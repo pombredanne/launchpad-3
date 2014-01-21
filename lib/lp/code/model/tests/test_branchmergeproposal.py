@@ -33,6 +33,7 @@ from lp.code.enums import (
 from lp.code.errors import (
     BadStateTransition,
     BranchMergeProposalExists,
+    DiffNotFound,
     WrongBranchMergeProposal,
     )
 from lp.code.event.branchmergeproposal import (
@@ -46,6 +47,9 @@ from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposal,
     IBranchMergeProposalGetter,
     notify_modified,
+    )
+from lp.code.interfaces.codereviewinlinecomment import (
+    ICodeReviewInlineCommentSet,
     )
 from lp.code.model.branchmergeproposal import (
     BranchMergeProposalGetter,
@@ -67,10 +71,12 @@ from lp.services.database.constants import UTC_NOW
 from lp.services.webapp import canonical_url
 from lp.testing import (
     ExpectedException,
+    feature_flags,
     launchpadlib_for,
     login,
     login_person,
     person_logged_in,
+    set_feature_flag,
     TestCaseWithFactory,
     verifyObject,
     WebServiceTestCase,
@@ -2038,6 +2044,228 @@ class TestGetUnlandedSourceBranchRevisions(TestCaseWithFactory):
         self.assertNotIn(r1, partial_revisions)
 
 
+class TestBranchMergeProposalInlineCommentsBase(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(TestBranchMergeProposalInlineCommentsBase, self).setUp()
+        # Create a testing IPerson, IPreviewDiff and IBranchMergeProposal
+        # for tests. Log in as the testing IPerson.
+        self.person = self.factory.makePerson()
+        self.bmp = self.factory.makeBranchMergeProposal(
+            registrant=self.person)
+        self.previewdiff = self.factory.makePreviewDiff(
+            merge_proposal=self.bmp)
+        login_person(self.person)
+
+    def getInlineComments(self, diff_timestamp=None):
+        # Return all published inline comments for the context BMP
+        if diff_timestamp is None:
+            diff_timestamp = self.previewdiff.date_created
+
+        return self.bmp.getInlineComments(diff_timestamp)
+
+    def getDraft(self, diff_timestamp=None, person=None):
+        # Return all draft inline comments for the context BMP
+        if diff_timestamp is None:
+            diff_timestamp = self.previewdiff.date_created
+        if person is None:
+            person = self.person
+
+        return self.bmp.getDraftInlineComments(
+            diff_timestamp, person)
+
+
+class TestBranchMergeProposalInlineCommentsDisabled(
+        TestBranchMergeProposalInlineCommentsBase):
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_save_drafts(self):
+        # 'saveDraftInlineComment' does not record draft inline comments
+        # if the corresponding feature-flag is not set.
+        self.bmp.saveDraftInlineComment(
+            diff_timestamp=self.previewdiff.date_created,
+            person=self.person,
+            comments={'10': 'No game'})
+        self.assertIsNone(self.getDraft())
+
+    def test_publish(self):
+        # `createComment` does not publish given inline comments
+        # if the corresponding feature-flag is not set. The MP comment
+        # is created. The MP comment itself is recorded.
+        self.bmp.createComment(
+            owner=self.bmp.registrant,
+            subject='Testing!',
+            diff_timestamp=self.previewdiff.date_created,
+            inline_comments={'11': 'foo'},
+        )
+        self.assertEqual(0, len(self.getInlineComments()))
+        self.assertEqual(1, self.bmp.all_comments.count())
+
+
+class TestBranchMergeProposalInlineCommentsEnabled(
+        TestBranchMergeProposalInlineCommentsBase):
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(TestBranchMergeProposalInlineCommentsEnabled, self).setUp()
+        # Enabled corresponding feature flag.
+        self.useContext(feature_flags())
+        set_feature_flag(u'code.inline_diff_comments.enabled', u'enabled')
+
+    def test_save_drafts(self):
+        # Draft inline comments, passed as a dictionary keyed by diff line
+        # number, can be stored for the current user using
+        # `IBranchMergeProposal.saveDraftInlineComment`.
+        # see `ICoreReviewInlineCommentSet.ensureDraft` for details.
+        self.bmp.saveDraftInlineComment(
+            diff_timestamp=self.previewdiff.date_created,
+            person=self.person,
+            comments={'10': 'DrAfT', '15': 'CoMmEnTs'})
+        self.assertEqual(2, len(self.getDraft()))
+
+    def test_save_drafts_no_previewdiff(self):
+        # `saveDraftInlineComment` raises `DiffNotFound` if there is
+        # no context `PreviewDiff` created on the given timestamp.
+        kwargs = {
+            'person': self.person,
+            'comments': {'10': 'No diff'},
+            'diff_timestamp': datetime(2001, 1, 1, 12, tzinfo=UTC),
+        }
+        self.assertRaises(
+            DiffNotFound, self.bmp.saveDraftInlineComment, **kwargs)
+
+    def test_publish(self):
+        # Existing (draft) inline comments can only be published associated
+        # with an `ICodeReviewComment` if the feature flag
+        # 'code.inline_diff_comments.enabled' is set.
+        self.bmp.createComment(
+            owner=self.bmp.registrant,
+            subject='Testing!',
+            diff_timestamp=self.previewdiff.date_created,
+            inline_comments={'11': 'foo'},
+        )
+        self.assertEqual(1, len(self.getInlineComments()))
+        self.assertEqual(1, self.bmp.all_comments.count())
+
+    def test_publish_no_inlines(self):
+        # Suppressing 'inline_comments' does not result in any inline
+        # comments, but the MP comment itself is created.
+        self.bmp.createComment(
+            owner=self.bmp.registrant,
+            subject='Testing!',
+            diff_timestamp=self.previewdiff.date_created,
+            inline_comments=None,
+        )
+        self.assertEqual(0, len(self.getInlineComments()))
+        self.assertEqual(1, self.bmp.all_comments.count())
+
+    def test_publish_empty(self):
+        # Passing an empty 'inline_comments' dictionary does not result
+        # in any inline comments published.
+        self.bmp.createComment(
+            owner=self.bmp.registrant,
+            subject='Testing!',
+            diff_timestamp=self.previewdiff.date_created,
+            inline_comments={},
+        )
+        self.assertEqual(0, len(self.getInlineComments()))
+        self.assertEqual(1, self.bmp.all_comments.count())
+
+    def test_publish_no_diff_timestamp(self):
+        # If previewdiff creation timestamp is not given and there are
+        # inline comments to publish, an `AssertioError` is raised
+        kwargs = {
+            'owner': self.bmp.registrant,
+            'subject': 'Testing!',
+            'diff_timestamp':  None,
+            'inline_comments': {'10': 'foo'},
+        }
+        self.assertRaises(
+            AssertionError, self.bmp.createComment, **kwargs)
+
+    def test_publish_no_diff_found(self):
+        # If previewdiff creation timestamp does not correspond to
+        # a context `PreviewDiff`, an `DiffNotFound` is raised.
+        kwargs = {
+            'owner': self.bmp.registrant,
+            'subject': 'Testing!',
+            'diff_timestamp': datetime(2001, 1, 1, 12, tzinfo=UTC),
+            'inline_comments': {'10': 'foo'},
+        }
+        self.assertRaises(
+            DiffNotFound, self.bmp.createComment, **kwargs)
+
+    def test_get_inlinecomments(self):
+        # Published inline comments for an specific `PreviewDiff` can
+        # be retrieved via `getInlineComments`.
+        comment = self.bmp.createComment(
+            owner=self.bmp.registrant,
+            subject='Testing!',
+            diff_timestamp=self.previewdiff.date_created,
+            inline_comments={'11': 'eleven'},
+        )
+
+        published_comments = self.bmp.getInlineComments(
+            self.previewdiff.date_created)
+        self.assertEqual(1, len(published_comments))
+        [published_comment] = published_comments
+
+        # A 'published' inline comment is represented by a list of 4
+        # elements (line_number, author, comment, timestamp).
+        self.assertEqual(
+            {'line_number': '11', 'person': self.person, 'text': 'eleven',
+             'date': comment.date_created},
+            published_comment)
+
+    def test_get_draft(self):
+        # Draft inline comments for an specific `PreviewDiff` and
+        # `IPerson` (author) can be retrieved via `getDraftInlineComments`.
+        self.bmp.saveDraftInlineComment(
+            diff_timestamp=self.previewdiff.date_created,
+            person=self.person,
+            comments={'10': 'ten'})
+
+        draft_comments = self.bmp.getDraftInlineComments(
+            self.previewdiff.date_created, self.person)
+
+        # A 'draft' inline comment is represented by a dictionary (object)
+        # with keyed by line numbers (as text) and the corresponding
+        # comment as value, exactly as it was sent to LP.
+        self.assertEqual({'10': 'ten'}, draft_comments)
+
+    def test_get_draft_different_users(self):
+        #  Different users have different draft comments.
+        self.bmp.saveDraftInlineComment(
+            diff_timestamp=self.previewdiff.date_created,
+            person=self.person,
+            comments={'1': 'zoing!'})
+
+        someone_else = self.factory.makePerson()
+        self.bmp.saveDraftInlineComment(
+            diff_timestamp=self.previewdiff.date_created,
+            person=someone_else,
+            comments={'1': 'boing!'})
+
+        self.assertEqual({'1': 'zoing!'}, self.getDraft())
+        self.assertEqual({'1': 'boing!'}, self.getDraft(person=someone_else))
+
+    def test_get_diff_not_found(self):
+        # Trying to fetch inline comments (draft or published) with a
+        # diff_timestamp that does not correspond to a context
+        # `PreviewDiff` creation date raises `DiffNotFound`.
+        self.assertRaises(
+            DiffNotFound, self.bmp.getInlineComments,
+            datetime(2001, 1, 1, 12, tzinfo=UTC))
+
+        self.assertRaises(
+            DiffNotFound, self.bmp.getDraftInlineComments,
+            datetime(2001, 1, 1, 12, tzinfo=UTC), self.person)
+
+
 class TestWebservice(WebServiceTestCase):
     """Tests for the webservice."""
 
@@ -2087,3 +2315,66 @@ class TestWebservice(WebServiceTestCase):
         user = previewdiff.branch_merge_proposal.target_branch.owner
         ws_previewdiff = self.wsObject(previewdiff, user=user)
         self.assertIsNone(ws_previewdiff.diffstat)
+
+    def test_saveDraftInlineComment_with_no_previewdiff(self):
+        # Failure on context diff mismatch.
+
+        # Enabled inline_diff feature.
+        self.useContext(feature_flags())
+        set_feature_flag(u'code.inline_diff_comments.enabled', u'enabled')
+
+        bmp = self.factory.makeBranchMergeProposal()
+        ws_bmp = self.wsObject(bmp, user=bmp.target_branch.owner)
+
+        self.assertRaises(
+            BadRequest, ws_bmp.saveDraftInlineComment,
+            diff_timestamp=datetime(2001, 1, 1, 12, tzinfo=UTC), comments={})
+
+    def test_saveDraftInlineComment(self):
+        # Creating and retrieving draft inline comments.
+
+        # Enabled inline_diff feature.
+        self.useContext(feature_flags())
+        set_feature_flag(u'code.inline_diff_comments.enabled', u'enabled')
+
+        previewdiff = self.factory.makePreviewDiff()
+        user = previewdiff.branch_merge_proposal.target_branch.owner
+        ws_bmp = self.wsObject(previewdiff.branch_merge_proposal, user=user)
+
+        ws_bmp.saveDraftInlineComment(
+            diff_timestamp=previewdiff.date_created,
+            comments={'2': 'foo'})
+        transaction.commit()
+
+        draft_comments = ws_bmp.getDraftInlineComments(
+            diff_timestamp=previewdiff.date_created)
+        self.assertEqual({'2': 'foo'}, draft_comments)
+
+    def test_getInlineComment(self):
+        # Publishing and retrieving inline comments.
+
+        # Enabled inline_diff feature.
+        self.useContext(feature_flags())
+        set_feature_flag(u'code.inline_diff_comments.enabled', u'enabled')
+
+        previewdiff = self.factory.makePreviewDiff()
+        user = previewdiff.branch_merge_proposal.target_branch.owner
+        ws_bmp = self.wsObject(previewdiff.branch_merge_proposal, user=user)
+
+        review_comment = ws_bmp.createComment(
+            subject='Testing!',
+            diff_timestamp=previewdiff.date_created,
+            inline_comments={u'2': u'foo'})
+        transaction.commit()
+
+        inline_comments = ws_bmp.getInlineComments(
+            diff_timestamp=previewdiff.date_created)
+
+        self.assertEqual(1, len(inline_comments))
+        [inline_comment] = inline_comments
+
+        self.assertEqual('2', inline_comment.get('line_number'))
+        self.assertEqual(user.name, inline_comment.get('person').get('name'))
+        self.assertEqual('foo', inline_comment.get('text'))
+        comment_date = review_comment.date_created.isoformat()
+        self.assertEqual(comment_date, inline_comment.get('date'))
