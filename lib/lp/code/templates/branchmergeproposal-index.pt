@@ -144,6 +144,7 @@
         <div id="add-comment-review-fields">
             Review: <tal:review replace="structure comment_form/widgets/vote"/>
             Review type: <tal:review replace="structure comment_form/widgets/review_type"/>
+            <tal:publish_inline_comments condition="features/code.inline_diff_comments.enabled">Publish inline comments: <tal:review replace="structure comment_form/widgets/publish_inline_comments" tal:condition="features/code.inline_diff_comments.enabled"/></tal:publish_inline_comments>
             <div class="actions"
                  tal:content="structure comment_form/actions/field.actions.add/render" />
         </div>
@@ -193,7 +194,6 @@
   replace="structure
   string:&lt;script id='codereview-script' type='text/javascript'&gt;" />
   conf = <tal:status-config replace="view/status_config" />
-  <!--
   LPJS.use('io-base', 'lp.code.branchmergeproposal.reviewcomment',
           'lp.code.branchmergeproposal.status', 'lp.app.comment',
           'lp.code.branchmergeproposal.updater', 'lp.app.widgets.expander',
@@ -206,6 +206,27 @@
         if (logged_in) {
             var comment = new Y.lp.app.comment.CodeReviewComment();
             comment.render();
+
+            comment._add_comment_success = function () {
+                var lp_client = new Y.lp.client.Launchpad();
+                var ns = Y.lp.code.branchmergeproposal.inlinecomments;
+                var diff_timestamp = (
+                    LP.cache.preview_diff_timestamps.slice(-1)[0]);
+                var config = {
+                    on: {
+                        success: function (r) {
+                            LP.cache.published_inline_comments = r;
+                            LP.cache.draft_inline_comments = null;
+                            ns.populate_existing_comments();
+                        },
+                    },
+                    parameters: {
+                        diff_timestamp: diff_timestamp,
+                    }
+                };
+                lp_client.named_get(
+                    LP.cache.context.self_link, 'getInlineComments', config);
+            }
             Y.lp.code.branchmergeproposal.status.connect_status(conf);
         }
         Y.lp.code.branchmergeproposal.reviewcomment.connect_links();
@@ -241,7 +262,6 @@
         Y.lp.code.branchmergeproposal.inlinecomments.setup_inline_comments();
     });
   });
-  -->
 <tal:script replace="structure string:&lt;/script&gt;" />
 
 </div>

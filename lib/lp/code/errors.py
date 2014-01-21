@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Errors used in the lp/code modules."""
@@ -27,6 +27,7 @@ __all__ = [
     'CodeImportAlreadyRunning',
     'CodeImportNotInReviewedState',
     'ClaimReviewFailed',
+    'DiffNotFound',
     'InvalidBranchMergeProposal',
     'InvalidMergeQueueConfig',
     'InvalidNamespace',
@@ -384,3 +385,8 @@ class InvalidMergeQueueConfig(Exception):
     def __init__(self):
         message = ('The configuration specified is not a valid JSON string.')
         Exception.__init__(self, message)
+
+
+@error_status(httplib.BAD_REQUEST)
+class DiffNotFound(Exception):
+    """A `IPreviewDiff` with the timestamp was not found."""
