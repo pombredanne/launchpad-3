@@ -404,6 +404,12 @@ class NewSpecificationTests:
         self.assertEqual(
             InformationType.PUBLIC, view.initial_values['information_type'])
 
+    def test_default_drafter_is_user(self):
+        drafter = self.factory.makePerson()
+        with person_logged_in(drafter):
+            view = self.createInitializedView()
+            self.assertEqual(drafter, view.widgets['drafter']._getFormValue())
+
 
 class TestNewSpecificationFromRootView(TestCaseWithFactory,
                                        NewSpecificationTests):

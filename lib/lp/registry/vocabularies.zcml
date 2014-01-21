@@ -119,6 +119,19 @@
 
 
   <securedutility
+    name="MilestoneWithDateExpected"
+    component="lp.registry.vocabularies.MilestoneWithDateExpectedVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
+    >
+    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+  </securedutility>
+
+  <class class="lp.registry.vocabularies.MilestoneWithDateExpectedVocabulary">
+    <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
+  </class>
+
+
+  <securedutility
     name="NonMergedPeopleAndTeams"
     component="lp.registry.vocabularies.NonMergedPeopleAndTeamsVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
