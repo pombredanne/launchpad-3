@@ -24,7 +24,7 @@
 # run multiprocess.
 ## No multiprocess for now - don't want to overflow replication
 ## MULTIPROC=-j 4
-MULTIPROC=-j 2
+MULTIPROC=
 
 NEW_STAGING_CONFIG=staging-setup # For building the db with a different name.
 STAGING_CONFIG=staging-db # For swapping fresh db into place.
@@ -73,7 +73,7 @@ stagingsetup:
 	cat ${STAGING_DUMP} \
 	    | ./walblock.py -n 5000 -d /var/lib/postgresql/9.1/staging/pg_xlog \
 	    | pg_restore --dbname=lpmain_staging --no-owner ${EXIT_ON_ERROR} \
-		--use-list=${DUMPLIST} ${MULTIPROC}
+		--use-list=${DUMPLIST}
 	rm ${DUMPLIST}
 	# Apply database patches.
 	@echo Running upgrade.py `date`.
