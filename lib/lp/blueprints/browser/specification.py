@@ -328,6 +328,11 @@ class NewSpecificationView(LaunchpadFormView):
                              'this product')
                     self.setFieldError('information_type', error)
 
+    def setUpWidgets(self):
+        super(NewSpecificationView, self).setUpWidgets()
+        widget = self.widgets['drafter']
+        widget.setRenderedValue(self.user)
+
 
 class NewSpecificationFromTargetView(NewSpecificationView):
     """An abstract view for creating a specification from a target context.

@@ -32,9 +32,9 @@ Launchpad models package relationship elements via the
 IPackageRelationShip instance. We use APT to parse the relationship
 lines:
 
-  >>> from apt_pkg import ParseDepends
+  >>> from apt_pkg import parse_depends
 
-ParseDepends returns a 'list of lists of tuples' as:
+parse_depends returns a 'list of lists of tuples' as:
 
   [ [('$NAME', '$VERSION', '$OPERATOR')],
     [('$NAME', '$VERSION', '$OPERATOR')],
@@ -44,7 +44,7 @@ So we need perform a small treatment on its result in order to have
 *sane* data:
 
   >>> parsed_relationships = [relationship for (relationship,) in
-  ...                         ParseDepends(relationship_line)]
+  ...                         parse_depends(relationship_line)]
 
 Let's see what we call 'sane':
 

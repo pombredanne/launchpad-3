@@ -40,6 +40,7 @@ __all__ = [
     'FilteredProductSeriesVocabulary',
     'KarmaCategoryVocabulary',
     'MilestoneVocabulary',
+    'MilestoneWithDateExpectedVocabulary',
     'NewPillarGranteeVocabulary',
     'NonMergedPeopleAndTeamsVocabulary',
     'person_team_participations_vocabulary_factory',
@@ -93,6 +94,7 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
+from lp.app.browser.tales import DateTimeFormatterAPI
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.code.interfaces.branch import IBranch
 from lp.registry.enums import (
@@ -1384,6 +1386,17 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
             return obj.target.getMilestone(obj.name)
         else:
             return SQLObjectVocabularyBase.__contains__(self, obj)
+
+
+class MilestoneWithDateExpectedVocabulary(MilestoneVocabulary):
+
+    def toTerm(self, obj):
+        """See `IVocabulary`."""
+        term = super(MilestoneWithDateExpectedVocabulary, self).toTerm(obj)
+        if obj.dateexpected:
+            formatter = DateTimeFormatterAPI(obj.dateexpected)
+            term.title += ' (%s)' % formatter.approximatedate()
+        return term
 
 
 class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):

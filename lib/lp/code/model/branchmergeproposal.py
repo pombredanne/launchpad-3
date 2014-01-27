@@ -45,6 +45,7 @@ from lp.code.errors import (
     BadBranchMergeProposalSearchContext,
     BadStateTransition,
     BranchMergeProposalExists,
+    DiffNotFound,
     UserNotBranchReviewer,
     WrongBranchMergeProposal,
     )
@@ -63,6 +64,9 @@ from lp.code.interfaces.branchmergeproposal import (
     )
 from lp.code.interfaces.branchrevision import IBranchRevision
 from lp.code.interfaces.branchtarget import IHasBranchTarget
+from lp.code.interfaces.codereviewinlinecomment import (
+    ICodeReviewInlineCommentSet,
+    )
 from lp.code.mail.branch import RecipientReason
 from lp.code.model.branchrevision import BranchRevision
 from lp.code.model.codereviewcomment import CodeReviewComment
@@ -72,6 +76,7 @@ from lp.code.model.diff import (
     IncrementalDiff,
     PreviewDiff,
     )
+from lp.services.features import getFeatureFlag
 from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
@@ -747,6 +752,7 @@ class BranchMergeProposal(SQLBase):
 
     def createComment(self, owner, subject, content=None, vote=None,
                       review_type=None, parent=None, _date_created=DEFAULT,
+                      diff_timestamp=None, inline_comments=None,
                       _notify_listeners=True):
         """See `IBranchMergeProposal`."""
         #:param _date_created: The date the message was created.  Provided
@@ -776,9 +782,40 @@ class BranchMergeProposal(SQLBase):
             parent=parent_message, owner=owner, rfc822msgid=msgid,
             subject=subject, datecreated=_date_created)
         MessageChunk(message=message, content=content, sequence=1)
-        return self.createCommentFromMessage(
+        comment = self.createCommentFromMessage(
             message, vote, review_type, original_email=None,
             _notify_listeners=_notify_listeners, _validate=False)
+
+        if getFeatureFlag("code.inline_diff_comments.enabled"):
+            if inline_comments:
+                assert diff_timestamp is not None, (
+                    'Inline comments must be associated with a previewdiff '
+                    'timestamp.')
+                previewdiff = self._getPreviewDiffByTimestamp(diff_timestamp)
+                getUtility(ICodeReviewInlineCommentSet).ensureDraft(
+                    previewdiff, owner, inline_comments)
+                getUtility(ICodeReviewInlineCommentSet).publishDraft(
+                    previewdiff, owner, comment)
+
+        return comment
+
+    def _getPreviewDiffByTimestamp(self, diff_timestamp):
+        """Return a `PreviewDiff` created on the given timestamp.
+
+        Looks for a `PreviewDiff` for this merge proposal created exactly
+        on the given timestamp. If it could not be found `DiffNotFound`
+        is raised.
+        """
+        previewdiff = IStore(PreviewDiff).find(
+            PreviewDiff,
+            PreviewDiff.branch_merge_proposal_id == self.id,
+            PreviewDiff.date_created == diff_timestamp).one()
+        if not previewdiff:
+            raise DiffNotFound(
+                "Could not locate a preview diff with a timestamp of "
+                "%s" % (diff_timestamp))
+
+        return previewdiff
 
     def getUsersVoteReference(self, user, review_type=None):
         """Get the existing vote reference for the given user."""
@@ -868,6 +905,26 @@ class BranchMergeProposal(SQLBase):
             notify(NewCodeReviewCommentEvent(
                     code_review_message, original_email))
         return code_review_message
+
+    def getInlineComments(self, diff_timestamp):
+        """See `IBranchMergeProposal`."""
+        previewdiff = self._getPreviewDiffByTimestamp(diff_timestamp)
+        return getUtility(ICodeReviewInlineCommentSet).getPublished(
+            previewdiff)
+
+    def getDraftInlineComments(self, diff_timestamp, person):
+        """See `IBranchMergeProposal`."""
+        previewdiff = self._getPreviewDiffByTimestamp(diff_timestamp)
+        return getUtility(ICodeReviewInlineCommentSet).getDraft(
+            previewdiff, person)
+
+    def saveDraftInlineComment(self, diff_timestamp, person, comments):
+        """See `IBranchMergeProposal`."""
+        if not getFeatureFlag("code.inline_diff_comments.enabled"):
+            return
+        previewdiff = self._getPreviewDiffByTimestamp(diff_timestamp)
+        getUtility(ICodeReviewInlineCommentSet).ensureDraft(
+            previewdiff, person, comments)
 
     def updatePreviewDiff(self, diff_content, source_revision_id,
                           target_revision_id, prerequisite_revision_id=None,

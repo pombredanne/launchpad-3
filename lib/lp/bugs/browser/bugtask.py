@@ -3057,7 +3057,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
 
     def getMilestoneWidgetValues(self):
         """Return data used to render the milestone checkboxes."""
-        return self.getWidgetValues("Milestone")
+        return self.getWidgetValues("MilestoneWithDateExpected")
 
     def getSimpleSearchURL(self):
         """Return a URL that can be used as an href to the simple search."""
