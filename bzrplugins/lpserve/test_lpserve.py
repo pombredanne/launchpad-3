@@ -597,8 +597,7 @@ class TestLPServiceInSubprocess(TestCaseWithLPForkingServiceSubprocess):
         self.assertEqual(None, self.service_process.poll())
         # Now when we send SIGTERM, it should wait for the child to exit,
         # before it tries to exit itself.
-        # In python2.6+ we could use self.service_process.terminate()
-        os.kill(self.service_process.pid, sig_id)
+        self.service_process.send_signal(sig_id)
         self.assertEqual(None, self.service_process.poll())
         # Now talk to the child, so the service can close
         stdout_content, stderr_content = self.communicate_with_fork(path)
