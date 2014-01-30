@@ -663,7 +663,7 @@ class LaunchpadBrowserPublication(
     def beginErrorHandlingTransaction(self, request, ob, note):
         """Hook for when a new view is started to handle an exception.
 
-        We need to add an additional behavior to the usual Zope behavior.
+        We need to add an additional behaviour to the usual Zope behaviour.
         We must restart the request timer.  Otherwise we can get OOPS errors
         from our exception views inappropriately.
         """

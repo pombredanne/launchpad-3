@@ -212,7 +212,7 @@ class LibrarianClientTestCase(unittest.TestCase):
     def test_restricted_getURLForDownload(self):
         # The RestrictedLibrarianClient should use the
         # restricted_download_host and restricted_download_port, but is
-        # otherwise identical to the behavior of the LibrarianClient discussed
+        # otherwise identical to the behaviour of the LibrarianClient discussed
         # and demonstrated above.
         #
         # (Set up:)

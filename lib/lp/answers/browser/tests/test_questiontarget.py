@@ -120,7 +120,7 @@ class TestSearchQuestionsViewCanConfigureAnswers(TestCaseWithFactory):
 
 
 class TestSearchQuestionsViewTemplate(TestCaseWithFactory):
-    """Test the behavior of SearchQuestionsView.template"""
+    """Test the behaviour of SearchQuestionsView.template"""
 
     layer = DatabaseFunctionalLayer
 
@@ -180,7 +180,7 @@ class TestSearchQuestionsViewTemplate(TestCaseWithFactory):
 
 
 class TestSearchQuestionsViewUnknown(TestCaseWithFactory):
-    """Test the behavior of SearchQuestionsView unknown support."""
+    """Test the behaviour of SearchQuestionsView unknown support."""
 
     layer = DatabaseFunctionalLayer
 

@@ -311,7 +311,7 @@ to a different 'bar_1.0.orig.tar.gz'.
     Subject: bar_1.0-3_source.changes rejected
     ...
 
-Force weird behavior with rfc2047 sentences containing '.' on
+Force weird behaviour with rfc2047 sentences containing '.' on
 bar_1.0-4, which caused bug # 41102.
 
     >>> from lp.registry.interfaces.person import IPersonSet

@@ -146,7 +146,7 @@ class Upgrader:
                 bd.root_transport.base, self.get_target_format())
             if exceptions:
                 if len(exceptions) == 1:
-                    # Compatibility with historical behavior
+                    # Compatibility with historical behaviour
                     raise exceptions[0]
                 else:
                     return 3

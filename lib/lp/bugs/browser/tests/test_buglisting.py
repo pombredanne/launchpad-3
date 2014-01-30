@@ -192,7 +192,7 @@ class TestBugTaskSearchListingPage(BrowserTestCase):
             find_tag_by_id(content, 'bugs-batch-links-upper'))
 
     def test_ajax_batch_navigation_feature_flag(self):
-        # The Javascript to wire up the ajax batch navigation behavior is
+        # The Javascript to wire up the ajax batch navigation behaviour is
         # correctly hidden behind a feature flag.
         product = self.factory.makeProduct()
         form = {'search': 'Search'}

@@ -26,8 +26,8 @@ from lp.buildmaster.interfaces.builder import (
     CannotFetchFile,
     CannotResumeHost,
     )
-from lp.buildmaster.interfaces.buildfarmjobbehavior import (
-    IBuildFarmJobBehavior,
+from lp.buildmaster.interfaces.buildfarmjobbehaviour import (
+    IBuildFarmJobBehaviour,
     )
 from lp.services import encoding
 from lp.services.config import config
@@ -242,12 +242,12 @@ class BuilderInteractor(object):
             vitals.url, vitals.vm_host, timeout)
 
     @staticmethod
-    def getBuildBehavior(queue_item, builder, slave):
+    def getBuildBehaviour(queue_item, builder, slave):
         if queue_item is None:
             return None
-        behavior = IBuildFarmJobBehavior(queue_item.specific_build)
-        behavior.setBuilder(builder, slave)
-        return behavior
+        behaviour = IBuildFarmJobBehaviour(queue_item.specific_build)
+        behaviour.setBuilder(builder, slave)
+        return behaviour
 
     @classmethod
     @defer.inlineCallbacks
@@ -324,7 +324,7 @@ class BuilderInteractor(object):
 
     @classmethod
     @defer.inlineCallbacks
-    def _startBuild(cls, build_queue_item, vitals, builder, slave, behavior,
+    def _startBuild(cls, build_queue_item, vitals, builder, slave, behaviour,
                     logger):
         """Start a build on this builder.
 
@@ -335,10 +335,10 @@ class BuilderInteractor(object):
             value is None, or a Failure that contains an exception
             explaining what went wrong.
         """
-        behavior.logStartBuild(logger)
-        behavior.verifyBuildRequest(logger)
+        behaviour.logStartBuild(logger)
+        behaviour.verifyBuildRequest(logger)
 
-        # Set the build behavior depending on the provided build queue item.
+        # Set the build behaviour depending on the provided build queue item.
         if not builder.builderok:
             raise BuildDaemonError(
                 "Attempted to start a build on a known-bad builder.")
@@ -355,7 +355,7 @@ class BuilderInteractor(object):
             yield cls.resumeSlaveHost(vitals, slave)
             yield slave.echo("ping")
 
-        yield behavior.dispatchBuildToSlave(build_queue_item.id, logger)
+        yield behaviour.dispatchBuildToSlave(build_queue_item.id, logger)
 
     @classmethod
     def resetOrFail(cls, vitals, slave, builder, logger, exception):
@@ -414,15 +414,15 @@ class BuilderInteractor(object):
             logger.debug("No build candidates available for builder.")
             defer.returnValue(None)
 
-        new_behavior = cls.getBuildBehavior(candidate, builder, slave)
+        new_behaviour = cls.getBuildBehaviour(candidate, builder, slave)
         needed_bfjb = type(removeSecurityProxy(
-            IBuildFarmJobBehavior(candidate.specific_build)))
-        if not zope_isinstance(new_behavior, needed_bfjb):
+            IBuildFarmJobBehaviour(candidate.specific_build)))
+        if not zope_isinstance(new_behaviour, needed_bfjb):
             raise AssertionError(
-                "Inappropriate IBuildFarmJobBehavior: %r is not a %r" %
-                (new_behavior, needed_bfjb))
+                "Inappropriate IBuildFarmJobBehaviour: %r is not a %r" %
+                (new_behaviour, needed_bfjb))
         yield cls._startBuild(
-            candidate, vitals, builder, slave, new_behavior, logger)
+            candidate, vitals, builder, slave, new_behaviour, logger)
         defer.returnValue(candidate)
 
     @staticmethod
@@ -441,7 +441,7 @@ class BuilderInteractor(object):
     @classmethod
     @defer.inlineCallbacks
     def updateBuild(cls, vitals, slave, slave_status, builder_factory,
-                    behavior_factory):
+                    behaviour_factory):
         """Verify the current build job status.
 
         Perform the required actions for each state.
@@ -466,8 +466,8 @@ class BuilderInteractor(object):
         elif builder_status == 'BuilderStatus.WAITING':
             # Build has finished. Delegate handling to the build itself.
             builder = builder_factory[vitals.name]
-            behavior = behavior_factory(vitals.build_queue, builder, slave)
-            yield behavior.handleStatus(
+            behaviour = behaviour_factory(vitals.build_queue, builder, slave)
+            yield behaviour.handleStatus(
                 vitals.build_queue, cls.extractBuildStatus(slave_status),
                 slave_status)
         else:

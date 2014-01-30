@@ -2,7 +2,7 @@ The lp.services.webapp.adapter code constrains the amount of time that
 a request can take.
 
 The document webapp/ftests/test_adapter.txt shows its
-behavior in detail.  This document shows the behavior within the context of a
+behaviour in detail.  This document shows the behaviour within the context of a
 page test.
 
 In particular, this demonstration shows not only that the main view will raise
@@ -77,7 +77,7 @@ exception, and a time machine.
     ...     DoomedExceptionView, required=(TimeoutError, IBrowserRequest),
     ...     provided=IBrowserView, name='index.html')
 
-Now we actually demonstrate the behavior.  The view did raise a TimeoutError.
+Now we actually demonstrate the behaviour.  The view did raise a TimeoutError.
 
     >>> from lp.testing.fixture import CaptureOops
     >>> capture = CaptureOops()

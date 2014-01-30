@@ -15,7 +15,7 @@ __all__ = [
     'MockBuilder',
     'OkSlave',
     'SlaveTestHelpers',
-    'TrivialBehavior',
+    'TrivialBehaviour',
     'WaitingSlave',
     ]
 
@@ -244,7 +244,7 @@ class BrokenSlave:
         return defer.fail(xmlrpclib.Fault(8001, "Broken slave"))
 
 
-class TrivialBehavior:
+class TrivialBehaviour:
 
     def getBuildCookie(self):
         return 'trivial'

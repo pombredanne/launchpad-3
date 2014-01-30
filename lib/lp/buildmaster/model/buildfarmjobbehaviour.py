@@ -1,12 +1,12 @@
 # Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Base and idle BuildFarmJobBehavior classes."""
+"""Base and idle BuildFarmJobBehaviour classes."""
 
 __metaclass__ = type
 
 __all__ = [
-    'BuildFarmJobBehaviorBase',
+    'BuildFarmJobBehaviourBase',
     ]
 
 import datetime
@@ -33,10 +33,10 @@ from lp.services.librarian.utils import copy_and_close
 SLAVE_LOG_FILENAME = 'buildlog'
 
 
-class BuildFarmJobBehaviorBase:
-    """Ensures that all behaviors inherit the same initialization.
+class BuildFarmJobBehaviourBase:
+    """Ensures that all behaviours inherit the same initialization.
 
-    All build-farm job behaviors should inherit from this.
+    All build-farm job behaviours should inherit from this.
     """
 
     def __init__(self, build):
@@ -50,7 +50,7 @@ class BuildFarmJobBehaviorBase:
         self._slave = slave
 
     def verifyBuildRequest(self, logger):
-        """The default behavior is a no-op."""
+        """The default behaviour is a no-op."""
         pass
 
     def getBuildCookie(self):
@@ -137,7 +137,7 @@ class BuildFarmJobBehaviorBase:
     ALLOWED_STATUS_NOTIFICATIONS = ['OK', 'PACKAGEFAIL', 'CHROOTFAIL']
 
     def handleStatus(self, bq, status, slave_status):
-        """See `IBuildFarmJobBehavior`."""
+        """See `IBuildFarmJobBehaviour`."""
         if bq != self.build.buildqueue_record:
             raise AssertionError(
                 "%r != %r" % (bq, self.build.buildqueue_record))

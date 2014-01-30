@@ -1,7 +1,7 @@
 Linked Bug Status Changed Notification (Private)
 ================================================
 
-See `answer-tracker-notifications-linked-bug.txt` for public bug behavior.
+See `answer-tracker-notifications-linked-bug.txt` for public bug behaviour.
 
 Question subscribers are not sent notifications about private bugs, because
 they are indirect subscribers.

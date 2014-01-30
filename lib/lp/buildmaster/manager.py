@@ -222,13 +222,13 @@ class SlaveScanner:
     def __init__(self, builder_name, builder_factory, logger, clock=None,
                  interactor_factory=BuilderInteractor,
                  slave_factory=BuilderInteractor.makeSlaveFromVitals,
-                 behavior_factory=BuilderInteractor.getBuildBehavior):
+                 behaviour_factory=BuilderInteractor.getBuildBehaviour):
         self.builder_name = builder_name
         self.builder_factory = builder_factory
         self.logger = logger
         self.interactor_factory = interactor_factory
         self.slave_factory = slave_factory
-        self.behavior_factory = behavior_factory
+        self.behaviour_factory = behaviour_factory
         # Use the clock if provided, so that tests can advance it.  Use the
         # reactor by default.
         if clock is None:
@@ -387,10 +387,10 @@ class SlaveScanner:
         """
         if vitals.build_queue != self._cached_build_queue:
             if vitals.build_queue is not None:
-                behavior = self.behavior_factory(
+                behaviour = self.behaviour_factory(
                     vitals.build_queue, self.builder_factory[vitals.name],
                     None)
-                self._cached_build_cookie = behavior.getBuildCookie()
+                self._cached_build_cookie = behaviour.getBuildCookie()
             else:
                 self._cached_build_cookie = None
             self._cached_build_queue = vitals.build_queue
@@ -458,7 +458,7 @@ class SlaveScanner:
             assert slave_status is not None
             yield interactor.updateBuild(
                 vitals, slave, slave_status, self.builder_factory,
-                self.behavior_factory)
+                self.behaviour_factory)
         elif vitals.manual:
             # If the builder is in manual mode, don't dispatch anything.
             self.logger.debug(

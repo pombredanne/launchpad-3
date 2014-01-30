@@ -862,7 +862,7 @@
     <allow interface="lp.buildmaster.interfaces.buildfarmjob.ISpecificBuildFarmJobSource"/>
   </securedutility>
 
-  <adapter factory="lp.code.model.recipebuilder.RecipeBuildBehavior"
+  <adapter factory="lp.code.model.recipebuilder.RecipeBuildBehaviour"
            permission="zope.Public" />
 
   <!-- SourcePackageRecipeData -->
