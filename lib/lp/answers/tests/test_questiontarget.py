@@ -134,7 +134,7 @@ class TestQuestionTarget_answer_contacts_with_languages(TestCaseWithFactory):
 
 
 class TestQuestionTargetCreateQuestionFromBug(TestCaseWithFactory):
-    """Test the createQuestionFromBug from bug behavior."""
+    """Test the createQuestionFromBug from bug behaviour."""
 
     layer = DatabaseFunctionalLayer
 

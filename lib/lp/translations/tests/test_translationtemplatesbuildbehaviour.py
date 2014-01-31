@@ -1,7 +1,7 @@
 # Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Unit tests for TranslationTemplatesBuildBehavior."""
+"""Unit tests for TranslationTemplatesBuildBehaviour."""
 
 import datetime
 import logging
@@ -16,8 +16,8 @@ from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interactor import BuilderInteractor
 from lp.buildmaster.interfaces.builder import CannotBuild
-from lp.buildmaster.interfaces.buildfarmjobbehavior import (
-    IBuildFarmJobBehavior,
+from lp.buildmaster.interfaces.buildfarmjobbehaviour import (
+    IBuildFarmJobBehaviour,
     )
 from lp.buildmaster.tests.mock_slaves import (
     SlaveTestHelpers,
@@ -42,35 +42,35 @@ from lp.translations.interfaces.translations import (
 class FakeBuildQueue:
     """Pretend `BuildQueue`."""
 
-    def __init__(self, behavior):
-        """Pretend to be a BuildQueue item for the given build behavior.
+    def __init__(self, behaviour):
+        """Pretend to be a BuildQueue item for the given build behaviour.
 
-        Copies its builder from the behavior object.
+        Copies its builder from the behaviour object.
         """
-        self.builder = behavior._builder
-        self.specific_build = behavior.build
+        self.builder = behaviour._builder
+        self.specific_build = behaviour.build
         self.date_started = datetime.datetime.now(pytz.UTC)
         self.destroySelf = FakeMethod()
 
 
-class MakeBehaviorMixin(object):
+class MakeBehaviourMixin(object):
     """Provide common test methods."""
 
-    def makeBehavior(self, branch=None, use_fake_chroot=True, **kwargs):
-        """Create a TranslationTemplatesBuildBehavior.
+    def makeBehaviour(self, branch=None, use_fake_chroot=True, **kwargs):
+        """Create a TranslationTemplatesBuildBehaviour.
 
         Anything that might communicate with build slaves and such
         (which we can't really do here) is mocked up.
         """
         build = self.factory.makeTranslationTemplatesBuild(branch=branch)
-        behavior = IBuildFarmJobBehavior(build)
+        behaviour = IBuildFarmJobBehaviour(build)
         slave = WaitingSlave(**kwargs)
-        behavior.setBuilder(self.factory.makeBuilder(), slave)
+        behaviour.setBuilder(self.factory.makeBuilder(), slave)
         if use_fake_chroot:
             lf = self.factory.makeLibraryFileAlias()
             self.layer.txn.commit()
-            behavior._getChroot = lambda: lf
-        return behavior
+            behaviour._getChroot = lambda: lf
+        return behaviour
 
     def makeProductSeriesWithBranchForTranslation(self):
         productseries = self.factory.makeProductSeries()
@@ -82,43 +82,43 @@ class MakeBehaviorMixin(object):
         return productseries
 
 
-class TestTranslationTemplatesBuildBehavior(
-    TestCaseWithFactory, MakeBehaviorMixin):
-    """Test `TranslationTemplatesBuildBehavior`."""
+class TestTranslationTemplatesBuildBehaviour(
+    TestCaseWithFactory, MakeBehaviourMixin):
+    """Test `TranslationTemplatesBuildBehaviour`."""
 
     layer = LaunchpadZopelessLayer
     run_tests_with = AsynchronousDeferredRunTest
 
     def setUp(self):
-        super(TestTranslationTemplatesBuildBehavior, self).setUp()
+        super(TestTranslationTemplatesBuildBehaviour, self).setUp()
         self.slave_helper = self.useFixture(SlaveTestHelpers())
 
     def test_getLogFileName(self):
         # Each job has a unique log file name.
-        b1 = self.makeBehavior()
-        b2 = self.makeBehavior()
+        b1 = self.makeBehaviour()
+        b2 = self.makeBehaviour()
         self.assertNotEqual(b1.getLogFileName(), b2.getLogFileName())
 
     def test_dispatchBuildToSlave_no_chroot_fails(self):
         # dispatchBuildToSlave will fail if the chroot does not exist.
-        behavior = self.makeBehavior(use_fake_chroot=False)
+        behaviour = self.makeBehaviour(use_fake_chroot=False)
         switch_dbuser(config.builddmaster.dbuser)
         self.assertRaises(
-            CannotBuild, behavior.dispatchBuildToSlave, None,
+            CannotBuild, behaviour.dispatchBuildToSlave, None,
             logging)
 
     def test_dispatchBuildToSlave(self):
         # dispatchBuildToSlave ultimately causes the slave's build
         # method to be invoked.  The slave receives the URL of the
         # branch it should build from.
-        behavior = self.makeBehavior()
+        behaviour = self.makeBehaviour()
         switch_dbuser(config.builddmaster.dbuser)
-        d = behavior.dispatchBuildToSlave(FakeBuildQueue(behavior), logging)
+        d = behaviour.dispatchBuildToSlave(FakeBuildQueue(behaviour), logging)
 
         def got_dispatch((status, info)):
             # call_log lives on the mock WaitingSlave and tells us what
             # calls to the slave that the behaviour class made.
-            call_log = behavior._slave.call_log
+            call_log = behaviour._slave.call_log
             build_params = call_log[-1]
             self.assertEqual('build', build_params[0])
             build_type = build_params[2]
@@ -127,7 +127,7 @@ class TestTranslationTemplatesBuildBehavior(
             # The slave receives the public http URL for the branch.
             self.assertEqual(
                 branch_url,
-                behavior.build.branch.composePublicURL())
+                behaviour.build.branch.composePublicURL())
         return d.addCallback(got_dispatch)
 
     def test_getChroot(self):
@@ -142,18 +142,18 @@ class TestTranslationTemplatesBuildBehavior(
         fake_chroot_file = getUtility(ILibraryFileAliasSet)[1]
         distroarchseries.addOrUpdateChroot(fake_chroot_file)
 
-        behavior = self.makeBehavior(use_fake_chroot=False)
-        chroot = behavior._getChroot()
+        behaviour = self.makeBehaviour(use_fake_chroot=False)
+        chroot = behaviour._getChroot()
 
         self.assertNotEqual(None, chroot)
         self.assertEqual(fake_chroot_file, chroot)
 
     def test_readTarball(self):
-        behavior = self.makeBehavior()
-        buildqueue = FakeBuildQueue(behavior)
-        path = behavior.templates_tarball_path
+        behaviour = self.makeBehaviour()
+        buildqueue = FakeBuildQueue(behaviour)
+        path = behaviour.templates_tarball_path
         # Poke the file we're expecting into the mock slave.
-        behavior._slave.valid_file_hashes.append(path)
+        behaviour._slave.valid_file_hashes.append(path)
 
         def got_tarball(filename):
             tarball = open(filename, 'r')
@@ -164,42 +164,42 @@ class TestTranslationTemplatesBuildBehavior(
                 tarball.close()
                 os.remove(filename)
 
-        d = behavior._readTarball(buildqueue, {path: path}, logging)
+        d = behaviour._readTarball(buildqueue, {path: path}, logging)
         return d.addCallback(got_tarball)
 
     def test_handleStatus_OK(self):
         # Hopefully, a build will succeed and produce a tarball.
-        behavior = self.makeBehavior(
+        behaviour = self.makeBehaviour(
             filemap={'translation-templates.tar.gz': 'foo'})
-        behavior._uploadTarball = FakeMethod()
-        queue_item = FakeBuildQueue(behavior)
-        slave = behavior._slave
+        behaviour._uploadTarball = FakeMethod()
+        queue_item = FakeBuildQueue(behaviour)
+        slave = behaviour._slave
 
-        d = behavior.dispatchBuildToSlave(queue_item, logging)
+        d = behaviour.dispatchBuildToSlave(queue_item, logging)
 
         def got_dispatch((status, info)):
             self.assertEqual(0, queue_item.destroySelf.call_count)
             slave_call_log = slave.call_log
             self.assertNotIn('clean', slave_call_log)
-            self.assertEqual(0, behavior._uploadTarball.call_count)
+            self.assertEqual(0, behaviour._uploadTarball.call_count)
 
             return slave.status_dict()
 
         def got_status(status):
             return (
-                behavior.handleStatus(
+                behaviour.handleStatus(
                     queue_item, BuilderInteractor.extractBuildStatus(status),
                     status),
                 slave.call_log)
 
         def build_updated(ignored):
-            self.assertEqual(BuildStatus.FULLYBUILT, behavior.build.status)
+            self.assertEqual(BuildStatus.FULLYBUILT, behaviour.build.status)
             # Log file is stored.
-            self.assertIsNotNone(behavior.build.log)
+            self.assertIsNotNone(behaviour.build.log)
             slave_call_log = slave.call_log
             self.assertEqual(1, queue_item.destroySelf.call_count)
             self.assertIn('clean', slave_call_log)
-            self.assertEqual(1, behavior._uploadTarball.call_count)
+            self.assertEqual(1, behaviour._uploadTarball.call_count)
 
         d.addCallback(got_dispatch)
         d.addCallback(got_status)
@@ -208,11 +208,11 @@ class TestTranslationTemplatesBuildBehavior(
 
     def test_handleStatus_failed(self):
         # Builds may also fail (and produce no tarball).
-        behavior = self.makeBehavior(state='BuildStatus.FAILEDTOBUILD')
-        behavior._uploadTarball = FakeMethod()
-        queue_item = FakeBuildQueue(behavior)
-        slave = behavior._slave
-        d = behavior.dispatchBuildToSlave(queue_item, logging)
+        behaviour = self.makeBehaviour(state='BuildStatus.FAILEDTOBUILD')
+        behaviour._uploadTarball = FakeMethod()
+        queue_item = FakeBuildQueue(behaviour)
+        slave = behaviour._slave
+        d = behaviour.dispatchBuildToSlave(queue_item, logging)
 
         def got_dispatch((status, info)):
             # Now that we've dispatched, get the status.
@@ -220,18 +220,18 @@ class TestTranslationTemplatesBuildBehavior(
 
         def got_status(status):
             del status['filemap']
-            return behavior.handleStatus(
+            return behaviour.handleStatus(
                 queue_item,
                 BuilderInteractor.extractBuildStatus(status),
                 status),
 
         def build_updated(ignored):
-            self.assertEqual(BuildStatus.FAILEDTOBUILD, behavior.build.status)
+            self.assertEqual(BuildStatus.FAILEDTOBUILD, behaviour.build.status)
             # Log file is stored.
-            self.assertIsNotNone(behavior.build.log)
+            self.assertIsNotNone(behaviour.build.log)
             self.assertEqual(1, queue_item.destroySelf.call_count)
             self.assertIn('clean', slave.call_log)
-            self.assertEqual(0, behavior._uploadTarball.call_count)
+            self.assertEqual(0, behaviour._uploadTarball.call_count)
 
         d.addCallback(got_dispatch)
         d.addCallback(got_status)
@@ -240,28 +240,28 @@ class TestTranslationTemplatesBuildBehavior(
 
     def test_handleStatus_notarball(self):
         # Even if the build status is "OK," absence of a tarball will
-        # not faze the Behavior class.
-        behavior = self.makeBehavior()
-        behavior._uploadTarball = FakeMethod()
-        queue_item = FakeBuildQueue(behavior)
-        slave = behavior._slave
-        d = behavior.dispatchBuildToSlave(queue_item, logging)
+        # not faze the Behaviour class.
+        behaviour = self.makeBehaviour()
+        behaviour._uploadTarball = FakeMethod()
+        queue_item = FakeBuildQueue(behaviour)
+        slave = behaviour._slave
+        d = behaviour.dispatchBuildToSlave(queue_item, logging)
 
         def got_dispatch((status, info)):
             return slave.status_dict()
 
         def got_status(status):
             del status['filemap']
-            return behavior.handleStatus(
+            return behaviour.handleStatus(
                 queue_item,
                 BuilderInteractor.extractBuildStatus(status),
                 status),
 
         def build_updated(ignored):
-            self.assertEqual(BuildStatus.FULLYBUILT, behavior.build.status)
+            self.assertEqual(BuildStatus.FULLYBUILT, behaviour.build.status)
             self.assertEqual(1, queue_item.destroySelf.call_count)
             self.assertIn('clean', slave.call_log)
-            self.assertEqual(0, behavior._uploadTarball.call_count)
+            self.assertEqual(0, behaviour._uploadTarball.call_count)
 
         d.addCallback(got_dispatch)
         d.addCallback(got_status)
@@ -271,12 +271,12 @@ class TestTranslationTemplatesBuildBehavior(
     def test_handleStatus_uploads(self):
         productseries = self.makeProductSeriesWithBranchForTranslation()
         branch = productseries.branch
-        behavior = self.makeBehavior(
+        behaviour = self.makeBehaviour(
             branch=branch, filemap={'translation-templates.tar.gz': 'foo'})
-        queue_item = FakeBuildQueue(behavior)
-        slave = behavior._slave
+        queue_item = FakeBuildQueue(behaviour)
+        slave = behaviour._slave
 
-        d = behavior.dispatchBuildToSlave(queue_item, logging)
+        d = behaviour.dispatchBuildToSlave(queue_item, logging)
 
         def fake_getFile(sum, file):
             dummy_tar = os.path.join(
@@ -290,13 +290,13 @@ class TestTranslationTemplatesBuildBehavior(
             return slave.status_dict()
 
         def got_status(status):
-            return behavior.handleStatus(
+            return behaviour.handleStatus(
                 queue_item,
                 BuilderInteractor.extractBuildStatus(status),
                 status),
 
         def build_updated(ignored):
-            self.assertEqual(BuildStatus.FULLYBUILT, behavior.build.status)
+            self.assertEqual(BuildStatus.FULLYBUILT, behaviour.build.status)
             entries = getUtility(
                 ITranslationImportQueue).getAllEntries(target=productseries)
             expected_templates = [
@@ -314,14 +314,14 @@ class TestTranslationTemplatesBuildBehavior(
         return d
 
 
-class TestTTBuildBehaviorTranslationsQueue(
-        TestCaseWithFactory, MakeBehaviorMixin):
+class TestTTBuildBehaviourTranslationsQueue(
+        TestCaseWithFactory, MakeBehaviourMixin):
     """Test uploads to the import queue."""
 
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        super(TestTTBuildBehaviorTranslationsQueue, self).setUp()
+        super(TestTTBuildBehaviourTranslationsQueue, self).setUp()
 
         self.queue = getUtility(ITranslationImportQueue)
         self.dummy_tar = os.path.join(
@@ -331,8 +331,8 @@ class TestTTBuildBehaviorTranslationsQueue(
 
     def test_uploadTarball(self):
         # Files from the tarball end up in the import queue.
-        behavior = self.makeBehavior()
-        behavior._uploadTarball(
+        behaviour = self.makeBehaviour()
+        behaviour._uploadTarball(
             self.branch, file(self.dummy_tar).read(), None)
 
         entries = self.queue.getAllEntries(target=self.productseries)
@@ -347,8 +347,8 @@ class TestTTBuildBehaviorTranslationsQueue(
 
     def test_uploadTarball_approved(self):
         # Uploaded template files are automatically approved.
-        behavior = self.makeBehavior()
-        behavior._uploadTarball(
+        behaviour = self.makeBehaviour()
+        behaviour._uploadTarball(
             self.branch, file(self.dummy_tar).read(), None)
 
         entries = self.queue.getAllEntries(target=self.productseries)
@@ -358,8 +358,8 @@ class TestTTBuildBehaviorTranslationsQueue(
 
     def test_uploadTarball_importer(self):
         # Files from the tarball are owned by the branch owner.
-        behavior = self.makeBehavior()
-        behavior._uploadTarball(
+        behaviour = self.makeBehaviour()
+        behaviour._uploadTarball(
             self.branch, file(self.dummy_tar).read(), None)
 
         entries = self.queue.getAllEntries(target=self.productseries)

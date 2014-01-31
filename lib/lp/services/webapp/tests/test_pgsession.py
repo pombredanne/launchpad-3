@@ -164,4 +164,4 @@ class TestPgSession(TestCase):
             self.request.response.getCookie('launchpad_tests'), None)
 
         # also see the page test xx-no-anonymous-session-cookies for tests of
-        # the cookie behavior.
+        # the cookie behaviour.

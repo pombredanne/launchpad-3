@@ -39,7 +39,7 @@ class FakeTranslationTemplatesSource(TranslationTemplatesBuild):
     How do you fake a utility that is implemented as a class, not a
     factory?  By inheriting from `TranslationTemplatesBuild`, this class
     "copies" the utility.  But you can make it fake the utility's
-    behavior by setting an attribute of the class (not an object!) at
+    behaviour by setting an attribute of the class (not an object!) at
     the beginning of every test.
     """
     # Fake _hasPotteryCompatibleSetup, and if so, make it give what

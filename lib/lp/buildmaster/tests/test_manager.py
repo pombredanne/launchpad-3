@@ -34,8 +34,8 @@ from lp.buildmaster.interactor import (
     extract_vitals_from_db,
     )
 from lp.buildmaster.interfaces.builder import IBuilderSet
-from lp.buildmaster.interfaces.buildfarmjobbehavior import (
-    IBuildFarmJobBehavior,
+from lp.buildmaster.interfaces.buildfarmjobbehaviour import (
+    IBuildFarmJobBehaviour,
     )
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.manager import (
@@ -55,7 +55,7 @@ from lp.buildmaster.tests.mock_slaves import (
     make_publisher,
     MockBuilder,
     OkSlave,
-    TrivialBehavior,
+    TrivialBehaviour,
     )
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.services.config import config
@@ -497,8 +497,8 @@ class TestSlaveScannerScan(TestCase):
         transaction.commit()
         login(ANONYMOUS)
         buildqueue = builder.currentjob
-        behavior = IBuildFarmJobBehavior(buildqueue.specific_build)
-        slave.build_id = behavior.getBuildCookie()
+        behaviour = IBuildFarmJobBehaviour(buildqueue.specific_build)
+        slave.build_id = behaviour.getBuildCookie()
         self.assertBuildingJob(buildqueue, builder)
 
         # Now set the build to CANCELLING.
@@ -672,7 +672,7 @@ class TestSlaveScannerWithoutDB(TestCase):
             'mock', MockBuilderFactory(MockBuilder(), bq), BufferLogger(),
             interactor_factory=FakeMethod(interactor),
             slave_factory=FakeMethod(slave),
-            behavior_factory=FakeMethod(TrivialBehavior()))
+            behaviour_factory=FakeMethod(TrivialBehaviour()))
 
         yield scanner.scan()
         self.assertEqual(['status_dict'], slave.call_log)
@@ -694,7 +694,7 @@ class TestSlaveScannerWithoutDB(TestCase):
             'mock', MockBuilderFactory(MockBuilder(), bq), BufferLogger(),
             interactor_factory=FakeMethod(interactor),
             slave_factory=FakeMethod(slave),
-            behavior_factory=FakeMethod(TrivialBehavior()))
+            behaviour_factory=FakeMethod(TrivialBehaviour()))
 
         # A single scan will call status_dict(), notice that the slave is
         # lost, abort() the slave, then reset() the job without calling
@@ -718,7 +718,7 @@ class TestSlaveScannerWithoutDB(TestCase):
             'mock', MockBuilderFactory(MockBuilder(), None), BufferLogger(),
             interactor_factory=FakeMethod(interactor),
             slave_factory=FakeMethod(slave),
-            behavior_factory=FakeMethod(None))
+            behaviour_factory=FakeMethod(None))
 
         # A single scan will call status_dict(), notice that the slave is
         # lost, abort() the slave, then reset() the job without calling
@@ -732,16 +732,16 @@ class TestSlaveScannerWithoutDB(TestCase):
         scanner = SlaveScanner(
             'mock', bf, BufferLogger(), interactor_factory=FakeMethod(None),
             slave_factory=FakeMethod(None),
-            behavior_factory=FakeMethod(TrivialBehavior()))
+            behaviour_factory=FakeMethod(TrivialBehaviour()))
 
         def assertCounts(expected):
             self.assertEqual(
                 expected,
                 (scanner.interactor_factory.call_count,
-                 scanner.behavior_factory.call_count,
+                 scanner.behaviour_factory.call_count,
                  scanner.builder_factory.get_call_count))
 
-        # The first call will get a Builder and a BuildFarmJobBehavior.
+        # The first call will get a Builder and a BuildFarmJobBehaviour.
         assertCounts((0, 0, 0))
         cookie1 = scanner.getExpectedCookie(bf.getVitals('foo'))
         self.assertEqual('trivial', cookie1)

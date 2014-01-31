@@ -2,7 +2,7 @@
 Introduction
 ************
 
-Some standard behavior is defined by the web service itself, not by
+Some standard behaviour is defined by the web service itself, not by
 the individual resources.
 
 Multiple versions

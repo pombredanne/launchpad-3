@@ -21,7 +21,7 @@ def listReferences(cur, table, column, indirect=True, _state=None):
     """Return a list of all foreign key references to the given table column
 
     `table` and `column` are both case sensitive strings (so they should
-    usually be lowercase strings as per PostgreSQL default behavior).
+    usually be lowercase strings as per PostgreSQL default behaviour).
 
     `cur` is an open DB-API cursor
 

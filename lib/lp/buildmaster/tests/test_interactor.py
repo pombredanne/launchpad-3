@@ -44,8 +44,8 @@ from lp.buildmaster.tests.mock_slaves import (
     )
 from lp.services.config import config
 from lp.services.log.logger import DevNullLogger
-from lp.soyuz.model.binarypackagebuildbehavior import (
-    BinaryPackageBuildBehavior,
+from lp.soyuz.model.binarypackagebuildbehaviour import (
+    BinaryPackageBuildBehaviour,
     )
 from lp.testing import (
     clean_up_reactor,
@@ -297,14 +297,14 @@ class TestBuilderInteractorDB(TestCaseWithFactory):
     layer = ZopelessDatabaseLayer
     run_tests_with = AsynchronousDeferredRunTest.make_factory(timeout=10)
 
-    def test_getBuildBehavior_idle(self):
-        """An idle builder has no build behavior."""
+    def test_getBuildBehaviour_idle(self):
+        """An idle builder has no build behaviour."""
         self.assertIs(
             None,
-            BuilderInteractor.getBuildBehavior(None, MockBuilder(), None))
+            BuilderInteractor.getBuildBehaviour(None, MockBuilder(), None))
 
-    def test_getBuildBehavior_building(self):
-        """The current behavior is set automatically from the current job."""
+    def test_getBuildBehaviour_building(self):
+        """The current behaviour is set automatically from the current job."""
         # Set the builder attribute on the buildqueue record so that our
         # builder will think it has a current build.
         builder = self.factory.makeBuilder(name='builder')
@@ -312,10 +312,10 @@ class TestBuilderInteractorDB(TestCaseWithFactory):
         build = self.factory.makeBinaryPackageBuild()
         bq = build.queueBuild()
         bq.markAsBuilding(builder)
-        behavior = BuilderInteractor.getBuildBehavior(bq, builder, slave)
-        self.assertIsInstance(behavior, BinaryPackageBuildBehavior)
-        self.assertEqual(behavior._builder, builder)
-        self.assertEqual(behavior._slave, slave)
+        behaviour = BuilderInteractor.getBuildBehaviour(bq, builder, slave)
+        self.assertIsInstance(behaviour, BinaryPackageBuildBehaviour)
+        self.assertEqual(behaviour._builder, builder)
+        self.assertEqual(behaviour._slave, slave)
 
     def _setupBuilder(self):
         processor = self.factory.makeProcessor(name="i386")

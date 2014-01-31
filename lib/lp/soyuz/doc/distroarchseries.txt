@@ -64,7 +64,7 @@ interrogate this information.
 
 See more information about getReleasePackages below.
 
-Check the behavior of the provided search method, which returns a
+Check the behaviour of the provided search method, which returns a
 list of IDARBPR instances containing the matching packages.
 
     >>> results = hoary_i386.searchBinaryPackages(text=u'pmount')
@@ -165,7 +165,7 @@ IDistroArchseries allows binary publishing lookup via
 getReleasedPackages method which returns a shortlist of
 IBinaryPackagePublishingHistory ordered by descending ID.
 
-In order to test its behavior we will create a bunch of sample
+In order to test its behaviour we will create a bunch of sample
 publishing records with different (status, pocket, archive) in
 ubuntu/breezy-autotest/i386, which is empty:
 

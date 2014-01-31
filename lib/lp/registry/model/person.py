@@ -441,7 +441,7 @@ def readonly_settings(message, interface):
     # The interface.names() method returns the names on the interface.  If
     # "all" is True, then you will also get the names on base
     # interfaces.  That is unlikely to be needed here, but would be the
-    # expected behavior if it were.
+    # expected behaviour if it were.
     for name in interface.names(all=True):
         # This next line is a work-around for a classic problem of
         # closures in a loop. Closures are bound (indirectly) to frame

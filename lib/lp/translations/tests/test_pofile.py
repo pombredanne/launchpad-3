@@ -50,7 +50,7 @@ def set_relicensing(person, choice):
 
 
 class TestTranslationSharedPOFileSourcePackage(TestCaseWithFactory):
-    """Test behavior of PO files with shared POTMsgSets on a source package.
+    """Test behaviour of PO files with shared POTMsgSets on a source package.
     """
 
     layer = ZopelessDatabaseLayer
@@ -723,7 +723,7 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
         # product series, therefore they are "upstream" files. As a
         # consequence "this side" in this test refers to "upstream" and
         # "other side"  refers to "ubuntu" translations. We keep the generic
-        # terms, though, because the behavior is symmetrical.
+        # terms, though, because the behaviour is symmetrical.
 
         # If there are no translations on either side, nothing is listed.
         found_translations = list(

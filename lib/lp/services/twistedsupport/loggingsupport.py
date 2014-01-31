@@ -154,7 +154,7 @@ class LoggingProxy(xmlrpc.Proxy):
     def callRemote(self, method, *args):
         """See `xmlrpc.Proxy.callRemote`.
 
-        In addition to the superclass' behavior, we log the call and its
+        In addition to the superclass' behaviour, we log the call and its
         result.
         """
         request = self.request_count

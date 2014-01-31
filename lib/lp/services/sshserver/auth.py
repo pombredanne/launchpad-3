@@ -130,7 +130,7 @@ class UserDetailsMind:
 
 
 class SSHUserAuthServer(userauth.SSHUserAuthServer):
-    """Subclass of Conch's SSHUserAuthServer to customize various behaviors.
+    """Subclass of Conch's SSHUserAuthServer to customize various behaviours.
 
     There are two main differences:
 

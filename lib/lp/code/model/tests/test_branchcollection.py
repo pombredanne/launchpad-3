@@ -897,7 +897,7 @@ class TestBranchMergeProposals(TestCaseWithFactory):
     def test_empty_branches_shortcut(self):
         # If you explicitly pass an empty collection of branches,
         # the method shortcuts and gives you an empty result set.  In this
-        # way, for_branches=None (the default) has a very different behavior
+        # way, for_branches=None (the default) has a very different behaviour
         # than for_branches=[]: the first is no restriction, while the second
         # excludes everything.
         self.factory.makeBranchMergeProposal()
@@ -908,7 +908,7 @@ class TestBranchMergeProposals(TestCaseWithFactory):
     def test_empty_revisions_shortcut(self):
         # If you explicitly pass an empty collection of revision numbers,
         # the method shortcuts and gives you an empty result set.  In this
-        # way, merged_revnos=None (the default) has a very different behavior
+        # way, merged_revnos=None (the default) has a very different behaviour
         # than merged_revnos=[]: the first is no restriction, while the second
         # excludes everything.
         self.factory.makeBranchMergeProposal()

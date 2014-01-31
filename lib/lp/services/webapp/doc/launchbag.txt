@@ -1,6 +1,6 @@
 The LaunchBag is a collection of all the 'stuff' we have traversed. It
 contains the request's 'context' or environment, which can be used to
-filter or otherwise specialize views or behavior.
+filter or otherwise specialize views or behaviour.
 
 First, we'll set up various imports and stub objects.
 

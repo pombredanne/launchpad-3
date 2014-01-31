@@ -308,7 +308,7 @@ Only the fields we specify will be validated:
   Name: Required input is missing.
   Password: Required input is missing.
 
-The default behavior is to validate all widgets.
+The default behaviour is to validate all widgets.
 
   >>> print_widget_validation(None)
   Name: Required input is missing.

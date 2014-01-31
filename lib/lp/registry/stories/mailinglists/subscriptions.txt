@@ -528,7 +528,7 @@ Updating the value twice has no adverse affect.
 Regardless of this setting, users will always receive a notification when a
 team they are a member of creates a new mailing list.  This notification
 offers them to join the new mailing list.  This page informs them of this
-behavior.
+behaviour.
 
     >>> print extract_text(
     ...     find_tag_by_id(carlos_browser.contents, 'notification-info'))

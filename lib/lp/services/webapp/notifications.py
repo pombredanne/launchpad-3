@@ -83,7 +83,7 @@ class NotificationResponse:
     page.
 
     It needs to be mixed in with an IHTTPApplicationResponse so its redirect
-    method intercepts the default behavior.
+    method intercepts the default behaviour.
 
     >>> class MyNotificationResponse(NotificationResponse, MockResponse):
     ...     pass

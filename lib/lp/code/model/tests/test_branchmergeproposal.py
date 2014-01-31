@@ -645,7 +645,7 @@ class TestMergeProposalAllComments(TestCase):
 
     def setUp(self):
         TestCase.setUp(self)
-        # Testing behavior, not permissions here.
+        # Testing behaviour, not permissions here.
         login('foo.bar@canonical.com')
         self.factory = LaunchpadObjectFactory()
         self.merge_proposal = self.factory.makeBranchMergeProposal()
@@ -670,7 +670,7 @@ class TestMergeProposalGetComment(TestCase):
 
     def setUp(self):
         TestCase.setUp(self)
-        # Testing behavior, not permissions here.
+        # Testing behaviour, not permissions here.
         login('foo.bar@canonical.com')
         self.factory = LaunchpadObjectFactory()
         self.merge_proposal = self.factory.makeBranchMergeProposal()
@@ -696,7 +696,7 @@ class TestMergeProposalGetVoteReference(TestCaseWithFactory):
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
-        # Testing behavior, not permissions here.
+        # Testing behaviour, not permissions here.
         login('foo.bar@canonical.com')
         self.merge_proposal = self.factory.makeBranchMergeProposal()
         self.merge_proposal2 = self.factory.makeBranchMergeProposal()
