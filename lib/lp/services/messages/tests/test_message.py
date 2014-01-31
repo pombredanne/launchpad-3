@@ -31,7 +31,7 @@ class TestMessageSet(TestCaseWithFactory):
 
     def setUp(self):
         super(TestMessageSet, self).setUp()
-        # Testing behavior, not permissions here.
+        # Testing behaviour, not permissions here.
         login('foo.bar@canonical.com')
 
     def createTestMessages(self):

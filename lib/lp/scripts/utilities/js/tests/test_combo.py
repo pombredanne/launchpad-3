@@ -254,7 +254,7 @@ class TestCombo(ComboTestBase):
     def test_combine_css_disable_minify(self):
         """
         It is possible to disable CSS minification altogether, while
-        keeping the URL rewriting behavior.
+        keeping the URL rewriting behaviour.
         """
         test_dir = self.makeDir()
 

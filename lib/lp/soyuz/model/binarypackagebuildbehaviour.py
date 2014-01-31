@@ -1,22 +1,24 @@
 # Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Builder behavior for binary package builds."""
+"""Builder behaviour for binary package builds."""
 
 __metaclass__ = type
 
 __all__ = [
-    'BinaryPackageBuildBehavior',
+    'BinaryPackageBuildBehaviour',
     ]
 
 from twisted.internet import defer
 from zope.interface import implements
 
 from lp.buildmaster.interfaces.builder import CannotBuild
-from lp.buildmaster.interfaces.buildfarmjobbehavior import (
-    IBuildFarmJobBehavior,
+from lp.buildmaster.interfaces.buildfarmjobbehaviour import (
+    IBuildFarmJobBehaviour,
     )
-from lp.buildmaster.model.buildfarmjobbehavior import BuildFarmJobBehaviorBase
+from lp.buildmaster.model.buildfarmjobbehaviour import (
+    BuildFarmJobBehaviourBase,
+    )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.webapp import urlappend
 from lp.soyuz.adapters.archivedependencies import (
@@ -26,13 +28,13 @@ from lp.soyuz.adapters.archivedependencies import (
 from lp.soyuz.enums import ArchivePurpose
 
 
-class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
-    """Define the behavior of binary package builds."""
+class BinaryPackageBuildBehaviour(BuildFarmJobBehaviourBase):
+    """Define the behaviour of binary package builds."""
 
-    implements(IBuildFarmJobBehavior)
+    implements(IBuildFarmJobBehaviour)
 
     def logStartBuild(self, logger):
-        """See `IBuildFarmJobBehavior`."""
+        """See `IBuildFarmJobBehaviour`."""
         spr = self.build.source_package_release
         logger.info("startBuild(%s, %s, %s, %s)", self._builder.url,
                     spr.name, spr.version, self.build.pocket.title)
@@ -82,7 +84,7 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
         return d.addCallback(lambda ignored: filemap)
 
     def dispatchBuildToSlave(self, build_queue_id, logger):
-        """See `IBuildFarmJobBehavior`."""
+        """See `IBuildFarmJobBehaviour`."""
 
         # Start the binary package build on the slave builder. First
         # we send the chroot.

@@ -145,7 +145,7 @@ class AjaxBatchNavigationMixin:
             find_tag_by_id(content, 'branches-table-listing'))
 
     def _test_ajax_batch_navigation_feature_flag(self, context, user=None):
-        # The Javascript to wire up the ajax batch navigation behavior is
+        # The Javascript to wire up the ajax batch navigation behaviour is
         # correctly hidden behind a feature flag.
         flags = {u"ajax.batch_navigator.enabled": u"true"}
         with FeatureFixture(flags):
@@ -250,7 +250,7 @@ class TestPersonOwnedBranchesView(TestCaseWithFactory,
         self._test_search_batch_request(self.barney, self.barney)
 
     def test_ajax_batch_navigation_feature_flag(self):
-        # The Javascript to wire up the ajax batch navigation behavior is
+        # The Javascript to wire up the ajax batch navigation behaviour is
         # correctly hidden behind a feature flag.
         self._test_ajax_batch_navigation_feature_flag(
             self.barney, self.barney)
@@ -780,7 +780,7 @@ class TestProjectGroupBranches(TestCaseWithFactory,
         self._test_search_batch_request(product)
 
     def test_ajax_batch_navigation_feature_flag(self):
-        # The Javascript to wire up the ajax batch navigation behavior is
+        # The Javascript to wire up the ajax batch navigation behaviour is
         # correctly hidden behind a feature flag.
         product = self.factory.makeProduct(project=self.project)
         for i in range(10):

@@ -17,7 +17,7 @@ how that code works.
 == show_tracebacks ==
 
 The show_tracebacks variable controls whether the client is shown
-tracebacks of errors. The show_tracebacks behavior itself is tested in
+tracebacks of errors. The show_tracebacks behaviour itself is tested in
 lazr.restful's "webservice-error" test. This test only shows how
 changes within Launchpad affect the value of show_tracebacks. The
 Launchpad web service shows or hides information about exceptions

@@ -2,7 +2,7 @@ Hosted files
 ============
 
 In Launchpad, hosted file resources are managed by the Launchpad
-library. This test illustrates the Launchpad-specific behavior of
+library. This test illustrates the Launchpad-specific behaviour of
 hosted file resources.
 
 

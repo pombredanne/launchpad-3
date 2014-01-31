@@ -24,7 +24,7 @@ from lp.testing.fixture import (
 class TestMailController(TestCase):
 
     def test_constructor(self):
-        """Test the default construction behavior.
+        """Test the default construction behaviour.
 
         Defaults should be empty.  The 'to' should be converted to a list.
         """
@@ -38,7 +38,7 @@ class TestMailController(TestCase):
         self.assertEqual([], ctrl.attachments)
 
     def test_constructor2(self):
-        """Test the explicit construction behavior.
+        """Test the explicit construction behaviour.
 
         Since to is a list, it is not converted into a list.
         """

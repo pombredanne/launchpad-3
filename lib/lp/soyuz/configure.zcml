@@ -776,11 +776,11 @@
             interface="lp.soyuz.interfaces.packagesetgroup.IPackagesetGroup"/>
     </class>
 
-    <!-- BinaryPackageBuildBehavior -->
+    <!-- BinaryPackageBuildBehaviour -->
     <adapter
         for="lp.soyuz.interfaces.binarypackagebuild.IBinaryPackageBuild"
-        provides="lp.buildmaster.interfaces.buildfarmjobbehavior.IBuildFarmJobBehavior"
-        factory="lp.soyuz.model.binarypackagebuildbehavior.BinaryPackageBuildBehavior"
+        provides="lp.buildmaster.interfaces.buildfarmjobbehaviour.IBuildFarmJobBehaviour"
+        factory="lp.soyuz.model.binarypackagebuildbehaviour.BinaryPackageBuildBehaviour"
         permission="zope.Public" />
 
     <!-- BinaryPackageReleaseDownloadCount -->

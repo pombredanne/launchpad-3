@@ -45,7 +45,7 @@ operating on public data.
   >>> len(public_output['entries'])
   2
 
-Although this behavior is inconsistent, it doesn't leak any private
+Although this behaviour is inconsistent, it doesn't leak any private
 information and implementing it consistently would be very difficult,
 so it's good enough. What happened here is that the web service
 request was made by a user who can see all 15 bugs, but the user used

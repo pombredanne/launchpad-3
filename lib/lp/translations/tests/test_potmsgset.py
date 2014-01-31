@@ -790,7 +790,7 @@ class TestPOTMsgSetSuggestions(TestCaseWithFactory):
     def test_getLocalTranslationMessages_include_unreviewed(self):
         # Setting include_unreviewed to True and include_dismissed to False
         # will only return those that have not been dismissed. This is
-        # the default behavior but is made explicit here.
+        # the default behaviour but is made explicit here.
         self._setUp_for_getLocalTranslationMessages()
         self.assertContentEqual(
             [self.suggestion2],

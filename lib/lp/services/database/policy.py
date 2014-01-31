@@ -132,7 +132,7 @@ class BaseDatabasePolicy:
             # will be good enough. Note we don't call self.getStore()
             # recursively because we want to make this attempt even if
             # the DatabasePolicy normally disallows master database
-            # connections. All this behavior allows read-only requests
+            # connections. All this behaviour allows read-only requests
             # to keep working when slave databases are being rebuilt or
             # updated.
             try:

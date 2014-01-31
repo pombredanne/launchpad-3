@@ -134,10 +134,10 @@ class ProjectGroupSearchTestCase(TestCaseWithFactory):
         # project group to demonstrate projects are NOT searched too.
 
         # XXX: BradCrittenden 2009-11-10 bug=479984:
-        # The behavior is currently unintuitive when search_products is used.
+        # The behaviour is currently unintuitive when search_products is used.
         # An exact match on a project is not returned since only products are
         # searched and the corresponding project for those matched is
-        # returned.  This test demonstrates the current wrong behavior and
+        # returned.  This test demonstrates the current wrong behaviour and
         # needs to be fixed when the search is fixed.
         results = self.projectset.search(
             text="zazzle-dazzle", search_products=True)

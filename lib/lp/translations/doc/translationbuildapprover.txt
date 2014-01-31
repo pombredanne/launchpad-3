@@ -4,7 +4,7 @@ The TranslationBuildApprover is a much simpler approver than the
 TranslationBranchApprover. The latter tries to detect when templates have
 been removed or renamed and refuses to approve anything when that happens.
 This new approver does not care about these things but tries to approve as
-many templates as possible. If this behavior proofs practical, it should
+many templates as possible. If this behaviour proofs practical, it should
 replace the TranslationBranchApprover in the future.
 
     >>> from lp.translations.interfaces.translationimportqueue import (

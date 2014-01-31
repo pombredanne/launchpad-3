@@ -1,7 +1,7 @@
 # Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Unit tests for BuildFarmJobBehaviorBase."""
+"""Unit tests for BuildFarmJobBehaviourBase."""
 
 __metaclass__ = type
 
@@ -17,10 +17,12 @@ from zope.security.proxy import removeSecurityProxy
 from lp.archiveuploader.uploadprocessor import parse_build_upload_leaf_name
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interactor import BuilderInteractor
-from lp.buildmaster.interfaces.buildfarmjobbehavior import (
-    IBuildFarmJobBehavior,
+from lp.buildmaster.interfaces.buildfarmjobbehaviour import (
+    IBuildFarmJobBehaviour,
     )
-from lp.buildmaster.model.buildfarmjobbehavior import BuildFarmJobBehaviorBase
+from lp.buildmaster.model.buildfarmjobbehaviour import (
+    BuildFarmJobBehaviourBase,
+    )
 from lp.buildmaster.tests.mock_slaves import WaitingSlave
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.config import config
@@ -40,18 +42,18 @@ class FakeBuildFarmJob:
     pass
 
 
-class TestBuildFarmJobBehaviorBase(TestCaseWithFactory):
-    """Test very small, basic bits of BuildFarmJobBehaviorBase."""
+class TestBuildFarmJobBehaviourBase(TestCaseWithFactory):
+    """Test very small, basic bits of BuildFarmJobBehaviourBase."""
 
     layer = ZopelessDatabaseLayer
 
-    def _makeBehavior(self, buildfarmjob=None):
-        """Create a `BuildFarmJobBehaviorBase`."""
+    def _makeBehaviour(self, buildfarmjob=None):
+        """Create a `BuildFarmJobBehaviourBase`."""
         if buildfarmjob is None:
             buildfarmjob = FakeBuildFarmJob()
         else:
             buildfarmjob = removeSecurityProxy(buildfarmjob)
-        return BuildFarmJobBehaviorBase(buildfarmjob)
+        return BuildFarmJobBehaviourBase(buildfarmjob)
 
     def _makeBuild(self):
         """Create a `Build` object."""
@@ -70,17 +72,17 @@ class TestBuildFarmJobBehaviorBase(TestCaseWithFactory):
 
     def test_getBuildCookie(self):
         build = self.factory.makeTranslationTemplatesBuild()
-        behavior = self._makeBehavior(build)
+        behaviour = self._makeBehaviour(build)
         self.assertEqual(
             '%s-%s' % (build.job_type.name, build.id),
-            behavior.getBuildCookie())
+            behaviour.getBuildCookie())
 
     def test_getUploadDirLeaf(self):
         # getUploadDirLeaf returns the current time, followed by the build
         # cookie.
         now = datetime.now()
         build_cookie = self.factory.getUniqueString()
-        upload_leaf = self._makeBehavior().getUploadDirLeaf(
+        upload_leaf = self._makeBehaviour().getUploadDirLeaf(
             build_cookie, now=now)
         self.assertEqual(
             '%s-%s' % (now.strftime("%Y%m%d-%H%M%S"), build_cookie),
@@ -99,14 +101,14 @@ class TestGetUploadMethodsMixin:
     def setUp(self):
         super(TestGetUploadMethodsMixin, self).setUp()
         self.build = self.makeBuild()
-        self.behavior = IBuildFarmJobBehavior(
+        self.behaviour = IBuildFarmJobBehaviour(
             self.build.buildqueue_record.specific_build)
 
     def test_getUploadDirLeafCookie_parseable(self):
         # getUploadDirLeaf should return a directory name
         # that is parseable by the upload processor.
-        upload_leaf = self.behavior.getUploadDirLeaf(
-            self.behavior.getBuildCookie())
+        upload_leaf = self.behaviour.getUploadDirLeaf(
+            self.behaviour.getBuildCookie())
         (job_type, job_id) = parse_build_upload_leaf_name(upload_leaf)
         self.assertEqual(
             (self.build.job_type.name, self.build.id), (job_type, job_id))
@@ -135,7 +137,7 @@ class TestHandleStatusMixin:
         self.slave = WaitingSlave('BuildStatus.OK')
         self.slave.valid_file_hashes.append('test_file_hash')
         self.interactor = BuilderInteractor()
-        self.behavior = self.interactor.getBuildBehavior(
+        self.behaviour = self.interactor.getBuildBehaviour(
             self.build.buildqueue_record, self.builder, self.slave)
 
         # We overwrite the buildmaster root to use a temp directory.
@@ -166,7 +168,7 @@ class TestHandleStatusMixin:
             self.assertEqual(BuildStatus.UPLOADING, self.build.status)
             self.assertResultCount(1, "incoming")
 
-        d = self.behavior.handleStatus(
+        d = self.behaviour.handleStatus(
             self.build.buildqueue_record, 'OK',
             {'filemap': {'myfile.py': 'test_file_hash'}})
         return d.addCallback(got_status)
@@ -179,7 +181,7 @@ class TestHandleStatusMixin:
             self.assertResultCount(0, "failed")
             self.assertIdentical(None, self.build.buildqueue_record)
 
-        d = self.behavior.handleStatus(
+        d = self.behaviour.handleStatus(
             self.build.buildqueue_record, 'OK',
             {'filemap': {'/tmp/myfile.py': 'test_file_hash'}})
         return d.addCallback(got_status)
@@ -191,7 +193,7 @@ class TestHandleStatusMixin:
             self.assertEqual(BuildStatus.FAILEDTOUPLOAD, self.build.status)
             self.assertResultCount(0, "failed")
 
-        d = self.behavior.handleStatus(
+        d = self.behaviour.handleStatus(
             self.build.buildqueue_record, 'OK',
             {'filemap': {'../myfile.py': 'test_file_hash'}})
         return d.addCallback(got_status)
@@ -199,7 +201,7 @@ class TestHandleStatusMixin:
     def test_handleStatus_OK_sets_build_log(self):
         # The build log is set during handleStatus.
         self.assertEqual(None, self.build.log)
-        d = self.behavior.handleStatus(
+        d = self.behaviour.handleStatus(
             self.build.buildqueue_record, 'OK',
             {'filemap': {'myfile.py': 'test_file_hash'}})
 
@@ -213,7 +215,7 @@ class TestHandleStatusMixin:
         # notifications are allowed for that status.
 
         expected_notification = (
-            status in self.behavior.ALLOWED_STATUS_NOTIFICATIONS)
+            status in self.behaviour.ALLOWED_STATUS_NOTIFICATIONS)
 
         def got_status(ignored):
             if expected_notification:
@@ -225,7 +227,7 @@ class TestHandleStatusMixin:
                     len(pop_notifications()) > 0,
                     "Notifications received")
 
-        d = self.behavior.handleStatus(
+        d = self.behaviour.handleStatus(
             self.build.buildqueue_record, status, {})
         return d.addCallback(got_status)
 
@@ -246,13 +248,13 @@ class TestHandleStatusMixin:
                 0, len(pop_notifications()), "Notifications received")
             self.assertEqual(BuildStatus.CANCELLED, self.build.status)
 
-        d = self.behavior.handleStatus(
+        d = self.behaviour.handleStatus(
             self.build.buildqueue_record, "ABORTED", {})
         return d.addCallback(got_status)
 
     def test_handleStatus_ABORTED_recovers_building(self):
         self.builder.vm_host = "fake_vm_host"
-        self.behavior = self.interactor.getBuildBehavior(
+        self.behaviour = self.interactor.getBuildBehaviour(
             self.build.buildqueue_record, self.builder, self.slave)
         self.build.updateStatus(BuildStatus.BUILDING)
 
@@ -264,7 +266,7 @@ class TestHandleStatusMixin:
             self.assertEqual(1, self.build.failure_count)
             self.assertIn("clean", self.slave.call_log)
 
-        d = self.behavior.handleStatus(
+        d = self.behaviour.handleStatus(
             self.build.buildqueue_record, "ABORTED", {})
         return d.addCallback(got_status)
 
@@ -273,14 +275,14 @@ class TestHandleStatusMixin:
         # If a build is intentionally cancelled, the build log is set.
         self.assertEqual(None, self.build.log)
         self.build.updateStatus(BuildStatus.CANCELLING)
-        yield self.behavior.handleStatus(
+        yield self.behaviour.handleStatus(
             self.build.buildqueue_record, "ABORTED", {})
         self.assertNotEqual(None, self.build.log)
 
     def test_date_finished_set(self):
         # The date finished is updated during handleStatus_OK.
         self.assertEqual(None, self.build.date_finished)
-        d = self.behavior.handleStatus(
+        d = self.behaviour.handleStatus(
             self.build.buildqueue_record, 'OK',
             {'filemap': {'myfile.py': 'test_file_hash'}})
 

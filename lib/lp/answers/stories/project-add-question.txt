@@ -148,7 +148,7 @@ behaviour).
 Register a support contact who speaks a non-English language
 ............................................................
 
-To illustrate the supported language behavior, we add an answer contact
+To illustrate the supported language behaviour, we add an answer contact
 to Thunderbird who has Japanese as a preferred language. Japanese will
 be a supported language for Thunderbird Questions, which allows us to
 test the supported languages behaviour for non-English languages. Dafydd
