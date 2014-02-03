@@ -155,7 +155,7 @@ class TestBuilderInteractor(TestCase):
         # A slave that's 'lost' should be aborted; when the slave is
         # broken then abort() should also throw a fault.
         slave = LostBuildingBrokenSlave()
-        slave_status = yield slave.status_dict()
+        slave_status = yield slave.status()
         try:
             yield BuilderInteractor.rescueIfLost(
                 extract_vitals_from_db(MockBuilder()), slave, slave_status,
@@ -171,7 +171,7 @@ class TestBuilderInteractor(TestCase):
         # idle. SlaveScanner.scan() will clean up the DB side, because
         # we still report that it's lost.
         slave = OkSlave()
-        slave_status = yield slave.status_dict()
+        slave_status = yield slave.status()
         lost = yield BuilderInteractor.rescueIfLost(
             extract_vitals_from_db(MockBuilder()), slave, slave_status,
             'trivial')
@@ -182,7 +182,7 @@ class TestBuilderInteractor(TestCase):
     def test_recover_ok_slave(self):
         # An idle slave that's meant to be idle is not rescued.
         slave = OkSlave()
-        slave_status = yield slave.status_dict()
+        slave_status = yield slave.status()
         lost = yield BuilderInteractor.rescueIfLost(
             extract_vitals_from_db(MockBuilder()), slave, slave_status, None)
         self.assertFalse(lost)
@@ -193,12 +193,12 @@ class TestBuilderInteractor(TestCase):
         # rescueIfLost does not attempt to abort or clean a builder that is
         # WAITING.
         waiting_slave = WaitingSlave(build_id='trivial')
-        slave_status = yield waiting_slave.status_dict()
+        slave_status = yield waiting_slave.status()
         lost = yield BuilderInteractor.rescueIfLost(
             extract_vitals_from_db(MockBuilder()), waiting_slave, slave_status,
             'trivial')
         self.assertFalse(lost)
-        self.assertEqual(['status_dict'], waiting_slave.call_log)
+        self.assertEqual(['status'], waiting_slave.call_log)
 
     @defer.inlineCallbacks
     def test_recover_waiting_slave_with_bad_id(self):
@@ -208,40 +208,40 @@ class TestBuilderInteractor(TestCase):
         # builder is reset for a new build, and the corrupt build is
         # discarded.
         waiting_slave = WaitingSlave(build_id='non-trivial')
-        slave_status = yield waiting_slave.status_dict()
+        slave_status = yield waiting_slave.status()
         lost = yield BuilderInteractor.rescueIfLost(
             extract_vitals_from_db(MockBuilder()), waiting_slave, slave_status,
             'trivial')
         self.assertTrue(lost)
-        self.assertEqual(['status_dict', 'clean'], waiting_slave.call_log)
+        self.assertEqual(['status', 'clean'], waiting_slave.call_log)
 
     @defer.inlineCallbacks
     def test_recover_building_slave_with_good_id(self):
         # rescueIfLost does not attempt to abort or clean a builder that is
         # BUILDING.
         building_slave = BuildingSlave(build_id='trivial')
-        slave_status = yield building_slave.status_dict()
+        slave_status = yield building_slave.status()
         lost = yield BuilderInteractor.rescueIfLost(
             extract_vitals_from_db(MockBuilder()), building_slave,
             slave_status, 'trivial')
         self.assertFalse(lost)
-        self.assertEqual(['status_dict'], building_slave.call_log)
+        self.assertEqual(['status'], building_slave.call_log)
 
     @defer.inlineCallbacks
     def test_recover_building_slave_with_bad_id(self):
         # If a slave is BUILDING with a build id we don't recognize, then we
         # abort the build, thus stopping it in its tracks.
         building_slave = BuildingSlave(build_id='non-trivial')
-        slave_status = yield building_slave.status_dict()
+        slave_status = yield building_slave.status()
         lost = yield BuilderInteractor.rescueIfLost(
             extract_vitals_from_db(MockBuilder()), building_slave,
             slave_status, 'trivial')
         self.assertTrue(lost)
-        self.assertEqual(['status_dict', 'abort'], building_slave.call_log)
+        self.assertEqual(['status', 'abort'], building_slave.call_log)
 
 
 class TestBuilderSlaveStatus(TestCase):
-    # Verify what BuilderSlave.status_dict returns with slaves in different
+    # Verify what BuilderSlave.status returns with slaves in different
     # states.
 
     run_tests_with = AsynchronousDeferredRunTest
@@ -250,7 +250,7 @@ class TestBuilderSlaveStatus(TestCase):
     def assertStatus(self, slave, builder_status=None, build_status=None,
                      build_id=False, logtail=False, filemap=None,
                      dependencies=None):
-        status = yield slave.status_dict()
+        status = yield slave.status()
 
         expected = {}
         if builder_status is not None:
@@ -460,21 +460,21 @@ class TestSlave(TestCase):
 
     @defer.inlineCallbacks
     def test_initial_status(self):
-        # Calling 'status_dict' returns the current status of the slave. The
+        # Calling 'status' returns the current status of the slave. The
         # initial status is IDLE.
         self.slave_helper.getServerSlave()
         slave = self.slave_helper.getClientSlave()
-        status = yield slave.status_dict()
+        status = yield slave.status()
         self.assertEqual(BuilderStatus.IDLE, status['builder_status'])
 
     @defer.inlineCallbacks
     def test_status_after_build(self):
-        # Calling 'status_dict' returns the current status of the slave.
-        # After a build has been triggered, the status is BUILDING.
+        # Calling 'status' returns the current status of the slave.  After a
+        # build has been triggered, the status is BUILDING.
         slave = self.slave_helper.getClientSlave()
         build_id = 'status-build-id'
         yield self.slave_helper.triggerGoodBuild(slave, build_id)
-        status = yield slave.status_dict()
+        status = yield slave.status()
         self.assertEqual(BuilderStatus.BUILDING, status['builder_status'])
         self.assertEqual(build_id, status['build_id'])
         self.assertIsInstance(status['logtail'], xmlrpclib.Binary)
@@ -624,7 +624,7 @@ class TestSlaveTimeouts(TestCase):
         return self.assertCancelled(self.slave.info())
 
     def test_timeout_status(self):
-        return self.assertCancelled(self.slave.status_dict())
+        return self.assertCancelled(self.slave.status())
 
     def test_timeout_ensurepresent(self):
         return self.assertCancelled(

@@ -415,7 +415,7 @@ class SlaveScanner:
         slave = self.slave_factory(vitals)
         if vitals.builderok:
             self.logger.debug("Scanning %s." % self.builder_name)
-            slave_status = yield slave.status_dict()
+            slave_status = yield slave.status()
         else:
             slave_status = None
 

@@ -675,7 +675,7 @@ class TestSlaveScannerWithoutDB(TestCase):
             behaviour_factory=FakeMethod(TrivialBehaviour()))
 
         yield scanner.scan()
-        self.assertEqual(['status_dict'], slave.call_log)
+        self.assertEqual(['status'], slave.call_log)
         self.assertEqual(1, interactor.updateBuild.call_count)
         self.assertEqual(0, bq.reset.call_count)
 
@@ -696,11 +696,11 @@ class TestSlaveScannerWithoutDB(TestCase):
             slave_factory=FakeMethod(slave),
             behaviour_factory=FakeMethod(TrivialBehaviour()))
 
-        # A single scan will call status_dict(), notice that the slave is
-        # lost, abort() the slave, then reset() the job without calling
+        # A single scan will call status(), notice that the slave is lost,
+        # abort() the slave, then reset() the job without calling
         # updateBuild().
         yield scanner.scan()
-        self.assertEqual(['status_dict', 'abort'], slave.call_log)
+        self.assertEqual(['status', 'abort'], slave.call_log)
         self.assertEqual(0, interactor.updateBuild.call_count)
         self.assertEqual(1, bq.reset.call_count)
 
@@ -720,11 +720,11 @@ class TestSlaveScannerWithoutDB(TestCase):
             slave_factory=FakeMethod(slave),
             behaviour_factory=FakeMethod(None))
 
-        # A single scan will call status_dict(), notice that the slave is
-        # lost, abort() the slave, then reset() the job without calling
+        # A single scan will call status(), notice that the slave is lost,
+        # abort() the slave, then reset() the job without calling
         # updateBuild().
         yield scanner.scan()
-        self.assertEqual(['status_dict', 'abort'], slave.call_log)
+        self.assertEqual(['status', 'abort'], slave.call_log)
         self.assertEqual(0, interactor.updateBuild.call_count)
 
     def test_getExpectedCookie_caches(self):

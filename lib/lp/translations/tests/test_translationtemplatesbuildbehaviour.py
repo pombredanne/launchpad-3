@@ -183,7 +183,7 @@ class TestTranslationTemplatesBuildBehaviour(
             self.assertNotIn('clean', slave_call_log)
             self.assertEqual(0, behaviour._uploadTarball.call_count)
 
-            return slave.status_dict()
+            return slave.status()
 
         def got_status(status):
             return (
@@ -216,7 +216,7 @@ class TestTranslationTemplatesBuildBehaviour(
 
         def got_dispatch((status, info)):
             # Now that we've dispatched, get the status.
-            return slave.status_dict()
+            return slave.status()
 
         def got_status(status):
             del status['filemap']
@@ -248,7 +248,7 @@ class TestTranslationTemplatesBuildBehaviour(
         d = behaviour.dispatchBuildToSlave(queue_item, logging)
 
         def got_dispatch((status, info)):
-            return slave.status_dict()
+            return slave.status()
 
         def got_status(status):
             del status['filemap']
@@ -287,7 +287,7 @@ class TestTranslationTemplatesBuildBehaviour(
 
         def got_dispatch((status, info)):
             slave.getFile = fake_getFile
-            return slave.status_dict()
+            return slave.status()
 
         def got_status(status):
             return behaviour.handleStatus(
