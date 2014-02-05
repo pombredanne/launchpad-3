@@ -108,9 +108,9 @@ class BuilderSlave(object):
         """Return the protocol version and the builder methods supported."""
         return self._with_timeout(self._server.callRemote('info'))
 
-    def status_dict(self):
+    def status(self):
         """Return the status of the build daemon."""
-        return self._with_timeout(self._server.callRemote('status_dict'))
+        return self._with_timeout(self._server.callRemote('status'))
 
     def ensurepresent(self, sha1sum, url, username, password):
         """Attempt to ensure the given file is present."""
@@ -429,7 +429,7 @@ class BuilderInteractor(object):
     def extractBuildStatus(slave_status):
         """Read build status name.
 
-        :param slave_status: build status dict from BuilderSlave.status_dict.
+        :param slave_status: build status dict from BuilderSlave.status.
         :return: the unqualified status name, e.g. "OK".
         """
         status_string = slave_status['build_status']
