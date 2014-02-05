@@ -338,7 +338,7 @@ class TestBinaryBuildPackageBehaviourBuildCollection(TestCaseWithFactory):
     @defer.inlineCallbacks
     def updateBuild(self, candidate, slave):
         bf = MockBuilderFactory(self.builder, candidate)
-        slave_status = yield slave.status_dict()
+        slave_status = yield slave.status()
         yield self.interactor.updateBuild(
             bf.getVitals('foo'), slave, slave_status, bf,
             self.interactor.getBuildBehaviour)
