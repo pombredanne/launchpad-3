@@ -1068,6 +1068,23 @@ class TestNewBuilders(TestCase):
         advance = NewBuildersScanner.SCAN_INTERVAL + 1
         clock.advance(advance)
 
+    def test_scan_swallows_exceptions(self):
+        # scan() swallows exceptions so the LoopingCall always retries.
+        clock = task.Clock()
+        scanner = self._getScanner(clock=clock)
+        scanner.checkForNewBuilders = FakeMethod(
+            failure=Exception("CHAOS REIGNS"))
+        scanner.scheduleScan()
+        self.assertEqual(1, scanner.checkForNewBuilders.call_count)
+
+        # Even though the previous checkForNewBuilders caused an
+        # exception, a rescan will happen as normal.
+        advance = NewBuildersScanner.SCAN_INTERVAL + 1
+        clock.advance(advance)
+        self.assertEqual(2, scanner.checkForNewBuilders.call_count)
+        clock.advance(advance)
+        self.assertEqual(3, scanner.checkForNewBuilders.call_count)
+
 
 def is_file_growing(filepath, poll_interval=1, poll_repeat=10):
     """Poll the file size to see if it grows.
