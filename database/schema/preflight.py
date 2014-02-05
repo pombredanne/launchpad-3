@@ -45,7 +45,6 @@ SYSTEM_USERS = set(['postgres', 'slony', 'nagios', 'lagmon'])
 # connected, so these systems will need to be shut down manually before
 # a database update.
 FRAGILE_USERS = set([
-    'buildd_manager',
     # process_accepted is fragile, but also fast so we likely shouldn't
     # need to ever manually shut it down.
     'process_accepted',
