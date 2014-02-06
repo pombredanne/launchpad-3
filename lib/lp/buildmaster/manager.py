@@ -507,9 +507,15 @@ class NewBuildersScanner:
 
     def scan(self):
         """If a new builder appears, create a SlaveScanner for it."""
-        self.manager.builder_factory.update()
-        new_builders = self.checkForNewBuilders()
-        self.manager.addScanForBuilders(new_builders)
+        try:
+            self.manager.builder_factory.update()
+            new_builders = self.checkForNewBuilders()
+            self.manager.addScanForBuilders(new_builders)
+        except Exception:
+            self.manager.logger.error(
+                "Failure while updating builders:\n",
+                exc_info=True)
+            transaction.abort()
 
     def checkForNewBuilders(self):
         """See if any new builders were added."""
