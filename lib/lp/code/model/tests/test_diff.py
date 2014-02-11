@@ -359,7 +359,8 @@ class TestPreviewDiff(DiffTestCase):
         # canonical_url of the merge proposal itself.
         mp = self._createProposalWithPreviewDiff()
         self.assertEqual(
-            canonical_url(mp) + '/+preview-diff',
+            '{0}/+preview-diff/{1}'.format(
+                canonical_url(mp), mp.preview_diff.id),
             canonical_url(mp.preview_diff))
 
     def test_empty_diff(self):
