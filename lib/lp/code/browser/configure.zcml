@@ -922,7 +922,7 @@
 
     <browser:url
         for="lp.code.interfaces.diff.IPreviewDiff"
-        path_expression="string:+preview-diff"
+        path_expression="string:+preview-diff/${id}"
         attribute_to_parent="branch_merge_proposal"
         rootsite="code" />
 

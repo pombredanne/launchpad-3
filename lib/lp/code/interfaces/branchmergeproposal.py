@@ -174,7 +174,11 @@ class IBranchMergeProposalView(Interface):
     next_preview_diff_job = Attribute(
         'The next BranchMergeProposalJob that will update a preview diff.')
 
-    preview_diffs = Attribute('All preview diffs for this merge proposal.')
+    preview_diffs = exported(
+        CollectionField(
+            title=_("All preview diffs for this merge proposal."),
+            value_type=Reference(schema=IPreviewDiff),
+            readonly=True))
 
     preview_diff = exported(
         Reference(
@@ -584,8 +588,9 @@ class IBranchMergeProposalAnyAllowedPerson(Interface):
     def getInlineComments(diff_timestamp):
         """Return a list of inline comments related to this MP.
 
-        The return value is a list of 4-tuples representing published and
-        draft inline comments.
+        The return value is an list of dictionaries (objects), each one
+        representing a comment with 'line_number', 'person', 'text' and
+        'date' attributes.
 
         :param diff_timestamp: The timestamp of the target `PreviewDiff`.
         """
@@ -596,13 +601,20 @@ class IBranchMergeProposalAnyAllowedPerson(Interface):
     @call_with(person=REQUEST_USER)
     @operation_for_version('devel')
     def getDraftInlineComments(diff_timestamp, person):
-        """Return a list of draft inline comments related to this MP.
+        """Return the draft inline comments related to this MP.
 
-        The return value is a list of 4-tuples representing published and
-        draft inline comments.
+        The return value is a dictionary (object) where the keys are the
+        diff lines and their values are the actual draft comment created
+        by the given person.
 
         :param diff_timestamp: The timestamp of the target `PreviewDiff`.
         :param person: The `IPerson` owner of the draft comments.
+        """
+
+    def getPreviewDiff(id):
+        """Return the preview diff with the given id.
+
+        :param id: The id of the target `PreviewDiff`.
         """
 
     @export_write_operation()

@@ -461,10 +461,17 @@ class BranchMergeProposalNavigation(Navigation):
         except WrongBranchMergeProposal:
             return None
 
-    @stepto("+preview-diff")
-    def preview_diff(self):
-        """Step to the preview diff."""
-        return self.context.preview_diff
+    @stepthrough("+preview-diff")
+    def traverse_preview_diff(self, id):
+        """Navigate to a PreviewDiff through its BMP."""
+        try:
+            id = int(id)
+        except ValueError:
+            return None
+        try:
+            return self.context.getPreviewDiff(id)
+        except WrongBranchMergeProposal:
+            return None
 
     @stepthrough('+review')
     def review(self, id):

@@ -34,6 +34,11 @@ from lp.code.interfaces.revision import IRevision
 class IDiff(Interface):
     """A diff that is stored in the Library."""
 
+    id = exported(
+        Int(
+            title=_('DB ID'), required=True, readonly=True,
+            description=_("The tracking number for this diff.")))
+
     text = Text(
         title=_('Textual contents of a diff.'), readonly=True,
         description=_("The text may be cut off at a defined maximum size."))
@@ -86,7 +91,7 @@ class IPreviewDiff(IDiff):
     trying to determine the effective changes of landing the source branch on
     the target branch.
     """
-    export_as_webservice_entry(publish_web_link=False)
+    export_as_webservice_entry()
 
     source_revision_id = exported(
         TextLine(
@@ -124,8 +129,10 @@ class IPreviewDiff(IDiff):
             Interface, readonly=True,
             title=_('The branch merge proposal that diff relates to.')))
 
-    date_created = Datetime(
-        title=_("When this diff was created."), readonly=True)
+    date_created = exported(
+        Datetime(
+            title=_('Date Created'), required=False, readonly=True,
+            description=_("When this diff was created.")))
 
     stale = exported(
         Bool(readonly=True, description=_(
