@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Job classes related to ApportJobs are in here."""
@@ -26,17 +26,6 @@ from zope.interface import (
     implements,
     )
 
-from canonical.database.enumcol import EnumCol
-from canonical.launchpad.database.temporaryblobstorage import (
-    TemporaryBlobStorage,
-    )
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
 from lp.bugs.interfaces.apportjob import (
     ApportJobType,
     IApportJob,
@@ -48,9 +37,17 @@ from lp.bugs.utilities.filebugdataparser import (
     FileBugData,
     FileBugDataParser,
     )
-from lp.services.job.model.job import Job
-from lp.services.job.runner import BaseRunnableJob
+from lp.services.config import config
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.interfaces import IStore
 from lp.services.database.stormbase import StormBase
+from lp.services.job.model.job import (
+    EnumeratedSubclass,
+    Job,
+    )
+from lp.services.job.runner import BaseRunnableJob
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
+from lp.services.temporaryblobstorage.model import TemporaryBlobStorage
 
 
 class ApportJob(StormBase):
@@ -105,16 +102,19 @@ class ApportJob(StormBase):
     @classmethod
     def get(cls, key):
         """Return the instance of this class whose key is supplied."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        instance = store.get(cls, key)
+        instance = IStore(cls).get(cls, key)
         if instance is None:
             raise SQLObjectNotFound(
                 'No occurrence of %s has key %s' % (cls.__name__, key))
         return instance
 
+    def makeDerived(self):
+        return ApportJobDerived.makeSubclass(self)
+
 
 class ApportJobDerived(BaseRunnableJob):
     """Intermediate class for deriving from ApportJob."""
+    __metaclass__ = EnumeratedSubclass
     delegates(IApportJob)
     classProvides(IApportJobSource)
 
@@ -126,7 +126,9 @@ class ApportJobDerived(BaseRunnableJob):
         """See `IApportJob`."""
         # If there's already a job for the blob, don't create a new one.
         job = ApportJob(blob, cls.class_job_type, {})
-        return cls(job)
+        derived = cls(job)
+        derived.celeryRunOnCommit()
+        return derived
 
     @classmethod
     def get(cls, job_id):
@@ -147,8 +149,7 @@ class ApportJobDerived(BaseRunnableJob):
     @classmethod
     def iterReady(cls):
         """Iterate through all ready ApportJobs."""
-        store = IStore(ApportJob)
-        jobs = store.find(
+        jobs = IStore(ApportJob).find(
             ApportJob,
             And(ApportJob.job_type == cls.class_job_type,
                 ApportJob.job == Job.id,
@@ -175,6 +176,8 @@ class ProcessApportBlobJob(ApportJobDerived):
     class_job_type = ApportJobType.PROCESS_BLOB
     classProvides(IProcessApportBlobJobSource)
 
+    config = config.IProcessApportBlobJobSource
+
     @classmethod
     def create(cls, blob):
         """See `IProcessApportBlobJobSource`."""
@@ -182,8 +185,7 @@ class ProcessApportBlobJob(ApportJobDerived):
         # We also include jobs which have been completed when checking
         # for exisiting jobs, since a BLOB should only be processed
         # once.
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        job_for_blob = store.find(
+        job_for_blob = IStore(ApportJob).find(
             ApportJob,
             ApportJob.blob == blob,
             ApportJob.job_type == cls.class_job_type,

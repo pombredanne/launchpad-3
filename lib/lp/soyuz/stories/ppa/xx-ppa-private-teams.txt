@@ -11,21 +11,21 @@ as for individuals and public teams.
     >>> # Create a private team.
     >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.person import (
-    ...     IPersonSet, PersonVisibility, TeamSubscriptionPolicy)
+    ...     IPersonSet, PersonVisibility, TeamMembershipPolicy)
     >>> login('foo.bar@canonical.com')
     >>> person_set = getUtility(IPersonSet)
     >>> cprov = person_set.getByName('cprov')
     >>> priv_team = factory.makeTeam(name='private-team',
     ...     owner=cprov, displayname="Private Team",
     ...     visibility=PersonVisibility.PRIVATE,
-    ...     subscription_policy=TeamSubscriptionPolicy.MODERATED)
+    ...     membership_policy=TeamMembershipPolicy.MODERATED)
     >>> logout()
 
 A section named 'Personal Package Archives' is presented in the
 user/team page.
 
     >>> browser = setupBrowser(
-    ...     auth='Basic celso.providelo@canonical.com:cprov')
+    ...     auth='Basic celso.providelo@canonical.com:test')
     >>> browser.open("http://launchpad.dev/~private-team")
 
    >>> print_tag_with_id(browser.contents, 'ppas')
@@ -77,7 +77,6 @@ Attempting to change the PPA to public is thwarted.
 
    >>> admin_browser.getControl(name='field.private').value = False
    >>> admin_browser.getControl('Save').click()
-    >>> for error in get_feedback_messages(admin_browser.contents):
-    ...     print error
-    There is 1 error.
-    Private teams may not have public archives.
+   >>> print_feedback_messages(admin_browser.contents)
+   There is 1 error.
+   Private teams may not have public archives.

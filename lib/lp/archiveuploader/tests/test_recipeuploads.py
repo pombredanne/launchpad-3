@@ -10,12 +10,12 @@ import os
 from storm.store import Store
 from zope.component import getUtility
 
-from lp.archiveuploader.uploadprocessor import (
-    UploadStatusEnum,
-    UploadHandler,
-    )
 from lp.archiveuploader.tests.test_uploadprocessor import (
     TestUploadProcessorBase,
+    )
+from lp.archiveuploader.uploadprocessor import (
+    UploadHandler,
+    UploadStatusEnum,
     )
 from lp.buildmaster.enums import BuildStatus
 from lp.code.interfaces.sourcepackagerecipebuild import (

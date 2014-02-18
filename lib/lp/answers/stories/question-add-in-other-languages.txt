@@ -20,7 +20,7 @@ link to enable to change his preferred languages:
 
 The languages that are supported are displayed with an asterisk.
 
-    >>> browser.addHeader('Authorization', 'Basic salgado@ubuntu.com:zeca')
+    >>> browser.addHeader('Authorization', 'Basic salgado@ubuntu.com:test')
     >>> browser.open('http://launchpad.dev/ubuntu/+addquestion')
 
     >>> browser.getControl('Language').displayOptions
@@ -103,7 +103,7 @@ the language in the question details portlet.
 It's also possible that the user chose English in the first page but
 then changed his mind on the second page.
 
-    >>> browser = setupBrowser(auth='Basic daf@canonical.com:daf')
+    >>> browser = setupBrowser(auth='Basic daf@canonical.com:test')
     >>> browser.open('http://launchpad.dev/ubuntu/+addquestion')
 
     >>> browser.getControl('Language').value = ['en']

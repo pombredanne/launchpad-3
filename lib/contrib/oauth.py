@@ -1,5 +1,3 @@
-# pylint: disable-msg=C0301,E0602,E0211,E0213,W0105,W0231,W0702
-
 import cgi
 import urllib
 import time

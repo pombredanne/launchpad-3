@@ -5,13 +5,13 @@ For all KarmaContexts we can see their top contributors.  That is, the
 people with highest karma on that context.  We can see the top overall
 contributors on a given context and the top contributors by category.
 
-    >>> from canonical.launchpad.testing.pages import (
+    >>> from lp.testing.pages import (
     ...     extract_text, find_tag_by_id)
     >>> from lp.registry.interfaces.product import IProductSet
 
     >>> product = getUtility(IProductSet).getByName('evolution')
     >>> user = product.owner
-    >>> login_person(user)
+    >>> ignored = login_person(user)
     >>> view = create_initialized_view(
     ...     product, '+topcontributors', principal=user)
     >>> contributors = view._getTopContributorsWithLimit(limit=3)

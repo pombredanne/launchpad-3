@@ -7,14 +7,14 @@ __metaclass__ = type
 from BeautifulSoup import BeautifulSoup
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp import canonical_url
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.enums import ServiceUsage
+from lp.services.propertycache import cachedproperty
+from lp.services.webapp import canonical_url
 from lp.testing import (
     BrowserTestCase,
     login_person,
     )
-from lp.services.propertycache import cachedproperty
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestRobotsMixin:
@@ -46,7 +46,12 @@ class TestRobotsMixin:
         # Using create_initialized_view for distroseries causes an error when
         # rendering the view due to the way the view is registered and menus
         # are adapted.  Getting the contents via a browser does work.
-        self.user_browser.open(self.url)
+        #
+        # Retrieve the URL before the user_browser is created. Products
+        # can only be access with an active interaction, and getUserBrowser()
+        # closes the current interaction.
+        url = self.url
+        self.user_browser.open(url)
         return self.user_browser.contents
 
     def getRobotsDirective(self):

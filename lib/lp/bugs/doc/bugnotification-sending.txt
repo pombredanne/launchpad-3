@@ -86,15 +86,6 @@ list of emails to send:
     <BLANKLINE>
     ...
     ----------------------------------------------------------------------
-    To: support@ubuntu.com
-    From: Sample Person <1@bugs.launchpad.net>
-    Subject: [Bug 1] subject
-    X-Launchpad-Message-Rationale: Registrant (Ubuntu) @ubuntu-team
-    <BLANKLINE>
-    a comment.
-    <BLANKLINE>
-    ...
-    ----------------------------------------------------------------------
     To: test@canonical.com
     From: Sample Person <1@bugs.launchpad.net>
     Subject: [Bug 1] subject
@@ -124,7 +115,7 @@ still None:
 
 Setting date_emailed to some date causes it not to be pending anymore:
 
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> notifications[0].date_emailed = datetime.now(pytz.timezone('UTC'))
     >>> flush_database_updates()
     >>> pending_notifications = getUtility(
@@ -159,11 +150,9 @@ subject, though, which is often the case when someone replies via email.
     To: foo.bar@canonical.com
     ...
     To: mark@example.com
-    ...
-    To: support@ubuntu.com
     From: Sample Person <1@bugs.launchpad.net>
     Subject: Re: [Bug 1] subject
-    X-Launchpad-Message-Rationale: Registrant (Ubuntu) @ubuntu-team
+    X-Launchpad-Message-Rationale: Assignee
     <BLANKLINE>
     a new comment.
     <BLANKLINE>
@@ -177,16 +166,17 @@ subject, though, which is often the case when someone replies via email.
 Let's add a few changes and see how it looks like:
 
     >>> from lp.bugs.adapters.bugchange import (
-    ...     BugTitleChange, BugVisibilityChange)
+    ...     BugTitleChange, BugInformationTypeChange)
+    >>> from lp.app.enums import InformationType
 
     >>> bug_one.addChange(
     ...     BugTitleChange(
     ...         ten_minutes_ago, sample_person, "title",
     ...         "Old summary", "New summary"))
     >>> bug_one.addChange(
-    ...     BugVisibilityChange(
-    ...         ten_minutes_ago, sample_person, "private",
-    ...         False, True))
+    ...     BugInformationTypeChange(
+    ...         ten_minutes_ago, sample_person, "information_type",
+    ...         InformationType.PUBLIC, InformationType.USERDATA))
     >>> pending_notifications = getUtility(
     ...     IBugNotificationSet).getNotificationsToSend()
     >>> len(pending_notifications)
@@ -199,17 +189,15 @@ Let's add a few changes and see how it looks like:
     To: foo.bar@canonical.com
     ...
     To: mark@example.com
-    ...
-    To: support@ubuntu.com
     From: Sample Person <1@bugs.launchpad.net>
     Subject: [Bug 1] Re: Firefox does not support SVG
-    X-Launchpad-Message-Rationale: Registrant (Ubuntu) @ubuntu-team
+    X-Launchpad-Message-Rationale: Assignee
     <BLANKLINE>
     ** Summary changed:
     - Old summary
     + New summary
     <BLANKLINE>
-    ** Visibility changed to: Private
+    ** Information type changed from Public to Private
     <BLANKLINE>
     --
     ...
@@ -229,9 +217,9 @@ the constructed email:
     ...         ten_minutes_ago, sample_person, "title",
     ...         "New summary", "Another summary"))
     >>> bug_one.addChange(
-    ...     BugVisibilityChange(
-    ...         ten_minutes_ago, sample_person, "private",
-    ...         True, False))
+    ...     BugInformationTypeChange(
+    ...         ten_minutes_ago, sample_person, "information_type",
+    ...         InformationType.USERDATA, InformationType.PUBLIC))
     >>> pending_notifications = getUtility(
     ...     IBugNotificationSet).getNotificationsToSend()
     >>> len(pending_notifications)
@@ -247,11 +235,9 @@ in the order they were added:
     To: foo.bar@canonical.com
     ...
     To: mark@example.com
-    ...
-    To: support@ubuntu.com
     From: Sample Person <1@bugs.launchpad.net>
     Subject: [Bug 1] Re: Firefox does not support SVG
-    X-Launchpad-Message-Rationale: Registrant (Ubuntu) @ubuntu-team
+    X-Launchpad-Message-Rationale: Assignee
     <BLANKLINE>
     a new comment.
     <BLANKLINE>
@@ -298,9 +284,10 @@ for the last 5 minutes:
     >>> now = datetime.now(pytz.timezone('UTC'))
     >>> for minutes_ago in reversed(range(10)):
     ...     bug_one.addChange(
-    ...         BugVisibilityChange(
+    ...         BugInformationTypeChange(
     ...             now - timedelta(minutes=minutes_ago), sample_person,
-    ...             "private", False, True))
+    ...             "information_type", InformationType.PUBLIC,
+    ...             InformationType.USERDATA))
     >>> pending_notifications = getUtility(
     ...     IBugNotificationSet).getNotificationsToSend()
     >>> len(pending_notifications)
@@ -341,7 +328,6 @@ notification will be sent to all members individually.
     foo.bar@canonical.com
     mark@example.com
     owner@example.com
-    support@ubuntu.com
     test@canonical.com
 
     >>> flush_notifications()
@@ -349,22 +335,7 @@ notification will be sent to all members individually.
 Duplicates
 ----------
 
-We will need some helper functions.
-
-    >>> from canonical.config import config
-    >>> from canonical.database.sqlbase import commit
-    >>> from canonical.testing import LaunchpadZopelessLayer
-
-    >>> def switch_db_to_launchpad():
-    ...     commit()
-    ...     LaunchpadZopelessLayer.switchDbUser('launchpad')
-
-    >>> def switch_db_to_bugnotification():
-    ...     commit()
-    ...     LaunchpadZopelessLayer.switchDbUser(
-    ...         config.malone.bugnotification_dbuser)
-
-We will also need a fresh new bug.
+We will need a fresh new bug.
 
     >>> from lp.bugs.interfaces.bug import CreateBugParams
     >>> from lp.registry.interfaces.distribution import IDistributionSet
@@ -397,15 +368,6 @@ top of the email:
     ...     get_email_notifications(notifications)):
     ...     for message in messages:
     ...         print_notification(message)
-    To: support@ubuntu.com
-    From: Sample Person <16@bugs.launchpad.net>
-    Subject: [Bug 16] subject
-    X-Launchpad-Message-Rationale: Registrant (Ubuntu) @ubuntu-team
-    <BLANKLINE>
-    *** This bug is a duplicate of bug 1 ***
-        http://bugs.launchpad.dev/bugs/1
-    ...
-    ----------------------------------------------------------------------
     To: test@canonical.com
     From: Sample Person <16@bugs.launchpad.net>
     Subject: [Bug 16] subject
@@ -433,12 +395,7 @@ inserted at the top of the message body.
     ...     sec_vuln_bug = ubuntu.createBug(CreateBugParams(
     ...         msg=sec_vuln_description, owner=sample_person,
     ...         title='Zero-day on Frobulator',
-    ...         security_related=True, private=True))
-
-    >>> sec_vuln_bug.security_related
-    True
-    >>> sec_vuln_bug.private
-    True
+    ...         information_type=InformationType.PRIVATESECURITY))
 
     >>> notifications = (
     ...     getUtility(IBugNotificationSet).getNotificationsToSend())
@@ -446,10 +403,10 @@ inserted at the top of the message body.
     >>> for bug_notifications, omitted, messages in email_notifications:
     ...     for message in messages:
     ...         print_notification(message)
-    To: support@ubuntu.com
+    To: test@canonical.com
     From: Sample Person <...@bugs.launchpad.net>
     Subject: [Bug ...] [NEW] Zero-day on Frobulator
-    X-Launchpad-Message-Rationale: Subscriber @ubuntu-team
+    X-Launchpad-Message-Rationale: Subscriber
     <BLANKLINE>
     *** This bug is a security vulnerability ***
     <BLANKLINE>
@@ -470,10 +427,10 @@ The message is only inserted for new bugs, not for modified bugs:
     >>> for bug_notifications, omitted, messages in email_notifications:
     ...     for message in messages:
     ...         print_notification(message)
-    To: support@ubuntu.com
+    To: test@canonical.com
     From: Sample Person <...@bugs.launchpad.net>
     Subject: [Bug ...] subject
-    X-Launchpad-Message-Rationale: Subscriber @ubuntu-team
+    X-Launchpad-Message-Rationale: Subscriber
     <BLANKLINE>
     a comment.
     <BLANKLINE>
@@ -515,13 +472,13 @@ few notifications to show that it works.
     ...         ten_minutes_ago, sample_person, "title",
     ...         "Old summary", "New summary"))
     >>> bug_two.addChange(
-    ...     BugVisibilityChange(
-    ...         ten_minutes_ago, sample_person, "title",
-    ...         False, True))
+    ...     BugInformationTypeChange(
+    ...         ten_minutes_ago, sample_person, "information_type",
+    ...         InformationType.PUBLIC, InformationType.USERDATA))
     >>> bug_two.addChange(
-    ...     BugVisibilityChange(
-    ...         ten_minutes_ago, sample_person, "title",
-    ...         True, False))
+    ...     BugInformationTypeChange(
+    ...         ten_minutes_ago, sample_person, "information_type",
+    ...         InformationType.USERDATA, InformationType.PUBLIC))
 
     >>> notifications = getUtility(
     ...     IBugNotificationSet).getNotificationsToSend()
@@ -547,8 +504,6 @@ makes it write out the emails it sends.
     0
     >>> print err
     DEBUG   ...
-    INFO    Notifying support@ubuntu.com about bug 2.
-    ...
     INFO    Notifying test@canonical.com about bug 2.
     ...
     From: Sample Person <...@bugs.launchpad.net>
@@ -572,8 +527,6 @@ makes it write out the emails it sends.
     INFO    Notifying mark@example.com about bug 1.
     ...
     INFO    Notifying owner@example.com about bug 1.
-    ...
-    INFO    Notifying support@ubuntu.com about bug 1.
     ...
     INFO    Notifying test@canonical.com about bug 1.
     ...
@@ -604,12 +557,10 @@ makes it write out the emails it sends.
     ...
     INFO    Notifying owner@example.com about bug 1.
     ...
-    INFO    Notifying support@ubuntu.com about bug 1.
-    ...
     INFO    Notifying test@canonical.com about bug 1.
     ...
 
-Note that the message omitted the undone visibility change.
+Note that the message omitted the undone information type change.
 
 The cronscript has to be sure to mark all notifications, omitted and
 otherwise, as sent.  It also marks the omitted notifications with a status,
@@ -641,8 +592,8 @@ been set properly.
     summary Sent
     comment Sent
     summary Sent
-    visibility Omitted
-    visibility Omitted
+    information type Omitted
+    information type Omitted
 
 
 The X-Launchpad-Bug header
@@ -651,8 +602,9 @@ The X-Launchpad-Bug header
 When a notification is sent out about a bug, the X-Launchpad-Bug header is
 filled with data about that bug:
 
-    >>> bug_three = getUtility(IBugSet).get(3)
-    >>> subscription = bug_three.subscribe(sample_person, sample_person)
+    >>> with lp_dbuser():
+    ...      bug_three = getUtility(IBugSet).get(3)
+    ...      subscription = bug_three.subscribe(sample_person, sample_person)
 
     >>> comment = getUtility(IMessageSet).fromText(
     ...     'subject', 'a short comment.', sample_person,
@@ -743,64 +695,59 @@ won't be included.
     >>> for message in trigger_and_get_email_messages(bug_three):
     ...     message.get_all('X-Launchpad-Bug-Tags')
 
-    >>> #bug_three.unsubscribe(sample_person, sample_person)
 
-
-The X-Launchpad-Bug-Private header
-----------------------------------
+The X-Launchpad-Bug-Information-Type header
+-------------------------------------------
 
 When a notification is sent out about a bug, the
-X-Launchpad-Bug-Private header shows if the bug is marked as
-private. It can have the value "yes" or "no".
+X-Launchpad-Bug-Information-Type header shows the information type value
+assigned to the bug. For backwards compatibility, the X-Launchpad-Bug-Private
+and X-Launchpad-Bug-Security-Vulnerability headers are also set. These headers
+can have the value "yes" or "no".
 
-    >>> bug_three.private
-    False
+    >>> print bug_three.information_type.title
+    Public
+
+    >>> def print_message_header_details(message):
+    ...     print '%s %s %s %s' % (
+    ...         message['To'],
+    ...         message.get_all('X-Launchpad-Bug-Private'),
+    ...         message.get_all('X-Launchpad-Bug-Security-Vulnerability'),
+    ...         message.get_all('X-Launchpad-Bug-Information-Type'))
 
     >>> for message in trigger_and_get_email_messages(bug_three):
-    ...     print message['To'], message.get_all('X-Launchpad-Bug-Private')
-    test@canonical.com ['no']
+    ...     print_message_header_details(message)
+    test@canonical.com ['no'] ['no'] ['Public']
 
 Predictably, private bugs are sent with a slightly different header:
 
     >>> with lp_dbuser():
-    ...     bug_three.setPrivate(True, sample_person)
+    ...     bug_three.transitionToInformationType(
+    ...         InformationType.USERDATA, sample_person)
     True
-    >>> bug_three.private
-    True
+    >>> print bug_three.information_type.title
+    Private
 
     >>> for message in trigger_and_get_email_messages(bug_three):
-    ...     print message['To'], message.get_all('X-Launchpad-Bug-Private')
-    test@canonical.com ['yes']
+    ...     print_message_header_details(message)
+    foo.bar@canonical.com ['yes'] ['no'] ['Private']
+    mark@example.com ['yes'] ['no']  ['Private']
+    test@canonical.com ['yes'] ['no']  ['Private']
 
-
-The X-Launchpad-Bug-Security-Vulnerability header
--------------------------------------------------
-
-When a notification is sent out about a bug, the
-X-Launchpad-Bug-Security-Vulnerability header records if the bug is a
-security vulnerability. It can have the value "yes" or "no".
-
-    >>> bug_three.security_related
-    False
-
-    >>> for message in trigger_and_get_email_messages(bug_three):
-    ...     print message['To'], (
-    ...         message.get_all('X-Launchpad-Bug-Security-Vulnerability'))
-    test@canonical.com ['no']
-
-The presence of the security flag on a bug is, surprise, denoted by a
-simple "yes":
+Now transition the bug to private security:
 
     >>> with lp_dbuser():
-    ...     bug_three.setSecurityRelated(True, getUtility(ILaunchBag).user)
+    ...     bug_three.transitionToInformationType(
+    ...         InformationType.PRIVATESECURITY, getUtility(ILaunchBag).user)
     True
-    >>> bug_three.security_related
-    True
+    >>> print bug_three.information_type.title
+    Private Security
 
     >>> for message in trigger_and_get_email_messages(bug_three):
-    ...     print message['To'], (
-    ...         message.get_all('X-Launchpad-Bug-Security-Vulnerability'))
-    test@canonical.com ['yes']
+    ...     print_message_header_details(message)
+    foo.bar@canonical.com ['yes'] ['yes'] ['Private Security']
+    mark@example.com ['yes'] ['yes']  ['Private Security']
+    test@canonical.com ['yes'] ['yes']  ['Private Security']
 
 
 The X-Launchpad-Bug-Commenters header
@@ -864,7 +811,7 @@ with different verbose_bugnotifications settings.
 
     >>> with lp_dbuser():
     ...     bug = factory.makeBug(
-    ...         product=factory.makeProduct(title='Foo'),
+    ...         target=factory.makeProduct(title='Foo'),
     ...         title='In the beginning, the universe was created. This '
     ...             'has made a lot of people very angry and has been '
     ...             'widely regarded as a bad move',
@@ -1125,7 +1072,7 @@ notification level of the subscription.
 
     >>> flush_notifications()
 
-    >>> from lp.bugs.enum import BugNotificationLevel
+    >>> from lp.bugs.enums import BugNotificationLevel
     >>> from lp.registry.interfaces.product import IProductSet
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> mr_no_privs = getUtility(IPersonSet).getByName('no-priv')
@@ -1178,12 +1125,6 @@ notifications.
     ...
     You received this bug notification because you are a member of
     Addressless Team, which is subscribed to the bug report.
-    ...
-    ----------------------------------------------------------------------
-    To: support@ubuntu.com
-    ...
-    You received this bug notification because you are a member of Ubuntu
-    Team, which is the registrant for Ubuntu.
     ...
     ----------------------------------------------------------------------
     To: test@canonical.com
@@ -1244,12 +1185,6 @@ COMMENTS, he also receives these notifications.
     Addressless Team, which is subscribed to the bug report.
     ...
     ----------------------------------------------------------------------
-    To: support@ubuntu.com
-    ...
-    You received this bug notification because you are a member of Ubuntu
-    Team, which is the registrant for Ubuntu.
-    ...
-    ----------------------------------------------------------------------
     To: test@canonical.com
     ...
     You received this bug notification because you are subscribed to the bug
@@ -1295,12 +1230,6 @@ no comment notifications.
     --
     You received this bug notification because you are a member of
     Addressless Team, which is subscribed to the bug report.
-    ...
-    ----------------------------------------------------------------------
-    To: support@ubuntu.com
-    ...
-    You received this bug notification because you are a member of Ubuntu
-    Team, which is the registrant for Ubuntu.
     ...
     ----------------------------------------------------------------------
     To: test@canonical.com
@@ -1361,12 +1290,6 @@ receives these notifications.
     Addressless Team, which is subscribed to the bug report.
     ...
     ----------------------------------------------------------------------
-    To: support@ubuntu.com
-    ...
-    You received this bug notification because you are a member of Ubuntu
-    Team, which is the registrant for Ubuntu.
-    ...
-    ----------------------------------------------------------------------
     To: test@canonical.com
     ...
     You received this bug notification because you are subscribed to the bug
@@ -1415,12 +1338,6 @@ no notifications created by addChange().
     You received this bug notification because you are a member of
     Addressless Team, which is subscribed to the bug report.
     http://bugs.launchpad.dev/bugs/1
-    ...
-    ----------------------------------------------------------------------
-    To: support@ubuntu.com
-    ...
-    You received this bug notification because you are a member of Ubuntu
-    Team, which is the registrant for Ubuntu.
     ...
     ----------------------------------------------------------------------
     To: test@canonical.com
@@ -1481,12 +1398,6 @@ after all.
     ...
     You received this bug notification because you are a member of
     Addressless Team, which is subscribed to the bug report.
-    ...
-    ----------------------------------------------------------------------
-    To: support@ubuntu.com
-    ...
-    You received this bug notification because you are a member of Ubuntu
-    Team, which is the registrant for Ubuntu.
     ...
     ----------------------------------------------------------------------
     To: test@canonical.com

@@ -8,8 +8,8 @@ To demonstrate this feature, we'll use bug 1.
 We'll start by adding some attachments to the bug:
 
     >>> import StringIO
-    >>> from canonical.database.sqlbase import flush_database_updates
-    >>> from canonical.launchpad.ftests import login, logout
+    >>> from lp.services.database.sqlbase import flush_database_updates
+    >>> from lp.testing import login, logout
     >>> from lp.bugs.model.bug import Bug
     >>> from lp.registry.model.person import Person
     >>> login("foo.bar@canonical.com")
@@ -17,7 +17,7 @@ We'll start by adding some attachments to the bug:
     >>> mark.displayname = u"M\xe1rk Sh\xfattlew\xf2rth"
     >>> bug = Bug.get(1)
     >>> content = StringIO.StringIO("<html><body>bogus</body></html>")
-    >>> a1 = bug.addAttachment(mark, content, "comment for file a", 
+    >>> a1 = bug.addAttachment(mark, content, "comment for file a",
     ...     "file_a.txt", content_type="text/html")
     >>> content = StringIO.StringIO("do we need to")
     >>> a2 = bug.addAttachment(mark, content, "comment for file with space",

@@ -44,15 +44,15 @@ access 'Copy package' page from any PPA.
     Unauthorized: ... 'launchpad.AnyPerson')
 
 James is a valid user, however he doesn't have access to any PPA, he
-is allowed to access the copy-package interface in Celso's PPA, but
+is allowed to access the copy-packages interface in Celso's PPA, but
 the form is not rendered, instead he is advised to activate his own
 PPA in order to be able to copy packages.
 
     >>> jblack_browser = setupBrowser(
-    ...     auth="Basic james.blackwell@ubuntulinux.com:jblack")
+    ...     auth="Basic james.blackwell@ubuntulinux.com:test")
 
     >>> jblack_extra_browser = setupBrowser(
-    ...     auth="Basic james.blackwell@ubuntulinux.com:jblack")
+    ...     auth="Basic james.blackwell@ubuntulinux.com:test")
 
     >>> jblack_browser.open(
     ...     'http://launchpad.dev/~cprov/+archive/ppa/+packages')
@@ -108,14 +108,11 @@ for packages. This is certainly not part of the doctest story.
 
     >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.person import IPersonSet
-    >>> from canonical.launchpad.ftests import login, logout
 
     >>> login('foo.bar@canonical.com')
-    >>> from canonical.launchpad.interfaces.librarian import (
-    ...     ILibraryFileAliasSet,
-    ...     )
+    >>> from lp.services.librarian.interfaces import ILibraryFileAliasSet
     >>> from lp.registry.interfaces.distribution import IDistributionSet
-    >>> from lp.soyuz.model.processor import ProcessorFamily
+    >>> from lp.soyuz.interfaces.processor import IProcessorSet
 
     >>> fake_chroot = getUtility(ILibraryFileAliasSet)[1]
 
@@ -131,22 +128,43 @@ for packages. This is certainly not part of the doctest story.
     >>> cprov = person_set.getByName('cprov')
     >>> grumpy = ubuntu.getSeries('grumpy')
     >>> grumpy_i386 = grumpy.newArch(
-    ...     'i386', ProcessorFamily.get(1), False, cprov,
+    ...     'i386', getUtility(IProcessorSet).getByName('386'), False, cprov,
     ...     supports_virtualized=True)
     >>> grumpy.nominatedarchindep = grumpy_i386
     >>> trash = grumpy_i386.addOrUpdateChroot(fake_chroot)
 
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
     >>> logout()
+
+Copying packages will create jobs.  Define a simple doctest-friendly runner.
+
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> from lp.services.log.logger import FakeLogger
+    >>> from lp.soyuz.interfaces.packagecopyjob import (
+    ...     IPlainPackageCopyJobSource,
+    ...     )
+
+    >>> def run_copy_jobs():
+    ...     login('foo.bar@canonical.com')
+    ...     source = getUtility(IPlainPackageCopyJobSource)
+    ...     for job in removeSecurityProxy(source).iterReady():
+    ...         job.logger = FakeLogger()
+    ...         job.start(manage_transaction=True)
+    ...         try:
+    ...             job.run()
+    ...         except Exception:
+    ...             job.fail(manage_transaction=True)
+    ...         else:
+    ...             job.complete(manage_transaction=True)
+    ...     logout()
 
 Let's say James wants to rebuild the Celso's 'pmount' source in his PPA.
 
 He is a little confused by the number of packages presented by
 default and wants to refine the options.
 
-    >>> jblack_browser.getControl(
-    ...     name='field.name_filter').value = 'pmount'
+    >>> jblack_browser.getControl(name='field.name_filter').value = 'pmount'
     >>> jblack_browser.getControl("Filter").click()
 
 There we go, James can be certain about which package to select, only
@@ -176,7 +194,7 @@ helper function will do this job in this test.
 
 The page section id is built using "pub$ID" notation.
 
-    >>> pmount_pub_id = getPPAPubIDsFor('cprov', 'pmount')[0]
+    >>> pmount_pub_id = getPPAPubIDsFor('cprov', u'pmount')[0]
     >>> expander_url = jblack_browser.getLink(
     ...     id='pub%s-expander' % pmount_pub_id).url
     >>> jblack_extra_browser.open(expander_url)
@@ -206,28 +224,23 @@ James is absolutely sure that's the package he wants, he selects it.
 Currently, James only has access to his just created PPA, which is the
 default form value for 'Destination PPA'.
 
-    >>> print jblack_browser.getControl(
-    ...     'Destination PPA').displayOptions
-    ['PPA for James Blackwell']
+    >>> print jblack_browser.getControl('Destination PPA').displayOptions
+    ['PPA for James Blackwell [~jblack/ppa]']
 
-    >>> print jblack_browser.getControl(
-    ...     'Destination PPA').value
+    >>> print jblack_browser.getControl('Destination PPA').value
     ['jblack/ppa']
 
 James notice that Celso's 'pmount' was uploaded and built in Warty,
 but he is using Hoary. No problem, because he can select a destination
 series while copying.
 
-    >>> print jblack_browser.getControl(
-    ...     'Destination series').displayOptions
+    >>> print jblack_browser.getControl('Destination series').displayOptions
     ['The same series', 'Breezy Badger Autotest', 'Grumpy', 'Hoary', 'Warty']
 
-    >>> print jblack_browser.getControl(
-    ...     'Destination series').value
+    >>> print jblack_browser.getControl('Destination series').value
     ['']
 
-    >>> jblack_browser.getControl(
-    ...     'Destination series').value = ['hoary']
+    >>> jblack_browser.getControl('Destination series').value = ['hoary']
 
 James may want to copy binaries over, or to do a full rebuild from
 source, which is the default option.
@@ -241,11 +254,12 @@ is presented.
 
     >>> jblack_browser.getControl("Copy Packages").click()
 
-    >>> messages = get_feedback_messages(jblack_browser.contents)
-    >>> for msg in messages:
-    ...     print msg
-    Packages copied to PPA for James Blackwell:
-    pmount 0.1-1 in hoary
+    >>> print_feedback_messages(jblack_browser.contents)
+    Requested sync of 1 package to PPA for James Blackwell.
+    Please allow some time for this to be processed.
+    >>> run_copy_jobs()
+    DEBUG Packages copied to PPA for James Blackwell:
+    DEBUG pmount 0.1-1 in hoary
 
 James uses the link in the copy summary to go straight to the target
 PPA, his own. There he can see the just copied package as PENDING and
@@ -266,13 +280,14 @@ indeed the same by checking the changelog, also that the binaries
 were not copied and instead a build was already created in his PPA
 context.
 
-    >>> pmount_pub_id = getPPAPubIDsFor('jblack', 'pmount')[0]
+    >>> pmount_pub_id = getPPAPubIDsFor('jblack', u'pmount')[0]
     >>> expander_url = jblack_browser.getLink(
     ...     id='pub%s-expander' % pmount_pub_id).url
     >>> jblack_extra_browser.open(expander_url)
     >>> print extract_text(jblack_extra_browser.contents)
     Publishing details
-      Copied from ubuntu hoary in Primary Archive for Ubuntu Linux
+      Copied from ubuntu hoary in Primary Archive for Ubuntu Linux by James
+      Blackwell
     Changelog
       pmount (0.1-1) hoary; urgency=low
       * Fix description (Malone #1)
@@ -359,14 +374,12 @@ Then selects pmount in hoary.
 
 Leave the Destination PPA alone, because it defaults to 'This PPA'.
 
-    >>> print jblack_browser.getControl(
-    ...     'Destination PPA').displayValue
+    >>> print jblack_browser.getControl('Destination PPA').displayValue
     ['This PPA']
 
 The destination series always default to 'The same series'.
 
-    >>> jblack_browser.getControl(
-    ...     'Destination series').displayValue
+    >>> jblack_browser.getControl('Destination series').displayValue
     ['The same series']
 
 He uses the default option of rebuilding copied source along the way.
@@ -384,21 +397,19 @@ hoary, if we allow the source to be copied and built in grumpy the
 resulted binaries would conflict (same name and version, but different
 contents). So, this copy is not allowed.
 
-    >>> messages = get_feedback_messages(jblack_browser.contents)
-    >>> for msg in messages:
-    ...     print msg
-    There is 1 error.
-    The following source cannot be copied:
-    pmount 0.1-1 in hoary
+    >>> print_feedback_messages(jblack_browser.contents)
+    Requested sync of 1 package to PPA for James Blackwell.
+    Please allow some time for this to be processed.
+    >>> run_copy_jobs()
+    INFO ... raised CannotCopy: pmount 0.1-1 in hoary
     (same version already building in the destination archive for Hoary)
 
 Now, knowing that pmount can only be copied within the same PPA if the
 binaries go together, James executes the copy including the binaries.
 
     >>> jblack_browser.getControl(
-    ...    name='field.selected_sources').value = [pmount_pub_id]
-    >>> jblack_browser.getControl(
-    ...     'Destination series').value = ['grumpy']
+    ...     name='field.selected_sources').value = [pmount_pub_id]
+    >>> jblack_browser.getControl('Destination series').value = ['grumpy']
     >>> jblack_browser.getControl(
     ...     name='field.include_binaries').value = ['COPY_BINARIES']
     >>> jblack_browser.getControl("Copy Packages").click()
@@ -406,11 +417,11 @@ binaries go together, James executes the copy including the binaries.
 But this is also not allowed. Since pmount is still building in hoary,
 there are no binaries to be copied.
 
-    >>> messages = get_feedback_messages(jblack_browser.contents)
-    >>> for msg in messages:
-    ...     print msg
-    There is 1 error.
-    The following source cannot be copied:
+    >>> print_feedback_messages(jblack_browser.contents)
+    Requested sync of 1 package to PPA for James Blackwell.
+    Please allow some time for this to be processed.
+    >>> run_copy_jobs()
+    INFO ... raised CannotCopy:
     pmount 0.1-1 in hoary (source has no binaries to be copied)
 
 We will mark the pmount build completed, to emulate the situation
@@ -418,8 +429,7 @@ described in bug #236407 when binaries were built but have to
 wait until the next publishing cycle to be published in the archive.
 
     >>> login('foo.bar@canonical.com')
-    >>> from lp.soyuz.tests.test_publishing import (
-    ...     SoyuzTestPublisher)
+    >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
     >>> test_publisher = SoyuzTestPublisher()
     >>> jblack = person_set.getByName('jblack')
     >>> pmount_build = jblack.archive.getBuildRecords()[0]
@@ -436,19 +446,17 @@ The new builds would stick in failed-to-upload state because the
 binaries could not be published in the PPA.
 
     >>> jblack_browser.getControl(
-    ...    name='field.selected_sources').value = [pmount_pub_id]
-    >>> jblack_browser.getControl(
-    ...     'Destination series').value = ['grumpy']
+    ...     name='field.selected_sources').value = [pmount_pub_id]
+    >>> jblack_browser.getControl('Destination series').value = ['grumpy']
     >>> jblack_browser.getControl(
     ...     name='field.include_binaries').value = ['REBUILD_SOURCES']
     >>> jblack_browser.getControl("Copy Packages").click()
 
-    >>> messages = get_feedback_messages(jblack_browser.contents)
-    >>> for msg in messages:
-    ...     print msg
-    There is 1 error.
-    The following source cannot be copied:
-    pmount 0.1-1 in hoary
+    >>> print_feedback_messages(jblack_browser.contents)
+    Requested sync of 1 package to PPA for James Blackwell.
+    Please allow some time for this to be processed.
+    >>> run_copy_jobs()
+    INFO ... raised CannotCopy: pmount 0.1-1 in hoary
     (same version has unpublished binaries in the destination
     archive for Hoary, please wait for them to be published before
     copying)
@@ -458,17 +466,16 @@ has unpublished binaries.
 
     >>> jblack_browser.getControl(
     ...    name='field.selected_sources').value = [pmount_pub_id]
-    >>> jblack_browser.getControl(
-    ...     'Destination series').value = ['grumpy']
+    >>> jblack_browser.getControl('Destination series').value = ['grumpy']
     >>> jblack_browser.getControl(
     ...     name='field.include_binaries').value = ['COPY_BINARIES']
     >>> jblack_browser.getControl("Copy Packages").click()
 
-    >>> messages = get_feedback_messages(jblack_browser.contents)
-    >>> for msg in messages:
-    ...     print msg
-    There is 1 error.
-    The following source cannot be copied:
+    >>> print_feedback_messages(jblack_browser.contents)
+    Requested sync of 1 package to PPA for James Blackwell.
+    Please allow some time for this to be processed.
+    >>> run_copy_jobs()
+    INFO ... raised CannotCopy:
     pmount 0.1-1 in hoary (source has no binaries to be copied)
 
 We will build and publish the architecture independent binary for
@@ -482,7 +489,6 @@ pmount ('pmount-bin') and publish it in hoary/i386 and hoary/hppa.
     ...     pmount_binary, jblack.archive,
     ...     status=PackagePublishingStatus.PUBLISHED)
     >>> flush_database_updates()
-    >>> logout()
 
     >>> for binary in pmount_binaries:
     ...     print binary.displayname
@@ -492,10 +498,10 @@ pmount ('pmount-bin') and publish it in hoary/i386 and hoary/hppa.
 The binaries have now been published, so James requests the copy
 including binaries.
 
+    >>> logout()
     >>> jblack_browser.getControl(
     ...    name='field.selected_sources').value = [pmount_pub_id]
-    >>> jblack_browser.getControl(
-    ...     'Destination series').value = ['grumpy']
+    >>> jblack_browser.getControl('Destination series').value = ['grumpy']
     >>> jblack_browser.getControl(
     ...     name='field.include_binaries').value = ['COPY_BINARIES']
     >>> jblack_browser.getControl("Copy Packages").click()
@@ -503,12 +509,14 @@ including binaries.
 The page not only renders the copy summary, but also shows the
 package copied in the available sources.
 
-    >>> messages = get_feedback_messages(jblack_browser.contents)
-    >>> for msg in messages:
-    ...     print msg
-    Packages copied to PPA for James Blackwell:
-    pmount 0.1-1 in grumpy
-    pmount-bin 0.1-1 in grumpy i386
+    >>> print_feedback_messages(jblack_browser.contents)
+    Requested sync of 1 package to PPA for James Blackwell.
+    Please allow some time for this to be processed.
+    >>> run_copy_jobs()
+    DEBUG Packages copied to PPA for James Blackwell:
+    DEBUG pmount 0.1-1 in grumpy
+    DEBUG pmount-bin 0.1-1 in grumpy i386
+    >>> jblack_browser.open(jblack_browser.url)
 
 Note that only the i386 binary got copied to grumpy since it lacks
 hppa support.
@@ -534,22 +542,20 @@ changes:
     pmount - 0.1-1              Pending    Grumpy           Editors
     pmount - 0.1-1 (Newer...)   Pending    Hoary            Editors
 
-If James performs exactly the same copy procedure again, a message
-stating that all packages involved were already copied to the
-selected destination PPA will be rendered.
+If James performs exactly the same copy procedure again, no more packages
+will be copied.
 
     >>> jblack_browser.getControl(
-    ...    name='field.selected_sources').value = [pmount_pub_id]
-    >>> jblack_browser.getControl(
-    ...     'Destination series').value = ['grumpy']
+    ...     name='field.selected_sources').value = [pmount_pub_id]
+    >>> jblack_browser.getControl('Destination series').value = ['grumpy']
     >>> jblack_browser.getControl(
     ...     name='field.include_binaries').value = ['COPY_BINARIES']
     >>> jblack_browser.getControl("Copy Packages").click()
 
-    >>> messages = get_feedback_messages(jblack_browser.contents)
-    >>> for msg in messages:
-    ...     print msg
-    All packages already copied to PPA for James Blackwell.
+    >>> print_feedback_messages(jblack_browser.contents)
+    Requested sync of 1 package to PPA for James Blackwell.
+    Please allow some time for this to be processed.
+    >>> run_copy_jobs()
 
 After some time, James realises that pmount in hoary doesn't make much
 sense and simply deletes it, so his users won't be bothered by this
@@ -561,9 +567,9 @@ James uses the 'delete-packages' interface in his PPA to delete the
     >>> jblack_browser.getLink('Cancel').click()
     >>> jblack_browser.getLink('Delete packages').click()
     >>> jblack_browser.getControl(
-    ...    name='field.selected_sources').value = [pmount_pub_id]
+    ...     name='field.selected_sources').value = [pmount_pub_id]
     >>> jblack_browser.getControl(
-    ...    "Deletion comment").value = "Deleted packages can be copied."
+    ...     "Deletion comment").value = "Deleted packages can be copied."
     >>> jblack_browser.getControl("Request Deletion").click()
 
 James return to his PPA packages page and checks that the package is
@@ -581,7 +587,7 @@ really deleted.
 In the minute after James had deleted the package, he discovered that
 'pmount' might work correctly in warty.
 
-No problem, he goes back to the copy-package interface in his PPA and
+No problem, he goes back to the copy-packages interface in his PPA and
 still able to copy the deleted source to the warty series.
 
 By default the copy view presents only PUBLISHED or PENDING packages.
@@ -613,16 +619,14 @@ binaries produced by the copy will conflict with the ones already
 published in the archive.
 
     >>> jblack_browser.getControl(
-    ...    name='field.selected_sources').value = [pmount_pub_id]
-    >>> jblack_browser.getControl(
-    ...     'Destination series').value = ['warty']
+    ...     name='field.selected_sources').value = [pmount_pub_id]
+    >>> jblack_browser.getControl('Destination series').value = ['warty']
     >>> jblack_browser.getControl("Copy Packages").click()
-    >>> messages = get_feedback_messages(jblack_browser.contents)
-    >>> for msg in messages:
-    ...     print msg
-    There is 1 error.
-    The following source cannot be copied:
-    pmount 0.1-1 in hoary
+    >>> print_feedback_messages(jblack_browser.contents)
+    Requested sync of 1 package to PPA for James Blackwell.
+    Please allow some time for this to be processed.
+    >>> run_copy_jobs()
+    INFO ... raised CannotCopy: pmount 0.1-1 in hoary
     (same version already has published binaries in the destination
     archive)
 
@@ -632,23 +636,23 @@ the ones already published in the archive and the copy will only be
 allowed if they are the same.
 
     >>> jblack_browser.getControl(
-    ...    name='field.selected_sources').value = [pmount_pub_id]
-    >>> jblack_browser.getControl(
-    ...     'Destination series').value = ['warty']
+    ...     name='field.selected_sources').value = [pmount_pub_id]
+    >>> jblack_browser.getControl('Destination series').value = ['warty']
     >>> jblack_browser.getControl(
     ...     name='field.include_binaries').value = ['COPY_BINARIES']
     >>> jblack_browser.getControl("Copy Packages").click()
 
-    >>> messages = get_feedback_messages(jblack_browser.contents)
-    >>> for msg in messages:
-    ...     print msg
-    Packages copied to PPA for James Blackwell:
-    pmount 0.1-1 in warty
-    pmount-bin 0.1-1 in warty hppa
-    pmount-bin 0.1-1 in warty i386
+    >>> print_feedback_messages(jblack_browser.contents)
+    Requested sync of 1 package to PPA for James Blackwell.
+    Please allow some time for this to be processed.
+    >>> run_copy_jobs()
+    DEBUG Packages copied to PPA for James Blackwell:
+    DEBUG pmount 0.1-1 in warty
+    DEBUG pmount-bin 0.1-1 in warty hppa
+    DEBUG pmount-bin 0.1-1 in warty i386
+    >>> jblack_browser.open(jblack_browser.url)
 
-James sees the just-copied 'pmount' source in warty pending
-publication.
+James sees the just-copied 'pmount' source in warty pending publication.
 
     >>> print_ppa_packages(jblack_browser.contents)
     Source          Published   Status     Series           Section  Build
@@ -668,8 +672,7 @@ together.
     >>> jblack_browser.open('http://launchpad.dev/people')
     >>> jblack_browser.getLink('Register a team').click()
 
-    >>> jblack_browser.getControl(
-    ...     name="field.name").value = 'jblack-friends'
+    >>> jblack_browser.getControl(name="field.name").value = 'jblack-friends'
 
     >>> jblack_browser.getControl(
     ...     'Display Name').value = 'James Blackwell Friends'
@@ -698,18 +701,17 @@ have ever seen. He goes to Celso's PPA copy interface.
 James would like to re-distribute Celso's 'pmount' and 'iceweasel'
 packages, thus he selects both.
 
-    >>> pmount_pub_id = getPPAPubIDsFor('cprov', 'pmount')[0]
-    >>> iceweasel_pub_id = getPPAPubIDsFor('cprov', 'iceweasel')[0]
+    >>> pmount_pub_id = getPPAPubIDsFor('cprov', u'pmount')[0]
+    >>> iceweasel_pub_id = getPPAPubIDsFor('cprov', u'iceweasel')[0]
 
     >>> jblack_browser.getControl(name='field.selected_sources').value = (
     ...     [iceweasel_pub_id, pmount_pub_id])
 
-Now that James have access to more than one PPA, the copy-package form
+Now that James have access to more than one PPA, the copy-packages form
 allows him to select one of them.
 
-    >>> print jblack_browser.getControl(
-    ...     'Destination PPA').displayOptions
-    ['PPA for James Blackwell', 'PPA for James Blackwell Friends']
+    >>> print jblack_browser.getControl('Destination PPA').displayOptions
+    ['PPA for James Blackwell [~jblack/ppa]', 'PPA for James Blackwell Friends [~jblack-friends/ppa]']
 
 James wants to populate the PPA for James Blackwell Friends, he
 selects that.
@@ -719,8 +721,7 @@ selects that.
 
 James decides that 'hoary' is where the action will be for his friends.
 
-    >>> jblack_browser.getControl(
-    ...     'Destination series').value = ['hoary']
+    >>> jblack_browser.getControl('Destination series').value = ['hoary']
 
 Also, in order to make James Friends' PPA ready to use, this time
 James will also copy Celso's binaries for the selected sources.
@@ -735,15 +736,17 @@ Button-pushing time for James again.
 The page not only renders the copy summary, but also shows the
 package copied in the available sources.
 
-    >>> messages = get_feedback_messages(jblack_browser.contents)
-    >>> for msg in messages:
-    ...     print msg
-    Packages copied to PPA for James Blackwell Friends:
-    iceweasel 1.0 in hoary
-    mozilla-firefox 1.0 in hoary i386
-    pmount 0.1-1 in hoary
-    pmount 0.1-1 in hoary hppa
-    pmount 0.1-1 in hoary i386
+    >>> print_feedback_messages(jblack_browser.contents)
+    Requested sync of 2 packages to PPA for James Blackwell Friends.
+    Please allow some time for these to be processed.
+    >>> run_copy_jobs()
+    DEBUG Packages copied to PPA for James Blackwell Friends:
+    DEBUG iceweasel 1.0 in hoary
+    DEBUG mozilla-firefox 1.0 in hoary i386
+    DEBUG Packages copied to PPA for James Blackwell Friends:
+    DEBUG pmount 0.1-1 in hoary
+    DEBUG pmount 0.1-1 in hoary hppa
+    DEBUG pmount 0.1-1 in hoary i386
 
 So happy-hacking for James Friends, Celso's 'iceweasel' and 'pmount'
 sources and binaries are copied to their PPA.
@@ -761,7 +764,7 @@ sources and binaries are copied to their PPA.
 James just gives a quick look to the details section of each copied
 sources to ensure the binaries are really there.
 
-    >>> pmount_pub_id = getPPAPubIDsFor('jblack-friends', 'pmount')[0]
+    >>> pmount_pub_id = getPPAPubIDsFor('jblack-friends', u'pmount')[0]
     >>> expander_url = jblack_browser.getLink(
     ...     id='pub%s-expander' % pmount_pub_id).url
     >>> jblack_extra_browser.open(expander_url)
@@ -772,7 +775,7 @@ sources to ensure the binaries are really there.
       pmount
     ...
 
-    >>> iceweasel_pub_id = getPPAPubIDsFor('jblack-friends', 'iceweasel')[0]
+    >>> iceweasel_pub_id = getPPAPubIDsFor('jblack-friends', u'iceweasel')[0]
     >>> expander_url = jblack_browser.getLink(
     ...     id='pub%s-expander' % iceweasel_pub_id).url
     >>> jblack_extra_browser.open(expander_url)
@@ -795,18 +798,16 @@ completely ignored.
     ...    name='field.selected_sources').value = [
     ...    pmount_pub_id, iceweasel_pub_id]
 
-    >>> jblack_browser.getControl(
-    ...     'Destination series').value = ['hoary']
+    >>> jblack_browser.getControl('Destination series').value = ['hoary']
 
     >>> jblack_browser.getControl("Copy Packages").click()
-    >>> messages = get_feedback_messages(jblack_browser.contents)
-    >>> for msg in messages:
-    ...     print msg
-    There is 1 error.
-    The following sources cannot be copied:
-    iceweasel 1.0 in hoary
+    >>> print_feedback_messages(jblack_browser.contents)
+    Requested sync of 2 packages to PPA for James Blackwell Friends.
+    Please allow some time for these to be processed.
+    >>> run_copy_jobs()
+    INFO ... raised CannotCopy: iceweasel 1.0 in hoary
     (same version already has published binaries in the destination archive)
-    pmount 0.1-1 in hoary
+    INFO ... raised CannotCopy: pmount 0.1-1 in hoary
     (same version already has published binaries in the destination archive)
 
 James goes wild and decided to create a new team PPA for his sandbox
@@ -815,8 +816,7 @@ tests.
     >>> jblack_browser.open('http://launchpad.dev/people')
     >>> jblack_browser.getLink('Register a team').click()
 
-    >>> jblack_browser.getControl(
-    ...     name="field.name").value = 'jblack-sandbox'
+    >>> jblack_browser.getControl(name="field.name").value = 'jblack-sandbox'
 
     >>> jblack_browser.getControl(
     ...     'Display Name').value = 'James Blackwell Sandbox'
@@ -824,8 +824,7 @@ tests.
     >>> jblack_browser.getControl("Create").click()
 
     >>> jblack_browser.getLink('Create a new PPA').click()
-    >>> jblack_browser.getControl(
-    ...     name="field.displayname").value = (
+    >>> jblack_browser.getControl(name="field.displayname").value = (
     ...     'PPA for James Blackwell Sandbox')
     >>> jblack_browser.getControl(name="field.accepted").value = True
     >>> jblack_browser.getControl(
@@ -860,8 +859,7 @@ insane because PPA-copy-ui is so cool.
     >>> jblack_browser.getControl(
     ...     'Destination PPA').value = ['jblack-sandbox/ppa']
 
-    >>> jblack_browser.getControl(
-    ...     'Destination series').value = ['']
+    >>> jblack_browser.getControl('Destination series').value = ['']
 
     >>> jblack_browser.getControl(
     ...     name='field.include_binaries').value = ['REBUILD_SOURCES']
@@ -872,15 +870,16 @@ The 'mass-rebuild' is not allowed since only one instance of 'pmount -
 0.1-1' source can be built in a archive, so the copy candidates are
 conflicts and cannot be allowed.
 
-    >>> messages = get_feedback_messages(jblack_browser.contents)
-    >>> for msg in messages:
-    ...     print msg
-    There is 1 error.
-    The following sources cannot be copied:
-    pmount 0.1-1 in grumpy
+    >>> print_feedback_messages(jblack_browser.contents)
+    Requested sync of 3 packages to PPA for James Blackwell Sandbox.
+    Please allow some time for these to be processed.
+    >>> run_copy_jobs()
+    DEBUG Packages copied to PPA for James Blackwell Sandbox:
+    DEBUG pmount 0.1-1 in warty
+    INFO ... raised CannotCopy: pmount 0.1-1 in grumpy
     (same version already building in the destination archive for Warty)
-    pmount 0.1-1 in hoary
-    (same version already building in the  destination archive for Warty)
+    INFO ... raised CannotCopy: pmount 0.1-1 in hoary
+    (same version already building in the destination archive for Warty)
 
 Due to the copy error, nothing was copied to the destination PPA, not
 even the 'warty' source, which was not denied.
@@ -891,7 +890,7 @@ even the 'warty' source, which was not denied.
 
     >>> print_ppa_packages(jblack_browser.contents)
 
-Not yet happy, James goes back to his PPA to check if the copy-package
+Not yet happy, James goes back to his PPA to check if the copy-packages
 interface can be used to resurrect deleted packages.
 
     >>> jblack_browser.open(
@@ -909,12 +908,10 @@ it to 'This PPA', 'The same series'.
     >>> jblack_browser.getControl(name='field.selected_sources').value = (
     ...     [deleted_pub_id])
 
-    >>> print jblack_browser.getControl(
-    ...     'Destination PPA').displayValue
+    >>> print jblack_browser.getControl('Destination PPA').displayValue
     ['This PPA']
 
-    >>> print jblack_browser.getControl(
-    ...     'Destination series').displayValue
+    >>> print jblack_browser.getControl('Destination series').displayValue
     ['The same series']
 
     >>> jblack_browser.getControl(
@@ -925,13 +922,15 @@ source in the wanted destination. So, done, in the next cycle the
 deleted files will be re-published in his archive.
 
     >>> jblack_browser.getControl("Copy Packages").click()
-    >>> messages = get_feedback_messages(jblack_browser.contents)
-    >>> for msg in messages:
-    ...     print msg
-    Packages copied to PPA for James Blackwell:
-    pmount 0.1-1 in hoary
-    pmount-bin 0.1-1 in hoary hppa
-    pmount-bin 0.1-1 in hoary i386
+    >>> print_feedback_messages(jblack_browser.contents)
+    Requested sync of 1 package to PPA for James Blackwell.
+    Please allow some time for this to be processed.
+    >>> run_copy_jobs()
+    DEBUG Packages copied to PPA for James Blackwell:
+    DEBUG pmount 0.1-1 in hoary
+    DEBUG pmount-bin 0.1-1 in hoary hppa
+    DEBUG pmount-bin 0.1-1 in hoary i386
+    >>> jblack_browser.open(jblack_browser.url)
 
     >>> print_ppa_packages(jblack_browser.contents)
     Source          Published   Status     Series           Section  Build
@@ -946,7 +945,6 @@ different version of foo_1.0 in Mark's and Celso's PPAs and a foo_2.0
 in No Privileges' PPA.
 
     >>> login('foo.bar@canonical.com')
-    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> hoary = ubuntu.getSeries('hoary')
 
@@ -984,7 +982,7 @@ in No Privileges' PPA.
     ...     status=PackagePublishingStatus.PUBLISHED)
     >>> [build] = jblack_friends_foo_src.createMissingBuilds()
     >>> from lp.buildmaster.enums import BuildStatus
-    >>> build.status = BuildStatus.FAILEDTOBUILD
+    >>> build.updateStatus(BuildStatus.FAILEDTOBUILD)
 
     >>> flush_database_updates()
     >>> logout()
@@ -1001,21 +999,21 @@ foo_2.0 version to his PPA.
         Status
     foo - 2.0 (changes file) ... Published  Hoary            Base
 
-    >>> foo_pub_id = getPPAPubIDsFor('no-priv', 'foo')[0]
+    >>> foo_pub_id = getPPAPubIDsFor('no-priv', u'foo')[0]
     >>> jblack_browser.getControl(
     ...     name='field.selected_sources').value = [foo_pub_id]
-    >>> jblack_browser.getControl(
-    ...     'Destination PPA').value = ['jblack/ppa']
+    >>> jblack_browser.getControl('Destination PPA').value = ['jblack/ppa']
     >>> jblack_browser.getControl(
     ...     name='field.include_binaries').value = ['COPY_BINARIES']
     >>> jblack_browser.getControl("Copy Packages").click()
-    >>> messages = get_feedback_messages(jblack_browser.contents)
-    >>> for msg in messages:
-    ...     print msg
-    Packages copied to PPA for James Blackwell:
-    foo 2.0 in hoary
-    foo-bin 2.0 in hoary hppa
-    foo-bin 2.0 in hoary i386
+    >>> print_feedback_messages(jblack_browser.contents)
+    Requested sync of 1 package to PPA for James Blackwell.
+    Please allow some time for this to be processed.
+    >>> run_copy_jobs()
+    DEBUG Packages copied to PPA for James Blackwell:
+    DEBUG foo 2.0 in hoary
+    DEBUG foo-bin 2.0 in hoary hppa
+    DEBUG foo-bin 2.0 in hoary i386
 
 James tries to copy some of Celso's packages that are older than
 the ones in his own PPA. He is not allowed to copy these older
@@ -1033,20 +1031,18 @@ packages since they would not be published in the destination anyway.
     iceweasel...(...) 2007-07-09  Published  Warty            Editors  i386
     pmount - 0.1-1    2007-07-09  Published  Warty            Editors
 
-    >>> foo_pub_id = getPPAPubIDsFor('cprov', 'foo')[0]
+    >>> foo_pub_id = getPPAPubIDsFor('cprov', u'foo')[0]
     >>> jblack_browser.getControl(
     ...     name='field.selected_sources').value = [foo_pub_id]
-    >>> jblack_browser.getControl(
-    ...     'Destination PPA').value = ['jblack/ppa']
+    >>> jblack_browser.getControl('Destination PPA').value = ['jblack/ppa']
     >>> jblack_browser.getControl(
     ...     name='field.include_binaries').value = ['COPY_BINARIES']
     >>> jblack_browser.getControl("Copy Packages").click()
-    >>> messages = get_feedback_messages(jblack_browser.contents)
-    >>> for msg in messages:
-    ...     print msg
-    There is 1 error.
-    The following source cannot be copied:
-    foo 1.1 in hoary
+    >>> print_feedback_messages(jblack_browser.contents)
+    Requested sync of 1 package to PPA for James Blackwell.
+    Please allow some time for this to be processed.
+    >>> run_copy_jobs()
+    INFO ... raised CannotCopy: foo 1.1 in hoary
     (version older than the foo 2.0 in hoary published in hoary)
 
 However if he copies it to another suite is just works (tm) since PPAs
@@ -1054,20 +1050,19 @@ do not enforce coherent version ordering across suites.
 
     >>> jblack_browser.getControl(
     ...     name='field.selected_sources').value = [foo_pub_id]
-    >>> jblack_browser.getControl(
-    ...     'Destination PPA').value = ['jblack/ppa']
-    >>> jblack_browser.getControl(
-    ...     'Destination series').value = ['warty']
+    >>> jblack_browser.getControl('Destination PPA').value = ['jblack/ppa']
+    >>> jblack_browser.getControl('Destination series').value = ['warty']
     >>> jblack_browser.getControl(
     ...     name='field.include_binaries').value = ['COPY_BINARIES']
     >>> jblack_browser.getControl("Copy Packages").click()
-    >>> messages = get_feedback_messages(jblack_browser.contents)
-    >>> for msg in messages:
-    ...     print msg
-    Packages copied to PPA for James Blackwell:
-    foo 1.1 in warty
-    foo-bin 1.1 in warty hppa
-    foo-bin 1.1 in warty i386
+    >>> print_feedback_messages(jblack_browser.contents)
+    Requested sync of 1 package to PPA for James Blackwell.
+    Please allow some time for this to be processed.
+    >>> run_copy_jobs()
+    DEBUG Packages copied to PPA for James Blackwell:
+    DEBUG foo 1.1 in warty
+    DEBUG foo-bin 1.1 in warty hppa
+    DEBUG foo-bin 1.1 in warty i386
 
     >>> jblack_browser.open(
     ...     'http://launchpad.dev/~jblack/+archive/ppa/+packages')
@@ -1094,22 +1089,19 @@ to copy the *same* version with different contents to grumpy in his PPA.
     foo - 1.1 (changes file) ...   Published  Hoary            Base
     iceweasel...(...) 2007-07-09  Published  Breezy-autotest  Editors
 
-    >>> foo_pub_id = getPPAPubIDsFor('mark', 'foo')[0]
+    >>> foo_pub_id = getPPAPubIDsFor('mark', u'foo')[0]
     >>> jblack_browser.getControl(
     ...     name='field.selected_sources').value = [foo_pub_id]
-    >>> jblack_browser.getControl(
-    ...     'Destination PPA').value = ['jblack/ppa']
-    >>> jblack_browser.getControl(
-    ...     'Destination series').value = ['grumpy']
+    >>> jblack_browser.getControl('Destination PPA').value = ['jblack/ppa']
+    >>> jblack_browser.getControl('Destination series').value = ['grumpy']
     >>> jblack_browser.getControl(
     ...     name='field.include_binaries').value = ['COPY_BINARIES']
     >>> jblack_browser.getControl("Copy Packages").click()
-    >>> messages = get_feedback_messages(jblack_browser.contents)
-    >>> for msg in messages:
-    ...     print msg
-    There is 1 error.
-    The following source cannot be copied:
-    foo 1.1 in hoary
+    >>> print_feedback_messages(jblack_browser.contents)
+    Requested sync of 1 package to PPA for James Blackwell.
+    Please allow some time for this to be processed.
+    >>> run_copy_jobs()
+    INFO ... raised CannotCopy: foo 1.1 in hoary
     (a different source with the same version is published in the
     destination archive)
 
@@ -1131,21 +1123,19 @@ But James doesn't think straight, he sees that foo-9.9 failed to build
 in i386, but even though, he tries to copy it including binaries. He
 is told that the sources cannot be copied.
 
-    >>> foo_pub_id = getPPAPubIDsFor('jblack-friends', 'foo')[0]
+    >>> foo_pub_id = getPPAPubIDsFor('jblack-friends', u'foo')[0]
     >>> jblack_browser.getControl(
     ...     name='field.selected_sources').value = [foo_pub_id]
-    >>> jblack_browser.getControl(
-    ...     'Destination PPA').value = ['jblack/ppa']
-    >>> jblack_browser.getControl(
-    ...     'Destination series').value = ['grumpy']
+    >>> jblack_browser.getControl('Destination PPA').value = ['jblack/ppa']
+    >>> jblack_browser.getControl('Destination series').value = ['grumpy']
     >>> jblack_browser.getControl(
     ...     name='field.include_binaries').value = ['COPY_BINARIES']
     >>> jblack_browser.getControl("Copy Packages").click()
-    >>> messages = get_feedback_messages(jblack_browser.contents)
-    >>> for msg in messages:
-    ...     print msg
-    There is 1 error.
-    The following source cannot be copied:
+    >>> print_feedback_messages(jblack_browser.contents)
+    Requested sync of 1 package to PPA for James Blackwell.
+    Please allow some time for this to be processed.
+    >>> run_copy_jobs()
+    INFO ... raised CannotCopy:
     foo 9.9 in hoary (source has no binaries to be copied)
 
 No game, no matter what he tries, James can't break PPAs.

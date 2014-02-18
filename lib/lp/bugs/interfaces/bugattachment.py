@@ -1,8 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213
-
 """Bug attachment interfaces."""
 
 __metaclass__ = type
@@ -36,10 +34,10 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
-from canonical.launchpad.interfaces.launchpad import IHasBug
-from lp.services.messages.interfaces.message import IMessage
+from lp import _
+from lp.bugs.interfaces.hasbug import IHasBug
 from lp.services.fields import Title
+from lp.services.messages.interfaces.message import IMessage
 
 
 class BugAttachmentType(DBEnumeratedType):

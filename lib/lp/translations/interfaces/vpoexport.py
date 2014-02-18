@@ -1,7 +1,5 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-# pylint: disable-msg=E0211,E0213
-
 """Interfaces for efficient translation file exports."""
 
 __metaclass__ = type
@@ -19,7 +17,7 @@ from zope.schema import (
     Text,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.translations.interfaces.pofile import IPOFile
 from lp.translations.interfaces.potmsgset import IPOTMsgSet
 from lp.translations.interfaces.translations import TranslationConstants

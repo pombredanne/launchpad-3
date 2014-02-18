@@ -14,22 +14,24 @@ from httplib import (
     UNAUTHORIZED,
     )
 
-from canonical.testing.layers import FunctionalLayer
 from lp.registry.errors import (
     CannotTransitionToCountryMirror,
+    CommercialSubscribersOnly,
     DeleteSubscriptionError,
     DistroSeriesDifferenceError,
+    InclusiveTeamLinkageError,
     JoinNotAllowed,
     NameAlreadyTaken,
-    OpenTeamLinkageError,
     PPACreationError,
     PrivatePersonLinkageError,
+    TeamMembershipPolicyError,
     TeamMembershipTransitionError,
-    TeamSubscriptionPolicyError,
     UserCannotChangeMembershipSilently,
     UserCannotSubscribePerson,
     )
+from lp.registry.interfaces.person import ImmutableVisibilityError
 from lp.testing import TestCase
+from lp.testing.layers import FunctionalLayer
 from lp.testing.views import create_webservice_error_view
 
 
@@ -38,8 +40,8 @@ class TestWebServiceErrors(TestCase):
 
     layer = FunctionalLayer
 
-    def test_OpenTeamLinkageError_forbidden(self):
-        error_view = create_webservice_error_view(OpenTeamLinkageError())
+    def test_InclusiveTeamLinkageError_forbidden(self):
+        error_view = create_webservice_error_view(InclusiveTeamLinkageError())
         self.assertEqual(FORBIDDEN, error_view.status)
 
     def test_PersonLinkageError_forbidden(self):
@@ -54,9 +56,9 @@ class TestWebServiceErrors(TestCase):
         error_view = create_webservice_error_view(JoinNotAllowed())
         self.assertEqual(BAD_REQUEST, error_view.status)
 
-    def test_TeamSubscriptionPolicyError_bad_request(self):
+    def test_TeamMembershipPolicyError_bad_request(self):
         error_view = create_webservice_error_view(
-            TeamSubscriptionPolicyError())
+            TeamMembershipPolicyError())
         self.assertEqual(BAD_REQUEST, error_view.status)
 
     def test_TeamMembershipTransitionError_bad_request(self):
@@ -73,7 +75,7 @@ class TestWebServiceErrors(TestCase):
         error_view = create_webservice_error_view(DeleteSubscriptionError())
         self.assertEqual(BAD_REQUEST, error_view.status)
 
-    def test_UserCannotSubscribePerson_bad_request(self):
+    def test_UserCannotSubscribePerson_authorised(self):
         error_view = create_webservice_error_view(UserCannotSubscribePerson())
         self.assertEqual(UNAUTHORIZED, error_view.status)
 
@@ -82,7 +84,7 @@ class TestWebServiceErrors(TestCase):
             CannotTransitionToCountryMirror())
         self.assertEqual(BAD_REQUEST, error_view.status)
 
-    def test_UserCannotChangeMembershipSilently_bad_request(self):
+    def test_UserCannotChangeMembershipSilently_authorised(self):
         error_view = create_webservice_error_view(
             UserCannotChangeMembershipSilently())
         self.assertEqual(UNAUTHORIZED, error_view.status)
@@ -90,3 +92,12 @@ class TestWebServiceErrors(TestCase):
     def test_NameAlreadyTaken_bad_request(self):
         error_view = create_webservice_error_view(NameAlreadyTaken())
         self.assertEqual(CONFLICT, error_view.status)
+
+    def test_CommercialSubscribersOnly_forbidden(self):
+        error_view = create_webservice_error_view(CommercialSubscribersOnly())
+        self.assertEqual(FORBIDDEN, error_view.status)
+
+    def test_ImmutableVisibilityError_forbidden(self):
+        error_view = create_webservice_error_view(
+            ImmutableVisibilityError())
+        self.assertEqual(FORBIDDEN, error_view.status)

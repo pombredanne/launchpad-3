@@ -11,10 +11,10 @@
       <a tal:replace="structure watch/fmt:external-link" />
       <tal:block tal:condition="watch/remotestatus">
         <br />[<span tal:content="watch/remotestatus" />]
-        </tal:block>&nbsp;<a
+        </tal:block><a
         tal:attributes="href watch/fmt:url"
-        class="sprite edit" alt="Change watch details"
-        ><span class="invisible-link">[edit]</span></a>
+        class="sprite edit action-icon" title="Change watch details"
+        >Edit</a>
     </li>
   </ul>
   <p>Bug watches keep track of this bug in other bug trackers.</p>

@@ -1,17 +1,12 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0611,W0212
-
 __metaclass__ = type
 __all__ = ['BranchSubscription']
 
 from sqlobject import ForeignKey
 from zope.interface import implements
 
-from canonical.database.constants import DEFAULT
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase
 from lp.code.enums import (
     BranchSubscriptionDiffSize,
     BranchSubscriptionNotificationLevel,
@@ -23,6 +18,9 @@ from lp.code.interfaces.branchtarget import IHasBranchTarget
 from lp.code.security import BranchSubscriptionEdit
 from lp.registry.interfaces.person import validate_person
 from lp.registry.interfaces.role import IPersonRoles
+from lp.services.database.constants import DEFAULT
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.sqlbase import SQLBase
 
 
 class BranchSubscription(SQLBase):

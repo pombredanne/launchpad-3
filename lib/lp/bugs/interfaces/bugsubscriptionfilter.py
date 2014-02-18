@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Bug subscription filter interfaces."""
@@ -30,15 +30,14 @@ from zope.schema import (
     Text,
     )
 
-from canonical.launchpad import _
-from lp.bugs.enum import BugNotificationLevel
+from lp import _
+from lp.app.enums import InformationType
+from lp.bugs.enums import BugNotificationLevel
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskStatus,
     )
-from lp.bugs.interfaces.structuralsubscription import (
-    IStructuralSubscription,
-    )
+from lp.bugs.interfaces.structuralsubscription import IStructuralSubscription
 from lp.services.fields import (
     PersonChoice,
     SearchTag,
@@ -101,6 +100,13 @@ class IBugSubscriptionFilterAttributes(Interface):
             title=_("The tags interested in"),
             required=True, default=frozenset(),
             value_type=SearchTag()))
+
+    information_types = exported(
+        FrozenSet(
+            title=_("The information types interested in (empty for all)"),
+            required=True, default=frozenset(),
+            value_type=Choice(
+                title=_('Information type'), vocabulary=InformationType)))
 
 
 class IBugSubscriptionFilterMethodsPublic(Interface):

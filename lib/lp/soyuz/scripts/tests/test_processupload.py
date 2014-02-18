@@ -12,9 +12,9 @@ import unittest
 
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.services.config import config
 from lp.services.scripts.interfaces.scriptactivity import IScriptActivitySet
+from lp.testing.layers import LaunchpadZopelessLayer
 
 
 class TestProcessUpload(unittest.TestCase):
@@ -73,6 +73,9 @@ class TestProcessUpload(unittest.TestCase):
         # just to check if local assertion is working as expect.
         self.assertRaises(AssertionError, self.assertQueuePath, 'foobar')
 
+        # Explicitly mark the database dirty.
+        self.layer.force_dirty_database()
+
     def testTopLevelLockFile(self):
         """Try a simple process-upload run.
 
@@ -93,7 +96,7 @@ class TestProcessUpload(unittest.TestCase):
             'INFO    Creating lockfile: '
             '/var/lock/process-upload-insecure.lock' in err.splitlines())
         self.assert_(
-            'DEBUG   Lockfile /var/lock/process-upload-insecure.lock in use'
+            'INFO    Lockfile /var/lock/process-upload-insecure.lock in use'
             in err.splitlines())
 
         # release the locally acquired lockfile

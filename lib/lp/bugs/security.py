@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Security adapters for the bugs module."""
@@ -6,11 +6,6 @@
 __metaclass__ = type
 __all__ = []
 
-from zope.component import getUtility
-
-from canonical.launchpad.interfaces.launchpad import IHasBug
-from lp.services.messages.interfaces.message import IMessage
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.security import (
     AnonymousAuthorization,
     AuthorizationBase,
@@ -26,9 +21,10 @@ from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from lp.bugs.interfaces.bugtask import IBugTaskDelete
 from lp.bugs.interfaces.bugtracker import IBugTracker
 from lp.bugs.interfaces.bugwatch import IBugWatch
+from lp.bugs.interfaces.hasbug import IHasBug
 from lp.bugs.interfaces.structuralsubscription import IStructuralSubscription
 from lp.registry.interfaces.role import IHasOwner
-from lp.services.features import getFeatureFlag
+from lp.services.messages.interfaces.message import IMessage
 
 
 class EditBugNominationStatus(AuthorizationBase):
@@ -62,8 +58,6 @@ class DeleteBugTask(AuthorizationBase):
         """Check that a user may delete a bugtask.
 
         A user may delete a bugtask if:
-         - The disclosure.delete_bugtask.enabled feature flag is enabled,
-         and they are:
          - project maintainer
          - task creator
          - bug supervisor
@@ -72,13 +66,8 @@ class DeleteBugTask(AuthorizationBase):
             return False
 
         # Admins can always delete bugtasks.
-        if user.inTeam(getUtility(ILaunchpadCelebrities).admin):
+        if user.in_admin:
             return True
-
-        delete_allowed = bool(getFeatureFlag(
-            'disclosure.delete_bugtask.enabled'))
-        if not delete_allowed:
-            return False
 
         bugtask = self.obj
         owner = None
@@ -197,7 +186,7 @@ class EditBugSubscription(AuthorizationBase):
          - They are the owner of the team that owns the subscription.
          - They are an admin of the team that owns the subscription.
         """
-        if self.obj.person.isTeam():
+        if self.obj.person.is_team:
             return (
                 self.obj.person.teamowner == user.person or
                 user.person in self.obj.person.adminmembers)
@@ -241,8 +230,7 @@ class AdminBugWatch(AuthorizationBase):
 
     def checkAuthenticated(self, user):
         return (
-            user.in_admin or
-            user.in_launchpad_developers)
+            user.in_admin or user.in_launchpad_developers)
 
 
 class EditStructuralSubscription(AuthorizationBase):

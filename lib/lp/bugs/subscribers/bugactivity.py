@@ -10,8 +10,6 @@ from zope.schema.interfaces import IField
 from zope.schema.vocabulary import getVocabularyRegistry
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.constants import UTC_NOW
-from canonical.database.sqlbase import block_implicit_flushes
 from lp.bugs.adapters.bugchange import (
     BugTaskAdded,
     BugTaskDeleted,
@@ -20,14 +18,15 @@ from lp.bugs.adapters.bugchange import (
     CveLinkedToBug,
     CveUnlinkedFromBug,
     )
+from lp.bugs.enums import BugNotificationLevel
 from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugactivity import IBugActivitySet
+from lp.registry.enums import PersonVisibility
 from lp.registry.interfaces.milestone import IMilestone
-from lp.registry.interfaces.person import (
-    IPerson,
-    PersonVisibility,
-    )
+from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.productrelease import IProductRelease
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.sqlbase import block_implicit_flushes
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 
 
@@ -102,7 +101,9 @@ def record_bug_added(bug, object_created_event):
         person=IPerson(object_created_event.user),
         whatchanged="bug",
         message="added bug")
-    bug.addCommentNotification(bug.initial_message, activity=activity)
+    bug.addCommentNotification(
+        bug.initial_message, activity=activity,
+        level=BugNotificationLevel.LIFECYCLE)
 
 
 @block_implicit_flushes

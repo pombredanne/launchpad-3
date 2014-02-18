@@ -51,7 +51,7 @@ shown. There are only two columns because teams cannot have karma.
     Launchpad Beta Testers       launchpad-beta-testers
     Launchpad Buildd Admins      launchpad-buildd-admins
     Launchpad Developers         launchpad
-    Launchpad Users              launchpad-users
+    Launchpad PPA Self Admins    launchpad-ppa-self-admins
 
 Restrict the search to people and only individuals are listed.
 

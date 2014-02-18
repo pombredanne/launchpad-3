@@ -74,10 +74,6 @@ Signatures are identified by paragraphs with a starting line like '--'.
 The entire content of the paragraph is wrapped by a tag of 'foldable'
 class.
 
-    >>> # XXX sinzui 2007-06-14 bug 120425
-    >>> # Pagetests cannot test CSS and JS behaviour.
-    >>> # We can only check that the markup includes the hooks
-    >>> # for the style and script.
     >>> print text.findAll('p')[-1]
     <p><span class="foldable">--...
     &lt;email address hidden&gt;<br />

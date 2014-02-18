@@ -5,8 +5,7 @@ __metaclass__ = type
 
 from urllib import urlopen
 
-from canonical.config import config
-
+from lp.services.config import config
 from lp.testing import TestCase
 from lp.testing.keyserver import KeyServerTac
 from lp.testing.keyserver.web import GREETING

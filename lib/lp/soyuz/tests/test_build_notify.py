@@ -3,22 +3,18 @@
 
 __metaclass__ = type
 
-from datetime import (
-    datetime,
-    timedelta,
-    )
-import pytz
+from datetime import timedelta
 from textwrap import dedent
+
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.launchpad.webapp import canonical_url
-from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.app.browser.tales import DurationFormatterAPI
 from lp.archivepublisher.utils import get_ppa_reference
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.config import config
+from lp.services.webapp import canonical_url
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.publishing import PackagePublishingPocket
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
@@ -26,6 +22,7 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.testing.mail_helpers import pop_notifications
 from lp.testing.sampledata import ADMIN_EMAIL
 
@@ -38,11 +35,10 @@ class TestBuildNotify(TestCaseWithFactory):
         super(TestBuildNotify, self).setUp()
         self.admin = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)
         # Create all of the items we need to create builds
-        self.pf = self.factory.makeProcessorFamily()
-        pf_proc = self.pf.addProcessor(self.factory.getUniqueString(), '', '')
+        self.processor = self.factory.makeProcessor()
         self.distroseries = self.factory.makeDistroSeries()
         self.das = self.factory.makeDistroArchSeries(
-            distroseries=self.distroseries, processorfamily=self.pf,
+            distroseries=self.distroseries, processor=self.processor,
             supports_virtualized=True)
         self.creator = self.factory.makePerson(email='test@example.com')
         self.gpgkey = self.factory.makeGPGKey(owner=self.creator)
@@ -58,7 +54,8 @@ class TestBuildNotify(TestCaseWithFactory):
             self.publisher.prepareBreezyAutotest()
             self.distroseries.nominatedarchindep = self.das
             self.publisher.addFakeChroots(distroseries=self.distroseries)
-            self.builder = self.factory.makeBuilder(processor=pf_proc)
+            self.builder = self.factory.makeBuilder(
+                processors=[self.processor])
             for member in buildd_admins.activemembers:
                 self.buildd_admins_email.append(member.preferredemail.email)
         self.builds = []
@@ -74,15 +71,15 @@ class TestBuildNotify(TestCaseWithFactory):
             spph.sourcepackagerelease.dscsigningkey = self.gpgkey
             [build] = spph.createMissingBuilds()
             with person_logged_in(self.admin):
-                build.status = status
-                build.builder = self.builder
+                build.updateStatus(BuildStatus.BUILDING, builder=self.builder)
+                build.updateStatus(status,
+                    date_finished=(
+                        build.date_started + timedelta(
+                            minutes=5 * (status.value + 1))))
                 if status != BuildStatus.BUILDING:
                     build.buildqueue_record.destroySelf()
                 else:
                     build.buildqueue_record.builder = self.builder
-                build.date_started = datetime.now(pytz.UTC)
-                build.date_finished = build.date_started + timedelta(
-                    minutes=5 * (status.value + 1))
             self.builds.append(build)
 
     def _assert_mail_is_correct(self, build, notification, ppa=False):
@@ -100,7 +97,6 @@ class TestBuildNotify(TestCaseWithFactory):
             self.assertEquals(
                 get_ppa_reference(self.ppa), notification['X-Launchpad-PPA'])
         body = notification.get_payload(decode=True)
-        duration = DurationFormatterAPI(build.duration).approximateduration()
         build_log = 'None'
         if ppa is True:
             archive = '%s PPA' % get_ppa_reference(build.archive)
@@ -123,6 +119,9 @@ class TestBuildNotify(TestCaseWithFactory):
             duration = 'uploading'
             build_log = 'see builder page'
             builder = 'not available'
+        else:
+            duration = DurationFormatterAPI(
+                build.duration).approximateduration()
         expected_body = dedent("""
          * Source Package: %s
          * Version: %s
@@ -324,7 +323,7 @@ class TestBuildNotify(TestCaseWithFactory):
         actual_emails = [n['To'] for n in notifications]
         self.assertEquals(self.buildd_admins_email, actual_emails)
         # And undo what we just did.
-        config_data = config.pop('notify_owner')
+        config.pop('notify_owner')
 
     def test_build_notification_supresses_mail(self):
         # When the 'build_notification' config option is False, we don't
@@ -340,7 +339,7 @@ class TestBuildNotify(TestCaseWithFactory):
         notifications = pop_notifications()
         self.assertEquals(0, len(notifications))
         # And undo what we just did.
-        config_data = config.pop('send_build_notification')
+        config.pop('send_build_notification')
 
     def test_sponsored_upload_notification(self):
         # If the signing key is different to the creator, they are both

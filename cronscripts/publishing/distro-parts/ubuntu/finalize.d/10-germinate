@@ -1,6 +1,0 @@
-#!/bin/sh
-
-if [ "$SECURITY_UPLOAD_ONLY" != "yes" ]
-then
-    cron.germinate || /bin/true
-fi

@@ -5,34 +5,52 @@
 
 __metaclass__ = type
 
-from unittest import TestCase
-
 from zope.component import getUtility
 
-from canonical.launchpad.ftests import (
-    login,
-    logout,
-    )
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.app.enums import InformationType
 from lp.blueprints.interfaces.specification import ISpecificationSet
-from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.projectgroup import IProjectGroupSet
-from lp.registry.vocabularies import MilestoneVocabulary
-from lp.testing.factory import LaunchpadObjectFactory
+from lp.registry.vocabularies import (
+    MilestoneVocabulary,
+    MilestoneWithDateExpectedVocabulary,
+    )
+from lp.testing import (
+    admin_logged_in,
+    person_logged_in,
+    TestCaseWithFactory,
+    )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
-class TestMilestoneVocabulary(TestCase):
-    """Test that the BranchVocabulary behaves as expected."""
+class TestMilestoneVocabulary(TestCaseWithFactory):
+    """Test that the MilestoneVocabulary behaves as expected."""
+
     layer = DatabaseFunctionalLayer
 
-    def setUp(self):
-        login('test@canonical.com')
+    def test_project_group_does_not_show_nonpublic_products(self):
+        # Milestones for a projectgroup should not include those on an
+        # associated private product.
+        owner = self.factory.makePerson()
+        group = self.factory.makeProject(owner=owner)
+        public = self.factory.makeProduct(project=group, owner=owner)
+        private = self.factory.makeProduct(project=group, owner=owner,
+            information_type=InformationType.PROPRIETARY)
+        with person_logged_in(owner):
+            m1 = self.factory.makeMilestone(name='public', product=public)
+            m2 = self.factory.makeMilestone(name='private', product=private)
+        vocabulary = MilestoneVocabulary(group)
+        expected = [m1.title]
+        listing = [term.title for term in vocabulary]
+        self.assertEqual(expected, listing)
 
-    def tearDown(self):
-        logout()
+        with person_logged_in(owner):
+            vocabulary = MilestoneVocabulary(group)
+            expected = [m1.title, m2.title]
+            listing = [term.title for term in vocabulary]
+            self.assertEqual(expected, listing)
 
     def testProductMilestoneVocabulary(self):
         """Test of MilestoneVocabulary for a product."""
@@ -73,74 +91,6 @@ class TestMilestoneVocabulary(TestCase):
             [term.title for term in vocabulary],
             [u'Debian 3.1', u'Debian 3.1-rc1'])
 
-    def testUpstreamBugTaskMilestoneVocabulary(self):
-        """Test of MilestoneVocabulary for a upstraem bugtask."""
-        bugtask = getUtility(IBugTaskSet).get(2)
-        firefox = getUtility(IProductSet).getByName('firefox')
-        self.assertEqual(bugtask.product, firefox)
-        vocabulary = MilestoneVocabulary(bugtask)
-        self.assertEqual(
-            [term.title for term in vocabulary], [u'Mozilla Firefox 1.0'])
-
-    def testDistributionBugTaskMilestoneVocabulary(self):
-        """Test of MilestoneVocabulary for a distribution."""
-        bugtask = getUtility(IBugTaskSet).get(4)
-        debian = getUtility(IDistributionSet).getByName('debian')
-        self.assertEqual(bugtask.distribution, debian)
-        vocabulary = MilestoneVocabulary(bugtask)
-        self.assertEqual(
-            [term.title for term in vocabulary],
-            [u'Debian 3.1', u'Debian 3.1-rc1'])
-
-    def testDistroseriesBugTaskMilestoneVocabulary(self):
-        """Test of MilestoneVocabulary for a distroseries."""
-        bugtask = getUtility(IBugTaskSet).get(18)
-        debian = getUtility(IDistributionSet).getByName('debian')
-        woody = debian.getSeries('woody')
-        self.assertEqual(bugtask.distroseries, woody)
-        vocabulary = MilestoneVocabulary(bugtask)
-        self.assertEqual(
-            [term.title for term in vocabulary],
-            [u'Debian 3.1', u'Debian 3.1-rc1'])
-
-    def testProductseriesBugTaskMilestoneVocabulary(self):
-        """Test of MilestoneVocabulary for a productseries."""
-        bugtask = getUtility(IBugTaskSet).get(29)
-        firefox = getUtility(IProductSet).getByName('firefox')
-        series_1_0 = firefox.getSeries('1.0')
-        self.assertEqual(bugtask.productseries, series_1_0)
-        vocabulary = MilestoneVocabulary(bugtask)
-        self.assertEqual(
-            [term.title for term in vocabulary], [u'Mozilla Firefox 1.0'])
-
-    def testDistributionsourcepackageBugTaskMilestoneVocabulary(self):
-        """Test of MilestoneVocabulary for a productseries."""
-        factory = LaunchpadObjectFactory()
-        debian = getUtility(IDistributionSet).getByName('debian')
-        distro_sourcepackage = factory.makeDistributionSourcePackage(
-            distribution=debian)
-        factory.makeSourcePackagePublishingHistory(
-            distroseries=debian.currentseries,
-            sourcepackagename=distro_sourcepackage.sourcepackagename)
-        bugtask = factory.makeBugTask(target=distro_sourcepackage)
-        vocabulary = MilestoneVocabulary(bugtask)
-        self.assertEqual(
-            [term.title for term in vocabulary],
-            [u'Debian 3.1', u'Debian 3.1-rc1'])
-
-    def testSourcepackageBugTaskMilestoneVocabulary(self):
-        """Test of MilestoneVocabulary for a productseries."""
-        factory = LaunchpadObjectFactory()
-        debian = getUtility(IDistributionSet).getByName('debian')
-        woody = debian.getSeries('woody')
-        sourcepackage = factory.makeSourcePackage(
-            distroseries=woody)
-        bugtask = factory.makeBugTask(target=sourcepackage)
-        vocabulary = MilestoneVocabulary(bugtask)
-        self.assertEqual(
-            [term.title for term in vocabulary],
-            [u'Debian 3.1', u'Debian 3.1-rc1'])
-
     def testSpecificationMilestoneVocabulary(self):
         """Test of MilestoneVocabulary for a specification."""
         spec = getUtility(ISpecificationSet).get(1)
@@ -160,3 +110,24 @@ class TestMilestoneVocabulary(TestCase):
         self.assertEqual(
             [term.title for term in vocabulary],
             [u'Debian 3.1', u'Debian 3.1-rc1', u'Mozilla Firefox 1.0'])
+
+
+class TestMilestoneWithDateExpectedVocabulary(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_milestone_with_date_expected(self):
+        firefox = getUtility(IProductSet).getByName('firefox')
+        vocabulary = MilestoneWithDateExpectedVocabulary(firefox)
+        self.assertEqual(
+            [term.title for term in vocabulary],
+            [u'Mozilla Firefox 1.0 (2056-10-16)'])
+
+    def test_milestone_without_date_expected(self):
+        evolution = getUtility(IProductSet).getByName('evolution')
+        series = evolution.getSeries('trunk')
+        with admin_logged_in():
+            series.newMilestone(name='3.0', dateexpected=None)
+        vocabulary = MilestoneWithDateExpectedVocabulary(evolution)
+        self.assertEqual(
+            [term.title for term in vocabulary], ['Evolution 3.0'])

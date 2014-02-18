@@ -14,11 +14,11 @@ from bzrlib import (
     )
 from bzrlib.branch import Branch
 from bzrlib.bzrdir import format_registry
+from bzrlib.errors import AppendRevisionsOnlyViolation
 from bzrlib.remote import RemoteBranch
 from bzrlib.tests import (
     multiply_tests,
     test_server,
-    TestCase,
     TestCaseWithTransport,
     TestLoader,
     TestNotApplicable,
@@ -33,10 +33,12 @@ from lp.codehosting.bzrutils import (
     DenyingServer,
     get_branch_stacked_on_url,
     get_vfs_format_classes,
+    install_oops_handler,
     is_branch_stackable,
     remove_exception_logging_hook,
     )
 from lp.codehosting.tests.helpers import TestResultWrapper
+from lp.testing import TestCase
 
 
 class TestGetBranchStackedOnURL(TestCaseWithControlDir):
@@ -171,6 +173,17 @@ class TestExceptionLoggingHooks(TestCase):
         self.logException(exception)
         self.assertEqual([(RuntimeError, exception)], exceptions)
 
+    def test_doesnt_call_hook_for_non_important_exception(self):
+        # Some exceptions are exempt from OOPSes.
+        exceptions = []
+
+        self.assertEqual(0, len(self.oopses))
+        hook = install_oops_handler(1000)
+        self.addCleanup(remove_exception_logging_hook, hook)
+        exception = AppendRevisionsOnlyViolation("foo")
+        self.logException(exception)
+        self.assertEqual(0, len(self.oopses))
+
     def test_doesnt_call_hook_when_removed(self):
         # remove_exception_logging_hook removes the hook function, ensuring
         # it's not called when Bazaar logs an exception.
@@ -224,7 +237,9 @@ def load_tests(basic_tests, module, loader):
     get_branch_stacked_on_url_tests = loader.loadTestsFromTestCase(
         TestGetBranchStackedOnURL)
     scenarios = [scenario for scenario in branch_scenarios()
-                 if scenario[0] != 'BranchReferenceFormat']
+                 if scenario[0] not in (
+                     'BranchReferenceFormat', 'GitBranchFormat',
+                     'SvnBranchFormat')]
     multiply_tests(get_branch_stacked_on_url_tests, scenarios, result)
 
     result.addTests(loader.loadTestsFromTestCase(TestIsBranchStackable))

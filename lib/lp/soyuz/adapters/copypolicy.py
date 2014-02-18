@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Copy Policy Classes.
@@ -42,12 +42,16 @@ class BasicCopyPolicy:
         if archive.is_ppa:
             return True
 
-        # If the pocket is RELEASE and we're not frozen then you can
-        # upload to it.  Any other states mean the upload is unapproved.
+        # If the pocket is RELEASE or PROPOSED and we're not frozen then you
+        # can upload to it.  Any other states mean the upload is unapproved.
         #
-        # This check is orthogonal to the
-        # IDistroSeries.canUploadToPocket check.
-        if (pocket == PackagePublishingPocket.RELEASE and
+        # This check is orthogonal to the IArchive.canModifySuite check.
+        auto_approve_pockets = (
+            PackagePublishingPocket.RELEASE,
+            PackagePublishingPocket.PROPOSED,
+            )
+        if (pocket in auto_approve_pockets and
+            distroseries.isUnstable() and
             distroseries.status != SeriesStatus.FROZEN):
             return True
 
@@ -63,7 +67,7 @@ class InsecureCopyPolicy(BasicCopyPolicy):
     def send_email(self, archive):
         if archive.is_ppa:
             return False
-            
+
         return True
 
 

@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for archive."""
@@ -22,14 +22,13 @@ __all__ = [
     'ArchivePackagesView',
     'ArchiveView',
     'ArchiveViewBase',
-    'EnableRestrictedFamiliesMixin',
+    'EnableRestrictedProcessorsMixin',
     'make_archive_vocabulary',
     'PackageCopyingMixin',
     'traverse_named_ppa',
     ]
 
 
-from cgi import escape
 from datetime import (
     datetime,
     timedelta,
@@ -39,9 +38,9 @@ from lazr.restful.utils import smartquote
 import pytz
 from sqlobject import SQLObjectNotFound
 from storm.expr import Desc
-from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
 from zope.formlib import form
+from zope.formlib.widgets import TextAreaWidget
 from zope.interface import (
     implements,
     Interface,
@@ -57,30 +56,10 @@ from zope.schema.vocabulary import (
     SimpleTerm,
     SimpleVocabulary,
     )
-from zope.security.interfaces import Unauthorized
+from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad import _
-from canonical.launchpad.browser.librarian import FileNavigationMixin
-from canonical.launchpad.helpers import english_list
-from canonical.launchpad.webapp import (
-    canonical_url,
-    enabled_with_permission,
-    LaunchpadView,
-    Link,
-    Navigation,
-    stepthrough,
-    )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.badge import HasBadgeBase
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.interfaces import (
-    ICanonicalUrlData,
-    IStructuredString,
-    )
-from canonical.launchpad.webapp.menu import (
-    NavigationMenu,
-    structured,
-    )
+from lp import _
+from lp.app.browser.badge import HasBadgeBase
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -101,20 +80,37 @@ from lp.app.widgets.itemswidgets import (
     )
 from lp.app.widgets.textwidgets import StrippedTextWidget
 from lp.buildmaster.enums import BuildStatus
-from lp.registry.interfaces.person import (
-    IPersonSet,
-    PersonVisibility,
-    )
+from lp.registry.enums import PersonVisibility
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.registry.model.person import Person
 from lp.services.browser_helpers import (
     get_plural_text,
     get_user_agent_distroseries,
     )
-from lp.services.database.bulk import load
-from lp.services.features import getFeatureFlag
+from lp.services.database.bulk import load_related
+from lp.services.helpers import english_list
+from lp.services.job.model.job import Job
+from lp.services.librarian.browser import FileNavigationMixin
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    canonical_url,
+    enabled_with_permission,
+    LaunchpadView,
+    Link,
+    Navigation,
+    stepthrough,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.escaping import structured
+from lp.services.webapp.interfaces import (
+    ICanonicalUrlData,
+    IStructuredString,
+    )
+from lp.services.webapp.menu import NavigationMenu
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.soyuz.adapters.archivedependencies import (
     default_component_dependency_name,
@@ -131,7 +127,6 @@ from lp.soyuz.browser.sourceslist import SourcesListEntriesWidget
 from lp.soyuz.browser.widgets.archive import PPANameWidget
 from lp.soyuz.enums import (
     ArchivePermissionType,
-    ArchivePurpose,
     ArchiveStatus,
     PackageCopyPolicy,
     PackagePublishingStatus,
@@ -153,28 +148,18 @@ from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
 from lp.soyuz.interfaces.packagecopyrequest import IPackageCopyRequestSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
-from lp.soyuz.interfaces.processor import IProcessorFamilySet
+from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status,
     inactive_publishing_status,
     IPublishingSet,
     )
-from lp.soyuz.model.archive import Archive
-from lp.soyuz.model.binarypackagename import BinaryPackageName
-from lp.soyuz.model.publishing import (
-    BinaryPackagePublishingHistory,
-    SourcePackagePublishingHistory,
+from lp.soyuz.model.archive import (
+    Archive,
+    validate_ppa,
     )
-from lp.soyuz.scripts.packagecopier import (
-    check_copy_permissions,
-    do_copy,
-    )
-
-# Feature flag: up to how many package sync requests (inclusive) are to be
-# processed synchronously within the web request?
-# Set to -1 to disable synchronous syncs.
-FEATURE_FLAG_MAX_SYNCHRONOUS_SYNCS = (
-    'soyuz.derived_series.max_synchronous_syncs')
+from lp.soyuz.model.publishing import SourcePackagePublishingHistory
+from lp.soyuz.scripts.packagecopier import check_copy_permissions
 
 
 class ArchiveBadges(HasBadgeBase):
@@ -372,6 +357,8 @@ class ArchiveNavigation(Navigation, FileNavigationMixin,
         if item_type is None or item is None:
             return None
 
+        the_item = None
+        kwargs = {}
         if item_type == 'component':
             # See if "item" is a component name.
             try:
@@ -394,12 +381,27 @@ class ArchiveNavigation(Navigation, FileNavigationMixin,
             if series is not None:
                 the_item = getUtility(IPackagesetSet).getByName(
                     item, distroseries=series)
+        elif item_type == 'pocket':
+            # See if "item" is a pocket name.
+            try:
+                the_item = PackagePublishingPocket.items[item]
+                # Was a 'series' URL param passed?
+                series = get_url_param('series')
+                if series is not None:
+                    # Get the requested distro series.
+                    try:
+                        series = self.context.distribution[series]
+                        kwargs["distroseries"] = series
+                    except NotFoundError:
+                        pass
+            except KeyError:
+                pass
         else:
             the_item = None
 
         if the_item is not None:
             result_set = getUtility(IArchivePermissionSet).checkAuthenticated(
-                user, self.context, permission_type, the_item)
+                user, self.context, permission_type, the_item, **kwargs)
             try:
                 return result_set[0]
             except IndexError:
@@ -435,7 +437,7 @@ class ArchiveMenuMixin:
         text = 'View PPA'
         return Link(canonical_url(self.context), text, icon='info')
 
-    @enabled_with_permission('launchpad.Commercial')
+    @enabled_with_permission('launchpad.Admin')
     def admin(self):
         text = 'Administer archive'
         return Link('+admin', text, icon='edit')
@@ -499,7 +501,7 @@ class ArchiveMenuMixin:
     def delete(self):
         """Display a delete menu option for non-copy archives."""
         text = 'Delete packages'
-        link = Link('+delete-packages', text, icon='edit')
+        link = Link('+delete-packages', text, icon='trash-icon')
 
         # This link should not be available for copy archives or
         # archives without any sources.
@@ -514,7 +516,7 @@ class ArchiveMenuMixin:
     def copy(self):
         """Display a copy menu option for non-copy archives."""
         text = 'Copy packages'
-        link = Link('+copy-packages', text, icon='edit')
+        link = Link('+copy-packages', text, icon='package-sync')
 
         # This link should not be available for copy archives.
         if self.context.is_copy:
@@ -583,9 +585,9 @@ class ArchiveViewBase(LaunchpadView, SourcesListEntriesWidget):
                     "being dispatched.")
             self.request.response.addNotification(structured(notification))
         super(ArchiveViewBase, self).initialize()
-        # Set the archive attribute so SourcesListEntriesWidget can be built
-        # correctly.
+        # Set properties for SourcesListEntriesWidget.
         self.archive = self.context
+        self.sources_list_user = self.user
 
     @cachedproperty
     def private(self):
@@ -610,14 +612,17 @@ class ArchiveViewBase(LaunchpadView, SourcesListEntriesWidget):
         binary_label = '%s binary %s' % (
             number_of_binaries, package_plural(number_of_binaries))
 
-        # Quota is stored in MiB, convert it to bytes.
-        quota = self.context.authorized_size * (2 ** 20)
         used = self.context.estimated_size
-
-        # Calculate the usage factor and limit it to 100%.
-        used_factor = (float(used) / quota)
-        if used_factor > 1:
-            used_factor = 1
+        if self.context.authorized_size:
+            # Quota is stored in MiB, convert it to bytes.
+            quota = self.context.authorized_size * (2 ** 20)
+            # Calculate the usage factor and limit it to 100%.
+            used_factor = (float(used) / quota)
+            if used_factor > 1:
+                used_factor = 1
+        else:
+            quota = 0
+            used_factor = 0
 
         # Calculate the appropriate CSS class to be used with the usage
         # factor. Highlight it (in red) if usage is over 90% of the quota.
@@ -861,9 +866,7 @@ class ArchiveSourcePackageListViewBase(ArchiveViewBase, LaunchpadFormView):
 
         This is after any filtering or overriding of the sources() method.
         """
-        # Trying to use bool(self.filtered_sources) here resulted in bug
-        # 702425 :(
-        return self.filtered_sources.count() > 0
+        return not self.filtered_sources.is_empty()
 
 
 class ArchiveView(ArchiveSourcePackageListViewBase):
@@ -886,7 +889,9 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
     def displayname_edit_widget(self):
         display_name = IArchive['displayname']
         title = "Edit the displayname"
-        return TextLineEditorWidget(self.context, display_name, title, 'h1')
+        return TextLineEditorWidget(
+            self.context, display_name, title, 'h1', max_width='95%',
+            truncate_lines=1)
 
     @property
     def default_series_filter(self):
@@ -997,16 +1002,6 @@ class ArchivePackagesView(ArchiveSourcePackageListViewBase):
     """Detailed packages view for an archive."""
     implements(IArchivePackagesActionMenu)
 
-    def initialize(self):
-        super(ArchivePackagesView, self).initialize()
-        if self.context.private:
-            # To see the +packages page, you must be an uploader, or a
-            # commercial admin.
-            if not check_permission('launchpad.Append', self.context):
-                admins = getUtility(ILaunchpadCelebrities).commercial_admin
-                if not self.user.inTeam(admins):
-                    raise Unauthorized
-
     @property
     def page_title(self):
         return smartquote('Packages in "%s"' % self.context.displayname)
@@ -1027,6 +1022,40 @@ class ArchivePackagesView(ArchiveSourcePackageListViewBase):
         # This property enables menu items to be shared between
         # context and view menues.
         return self.context.is_copy
+
+    @cachedproperty
+    def package_copy_jobs(self):
+        """Return incomplete PCJs targeted at this archive."""
+        job_source = getUtility(IPlainPackageCopyJobSource)
+        ppcjs = job_source.getIncompleteJobsForArchive(self.context)
+
+        # Convert PPCJ into PCJ.
+        # removeSecurityProxy is only used to fetch pcjs objects and preload
+        # related objects.
+        pcjs = [removeSecurityProxy(ppcj).context for ppcj in ppcjs]
+        # Pre-load related Jobs.
+        jobs = load_related(Job, pcjs, ['job_id'])
+        # Pre-load related requesters.
+        load_related(Person, jobs, ['requester_id'])
+        # Pre-load related source archives.
+        load_related(Archive, pcjs, ['source_archive_id'])
+
+        return ppcjs.config(limit=5)
+
+    @cachedproperty
+    def has_pending_copy_jobs(self):
+        return self.package_copy_jobs.any()
+
+    @cachedproperty
+    def pending_copy_jobs_text(self):
+        job_source = getUtility(IPlainPackageCopyJobSource)
+        count = job_source.getIncompleteJobsForArchive(self.context).count()
+        if count > 5:
+            return 'Showing 5 of %s' % count
+    
+    @cachedproperty
+    def has_append_perm(self):
+        return check_permission('launchpad.Append', self.context)
 
 
 class ArchiveSourceSelectionFormView(ArchiveSourcePackageListViewBase):
@@ -1147,7 +1176,7 @@ class ArchivePackageDeletionView(ArchiveSourceSelectionFormView):
         to ensure that it only returns true if there are sources
         that can be deleted in this archive.
         """
-        return bool(self.context.getSourcesForDeletion())
+        return not self.context.getSourcesForDeletion().is_empty()
 
     def validate_delete(self, action, data):
         """Validate deletion parameters.
@@ -1178,20 +1207,15 @@ class ArchivePackageDeletionView(ArchiveSourceSelectionFormView):
         publishing_set.requestDeletion(selected_sources, self.user, comment)
 
         # Present a page notification describing the action.
-        messages = []
-        messages.append(
-            '<p>Source and binaries deleted by %s request:'
-            % self.user.displayname)
+        messages = [structured(
+            '<p>Source and binaries deleted by %s:', self.user.displayname)]
         for source in selected_sources:
-            messages.append('<br/>%s' % source.displayname)
-        messages.append('</p>')
-        # Replace the 'comment' content added by the user via structured(),
-        # so it will be quoted appropriately.
-        messages.append("<p>Deletion comment: %(comment)s</p>")
-
-        notification = "\n".join(messages)
-        self.request.response.addNotification(
-            structured(notification, comment=comment))
+            messages.append(structured('<br/>%s', source.displayname))
+        messages.append(structured(
+            '</p>\n<p>Deletion comment: %s</p>', comment))
+        notification = structured(
+            '\n'.join([msg.escapedtext for msg in messages]))
+        self.request.response.addNotification(notification)
 
         self.setNextURL()
 
@@ -1206,67 +1230,10 @@ class DestinationSeriesDropdownWidget(LaunchpadDropdownWidget):
     _messageNoValue = _("vocabulary-copy-to-same-series", "The same series")
 
 
-def preload_binary_package_names(copies):
-    """Preload `BinaryPackageName`s to speed up display-name construction."""
-    bpn_ids = [
-        copy.binarypackagerelease.binarypackagenameID for copy in copies
-        if isinstance(copy, BinaryPackagePublishingHistory)]
-    load(BinaryPackageName, bpn_ids)
-
-
-def compose_synchronous_copy_feedback(copies, dest_archive, dest_url=None,
-                                      dest_display_name=None):
-    """Compose human-readable feedback after a synchronous copy."""
-    if dest_url is None:
-        dest_url = escape(
-            canonical_url(dest_archive) + '/+packages', quote=True)
-
-    if dest_display_name is None:
-        dest_display_name = escape(dest_archive.displayname)
-
-    if len(copies) == 0:
-        return structured(
-            '<p>All packages already copied to <a href="%s">%s</a>.</p>'
-            % (dest_url, dest_display_name))
-    else:
-        messages = []
-        messages.append(
-            '<p>Packages copied to <a href="%s">%s</a>:</p>'
-            % (dest_url, dest_display_name))
-        messages.append('<ul>')
-        messages.append("\n".join([
-            '<li>%s</li>' % escape(copy) for copy in copies]))
-        messages.append('</ul>')
-        return structured("\n".join(messages))
-
-
-def copy_synchronously(source_pubs, dest_archive, dest_series, dest_pocket,
-                       include_binaries, dest_url=None,
-                       dest_display_name=None, person=None,
-                       check_permissions=True):
-    """Copy packages right now.
-
-    :return: A `structured` with human-readable feedback about the
-        operation.
-    :raises CannotCopy: If `check_permissions` is True and the copy is
-        not permitted.
-    """
-    copies = do_copy(
-        source_pubs, dest_archive, dest_series, dest_pocket, include_binaries,
-        allow_delayed_copies=True, person=person,
-        check_permissions=check_permissions)
-
-    preload_binary_package_names(copies)
-
-    return compose_synchronous_copy_feedback(
-        [copy.displayname for copy in copies], dest_archive, dest_url,
-        dest_display_name)
-
-
 def copy_asynchronously(source_pubs, dest_archive, dest_series, dest_pocket,
                         include_binaries, dest_url=None,
                         dest_display_name=None, person=None,
-                        check_permissions=True):
+                        check_permissions=True, sponsored=None):
     """Schedule jobs to copy packages later.
 
     :return: A `structured` with human-readable feedback about the
@@ -1275,42 +1242,56 @@ def copy_asynchronously(source_pubs, dest_archive, dest_series, dest_pocket,
         not permitted.
     """
     if check_permissions:
-        spns = [
-            spph.sourcepackagerelease.sourcepackagename
-            for spph in source_pubs]
         check_copy_permissions(
-            person, dest_archive, dest_series, dest_pocket, spns)
+            person, dest_archive, dest_series, dest_pocket, source_pubs)
 
     job_source = getUtility(IPlainPackageCopyJobSource)
     for spph in source_pubs:
         job_source.create(
-            spph.source_package_name, spph.archive, dest_archive, dest_series,
+            spph.source_package_name, spph.archive, dest_archive,
+            dest_series if dest_series is not None else spph.distroseries,
             dest_pocket, include_binaries=include_binaries,
             package_version=spph.sourcepackagerelease.version,
             copy_policy=PackageCopyPolicy.INSECURE,
-            requester=person)
+            requester=person, sponsored=sponsored, unembargo=True,
+            source_distroseries=spph.distroseries, source_pocket=spph.pocket)
 
-    return copy_asynchronously_message(len(source_pubs))
+    return copy_asynchronously_message(
+        len(source_pubs), dest_archive, dest_url, dest_display_name)
 
 
-def copy_asynchronously_message(source_pubs_count):
+def copy_asynchronously_message(source_pubs_count, dest_archive, dest_url=None,
+                                dest_display_name=None):
     """Return a message detailing the sync action.
 
     :param source_pubs_count: The number of source pubs requested for syncing.
+    :param dest_archive: The destination IArchive.
+    :param dest_url: The URL of the destination to display in the
+        notification box.  Defaults to the target archive.
+    :param dest_display_name: The text to use for the dest_url link.
+        Defaults to the target archive's display name.
     """
+    if dest_url is None:
+        dest_url = canonical_url(dest_archive) + '/+packages'
+
+    if dest_display_name is None:
+        dest_display_name = dest_archive.displayname
+
     package_or_packages = get_plural_text(
         source_pubs_count, "package", "packages")
     if source_pubs_count == 0:
         return structured(
-            "Requested sync of %s %s.",
-            source_pubs_count, package_or_packages)
+            'Requested sync of %s %s to <a href="%s">%s</a>.',
+            source_pubs_count, package_or_packages, dest_url,
+            dest_display_name)
     else:
         this_or_these = get_plural_text(
             source_pubs_count, "this", "these")
         return structured(
-            "Requested sync of %s %s.<br />"
+            'Requested sync of %s %s to <a href="%s">%s</a>.<br />'
             "Please allow some time for %s to be processed.",
-            source_pubs_count, package_or_packages, this_or_these)
+            source_pubs_count, package_or_packages, dest_url,
+            dest_display_name, this_or_these)
 
 
 def render_cannotcopy_as_html(cannotcopy_exception):
@@ -1337,27 +1318,14 @@ def render_cannotcopy_as_html(cannotcopy_exception):
 class PackageCopyingMixin:
     """A mixin class that adds helpers for package copying."""
 
-    def canCopySynchronously(self, source_pubs):
-        """Can we afford to copy `source_pubs` synchronously?"""
-        # Fixed estimate: up to 100 packages can be copied in acceptable
-        # time.  Anything more than that and we go async.
-        limit = getFeatureFlag(FEATURE_FLAG_MAX_SYNCHRONOUS_SYNCS)
-        try:
-            limit = int(limit)
-        except:
-            limit = 100
-
-        return len(source_pubs) <= limit
-
     def do_copy(self, sources_field_name, source_pubs, dest_archive,
                 dest_series, dest_pocket, include_binaries,
                 dest_url=None, dest_display_name=None, person=None,
-                check_permissions=True, force_async=False):
+                check_permissions=True, sponsored_person=None):
         """Copy packages and add appropriate feedback to the browser page.
 
-        This may either copy synchronously, if there are few enough
-        requests to process right now; or asynchronously in which case
-        it will schedule jobs that will be processed by a script.
+        This will copy asynchronously, scheduling jobs that will be
+        processed by a script.
 
         :param sources_field_name: The name of the form field to set errors
             on when the copy fails
@@ -1376,26 +1344,19 @@ class PackageCopyingMixin:
         :param person: The person requesting the copy.
         :param: check_permissions: boolean indicating whether or not the
             requester's permissions to copy should be checked.
-        :param force_async: Force the copy to create package copy jobs and
-            perform the copy asynchronously.
+        :param sponsored_person: An IPerson representing the person being
+            sponsored.
 
         :return: True if the copying worked, False otherwise.
         """
         try:
-            if (force_async == False and
-                    self.canCopySynchronously(source_pubs)):
-                notification = copy_synchronously(
-                    source_pubs, dest_archive, dest_series, dest_pocket,
-                    include_binaries, dest_url=dest_url,
-                    dest_display_name=dest_display_name, person=person,
-                    check_permissions=check_permissions)
-            else:
-                notification = copy_asynchronously(
-                    source_pubs, dest_archive, dest_series, dest_pocket,
-                    include_binaries, dest_url=dest_url,
-                    dest_display_name=dest_display_name, person=person,
-                    check_permissions=check_permissions)
-        except CannotCopy, error:
+            notification = copy_asynchronously(
+                source_pubs, dest_archive, dest_series, dest_pocket,
+                include_binaries, dest_url=dest_url,
+                dest_display_name=dest_display_name, person=person,
+                check_permissions=check_permissions,
+                sponsored=sponsored_person)
+        except CannotCopy as error:
             self.setFieldError(
                 sources_field_name, render_cannotcopy_as_html(error))
             return False
@@ -1408,7 +1369,7 @@ def make_archive_vocabulary(archives):
     terms = []
     for archive in archives:
         token = '%s/%s' % (archive.owner.name, archive.name)
-        label = archive.displayname
+        label = '%s [~%s]' % (archive.displayname, token)
         terms.append(SimpleTerm(archive, token, label))
     return SimpleVocabulary(terms)
 
@@ -1735,7 +1696,8 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
          || FOLLOW_PRIMARY ||    None    ||
 
         When omitted in the form, this widget defaults to 'All ubuntu
-        components' option when rendered.
+        components' option when rendered. Other components, such as 'main',
+        or 'contrib' will be added to the list of options if they are used.
         """
         multiverse = getUtility(IComponentSet)['multiverse']
 
@@ -1757,6 +1719,11 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
             default_value = primary_dependency.component
 
         terms = [all_components, follow_primary]
+        if default_value and default_value != multiverse:
+            current_component = SimpleTerm(
+                default_value, 'OTHER_COMPONENT',
+                _('Unsupported component (%s)' % default_value.name))
+            terms.append(current_component)
         primary_components_vocabulary = SimpleVocabulary(terms)
         current_term = primary_components_vocabulary.getTerm(default_value)
 
@@ -1901,6 +1868,10 @@ class ArchiveActivateView(LaunchpadFormView):
     def ubuntu(self):
         return getUtility(ILaunchpadCelebrities).ubuntu
 
+    @cachedproperty
+    def visible_ppas(self):
+        return self.context.getVisiblePPAs(self.user)
+
     @property
     def initial_values(self):
         """Set up default values for form fields."""
@@ -1939,7 +1910,8 @@ class ArchiveActivateView(LaunchpadFormView):
                 'The default PPA is already activated. Please specify a '
                 'name for the new PPA and resubmit the form.')
 
-        errors = Archive.validatePPA(self.context, proposed_name)
+        errors = validate_ppa(
+            self.context, proposed_name, private=self.is_private_team)
         if errors is not None:
             self.addError(errors)
 
@@ -1951,20 +1923,14 @@ class ArchiveActivateView(LaunchpadFormView):
     @action(_("Activate"), name="activate")
     def save_action(self, action, data):
         """Activate a PPA and moves to its page."""
-
         # 'name' field is omitted from the form data for default PPAs and
         # it's dealt with by IArchive.new(), which will use the default
         # PPA name.
         name = data.get('name', None)
-
-        # XXX cprov 2009-03-27 bug=188564: We currently only create PPAs
-        # for Ubuntu distribution. PPA creation should be revisited when we
-        # start supporting other distribution (debian, mainly).
-        ppa = getUtility(IArchiveSet).new(
-            owner=self.context, purpose=ArchivePurpose.PPA,
-            distribution=self.ubuntu, name=name,
-            displayname=data['displayname'], description=data['description'])
-
+        displayname = data['displayname']
+        description = data['description']
+        ppa = self.context.createPPA(
+            name, displayname, description, private=self.is_private_team)
         self.next_url = canonical_url(ppa)
 
     @property
@@ -2017,8 +1983,14 @@ class BaseArchiveEditView(LaunchpadEditFormView, ArchiveViewBase):
         return canonical_url(self.context)
 
     def validate_save(self, action, data):
-        """Default save validation does nothing."""
-        pass
+        """Check that we're not reenabling a deleted archive.."""
+        form.getWidgetsData(self.widgets, 'field', data)
+
+        # Deleted PPAs can't be reactivated.
+        if ((data.get('enabled') or data.get('publish'))
+            and not self.context.is_active):
+            self.setFieldError(
+                "enabled", "Deleted PPAs can't be enabled.")
 
 
 class ArchiveEditView(BaseArchiveEditView):
@@ -2033,18 +2005,16 @@ class ArchiveEditView(BaseArchiveEditView):
         return 'Edit %s' % self.context.displayname
 
 
-class EnableRestrictedFamiliesMixin:
-    """A mixin that provides enabled_restricted_families field support"""
+class EnableRestrictedProcessorsMixin:
+    """A mixin that provides enabled_restricted_processors field support"""
 
-    def createEnabledRestrictedFamilies(self, description=None):
-        """Creates the 'enabled_restricted_families' field.
-
-        """
+    def createEnabledRestrictedProcessors(self, description=None):
+        """Creates the 'enabled_restricted_processors' field."""
         terms = []
-        for family in getUtility(IProcessorFamilySet).getRestricted():
+        for processor in getUtility(IProcessorSet).getRestricted():
             terms.append(SimpleTerm(
-                family, token=family.name, title=family.title))
-        old_field = IArchive['enabled_restricted_families']
+                processor, token=processor.name, title=processor.title))
+        old_field = IArchive['enabled_restricted_processors']
         return form.Fields(
             List(__name__=old_field.__name__,
                  title=old_field.title,
@@ -2054,56 +2024,32 @@ class EnableRestrictedFamiliesMixin:
                      else description),
                  render_context=self.render_context)
 
-    def validate_enabled_restricted_families(self, data, error_msg):
-        enabled_restricted_families = data['enabled_restricted_families']
-        require_virtualized = data.get('require_virtualized', False)
-        proc_family_set = getUtility(IProcessorFamilySet)
-        if (not require_virtualized and
-            set(enabled_restricted_families) !=
-                set(proc_family_set.getRestricted())):
-            self.setFieldError('enabled_restricted_families', error_msg)
-            self.setFieldError('require_virtualized', error_msg)
 
+class ArchiveAdminView(BaseArchiveEditView, EnableRestrictedProcessorsMixin):
 
-ARCHIVE_ENABLED_RESTRICTED_FAMILITES_ERROR_MSG = (
-    u'Main archives can not be restricted to certain '
-    'architectures unless they are set to build on '
-    'virtualized builders.')
-
-
-class ArchiveAdminView(BaseArchiveEditView, EnableRestrictedFamiliesMixin):
-
-    field_names = ['enabled', 'private', 'commercial', 'require_virtualized',
-                   'build_debug_symbols', 'buildd_secret', 'authorized_size',
-                   'relative_build_score', 'external_dependencies']
+    field_names = [
+        'enabled',
+        'private',
+        'suppress_subscription_notifications',
+        'require_virtualized',
+        'build_debug_symbols',
+        'publish_debug_symbols',
+        'permit_obsolete_series_uploads',
+        'authorized_size',
+        'relative_build_score',
+        'external_dependencies',
+        ]
     custom_widget('external_dependencies', TextAreaWidget, height=3)
-    custom_widget('enabled_restricted_families', LabeledMultiCheckBoxWidget)
+    custom_widget('enabled_restricted_processors', LabeledMultiCheckBoxWidget)
     page_title = 'Administer'
 
     @property
     def label(self):
         return 'Administer %s' % self.context.displayname
 
-    def updateContextFromData(self, data):
-        """Update context from form data.
-
-        If the user did not specify a buildd secret but marked the
-        archive as private, generate a secret for them.
-        """
-        if data['private'] and data['buildd_secret'] is None:
-            # The buildd secret is auto-generated and set when 'private'
-            # is set to True
-            del(data['buildd_secret'])
-        super(ArchiveAdminView, self).updateContextFromData(data)
-
     def validate_save(self, action, data):
-        """Validate the save action on ArchiveAdminView.
-
-        buildd_secret can only, and must, be set for private archives.
-        If the archive is private and the buildd secret is not set it will be
-        generated.
-        """
-        form.getWidgetsData(self.widgets, 'field', data)
+        """Validate the save action on ArchiveAdminView."""
+        super(ArchiveAdminView, self).validate_save(action, data)
 
         if data.get('private') != self.context.private:
             # The privacy is being switched.
@@ -2117,10 +2063,6 @@ class ArchiveAdminView(BaseArchiveEditView, EnableRestrictedFamiliesMixin):
             self.setFieldError(
                 'private',
                 'Private teams may not have public archives.')
-        elif data.get('buildd_secret') is not None and not data['private']:
-            self.setFieldError(
-                'buildd_secret',
-                'Do not specify for non-private archives')
 
         # Check the external_dependencies field.
         ext_deps = data.get('external_dependencies')
@@ -2129,25 +2071,6 @@ class ArchiveAdminView(BaseArchiveEditView, EnableRestrictedFamiliesMixin):
             if len(errors) != 0:
                 error_text = "\n".join(errors)
                 self.setFieldError('external_dependencies', error_text)
-
-        if data.get('commercial') is True and not data['private']:
-            self.setFieldError(
-                'commercial',
-                'Can only set commericial for private archives.')
-
-        enabled_restricted_families = data.get('enabled_restricted_families')
-        require_virtualized = data.get('require_virtualized')
-        proc_family_set = getUtility(IProcessorFamilySet)
-        if (enabled_restricted_families and
-            not require_virtualized and
-            set(enabled_restricted_families) !=
-                set(proc_family_set.getRestricted())):
-            self.setFieldError(
-                'enabled_restricted_families',
-                ARCHIVE_ENABLED_RESTRICTED_FAMILITES_ERROR_MSG)
-            self.setFieldError(
-                'require_virtualized',
-                ARCHIVE_ENABLED_RESTRICTED_FAMILITES_ERROR_MSG)
 
     @property
     def owner_is_private_team(self):
@@ -2161,17 +2084,17 @@ class ArchiveAdminView(BaseArchiveEditView, EnableRestrictedFamiliesMixin):
     @property
     def initial_values(self):
         return {
-            'enabled_restricted_families':
-                self.context.enabled_restricted_families,
+            'enabled_restricted_processors':
+                self.context.enabled_restricted_processors,
             }
 
     def setUpFields(self):
         """Override `LaunchpadEditFormView`.
 
-        See `createEnabledRestrictedFamilies` method.
+        See `createEnabledRestrictedProcessors` method.
         """
         super(ArchiveAdminView, self).setUpFields()
-        self.form_fields += self.createEnabledRestrictedFamilies()
+        self.form_fields += self.createEnabledRestrictedProcessors()
 
 
 class ArchiveDeleteView(LaunchpadFormView):

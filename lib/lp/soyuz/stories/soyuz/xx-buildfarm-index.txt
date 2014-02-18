@@ -4,6 +4,7 @@ The BuildFarm page is accessible from the root page, although we don't
 link to it yet because we are not yet sure of the benefits of doing
 this, since the audience of this page is still restricted.
 
+    >>> anon_browser.mech_browser.set_handle_equiv(False)
     >>> anon_browser.open('http://launchpad.dev/+builds')
 
 The BuildFarm contains a list of all builders registered in Launchpad
@@ -17,15 +18,15 @@ containing the build queue status summary for each build domain.
     1 available build machine, 1 disabled and 1 building of a total of
     2 registered.
     Builders
-    Name  Processor  Status
-    bob   386        Building i386 build of mozilla-firefox 0.9 ...
-    frog  386        Disabled
+    Name  Architectures   Status
+    bob   386            Building i386 build of mozilla-firefox 0.9 ...
+    frog  386            Disabled
     Official distributions build status
-    Processor  Builders  Queue
-    386        1         1 job (1 minute)
+    Architecture  Builders  Queue
+    386           1         1 job (1 minute)
     PPA build status
-    Processor  Builders  Queue
-    386        0         empty
+    Architecture  Builders  Queue
+    386           0         empty
 
 When building, the 'Status' column contains a link to the
 corresponding 'Build' page.
@@ -43,14 +44,14 @@ supported processor on each separated build domain, 'official'
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'official-queue-status'))
     Official distributions build status
-    Processor  Builders  Queue
-    386        1         1 job (1 minute)
+    Architecture  Builders  Queue
+    386           1         1 job (1 minute)
 
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'ppa-queue-status',))
     PPA build status
-    Processor  Builders  Queue
-    386        0         empty
+    Architecture  Builders  Queue
+    386           0         empty
 
 When there are pending builds in the PPA domain, they are listed in
 the corresponding portlet with their estimated duration as well.
@@ -76,8 +77,8 @@ the corresponding portlet with their estimated duration as well.
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'ppa-queue-status'))
     PPA build status
-    Processor  Builders  Queue
-    386        0         1 job (1 minute)
+    Architecture  Builders  Queue
+    386           0         1 job (1 minute)
 
 If the archive for the build does not require virtual builders, then
 the pending job will appear in the 'official' queue. Since the build
@@ -92,14 +93,14 @@ record already exists, we must manually set it to non-virtualized too.
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'ppa-queue-status'))
     PPA build status
-    Processor  Builders  Queue
-    386        0         empty
+    Architecture  Builders  Queue
+    386           0         empty
 
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'official-queue-status'))
     Official distributions build status
-    Processor  Builders  Queue
-    386        1         2 jobs (2 minutes)
+    Architecture  Builders  Queue
+    386           1         2 jobs (2 minutes)
 
 From this page, users with the appropriate permission can register new
 builders.
@@ -120,6 +121,7 @@ and are not permitted if they go directly to the URL.
 
 Administrators can create new builders.
 
+    >>> admin_browser.mech_browser.set_handle_equiv(False)
     >>> admin_browser.open("http://launchpad.dev/+builds/+index")
 
     >>> admin_browser.getLink("Register a new build machine").click()
@@ -127,22 +129,23 @@ Administrators can create new builders.
     >>> print admin_browser.title
     Register a new...
 
-Registering a new builder involves setting its name, title,
-description and corresponding location.
+Registering a new builder involves setting its name, title and corresponding
+location.
 
     >>> admin_browser.getControl('Name').value = 'tubaina'
     >>> admin_browser.getControl('Title').value = 'Tubaina'
-    >>> admin_browser.getControl('Description').value = 'Bogus'
     >>> admin_browser.getControl(
     ...     'URL').value = 'http://tubaina.buildd'
 
 Additionaly, the administrator can select the processor corresponding
-to the builder or simply proceed with the default (i386).
+to the builder.
 
-    >>> admin_browser.getControl(name='field.processor').displayOptions
-    ['Intel 386', 'AMD 64bit', 'HPPA Processor']
-    >>> admin_browser.getControl(name='field.processor').displayValue
-    ['Intel 386']
+    >>> admin_browser.getControl(name='field.processors').options
+    ['386', 'amd64', 'hppa']
+    >>> admin_browser.getControl(name='field.processors').value
+    []
+    >>> admin_browser.getControl(name='field.processors').value = [
+    ...     'amd64', 'hppa']
 
 By default, builders are created as 'Publicly Visible', although the
 administrator can change this value during creation time.
@@ -167,7 +170,9 @@ Once the form is submitted the users will be redirected to the
 just-created builder page.
 
 
-    >>> from canonical.launchpad.helpers import backslashreplace
+    >>> from lp.services.helpers import backslashreplace
     >>> admin_browser.getControl("Register builder").click()
     >>> print backslashreplace(admin_browser.title)
     Tubaina : Build Farm
+    >>> 'amd64 and hppa' in admin_browser.contents
+    True

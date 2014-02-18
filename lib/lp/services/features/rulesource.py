@@ -12,20 +12,19 @@ __all__ = [
 
 __metaclass__ = type
 
-import re
 from collections import (
     defaultdict,
     namedtuple,
     )
+import re
 
 from storm.locals import Desc
 
-from canonical.launchpad.webapp import adapter
 from lp.services.features.model import (
     FeatureFlag,
     getFeatureStore,
     )
-
+from lp.services.webapp import adapter
 
 # A convenient mapping for a feature flag rule in the database.
 Rule = namedtuple("Rule", "flag scope priority value")
@@ -118,7 +117,7 @@ class StormFeatureRuleSource(FeatureRuleSource):
             # timeouts also looks up flags, but doing such a lookup can
             # will cause a doom if the db request is not executed or is
             # canceled by the DB - and then results in a failure in
-            # zope.app.publications.ZopePublication.handleError when it
+            # zope.app.publication.ZopePublication.handleError when it
             # calls transaction.commit.
             # By Looking this up first, we avoid this and also permit
             # code using flags to work in timed out requests (by appearing to

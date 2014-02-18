@@ -3,7 +3,7 @@ Translations Relicensing
 
 When Karl visits +translate page for the first time, he is sent
 to a form to indicate whether he agrees to license his translations
-under the revised BSD license.
+under the revised BSD licence.
 
     >>> browser = setupBrowser(auth='Basic karl@canonical.com:test')
     >>> browser.open('http://translations.launchpad.dev/alsa-utils/trunk/'
@@ -36,8 +36,8 @@ Karl chooses "no".
 
 Karl sees a notice acknowledging his choice.
 
-    >>> get_feedback_messages(browser.contents)
-    [u'We respect your choice...']
+    >>> print_feedback_messages(browser.contents)
+    We respect your choice...
 
 He's also forwarded back to the Spanish alsa-utils translations page.
 
@@ -75,8 +75,8 @@ He changes it again.
     >>> radiobuttons.value = ['BSD']
     >>> browser.getControl("Confirm").click()
 
-    >>> get_feedback_messages(browser.contents)
-    [u'Thank you for BSD-licensing your translations.']
+    >>> print_feedback_messages(browser.contents)
+    Thank you for BSD-licensing your translations.
 
 Karl can now browse to a +translate page without being forwarded.
 

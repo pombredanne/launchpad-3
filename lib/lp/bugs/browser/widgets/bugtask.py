@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Widgets related to IBugTask."""
@@ -14,31 +14,26 @@ __all__ = [
     "BugWatchEditForm",
     "DBItemDisplayWidget",
     "NewLineToSpacesWidget",
-    "NominationReviewActionWidget",
     "UbuntuSourcePackageNameWidget",
     ]
 
-from xml.sax.saxutils import escape
-
 from z3c.ptcompat import ViewPageTemplateFile
-from zope.app.form import (
-    CustomWidgetFactory,
-    Widget,
-    )
-from zope.app.form.browser.itemswidgets import RadioWidget
-from zope.app.form.browser.widget import (
-    BrowserWidget,
-    renderElement,
-    )
-from zope.app.form.interfaces import (
+from zope.component import getUtility
+from zope.formlib.interfaces import (
     ConversionError,
     IDisplayWidget,
     IInputWidget,
     InputErrors,
     WidgetInputError,
     )
-from zope.app.form.utility import setUpWidget
-from zope.component import getUtility
+from zope.formlib.itemswidgets import RadioWidget
+from zope.formlib.utility import setUpWidget
+from zope.formlib.widget import (
+    BrowserWidget,
+    CustomWidgetFactory,
+    renderElement,
+    Widget,
+    )
 from zope.interface import (
     implements,
     Interface,
@@ -48,9 +43,7 @@ from zope.schema.interfaces import (
     ValidationError,
     )
 
-from canonical.launchpad import _
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp import _
 from lp.app.browser.tales import TeamFormatterAPI
 from lp.app.errors import (
     NotFoundError,
@@ -58,7 +51,7 @@ from lp.app.errors import (
     )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.widgets.helpers import get_widget_template
-from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
+from lp.app.widgets.launchpadtarget import LaunchpadTargetWidget
 from lp.app.widgets.popup import (
     PersonPickerWidget,
     VocabularyPickerWidget,
@@ -67,16 +60,17 @@ from lp.app.widgets.textwidgets import (
     StrippedTextWidget,
     URIWidget,
     )
-from lp.app.widgets.launchpadtarget import LaunchpadTargetWidget
 from lp.bugs.interfaces.bugwatch import (
     IBugWatchSet,
     NoBugTrackerFound,
     UnrecognizedBugTrackerURL,
     )
-from lp.bugs.vocabulary import UsesBugsDistributionVocabulary
+from lp.bugs.vocabularies import UsesBugsDistributionVocabulary
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.services.features import getFeatureFlag
 from lp.services.fields import URIField
+from lp.services.webapp import canonical_url
+from lp.services.webapp.escaping import html_escape
+from lp.services.webapp.interfaces import ILaunchBag
 
 
 class BugTaskAssigneeWidget(Widget):
@@ -95,7 +89,7 @@ class BugTaskAssigneeWidget(Widget):
         # be input provided), we set required to False, to avoid
         # unnecessary 'required' UI connotations.
         #
-        # See zope.app.form.interfaces.IInputWidget.
+        # See zope.formlib.interfaces.IInputWidget.
         self.required = False
         self.assignee_chooser_widget = PersonPickerWidget(
             context, context.vocabulary, request)
@@ -117,7 +111,7 @@ class BugTaskAssigneeWidget(Widget):
 
     def validate(self):
         """
-        This method used to be part of zope.app.form.interfaces.IInputWidget
+        This method used to be part of zope.formlib.interfaces.IInputWidget
         in Zope 3.0, but is no longer part of the interface in Zope 3.2
         """
         # If the user has chosen to assign this bug to somebody else,
@@ -135,12 +129,12 @@ class BugTaskAssigneeWidget(Widget):
                         ValidationError("Assignee not found"))
 
     def hasInput(self):
-        """See zope.app.form.interfaces.IInputWidget."""
+        """See zope.formlib.interfaces.IInputWidget."""
         field_name = self.name + ".option"
         return field_name in self.request.form
 
     def hasValidInput(self):
-        """See zope.app.form.interfaces.IInputWidget."""
+        """See zope.formlib.interfaces.IInputWidget."""
         try:
             self.validate()
             return True
@@ -148,7 +142,7 @@ class BugTaskAssigneeWidget(Widget):
             return False
 
     def getInputValue(self):
-        """See zope.app.form.interfaces.IInputWidget."""
+        """See zope.formlib.interfaces.IInputWidget."""
         self.validate()
 
         form = self.request.form_ng
@@ -172,7 +166,7 @@ class BugTaskAssigneeWidget(Widget):
         raise WidgetInputError("Unknown assignee option chosen")
 
     def applyChanges(self, content):
-        """See zope.app.form.interfaces.IInputWidget."""
+        """See zope.formlib.interfaces.IInputWidget."""
         assignee_field = self.context
         bugtask = assignee_field.context
         new_assignee = self.getInputValue()
@@ -278,8 +272,8 @@ class BugTaskAssigneeWidget(Widget):
         user = getUtility(ILaunchBag).user
         context = self.context.context
         return user is not None and (
-            context.userCanSetAnyAssignee(user) or
-            user.teams_participated_in.count() > 0)
+            context.userCanSetAnyAssignee(user) or not
+            user.teams_participated_in.is_empty())
 
 
 class BugWatchEditForm(Interface):
@@ -333,14 +327,14 @@ class BugTaskBugWatchWidget(RadioWidget):
                 bugtask = self.context.context
                 return bugtask.bug.addWatch(
                     bugtracker, remote_bug, getUtility(ILaunchBag).user)
-            except WidgetInputError, error:
+            except WidgetInputError as error:
                 # Prefix the error with the widget name, since the error
                 # will be display at the top of the page, and not right
                 # next to the widget.
                 raise WidgetInputError(
                     self.context.__name__, self.label,
                     'Remote Bug: %s' % error.doc())
-            except (NoBugTrackerFound, UnrecognizedBugTrackerURL), error:
+            except (NoBugTrackerFound, UnrecognizedBugTrackerURL) as error:
                 raise WidgetInputError(
                     self.context.__name__, self.label,
                     'Invalid bug tracker URL.')
@@ -387,8 +381,8 @@ class BugTaskBugWatchWidget(RadioWidget):
               value != self._new_bugwatch_value):
             value = self._toFieldValue(value)
         # check if we want to select first item, the previously selected item
-        # or the "no value" item.
-        no_value = None
+        # or the "nothing selected" item.
+        nothing_selected = None
         if (value == self.context.missing_value
             and getattr(self, 'firstItem', False)
             and len(self.vocabulary) > 0
@@ -398,8 +392,8 @@ class BugTaskBugWatchWidget(RadioWidget):
         elif value != self.context.missing_value:
             values = [value]
         else:
-            # the "no value" option will be checked
-            no_value = 'checked'
+            # the "nothing selected" option will be checked
+            nothing_selected = 'checked'
             values = []
 
         items = self.renderItemsWithValues(values)
@@ -410,7 +404,7 @@ class BugTaskBugWatchWidget(RadioWidget):
                 'value': '',
                 'name': self.name,
                 'cssClass': self.cssClass}
-            if no_value:
+            if nothing_selected:
                 option = self.renderSelectedItem(**kwargs)
             else:
                 option = self.renderItem(**kwargs)
@@ -490,6 +484,11 @@ class BugTaskSourcePackageNameWidget(VocabularyPickerWidget):
     It accepts both binary and source package names.
     """
 
+    def __init__(self, field, vocabulary, request):
+        super(BugTaskSourcePackageNameWidget, self).__init__(
+            field, vocabulary, request)
+        self.cached_values = {}
+
     def getDistribution(self):
         """Get the distribution used for package validation.
 
@@ -509,27 +508,19 @@ class BugTaskSourcePackageNameWidget(VocabularyPickerWidget):
             return self.context.missing_value
 
         distribution = self.getDistribution()
-
-        if bool(getFeatureFlag('disclosure.dsp_picker.enabled')):
-            try:
-                source = self.context.vocabulary.getTermByToken(input).value
-            except NotFoundError:
-                raise ConversionError(
-                    "Launchpad doesn't know of any source package named"
-                    " '%s' in %s." % (input, distribution.displayname))
-            else:
-                return source
-        # Else the untrusted SPN vocab was used so it needs seconday
-        # verification.
+        cached_value = self.cached_values.get(input)
+        if cached_value:
+            return cached_value
         try:
             source = distribution.guessPublishedSourcePackageName(input)
         except NotFoundError:
             try:
-                return self.convertTokensToValues([input])[0]
+                source = self.convertTokensToValues([input])[0]
             except InvalidValue:
                 raise ConversionError(
                     "Launchpad doesn't know of any source package named"
                     " '%s' in %s." % (input, distribution.displayname))
+        self.cached_values[input] = source
         return source
 
 
@@ -583,9 +574,10 @@ class AssigneeDisplayWidget(BrowserWidget):
                 'img', style="padding-bottom: 2px", src="/@@/person", alt="")
             return renderElement(
                 'a', href=canonical_url(assignee),
-                contents="%s %s" % (person_img, escape(assignee.displayname)))
+                contents="%s %s" % (
+                    person_img, html_escape(assignee.displayname)))
         else:
-            if bugtask.target_uses_malone:
+            if bugtask.pillar.official_malone:
                 return renderElement('i', contents='not assigned')
             else:
                 return renderElement('i', contents='unknown')
@@ -623,17 +615,3 @@ class NewLineToSpacesWidget(StrippedTextWidget):
             lines = value.splitlines()
             value = ' '.join(lines)
         return value
-
-
-class NominationReviewActionWidget(LaunchpadRadioWidget):
-    """Widget for choosing a nomination review action.
-
-    It renders a radio box with no label for each option.
-    """
-    orientation = "horizontal"
-
-    # The label will always be the empty string.
-    _joinButtonToMessageTemplate = '%s%s'
-
-    def textForValue(self, term):
-        return u''

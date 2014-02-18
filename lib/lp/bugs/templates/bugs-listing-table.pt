@@ -17,11 +17,7 @@
   <tal:results condition="context/batch">
     <div class="lesser"
         tal:content="structure context/@@+navigation-links-upper" />
-    <div tal:replace="structure context/@@+table-view-without-navlinks"
-        tal:condition="not: request/features/bugs.dynamic_bug_listings.enabled"
-    />
-    <tal:mustache
-        condition="request/features/bugs.dynamic_bug_listings.enabled">
+    <tal:mustache>
         <div id="bugs-orderby"></div>
         <div id="client-listing" tal:content="structure context/mustache" />
         <script tal:content="structure context/mustache_listings" />
@@ -33,7 +29,7 @@
   <tal:comment
     tal:condition="request/features/ajax.batch_navigator.enabled"
     replace='structure string:&lt;script type="text/javascript"&gt;
-    LPS.use("lp.app.batchnavigator",
+    LPJS.use("lp.app.batchnavigator",
         function(Y) {
             Y.on("domready", function () {
                 var config = {

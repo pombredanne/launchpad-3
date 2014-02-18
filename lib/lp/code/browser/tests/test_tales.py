@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the tales formatters."""
@@ -13,14 +13,14 @@ from zope.component import queryAdapter
 from zope.security.proxy import removeSecurityProxy
 from zope.traversing.interfaces import IPathAdapter
 
-from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
     login,
     person_logged_in,
     test_tales,
     TestCaseWithFactory,
     )
+from lp.testing.layers import LaunchpadFunctionalLayer
 
 
 class TestPreviewDiffFormatter(TestCaseWithFactory):
@@ -67,7 +67,7 @@ class TestPreviewDiffFormatter(TestCaseWithFactory):
     def test_creation_method(self):
         # Just confirm that our helpers do what they say.
         preview = self._createPreviewDiff(
-            12, 45, 23, u'conflicts', {'filename': (3,2)})
+            12, 45, 23, u'conflicts', {'filename': (3, 2)})
         self.assertEqual(12, preview.diff_lines_count)
         self.assertEqual(45, preview.added_lines_count)
         self.assertEqual(23, preview.removed_lines_count)
@@ -144,7 +144,7 @@ class TestPreviewDiffFormatter(TestCaseWithFactory):
     def test_fmt_stale_non_empty_diff(self):
         # If there is no diff, there is no link.
         diffstat = dict(
-            (self.factory.getUniqueString(), (2,3)) for x in range(23))
+            (self.factory.getUniqueString(), (2, 3)) for x in range(23))
         preview = self._createStalePreviewDiff(
             500, 89, 340, diffstat=diffstat)
         self.assertEqual(
@@ -156,7 +156,7 @@ class TestPreviewDiffFormatter(TestCaseWithFactory):
     def test_fmt_stale_non_empty_diff_with_conflicts(self):
         # If there is no diff, there is no link.
         diffstat = dict(
-            (self.factory.getUniqueString(), (2,3)) for x in range(23))
+            (self.factory.getUniqueString(), (2, 3)) for x in range(23))
         preview = self._createStalePreviewDiff(
             500, 89, 340, u'conflicts', diffstat=diffstat)
         self.assertEqual(
@@ -191,7 +191,7 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         self.assertThat(
             adapter.link(None),
             Equals(
-                '<a href="%s">%s recipe build [eric/ppa]</a>'
+                '<a href="%s">%s recipe build</a> [eric/ppa]'
                 % (canonical_url(build, path_only_if_possible=True),
                    build.recipe.base_branch.unique_name)))
 
@@ -206,5 +206,12 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         self.assertThat(
             adapter.link(None),
             Equals(
-                '<a href="%s">build for deleted recipe [eric/ppa]</a>'
+                '<a href="%s">build for deleted recipe</a> [eric/ppa]'
                 % (canonical_url(build, path_only_if_possible=True), )))
+
+    def test_link_no_permission(self):
+        eric = self.factory.makePerson(name='eric')
+        ppa = self.factory.makeArchive(owner=eric, name='ppa', private=True)
+        build = self.factory.makeSourcePackageRecipeBuild(archive=ppa)
+        adapter = queryAdapter(build, IPathAdapter, 'fmt')
+        self.assertThat(adapter.link(None), Equals('private job'))

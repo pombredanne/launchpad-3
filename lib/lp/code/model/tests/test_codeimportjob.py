@@ -14,25 +14,10 @@ import StringIO
 import unittest
 
 from pytz import UTC
-from sqlobject.sqlbuilder import SQLConstant
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.database.constants import UTC_NOW
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.testing.codeimporthelpers import (
-    make_finished_import,
-    make_running_import,
-    )
-from canonical.launchpad.testing.pages import get_feedback_messages
-from canonical.launchpad.webapp import canonical_url
-from canonical.librarian.interfaces import ILibrarianClient
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    )
 from lp.code.enums import (
     CodeImportEventType,
     CodeImportJobState,
@@ -48,6 +33,15 @@ from lp.code.interfaces.codeimportjob import (
 from lp.code.interfaces.codeimportresult import ICodeImportResult
 from lp.code.model.codeimportjob import CodeImportJob
 from lp.code.model.codeimportresult import CodeImportResult
+from lp.code.tests.codeimporthelpers import (
+    make_finished_import,
+    make_running_import,
+    )
+from lp.services.config import config
+from lp.services.database.constants import UTC_NOW
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
+from lp.services.librarian.interfaces.client import ILibrarianClient
+from lp.services.webapp import canonical_url
 from lp.testing import (
     ANONYMOUS,
     login,
@@ -57,6 +51,11 @@ from lp.testing import (
     with_anonymous_login,
     with_celebrity_logged_in,
     )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
+from lp.testing.pages import get_feedback_messages
 
 
 def login_for_code_imports():
@@ -121,9 +120,7 @@ class TestCodeImportJobSetGetJobForMachine(TestCaseWithFactory):
         if state == CodeImportJobState.RUNNING:
             getUtility(ICodeImportJobWorkflow).startJob(job, self.machine)
         naked_job = removeSecurityProxy(job)
-        naked_job.date_due = SQLConstant(
-            "CURRENT_TIMESTAMP AT TIME ZONE 'UTC' + '%d days'"
-            % date_due_delta)
+        naked_job.date_due = UTC_NOW + u'%d days' % date_due_delta
         naked_job.requesting_user = requesting_user
         return job
 
@@ -231,9 +228,7 @@ class ReclaimableJobTests(TestCaseWithFactory):
     def makeJobWithHeartbeatInPast(self, seconds_in_past):
         code_import = make_running_import(factory=self.factory)
         naked_job = removeSecurityProxy(code_import.import_job)
-        naked_job.heartbeat = SQLConstant(
-            "CURRENT_TIMESTAMP AT TIME ZONE 'UTC' + '%d seconds'"
-            % (-seconds_in_past,))
+        naked_job.heartbeat = UTC_NOW + u'%d seconds' % -seconds_in_past
         return code_import.import_job
 
     def assertReclaimableJobs(self, jobs):
@@ -310,7 +305,7 @@ class AssertFailureMixin:
         """
         try:
             callable_obj(*args, **kwargs)
-        except AssertionError, exception:
+        except AssertionError as exception:
             self.assertEqual(str(exception), message)
         else:
             self.fail("AssertionError was not raised")
@@ -448,7 +443,7 @@ class TestCodeImportJobWorkflowNewJob(TestCaseWithFactory,
         # This causes problems for the "UTC_NOW - interval / 2"
         # expression below.
         interval = code_import.effective_update_interval
-        from canonical.database.sqlbase import get_transaction_timestamp
+        from lp.services.database.sqlbase import get_transaction_timestamp
         recent_result = CodeImportResult(
             code_import=code_import, machine=machine, status=FAILURE,
             date_job_started=get_transaction_timestamp() - interval / 2)

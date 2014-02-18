@@ -11,11 +11,11 @@ from zope.event import notify
 from zope.interface import providedBy
 
 from lp.bugs.model.bugnotification import BugNotification
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.scripts.bugnotification import construct_email_notifications
 from lp.services.mail import stub
+from lp.services.webapp.interfaces import ILaunchBag
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestAssignmentNotification(TestCaseWithFactory):
@@ -30,7 +30,7 @@ class TestAssignmentNotification(TestCaseWithFactory):
         self.user = getUtility(ILaunchBag).user
         self.product = self.factory.makeProduct(owner=self.user,
                                                 name='rebirth')
-        self.bug = self.factory.makeBug(product=self.product)
+        self.bug = self.factory.makeBug(target=self.product)
         self.bug_task = self.bug.getBugTask(self.product)
         self.bug_task_before_modification = Snapshot(self.bug_task,
             providing=providedBy(self.bug_task))

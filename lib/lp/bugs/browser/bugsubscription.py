@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Views for BugSubscription."""
@@ -12,8 +12,6 @@ __all__ = [
     'BugSubscriptionListView',
     ]
 
-import cgi
-
 from lazr.delegates import delegates
 from lazr.restful.interfaces import (
     IJSONRequestCache,
@@ -21,8 +19,8 @@ from lazr.restful.interfaces import (
     )
 from simplejson import dumps
 from zope import formlib
-from zope.app.form import CustomWidgetFactory
-from zope.app.form.browser.itemswidgets import RadioWidget
+from zope.formlib.itemswidgets import RadioWidget
+from zope.formlib.widget import CustomWidgetFactory
 from zope.schema import Choice
 from zope.schema.vocabulary import (
     SimpleTerm,
@@ -31,26 +29,17 @@ from zope.schema.vocabulary import (
 from zope.security.proxy import removeSecurityProxy
 from zope.traversing.browser import absoluteURL
 
-from canonical.launchpad import _
-from canonical.launchpad.webapp import (
-    canonical_url,
-    LaunchpadView,
-    )
-from canonical.launchpad.webapp.authorization import (
-    check_permission,
-    precache_permission_for_objects,
-    )
-from canonical.launchpad.webapp.launchpadform import ReturnToReferrerMixin
-from canonical.launchpad.webapp.menu import structured
+from lp import _
 from lp.app.browser.launchpadform import (
     action,
     LaunchpadFormView,
+    ReturnToReferrerMixin,
     )
+from lp.app.errors import SubscriptionPrivacyViolation
 from lp.bugs.browser.structuralsubscription import (
     expose_structural_subscription_data_to_js,
     )
-from lp.bugs.enum import BugNotificationLevel
-from lp.bugs.errors import SubscriptionPrivacyViolation
+from lp.bugs.enums import BugNotificationLevel
 from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
 from lp.bugs.model.personsubscriptioninfo import PersonSubscriptions
@@ -58,6 +47,15 @@ from lp.bugs.model.structuralsubscription import (
     get_structural_subscriptions_for_bug,
     )
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    canonical_url,
+    LaunchpadView,
+    )
+from lp.services.webapp.authorization import (
+    check_permission,
+    precache_permission_for_objects,
+    )
+from lp.services.webapp.escaping import structured
 
 
 class BugSubscriptionAddView(LaunchpadFormView):
@@ -81,7 +79,7 @@ class BugSubscriptionAddView(LaunchpadFormView):
         except SubscriptionPrivacyViolation as error:
             self.setFieldError('person', unicode(error))
         else:
-            if person.isTeam():
+            if person.is_team:
                 message = '%s team has been subscribed to this bug.'
             else:
                 message = '%s has been subscribed to this bug.'
@@ -159,6 +157,7 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
     """A view to handle the +subscribe page for a bug."""
 
     schema = IBugSubscription
+    page_title = 'Subscription options'
 
     # A mapping of BugNotificationLevel values to descriptions to be
     # shown on the +subscribe page.
@@ -270,9 +269,10 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
                 subscription_terms.append(
                     SimpleTerm(
                         person, person.name,
-                        'unsubscribe <a href="%s">%s</a> from this bug' % (
+                        structured(
+                            'unsubscribe <a href="%s">%s</a> from this bug',
                             canonical_url(person),
-                            cgi.escape(person.displayname))))
+                            person.displayname).escapedtext))
         if not self_subscribed:
             if not is_really_muted:
                 subscription_terms.insert(0,
@@ -485,18 +485,19 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
             if check_permission("launchpad.View", current_bug):
                 # The user still has permission to see this bug, so no
                 # special-casing needed.
-                return (
-                    "You have been unsubscribed from bug %d%s." % (
-                    current_bug.id, unsubed_dupes_msg_fragment))
+                return structured(
+                    "You have been unsubscribed from bug %s%s.",
+                    current_bug.id, unsubed_dupes_msg_fragment).escapedtext
             else:
-                return (
-                    "You have been unsubscribed from bug %d%s. You no "
-                    "longer have access to this private bug.") % (
-                        current_bug.id, unsubed_dupes_msg_fragment)
+                return structured(
+                    "You have been unsubscribed from bug %s%s. You no "
+                    "longer have access to this private bug.",
+                    current_bug.id, unsubed_dupes_msg_fragment).escapedtext
         else:
-            return "%s has been unsubscribed from bug %d%s." % (
-                cgi.escape(user.displayname), current_bug.id,
-                unsubed_dupes_msg_fragment)
+            return structured(
+                "%s has been unsubscribed from bug %s%s.",
+                user.displayname, current_bug.id,
+                unsubed_dupes_msg_fragment).escapedtext
 
     def _getUnsubscribedDupesMsgFragment(self, unsubed_dupes):
         """Return the duplicates fragment of the unsubscription notification.
@@ -509,11 +510,13 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
 
         dupe_links = []
         for unsubed_dupe in unsubed_dupes:
-            dupe_links.append(
-                '<a href="%s" title="%s">#%d</a>' % (
+            dupe_links.append(structured(
+                '<a href="%s" title="%s">#%s</a>',
                 canonical_url(unsubed_dupe), unsubed_dupe.title,
                 unsubed_dupe.id))
-        dupe_links_string = ", ".join(dupe_links)
+        # We can't current join structured()s, so do it manually.
+        dupe_links_string = structured(
+            ", ".join(['%s'] * len(dupe_links)), *dupe_links)
 
         num_dupes = len(unsubed_dupes)
         if num_dupes > 1:
@@ -521,12 +524,11 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
         else:
             plural_suffix = ""
 
-        return (
+        return structured(
             " and %(num_dupes)d duplicate%(plural_suffix)s "
-            "(%(dupe_links_string)s)") % ({
-                'num_dupes': num_dupes,
-                'plural_suffix': plural_suffix,
-                'dupe_links_string': dupe_links_string})
+            "(%(dupe_links_string)s)",
+            num_dupes=num_dupes, plural_suffix=plural_suffix,
+            dupe_links_string=dupe_links_string)
 
 
 class BugPortletSubscribersWithDetails(LaunchpadView):
@@ -555,6 +557,8 @@ class BugPortletSubscribersWithDetails(LaunchpadView):
 
             # If we have made it to here then the logged in user can see the
             # bug, hence they can see any subscribers.
+            # The security adaptor will do the job also but we don't want or
+            # need the expense of running several complex SQL queries.
             precache_permission_for_objects(
                         self.request, 'launchpad.LimitedView', [person])
             subscriber = {
@@ -582,7 +586,7 @@ class BugPortletSubscribersWithDetails(LaunchpadView):
 
         others = list(bug.getIndirectSubscribers())
         # If we have made it to here then the logged in user can see the
-        # bug, hence they can see any subscribers.
+        # bug, hence they can see any indirect subscribers.
         include_private = self.user is not None
         if include_private:
             precache_permission_for_objects(

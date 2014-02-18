@@ -1,4 +1,5 @@
-# Copyright 2010 Canonical Ltd.  All rights reserved.
+# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 __all__ = [
@@ -11,11 +12,10 @@ __all__ = [
 from zope.interface import Interface
 from zope.schema import TextLine
 
-from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
-from canonical.launchpad.webapp.url import urlappend
-from canonical.launchpad.webapp.vhosts import allvhosts
-from lp.services.fields import PasswordField
 from lp.services.openid.interfaces.openid import IOpenIDPersistentIdentity
+from lp.services.webapp.interfaces import ILaunchpadApplication
+from lp.services.webapp.url import urlappend
+from lp.services.webapp.vhosts import allvhosts
 
 
 class ITestOpenIDApplication(ILaunchpadApplication):
@@ -24,7 +24,6 @@ class ITestOpenIDApplication(ILaunchpadApplication):
 
 class ITestOpenIDLoginForm(Interface):
     email = TextLine(title=u'What is your e-mail address?', required=True)
-    password = PasswordField(title=u'Password', required=True)
 
 
 class ITestOpenIDPersistentIdentity(IOpenIDPersistentIdentity):

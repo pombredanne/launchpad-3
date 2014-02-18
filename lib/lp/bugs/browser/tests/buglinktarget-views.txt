@@ -3,7 +3,7 @@
 The +linkbug and +unlinkbug views operates on IBugLinkTarget.
 
     >>> from zope.component import getMultiAdapter
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> from lazr.lifecycle.event import ObjectModifiedEvent
     >>> from lp.bugs.interfaces.bug import IBugSet
     >>> from lp.bugs.interfaces.buglink import IBugLinkTarget
@@ -13,7 +13,7 @@ The +linkbug and +unlinkbug views operates on IBugLinkTarget.
     >>> cve = getUtility(ICveSet)['2005-2730']
 
     (Setup an event listener.)
-    >>> from canonical.launchpad.ftests.event import TestEventListener
+    >>> from lp.testing.event import TestEventListener
     >>> collected_events = []
     >>> modified_listener = TestEventListener(
     ...     IBugLinkTarget, ObjectModifiedEvent,
@@ -145,7 +145,7 @@ The notification contains the escaped bug title.
     >>> for notification in request.response.notifications:
     ...     print notification.message.encode('utf8')
     Added link to bug #2:
-    ...&lt;script&gt;window.alert("Hello!")&lt;/script&gt;....
+    ...&lt;script&gt;window.alert(&quot;Hello!&quot;)&lt;/script&gt;....
 
 
 == Cleanup ==

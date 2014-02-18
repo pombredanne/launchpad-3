@@ -44,7 +44,6 @@ currently subscribed to the bug:
     Also notified:
     Foo Bar
     Mark Shuttleworth
-    Ubuntu Team
 
 He subscribes David Allouche to the bug using his Launchpad username.
 

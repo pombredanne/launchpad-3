@@ -9,9 +9,11 @@ import urlparse
 
 from lazr.restful.utils import safe_hasattr
 
-from canonical.testing import reset_logging
 from lp.registry.scripts.productreleasefinder.walker import WalkerBase
-from lp.testing import TestCase
+from lp.testing import (
+    reset_logging,
+    TestCase,
+    )
 
 
 class WalkerBase_Logging(TestCase):

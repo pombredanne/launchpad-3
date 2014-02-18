@@ -58,7 +58,7 @@
         </div>
         <div style="margin-top: 0.5em;">
           <input type="submit" value="Import Public Key" />
-          or&nbsp; <a tal:attributes="href view/cancel_url">Cancel</a>
+          or&nbsp;<a tal:attributes="href view/cancel_url">Cancel</a>
         </div>
       </div>
     </form>

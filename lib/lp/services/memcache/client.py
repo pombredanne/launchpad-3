@@ -12,8 +12,8 @@ import re
 from lazr.restful.utils import get_current_browser_request
 import memcache
 
-from canonical.config import config
 from lp.services import features
+from lp.services.config import config
 from lp.services.timeline.requesttimeline import get_request_timeline
 
 

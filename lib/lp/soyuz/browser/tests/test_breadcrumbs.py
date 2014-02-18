@@ -5,8 +5,8 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from canonical.launchpad.webapp.publisher import canonical_url
 from lp.registry.interfaces.distribution import IDistributionSet
+from lp.services.webapp.publisher import canonical_url
 from lp.soyuz.browser.archivesubscription import PersonalArchiveSubscription
 from lp.testing import (
     login,
@@ -54,7 +54,6 @@ class TestArchiveSubscriptionBreadcrumb(BaseBreadcrumbTestCase):
         self.ppa = self.factory.makeArchive()
         login('foo.bar@canonical.com')
         self.ppa.private = True
-        self.ppa.buildd_secret = 'secret'
 
         owner = self.ppa.owner
         login_person(owner)

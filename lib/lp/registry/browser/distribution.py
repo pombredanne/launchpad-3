@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for distributions."""
@@ -41,37 +41,17 @@ __all__ = [
 from collections import defaultdict
 import datetime
 
-from zope.app.form.browser.boolwidgets import CheckBoxWidget
+from lazr.restful.utils import smartquote
 from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
+from zope.formlib.boolwidgets import CheckBoxWidget
 from zope.interface import implements
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.schema import Bool
+from zope.security.checker import canWrite
 from zope.security.interfaces import Unauthorized
 
-from canonical.launchpad.browser.feeds import FeedsMixin
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
-    )
-from canonical.launchpad.helpers import english_list
-from canonical.launchpad.webapp import (
-    ApplicationMenu,
-    canonical_url,
-    ContextMenu,
-    enabled_with_permission,
-    GetitemNavigation,
-    LaunchpadView,
-    Link,
-    Navigation,
-    NavigationMenu,
-    redirection,
-    StandardLaunchpadFacets,
-    stepthrough,
-    )
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
 from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin,
@@ -82,6 +62,8 @@ from lp.app.browser.launchpadform import (
     custom_widget,
     LaunchpadFormView,
     )
+from lp.app.browser.lazrjs import InlinePersonEditPickerWidget
+from lp.app.browser.tales import format_link
 from lp.app.errors import NotFoundError
 from lp.app.widgets.image import ImageChangeWidget
 from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
@@ -108,7 +90,11 @@ from lp.registry.browser.menu import (
     RegistryCollectionActionMenuBase,
     )
 from lp.registry.browser.objectreassignment import ObjectReassignmentView
-from lp.registry.browser.pillar import PillarBugsMenu
+from lp.registry.browser.pillar import (
+    PillarBugsMenu,
+    PillarNavigationMixin,
+    PillarViewMixin,
+    )
 from lp.registry.interfaces.distribution import (
     IDerivativeDistribution,
     IDistribution,
@@ -121,21 +107,42 @@ from lp.registry.interfaces.distributionmirror import (
     MirrorSpeed,
     )
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.feeds.browser import FeedsMixin
 from lp.services.geoip.helpers import (
     ipaddress_from_request,
     request_country,
     )
+from lp.services.helpers import english_list
 from lp.services.propertycache import cachedproperty
-from lp.soyuz.browser.archive import EnableRestrictedFamiliesMixin
+from lp.services.webapp import (
+    ApplicationMenu,
+    canonical_url,
+    ContextMenu,
+    enabled_with_permission,
+    GetitemNavigation,
+    LaunchpadView,
+    Link,
+    Navigation,
+    NavigationMenu,
+    redirection,
+    StandardLaunchpadFacets,
+    stepthrough,
+    )
+from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.interfaces import ILaunchBag
+from lp.soyuz.browser.archive import EnableRestrictedProcessorsMixin
 from lp.soyuz.browser.packagesearch import PackageSearchViewBase
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.archive import IArchiveSet
-from lp.soyuz.interfaces.processor import IProcessorFamilySet
+from lp.soyuz.interfaces.processor import IProcessorSet
 
 
 class DistributionNavigation(
     GetitemNavigation, BugTargetTraversalMixin, QuestionTargetTraversalMixin,
-    FAQTargetNavigationMixin, StructuralSubscriptionTargetTraversalMixin):
+    FAQTargetNavigationMixin, StructuralSubscriptionTargetTraversalMixin,
+    PillarNavigationMixin):
 
     usedfor = IDistribution
 
@@ -166,6 +173,13 @@ class DistributionNavigation(
     @stepthrough('+archive')
     def traverse_archive(self, name):
         return self.context.getArchive(name)
+
+    def traverse(self, name):
+        try:
+            return super(DistributionNavigation, self).traverse(name)
+        except NotFoundError:
+            resolved = self.context.resolveSeriesAlias(name)
+            return self.redirectSubTree(canonical_url(resolved), status=303)
 
 
 class DistributionSetNavigation(Navigation):
@@ -303,9 +317,14 @@ class DistributionNavigationMenu(NavigationMenu, DistributionLinksMixin):
         text = "Configure publisher"
         return Link("+pubconf", text, icon="edit")
 
+    @enabled_with_permission('launchpad.Driver')
+    def sharing(self):
+        return Link('+sharing', 'Sharing', icon='edit')
+
     @cachedproperty
     def links(self):
-        return ['edit', 'pubconf', 'subscribe_to_bug_mail', 'edit_bug_mail']
+        return ['edit', 'pubconf', 'subscribe_to_bug_mail',
+                 'edit_bug_mail', 'sharing']
 
 
 class DistributionOverviewMenu(ApplicationMenu, DistributionLinksMixin):
@@ -483,12 +502,7 @@ class DistributionBugsMenu(PillarBugsMenu):
 
     @property
     def links(self):
-        links = [
-            'bugsupervisor',
-            'securitycontact',
-            'cve',
-            'filebug',
-            ]
+        links = ['bugsupervisor', 'cve', 'filebug']
         add_subscribe_link(links)
         return links
 
@@ -536,6 +550,10 @@ class DistributionPackageSearchView(PackageSearchViewBase):
         return non_exact_matches.config(distinct=True)
 
     @property
+    def page_title(self):
+        return smartquote("Search %s's packages" % self.context.displayname)
+
+    @property
     def search_by_binary_name(self):
         """Return whether the search is on binary names.
 
@@ -564,7 +582,7 @@ class DistributionPackageSearchView(PackageSearchViewBase):
 
     @property
     def has_exact_matches(self):
-        return self.exact_matches.count() > 0
+        return not self.exact_matches.is_empty()
 
     @property
     def has_matches(self):
@@ -627,7 +645,7 @@ class DistributionPackageSearchView(PackageSearchViewBase):
         return self.has_exact_matches
 
 
-class DistributionView(HasAnnouncementsView, FeedsMixin):
+class DistributionView(PillarViewMixin, HasAnnouncementsView, FeedsMixin):
     """Default Distribution view class."""
 
     def initialize(self):
@@ -638,6 +656,53 @@ class DistributionView(HasAnnouncementsView, FeedsMixin):
     @property
     def page_title(self):
         return '%s in Launchpad' % self.context.displayname
+
+    @property
+    def maintainer_widget(self):
+        return InlinePersonEditPickerWidget(
+            self.context, IDistribution['owner'],
+            format_link(self.context.owner),
+            header='Change maintainer', edit_view='+reassign',
+            step_title='Select a new maintainer', show_create_team=True)
+
+    @property
+    def driver_widget(self):
+        if canWrite(self.context, 'driver'):
+            empty_value = 'Specify a driver'
+        else:
+            empty_value = 'None'
+        return InlinePersonEditPickerWidget(
+            self.context, IDistribution['driver'],
+            format_link(self.context.driver, empty_value=empty_value),
+            header='Change driver', edit_view='+driver',
+            null_display_value=empty_value,
+            step_title='Select a new driver', show_create_team=True)
+
+    @property
+    def members_widget(self):
+        if canWrite(self.context, 'members'):
+            empty_value = ' Specify the members team'
+        else:
+            empty_value = 'None'
+        return InlinePersonEditPickerWidget(
+            self.context, IDistribution['members'],
+            format_link(self.context.members, empty_value=empty_value),
+            header='Change the members team', edit_view='+selectmemberteam',
+            null_display_value=empty_value,
+            step_title='Select a new members team')
+
+    @property
+    def mirror_admin_widget(self):
+        if canWrite(self.context, 'mirror_admin'):
+            empty_value = ' Specify a mirror administrator'
+        else:
+            empty_value = 'None'
+        return InlinePersonEditPickerWidget(
+            self.context, IDistribution['mirror_admin'],
+            format_link(self.context.mirror_admin, empty_value=empty_value),
+            header='Change the mirror administrator',
+            edit_view='+selectmirroradmins', null_display_value=empty_value,
+            step_title='Select a new mirror administrator')
 
     def linkedMilestonesForSeries(self, series):
         """Return a string of linkified milestones in the series."""
@@ -661,6 +726,10 @@ class DistributionView(HasAnnouncementsView, FeedsMixin):
 
 
 class DistributionArchivesView(LaunchpadView):
+
+    @property
+    def page_title(self):
+        return '%s Copy Archives' % self.context.title
 
     @property
     def batchnav(self):
@@ -718,32 +787,8 @@ class DistributionPPASearchView(LaunchpadView):
         return self.batchnav.currentBatch()
 
     @property
-    def number_of_registered_ppas(self):
-        """The number of archives with PPA purpose.
-
-        It doesn't include private PPAs.
-        """
-        return self.context.searchPPAs(show_inactive=True).count()
-
-    @property
-    def number_of_active_ppas(self):
-        """The number of PPAs with at least one source publication.
-
-        It doesn't include private PPAs.
-        """
-        return self.context.searchPPAs(show_inactive=False).count()
-
-    @property
-    def number_of_ppa_sources(self):
-        """The number of sources published across all PPAs."""
-        return getUtility(IArchiveSet).getNumberOfPPASourcesForDistribution(
-            self.context)
-
-    @property
-    def number_of_ppa_binaries(self):
-        """The number of binaries published across all PPAs."""
-        return getUtility(IArchiveSet).getNumberOfPPABinariesForDistribution(
-            self.context)
+    def distribution_has_ppas(self):
+        return not self.context.getAllPPAs().is_empty()
 
     @property
     def latest_ppa_source_publications(self):
@@ -799,9 +844,8 @@ class RequireVirtualizedBuildersMixin:
             archive.require_virtualized = require_virtualized
 
 
-class DistributionAddView(LaunchpadFormView,
-                          RequireVirtualizedBuildersMixin,
-                          EnableRestrictedFamiliesMixin):
+class DistributionAddView(LaunchpadFormView, RequireVirtualizedBuildersMixin,
+                          EnableRestrictedProcessorsMixin):
 
     schema = IDistribution
     label = "Register a new distribution"
@@ -819,23 +863,18 @@ class DistributionAddView(LaunchpadFormView,
         "answers_usage",
         ]
     custom_widget('require_virtualized', CheckBoxWidget)
-    custom_widget('enabled_restricted_families', LabeledMultiCheckBoxWidget)
+    custom_widget('enabled_restricted_processors', LabeledMultiCheckBoxWidget)
 
     @property
     def page_title(self):
         """The page title."""
         return self.label
 
-    def validate(self, data):
-        self.validate_enabled_restricted_families(
-            data, ENABLED_RESTRICTED_FAMILITES_ERROR_MSG)
-
     @property
     def initial_values(self):
-        proc_family_set = getUtility(IProcessorFamilySet)
-        restricted_families = set(proc_family_set.getRestricted())
+        restricted_processors = getUtility(IProcessorSet).getRestricted()
         return {
-            'enabled_restricted_families': restricted_families,
+            'enabled_restricted_processors': restricted_processors,
             'require_virtualized': False,
             }
 
@@ -848,9 +887,9 @@ class DistributionAddView(LaunchpadFormView,
         """See `LaunchpadFormView`."""
         LaunchpadFormView.setUpFields(self)
         self.form_fields += self.createRequireVirtualized()
-        self.form_fields += self.createEnabledRestrictedFamilies(
-            u'The restricted architecture families on which the '
-            "distribution's main archive can build.")
+        self.form_fields += self.createEnabledRestrictedProcessors(
+            u"The restricted architectures on which the distribution's main "
+            "archive can build.")
 
     @action("Save", name='save')
     def save_action(self, action, data):
@@ -868,22 +907,16 @@ class DistributionAddView(LaunchpadFormView,
         archive = distribution.main_archive
         self.updateRequireVirtualized(data['require_virtualized'], archive)
         if archive.require_virtualized is True:
-            archive.enabled_restricted_families = (
-                data['enabled_restricted_families'])
+            archive.enabled_restricted_processors = data[
+                'enabled_restricted_processors']
 
         notify(ObjectCreatedEvent(distribution))
         self.next_url = canonical_url(distribution)
 
 
-ENABLED_RESTRICTED_FAMILITES_ERROR_MSG = (
-    u"This distribution's main archive can not be restricted to "
-    'certain architectures unless the archive is also set '
-    'to build on virtualized builders.')
-
-
 class DistributionEditView(RegistryEditFormView,
                            RequireVirtualizedBuildersMixin,
-                           EnableRestrictedFamiliesMixin):
+                           EnableRestrictedProcessorsMixin):
 
     schema = IDistribution
     field_names = [
@@ -909,7 +942,7 @@ class DistributionEditView(RegistryEditFormView,
     custom_widget('logo', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
     custom_widget('mugshot', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
     custom_widget('require_virtualized', CheckBoxWidget)
-    custom_widget('enabled_restricted_families', LabeledMultiCheckBoxWidget)
+    custom_widget('enabled_restricted_processors', LabeledMultiCheckBoxWidget)
 
     @property
     def label(self):
@@ -920,17 +953,17 @@ class DistributionEditView(RegistryEditFormView,
         """See `LaunchpadFormView`."""
         RegistryEditFormView.setUpFields(self)
         self.form_fields += self.createRequireVirtualized()
-        self.form_fields += self.createEnabledRestrictedFamilies(
-            u'The restricted architecture families on which the '
-            "distribution's main archive can build.")
+        self.form_fields += self.createEnabledRestrictedProcessors(
+            u"The restricted architectures on which the distribution's main "
+            "archive can build.")
 
     @property
     def initial_values(self):
         return {
             'require_virtualized':
                 self.context.main_archive.require_virtualized,
-            'enabled_restricted_families':
-                self.context.main_archive.enabled_restricted_families,
+            'enabled_restricted_processors':
+                self.context.main_archive.enabled_restricted_processors,
             }
 
     def validate(self, data):
@@ -942,11 +975,6 @@ class DistributionEditView(RegistryEditFormView,
         if not official_malone:
             data['enable_bug_expiration'] = False
 
-        # Validate enabled_restricted_families.
-        self.validate_enabled_restricted_families(
-            data,
-            ENABLED_RESTRICTED_FAMILITES_ERROR_MSG)
-
     def change_archive_fields(self, data):
         # Update context.main_archive.
         new_require_virtualized = data.get('require_virtualized')
@@ -954,14 +982,14 @@ class DistributionEditView(RegistryEditFormView,
             self.updateRequireVirtualized(
                 new_require_virtualized, self.context.main_archive)
             del(data['require_virtualized'])
-        new_enabled_restricted_families = data.get(
-            'enabled_restricted_families')
-        if new_enabled_restricted_families is not None:
-            if (set(self.context.main_archive.enabled_restricted_families) !=
-                set(new_enabled_restricted_families)):
-                self.context.main_archive.enabled_restricted_families = (
-                    new_enabled_restricted_families)
-            del(data['enabled_restricted_families'])
+        new_enabled_restricted_processors = data.get(
+            'enabled_restricted_processors')
+        if new_enabled_restricted_processors is not None:
+            if (set(self.context.main_archive.enabled_restricted_processors) !=
+                set(new_enabled_restricted_processors)):
+                self.context.main_archive.enabled_restricted_processors = (
+                    new_enabled_restricted_processors)
+            del(data['enabled_restricted_processors'])
 
     @action("Change", name='change')
     def change_action(self, action, data):

@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -8,6 +8,16 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
     i18n_domain="launchpad">
+    <browser:url
+       for="lp.code.interfaces.branch.IBranchSet"
+       path_expression="string:branches"
+       parent_utility="lp.services.webapp.interfaces.ILaunchpadRoot"
+      />
+    <browser:feeds
+        module="lp.code.feed.branch"
+        classes="BranchFeed PersonBranchFeed ProductBranchFeed ProjectBranchFeed
+                 PersonRevisionFeed ProductRevisionFeed ProjectRevisionFeed"
+        />
 
   <adapter
       provides="lp.app.interfaces.headings.IRootContext"
@@ -29,36 +39,30 @@
       />
 
   <browser:page
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      for="lp.services.webapp.interfaces.ILaunchpadApplication"
       name="+project-cloud"
       class="lp.code.browser.bazaar.BazaarProjectsRedirect"
       permission="zope.Public"
       />
   <browser:page
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      for="lp.services.webapp.interfaces.ILaunchpadApplication"
       name="+recently-registered-branches"
       class="lp.code.browser.branchlisting.RecentlyRegisteredBranchesView"
       template="../templates/branch-listing-cross-product.pt"
       permission="zope.Public"
       />
   <browser:page
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      for="lp.services.webapp.interfaces.ILaunchpadApplication"
       name="+recently-imported-branches"
       class="lp.code.browser.branchlisting.RecentlyImportedBranchesView"
       template="../templates/branch-listing-cross-product.pt"
       permission="zope.Public"
       />
   <browser:page
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      for="lp.services.webapp.interfaces.ILaunchpadApplication"
       name="+recently-changed-branches"
       class="lp.code.browser.branchlisting.RecentlyChangedBranchesView"
       template="../templates/branch-listing-cross-product.pt"
-      permission="zope.Public"
-      />
-  <browser:page
-      for="zope.interface.Interface"
-      name="+test-webservice-js"
-      template="../templates/test-webservice-js.pt"
       permission="zope.Public"
       />
 
@@ -112,26 +116,19 @@
         module="lp.code.browser.branchref"
         classes="BranchRefNavigation"/>
     <browser:url
-        for="canonical.launchpad.interfaces.launchpad.IBazaarApplication"
+        for="lp.code.interfaces.codehosting.IBazaarApplication"
         path_expression="string:+code"
-        parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+        parent_utility="lp.services.webapp.interfaces.ILaunchpadRoot"
         rootsite="code"/>
     <browser:defaultView
-        for="canonical.launchpad.interfaces.launchpad.IBazaarApplication"
+        for="lp.code.interfaces.codehosting.IBazaarApplication"
         name="+index"/>
     <browser:page
-        for="canonical.launchpad.interfaces.launchpad.IBazaarApplication"
+        for="lp.code.interfaces.codehosting.IBazaarApplication"
         permission="zope.Public"
         class="lp.code.browser.bazaar.BazaarApplicationView"
         name="+index"
         template="../templates/bazaar-index.pt" />
-    <browser:page
-        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
-        permission="zope.Public"
-        class="lp.code.browser.recipebuildslisting.CompletedDailyBuildsView"
-        name="+daily-builds"
-        template="../templates/daily-builds-listing.pt" />
-
     <browser:page
         for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
         name="+hierarchy"
@@ -167,6 +164,9 @@
         <browser:page
             name="++diff"
             template="../templates/branchmergeproposal-diff.pt"/>
+        <browser:page
+            name="++diff-stats"
+            template="../templates/branchmergeproposal-diff-stats.pt"/>
         <browser:page
             name="+pagelet-summary"
             template="../templates/branchmergeproposal-pagelet-summary.pt"/>
@@ -345,9 +345,11 @@
             name="+index"
             template="../templates/branch-index.pt"/>
         <browser:page
+            name="+portlet-privacy"
+            template="../templates/branch-portlet-privacy.pt"/>
+        <browser:page
             name="++bug-links"
             template="../templates/branch-bug-links.pt"/>
-
         <browser:page
             name="++branch-information"
             template="../templates/branch-information.pt" />
@@ -372,14 +374,10 @@
         <browser:page
             name="++branch-related-bugs-specs"
             template="../templates/branch-related-bugs-specs.pt" />
-
     </browser:pages>
     <browser:pages
         for="lp.code.interfaces.branch.IBranch"
         permission="zope.Public">
-        <browser:page
-            name="+portlet-privacy"
-            template="../templates/branch-portlet-privacy.pt"/>
         <browser:page
             name="+heading"
             template="../templates/branch-heading.pt"/>
@@ -427,6 +425,13 @@
         for="lp.code.interfaces.branch.IBranch"
         class="lp.code.browser.branch.BranchEditStatusView"
         permission="launchpad.Edit"
+        template="../../app/templates/generic-edit.pt"/>
+    <browser:page
+        name="+edit-information-type"
+        for="lp.code.interfaces.branch.IBranch"
+        layer="lp.code.publisher.CodeLayer"
+        class="lp.code.browser.branch.BranchEditInformationTypeView"
+        permission="launchpad.Moderate"
         template="../../app/templates/generic-edit.pt"/>
     <browser:page
         name="+edit"
@@ -528,27 +533,6 @@
         name="+branch-listing"
         template="../templates/branch-listing.pt"
         permission="zope.Public"/>
-    <browser:page
-        name="+branchvisibility"
-        for="lp.code.interfaces.branchvisibilitypolicy.IHasBranchVisibilityPolicy"
-        facet="overview"
-        class="lp.code.browser.branchvisibilitypolicy.BranchVisibilityPolicyView"
-        permission="launchpad.Commercial"
-        template="../templates/branch-visibility.pt"/>
-    <browser:page
-        name="+addbranchvisibilitypolicy"
-        for="lp.code.interfaces.branchvisibilitypolicy.IHasBranchVisibilityPolicy"
-        facet="overview"
-        class="lp.code.browser.branchvisibilitypolicy.AddBranchVisibilityTeamPolicyView"
-        permission="launchpad.Commercial"
-        template="../../app/templates/generic-edit.pt"/>
-    <browser:page
-        name="+removebranchvisibilitypolicy"
-        for="lp.code.interfaces.branchvisibilitypolicy.IHasBranchVisibilityPolicy"
-        facet="overview"
-        class="lp.code.browser.branchvisibilitypolicy.RemoveBranchVisibilityTeamPolicyView"
-        permission="launchpad.Commercial"
-        template="../../app/templates/generic-edit.pt"/>
     <browser:menus
         classes="
             BranchContextMenu
@@ -573,12 +557,20 @@
         class="lp.code.browser.codereviewcomment.CodeReviewCommentView"
         permission="zope.Public">
         <browser:page
-            name="+index"
-            template="../templates/codereviewcomment-index.pt"/>
-        <browser:page
             name="+fragment"
             template="../templates/codereviewcomment-fragment.pt"/>
+        <browser:page
+            name="+download"
+            attribute="download"
+        />
     </browser:pages>
+    <browser:page
+        for="lp.code.interfaces.codereviewcomment.ICodeReviewComment"
+        name="+index"
+        template="../templates/codereviewcomment-index.pt"
+        class="lp.code.browser.codereviewcomment.CodeReviewCommentIndexView"
+        permission="zope.Public"
+        />
     <browser:pages
         for="lp.code.browser.codereviewcomment.ICodeReviewDisplayComment"
         class="lp.code.browser.codereviewcomment.CodeReviewCommentView"
@@ -593,6 +585,11 @@
             name="+comment-footer"
             template="../templates/codereviewcomment-footer.pt"/>
     </browser:pages>
+    <adapter
+      provides="lp.services.messages.interfaces.message.IMessage"
+      for="lp.code.browser.codereviewcomment.ICodeReviewDisplayComment"
+      factory="lp.code.browser.codereviewcomment.get_message"/>
+
     <browser:pages
         for="lp.code.browser.branchmergeproposal.ICodeReviewNewRevisions"
         class="lp.code.browser.branchmergeproposal.CodeReviewNewRevisionsView"
@@ -621,7 +618,7 @@
         <browser:url
             for="lp.code.interfaces.codeimport.ICodeImportSet"
             path_expression="string:+code-imports"
-            parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+            parent_utility="lp.services.webapp.interfaces.ILaunchpadRoot"
             rootsite="code"/>
         <browser:defaultView
             for="lp.code.interfaces.codeimport.ICodeImportSet"
@@ -768,12 +765,6 @@
             name="+activereviews"
             template="../templates/active-reviews.pt"/>
         <browser:page
-            name="+addbranch"
-            for="lp.registry.interfaces.person.IPerson"
-            class="lp.code.browser.branch.BranchAddView"
-            permission="launchpad.AnyPerson"
-            template="../templates/branch-add.pt"/>
-        <browser:page
             for="lp.registry.interfaces.person.IPerson"
             class="lp.code.browser.branchlisting.PersonTeamBranchesView"
             name="+portlet-teambranches"
@@ -810,20 +801,6 @@
         permission="zope.Public"
         name="+count-summary"
         template="../templates/branch-count-summary.pt"/>
-
-    <browser:page
-        name="+addbranch"
-        for="lp.registry.interfaces.product.IProduct"
-        class="lp.code.browser.branch.BranchAddView"
-        permission="launchpad.AnyPerson"
-        template="../templates/branch-add.pt"/>
-
-    <browser:page
-        name="+addbranch"
-        for="lp.registry.interfaces.productseries.IProductSeries"
-        class="lp.code.browser.branch.BranchAddView"
-        permission="launchpad.AnyPerson"
-        template="../templates/branch-add.pt"/>
 
     <browser:menus
         classes="ProductBranchesMenu"
@@ -935,31 +912,31 @@
 
     <adapter
         name="code"
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.code.interfaces.hasbranches.IHasBranches"
         factory="lp.code.browser.branchlisting.CodeVHostBreadcrumb"
         permission="zope.Public"/>
 
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.code.interfaces.branch.IBranch"
-        factory="canonical.launchpad.webapp.breadcrumb.NameBreadcrumb"
+        factory="lp.services.webapp.breadcrumb.NameBreadcrumb"
         permission="zope.Public"/>
 
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
         factory="lp.code.browser.branchmergeproposal.BranchMergeProposalBreadcrumb"
         permission="zope.Public"/>
 
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.code.interfaces.codeimportmachine.ICodeImportMachine"
         factory="lp.code.browser.codeimportmachine.CodeImportMachineBreadcrumb"
         permission="zope.Public"/>
 
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.code.interfaces.codeimportmachine.ICodeImportMachineSet"
         factory="lp.code.browser.codeimportmachine.CodeImportMachineSetBreadcrumb"
         permission="zope.Public"/>
@@ -990,12 +967,6 @@
         for="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuild"
         attribute_to_parent="archive"
         path_expression="string:+recipebuild/${id}"
-        />
-    <adapter
-        for="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuild"
-        provides="zope.traversing.interfaces.IPathAdapter"
-        factory="lp.code.browser.sourcepackagerecipebuild.SourcePackageRecipeBuildFormatterAPI"
-        name="fmt"
         />
     <browser:menus
         classes="SourcePackageRecipeBuildContextMenu"
@@ -1105,9 +1076,9 @@
             permission="zope.Public"/>
 
         <adapter
-            provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+            provides="lp.services.webapp.interfaces.IBreadcrumb"
             for="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"
-            factory="canonical.launchpad.webapp.breadcrumb.NameBreadcrumb"
+            factory="lp.services.webapp.breadcrumb.NameBreadcrumb"
             permission="zope.Public"/>
 
         <browser:page

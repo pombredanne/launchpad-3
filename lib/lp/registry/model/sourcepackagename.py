@@ -1,8 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0611,W0212
-
 __metaclass__ = type
 __all__ = [
     'SourcePackageName',
@@ -17,13 +15,6 @@ from sqlobject import (
     )
 from zope.interface import implements
 
-from canonical.database.sqlbase import (
-    cursor,
-    quote_like,
-    SQLBase,
-    sqlvalues,
-    )
-from canonical.launchpad.helpers import ensure_unicode
 from lp.app.errors import NotFoundError
 from lp.app.validators.name import valid_name
 from lp.registry.errors import (
@@ -34,6 +25,12 @@ from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageName,
     ISourcePackageNameSet,
     )
+from lp.services.database.sqlbase import (
+    cursor,
+    SQLBase,
+    sqlvalues,
+    )
+from lp.services.helpers import ensure_unicode
 
 
 class SourcePackageName(SQLBase):
@@ -66,7 +63,7 @@ class SourcePackageNameSet:
     implements(ISourcePackageNameSet)
 
     def __getitem__(self, name):
-        """See canonical.launchpad.interfaces.ISourcePackageNameSet."""
+        """See `ISourcePackageNameSet`."""
         name = ensure_unicode(name)
         try:
             return SourcePackageName.byName(name)
@@ -74,23 +71,18 @@ class SourcePackageNameSet:
             raise NoSuchSourcePackageName(name)
 
     def get(self, sourcepackagenameid):
-        """See canonical.launchpad.interfaces.ISourcePackageNameSet."""
+        """See `ISourcePackageNameSet`."""
         try:
             return SourcePackageName.get(sourcepackagenameid)
         except SQLObjectNotFound:
             raise NotFoundError(sourcepackagenameid)
 
     def getAll(self):
-        """See canonical.launchpad.interfaces.ISourcePackageNameSet."""
+        """See `ISourcePackageNameSet`."""
         return SourcePackageName.select()
 
-    def findByName(self, name):
-        """Find sourcepackagenames by its name or part of it."""
-        query = "name ILIKE '%%' || %s || '%%'" % quote_like(name)
-        return SourcePackageName.select(query)
-
     def queryByName(self, name):
-        """See canonical.launchpad.interfaces.ISourcePackageNameSet."""
+        """See `ISourcePackageNameSet`."""
         return SourcePackageName.selectOneBy(name=name)
 
     def new(self, name):
@@ -137,16 +129,13 @@ def getSourcePackageDescriptions(
     cur.execute("""SELECT DISTINCT BinaryPackageName.name,
                           SourcePackageName.name
                      FROM BinaryPackageRelease, SourcePackageName,
-                          BinaryPackageBuild, SourcePackageRelease,
-                          BinaryPackageName
+                          BinaryPackageBuild, BinaryPackageName
                     WHERE
                        BinaryPackageName.id =
                            BinaryPackageRelease.binarypackagename AND
                        BinaryPackageRelease.build = BinaryPackageBuild.id AND
-                       SourcePackageRelease.sourcepackagename =
+                       BinaryPackageBuild.source_package_name =
                            SourcePackageName.id AND
-                       BinaryPackageBuild.source_package_release =
-                           SourcePackageRelease.id AND
                        %s
                    ORDER BY BinaryPackageName.name,
                             SourcePackageName.name"""

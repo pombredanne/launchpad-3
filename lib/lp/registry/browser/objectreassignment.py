@@ -11,20 +11,19 @@ __metaclass__ = type
 __all__ = ["ObjectReassignmentView"]
 
 
-from zope.app.form.interfaces import (
+from zope.component import getUtility
+from zope.formlib.form import FormFields
+from zope.formlib.interfaces import (
     ConversionError,
     WidgetInputError,
     )
-from zope.component import getUtility
-from zope.formlib.form import FormFields
 from zope.schema import Choice
 from zope.schema.vocabulary import (
     SimpleTerm,
     SimpleVocabulary,
     )
 
-from canonical.launchpad import _
-from canonical.launchpad.webapp import canonical_url
+from lp import _
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -36,6 +35,7 @@ from lp.registry.interfaces.person import (
     IObjectReassignment,
     IPersonSet,
     )
+from lp.services.webapp import canonical_url
 
 
 class ObjectReassignmentView(LaunchpadFormView):

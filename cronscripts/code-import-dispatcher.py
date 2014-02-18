@@ -5,15 +5,14 @@
 
 """Look for and dispatch code import jobs as needed."""
 
-# pylint: disable-msg=W0403
 import _pythonpath
 
 from xmlrpclib import ServerProxy
 
 from lp.codehosting.codeimport.dispatcher import CodeImportDispatcher
-from canonical.config import config
+from lp.services.config import config
 from lp.services.scripts.base import LaunchpadScript
-from canonical.launchpad.webapp.errorlog import globalErrorUtility
+from lp.services.webapp.errorlog import globalErrorUtility
 
 
 class CodeImportDispatcherScript(LaunchpadScript):

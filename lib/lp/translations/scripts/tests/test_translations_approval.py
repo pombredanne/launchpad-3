@@ -2,10 +2,11 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import logging
+
 import transaction
 
-from canonical.testing.layers import LaunchpadScriptLayer
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import LaunchpadScriptLayer
 from lp.translations.enums import RosettaImportStatus
 from lp.translations.model.translationimportqueue import (
     TranslationImportQueue,

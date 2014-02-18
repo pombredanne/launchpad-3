@@ -35,7 +35,6 @@
           action for obvious spam.</li>
           <li><strong>Hold</strong> - Continue to hold the message, deferring
           your decision until later.</li>
-          <li>Toss</li>
         </ul>
       </div>
       <div metal:fill-slot="widgets">

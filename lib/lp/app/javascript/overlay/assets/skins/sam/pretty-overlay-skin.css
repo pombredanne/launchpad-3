@@ -31,9 +31,11 @@
     float: right;
     width: 15px;
     height: 15px;
+    overflow: hidden;
     background: url('images/close.gif');
     display: block;
     margin-top: 4px;
+    text-indent: 3em;
 }
 
 .yui3-pretty-overlay .close .clear {

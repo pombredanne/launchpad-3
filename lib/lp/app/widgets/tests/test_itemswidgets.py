@@ -1,35 +1,44 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
 import doctest
 
+from lazr.enum import (
+    EnumeratedType,
+    Item,
+    )
+from lazr.enum._enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
+from testtools.matchers import DocTestMatches
 from zope.schema import Choice
 from zope.schema.vocabulary import (
     SimpleTerm,
     SimpleVocabulary,
     )
 
-from testtools.matchers import DocTestMatches
-
-from lazr.enum import (
-    EnumeratedType,
-    Item,
+from lp.app.browser.lazrjs import (
+    EnumChoiceWidget,
+    vocabulary_to_choice_edit_items,
     )
-
-from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.widgets.itemswidgets import (
     LabeledMultiCheckBoxWidget,
     LaunchpadRadioWidget,
     LaunchpadRadioWidgetWithDescription,
     PlainMultiCheckBoxWidget,
     )
+from lp.code.interfaces.branch import IBranch
+from lp.services.webapp.escaping import structured
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
+    ANONYMOUS,
+    person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class ItemWidgetTestCase(TestCaseWithFactory):
@@ -207,3 +216,120 @@ class TestLaunchpadRadioWidgetWithDescription(TestCaseWithFactory):
             '<...>item-&lt;2&gt;<...>&lt;unsafe&gt; &amp;nbsp; title<...>')
         self.assertRenderItem(
             expected, self.widget.renderItem, self.TestEnum.UNSAFE_TERM)
+
+    def test_renderExtraHint(self):
+        # If an extra hint is specified, it is rendered.
+        self.widget.extra_hint = "Hello World"
+        self.widget.extra_hint_class = 'hint_class'
+        expected = (
+            '<div class="hint_class">Hello World</div>')
+        hint_html = self.widget.renderExtraHint()
+        self.assertEqual(expected, hint_html)
+
+
+class TestEnumChoiceWidget(TestCaseWithFactory):
+    """Tests for EnumChoiceWidget and vocabulary_to_choice_edit_items."""
+
+    layer = DatabaseFunctionalLayer
+
+    class ChoiceEnum(DBEnumeratedType):
+
+        ITEM_A = DBItem(1, """
+            Item A
+
+            This is item A.
+            """)
+
+        ITEM_B = DBItem(2, """
+            Item B
+
+            This is item B.
+            """)
+
+    def _makeItemDict(self, item, overrides=None):
+        if not overrides:
+            overrides = dict()
+        result = {
+            'value': item.title,
+            'name': item.title,
+            'description': item.description,
+            'description_css_class': 'choice-description',
+            'style': '', 'help': '', 'disabled': False}
+        result.update(overrides)
+        return result
+
+    def test_vocabulary_to_choice_edit_items(self):
+        # The items list is as expected without the feature flag.
+        items = vocabulary_to_choice_edit_items(self.ChoiceEnum)
+        overrides = {'description': ''}
+        expected = [self._makeItemDict(e.value, overrides)
+                    for e in self.ChoiceEnum]
+        self.assertEqual(expected, items)
+
+    def test_vocabulary_to_choice_edit_items_no_description(self):
+        # There are no descriptions unless wanted.
+        overrides = {'description': ''}
+        items = vocabulary_to_choice_edit_items(self.ChoiceEnum)
+        expected = [self._makeItemDict(e.value, overrides)
+                    for e in self.ChoiceEnum]
+        self.assertEqual(expected, items)
+
+    def test_vocabulary_to_choice_edit_items_with_description(self):
+        # The items list is as expected.
+        items = vocabulary_to_choice_edit_items(
+            self.ChoiceEnum, include_description=True)
+        expected = [self._makeItemDict(e.value) for e in self.ChoiceEnum]
+        self.assertEqual(expected, items)
+
+    def test_vocabulary_to_choice_edit_items_excluded_items(self):
+        # Excluded items are not included.
+        items = vocabulary_to_choice_edit_items(
+            self.ChoiceEnum, include_description=True,
+            excluded_items=[self.ChoiceEnum.ITEM_B])
+        expected = [self._makeItemDict(self.ChoiceEnum.ITEM_A)]
+        self.assertEqual(expected, items)
+
+    def test_widget_with_anonymous_user(self):
+        # When the user is anonymous, the widget outputs static text.
+        branch = self.factory.makeAnyBranch()
+        widget = EnumChoiceWidget(
+            branch, IBranch['lifecycle_status'],
+            header='Change status to', css_class_prefix='branchstatus')
+        with person_logged_in(ANONYMOUS):
+            markup = widget()
+        expected = """
+        <span id="edit-lifecycle_status">
+            <span class="value branchstatusDEVELOPMENT">Development</span>
+        </span>
+        """
+        expected_matcher = DocTestMatches(
+            expected, (doctest.NORMALIZE_WHITESPACE |
+                       doctest.REPORT_NDIFF | doctest.ELLIPSIS))
+        self.assertThat(markup, expected_matcher)
+
+    def test_widget_with_user(self):
+        # When the user has edit permission, the widget allows changes via JS.
+        branch = self.factory.makeAnyBranch()
+        widget = EnumChoiceWidget(
+            branch, IBranch['lifecycle_status'],
+            header='Change status to', css_class_prefix='branchstatus')
+        with person_logged_in(branch.owner):
+            markup = widget()
+        expected = """
+        <span id="edit-lifecycle_status">
+            <span class="value branchstatusDEVELOPMENT">Development</span>
+            <span>
+            <a class="editicon sprite edit action-icon"
+                href="http://.../+edit"
+                title="">Edit</a>
+            </span>
+        </span>
+        <script>
+        LPJS.use('lp.app.choice', function(Y) {
+        ...
+        </script>
+        """
+        expected_matcher = DocTestMatches(
+            expected, (doctest.NORMALIZE_WHITESPACE |
+                       doctest.REPORT_NDIFF | doctest.ELLIPSIS))
+        self.assertThat(markup, expected_matcher)

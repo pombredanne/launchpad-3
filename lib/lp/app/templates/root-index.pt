@@ -3,7 +3,7 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  metal:use-macro="view/macro:page/locationless"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad">
   <metal:head fill-slot="head_epilogue">
     <style>
@@ -60,14 +60,14 @@
 
         <div class="top-portlet" style="border-bottom: 1px dotted #999;">
           <img src="/@@/launchpad-logo-and-name.png"
-               alt=""
+               id="launchpad-logo-and-name" alt=""
                style="margin: 0 9em 1em 0"/>
         </div>
 
         <div class="yui-g">
           <div class="yui-u first" style="margin-top: 1.5em;">
             <div class="homepage-whatslaunchpad"
-                 tal:condition="not:view/user" tal:content="cache:anonymous">
+                 tal:condition="view/show_whatslaunchpad">
               <h2><span class="launchpad-gold">Launchpad</span> is a software collaboration platform that provides:</h2>
               <ul tal:define="apphomes view/apphomes">
               <li>
@@ -110,7 +110,7 @@
             </div>
 
             <div id="homepage-blogposts" class="homepage-portlet"
-              tal:content="cache:public, 1 hour">
+                 tal:condition="features/app.root_blog.enabled">
               <h2>Recent Launchpad blog posts</h2>
               <ul tal:define="posts view/getRecentBlogPosts">
                 <li class="news"
@@ -143,13 +143,15 @@
               xml:lang="en" lang="en" dir="ltr"
               tal:attributes="action string:${rooturl}+search"
               method="get" accept-charset="UTF-8">
-              <input id="text" type="text" name="field.text" size="25%" />
+              <input id="text" type="text" name="field.text" size="25" />
               <input id="search" type="submit" value="Search Launchpad" />
             </form>
-            <script type="text/javascript"><!--
-              setFocusByName('field.text');
-            // --></script>
-            <div id="homepage-stats" tal:content="cache:public, 1 hour">
+            <script type="text/javascript">
+                LPJS.use('lp', function () {
+                    setFocusByName('field.text');
+                });
+            </script>
+            <div id="homepage-stats">
               <strong
                 tal:content="view/project_count/fmt:intcomma">123</strong>&nbsp;projects,
               <strong
@@ -176,8 +178,7 @@
                 or try it for yourself in our
                 <a href="https://qastaging.launchpad.net/">sandbox environment</a>.
               </p>
-              <tal:logged_in condition="view/user" omit-tag=""
-                tal:content="cache:public">
+              <tal:logged_in condition="view/user" omit-tag="">
                 If you're ready, you can:
                 <ul tal:define="apphomes view/apphomes">
                   <li>
@@ -188,15 +189,15 @@
                     <a class="sprite add"
                       href="/people/+newteam">Register a team</a>
                   </li>
-                  <li>
+                  <li tal:condition="not:view/show_whatslaunchpad">
                     <a class="sprite bug"
                       tal:attributes="href apphomes/bugs">Browse bugs</a>
                   </li>
-                  <li>
+                  <li tal:condition="not:view/show_whatslaunchpad">
                     <a class="sprite translate-icon"
                       tal:attributes="href apphomes/translations">Help translate</a>
                   </li>
-                  <li>
+                  <li tal:condition="not:view/show_whatslaunchpad">
                     <a class="sprite question"
                       tal:attributes="href apphomes/answers">Find answers</a>
                   </li>
@@ -204,17 +205,14 @@
                     <a class="sprite ppa-icon"
                       href="/ubuntu/+ppas">Browse Ubuntu PPAs</a>
                   </li>
-                  <li>
+                  <li tal:condition="not:view/show_whatslaunchpad">
                      <a class="sprite tour" href="/+tour">Take the tour</a>
                    </li>
                 </ul>
               </tal:logged_in>
             </div>
 
-            <div id="homepage-featured" class="homepage-portlet"
-                tal:content="cache:anonymous, 1 hour">
-              <tal:cache
-                  tal:content="cache:public, 5 minutes" tal:omit-tag="">
+            <div id="homepage-featured" class="homepage-portlet">
               <h2>Featured projects</h2>
 
               <div class="featured-project-top"
@@ -238,10 +236,9 @@
                   </li>
                 </ul>
               </div>
-              </tal:cache>
 
               <ul class="horizontal">
-                <li tal:content="cache:public, 1 hour">
+                <li>
                   <strong><a href="/projects">Browse all
                     <tal:count content="view/project_count">42</tal:count>
                     projects</a>!</strong>

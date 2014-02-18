@@ -5,9 +5,9 @@
 
 __metaclass__ = type
 
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.vocabularies import SourcePackageNameVocabulary
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestSourcePackageNameVocabulary(TestCaseWithFactory):

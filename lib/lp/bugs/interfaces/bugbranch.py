@@ -1,8 +1,6 @@
 # Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213
-
 """Interfaces for linking BugTasks and Branches."""
 
 __metaclass__ = type
@@ -24,18 +22,14 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
-from canonical.launchpad.interfaces.launchpad import (
-    IHasBug,
-    IHasDateCreated,
-    )
+from lp import _
+from lp.app.interfaces.launchpad import IHasDateCreated
 from lp.bugs.interfaces.bugtask import IBugTask
+from lp.bugs.interfaces.hasbug import IHasBug
 from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchtarget import IHasBranchTarget
 from lp.registry.interfaces.person import IPerson
-from lp.services.fields import (
-    BugField,
-    )
+from lp.services.fields import BugField
 
 
 class IBugBranch(IHasDateCreated, IHasBug, IHasBranchTarget):

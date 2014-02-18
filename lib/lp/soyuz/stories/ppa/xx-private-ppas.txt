@@ -44,7 +44,7 @@ they are not shown to non-authorised users.
 The owner of the archive will see his own archive in the listing:
 
     >>> cprov_browser = setupBrowser(
-    ...     auth="Basic celso.providelo@canonical.com:cprov")
+    ...     auth="Basic celso.providelo@canonical.com:test")
     >>> cprov_browser.open("http://launchpad.dev/ubuntu/+ppas")
     >>> cprov_browser.getControl(name="show_inactive").value = True
     >>> cprov_browser.getControl('Search', index=0).click()
@@ -67,7 +67,6 @@ private.
 
     >>> admin_browser.getLink("Administer archive").click()
     >>> admin_browser.getControl(name="field.private").value = True
-    >>> admin_browser.getControl(name="field.buildd_secret").value = "secret"
     >>> admin_browser.getControl("Save").click()
 
 A member of a private team PPA will see his team's PPA in the listing.

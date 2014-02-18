@@ -7,10 +7,10 @@ __metaclass__ = type
 
 from smtplib import SMTPException
 
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.services.mail.basemailer import BaseMailer
 from lp.services.mail.sendmail import MailController
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.testing.mail_helpers import pop_notifications
 
 

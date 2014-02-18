@@ -7,9 +7,9 @@ Run the doctests and pagetests.
 
 import os
 
-from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
-from canonical.testing.layers import BaseLayer
 from lp.services.testing import build_test_suite
+from lp.testing.layers import BaseLayer
+from lp.testing.systemdocs import LayeredDocFileSuite
 
 
 here = os.path.dirname(os.path.realpath(__file__))

@@ -12,7 +12,6 @@ __all__ = [
     'ProductReleaseEditView',
     'ProductReleaseNavigation',
     'ProductReleaseRdfView',
-    'ProductReleaseView',
     ]
 
 import mimetypes
@@ -20,12 +19,12 @@ import mimetypes
 from lazr.restful.interface import copy_field
 from lazr.restful.utils import smartquote
 from z3c.ptcompat import ViewPageTemplateFile
-from zope.app.form.browser import (
+from zope.event import notify
+from zope.formlib.form import FormFields
+from zope.formlib.widgets import (
     TextAreaWidget,
     TextWidget,
     )
-from zope.event import notify
-from zope.formlib.form import FormFields
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.schema import Bool
 from zope.schema.vocabulary import (
@@ -33,16 +32,7 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from canonical.launchpad import _
-from canonical.launchpad.webapp import (
-    canonical_url,
-    ContextMenu,
-    enabled_with_permission,
-    LaunchpadView,
-    Link,
-    Navigation,
-    stepthrough,
-    )
+from lp import _
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -55,10 +45,17 @@ from lp.registry.browser import (
     MilestoneOverlayMixin,
     RegistryDeleteViewMixin,
     )
-from lp.registry.browser.product import ProductDownloadFileMixin
 from lp.registry.interfaces.productrelease import (
     IProductRelease,
     IProductReleaseFileAddForm,
+    )
+from lp.services.webapp import (
+    canonical_url,
+    ContextMenu,
+    enabled_with_permission,
+    Link,
+    Navigation,
+    stepthrough,
     )
 
 
@@ -194,12 +191,6 @@ class ProductReleaseFromSeriesAddView(ProductReleaseAddViewBase,
         'changelog',
         ]
 
-    def initialize(self):
-        # The dynamically loaded milestone form needs this javascript
-        # enabled in the base-layout.
-        self.request.needs_datepicker_iframe = True
-        super(ProductReleaseFromSeriesAddView, self).initialize()
-
     def setUpFields(self):
         super(ProductReleaseFromSeriesAddView, self).setUpFields()
         self._prependKeepMilestoneActiveField()
@@ -263,7 +254,7 @@ class ProductReleaseRdfView(BaseRdfView):
 
     @property
     def filename(self):
-        return '%s-%s-%s' % (
+        return '%s-%s-%s.rdf' % (
             self.context.product.name,
             self.context.productseries.name,
             self.context.version)
@@ -273,7 +264,7 @@ class ProductReleaseAddDownloadFileView(LaunchpadFormView):
     """A view for adding a file to an `IProductRelease`."""
     schema = IProductReleaseFileAddForm
 
-    custom_widget('description', TextWidget, width=62)
+    custom_widget('description', TextWidget, displayWidth=60)
 
     @property
     def label(self):
@@ -281,6 +272,19 @@ class ProductReleaseAddDownloadFileView(LaunchpadFormView):
         return smartquote('Add a download file to %s' % self.context.title)
 
     page_title = label
+
+    def validate(self, data):
+        """See `LaunchpadFormView`."""
+        if not self.context.can_have_release_files:
+            self.addError('Only public projects can have download files.')
+        file_name = None
+        filecontent = self.request.form.get(self.widgets['filecontent'].name)
+        if filecontent:
+            file_name = filecontent.filename
+        if file_name and self.context.hasReleaseFile(file_name):
+            self.setFieldError(
+                'filecontent',
+                u"The file '%s' is already uploaded." % file_name)
 
     @action('Upload', name='add')
     def add_action(self, action, data):
@@ -329,18 +333,6 @@ class ProductReleaseAddDownloadFileView(LaunchpadFormView):
     @property
     def cancel_url(self):
         return canonical_url(self.context)
-
-
-class ProductReleaseView(LaunchpadView, ProductDownloadFileMixin):
-    """View for ProductRelease overview."""
-
-    def initialize(self):
-        self.form = self.request.form
-        self.processDeleteFiles()
-
-    def getReleases(self):
-        """See `ProductDownloadFileMixin`."""
-        return set([self.context])
 
 
 class ProductReleaseDeleteView(LaunchpadFormView, RegistryDeleteViewMixin):

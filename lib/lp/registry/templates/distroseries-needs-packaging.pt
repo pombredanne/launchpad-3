@@ -31,7 +31,6 @@
         </ul>
       </div>
 
-      <tal:cache content="cache:public, 30 minute">
       <div class="narrow"
         tal:define="summaries view/cached_unlinked_packages;"
         tal:condition="summaries/batch">
@@ -87,7 +86,6 @@
         <div class="results"
           tal:content="structure summaries/@@+navigation-links-lower" />
       </div>
-      </tal:cache>
     </div>
   </body>
 </html>

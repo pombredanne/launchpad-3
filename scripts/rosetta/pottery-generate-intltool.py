@@ -7,7 +7,6 @@
 
 import _pythonpath
 
-
 from lpbuildd.pottery.intltool import generate_pots
 
 

@@ -14,6 +14,7 @@ __all__ = [
 from collections import deque
 from functools import partial
 import json
+import socket
 import sys
 import threading
 import time
@@ -23,7 +24,7 @@ import transaction
 from transaction._transaction import Status as TransactionStatus
 from zope.interface import implements
 
-from canonical.config import config
+from lp.services.config import config
 from lp.services.messaging.interfaces import (
     IMessageConsumer,
     IMessageProducer,
@@ -117,6 +118,9 @@ class RabbitSession(threading.local):
         if self._connection is not None:
             try:
                 self._connection.close()
+            except socket.error:
+                # Socket error is fine; the connection is still closed.
+                pass
             finally:
                 self._connection = None
 
@@ -189,7 +193,7 @@ class RabbitUnreliableSession(RabbitSession):
         except self.suppressed_errors:
             pass
         except Exception:
-            from canonical.launchpad.webapp import errorlog
+            from lp.services.webapp import errorlog
             errorlog.globalErrorUtility.raising(sys.exc_info())
 
 
@@ -281,7 +285,7 @@ class RabbitQueue(RabbitMessageBase):
                 else:
                     self.channel.basic_ack(message.delivery_tag)
                     return json.loads(message.body)
-            except amqp.AMQPChannelException, error:
+            except amqp.AMQPChannelException as error:
                 if error.amqp_reply_code == 404:
                     raise QueueNotFound()
                 else:

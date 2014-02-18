@@ -1,15 +1,13 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=F0401
-
 """Tests for classes that implement IHasRecipes."""
 
 __metaclass__ = type
 
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.interfaces.hasrecipes import IHasRecipes
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestIHasRecipes(TestCaseWithFactory):

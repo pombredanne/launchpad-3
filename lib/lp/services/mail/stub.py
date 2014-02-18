@@ -8,7 +8,7 @@ __metaclass__ = type
 import email
 from logging import getLogger
 
-from zope.app import zapi
+from zope.component import getUtility
 from zope.interface import implements
 from zope.sendmail.interfaces import IMailer
 
@@ -49,7 +49,7 @@ class StubMailer:
             message['From'] = self.from_addr
             message = message.as_string()
 
-        sendmail = zapi.getUtility(IMailer, self.mailer)
+        sendmail = getUtility(IMailer, self.mailer)
         sendmail.send(self.from_addr, self.to_addrs, message)
 
 

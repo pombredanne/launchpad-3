@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test NascentUploadFile functionality."""
@@ -7,29 +7,35 @@ __metaclass__ = type
 
 import hashlib
 import os
+import subprocess
 
 from debian.deb822 import (
     Changes,
     Dsc,
     )
 
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.archiveuploader.changesfile import ChangesFile
 from lp.archiveuploader.dscfile import DSCFile
 from lp.archiveuploader.nascentuploadfile import (
     CustomUploadFile,
     DebBinaryUploadFile,
+    NascentUploadFile,
     UploadError,
     )
-from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.archiveuploader.tests import AbsolutelyAnythingGoesUploadPolicy
 from lp.buildmaster.enums import BuildStatus
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.log.logger import BufferLogger
+from lp.services.osutils import write_file
 from lp.soyuz.enums import (
-    PackageUploadCustomFormat,
     PackagePublishingStatus,
+    PackageUploadCustomFormat,
     )
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import (
+    LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
+    )
 
 
 class NascentUploadFileTestCase(TestCaseWithFactory):
@@ -49,15 +55,49 @@ class NascentUploadFileTestCase(TestCaseWithFactory):
 
         :param filename: Filename to use
         :param contents: Contents of the file
-        :return: Tuple with path, digest and size
+        :return: Tuple with path, md5 and size
         """
         path = os.path.join(self.makeTemporaryDirectory(), filename)
-        f = open(path, 'w')
-        try:
+        with open(path, 'w') as f:
             f.write(contents)
-        finally:
-            f.close()
-        return (path, hashlib.sha1(contents), len(contents))
+        return (
+            path, hashlib.md5(contents).hexdigest(),
+            hashlib.sha1(contents).hexdigest(), len(contents))
+
+
+class TestNascentUploadFile(NascentUploadFileTestCase):
+
+    layer = ZopelessDatabaseLayer
+
+    def test_checkSizeAndCheckSum_validates_size(self):
+        (path, md5, sha1, size) = self.writeUploadFile('foo', 'bar')
+        nuf = NascentUploadFile(
+            path, dict(MD5=md5), size - 1, 'main/devel', None, None, None)
+        self.assertRaisesWithContent(
+            UploadError,
+            'File foo mentioned in the changes has a size mismatch. 3 != 2',
+            nuf.checkSizeAndCheckSum)
+
+    def test_checkSizeAndCheckSum_validates_md5(self):
+        (path, md5, sha1, size) = self.writeUploadFile('foo', 'bar')
+        nuf = NascentUploadFile(
+            path, dict(MD5='deadbeef'), size, 'main/devel', None, None, None)
+        self.assertRaisesWithContent(
+            UploadError,
+            'File foo mentioned in the changes has a MD5 mismatch. '
+            '37b51d194a7513e45b56f6524f2d51f2 != deadbeef',
+            nuf.checkSizeAndCheckSum)
+
+    def test_checkSizeAndCheckSum_validates_sha1(self):
+        (path, md5, sha1, size) = self.writeUploadFile('foo', 'bar')
+        nuf = NascentUploadFile(
+            path, dict(MD5=md5, SHA1='foobar'), size, 'main/devel', None,
+            None, None)
+        self.assertRaisesWithContent(
+            UploadError,
+            'File foo mentioned in the changes has a SHA1 mismatch. '
+            '62cdb7020ff920e5aa642c3d4066950dd1f01f4d != foobar',
+            nuf.checkSizeAndCheckSum)
 
 
 class CustomUploadFileTests(NascentUploadFileTestCase):
@@ -68,9 +108,9 @@ class CustomUploadFileTests(NascentUploadFileTestCase):
     def createCustomUploadFile(self, filename, contents,
                                component_and_section, priority_name):
         """Simple wrapper to create a CustomUploadFile."""
-        (path, digest, size) = self.writeUploadFile(filename, contents)
+        (path, md5, sha1, size) = self.writeUploadFile(filename, contents)
         uploadfile = CustomUploadFile(
-            path, digest, size, component_and_section, priority_name,
+            path, dict(MD5=md5), size, component_and_section, priority_name,
             self.policy, self.logger)
         return uploadfile
 
@@ -90,6 +130,36 @@ class CustomUploadFileTests(NascentUploadFileTestCase):
         libraryfile = uploadfile.storeInDatabase()
         self.assertEquals("bla.txt", libraryfile.filename)
         self.assertEquals("application/octet-stream", libraryfile.mimetype)
+
+    def test_debian_installer_verify(self):
+        # debian-installer uploads are required to have sensible filenames.
+        uploadfile = self.createCustomUploadFile(
+            "debian-installer-images_20120627_i386.tar.gz", "data",
+            "main/raw-installer", "extra")
+        self.assertEqual([], list(uploadfile.verify()))
+        uploadfile = self.createCustomUploadFile(
+            "bla.txt", "data", "main/raw-installer", "extra")
+        errors = list(uploadfile.verify())
+        self.assertEqual(1, len(errors))
+        self.assertIsInstance(errors[0], UploadError)
+
+    def test_no_handler_no_verify(self):
+        # Uploads without special handlers have no filename checks.
+        uploadfile = self.createCustomUploadFile(
+            "bla.txt", "data", "main/raw-meta-data", "extra")
+        self.assertEqual([], list(uploadfile.verify()))
+
+    def test_debian_installer_auto_approved(self):
+        # debian-installer uploads are auto-approved.
+        uploadfile = self.createCustomUploadFile(
+            "bla.txt", "data", "main/raw-installer", "extra")
+        self.assertTrue(uploadfile.autoApprove())
+
+    def test_uefi_not_auto_approved(self):
+        # UEFI uploads are auto-approved.
+        uploadfile = self.createCustomUploadFile(
+            "bla.txt", "data", "main/raw-uefi", "extra")
+        self.assertFalse(uploadfile.autoApprove())
 
 
 class PackageUploadFileTestCase(NascentUploadFileTestCase):
@@ -124,11 +194,8 @@ class PackageUploadFileTestCase(NascentUploadFileTestCase):
     def createChangesFile(self, filename, changes):
         tempdir = self.makeTemporaryDirectory()
         path = os.path.join(tempdir, filename)
-        changes_fd = open(path, "w")
-        try:
+        with open(path, "w") as changes_fd:
             changes.dump(changes_fd)
-        finally:
-            changes_fd.close()
         return ChangesFile(path, self.policy, self.logger)
 
 
@@ -153,12 +220,12 @@ class DSCFileTests(PackageUploadFileTestCase):
 
     def createDSCFile(self, filename, dsc, component_and_section,
                       priority_name, package, version, changes):
-        (path, digest, size) = self.writeUploadFile(filename, dsc.dump())
+        (path, md5, sha1, size) = self.writeUploadFile(filename, dsc.dump())
         if changes:
             self.assertEquals([], list(changes.processAddresses()))
         return DSCFile(
-            path, digest, size, component_and_section, priority_name, package,
-            version, changes, self.policy, self.logger)
+            path, dict(MD5=md5), size, component_and_section, priority_name,
+            package, version, changes, self.policy, self.logger)
 
     def test_filetype(self):
         # The filetype attribute is set based on the file extension.
@@ -226,6 +293,9 @@ class DSCFileTests(PackageUploadFileTestCase):
 
     def test_checkBuild(self):
         # checkBuild() verifies consistency with a build.
+        self.policy.distroseries.nominatedarchindep = (
+            self.factory.makeDistroArchSeries(
+                distroseries=self.policy.distroseries))
         build = self.factory.makeSourcePackageRecipeBuild(
             pocket=self.policy.pocket, distroseries=self.policy.distroseries,
             archive=self.policy.archive)
@@ -242,9 +312,11 @@ class DSCFileTests(PackageUploadFileTestCase):
     def test_checkBuild_inconsistent(self):
         # checkBuild() raises UploadError if inconsistencies between build
         # and upload file are found.
+        distroseries = self.factory.makeDistroSeries()
+        distroseries.nominatedarchindep = self.factory.makeDistroArchSeries(
+            distroseries=distroseries)
         build = self.factory.makeSourcePackageRecipeBuild(
-            pocket=self.policy.pocket,
-            distroseries=self.factory.makeDistroSeries(),
+            pocket=self.policy.pocket, distroseries=distroseries,
             archive=self.policy.archive)
         dsc = self.getBaseDsc()
         uploadfile = self.createDSCFile(
@@ -276,13 +348,34 @@ class DebBinaryUploadFileTests(PackageUploadFileTestCase):
                 "protocols",
             }
 
+    def createDeb(self, filename, data_format):
+        """Return the contents of a dummy .deb file."""
+        tempdir = self.makeTemporaryDirectory()
+        members = [
+            "debian-binary",
+            "control.tar.gz",
+            "data.tar.%s" % data_format,
+            ]
+        for member in members:
+            write_file(os.path.join(tempdir, member), "")
+        retcode = subprocess.call(
+            ["ar", "rc", filename] + members, cwd=tempdir)
+        self.assertEqual(0, retcode)
+        with open(os.path.join(tempdir, filename)) as f:
+            return f.read()
+
     def createDebBinaryUploadFile(self, filename, component_and_section,
-                                  priority_name, package, version, changes):
+                                  priority_name, package, version, changes,
+                                  data_format=None):
         """Create a DebBinaryUploadFile."""
-        (path, digest, size) = self.writeUploadFile(filename, "DUMMY DATA")
+        if data_format:
+            data = self.createDeb(filename, data_format)
+        else:
+            data = "DUMMY DATA"
+        (path, md5, sha1, size) = self.writeUploadFile(filename, data)
         return DebBinaryUploadFile(
-            path, digest, size, component_and_section, priority_name, package,
-            version, changes, self.policy, self.logger)
+            path, dict(MD5=md5), size, component_and_section, priority_name,
+            package, version, changes, self.policy, self.logger)
 
     def test_unknown_priority(self):
         # Unknown priorities automatically get changed to 'extra'.
@@ -301,6 +394,15 @@ class DebBinaryUploadFileTests(PackageUploadFileTestCase):
         self.assertEquals("dulwich", uploadfile.source_name)
         self.assertEquals("0.42", uploadfile.source_version)
         self.assertEquals("0.42", uploadfile.control_version)
+
+    def test_verifyFormat_xz(self):
+        # verifyFormat accepts xz-compressed .debs.
+        uploadfile = self.createDebBinaryUploadFile(
+            "foo_0.42_i386.deb", "main/python", "unknown", "mypkg", "0.42",
+            None, data_format="xz")
+        control = self.getBaseControl()
+        uploadfile.parseControl(control)
+        self.assertEqual([], list(uploadfile.verifyFormat()))
 
     def test_storeInDatabase(self):
         # storeInDatabase creates a BinaryPackageRelease.
@@ -395,7 +497,7 @@ class DebBinaryUploadFileTests(PackageUploadFileTestCase):
         # findSourcePackageRelease finds the matching SourcePackageRelease.
         das = self.factory.makeDistroArchSeries(
             distroseries=self.policy.distroseries, architecturetag="i386")
-        build = self.factory.makeBinaryPackageBuild(
+        self.factory.makeBinaryPackageBuild(
             distroarchseries=das,
             archive=self.policy.archive)
         uploadfile = self.createDebBinaryUploadFile(
@@ -416,7 +518,7 @@ class DebBinaryUploadFileTests(PackageUploadFileTestCase):
         # SourcePackageRelease.
         das = self.factory.makeDistroArchSeries(
             distroseries=self.policy.distroseries, architecturetag="i386")
-        build = self.factory.makeBinaryPackageBuild(
+        self.factory.makeBinaryPackageBuild(
             distroarchseries=das,
             archive=self.policy.archive)
         uploadfile = self.createDebBinaryUploadFile(
@@ -433,14 +535,14 @@ class DebBinaryUploadFileTests(PackageUploadFileTestCase):
         # package releases.
         das = self.factory.makeDistroArchSeries(
             distroseries=self.policy.distroseries, architecturetag="i386")
-        build = self.factory.makeBinaryPackageBuild(
+        self.factory.makeBinaryPackageBuild(
             distroarchseries=das,
             archive=self.policy.archive)
         uploadfile = self.createDebBinaryUploadFile(
             "foo_0.42_i386.deb", "main/python", "unknown", "mypkg", "0.42",
             None)
         spn = self.factory.makeSourcePackageName("foo")
-        spph1 = self.factory.makeSourcePackagePublishingHistory(
+        self.factory.makeSourcePackagePublishingHistory(
             sourcepackagename=spn,
             distroseries=self.policy.distroseries,
             version="0.42", archive=self.policy.archive,

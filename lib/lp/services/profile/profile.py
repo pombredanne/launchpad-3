@@ -25,7 +25,6 @@ import threading
 from bzrlib import lsprof
 import oops_datedir_repo.serializer_rfc822
 from z3c.pt.pagetemplate import PageTemplateFile
-from zope.app.publication.interfaces import IEndRequestEvent
 from zope.component import (
     adapter,
     getUtility,
@@ -33,19 +32,20 @@ from zope.component import (
 from zope.contenttype.parse import parse
 from zope.error.interfaces import IErrorReportingUtility
 from zope.exceptions.exceptionformatter import format_exception
-from zope.traversing.namespace import view
-
-from canonical.config import config
-import canonical.launchpad.webapp.adapter as da
-from canonical.launchpad.webapp.interfaces import (
-    DisallowedStore,
+from zope.publisher.interfaces import (
+    IEndRequestEvent,
     IStartRequestEvent,
     )
+from zope.traversing.namespace import view
+
+from lp.services.config import config
+from lp.services.database.interfaces import DisallowedStore
+from lp.services.features import getFeatureFlag
 from lp.services.profile.mem import (
     memory,
     resident,
     )
-from lp.services.features import getFeatureFlag
+import lp.services.webapp.adapter as da
 
 
 class ProfilingOops(Exception):

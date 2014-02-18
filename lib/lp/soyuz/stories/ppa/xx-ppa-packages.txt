@@ -40,7 +40,6 @@ the 'View all builds' link.
     >>> print anon_browser.url
     http://launchpad.dev/~cprov/+archive/ppa/+builds
 
-
 The rest of the builds page functionality is tested generically at
 in xx-builds-pages.txt.
 
@@ -133,6 +132,7 @@ published, this will be indicated to the viewer:
     # record so that it is pending publication.
     >>> login('foo.bar@canonical.com')
     >>> from zope.component import getUtility
+    >>> from zope.security.proxy import removeSecurityProxy
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> cprov_ppa = cprov.archive
@@ -141,8 +141,9 @@ published, this will be indicated to the viewer:
     >>> print pmount_i386_pub.displayname
     pmount 0.1-1 in warty i386
     >>> from lp.soyuz.enums import PackagePublishingStatus
-    >>> pmount_i386_pub.status = PackagePublishingStatus.PENDING
-    >>> pmount_i386_pub.datepublished = None
+    >>> naked_pub = removeSecurityProxy(pmount_i386_pub)
+    >>> naked_pub.status = PackagePublishingStatus.PENDING
+    >>> naked_pub.datepublished = None
     >>> transaction.commit()
     >>> logout()
 
@@ -208,7 +209,7 @@ We can view the link on the public PPA to Celso's private PPA when logged
 in as Celso.
 
     >>> cprov_browser = setupBrowser(
-    ...     auth="Basic celso.providelo@canonical.com:cprov")
+    ...     auth="Basic celso.providelo@canonical.com:test")
     >>> cprov_browser.open(
     ...     "http://launchpad.dev/~joe/+archive/ppa/+packages")
     >>> expander_url = cprov_browser.getLink(id=expander_link_id).url
@@ -271,26 +272,19 @@ modify some publication in Celso's PPA to SUPERSEDED and DELETED
 states. Note, for consistency we have to create the binary publishing records
 for iceweasel before marking it as superseded.
 
-    >>> from zope.component import getUtility
-    >>> from lp.registry.interfaces.person import IPersonSet
-    >>> login('foo.bar@canonical.com')
+    >>> login('celso.providelo@canonical.com')
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> iceweasel_pub = cprov.archive.getPublishedSources(
-    ...     name='iceweasel').first()
+    ...     name=u'iceweasel').first()
     >>> bpr = test_publisher.uploadBinaryForBuild(
     ...     iceweasel_pub.getBuilds()[0], 'bar-bin')
     >>> pub_bins = test_publisher.publishBinaryInArchive(
     ...     bpr, cprov.archive, status=PackagePublishingStatus.PUBLISHED)
-    >>> iceweasel_pub.status = (
-    ...     PackagePublishingStatus.SUPERSEDED)
-    >>> pmount_pub = cprov.archive.getPublishedSources(name='pmount').first()
-    >>> pmount_pub.status = PackagePublishingStatus.DELETED
-    >>> pmount_pub.removed_by = cprov
-    >>> pmount_pub.removal_comment = 'nhack !'
+    >>> iceweasel_pub.supersede()
+    >>> pmount_pub = cprov.archive.getPublishedSources(name=u'pmount').first()
+    >>> pmount_pub.requestDeletion(cprov, 'nhack !')
     >>> logout()
     >>> transaction.commit()
-    >>> from canonical.database.sqlbase import flush_database_updates
-    >>> flush_database_updates()
 
 The default status filter is 'published', which means that, by
 default, PPA pages will only present PUBLISHED or PENDING packages.
@@ -305,7 +299,8 @@ default, PPA pages will only present PUBLISHED or PENDING packages.
 
 Use can explicitly select 'published' filter and will get the same result.
 
-    >>> anon_browser.getControl(name='field.status_filter').value = ['published']
+    >>> anon_browser.getControl(
+    ...     name='field.status_filter').value = ['published']
     >>> anon_browser.getControl('Filter', index=0).click()
     >>> print_archive_package_rows(anon_browser.contents)
     Source          Published   Status     Series           Section  Build
@@ -315,7 +310,8 @@ Use can explicitly select 'published' filter and will get the same result.
 When needed the users can select the 'superseded' filter and the
 result will only contain packages SUPERSEDED or DELETED.
 
-    >>> anon_browser.getControl(name='field.status_filter').value = ['superseded']
+    >>> anon_browser.getControl(
+    ...     name='field.status_filter').value = ['superseded']
     >>> anon_browser.getControl('Filter', index=0).click()
     >>> print_archive_package_rows(anon_browser.contents)
     Source            Published    Status        Series   Section  Build
@@ -355,12 +351,19 @@ Publish mozilla-firefox to ubuntu-team's PPA and ensure that it is signed
 by name16 (Foo Bar) who is a member - the signer is presented as the uploader
 in the list.
 
-    >>> from lp.soyuz.tests.ppa import publishToTeamPPA
+    >>> from lp.registry.interfaces.sourcepackage import SourcePackageFileType
+    >>> from lp.testing.sampledata import UBUNTU_UPLOAD_TEAM_NAME
     >>> login(ANONYMOUS)
-    >>> publishToTeamPPA(team_name="ubuntu-team")
+    >>> team = getUtility(IPersonSet).getByName(UBUNTU_UPLOAD_TEAM_NAME)
+    >>> key = factory.makeGPGKey(team.teamowner)
+    >>> pub = factory.makeSourcePackagePublishingHistory(
+    ...     archive=team.archive, dscsigningkey=key)
+    >>> lfa = factory.makeLibraryFileAlias(filename='foo.orig.tar.gz')
+    >>> ign = factory.makeSourcePackageReleaseFile(
+    ...     sourcepackagerelease=pub.sourcepackagerelease, library_file=lfa,
+    ...     filetype=SourcePackageFileType.ORIG_TARBALL)
     >>> logout()
     >>> transaction.commit()
-    >>> flush_database_updates()
 
 Access ubuntu-team's PPA page:
 
@@ -371,7 +374,7 @@ The package row data shows the uploader:
 
     >>> print_archive_package_rows(foo_browser.contents)
     Source              Uploader ... Status   Series  Section  Build Status
-    mozilla-firefox...  name16       Pending  Hoary   Base
+    unique-from...      mark         Pending  Distroseries... Section...
 
 Links from files go to their on-archive locations:
 
@@ -380,13 +383,13 @@ Links from files go to their on-archive locations:
     >>> expander_url = foo_browser.getLink(id=expander_id).url
     >>> anon_browser.open(expander_url)
     >>> print anon_browser.getLink("orig").url
-    http://.../firefox_0.9.2.orig.tar.gz
+    http://.../+files/foo.orig.tar.gz
 
 The uploader name is linkified to that user's home page:
 
-    >>> foo_browser.getLink(url="~name16").click()
+    >>> foo_browser.getLink(url="~mark").click()
     >>> foo_browser.url
-    'http://launchpad.dev/~name16'
+    'http://launchpad.dev/~mark'
 
 
 PPA Build Status column
@@ -443,7 +446,7 @@ sees that there was a failure while building 'cdrkit' on i386 he can
 quickly 'retry' the failure.
 
     >>> cprov_browser = setupBrowser(
-    ...     auth='Basic celso.providelo@canonical.com:cprov')
+    ...     auth='Basic celso.providelo@canonical.com:test')
     >>> cprov_browser.open(
     ...     "http://launchpad.dev/~cprov/+archive/ppa/+packages")
 

@@ -58,19 +58,22 @@ class ImportantInfo:
         return '\n'.join(L)
 
 # PageTemplateFile has .filename.
-from z3c.ptcompat import PageTemplateFile, ViewPageTemplateFile
+from z3c.ptcompat import (
+    PageTemplateFile,
+    ViewPageTemplateFile,
+    )
 
 # PythonExpr has .text, the text of the expression.
 from zope.tales.pythonexpr import PythonExpr
 
 # TrustedZopeContext has self.contexts, a dict with template, view, context,
 # request, etc.
-from zope.app.pagetemplate.engine import TrustedZopeContext
+from zope.pagetemplate.engine import TrustedZopeContext
 
 # TALInterpreter has self.sourceFile, a filename of a page template.
 from zope.tal.talinterpreter import TALInterpreter
 
-from zope.app.pagetemplate.simpleviewclass import simple
+from zope.browserpage.simpleviewclass import simple
 
 def find_important_info():
     stack = inspect.stack()
@@ -102,7 +105,6 @@ def find_important_info():
                     metadata["doctest"] = (filename, lineno, func_name)
                 if 'self' in frame.f_locals:
                     fself = frame.f_locals['self']
-                    ftype = type(fself)
                     for cls in list(important_classes):
                         if isinstance(fself, cls):
                             important_objects[cls] = fself

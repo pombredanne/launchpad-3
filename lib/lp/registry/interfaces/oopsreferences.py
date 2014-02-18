@@ -15,14 +15,10 @@ from lazr.restful.declarations import (
     operation_for_version,
     operation_parameters,
     )
-from zope.interface import (
-    Interface,
-    )
-from zope.schema import (
-    Datetime
-    )
+from zope.interface import Interface
+from zope.schema import Datetime
 
-from canonical.launchpad import _
+from lp import _
 
 
 class IHasOOPSReferences(Interface):

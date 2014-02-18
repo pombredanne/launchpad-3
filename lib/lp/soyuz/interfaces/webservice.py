@@ -33,8 +33,6 @@ __all__ = [
     'IPackageset',
     'IPackagesetSet',
     'IProcessor',
-    'IProcessorFamily',
-    'IProcessorFamilySet',
     'IProcessorSet',
     'ISourcePackagePublishingHistory',
     'IncompatibleArguments',
@@ -51,6 +49,9 @@ __all__ = [
     'VersionRequiresName',
     ]
 
+# XXX: JonathanLange 2010-11-09 bug=673083: Legacy work-around for circular
+# import bugs.  Break this up into a per-package thing.
+from lp import _schema_circular_imports
 from lp.soyuz.interfaces.archive import (
     AlreadySubscribed,
     ArchiveDisabled,
@@ -58,14 +59,14 @@ from lp.soyuz.interfaces.archive import (
     CannotCopy,
     CannotSwitchPrivacy,
     CannotUploadToArchive,
-    CannotUploadToPPA,
     CannotUploadToPocket,
+    CannotUploadToPPA,
     ComponentNotFound,
     IArchive,
     InsufficientUploadRights,
     InvalidComponent,
-    InvalidPocketForPPA,
     InvalidPocketForPartnerArchive,
+    InvalidPocketForPPA,
     NoRightsForArchive,
     NoRightsForComponent,
     NoSuchPPA,
@@ -83,9 +84,7 @@ from lp.soyuz.interfaces.binarypackagebuild import (
 from lp.soyuz.interfaces.binarypackagerelease import (
     IBinaryPackageReleaseDownloadCount,
     )
-from lp.soyuz.interfaces.buildrecords import (
-    IncompatibleArguments,
-    )
+from lp.soyuz.interfaces.buildrecords import IncompatibleArguments
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 from lp.soyuz.interfaces.packageset import (
     DuplicatePackagesetName,
@@ -95,8 +94,6 @@ from lp.soyuz.interfaces.packageset import (
     )
 from lp.soyuz.interfaces.processor import (
     IProcessor,
-    IProcessorFamily,
-    IProcessorFamilySet,
     IProcessorSet,
     )
 from lp.soyuz.interfaces.publishing import (
@@ -105,22 +102,5 @@ from lp.soyuz.interfaces.publishing import (
     )
 from lp.soyuz.interfaces.queue import IPackageUpload
 
-from canonical.launchpad.components.apihelpers import (
-    patch_collection_property,
-    patch_plain_parameter_type,
-    patch_reference_property,
-    )
 
-# XXX: JonathanLange 2010-11-09 bug=673083: Legacy work-around for circular
-# import bugs.  Break this up into a per-package thing.
-from canonical.launchpad.interfaces import _schema_circular_imports
 _schema_circular_imports
-
-# IProcessor
-patch_reference_property(
-    IProcessor, 'family', IProcessorFamily)
-
-patch_collection_property(
-    IArchive, 'enabled_restricted_families', IProcessorFamily)
-patch_plain_parameter_type(
-    IArchive, 'enableRestrictedFamily', 'family', IProcessorFamily)

@@ -1,8 +1,6 @@
 # Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=W0222,W0231
-
 __metaclass__ = type
 
 import logging
@@ -28,12 +26,6 @@ from twisted.internet import (
 from twisted.protocols.basic import NetstringParseError
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.launchpad.webapp import errorlog
-from canonical.testing import (
-    reset_logging,
-    ZopelessAppServerLayer,
-    )
 from lp.code.enums import BranchType
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.codehosting import LAUNCHPAD_SERVICES
@@ -43,12 +35,18 @@ from lp.codehosting.puller import (
     )
 from lp.codehosting.puller.tests import PullerBranchTestCase
 from lp.codehosting.puller.worker import get_canonical_url_for_branch_name
+from lp.services.config import config
 from lp.services.twistedsupport.tests.test_processmonitor import (
     makeFailure,
     ProcessTestsMixin,
     suppress_stderr,
     )
-from lp.testing import TestCase
+from lp.services.webapp import errorlog
+from lp.testing import (
+    reset_logging,
+    TestCase,
+    )
+from lp.testing.layers import ZopelessAppServerLayer
 
 
 class FakeCodehostingEndpointProxy:
@@ -855,15 +853,13 @@ class TestPullerMasterIntegration(PullerBranchTestCase):
         return locking_process_deferred.addCallbacks(
             locking_process_callback, locking_process_errback)
 
-    # XXX wgrant 2011-09-14 bug 848994: This is a fragile test.
-    def DISABLE_test_mirror_with_destination_self_locked(self):
+    def test_mirror_with_destination_self_locked(self):
         # If the destination branch was locked by another worker, the worker
         # should break the lock and mirror the branch regardless.
         deferred = self._run_with_destination_locked(self.doDefaultMirroring)
         return deferred.addErrback(self._dumpError)
 
-    # XXX gary 2011-09-13 bug 848994: This is a fragile test.
-    def DISABLE_test_mirror_with_destination_locked_by_another(self):
+    def test_mirror_with_destination_locked_by_another(self):
         # When the destination branch is locked with a different lock it, the
         # worker should *not* break the lock and instead fail.
 

@@ -22,17 +22,16 @@
            tal:attributes="
             id string:bugtask-delete-${data/form_row_id};
             href data/delete_link"
-           class="sprite remove bugtask-delete" style="margin-left: 4px"></a>
+           class="sprite remove bugtask-delete action-icon"
+           style="margin-left: 4px">Remove</a>
     </td>
     <td tal:condition="not:data/indent_task">
       <span tal:attributes="id string:bugtarget-picker-${data/row_id}">
         <span class="yui3-activator-data-box">
-          <span title="This project&rsquo;s license has not been specified.">
             <a tal:attributes="href data/target_link;
                                title data/target_link_title;
                                class context/target/image:sprite_css"
                tal:content="context/bugtargetdisplayname" />
-          </span>
         </span>
         <button class="lazr-btn yui3-activator-act yui3-activator-hidden">
           Edit
@@ -42,13 +41,14 @@
            tal:attributes="
             id string:bugtask-delete-${data/form_row_id};
             href data/delete_link"
-           class="sprite remove bugtask-delete" style="margin-left: 4px"></a>
+           class="sprite remove bugtask-delete action-icon"
+           style="margin-left: 4px">Remove</a>
       </span>
     </td>
 
     <tal:conjoined-task condition="data/is_conjoined_slave">
     <td colspan="5" style="vertical-align: middle">
-      <span class="discreet lesser" style="font-size: 100%">
+      <span class="lesser">
         Status tracked in
         <tal:master tal:replace="view/getConjoinedMasterName">
           Hoary
@@ -187,7 +187,7 @@
     <tr
       tal:attributes="id data/form_row_id"
       tal:condition="data/expandable"
-      class="bugtask-collapsible-content unseen"
+      class="bugtask-collapsible-content hidden"
     >
      <td colspan="7" tal:content="structure view/edit_view" />
     </tr>

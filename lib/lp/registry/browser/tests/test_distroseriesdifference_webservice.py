@@ -8,17 +8,17 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.testing import AppServerLayer
-from lp.registry.enum import DistroSeriesDifferenceStatus
+from lp.registry.enums import DistroSeriesDifferenceStatus
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifferenceSource,
     )
+from lp.services.webapp.publisher import canonical_url
 from lp.soyuz.enums import PackageDiffStatus
 from lp.testing import (
     TestCaseWithFactory,
     ws_object,
     )
+from lp.testing.layers import AppServerLayer
 
 
 class DistroSeriesDifferenceWebServiceTestCase(TestCaseWithFactory):

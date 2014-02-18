@@ -11,26 +11,26 @@ from zope.component import getUtility
 from zope.schema.vocabulary import getVocabularyRegistry
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.ftests import login_person
-from canonical.launchpad.webapp.vocabulary import FilteredVocabularyBase
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadZopelessLayer,
+from lp.registry.enums import (
+    EXCLUSIVE_TEAM_POLICY,
+    INCLUSIVE_TEAM_POLICY,
+    PersonVisibility,
+    TeamMembershipPolicy,
     )
 from lp.registry.interfaces.irc import IIrcIDSet
-from lp.registry.interfaces.person import (
-    PersonVisibility,
-    TeamSubscriptionPolicy,
-    CLOSED_TEAM_POLICY,
-    OPEN_TEAM_POLICY,
-    )
 from lp.registry.interfaces.karma import IKarmaCacheManager
 from lp.registry.vocabularies import ValidPersonOrTeamVocabulary
+from lp.services.identity.interfaces.account import AccountStatus
+from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
+from lp.services.webapp.vocabulary import FilteredVocabularyBase
 from lp.testing import (
+    login_person,
+    person_logged_in,
     StormStatementRecorder,
     TestCaseWithFactory,
     )
 from lp.testing.dbuser import dbuser
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import HasQueryCount
 
 
@@ -158,6 +158,18 @@ class ValidPersonOrTeamVocabularyMixin(VocabularyTestBase):
         results = self.searchVocabulary(None, u'fred', 'TEAM')
         self.assertContentEqual(teams, list(results))
 
+    def test_inactive_people_ignored(self):
+        # Only people with active accounts (or teams) are returned.
+        for status in AccountStatus:
+            if status.value != AccountStatus.ACTIVE:
+                self.factory.makePerson(
+                    name='fred' + status.token.lower(),
+                    account_status=status.value)
+        active_person = self.factory.makePerson(name='fredactive')
+        team = self.factory.makePerson(name='fredteam')
+        results = self.searchVocabulary(None, 'fred')
+        self.assertContentEqual([active_person, team], list(results))
+
 
 class TestValidPersonOrTeamVocabulary(ValidPersonOrTeamVocabularyMixin,
                                       TestCaseWithFactory):
@@ -166,7 +178,7 @@ class TestValidPersonOrTeamVocabulary(ValidPersonOrTeamVocabularyMixin,
     Most tests are in lib/lp/registry/doc/vocabularies.txt.
     """
 
-    layer = LaunchpadZopelessLayer
+    layer = DatabaseFunctionalLayer
     vocabulary_name = 'ValidPersonOrTeam'
 
     def test_team_filter(self):
@@ -176,6 +188,22 @@ class TestValidPersonOrTeamVocabulary(ValidPersonOrTeamVocabularyMixin,
         team = self.factory.makeTeam(
             name="fredteam", email="fredteam@foo.com")
         self._team_filter_tests([team])
+
+    def test_search_accepts_or_expressions(self):
+        person = self.factory.makePerson(name='baz')
+        team = self.factory.makeTeam(name='blah')
+        result = list(self.searchVocabulary(None, 'baz OR blah'))
+        self.assertEqual([person, team], result)
+        private_team_one = self.factory.makeTeam(
+            name='private-eye', visibility=PersonVisibility.PRIVATE,
+            owner=person)
+        private_team_two = self.factory.makeTeam(
+            name='paranoid', visibility=PersonVisibility.PRIVATE,
+            owner=person)
+        with person_logged_in(person):
+            result = list(
+                self.searchVocabulary(None, 'paranoid OR private-eye'))
+        self.assertEqual([private_team_one, private_team_two], result)
 
 
 class TestValidPersonOrTeamPreloading(VocabularyTestBase,
@@ -214,28 +242,28 @@ class TestValidPersonOrTeamPreloading(VocabularyTestBase,
         self.assertThat(recorder, HasQueryCount(Equals(0)))
 
 
-class TestValidPersonOrClosedTeamVocabulary(ValidPersonOrTeamVocabularyMixin,
-                                            TestCaseWithFactory):
-    """Test that the ValidPersonOrClosedTeamVocabulary behaves as expected."""
+class TestValidPersonOrExclusiveTeamVocabulary(
+                    ValidPersonOrTeamVocabularyMixin, TestCaseWithFactory):
+    """Test that the ValidPersonOrExclusiveTeamVocabulary is correct."""
 
-    layer = LaunchpadZopelessLayer
+    layer = DatabaseFunctionalLayer
     vocabulary_name = 'ValidPillarOwner'
 
     def test_team_filter(self):
-        # Test that the team filter only returns closed teams.
+        # Test that the team filter only returns exclusive teams.
         self.factory.makePerson(
             name="fredperson", email="fredperson@foo.com")
-        for policy in OPEN_TEAM_POLICY:
+        for policy in INCLUSIVE_TEAM_POLICY:
             self.factory.makeTeam(
                 name="fred%s" % policy.name.lower(),
                 email="team_%s@foo.com" % policy.name,
-                subscription_policy=policy)
+                membership_policy=policy)
         closed_teams = []
-        for policy in CLOSED_TEAM_POLICY:
+        for policy in EXCLUSIVE_TEAM_POLICY:
             closed_teams.append(self.factory.makeTeam(
                 name="fred%s" % policy.name.lower(),
                 email="team_%s@foo.com" % policy.name,
-                subscription_policy=policy))
+                membership_policy=policy))
         self._team_filter_tests(closed_teams)
 
 
@@ -243,13 +271,13 @@ class TeamMemberVocabularyTestBase(VocabularyTestBase):
 
     def test_open_team_cannot_be_a_member_of_a_closed_team(self):
         context_team = self.factory.makeTeam(
-            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+            membership_policy=TeamMembershipPolicy.MODERATED)
         open_team = self.factory.makeTeam(
-            subscription_policy=TeamSubscriptionPolicy.OPEN)
+            membership_policy=TeamMembershipPolicy.OPEN)
         moderated_team = self.factory.makeTeam(
-            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+            membership_policy=TeamMembershipPolicy.MODERATED)
         restricted_team = self.factory.makeTeam(
-            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
+            membership_policy=TeamMembershipPolicy.RESTRICTED)
         user = self.factory.makePerson()
         all_possible_members = self.searchVocabulary(context_team, '')
         self.assertNotIn(open_team, all_possible_members)
@@ -259,13 +287,13 @@ class TeamMemberVocabularyTestBase(VocabularyTestBase):
 
     def test_open_team_can_be_a_member_of_an_open_team(self):
         context_team = self.factory.makeTeam(
-            subscription_policy=TeamSubscriptionPolicy.OPEN)
+            membership_policy=TeamMembershipPolicy.OPEN)
         open_team = self.factory.makeTeam(
-            subscription_policy=TeamSubscriptionPolicy.OPEN)
+            membership_policy=TeamMembershipPolicy.OPEN)
         moderated_team = self.factory.makeTeam(
-            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+            membership_policy=TeamMembershipPolicy.MODERATED)
         restricted_team = self.factory.makeTeam(
-            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
+            membership_policy=TeamMembershipPolicy.RESTRICTED)
         user = self.factory.makePerson()
         all_possible_members = self.searchVocabulary(context_team, '')
         self.assertIn(open_team, all_possible_members)
@@ -275,20 +303,20 @@ class TeamMemberVocabularyTestBase(VocabularyTestBase):
 
     def test_vocabulary_displayname(self):
         context_team = self.factory.makeTeam(
-            subscription_policy=TeamSubscriptionPolicy.OPEN)
+            membership_policy=TeamMembershipPolicy.OPEN)
         vocabulary = self.getVocabulary(context_team)
         self.assertEqual(
             'Select a Team or Person', vocabulary.displayname)
 
     def test_open_team_vocabulary_step_title(self):
         context_team = self.factory.makeTeam(
-            subscription_policy=TeamSubscriptionPolicy.OPEN)
+            membership_policy=TeamMembershipPolicy.OPEN)
         vocabulary = self.getVocabulary(context_team)
         self.assertEqual('Search', vocabulary.step_title)
 
     def test_closed_team_vocabulary_step_title(self):
         context_team = self.factory.makeTeam(
-            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+            membership_policy=TeamMembershipPolicy.MODERATED)
         vocabulary = self.getVocabulary(context_team)
         self.assertEqual(
             'Search for a restricted team, a moderated team, or a person',
@@ -311,9 +339,10 @@ class TestValidTeamMemberVocabulary(TeamMemberVocabularyTestBase,
     def test_private_team_cannot_be_a_member_of_itself(self):
         # A private team should be filtered by the vocab.extra_clause
         # when provided a search term.
+        owner = self.factory.makePerson()
         team = self.factory.makeTeam(
-            visibility=PersonVisibility.PRIVATE)
-        login_person(team.teamowner)
+            owner=owner, visibility=PersonVisibility.PRIVATE)
+        login_person(owner)
         self.assertNotIn(team, self.searchVocabulary(team, team.name))
 
 
@@ -340,7 +369,7 @@ class TestValidPersonVocabulary(VocabularyTestBase,
                                       TestCaseWithFactory):
     """Test that the ValidPersonVocabulary behaves as expected."""
 
-    layer = LaunchpadZopelessLayer
+    layer = DatabaseFunctionalLayer
     vocabulary_name = 'ValidPerson'
 
     def test_supported_filters(self):
@@ -352,9 +381,52 @@ class TestValidTeamVocabulary(VocabularyTestBase,
                                       TestCaseWithFactory):
     """Test that the ValidTeamVocabulary behaves as expected."""
 
-    layer = LaunchpadZopelessLayer
+    layer = DatabaseFunctionalLayer
     vocabulary_name = 'ValidTeam'
 
     def test_supported_filters(self):
         # The vocab shouldn't support person or team filters.
         self.assertEqual([], self.getVocabulary(None).supportedFilters())
+
+    def test_unvalidated_emails_ignored(self):
+        person = self.factory.makePerson()
+        self.factory.makeEmail(
+            'fnord@example.com',
+            person,
+            email_status=EmailAddressStatus.NEW)
+        search = self.searchVocabulary(None, 'fnord@example.com')
+        self.assertEqual([], [s for s in search])
+
+    def test_search_accepts_or_expressions(self):
+        team_one = self.factory.makeTeam(name='baz')
+        team_two = self.factory.makeTeam(name='blah')
+        result = list(self.searchVocabulary(None, 'baz OR blah'))
+        self.assertEqual([team_one, team_two], result)
+
+
+class TestNewPillarGranteeVocabulary(VocabularyTestBase,
+                                        TestCaseWithFactory):
+    """Test that the NewPillarGranteeVocabulary behaves as expected."""
+
+    layer = DatabaseFunctionalLayer
+    vocabulary_name = 'NewPillarGrantee'
+
+    def test_existing_grantees_excluded(self):
+        # Existing grantees should be excluded from the results.
+        product = self.factory.makeProduct()
+        person1 = self.factory.makePerson(name='grantee1')
+        person2 = self.factory.makePerson(name='grantee2')
+        policy = self.factory.makeAccessPolicy(pillar=product)
+        self.factory.makeAccessPolicyGrant(policy=policy, grantee=person1)
+        [newgrantee] = self.searchVocabulary(product, 'grantee')
+        self.assertEqual(newgrantee, person2)
+
+    def test_open_teams_excluded(self):
+        # Only exclusive teams should be available for selection.
+        product = self.factory.makeProduct()
+        self.factory.makeTeam(name='grantee1')
+        closed_team = self.factory.makeTeam(
+            name='grantee2',
+            membership_policy=TeamMembershipPolicy.MODERATED)
+        [newgrantee] = self.searchVocabulary(product, 'grantee')
+        self.assertEqual(newgrantee, closed_team)

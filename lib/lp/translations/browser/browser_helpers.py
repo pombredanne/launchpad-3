@@ -16,9 +16,9 @@ __all__ = [
 
 from math import ceil
 import re
-from xml.sax.saxutils import escape as xml_escape
 
-from canonical.launchpad import helpers
+from lp.services import helpers
+from lp.services.webapp.escaping import html_escape
 from lp.translations.interfaces.translations import TranslationConstants
 
 
@@ -62,7 +62,7 @@ def text_to_html(text, flags, space=TranslationConstants.SPACE_CHAR,
         newline_chars = u'\r'
     else:
         newline_chars = u'\n'
-    for line in xml_escape(text).split(newline_chars):
+    for line in html_escape(text).split(newline_chars):
         # Pattern:
         # - group 1: zero or more spaces: leading whitespace
         # - group 2: zero or more groups of (zero or

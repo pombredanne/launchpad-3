@@ -8,9 +8,10 @@ same person and they're there just because each of those was created
 using a different email address.
 
     >>> from zope.component import getUtility
-    >>> from canonical.database.sqlbase import sqlvalues
+    >>> from lp.services.database.sqlbase import sqlvalues
     >>> from lp.registry.interfaces.person import IPersonSet
-    >>> from canonical.launchpad.ftests import login, ANONYMOUS
+    >>> from lp.registry.personmerge import merge_people
+    >>> from lp.testing import login, ANONYMOUS
 
     >>> login(ANONYMOUS)
     >>> personset = getUtility(IPersonSet)
@@ -25,7 +26,7 @@ Sanity checks
 
 We can't merge an account that still has email addresses attached to it
 
-    >>> personset.merge(marilize, sample)
+    >>> merge_people(marilize, sample, None)
     Traceback (most recent call last):
     ...
     AssertionError: ...
@@ -98,6 +99,16 @@ Person' will be an active member of that team.
     >>> marilize in ubuntu_translators.activemembers
     True
 
+marilize happens to have an LoginToken.
+
+    >>> from lp.services.verification.interfaces.logintoken import (
+    ...     ILoginTokenSet)
+    >>> from lp.services.verification.interfaces.authtoken import (
+    ...     LoginTokenType)
+    >>> token = getUtility(ILoginTokenSet).new(
+    ...     marilize, marilize.preferredemail.email, 'willdie@example.com',
+    ...     LoginTokenType.VALIDATEEMAIL)
+
 Do the merge!
 -------------
 
@@ -105,16 +116,15 @@ Do the merge!
     # it.  First we need to change its status, though, because we can't delete
     # a person's preferred email.
 
-    >>> from canonical.launchpad.interfaces.emailaddress import (
+    >>> from lp.services.identity.interfaces.emailaddress import (
     ...     EmailAddressStatus)
-    >>> from canonical.launchpad.interfaces.lpstorm import IMasterObject
-    >>> email = IMasterObject(marilize.preferredemail)
+    >>> email = marilize.preferredemail
     >>> email.status = EmailAddressStatus.VALIDATED
     >>> email.destroySelf()
     >>> import transaction
     >>> transaction.commit()
 
-    >>> personset.merge(marilize, sample)
+    >>> merge_people(marilize, sample, None)
 
 
 Merge results
@@ -152,7 +162,7 @@ Check that the branches have been renamed properly.
 The Karma that was previously assigned to marilize is now assigned to
 name12 (Sample Person).
 
-    >>> from canonical.database.sqlbase import flush_database_caches
+    >>> from lp.services.database.sqlbase import flush_database_caches
     >>> flush_database_caches()
     >>> saved_marilize_karma_id == marilize_karma.id
     True
@@ -230,6 +240,11 @@ email and mailing list subscription settings.
 
         https://launchpad.net/name12/+editemails ...
 
+sample has not been transferred marilize's logintoken.
+
+    >>> list(getUtility(ILoginTokenSet).searchByEmailRequesterAndType(
+    ...     'willdie@example.com', sample, LoginTokenType.VALIDATEEMAIL))
+    []
 
 Person decoration
 -----------------
@@ -281,7 +296,8 @@ First, we will test a merge where there is no decoration.
     >>> print decorator_refs(store, winner, loser)
     <BLANKLINE>
 
-    >>> personset._merge_person_decoration(winner, loser, skip,
+    >>> from lp.registry.personmerge import _merge_person_decoration
+    >>> _merge_person_decoration(winner, loser, skip,
     ...     'PersonLocation', 'person', ['last_modified_by',])
 
 "Skip" should have been updated with the table and unique reference
@@ -303,7 +319,7 @@ but not the loser.
     >>> print decorator_refs(store, winner, loser)
     winner, winner,
 
-    >>> personset._merge_person_decoration(winner, loser, skip,
+    >>> _merge_person_decoration(winner, loser, skip,
     ...     'PersonLocation', 'person', ['last_modified_by',])
 
 There should now still be one decorator, with all columns pointing to
@@ -320,7 +336,7 @@ INTO another person, but nothing on the target person.
     >>> print decorator_refs(store, winner, loser)
     loser, loser,
 
-    >>> personset._merge_person_decoration(winner, loser, skip,
+    >>> _merge_person_decoration(winner, loser, skip,
     ...     'PersonLocation', 'person', ['last_modified_by',])
 
 There should now still be one decorator, with all columns pointing to
@@ -341,7 +357,7 @@ point to the winner, and the to_person will be unaffected.
     winner, winner,
     loser, loser,
 
-    >>> personset._merge_person_decoration(winner, loser, skip,
+    >>> _merge_person_decoration(winner, loser, skip,
     ...     'PersonLocation', 'person', ['last_modified_by',])
     >>> print decorator_refs(store, winner, loser)
     winner, winner,

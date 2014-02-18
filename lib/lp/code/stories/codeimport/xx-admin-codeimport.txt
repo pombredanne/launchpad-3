@@ -12,7 +12,7 @@ to edit the details.
 
     >>> svn_import = factory.makeProductCodeImport(
     ...     svn_branch_url='svn://svn.example.com/fooix/trunk')
-    >>> from canonical.launchpad.webapp import canonical_url
+    >>> from lp.services.webapp import canonical_url
     >>> svn_import_location = str(canonical_url(svn_import.branch))
     >>> svn_import_branch_unique_name = svn_import.branch.unique_name
 
@@ -33,13 +33,8 @@ to edit the details.
     >>> git_import_location = str(canonical_url(git_import.branch))
     >>> git_import_branch_unique_name = git_import.branch.unique_name
 
-    >>> hg_import = factory.makeProductCodeImport(
-    ...     hg_repo_url="http://hg.example.org/bar")
-    >>> hg_import_location = str(canonical_url(hg_import.branch))
-    >>> hg_import_branch_unique_name = hg_import.branch.unique_name
-
     >>> package_import = factory.makePackageCodeImport(
-    ...     hg_repo_url="http://hg.example.org/zap")
+    ...     git_repo_url="http://git.example.org/zap")
     >>> package_import_location = str(canonical_url(package_import.branch))
     >>> package_import_branch_unique_name = package_import.branch.unique_name
 
@@ -110,15 +105,10 @@ in the form.
     >>> print_form_fields(import_browser)
     field.url: git://git.example.org/fooix
 
-    >>> import_browser.open(hg_import_location)
-    >>> import_browser.getLink('Edit import source or review import').click()
-    >>> print_form_fields(import_browser)
-    field.url: http://hg.example.org/bar
-
     >>> import_browser.open(package_import_location)
     >>> import_browser.getLink('Edit import source or review import').click()
     >>> print_form_fields(import_browser)
-    field.url: http://hg.example.org/zap
+    field.url: http://git.example.org/zap
 
 
 Editing the import location
@@ -134,8 +124,7 @@ This is true for Subversion imports,
     >>> import_browser.getControl('URL').value = \
     ...     'svn://user:password@svn-new.example.com/fooix/trunk'
     >>> import_browser.getControl('Update').click()
-    >>> for message in get_feedback_messages(import_browser.contents):
-    ...     print extract_text(message)
+    >>> print_feedback_messages(import_browser.contents)
     The code import has been updated.
 
 bzr-svn imports,
@@ -144,8 +133,7 @@ bzr-svn imports,
     >>> import_browser.getControl('URL').value = \
     ...     'svn://user:password@svn-new.example.com/bzr-svn/trunk'
     >>> import_browser.getControl('Update').click()
-    >>> for message in get_feedback_messages(import_browser.contents):
-    ...     print extract_text(message)
+    >>> print_feedback_messages(import_browser.contents)
     The code import has been updated.
 
 CVS imports,
@@ -156,8 +144,7 @@ CVS imports,
     >>> import_browser.getControl('Module').value = \
     ...     'fooix2'
     >>> import_browser.getControl('Update').click()
-    >>> for message in get_feedback_messages(import_browser.contents):
-    ...     print extract_text(message)
+    >>> print_feedback_messages(import_browser.contents)
     The code import has been updated.
 
 Git imports,
@@ -166,18 +153,7 @@ Git imports,
     >>> import_browser.getControl('URL').value = \
     ...     'git://user:password@git-new.example.org/fooix'
     >>> import_browser.getControl('Update').click()
-    >>> for message in get_feedback_messages(import_browser.contents):
-    ...     print extract_text(message)
-    The code import has been updated.
-
-Mercurial imports,
-
-    >>> import_browser.open(hg_import_location + '/+edit-import')
-    >>> import_browser.getControl('URL').value = \
-    ...     'http://user:password@metal.example.org/bar'
-    >>> import_browser.getControl('Update').click()
-    >>> for message in get_feedback_messages(import_browser.contents):
-    ...     print extract_text(message)
+    >>> print_feedback_messages(import_browser.contents)
     The code import has been updated.
 
 and imports targetting source packages.
@@ -186,8 +162,7 @@ and imports targetting source packages.
     >>> import_browser.getControl('URL').value = \
     ...     'http://metal.example.org/zap'
     >>> import_browser.getControl('Update').click()
-    >>> for message in get_feedback_messages(import_browser.contents):
-    ...     print extract_text(message)
+    >>> print_feedback_messages(import_browser.contents)
     The code import has been updated.
 
 
@@ -199,8 +174,7 @@ Invalidating an import
     >>> print_import_details(import_browser)
     Import Status: Invalid
     ...
-    >>> for message in get_feedback_messages(import_browser.contents):
-    ...     print extract_text(message)
+    >>> print_feedback_messages(import_browser.contents)
     The code import has been set as invalid.
 
 
@@ -212,8 +186,7 @@ Suspending an import
     >>> print_import_details(import_browser)
     Import Status: Suspended
     ...
-    >>> for message in get_feedback_messages(import_browser.contents):
-    ...     print extract_text(message)
+    >>> print_feedback_messages(import_browser.contents)
     The code import has been suspended.
 
 
@@ -225,8 +198,7 @@ Marking an import as failing
     >>> print_import_details(import_browser)
     Import Status: Failed
     ...
-    >>> for message in get_feedback_messages(import_browser.contents):
-    ...     print extract_text(message)
+    >>> print_feedback_messages(import_browser.contents)
     The code import has been marked as failing.
 
 
@@ -247,7 +219,7 @@ says how long ago since it started.
 Now set the job as running.
 
     >>> login('david.allouche@canonical.com')
-    >>> from canonical.launchpad.testing.codeimporthelpers import (
+    >>> from lp.code.tests.codeimporthelpers import (
     ...     get_import_for_branch_name, make_running_import)
     >>> code_import = get_import_for_branch_name(
     ...     svn_import_branch_unique_name)
@@ -283,7 +255,7 @@ will be run -- which is, by default for Subversion, six hours after the
 last import completed, and so in this case in about three hours.
 
     >>> login('david.allouche@canonical.com')
-    >>> from canonical.launchpad.testing.codeimporthelpers import (
+    >>> from lp.code.tests.codeimporthelpers import (
     ...     make_finished_import)
     >>> date_finished = datetime(2007,9,10,12, tzinfo=pytz.UTC)
     >>> code_import = get_import_for_branch_name(
@@ -327,8 +299,7 @@ to run ASAP and the fact that the import has been requested is
 displayed.
 
     >>> sample_person_browser.getControl('Import Now').click()
-    >>> for msg in get_feedback_messages(sample_person_browser.contents):
-    ...     print msg
+    >>> print_feedback_messages(sample_person_browser.contents)
     Import will run as soon as possible.
     >>> print_import_details(sample_person_browser)
     Import Status: Reviewed

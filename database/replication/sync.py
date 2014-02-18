@@ -12,8 +12,12 @@ import _pythonpath
 
 from optparse import OptionParser
 
-from canonical.launchpad.scripts import logger_options, db_options
+from lp.services.scripts import (
+    db_options,
+    logger_options,
+    )
 from replication.helpers import sync
+
 
 if __name__ == '__main__':
     parser = OptionParser()

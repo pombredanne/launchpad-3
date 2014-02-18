@@ -25,20 +25,17 @@ Publishing package and creating a bugtask
     >>> bar_src.queue_root.setAccepted()
     >>> pub_records = bar_src.queue_root.realiseUpload()
 
-    >>> from canonical.database.sqlbase import commit
-    >>> commit()
-
 Check the current status of the bug we are supposed to fix:
 
     >>> the_bug_id = 6
 
-    >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.testing.dbuser import switch_dbuser
     >>> from lp.bugs.interfaces.bug import IBugSet
     >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> login('no-priv@canonical.com')
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> switch_dbuser('launchpad')
 
     >>> bugtask_owner = getUtility(IPersonSet).getByName('kinnison')
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
@@ -60,9 +57,8 @@ Inspect the current bugtasks for bug #6:
 
 Return to the original test environment:
 
-    >>> commit()
-    >>> from canonical.config import config
-    >>> LaunchpadZopelessLayer.switchDbUser(config.uploader.dbuser)
+    >>> from lp.services.config import config
+    >>> switch_dbuser(config.uploader.dbuser)
     >>> login('foo.bar@canonical.com')
 
 
@@ -113,30 +109,6 @@ FIXRELEASED and bug notification are generated:
     NEW
     Bug #6 in bar (Ubuntu): "Firefox crashes when ...
     FIXRELEASED
-
-    >>> from lp.bugs.model.bugnotification import BugNotification
-    >>> notifications = BugNotification.selectBy(bug=the_bug, orderBy='id')
-    >>> for notification in notifications:
-    ...     print "From %s:\n%s\n" % (
-    ...         notification.message.owner.displayname,
-    ...         notification.message.text_contents)
-    From Launchpad Janitor:
-    ** Changed in: bar (Ubuntu)
-           Status: New => Fix Released
-    <BLANKLINE>
-    From Launchpad Janitor:
-    This bug was fixed in the package bar - 1.0-2
-    <BLANKLINE>
-    ---------------
-    bar (1.0-2) breezy; urgency=low
-    <BLANKLINE>
-      * A second upload to ensure that binary overrides of _all work
-    <BLANKLINE>
-      * Also closes Launchpad bug #6
-    <BLANKLINE>
-    <BLANKLINE>
-     -- Daniel Silverstone <daniel.silverstone@canonical.com>   Thu, 30 Mar 2006 01:36:14 +0100
-    <BLANKLINE>
 
 And clean up.
 

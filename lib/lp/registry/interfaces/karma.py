@@ -1,8 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213
-
 """Karma interfaces."""
 
 __metaclass__ = type
@@ -19,7 +17,6 @@ __all__ = [
     'IKarmaContext',
     ]
 
-from zope.app.form.browser.interfaces import IAddFormCustomization
 from zope.component.interfaces import IObjectEvent
 from zope.interface import (
     Attribute,
@@ -33,7 +30,7 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
+from lp import _
 
 
 class IKarma(Interface):
@@ -77,7 +74,7 @@ class IKarmaAction(Interface):
                       "this action."))
 
 
-class IKarmaActionSet(IAddFormCustomization):
+class IKarmaActionSet(Interface):
     """The set of actions that gives karma to a Person."""
 
     title = Attribute('Title')

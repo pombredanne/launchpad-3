@@ -1,8 +1,6 @@
 # Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213
-
 """Code import interfaces."""
 
 __metaclass__ = type
@@ -38,7 +36,7 @@ from zope.schema import (
     Timedelta,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.app.validators import LaunchpadValidationError
 from lp.code.enums import (
     CodeImportReviewStatus,
@@ -54,7 +52,7 @@ from lp.services.fields import (
 def validate_cvs_root(cvsroot):
     try:
         root = CVSRoot(cvsroot)
-    except CvsRootError, e:
+    except CvsRootError as e:
         raise LaunchpadValidationError(e)
     if root.method == 'local':
         raise LaunchpadValidationError('Local CVS roots are not allowed.')
@@ -121,7 +119,7 @@ class ICodeImport(Interface):
     url = exported(
         URIField(title=_("URL"), required=False, readonly=True,
             description=_("The URL of the VCS branch."),
-            allowed_schemes=["http", "https", "svn", "git"],
+            allowed_schemes=["http", "https", "svn", "git", "bzr", "ftp"],
             allow_userinfo=True,
             allow_port=True,
             allow_query=False,      # Query makes no sense in Subversion.

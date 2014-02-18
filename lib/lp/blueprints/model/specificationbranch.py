@@ -1,8 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0611,W0212
-
 """Database classes for linking specifications and branches."""
 
 __metaclass__ = type
@@ -15,18 +13,17 @@ __all__ = [
 from sqlobject import (
     ForeignKey,
     IN,
-    StringCol,
     )
 from zope.interface import implements
 
-from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.sqlbase import SQLBase
 from lp.blueprints.interfaces.specificationbranch import (
     ISpecificationBranch,
     ISpecificationBranchSet,
     )
 from lp.registry.interfaces.person import validate_public_person
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.sqlbase import SQLBase
 
 
 class SpecificationBranch(SQLBase):

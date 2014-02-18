@@ -9,12 +9,14 @@ import os
 from shutil import rmtree
 import tempfile
 
-from canonical.launchpad.webapp.testing import verifyObject
 from lp.services.mail.mailbox import (
     DirectoryMailBox,
     IMailBox,
     )
-from lp.testing import TestCase
+from lp.testing import (
+    TestCase,
+    verifyObject,
+    )
 
 
 class TestDirectoryMailBox(TestCase):

@@ -1,8 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0611,W0212
-
 """Database class to handle translation export view."""
 
 __metaclass__ = type
@@ -16,17 +14,11 @@ from storm.expr import (
     And,
     Or,
     )
-from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector,
-    MAIN_STORE,
-    SLAVE_FLAVOR,
-    )
+from lp.services.database.interfaces import ISlaveStore
 from lp.soyuz.model.component import Component
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
-from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.translations.interfaces.vpoexport import (
     IVPOExport,
     IVPOExportSet,
@@ -66,16 +58,13 @@ class VPOExportSet:
         if component is not None:
             tables.extend([
                 SourcePackagePublishingHistory,
-                SourcePackageRelease,
                 Component,
                 ])
             conditions.extend([
                 SourcePackagePublishingHistory.distroseries == series,
-                SourcePackagePublishingHistory.sourcepackagerelease ==
-                     SourcePackageRelease.id,
                 SourcePackagePublishingHistory.component == Component.id,
                 POTemplate.sourcepackagename ==
-                    SourcePackageRelease.sourcepackagenameID,
+                    SourcePackagePublishingHistory.sourcepackagenameID,
                 Component.name == component,
                 SourcePackagePublishingHistory.dateremoved == None,
                 SourcePackagePublishingHistory.archive == series.main_archive,
@@ -87,8 +76,8 @@ class VPOExportSet:
         # Use the slave store.  We may want to write to the distroseries
         # to register a language pack, but not to the translation data
         # we retrieve for it.
-        store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
-        query = store.using(*tables).find(POFile, And(*conditions))
+        query = ISlaveStore(POFile).using(*tables).find(
+            POFile, And(*conditions))
 
         # Order by POTemplate.  Caching in the export scripts can be
         # much more effective when consecutive POFiles belong to the

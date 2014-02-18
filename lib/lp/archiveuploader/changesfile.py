@@ -29,15 +29,16 @@ from lp.archiveuploader.nascentuploadfile import (
     SourceUploadFile,
     splitComponentAndSection,
     UdebBinaryUploadFile,
-    UploadError,
-    UploadWarning,
     )
 from lp.archiveuploader.utils import (
     determine_binary_file_type,
     determine_source_file_type,
+    parse_and_merge_file_lists,
     re_changes_file_name,
     re_isadeb,
     re_issource,
+    UploadError,
+    UploadWarning,
     )
 from lp.registry.interfaces.sourcepackage import (
     SourcePackageFileType,
@@ -145,12 +146,12 @@ class ChangesFile(SignableTagFile):
             # doing ensurePerson() for buildds and sync owners.
             try:
                 self.maintainer = self.parseAddress(self._dict['Maintainer'])
-            except UploadError, error:
+            except UploadError as error:
                 yield error
 
         try:
             self.changed_by = self.parseAddress(self._dict['Changed-By'])
-        except UploadError, error:
+        except UploadError as error:
             yield error
 
     def isCustom(self, component_and_section):
@@ -173,12 +174,15 @@ class ChangesFile(SignableTagFile):
         all exceptions that are generated while processing all mentioned
         files.
         """
+        try:
+            raw_files = parse_and_merge_file_lists(self._dict, changes=True)
+        except UploadError as e:
+            yield e
+            return
+
         files = []
-        for fileline in self._dict['Files'].strip().split("\n"):
-            # files lines from a changes file are always of the form:
-            # CHECKSUM SIZE [COMPONENT/]SECTION PRIORITY FILENAME
-            digest, size, component_and_section, priority_name, filename = (
-                fileline.strip().split())
+        for attr in raw_files:
+            filename, hashes, size, component_and_section, priority_name = attr
             filepath = os.path.join(self.dirname, filename)
             try:
                 if self.isCustom(component_and_section):
@@ -186,7 +190,7 @@ class ChangesFile(SignableTagFile):
                     # otherwise the tarballs in custom uploads match
                     # with source_match.
                     file_instance = CustomUploadFile(
-                        filepath, digest, size, component_and_section,
+                        filepath, hashes, size, component_and_section,
                         priority_name, self.policy, self.logger)
                 else:
                     try:
@@ -198,13 +202,13 @@ class ChangesFile(SignableTagFile):
                         continue
 
                     file_instance = cls(
-                        filepath, digest, size, component_and_section,
+                        filepath, hashes, size, component_and_section,
                         priority_name, package, self.version, self,
                         self.policy, self.logger)
 
                     if cls == DSCFile:
                         self.dsc = file_instance
-            except UploadError, error:
+            except UploadError as error:
                 yield error
             else:
                 files.append(file_instance)

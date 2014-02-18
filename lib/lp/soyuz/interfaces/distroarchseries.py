@@ -1,7 +1,5 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=E0211,E0213
 
 """Distribution architecture series interfaces."""
 
@@ -9,36 +7,52 @@ __metaclass__ = type
 
 __all__ = [
     'IDistroArchSeries',
-    'IDistroArchSeriesSet',
+    'InvalidChrootUploaded',
     'IPocketChroot',
     ]
 
+import httplib
+
 from lazr.restful.declarations import (
+    error_status,
     export_as_webservice_entry,
+    export_write_operation,
     exported,
+    operation_for_version,
+    operation_parameters,
     )
-from lazr.restful.fields import Reference
+from lazr.restful.fields import (
+    Reference,
+    ReferenceChoice,
+    )
 from zope.interface import (
     Attribute,
     Interface,
     )
 from zope.schema import (
     Bool,
-    Choice,
+    Bytes,
     Int,
+    Text,
     TextLine,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.app.validators.name import name_validator
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.role import IHasOwner
+from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
+from lp.soyuz.interfaces.processor import IProcessor
 
 
-class IDistroArchSeries(IHasOwner):
-    """DistroArchSeries Table Interface"""
-    export_as_webservice_entry()
+@error_status(httplib.BAD_REQUEST)
+class InvalidChrootUploaded(Exception):
+    """Raised when the sha1sum of an uploaded chroot does not match."""
+
+
+class IDistroArchSeriesPublic(IHasBuildRecords, IHasOwner):
+    """Public attributes for a DistroArchSeries."""
 
     id = Attribute("Identifier")
     distroseries = exported(
@@ -46,9 +60,10 @@ class IDistroArchSeries(IHasOwner):
             IDistroSeries,
             title=_("The context distroseries"),
             required=False, readonly=False))
-    processorfamily = Choice(
-        title=_("Processor Family"),
-        required=True, vocabulary='ProcessorFamily')
+    processor = exported(
+        ReferenceChoice(
+            title=_("Processor"), required=True, readonly=True,
+            vocabulary='Processor', schema=IProcessor))
     architecturetag = exported(
         TextLine(
             title=_("Architecture Tag"),
@@ -85,12 +100,14 @@ class IDistroArchSeries(IHasOwner):
             description=_("Indicate whether or not this port has support "
                           "for building PPA packages."),
             required=False))
-    enabled = Bool(
-        title=_("Enabled"),
-        description=_(
-            "Whether or not this DistroArchSeries is enabled for build "
-            "creation and publication."),
-        required=False, readonly=False)
+    enabled = exported(
+        Bool(
+            title=_("Enabled"),
+            description=_(
+                "Whether or not this DistroArchSeries is enabled for build "
+                "creation and publication."),
+            readonly=False, required=False),
+        as_of="devel")
 
     # Joins.
     packages = Attribute('List of binary packages in this port.')
@@ -115,15 +132,9 @@ class IDistroArchSeries(IHasOwner):
                 'True if this distroarchseries is the NominatedArchIndep '
                 'one.')),
         exported_as="is_nominated_arch_indep")
-    default_processor = Attribute(
-        "Return the DistroArchSeries default processor, by picking the "
-        "first processor inside its processorfamily.")
-    processors = Attribute(
-        "The group of Processors for this DistroArchSeries.processorfamily."
-        )
     main_archive = exported(
         Reference(
-            Interface, # Really IArchive, circular import fixed below.
+            Interface,  # Really IArchive, circular import fixed below.
             title=_('Main Archive'),
             description=_("The main archive of the distroarchseries.")))
     chroot_url = exported(
@@ -156,21 +167,21 @@ class IDistroArchSeries(IHasOwner):
         matching the given text."""
 
     def getReleasedPackages(binary_name, pocket=None, include_pending=False,
-                            exclude_pocket=None, archive=None):
+                            archive=None):
         """Get the publishing records for the given binary package name.
 
         :param: binary_name: should either be a `BinaryPackageName` instance
             or else a string which will be looked up as a `BinaryPackageName`;
-        :param: pocket: optional `PackagePublishingPocket` filter, if it is not
-            specified, we look in all pockets.
-        :param: exclude_pocket: optional negative `PackagePublishingPocket`
-            filter, if it is specified exclude results matching that pocket.
-        :param: include_pending: optionally return also the pending publication
-            records, those packages that will get published in the next publisher
-            run (it's only useful when we need to know if a given package is
-            known during a publisher run, mostly in pre-upload checks)
-        :param: archive: optional IArchive filter, if is not specified, consider
-            publication in the main_archives, otherwise respect the given value.
+        :param: pocket: optional `PackagePublishingPocket` filter, if it is
+            not specified, we look in all pockets.
+        :param: include_pending: optionally return also the pending
+            publication records, those packages that will get published in the
+            next publisher run (it's only useful when we need to know if a
+            given package is known during a publisher run, mostly in
+            pre-upload checks)
+        :param: archive: optional IArchive filter, if is not specified,
+            consider publication in the main_archives, otherwise respect the
+            given value.
 
         If the BinaryPackageName cannot be found, NotFoundError will be
         raised.
@@ -187,30 +198,35 @@ class IDistroArchSeries(IHasOwner):
         """
 
 
-class IDistroArchSeriesSet(Interface):
-    """Interface for DistroArchSeriesSet"""
+class IDistroArchSeriesModerate(Interface):
 
-    def __iter__():
-        """Iterate over distroarchseriess."""
+    @operation_parameters(data=Bytes(), sha1sum=Text())
+    @export_write_operation()
+    @operation_for_version("devel")
+    def setChroot(data, sha1sum):
+        """Set the chroot tarball used for builds in this architecture.
 
-    def count():
-        """Return the number of distroarchseriess in the system."""
+        The SHA-1 checksum must match the chroot file.
+        """
 
-    def get(distroarchseries_id):
-        """Return the IDistroArchSeries to the given distroarchseries_id."""
+    @export_write_operation()
+    @operation_for_version("devel")
+    def removeChroot():
+        """Remove the chroot tarball used for builds in this architecture."""
+
+
+class IDistroArchSeries(IDistroArchSeriesPublic, IDistroArchSeriesModerate):
+    """An architecture for a distroseries."""
+    export_as_webservice_entry()
 
 
 class IPocketChroot(Interface):
     """PocketChroot Table Interface"""
     id = Attribute("Identifier")
-    distroarchseries = Attribute("The DistroArchSeries this chroot "
-                                  "belongs to.")
+    distroarchseries = Attribute(
+        "The DistroArchSeries this chroot belongs to.")
     pocket = Attribute("The Pocket this chroot is for.")
     chroot = Attribute("The file alias of the chroot.")
 
     def syncUpdate():
         """Commit changes to DB."""
-
-
-# Monkey patching circular import fixes is done in
-# _schema_circular_imports.py

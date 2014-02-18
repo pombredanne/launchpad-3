@@ -26,6 +26,7 @@ from zope.interface import (
     implements,
     )
 
+from lp.services.config import config
 from lp.services.job.interfaces.job import IRunnableJob
 from lp.services.job.runner import BaseRunnableJob
 from lp.translations.interfaces.translationpackagingjob import (
@@ -88,6 +89,8 @@ class TranslationMergeJob(TranslationPackagingJob):
 
     create_on_event = IObjectCreatedEvent
 
+    config = config.ITranslationPackagingJobSource
+
     def run(self):
         """See `IRunnableJob`."""
         logger = logging.getLogger()
@@ -113,6 +116,8 @@ class TranslationSplitJob(TranslationPackagingJob):
 
     create_on_event = IObjectDeletedEvent
 
+    config = config.ITranslationPackagingJobSource
+
     def run(self):
         """See `IRunnableJob`."""
         logger = logging.getLogger()
@@ -130,6 +135,8 @@ class TranslationTemplateChangeJob(TranslationPackagingJob):
     class_job_type = TranslationSharingJobType.TEMPLATE_CHANGE
 
     create_on_event = IObjectModifiedEvent
+
+    config = config.ITranslationPackagingJobSource
 
     @classmethod
     def forPOTemplate(cls, potemplate):

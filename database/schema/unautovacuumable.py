@@ -16,19 +16,19 @@ Don't run this on any production systems.
 __metaclass__ = type
 __all__ = []
 
+import _pythonpath
+
 from distutils.version import LooseVersion
 from optparse import OptionParser
 import sys
 import time
 
-# pylint: disable-msg=W0403
-import _pythonpath
-
-from canonical.database.sqlbase import (
+from lp.services.database import activity_cols
+from lp.services.database.sqlbase import (
     connect,
     ISOLATION_LEVEL_AUTOCOMMIT,
     )
-from canonical.launchpad.scripts import (
+from lp.services.scripts import (
     db_options,
     logger,
     logger_options,
@@ -84,16 +84,16 @@ def main():
         # Sleep long enough for pg_stat_activity to be updated.
         time.sleep(0.6)
         cur.execute("""
-            SELECT procpid FROM pg_stat_activity
+            SELECT %(pid)s FROM pg_stat_activity
             WHERE
                 datname=current_database()
-                AND current_query LIKE 'autovacuum: %'
-            """)
+                AND %(query)s LIKE 'autovacuum: %%'
+            """ % activity_cols(cur))
         autovacuums = [row[0] for row in cur.fetchall()]
         num_autovacuums = len(autovacuums)
-        for procpid in autovacuums:
-            log.debug("Cancelling %d" % procpid)
-            cur.execute("SELECT pg_cancel_backend(%d)" % procpid)
+        for pid in autovacuums:
+            log.debug("Cancelling %d" % pid)
+            cur.execute("SELECT pg_cancel_backend(%d)" % pid)
 
 
 if __name__ == '__main__':

@@ -227,7 +227,7 @@ def get_sources_list_for_building(build, distroarchseries, sourcepackagename):
                 line = archive_dep % (
                     {'series': distroarchseries.distroseries.name})
                 external_dep_lines.append(line)
-    except StandardError, e:
+    except StandardError:
         # Malformed external dependencies can incapacitate the build farm
         # manager (lp:516169). That's obviously not acceptable.
         # Log the error, and disable the PPA.
@@ -257,9 +257,7 @@ def _has_published_binaries(archive, distroarchseries, pocket):
     published_binaries = archive.getAllPublishedBinaries(
         distroarchseries=distroarchseries,
         status=PackagePublishingStatus.PUBLISHED)
-    # XXX cprov 20080923 bug=246200: This count should be replaced
-    # by bool() (__non_zero__) when storm implementation gets fixed.
-    return published_binaries.count() > 0
+    return not published_binaries.is_empty()
 
 
 def _get_binary_sources_list_line(archive, distroarchseries, pocket,

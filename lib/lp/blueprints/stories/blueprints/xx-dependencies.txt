@@ -97,7 +97,7 @@ We'll POST the form selecting "extension-manager-upgrades" for removal. We
 expect to be redirected to the blueprint page.
 
   >>> owner_browser.getControl(
-  ...     'Dependency').value = ['extension-manager-upgrades']
+  ...     'Dependency').value = ['1']
   >>> owner_browser.getControl('Continue').click()
   >>> owner_browser.url
   'http://blueprints.launchpad.dev/firefox/+spec/canvas'
@@ -144,7 +144,7 @@ blueprint we registered in jokosher.
   >>> owner_browser.getControl(
   ...     'Depends On').value = 'test-blueprint'
   >>> owner_browser.getControl('Continue').click()
-  >>> 'no blueprint named "test-blueprint"' in owner_browser.contents
+  >>> 'no blueprint named &quot;test-blueprint&quot;' in owner_browser.contents
   True
 
 
@@ -162,7 +162,7 @@ We know that "canvas" depends on "e4x". We try to make "e4x" depend on
   >>> owner_browser.getControl(
   ...     'Depends On').value = 'canvas'
   >>> owner_browser.getControl('Continue').click()
-  >>> 'no blueprint named "canvas"' in owner_browser.contents
+  >>> 'no blueprint named &quot;canvas&quot;' in owner_browser.contents
   True
 
 

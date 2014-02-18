@@ -1,8 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213
-
 """Packaging interfaces."""
 
 __metaclass__ = type
@@ -27,7 +25,7 @@ from zope.schema import (
     Int,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.registry.interfaces.role import IHasOwner
 
 
@@ -98,9 +96,8 @@ class IPackaging(IHasOwner):
         """True, if the current user is allowed to delete this packaging,
         else False.
 
-        People who created the packaging can delete it, as well as
-        people with upload rights for a source package, distribution
-        owners, members of the registry team and LP admin team.
+        Non-probationary users can delete packaging links that they believe
+        connect Ubuntu to bogus data.
         """
 
 

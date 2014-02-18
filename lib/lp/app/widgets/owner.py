@@ -1,14 +1,20 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
 from zope.component import getUtility
-from zope.interface import implements, Interface
-from zope.app.form.interfaces import IInputWidget
-from zope.app.form.browser.interfaces import IBrowserWidget
+from zope.formlib.interfaces import (
+    IBrowserWidget,
+    IInputWidget,
+    )
+from zope.interface import (
+    implements,
+    Interface,
+    )
 
-from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.services.webapp.interfaces import ILaunchBag
+
 
 class RequestWidget(object):
     '''A widget that sets itself to a value calculated from request
@@ -34,15 +40,15 @@ class RequestWidget(object):
         self.name = self._prefix + context.__name__
 
     def validate(self):
-        '''See zope.app.form.interfaces.IInputWidget'''
+        '''See zope.formlib.interfaces.IInputWidget'''
         return self.getValueFromRequest(self.request)
 
     def getInputValue(self):
-        '''See zope.app.form.interfaces.IInpputWidget'''
-        raise NotImplementedError, 'getInputValue'
+        '''See zope.formlib.interfaces.IInputWidget'''
+        raise NotImplementedError('getInputValue')
 
     def applyChanges(self, content):
-        '''See zope.app.form.interfaces.IInputWidget'''
+        '''See zope.formlib.interfaces.IInputWidget'''
         field = self.context
         value = self.getInputValue(self.request)
         if field.query(content, self) != value:
@@ -52,26 +58,26 @@ class RequestWidget(object):
             return False
 
     def setPrefix(self, prefix):
-        '''See zope.app.form.interfaces.IWidget'''
+        '''See zope.formlib.interfaces.IWidget'''
         if not prefix.endswith("."):
             prefix += '.'
         self._prefix = prefix
         self.name = prefix + self.context.__name__
 
     def hasInput(self):
-        '''See zope.app.form.interfaces.IInputWidget'''
+        '''See zope.formlib.interfaces.IInputWidget'''
         return True
 
     def __call__(self):
-        '''See zope.app.form.browser.interfaces.IBrowserWidget'''
+        '''See zope.formlib.interfaces.IBrowserWidget'''
         return ''
 
     def hidden(self):
-        '''See zope.app.form.browser.interfaces.IBrowserWidget'''
+        '''See zope.formlib.interfaces.IBrowserWidget'''
         return ''
 
     def error(self):
-        '''See zope.app.form.browser.interfaces.IBrowserWidget'''
+        '''See zope.formlib.interfaces.IBrowserWidget'''
         return ''
 
 
@@ -81,6 +87,7 @@ class IUserWidget(Interface):
 
 class HiddenUserWidget(RequestWidget):
     implements(IUserWidget)
+
     def __init__(self, context, vocabulary, request=None):
         '''Construct the HiddenUserWidget.
 

@@ -6,17 +6,18 @@
 """Perform simple librarian operations to verify the current configuration.
 """
 
-import _pythonpath # Not lint, actually needed.
+import _pythonpath
 
 import sys
 
 from zope.component import getUtility
-from canonical.launchpad.scripts import execute_zcml_for_scripts
-from canonical.librarian.interfaces import (
-    IRestrictedLibrarianClient,
+
+from lp.services.librarian.interfaces.client import (
     ILibrarianClient,
+    IRestrictedLibrarianClient,
     )
-from canonical.librarian.smoketest import do_smoketest
+from lp.services.librarian.smoketest import do_smoketest
+from lp.services.scripts import execute_zcml_for_scripts
 
 
 if __name__ == '__main__':

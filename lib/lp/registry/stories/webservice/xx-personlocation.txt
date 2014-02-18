@@ -1,7 +1,9 @@
 = Person location =
 
 The location of a person is readable through the Web Service API, and can
-be set that way, too.
+be set that way too, but it has been deprecated as we no longer have that
+information in our database, so the latitude/longitude will always be None.
+The time_zone attribute has not been deprecated, though.
 
 We start with the case where there is no information about the user's
 location, at all.
@@ -14,30 +16,8 @@ location, at all.
     >>> print jdub['longitude']
     None
 
-We show that we handle the case where there is no latitude or
-longitude information.
-
-    >>> marilize = webservice.get("/~marilize").jsonBody()
-    >>> print marilize['time_zone']
-    Africa/Maseru
-    >>> print marilize['latitude']
-    None
-    >>> print marilize['longitude']
-    None
-
-And here is an example, where we have location and time zone information for
-a user:
-
-    >>> kamion = webservice.get("/~kamion").jsonBody()
-    >>> print kamion['time_zone']
-    Europe/London
-    >>> print kamion['latitude']
-    52.2
-    >>> print kamion['longitude']
-    0.3
-
-It is also possible to set the location, if it is not yet locked by being
-provided by the user themselves.
+It is also possible to set the location, but as you can see the
+latitude/longitude read via the Web API will still be None.
 
     >>> print webservice.get("/~jdub").jsonBody()['time_zone']
     None
@@ -48,3 +28,7 @@ provided by the user themselves.
     ...
     >>> webservice.get("/~jdub").jsonBody()['time_zone']
     u'Australia/Sydney'
+    >>> print jdub['latitude']
+    None
+    >>> print jdub['longitude']
+    None

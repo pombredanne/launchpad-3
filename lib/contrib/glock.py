@@ -177,7 +177,7 @@ class GlobalLock:
                 options = fcntl.LOCK_EX|fcntl.LOCK_NB
             try:
                 fcntl.flock(self.fdlock, options)
-            except IOError, message: #(errno 13: perm. denied,
+            except IOError as message: #(errno 13: perm. denied,
                             #       36: Resource deadlock avoided)
                 if not blocking and self._errnoOf (message) == errno.EWOULDBLOCK:
                     raise LockAlreadyAcquired('Lock %s already acquired by '
@@ -230,7 +230,7 @@ class GlobalLock:
                 try:
                     win32event.ReleaseMutex(self.mutex)
                     #print "released mutex"
-                except pywintypes.error, e:
+                except pywintypes.error as e:
                     errCode, fctName, errMsg =  e.args
                     if errCode == 288:
                         raise NotOwner("Attempt to release somebody else's lock")

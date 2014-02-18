@@ -4,11 +4,11 @@ TranslationMessage View
 On this section, we are going to test the view class for an
 ITranslationMessage object.
 
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> from lp.translations.model.pofile import POFile
     >>> from lp.translations.model.translationmessage import (
     ...     TranslationMessage)
-    >>> from canonical.launchpad.webapp import canonical_url
+    >>> from lp.services.webapp import canonical_url
     >>> from lp.services.worlddata.interfaces.language import ILanguageSet
     >>> from lp.translations.publisher import TranslationsLayer
 
@@ -451,6 +451,7 @@ languages...
     id: 703
     is_empty: False
     is_local_to_pofile: False
+    is_traversable: ...
     language: ...
     legal_warning: False
     origin_html_id: msgset_15_ja_suggestion_703_0_origin
@@ -458,7 +459,7 @@ languages...
     plural_index: 0
     pofile: ...
     potmsgset: ...
-    row_html_id:
+    row_html_id: 
     suggestion_dismissable_class: msgset_15_dismissable_button
     suggestion_html_id: msgset_15_ja_suggestion_703_0
     suggestion_text: Foo <code>%d</code>

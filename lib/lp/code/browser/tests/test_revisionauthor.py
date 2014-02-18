@@ -5,7 +5,6 @@
 
 __metaclass__ = type
 
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.browser.tales import (
     PersonFormatterAPI,
     RevisionAuthorFormatterAPI,
@@ -14,6 +13,7 @@ from lp.testing import (
     login,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.sampledata import USER_EMAIL
 
 

@@ -10,8 +10,8 @@ __all__ = [
     ]
 
 
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.authorization import check_permission
+from lp.services.webapp import canonical_url
+from lp.services.webapp.authorization import check_permission
 
 
 class TranslationSharingDetailsMixin:

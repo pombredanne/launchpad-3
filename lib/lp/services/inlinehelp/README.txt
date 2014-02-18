@@ -8,7 +8,7 @@ containing inline help documentation.
 These are lazr.folder.ExportedFolder that automatically export
 their subdirectories.
 
-    >>> from canonical.lazr.folder import ExportedFolder
+    >>> from lp.app.browser.folder import ExportedFolder
     >>> from lp.services.inlinehelp.browser import HelpFolder
 
     >>> issubclass(HelpFolder, ExportedFolder)
@@ -44,14 +44,20 @@ The help folder is registered on the ILaunchpadRoot interface.
     >>> directlyProvides(request, IBrowserRequest)
 
     >>> from zope.component import queryMultiAdapter
-    >>> from canonical.launchpad.webapp.publisher import rootObject
-    >>> help = queryMultiAdapter((rootObject, request), name="+help")
+    >>> from lp.services.webapp.publisher import rootObject
+    >>> help_view = queryMultiAdapter((rootObject, request), name="+help")
 
-    >>> help.folder == help_folder
+    >>> help_view.folder == help_folder
     True
 
-    >>> isinstance(help, HelpFolder)
+    >>> isinstance(help_view, HelpFolder)
     True
+
+    >>> print help_view.__name__
+    +help
+
+    >>> print help_view.__class__.__name__
+    +help for /tmp/help...
 
 
 Cleanup

@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-12 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for lp.testing.fixture."""
@@ -10,6 +10,7 @@ import sys
 import oops_amqp
 import psycopg2
 from storm.exceptions import DisconnectionError
+import transaction
 from zope.component import (
     adapts,
     ComponentLookupError,
@@ -22,29 +23,31 @@ from zope.interface import (
     )
 from zope.sendmail.interfaces import IMailDelivery
 
-from canonical.config import (
+from lp.registry.model.person import Person
+from lp.services.config import (
     config,
     dbconfig,
     )
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
-from canonical.launchpad.webapp.errorlog import (
+from lp.services.database.interfaces import IMasterStore
+from lp.services.messaging import rabbit
+from lp.services.webapp.errorlog import (
     globalErrorUtility,
     notify_publisher,
     )
-from canonical.testing.layers import (
-    BaseLayer,
-    DatabaseLayer,
-    LaunchpadZopelessLayer,
-    LaunchpadLayer,
-    )
-from lp.registry.model.person import Person
-from lp.services.messaging import rabbit
 from lp.testing import TestCase
 from lp.testing.fixture import (
     CaptureOops,
+    DisableTriggerFixture,
     PGBouncerFixture,
     ZopeAdapterFixture,
     ZopeUtilityFixture,
+    )
+from lp.testing.layers import (
+    BaseLayer,
+    DatabaseLayer,
+    LaunchpadLayer,
+    LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
     )
 
 
@@ -122,13 +125,11 @@ class TestPGBouncerFixtureWithCA(TestCase):
 
     def is_connected(self):
         # First rollback any existing transaction to ensure we attempt
-        # to reconnect. We currently rollback the store explicitely
-        # rather than call transaction.abort() due to Bug #819282.
-        store = IMasterStore(Person)
-        store.rollback()
+        # to reconnect.
+        transaction.abort()
 
         try:
-            store.find(Person).first()
+            IMasterStore(Person).find(Person).first()
             return True
         except DisconnectionError:
             return False
@@ -263,3 +264,62 @@ class TestCaptureOopsRabbit(TestCase):
         capture = self.useFixture(CaptureOops())
         capture.sync()
         capture.sync()
+
+
+class TestDisableTriggerFixture(TestCase):
+    """Test the DisableTriggerFixture class."""
+
+    layer = ZopelessDatabaseLayer
+
+    def setUp(self):
+        super(TestDisableTriggerFixture, self).setUp()
+        con_str = dbconfig.rw_main_master + ' user=launchpad_main'
+        con = psycopg2.connect(con_str)
+        con.set_isolation_level(0)
+        self.cursor = con.cursor()
+        # Create a test table and trigger.
+        setup_sql = """
+        CREATE OR REPLACE FUNCTION trig() RETURNS trigger
+        LANGUAGE plpgsql
+        AS
+        'BEGIN
+            update test_trigger set col_b = NEW.col_a
+            where col_a = NEW.col_a;
+            RETURN NULL;
+        END;';
+        DROP TABLE IF EXISTS test_trigger CASCADE;
+        CREATE TABLE test_trigger(col_a integer, col_b integer);
+        CREATE TRIGGER test_trigger_t
+            AFTER INSERT on test_trigger
+            FOR EACH ROW EXECUTE PROCEDURE trig();
+        """
+        self.cursor.execute(setup_sql)
+        self.addCleanup(self._cleanup)
+
+    def _cleanup(self):
+        self.cursor.execute('DROP TABLE test_trigger CASCADE;')
+        self.cursor.close()
+        self.cursor.connection.close()
+
+    def test_triggers_are_disabled(self):
+        # Test that the fixture correctly disables specified triggers.
+        with DisableTriggerFixture({'test_trigger': 'test_trigger_t'}):
+            self.cursor.execute(
+                'INSERT INTO test_trigger(col_a) values (1)')
+            self.cursor.execute(
+                'SELECT col_b FROM test_trigger WHERE col_a = 1')
+            [col_b] = self.cursor.fetchone()
+            self.assertEqual(None, col_b)
+
+    def test_triggers_are_enabled_after(self):
+        # Test that the fixture correctly enables the triggers again when it
+        # is done.
+        with DisableTriggerFixture({'test_trigger': 'test_trigger_t'}):
+            self.cursor.execute(
+                'INSERT INTO test_trigger(col_a) values (1)')
+        self.cursor.execute(
+            'INSERT INTO test_trigger(col_a) values (2)')
+        self.cursor.execute(
+            'SELECT col_b FROM test_trigger WHERE col_a = 2')
+        [col_b] = self.cursor.fetchone()
+        self.assertEqual(2, col_b)

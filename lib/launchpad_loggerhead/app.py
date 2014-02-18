@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import logging
@@ -43,16 +43,16 @@ from paste.request import (
     path_info_pop,
     )
 
-from canonical.config import config
-from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
-from canonical.launchpad.webapp.vhosts import allvhosts
-from canonical.launchpad.xmlrpc import faults
 from lp.code.interfaces.codehosting import (
     BRANCH_TRANSPORT,
     LAUNCHPAD_ANONYMOUS,
     )
 from lp.codehosting.safe_open import safe_open
 from lp.codehosting.vfs import get_lp_server
+from lp.services.config import config
+from lp.services.webapp.errorlog import ErrorReportingUtility
+from lp.services.webapp.vhosts import allvhosts
+from lp.xmlrpc import faults
 
 
 robots_txt = '''\
@@ -110,9 +110,8 @@ class RootApp:
         the page they were looking at, with a cookie that gives us the
         username.
         """
-        openid_vhost = config.launchpad.openid_provider_vhost
         openid_request = self._make_consumer(environ).begin(
-            allvhosts.configs[openid_vhost].rooturl)
+            config.launchpad.openid_provider_root)
         openid_request.addExtension(
             SRegRequest(required=['nickname']))
         back_to = construct_url(environ)
@@ -138,7 +137,14 @@ class RootApp:
         if response.status == SUCCESS:
             self.log.error('open id response: SUCCESS')
             sreg_info = SRegResponse.fromSuccessResponse(response)
-            print sreg_info
+            if not sreg_info:
+                self.log.error('sreg_info is None.')
+                exc = HTTPUnauthorized()
+                exc.explanation = (
+                  "You don't have a Launchpad account. Check that you're "
+                  "logged in as the right user, or log into Launchpad and try "
+                  "again.")
+                raise exc
             environ[self.session_var]['user'] = sreg_info['nickname']
             raise HTTPMovedPermanently(query['back_to'])
         elif response.status == FAILURE:
@@ -192,7 +198,7 @@ class RootApp:
             try:
                 transport_type, info, trail = self.branchfs.translatePath(
                     user, urlutils.escape(path))
-            except xmlrpclib.Fault, f:
+            except xmlrpclib.Fault as f:
                 if check_fault(f, faults.PathTranslationError):
                     raise HTTPNotFound()
                 elif check_fault(f, faults.PermissionDenied):
@@ -238,7 +244,7 @@ class RootApp:
             if not os.path.isdir(cachepath):
                 os.makedirs(cachepath)
             self.log.info('branch_url: %s', branch_url)
-            base_api_url = config.appserver_root_url('api')
+            base_api_url = allvhosts.configs['api'].rooturl
             branch_api_url = '%s/%s/%s' % (
                 base_api_url,
                 'devel',
@@ -252,9 +258,16 @@ class RootApp:
                 response = urllib2.urlopen(req)
             except urllib2.HTTPError as response:
                 code = response.getcode()
-                if code in (400, 401, 403):
-                    # 400, 401, and 403 are the possible returns for api
-                    # requests on a private branch without authentication.
+                if code in (400, 401, 403, 404):
+                    # There are several error codes that imply private data.
+                    # 400 (bad request) is a default error code from the API
+                    # 401 (unauthorized) should never be returned as the
+                    # requests are always from anon. If it is returned
+                    # however, the data is certainly private.
+                    # 403 (forbidden) is obviously private.
+                    # 404 (not found) implies privacy from a private team or
+                    # similar situation, which we hide as not existing rather
+                    # than mark as forbidden.
                     self.log.info("Branch is private")
                     private = True
                 self.log.info(
@@ -268,7 +281,7 @@ class RootApp:
             try:
                 bzr_branch = safe_open(
                     lp_server.get_url().strip(':/'), branch_url)
-            except errors.NotBranchError, err:
+            except errors.NotBranchError as err:
                 self.log.warning('Not a branch: %s', err)
                 raise HTTPNotFound()
             bzr_branch.lock_read()
@@ -279,6 +292,12 @@ class RootApp:
                     served_url=None, private=private)
                 return view.app(environ, start_response)
             finally:
+                bzr_branch.repository.revisions.clear_cache()
+                bzr_branch.repository.signatures.clear_cache()
+                bzr_branch.repository.inventories.clear_cache()
+                if bzr_branch.repository.chk_bytes is not None:
+                    bzr_branch.repository.chk_bytes.clear_cache()
+                bzr_branch.repository.texts.clear_cache()
                 bzr_branch.unlock()
         finally:
             lp_server.stop_server()
@@ -317,4 +336,4 @@ def oops_middleware(app):
     """
     error_utility = make_error_utility()
     return oops_wsgi.make_app(app, error_utility._oops_config,
-            template=_oops_html_template)
+            template=_oops_html_template, soft_start_timeout=7000)

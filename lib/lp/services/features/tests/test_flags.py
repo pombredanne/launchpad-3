@@ -8,14 +8,16 @@ __metaclass__ = type
 
 import os
 
-from canonical.testing import layers
 from lp.services.features import (
     getFeatureFlag,
     install_feature_controller,
     )
 from lp.services.features.flags import FeatureController
 from lp.services.features.rulesource import StormFeatureRuleSource
-from lp.testing import TestCase
+from lp.testing import (
+    layers,
+    TestCase,
+    )
 
 
 notification_name = 'notification.global.text'

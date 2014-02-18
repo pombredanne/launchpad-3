@@ -79,28 +79,15 @@
 
 <metal:block define-macro="simple-search-form">
 <div id="bugs-search-form"
-     tal:attributes="
-         class python:
-             'dynamic_bug_listing' if view.dynamic_bug_listing_enabled
-                 else None;
-            action search_url|string:">
-  <form method="get" name="search" class="primary search"
-        tal:attributes="
-            class python:
-                'primary search dynamic_bug_listing'
-                    if view.dynamic_bug_listing_enabled
-                    else 'primary search';
-            action search_url|string:">
-    <h3 tal:condition="view/dynamic_bug_listing_enabled"
-        tal:content="view/search_macro_title">
+     class="dynamic_bug_listing"
+     tal:attributes="action search_url|string:">
+  <form method="get" name="search" class="primary search dynamic_bug_listing"
+        tal:attributes="action search_url|string:">
+    <h3 tal:content="view/search_macro_title">
       Search bugs in Ubuntu
     </h3>
     <p>
     <tal:searchbox replace="structure view/widgets/searchtext" />
-    <tal:without_dynamic_bug_listing
-        condition="not: view/dynamic_bug_listing_enabled">
-        <metal:widget use-macro="context/@@+bugtarget-macros-search/sortwidget" />
-    </tal:without_dynamic_bug_listing>
     <input type="submit" name="search" value="Search" />
     <tal:widget replace="structure view/widgets/status/hidden" />
     <tal:widget replace="structure view/widgets/importance/hidden" />

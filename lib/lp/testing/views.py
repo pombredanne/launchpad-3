@@ -18,14 +18,16 @@ from zope.security.management import (
     newInteraction,
     )
 
-from canonical.launchpad.layers import setFirstLayer
-from canonical.launchpad.webapp.servers import WebServiceTestRequest
-from canonical.launchpad.webapp.interfaces import (
+from lp.layers import setFirstLayer
+from lp.services.webapp.interfaces import (
     ICanonicalUrlData,
     IPlacelessAuthUtility,
     )
-from canonical.launchpad.webapp.publisher import layer_for_rootsite
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from lp.services.webapp.publisher import layer_for_rootsite
+from lp.services.webapp.servers import (
+    LaunchpadTestRequest,
+    WebServiceTestRequest,
+    )
 
 
 def create_view(context, name, form=None, layer=None, server_url=None,

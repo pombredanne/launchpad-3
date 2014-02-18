@@ -31,7 +31,7 @@ class _InstrumentedMethod:
         self.observer.called(self.name, args, kwargs)
         try:
             value = self.callable(*args, **kwargs)
-        except Exception, exc:
+        except Exception as exc:
             self.observer.raised(self.name, exc)
             raise
         else:

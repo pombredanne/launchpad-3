@@ -12,21 +12,20 @@ from soupmatchers import (
     Tag,
     )
 
-from canonical.launchpad.testing.pages import (
-    extract_text,
-    find_tag_by_id,
-    )
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.enums import ServiceUsage
-from lp.services.features.testing import FeatureFixture
+from lp.services.webapp import canonical_url
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
     BrowserTestCase,
     EventRecorder,
     extract_lp_cache,
     person_logged_in,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.pages import (
+    extract_text,
+    find_tag_by_id,
     )
 from lp.translations.browser.sourcepackage import (
     SourcePackageTranslationSharingDetailsView,
@@ -95,8 +94,6 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
 
     def setUp(self):
         super(TestSourcePackageTranslationSharingDetailsView, self).setUp()
-        self.useFixture(FeatureFixture(
-            {'translations.sharing_information.enabled': 'on'}))
         distroseries = self.factory.makeUbuntuDistroSeries()
         self.sourcepackage = self.factory.makeSourcePackage(
             distroseries=distroseries)
@@ -104,7 +101,9 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
             sourcepackage=self.sourcepackage, name='ubuntu-only')
         self.shared_template_ubuntu_side = self.factory.makePOTemplate(
             sourcepackage=self.sourcepackage, name='shared-template')
-        self.productseries = self.factory.makeProductSeries()
+        self.privileged_user = self.factory.makePerson(karma=200)
+        product = self.factory.makeProduct(owner=self.privileged_user)
+        self.productseries = self.factory.makeProductSeries(product=product)
         self.shared_template_upstream_side = self.factory.makePOTemplate(
             productseries=self.productseries, name='shared-template')
         self.upstream_only_template = self.factory.makePOTemplate(
@@ -364,11 +363,11 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
             url = '%s/+configure-translations' % canonical_url(series.product)
         return (
             '<a id="upstream-translations-%(id)s" class="sprite '
-            'edit%(seen)s" href="%(url)s"><span class="invisible-link">'
-            'Configure Upstream Translations</span></a>') % {
+            'edit action-icon%(seen)s" href="%(url)s">'
+            'Configure Upstream Translations</a>') % {
             'id': id,
             'url': url,
-            'seen': '' if visible else ' unseen',
+            'seen': '' if visible else ' hidden',
             }
 
     def test_configure_translations_link__no_packaging_link(self):
@@ -457,12 +456,11 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
             url = '%s/+translations-settings' % canonical_url(series)
         return (
         '<a id="translation-synchronisation-%(id)s" class="sprite '
-        'edit%(seen)s" href="%(url)s">'
-        '<span class="invisible-link">Configure Translation '
-        'Synchronisation</span></a>') % {
+        'edit action-icon%(seen)s" href="%(url)s">'
+        'Configure Translation Synchronisation</a>') % {
             'id': id,
             'url': url,
-            'seen': '' if visible else ' unseen',
+            'seen': '' if visible else ' hidden',
             }
 
     def test_upstream_sync_link__no_packaging_link(self):
@@ -540,12 +538,12 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
     def _getExpectedPackagingLink(self, id, url, icon, text, visible):
         url = '%s/%s' % (canonical_url(self.sourcepackage), url)
         return (
-            '<a id="%(id)s" class="sprite %(icon)s%(seen)s" href="%(url)s">'
-            '<span class="invisible-link">%(text)s</span></a>') % {
+            '<a id="%(id)s" class="sprite %(icon)s action-icon%(seen)s"'
+            ' href="%(url)s">%(text)s</a>') % {
             'id': id,
             'url': url,
             'icon': icon,
-            'seen': '' if visible else ' unseen',
+            'seen': '' if visible else ' hidden',
             'text': text,
             }
 
@@ -570,8 +568,8 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
             self.assertEqual(
                 expected, self.view.set_packaging_link.escapedtext)
 
-    def test_set_packaging_link__with_packaging_any_user(self):
-        # If packaging is configured, arbitrary users do no see
+    def test_set_packaging_link__with_packaging_probationary_user(self):
+        # If packaging is configured, probationary users do no see
         # the "set packaging" link.
         self.configureSharing()
         expected = self._getExpectedPackagingLink(
@@ -592,7 +590,7 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
         expected = self._getExpectedPackagingLink(
             id='set-packaging', url='+edit-packaging', icon='add',
             text='Set upstream link', visible=True)
-        with person_logged_in(self.sourcepackage.packaging.owner):
+        with person_logged_in(self.privileged_user):
             view = SourcePackageTranslationSharingDetailsView(
                 self.sourcepackage, LaunchpadTestRequest())
             view.initialize()
@@ -621,8 +619,8 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
             self.assertEqual(
                 expected, self.view.change_packaging_link.escapedtext)
 
-    def test_change_packaging_link__with_packaging_any_user(self):
-        # If packaging is configured, arbitrary users do no see
+    def test_change_packaging_link__with_packaging_probationary_user(self):
+        # If packaging is configured, probationary users do no see
         # the "change packaging" link.
         self.configureSharing()
         expected = self._getExpectedPackagingLink(
@@ -643,7 +641,7 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
         expected = self._getExpectedPackagingLink(
             id='change-packaging', url='+edit-packaging', icon='edit',
             text='Change upstream link', visible=True)
-        with person_logged_in(self.sourcepackage.packaging.owner):
+        with person_logged_in(self.privileged_user):
             view = SourcePackageTranslationSharingDetailsView(
                 self.sourcepackage, LaunchpadTestRequest())
             view.initialize()
@@ -672,8 +670,8 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
             self.assertEqual(
                 expected, self.view.remove_packaging_link.escapedtext)
 
-    def test_remove_packaging_link__with_packaging_any_user(self):
-        # If packaging is configured, arbitrary users do no see
+    def test_remove_packaging_link__with_packaging_probationary_user(self):
+        # If packaging is configured, probationary users do no see
         # the "remove packaging" link.
         self.configureSharing()
         expected = self._getExpectedPackagingLink(
@@ -694,7 +692,7 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
         expected = self._getExpectedPackagingLink(
             id='remove-packaging', url='+remove-packaging', icon='remove',
             text='Remove upstream link', visible=True)
-        with person_logged_in(self.sourcepackage.packaging.owner):
+        with person_logged_in(self.privileged_user):
             view = SourcePackageTranslationSharingDetailsView(
                 self.sourcepackage, LaunchpadTestRequest())
             view.initialize()
@@ -707,11 +705,6 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
     """Test for the sharing details page of a source package."""
 
     layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        super(TestSourcePackageSharingDetailsPage, self).setUp()
-        self.useFixture(FeatureFixture(
-            {'translations.sharing_information.enabled': 'on'}))
 
     def _makeSourcePackage(self):
         """Make a source package in Ubuntu."""
@@ -727,16 +720,16 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
             sourcepackage, no_login=no_login, rootsite="translations",
             view_name="+sharing-details", user=user)
 
-    def assertUnseen(self, browser, html_id):
-        unseen_matcher = Tag(html_id, 'li', attrs={
+    def asserthidden(self, browser, html_id):
+        hidden_matcher = Tag(html_id, 'li', attrs={
             'id': html_id,
-            'class': lambda v: v and 'unseen' in v.split(' ')})
-        self.assertThat(browser.contents, HTMLContains(unseen_matcher))
+            'class': lambda v: v and 'hidden' in v.split(' ')})
+        self.assertThat(browser.contents, HTMLContains(hidden_matcher))
 
     def assertSeen(self, browser, html_id, dimmed=False):
         seen_matcher = Tag(html_id, 'li', attrs={
             'id': html_id,
-            'class': lambda v: v and 'unseen' not in v.split(' ')})
+            'class': lambda v: v and 'hidden' not in v.split(' ')})
         self.assertThat(browser.contents, HTMLContains(seen_matcher))
         if dimmed:
             dimmed_matcher = Tag(html_id, 'li', attrs={
@@ -756,13 +749,13 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
                 'class': '',
                 })
         self.assertThat(browser.contents, HTMLContains(seen_matcher))
-        unseen_matcher = Tag(
+        hidden_matcher = Tag(
             'configuration-complete', 'span',
             attrs={
                 'id': 'configuration-complete',
-                'class': 'unseen',
+                'class': 'hidden',
                 })
-        self.assertThat(browser.contents, HTMLContains(unseen_matcher))
+        self.assertThat(browser.contents, HTMLContains(hidden_matcher))
 
     def assertStatusDisplayShowsCompleted(self, browser):
         seen_matcher = Tag(
@@ -772,13 +765,13 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
                 'class': '',
                 })
         self.assertThat(browser.contents, HTMLContains(seen_matcher))
-        unseen_matcher = Tag(
+        hidden_matcher = Tag(
             'configuration-incomplete', 'span',
             attrs={
                 'id': 'configuration-incomplete',
-                'class': 'unseen',
+                'class': 'hidden',
                 })
-        self.assertThat(browser.contents, HTMLContains(unseen_matcher))
+        self.assertThat(browser.contents, HTMLContains(hidden_matcher))
 
     def assertElementText(self, browser, id, expected):
         node = find_tag_by_id(browser.contents, id)
@@ -835,13 +828,13 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
         browser = self._getSharingDetailsViewBrowser(sourcepackage)
         self.assertContentComplete(browser)
         self.assertStatusDisplayShowsIncomplete(browser)
-        self.assertUnseen(browser, 'packaging-complete')
+        self.asserthidden(browser, 'packaging-complete')
         self.assertSeen(browser, 'branch-incomplete', dimmed=True)
-        self.assertUnseen(browser, 'branch-complete')
+        self.asserthidden(browser, 'branch-complete')
         self.assertSeen(browser, 'translation-incomplete', dimmed=True)
-        self.assertUnseen(browser, 'translation-complete')
+        self.asserthidden(browser, 'translation-complete')
         self.assertSeen(browser, 'upstream-sync-incomplete', dimmed=True)
-        self.assertUnseen(browser, 'upstream-sync-complete')
+        self.asserthidden(browser, 'upstream-sync-complete')
 
     def test_checklist_packaging_configured(self):
         # Linking a source package takes care of one item.
@@ -850,14 +843,14 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
         browser = self._getSharingDetailsViewBrowser(packaging.sourcepackage)
         self.assertContentComplete(browser)
         self.assertStatusDisplayShowsIncomplete(browser)
-        self.assertUnseen(browser, 'packaging-incomplete')
+        self.asserthidden(browser, 'packaging-incomplete')
         self.assertSeen(browser, 'packaging-complete')
         self.assertSeen(browser, 'branch-incomplete')
-        self.assertUnseen(browser, 'branch-complete')
+        self.asserthidden(browser, 'branch-complete')
         self.assertSeen(browser, 'translation-incomplete')
-        self.assertUnseen(browser, 'translation-complete')
+        self.asserthidden(browser, 'translation-complete')
         self.assertSeen(browser, 'upstream-sync-incomplete')
-        self.assertUnseen(browser, 'upstream-sync-complete')
+        self.asserthidden(browser, 'upstream-sync-complete')
 
     def test_checklist_packaging_and_branch_configured(self):
         # Linking a source package and and setting an upstream branch
@@ -868,14 +861,14 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
         browser = self._getSharingDetailsViewBrowser(packaging.sourcepackage)
         self.assertContentComplete(browser)
         self.assertStatusDisplayShowsIncomplete(browser)
-        self.assertUnseen(browser, 'packaging-incomplete')
+        self.asserthidden(browser, 'packaging-incomplete')
         self.assertSeen(browser, 'packaging-complete')
-        self.assertUnseen(browser, 'branch-incomplete')
+        self.asserthidden(browser, 'branch-incomplete')
         self.assertSeen(browser, 'branch-complete')
         self.assertSeen(browser, 'translation-incomplete')
-        self.assertUnseen(browser, 'translation-complete')
+        self.asserthidden(browser, 'translation-complete')
         self.assertSeen(browser, 'upstream-sync-incomplete')
-        self.assertUnseen(browser, 'upstream-sync-complete')
+        self.asserthidden(browser, 'upstream-sync-complete')
 
     def test_checklist_packaging_and_translations_enabled(self):
         # Linking a source package and and setting an upstream branch
@@ -887,14 +880,14 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
         browser = self._getSharingDetailsViewBrowser(packaging.sourcepackage)
         self.assertContentComplete(browser)
         self.assertStatusDisplayShowsIncomplete(browser)
-        self.assertUnseen(browser, 'packaging-incomplete')
+        self.asserthidden(browser, 'packaging-incomplete')
         self.assertSeen(browser, 'packaging-complete')
         self.assertSeen(browser, 'branch-incomplete')
-        self.assertUnseen(browser, 'branch-complete')
-        self.assertUnseen(browser, 'translation-incomplete')
+        self.asserthidden(browser, 'branch-complete')
+        self.asserthidden(browser, 'translation-incomplete')
         self.assertSeen(browser, 'translation-complete')
         self.assertSeen(browser, 'upstream-sync-incomplete')
-        self.assertUnseen(browser, 'upstream-sync-complete')
+        self.asserthidden(browser, 'upstream-sync-complete')
 
     def test_checklist_packaging_and_upstream_sync_enabled(self):
         # Linking a source package and enabling upstream translation
@@ -908,13 +901,13 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
         browser = self._getSharingDetailsViewBrowser(packaging.sourcepackage)
         self.assertContentComplete(browser)
         self.assertStatusDisplayShowsIncomplete(browser)
-        self.assertUnseen(browser, 'packaging-incomplete')
+        self.asserthidden(browser, 'packaging-incomplete')
         self.assertSeen(browser, 'packaging-complete')
         self.assertSeen(browser, 'branch-incomplete')
-        self.assertUnseen(browser, 'branch-complete')
+        self.asserthidden(browser, 'branch-complete')
         self.assertSeen(browser, 'translation-incomplete')
-        self.assertUnseen(browser, 'translation-complete')
-        self.assertUnseen(browser, 'upstream-sync-incomplete')
+        self.asserthidden(browser, 'translation-complete')
+        self.asserthidden(browser, 'upstream-sync-incomplete')
         self.assertSeen(browser, 'upstream-sync-complete')
 
     def test_checklist_fully_configured(self):
@@ -923,13 +916,13 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
         browser = self._getSharingDetailsViewBrowser(sourcepackage)
         self.assertContentComplete(browser)
         self.assertStatusDisplayShowsCompleted(browser)
-        self.assertUnseen(browser, 'packaging-incomplete')
+        self.asserthidden(browser, 'packaging-incomplete')
         self.assertSeen(browser, 'packaging-complete')
-        self.assertUnseen(browser, 'branch-incomplete')
+        self.asserthidden(browser, 'branch-incomplete')
         self.assertSeen(browser, 'branch-complete')
-        self.assertUnseen(browser, 'translation-incomplete')
+        self.asserthidden(browser, 'translation-incomplete')
         self.assertSeen(browser, 'translation-complete')
-        self.assertUnseen(browser, 'upstream-sync-incomplete')
+        self.asserthidden(browser, 'upstream-sync-incomplete')
         self.assertSeen(browser, 'upstream-sync-complete')
 
     def test_cache_javascript(self):
@@ -1003,25 +996,27 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
     def assertBranchLinks(self, contents, real_links, enabled):
         if real_links:
             match = (
-                r'^http://translations.launchpad.dev/.*/trunk/\+linkbranch$')
+                r'^http://translations.launchpad.dev/.*/trunk/\+setbranch$')
 
             def link_matcher(url):
+                if url is None:
+                    return False
                 return re.search(match, url)
         else:
             link_matcher = '#'
         if enabled:
-            css_class = 'sprite add'
+            css_class = 'sprite add action-icon'
         else:
-            css_class = 'sprite add unseen'
+            css_class = 'sprite add action-icon hidden'
         matcher = Tag('add-branch', 'a', attrs={
             'id': 'add-branch',
             'href': link_matcher,
             'class': css_class})
         self.assertThat(contents, HTMLContains(matcher))
         if enabled:
-            css_class = 'sprite edit'
+            css_class = 'sprite edit action-icon'
         else:
-            css_class = 'sprite edit unseen'
+            css_class = 'sprite edit action-icon hidden'
         matcher = Tag('change-branch', 'a', attrs={
             'id': 'change-branch',
             'href': link_matcher,
@@ -1083,7 +1078,7 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
             attrs={
                 'id': 'upstream-translations-incomplete',
                 'href': '#',
-                'class': 'sprite edit unseen',
+                'class': 'sprite edit action-icon hidden',
                 },
         )
         self.assertThat(browser.contents, HTMLContains(matcher))
@@ -1092,7 +1087,7 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
             attrs={
                 'id': 'upstream-translations-complete',
                 'href': '#',
-                'class': 'sprite edit unseen',
+                'class': 'sprite edit action-icon hidden',
                 },
         )
         self.assertThat(browser.contents, HTMLContains(matcher))
@@ -1107,7 +1102,7 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
             attrs={
                 'id': 'translation-synchronisation-incomplete',
                 'href': '#',
-                'class': 'sprite edit unseen',
+                'class': 'sprite edit action-icon hidden',
                 },
         )
         self.assertThat(browser.contents, HTMLContains(matcher))
@@ -1116,7 +1111,7 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
             attrs={
                 'id': 'translation-synchronisation-complete',
                 'href': '#',
-                'class': 'sprite edit unseen',
+                'class': 'sprite edit action-icon hidden',
                 },
         )
         self.assertThat(browser.contents, HTMLContains(matcher))
@@ -1127,11 +1122,6 @@ class TestTranslationSharingDetailsViewNotifications(TestCaseWithFactory,
     """Tests for Notifications in SourcePackageTranslationSharingView."""
 
     layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        super(TestTranslationSharingDetailsViewNotifications, self).setUp()
-        self.useFixture(FeatureFixture(
-            {'translations.sharing_information.enabled': 'on'}))
 
     def _getNotifications(self, view):
         notifications = view.request.response.notifications

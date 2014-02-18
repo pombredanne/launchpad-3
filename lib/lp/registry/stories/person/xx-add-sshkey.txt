@@ -28,8 +28,14 @@ users.
 
 Salgado sees a message explaining that he can register his ssh key.
 
-    >>> browser = setupBrowser(
-    ...     auth='Basic guilherme.salgado@canonical.com:zeca')
+    >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.testing.pages import setupBrowserFreshLogin
+    >>> login(ANONYMOUS)
+    >>> salgado = getUtility(IPersonSet).getByEmail(
+    ...     'guilherme.salgado@canonical.com')
+    >>> logout()
+    >>> browser = setupBrowserFreshLogin(salgado)
     >>> browser.open('http://launchpad.dev/~salgado')
     >>> print browser.title
     Guilherme Salgado in Launchpad
@@ -97,6 +103,10 @@ format.
 
 Launchpad administrators are not allowed to poke at other user's ssh keys.
 
+    >>> login(ANONYMOUS)
+    >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
+    >>> logout()
+    >>> admin_browser = setupBrowserFreshLogin(foo_bar)
     >>> admin_browser.open('http://launchpad.dev/~salgado/+editsshkeys')
     Traceback (most recent call last):
     ...
@@ -148,6 +158,20 @@ this case we'll raise an UnexpectedFormData.
     ...
     UnexpectedFormData: ...
 
+If he removes a key then he will get a security warning email notification
+that the key has been removed.
+
+    >>> import email
+    >>> from lp.services.mail import stub
+    >>> stub.test_emails = []
+    >>> browser.open('http://launchpad.dev/~salgado/+editsshkeys')
+    >>> browser.getControl('Remove', index=0).click()
+    >>> from_addr, to_addr, msg = stub.test_emails.pop()
+    >>> to_addr
+    ['guilherme.salgado@canonical.com']
+    >>> payload = email.message_from_string(msg).get_payload()
+    >>> assert payload.startswith('The SSH Key')
+
 
 == Blacklisted keys ==
 
@@ -159,11 +183,11 @@ brute-force attacks, so we don't accept any of these keys.
     >>> browser.open('http://launchpad.dev/~salgado/+editsshkeys')
     >>> browser.getControl(name='sshkey').value = compromised_key
     >>> browser.getControl('Import Public Key').click()
-    >>> print get_feedback_messages(browser.contents)
-    [u'This key is known to be compromised due to a security flaw in the
-     software used to generate it, so it will not be accepted by Launchpad. See
-     the full Security Notice for further information and instructions on how
-     to generate another key.']
+    >>> print_feedback_messages(browser.contents)
+    This key is known to be compromised due to a security flaw in the
+    software used to generate it, so it will not be accepted by Launchpad. See
+    the full Security Notice for further information and instructions on how
+    to generate another key.
 
 
 == Keys containing non-ASCII comments ==
@@ -174,5 +198,5 @@ comments.
     >>> key = 'ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAzSc+OzlZaURcX8NK9Hy1VoA1SXXuxFAvLw9ljz6xXEFgodmkSgSE/Pc+nR2fO/hl0rnWi//8oOwkHlwLVPQpor2cjQlceVs9rKaQcrcwRm6Jmi8CYKlEIBq82kpaLwXwK/x5ZsDfFtYUq558C5IKZOnDozthC7REPYK0cQ8gZ4bLf+5hmJ6QO4sSRZcXTZuPvgUixhlazFo6w6GqWbynf29Wp+WkLFGxGF2UE/dI8HyQy2j7ddaLnW50mGfB00B/pYtO246s84097BRUE8XoBC3SvzsZx6IbI3hOd2e834lq6kOj6QI0wu6+GINRCZf5UyNlpJv6X809XBvq68SCgw== St\xc3\xa9phane'
     >>> browser.getControl(name='sshkey').value = key
     >>> browser.getControl('Import Public Key').click()
-    >>> print get_feedback_messages(browser.contents)
-    [u'SSH public key added.']
+    >>> print_feedback_messages(browser.contents)
+    SSH public key added.

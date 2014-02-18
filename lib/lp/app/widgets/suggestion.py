@@ -16,28 +16,28 @@ from datetime import (
     )
 
 from pytz import utc
-from zope.app.form.browser.widget import renderElement
-from zope.app.form.interfaces import (
-    IInputWidget,
-    InputErrors,
-    )
-from zope.app.form.utility import setUpWidget
 from zope.component import (
     getMultiAdapter,
     getUtility,
     )
+from zope.formlib.interfaces import (
+    IInputWidget,
+    InputErrors,
+    )
+from zope.formlib.utility import setUpWidget
+from zope.formlib.widget import renderElement
 from zope.schema.vocabulary import (
     SimpleTerm,
     SimpleVocabulary,
     )
 
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.menu import (
-    escape,
+from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
+from lp.services.webapp import canonical_url
+from lp.services.webapp.escaping import (
+    html_escape,
     structured,
     )
-from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
+from lp.services.webapp.interfaces import ILaunchBag
 
 
 class SuggestionWidget(LaunchpadRadioWidget):
@@ -87,7 +87,7 @@ class SuggestionWidget(LaunchpadRadioWidget):
         return len(self.suggestion_vocab) > 0
 
     def _optionId(self, index):
-        return '%s.%d' % (escape(self.name), index)
+        return '%s.%d' % (html_escape(self.name), index)
 
     def _otherId(self):
         """Return the id of the "Other" option."""
@@ -174,7 +174,7 @@ class SuggestionWidget(LaunchpadRadioWidget):
         # Lastly render the other option.
         index = len(items)
         other_selection_text = "%s %s" % (
-            escape(self._renderLabel("Other:", index)),
+            html_escape(self._renderLabel("Other:", index)),
             self.other_selection_widget())
         other_selection_onclick = (
             "this.form['%s'].focus()" % self.other_selection_widget.name)
@@ -260,7 +260,8 @@ class TargetBranchWidget(SuggestionWidget):
         # button.  It was decided not to have the entire text as a link, but
         # instead to have a separate link to the branch details.
         text = '%s (<a href="%s">branch details</a>)' % (
-            escape(branch.displayname), escape(canonical_url(branch)))
+            html_escape(branch.displayname),
+            html_escape(canonical_url(branch)))
         # If the branch is the development focus, say so.
         if branch == self.context.context.target.default_merge_target:
             text = text + "&ndash; <em>development focus</em>"

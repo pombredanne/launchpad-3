@@ -1,7 +1,5 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-# pylint: disable-msg=F0401,E1002
-
 """Tests for the source package recipe view classes and templates."""
 
 __metaclass__ = type
@@ -14,23 +12,26 @@ from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.testing.pages import (
-    extract_text,
-    find_main_content,
-    find_tags_by_class,
-    )
-from canonical.launchpad.webapp import canonical_url
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.person import IPersonSet
-from lp.soyuz.model.processor import ProcessorFamily
+from lp.services.webapp import canonical_url
+from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.testing import (
+    admin_logged_in,
     ANONYMOUS,
     BrowserTestCase,
     login,
     logout,
     person_logged_in,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.pages import (
+    extract_text,
+    find_main_content,
+    find_tags_by_class,
+    setupBrowser,
+    setupBrowserForUser,
     )
 from lp.testing.sampledata import ADMIN_EMAIL
 
@@ -59,7 +60,7 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
         super(TestSourcePackageRecipeBuild, self).setUp()
         self.admin = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)
         self.chef = self.factory.makePerson(
-            displayname='Master Chef', name='chef', password='test')
+            displayname='Master Chef', name='chef')
         self.user = self.chef
         self.ppa = self.factory.makeArchive(
             displayname='Secret PPA', owner=self.chef, name='ppa')
@@ -68,8 +69,8 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
             distribution=self.ppa.distribution)
         naked_squirrel = removeSecurityProxy(self.squirrel)
         naked_squirrel.nominatedarchindep = self.squirrel.newArch(
-            'i386', ProcessorFamily.get(1), False, self.chef,
-            supports_virtualized=True)
+            'i386', getUtility(IProcessorSet).getByName('386'), False,
+            self.chef, supports_virtualized=True)
 
     def makeRecipeBuild(self):
         """Create and return a specific recipe."""
@@ -87,8 +88,8 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
 
     def test_cancel_build(self):
         """An admin can cancel a build."""
-        queue = self.factory.makeSourcePackageRecipeBuildJob()
-        build = queue.specific_job.build
+        queue = self.factory.makeSourcePackageRecipeBuild().queueBuild()
+        build = queue.specific_build
         transaction.commit()
         build_url = canonical_url(build)
         logout()
@@ -113,8 +114,8 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
 
     def test_cancel_build_not_admin(self):
         """No one but an admin can cancel a build."""
-        queue = self.factory.makeSourcePackageRecipeBuildJob()
-        build = queue.specific_job.build
+        queue = self.factory.makeSourcePackageRecipeBuild().queueBuild()
+        build = queue.specific_build
         transaction.commit()
         build_url = canonical_url(build)
         logout()
@@ -143,8 +144,8 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
 
     def test_rescore_build(self):
         """An admin can rescore a build."""
-        queue = self.factory.makeSourcePackageRecipeBuildJob()
-        build = queue.specific_job.build
+        queue = self.factory.makeSourcePackageRecipeBuild().queueBuild()
+        build = queue.specific_build
         transaction.commit()
         build_url = canonical_url(build)
         logout()
@@ -171,8 +172,8 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
 
     def test_rescore_build_invalid_score(self):
         """Build scores can only take numbers."""
-        queue = self.factory.makeSourcePackageRecipeBuildJob()
-        build = queue.specific_job.build
+        queue = self.factory.makeSourcePackageRecipeBuild().queueBuild()
+        build = queue.specific_build
         transaction.commit()
         build_url = canonical_url(build)
         logout()
@@ -194,8 +195,8 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
 
     def test_rescore_build_not_admin(self):
         """No one but admin can rescore a build."""
-        queue = self.factory.makeSourcePackageRecipeBuildJob()
-        build = queue.specific_job.build
+        queue = self.factory.makeSourcePackageRecipeBuild().queueBuild()
+        build = queue.specific_build
         transaction.commit()
         build_url = canonical_url(build)
         logout()
@@ -256,10 +257,49 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
         build = self.makeRecipeBuild()
         Store.of(build).flush()
         build_url = canonical_url(build)
-        removeSecurityProxy(build).builder = self.factory.makeBuilder()
+        build.updateStatus(
+            BuildStatus.FULLYBUILT, builder=self.factory.makeBuilder())
         browser = self.getViewBrowser(build.builder, '+history')
         self.assertTextMatchesExpressionIgnoreWhitespace(
              'Build history.*~chef/chocolate/cake recipe build',
              extract_text(find_main_content(browser.contents)))
         self.assertEqual(build_url,
                 browser.getLink('~chef/chocolate/cake recipe build').url)
+
+    def makeBuildingRecipe(self, archive=None):
+        builder = self.factory.makeBuilder()
+        build = self.factory.makeSourcePackageRecipeBuild(archive=archive)
+        build.updateStatus(BuildStatus.BUILDING, builder=builder)
+        build.queueBuild()
+        build.buildqueue_record.builder = builder
+        build.buildqueue_record.logtail = 'i am failing'
+        return build
+
+    def makeNonRedirectingBrowser(self, url, user=None):
+        browser = setupBrowserForUser(user) if user else setupBrowser()
+        browser.mech_browser.set_handle_equiv(False)
+        browser.open(url)
+        return browser
+
+    def test_builder_index_public(self):
+        build = self.makeBuildingRecipe()
+        url = canonical_url(build.builder)
+        logout()
+        browser = self.makeNonRedirectingBrowser(url)
+        self.assertIn('i am failing', browser.contents)
+
+    def test_builder_index_private(self):
+        archive = self.factory.makeArchive(private=True)
+        with admin_logged_in():
+            build = self.makeBuildingRecipe(archive=archive)
+        url = canonical_url(removeSecurityProxy(build).builder)
+        random_person = self.factory.makePerson()
+        logout()
+
+        # An unrelated user can't see the logtail of a private build.
+        browser = self.makeNonRedirectingBrowser(url, random_person)
+        self.assertNotIn('i am failing', browser.contents)
+
+        # But someone who can see the archive can.
+        browser = self.makeNonRedirectingBrowser(url, archive.owner)
+        self.assertIn('i am failing', browser.contents)

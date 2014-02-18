@@ -9,15 +9,7 @@ from storm.store import Store
 import transaction
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.sqlbase import (
-    cursor,
-    quote,
-    )
-from canonical.testing.layers import (
-    LaunchpadFunctionalLayer,
-    ZopelessDatabaseLayer,
-    )
-from lp.registry.enum import (
+from lp.registry.enums import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
     )
@@ -32,6 +24,10 @@ from lp.registry.scripts.populate_distroseriesdiff import (
     find_derived_series,
     populate_distroseriesdiff,
     PopulateDistroSeriesDiff,
+    )
+from lp.services.database.sqlbase import (
+    cursor,
+    quote,
     )
 from lp.services.log.logger import (
     BufferLogger,
@@ -48,6 +44,10 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.layers import (
+    LaunchpadFunctionalLayer,
+    ZopelessDatabaseLayer,
+    )
 
 
 class FactoryHelper:

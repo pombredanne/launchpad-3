@@ -1,7 +1,5 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 __all__ = [
@@ -11,6 +9,7 @@ __all__ = [
     'productrelease_to_milestone',
     ]
 
+import os
 from StringIO import StringIO
 
 from sqlobject import (
@@ -26,21 +25,12 @@ from storm.store import EmptyResultSet
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import (
-    SQLBase,
-    sqlvalues,
-    )
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
+from lp.app.enums import InformationType
 from lp.app.errors import NotFoundError
+from lp.registry.errors import (
+    InvalidFilename,
+    ProprietaryProduct,
+    )
 from lp.registry.interfaces.person import (
     validate_person,
     validate_public_person,
@@ -51,9 +41,19 @@ from lp.registry.interfaces.productrelease import (
     IProductReleaseSet,
     UpstreamFileType,
     )
-
-
-SEEK_END = 2                    # Python2.4 has no definition for SEEK_END.
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.interfaces import IStore
+from lp.services.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
+from lp.services.propertycache import cachedproperty
+from lp.services.webapp.publisher import (
+    get_raw_form_value_from_current_request,
+    )
 
 
 class ProductRelease(SQLBase):
@@ -73,50 +73,28 @@ class ProductRelease(SQLBase):
         notNull=True)
     milestone = ForeignKey(dbName='milestone', foreignKey='Milestone')
 
-    files = SQLMultipleJoin(
+    _files = SQLMultipleJoin(
         'ProductReleaseFile', joinColumn='productrelease',
         orderBy='-date_uploaded', prejoins=['productrelease'])
 
-    # properties
-    @property
-    def codename(self):
-        """Backwards compatible codename attribute.
-
-        This attribute was moved to the Milestone."""
-        # XXX EdwinGrubbs 2009-02-02 bug=324394: Remove obsolete attributes.
-        return self.milestone.code_name
+    @cachedproperty
+    def files(self):
+        return self._files
 
     @property
     def version(self):
-        """Backwards compatible version attribute.
-
-        This attribute was replaced by the Milestone.name."""
-        # XXX EdwinGrubbs 2009-02-02 bug=324394: Remove obsolete attributes.
+        """See `IProductRelease`."""
         return self.milestone.name
 
     @property
-    def summary(self):
-        """Backwards compatible summary attribute.
-
-        This attribute was replaced by the Milestone.summary."""
-        # XXX EdwinGrubbs 2009-02-02 bug=324394: Remove obsolete attributes.
-        return self.milestone.summary
-
-    @property
     def productseries(self):
-        """Backwards compatible summary attribute.
-
-        This attribute was replaced by the Milestone.productseries."""
-        # XXX EdwinGrubbs 2009-02-02 bug=324394: Remove obsolete attributes.
+        """See `IProductRelease`."""
         return self.milestone.productseries
 
     @property
     def product(self):
-        """Backwards compatible summary attribute.
-
-        This attribute was replaced by the Milestone.productseries.product."""
-        # XXX EdwinGrubbs 2009-02-02 bug=324394: Remove obsolete attributes.
-        return self.productseries.product
+        """See `IProductRelease`."""
+        return self.milestone.productseries.product
 
     @property
     def displayname(self):
@@ -128,6 +106,11 @@ class ProductRelease(SQLBase):
         """See `IProductRelease`."""
         return self.milestone.title
 
+    @property
+    def can_have_release_files(self):
+        """See `IProductRelease`."""
+        return self.product.information_type == InformationType.PUBLIC
+
     @staticmethod
     def normalizeFilename(filename):
         # Replace slashes in the filename with less problematic dashes.
@@ -135,7 +118,7 @@ class ProductRelease(SQLBase):
 
     def destroySelf(self):
         """See `IProductRelease`."""
-        assert self.files.count() == 0, (
+        assert self._files.count() == 0, (
             "You can't delete a product release which has files associated "
             "with it.")
         SQLBase.destroySelf(self)
@@ -154,7 +137,7 @@ class ProductRelease(SQLBase):
                 "file_or_data is not an expected type")
             file_obj = file_or_data
             start = file_obj.tell()
-            file_obj.seek(0, SEEK_END)
+            file_obj.seek(0, os.SEEK_END)
             file_size = file_obj.tell()
             file_obj.seek(start)
         return file_obj, file_size
@@ -163,35 +146,44 @@ class ProductRelease(SQLBase):
                        uploader, signature_filename=None,
                        signature_content=None,
                        file_type=UpstreamFileType.CODETARBALL,
-                       description=None):
+                       description=None, from_api=False):
         """See `IProductRelease`."""
+        if not self.can_have_release_files:
+            raise ProprietaryProduct(
+                "Only public projects can have download files.")
+        if self.hasReleaseFile(filename):
+            raise InvalidFilename
         # Create the alias for the file.
         filename = self.normalizeFilename(filename)
+        # XXX: StevenK 2013-02-06 bug=1116954: We should not need to refetch
+        # the file content from the request, since the passed in one has been
+        # wrongly encoded.
+        if from_api:
+            file_content = get_raw_form_value_from_current_request(
+                'file_content')
         file_obj, file_size = self._getFileObjectAndSize(file_content)
 
         alias = getUtility(ILibraryFileAliasSet).create(
-            name=filename,
-            size=file_size,
-            file=file_obj,
+            name=filename, size=file_size, file=file_obj,
             contentType=content_type)
         if signature_filename is not None and signature_content is not None:
+            # XXX: StevenK 2013-02-06 bug=1116954: We should not need to
+            # refetch the file content from the request, since the passed in
+            # one has been wrongly encoded.
+            if from_api:
+                signature_content = get_raw_form_value_from_current_request(
+                    'signature_content')
             signature_obj, signature_size = self._getFileObjectAndSize(
                 signature_content)
-            signature_filename = self.normalizeFilename(
-                signature_filename)
+            signature_filename = self.normalizeFilename(signature_filename)
             signature_alias = getUtility(ILibraryFileAliasSet).create(
-                name=signature_filename,
-                size=signature_size,
-                file=signature_obj,
-                contentType='application/pgp-signature')
+                name=signature_filename, size=signature_size,
+                file=signature_obj, contentType='application/pgp-signature')
         else:
             signature_alias = None
-        return ProductReleaseFile(productrelease=self,
-                                  libraryfile=alias,
-                                  signature=signature_alias,
-                                  filetype=file_type,
-                                  description=description,
-                                  uploader=uploader)
+        return ProductReleaseFile(
+            productrelease=self, libraryfile=alias, signature=signature_alias,
+            filetype=file_type, description=description, uploader=uploader)
 
     def getFileAliasByName(self, name):
         """See `IProductRelease`."""
@@ -208,6 +200,14 @@ class ProductRelease(SQLBase):
             if file_.libraryfile.filename == name:
                 return file_
         raise NotFoundError(name)
+
+    def hasReleaseFile(self, name):
+        """See `IProductRelease`."""
+        try:
+            self.getProductReleaseFileByName(name)
+            return True
+        except NotFoundError:
+            return False
 
 
 class ProductReleaseFile(SQLBase):
@@ -265,13 +265,12 @@ class ProductReleaseSet(object):
         from lp.registry.model.milestone import Milestone
         if len(list(series)) == 0:
             return EmptyResultSet()
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         series_ids = [s.id for s in series]
-        result = store.find(
+        return IStore(ProductRelease).find(
             ProductRelease,
             And(ProductRelease.milestone == Milestone.id),
-                Milestone.productseriesID.is_in(series_ids))
-        return result.order_by(Desc(ProductRelease.datereleased))
+                Milestone.productseriesID.is_in(series_ids)).order_by(
+                    Desc(ProductRelease.datereleased))
 
     def getFilesForReleases(self, releases):
         """See `IProductReleaseSet`."""

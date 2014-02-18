@@ -3,7 +3,7 @@ Let's first setup some objects that we'll need.
     >>> no_priv_browser = setupBrowser(
     ...     auth='Basic no-priv@canonical.com:test')
     >>> team_admin_browser = setupBrowser(
-    ...    'Basic jeff.waugh@ubuntulinux.com:jdub')
+    ...    'Basic jeff.waugh@ubuntulinux.com:test')
 
 If you're not logged in and go to the +polls page of the "Ubuntu Team"
 you'll see a link to login as a team administrator.
@@ -54,7 +54,7 @@ test the name field validator.
     ...     name='field.datecloses').value = '2100-07-04 02:00:00+00:00'
     >>> team_admin_browser.getControl('Continue').click()
 
-    >>> print "\n".join(get_feedback_messages(team_admin_browser.contents))
+    >>> print_feedback_messages(team_admin_browser.contents)
     There is 1 error.
     Invalid name 'election_2100'. Names must be at least two characters ...
 
@@ -68,7 +68,7 @@ We fix the name, but swap the dates. Again a nice error message.
     ...     name='field.datecloses').value = '2100-06-04 02:00:00+00:00'
     >>> team_admin_browser.getControl('Continue').click()
 
-    >>> print "\n".join(get_feedback_messages(team_admin_browser.contents))
+    >>> print_feedback_messages(team_admin_browser.contents)
     There is 1 error.
     A poll cannot close at the time (or before) it opens.
 
@@ -147,7 +147,7 @@ Now lets try to insert a poll with the name of a existing one.
     ...     name='field.datecloses').value = '2035-06-04 02:00:00+00:00'
     >>> team_admin_browser.getControl('Continue').click()
 
-    >>> print "\n".join(get_feedback_messages(team_admin_browser.contents))
+    >>> print_feedback_messages(team_admin_browser.contents)
     There is 1 error.
     dpl-2080 is already in use by another poll in this team.
 
@@ -160,6 +160,6 @@ the poll opens -- at that point new options cannot be added.
     >>> today = datetime.today().strftime('%Y-%m-%d')
     >>> team_admin_browser.getControl(name='field.dateopens').value = today
     >>> team_admin_browser.getControl('Continue').click()
-    >>> print "\n".join(get_feedback_messages(team_admin_browser.contents))
+    >>> print_feedback_messages(team_admin_browser.contents)
     There is 1 error.
-    A poll cannot open less than 12 hours after it's created.
+    A poll cannot open less than 12 hours after it&#x27;s created.

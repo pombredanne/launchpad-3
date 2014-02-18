@@ -6,21 +6,12 @@
 __metaclass__ = type
 __all__ = [
     'ViewProcessor',
-    'ViewProcessorFamily',
     ]
 
 from lp.app.security import AnonymousAuthorization
-from lp.soyuz.interfaces.processor import (
-    IProcessor,
-    IProcessorFamily,
-    )
+from lp.soyuz.interfaces.processor import IProcessor
 
 
 class ViewProcessor(AnonymousAuthorization):
     """Anyone can view an `IProcessor`."""
     usedfor = IProcessor
-
-
-class ViewProcessorFamily(AnonymousAuthorization):
-    """Anyone can view an `IProcessorFamily`."""
-    usedfor = IProcessorFamily

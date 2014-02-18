@@ -14,18 +14,17 @@ from zope.sendmail.interfaces import IMailDelivery
 from lp.services.encoding import is_ascii_only
 from lp.services.mail import sendmail
 from lp.services.mail.sendmail import MailController
+from lp.testing import TestCase
 from lp.testing.fixture import (
     CaptureTimeline,
     ZopeUtilityFixture,
     )
 
-from lp.testing import TestCase
-
 
 class TestMailController(TestCase):
 
     def test_constructor(self):
-        """Test the default construction behavior.
+        """Test the default construction behaviour.
 
         Defaults should be empty.  The 'to' should be converted to a list.
         """
@@ -39,7 +38,7 @@ class TestMailController(TestCase):
         self.assertEqual([], ctrl.attachments)
 
     def test_constructor2(self):
-        """Test the explicit construction behavior.
+        """Test the explicit construction behaviour.
 
         Since to is a list, it is not converted into a list.
         """
@@ -51,6 +50,18 @@ class TestMailController(TestCase):
         self.assertEqual({'key': 'value'}, ctrl.headers)
         self.assertEqual('body', ctrl.body)
         self.assertEqual([], ctrl.attachments)
+
+    def test_long_subject_wrapping(self):
+        # Python2.6 prefixes continuation lines with '\t', 2.7 uses a single
+        # space instead. Catch any change in this behaviour to avoid having to
+        # redo the full diagnosis in the future.
+        before = '0123456789' * 6 + 'before'
+        after = 'after' + '0123456789'
+        hdr = email.header.Header(before + ' ' + after, header_name='Subject')
+        encoded = hdr.encode()
+        self.assertTrue(('before\n after' in encoded)
+                        or ('before\n\t after' in encoded),
+                        'Header.encode() changed continuation lines again')
 
     def test_addAttachment(self):
         """addAttachment should add a part to the list of attachments."""

@@ -10,15 +10,16 @@ __metaclass__ = type
 import atexit
 import os
 import random
-import time
 import sys
+import time
 
-from bzrlib.lock import WriteLock
 from bzrlib.errors import LockContention
+from bzrlib.lock import WriteLock
 import psycopg2
 
-from canonical.config import config
-from canonical.database.postgresql import (
+from lp.services.config import config
+from lp.services.database import activity_cols
+from lp.services.database.postgresql import (
     generateResetSequencesSQL,
     resetSequences,
     )
@@ -187,7 +188,7 @@ class PgTestSetup:
         if template is not None:
             self.template = template
         if dbname is PgTestSetup.dynamic:
-            from canonical.testing.layers import BaseLayer
+            from lp.testing.layers import BaseLayer
             if os.environ.get('LP_TEST_INSTANCE'):
                 self.dbname = "%s_%s" % (
                     self.__class__.dbname, os.environ.get('LP_TEST_INSTANCE'))
@@ -338,7 +339,7 @@ rw_main_slave:  dbname=%s host=localhost
                                     "create db in %0.2fs\n" % (
                                         time.time() - _start))
                             break
-                        except psycopg2.DatabaseError, x:
+                        except psycopg2.DatabaseError as x:
                             if counter == attempts - 1:
                                 raise
                             x = str(x)
@@ -403,7 +404,7 @@ rw_main_slave:  dbname=%s host=localhost
         for i in range(0, attempts):
             try:
                 con = self.superuser_connection(self.template)
-            except psycopg2.OperationalError, x:
+            except psycopg2.OperationalError as x:
                 if 'does not exist' in str(x):
                     return
                 raise
@@ -416,10 +417,11 @@ rw_main_slave:  dbname=%s host=localhost
                 try:
                     cur = con.cursor()
                     cur.execute("""
-                        SELECT pg_terminate_backend(procpid)
+                        SELECT pg_terminate_backend(%(pid)s)
                         FROM pg_stat_activity
-                        WHERE procpid <> pg_backend_pid() AND datname=%s
-                        """, [self.dbname])
+                        WHERE %(pid)s <> pg_backend_pid() AND datname=%%s
+                        """ % activity_cols(cur),
+                        [self.dbname])
                 except psycopg2.DatabaseError:
                     pass
 
@@ -428,7 +430,7 @@ rw_main_slave:  dbname=%s host=localhost
                 try:
                     cur = con.cursor()
                     cur.execute('DROP DATABASE %s' % self.dbname)
-                except psycopg2.DatabaseError, x:
+                except psycopg2.DatabaseError as x:
                     if i == attempts - 1:
                         # Too many failures - raise an exception
                         raise

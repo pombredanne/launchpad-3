@@ -37,8 +37,6 @@ from twisted.internet.threads import deferToThreadPool
 from twisted.python.threadpool import ThreadPool
 from zope.component import getUtility
 
-from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad.scripts.logger import log as default_log
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs import externalbugtracker
 from lp.bugs.externalbugtracker import (
@@ -64,7 +62,9 @@ from lp.registry.interfaces.person import (
     PersonCreationRationale,
     )
 from lp.services.database.bulk import reload
+from lp.services.database.sqlbase import flush_database_updates
 from lp.services.scripts.base import LaunchpadCronScript
+from lp.services.scripts.logger import log as default_log
 
 # The login of the user to run as.
 LOGIN = 'bugwatch@bugs.launchpad.net'
@@ -121,7 +121,7 @@ def record_errors(transaction, bug_watch_ids):
     """
     try:
         yield
-    except Exception, e:
+    except Exception as e:
         # We record the error against all the bugwatches that should
         # have been updated before re-raising it. We also update the
         # bug watches' lastchecked dates so that checkwatches
@@ -267,7 +267,7 @@ class CheckwatchesMaster(WorkingBase):
         except (KeyboardInterrupt, SystemExit):
             # We should never catch KeyboardInterrupt or SystemExit.
             raise
-        except Exception, error:
+        except Exception as error:
             # If something unexpected goes wrong, we log it and
             # continue: a failure shouldn't break the updating of
             # the other bug trackers.
@@ -426,7 +426,7 @@ class CheckwatchesMaster(WorkingBase):
             try:
                 trackers_and_watches = self._getExternalBugTrackersAndWatches(
                     bug_tracker, bug_watches_to_update)
-            except (UnknownBugTrackerTypeError, ProtocolError), error:
+            except (UnknownBugTrackerTypeError, ProtocolError) as error:
                 # We update all the bug watches to reflect the fact that
                 # this error occurred. We also update their last checked
                 # date to ensure that they don't get checked for another

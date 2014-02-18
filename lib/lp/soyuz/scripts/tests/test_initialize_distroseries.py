@@ -1,22 +1,13 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the initialize_distroseries script machinery."""
 
 __metaclass__ = type
 
-import os
-import subprocess
-import sys
-
-from testtools.content import Content
-from testtools.content_type import UTF8_TEXT
 import transaction
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.distroseriesdifference import (
@@ -24,7 +15,7 @@ from lp.registry.interfaces.distroseriesdifference import (
     )
 from lp.registry.interfaces.distroseriesparent import IDistroSeriesParentSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.services.features.testing import FeatureFixture
+from lp.services.database.interfaces import IStore
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackageUploadStatus,
@@ -36,23 +27,24 @@ from lp.soyuz.interfaces.packageset import (
     IPackagesetSet,
     NoSuchPackageSet,
     )
-from lp.soyuz.interfaces.processor import IProcessorFamilySet
+from lp.soyuz.interfaces.processor import (
+    IProcessorSet,
+    ProcessorNotFound,
+    )
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
     )
 from lp.soyuz.model.component import ComponentSelection
 from lp.soyuz.model.distroarchseries import DistroArchSeries
-from lp.soyuz.model.distroseriesdifferencejob import (
-    FEATURE_FLAG_ENABLE_MODULE,
-    find_waiting_jobs,
-    )
+from lp.soyuz.model.distroseriesdifferencejob import find_waiting_jobs
 from lp.soyuz.model.section import SectionSelection
 from lp.soyuz.scripts.initialize_distroseries import (
     InitializationError,
     InitializeDistroSeries,
     )
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import LaunchpadZopelessLayer
 
 
 class InitializationHelperTestCase(TestCaseWithFactory):
@@ -60,11 +52,13 @@ class InitializationHelperTestCase(TestCaseWithFactory):
     # - setup/populate parents with packages;
     # - initialize a child from parents.
 
-    def setupDas(self, parent, proc, arch_tag):
-        pf = getUtility(IProcessorFamilySet).getByName(proc)
+    def setupDas(self, parent, processor_name, arch_tag):
+        try:
+            processor = getUtility(IProcessorSet).getByName(processor_name)
+        except ProcessorNotFound:
+            processor = self.factory.makeProcessor(name=processor_name)
         parent_das = self.factory.makeDistroArchSeries(
-            distroseries=parent, processorfamily=pf,
-            architecturetag=arch_tag)
+            distroseries=parent, processor=processor, architecturetag=arch_tag)
         lf = self.factory.makeLibraryFileAlias()
         transaction.commit()
         parent_das.addOrUpdateChroot(lf)
@@ -72,10 +66,8 @@ class InitializationHelperTestCase(TestCaseWithFactory):
         return parent_das
 
     def setupParent(self, parent=None, packages=None, format_selection=None,
-                    distribution=None,
-                    pocket=PackagePublishingPocket.RELEASE,
-                    proc='x86', arch_tag='i386'
-                    ):
+                    distribution=None, pocket=PackagePublishingPocket.RELEASE,
+                    proc='386', arch_tag='i386'):
         if parent is None:
             parent = self.factory.makeDistroSeries(distribution)
         parent_das = self.setupDas(parent, proc, arch_tag)
@@ -156,9 +148,13 @@ class InitializationHelperTestCase(TestCaseWithFactory):
             distroseries=distroseries,
             sourcepackagename=spn,
             pocket=PackagePublishingPocket.RELEASE)
-        packageset = getUtility(IPackagesetSet).new(
-            packageset_name, packageset_name, distroseries.owner,
-            distroseries=distroseries)
+        try:
+            packageset = getUtility(IPackagesetSet).getByName(
+                packageset_name, distroseries=distroseries)
+        except NoSuchPackageSet:
+            packageset = getUtility(IPackagesetSet).new(
+                packageset_name, packageset_name, distroseries.owner,
+                distroseries=distroseries)
         packageset.addSources(package_name)
         if create_build:
             source.createMissingBuilds()
@@ -553,9 +549,9 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
                                                parent_das):
         # Check that 'udev' has been copied correctly.
         parent_udev_pubs = parent.main_archive.getPublishedSources(
-            'udev', distroseries=parent)
+            u'udev', distroseries=parent)
         child_udev_pubs = child.main_archive.getPublishedSources(
-            'udev', distroseries=child)
+            u'udev', distroseries=child)
         self.assertEqual(
             parent_udev_pubs.count(), child_udev_pubs.count())
         parent_arch_udev_pubs = parent[
@@ -686,11 +682,54 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
             [(u'udev', u'0.1-1'), (u'firefox', u'2.1')],
             pub_sources)
 
+    def test_copying_packagesets_no_duplication(self):
+        # Copying packagesets only copies the packageset from the most
+        # recent series, rather than merging those from all series.
+        previous_parent, _ = self.setupParent()
+        parent = self._fullInitialize([previous_parent])
+        self.factory.makeSourcePackagePublishingHistory(distroseries=parent)
+        p1, parent_packageset, _ = self.createPackageInPackageset(
+            parent, u"p1", u"packageset")
+        uploader1 = self.factory.makePerson()
+        getUtility(IArchivePermissionSet).newPackagesetUploader(
+            parent.main_archive, uploader1, parent_packageset)
+        child = self._fullInitialize(
+            [previous_parent], previous_series=parent,
+            distribution=parent.distribution)
+        # Make sure the child's packageset has disjoint packages and
+        # permissions.
+        p2, child_packageset, _ = self.createPackageInPackageset(
+            child, u"p2", u"packageset")
+        child_packageset.removeSources([u"p1"])
+        uploader2 = self.factory.makePerson()
+        getUtility(IArchivePermissionSet).newPackagesetUploader(
+            child.main_archive, uploader2, child_packageset)
+        getUtility(IArchivePermissionSet).deletePackagesetUploader(
+            parent.main_archive, uploader1, child_packageset)
+        grandchild = self._fullInitialize(
+            [previous_parent], previous_series=child,
+            distribution=parent.distribution)
+        grandchild_packageset = getUtility(IPackagesetSet).getByName(
+            parent_packageset.name, distroseries=grandchild)
+        # The copied grandchild set has sources matching the child.
+        self.assertContentEqual(
+            child_packageset.getSourcesIncluded(),
+            grandchild_packageset.getSourcesIncluded())
+        # It also has permissions matching the child.
+        perms2 = getUtility(IArchivePermissionSet).uploadersForPackageset(
+            parent.main_archive, child_packageset)
+        perms3 = getUtility(IArchivePermissionSet).uploadersForPackageset(
+            parent.main_archive, grandchild_packageset)
+        self.assertContentEqual(
+            [perm.person.name for perm in perms2],
+            [perm.person.name for perm in perms3])
+
     def test_intra_distro_perm_copying(self):
         # If child.distribution equals parent.distribution, we also
         # copy the archivepermissions.
         parent, unused = self.setupParent()
         uploader = self.factory.makePerson()
+        releaser = self.factory.makePerson()
         test1 = self.factory.makePackageset(
             u'test1', u'test 1 packageset', parent.owner,
             distroseries=parent)
@@ -701,41 +740,64 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         archive_permset = getUtility(IArchivePermissionSet)
         archive_permset.newPackagesetUploader(
             parent.main_archive, uploader, test1)
+        archive_permset.newPocketQueueAdmin(
+            parent.main_archive, releaser, PackagePublishingPocket.RELEASE,
+            distroseries=parent)
         # Create child series in the same distribution.
         child = self.factory.makeDistroSeries(
             distribution=parent.distribution,
             previous_series=parent)
         self._fullInitialize([parent], child=child)
+        # Create a third series without any special permissions.
+        third = self.factory.makeDistroSeries(
+            distribution=parent.distribution)
 
-        # The uploader can upload to the new distroseries.
-        self.assertTrue(archive_permset.isSourceUploadAllowed(
-                parent.main_archive, 'udev', uploader,
-                distroseries=parent))
-        self.assertTrue(archive_permset.isSourceUploadAllowed(
-                child.main_archive, 'udev', uploader,
-                distroseries=child))
+        # The uploader can upload to the new distroseries, but not to third.
+        # Likewise, the release team member can administer the release
+        # pocket in the new distroseries, but not in third.
+        for series, allowed in ((parent, True), (child, True), (third, False)):
+            self.assertEqual(
+                allowed,
+                archive_permset.isSourceUploadAllowed(
+                    series.main_archive, 'udev', uploader,
+                    distroseries=series))
+            self.assertEqual(
+                allowed,
+                series.main_archive.canAdministerQueue(
+                    releaser, pocket=PackagePublishingPocket.RELEASE,
+                    distroseries=series))
 
     def test_no_cross_distro_perm_copying(self):
         # No cross-distro archivepermissions copying should happen.
         self.parent, self.parent_das = self.setupParent()
         uploader = self.factory.makePerson()
+        releaser = self.factory.makePerson()
         test1 = getUtility(IPackagesetSet).new(
             u'test1', u'test 1 packageset', self.parent.owner,
             distroseries=self.parent)
         test1.addSources('udev')
-        getUtility(IArchivePermissionSet).newPackagesetUploader(
+        archive_permset = getUtility(IArchivePermissionSet)
+        archive_permset.newPackagesetUploader(
             self.parent.main_archive, uploader, test1)
+        archive_permset.newPocketQueueAdmin(
+            self.parent.main_archive, releaser,
+            PackagePublishingPocket.RELEASE, distroseries=self.parent)
         child = self._fullInitialize([self.parent])
 
-        # The uploader cannot upload to the new distroseries.
-        self.assertTrue(
-            getUtility(IArchivePermissionSet).isSourceUploadAllowed(
-                self.parent.main_archive, 'udev', uploader,
-                distroseries=self.parent))
-        self.assertFalse(
-            getUtility(IArchivePermissionSet).isSourceUploadAllowed(
-                child.main_archive, 'udev', uploader,
-                distroseries=child))
+        # The uploader cannot upload to the new distroseries.  Likewise, the
+        # release team member cannot administer the release pocket in the
+        # new distroseries.
+        for series, allowed in ((self.parent, True), (child, False)):
+            self.assertEqual(
+                allowed,
+                archive_permset.isSourceUploadAllowed(
+                    series.main_archive, 'udev', uploader,
+                    distroseries=series))
+            self.assertEqual(
+                allowed,
+                series.main_archive.canAdministerQueue(
+                    releaser, pocket=PackagePublishingPocket.RELEASE,
+                    distroseries=series))
 
     def test_packageset_owner_preserved_within_distro(self):
         # When initializing a new series within a distro, the copied
@@ -853,39 +915,6 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         self.assertEqual(len(das), 1)
         self.assertEqual(
             das[0].architecturetag, self.parent_das.architecturetag)
-
-    def test_script(self):
-        # Do an end-to-end test using the command-line tool.
-        self.parent, self.parent_das = self.setupParent()
-        uploader = self.factory.makePerson()
-        test1 = getUtility(IPackagesetSet).new(
-            u'test1', u'test 1 packageset', self.parent.owner,
-            distroseries=self.parent)
-        test1.addSources('udev')
-        getUtility(IArchivePermissionSet).newPackagesetUploader(
-            self.parent.main_archive, uploader, test1)
-        child = self.factory.makeDistroSeries(previous_series=self.parent)
-        # Create an initialized series in the distribution.
-        other_series = self.factory.makeDistroSeries(
-            distribution=child.parent)
-        self.factory.makeSourcePackagePublishingHistory(
-            distroseries=other_series)
-        transaction.commit()
-        ifp = os.path.join(
-            config.root, 'scripts', 'ftpmaster-tools',
-            'initialize-from-parent.py')
-        process = subprocess.Popen(
-            [sys.executable, ifp, "-vv", "-d", child.parent.name,
-            child.name], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        stdout, stderr = process.communicate()
-        self.addDetail("stdout", Content(UTF8_TEXT, lambda: stdout))
-        self.addDetail("stderr", Content(UTF8_TEXT, lambda: stderr))
-        self.assertEqual(process.returncode, 0)
-        self.assertTrue(
-            "DEBUG   Committing transaction." in stderr.split('\n'))
-        transaction.commit()
-        self.assertDistroSeriesInitializedCorrectly(
-            child, self.parent, self.parent_das)
 
     def test_is_initialized(self):
         # At the end of the initialization, the distroseriesparent is marked
@@ -1171,16 +1200,16 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
             ids.check)
 
     def createDistroSeriesWithPublication(self, distribution=None):
-        # Create a distroseries with a publication in the DEBUG archive.
+        # Create a distroseries with a publication in the PARTNER archive.
         distroseries = self.factory.makeDistroSeries(
             distribution=distribution)
         # Publish a package in another archive in distroseries' distribution.
-        debug_archive = self.factory.makeArchive(
+        partner_archive = self.factory.makeArchive(
             distribution=distroseries.distribution,
-            purpose=ArchivePurpose.DEBUG)
+            purpose=ArchivePurpose.PARTNER)
 
         self.factory.makeSourcePackagePublishingHistory(
-            distroseries=distroseries, archive=debug_archive)
+            distroseries=distroseries, archive=partner_archive)
         return distroseries
 
     def test_copy_method_diff_archive_empty_target(self):
@@ -1358,7 +1387,6 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         # of the DSDJs with all the parents.
         parent1, unused = self.setupParent(packages={u'p1': u'1.2'})
         parent2, unused = self.setupParent(packages={u'p2': u'1.5'})
-        self.useFixture(FeatureFixture({FEATURE_FLAG_ENABLE_MODULE: 'on'}))
         child = self._fullInitialize([parent1, parent2])
 
         self.assertNotEqual([], self.getWaitingJobs(child, 'p1', parent1))
@@ -1374,7 +1402,6 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
             previous_parents=[prev_parent1, prev_parent2])
         parent3, unused = self.setupParent(
             packages={u'p2': u'2.5', u'p3': u'1.1'})
-        self.useFixture(FeatureFixture({FEATURE_FLAG_ENABLE_MODULE: 'on'}))
         self._fullInitialize(
             [prev_parent1, prev_parent2, parent3], child=child)
 
@@ -1400,7 +1427,6 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         test1.addSources('p1')
         parent3, unused = self.setupParent(
             packages={u'p1': u'2.5', u'p3': u'4.4'})
-        self.useFixture(FeatureFixture({FEATURE_FLAG_ENABLE_MODULE: 'on'}))
         self._fullInitialize(
             [prev_parent1, prev_parent2, parent3], child=child,
             packagesets=(str(test1.id),))

@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __all__ = [
@@ -10,6 +10,8 @@ __all__ = [
     ]
 
 
+import logging
+
 from lp.services.features.rulesource import (
     NullFeatureRuleSource,
     StormFeatureRuleSource,
@@ -19,6 +21,8 @@ from lp.services.features.rulesource import (
 __metaclass__ = type
 
 
+logger = logging.getLogger('lp.services.features')
+
 value_domain_info = sorted([
     ('boolean',
      'Any non-empty value is true; an empty value is false.'),
@@ -27,14 +31,20 @@ value_domain_info = sorted([
     ('int',
      "An integer."),
     ('space delimited',
-     'Space-delimited strings.')
+     'Space-delimited strings.'),
+    ('datetime',
+     'ISO 8601 datetime'),
     ])
 
 # Data for generating web-visible feature flag documentation.
 #
 # Entries for each flag are:
-# flag name, value domain, prose documentation, default behaviour, title,
-# URL to a page with more information about the feature.
+# 1. flag name
+# 2. value domain
+# 3. prose documentation
+# 4. default behaviour
+# 5. title
+# 6. URL to a page with more information about the feature.
 #
 # Value domain as in value_domain_info above.
 #
@@ -59,18 +69,19 @@ flag_info = sorted([
      '',
      '',
      ''),
-    ('bugs.dynamic_bug_listings.enabled',
-     'boolean',
-     ('Enables the dynamic configuration of bug listings.'),
-     '',
-     'Dynamic bug listings',
-     'http://blog.launchpad.net/?p=3005'),
     ('bugs.dynamic_bug_listings.pre_fetch',
      'boolean',
      ('Enables pre-fetching bug listing results.'),
      '',
      'Listing pre-fetching',
      'https://bugs.launchpad.net/launchpad/+bug/888756'),
+    ('bugs.heat_updates.cutoff',
+     'timestamp',
+     ('Set the oldest that a bug\'s heat can be before it is '
+      'considered outdated.'),
+     '',
+     '',
+     ''),
     ('code.ajax_revision_diffs.enabled',
      'boolean',
      ("Offer expandable inline diffs for branch revisions."),
@@ -89,27 +100,27 @@ flag_info = sorted([
      '',
      '',
      ''),
-    ('code.simplified_branches_menu.enabled',
-     'boolean',
-     ('Display a simplified version of the branch menu (omit the counts).'),
-     '',
-     '',
-     ''),
     ('hard_timeout',
      'float',
      'Sets the hard request timeout in milliseconds.',
      '',
      '',
      ''),
+    ('jobs.celery.enabled_classes',
+     'space delimited',
+     'Names of Job classes that should be run via celery',
+     'No jobs run via celery',
+     'Celery-enabled job classes',
+     'https://dev.launchpad.net/CeleryJobRunner'),
+    ('js.yui_version',
+     'space delimited',
+     'Allows us to change the YUI version we run against, e.g. yui-3.4.',
+     'As speficied in versions.cfg',
+     '',
+     ''),
     ('mail.dkim_authentication.disabled',
      'boolean',
      'Disable DKIM authentication checks on incoming mail.',
-     '',
-     '',
-     ''),
-    ('malone.disable_targetnamesearch',
-     'boolean',
-     'If true, disables consultation of target names during bug text search.',
      '',
      '',
      ''),
@@ -131,84 +142,15 @@ flag_info = sorted([
      '',
      '',
      ''),
-    ('soyuz.derived_series.max_synchronous_syncs',
-     'int',
-     "How many package syncs may be done directly in a web request.",
-     '100',
-     '',
-     ''),
-    ('soyuz.derived_series_ui.enabled',
-     'boolean',
-     'Enables derivative distributions pages.',
-     '',
-     '',
-     ''),
-    ('soyuz.derived_series_sync.enabled',
-     'boolean',
-     'Enables syncing of packages on derivative distributions pages.',
-     '',
-     '',
-     ''),
     ('soyuz.derived_series_upgrade.enabled',
      'boolean',
      'Enables mass-upgrade of packages on derivative distributions pages.',
      '',
      '',
      ''),
-    ('soyuz.derived_series_jobs.enabled',
-     'boolean',
-     "Compute package differences for derived distributions.",
-     '',
-     '',
-     ''),
-    ('translations.sharing_information.enabled',
-     'boolean',
-     'Enables display of sharing information on translation pages.',
-     '',
-     '',
-     ''),
     ('visible_render_time',
      'boolean',
      'Shows the server-side page render time in the login widget.',
-     '',
-     '',
-     ''),
-    ('disclosure.dsp_picker.enabled',
-     'boolean',
-     'Enables the use of the new DistributionSourcePackage vocabulary for '
-     'the source and binary package name pickers.',
-     '',
-     '',
-     ''),
-    ('disclosure.private_bug_visibility_rules.enabled',
-     'boolean',
-     ('Enables the application of additional privacy filter terms in bug '
-      'queries to allow defined project roles to see private bugs.'),
-     '',
-     '',
-     ''),
-    ('disclosure.enhanced_private_bug_subscriptions.enabled',
-     'boolean',
-     ('Enables the auto subscribing and unsubscribing of users as a bug '
-      'transitions between public, private and security related states.'),
-     '',
-     '',
-     ''),
-    ('disclosure.delete_bugtask.enabled',
-     'boolean',
-     'Enables bugtasks to be deleted by authorised users.',
-     '',
-     '',
-     ''),
-    ('disclosure.allow_multipillar_private_bugs.enabled',
-     'boolean',
-     'Allows private bugs to have more than one bug task.',
-     '',
-     '',
-     ''),
-    ('disclosure.users_hide_own_bug_comments.enabled',
-     'boolean',
-     'Allows users in project roles and comment owners to hide bug comments.',
      '',
      '',
      ''),
@@ -242,10 +184,46 @@ flag_info = sorted([
      '',
      '',
      ''),
-    ('disclosure.log_private_team_leaks.enabled',
+    ('registry.upcoming_work_view.enabled',
      'boolean',
-     ('Enables soft OOPSes for code that is mixing visibility rules, such '
-      'as disclosing private teams, so the data can be analyzed.'),
+     ('If true, the new upcoming work view of teams is available.'),
+     '',
+     '',
+     ''),
+    ('soyuz.gina.skip_source_versions',
+     'space delimited',
+     ('List of source versions for gina to skip when importing into a '
+      'distribution, formatted as distro/package/version.'),
+     '',
+     '',
+     ''),
+    ('auditor.enabled',
+     'boolean',
+     'If true, send audit data to an auditor instance.',
+     '',
+     '',
+     ''),
+    ('app.root_blog.enabled',
+     'boolean',
+     'If true, load posts from the Launchpad blog to show on the root page.',
+     '',
+     '',
+     ''),
+    ('twisted.flags.refresh',
+     'float',
+     'Number of seconds between feature flag refreshes.',
+     '30',
+     '',
+     ''),
+    ('librarian.swift.enabled',
+     'boolean',
+     'If true, attempt to serve files from Swift.',
+     'disabled',
+     '',
+     ''),
+    ('code.inline_diff_comments.enabled',
+     'space delimited',
+     'Names of projects have inline diff comments enabled.',
      '',
      '',
      ''),
@@ -356,8 +334,19 @@ class FeatureController():
         if flag in self._rules:
             for scope, priority, value in self._rules[flag]:
                 if self._known_scopes.lookup(scope):
+                    self._debugMessage(
+                        'feature match flag=%r value=%r scope=%r' %
+                        (flag, value, scope))
                     return (value, scope)
+            else:
+                self._debugMessage('no rules matched for %r' % flag)
+        else:
+            self._debugMessage('no rules relevant to %r' % flag)
         return (None, None)
+
+    def _debugMessage(self, message):
+        logger.debug(message)
+        # The OOPS machinery can also grab it out of the request if needed.
 
     def currentScope(self, flag):
         """The name of the scope of the matching rule with the highest

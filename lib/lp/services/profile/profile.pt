@@ -347,7 +347,7 @@ with profiling():
   </tal:block>
 </div>
 <script>
-LPS.use('node', 'lp', 'transition', function (Y) {
+LPJS.use('node', 'lp', 'transition', function (Y) {
     Y.one('div#reveal_profiling').on('click', function (e) {
         Y.one('div#profiling_info').setStyle('display', 'block');
         e.preventDefault();
@@ -359,7 +359,7 @@ LPS.use('node', 'lp', 'transition', function (Y) {
 });
 </script>
 <script tal:condition="not:options/sql_traceback_none|nothing">
-LPS.use('node', 'lp', 'transition', function (Y) {
+LPJS.use('node', 'lp', 'transition', function (Y) {
     function slideIn(target) {
         target.transition({
             easing: 'ease-in',

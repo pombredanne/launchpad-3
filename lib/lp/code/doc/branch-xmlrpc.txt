@@ -133,7 +133,7 @@ If we try to register a branch with an invalid URI:
     ...     'test@canonical.com', 'evolution')
     Traceback (most recent call last):
     ...
-    Fault: <Fault 120: 'Invalid URL: .\n"." is not a valid URI'>
+    Fault: <Fault 120: 'Invalid URL: .\n&quot;.&quot; is not a valid URI'>
 
 If we try to register a URL with a unsupported scheme:
 
@@ -144,9 +144,9 @@ If we try to register a URL with a unsupported scheme:
     Traceback (most recent call last):
     ...
     Fault: <Fault 120: 'Invalid URL:
-    svn://chinstrap.ubuntu.com/foo/bar/baz\nThe URI scheme "svn" is not
-    allowed.  Only URIs with the following schemes may be used: bzr+ssh,
-    ftp, http, https, sftp'>
+    svn://chinstrap.ubuntu.com/foo/bar/baz\nThe URI scheme
+    &quot;svn&quot; is not allowed.  Only URIs with the following
+    schemes may be used: bzr+ssh, ftp, http, https, sftp'>
 
 If we try to register a root URL:
 
@@ -264,7 +264,7 @@ explains the problem:
     ...     'test@canonical.com', 'evolution')
     Traceback (most recent call last):
     ...
-    Fault: <Fault 260: "Invalid branch name '.bzr'. Branch names must ...
+    Fault: <Fault 260: 'Invalid branch name &#x27;.bzr&#x27;. Branch names must ...
 
 Crazy unicode characters are also invalid:
 
@@ -274,7 +274,7 @@ Crazy unicode characters are also invalid:
     ...     'test@canonical.com', 'evolution')
     Traceback (most recent call last):
     ...
-    Fault: <Fault 260: u"Invalid branch name '\xe9'. Branch names must ...
+    Fault: <Fault 260: u'Invalid branch name &#x27;\xe9&#x27;. Branch names must ...
 
 
 link_branch_to_bug(branch_url, bug_id)

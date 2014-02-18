@@ -10,16 +10,16 @@ import unittest
 import transaction
 from zope.component import getUtility
 
-from canonical.database.sqlbase import flush_database_caches
-from canonical.launchpad.ftests import (
+from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.product import IProductSet
+from lp.registry.model.karma import KarmaCache
+from lp.services.database.sqlbase import flush_database_caches
+from lp.testing import (
     ANONYMOUS,
     login,
     logout,
     )
-from canonical.testing.layers import LaunchpadFunctionalLayer
-from lp.registry.interfaces.person import IPersonSet
-from lp.registry.interfaces.product import IProductSet
-from lp.registry.model.karma import KarmaCache
+from lp.testing.layers import LaunchpadFunctionalLayer
 
 
 class TestKarmaCacheUpdater(unittest.TestCase):
@@ -58,7 +58,7 @@ class TestKarmaCacheUpdater(unittest.TestCase):
         # delete the cache entries for Sample Person.
         sample_person = self.personset.getByName('name12')
         cache_entries = self._getCacheEntriesByPerson(sample_person)
-        self.failUnless(cache_entries.count() > 0)
+        self.failUnless(not cache_entries.is_empty())
         for cache in cache_entries:
             self.failIf(cache.karmavalue <= 0)
 
@@ -102,4 +102,4 @@ class TestKarmaCacheUpdater(unittest.TestCase):
         self.failUnless(entries_count <= foobar_original_entries_count)
 
         # And finally, ensure that No Priv got some new KarmaCache entries.
-        self.failUnless(self._getCacheEntriesByPerson(nopriv).count() > 0)
+        self.failUnless(not self._getCacheEntriesByPerson(nopriv).is_empty())

@@ -6,7 +6,7 @@ Although question cannot be filed directly against project groups,
 IProjectGroup in Launchpad also provides the IQuestionCollection and
 ISearchableByQuestionOwner interfaces.
 
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.testing import verifyObject
     >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
     >>> from lp.answers.interfaces.questioncollection import (
     ...     ISearchableByQuestionOwner, IQuestionCollection)
@@ -36,7 +36,7 @@ project group's searchQuestions() method.
     ...     "It would be a nice feature if SVG attachments could be displayed"
     ...     " inlined.")
 
-    >>> for question in mozilla_project.searchQuestions(search_text='svg'):
+    >>> for question in mozilla_project.searchQuestions(search_text=u'svg'):
     ...     print question.title, question.target.displayname
     SVG attachments aren't displayed            Mozilla Thunderbird
     Problem showing the SVG demo on W3C site    Mozilla Firefox

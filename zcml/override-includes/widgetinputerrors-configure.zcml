@@ -7,8 +7,8 @@
     with our more intelligent version -->
     <view
         type="zope.publisher.interfaces.browser.IBrowserRequest"
-        for="zope.app.form.interfaces.IWidgetInputError"
-        provides="zope.app.form.browser.interfaces.IWidgetInputErrorView"
+        for="zope.formlib.interfaces.IWidgetInputError"
+        provides="zope.formlib.interfaces.IWidgetInputErrorView"
         factory="lp.app.validators.WidgetInputErrorView"
         permission="zope.Public"
         />

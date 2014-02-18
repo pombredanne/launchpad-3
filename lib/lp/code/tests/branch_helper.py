@@ -13,11 +13,8 @@ from datetime import datetime
 import pytz
 from zope.component import getUtility
 
-from canonical.launchpad.ftests import (
-    login,
-    logout,
-    )
 from lp.code.interfaces.branchcollection import IAllBranches
+from lp.testing import celebrity_logged_in
 
 
 def reset_all_branch_last_modified(last_modified=datetime.now(pytz.UTC)):
@@ -25,9 +22,7 @@ def reset_all_branch_last_modified(last_modified=datetime.now(pytz.UTC)):
 
     DO NOT use this in a non-pagetest.
     """
-    login('foo.bar@canonical.com')
-    branches = getUtility(IAllBranches).getBranches()
-    for branch in branches:
-        branch.date_last_modified = last_modified
-    logout()
-
+    with celebrity_logged_in('admin'):
+        branches = getUtility(IAllBranches).getBranches()
+        for branch in branches:
+            branch.date_last_modified = last_modified

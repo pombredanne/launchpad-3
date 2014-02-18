@@ -3,20 +3,17 @@
 # Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=C0103,W0403
-
 # This script updates the cached stats in the system
 
 import _pythonpath
+
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.launchpad.interfaces.launchpadstatistic import (
-    ILaunchpadStatisticSet,
-    )
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.config import config
 from lp.services.scripts.base import LaunchpadCronScript
+from lp.services.statistics.interfaces.statistic import ILaunchpadStatisticSet
 
 
 class StatUpdater(LaunchpadCronScript):
@@ -34,7 +31,7 @@ class StatUpdater(LaunchpadCronScript):
         launchpad_stats = getUtility(ILaunchpadStatisticSet)
         launchpad_stats.updateStatistics(self.txn)
 
-        getUtility(IPersonSet).updateStatistics(self.txn)
+        getUtility(IPersonSet).updateStatistics()
 
         self.logger.debug('Finished the stats update')
 

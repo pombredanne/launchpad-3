@@ -7,14 +7,14 @@ Other tests are in codeimport-machine.txt."""
 
 from zope.component import getUtility
 
-from canonical.database.constants import UTC_NOW
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.enums import (
     CodeImportMachineOfflineReason,
     CodeImportMachineState,
     )
 from lp.code.interfaces.codeimportjob import ICodeImportJobWorkflow
+from lp.services.database.constants import UTC_NOW
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestCodeImportMachineShouldLookForJob(TestCaseWithFactory):

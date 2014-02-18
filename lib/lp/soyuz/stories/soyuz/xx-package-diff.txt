@@ -73,23 +73,12 @@ the first one (new upload).
     >>> diff_one = biscuit_one_pub.sourcepackagerelease.requestDiffTo(
     ...     requester=name16,
     ...     to_sourcepackagerelease=biscuit_two_pub.sourcepackagerelease)
-
     >>> diff_two = biscuit_two_pub.sourcepackagerelease.requestDiffTo(
     ...     requester=name16,
     ...     to_sourcepackagerelease=biscuit_three_pub.sourcepackagerelease)
-
     >>> diff_three = biscuit_three_pub.sourcepackagerelease.requestDiffTo(
     ...     requester=name16,
     ...     to_sourcepackagerelease=biscuit_four_pub.sourcepackagerelease)
-
-    >>> from lp.soyuz.interfaces.packagediff import IPackageDiffSet
-    >>> diff_set = getUtility(IPackageDiffSet)
-    >>> diffs = list(diff_set.getPendingDiffs())
-    >>> for diff in diffs:
-    ...     print diff.title
-    diff from 1.0-1 to 1.0-2
-    diff from 1.0-2 to 1.0-3
-    diff from 1.0-3 (in Ubuntu) to 1.0-4
 
 Perform some diffs in advance, the first diff in ubuntu and the diff
 in PPA will be performed, the second diff in ubuntu will be performed
@@ -97,8 +86,8 @@ later.
 
     >>> from zope.security.proxy import removeSecurityProxy
     >>> from StringIO import StringIO
-    >>> from canonical.database.constants import UTC_NOW
-    >>> from canonical.librarian.interfaces import ILibrarianClient
+    >>> from lp.services.database.constants import UTC_NOW
+    >>> from lp.services.librarian.interfaces.client import ILibrarianClient
     >>> from lp.soyuz.enums import PackageDiffStatus
 
     >>> def perform_fake_diff(diff, filename):
@@ -166,9 +155,7 @@ When the remaining pending diff is performed and the page is reloaded
 the missing link is rendered.
 
     >>> login('foo.bar@canonical.com')
-    >>> diff_set = getUtility(IPackageDiffSet)
-    >>> [diff] = diff_set.getPendingDiffs()
-    >>> perform_fake_diff(diff, 'biscuit_1.0-2_1.0-3.diff.gz')
+    >>> perform_fake_diff(diff_two, 'biscuit_1.0-2_1.0-3.diff.gz')
     >>> transaction.commit()
     >>> logout()
 

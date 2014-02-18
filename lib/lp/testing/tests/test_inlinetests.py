@@ -9,15 +9,15 @@ from doctest import (
     ELLIPSIS,
     )
 
-from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
-from canonical.testing.layers import BaseLayer
 from lp import testing
+from lp.testing.layers import BaseLayer
+from lp.testing.systemdocs import LayeredDocFileSuite
 
 
 def test_suite():
     suite = LayeredDocFileSuite(
+        [],
         layer=BaseLayer)
     suite.addTest(doctest.DocTestSuite(
         testing, optionflags=NORMALIZE_WHITESPACE|ELLIPSIS))
     return suite
-

@@ -1,8 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0611,W0212
-
 """SQLBase implementation of IQuestionReopening."""
 
 __metaclass__ = type
@@ -16,13 +14,13 @@ from zope.event import notify
 from zope.interface import implements
 from zope.security.proxy import ProxyFactory
 
-from canonical.database.constants import DEFAULT
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase
 from lp.answers.enums import QuestionStatus
 from lp.answers.interfaces.questionreopening import IQuestionReopening
 from lp.registry.interfaces.person import validate_public_person
+from lp.services.database.constants import DEFAULT
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.sqlbase import SQLBase
 
 
 class QuestionReopening(SQLBase):

@@ -3,7 +3,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=W0403
 """Simple tool to upload arbitrary files into Librarian."""
 
 import _pythonpath
@@ -13,10 +12,12 @@ import os
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.helpers import filenameToContentType
+from lp.services.helpers import filenameToContentType
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.scripts.base import (
-    LaunchpadScript, LaunchpadScriptFailure)
+    LaunchpadScript,
+    LaunchpadScriptFailure,
+    )
 
 
 class LibrarianUploader(LaunchpadScript):

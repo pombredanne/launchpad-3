@@ -13,8 +13,7 @@
   </p>
 
   <tal:buildable condition="architectures">
-    <ul id="portlet-architectures-list"
-      tal:content="cache:public, 3 hour">
+    <ul id="portlet-architectures-list">
       <tal:official repeat="architecture architectures">
         <li tal:condition="architecture/official">
           <a class="sprite architecture"
