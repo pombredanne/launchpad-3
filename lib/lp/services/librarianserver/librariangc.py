@@ -15,6 +15,8 @@ import re
 import sys
 from time import time
 
+import iso8601
+from swiftclient import client as swiftclient
 from zope.interface import implements
 
 from lp.services.config import config
@@ -23,9 +25,10 @@ from lp.services.database.postgresql import (
     listReferences,
     quoteIdentifier,
     )
+from lp.services.features import getFeatureFlag
+from lp.services.librarianserver import swift
 from lp.services.librarianserver.storage import (
     _relFileLocation as relative_file_path,
-    _sameFile,
     )
 from lp.services.looptuner import (
     DBLoopTuner,
@@ -35,6 +38,70 @@ from lp.services.looptuner import (
 
 log = None  # This is set by cronscripts/librarian-gc.py
 debug = False
+
+
+STREAM_CHUNK_SIZE = 64 * 1024
+
+
+def file_exists(content_id):
+    """True if the file exists either on disk or in Swift.
+
+    Swift is only checked if the librarian.swift.enabled feature flag
+    is set.
+    """
+    swift_enabled = getFeatureFlag('librarian.swift.enabled') or False
+    if swift_enabled:
+        swift_connection = swift.connection_pool.get()
+        container, name = swift.swift_location(content_id)
+        try:
+            swift_connection.head_object(container, name)
+            return True
+        except swiftclient.ClientException as x:
+            if x.http_status != 404:
+                raise
+            swift.connection_pool.put(swift_connection)
+    return os.path.exists(get_file_path(content_id))
+
+
+def _utcnow():
+    # Wrapper that is replaced in the test suite.
+    return datetime.utcnow()
+
+
+def open_stream(content_id):
+    """Return an open file for the given content_id.
+
+    Returns None if the file cannot be found.
+    """
+    swift_enabled = getFeatureFlag('librarian.swift.enabled') or False
+    if swift_enabled:
+        try:
+            swift_connection = swift.connection_pool.get()
+            container, name = swift.swift_location(content_id)
+            chunks = swift_connection.get_object(
+                container, name, resp_chunk_size=STREAM_CHUNK_SIZE)[1]
+            return swift.SwiftStream(swift_connection, chunks)
+        except swiftclient.ClientException as x:
+            if x.http_status != 404:
+                raise
+    path = get_file_path(content_id)
+    if os.path.exists(path):
+        return open(path, 'rb')
+
+    return None  # File not found.
+
+
+def same_file(content_id_1, content_id_2):
+    file1 = open_stream(content_id_1)
+    file2 = open_stream(content_id_2)
+
+    chunks_iter = iter(
+        lambda: (file1.read(STREAM_CHUNK_SIZE), file2.read(STREAM_CHUNK_SIZE)),
+        ('', ''))
+    for chunk1, chunk2 in chunks_iter:
+        if chunk1 != chunk2:
+            return False
+    return True
 
 
 def confirm_no_clock_skew(con):
@@ -47,7 +114,7 @@ def confirm_no_clock_skew(con):
     cur = con.cursor()
     cur.execute("SELECT CURRENT_TIMESTAMP AT TIME ZONE 'UTC'")
     db_now = cur.fetchone()[0]
-    local_now = datetime.utcnow()
+    local_now = _utcnow()
     five_minutes = timedelta(minutes=5)
 
     if -five_minutes < local_now - db_now < five_minutes:
@@ -62,7 +129,7 @@ def delete_expired_blobs(con):
     """Remove expired TemporaryBlobStorage entries and their corresponding
        LibraryFileAlias entries.
 
-       We delete the LibraryFileAliases here as the default behavior of the
+       We delete the LibraryFileAliases here as the default behaviour of the
        garbage collector could leave them hanging around indefinitely.
 
        We also delete any linked ApportJob and Job records here.
@@ -180,18 +247,13 @@ def merge_duplicates(con):
         # be more common because database records has been synced from
         # production but the actual librarian contents has not.
         dupe1_id = dupes[0]
-        dupe1_path = get_file_path(dupe1_id)
-        if not os.path.exists(dupe1_path):
+        if not file_exists(dupe1_id):
             if config.instance_name == 'staging':
                 log.debug(
-                        "LibraryFileContent %d data is missing (%s)",
-                        dupe1_id, dupe1_path
-                        )
+                        "LibraryFileContent %d data is missing", dupe1_id)
             else:
                 log.warning(
-                        "LibraryFileContent %d data is missing (%s)",
-                        dupe1_id, dupe1_path
-                        )
+                        "LibraryFileContent %d data is missing", dupe1_id)
             continue
 
         # Do a manual check that they really are identical, because we
@@ -200,10 +262,8 @@ def merge_duplicates(con):
         # with an identical filesize to an existing file. Which is pretty
         # unlikely. Where did I leave my tin foil hat?
         for dupe2_id in (dupe for dupe in dupes[1:]):
-            dupe2_path = get_file_path(dupe2_id)
             # Check paths exist, because on staging they may not!
-            if (os.path.exists(dupe2_path)
-                and not _sameFile(dupe1_path, dupe2_path)):
+            if (file_exists(dupe2_id) and not same_file(dupe1_id, dupe2_id)):
                 log.error(
                         "SHA-1 collision found. LibraryFileContent %d and "
                         "%d have the same SHA1 and filesize, but are not "
@@ -412,12 +472,13 @@ class UnreferencedContentPruner:
     not referenced by any LibraryFileAlias entries.
 
     Note that a LibraryFileContent can only be accessed through a
-    LibraryFileAlias, so all entries in this state are garbage no matter
-    what their expires flag says.
+    LibraryFileAlias, so all entries in this state are garbage.
     """
     implements(ITunableLoop)
 
     def __init__(self, con):
+        self.swift_enabled = getFeatureFlag(
+            'librarian.swift.enabled') or False
         self.con = con
         self.index = 1
         self.total_deleted = 0
@@ -477,21 +538,38 @@ class UnreferencedContentPruner:
             WHERE id BETWEEN %s AND %s
             """, (self.index, self.index + chunksize - 1))
         for content_id in (row[0] for row in cur.fetchall()):
-            # Remove the file from disk, if it hasn't already been
+            removed = []
+
+            # Remove the file from disk, if it hasn't already been.
             path = get_file_path(content_id)
             try:
                 os.unlink(path)
+                removed.append('filesystem')
             except OSError as e:
                 if e.errno != errno.ENOENT:
                     raise
-                if config.librarian_server.upstream_host is None:
-                    # It is normal to have files in the database that
-                    # are not on disk if the Librarian has an upstream
-                    # Librarian, such as on staging. Don't annoy the
-                    # operator with noise in this case.
-                    log.info("%s already deleted", path)
-            else:
-                log.debug("Deleted %s", path)
+
+            # Remove the file from Swift, if it hasn't already been.
+            if self.swift_enabled:
+                container, name = swift.swift_location(content_id)
+                with swift.connection() as swift_connection:
+                    try:
+                        swift_connection.delete_object(container, name)
+                        removed.append('Swift')
+                    except swiftclient.ClientException as x:
+                        if x.http_status != 404:
+                            raise
+
+            if removed:
+                log.debug(
+                    "Deleted %s from %s", content_id, ' & '.join(removed))
+
+            elif config.librarian_server.upstream_host is None:
+                # It is normal to have files in the database that
+                # are not on disk if the Librarian has an upstream
+                # Librarian, such as on staging. Don't annoy the
+                # operator with noise in this case.
+                log.info("%s already deleted", path)
         self.con.rollback()
 
         self.index += chunksize
@@ -504,6 +582,13 @@ def delete_unreferenced_content(con):
 
 
 def delete_unwanted_files(con):
+    delete_unwanted_disk_files(con)
+    swift_enabled = getFeatureFlag('librarian.swift.enabled') or False
+    if swift_enabled:
+        delete_unwanted_swift_files(con)
+
+
+def delete_unwanted_disk_files(con):
     """Delete files found on disk that have no corresponding record in the
     database.
 
@@ -511,6 +596,8 @@ def delete_unwanted_files(con):
     to avoid deleting files that have just been uploaded but have yet to have
     the database records committed.
     """
+    swift_enabled = getFeatureFlag('librarian.swift.enabled') or False
+
     cur = con.cursor()
 
     # Calculate all stored LibraryFileContent ids that we want to keep.
@@ -585,6 +672,7 @@ def delete_unwanted_files(con):
                 next_wanted_content_id = get_next_wanted_content_id()
 
                 if (config.librarian_server.upstream_host is None
+                        and not swift_enabled  # Maybe the file is in Swift.
                         and next_wanted_content_id is not None
                         and next_wanted_content_id < content_id):
                     log.error(
@@ -610,16 +698,127 @@ def delete_unwanted_files(con):
     # should exist but we didn't find on disk.
     if next_wanted_content_id == content_id:
         next_wanted_content_id = get_next_wanted_content_id()
-    while next_wanted_content_id is not None:
-        log.error(
-            "LibraryFileContent %d exists in the database but "
-            "was not found on disk." % next_wanted_content_id)
-        next_wanted_content_id = get_next_wanted_content_id()
+    if not swift_enabled:
+        while next_wanted_content_id is not None:
+            log.error(
+                "LibraryFileContent %d exists in the database but "
+                "was not found on disk." % next_wanted_content_id)
+            next_wanted_content_id = get_next_wanted_content_id()
 
     log.info(
             "Deleted %d files from disk that where no longer referenced "
             "in the db" % removed_count
             )
+
+
+def swift_files(max_lfc_id):
+    """Generate the (container, name) of all files stored in Swift.
+
+    Results are yielded in numerical order.
+    """
+    final_container = swift.swift_location(max_lfc_id)[0]
+
+    with swift.connection() as swift_connection:
+        # We generate the container names, rather than query the
+        # server, because the mock Swift implementation doesn't
+        # support that operation.
+        container_num = -1
+        container = None
+        while container != final_container:
+            container_num += 1
+            container = swift.SWIFT_CONTAINER_PREFIX + str(container_num)
+            try:
+                names = sorted(
+                    swift_connection.get_container(
+                        container, full_listing=True)[1],
+                    key=lambda x: int(x['name']))
+                for name in names:
+                    yield (container, name)
+            except swiftclient.ClientException as x:
+                if x.http_status == 404:
+                    continue
+                raise
+
+
+def delete_unwanted_swift_files(con):
+    """Delete files found in Swift that have no corresponding db record."""
+    assert getFeatureFlag('librarian.swift.enabled')
+
+    cur = con.cursor()
+
+    # Get the largest LibraryFileContent id in the database. This lets
+    # us know when to stop looking in Swift for more files.
+    cur.execute("SELECT max(id) FROM LibraryFileContent")
+    max_lfc_id = cur.fetchone()[0]
+
+    # Calculate all stored LibraryFileContent ids that we want to keep.
+    # Results are ordered so we don't have to suck them all in at once.
+    cur.execute("""
+        SELECT id FROM LibraryFileContent ORDER BY id
+        """)
+
+    def get_next_wanted_content_id():
+        result = cur.fetchone()
+        if result is None:
+            return None
+        else:
+            return result[0]
+
+    removed_count = 0
+    content_id = next_wanted_content_id = -1
+
+    for container, obj in swift_files(max_lfc_id):
+        name = obj['name']
+
+        # We may have a segment of a large file.
+        if '/' in name:
+            content_id = int(name.split('/', 1)[0])
+        else:
+            content_id = int(name)
+
+        while (next_wanted_content_id is not None
+            and content_id > next_wanted_content_id):
+
+            next_wanted_content_id = get_next_wanted_content_id()
+
+            if (config.librarian_server.upstream_host is None
+                    and next_wanted_content_id is not None
+                    and next_wanted_content_id < content_id
+                    and not os.path.exists(
+                        get_file_path(next_wanted_content_id))):
+                log.error(
+                    "LibraryFileContent %d exists in the database but "
+                    "was not found on disk nor in Swift."
+                    % next_wanted_content_id)
+
+        file_wanted = (
+            next_wanted_content_id is not None
+            and next_wanted_content_id == content_id)
+
+        if not file_wanted:
+            mod_time = iso8601.parse_date(
+                obj['last_modified']).replace(tzinfo=None)
+            if mod_time > _utcnow() - timedelta(days=1):
+                log.debug(
+                    "File %d not removed - created too recently", content_id)
+            else:
+                with swift.connection() as swift_connection:
+                    swift_connection.delete_object(container, name)
+                log.debug(
+                    'Deleted ({0}, {1}) from Swift'.format(container, name))
+                removed_count += 1
+
+    if next_wanted_content_id == content_id:
+        next_wanted_content_id = get_next_wanted_content_id()
+    while next_wanted_content_id is not None:
+        log.error(
+            "LibraryFileContent {0} exists in the database but was not "
+            "found in Swift.".format(next_wanted_content_id))
+        next_wanted_content_id = get_next_wanted_content_id()
+
+    log.info(
+        "Deleted {0} files from Swift that where no longer referenced"
+        "in the db".format(removed_count))
 
 
 def get_file_path(content_id):

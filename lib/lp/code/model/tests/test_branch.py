@@ -10,13 +10,14 @@ from datetime import (
     datetime,
     timedelta,
     )
+import json
 
 from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
 from bzrlib.revision import NULL_REVISION
 from pytz import UTC
-import simplejson
 from sqlobject import SQLObjectNotFound
+from storm.exceptions import LostObjectError
 from storm.locals import Store
 from testtools import ExpectedException
 from testtools.matchers import (
@@ -25,6 +26,7 @@ from testtools.matchers import (
     )
 import transaction
 from zope.component import getUtility
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from lp import _
@@ -42,7 +44,6 @@ from lp.bugs.interfaces.bug import (
     IBugSet,
     )
 from lp.bugs.model.bugbranch import BugBranch
-from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.bzr import (
     BranchFormat,
@@ -139,12 +140,15 @@ from lp.services.job.tests import (
 from lp.services.osutils import override_environ
 from lp.services.propertycache import clear_property_cache
 from lp.services.webapp.authorization import check_permission
-from lp.services.webapp.interfaces import IOpenLaunchBag
+from lp.services.webapp.interfaces import (
+    IOpenLaunchBag,
+    OAuthPermission,
+    )
 from lp.testing import (
     admin_logged_in,
     ANONYMOUS,
+    api_url,
     celebrity_logged_in,
-    launchpadlib_for,
     login,
     login_person,
     logout,
@@ -154,11 +158,9 @@ from lp.testing import (
     TestCaseWithFactory,
     time_counter,
     WebServiceTestCase,
-    ws_object,
     )
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.layers import (
-    AppServerLayer,
     CeleryBranchWriteJobLayer,
     CeleryBzrsyncdJobLayer,
     DatabaseFunctionalLayer,
@@ -166,12 +168,7 @@ from lp.testing.layers import (
     LaunchpadZopelessLayer,
     ZopelessAppServerLayer,
     )
-from lp.translations.model.translationtemplatesbuild import (
-    TranslationTemplatesBuild,
-    )
-from lp.translations.model.translationtemplatesbuildjob import (
-    ITranslationTemplatesBuildJobSource,
-    )
+from lp.testing.pages import webservice_for_person
 
 
 def create_knit(test_case):
@@ -1352,15 +1349,6 @@ class TestBranchDeletion(TestCaseWithFactory):
         # Need to commit the transaction to fire off the constraint checks.
         transaction.commit()
 
-    def test_related_TranslationTemplatesBuildJob_cleaned_out(self):
-        # A TranslationTemplatesBuildJob is a type of BranchJob that
-        # comes with a BuildQueue entry referring to the same Job.
-        # Deleting the branch cleans up the BuildQueue before it can
-        # remove the Job and BranchJob.
-        branch = self.factory.makeAnyBranch()
-        getUtility(ITranslationTemplatesBuildJobSource).create(branch)
-        branch.destroySelf(break_references=True)
-
     def test_linked_translations_branch_cleared(self):
         # The translations_branch of a series that is linked to the branch
         # should be cleared.
@@ -1368,34 +1356,30 @@ class TestBranchDeletion(TestCaseWithFactory):
         dev_focus.translations_branch = self.branch
         self.branch.destroySelf(break_references=True)
 
-    def test_unrelated_TranslationTemplatesBuildJob_intact(self):
+    def test_related_TranslationTemplatesBuild_cleaned_out(self):
+        # A TranslationTemplatesBuild may come with a BuildQueue entry.
+        # Deleting the branch cleans up the BuildQueue before it can
+        # remove the TTB.
+        build = self.factory.makeTranslationTemplatesBuild()
+        build.queueBuild()
+        build.branch.destroySelf(break_references=True)
+
+    def test_unrelated_TranslationTemplatesBuild_intact(self):
         # No innocent BuildQueue entries are harmed in deleting a
         # branch.
-        branch = self.factory.makeAnyBranch()
-        other_branch = self.factory.makeAnyBranch()
-        source = getUtility(ITranslationTemplatesBuildJobSource)
-        job = source.create(branch)
-        other_job = source.create(other_branch)
-        store = Store.of(branch)
-        bfj = store.find(
-            BuildFarmJob,
-            BuildFarmJob.id == TranslationTemplatesBuild.build_farm_job_id,
-            TranslationTemplatesBuild.branch == branch).one().id
+        build = self.factory.makeTranslationTemplatesBuild()
+        bq = build.queueBuild()
+        other_build = self.factory.makeTranslationTemplatesBuild()
+        other_bq = other_build.queueBuild()
 
-        branch.destroySelf(break_references=True)
+        build.branch.destroySelf(break_references=True)
 
+        store = Store.of(build)
         # The BuildQueue for the job whose branch we deleted is gone.
-        buildqueue = store.find(BuildQueue, BuildQueue.job == job.job)
-        self.assertEqual(0, buildqueue.count())
-
-        # The BuildFarmJob for the TTB is gone.
-        bfjs = store.find(BuildFarmJob, BuildFarmJob.id == bfj)
-        self.assertEqual(0, bfjs.count())
+        self.assertEqual(0, store.find(BuildQueue, id=bq.id).count())
 
         # The other job's BuildQueue entry is still there.
-        other_buildqueue = store.find(
-            BuildQueue, BuildQueue.job == other_job.job)
-        self.assertEqual(1, other_buildqueue.count())
+        self.assertEqual(1, store.find(BuildQueue, id=other_bq.id).count())
 
     def test_createsJobToReclaimSpace(self):
         # When a branch is deleted from the database, a job to remove the
@@ -3270,7 +3254,7 @@ class TestMergeQueue(TestCaseWithFactory):
     def test_setMergeQueueConfig(self):
         """Test Branch.setMergeQueueConfig."""
         branch = self.factory.makeBranch()
-        config = simplejson.dumps({
+        config = json.dumps({
             'path': '/',
             'test': 'make test',
             })
@@ -3292,56 +3276,111 @@ class TestMergeQueue(TestCaseWithFactory):
                 config)
 
 
+class TestBranchUnscan(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_unscan(self):
+        # Unscanning a branch resets the scan data, including the
+        # BranchRevisions, last_scanned_id and revision_count.
+        branch = self.factory.makeAnyBranch()
+        self.factory.makeRevisionsForBranch(branch=branch)
+        head = branch.getBranchRevision(revision_id=branch.last_scanned_id)
+        self.assertEqual(5, head.sequence)
+        self.assertEqual(5, branch.revision_count)
+
+        with person_logged_in(branch.owner):
+            self.assertEqual(
+                (head.revision.revision_id, head.revision.revision_id),
+                branch.unscan())
+        transaction.commit()
+
+        self.assertIs(None, branch.last_scanned_id)
+        self.assertEqual(0, branch.revision_count)
+        self.assertRaises(LostObjectError, getattr, head, 'sequence')
+
+    def test_rescan(self):
+        branch = self.factory.makeAnyBranch()
+        self.assertEqual(
+            0, Store.of(branch).find(BranchJob, branch=branch).count())
+        with person_logged_in(branch.owner):
+            branch.unscan(rescan=True)
+        self.assertEqual(
+            1, Store.of(branch).find(BranchJob, branch=branch).count())
+
+    def test_no_rescan(self):
+        branch = self.factory.makeAnyBranch()
+        self.assertEqual(
+            0, Store.of(branch).find(BranchJob, branch=branch).count())
+        with person_logged_in(branch.owner):
+            branch.unscan(rescan=False)
+        self.assertEqual(
+            0, Store.of(branch).find(BranchJob, branch=branch).count())
+
+    def test_security(self):
+        branch = self.factory.makeAnyBranch()
+
+        # Random users can't unscan a branch.
+        with person_logged_in(self.factory.makePerson()):
+            self.assertRaises(Unauthorized, getattr, branch, 'unscan')
+
+        # But the owner can.
+        with person_logged_in(branch.owner):
+            branch.unscan()
+
+        # And so can commercial-admins (and maybe registry too,
+        # eventually).
+        with person_logged_in(
+                getUtility(ILaunchpadCelebrities).commercial_admin):
+            branch.unscan()
+
+
 class TestWebservice(TestCaseWithFactory):
     """Tests for the webservice."""
 
-    layer = AppServerLayer
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestWebservice, self).setUp()
+        self.branch_db = self.factory.makeBranch()
+        self.branch_url = api_url(self.branch_db)
+        self.webservice = webservice_for_person(
+            self.branch_db.owner, permission=OAuthPermission.WRITE_PUBLIC)
 
     def test_set_merge_queue(self):
-        """Test that the merge queue can be set properly."""
+        """Test that the merge queue and config can be set properly."""
         with person_logged_in(ANONYMOUS):
-            db_queue = self.factory.makeBranchMergeQueue()
-            db_branch = self.factory.makeBranch()
-            launchpad = launchpadlib_for('test', db_branch.owner,
-                service_root=self.layer.appserver_root_url('api'))
+            queue_db = self.factory.makeBranchMergeQueue()
+            queue_url = api_url(queue_db)
 
-        branch = ws_object(launchpad, db_branch)
-        queue = ws_object(launchpad, db_queue)
-        branch.merge_queue = queue
-        branch.lp_save()
-
-        branch2 = ws_object(launchpad, db_branch)
-        self.assertEqual(branch2.merge_queue, queue)
-
-    def test_set_configuration(self):
-        """Test the mutator for setting configuration."""
+        config = json.dumps({'test': 'make check'})
+        self.webservice.patch(
+            self.branch_url, "application/json",
+            json.dumps({
+                "merge_queue_link": queue_url,
+                "merge_queue_config": config,
+                }),
+            api_version='devel')
         with person_logged_in(ANONYMOUS):
-            db_branch = self.factory.makeBranch()
-            launchpad = launchpadlib_for('test', db_branch.owner,
-                service_root=self.layer.appserver_root_url('api'))
-
-        configuration = simplejson.dumps({'test': 'make check'})
-
-        branch = ws_object(launchpad, db_branch)
-        branch.merge_queue_config = configuration
-        branch.lp_save()
-
-        branch2 = ws_object(launchpad, db_branch)
-        self.assertEqual(branch2.merge_queue_config, configuration)
+            self.assertEqual(self.branch_db.merge_queue, queue_db)
+            self.assertEqual(self.branch_db.merge_queue_config, config)
 
     def test_transitionToInformationType(self):
         """Test transitionToInformationType() API arguments."""
-        product = self.factory.makeProduct()
-        self.factory.makeCommercialSubscription(product)
-        with person_logged_in(product.owner):
-            product.setBranchSharingPolicy(
-                BranchSharingPolicy.PUBLIC_OR_PROPRIETARY)
-            db_branch = self.factory.makeBranch(product=product)
-            launchpad = launchpadlib_for('test', db_branch.owner,
-                service_root=self.layer.appserver_root_url('api'))
+        self.webservice.named_post(
+            self.branch_url, 'transitionToInformationType',
+            information_type='Private Security', api_version='devel')
+        with admin_logged_in():
+            self.assertEqual(
+                'Private Security', self.branch_db.information_type.title)
 
-        branch = ws_object(launchpad, db_branch)
-        branch.transitionToInformationType(information_type='Proprietary')
-
-        updated_branch = ws_object(launchpad, db_branch)
-        self.assertEqual('Proprietary', updated_branch.information_type)
+    def test_unscan(self):
+        """Test unscan() API call."""
+        with admin_logged_in():
+            self.assertEqual(
+                0, len(list(getUtility(IBranchScanJobSource).iterReady())))
+        self.webservice.named_post(
+            self.branch_url, 'unscan', rescan=True, api_version='devel')
+        with admin_logged_in():
+            self.assertEqual(
+                1, len(list(getUtility(IBranchScanJobSource).iterReady())))

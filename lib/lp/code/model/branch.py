@@ -1153,6 +1153,17 @@ class Branch(SQLBase, BzrIdentityMixin):
         else:
             raise AssertionError("No pull URL for %r" % (self, ))
 
+    def unscan(self, rescan=True):
+        from lp.code.model.branchjob import BranchScanJob
+        old_scanned_id = self.last_scanned_id
+        Store.of(self).find(BranchRevision, branch=self).remove()
+        self.last_scanned = self.last_scanned_id = None
+        self.revision_count = 0
+        if rescan:
+            job = BranchScanJob.create(self)
+            job.celeryRunOnCommit()
+        return (self.last_mirrored_id, old_scanned_id)
+
     def requestMirror(self):
         """See `IBranch`."""
         if self.branch_type in (BranchType.REMOTE, BranchType.HOSTED):
@@ -1263,25 +1274,22 @@ class Branch(SQLBase, BzrIdentityMixin):
             TranslationTemplatesBuild,
             )
 
+        # Remove BranchJobs.
         store = Store.of(self)
         affected_jobs = Select(
             [BranchJob.jobID],
             And(BranchJob.job == Job.id, BranchJob.branch == self))
+        store.find(Job, Job.id.is_in(affected_jobs)).remove()
 
-        # Delete BuildQueue entries for affected Jobs.  They would pin
-        # the affected Jobs in the database otherwise.
-        store.find(BuildQueue, BuildQueue.jobID.is_in(affected_jobs)).remove()
-
-        # Find BuildFarmJobs to delete.
+        # Delete TranslationTemplatesBuilds, their BuildFarmJobs and
+        # their BuildQueues.
         bfjs = store.find(
             (BuildFarmJob.id,),
             TranslationTemplatesBuild.build_farm_job_id == BuildFarmJob.id,
             TranslationTemplatesBuild.branch == self)
         bfj_ids = [bfj[0] for bfj in bfjs]
-
-        # Delete Jobs.  Their BranchJobs cascade along in the database.
-        store.find(Job, Job.id.is_in(affected_jobs)).remove()
-
+        store.find(
+            BuildQueue, BuildQueue._build_farm_job_id.is_in(bfj_ids)).remove()
         store.find(
             TranslationTemplatesBuild,
             TranslationTemplatesBuild.branch == self).remove()

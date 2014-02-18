@@ -42,6 +42,7 @@ class TestAssignmentNotification(TestCaseWithFactory):
         self.dup_bug.subscribe(
             self.person_subscribed, subscribed_by=self.user)
         self.dup_bug.markAsDuplicate(self.master_bug)
+        self.master_bug.clearBugNotificationRecipientsCache()
 
     def test_dup_subscriber_change_notification_message(self):
         """Duplicate bug number in the reason (email footer) for

@@ -81,7 +81,7 @@ that a dispatch time estimation will not be available for the build in
 question.
 
     >>> login('foo.bar@canonical.com')
-    >>> build.buildqueue_record.job.suspend()
+    >>> build.buildqueue_record.suspend()
     >>> logout()
     >>> anon_browser.open(build_url)
     >>> print extract_text(find_main_content(anon_browser.contents))
@@ -101,7 +101,7 @@ question.
 Re-enable the build in order to avoid subsequent test breakage.
 
     >>> login('foo.bar@canonical.com')
-    >>> build.buildqueue_record.job.resume()
+    >>> build.buildqueue_record.resume()
     >>> logout()
     >>> anon_browser.open(build_url)
 

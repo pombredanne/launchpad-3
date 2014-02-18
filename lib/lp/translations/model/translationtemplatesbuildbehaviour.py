@@ -1,14 +1,14 @@
 # Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""An `IBuildFarmJobBehavior` for `TranslationTemplatesBuildJob`.
+"""An `IBuildFarmJobBehaviour` for `TranslationTemplatesBuild`.
 
 Dispatches translation template build jobs to build-farm slaves.
 """
 
 __metaclass__ = type
 __all__ = [
-    'TranslationTemplatesBuildBehavior',
+    'TranslationTemplatesBuildBehaviour',
     ]
 
 import logging
@@ -24,10 +24,12 @@ from zope.interface import implements
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.builder import CannotBuild
-from lp.buildmaster.interfaces.buildfarmjobbehavior import (
-    IBuildFarmJobBehavior,
+from lp.buildmaster.interfaces.buildfarmjobbehaviour import (
+    IBuildFarmJobBehaviour,
     )
-from lp.buildmaster.model.buildfarmjobbehavior import BuildFarmJobBehaviorBase
+from lp.buildmaster.model.buildfarmjobbehaviour import (
+    BuildFarmJobBehaviourBase,
+    )
 from lp.registry.interfaces.productseries import IProductSeriesSet
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
@@ -35,9 +37,9 @@ from lp.translations.interfaces.translationimportqueue import (
 from lp.translations.model.approver import TranslationBuildApprover
 
 
-class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
+class TranslationTemplatesBuildBehaviour(BuildFarmJobBehaviourBase):
     """Dispatches `TranslationTemplateBuildJob`s to slaves."""
-    implements(IBuildFarmJobBehavior)
+    implements(IBuildFarmJobBehaviour)
 
     # Identify the type of job to the slave.
     build_type = 'translation-templates'
@@ -50,11 +52,11 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
     def getLogFileName(self):
         """See `IBuildFarmJob`."""
         safe_name = re.sub(
-            self.unsafe_chars, '_', self.buildfarmjob.branch.unique_name)
+            self.unsafe_chars, '_', self.build.branch.unique_name)
         return "translationtemplates_%s_%d.txt" % (safe_name, self.build.id)
 
     def dispatchBuildToSlave(self, build_queue_item, logger):
-        """See `IBuildFarmJobBehavior`."""
+        """See `IBuildFarmJobBehaviour`."""
         chroot = self._getChroot()
         if chroot is None:
             distroarchseries = self._getDistroArchSeries()
@@ -66,7 +68,7 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
         def got_cache_file(ignored):
             args = {
                 'arch_tag': self._getDistroArchSeries().architecturetag,
-                'branch_url': self.buildfarmjob.branch.composePublicURL(),
+                'branch_url': self.build.branch.composePublicURL(),
                 }
 
             filemap = {}
@@ -84,11 +86,11 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
         return ubuntu.currentseries.nominatedarchindep
 
     def logStartBuild(self, logger):
-        """See `IBuildFarmJobBehavior`."""
+        """See `IBuildFarmJobBehaviour`."""
         logger.info(
             "Starting templates build %s for %s." % (
             self.getBuildCookie(),
-            self.buildfarmjob.branch.bzr_identity))
+            self.build.branch.bzr_identity))
 
     def _readTarball(self, buildqueue, filemap, logger):
         """Read tarball with generated translation templates from slave."""
@@ -133,7 +135,7 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
         logger.info(
             "Processing finished %s build %s (%s) from builder %s" % (
             status, self.getBuildCookie(),
-            queue_item.specific_job.branch.bzr_identity,
+            queue_item.specific_build.branch.bzr_identity,
             queue_item.builder.name))
 
         if status == 'OK':
@@ -161,7 +163,7 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
                         logger.debug(
                             "Uploading translation templates tarball.")
                         self._uploadTarball(
-                            queue_item.specific_job.branch, tarball, logger)
+                            queue_item.specific_build.branch, tarball, logger)
                         logger.debug("Upload complete.")
                 finally:
                     self.build.updateStatus(BuildStatus.FULLYBUILT)

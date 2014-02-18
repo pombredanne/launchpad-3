@@ -793,7 +793,7 @@ class BugTask(SQLBase):
     def _checkAutoconfirmFeatureFlag(self):
         """Does a feature flag enable automatic switching of our bugtasks?"""
         # This method should be ripped out if we determine that we like
-        # this behavior for all projects.
+        # this behaviour for all projects.
         # This is a bit of a feature flag hack, but has been discussed as
         # a reasonable way to deploy this quickly.
         pillar = self.pillar
@@ -840,15 +840,18 @@ class BugTask(SQLBase):
     def canTransitionToStatus(self, new_status, user):
         """See `IBugTask`."""
         new_status = normalize_bugtask_status(new_status)
-        if (self.status == BugTaskStatus.FIXRELEASED and
-           (user.id == self.bug.ownerID or user.inTeam(self.bug.owner))):
+        if self.userHasBugSupervisorPrivileges(user):
+            # Bug supervisor can always set any status.
             return True
-        elif self.userHasBugSupervisorPrivileges(user):
-            return True
-        else:
-            return (self.status not in (
-                        BugTaskStatus.WONTFIX, BugTaskStatus.FIXRELEASED)
-                    and new_status not in BUG_SUPERVISOR_BUGTASK_STATUSES)
+        elif (self.status == BugTaskStatus.FIXRELEASED and
+              user.id != self.bug.ownerID and not user.inTeam(self.bug.owner)):
+            # The bug reporter can reopen a Fix Released bug.
+            return False
+        elif self.status == BugTaskStatus.WONTFIX:
+            # Only bug supervisors can switch away from WONTFIX.
+            return False
+        # Non-supervisors can transition to non-supervisor statuses.
+        return new_status not in BUG_SUPERVISOR_BUGTASK_STATUSES
 
     def transitionToStatus(self, new_status, user, when=None):
         """See `IBugTask`."""

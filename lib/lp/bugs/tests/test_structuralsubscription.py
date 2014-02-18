@@ -63,7 +63,7 @@ class TestStructuralSubscription(TestCaseWithFactory):
     def test_delete_requires_Edit_permission(self):
         # delete() is only available to the subscriber.
         # We use a lambda here because a security proxy around
-        # self.subscription is giving us the behavior we want to
+        # self.subscription is giving us the behaviour we want to
         # demonstrate.  Merely accessing the "delete" name raises
         # Unauthorized, before the method is even called.  Therefore,
         # we use a lambda to make the trigger happen within "assertRaises".

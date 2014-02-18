@@ -56,6 +56,7 @@ from zope.schema import (
     Bool,
     Choice,
     Datetime,
+    Dict,
     Int,
     Object,
     Text,
@@ -82,7 +83,6 @@ from lp.services.job.interfaces.job import (
     IJob,
     IJobSource,
     IRunnableJob,
-    ITwistedJobSource,
     )
 from lp.services.webapp.interfaces import ITableBatchNavigator
 
@@ -544,12 +544,15 @@ class IBranchMergeProposalAnyAllowedPerson(Interface):
     @operation_parameters(
         subject=Text(), content=Text(),
         vote=Choice(vocabulary=CodeReviewVote), review_type=Text(),
-        parent=Reference(schema=Interface))
+        parent=Reference(schema=Interface),
+        diff_timestamp=Datetime(),
+        inline_comments=Dict(key_type=TextLine(), value_type=Text()))
     @call_with(owner=REQUEST_USER)
     # ICodeReviewComment supplied as Interface to avoid circular imports.
     @export_factory_operation(Interface, [])
     def createComment(owner, subject, content=None, vote=None,
-                      review_type=None, parent=None):
+                      review_type=None, parent=None,
+                      diff_timestamp=None, inline_comments=None):
         """Create an ICodeReviewComment associated with this merge proposal.
 
         :param owner: The person who the message is from.
@@ -558,6 +561,10 @@ class IBranchMergeProposalAnyAllowedPerson(Interface):
             unspecified, the text of the merge proposal is used.
         :param parent: The previous CodeReviewComment in the thread.  If
             unspecified, the root message is used.
+        :param diff_timestamp: the context diff creation timestamp which
+            will be used to retrive the actual `PreviewDiff` register.
+        :param inline_comments: a dictionary containing the draft inline
+            comments keyed by the diff line number.
         """
 
     def createCommentFromMessage(message, vote, review_type,
@@ -568,6 +575,48 @@ class IBranchMergeProposalAnyAllowedPerson(Interface):
         :param vote: A CodeReviewVote (or None).
         :param review_type: A string (or None).
         :param original_email: Original email message.
+        """
+
+    @export_read_operation()
+    @operation_parameters(
+        diff_timestamp=Datetime())
+    @operation_for_version('devel')
+    def getInlineComments(diff_timestamp):
+        """Return a list of inline comments related to this MP.
+
+        The return value is a list of 4-tuples representing published and
+        draft inline comments.
+
+        :param diff_timestamp: The timestamp of the target `PreviewDiff`.
+        """
+
+    @export_read_operation()
+    @operation_parameters(
+        diff_timestamp=Datetime())
+    @call_with(person=REQUEST_USER)
+    @operation_for_version('devel')
+    def getDraftInlineComments(diff_timestamp, person):
+        """Return a list of draft inline comments related to this MP.
+
+        The return value is a list of 4-tuples representing published and
+        draft inline comments.
+
+        :param diff_timestamp: The timestamp of the target `PreviewDiff`.
+        :param person: The `IPerson` owner of the draft comments.
+        """
+
+    @export_write_operation()
+    @operation_parameters(
+        diff_timestamp=Datetime(),
+        comments=Dict(key_type=TextLine(), value_type=Text()))
+    @call_with(person=REQUEST_USER)
+    @operation_for_version('devel')
+    def saveDraftInlineComment(diff_timestamp, person, comments):
+        """Save `ICodeReviewInlineCommentDraft`
+
+        :param diff_timestamp: The timestamp of the target `PreviewDiff`.
+        :param person: The `IPerson` making the comments.
+        :param comments: The comments.
         """
 
 
@@ -597,10 +646,6 @@ class IBranchMergeProposalJob(Interface):
 
     def destroySelf():
         """Destroy this object."""
-
-
-class IBranchMergeProposalJobSource(ITwistedJobSource):
-    """A job source that will get all supported merge proposal jobs."""
 
 
 class IBranchMergeProposalJobSource(IJobSource):

@@ -34,7 +34,7 @@ class TestLaunchpadLogFile(TestCase):
         incoherent with 'maxRotatedFiles', like requesting the compression
         of more files that we have rotated.
         """
-        # Default behavior.
+        # Default behaviour.
         log_file = LaunchpadLogFile('test.log', self.temp_dir)
         self.assertEqual(5, log_file.maxRotatedFiles)
         self.assertEqual(3, log_file.compressLast)

@@ -21,6 +21,7 @@ from zope.interface import (
     Interface,
     )
 
+from lp.services.database import activity_cols
 from lp.services.database.interfaces import IMasterStore
 import lp.services.scripts
 
@@ -311,18 +312,19 @@ class DBLoopTuner(LoopTuner):
         store = IMasterStore(LibraryFileAlias)
         msg_counter = 0
         while not self._isTimedOut():
-            results = list(store.execute("""
+            results = list(store.execute(("""
                 SELECT
                     CURRENT_TIMESTAMP - xact_start,
-                    procpid,
+                    %(pid)s,
                     usename,
                     datname,
-                    current_query
+                    %(query)s
                 FROM activity()
-                WHERE xact_start < CURRENT_TIMESTAMP - interval '%f seconds'
+                WHERE xact_start < CURRENT_TIMESTAMP - interval '%%f seconds'
                     AND datname = current_database()
                 ORDER BY xact_start LIMIT 4
-                """ % self.long_running_transaction).get_all())
+                """ % activity_cols(store))
+                % self.long_running_transaction).get_all())
             if not results:
                 break
 
@@ -330,10 +332,10 @@ class DBLoopTuner(LoopTuner):
             # only report every 10 minutes to avoid log spam.
             msg_counter += 1
             if msg_counter % 60 == 1:
-                for runtime, procpid, usename, datname, query in results:
+                for runtime, pid, usename, datname, query in results:
                     self.log.info(
                         "Blocked on %s old xact %s@%s/%d - %s.",
-                        runtime, usename, datname, procpid, query)
+                        runtime, usename, datname, pid, query)
                 self.log.info("Sleeping for up to 10 minutes.")
             # Don't become a long running transaction!
             transaction.abort()

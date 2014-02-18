@@ -6,7 +6,10 @@
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.enums import (
+    BuildQueueStatus,
+    BuildStatus,
+    )
 from lp.buildmaster.interfaces.builder import (
     IBuilder,
     IBuilderSet,
@@ -15,14 +18,17 @@ from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.tests.mock_slaves import make_publisher
 from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import flush_database_updates
-from lp.services.job.interfaces.job import JobStatus
 from lp.services.log.logger import BufferLogger
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
     )
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
-from lp.testing import TestCaseWithFactory
+from lp.soyuz.interfaces.processor import IProcessorSet
+from lp.testing import (
+    admin_logged_in,
+    TestCaseWithFactory,
+    )
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
@@ -60,6 +66,23 @@ class TestBuilder(TestCaseWithFactory):
         builder.handleFailure(BufferLogger())
         self.assertEqual(1, builder.failure_count)
 
+    def test_set_processors(self):
+        builder = self.factory.makeBuilder()
+        proc1 = self.factory.makeProcessor()
+        proc2 = self.factory.makeProcessor()
+        with admin_logged_in():
+            builder.processors = [proc1, proc2]
+        self.assertEqual(proc1, builder.processor)
+        self.assertEqual([proc1, proc2], builder.processors)
+
+    def test_set_processor(self):
+        builder = self.factory.makeBuilder()
+        proc = self.factory.makeProcessor()
+        with admin_logged_in():
+            builder.processor = proc
+        self.assertEqual(proc, builder.processor)
+        self.assertEqual([proc], builder.processors)
+
 
 class TestFindBuildCandidateBase(TestCaseWithFactory):
     """Setup the test publisher and some builders."""
@@ -94,6 +117,32 @@ class TestFindBuildCandidateBase(TestCaseWithFactory):
 
 class TestFindBuildCandidateGeneralCases(TestFindBuildCandidateBase):
     # Test usage of findBuildCandidate not specific to any archive type.
+
+    def test_findBuildCandidate_matches_processor(self):
+        # Builder._findBuildCandidate returns the highest scored build
+        # for any of the builder's architectures.
+        bq1 = self.factory.makeBinaryPackageBuild().queueBuild()
+        bq2 = self.factory.makeBinaryPackageBuild().queueBuild()
+
+        # With no job for the builder's processor, no job is returned.
+        proc = self.factory.makeProcessor()
+        builder = removeSecurityProxy(
+            self.factory.makeBuilder(processors=[proc], virtualized=True))
+        self.assertIs(None, builder._findBuildCandidate())
+
+        # Once bq1's processor is added to the mix, it's the best
+        # candidate.
+        builder.processors = [proc, bq1.processor]
+        self.assertEqual(bq1, builder._findBuildCandidate())
+
+        # bq2's score doesn't matter, as its processor isn't suitable
+        # for our builder.
+        bq2.manualScore(3000)
+        self.assertEqual(bq1, builder._findBuildCandidate())
+
+        # But once we add bq2's processor, its higher score makes it win.
+        builder.processors = [bq1.processor, bq2.processor]
+        self.assertEqual(bq2, builder._findBuildCandidate())
 
     def test_findBuildCandidate_supersedes_builds(self):
         # IBuilder._findBuildCandidate identifies if there are builds
@@ -132,7 +181,7 @@ class TestFindBuildCandidateGeneralCases(TestFindBuildCandidateBase):
             archive=archive).createMissingBuilds()
         candidate = removeSecurityProxy(
             self.frog_builder).acquireBuildCandidate()
-        self.assertEqual(JobStatus.RUNNING, candidate.job.status)
+        self.assertEqual(BuildQueueStatus.RUNNING, candidate.status)
 
 
 class TestFindBuildCandidatePPAWithSingleBuilder(TestCaseWithFactory):
@@ -334,7 +383,12 @@ class TestFindBuildCandidateDistroArchive(TestFindBuildCandidateBase):
         self.assertEqual(self.gedit_build.buildqueue_record.lastscore, 2505)
         self.assertEqual(self.firefox_build.buildqueue_record.lastscore, 2505)
 
-        recipe_build_job = self.factory.makeSourcePackageRecipeBuildJob(9999)
+        das = self.factory.makeDistroArchSeries(
+            processor=getUtility(IProcessorSet).getByName('386'))
+        das.distroseries.nominatedarchindep = das
+        recipe_build_job = self.factory.makeSourcePackageRecipeBuild(
+            distroseries=das.distroseries).queueBuild()
+        recipe_build_job.manualScore(9999)
 
         self.assertEqual(recipe_build_job.lastscore, 9999)
 
@@ -361,9 +415,16 @@ class TestFindRecipeBuildCandidates(TestFindBuildCandidateBase):
         self.non_ppa = self.factory.makeArchive(
             name="primary", purpose=ArchivePurpose.PRIMARY)
 
+        das = self.factory.makeDistroArchSeries(
+            processor=getUtility(IProcessorSet).getByName('386'))
+        das.distroseries.nominatedarchindep = das
         self.clearBuildQueue()
-        self.bq1 = self.factory.makeSourcePackageRecipeBuildJob(3333)
-        self.bq2 = self.factory.makeSourcePackageRecipeBuildJob(4333)
+        self.bq1 = self.factory.makeSourcePackageRecipeBuild(
+            distroseries=das.distroseries).queueBuild()
+        self.bq1.manualScore(3333)
+        self.bq2 = self.factory.makeSourcePackageRecipeBuild(
+            distroseries=das.distroseries).queueBuild()
+        self.bq2.manualScore(4333)
 
     def test_findBuildCandidate_with_highest_score(self):
         # The recipe build with the highest score is selected first.

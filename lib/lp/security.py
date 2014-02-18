@@ -59,10 +59,7 @@ from lp.buildmaster.interfaces.builder import (
     IBuilder,
     IBuilderSet,
     )
-from lp.buildmaster.interfaces.buildfarmjob import (
-    IBuildFarmJob,
-    IBuildFarmJobOld,
-    )
+from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
 from lp.buildmaster.interfaces.packagebuild import IPackageBuild
 from lp.code.interfaces.branch import (
     IBranch,
@@ -170,7 +167,6 @@ from lp.registry.interfaces.teammembership import (
     )
 from lp.registry.interfaces.wikiname import IWikiName
 from lp.registry.model.person import Person
-from lp.services.config import config
 from lp.services.database.interfaces import IStore
 from lp.services.identity.interfaces.account import IAccount
 from lp.services.identity.interfaces.emailaddress import IEmailAddress
@@ -1938,19 +1934,6 @@ class ViewTranslationTemplatesBuild(DelegatedAuthorization):
 
     def __init__(self, obj):
         super(ViewTranslationTemplatesBuild, self).__init__(obj, obj.branch)
-
-
-class ViewBuildFarmJobOld(DelegatedAuthorization):
-    """Permission to view an `IBuildFarmJobOld`.
-
-    This permission is based entirely on permission to view the
-    associated `IBuildFarmJob`.
-    """
-    permission = 'launchpad.View'
-    usedfor = IBuildFarmJobOld
-
-    def __init__(self, obj):
-        super(ViewBuildFarmJobOld, self).__init__(obj, obj.build)
 
 
 class AdminQuestion(AdminByAdminsTeam):

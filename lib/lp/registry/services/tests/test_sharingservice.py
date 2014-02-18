@@ -1417,7 +1417,7 @@ class TestSharingService(TestCaseWithFactory):
             expected = [product]
             if IPersonRoles(who).in_admin:
                 expected.append(unrelated_product)
-        self.assertEqual(expected, list(shared))
+        self.assertContentEqual(expected, shared)
 
     def test_getSharedProjects_anonymous(self):
         # Anonymous users don't get to see any shared products.

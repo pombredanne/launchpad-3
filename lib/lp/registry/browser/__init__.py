@@ -152,7 +152,7 @@ class MilestoneOverlayMixin:
 
 
 class RegistryDeleteViewMixin:
-    """A mixin class that provides common behavior for registry deletions."""
+    """A mixin class that provides common behaviour for registry deletions."""
 
     @property
     def cancel_url(self):

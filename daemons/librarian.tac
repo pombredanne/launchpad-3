@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # Twisted Application Configuration file.
@@ -6,6 +6,15 @@
 
 import os
 import signal
+
+# Turn off the http_proxy environment variable if it is set. We
+# don't need it, but we do need to contact Keystone & Swift directly.
+# We could use no_proxy, but this requires keeping it in sync with
+# reality on dev, staging & production servers.
+if 'http_proxy' in os.environ:
+    del os.environ['http_proxy']
+if 'HTTP_PROXY' in os.environ:
+    del os.environ['HTTP_PROXY']
 
 from meliae import scanner
 from twisted.application import (
@@ -34,6 +43,7 @@ from lp.services.librarianserver import (
 from lp.services.librarianserver.libraryprotocol import FileUploadFactory
 from lp.services.scripts import execute_zcml_for_scripts
 from lp.services.twistedsupport.loggingsupport import set_up_oops_reporting
+from lp.services.twistedsupport.features import setup_feature_controller
 
 # Connect to database
 dbconfig.override(
@@ -64,6 +74,7 @@ librarianService = service.IServiceCollection(application)
 
 # Service that announces when the daemon is ready
 readyservice.ReadyService().setServiceParent(librarianService)
+
 
 def setUpListener(uploadPort, webPort, restricted):
     """Set up a librarian listener on the given ports.
@@ -106,6 +117,10 @@ options = ServerOptions()
 options.parseOptions()
 logfile = options.get("logfile")
 set_up_oops_reporting('librarian', 'librarian', logfile)
+
+# Allow use of feature flags.
+setup_feature_controller('librarian')
+
 
 # Setup a signal handler to dump the process' memory upon 'kill -44'.
 def sigdumpmem_handler(signum, frame):

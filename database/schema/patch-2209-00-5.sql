@@ -1,24 +1,15 @@
 SET client_min_messages = ERROR;
 
--- Compatibility code. During transition, we need code that runs with
--- both PostgreSQL 8.4 and 9.1.
+-- NOTE: This is not the original patch 2209-00-5. That was originally
+-- to support 8.4 and 9.1, but it failed to apply in 9.3, so history was
+-- altered to make it support 9.1 and 9.3 instead. It's duplicated as
+-- 2209-53-1 to ensure the new version is applied to systems that
+-- already have 2209-00-5.
 
--- This used to be a simple SQL function, but PG 9.1 grew an extra
--- column to pg_stat_activity. We can revert once PG 8.4
--- compatibility is not needed.
---     SELECT
---         datid, datname, procpid, usesysid, usename,
---         CASE
---             WHEN current_query LIKE '<IDLE>%'
---                 OR current_query LIKE 'autovacuum:%'
---                 THEN current_query
---             ELSE
---                 '<HIDDEN>'
---         END AS current_query,
---         waiting, xact_start, query_start,
---         backend_start, client_addr, client_port
---     FROM pg_catalog.pg_stat_activity;
---
+-- Compatibility code. During transition, we need code that runs with
+-- both PostgreSQL 9.1 and 9.3. Once we're on 9.3 this can probably be
+-- replaced with a simple SQL function.
+
 CREATE OR REPLACE FUNCTION activity()
 RETURNS SETOF pg_stat_activity
 VOLATILE SECURITY DEFINER SET search_path = public
@@ -26,13 +17,38 @@ LANGUAGE plpgsql AS $$
 DECLARE
     a pg_stat_activity%ROWTYPE;
 BEGIN
-    FOR a IN SELECT * FROM pg_stat_activity LOOP
-        IF a.current_query NOT LIKE '<IDLE>%'
-            AND a.current_query NOT LIKE 'autovacuum:%' THEN
-            a.current_query := '<HIDDEN>';
-        END IF;
-        RETURN NEXT a;
-    END LOOP;
+    IF EXISTS (
+            SELECT 1 FROM pg_attribute WHERE
+                attrelid =
+                    (SELECT oid FROM pg_class
+                     WHERE relname = 'pg_stat_activity')
+                AND attname = 'procpid') THEN
+        RETURN QUERY SELECT
+            datid, datname, procpid, usesysid, usename, application_name,
+            client_addr, client_hostname, client_port, backend_start,
+            xact_start, query_start, waiting,
+            CASE
+                WHEN current_query LIKE '<IDLE>%'
+                    OR current_query LIKE 'autovacuum:%'
+                    THEN current_query
+                ELSE
+                    '<HIDDEN>'
+            END AS current_query
+        FROM pg_catalog.pg_stat_activity;
+    ELSE
+        RETURN QUERY SELECT
+            datid, datname, pid, usesysid, usename, application_name,
+            client_addr, client_hostname, client_port, backend_start,
+            xact_start, query_start, state_change, waiting, state,
+            CASE
+                WHEN query LIKE '<IDLE>%'
+                    OR query LIKE 'autovacuum:%'
+                    THEN query
+                ELSE
+                    '<HIDDEN>'
+            END AS query
+        FROM pg_catalog.pg_stat_activity;
+    END IF;
 END;
 $$;
 

@@ -25,7 +25,7 @@ from lp.testing.views import create_initialized_view
 
 
 class TestQuestionAddView(TestCaseWithFactory):
-    """Verify the behavior of the QuestionAddView."""
+    """Verify the behaviour of the QuestionAddView."""
 
     layer = DatabaseFunctionalLayer
 
@@ -76,7 +76,7 @@ class TestQuestionAddView(TestCaseWithFactory):
         self.assertIn(msg, contents)
 
 class QuestionEditViewTestCase(TestCaseWithFactory):
-    """Verify the behavior of the QuestionEditView."""
+    """Verify the behaviour of the QuestionEditView."""
 
     layer = DatabaseFunctionalLayer
 

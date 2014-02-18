@@ -23,7 +23,7 @@ Try renaming a project to a blacklisted name:
     >>> "The name &#x27;blacklisted&#x27; has been blocked" in admin_browser.contents
     True
 
-Same behavior for products:
+Same behaviour for products:
 
     >>> admin_browser.open('http://launchpad.dev/firefox')
     >>> admin_browser.getLink('Administer').click()
@@ -32,7 +32,7 @@ Same behavior for products:
     >>> "The name &#x27;blacklisted&#x27; has been blocked" in admin_browser.contents
     True
 
-Same behavior for people:
+Same behaviour for people:
 
     >>> admin_browser.open('http://launchpad.dev/~stub')
     >>> admin_browser.getLink('Change details').click()

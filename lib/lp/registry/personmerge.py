@@ -561,6 +561,22 @@ def _mergeDateCreated(cur, from_id, to_id):
         ''' % vars())
 
 
+def _mergeCodeReviewInlineCommentDraft(cur, from_id, to_id):
+    params = dict(from_id=from_id, to_id=to_id)
+    # Remove conflicting drafts.
+    cur.execute('''
+    DELETE FROM CodeReviewInlineCommentDraft
+    WHERE person = %(from_id)d AND previewdiff IN (
+        SELECT previewdiff FROM CodeReviewInlineCommentDraft
+            WHERE person = %(to_id)d)
+    ''' % params)
+    # Update draft comments to the new owner.
+    cur.execute('''
+    UPDATE CodeReviewInlineCommentDraft SET person = %(to_id)d
+    WHERE person = %(from_id)d
+    ''' % params)
+
+
 def _purgeUnmergableTeamArtifacts(from_team, to_team, reviewer):
     """Purge team artifacts that cannot be merged, but can be removed."""
     # A team cannot have more than one mailing list.
@@ -776,6 +792,9 @@ def merge_people(from_person, to_person, reviewer, delete=False):
 
     _mergeLoginTokens(cur, from_id, to_id)
     skip.append(('logintoken', 'requester'))
+
+    _mergeCodeReviewInlineCommentDraft(cur, from_id, to_id)
+    skip.append(('codereviewinlinecommentdraft', 'person'))
 
     # Sanity check. If we have a reference that participates in a
     # UNIQUE index, it must have already been handled by this point.

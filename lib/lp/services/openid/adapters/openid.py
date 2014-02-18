@@ -20,11 +20,11 @@ from zope.interface import (
     )
 
 from lp.registry.interfaces.person import IPerson
+from lp.services.config import config
 from lp.services.database.interfaces import IStore
 from lp.services.identity.interfaces.account import IAccount
 from lp.services.openid.interfaces.openid import IOpenIDPersistentIdentity
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
-from lp.services.webapp.vhosts import allvhosts
 
 
 class CurrentOpenIDEndPoint:
@@ -33,13 +33,7 @@ class CurrentOpenIDEndPoint:
     @classmethod
     def getServiceURL(cls):
         """The OpenID server URL (/+openid) for the current request."""
-        return allvhosts.configs['openid'].rooturl + '+openid'
-
-    @classmethod
-    def supportsURL(cls, identity_url):
-        """Does the OpenID current vhost support the identity_url?"""
-        root_url = allvhosts.configs['openid'].rooturl
-        return identity_url.startswith(root_url + '+id')
+        return config.launchpad.openid_provider_root + '+openid'
 
 
 class OpenIDPersistentIdentity:
@@ -57,8 +51,9 @@ class OpenIDPersistentIdentity:
         openid_identifier = self.openid_identifier
         if openid_identifier is None:
             return None
-        identity_root_url = allvhosts.configs['openid'].rooturl
-        return identity_root_url + openid_identifier.encode('ascii')
+        return (
+            config.launchpad.openid_provider_root +
+            openid_identifier.encode('ascii'))
 
     @property
     def openid_identifier(self):

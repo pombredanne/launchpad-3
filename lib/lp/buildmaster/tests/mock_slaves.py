@@ -15,7 +15,7 @@ __all__ = [
     'MockBuilder',
     'OkSlave',
     'SlaveTestHelpers',
-    'TrivialBehavior',
+    'TrivialBehaviour',
     'WaitingSlave',
     ]
 
@@ -76,7 +76,7 @@ class OkSlave:
         self.arch_tag = arch_tag
         self.version = version
 
-    def status_dict(self):
+    def status(self):
         slave_status = {'builder_status': 'BuilderStatus.IDLE'}
         if self.version is not None:
             slave_status['builder_version'] = self.version
@@ -139,8 +139,8 @@ class BuildingSlave(OkSlave):
         super(BuildingSlave, self).__init__()
         self.build_id = build_id
 
-    def status_dict(self):
-        self.call_log.append('status_dict')
+    def status(self):
+        self.call_log.append('status')
         buildlog = xmlrpclib.Binary("This is a build log")
         return defer.succeed({
             'builder_status': 'BuilderStatus.BUILDING',
@@ -176,8 +176,8 @@ class WaitingSlave(OkSlave):
         # can update this list as needed.
         self.valid_file_hashes = ['buildlog']
 
-    def status_dict(self):
-        self.call_log.append('status_dict')
+    def status(self):
+        self.call_log.append('status')
         return defer.succeed({
             'builder_status': 'BuilderStatus.WAITING',
             'build_status': self.state,
@@ -200,8 +200,8 @@ class WaitingSlave(OkSlave):
 class AbortingSlave(OkSlave):
     """A mock slave that looks like it's in the process of aborting."""
 
-    def status_dict(self):
-        self.call_log.append('status_dict')
+    def status(self):
+        self.call_log.append('status')
         return defer.succeed({
             'builder_status': 'BuilderStatus.ABORTING',
             'build_id': '1-1',
@@ -217,8 +217,8 @@ class LostBuildingBrokenSlave:
     def __init__(self):
         self.call_log = []
 
-    def status_dict(self):
-        self.call_log.append('status_dict')
+    def status(self):
+        self.call_log.append('status')
         return defer.succeed({
             'builder_status': 'BuilderStatus.BUILDING',
             'build_id': '1000-10000',
@@ -239,12 +239,12 @@ class BrokenSlave:
     def __init__(self):
         self.call_log = []
 
-    def status_dict(self):
-        self.call_log.append('status_dict')
+    def status(self):
+        self.call_log.append('status')
         return defer.fail(xmlrpclib.Fault(8001, "Broken slave"))
 
 
-class TrivialBehavior:
+class TrivialBehaviour:
 
     def getBuildCookie(self):
         return 'trivial'

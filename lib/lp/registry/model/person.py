@@ -304,7 +304,6 @@ from lp.services.verification.interfaces.authtoken import LoginTokenType
 from lp.services.verification.interfaces.logintoken import ILoginTokenSet
 from lp.services.verification.model.logintoken import LoginToken
 from lp.services.webapp.interfaces import ILaunchBag
-from lp.services.webapp.vhosts import allvhosts
 from lp.services.worlddata.model.language import Language
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -364,23 +363,12 @@ class ValidPersonCache(SQLBase):
 def validate_person_visibility(person, attr, value):
     """Validate changes in visibility.
 
-    * Prevent teams with inconsistent connections from being made private.
-    * Prevent private teams from any transition.
+    Prevent teams with links to other objects from transitioning,
+    ignoring known-OK links.
     """
-
-    # Prohibit any visibility changes for private teams.  This rule is
-    # recognized to be Draconian and may be relaxed in the future.
-    if person.visibility == PersonVisibility.PRIVATE:
-        raise ImmutableVisibilityError(
-            'A private team cannot change visibility.')
-
-    # If transitioning to a non-public visibility, check for existing
-    # relationships that could leak data.
-    if value != PersonVisibility.PUBLIC:
-        warning = person.visibilityConsistencyWarning(value)
-        if warning is not None:
-            raise ImmutableVisibilityError(warning)
-
+    warning = person.visibilityConsistencyWarning(value)
+    if warning is not None:
+        raise ImmutableVisibilityError(warning)
     return value
 
 
@@ -453,7 +441,7 @@ def readonly_settings(message, interface):
     # The interface.names() method returns the names on the interface.  If
     # "all" is True, then you will also get the names on base
     # interfaces.  That is unlikely to be needed here, but would be the
-    # expected behavior if it were.
+    # expected behaviour if it were.
     for name in interface.names(all=True):
         # This next line is a work-around for a classic problem of
         # closures in a loop. Closures are bound (indirectly) to frame
@@ -523,8 +511,8 @@ class Person(
     _sortingColumnsForSetOperations = SQL(
         "person_sort_key(displayname, name)")
     _defaultOrder = sortingColumns
-    _visibility_warning_marker = object()
-    _visibility_warning_cache = _visibility_warning_marker
+    _visibility_warning_cache_key = None
+    _visibility_warning_cache = None
 
     account = ForeignKey(dbName='account', foreignKey='Account', default=None)
 
@@ -2306,17 +2294,28 @@ class Person(
         A private-membership team cannot be connected to other
         objects, since it may be possible to infer the membership.
         """
-        if self._visibility_warning_cache != self._visibility_warning_marker:
+        if self._visibility_warning_cache_key == new_value:
             return self._visibility_warning_cache
 
         cur = cursor()
         references = list(
             postgresql.listReferences(cur, 'person', 'id', indirect=False))
         # These tables will be skipped since they do not risk leaking
-        # team membership information, except StructuralSubscription
-        # which will be checked further down to provide a clearer warning.
+        # team membership information.
         # Note all of the table names and columns must be all lowercase.
         skip = set([
+            ('accessartifactgrant', 'grantee'),
+            ('accessartifactgrant', 'grantor'),
+            ('accesspolicy', 'person'),
+            ('accesspolicygrant', 'grantee'),
+            ('accesspolicygrant', 'grantor'),
+            ('archive', 'owner'),
+            ('archivesubscriber', 'subscriber'),
+            ('branch', 'owner'),
+            ('branchsubscription', 'person'),
+            ('bugsubscription', 'person'),
+            ('bugsummary', 'viewed_by'),
+            ('bugtask', 'assignee'),
             ('emailaddress', 'person'),
             ('gpgkey', 'owner'),
             ('ircid', 'person'),
@@ -2330,9 +2329,19 @@ class Person(
             ('personsettings', 'person'),
             ('persontransferjob', 'minor_person'),
             ('persontransferjob', 'major_person'),
+            ('product', 'bug_supervisor'),
+            ('product', 'driver'),
+            ('product', 'owner'),
+            ('productseries', 'driver'),
+            ('productseries', 'owner'),
+            ('sharingjob', 'grantee'),
             ('signedcodeofconduct', 'owner'),
+            ('specificationsubscription', 'person'),
             ('sshkey', 'person'),
             ('structuralsubscription', 'subscriber'),
+            ('teammembership', 'acknowledged_by'),
+            ('teammembership', 'proposed_by'),
+            ('teammembership', 'reviewed_by'),
             ('teammembership', 'team'),
             ('teamparticipation', 'person'),
             ('teamparticipation', 'team'),
@@ -2344,18 +2353,6 @@ class Person(
             ('latestpersonsourcepackagereleasecache', 'creator'),
             ('latestpersonsourcepackagereleasecache', 'maintainer'),
             ])
-
-        # The following relationships are allowable for Private teams and
-        # thus should be skipped.
-        if new_value == PersonVisibility.PRIVATE:
-            skip.update([('bugsubscription', 'person'),
-                         ('bugtask', 'assignee'),
-                         ('branch', 'owner'),
-                         ('branchsubscription', 'person'),
-                         ('branchvisibilitypolicy', 'team'),
-                         ('archive', 'owner'),
-                         ('archivesubscriber', 'subscriber'),
-                         ])
 
         warnings = set()
         ref_query = []
@@ -2377,36 +2374,6 @@ class Person(
                     article = 'a'
                 warnings.add('%s %s' % (article, table_name))
 
-        # Private teams may have structural subscription, so the following
-        # test is not applied to them.
-        if new_value != PersonVisibility.PRIVATE:
-            # Add warnings for subscriptions in StructuralSubscription table
-            # describing which kind of object is being subscribed to.
-            cur.execute("""
-                SELECT
-                    count(product) AS product_count,
-                    count(productseries) AS productseries_count,
-                    count(project) AS project_count,
-                    count(milestone) AS milestone_count,
-                    count(distribution) AS distribution_count,
-                    count(distroseries) AS distroseries_count,
-                    count(sourcepackagename) AS sourcepackagename_count
-                FROM StructuralSubscription
-                WHERE subscriber=%d LIMIT 1
-                """ % self.id)
-
-            row = cur.fetchone()
-            for count, warning in zip(row, [
-                    'a project subscriber',
-                    'a project series subscriber',
-                    'a project subscriber',
-                    'a milestone subscriber',
-                    'a distribution subscriber',
-                    'a distroseries subscriber',
-                    'a source package subscriber']):
-                if count > 0:
-                    warnings.add(warning)
-
         # Non-purged mailing list check for transitioning to or from PUBLIC.
         if PersonVisibility.PUBLIC in [self.visibility, new_value]:
             mailing_list = getUtility(IMailingListSet).get(self.name)
@@ -2419,6 +2386,7 @@ class Person(
 
         if len(warnings) == 0:
             self._visibility_warning_cache = None
+            self._visibility_warning_cache_key = new_value
         else:
             if len(warnings) == 1:
                 message = warnings[0]
@@ -2429,6 +2397,7 @@ class Person(
             self._visibility_warning_cache = (
                 'This team cannot be converted to %s since it is '
                 'referenced by %s.' % (new_value, message))
+            self._visibility_warning_cache_key = new_value
         return self._visibility_warning_cache
 
     @property
@@ -3275,10 +3244,16 @@ class PersonSet:
         # + is reserved, so is not allowed to be reencoded in transit, so
         # should never appear as its percent-encoded equivalent.
         identifier_suffix = None
-        for vhost in ('openid', 'ubuntu_openid'):
-            root = '%s+id/' % allvhosts.configs[vhost].rooturl
-            if identifier.startswith(root):
-                identifier_suffix = identifier.replace(root, '', 1)
+        roots = [config.launchpad.openid_provider_root]
+        if config.launchpad.openid_alternate_provider_roots:
+            roots.extend(
+                [root.strip() for root in
+                 config.launchpad.openid_alternate_provider_roots.split(',')
+                 if root.strip()])
+        for root in roots:
+            base = '%s+id/' % root
+            if identifier.startswith(base):
+                identifier_suffix = identifier.replace(base, '', 1)
                 break
         if identifier_suffix is None:
             return None

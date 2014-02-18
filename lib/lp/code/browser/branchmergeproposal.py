@@ -61,6 +61,7 @@ from zope.schema.vocabulary import (
     SimpleTerm,
     SimpleVocabulary,
     )
+from zope.security.proxy import removeSecurityProxy
 
 from lp import _
 from lp.app.browser.launchpadform import (
@@ -92,6 +93,9 @@ from lp.code.errors import (
     )
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.codereviewcomment import ICodeReviewComment
+from lp.code.interfaces.codereviewinlinecomment import (
+    ICodeReviewInlineCommentSet,
+    )
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.code.interfaces.diff import IPreviewDiff
 from lp.registry.interfaces.person import IPersonSet
@@ -623,8 +627,22 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
                     self.context.source_branch.unique_name),
             })
         if getFeatureFlag("longpoll.merge_proposals.enabled"):
-            cache.objects['merge_proposal_event_key'] = (
-                subscribe(self.context).event_key)
+            cache.objects['merge_proposal_event_key'] = subscribe(
+                self.context).event_key
+        if getFeatureFlag("code.inline_diff_comments.enabled"):
+            cache.objects['inline_diff_comments'] = True
+            cache.objects['preview_diff_timestamps'] = [
+                pd.date_created for pd in self.context.preview_diffs]
+            if self.context.preview_diff:
+                cache.objects['published_inline_comments'] = (
+                    self.context.getInlineComments(
+                        self.preview_diff.date_created))
+                cache.objects['draft_inline_comments'] = (
+                    self.context.getDraftInlineComments(
+                        self.preview_diff.date_created, self.user))
+            else:
+                cache.objects['published_inline_comments'] = []
+                cache.objects['draft_inline_comments'] = []
 
     @action('Claim', name='claim')
     def claim_action(self, action, data):
@@ -711,9 +729,7 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
 
         If no preview is available, try using the review diff.
         """
-        if self.context.preview_diff is not None:
-            return self.context.preview_diff
-        return None
+        return self.context.preview_diff
 
     @property
     def has_bug_or_spec(self):
@@ -1460,8 +1476,7 @@ class BranchMergeProposalAddVoteView(LaunchpadFormView):
         else:
             review_type = self.users_vote_ref.review_type
         # We'll be positive here and default the vote to approve.
-        return {'vote': CodeReviewVote.APPROVE,
-                'review_type': review_type}
+        return {'vote': CodeReviewVote.APPROVE, 'review_type': review_type}
 
     def initialize(self):
         """Get the users existing vote reference."""
@@ -1476,10 +1491,10 @@ class BranchMergeProposalAddVoteView(LaunchpadFormView):
         if self.user is None:
             # Anonymous users are not valid voters.
             raise AssertionError('Invalid voter')
-        LaunchpadFormView.initialize(self)
+        super(BranchMergeProposalAddVoteView, self).initialize()
 
     def setUpFields(self):
-        LaunchpadFormView.setUpFields(self)
+        super(BranchMergeProposalAddVoteView, self).setUpFields()
         self.reviewer = self.user.name
         # claim_review is set in situations where a user is reviewing on
         # behalf of a team.
@@ -1510,8 +1525,7 @@ class BranchMergeProposalAddVoteView(LaunchpadFormView):
         # the data dict.  If this is the case, get the review_type from the
         # hidden field that we so cunningly added to the form.
         review_type = data.get(
-            'review_type',
-            self.request.form.get('review_type'))
+            'review_type', self.request.form.get('review_type'))
         # Translate the request parameter back into what our object model
         # needs.
         if review_type == '':

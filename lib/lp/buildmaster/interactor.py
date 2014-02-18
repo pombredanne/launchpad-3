@@ -26,12 +26,11 @@ from lp.buildmaster.interfaces.builder import (
     CannotFetchFile,
     CannotResumeHost,
     )
-from lp.buildmaster.interfaces.buildfarmjobbehavior import (
-    IBuildFarmJobBehavior,
+from lp.buildmaster.interfaces.buildfarmjobbehaviour import (
+    IBuildFarmJobBehaviour,
     )
 from lp.services import encoding
 from lp.services.config import config
-from lp.services.job.interfaces.job import JobStatus
 from lp.services.twistedsupport import cancel_on_timeout
 from lp.services.twistedsupport.processmonitor import ProcessWithTimeout
 from lp.services.webapp import urlappend
@@ -90,8 +89,8 @@ class BuilderSlave(object):
             server_proxy = proxy
         return cls(server_proxy, builder_url, vm_host, timeout, reactor)
 
-    def _with_timeout(self, d):
-        return cancel_on_timeout(d, self.timeout, self.reactor)
+    def _with_timeout(self, d, timeout=None):
+        return cancel_on_timeout(d, timeout or self.timeout, self.reactor)
 
     def abort(self):
         """Abort the current build."""
@@ -109,15 +108,19 @@ class BuilderSlave(object):
         """Return the protocol version and the builder methods supported."""
         return self._with_timeout(self._server.callRemote('info'))
 
-    def status_dict(self):
+    def status(self):
         """Return the status of the build daemon."""
-        return self._with_timeout(self._server.callRemote('status_dict'))
+        return self._with_timeout(self._server.callRemote('status'))
 
     def ensurepresent(self, sha1sum, url, username, password):
-        # XXX: Nothing external calls this. Make it private.
         """Attempt to ensure the given file is present."""
-        return self._with_timeout(self._server.callRemote(
-            'ensurepresent', sha1sum, url, username, password))
+        # XXX: Nothing external calls this. Make it private.
+        # Use a larger timeout than other calls, as this synchronously
+        # downloads large files.
+        return self._with_timeout(
+            self._server.callRemote(
+                'ensurepresent', sha1sum, url, username, password),
+            self.timeout * 5)
 
     def getFile(self, sha_sum, file_to_write):
         """Fetch a file from the builder.
@@ -239,12 +242,12 @@ class BuilderInteractor(object):
             vitals.url, vitals.vm_host, timeout)
 
     @staticmethod
-    def getBuildBehavior(queue_item, builder, slave):
+    def getBuildBehaviour(queue_item, builder, slave):
         if queue_item is None:
             return None
-        behavior = IBuildFarmJobBehavior(queue_item.specific_job)
-        behavior.setBuilder(builder, slave)
-        return behavior
+        behaviour = IBuildFarmJobBehaviour(queue_item.specific_build)
+        behaviour.setBuilder(builder, slave)
+        return behaviour
 
     @classmethod
     @defer.inlineCallbacks
@@ -321,7 +324,7 @@ class BuilderInteractor(object):
 
     @classmethod
     @defer.inlineCallbacks
-    def _startBuild(cls, build_queue_item, vitals, builder, slave, behavior,
+    def _startBuild(cls, build_queue_item, vitals, builder, slave, behaviour,
                     logger):
         """Start a build on this builder.
 
@@ -332,10 +335,10 @@ class BuilderInteractor(object):
             value is None, or a Failure that contains an exception
             explaining what went wrong.
         """
-        behavior.logStartBuild(logger)
-        behavior.verifyBuildRequest(logger)
+        behaviour.logStartBuild(logger)
+        behaviour.verifyBuildRequest(logger)
 
-        # Set the build behavior depending on the provided build queue item.
+        # Set the build behaviour depending on the provided build queue item.
         if not builder.builderok:
             raise BuildDaemonError(
                 "Attempted to start a build on a known-bad builder.")
@@ -352,7 +355,7 @@ class BuilderInteractor(object):
             yield cls.resumeSlaveHost(vitals, slave)
             yield slave.echo("ping")
 
-        yield behavior.dispatchBuildToSlave(build_queue_item.id, logger)
+        yield behaviour.dispatchBuildToSlave(build_queue_item.id, logger)
 
     @classmethod
     def resetOrFail(cls, vitals, slave, builder, logger, exception):
@@ -411,22 +414,22 @@ class BuilderInteractor(object):
             logger.debug("No build candidates available for builder.")
             defer.returnValue(None)
 
-        new_behavior = cls.getBuildBehavior(candidate, builder, slave)
+        new_behaviour = cls.getBuildBehaviour(candidate, builder, slave)
         needed_bfjb = type(removeSecurityProxy(
-            IBuildFarmJobBehavior(candidate.specific_job)))
-        if not zope_isinstance(new_behavior, needed_bfjb):
+            IBuildFarmJobBehaviour(candidate.specific_build)))
+        if not zope_isinstance(new_behaviour, needed_bfjb):
             raise AssertionError(
-                "Inappropriate IBuildFarmJobBehavior: %r is not a %r" %
-                (new_behavior, needed_bfjb))
+                "Inappropriate IBuildFarmJobBehaviour: %r is not a %r" %
+                (new_behaviour, needed_bfjb))
         yield cls._startBuild(
-            candidate, vitals, builder, slave, new_behavior, logger)
+            candidate, vitals, builder, slave, new_behaviour, logger)
         defer.returnValue(candidate)
 
     @staticmethod
     def extractBuildStatus(slave_status):
         """Read build status name.
 
-        :param slave_status: build status dict from BuilderSlave.status_dict.
+        :param slave_status: build status dict from BuilderSlave.status.
         :return: the unqualified status name, e.g. "OK".
         """
         status_string = slave_status['build_status']
@@ -438,7 +441,7 @@ class BuilderInteractor(object):
     @classmethod
     @defer.inlineCallbacks
     def updateBuild(cls, vitals, slave, slave_status, builder_factory,
-                    behavior_factory):
+                    behaviour_factory):
         """Verify the current build job status.
 
         Perform the required actions for each state.
@@ -452,11 +455,6 @@ class BuilderInteractor(object):
         builder_status = slave_status['builder_status']
         if builder_status == 'BuilderStatus.BUILDING':
             # Build still building, collect the logtail.
-            if vitals.build_queue.job.status != JobStatus.RUNNING:
-                # XXX: This check should be removed once we confirm it's
-                # not regularly hit.
-                raise AssertionError(
-                    "Job not running when assigned and slave building.")
             vitals.build_queue.logtail = encoding.guess(
                 str(slave_status.get('logtail')))
             transaction.commit()
@@ -468,8 +466,8 @@ class BuilderInteractor(object):
         elif builder_status == 'BuilderStatus.WAITING':
             # Build has finished. Delegate handling to the build itself.
             builder = builder_factory[vitals.name]
-            behavior = behavior_factory(vitals.build_queue, builder, slave)
-            yield behavior.handleStatus(
+            behaviour = behaviour_factory(vitals.build_queue, builder, slave)
+            yield behaviour.handleStatus(
                 vitals.build_queue, cls.extractBuildStatus(slave_status),
                 slave_status)
         else:

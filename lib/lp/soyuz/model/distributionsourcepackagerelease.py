@@ -52,6 +52,22 @@ class DistributionSourcePackageRelease:
         self.distribution = distribution
         self.sourcepackagerelease = sourcepackagerelease
 
+    @staticmethod
+    def getPublishingHistories(distribution, sprs):
+        from lp.registry.model.distroseries import DistroSeries
+        res = Store.of(distribution).find(
+            SourcePackagePublishingHistory,
+            SourcePackagePublishingHistory.archiveID.is_in(
+                distribution.all_distro_archive_ids),
+            SourcePackagePublishingHistory.distroseriesID == DistroSeries.id,
+            DistroSeries.distribution == distribution,
+            SourcePackagePublishingHistory.sourcepackagereleaseID.is_in(
+                spr.id for spr in sprs))
+        return res.order_by(
+            Desc(SourcePackagePublishingHistory.sourcepackagereleaseID),
+            Desc(SourcePackagePublishingHistory.datecreated),
+            Desc(SourcePackagePublishingHistory.id))
+
     @property
     def sourcepackage(self):
         """See IDistributionSourcePackageRelease"""
@@ -72,18 +88,8 @@ class DistributionSourcePackageRelease:
     @property
     def publishing_history(self):
         """See IDistributionSourcePackageRelease."""
-        from lp.registry.model.distroseries import DistroSeries
-        res = Store.of(self.distribution).find(
-            SourcePackagePublishingHistory,
-            SourcePackagePublishingHistory.archiveID.is_in(
-                self.distribution.all_distro_archive_ids),
-            SourcePackagePublishingHistory.distroseriesID == DistroSeries.id,
-            DistroSeries.distribution == self.distribution,
-            SourcePackagePublishingHistory.sourcepackagerelease ==
-                self.sourcepackagerelease)
-        return res.order_by(
-            Desc(SourcePackagePublishingHistory.datecreated),
-            Desc(SourcePackagePublishingHistory.id))
+        return self.getPublishingHistories(
+            self.distribution, [self.sourcepackagerelease])
 
     @property
     def builds(self):

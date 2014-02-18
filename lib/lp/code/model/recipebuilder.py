@@ -5,7 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
-    'RecipeBuildBehavior',
+    'RecipeBuildBehaviour',
     ]
 
 import traceback
@@ -15,12 +15,14 @@ from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
 from lp.buildmaster.interfaces.builder import CannotBuild
-from lp.buildmaster.interfaces.buildfarmjobbehavior import (
-    IBuildFarmJobBehavior,
+from lp.buildmaster.interfaces.buildfarmjobbehaviour import (
+    IBuildFarmJobBehaviour,
     )
-from lp.buildmaster.model.buildfarmjobbehavior import BuildFarmJobBehaviorBase
+from lp.buildmaster.model.buildfarmjobbehaviour import (
+    BuildFarmJobBehaviourBase,
+    )
 from lp.code.interfaces.sourcepackagerecipebuild import (
-    ISourcePackageRecipeBuildJob,
+    ISourcePackageRecipeBuild,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.config import config
@@ -30,11 +32,11 @@ from lp.soyuz.adapters.archivedependencies import (
     )
 
 
-class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
+class RecipeBuildBehaviour(BuildFarmJobBehaviourBase):
     """How to build a recipe on the build farm."""
 
-    adapts(ISourcePackageRecipeBuildJob)
-    implements(IBuildFarmJobBehavior)
+    adapts(ISourcePackageRecipeBuild)
+    implements(IBuildFarmJobBehaviour)
 
     # The list of build status values for which email notifications are
     # allowed to be sent. It is up to each callback as to whether it will
@@ -42,10 +44,6 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
     # in this list.
     ALLOWED_STATUS_NOTIFICATIONS = [
         'OK', 'PACKAGEFAIL', 'DEPFAIL', 'CHROOTFAIL']
-
-    @property
-    def build(self):
-        return self.buildfarmjob.build
 
     @property
     def display_name(self):
@@ -57,7 +55,7 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
         return ret
 
     def logStartBuild(self, logger):
-        """See `IBuildFarmJobBehavior`."""
+        """See `IBuildFarmJobBehaviour`."""
         logger.info("startBuild(%s)", self.display_name)
 
     def _extraBuildArgs(self, distroarchseries, logger=None):
@@ -117,7 +115,7 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
         return args
 
     def dispatchBuildToSlave(self, build_queue_id, logger):
-        """See `IBuildFarmJobBehavior`."""
+        """See `IBuildFarmJobBehaviour`."""
 
         distroseries = self.build.distroseries
         # Start the binary package build on the slave builder. First

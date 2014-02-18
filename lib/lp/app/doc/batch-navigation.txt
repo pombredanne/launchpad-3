@@ -2,7 +2,7 @@
 Batch Navigation
 ================
 
-Most of the test for this behavior is in the lazr.batchnavigation package.
+Most of the test for this behaviour is in the lazr.batchnavigation package.
 
 This documents and tests the Launchpad-specific elements of its usage.
 

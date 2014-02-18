@@ -48,8 +48,8 @@ from lp.buildmaster.enums import (
     BuildFarmJobType,
     BuildStatus,
     )
-from lp.buildmaster.interfaces.buildfarmjobbehavior import (
-    IBuildFarmJobBehavior,
+from lp.buildmaster.interfaces.buildfarmjobbehaviour import (
+    IBuildFarmJobBehaviour,
     )
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
@@ -2095,8 +2095,8 @@ class TestUploadHandler(TestUploadProcessorBase):
 
         # Commit so the build cookie has the right ids.
         self.layer.txn.commit()
-        behavior = IBuildFarmJobBehavior(build.buildqueue_record.specific_job)
-        leaf_name = behavior.getUploadDirLeaf(behavior.getBuildCookie())
+        behaviour = IBuildFarmJobBehaviour(build)
+        leaf_name = behaviour.getUploadDirLeaf(behaviour.getBuildCookie())
         os.mkdir(os.path.join(self.incoming_folder, leaf_name))
         self.options.context = 'buildd'
         self.options.builds = True
@@ -2138,8 +2138,8 @@ class TestUploadHandler(TestUploadProcessorBase):
 
         # Commit so the build cookie has the right ids.
         self.layer.txn.commit()
-        behavior = IBuildFarmJobBehavior(build.buildqueue_record.specific_job)
-        leaf_name = behavior.getUploadDirLeaf(behavior.getBuildCookie())
+        behaviour = IBuildFarmJobBehaviour(build)
+        leaf_name = behaviour.getUploadDirLeaf(behaviour.getBuildCookie())
         upload_dir = self.queueUpload("bar_1.0-1_binary",
                 queue_entry=leaf_name)
         self.options.context = 'buildd'
@@ -2163,12 +2163,11 @@ class TestUploadHandler(TestUploadProcessorBase):
             distroseries=self.breezy, archive=archive,
             requester=archive.owner)
         self.assertEquals(archive.owner, build.requester)
-        bq = self.factory.makeSourcePackageRecipeBuildJob(recipe_build=build)
         self.switchToUploader()
         # Commit so the build cookie has the right ids.
         self.layer.txn.commit()
-        behavior = IBuildFarmJobBehavior(bq.specific_job)
-        leaf_name = behavior.getUploadDirLeaf(behavior.getBuildCookie())
+        behaviour = IBuildFarmJobBehaviour(build)
+        leaf_name = behaviour.getUploadDirLeaf(behaviour.getBuildCookie())
         relative_path = "~%s/%s/%s/%s" % (
             archive.owner.name, archive.name, self.breezy.distribution.name,
             self.breezy.name)
@@ -2211,11 +2210,10 @@ class TestUploadHandler(TestUploadProcessorBase):
         archive.require_virtualized = False
         build = self.factory.makeSourcePackageRecipeBuild(sourcename=u"bar",
             distroseries=self.breezy, archive=archive)
-        bq = self.factory.makeSourcePackageRecipeBuildJob(recipe_build=build)
         # Commit so the build cookie has the right ids.
         Store.of(build).flush()
-        behavior = IBuildFarmJobBehavior(bq.specific_job)
-        leaf_name = behavior.getUploadDirLeaf(behavior.getBuildCookie())
+        behaviour = IBuildFarmJobBehaviour(build)
+        leaf_name = behaviour.getUploadDirLeaf(behaviour.getBuildCookie())
         os.mkdir(os.path.join(self.incoming_folder, leaf_name))
         self.options.context = 'buildd'
         self.options.builds = True
@@ -2255,12 +2253,11 @@ class TestUploadHandler(TestUploadProcessorBase):
         archive.require_virtualized = False
         build = self.factory.makeSourcePackageRecipeBuild(sourcename=u"bar",
             distroseries=self.breezy, archive=archive)
-        bq = self.factory.makeSourcePackageRecipeBuildJob(recipe_build=build)
         self.switchToUploader()
         # Commit so the build cookie has the right ids.
         Store.of(build).flush()
-        behavior = IBuildFarmJobBehavior(bq.specific_job)
-        leaf_name = behavior.getUploadDirLeaf(behavior.getBuildCookie())
+        behaviour = IBuildFarmJobBehaviour(build)
+        leaf_name = behaviour.getUploadDirLeaf(behaviour.getBuildCookie())
         os.mkdir(os.path.join(self.incoming_folder, leaf_name))
         self.options.context = 'buildd'
         self.options.builds = True
@@ -2307,8 +2304,8 @@ class TestUploadHandler(TestUploadProcessorBase):
 
         # Commit so the build cookie has the right ids.
         self.layer.txn.commit()
-        behavior = IBuildFarmJobBehavior(build.buildqueue_record.specific_job)
-        leaf_name = behavior.getUploadDirLeaf(behavior.getBuildCookie())
+        behaviour = IBuildFarmJobBehaviour(build)
+        leaf_name = behaviour.getUploadDirLeaf(behaviour.getBuildCookie())
         upload_dir = self.queueUpload(
             "bar_1.0-1_binary", queue_entry=leaf_name)
         self.options.context = 'buildd'

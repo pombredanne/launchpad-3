@@ -9,7 +9,7 @@ import logging
 from StringIO import StringIO
 
 import dkim
-import dns.resolver
+import dkim.dnsplug
 
 from lp.services.features.testing import FeatureFixture
 from lp.services.identity.interfaces.account import AccountStatus
@@ -28,27 +28,37 @@ from lp.testing.layers import DatabaseFunctionalLayer
 # rsa -pubout'.  Not really the key for canonical.com ;-)
 sample_privkey = """\
 -----BEGIN RSA PRIVATE KEY-----
-MIIBOwIBAAJBANmBe10IgY+u7h3enWTukkqtUD5PR52Tb/mPfjC0QJTocVBq6Za/
-PlzfV+Py92VaCak19F4WrbVTK5Gg5tW220MCAwEAAQJAYFUKsD+uMlcFu1D3YNaR
-EGYGXjJ6w32jYGJ/P072M3yWOq2S1dvDthI3nRT8MFjZ1wHDAYHrSpfDNJ3v2fvZ
-cQIhAPgRPmVYn+TGd59asiqG1SZqh+p+CRYHW7B8BsicG5t3AiEA4HYNOohlgWan
-8tKgqLJgUdPFbaHZO1nDyBgvV8hvWZUCIQDDdCq6hYKuKeYUy8w3j7cgJq3ih922
-2qNWwdJCfCWQbwIgTY0cBvQnNe0067WQIpj2pG7pkHZR6qqZ9SE+AjNTHX0CIQCI
-Mgq55Y9MCq5wqzy141rnxrJxTwK9ABo3IAFMWEov3g==
+MIICWwIBAAKBgQC7ozYozzZuLYQi2DXSMtI3wWzWd7tAJfg+zwbOcNS4Aib6lo3R
+y6ansi+fOhHSwgeOrkBGKzgHi2T8iDPzpUFhAZuOFsQaVY6yHzhXwPFi/nKYtFxU
+X0DE4/GxkmNDgBOPqIpyEUQJvf5+byvb5mI85AS09em90EQGpf/a/O1Y0QIDAQAB
+AoGABTPEN6NvFeTrKfAmpdpE28jgFJ4jMecbl9ozjRuxuhxNKltsOSnVSAb3rQl2
+HwrEHN+V5pwiJItn1FyOXC3zvwmeKfX1J290+dleI4kNfXf97eYtJyOVVdRcreNA
+7qUROmFgN8sLOWsPgvYq3IRf+QxBXD/BPVEhuHBbCJBFq8UCQQDcJ6oDk2D2+8W2
+5f+3nrTBIrFtQBlApJF6q26zTOmwvOM6wrx+9wa4gAcVD8dbH2eklekTfLE3k7cU
+r1WHzN5HAkEA2jAuctbruPfmTP2KctjgeEokaOq7ym5aVwcbSlTHtJZLIOjvlPmu
+BhFFqZj0Yy3H1LhpYpGHrvG+uGp07h6kJwJAcIqeMKHAacGe+rZsmJM615hClxSz
+VAZMkCbeui3RMJX+muU9srHY76wS8sNUJ9LQCqTPtzSA62ZJqvtOf9NMtQJAZgVp
+cqE0D4U61n0nI5RtQVHJvJUlwf3fmBnmlNcXmkU8U+MXQ52L1aJ15Ft0yns5mSmx
+fTl3LEI1X53HlyAUuQJALHmpSB2Qq0DqmgcAGXkDsh3GRfMv91a7u99VDT/fe+J0
+2KXtp+K0MdWdAe/83icQ/WlYKIDz0Asm5FZcsTNapw==
 -----END RSA PRIVATE KEY-----
 """
 
 sample_pubkey = """\
 -----BEGIN PUBLIC KEY-----
-MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBANmBe10IgY+u7h3enWTukkqtUD5PR52T
-b/mPfjC0QJTocVBq6Za/PlzfV+Py92VaCak19F4WrbVTK5Gg5tW220MCAwEAAQ==
+MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC7ozYozzZuLYQi2DXSMtI3wWzW
+d7tAJfg+zwbOcNS4Aib6lo3Ry6ansi+fOhHSwgeOrkBGKzgHi2T8iDPzpUFhAZuO
+FsQaVY6yHzhXwPFi/nKYtFxUX0DE4/GxkmNDgBOPqIpyEUQJvf5+byvb5mI85AS0
+9em90EQGpf/a/O1Y0QIDAQAB
 -----END PUBLIC KEY-----
 """
 
 sample_dns = """\
 k=rsa; \
-p=MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBANmBe10IgY+u7h3enWTukkqtUD5PR52T\
-b/mPfjC0QJTocVBq6Za/PlzfV+Py92VaCak19F4WrbVTK5Gg5tW220MCAwEAAQ=="""
+p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC7ozYozzZuLYQi2DXSMtI3wWzW\
+d7tAJfg+zwbOcNS4Aib6lo3Ry6ansi+fOhHSwgeOrkBGKzgHi2T8iDPzpUFhAZuO\
+FsQaVY6yHzhXwPFi/nKYtFxUX0DE4/GxkmNDgBOPqIpyEUQJvf5+byvb5mI85AS0\
+9em90EQGpf/a/O1Y0QIDAQAB"""
 
 
 class TestDKIM(TestCaseWithFactory):
@@ -61,9 +71,9 @@ class TestDKIM(TestCaseWithFactory):
         TestCaseWithFactory.setUp(self, 'admin@canonical.com')
         self._log_output = StringIO()
         handler = logging.StreamHandler(self._log_output)
-        logger = logging.getLogger('mail-authenticate-dkim')
-        logger.addHandler(handler)
-        self.addCleanup(lambda: logger.removeHandler(handler))
+        self.logger = logging.getLogger('mail-authenticate-dkim')
+        self.logger.addHandler(handler)
+        self.addCleanup(lambda: self.logger.removeHandler(handler))
         self.monkeypatch_dns()
 
     def fake_signing(self, plain_message, canonicalize=None):
@@ -73,7 +83,7 @@ class TestDKIM(TestCaseWithFactory):
             selector='example',
             domain='canonical.com',
             privkey=sample_privkey,
-            debuglog=self._log_output,
+            logger=self.logger,
             canonicalize=canonicalize)
         assert dkim_line[-1] == '\n'
         return dkim_line + plain_message
@@ -85,13 +95,13 @@ class TestDKIM(TestCaseWithFactory):
             try:
                 return self._dns_responses[name]
             except KeyError:
-                raise dns.resolver.NXDOMAIN()
+                return None
 
-        orig_dnstxt = dkim.dnstxt
-        dkim.dnstxt = my_lookup
+        orig_get_txt = dkim.dnsplug._get_txt
+        dkim.dnsplug._get_txt = my_lookup
 
         def restore():
-            dkim.dnstxt = orig_dnstxt
+            dkim.dnsplug._get_txt = orig_get_txt
 
         self.addCleanup(restore)
 
@@ -111,7 +121,7 @@ class TestDKIM(TestCaseWithFactory):
             key = 'abcdefg'
         else:
             raise ValueError(response_type)
-        self._dns_responses['example._domainkey.canonical.com.'] = key
+        self._dns_responses[u'example._domainkey.canonical.com.'] = key
 
     def get_dkim_log(self):
         return self._log_output.getvalue()
@@ -159,7 +169,8 @@ Why isn't this fixed yet?""")
         self.assertWeaklyAuthenticated(principal, signed_message)
         self.assertEqual(principal.person.preferredemail.email,
             'foo.bar@canonical.com')
-        self.assertDkimLogContains('unexpected error in DKIM verification')
+        self.assertDkimLogContains(
+            "DKIM error: KeyFormatError('incomplete public key:")
 
     def test_dkim_garbage_pubkey(self):
         signed_message = self.fake_signing(self.makeMessageText())
@@ -169,7 +180,7 @@ Why isn't this fixed yet?""")
         self.assertWeaklyAuthenticated(principal, signed_message)
         self.assertEqual(principal.person.preferredemail.email,
             'foo.bar@canonical.com')
-        self.assertDkimLogContains('invalid format in _domainkey txt record')
+        self.assertDkimLogContains("DKIM error: KeyFormatError(InvalidTagSpec")
 
     def test_dkim_disabled(self):
         """With disabling flag set, mail isn't trusted."""

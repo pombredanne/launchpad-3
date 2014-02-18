@@ -586,6 +586,23 @@
       provides="lp.services.webapp.interfaces.IPrimaryContext"
       factory="lp.code.browser.codereviewcomment.CodeReviewCommentPrimaryContext"/>
 
+  <!-- CodeReviewInlineComment -->
+
+  <class class="lp.code.model.codereviewinlinecomment.CodeReviewInlineComment">
+    <allow interface="lp.code.interfaces.codereviewinlinecomment.ICodeReviewInlineComment"/>
+  </class>
+
+  <!-- CodeReviewInlineCommentSet -->
+
+  <securedutility
+      class="lp.code.model.codereviewinlinecomment.CodeReviewInlineCommentSet"
+      provides="lp.code.interfaces.codereviewinlinecomment.ICodeReviewInlineCommentSet">
+    <allow interface="lp.code.interfaces.codereviewinlinecomment.ICodeReviewInlineCommentSet"/>
+  </securedutility>
+  <class class="lp.code.model.codereviewinlinecomment.CodeReviewInlineCommentSet">
+    <allow interface="lp.code.interfaces.codereviewinlinecomment.ICodeReviewInlineCommentSet"/>
+  </class>
+
   <!-- hierarchy -->
 
   <class class="lp.code.model.branchjob.BranchJob">
@@ -845,18 +862,7 @@
     <allow interface="lp.buildmaster.interfaces.buildfarmjob.ISpecificBuildFarmJobSource"/>
   </securedutility>
 
-  <class
-     class="lp.code.model.sourcepackagerecipebuild.SourcePackageRecipeBuildJob">
-    <allow interface="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuildJob"/>
-  </class>
-
-  <securedutility
-     component="lp.code.model.sourcepackagerecipebuild.SourcePackageRecipeBuildJob"
-     provides="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuildJobSource">
-    <allow interface="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuildJobSource"/>
-  </securedutility>
-
-  <adapter factory="lp.code.model.recipebuilder.RecipeBuildBehavior"
+  <adapter factory="lp.code.model.recipebuilder.RecipeBuildBehaviour"
            permission="zope.Public" />
 
   <!-- SourcePackageRecipeData -->
@@ -900,10 +906,6 @@
   <subscriber
     for="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe zope.lifecycleevent.interfaces.IObjectModifiedEvent"
     handler="lp.code.model.sourcepackagerecipe.recipe_modified"/>
-
-  <utility component="lp.code.model.sourcepackagerecipebuild.SourcePackageRecipeBuildJob"
-        name="RECIPEBRANCHBUILD"
-        provides="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJob"/>
 
   <webservice:register module="lp.code.interfaces.webservice" />
 

@@ -200,6 +200,15 @@ class TestBugTaskStatusTransitionForReporter(TestCaseWithFactory):
                 BugTaskStatus.CONFIRMED, self.reporter)
             self.assertEqual(self.task.status, BugTaskStatus.CONFIRMED)
 
+    def test_reporter_still_cannot_set_restricted_status(self):
+        # The bug reporter can't transition away from Fix Released to a
+        # status that they couldn't otherwise set.
+        removeSecurityProxy(self.task)._status = BugTaskStatus.FIXRELEASED
+        self.assertEqual(
+            self.task.canTransitionToStatus(
+                BugTaskStatus.WONTFIX, self.reporter),
+            False)
+
     def test_reporter_canTransitionToStatus(self):
         # The bug reporter can transition away from Fix Released, so
         # canTransitionToStatus should always return True.
