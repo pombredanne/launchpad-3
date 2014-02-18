@@ -28,6 +28,7 @@ class UbuntuMaintenance(object):
         "armel",
         "armhf",
         "arm64",
+        "ppc64el",
         ]
 
     # what defines the seeds is documented in wiki.ubuntu.com/SeedManagement
