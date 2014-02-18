@@ -6,37 +6,35 @@
 __metaclass__ = type
 
 import os
-from simplejson import dumps
 from urllib import quote
 
 from BeautifulSoup import BeautifulSoup
-from storm.store import Store
-from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
-from zope.traversing.browser import absoluteURL
-
 from lazr.restful.interfaces import (
     IJSONRequestCache,
     IWebServiceClientRequest,
     )
+from simplejson import dumps
+from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
+from zope.traversing.browser import absoluteURL
 
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.testing.pages import find_tag_by_id
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    )
 from lp.answers.interfaces.questioncollection import IQuestionSet
 from lp.app.enums import ServiceUsage
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.webapp import canonical_url
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import (
     login_person,
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.testing.matchers import BrowsesWithQueryLimit
+from lp.testing.pages import find_tag_by_id
 from lp.testing.sampledata import ADMIN_EMAIL
 from lp.testing.views import (
     create_initialized_view,
@@ -74,12 +72,7 @@ class TestSearchQuestionsView(TestCaseWithFactory):
         removeSecurityProxy(distro).official_answers = True
         dsp = self.factory.makeDistributionSourcePackage(
             distribution=distro)
-        questions = []
-        for i in range(0, 5):
-            questions.append(self.factory.makeQuestion(
-                target=dsp, owner=owner))
-        # Empty the cache.
-        Store.of(questions[0]).invalidate()
+        [self.factory.makeQuestion(target=dsp, owner=owner) for i in range(5)]
         browses_under_limit = BrowsesWithQueryLimit(
             31, owner, view_name="+questions")
         self.assertThat(dsp, browses_under_limit)
@@ -127,7 +120,7 @@ class TestSearchQuestionsViewCanConfigureAnswers(TestCaseWithFactory):
 
 
 class TestSearchQuestionsViewTemplate(TestCaseWithFactory):
-    """Test the behavior of SearchQuestionsView.template"""
+    """Test the behaviour of SearchQuestionsView.template"""
 
     layer = DatabaseFunctionalLayer
 
@@ -187,7 +180,7 @@ class TestSearchQuestionsViewTemplate(TestCaseWithFactory):
 
 
 class TestSearchQuestionsViewUnknown(TestCaseWithFactory):
-    """Test the behavior of SearchQuestionsView unknown support."""
+    """Test the behaviour of SearchQuestionsView unknown support."""
 
     layer = DatabaseFunctionalLayer
 

@@ -41,11 +41,22 @@
       </div>
     </metal:widgets>
 
-    <p metal:fill-slot="extra_bottom" id="set-up-a-mailing-list">
+    <div metal:fill-slot="extra_bottom">
+    <p id="set-up-a-mailing-list">
       If you <a href="+mailinglist">set up a mailing list for this
       team</a>, you can use the mailing list as the team contact
       address.
     </p>
+
+    <p id="email-warning" class="block-sprite large-warning">
+        E-mail sent to a mailing list or external contact address may
+        be publicly accessible.<br/>If this team is subscribed to private
+        bug or branches, private information may be disclosed.<br/>
+        The safest option to avoid leaking private information is to
+        send notifications to each member individually.
+    </p>
+    </div>
+
   </div>
 
 </div>

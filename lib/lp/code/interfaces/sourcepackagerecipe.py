@@ -1,7 +1,5 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=E0211,E0213,F0401
 
 """Interface of the `SourcePackageRecipe` content type."""
 
@@ -52,7 +50,7 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.app.validators.name import name_validator
 from lp.code.interfaces.branch import IBranch
 from lp.registry.interfaces.distroseries import IDistroSeries
@@ -159,6 +157,10 @@ class ISourcePackageRecipeView(Interface):
         :param pocket: the pocket that should be targeted.
         :raises: various specific upload errors if the requestor is not
             able to upload to the archive.
+        """
+
+    def containsUnbuildableSeries(archive):
+        """Does the recipe contain series that can not be built into.
         """
 
     @export_write_operation()

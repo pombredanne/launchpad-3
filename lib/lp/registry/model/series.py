@@ -47,11 +47,6 @@ class SeriesMixin(HasDriversMixin):
         return self.parent.bug_supervisor
 
     @property
-    def security_contact(self):
-        """See `ISeriesMixin`."""
-        return self.parent.security_contact
-
-    @property
     def drivers(self):
         """See `IHasDrivers`."""
         drivers = set()

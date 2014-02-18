@@ -10,21 +10,21 @@ import unittest
 
 from zope.component import getUtility
 
-from canonical.launchpad.ftests import (
-    ANONYMOUS,
-    login,
-    )
-from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite,
-    setUp,
-    tearDown,
-    )
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.projectgroup import IProjectGroupSet
 from lp.services.mail.tests.test_doc import ProcessMailLayer
 from lp.services.testing import build_test_suite
+from lp.testing import (
+    ANONYMOUS,
+    login,
+    )
+from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.systemdocs import (
+    LayeredDocFileSuite,
+    setUp,
+    tearDown,
+    )
 
 
 here = os.path.dirname(os.path.realpath(__file__))
@@ -87,10 +87,13 @@ def create_interface_test_suite(test_file, targets):
 
     suite = unittest.TestSuite()
     for name, setup_func in targets:
+        test_path = os.path.join(os.path.pardir, 'doc', test_file)
+        id_ext = "%s-%s" % (test_file, name)
         test = LayeredDocFileSuite(
-            os.path.join(os.path.pardir, 'doc', test_file),
-                    setUp=setup_func, tearDown=tearDown,
-                    layer=DatabaseFunctionalLayer)
+            test_path,
+            id_extensions=[id_ext],
+            setUp=setup_func, tearDown=tearDown,
+            layer=DatabaseFunctionalLayer)
         suite.addTest(test)
     return suite
 

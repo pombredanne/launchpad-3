@@ -1,9 +1,7 @@
 #!/usr/bin/python -S
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=W0403
 
 """List the stacked branches in Launchpad.
 
@@ -27,20 +25,19 @@ __metaclass__ = type
 
 import _pythonpath
 
-from storm.locals import Not
-from zope.component import getUtility
+from optparse import OptionParser
 
-from canonical.launchpad.scripts import execute_zcml_for_scripts
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
+from storm.locals import Not
+
+from lp.services.database.interfaces import ISlaveStore
+from lp.services.scripts import execute_zcml_for_scripts
 
 
 def get_stacked_branches():
     """Iterate over all branches that, according to the db, are stacked."""
     # Avoiding circular import.
     from lp.code.model.branch import Branch
-    store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
-    return store.find(Branch, Not(Branch.stacked_on == None))
+    return ISlaveStore(Branch).find(Branch, Not(Branch.stacked_on == None))
 
 
 def main():
@@ -48,6 +45,10 @@ def main():
 
     See the module docstring for more information.
     """
+    parser = OptionParser(
+        description="List the stacked branches in Launchpad.")
+    parser.parse_args()
+
     execute_zcml_for_scripts()
     for db_branch in get_stacked_branches():
         stacked_on = db_branch.stacked_on

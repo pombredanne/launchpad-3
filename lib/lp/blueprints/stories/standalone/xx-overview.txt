@@ -81,7 +81,8 @@ Let's target an existing Mozilla Firefox blueprint to the 1.0 series:
     >>> print extract_text(find_tag_by_id(main, 'series-goal'))
     Series goal: Accepted for 1.0...
 
-We'll also target the blueprint to a milestone. First we'll create a milestone:
+We'll also target the blueprint to a milestone.  First we'll create a
+milestone:
 
     >>> browser.open('http://launchpad.dev/firefox/1.0')
     >>> browser.getLink('Create milestone').click()
@@ -140,7 +141,7 @@ blueprints attached to Ubuntu Linux by following the "Blueprints" tab:
     >>> print extract_text(main).encode('ascii', 'backslashreplace')
     Blueprints for Ubuntu...
     Priority ...Blueprint        ...Design    ...Delivery...
-    Undefined...media-integrity-check...Discussion...Unknown
+    Undefined...media-integrity-check...Discussion...Unknown...
 
 
 Viewing blueprints targeted to a distribution series
@@ -182,7 +183,8 @@ Let's target an existing Ubuntu blueprint to the Grumpy series:
     >>> print extract_text(find_tag_by_id(browser.contents, 'series-goal'))
     Series goal: Accepted for grumpy...
 
-We'll also target the blueprint to a milestone. First we'll create a milestone:
+We'll also target the blueprint to a milestone.  First we'll create a
+milestone:
 
     >>> browser.open('http://launchpad.dev/ubuntu/grumpy/')
     >>> browser.getLink('Create milestone').click()

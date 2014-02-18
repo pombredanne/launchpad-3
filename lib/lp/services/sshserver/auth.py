@@ -1,12 +1,10 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=W0231
-
 """Custom authentication for the SSH server.
 
 Launchpad's SSH server authenticates users against a XML-RPC service (see
-`canonical.launchpad.interfaces.authserver.IAuthServer` and
+`lp.services.authserver.interfaces.IAuthServer` and
 `PublicKeyFromLaunchpadChecker`) and provides richer error messages in the
 case of failed authentication (see `SSHUserAuthServer`).
 """
@@ -40,11 +38,11 @@ from twisted.python import failure
 from zope.event import notify
 from zope.interface import implements
 
-from canonical.launchpad.xmlrpc import faults
 from lp.services.sshserver import events
 from lp.services.sshserver.session import PatchedSSHSession
 from lp.services.sshserver.sftp import FileTransferServer
 from lp.services.twistedsupport.xmlrpc import trap_fault
+from lp.xmlrpc import faults
 
 
 class LaunchpadAvatar(avatar.ConchUser):
@@ -132,7 +130,7 @@ class UserDetailsMind:
 
 
 class SSHUserAuthServer(userauth.SSHUserAuthServer):
-    """Subclass of Conch's SSHUserAuthServer to customize various behaviors.
+    """Subclass of Conch's SSHUserAuthServer to customize various behaviours.
 
     There are two main differences:
 

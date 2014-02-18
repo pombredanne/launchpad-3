@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Handle incoming Bugs email."""
@@ -18,13 +18,6 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
 
-from canonical.launchpad.helpers import get_email_template
-from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
-from canonical.launchpad.mailnotification import (
-    MailWrapper,
-    send_process_error_notification,
-    )
-from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.bugs.interfaces.bug import (
     CreateBugParams,
     CreatedBugWithNoBugTasksError,
@@ -35,8 +28,10 @@ from lp.bugs.interfaces.bugattachment import (
     )
 from lp.bugs.interfaces.bugmessage import IBugMessageSet
 from lp.bugs.mail.commands import BugEmailCommands
+from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
 from lp.services.mail.helpers import (
     ensure_not_weakly_authenticated,
+    get_email_template,
     get_error_message,
     get_main_body,
     guess_bugtask,
@@ -52,8 +47,11 @@ from lp.services.mail.interfaces import (
     IBugTaskEmailCommand,
     IMailHandler,
     )
+from lp.services.mail.mailwrapper import MailWrapper
+from lp.services.mail.notification import send_process_error_notification
 from lp.services.mail.sendmail import simple_sendmail
 from lp.services.messages.interfaces.message import IMessageSet
+from lp.services.webapp.interfaces import ILaunchBag
 
 
 error_templates = os.path.join(os.path.dirname(__file__), 'errortemplates')
@@ -190,9 +188,10 @@ class MaloneHandler:
         content = get_main_body(signed_msg)
         if content is None:
             return []
-        return [BugEmailCommands.get(name=name, string_args=args) for
-                name, args in parse_commands(content,
-                                             BugEmailCommands.names())]
+        return [
+            BugEmailCommands.get(name=name, string_args=args) for
+            name, args in parse_commands(
+                content, BugEmailCommands.parsingParameters())]
 
     def extractAndAuthenticateCommands(self, signed_msg, to_addr):
         """Extract commands and handle special destinations.
@@ -228,9 +227,7 @@ class MaloneHandler:
         # We send a different failure message for attempts to create a new
         # bug.
         elif to_user.lower() == 'new':
-            ensure_not_weakly_authenticated(signed_msg, CONTEXT,
-                'unauthenticated-bug-creation.txt',
-                error_templates=error_templates)
+            ensure_not_weakly_authenticated(signed_msg, CONTEXT)
         elif len(commands) > 0:
             ensure_not_weakly_authenticated(signed_msg, CONTEXT)
         if to_user.lower() == 'new':
@@ -275,8 +272,7 @@ class MaloneHandler:
                         bugtask = None
                         bugtask_event = None
                         # Get or start building a new bug.
-                        bug, bug_event = command.execute(
-                            signed_msg, filealias)
+                        bug, bug_event = command.execute(signed_msg, filealias)
                         if add_comment_to_bug:
                             message = self.appendBugComment(
                                 bug, signed_msg, filealias)
@@ -303,7 +299,7 @@ class MaloneHandler:
                         bugtask, bugtask_event = command.execute(
                             bugtask, bugtask_event)
 
-                except EmailProcessingError, error:
+                except EmailProcessingError as error:
                     processing_errors.append((error, command))
                     if error.stop_processing:
                         commands = []
@@ -322,7 +318,7 @@ class MaloneHandler:
             self.notify_bug_event(bug_event)
             self.notify_bugtask_event(bugtask_event, bug_event)
 
-        except IncomingEmailError, error:
+        except IncomingEmailError as error:
             send_process_error_notification(
                 str(getUtility(ILaunchBag).user.preferredemail.email),
                 'Submit Request Failure',
@@ -333,7 +329,7 @@ class MaloneHandler:
     def sendHelpEmail(self, to_address):
         """Send usage help to `to_address`."""
         # Get the help text (formatted as MoinMoin markup)
-        help_text = get_email_template('help.txt')
+        help_text = get_email_template('help.txt', app='bugs')
         help_text = reformat_wiki_text(help_text)
         # Wrap text
         mailwrapper = MailWrapper(width=72)
@@ -402,24 +398,19 @@ class MaloneHandler:
         """Append the message text to the bug comments."""
         messageset = getUtility(IMessageSet)
         message = messageset.fromEmail(
-            signed_msg.as_string(),
-            owner=getUtility(ILaunchBag).user,
-            filealias=filealias,
-            parsed_message=signed_msg,
-            fallback_parent=bug.initial_message)
-        # If the new message's parent is linked to
-        # a bug watch we also link this message to
-        # that bug watch.
-        bug_message_set = getUtility(IBugMessageSet)
-        parent_bug_message = (
-            bug_message_set.getByBugAndMessage(bug, message.parent))
+            signed_msg.as_string(), owner=getUtility(ILaunchBag).user,
+            filealias=filealias, parsed_message=signed_msg,
+            fallback_parent=bug.initial_message, restricted=bug.private)
+        # If the new message's parent is linked to a bug watch we also link
+        # this message to that bug watch.
+        parent_bug_message = getUtility(IBugMessageSet).getByBugAndMessage(
+            bug, message.parent)
         if (parent_bug_message is not None and
             parent_bug_message.bugwatch):
             bug_watch = parent_bug_message.bugwatch
         else:
             bug_watch = None
-        bugmessage = bug.linkMessage(
-            message, bug_watch)
+        bugmessage = bug.linkMessage(message, bug_watch)
         notify(ObjectCreatedEvent(bugmessage))
         return message
 

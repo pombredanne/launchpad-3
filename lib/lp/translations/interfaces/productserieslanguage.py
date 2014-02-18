@@ -1,8 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0213
-
 from lazr.restful.fields import Reference
 from zope.interface import Interface
 from zope.schema import (
@@ -10,7 +8,7 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.translations.interfaces.pofile import IPOFile
 from lp.translations.interfaces.rosettastats import IRosettaStats
 from lp.translations.interfaces.translatedlanguage import ITranslatedLanguage

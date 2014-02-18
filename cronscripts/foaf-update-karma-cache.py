@@ -3,18 +3,17 @@
 # Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=C0103,W0403
-
 import _pythonpath
+
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.database.sqlbase import (
+from lp.app.errors import NotFoundError
+from lp.registry.interfaces.karma import IKarmaCacheManager
+from lp.services.config import config
+from lp.services.database.sqlbase import (
     cursor,
     flush_database_updates,
     )
-from lp.app.errors import NotFoundError
-from lp.registry.interfaces.karma import IKarmaCacheManager
 from lp.services.scripts.base import LaunchpadCronScript
 
 

@@ -1,17 +1,16 @@
-<div xmlns:tal="http://xml.zope.org/namespaces/tal"
+<tal:block xmlns:tal="http://xml.zope.org/namespaces/tal"
      xmlns:metal="http://xml.zope.org/namespaces/metal"
-     xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-     class="portletBody">
-  <div class="section" tal:define="tags_cloud_data view/tags_cloud_data">
+     xmlns:i18n="http://xml.zope.org/namespaces/i18n">
+  <tal:block define="tags_cloud_data view/tags_cloud_data">
     <h2>Tags</h2>
-    <ul class="tag-list">
+    <ul class="data-list">
       <li tal:repeat="tag_info tags_cloud_data">
         <span tal:content="tag_info/count"
-              class="tag-count" />
+              class="count" />
         <a tal:content="tag_info/tag"
          tal:attributes="href tag_info/url" />
       </li>
     </ul>
-  </div>
-</div>
+  </tal:block>
+</tal:block>
 

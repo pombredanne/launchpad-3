@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Notification for uploads and copies."""
@@ -17,9 +17,6 @@ import os
 
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.launchpad.helpers import get_email_template
-from canonical.launchpad.webapp import canonical_url
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archivepublisher.utils import get_ppa_reference
 from lp.archiveuploader.changesfile import ChangesFile
@@ -29,15 +26,19 @@ from lp.archiveuploader.utils import (
     )
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.config import config
 from lp.services.encoding import (
     ascii_smash,
     guess as guess_encoding,
     )
+from lp.services.mail.helpers import get_email_template
 from lp.services.mail.sendmail import (
     format_address,
     format_address_for_person,
     sendmail,
     )
+from lp.services.webapp import canonical_url
+from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 
 
 def reject_changes_file(blamer, changes_file_path, changes, archive,
@@ -52,9 +53,6 @@ def reject_changes_file(blamer, changes_file_path, changes, archive,
     :param reason: The reason for the rejection.
     """
     ignored, filename = os.path.split(changes_file_path)
-    subject = '%s rejected' % filename
-    if archive and archive.is_ppa:
-        subject = '[PPA %s] %s' % (get_ppa_reference(archive), subject)
     information = {
         'SUMMARY': reason,
         'CHANGESFILE': '',
@@ -63,8 +61,13 @@ def reject_changes_file(blamer, changes_file_path, changes, archive,
         'MAINTAINER': '',
         'SIGNER': '',
         'ORIGIN': '',
+        'ARCHIVE_URL': '',
         'USERS_ADDRESS': config.launchpad.users_address,
     }
+    subject = '%s rejected' % filename
+    if archive and archive.is_ppa:
+        subject = '[PPA %s] %s' % (get_ppa_reference(archive), subject)
+        information['ARCHIVE_URL'] = '\n%s' % canonical_url(archive)
     template = get_template(archive, 'rejected')
     body = template % information
     to_addrs = get_upload_notification_recipients(
@@ -88,7 +91,7 @@ def get_template(archive, action):
     if archive.is_ppa:
         template_name = 'ppa-%s' % template_name
     template_name += '.txt'
-    return get_email_template(template_name)
+    return get_email_template(template_name, app='soyuz')
 
 
 ACTION_DESCRIPTIONS = {
@@ -203,10 +206,7 @@ def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
         if not recipients:
             recipients = [default_recipient]
         debug(logger, "Sending rejection email.")
-        if summary_text is None:
-            summarystring = 'Rejected by archive administrator.'
-        else:
-            summarystring = summary_text
+        summarystring = summary_text
     else:
         summary = build_summary(spr, files, action)
         if summary_text:
@@ -245,8 +245,7 @@ def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
         and not archive.is_ppa
         and pocket != PackagePublishingPocket.BACKPORTS
         and not (pocket == PackagePublishingPocket.SECURITY and spr is None)
-        and not is_auto_sync_upload(
-            spr, bprs, pocket, from_addr)):
+        and not is_auto_sync_upload(spr, bprs, pocket, from_addr)):
         name = None
         bcc_addr = None
         if spr:
@@ -282,6 +281,7 @@ def assemble_body(blamer, spr, bprs, archive, distroseries, summary, changes,
         'ORIGIN': '',
         'SIGNER': '',
         'SPR_URL': '',
+        'ARCHIVE_URL': '\n%s' % canonical_url(archive),
         'USERS_ADDRESS': config.launchpad.users_address,
         }
     if spr:
@@ -393,6 +393,8 @@ def send_mail(
         debug(logger, "  Bcc: %s" % extra_headers['Bcc'])
     debug(logger, "  Body:")
     for line in mail_text.splitlines():
+        if isinstance(line, str):
+            line = line.decode('utf-8', 'replace')
         debug(logger, line)
 
     if not dry_run:
@@ -460,7 +462,8 @@ def is_valid_uploader(person, distribution):
     if person is None:
         return None
     else:
-        return person.isUploader(distribution)
+        return not getUtility(IArchivePermissionSet).componentsForUploader(
+            distribution.main_archive, person).is_empty()
 
 
 def get_upload_notification_recipients(blamer, archive, distroseries,
@@ -468,17 +471,14 @@ def get_upload_notification_recipients(blamer, archive, distroseries,
                                        bprs=None):
     """Return a list of recipients for notification emails."""
     debug(logger, "Building recipients list.")
-    candidate_recipients = [
-        blamer,
-        ]
+    candidate_recipients = [blamer]
     info = fetch_information(spr, bprs, changes)
 
     changer = email_to_person(info['changedby'])
     maintainer = email_to_person(info['maintainer'])
 
-    if blamer is None:
-        debug(
-            logger, "Changes file is unsigned; adding changer as recipient.")
+    if blamer is None and not archive.is_copy:
+        debug(logger, "Changes file is unsigned; adding changer as recipient.")
         candidate_recipients.append(changer)
 
     if archive.is_ppa:
@@ -488,6 +488,10 @@ def get_upload_notification_recipients(blamer, archive, distroseries,
         candidate_recipients.extend([
             permission.person
             for permission in archive.getUploadersForComponent()])
+    elif archive.is_copy:
+        # For copy archives, notifying anyone else will probably only
+        # confuse them.
+        pass
     else:
         # If this is not a PPA, we also consider maintainer and changed-by.
         if blamer is not None:
@@ -545,8 +549,7 @@ def build_uploaded_files_list(spr, builds, customfiles, logger):
 
     if customfiles:
         files.extend(
-            [(file.libraryfilealias.filename, '', '')
-            for file in customfiles])
+            [(file.libraryfilealias.filename, '', '') for file in customfiles])
 
     return files
 
@@ -578,8 +581,7 @@ def email_to_person(fullemail):
     try:
         # The 2nd arg to s_f_m() doesn't matter as it won't fail since every-
         # thing will have already parsed at this point.
-        (rfc822, rfc2047, name, email) = safe_fix_maintainer(
-            fullemail, "email")
+        rfc822, rfc2047, name, email = safe_fix_maintainer(fullemail, "email")
         return getUtility(IPersonSet).getByEmail(email)
     except ParseMaintError:
         return None
@@ -599,12 +601,11 @@ def is_auto_sync_upload(spr, bprs, pocket, changed_by_email):
     the security pocket. The Changed-By field is also the Katie
     user (archive@ubuntu.com).
     """
-    katie = getUtility(ILaunchpadCelebrities).katie
     changed_by = email_to_person(changed_by_email)
     return (
         spr and
         not bprs and
-        changed_by == katie and
+        changed_by == getUtility(ILaunchpadCelebrities).katie and
         pocket != PackagePublishingPocket.SECURITY)
 
 

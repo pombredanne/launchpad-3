@@ -10,7 +10,6 @@ named like cc.txt (where cc is the two letter country code),
 containing the archive mirrors for that country.
 """
 
-# pylint: disable-msg=W0403
 import _pythonpath
 
 import os
@@ -20,9 +19,13 @@ import tempfile
 from zope.component import getUtility
 
 from lp.registry.interfaces.distributionmirror import (
-    IDistributionMirrorSet, MirrorContent)
+    IDistributionMirrorSet,
+    MirrorContent,
+    )
 from lp.services.scripts.base import (
-    LaunchpadScript, LaunchpadScriptFailure)
+    LaunchpadScript,
+    LaunchpadScriptFailure,
+    )
 from lp.services.worlddata.interfaces.country import ICountrySet
 
 

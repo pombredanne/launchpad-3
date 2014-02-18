@@ -17,9 +17,6 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import isinstance as zope_isinstance
 
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
-from canonical.launchpad.webapp.sorting import sorted_version_numbers
 from lp.code.errors import NoLinkedBranch
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchtarget import (
@@ -30,6 +27,9 @@ from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.code.interfaces.linkedbranch import get_linked_to_branch
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.interfaces import ICanonicalUrlData
+from lp.services.webapp.sorting import sorted_version_numbers
 
 
 def branch_to_target(branch):

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -20,29 +20,22 @@ from storm.store import EmptyResultSet
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import (
+from lp.services.database.bulk import load
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.interfaces import IStore
+from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
-    )
-from canonical.launchpad.database.librarian import (
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
+from lp.services.librarian.model import (
     LibraryFileAlias,
     LibraryFileContent,
     )
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
-from canonical.librarian.utils import copy_and_close
-from lp.services.database.bulk import load
+from lp.services.librarian.utils import copy_and_close
 from lp.soyuz.enums import PackageDiffStatus
 from lp.soyuz.interfaces.packagediff import (
     IPackageDiff,
@@ -69,7 +62,6 @@ def perform_deb_diff(tmp_dir, out_filename, from_files, to_files):
         with the second package.
     :type to_files: ``list``
     """
-    compressed_bytes = -1
     [from_dsc] = [name for name in from_files
                   if name.lower().endswith('.dsc')]
     [to_dsc] = [name for name in to_files
@@ -114,7 +106,7 @@ class PackageDiff(SQLBase):
     date_requested = UtcDateTimeCol(notNull=False, default=UTC_NOW)
 
     requester = ForeignKey(
-        dbName='requester', foreignKey='Person', notNull=True)
+        dbName='requester', foreignKey='Person', notNull=False)
 
     from_source = ForeignKey(
         dbName="from_source", foreignKey='SourcePackageRelease', notNull=True)
@@ -148,12 +140,13 @@ class PackageDiff(SQLBase):
     @property
     def private(self):
         """See `IPackageDiff`."""
-        return self.to_source.upload_archive.private
+        to_source = self.to_source
+        archives = [to_source.upload_archive] + to_source.published_archives
+        return all(archive.private for archive in archives)
 
     def _countDeletedLFAs(self):
         """How many files associated with either source package have been
         deleted from the librarian?"""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         query = """
             SELECT COUNT(lfa.id)
             FROM
@@ -165,7 +158,7 @@ class PackageDiff(SQLBase):
                 AND sprf.libraryfile = lfa.id
                 AND lfa.content IS NULL
             """ % sqlvalues((self.from_source.id, self.to_source.id))
-        result = store.execute(query).get_one()
+        result = IStore(LibraryFileAlias).execute(query).get_one()
         return (0 if result is None else result[0])
 
     def performDiff(self):
@@ -190,9 +183,6 @@ class PackageDiff(SQLBase):
 
             # Keep track of the files belonging to the respective packages.
             downloaded = dict(zip(directions, ([], [])))
-
-            # Please note that packages may have files in common.
-            files_seen = []
 
             # Make it easy to iterate over packages.
             packages = dict(
@@ -274,13 +264,6 @@ class PackageDiffSet:
         """See `IPackageDiffSet`."""
         return PackageDiff.get(diff_id)
 
-    def getPendingDiffs(self, limit=None):
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        result = store.find(
-            PackageDiff, PackageDiff.status == PackageDiffStatus.PENDING)
-        result.order_by(PackageDiff.id)
-        return result.config(limit=limit)
-
     def getDiffsToReleases(self, sprs, preload_for_display=False):
         """See `IPackageDiffSet`."""
         from lp.registry.model.distribution import Distribution
@@ -288,22 +271,21 @@ class PackageDiffSet:
         from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
         if len(sprs) == 0:
             return EmptyResultSet()
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         spr_ids = [spr.id for spr in sprs]
-        result = store.find(
+        result = IStore(PackageDiff).find(
             PackageDiff, PackageDiff.to_sourceID.is_in(spr_ids))
         result.order_by(PackageDiff.to_sourceID,
                         Desc(PackageDiff.date_requested))
 
         def preload_hook(rows):
             lfas = load(LibraryFileAlias, (pd.diff_contentID for pd in rows))
-            lfcs = load(LibraryFileContent, (lfa.contentID for lfa in lfas))
+            load(LibraryFileContent, (lfa.contentID for lfa in lfas))
             sprs = load(
                 SourcePackageRelease,
                 itertools.chain.from_iterable(
                     (pd.from_sourceID, pd.to_sourceID) for pd in rows))
             archives = load(Archive, (spr.upload_archiveID for spr in sprs))
-            distros = load(Distribution, (a.distributionID for a in archives))
+            load(Distribution, (a.distributionID for a in archives))
 
         if preload_for_display:
             return DecoratedResultSet(result, pre_iter_hook=preload_hook)

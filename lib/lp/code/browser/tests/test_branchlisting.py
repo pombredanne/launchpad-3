@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for branch listing."""
@@ -20,15 +20,8 @@ from storm.expr import (
 from testtools.matchers import Not
 from zope.component import getUtility
 
-from canonical.launchpad.testing.pages import (
-    extract_text,
-    find_main_content,
-    find_tag_by_id,
-    )
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing import LaunchpadFunctionalLayer
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.app.enums import InformationType
+from lp.app.interfaces.services import IService
 from lp.code.browser.branchlisting import (
     BranchListingSort,
     BranchListingView,
@@ -36,21 +29,24 @@ from lp.code.browser.branchlisting import (
     PersonProductSubscribedBranchesView,
     SourcePackageBranchesView,
     )
-from lp.code.enums import BranchVisibilityRule
 from lp.code.model.branch import Branch
 from lp.code.model.seriessourcepackagebranch import (
     SeriesSourcePackageBranchSet,
     )
-from lp.registry.interfaces.person import (
-    IPersonSet,
+from lp.registry.enums import (
     PersonVisibility,
+    SharingPermission,
     )
+from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.personproduct import IPersonProductFactory
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.person import Owner
 from lp.registry.model.product import Product
 from lp.services.features.testing import FeatureFixture
+from lp.services.webapp import canonical_url
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
+    admin_logged_in,
     BrowserTestCase,
     login_person,
     normalize_whitespace,
@@ -60,10 +56,15 @@ from lp.testing import (
     time_counter,
     )
 from lp.testing.factory import remove_security_proxy_and_shout_at_engineer
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.testing.matchers import DocTestMatches
-from lp.testing.sampledata import (
-    ADMIN_EMAIL,
-    COMMERCIAL_ADMIN_EMAIL,
+from lp.testing.pages import (
+    extract_text,
+    find_main_content,
+    find_tag_by_id,
     )
 from lp.testing.views import (
     create_initialized_view,
@@ -144,7 +145,7 @@ class AjaxBatchNavigationMixin:
             find_tag_by_id(content, 'branches-table-listing'))
 
     def _test_ajax_batch_navigation_feature_flag(self, context, user=None):
-        # The Javascript to wire up the ajax batch navigation behavior is
+        # The Javascript to wire up the ajax batch navigation behaviour is
         # correctly hidden behind a feature flag.
         flags = {u"ajax.batch_navigator.enabled": u"true"}
         with FeatureFixture(flags):
@@ -249,7 +250,7 @@ class TestPersonOwnedBranchesView(TestCaseWithFactory,
         self._test_search_batch_request(self.barney, self.barney)
 
     def test_ajax_batch_navigation_feature_flag(self):
-        # The Javascript to wire up the ajax batch navigation behavior is
+        # The Javascript to wire up the ajax batch navigation behaviour is
         # correctly hidden behind a feature flag.
         self._test_ajax_batch_navigation_feature_flag(
             self.barney, self.barney)
@@ -263,9 +264,56 @@ class TestPersonOwnedBranchesView(TestCaseWithFactory,
         # The correct template is used for batch requests.
         self._test_batch_template(self.barney)
 
+    def test_proprietary_branch_for_series_user_has_artifact_grant(self):
+        # A user can be the owner of a branch which is the series
+        # branch of a proprietary product, and the user may only have
+        # an access grant for the branch but no policy grant for the
+        # product. In this case, the branch owner does get any information
+        #about the series.
+        product_owner = self.factory.makePerson()
+        product = self.factory.makeProduct(
+            owner=product_owner, information_type=InformationType.PROPRIETARY)
+        branch_owner = self.factory.makePerson()
+        sharing_service = getUtility(IService, 'sharing')
+        with person_logged_in(product_owner):
+            # The branch owner needs to have a policy grant at first
+            # so that they can create the branch.
+            sharing_service.sharePillarInformation(
+                product, branch_owner, product_owner,
+                {InformationType.PROPRIETARY: SharingPermission.ALL})
+            proprietary_branch = self.factory.makeProductBranch(
+                product, owner=branch_owner, name='special-branch',
+                information_type=InformationType.PROPRIETARY)
+            series = self.factory.makeProductSeries(
+                product=product, branch=proprietary_branch)
+            sharing_service.deletePillarGrantee(
+                product, branch_owner, product_owner)
+        # Admin help is needed: Product owners do not have the
+        # permission to create artifact grants for branches they
+        # do not own, and the branch owner does have the permission
+        # to issue grants related to the product.
+        with admin_logged_in():
+            sharing_service.ensureAccessGrants(
+                [branch_owner], product_owner, branches=[proprietary_branch])
 
-SIMPLIFIED_BRANCHES_MENU_FLAG = {
-    'code.simplified_branches_menu.enabled': 'on'}
+        with person_logged_in(branch_owner):
+            view = create_initialized_view(
+                branch_owner, name="+branches", rootsite='code',
+                principal=branch_owner)
+            self.assertIn(proprietary_branch, view.branches().batch)
+            # The product series related to the branch is not returned
+            # for the branch owner.
+            self.assertEqual(
+                [], view.branches().getProductSeries(proprietary_branch))
+
+        with person_logged_in(product_owner):
+            # The product series related to the branch is returned
+            # for the product owner.
+            view = create_initialized_view(
+                branch_owner, name="+branches", rootsite='code',
+                principal=branch_owner)
+            self.assertEqual(
+                [series], view.branches().getProductSeries(proprietary_branch))
 
 
 class TestSimplifiedPersonBranchesView(TestCaseWithFactory):
@@ -293,19 +341,16 @@ class TestSimplifiedPersonBranchesView(TestCaseWithFactory):
     def get_branch_list_page(self, target=None, page_name='+branches'):
         if target is None:
             target = self.default_target
-        with FeatureFixture(SIMPLIFIED_BRANCHES_MENU_FLAG):
-            with person_logged_in(self.user):
-                return create_initialized_view(
-                    target, page_name, rootsite='code',
-                    principal=self.user)()
+        with person_logged_in(self.user):
+            return create_initialized_view(
+                target, page_name, rootsite='code', principal=self.user)()
 
     def test_branch_list_h1(self):
         self.makeABranch()
         page = self.get_branch_list_page()
         h1_matcher = soupmatchers.HTMLContains(
             soupmatchers.Tag(
-                'Title', 'h1',
-                text='Bazaar branches owned by Barney'))
+                'Title', 'h1', text='Bazaar branches owned by Barney'))
         self.assertThat(page, h1_matcher)
 
     def test_branch_list_empty(self):
@@ -316,7 +361,6 @@ class TestSimplifiedPersonBranchesView(TestCaseWithFactory):
                 text='There are no branches related to Barney '
                      'in Launchpad today.'))
         self.assertThat(page, empty_message_matcher)
-        self.assertThat(page, Not(self.registered_branches_matcher))
 
     def test_branch_list_registered_link(self):
         self.makeABranch()
@@ -354,6 +398,19 @@ class TestSimplifiedPersonBranchesView(TestCaseWithFactory):
         self.makeABranch()
         page = self.get_branch_list_page(target=self.team)
         self.assertThat(page, Not(self.registered_branches_matcher))
+
+    def test_branch_list_recipes_link(self):
+        # The link to the source package recipes is always displayed.
+        page = self.get_branch_list_page()
+        recipes_matcher = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Source package recipes link', 'a',
+                text='Source package recipes',
+                attrs={'href': self.base_url + '/+recipes'}))
+        if IPerson.providedBy(self.default_target):
+            self.assertThat(page, recipes_matcher)
+        else:
+            self.assertThat(page, Not(recipes_matcher))
 
 
 class TestSimplifiedPersonProductBranchesView(
@@ -394,7 +451,6 @@ class TestSimplifiedPersonProductBranchesView(
                 text='There are no branches of Bambam owned by Barney '
                      'in Launchpad today.'))
         self.assertThat(page, empty_message_matcher)
-        self.assertThat(page, Not(self.registered_branches_matcher))
 
 
 class TestSourcePackageBranchesView(TestCaseWithFactory):
@@ -597,11 +653,33 @@ class TestProductSeriesTemplate(TestCaseWithFactory):
         # series on the main site, not the code site.
         branch = self.factory.makeProductBranch()
         series = self.factory.makeProductSeries(product=branch.product)
+        series_name = series.name
         remove_security_proxy_and_shout_at_engineer(series).branch = branch
         browser = self.getUserBrowser(
             canonical_url(branch.product, rootsite='code'))
-        link = browser.getLink(re.compile('^' + series.name + '$'))
+        link = browser.getLink(re.compile('^' + series_name + '$'))
         self.assertEqual('launchpad.dev', URI(link.url).host)
+
+
+class TestProductConfigureCodehosting(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_configure_codehosting_hidden(self):
+        # If the user does not have driver permissions, they are not shown
+        # the configure codehosting link.
+        product = self.factory.makeProduct()
+        browser = self.getUserBrowser(
+            canonical_url(product, rootsite='code'))
+        self.assertFalse('Configure code hosting' in browser.contents)
+
+    def test_configure_codehosting_shown(self):
+        # If the user has driver permissions, they are shown the configure
+        # codehosting link.
+        product = self.factory.makeProduct()
+        browser = self.getUserBrowser(
+            canonical_url(product, rootsite='code'), user=product.owner)
+        self.assertTrue('Configure code hosting' in browser.contents)
 
 
 class TestPersonBranchesPage(BrowserTestCase):
@@ -613,14 +691,14 @@ class TestPersonBranchesPage(BrowserTestCase):
     layer = DatabaseFunctionalLayer
 
     def _make_branch_for_private_team(self):
+        owner = self.factory.makePerson()
         private_team = self.factory.makeTeam(
-            name='shh', displayname='Shh',
+            name='shh', displayname='Shh', owner=owner,
             visibility=PersonVisibility.PRIVATE)
-        member = self.factory.makePerson(
-            email='member@example.com', password='test')
-        with person_logged_in(private_team.teamowner):
-            private_team.addMember(member, private_team.teamowner)
-        branch = self.factory.makeProductBranch(owner=private_team)
+        member = self.factory.makePerson(email='member@example.com')
+        with person_logged_in(owner):
+            private_team.addMember(member, owner)
+            branch = self.factory.makeProductBranch(owner=private_team)
         return private_team, member, branch
 
     def test_private_team_membership_for_team_member(self):
@@ -650,6 +728,16 @@ class TestPersonBranchesPage(BrowserTestCase):
             branch.product, name="+branches", rootsite='code')
         self.assertIn('a moment ago', view())
 
+    def test_no_branch_message_escaped(self):
+        # make sure we escape any information put into the no branch message
+        badname = '<script>Test</script>'
+        escapedname = 'no branches related to &lt;script&gt;Test'
+        baduser = self.factory.makePerson(displayname=badname)
+        browser = self.getViewBrowser(baduser, rootsite='code')
+        # the content should not appear in tact because it's been escaped
+        self.assertTrue(badname not in browser.contents)
+        self.assertTrue(escapedname in browser.contents)
+
 
 class TestProjectGroupBranches(TestCaseWithFactory,
                                AjaxBatchNavigationMixin):
@@ -660,60 +748,6 @@ class TestProjectGroupBranches(TestCaseWithFactory,
     def setUp(self):
         super(TestProjectGroupBranches, self).setUp()
         self.project = self.factory.makeProject()
-
-    def test_project_with_no_branch_visibility_rule(self):
-        view = create_initialized_view(
-            self.project, name="+branches", rootsite='code')
-        privacy_portlet = find_tag_by_id(view(), 'privacy')
-        text = extract_text(privacy_portlet)
-        expected = """
-            Inherited branch visibility for all projects in .* is Public.
-            """
-        self.assertTextMatchesExpressionIgnoreWhitespace(
-            expected, text)
-
-    def test_project_with_private_branch_visibility_rule(self):
-        self.project.setBranchVisibilityTeamPolicy(
-            None, BranchVisibilityRule.FORBIDDEN)
-        view = create_initialized_view(
-            self.project, name="+branches", rootsite='code')
-        privacy_portlet = find_tag_by_id(view(), 'privacy')
-        text = extract_text(privacy_portlet)
-        expected = """
-            Inherited branch visibility for all projects in .* is Forbidden.
-            """
-        self.assertTextMatchesExpressionIgnoreWhitespace(
-            expected, text)
-
-    def _testBranchVisibilityLink(self, user):
-        login_person(user)
-        view = create_initialized_view(
-            self.project, name="+branches", rootsite='code',
-            principal=user)
-        action_portlet = find_tag_by_id(view(), 'action-portlet')
-        text = extract_text(action_portlet)
-        expected = '.*Define branch visibility.*'
-        self.assertTextMatchesExpressionIgnoreWhitespace(
-            expected, text)
-
-    def test_branch_visibility_link_admin(self):
-        # An admin will be displayed a link to define branch visibility in the
-        # action portlet.
-        admin = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)
-        self._testBranchVisibilityLink(admin)
-
-    def test_branch_visibility_link_commercial_admin(self):
-        # A commercial admin will be displayed a link to define branch
-        # visibility in the action portlet.
-        admin = getUtility(IPersonSet).getByEmail(COMMERCIAL_ADMIN_EMAIL)
-        self._testBranchVisibilityLink(admin)
-
-    def test_branch_visibility_link_non_admin(self):
-        # A non-admin will not see the action portlet.
-        view = create_initialized_view(
-            self.project, name="+branches", rootsite='code')
-        action_portlet = find_tag_by_id(view(), 'action-portlet')
-        self.assertIs(None, action_portlet)
 
     def test_no_branches_gets_message_not_listing(self):
         # If there are no product branches on the project's products, then
@@ -746,7 +780,7 @@ class TestProjectGroupBranches(TestCaseWithFactory,
         self._test_search_batch_request(product)
 
     def test_ajax_batch_navigation_feature_flag(self):
-        # The Javascript to wire up the ajax batch navigation behavior is
+        # The Javascript to wire up the ajax batch navigation behaviour is
         # correctly hidden behind a feature flag.
         product = self.factory.makeProduct(project=self.project)
         for i in range(10):

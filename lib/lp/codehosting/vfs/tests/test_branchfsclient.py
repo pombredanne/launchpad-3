@@ -1,15 +1,11 @@
 # Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=W0702
-
 """Tests for branchfsclient."""
 
 __metaclass__ = type
 
-from testtools.deferredruntest import (
-    AsynchronousDeferredRunTest,
-    )
+from testtools.deferredruntest import AsynchronousDeferredRunTest
 
 from lp.code.interfaces.codehosting import BRANCH_TRANSPORT
 from lp.codehosting.inmemory import (

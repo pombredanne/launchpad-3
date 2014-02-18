@@ -23,8 +23,7 @@ sees a link to his subscribed questions.
 
 A message confirming that he was subscribed is displayed:
 
-    >>> for message in get_feedback_messages(user_browser.contents):
-    ...     print message
+    >>> print_feedback_messages(user_browser.contents)
     You have subscribed to this question.
 
 
@@ -46,8 +45,7 @@ link and then click on the 'Unsubscribe' button.
 
 A confirmation is displayed:
 
-    >>> for message in get_feedback_messages(user_browser.contents):
-    ...     print message
+    >>> print_feedback_messages(user_browser.contents)
     You have unsubscribed from this question.
 
 
@@ -67,7 +65,6 @@ discussion about this question' checkbox:
 
 A notification message is displayed notifying of the subscription:
 
-    >>> for message in get_feedback_messages(user_browser.contents):
-    ...     print message
+    >>> print_feedback_messages(user_browser.contents)
     Thanks for your information request.
     You have subscribed to this question.

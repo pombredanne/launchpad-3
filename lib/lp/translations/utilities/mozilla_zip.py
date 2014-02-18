@@ -53,7 +53,7 @@ class MozillaZipTraversal:
         self.manifest = manifest
         try:
             self.archive = ZipFile(archive, 'r')
-        except BadZipfile, exception:
+        except BadZipfile as exception:
             raise TranslationFormatInvalidInputError(
                 filename=filename, message=str(exception))
 

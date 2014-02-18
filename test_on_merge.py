@@ -4,17 +4,29 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests that get run automatically on a merge."""
+
 import _pythonpath
 
-import sys, time
-import os, errno
-import tabnanny
-from StringIO import StringIO
-import psycopg2
-from subprocess import Popen, PIPE, STDOUT
-from signal import SIGKILL, SIGTERM, SIGINT, SIGHUP
+import errno
+import os
 import select
+from signal import (
+    SIGHUP,
+    SIGINT,
+    SIGKILL,
+    SIGTERM,
+    )
+from subprocess import (
+    PIPE,
+    Popen,
+    STDOUT,
+    )
+import sys
+import time
 
+import psycopg2
+
+from lp.services.database import activity_cols
 
 # The TIMEOUT setting (expressed in seconds) affects how long a test will run
 # before it is deemed to be hung, and then appropriately terminated.
@@ -70,7 +82,7 @@ def setup_test_database():
     cur = con.cursor()
     try:
         cur.execute('drop database launchpad_ftest_template')
-    except psycopg2.ProgrammingError, x:
+    except psycopg2.ProgrammingError as x:
         if 'does not exist' not in str(x):
             raise
 
@@ -78,17 +90,17 @@ def setup_test_database():
     # rogue processes still connected to the database.
     for loop in range(2):
         cur.execute("""
-            SELECT usename, current_query
+            SELECT usename, %(query)s
             FROM pg_stat_activity
             WHERE datname IN (
                 'launchpad_dev', 'launchpad_ftest_template', 'launchpad_ftest')
-            """)
+            """ % activity_cols(cur))
         results = list(cur.fetchall())
         if not results:
             break
         # Rogue processes. Report, sleep for a bit, and try again.
-        for usename, current_query in results:
-            print '!! Open connection %s - %s' % (usename, current_query)
+        for usename, query in results:
+            print '!! Open connection %s - %s' % (usename, query)
         print 'Sleeping'
         time.sleep(20)
     else:
@@ -185,7 +197,7 @@ def run_test_process():
             try:
                 rlist, wlist, xlist = select.select(open_readers, [], [], TIMEOUT)
                 break
-            except select.error, e:
+            except select.error as e:
                 # nb: select.error doesn't expose a named 'errno' attribute,
                 # at least in python 2.6.5; see
                 # <http://mail.python.org/pipermail/python-dev/2000-October/009671.html>
@@ -262,7 +274,7 @@ def nice_killpg(pgid):
             # Give the processes some time to shut down.
             time.sleep(3)
 
-    except OSError, exc:
+    except OSError as exc:
         if exc.errno == errno.ESRCH:
             # We tried to call os.killpg() and found the group to be empty.
             pass

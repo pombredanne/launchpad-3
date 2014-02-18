@@ -7,7 +7,7 @@ __metaclass__ = type
 
 from functools import partial
 from itertools import count
-import thread
+import socket
 
 from testtools.testcase import ExpectedException
 import transaction
@@ -15,11 +15,6 @@ from transaction._transaction import Status as TransactionStatus
 from zope.component import getUtility
 from zope.event import notify
 
-from canonical.launchpad.webapp.interfaces import FinishReadOnlyRequestEvent
-from canonical.testing.layers import (
-    LaunchpadFunctionalLayer,
-    RabbitMQLayer,
-    )
 from lp.services.messaging.interfaces import (
     IMessageConsumer,
     IMessageProducer,
@@ -38,9 +33,17 @@ from lp.services.messaging.rabbit import (
     session as global_session,
     unreliable_session as global_unreliable_session,
     )
-from lp.testing import TestCase
+from lp.services.webapp.interfaces import FinishReadOnlyRequestEvent
+from lp.testing import (
+    monkey_patch,
+    TestCase,
+    )
 from lp.testing.fakemethod import FakeMethod
 from lp.testing.faketransaction import FakeTransaction
+from lp.testing.layers import (
+    LaunchpadFunctionalLayer,
+    RabbitMQLayer,
+    )
 from lp.testing.matchers import Provides
 
 # RabbitMQ is not (yet) torn down or reset between tests, so here are sources
@@ -122,6 +125,17 @@ class TestRabbitSession(RabbitTestCase):
         session.connect()
         session.disconnect()
         self.assertFalse(session.is_connected)
+
+    def test_disconnect_with_error(self):
+        session = self.session_factory()
+        session.connect()
+        old_close = session._connection.close
+        def new_close(*args, **kwargs):
+            old_close(*args, **kwargs)
+            raise socket.error
+        with monkey_patch(session._connection, close=new_close):
+            session.disconnect()
+            self.assertFalse(session.is_connected)
 
     def test_is_connected(self):
         # is_connected is False once a connection has been closed.
@@ -374,9 +388,8 @@ class TestRabbit(RabbitTestCase):
     """Integration-like tests for the RabbitMQ messaging abstractions."""
 
     def get_synced_sessions(self):
-        thread_id = thread.get_ident()
         try:
-            syncs_set = transaction.manager._synchs[thread_id]
+            syncs_set = transaction.manager._synchs
         except KeyError:
             return set()
         else:

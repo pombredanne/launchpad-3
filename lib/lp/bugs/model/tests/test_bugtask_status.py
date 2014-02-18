@@ -8,7 +8,6 @@ __metaclass__ = type
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
@@ -16,11 +15,12 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskStatusSearchDisplay,
     UserCannotEditBugTaskStatus,
     )
-from lp.registry.interfaces.person import TeamSubscriptionPolicy
+from lp.registry.interfaces.person import TeamMembershipPolicy
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestBugTaskStatusTransitionForUser(TestCaseWithFactory):
@@ -200,6 +200,15 @@ class TestBugTaskStatusTransitionForReporter(TestCaseWithFactory):
                 BugTaskStatus.CONFIRMED, self.reporter)
             self.assertEqual(self.task.status, BugTaskStatus.CONFIRMED)
 
+    def test_reporter_still_cannot_set_restricted_status(self):
+        # The bug reporter can't transition away from Fix Released to a
+        # status that they couldn't otherwise set.
+        removeSecurityProxy(self.task)._status = BugTaskStatus.FIXRELEASED
+        self.assertEqual(
+            self.task.canTransitionToStatus(
+                BugTaskStatus.WONTFIX, self.reporter),
+            False)
+
     def test_reporter_canTransitionToStatus(self):
         # The bug reporter can transition away from Fix Released, so
         # canTransitionToStatus should always return True.
@@ -374,7 +383,7 @@ class TestBugTaskStatusTransitionOwnerTeam(
         self.person = self.factory.makePerson()
         self.team = self.factory.makeTeam(
             members=[self.person],
-            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
+            membership_policy=TeamMembershipPolicy.RESTRICTED)
         self.product = self.factory.makeProduct(owner=self.team)
         self.task = self.factory.makeBugTask(target=self.product)
 
@@ -386,10 +395,9 @@ class TestBugTaskStatusTransitionBugSupervisorPerson(
     def makePersonAndTask(self):
         self.owner = self.factory.makePerson()
         self.person = self.factory.makePerson()
-        self.product = self.factory.makeProduct(owner=self.owner)
+        self.product = self.factory.makeProduct(
+            owner=self.owner, bug_supervisor=self.person)
         self.task = self.factory.makeBugTask(target=self.product)
-        with person_logged_in(self.owner):
-            self.product.setBugSupervisor(self.person, self.person)
 
 
 class TestBugTaskStatusTransitionBugSupervisorTeamMember(
@@ -400,10 +408,9 @@ class TestBugTaskStatusTransitionBugSupervisorTeamMember(
         self.owner = self.factory.makePerson()
         self.person = self.factory.makePerson()
         self.team = self.factory.makeTeam(members=[self.person])
-        self.product = self.factory.makeProduct(owner=self.owner)
+        self.product = self.factory.makeProduct(
+            owner=self.owner, bug_supervisor=self.team)
         self.task = self.factory.makeBugTask(target=self.product)
-        with person_logged_in(self.owner):
-            self.product.setBugSupervisor(self.team, self.team)
 
 
 class TestBugTaskStatusTransitionBugWatchUpdater(

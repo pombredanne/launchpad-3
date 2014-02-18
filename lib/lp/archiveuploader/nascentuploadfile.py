@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Specific models for uploaded files"""
@@ -14,8 +14,6 @@ __all__ = [
     'PackageUploadFile',
     'SourceUploadFile',
     'UdebBinaryUploadFile',
-    'UploadError',
-    'UploadWarning',
     'splitComponentAndSection',
     ]
 
@@ -30,9 +28,12 @@ import apt_pkg
 from debian.deb822 import Deb822Dict
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.librarian.utils import filechunks
 from lp.app.errors import NotFoundError
+from lp.archivepublisher.ddtp_tarball import DdtpTarballUpload
+from lp.archivepublisher.debian_installer import DebianInstallerUpload
+from lp.archivepublisher.dist_upgrader import DistUpgraderUpload
+from lp.archivepublisher.rosetta_translations import RosettaTranslationsUpload
+from lp.archivepublisher.uefi import UefiUpload
 from lp.archiveuploader.utils import (
     determine_source_file_type,
     prefix_multi_line_string,
@@ -44,9 +45,12 @@ from lp.archiveuploader.utils import (
     re_taint_free,
     re_valid_pkg_name,
     re_valid_version,
+    UploadError,
     )
 from lp.buildmaster.enums import BuildStatus
 from lp.services.encoding import guess as guess_encoding
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
+from lp.services.librarian.utils import filechunks
 from lp.soyuz.enums import (
     BinaryPackageFormat,
     PackagePublishingPriority,
@@ -58,15 +62,7 @@ from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.model.files import SourceFileMixin
 
 
-apt_pkg.InitSystem()
-
-
-class UploadError(Exception):
-    """All upload errors are returned in this form."""
-
-
-class UploadWarning(Warning):
-    """All upload warnings are returned in this form."""
+apt_pkg.init_system()
 
 
 class TarFileDateChecker:
@@ -86,13 +82,12 @@ class TarFileDateChecker:
         self.future_files = {}
         self.ancient_files = {}
 
-    def callback(self, kind, name, link, mode, uid, gid, size, mtime,
-                 major, minor):
-        """Callback designed to cope with apt_inst.debExtract.
+    def callback(self, member, data):
+        """Callback designed to cope with apt_inst.TarFile.go.
 
         It check and store timestamp details of the extracted DEB.
         """
-        self.check_cutoff(name, mtime)
+        self.check_cutoff(member.name, member.mtime)
 
     def check_cutoff(self, name, mtime):
         """Check the timestamp details of the supplied file.
@@ -119,7 +114,6 @@ class NascentUploadFile:
     The filename, along with information about it, is kept here.
     """
     new = False
-    sha_digest = None
 
     # Files need their content type for creating in the librarian.
     # This maps endings of filenames onto content types we may encounter
@@ -132,10 +126,10 @@ class NascentUploadFile:
         ".tar.gz": "application/gzipped-tar",
         }
 
-    def __init__(self, filepath, digest, size, component_and_section,
+    def __init__(self, filepath, checksums, size, component_and_section,
                  priority_name, policy, logger):
         self.filepath = filepath
-        self.digest = digest
+        self.checksums = checksums
         self.priority_name = priority_name
         self.policy = policy
         self.logger = logger
@@ -204,13 +198,10 @@ class NascentUploadFile:
                 "Invalid character(s) in filename: '%s'." % self.filename)
 
     def checkSizeAndCheckSum(self):
-        """Check the md5sum and size of the nascent file.
+        """Check the size and checksums of the nascent file.
 
-        Raise UploadError if the digest or size does not match or if the
+        Raise UploadError if the size or checksums do not match or if the
         file is not found on the disk.
-
-        Populate self.sha_digest with the calculated sha1 digest of the
-        file on disk.
         """
         if not self.exists_on_disk:
             raise UploadError(
@@ -219,30 +210,27 @@ class NascentUploadFile:
 
         # Read in the file and compute its md5 and sha1 checksums and remember
         # the size of the file as read-in.
-        digest = hashlib.md5()
-        sha_cksum = hashlib.sha1()
+        digesters = dict((n, hashlib.new(n)) for n in self.checksums.keys())
         ckfile = open(self.filepath, "r")
         size = 0
         for chunk in filechunks(ckfile):
-            digest.update(chunk)
-            sha_cksum.update(chunk)
+            for digester in digesters.itervalues():
+                digester.update(chunk)
             size += len(chunk)
         ckfile.close()
 
         # Check the size and checksum match what we were told in __init__
-        if digest.hexdigest() != self.digest:
-            raise UploadError(
-                "File %s mentioned in the changes has a checksum mismatch. "
-                "%s != %s" % (self.filename, digest.hexdigest(), self.digest))
+        for n in sorted(self.checksums.keys()):
+            if digesters[n].hexdigest() != self.checksums[n]:
+                raise UploadError(
+                    "File %s mentioned in the changes has a %s mismatch. "
+                    "%s != %s" % (
+                        self.filename, n, digesters[n].hexdigest(),
+                        self.checksums[n]))
         if size != self.size:
             raise UploadError(
                 "File %s mentioned in the changes has a size mismatch. "
                 "%s != %s" % (self.filename, size, self.size))
-
-        # The sha_digest is used later when verifying packages mentioned
-        # in the DSC file; it's used to compare versus files in the
-        # Librarian.
-        self.sha_digest = sha_cksum.hexdigest()
 
 
 class CustomUploadFile(NascentUploadFile):
@@ -255,7 +243,8 @@ class CustomUploadFile(NascentUploadFile):
     results in new archive files.
     """
 
-    # This is a marker as per the comment in dbschema.py: ##CUSTOMFORMAT##
+    # This is a marker as per the comment in lib/lp/soyuz/enums.py:
+    ##CUSTOMFORMAT##
     # Essentially if you change anything to do with custom formats, grep for
     # the marker in the codebase and make sure the same changes are made
     # everywhere which needs them.
@@ -268,6 +257,16 @@ class CustomUploadFile(NascentUploadFile):
             PackageUploadCustomFormat.STATIC_TRANSLATIONS,
         'raw-meta-data':
             PackageUploadCustomFormat.META_DATA,
+        'raw-uefi': PackageUploadCustomFormat.UEFI,
+        }
+
+    custom_handlers = {
+        PackageUploadCustomFormat.DEBIAN_INSTALLER: DebianInstallerUpload,
+        PackageUploadCustomFormat.DIST_UPGRADER: DistUpgraderUpload,
+        PackageUploadCustomFormat.DDTP_TARBALL: DdtpTarballUpload,
+        PackageUploadCustomFormat.ROSETTA_TRANSLATIONS:
+            RosettaTranslationsUpload,
+        PackageUploadCustomFormat.UEFI: UefiUpload,
         }
 
     @property
@@ -284,6 +283,16 @@ class CustomUploadFile(NascentUploadFile):
         if self.section_name not in self.custom_sections:
             yield UploadError(
                 "Unsupported custom section name %r" % self.section_name)
+        else:
+            handler = self.custom_handlers.get(
+                self.custom_sections[self.section_name])
+            if handler is not None:
+                try:
+                    handler.parsePath(self.filename)
+                except ValueError:
+                    yield UploadError(
+                        "Invalid filename %r for section name %r" % (
+                            self.filename, self.section_name))
 
     def storeInDatabase(self):
         """Create and return the corresponding LibraryFileAlias reference."""
@@ -294,21 +303,28 @@ class CustomUploadFile(NascentUploadFile):
             restricted=self.policy.archive.private)
         return libraryfile
 
+    def autoApprove(self):
+        """Return whether this custom upload can be automatically approved."""
+        # UEFI uploads are signed, and must therefore be approved by a human.
+        if self.custom_type == PackageUploadCustomFormat.UEFI:
+            return False
+        return True
+
 
 class PackageUploadFile(NascentUploadFile):
     """Base class to model sources and binary files contained in a upload. """
 
-    def __init__(self, filepath, digest, size, component_and_section,
+    def __init__(self, filepath, md5, size, component_and_section,
                  priority_name, package, version, changes, policy, logger):
         """Check presence of the component and section from an uploaded_file.
 
         They need to satisfy at least the NEW queue constraints that includes
         SourcePackageRelease creation, so component and section need to exist.
-        Even if they might be overriden in the future.
+        Even if they might be overridden in the future.
         """
-        NascentUploadFile.__init__(
-            self, filepath, digest, size, component_and_section,
-            priority_name, policy, logger)
+        super(PackageUploadFile, self).__init__(
+            filepath, md5, size, component_and_section, priority_name,
+            policy, logger)
         self.package = package
         self.version = version
         self.changes = changes
@@ -390,10 +406,7 @@ class SourceUploadFile(SourceFileMixin, PackageUploadFile):
     def checkBuild(self, build):
         """See PackageUploadFile."""
         # The master verifies the status to confirm successful upload.
-        build.status = BuildStatus.FULLYBUILT
-        # If this upload is successful, any existing log is wrong and
-        # unuseful.
-        build.upload_log = None
+        build.updateStatus(BuildStatus.FULLYBUILT)
 
         # Sanity check; raise an error if the build we've been
         # told to link to makes no sense.
@@ -454,11 +467,11 @@ class BaseBinaryUploadFile(PackageUploadFile):
     source_name = None
     source_version = None
 
-    def __init__(self, filepath, digest, size, component_and_section,
+    def __init__(self, filepath, md5, size, component_and_section,
                  priority_name, package, version, changes, policy, logger):
 
         PackageUploadFile.__init__(
-            self, filepath, digest, size, component_and_section,
+            self, filepath, md5, size, component_and_section,
             priority_name, package, version, changes, policy, logger)
 
         if self.priority_name not in self.priority_map:
@@ -529,28 +542,27 @@ class BaseBinaryUploadFile(PackageUploadFile):
                 yield error
 
     def extractAndParseControl(self):
-        """Extract and parse tcontrol information."""
-        deb_file = open(self.filepath, "r")
+        """Extract and parse control information."""
         try:
-            control_file = apt_inst.debExtractControl(deb_file)
-            control_lines = apt_pkg.ParseSection(control_file)
+            deb_file = apt_inst.DebFile(self.filepath)
+            control_file = deb_file.control.extractdata("control")
+            control_lines = apt_pkg.TagSection(control_file)
         except (SystemExit, KeyboardInterrupt):
             raise
         except:
-            deb_file.close()
             yield UploadError(
-                "%s: debExtractControl() raised %s, giving up."
+                "%s: extracting control file raised %s, giving up."
                  % (self.filename, sys.exc_type))
             return
 
         for mandatory_field in self.mandatory_fields:
-            if control_lines.Find(mandatory_field) is None:
+            if control_lines.find(mandatory_field) is None:
                 yield UploadError(
                     "%s: control file lacks mandatory field %r"
                      % (self.filename, mandatory_field))
         control = {}
         for key in control_lines.keys():
-            control[key] = control_lines.Find(key)
+            control[key] = control_lines.find(key)
         self.parseControl(control)
 
     def parseControl(self, control):
@@ -581,7 +593,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
 
         # Since DDEBs are generated after the original DEBs are processed
         # and considered by `dpkg-genchanges` they are only half-incorporated
-        # the the binary upload changes file. DDEBs are only listed in the
+        # the binary upload changes file. DDEBs are only listed in the
         # Files/Checksums-Sha1/ChecksumsSha256 sections and missing from
         # Binary/Description.
         if not self.filename.endswith('.ddeb'):
@@ -713,47 +725,6 @@ class BaseBinaryUploadFile(PackageUploadFile):
                 "data.tar.bz2, data.tar.lzma or data.tar.xz." %
                 (self.filename, data_tar))
 
-        # xz-compressed debs must pre-depend on dpkg >= 1.15.6.
-        XZ_REQUIRED_DPKG_VER = '1.15.6'
-        if data_tar == "data.tar.xz":
-            parsed_deps = []
-            try:
-                parsed_deps = apt_pkg.ParseDepends(
-                    self.control['Pre-Depends'])
-            except (ValueError, TypeError):
-                yield UploadError(
-                    "Can't parse Pre-Depends in the control file.")
-                return
-            except KeyError:
-                # Go past the for loop and yield the error below.
-                pass
-
-            for token in parsed_deps:
-                try:
-                    name, version, relation = token[0]
-                except ValueError:
-                    yield("APT error processing token '%r' from Pre-Depends.")
-                    return
-
-                if name == 'dpkg':
-                    # VersionCompare returns values similar to cmp;
-                    # negative if first < second, zero if first ==
-                    # second and positive if first > second.
-                    if apt_pkg.VersionCompare(
-                        version, XZ_REQUIRED_DPKG_VER) >= 0:
-                        # Pre-Depends dpkg is fine.
-                        return
-                    else:
-                        yield UploadError(
-                            "Pre-Depends dpkg version should be >= %s "
-                            "when using xz compression." %
-                            XZ_REQUIRED_DPKG_VER)
-                        return
-
-            yield UploadError(
-                "Require Pre-Depends: dpkg (>= %s) when using xz "
-                "compression." % XZ_REQUIRED_DPKG_VER)
-
     def verifyDebTimestamp(self):
         """Check specific DEB format timestamp checks."""
         self.logger.debug("Verifying timestamps in %s" % (self.filename))
@@ -765,52 +736,37 @@ class BaseBinaryUploadFile(PackageUploadFile):
         tar_checker = TarFileDateChecker(future_cutoff, past_cutoff)
         tar_checker.reset()
         try:
-            deb_file = open(self.filepath, "rb")
-            apt_inst.debExtract(deb_file, tar_checker.callback,
-                                "control.tar.gz")
-            # Only one of these files is present in the archive, so loop
-            # until we find one of them, otherwise fail.
-            data_files = ("data.tar.gz", "data.tar.bz2", "data.tar.lzma",
-                          "data.tar.xz")
-            for file in data_files:
-                deb_file.seek(0)
-                try:
-                    apt_inst.debExtract(deb_file, tar_checker.callback, file)
-                except SystemError:
-                    continue
-                else:
-                    deb_file.close()
+            deb_file = apt_inst.DebFile(self.filepath)
+        except SystemError as error:
+            # We get an error from the constructor if the .deb does not
+            # contain all the expected top-level members (debian-binary,
+            # control.tar.gz, and data.tar.*).
+            yield UploadError(error)
+        try:
+            deb_file.control.go(tar_checker.callback)
+            deb_file.data.go(tar_checker.callback)
+            future_files = tar_checker.future_files.keys()
+            if future_files:
+                first_file = future_files[0]
+                timestamp = time.ctime(tar_checker.future_files[first_file])
+                yield UploadError(
+                    "%s: has %s file(s) with a time stamp too "
+                    "far into the future (e.g. %s [%s])."
+                     % (self.filename, len(future_files), first_file,
+                        timestamp))
 
-                    future_files = tar_checker.future_files.keys()
-                    if future_files:
-                        first_file = future_files[0]
-                        timestamp = time.ctime(
-                            tar_checker.future_files[first_file])
-                        yield UploadError(
-                            "%s: has %s file(s) with a time stamp too "
-                            "far into the future (e.g. %s [%s])."
-                             % (self.filename, len(future_files), first_file,
-                                timestamp))
-
-                    ancient_files = tar_checker.ancient_files.keys()
-                    if ancient_files:
-                        first_file = ancient_files[0]
-                        timestamp = time.ctime(
-                            tar_checker.ancient_files[first_file])
-                        yield UploadError(
-                            "%s: has %s file(s) with a time stamp too "
-                            "far in the past (e.g. %s [%s])."
-                             % (self.filename, len(ancient_files), first_file,
-                                timestamp))
-                    return
-
-            deb_file.close()
-            yield UploadError(
-                "Could not find data tarball in %s" % self.filename)
-
+            ancient_files = tar_checker.ancient_files.keys()
+            if ancient_files:
+                first_file = ancient_files[0]
+                timestamp = time.ctime(tar_checker.ancient_files[first_file])
+                yield UploadError(
+                    "%s: has %s file(s) with a time stamp too "
+                    "far in the past (e.g. %s [%s])."
+                     % (self.filename, len(ancient_files), first_file,
+                        timestamp))
         except (SystemExit, KeyboardInterrupt):
             raise
-        except Exception, error:
+        except Exception as error:
             # There is a very large number of places where we
             # might get an exception while checking the timestamps.
             # Many of them come from apt_inst/apt_pkg and they are
@@ -822,6 +778,29 @@ class BaseBinaryUploadFile(PackageUploadFile):
     #
     #   Database relationship methods
     #
+    def findCurrentSourcePublication(self):
+        """Return the respective ISourcePackagePublishingHistory for this
+        binary upload.
+
+        It inspects publication in the targeted DistroSeries.
+
+        It raises UploadError if the spph was not found.
+        """
+        assert self.source_name is not None
+        assert self.source_version is not None
+        distroseries = self.policy.distroseries
+        spphs = distroseries.getPublishedSources(
+            self.source_name, version=self.source_version,
+            include_pending=True, archive=self.policy.archive)
+        # Workaround storm bug in EmptyResultSet.
+        spphs = list(spphs[:1])
+        try:
+            return spphs[0]
+        except IndexError:
+            raise UploadError(
+                "Unable to find source publication %s/%s in %s" % (
+                self.source_name, self.source_version, distroseries.name))
+
     def findSourcePackageRelease(self):
         """Return the respective ISourcePackageRelease for this binary upload.
 
@@ -833,20 +812,8 @@ class BaseBinaryUploadFile(PackageUploadFile):
         mixed_uploads (source + binary) we do not have the source stored
         in DB yet (see verifySourcepackagerelease).
         """
-        assert self.source_name is not None
-        assert self.source_version is not None
-        distroseries = self.policy.distroseries
-        spphs = distroseries.getPublishedSources(
-            self.source_name, version=self.source_version,
-            include_pending=True, archive=self.policy.archive)
-        # Workaround storm bug in EmptyResultSet.
-        spphs = list(spphs[:1])
-        try:
-            return spphs[0].sourcepackagerelease
-        except IndexError:
-            raise UploadError(
-                "Unable to find source package %s/%s in %s" % (
-                self.source_name, self.source_version, distroseries.name))
+        spph = self.findCurrentSourcePublication()
+        return spph.sourcepackagerelease
 
     def verifySourcePackageRelease(self, sourcepackagerelease):
         """Check if the given ISourcePackageRelease matches the context."""
@@ -882,7 +849,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
         build = sourcepackagerelease.getBuildByArch(
             dar, self.policy.archive)
         if build is not None:
-            build.status = BuildStatus.FULLYBUILT
+            build.updateStatus(BuildStatus.FULLYBUILT)
             self.logger.debug("Updating build for %s: %s" % (
                 dar.architecturetag, build.id))
         else:
@@ -903,14 +870,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
                 "Upload to unknown architecture %s for distroseries %s" %
                 (self.archtag, self.policy.distroseries))
 
-        # Ensure gathered binary is related to a FULLYBUILT build
-        # record. It will be check in slave-scanner procedure to
-        # certify that the build was processed correctly.
-        build.status = BuildStatus.FULLYBUILT
-        # Also purge any previous failed upload_log stored, so its
-        # content can be garbage-collected since it's not useful
-        # anymore.
-        build.upload_log = None
+        build.updateStatus(BuildStatus.FULLYBUILT)
 
         # Sanity check; raise an error if the build we've been
         # told to link to makes no sense.

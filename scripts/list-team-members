@@ -5,16 +5,21 @@
 
 __metaclass__ = type
 
+import _pythonpath
+
 import logging
 import sys
 
-import _pythonpath
-
-from canonical.config import config
-
-from canonical.launchpad.scripts import execute_zcml_for_scripts
-from lp.services.scripts.base import LaunchpadScript
-from lp.registry.scripts.listteammembers import process_team, NoSuchTeamError
+from lp.registry.scripts.listteammembers import (
+    NoSuchTeamError,
+    process_team,
+    )
+from lp.services.config import config
+from lp.services.scripts import execute_zcml_for_scripts
+from lp.services.scripts.base import (
+    LaunchpadScript,
+    LaunchpadScriptFailure,
+    )
 
 
 class ListTeamMembersScript(LaunchpadScript):
@@ -50,12 +55,10 @@ class ListTeamMembersScript(LaunchpadScript):
             try:
                 member_details.update(process_team(teamname, display_option))
             except NoSuchTeamError:
-                print "Error, no such team: %s" % teamname
-                return 1
+                raise LaunchpadScriptFailure("No such team: %s" % teamname)
         print "\n".join(detail.encode('utf-8') for detail in
                         sorted(member_details))
-        return 0
 
 if __name__ == '__main__':
-    script = ListTeamMembersScript('canonical.launchpad.scripts.listteammembers', dbuser='listteammembers')
+    script = ListTeamMembersScript('lp.services.scripts.listteammembers', dbuser='listteammembers')
     script.run()

@@ -40,11 +40,11 @@ from twisted.internet import defer
 from twisted.python import util
 from zope.interface import implements
 
-from canonical.config import config
 from lp.codehosting.vfs import (
     AsyncLaunchpadTransport,
     LaunchpadServer,
     )
+from lp.services.config import config
 from lp.services.sshserver.sftp import FileIsADirectory
 from lp.services.twistedsupport import gatherResults
 
@@ -68,7 +68,7 @@ class FatLocalTransport(LocalTransport):
         osutils.check_legal_path(abspath)
         try:
             chunk_file = os.open(abspath, os.O_CREAT | os.O_WRONLY)
-        except OSError, e:
+        except OSError as e:
             if e.errno != errno.EISDIR:
                 raise
             raise FileIsADirectory(name)

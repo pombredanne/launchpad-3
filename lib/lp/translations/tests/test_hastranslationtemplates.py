@@ -5,8 +5,8 @@ __metaclass__ = type
 
 from zope.interface.verify import verifyObject
 
-from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import ZopelessDatabaseLayer
 from lp.translations.interfaces.hastranslationtemplates import (
     IHasTranslationTemplates,
     )

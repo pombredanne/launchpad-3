@@ -1,16 +1,15 @@
-Edit person location information
-================================
+Edit person time zone information
+=================================
 
-A person's location is only editable by people who have launchpad.Edit on
+A person's time zone is only editable by people who have launchpad.Edit on
 the person, which is that person and admins.
 
     >>> login('test@canonical.com')
     >>> zzz = factory.makePerson(
-    ...     name='zzz', time_zone='Africa/Maseru', email='zzz@foo.com',
-    ...     latitude=None, longitude=None, password='test')
+    ...     name='zzz', time_zone='Africa/Maseru', email='zzz@foo.com')
     >>> logout()
 
-A user cannot set another user's location.
+A user cannot set another user's +editlocation page.
 
     >>> nopriv_browser = setupBrowser(auth="Basic no-priv@canonical.com:test")
     >>> nopriv_browser.open('http://launchpad.dev/~zzz/+editlocation')
@@ -18,35 +17,22 @@ A user cannot set another user's location.
     ...
     Unauthorized:...
 
-A user can set his own location:
+A user can set his own time zone:
 
     >>> self_browser = setupBrowser(auth="Basic zzz@foo.com:test")
     >>> self_browser.open('http://launchpad.dev/~zzz/+editlocation')
-    >>> self_browser.getControl(name='field.location.latitude').value = (
-    ...     '39.48')
-    >>> self_browser.getControl(name='field.location.longitude').value = (
-    ...     '-0.40')
-    >>> self_browser.getControl(name='field.location.time_zone').value = [
+    >>> self_browser.getControl(name='field.time_zone').value = [
     ...     'Europe/Madrid']
     >>> self_browser.getControl('Update').click()
 
     >>> login('zzz@foo.com')
-    >>> zzz.latitude
-    39.4...
-    >>> zzz.longitude
-    -0.4...
     >>> zzz.time_zone
     u'Europe/Madrid'
     >>> logout()
 
-The user can change his location:
+And when he comes back to change it later, he'll see it there as the selected
+value.
 
     >>> self_browser.open('http://launchpad.dev/~zzz/+editlocation')
-    >>> self_browser.getControl(name='field.location.latitude').value
-    '39.48'
-
-And so can a Launchpad admin:
-
-    >>> admin_browser.open('http://launchpad.dev/~zzz/+editlocation')
-    >>> admin_browser.getControl(name='field.location.latitude').value
-    '39.48'
+    >>> print self_browser.getControl(name='field.time_zone').value
+    ['Europe/Madrid']

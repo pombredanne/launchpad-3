@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test native publication workflow for Soyuz. """
@@ -17,14 +17,6 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.database.constants import UTC_NOW
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadZopelessLayer,
-    ZopelessDatabaseLayer,
-    )
 from lp.app.errors import NotFoundError
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.diskpool import DiskPool
@@ -32,33 +24,32 @@ from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
-from lp.services.features.testing import FeatureFixture
+from lp.services.config import config
+from lp.services.database.constants import UTC_NOW
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.log.logger import DevNullLogger
-from lp.soyuz.adapters.overrides import UnknownOverridePolicy
 from lp.soyuz.enums import (
-    ArchivePurpose,
     BinaryPackageFormat,
     PackageUploadStatus,
     )
-from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.component import IComponentSet
+from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.soyuz.interfaces.publishing import (
+    DeletionError,
     IPublishingSet,
+    OverrideError,
     PackagePublishingPriority,
     PackagePublishingStatus,
     )
 from lp.soyuz.interfaces.queue import QueueInconsistentStateError
 from lp.soyuz.interfaces.section import ISectionSet
-from lp.soyuz.model.distroseriesdifferencejob import (
-    FEATURE_FLAG_ENABLE_MODULE,
-    find_waiting_jobs,
-    )
+from lp.soyuz.model.distroseriesdifferencejob import find_waiting_jobs
 from lp.soyuz.model.distroseriespackagecache import DistroSeriesPackageCache
-from lp.soyuz.model.processor import ProcessorFamily
 from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory,
     SourcePackagePublishingHistory,
@@ -67,8 +58,16 @@ from lp.testing import (
     StormStatementRecorder,
     TestCaseWithFactory,
     )
-from lp.testing.dbuser import dbuser
+from lp.testing.dbuser import (
+    dbuser,
+    switch_dbuser,
+    )
 from lp.testing.factory import LaunchpadObjectFactory
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
+    )
 from lp.testing.matchers import HasQueryCount
 
 
@@ -119,23 +118,28 @@ class SoyuzTestPublisher:
             self.breezy_autotest_i386 = self.breezy_autotest['i386']
         except NotFoundError:
             self.breezy_autotest_i386 = self.breezy_autotest.newArch(
-                'i386', ProcessorFamily.get(1), False, self.person,
-                supports_virtualized=True)
+                'i386', getUtility(IProcessorSet).getByName('386'), False,
+                self.person, supports_virtualized=True)
         try:
             self.breezy_autotest_hppa = self.breezy_autotest['hppa']
         except NotFoundError:
             self.breezy_autotest_hppa = self.breezy_autotest.newArch(
-                'hppa', ProcessorFamily.get(4), False, self.person)
+                'hppa', getUtility(IProcessorSet).getByName('hppa'), False,
+                self.person)
         self.breezy_autotest.nominatedarchindep = self.breezy_autotest_i386
         fake_chroot = self.addMockFile('fake_chroot.tar.gz')
         self.breezy_autotest_i386.addOrUpdateChroot(fake_chroot)
         self.breezy_autotest_hppa.addOrUpdateChroot(fake_chroot)
 
-    def addFakeChroots(self, distroseries=None):
+    def addFakeChroots(self, distroseries=None, db_only=False):
         """Add fake chroots for all the architectures in distroseries."""
         if distroseries is None:
             distroseries = self.distroseries
-        fake_chroot = self.addMockFile('fake_chroot.tar.gz')
+        if db_only:
+            fake_chroot = self.factory.makeLibraryFileAlias(
+                filename='fake_chroot.tar.gz', db_only=True)
+        else:
+            fake_chroot = self.addMockFile('fake_chroot.tar.gz')
         for arch in distroseries.architectures:
             arch.addOrUpdateChroot(fake_chroot)
 
@@ -272,6 +276,7 @@ class SoyuzTestPublisher:
         spph = SourcePackagePublishingHistory(
             distroseries=distroseries,
             sourcepackagerelease=spr,
+            sourcepackagename=spr.sourcepackagename,
             component=spr.component,
             section=spr.section,
             status=status,
@@ -303,6 +308,7 @@ class SoyuzTestPublisher:
                        architecturespecific=False,
                        builder=None,
                        component='main',
+                       phased_update_percentage=None,
                        with_debug=False, user_defined_fields=None):
         """Return a list of binary publishing records."""
         if distroseries is None:
@@ -329,7 +335,7 @@ class SoyuzTestPublisher:
         builds = pub_source.createMissingBuilds()
         published_binaries = []
         for build in builds:
-            build.builder = builder
+            build.updateStatus(BuildStatus.FULLYBUILT, builder=builder)
             pub_binaries = []
             if with_debug:
                 binarypackagerelease_ddeb = self.uploadBinaryForBuild(
@@ -338,8 +344,9 @@ class SoyuzTestPublisher:
                     conflicts, replaces, provides, pre_depends, enhances,
                     breaks, BinaryPackageFormat.DDEB, version=version)
                 pub_binaries += self.publishBinaryInArchive(
-                    binarypackagerelease_ddeb, archive.debug_archive, status,
-                    pocket, scheduleddeletiondate, dateremoved)
+                    binarypackagerelease_ddeb, archive, status,
+                    pocket, scheduleddeletiondate, dateremoved,
+                    phased_update_percentage)
             else:
                 binarypackagerelease_ddeb = None
 
@@ -351,7 +358,7 @@ class SoyuzTestPublisher:
                 user_defined_fields=user_defined_fields)
             pub_binaries += self.publishBinaryInArchive(
                 binarypackagerelease, archive, status, pocket,
-                scheduleddeletiondate, dateremoved)
+                scheduleddeletiondate, dateremoved, phased_update_percentage)
             published_binaries.extend(pub_binaries)
             package_upload = self.addPackageUpload(
                 archive, distroseries, pocket,
@@ -421,12 +428,10 @@ class SoyuzTestPublisher:
         binarypackagerelease.addFile(alias)
 
         # Adjust the build record in way it looks complete.
-        naked_build = removeSecurityProxy(build)
-        naked_build.status = BuildStatus.FULLYBUILT
-        naked_build.date_finished = datetime.datetime(
-            2008, 1, 1, 0, 5, 0, tzinfo=pytz.UTC)
-        naked_build.date_started = (
-            build.date_finished - datetime.timedelta(minutes=5))
+        date_finished = datetime.datetime(2008, 1, 1, 0, 5, 0, tzinfo=pytz.UTC)
+        date_started = date_finished - datetime.timedelta(minutes=5)
+        build.updateStatus(BuildStatus.BUILDING, date_started=date_started)
+        build.updateStatus(BuildStatus.FULLYBUILT, date_finished=date_finished)
         buildlog_filename = 'buildlog_%s-%s-%s.%s_%s_%s.txt.gz' % (
             build.distribution.name,
             build.distro_series.name,
@@ -434,9 +439,11 @@ class SoyuzTestPublisher:
             build.source_package_release.name,
             build.source_package_release.version,
             build.status.name)
-        naked_build.log = self.addMockFile(
-            buildlog_filename, filecontent='Built!',
-            restricted=build.archive.private)
+        if not build.log:
+            build.setLog(
+                self.addMockFile(
+                    buildlog_filename, filecontent='Built!',
+                    restricted=build.archive.private))
 
         return binarypackagerelease
 
@@ -444,7 +451,8 @@ class SoyuzTestPublisher:
         self, binarypackagerelease, archive,
         status=PackagePublishingStatus.PENDING,
         pocket=PackagePublishingPocket.RELEASE,
-        scheduleddeletiondate=None, dateremoved=None):
+        scheduleddeletiondate=None, dateremoved=None,
+        phased_update_percentage=None):
         """Return the corresponding BinaryPackagePublishingHistory."""
         distroarchseries = binarypackagerelease.build.distro_arch_series
 
@@ -459,6 +467,7 @@ class SoyuzTestPublisher:
             pub = BinaryPackagePublishingHistory(
                 distroarchseries=arch,
                 binarypackagerelease=binarypackagerelease,
+                binarypackagename=binarypackagerelease.binarypackagename,
                 component=binarypackagerelease.component,
                 section=binarypackagerelease.section,
                 priority=binarypackagerelease.priority,
@@ -467,7 +476,8 @@ class SoyuzTestPublisher:
                 dateremoved=dateremoved,
                 datecreated=UTC_NOW,
                 pocket=pocket,
-                archive=archive)
+                archive=archive,
+                phased_update_percentage=phased_update_percentage)
             if status == PackagePublishingStatus.PUBLISHED:
                 pub.datepublished = UTC_NOW
             pub_binaries.append(pub)
@@ -497,11 +507,8 @@ class SoyuzTestPublisher:
             if new_version is None:
                 new_version = version
             changesfile_content = ''
-            handle = open(changesfile_path, 'r')
-            try:
+            with open(changesfile_path, 'r') as handle:
                 changesfile_content = handle.read()
-            finally:
-                handle.close()
 
             source = self.getPubSource(
                 sourcename=sourcename, archive=archive, version=new_version,
@@ -572,7 +579,7 @@ class TestNativePublishingBase(TestCaseWithFactory, SoyuzTestPublisher):
     def setUp(self):
         """Setup a pool dir, the librarian, and instantiate the DiskPool."""
         super(TestNativePublishingBase, self).setUp()
-        self.layer.switchDbUser(config.archivepublisher.dbuser)
+        switch_dbuser(config.archivepublisher.dbuser)
         self.prepareBreezyAutotest()
         self.config = getPubConfig(self.ubuntutest.main_archive)
         self.config.setupArchiveDirs()
@@ -641,9 +648,9 @@ class TestNativePublishingBase(TestCaseWithFactory, SoyuzTestPublisher):
                     dominant = supersededby.binarypackagerelease.build
                 else:
                     dominant = supersededby.sourcepackagerelease
-                self.assertEquals(dominant, pub.supersededby)
+                self.assertEqual(dominant, pub.supersededby)
             else:
-                self.assertIs(None, pub.supersededby)
+                self.assertIsNone(pub.supersededby)
 
 
 class TestNativePublishing(TestNativePublishingBase):
@@ -653,9 +660,7 @@ class TestNativePublishing(TestNativePublishingBase):
         # the corresponding files are dumped in the disk pool/.
         pub_source = self.getPubSource(filecontent='Hello world')
         pub_source.publish(self.disk_pool, self.logger)
-        self.assertEqual(
-            PackagePublishingStatus.PUBLISHED,
-            pub_source.status)
+        self.assertEqual(PackagePublishingStatus.PUBLISHED, pub_source.status)
         pool_path = "%s/main/f/foo/foo_666.dsc" % self.pool_dir
         self.assertEqual(open(pool_path).read().strip(), 'Hello world')
 
@@ -664,11 +669,36 @@ class TestNativePublishing(TestNativePublishingBase):
         # the corresponding files are dumped in the disk pool/.
         pub_binary = self.getPubBinaries(filecontent='Hello world')[0]
         pub_binary.publish(self.disk_pool, self.logger)
-        self.assertEqual(
-            PackagePublishingStatus.PUBLISHED,
-            pub_binary.status)
+        self.assertEqual(PackagePublishingStatus.PUBLISHED, pub_binary.status)
         pool_path = "%s/main/f/foo/foo-bin_666_all.deb" % self.pool_dir
         self.assertEqual(open(pool_path).read().strip(), 'Hello world')
+
+    def test_publish_ddeb_when_disabled_is_noop(self):
+        # Publishing a DDEB publication when
+        # Archive.publish_debug_symbols is false just sets PUBLISHED,
+        # without a file in the pool.
+        pubs = self.getPubBinaries(
+            binaryname='dbg', filecontent='Hello world', with_debug=True)
+
+        def publish_everything():
+            existence_map = {}
+            for pub in pubs:
+                pub.publish(self.disk_pool, self.logger)
+                self.assertEqual(PackagePublishingStatus.PUBLISHED, pub.status)
+                filename = pub.files[0].libraryfilealias.filename
+                path = "%s/main/d/dbg/%s" % (self.pool_dir, filename)
+                existence_map[filename] = os.path.exists(path)
+            return existence_map
+
+        self.assertEqual(
+            {u'dbg_666_all.deb': True, u'dbg-dbgsym_666_all.ddeb': False},
+            publish_everything())
+
+        pubs[0].archive.publish_debug_symbols = True
+
+        self.assertEqual(
+            {u'dbg_666_all.deb': True, u'dbg-dbgsym_666_all.ddeb': True},
+            publish_everything())
 
     def testPublishingOverwriteFileInPool(self):
         """Test if publishOne refuses to overwrite a file in pool.
@@ -681,9 +711,8 @@ class TestNativePublishing(TestNativePublishingBase):
         foo_path = os.path.join(self.pool_dir, 'main', 'f', 'foo')
         os.makedirs(foo_path)
         foo_dsc_path = os.path.join(foo_path, 'foo_666.dsc')
-        foo_dsc = open(foo_dsc_path, 'w')
-        foo_dsc.write('Hello world')
-        foo_dsc.close()
+        with open(foo_dsc_path, 'w') as foo_dsc:
+            foo_dsc.write('Hello world')
 
         pub_source = self.getPubSource(filecontent="Something")
         pub_source.publish(self.disk_pool, self.logger)
@@ -692,8 +721,7 @@ class TestNativePublishing(TestNativePublishingBase):
         self.assertEqual("PoolFileOverwriteError", self.oopses[0]['type'])
 
         self.layer.commit()
-        self.assertEqual(
-            pub_source.status, PackagePublishingStatus.PENDING)
+        self.assertEqual(pub_source.status, PackagePublishingStatus.PENDING)
         self.assertEqual(open(foo_dsc_path).read().strip(), 'Hello world')
 
     def testPublishingDifferentContents(self):
@@ -704,8 +732,7 @@ class TestNativePublishing(TestNativePublishingBase):
 
         foo_name = "%s/main/f/foo/foo_666.dsc" % self.pool_dir
         pub_source.sync()
-        self.assertEqual(
-            pub_source.status, PackagePublishingStatus.PUBLISHED)
+        self.assertEqual(pub_source.status, PackagePublishingStatus.PUBLISHED)
         self.assertEqual(open(foo_name).read().strip(), 'foo is happy')
 
         # try to publish 'foo' again with a different content, it
@@ -716,8 +743,7 @@ class TestNativePublishing(TestNativePublishingBase):
         self.layer.commit()
 
         pub_source2.sync()
-        self.assertEqual(
-            pub_source2.status, PackagePublishingStatus.PENDING)
+        self.assertEqual(pub_source2.status, PackagePublishingStatus.PENDING)
         self.assertEqual(open(foo_name).read().strip(), 'foo is happy')
 
     def testPublishingAlreadyInPool(self):
@@ -733,16 +759,14 @@ class TestNativePublishing(TestNativePublishingBase):
         bar_name = "%s/main/b/bar/bar_666.dsc" % self.pool_dir
         self.assertEqual(open(bar_name).read().strip(), 'bar is good')
         pub_source.sync()
-        self.assertEqual(
-            pub_source.status, PackagePublishingStatus.PUBLISHED)
+        self.assertEqual(pub_source.status, PackagePublishingStatus.PUBLISHED)
 
         pub_source2 = self.getPubSource(
             sourcename='bar', filecontent='bar is good')
         pub_source2.publish(self.disk_pool, self.logger)
         self.layer.commit()
         pub_source2.sync()
-        self.assertEqual(
-            pub_source2.status, PackagePublishingStatus.PUBLISHED)
+        self.assertEqual(pub_source2.status, PackagePublishingStatus.PUBLISHED)
 
     def testPublishingSymlink(self):
         """Test if publishOne moving publication between components.
@@ -752,8 +776,7 @@ class TestNativePublishing(TestNativePublishingBase):
         """
         content = 'am I a file or a symbolic link ?'
         # publish sim.dsc in main and re-publish in universe
-        pub_source = self.getPubSource(
-            sourcename='sim', filecontent=content)
+        pub_source = self.getPubSource(sourcename='sim', filecontent=content)
         pub_source2 = self.getPubSource(
             sourcename='sim', component='universe', filecontent=content)
         pub_source.publish(self.disk_pool, self.logger)
@@ -762,10 +785,8 @@ class TestNativePublishing(TestNativePublishingBase):
 
         pub_source.sync()
         pub_source2.sync()
-        self.assertEqual(
-            pub_source.status, PackagePublishingStatus.PUBLISHED)
-        self.assertEqual(
-            pub_source2.status, PackagePublishingStatus.PUBLISHED)
+        self.assertEqual(pub_source.status, PackagePublishingStatus.PUBLISHED)
+        self.assertEqual(pub_source2.status, PackagePublishingStatus.PUBLISHED)
 
         # check the resulted symbolic link
         sim_universe = "%s/universe/s/sim/sim_666.dsc" % self.pool_dir
@@ -781,8 +802,7 @@ class TestNativePublishing(TestNativePublishingBase):
         self.layer.commit()
 
         pub_source3.sync()
-        self.assertEqual(
-            pub_source3.status, PackagePublishingStatus.PENDING)
+        self.assertEqual(pub_source3.status, PackagePublishingStatus.PENDING)
 
     def testPublishInAnotherArchive(self):
         """Publication in another archive
@@ -813,201 +833,6 @@ class TestNativePublishing(TestNativePublishingBase):
         shutil.rmtree(test_temp_dir)
 
 
-class OverrideFromAncestryTestCase(TestCaseWithFactory):
-    """Test `IPublishing.overrideFromAncestry`.
-
-    When called from a `SourcePackagePublishingHistory` or a
-    `BinaryPackagePublishingHistory` it sets the object target component
-    according to its ancestry if available or falls back to the component
-    it was originally uploaded to.
-    """
-    layer = LaunchpadZopelessLayer
-
-    def setUp(self):
-        TestCaseWithFactory.setUp(self)
-        self.test_publisher = SoyuzTestPublisher()
-        self.test_publisher.prepareBreezyAutotest()
-
-    def test_overrideFromAncestry_only_works_for_pending_records(self):
-        # overrideFromAncestry only accepts PENDING publishing records.
-        source = self.test_publisher.getPubSource()
-
-        forbidden_status = [
-            item
-            for item in PackagePublishingStatus.items
-            if item is not PackagePublishingStatus.PENDING]
-
-        for status in forbidden_status:
-            source.status = status
-            self.layer.commit()
-            self.assertRaisesWithContent(
-                AssertionError,
-                'Cannot override published records.',
-                source.overrideFromAncestry)
-
-    def makeSource(self):
-        """Return a 'source' publication.
-
-        It's pending publication with binaries in a brand new PPA
-        and in 'main' component.
-        """
-        test_archive = self.factory.makeArchive(
-            distribution=self.test_publisher.ubuntutest,
-            purpose=ArchivePurpose.PPA)
-        source = self.test_publisher.getPubSource(archive=test_archive)
-        self.test_publisher.getPubBinaries(pub_source=source)
-        return source
-
-    def copyAndCheck(self, pub_record, series, component_name):
-        """Copy and check if overrideFromAncestry is working as expected.
-
-        The copied publishing record is targeted to the same component
-        as its source, but override_from_ancestry changes it to follow
-        the ancestry or fallback to the SPR/BPR original component.
-        """
-        copied = pub_record.copyTo(
-            series, pub_record.pocket, series.main_archive)
-
-        # Cope with heterogeneous results from copyTo().
-        try:
-            copies = tuple(copied)
-        except TypeError:
-            copies = (copied, )
-
-        for copy in copies:
-            self.assertEquals(copy.component, pub_record.component)
-            copy.overrideFromAncestry()
-            self.layer.commit()
-            self.assertEquals(copy.component.name, 'universe')
-
-    def test_overrideFromAncestry_fallback_to_source_component(self):
-        # overrideFromAncestry on the lack of ancestry, falls back to the
-        # component the source was originally uploaded to.
-        source = self.makeSource()
-
-        # Adjust the source package release original component.
-        universe = getUtility(IComponentSet)['universe']
-        source.sourcepackagerelease.component = universe
-
-        self.copyAndCheck(source, source.distroseries, 'universe')
-
-    def test_overrideFromAncestry_fallback_to_binary_component(self):
-        # overrideFromAncestry on the lack of ancestry, falls back to the
-        # component the binary was originally uploaded to.
-        binary = self.makeSource().getPublishedBinaries()[0]
-
-        # Adjust the binary package release original component.
-        universe = getUtility(IComponentSet)['universe']
-        removeSecurityProxy(binary.binarypackagerelease).component = universe
-
-        self.copyAndCheck(
-            binary, binary.distroarchseries.distroseries, 'universe')
-
-    def test_overrideFromAncestry_follow_ancestry_source_component(self):
-        # overrideFromAncestry finds and uses the component of the most
-        # recent PUBLISHED publication of the same name in the same
-        #location.
-        source = self.makeSource()
-
-        # Create a published ancestry source in the copy destination
-        # targeted to 'universe' and also 2 other noise source
-        # publications, a pending source target to 'restricted' and
-        # a published, but older, one target to 'multiverse'.
-        self.test_publisher.getPubSource(component='restricted')
-
-        self.test_publisher.getPubSource(
-            component='multiverse', status=PackagePublishingStatus.PUBLISHED)
-
-        self.test_publisher.getPubSource(
-            component='universe', status=PackagePublishingStatus.PUBLISHED)
-
-        # Overridden copy it targeted to 'universe'.
-        self.copyAndCheck(source, source.distroseries, 'universe')
-
-    def test_overrideFromAncestry_follow_ancestry_binary_component(self):
-        # overrideFromAncestry finds and uses the component of the most
-        # recent published publication of the same name in the same
-        # location.
-        binary = self.makeSource().getPublishedBinaries()[0]
-
-        # Create a published ancestry binary in the copy destination
-        # targeted to 'universe'.
-        restricted_source = self.test_publisher.getPubSource(
-            component='restricted')
-        self.test_publisher.getPubBinaries(pub_source=restricted_source)
-
-        multiverse_source = self.test_publisher.getPubSource(
-            component='multiverse')
-        self.test_publisher.getPubBinaries(
-            pub_source=multiverse_source,
-            status=PackagePublishingStatus.PUBLISHED)
-
-        ancestry_source = self.test_publisher.getPubSource(
-            component='universe')
-        self.test_publisher.getPubBinaries(
-            pub_source=ancestry_source,
-            status=PackagePublishingStatus.PUBLISHED)
-
-        # Overridden copy it targeted to 'universe'.
-        self.copyAndCheck(
-            binary, binary.distroarchseries.distroseries, 'universe')
-
-    def test_ppa_override_no_ancestry(self):
-        # Test a PPA publication with no ancestry is 'main'
-        ppa = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
-        spr = self.factory.makeSourcePackageRelease()
-        spph = self.factory.makeSourcePackagePublishingHistory(
-            sourcepackagerelease=spr, archive=ppa)
-        spph.overrideFromAncestry()
-        self.assertEquals(spph.component.name, 'main')
-
-    def test_ppa_override_with_ancestry(self):
-        # Test a PPA publication with ancestry
-        ppa = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
-        spr = self.factory.makeSourcePackageRelease()
-        # We don't reference the first spph so it doesn't get a name.
-        self.factory.makeSourcePackagePublishingHistory(
-            sourcepackagerelease=spr, archive=ppa)
-        spph2 = self.factory.makeSourcePackagePublishingHistory(
-            sourcepackagerelease=spr, archive=ppa)
-        spph2.overrideFromAncestry()
-        self.assertEquals(spph2.component.name, 'main')
-
-    def test_copyTo_with_overrides(self):
-        # Specifying overrides with copyTo should result in the new
-        # publication having those overrides.
-        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
-        target_archive = self.factory.makeArchive(
-            purpose=ArchivePurpose.PRIMARY)
-        main_component = getUtility(IComponentSet)['main']
-        spph = self.factory.makeSourcePackagePublishingHistory(
-            archive=archive, component=main_component)
-        name = spph.sourcepackagerelease.sourcepackagename
-
-        # Roll with default overrides to reduce the setup.
-        policy = UnknownOverridePolicy()
-        overrides = policy.calculateSourceOverrides(
-            target_archive, None, None, [name])
-        [override] = overrides
-
-        copy = spph.copyTo(
-            spph.distroseries, spph.pocket, target_archive, override)
-
-        # The component is overridden to the default.
-        self.assertEqual('universe', copy.component.name)
-        # Section has no default so it comes from the old publication.
-        self.assertEqual(spph.section, copy.section)
-
-    def test_copyTo_sets_ancestor(self):
-        # SPPH's ancestor get's populated when a spph is copied over.
-        target_archive = self.factory.makeArchive()
-        spph = self.factory.makeSourcePackagePublishingHistory()
-        copy = spph.copyTo(
-            spph.distroseries, spph.pocket, target_archive)
-
-        self.assertEqual(spph, copy.ancestor)
-
-
 class BuildRecordCreationTests(TestNativePublishingBase):
     """Test the creation of build records."""
 
@@ -1017,17 +842,14 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         self.distroseries = self.factory.makeDistroSeries(
             distribution=self.distro, name="crazy")
         self.archive = self.factory.makeArchive()
-        self.avr_family = self.factory.makeProcessorFamily(
-            name="avr", restricted=True)
-        self.factory.makeProcessor(self.avr_family, "avr2001")
+        self.avr = self.factory.makeProcessor(name="avr2001", restricted=True)
         self.avr_distroarch = self.factory.makeDistroArchSeries(
-            architecturetag='avr', processorfamily=self.avr_family,
+            architecturetag='avr', processor=self.avr,
             distroseries=self.distroseries, supports_virtualized=True)
-        self.sparc_family = self.factory.makeProcessorFamily(name="sparc",
-            restricted=False)
-        self.factory.makeProcessor(self.sparc_family, "sparc64")
+        self.sparc = self.factory.makeProcessor(
+            name="sparc64", restricted=False)
         self.sparc_distroarch = self.factory.makeDistroArchSeries(
-            architecturetag='sparc', processorfamily=self.sparc_family,
+            architecturetag='sparc', processor=self.sparc,
             distroseries=self.distroseries, supports_virtualized=True)
         self.distroseries.nominatedarchindep = self.sparc_distroarch
         self.addFakeChroots(self.distroseries)
@@ -1052,7 +874,8 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         """
         available_archs = [self.sparc_distroarch, self.avr_distroarch]
         pubrec = self.getPubSource(architecturehintlist='any')
-        self.assertEquals([self.sparc_distroarch],
+        self.assertEqual(
+            [self.sparc_distroarch],
             pubrec._getAllowedArchitectures(available_archs))
 
     def test__getAllowedArchitectures_restricted_override(self):
@@ -1062,9 +885,10 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         an explicit ArchiveArch association with the archive.
         """
         available_archs = [self.sparc_distroarch, self.avr_distroarch]
-        getUtility(IArchiveArchSet).new(self.archive, self.avr_family)
+        getUtility(IArchiveArchSet).new(self.archive, self.avr)
         pubrec = self.getPubSource(architecturehintlist='any')
-        self.assertEquals([self.sparc_distroarch, self.avr_distroarch],
+        self.assertEqual(
+            [self.sparc_distroarch, self.avr_distroarch],
             pubrec._getAllowedArchitectures(available_archs))
 
     def test_createMissingBuilds_restricts_any(self):
@@ -1073,8 +897,8 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         """
         pubrec = self.getPubSource(architecturehintlist='any')
         builds = pubrec.createMissingBuilds()
-        self.assertEquals(1, len(builds))
-        self.assertEquals(self.sparc_distroarch, builds[0].distro_arch_series)
+        self.assertEqual(1, len(builds))
+        self.assertEqual(self.sparc_distroarch, builds[0].distro_arch_series)
 
     def test_createMissingBuilds_restricts_explicitlist(self):
         """createMissingBuilds() limits builds targeted at a variety of
@@ -1082,8 +906,8 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         """
         pubrec = self.getPubSource(architecturehintlist='sparc i386 avr')
         builds = pubrec.createMissingBuilds()
-        self.assertEquals(1, len(builds))
-        self.assertEquals(self.sparc_distroarch, builds[0].distro_arch_series)
+        self.assertEqual(1, len(builds))
+        self.assertEqual(self.sparc_distroarch, builds[0].distro_arch_series)
 
     def test_createMissingBuilds_restricts_all(self):
         """createMissingBuilds() should limit builds targeted at 'all'
@@ -1092,20 +916,20 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         """
         pubrec = self.getPubSource(architecturehintlist='all')
         builds = pubrec.createMissingBuilds()
-        self.assertEquals(1, len(builds))
-        self.assertEquals(self.sparc_distroarch, builds[0].distro_arch_series)
+        self.assertEqual(1, len(builds))
+        self.assertEqual(self.sparc_distroarch, builds[0].distro_arch_series)
 
     def test_createMissingBuilds_restrict_override(self):
         """createMissingBuilds() should limit builds targeted at 'any'
         architecture to architectures that are unrestricted or
         explicitly associated with the archive.
         """
-        getUtility(IArchiveArchSet).new(self.archive, self.avr_family)
+        getUtility(IArchiveArchSet).new(self.archive, self.avr)
         pubrec = self.getPubSource(architecturehintlist='any')
         builds = pubrec.createMissingBuilds()
-        self.assertEquals(2, len(builds))
-        self.assertEquals(self.avr_distroarch, builds[0].distro_arch_series)
-        self.assertEquals(self.sparc_distroarch, builds[1].distro_arch_series)
+        self.assertEqual(2, len(builds))
+        self.assertEqual(self.avr_distroarch, builds[0].distro_arch_series)
+        self.assertEqual(self.sparc_distroarch, builds[1].distro_arch_series)
 
 
 class PublishingSetTests(TestCaseWithFactory):
@@ -1168,56 +992,114 @@ class TestPublishingSetLite(TestCaseWithFactory):
 
     layer = ZopelessDatabaseLayer
 
-    def enableDistroDerivation(self):
-        self.useFixture(FeatureFixture({FEATURE_FLAG_ENABLE_MODULE: u'on'}))
+    def setUp(self):
+        super(TestPublishingSetLite, self).setUp()
+        self.person = self.factory.makePerson()
 
     def test_requestDeletion_marks_SPPHs_deleted(self):
         spph = self.factory.makeSourcePackagePublishingHistory()
-        getUtility(IPublishingSet).requestDeletion(
-            [spph], self.factory.makePerson())
+        getUtility(IPublishingSet).requestDeletion([spph], self.person)
         self.assertEqual(PackagePublishingStatus.DELETED, spph.status)
 
     def test_requestDeletion_leaves_other_SPPHs_alone(self):
         spph = self.factory.makeSourcePackagePublishingHistory()
         other_spph = self.factory.makeSourcePackagePublishingHistory()
-        getUtility(IPublishingSet).requestDeletion(
-            [other_spph], self.factory.makePerson())
+        getUtility(IPublishingSet).requestDeletion([other_spph], self.person)
         self.assertEqual(PackagePublishingStatus.PENDING, spph.status)
+
+    def test_requestDeletion_marks_BPPHs_deleted(self):
+        bpph = self.factory.makeBinaryPackagePublishingHistory()
+        getUtility(IPublishingSet).requestDeletion([bpph], self.person)
+        self.assertEqual(PackagePublishingStatus.DELETED, bpph.status)
 
     def test_requestDeletion_marks_attached_BPPHs_deleted(self):
         bpph = self.factory.makeBinaryPackagePublishingHistory()
         spph = self.factory.makeSPPHForBPPH(bpph)
-        getUtility(IPublishingSet).requestDeletion(
-            [spph], self.factory.makePerson())
+        getUtility(IPublishingSet).requestDeletion([spph], self.person)
         self.assertEqual(PackagePublishingStatus.DELETED, spph.status)
 
     def test_requestDeletion_leaves_other_BPPHs_alone(self):
         bpph = self.factory.makeBinaryPackagePublishingHistory()
         unrelated_spph = self.factory.makeSourcePackagePublishingHistory()
         getUtility(IPublishingSet).requestDeletion(
-            [unrelated_spph], self.factory.makePerson())
+            [unrelated_spph], self.person)
         self.assertEqual(PackagePublishingStatus.PENDING, bpph.status)
 
     def test_requestDeletion_accepts_empty_sources_list(self):
-        person = self.factory.makePerson()
-        getUtility(IPublishingSet).requestDeletion([], person)
+        getUtility(IPublishingSet).requestDeletion([], self.person)
         # The test is that this does not fail.
-        Store.of(person).flush()
+        Store.of(self.person).flush()
 
     def test_requestDeletion_creates_DistroSeriesDifferenceJobs(self):
         dsp = self.factory.makeDistroSeriesParent()
-        series = dsp.derived_series
         spph = self.factory.makeSourcePackagePublishingHistory(
-            series, pocket=PackagePublishingPocket.RELEASE)
+            dsp.derived_series, pocket=PackagePublishingPocket.RELEASE)
         spn = spph.sourcepackagerelease.sourcepackagename
-
-        self.enableDistroDerivation()
-        getUtility(IPublishingSet).requestDeletion(
-            [spph], self.factory.makePerson())
-
+        getUtility(IPublishingSet).requestDeletion([spph], self.person)
         self.assertEqual(
             1, len(find_waiting_jobs(
                 dsp.derived_series, spn, dsp.parent_series)))
+
+    def test_requestDeletion_disallows_unmodifiable_suites(self):
+        bpph = self.factory.makeBinaryPackagePublishingHistory(
+            pocket=PackagePublishingPocket.RELEASE)
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            distroseries=bpph.distroseries,
+            pocket=PackagePublishingPocket.RELEASE)
+        spph.distroseries.status = SeriesStatus.CURRENT
+        message = "Cannot delete publications from suite '%s'" % (
+            spph.distroseries.getSuite(spph.pocket))
+        for pub in spph, bpph:
+            self.assertRaisesWithContent(
+                DeletionError, message, pub.requestDeletion, self.person)
+            self.assertRaisesWithContent(
+                DeletionError, message, pub.api_requestDeletion, self.person)
+
+    def test_requestDeletion_marks_debug_as_deleted(self):
+        matching_bpph, debug_matching_bpph = (
+            self.factory.makeBinaryPackagePublishingHistory(
+                pocket=PackagePublishingPocket.RELEASE, with_debug=True))
+        non_match_bpph = self.factory.makeBinaryPackagePublishingHistory(
+            pocket=PackagePublishingPocket.RELEASE)
+        non_match_bpr = removeSecurityProxy(
+            non_match_bpph.binarypackagerelease)
+        debug_non_match_bpph = self.factory.makeBinaryPackagePublishingHistory(
+            pocket=PackagePublishingPocket.RELEASE,
+            binpackageformat=BinaryPackageFormat.DDEB)
+        debug_non_match_bpr = debug_non_match_bpph.binarypackagerelease
+        non_match_bpr.debug_package = debug_non_match_bpr
+        getUtility(IPublishingSet).requestDeletion(
+            [matching_bpph, non_match_bpph], self.person)
+        for pub in (matching_bpph, debug_matching_bpph, non_match_bpph):
+            self.assertEqual(pub.status, PackagePublishingStatus.DELETED)
+        self.assertEqual(
+            debug_non_match_bpph.status, PackagePublishingStatus.PENDING)
+
+    def test_changeOverride_also_overrides_debug_package(self):
+        bpph, debug_bpph = self.factory.makeBinaryPackagePublishingHistory(
+            pocket=PackagePublishingPocket.RELEASE, with_debug=True)
+        new_section = self.factory.makeSection()
+        new_bpph = bpph.changeOverride(new_section=new_section)
+        publishing_set = getUtility(IPublishingSet)
+        [new_debug_bpph] = publishing_set.findCorrespondingDDEBPublications(
+            [new_bpph])
+        self.assertEqual(new_debug_bpph.section, new_section)
+
+    def test_requestDeletion_forbids_debug_package(self):
+        bpph, debug_bpph = self.factory.makeBinaryPackagePublishingHistory(
+            pocket=PackagePublishingPocket.RELEASE, with_debug=True)
+        self.assertRaisesWithContent(
+            DeletionError, "Cannot delete ddeb publications directly; delete "
+            "the corresponding deb instead.",
+            debug_bpph.requestDeletion, self.factory.makePerson())
+
+    def test_changeOverride_forbids_debug_package(self):
+        bpph, debug_bpph = self.factory.makeBinaryPackagePublishingHistory(
+            pocket=PackagePublishingPocket.RELEASE, with_debug=True)
+        self.assertRaisesWithContent(
+            OverrideError, "Cannot override ddeb publications directly; "
+            "override the corresponding deb instead.",
+            debug_bpph.changeOverride, new_phased_update_percentage=20)
 
 
 class TestSourceDomination(TestNativePublishingBase):
@@ -1255,7 +1137,7 @@ class TestSourceDomination(TestNativePublishingBase):
 
         self.assertRaises(AssertionError, source.supersede, super_source)
         self.checkSuperseded([source], super_source)
-        self.assertEquals(super_date, source.datesuperseded)
+        self.assertEqual(super_date, source.datesuperseded)
 
 
 class TestBinaryDomination(TestNativePublishingBase):
@@ -1291,18 +1173,26 @@ class TestBinaryDomination(TestNativePublishingBase):
         """Check that atomic domination only covers identical overrides.
 
         This is important, as otherwise newly-overridden arch-indep binaries
-        will supersede themselves, and vanish entirely (bug #178102).
+        will supersede themselves, and vanish entirely (bug #178102).  We
+        check both DEBs and DDEBs.
         """
-        bins = self.getPubBinaries(architecturespecific=False)
-
         universe = getUtility(IComponentSet)['universe']
-        super_bins = []
-        for bin in bins:
-            super_bins.append(bin.changeOverride(new_component=universe))
+        games = getUtility(ISectionSet)['games']
+        for name, override in (
+            ("component", {"new_component": universe}),
+            ("section", {"new_section": games}),
+            ("priority", {"new_priority": PackagePublishingPriority.EXTRA}),
+            ("phase", {"new_phased_update_percentage": 50})):
+            bins = self.getPubBinaries(
+                binaryname=name, architecturespecific=False)
 
-        bins[0].supersede(super_bins[0])
-        self.checkSuperseded(bins, super_bins[0])
-        self.checkPublications(super_bins, PackagePublishingStatus.PENDING)
+            super_bins = []
+            for bin in bins:
+                super_bins.append(bin.changeOverride(**override))
+
+            bins[0].supersede(super_bins[0])
+            self.checkSuperseded(bins, super_bins[0])
+            self.checkPublications(super_bins, PackagePublishingStatus.PENDING)
 
     def testSupersedingSupersededArchSpecificBinaryFails(self):
         """Check that supersede() fails with a superseded arch-dep binary.
@@ -1322,7 +1212,7 @@ class TestBinaryDomination(TestNativePublishingBase):
 
         self.assertRaises(AssertionError, bin.supersede, super_bin)
         self.checkSuperseded([bin], super_bin)
-        self.assertEquals(super_date, bin.datesuperseded)
+        self.assertEqual(super_date, bin.datesuperseded)
 
     def testSkipsSupersededArchIndependentBinary(self):
         """Check that supersede() skips a superseded arch-indep binary.
@@ -1344,7 +1234,7 @@ class TestBinaryDomination(TestNativePublishingBase):
 
         bin.supersede(super_bin)
         self.checkSuperseded([bin], super_bin)
-        self.assertEquals(super_date, bin.datesuperseded)
+        self.assertEqual(super_date, bin.datesuperseded)
 
     def testSupersedesCorrespondingDDEB(self):
         """Check that supersede() takes with it any corresponding DDEB.
@@ -1352,14 +1242,9 @@ class TestBinaryDomination(TestNativePublishingBase):
         DDEB publications should be superseded when their corresponding DEB
         is.
         """
-        getUtility(IArchiveSet).new(
-            purpose=ArchivePurpose.DEBUG, owner=self.ubuntutest.owner,
-            distribution=self.ubuntutest)
-
         # Each of these will return (i386 deb, i386 ddeb, hppa deb,
         # hppa ddeb).
-        bins = self.getPubBinaries(
-            architecturespecific=True, with_debug=True)
+        bins = self.getPubBinaries(architecturespecific=True, with_debug=True)
         super_bins = self.getPubBinaries(
             architecturespecific=True, with_debug=True)
 
@@ -1379,13 +1264,8 @@ class TestBinaryDomination(TestNativePublishingBase):
         Since DDEBs are superseded when their DEBs are, there's no need to
         for them supersede anything themselves. Any such attempt is an error.
         """
-        getUtility(IArchiveSet).new(
-            purpose=ArchivePurpose.DEBUG, owner=self.ubuntutest.owner,
-            distribution=self.ubuntutest)
-
         # This will return (i386 deb, i386 ddeb, hppa deb, hppa ddeb).
-        bins = self.getPubBinaries(
-            architecturespecific=True, with_debug=True)
+        bins = self.getPubBinaries(architecturespecific=True, with_debug=True)
         self.assertRaises(AssertionError, bins[0].supersede, bins[1])
 
 
@@ -1393,9 +1273,8 @@ class TestBinaryGetOtherPublications(TestNativePublishingBase):
     """Test BinaryPackagePublishingHistory._getOtherPublications() works."""
 
     def checkOtherPublications(self, this, others):
-        self.assertEquals(
-            set(removeSecurityProxy(this)._getOtherPublications()),
-            set(others))
+        self.assertContentEqual(
+            removeSecurityProxy(this)._getOtherPublications(), others)
 
     def testFindsOtherArchIndepPublications(self):
         """Arch-indep publications with the same overrides should be found."""
@@ -1508,7 +1387,7 @@ class TestGetBuiltBinaries(TestNativePublishingBase):
         # SPPH, BPPHs and BPRs.
         with StormStatementRecorder() as recorder:
             bins = spph.getBuiltBinaries()
-        self.assertEquals(0, len(bins))
+        self.assertEqual(0, len(bins))
         self.assertThat(recorder, HasQueryCount(Equals(3)))
 
         self.getPubBinaries(pub_source=spph)
@@ -1520,7 +1399,7 @@ class TestGetBuiltBinaries(TestNativePublishingBase):
         # BPF has no query penalty.
         with StormStatementRecorder() as recorder:
             bins = spph.getBuiltBinaries(want_files=True)
-            self.assertEquals(2, len(bins))
+            self.assertEqual(2, len(bins))
             for bpph in bins:
                 files = bpph.binarypackagerelease.files
                 self.assertEqual(1, len(files))
@@ -1530,12 +1409,12 @@ class TestGetBuiltBinaries(TestNativePublishingBase):
 
 
 class TestPublishBinaries(TestCaseWithFactory):
-    """Test PublishingSet.publishBinary() works."""
+    """Test PublishingSet.publishBinaries() works."""
 
     layer = LaunchpadZopelessLayer
 
     def makeArgs(self, bprs, distroseries, archive=None):
-        """Create a dict of arguments for publishBinary."""
+        """Create a dict of arguments for publishBinaries."""
         if archive is None:
             archive = distroseries.main_archive
         return {
@@ -1545,7 +1424,7 @@ class TestPublishBinaries(TestCaseWithFactory):
             'binaries': dict(
                 (bpr, (self.factory.makeComponent(),
                  self.factory.makeSection(),
-                 PackagePublishingPriority.REQUIRED)) for bpr in bprs),
+                 PackagePublishingPriority.REQUIRED, 50)) for bpr in bprs),
             }
 
     def test_architecture_dependent(self):
@@ -1568,14 +1447,15 @@ class TestPublishBinaries(TestCaseWithFactory):
             (args['archive'], target_das, args['pocket']),
             (bpph.archive, bpph.distroarchseries, bpph.pocket))
         self.assertEqual(
-            overrides, (bpph.component, bpph.section, bpph.priority))
+            overrides,
+            (bpph.component, bpph.section, bpph.priority,
+             bpph.phased_update_percentage))
         self.assertEqual(PackagePublishingStatus.PENDING, bpph.status)
 
     def test_architecture_independent(self):
         # Architecture-independent binaries get published to all enabled
         # DASes in the series.
-        bpr = self.factory.makeBinaryPackageRelease(
-            architecturespecific=False)
+        bpr = self.factory.makeBinaryPackageRelease(architecturespecific=False)
         # Create 3 architectures. The binary will not be published in
         # the disabled one.
         target_das_a = self.factory.makeDistroArchSeries()
@@ -1585,12 +1465,26 @@ class TestPublishBinaries(TestCaseWithFactory):
         self.factory.makeDistroArchSeries(
             distroseries=target_das_a.distroseries, enabled=False)
         args = self.makeArgs([bpr], target_das_a.distroseries)
-        bpphs = getUtility(IPublishingSet).publishBinaries(
-            **args)
-        self.assertEquals(2, len(bpphs))
-        self.assertEquals(
-            set((target_das_a, target_das_b)),
-            set(bpph.distroarchseries for bpph in bpphs))
+        bpphs = getUtility(IPublishingSet).publishBinaries(**args)
+        self.assertEqual(2, len(bpphs))
+        self.assertContentEqual(
+            (target_das_a, target_das_b),
+            [bpph.distroarchseries for bpph in bpphs])
+
+    def test_architecture_disabled(self):
+        # An empty list is return if the DistroArchSeries was disabled.
+        arch_tag = self.factory.getUniqueString('arch-')
+        orig_das = self.factory.makeDistroArchSeries(
+            architecturetag=arch_tag)
+        target_das = self.factory.makeDistroArchSeries(
+            architecturetag=arch_tag)
+        build = self.factory.makeBinaryPackageBuild(distroarchseries=orig_das)
+        bpr = self.factory.makeBinaryPackageRelease(
+            build=build, architecturespecific=True)
+        target_das.enabled = False
+        args = self.makeArgs([bpr], target_das.distroseries)
+        results = getUtility(IPublishingSet).publishBinaries(**args)
+        self.assertEqual([], results)
 
     def test_does_not_duplicate(self):
         # An attempt to copy something for a second time is ignored.
@@ -1606,37 +1500,117 @@ class TestPublishBinaries(TestCaseWithFactory):
         args['pocket'] = PackagePublishingPocket.RELEASE
         [another_bpph] = getUtility(IPublishingSet).publishBinaries(**args)
 
-    def test_ddebs_need_debug_archive(self):
+    def test_primary_ddebs_need_ddebs_enabled(self):
         debug = self.factory.makeBinaryPackageRelease(
             binpackageformat=BinaryPackageFormat.DDEB)
         args = self.makeArgs(
             [debug], debug.build.distro_arch_series.distroseries)
+
+        # ddebs are rejected with build_debug_symbols unset
         self.assertRaises(
             QueueInconsistentStateError,
             getUtility(IPublishingSet).publishBinaries, **args)
 
-    def test_ddebs_go_to_debug_archive(self):
-        # Normal packages go to the given archive, but debug packages go
-        # to the corresponding debug archive.
-        das = self.factory.makeDistroArchSeries()
-        self.factory.makeArchive(
-            purpose=ArchivePurpose.DEBUG,
-            distribution=das.distroseries.distribution)
-        build = self.factory.makeBinaryPackageBuild(distroarchseries=das)
-        normal = self.factory.makeBinaryPackageRelease(build=build)
-        debug = self.factory.makeBinaryPackageRelease(
-            build=build, binpackageformat=BinaryPackageFormat.DDEB)
-        args = self.makeArgs([normal, debug], das.distroseries)
-        bpphs = getUtility(IPublishingSet).publishBinaries(**args)
-        self.assertEquals(2, len(bpphs))
-        self.assertEquals(
-            set((normal, debug)),
-            set(bpph.binarypackagerelease for bpph in bpphs))
-        self.assertEquals(
-            set((das.main_archive, das.main_archive.debug_archive)),
-            set(bpph.archive for bpph in bpphs))
+        # But accepted with build_debug_symbols set
+        archive = debug.build.distro_arch_series.distroseries.main_archive
+        archive.build_debug_symbols = True
+        getUtility(IPublishingSet).publishBinaries(**args)
 
-        # A second copy does nothing, because it checks in the debug
-        # archive too.
-        self.assertContentEqual(
-            [], getUtility(IPublishingSet).publishBinaries(**args))
+
+class TestChangeOverride(TestNativePublishingBase):
+    """Test that changing overrides works."""
+
+    def setUpOverride(self, status=SeriesStatus.DEVELOPMENT,
+                      pocket=PackagePublishingPocket.RELEASE, binary=False,
+                      ddeb=False, **kwargs):
+        self.distroseries.status = status
+        if ddeb:
+            pub = self.getPubBinaries(pocket=pocket, with_debug=True)[2]
+            self.assertEqual(
+                BinaryPackageFormat.DDEB,
+                pub.binarypackagerelease.binpackageformat)
+        elif binary:
+            pub = self.getPubBinaries(pocket=pocket)[0]
+        else:
+            pub = self.getPubSource(pocket=pocket)
+        return pub.changeOverride(**kwargs)
+
+    def assertCanOverride(self, status=SeriesStatus.DEVELOPMENT,
+                          pocket=PackagePublishingPocket.RELEASE, **kwargs):
+        new_pub = self.setUpOverride(status=status, pocket=pocket, **kwargs)
+        self.assertEqual(new_pub.status, PackagePublishingStatus.PENDING)
+        self.assertEqual(new_pub.pocket, pocket)
+        if "new_component" in kwargs:
+            self.assertEqual(kwargs["new_component"], new_pub.component.name)
+        if "new_section" in kwargs:
+            self.assertEqual(kwargs["new_section"], new_pub.section.name)
+        if "new_priority" in kwargs:
+            self.assertEqual(
+                kwargs["new_priority"], new_pub.priority.name.lower())
+        if "new_phased_update_percentage" in kwargs:
+            self.assertEqual(
+                kwargs["new_phased_update_percentage"],
+                new_pub.phased_update_percentage)
+        return new_pub
+
+    def assertCannotOverride(self, **kwargs):
+        self.assertRaises(OverrideError, self.setUpOverride, **kwargs)
+
+    def test_changes_source(self):
+        # SPPH.changeOverride changes the properties of source publications.
+        self.assertCanOverride(new_component="universe", new_section="misc")
+
+    def test_changes_binary(self):
+        # BPPH.changeOverride changes the properties of binary publications.
+        self.assertCanOverride(
+            binary=True, new_component="universe", new_section="misc",
+            new_priority="extra", new_phased_update_percentage=90)
+
+    def test_set_and_clear_phased_update_percentage(self):
+        # new_phased_update_percentage=<integer> sets a phased update
+        # percentage; new_phased_update_percentage=100 clears it.
+        pub = self.assertCanOverride(
+            binary=True, new_phased_update_percentage=50)
+        new_pub = pub.changeOverride(new_phased_update_percentage=100)
+        self.assertIsNone(new_pub.phased_update_percentage)
+
+    def test_no_change(self):
+        # changeOverride does not create a new publication if the existing
+        # publication is already in the desired state.
+        self.assertIsNone(
+            self.setUpOverride(new_component="main", new_section="base"))
+        self.assertIsNone(
+            self.setUpOverride(
+                binary=True, new_component="main", new_section="base",
+                new_priority="standard"))
+
+    def test_forbids_stable_RELEASE(self):
+        # changeOverride is not allowed in the RELEASE pocket of a stable
+        # distroseries.
+        self.assertCannotOverride(
+            status=SeriesStatus.CURRENT, new_component="universe")
+        self.assertCannotOverride(
+            status=SeriesStatus.CURRENT, binary=True, new_component="universe")
+
+    def test_allows_development_RELEASE(self):
+        # changeOverride is allowed in the RELEASE pocket of a development
+        # distroseries.
+        self.assertCanOverride(new_component="universe")
+        self.assertCanOverride(binary=True, new_component="universe")
+
+    def test_allows_stable_PROPOSED(self):
+        # changeOverride is allowed in the PROPOSED pocket of a stable
+        # distroseries.
+        self.assertCanOverride(
+            status=SeriesStatus.CURRENT,
+            pocket=PackagePublishingPocket.PROPOSED, new_component="universe")
+        self.assertCanOverride(
+            status=SeriesStatus.CURRENT,
+            pocket=PackagePublishingPocket.PROPOSED, binary=True,
+            new_component="universe")
+
+    def test_forbids_changing_archive(self):
+        # changeOverride refuses to make changes that would require changing
+        # archive.
+        self.assertCannotOverride(new_component="partner")
+        self.assertCannotOverride(binary=True, new_component="partner")

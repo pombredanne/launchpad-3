@@ -8,17 +8,14 @@
 
   <h2>Milestone-targeted bugs</h2>
 
-  <div class="portletBody">
-    <table width="100%">
-      <tr tal:repeat="milestone_openbugs milestone_buglistings">
-        <td>
-          <a href=""
-             tal:content="milestone_openbugs/title"
-             tal:attributes="href milestone_openbugs/url">sid</a>
-        </td>
-        <td><span tal:replace="milestone_openbugs/count">2</span></td>
-      </tr>
-    </table>
-  </div>
+  <ul class="data-list">
+    <li tal:repeat="milestone_openbugs milestone_buglistings">
+      <span tal:content="milestone_openbugs/count"
+            class="count">2</span>
+      <a href=""
+         tal:content="milestone_openbugs/title"
+         tal:attributes="href milestone_openbugs/url">sid</a>
+    </li>
+  </ul>
 
 </div>

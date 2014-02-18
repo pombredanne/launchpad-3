@@ -1,8 +1,6 @@
 # Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213
-
 from datetime import timedelta
 import httplib
 
@@ -43,7 +41,7 @@ from zope.schema import (
     )
 from zope.security.interfaces import Unauthorized
 
-from canonical.launchpad import _
+from lp import _
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.sourcepackage import ISourcePackage
@@ -400,7 +398,8 @@ class ITranslationImportQueue(Interface):
     @operation_parameters(
         status=copy_field(ITranslationImportQueueEntry['status']))
     @operation_returns_collection_of(IHasTranslationImports)
-    def getRequestTargets(status=None):
+    @call_with(user=REQUEST_USER)
+    def getRequestTargets(user,  status=None):
         """List `Product`s and `DistroSeries` with pending imports.
 
         :arg status: Filter by `RosettaImportStatus`.

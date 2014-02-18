@@ -10,9 +10,9 @@ import logging
 import transaction
 from zope.component import getUtility
 
-from canonical.config import config
 from lp.bugs.scripts.bugimport import BugImporter
 from lp.registry.interfaces.product import IProductSet
+from lp.services.config import config
 from lp.services.scripts.base import LaunchpadScript
 from lp.testing.factory import LaunchpadObjectFactory
 
@@ -88,5 +88,5 @@ class BugImportScript(LaunchpadScript):
 
 
 if __name__ == '__main__':
-    script = BugImportScript('canonical.launchpad.scripts.bugimport')
+    script = BugImportScript('lp.services.scripts.bugimport')
     script.run()

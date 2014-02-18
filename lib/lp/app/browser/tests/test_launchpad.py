@@ -1,40 +1,52 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for traversal from the root branch object."""
 
 __metaclass__ = type
 
-from zope.component import getUtility
+from zope.component import (
+    getMultiAdapter,
+    getUtility,
+    )
 from zope.publisher.interfaces import NotFound
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.account import AccountStatus
-from canonical.launchpad.webapp import (
-    canonical_url,
+from lp.app.browser.launchpad import (
+    iter_view_registrations,
+    LaunchpadRootNavigation,
     )
-from canonical.launchpad.webapp.interfaces import (
+from lp.app.enums import InformationType
+from lp.app.errors import GoneError
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.services import IService
+from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
+from lp.registry.enums import (
+    PersonVisibility,
+    SharingPermission,
+    )
+from lp.registry.interfaces.person import IPersonSet
+from lp.services.identity.interfaces.account import AccountStatus
+from lp.services.webapp import canonical_url
+from lp.services.webapp.escaping import html_escape
+from lp.services.webapp.interfaces import (
     BrowserNotificationLevel,
     ILaunchpadRoot,
     )
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.launchpad.webapp.url import urlappend
-from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.app.browser.launchpad import LaunchpadRootNavigation
-from lp.app.errors import GoneError
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
-from lp.registry.interfaces.person import (
-    IPersonSet,
-    PersonVisibility,
-    )
+from lp.services.webapp.servers import LaunchpadTestRequest
+from lp.services.webapp.url import urlappend
 from lp.testing import (
     ANONYMOUS,
+    celebrity_logged_in,
     login,
     login_person,
     person_logged_in,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    FunctionalLayer,
     )
 from lp.testing.publication import test_traverse
 from lp.testing.views import create_view
@@ -159,17 +171,19 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
         # branch that doesn't exist will display an error message.
         branch = self.factory.makeAnyBranch()
         bad_name = branch.unique_name + 'wibble'
-        requiredMessage = "No such branch: '%s'." % (
-            branch.name + "wibble")
-        self.assertDisplaysError(bad_name, requiredMessage)
+        required_message = html_escape(
+            "No such branch: '%s'." % (branch.name + "wibble"))
+        self.assertDisplaysError(bad_name, required_message)
 
     def test_private_branch(self):
         # If an attempt is made to access a private branch, display an error.
-        branch = self.factory.makeProductBranch(private=True)
+        branch = self.factory.makeProductBranch(
+            information_type=InformationType.USERDATA)
         branch_unique_name = removeSecurityProxy(branch).unique_name
         login(ANONYMOUS)
-        requiredMessage = "No such branch: '%s'." % branch_unique_name
-        self.assertDisplaysError(branch_unique_name, requiredMessage)
+        required_message = html_escape(
+            "No such branch: '%s'." % branch_unique_name)
+        self.assertDisplaysError(branch_unique_name, required_message)
 
     def test_product_alias(self):
         # Traversing to /+branch/<product> redirects to the page for the
@@ -185,7 +199,8 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
         branch = self.factory.makeProductBranch()
         naked_product = removeSecurityProxy(branch.product)
         ICanHasLinkedBranch(naked_product).setBranch(branch)
-        removeSecurityProxy(branch).explicitly_private = True
+        removeSecurityProxy(branch).information_type = (
+            InformationType.USERDATA)
         login(ANONYMOUS)
         requiredMessage = (
             u"The target %s does not have a linked branch." %
@@ -195,8 +210,8 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
     def test_nonexistent_product(self):
         # Traversing to /+branch/<no-such-product> displays an error message.
         non_existent = 'non-existent'
-        requiredMessage = u"No such product: '%s'." % non_existent
-        self.assertDisplaysError(non_existent, requiredMessage)
+        required_message = u"No such product: '%s'." % non_existent
+        self.assertDisplaysError(non_existent, html_escape(required_message))
 
     def test_nonexistent_product_without_referer(self):
         # Traversing to /+branch/<no-such-product> without a referer results
@@ -211,7 +226,8 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
         branch = self.factory.makeProductBranch()
         naked_product = removeSecurityProxy(branch.product)
         ICanHasLinkedBranch(naked_product).setBranch(branch)
-        removeSecurityProxy(branch).explicitly_private = True
+        removeSecurityProxy(branch).information_type = (
+            InformationType.USERDATA)
         login(ANONYMOUS)
         self.assertNotFound(naked_product.name, use_default_referer=False)
 
@@ -241,7 +257,8 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
         # message telling the user there is no linked branch.
         sourcepackage = self.factory.makeSourcePackage()
         branch = self.factory.makePackageBranch(
-            sourcepackage=sourcepackage, private=True)
+            sourcepackage=sourcepackage,
+            information_type=InformationType.USERDATA)
         distro_package = sourcepackage.distribution_sourcepackage
         registrant = distro_package.distribution.owner
         with person_logged_in(registrant):
@@ -259,6 +276,14 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
         path = urlappend(branch.unique_name, '+edit')
         self.assertRedirects(path, canonical_url(branch, view_name='+edit'))
 
+    def test_alias_trailing_path_redirect(self):
+        # Redirects also support trailing path segments with aliases.
+        branch = self.factory.makeProductBranch()
+        with person_logged_in(branch.product.owner):
+            branch.product.development_focus.branch = branch
+        path = '%s/+edit' % branch.product.name
+        self.assertRedirects(path, canonical_url(branch, view_name='+edit'))
+
     def test_product_series_redirect(self):
         # Traversing to /+branch/<product>/<series> redirects to the branch
         # for that series, if there is one.
@@ -266,15 +291,6 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
         series = self.factory.makeProductSeries(branch=branch)
         self.assertRedirects(
             ICanHasLinkedBranch(series).bzr_path, canonical_url(branch))
-
-    def test_nonexistent_product_series(self):
-        # /+branch/<product>/<series> displays an error message if there is
-        # no such series.
-        product = self.factory.makeProduct()
-        non_existent = 'nonexistent'
-        requiredMessage = u"No such product series: '%s'." % non_existent
-        path = '%s/%s' % (product.name, non_existent)
-        self.assertDisplaysError(path, requiredMessage)
 
     def test_no_branch_for_series(self):
         # If there's no branch for a product series, display a
@@ -288,7 +304,8 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
     def test_private_branch_for_series(self):
         # If the development focus of a product series is private, display a
         # message telling the user there is no linked branch.
-        branch = self.factory.makeBranch(private=True)
+        branch = self.factory.makeBranch(
+            information_type=InformationType.USERDATA)
         series = self.factory.makeProductSeries(branch=branch)
         login(ANONYMOUS)
         path = ICanHasLinkedBranch(series).bzr_path
@@ -300,7 +317,7 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
         # error notification if the thing following +branch is a unique name
         # that's too short to be a real unique name.
         owner = self.factory.makePerson()
-        requiredMessage = (
+        requiredMessage = html_escape(
             u"Cannot understand namespace name: '%s'" % owner.name)
         self.assertDisplaysError('~%s' % owner.name, requiredMessage)
 
@@ -424,3 +441,145 @@ class TestErrorViews(TestCaseWithFactory):
         view = create_view(error, 'index.html')
         self.assertEqual('Error: Page gone', view.page_title)
         self.assertEqual(410, view.request.response.getStatus())
+
+
+class ExceptionHierarchyTestCase(TestCaseWithFactory):
+
+    layer = FunctionalLayer
+
+    def test_exception(self):
+        view = create_view(IndexError('test'), '+hierarchy')
+        view.request.traversed_objects = [getUtility(ILaunchpadRoot)]
+        self.assertEqual([], view.objects)
+
+    def test_zope_exception(self):
+        view = create_view(Unauthorized('test'), '+hierarchy')
+        view.request.traversed_objects = [getUtility(ILaunchpadRoot)]
+        self.assertEqual([], view.objects)
+
+    def test_launchapd_exception(self):
+        view = create_view(NotFound(None, 'test'), '+hierarchy')
+        view.request.traversed_objects = [getUtility(ILaunchpadRoot)]
+        self.assertEqual([], view.objects)
+
+
+class TestIterViewRegistrations(TestCaseWithFactory):
+
+    layer = FunctionalLayer
+
+    def test_iter_view_registrations(self):
+        """iter_view_registrations provides only registrations of class."""
+        macros = getMultiAdapter(
+            (object(), LaunchpadTestRequest()), name='+base-layout-macros')
+        names = set(
+            reg.name for reg in iter_view_registrations(macros.__class__))
+        self.assertIn('+base-layout-macros', names)
+        self.assertNotIn('+related-pages', names)
+
+
+class TestProductTraversal(TestCaseWithFactory, TraversalMixin):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestProductTraversal, self).setUp()
+        self.active_public_product = self.factory.makeProduct()
+        self.inactive_public_product = self.factory.makeProduct()
+        removeSecurityProxy(self.inactive_public_product).active = False
+        self.proprietary_product_owner = self.factory.makePerson()
+        self.active_proprietary_product = self.factory.makeProduct(
+            owner=self.proprietary_product_owner,
+            information_type=InformationType.PROPRIETARY)
+        self.inactive_proprietary_product = self.factory.makeProduct(
+            owner=self.proprietary_product_owner,
+            information_type=InformationType.PROPRIETARY)
+        removeSecurityProxy(self.inactive_proprietary_product).active = False
+
+    def traverse_to_active_public_product(self):
+        segment = self.active_public_product.name
+        self.traverse(segment, segment)
+
+    def traverse_to_inactive_public_product(self):
+        segment = removeSecurityProxy(self.inactive_public_product).name
+        self.traverse(segment, segment)
+
+    def traverse_to_active_proprietary_product(self):
+        segment = removeSecurityProxy(self.active_proprietary_product).name
+        self.traverse(segment, segment)
+
+    def traverse_to_inactive_proprietary_product(self):
+        segment = removeSecurityProxy(self.inactive_proprietary_product).name
+        self.traverse(segment, segment)
+
+    def test_access_for_anon(self):
+        # Anonymous users can see only public active products.
+        with person_logged_in(ANONYMOUS):
+            self.traverse_to_active_public_product()
+            # Access to other products raises a NotFound error.
+            self.assertRaises(
+                NotFound, self.traverse_to_inactive_public_product)
+            self.assertRaises(
+                NotFound, self.traverse_to_active_proprietary_product)
+            self.assertRaises(
+                NotFound, self.traverse_to_inactive_proprietary_product)
+
+    def test_access_for_ordinary_users(self):
+        # Ordinary logged in users can see only public active products.
+        with person_logged_in(self.factory.makePerson()):
+            self.traverse_to_active_public_product()
+            # Access to other products raises a NotFound error.
+            self.assertRaises(
+                NotFound, self.traverse_to_inactive_public_product)
+            self.assertRaises(
+                NotFound, self.traverse_to_active_proprietary_product)
+            self.assertRaises(
+                NotFound, self.traverse_to_inactive_proprietary_product)
+
+    def test_access_for_person_with_pillar_grant(self):
+        # Persons with a policy grant for a proprietary product can
+        # access this product, if it is active.
+        user = self.factory.makePerson()
+        with person_logged_in(self.proprietary_product_owner):
+            getUtility(IService, 'sharing').sharePillarInformation(
+                self.active_proprietary_product, user,
+                self.proprietary_product_owner,
+                {InformationType.PROPRIETARY: SharingPermission.ALL})
+            getUtility(IService, 'sharing').sharePillarInformation(
+                self.inactive_proprietary_product, user,
+                self.proprietary_product_owner,
+                {InformationType.PROPRIETARY: SharingPermission.ALL})
+        with person_logged_in(user):
+            self.traverse_to_active_public_product()
+            self.assertRaises(
+                NotFound, self.traverse_to_inactive_public_product)
+            self.traverse_to_active_proprietary_product()
+            self.assertRaises(
+                NotFound, self.traverse_to_inactive_proprietary_product)
+
+    def test_access_for_persons_with_artifact_grant(self):
+        # Persons with an artifact grant related to a private product
+        # can traverse the product.
+        user = self.factory.makePerson()
+        with person_logged_in(self.proprietary_product_owner):
+            bug = self.factory.makeBug(
+                target=self.active_proprietary_product,
+                information_type=InformationType.PROPRIETARY)
+            getUtility(IService, 'sharing').ensureAccessGrants(
+                [user], self.proprietary_product_owner, bugs=[bug])
+        with person_logged_in(user):
+            self.traverse_to_active_proprietary_product()
+
+    def check_admin_access(self):
+        self.traverse_to_active_public_product()
+        self.traverse_to_inactive_public_product()
+        self.traverse_to_active_proprietary_product()
+        self.traverse_to_inactive_proprietary_product()
+
+    def test_access_for_persons_with_special_permissions(self):
+        # Admins have access all products, including inactive and propretary
+        # products.
+        with celebrity_logged_in('admin'):
+            self.check_admin_access()
+        # Commercial admins have access to all products.
+        with celebrity_logged_in('commercial_admin'):
+            self.check_admin_access()

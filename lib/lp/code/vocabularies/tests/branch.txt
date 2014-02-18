@@ -20,25 +20,16 @@ concerned).
     # Just use None as the context.
     >>> branch_vocabulary = vocabulary_registry.get(None, "Branch")
     >>> def print_vocab_branches(vocab, search):
-    ...     for term in vocab.searchForTerms(search):
-    ...         print term.value.unique_name
+    ...     terms = vocab.searchForTerms(search)
+    ...     for name in sorted(term.value.unique_name for term in terms):
+    ...         print name
 
     >>> print_vocab_branches(branch_vocabulary, 'main')
-    ~name12/firefox/main
-    ~stevea/thunderbird/main
     ~justdave/+junk/main
     ~kiko/+junk/main
-    ~vcs-imports/evolution/main
+    ~name12/firefox/main
     ~name12/gnome-terminal/main
-
-    >>> print_vocab_branches(branch_vocabulary, 'vcs-imports')
-    ~vcs-imports/gnome-terminal/import
-    ~vcs-imports/evolution/import
-    ~vcs-imports/evolution/main
-
-    >>> print_vocab_branches(branch_vocabulary, 'evolution')
-    ~carlos/evolution/2.0
-    ~vcs-imports/evolution/import
+    ~stevea/thunderbird/main
     ~vcs-imports/evolution/main
 
 A search with the full branch unique name should also find the branch.
@@ -81,14 +72,14 @@ able to see.
 
     >>> login(ADMIN_EMAIL)
     >>> print_vocab_branches(branch_vocabulary, 'trunk')
-    ~spiv/+junk/trunk
-    ~limi/+junk/trunk
     ~landscape-developers/landscape/trunk
+    ~limi/+junk/trunk
+    ~spiv/+junk/trunk
 
     >>> login(ANONYMOUS)
     >>> print_vocab_branches(branch_vocabulary, 'trunk')
-    ~spiv/+junk/trunk
     ~limi/+junk/trunk
+    ~spiv/+junk/trunk
 
 
 BranchRestrictedOnProduct
@@ -105,9 +96,6 @@ then the product of the branch is used to restrict the query.
     ...     gnome_terminal, "BranchRestrictedOnProduct")
     >>> print_vocab_branches(branch_vocabulary, 'main')
     ~name12/gnome-terminal/main
-
-    >>> print_vocab_branches(branch_vocabulary, 'vcs-imports')
-    ~vcs-imports/gnome-terminal/import
 
 If a full unique name is entered that has a different product, the
 branch is not part of the vocabulary.

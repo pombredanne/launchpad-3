@@ -1,7 +1,5 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=F0401
 
 """Browser views related to archive subscriptions."""
 
@@ -9,19 +7,23 @@ __metaclass__ = type
 
 __all__ = [
     'ArchiveSubscribersView',
+    'PersonalArchiveSubscription',
     'PersonArchiveSubscriptionView',
     'PersonArchiveSubscriptionsView',
     'traverse_archive_subscription_for_subscriber',
     ]
 
 import datetime
-from operator import attrgetter
+from operator import (
+    attrgetter,
+    itemgetter,
+    )
 
 import pytz
-from zope.app.form import CustomWidgetFactory
-from zope.app.form.browser import TextWidget
 from zope.component import getUtility
 from zope.formlib import form
+from zope.formlib.widget import CustomWidgetFactory
+from zope.formlib.widgets import TextWidget
 from zope.interface import (
     implements,
     Interface,
@@ -31,11 +33,7 @@ from zope.schema import (
     Text,
     )
 
-from canonical.launchpad import _
-from canonical.launchpad.webapp.publisher import (
-    canonical_url,
-    LaunchpadView,
-    )
+from lp import _
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -45,14 +43,28 @@ from lp.app.browser.launchpadform import (
 from lp.app.widgets.date import DateWidget
 from lp.app.widgets.popup import PersonPickerWidget
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.database.bulk import load_related
 from lp.services.fields import PersonChoice
-from lp.services.propertycache import cachedproperty
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
+from lp.services.webapp.authorization import precache_permission_for_objects
+from lp.services.webapp.batching import (
+    BatchNavigator,
+    StormRangeFactory,
+    )
+from lp.services.webapp.publisher import (
+    canonical_url,
+    LaunchpadView,
+    )
 from lp.soyuz.browser.sourceslist import SourcesListEntriesWidget
 from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.archivesubscriber import (
     IArchiveSubscriberSet,
     IPersonalArchiveSubscription,
     )
+from lp.soyuz.model.archive import Archive
 
 
 def archive_subscription_ui_adapter(archive_subscription):
@@ -147,21 +159,28 @@ class ArchiveSubscribersView(LaunchpadFormView):
             return
 
         super(ArchiveSubscribersView, self).initialize()
+        subscription_set = getUtility(IArchiveSubscriberSet)
+        self.subscriptions = subscription_set.getByArchive(self.context)
+        self.batchnav = BatchNavigator(
+            self.subscriptions, self.request,
+            range_factory=StormRangeFactory(self.subscriptions))
 
     @cachedproperty
-    def subscriptions(self):
-        """Return all the subscriptions for this archive."""
-        result = list(getUtility(IArchiveSubscriberSet
-            ).getByArchive(self.context))
-        ids = set(map(attrgetter('subscriber_id'), result))
+    def current_subscriptions_batch(self):
+        """Return the subscriptions of the current batch.
+
+        Bulk loads the related Person records.
+        """
+        batch = list(self.batchnav.currentBatch())
+        ids = map(attrgetter('subscriber_id'), batch)
         list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(ids,
             need_validity=True))
-        return result
+        return batch
 
     @cachedproperty
     def has_subscriptions(self):
         """Return whether this archive has any subscribers."""
-        return bool(self.subscriptions)
+        return self.subscriptions.any() is not None
 
     def validate_new_subscription(self, action, data):
         """Ensure the subscriber isn't already subscribed.
@@ -297,6 +316,7 @@ class PersonArchiveSubscriptionsView(LaunchpadView):
     """A view for displaying a persons archive subscriptions."""
 
     label = "Private PPA access"
+    private = True
 
     @cachedproperty
     def subscriptions_with_tokens(self):
@@ -310,6 +330,14 @@ class PersonArchiveSubscriptionsView(LaunchpadView):
         subs_with_tokens = subscriber_set.getBySubscriberWithActiveToken(
             self.context)
 
+        subscriptions = map(itemgetter(0), subs_with_tokens)
+        precache_permission_for_objects(None, 'launchpad.View', subscriptions)
+        archives = load_related(Archive, subscriptions, ['archive_id'])
+        list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+            [archive.ownerID for archive in archives], need_validity=True))
+        for archive in archives:
+            get_property_cache(archive)._known_subscribers = [self.user]
+
         # Turn the result set into a list of dicts so it can be easily
         # accessed in TAL. Note that we need to ensure that only one
         # PersonalArchiveSubscription is included for each archive,
@@ -320,15 +348,12 @@ class PersonArchiveSubscriptionsView(LaunchpadView):
         for subscription, token in subs_with_tokens:
             if subscription.archive in unique_archives:
                 continue
-
             unique_archives.add(subscription.archive)
 
             personal_subscription = PersonalArchiveSubscription(
                 self.context, subscription.archive)
             personal_subscription_tokens.append({
-                'subscription': personal_subscription,
-                'token': token
-                })
+                'subscription': personal_subscription, 'token': token})
 
         return personal_subscription_tokens
 
@@ -349,30 +374,25 @@ class PersonArchiveSubscriptionView(LaunchpadView, SourcesListEntriesWidget):
     def initialize(self):
         """Process any posted actions."""
         super(PersonArchiveSubscriptionView, self).initialize()
-        # Set the archive attribute so SourcesListEntriesWidget can be built
-        # correctly.
+        # Set properties for SourcesListEntriesWidget.
         self.archive = self.context.archive
+        self.sources_list_user = self.context.subscriber
 
         # If an activation was requested and there isn't a currently
         # active token, then create a token, provide a notification
         # and redirect.
         if self.request.form.get('activate') and not self.active_token:
             self.context.archive.newAuthToken(self.context.subscriber)
-
             self.request.response.redirect(self.request.getURL())
-
         # Otherwise, if a regeneration was requested and there is an
         # active token, then cancel the old token, create a new one,
         # provide a notification and redirect.
         elif self.request.form.get('regenerate') and self.active_token:
             self.active_token.deactivate()
-
             self.context.archive.newAuthToken(self.context.subscriber)
-
             self.request.response.addNotification(
                 "Launchpad has generated the new password you requested "
                 "for your access to the archive %s. Please follow "
                 "the instructions below to update your custom "
                 "\"sources.list\"." % self.context.archive.displayname)
-
             self.request.response.redirect(self.request.getURL())

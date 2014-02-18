@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Classes that implement ICelebrity interfaces."""
@@ -145,13 +145,13 @@ class LaunchpadCelebrities:
     launchpad_developers = PersonCelebrityDescriptor('launchpad')
     obsolete_junk = CelebrityDescriptor(IProductSet, 'obsolete-junk')
     ppa_key_guard = PersonCelebrityDescriptor('ppa-key-guard')
+    ppa_self_admins = PersonCelebrityDescriptor('launchpad-ppa-self-admins')
     registry_experts = PersonCelebrityDescriptor('registry')
     rosetta_experts = PersonCelebrityDescriptor('rosetta-admins')
     savannah_tracker = CelebrityDescriptor(IBugTrackerSet, 'savannah')
     sourceforge_tracker = CelebrityDescriptor(IBugTrackerSet, 'sf')
     ubuntu = CelebrityDescriptor(IDistributionSet, 'ubuntu')
     ubuntu_bugzilla = CelebrityDescriptor(IBugTrackerSet, 'ubuntu-bugzilla')
-    ubuntu_security = PersonCelebrityDescriptor('ubuntu-security')
     ubuntu_techboard = PersonCelebrityDescriptor('techboard')
     vcs_imports = PersonCelebrityDescriptor('vcs-imports')
 

@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test buildd uploads use-cases."""
@@ -9,22 +9,21 @@ import os
 
 from zope.component import getUtility
 
-from canonical.database.constants import UTC_NOW
-from canonical.launchpad.ftests import import_public_test_keys
+from lp.archiveuploader.tests.test_uploadprocessor import (
+    TestUploadProcessorBase,
+    )
+from lp.archiveuploader.uploadprocessor import UploadHandler
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.database.constants import UTC_NOW
 from lp.soyuz.enums import (
     PackagePublishingStatus,
     PackageUploadStatus,
     )
-from lp.archiveuploader.tests.test_uploadprocessor import (
-    TestUploadProcessorBase,
-    )
-from lp.archiveuploader.uploadprocessor import (
-    UploadHandler,
-    )
-from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.soyuz.interfaces.publishing import IPublishingSet
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
+from lp.testing.gpgkeys import import_public_test_keys
 
 
 class TestStagedBinaryUploadBase(TestUploadProcessorBase):
@@ -134,7 +133,7 @@ class TestStagedBinaryUploadBase(TestUploadProcessorBase):
         self.assertTrue(
             queue_item is not None,
             "Binary Upload Failed\nGot: %s" % self.log.getLogBuffer())
-        self.assertEqual(queue_item.builds.count(), 1)
+        self.assertEqual(1, len(queue_item.builds))
         return queue_item.builds[0].build
 
     def _createBuild(self, archtag):
@@ -178,15 +177,11 @@ class TestBuilddUploads(TestStagedBinaryUploadBase):
     def setupBreezy(self):
         """Extend breezy setup to enable uploads to powerpc architecture."""
         TestStagedBinaryUploadBase.setupBreezy(self)
-        from lp.soyuz.model.processor import (
-            Processor, ProcessorFamily)
         self.switchToAdmin()
-        ppc_family = ProcessorFamily.selectOneBy(name='powerpc')
-        ppc_proc = Processor(
-            name='powerpc', title='PowerPC', description='not yet',
-            family=ppc_family)
-        breezy_ppc = self.breezy.newArch(
-            'powerpc', ppc_family, True, self.breezy.owner)
+        ppc = getUtility(IProcessorSet).new(
+            name='powerpc', title='PowerPC', description='not yet')
+        self.breezy.newArch(
+            'powerpc', ppc, True, self.breezy.owner)
         self.switchToUploader()
 
     def setUp(self):

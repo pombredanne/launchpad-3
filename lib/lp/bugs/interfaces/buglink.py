@@ -1,8 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213
-
 """Interfaces for objects that can be linked to bugs."""
 
 __metaclass__ = type
@@ -40,9 +38,9 @@ from zope.schema.vocabulary import (
     )
 from zope.security.interfaces import Unauthorized
 
-from canonical.launchpad import _
-from canonical.launchpad.interfaces.launchpad import IHasBug
+from lp import _
 from lp.bugs.interfaces.bug import IBug
+from lp.bugs.interfaces.hasbug import IHasBug
 from lp.services.fields import BugField
 
 

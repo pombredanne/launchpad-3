@@ -3,6 +3,16 @@
 -->
 
 <configure xmlns="http://namespaces.zope.org/zope">
-    <include file="script.zcml" />
-    <includeOverrides files="package-includes/*-configure-testing.zcml" />
+
+    <include file="common.zcml" />
+
+    <include files="package-includes/*-configure.zcml" />
+    <include files="package-includes/*-configure-testing.zcml" />
+
+    <includeOverrides files="override-includes/*-configure.zcml" />
+    <includeOverrides files="override-includes/*-configure-testing.zcml" />
+
+    <!-- No +config-overrides here, as the mail config can cause celery
+         tests to fail. -->
+
 </configure>

@@ -8,24 +8,26 @@ __metaclass__ = type
 import transaction
 from zope.component import getUtility
 
-from canonical.launchpad.scripts.logger import log
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.externalbugtracker import get_external_bugtracker
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.bugs.scripts.checkwatches import CheckwatchesMaster
+from lp.services.scripts.logger import log
 
 
-def import_debian_bugs(bugs_to_import):
+def import_debian_bugs(bugs_to_import, logger=None):
     """Import the specified Debian bugs into Launchpad."""
+    if logger is None:
+        logger = log
     debbugs = getUtility(ILaunchpadCelebrities).debbugs
     external_debbugs = get_external_bugtracker(debbugs)
-    bug_watch_updater = CheckwatchesMaster(transaction, log)
+    bug_watch_updater = CheckwatchesMaster(transaction, logger)
     debian = getUtility(ILaunchpadCelebrities).debian
     for debian_bug in bugs_to_import:
         existing_bug_ids = [
             str(bug.id) for bug in debbugs.getBugsWatching(debian_bug)]
         if len(existing_bug_ids) > 0:
-            log.warning(
+            logger.warning(
                 "Not importing debbugs #%s, since it's already linked"
                 " from LP bug(s) #%s." % (
                     debian_bug, ', '.join(existing_bug_ids)))
@@ -41,6 +43,6 @@ def import_debian_bugs(bugs_to_import):
             target = target.getSourcePackage(debian_task.sourcepackagename)
         getUtility(IBugTaskSet).createTask(
             bug, getUtility(ILaunchpadCelebrities).bug_watch_updater, target)
-        log.info(
+        logger.info(
             "Imported debbugs #%s as Launchpad bug #%s." % (
                 debian_bug, bug.id))

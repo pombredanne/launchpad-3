@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Server used in codehosting acceptance tests."""
@@ -19,17 +19,15 @@ from bzrlib.transport import (
     get_transport,
     Server,
     )
+import transaction
 from twisted.python.util import sibpath
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.database.sqlbase import commit
-from canonical.launchpad.daemons.tachandler import TacTestSetup
-from lp.registry.interfaces.person import (
-    IPersonSet,
-    TeamSubscriptionPolicy,
-    )
+from lp.registry.enums import TeamMembershipPolicy
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.ssh import ISSHKeySet
+from lp.services.config import config
+from lp.services.daemons.tachandler import TacTestSetup
 
 
 def set_up_test_user(test_user, test_team):
@@ -42,7 +40,7 @@ def set_up_test_user(test_user, test_team):
     testUser.name = test_user
     testTeam = person_set.newTeam(
         testUser, test_team, test_team,
-        subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
+        membership_policy=TeamMembershipPolicy.OPEN)
     testUser.join(testTeam)
     ssh_key_set = getUtility(ISSHKeySet)
     ssh_key_set.new(
@@ -53,15 +51,13 @@ def set_up_test_user(test_user, test_team):
         'Z5Q8/OTdViTaalvGXaRIsBdaQamHEBB+Vek/VpnF1UGGm8YAAABAaCXDl0r1k93J'
         'hnMdF0ap4UJQ2/NnqCyoE8Xd5KdUWWwqwGdMzqB1NOeKN6ladIAXRggLc2E00Usn'
         'UXh3GE3Rgw== testuser')
-    commit()
+    transaction.commit()
 
 
 class CodeHostingTac(TacTestSetup):
 
-    def __init__(self, hosted_area, mirrored_area):
+    def __init__(self, mirrored_area):
         super(CodeHostingTac, self).__init__()
-        # The hosted area.
-        self._hosted_root = hosted_area
         # The mirrored area.
         self._mirror_root = mirrored_area
         # Where the pidfile, logfile etc will go.
@@ -69,9 +65,6 @@ class CodeHostingTac(TacTestSetup):
 
     def clear(self):
         """Clear the branch areas."""
-        if os.path.isdir(self._hosted_root):
-            shutil.rmtree(self._hosted_root)
-        os.makedirs(self._hosted_root, 0700)
         if os.path.isdir(self._mirror_root):
             shutil.rmtree(self._mirror_root)
         os.makedirs(self._mirror_root, 0700)
@@ -80,7 +73,6 @@ class CodeHostingTac(TacTestSetup):
         self.clear()
 
     def tearDownRoot(self):
-        shutil.rmtree(self._hosted_root)
         shutil.rmtree(self._server_root)
 
     @property

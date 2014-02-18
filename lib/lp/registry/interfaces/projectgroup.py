@@ -1,8 +1,6 @@
 # Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213
-
 """ProjectGroup-related interfaces for Launchpad."""
 
 __metaclass__ = type
@@ -28,6 +26,7 @@ from lazr.restful.fields import (
     Reference,
     ReferenceChoice,
     )
+from lazr.restful.interface import copy_field
 from zope.interface import (
     Attribute,
     Interface,
@@ -41,14 +40,14 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
-from canonical.launchpad.interfaces.launchpad import (
+from lp import _
+from lp.app.interfaces.headings import IRootContext
+from lp.app.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
     IHasMugshot,
+    IServiceUsage,
     )
-from lp.app.interfaces.headings import IRootContext
-from lp.app.interfaces.launchpad import IServiceUsage
 from lp.app.validators.name import name_validator
 from lp.blueprints.interfaces.specificationtarget import IHasSpecifications
 from lp.blueprints.interfaces.sprint import IHasSprints
@@ -60,9 +59,6 @@ from lp.bugs.interfaces.bugtracker import IBugTracker
 from lp.bugs.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget,
     )
-from lp.code.interfaces.branchvisibilitypolicy import (
-    IHasBranchVisibilityPolicy,
-    )
 from lp.code.interfaces.hasbranches import (
     IHasBranches,
     IHasMergeProposals,
@@ -72,6 +68,7 @@ from lp.registry.interfaces.karma import IKarmaContext
 from lp.registry.interfaces.milestone import (
     ICanGetMilestonesDirectly,
     IHasMilestones,
+    IProjectGroupMilestone,
     )
 from lp.registry.interfaces.pillar import IPillar
 from lp.registry.interfaces.role import (
@@ -119,13 +116,23 @@ class IProjectGroupModerate(IPillar):
 
 class IProjectGroupPublic(
     ICanGetMilestonesDirectly, IHasAppointedDriver, IHasBranches, IHasBugs,
-    IHasDrivers, IHasBranchVisibilityPolicy, IHasIcon, IHasLogo,
-    IHasMergeProposals, IHasMilestones, IHasMugshot,
-    IHasOwner, IHasSpecifications, IHasSprints, IMakesAnnouncements,
-    IKarmaContext, IRootContext, IHasOfficialBugTags, IServiceUsage):
+    IHasDrivers, IHasIcon, IHasLogo, IHasMergeProposals, IHasMilestones,
+    IHasMugshot, IHasOwner, IHasSpecifications, IHasSprints,
+    IMakesAnnouncements, IKarmaContext, IRootContext, IHasOfficialBugTags,
+    IServiceUsage):
     """Public IProjectGroup properties."""
 
     id = Int(title=_('ID'), readonly=True)
+
+    # The following milestone collections are copied from IHasMilestone so that
+    # we can override the collection value types to be IProjectGroupMilestone.
+    milestones = copy_field(
+        IHasMilestones['milestones'],
+        value_type=Reference(schema=IProjectGroupMilestone))
+
+    all_milestones = copy_field(
+        IHasMilestones['all_milestones'],
+        value_type=Reference(schema=IProjectGroupMilestone))
 
     owner = exported(
         PublicPersonChoice(
@@ -317,18 +324,13 @@ class IProjectGroupPublic(
         title=u"Search for possible duplicate bugs when a new bug is filed",
         required=False, readonly=True)
 
+    translatables = Attribute("Products that are translatable in LP")
+
     def getProduct(name):
         """Get a product with name `name`."""
 
     def getConfigurableProducts():
         """Get all products that can be edited by user."""
-
-    def translatables():
-        """Return an iterator over products that are translatable in LP.
-
-        Only products with IProduct.translations_usage set to
-        ServiceUsage.LAUNCHPAD are considered translatable.
-        """
 
     def has_translatable():
         """Return a boolean showing the existance of translatables products.

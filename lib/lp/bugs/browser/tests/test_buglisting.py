@@ -4,41 +4,33 @@
 __metaclass__ = type
 
 import os
+
 from soupmatchers import (
     HTMLContains,
     Tag,
     )
-from storm.expr import LeftJoin
-from storm.store import Store
-from testtools.matchers import (
-    Equals,
-    Not,
-    )
 from zope.component import getUtility
 
-from canonical.launchpad.testing.pages import (
+from lp.app.enums import InformationType
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.services.features.testing import FeatureFixture
+from lp.services.webapp.publisher import canonical_url
+from lp.testing import (
+    BrowserTestCase,
+    login_person,
+    person_logged_in,
+    TestCaseWithFactory,
+    )
+from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.pages import (
     extract_text,
     find_main_content,
     find_tag_by_id,
     find_tags_by_class,
     )
-from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.bugs.model.bugtask import BugTask
-from lp.registry.model.person import Person
-from lp.services.features.testing import FeatureFixture
-from lp.testing import (
-    BrowserTestCase,
-    login_person,
-    person_logged_in,
-    StormStatementRecorder,
-    TestCaseWithFactory,
-    )
-from lp.testing.matchers import HasQueryCount
 from lp.testing.views import (
-    create_view,
     create_initialized_view,
+    create_view,
     )
 
 
@@ -149,26 +141,6 @@ class TestBugTaskSearchListingPage(BrowserTestCase):
                       find_tag_by_id(browser.contents, 'portlet-tags'),
                       "portlet-tags should not be shown.")
 
-    def test_searchUnbatched_can_preload_objects(self):
-        # BugTaskSearchListingView.searchUnbatched() can optionally
-        # preload objects while retrieving the bugtasks.
-        product = self.factory.makeProduct()
-        bugtask_1 = self.factory.makeBug(product=product).default_bugtask
-        bugtask_2 = self.factory.makeBug(product=product).default_bugtask
-        view = create_initialized_view(product, '+bugs')
-        Store.of(product).invalidate()
-        with StormStatementRecorder() as recorder:
-            prejoins = [
-                (Person, LeftJoin(Person, BugTask.owner == Person.id)),
-                ]
-            bugtasks = list(view.searchUnbatched(prejoins=prejoins))
-            self.assertEqual(
-                [bugtask_1, bugtask_2], bugtasks)
-            # If the table prejoin failed, then this will issue two
-            # additional SQL queries
-            [bugtask.owner for bugtask in bugtasks]
-        self.assertThat(recorder, HasQueryCount(Equals(2)))
-
     def test_search_components_error(self):
         # Searching for using components for bug targets that are not a distro
         # or distroseries will report an error, but not OOPS.  See bug
@@ -176,12 +148,10 @@ class TestBugTaskSearchListingPage(BrowserTestCase):
         product = self.factory.makeProduct()
         form = {
             'search': 'Search',
-            'advanced': 1,
             'field.component': 1,
             'field.component-empty-marker': 1}
         with person_logged_in(product.owner):
             view = create_initialized_view(product, '+bugs', form=form)
-            view.searchUnbatched()
         response = view.request.response
         self.assertEqual(1, len(response.notifications))
         expected = (
@@ -222,7 +192,7 @@ class TestBugTaskSearchListingPage(BrowserTestCase):
             find_tag_by_id(content, 'bugs-batch-links-upper'))
 
     def test_ajax_batch_navigation_feature_flag(self):
-        # The Javascript to wire up the ajax batch navigation behavior is
+        # The Javascript to wire up the ajax batch navigation behaviour is
         # correctly hidden behind a feature flag.
         product = self.factory.makeProduct()
         form = {'search': 'Search'}
@@ -237,85 +207,23 @@ class TestBugTaskSearchListingPage(BrowserTestCase):
         self.assertFalse(
             'Y.lp.app.batchnavigator.BatchNavigatorHooks' in view())
 
-    def test_dynamic_bug_listing_feature_flag(self):
-        # BugTaskSearchListingView.dynamic_bug_listing_enabled provides
-        # access to the feature flag bugs.dynamic_bug_listings.enabled.
-        # The property is False by default.
-        product = self.factory.makeProduct()
-        view = create_initialized_view(product, '+bugs')
-        self.assertFalse(view.dynamic_bug_listing_enabled)
-        # When the feature flag is turned on, dynamic_bug_listing_enabled
-        # is True.
-        flags = {u"bugs.dynamic_bug_listings.enabled": u"true"}
-        with FeatureFixture(flags):
-            view = create_initialized_view(product, '+bugs')
-            self.assertTrue(view.dynamic_bug_listing_enabled)
-
     def test_search_macro_title(self):
-        # BugTaskSearchListingView.dynamic_bug_listing_enabled returns
-        # the title text for the macro `simple-search-form`.
+        # The title text is displayed for the macro `simple-search-form`.
         product = self.factory.makeProduct(
             displayname='Test Product', official_malone=True)
         view = create_initialized_view(product, '+bugs')
         self.assertEqual(
             'Search bugs in Test Product', view.search_macro_title)
 
-        # The title not shown by default.
+        # The title is shown.
         form_title_matches = Tag(
             'Search form title', 'h3', text=view.search_macro_title)
-        self.assertThat(view.render(), Not(HTMLContains(form_title_matches)))
-
-        # If the feature flag bugs.dynamic_bug_listings.enabled
-        # is set, the title is shown.
-        flags = {u"bugs.dynamic_bug_listings.enabled": u"true"}
-        with FeatureFixture(flags):
-            view = create_initialized_view(product, '+bugs')
-            self.assertThat(view.render(), HTMLContains(form_title_matches))
-
-    def test_search_macro_sort_widget_hidden_for_dynamic_bug_listing(self):
-        # The macro `simple-search-form` has by default a sort widget.
-        product = self.factory.makeProduct(
-            displayname='Test Product', official_malone=True)
         view = create_initialized_view(product, '+bugs')
-        sort_selector_matches = Tag(
-            'Sort widget found', tag_type='select', attrs={'id': 'orderby'})
-        self.assertThat(view.render(), HTMLContains(sort_selector_matches))
+        self.assertThat(view.render(), HTMLContains(form_title_matches))
 
-        # If the feature flag bugs.dynamic_bug_listings.enabled
-        # is set, the sort widget is not rendered.
-        flags = {u"bugs.dynamic_bug_listings.enabled": u"true"}
-        with FeatureFixture(flags):
-            view = create_initialized_view(product, '+bugs')
-            self.assertThat(
-                view.render(), Not(HTMLContains(sort_selector_matches)))
-
-    def test_search_macro_div_node_no_css_class_by_default(self):
+    def test_search_macro_div_node_with_css_class(self):
         # The <div> enclosing the search form in the macro
-        # `simple-search-form` has by default no CSS class.
-        product = self.factory.makeProduct(
-            displayname='Test Product', official_malone=True)
-        view = create_initialized_view(product, '+bugs')
-        # The <div> node exists.
-        rendered_view = view.render()
-        search_div_matches = Tag(
-            'Main search div', tag_type='div',
-            attrs={'id': 'bugs-search-form'})
-        self.assertThat(
-            rendered_view, HTMLContains(search_div_matches))
-        # But it has no 'class' attribute.
-        attributes = {
-            'id': 'bugs-search-form',
-            'class': True,
-            }
-        search_div_with_class_attribute_matches = Tag(
-            'Main search div', tag_type='div', attrs=attributes)
-        self.assertThat(
-            rendered_view,
-            HTMLContains(Not(search_div_with_class_attribute_matches)))
-
-    def test_search_macro_div_node_with_css_class_for_dynamic_listings(self):
-        # If the feature flag bugs.dynamic_bug_listings.enabled
-        # is set, the <div> node has the CSS class "dynamic_bug_listing".
+        # `simple-search-form` has the CSS class "dynamic_bug_listing".
         product = self.factory.makeProduct(
             displayname='Test Product', official_malone=True)
         attributes = {
@@ -323,37 +231,14 @@ class TestBugTaskSearchListingPage(BrowserTestCase):
             'class': 'dynamic_bug_listing',
             }
         search_div_with_class_attribute_matches = Tag(
-            'Main search div feature flag bugs.dynamic_bug_listings.enabled',
-            tag_type='div', attrs=attributes)
-        flags = {u"bugs.dynamic_bug_listings.enabled": u"true"}
-        with FeatureFixture(flags):
-            view = create_initialized_view(product, '+bugs')
-            self.assertThat(
-                view.render(),
-                HTMLContains(search_div_with_class_attribute_matches))
-
-    def test_search_macro_css_for_form_node_default(self):
-        # The <form> node of the search form in the macro
-        # `simple-search-form` has by default the CSS classes
-        # 'prmary search'
-        product = self.factory.makeProduct(
-            displayname='Test Product', official_malone=True)
+            'Main search div', tag_type='div', attrs=attributes)
         view = create_initialized_view(product, '+bugs')
-        # The <div> node exists.
-        rendered_view = view.render()
-        attributes = {
-            'name': 'search',
-            'class': 'primary search',
-            }
-        search_form_matches = Tag(
-            'Default search form CSS classes', tag_type='form',
-            attrs=attributes)
         self.assertThat(
-            rendered_view, HTMLContains(search_form_matches))
+            view.render(),
+            HTMLContains(search_div_with_class_attribute_matches))
 
-    def test_search_macro_css_for_form_node_with_dynamic_bug_listings(self):
-        # If the feature flag bugs.dynamic_bug_listings.enabled
-        # is set, the <form> node has the CSS classes
+    def test_search_macro_css_for_form_node(self):
+        # The <form> node has the CSS classes
         # "primary search dynamic_bug_listing".
         product = self.factory.makeProduct(
             displayname='Test Product', official_malone=True)
@@ -362,13 +247,9 @@ class TestBugTaskSearchListingPage(BrowserTestCase):
             'class': 'primary search dynamic_bug_listing',
             }
         search_form_matches = Tag(
-            'Search form CSS classes with feature flag '
-            'bugs.dynamic_bug_listings.enabled', tag_type='form',
-            attrs=attributes)
-        flags = {u"bugs.dynamic_bug_listings.enabled": u"true"}
-        with FeatureFixture(flags):
-            view = create_initialized_view(product, '+bugs')
-            self.assertThat(view.render(), HTMLContains(search_form_matches))
+            'Search form CSS classes', tag_type='form', attrs=attributes)
+        view = create_initialized_view(product, '+bugs')
+        self.assertThat(view.render(), HTMLContains(search_form_matches))
 
 
 class BugTargetTestCase(TestCaseWithFactory):
@@ -414,8 +295,12 @@ class TestBugTaskSearchListingViewProduct(BugTargetTestCase):
 
     def test_has_bugtracker_external_is_true(self):
         bug_target = self._makeBugTargetProduct(bug_tracker='external')
-        view = create_initialized_view(bug_target, '+bugs')
+        user = self.factory.makePerson()
+        view = create_initialized_view(bug_target, '+bugs', principal=user)
         self.assertEqual(True, view.has_bugtracker)
+        markup = view.render()
+        self.assertIsNone(find_tag_by_id(markup, 'bugs-search-form'))
+        self.assertIsNone(find_tag_by_id(markup, 'bugs-table-listings'))
 
     def test_has_bugtracker_launchpad_is_true(self):
         bug_target = self._makeBugTargetProduct(bug_tracker='launchpad')
@@ -466,6 +351,18 @@ class TestBugTaskSearchListingViewProduct(BugTargetTestCase):
             bug_target, rootsite='answers', view_name='+addquestion')
         self.assertEqual(url, view.addquestion_url)
 
+    def test_upstream_project(self):
+        # BugTaskSearchListingView.upstream_project and
+        # BugTaskSearchListingView.upstream_launchpad_project are
+        # None for all bug targets except SourcePackages
+        # and DistributionSourcePackages.
+        bug_target = self._makeBugTargetProduct(
+            bug_tracker='launchpad', packaging=True)
+        view = create_initialized_view(
+            bug_target, '+bugs', principal=bug_target.owner)
+        self.assertIs(None, view.upstream_project)
+        self.assertIs(None, view.upstream_launchpad_project)
+
 
 class TestBugTaskSearchListingViewDSP(BugTargetTestCase):
 
@@ -488,6 +385,7 @@ class TestBugTaskSearchListingViewDSP(BugTargetTestCase):
         view = create_initialized_view(
             bug_target, '+bugs', principal=upstream_project.owner)
         self.assertEqual(upstream_project, view.upstream_launchpad_project)
+        self.assertEqual(upstream_project, view.upstream_project)
         content = find_tag_by_id(view.render(), 'also-in-upstream')
         link = canonical_url(upstream_project, rootsite='bugs')
         self.assertEqual(link, content.a['href'])
@@ -500,6 +398,7 @@ class TestBugTaskSearchListingViewDSP(BugTargetTestCase):
         view = create_initialized_view(
             bug_target, '+bugs', principal=upstream_project.owner)
         self.assertEqual(None, view.upstream_launchpad_project)
+        self.assertEqual(upstream_project, view.upstream_project)
         self.assertEqual(None, find_tag_by_id(view(), 'also-in-upstream'))
 
     def test_package_without_upstream_project(self):
@@ -511,7 +410,24 @@ class TestBugTaskSearchListingViewDSP(BugTargetTestCase):
         view = create_initialized_view(
             bug_target, '+bugs', principal=observer)
         self.assertEqual(None, view.upstream_launchpad_project)
+        self.assertEqual(None, view.upstream_project)
         self.assertEqual(None, find_tag_by_id(view(), 'also-in-upstream'))
+
+    def test_filter_by_upstream_target(self):
+        # If an upstream target is specified is the query parameters,
+        # the corresponding flag in BugTaskSearchParams is set.
+        upstream_project = self._makeBugTargetProduct(
+            bug_tracker='launchpad', packaging=True)
+        bug_target = self._getBugTarget(
+            upstream_project.distrosourcepackages[0])
+        form = {
+            'search': 'Search',
+            'advanced': 1,
+            'field.upstream_target': upstream_project.name,
+            }
+        view = create_initialized_view(bug_target, '+bugs', form=form)
+        search_params = view.buildSearchParams()
+        self.assertEqual(upstream_project, search_params.upstream_target)
 
 
 class TestBugTaskSearchListingViewSP(TestBugTaskSearchListingViewDSP):
@@ -519,3 +435,55 @@ class TestBugTaskSearchListingViewSP(TestBugTaskSearchListingViewDSP):
         def _getBugTarget(self, dsp):
             """Return the current `ISourcePackage` for the dsp."""
             return dsp.development_version
+
+
+class TestPersonBugListing(BrowserTestCase):
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestPersonBugListing, self).setUp()
+        self.user = self.factory.makePerson()
+        self.private_product_owner = self.factory.makePerson()
+        self.private_product = self.factory.makeProduct(
+            owner=self.private_product_owner,
+            information_type=InformationType.PROPRIETARY)
+
+    def test_grant_for_bug_with_task_for_private_product(self):
+        # A person's own bug page is correctly rendered when the person
+        # is subscribed to a bug with a task for a propritary product.
+        with person_logged_in(self.private_product_owner):
+            bug = self.factory.makeBug(
+                target=self.private_product, owner=self.private_product_owner)
+            bug.subscribe(self.user, subscribed_by=self.private_product_owner)
+        url = canonical_url(self.user, rootsite='bugs')
+        # Just ensure that no exception occurs when the page is rendered.
+        self.getUserBrowser(url, user=self.user)
+
+    def test_grant_for_bug_with_task_for_private_product_series(self):
+        # A person's own bug page is correctly rendered when the person
+        # is subscribed to a bug with a task for a propritary product series.
+        with person_logged_in(self.private_product_owner):
+            series = self.factory.makeProductSeries(
+                product=self.private_product)
+            bug = self.factory.makeBug(
+                target=self.private_product, series=series,
+                owner=self.private_product_owner)
+            bug.subscribe(self.user, subscribed_by=self.private_product_owner)
+        url = canonical_url(self.user, rootsite='bugs')
+        # Just ensure that no exception occurs when the page is rendered.
+        self.getUserBrowser(url, user=self.user)
+
+    def test_grant_for_bug_with_task_for_private_product_and_milestone(self):
+        # A person's own bug page is correctly rendered when the person
+        # is subscribed to a bug with a task for a propritary product and
+        # a milestone.
+        with person_logged_in(self.private_product_owner):
+            milestone = self.factory.makeMilestone(
+                product=self.private_product)
+            bug = self.factory.makeBug(
+                target=self.private_product, milestone=milestone,
+                owner=self.private_product_owner)
+            bug.subscribe(self.user, subscribed_by=self.private_product_owner)
+        url = canonical_url(self.user, rootsite='bugs')
+        # Just ensure that no exception occurs when the page is rendered.
+        self.getUserBrowser(url, user=self.user)

@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test NascentUpload functionality."""
@@ -8,10 +8,21 @@ __metaclass__ = type
 from testtools import TestCase
 from testtools.matchers import MatchesStructure
 
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.archiveuploader.changesfile import determine_file_class_and_name
-from lp.archiveuploader.nascentupload import NascentUpload
+from lp.archiveuploader.nascentupload import (
+    EarlyReturnUploadError,
+    NascentUpload,
+    )
+from lp.archiveuploader.tests import (
+    datadir,
+    getPolicy,
+    )
+from lp.archiveuploader.uploadpolicy import ArchiveUploadType
 from lp.services.log.logger import DevNullLogger
+from lp.testing.layers import (
+    LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
+    )
 
 
 class FakeChangesFile:
@@ -65,6 +76,8 @@ class TestMatchDDEBs(TestCase):
         self.addFile('blah_1.0_all.deb')
         self.addFile('libblah_1.0_i386.deb')
         self.addFile('libblah-dbgsym_1.0_i386.ddeb')
+        self.addFile('libfooble_1.0_i386.udeb')
+        self.addFile('libfooble-dbgsym_1.0_i386.ddeb')
         self.assertMatchDDEBErrors([])
         self.assertIs(None, self.changes.files[0].ddeb_file)
         self.assertIs(self.changes.files[2], self.changes.files[1].ddeb_file)
@@ -103,3 +116,25 @@ class TestOverrideDDEBs(TestMatchDDEBs):
             ddeb,
             MatchesStructure.fromExample(
                 deb, "component_name", "section_name", "priority_name"))
+
+
+class TestNascentUpload(TestCase):
+
+    layer = ZopelessDatabaseLayer
+
+    def test_hash_mismatch_rejects(self):
+        # A hash mismatch for any uploaded file will cause the upload to
+        # be rejected.
+        policy = getPolicy(
+            name="sync", distro="ubuntu", distroseries="hoary")
+        policy.accepted_type = ArchiveUploadType.BINARY_ONLY
+        upload = NascentUpload.from_changesfile_path(
+            datadir("suite/badhash_1.0-1/badhash_1.0-1_i386.changes"),
+            policy, DevNullLogger())
+        upload.process()
+        self.assertTrue(upload.is_rejected)
+        self.assertEqual(
+            'File badhash_1.0-1_i386.deb mentioned in the changes has a SHA1 '
+            'mismatch. 2ca33cf32a45852c62b465aaf9063fb7deb31725 != '
+            '91556113ad38eb35d2fe03d27ae646e0ed487a3d',
+            upload.rejection_message)

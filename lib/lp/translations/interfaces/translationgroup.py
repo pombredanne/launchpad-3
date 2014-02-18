@@ -1,8 +1,6 @@
 # Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213
-
 """Interfaces for groups of translators."""
 
 __metaclass__ = type
@@ -15,11 +13,10 @@ __all__ = [
 
 from lazr.restful.declarations import (
     collection_default_content,
-    exported,
-    export_as_webservice_entry,
     export_as_webservice_collection,
+    export_as_webservice_entry,
     export_read_operation,
-    export_operation_as,
+    exported,
     operation_for_version,
     operation_parameters,
     operation_returns_entry,
@@ -34,7 +31,7 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.app.validators.name import name_validator
 from lp.registry.interfaces.role import IHasOwner
 from lp.services.fields import (

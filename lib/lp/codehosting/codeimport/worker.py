@@ -14,7 +14,6 @@ __all__ = [
     'CodeImportWorkerExitCode',
     'ForeignTreeStore',
     'GitImportWorker',
-    'HgImportWorker',
     'ImportWorker',
     'get_default_bazaar_branch_store',
     ]
@@ -22,6 +21,10 @@ __all__ = [
 
 import os
 import shutil
+
+# FIRST Ensure correct plugins are loaded. Do not delete this comment or the
+# line below this comment.
+import lp.codehosting
 
 from bzrlib.branch import (
     Branch,
@@ -40,7 +43,6 @@ from bzrlib.errors import (
     TooManyRedirections,
     )
 from bzrlib.transport import (
-    do_catching_redirections,
     get_transport_from_path,
     get_transport_from_url,
     )
@@ -59,7 +61,6 @@ from lazr.uri import (
     )
 import SCM
 
-from canonical.config import config
 from lp.code.enums import RevisionControlSystems
 from lp.code.interfaces.branch import get_blacklisted_hostnames
 from lp.code.interfaces.codehosting import (
@@ -80,6 +81,7 @@ from lp.codehosting.safe_open import (
     BranchOpenPolicy,
     SafeBranchOpener,
     )
+from lp.services.config import config
 from lp.services.propertycache import cachedproperty
 
 
@@ -92,7 +94,7 @@ class CodeImportBranchOpenPolicy(BranchOpenPolicy):
      - only open the allowed schemes
     """
 
-    allowed_schemes = ['http', 'https', 'svn', 'git', 'ftp']
+    allowed_schemes = ['http', 'https', 'svn', 'git', 'ftp', 'bzr']
 
     def shouldFollowReferences(self):
         """See `BranchOpenPolicy.shouldFollowReferences`.
@@ -264,9 +266,9 @@ class CodeImportSourceDetails:
 
     :ivar branch_id: The id of the branch associated to this code import, used
         for locating the existing import and the foreign tree.
-    :ivar rcstype: 'svn', 'cvs', 'hg', 'git', 'bzr-svn', 'bzr' as appropriate.
+    :ivar rcstype: 'svn', 'cvs', 'git', 'bzr-svn', 'bzr' as appropriate.
     :ivar url: The branch URL if rcstype in ['svn', 'bzr-svn',
-        'git', 'hg', 'bzr'], None otherwise.
+        'git', 'bzr'], None otherwise.
     :ivar cvs_root: The $CVSROOT if rcstype == 'cvs', None otherwise.
     :ivar cvs_module: The CVS module if rcstype == 'cvs', None otherwise.
     """
@@ -285,7 +287,7 @@ class CodeImportSourceDetails:
         """Convert command line-style arguments to an instance."""
         branch_id = int(arguments.pop(0))
         rcstype = arguments.pop(0)
-        if rcstype in ['svn', 'bzr-svn', 'git', 'hg', 'bzr']:
+        if rcstype in ['svn', 'bzr-svn', 'git', 'bzr']:
             url = arguments.pop(0)
             try:
                 stacked_on_url = arguments.pop(0)
@@ -327,10 +329,6 @@ class CodeImportSourceDetails:
             return cls(
                 branch.id, 'git', str(code_import.url),
                 stacked_on_url=stacked_on_url)
-        elif code_import.rcs_type == RevisionControlSystems.HG:
-            return cls(
-                branch.id, 'hg', str(code_import.url),
-                stacked_on_url=stacked_on_url)
         elif code_import.rcs_type == RevisionControlSystems.BZR:
             return cls(
                 branch.id, 'bzr', str(code_import.url),
@@ -342,7 +340,7 @@ class CodeImportSourceDetails:
         """Return a list of arguments suitable for passing to a child process.
         """
         result = [str(self.branch_id), self.rcstype]
-        if self.rcstype in ['svn', 'bzr-svn', 'git', 'hg', 'bzr']:
+        if self.rcstype in ['svn', 'bzr-svn', 'git', 'bzr']:
             result.append(self.url)
             if self.stacked_on_url is not None:
                 result.append(self.stacked_on_url)
@@ -711,59 +709,27 @@ class PullingImportWorker(ImportWorker):
         """
         return None
 
-    def _open_dir(self, url):
-        """Simple BzrDir.open clone that only uses self.probers.
-
-        :param url: URL to open
-        :return: ControlDir instance
-        """
-        def redirected(transport, e, redirection_notice):
-            self._opener_policy.checkOneURL(e.target)
-            redirected_transport = transport._redirected_to(
-                e.source, e.target)
-            if redirected_transport is None:
-                raise NotBranchError(e.source)
-            self._logger.info('%s is%s redirected to %s',
-                 transport.base, e.permanently, redirected_transport.base)
-            return redirected_transport
-
-        def find_format(transport):
-            last_error = None
-            for prober_kls in self.probers:
-                prober = prober_kls()
-                try:
-                    return transport, prober.probe_transport(transport)
-                except NotBranchError, e:
-                    last_error = e
-            else:
-                raise last_error
-        transport = get_transport_from_url(url)
-        transport, format = do_catching_redirections(find_format, transport,
-            redirected)
-        return format.open(transport)
-
     def _doImport(self):
         self._logger.info("Starting job.")
         saved_factory = bzrlib.ui.ui_factory
-        opener = SafeBranchOpener(self._opener_policy)
+        opener = SafeBranchOpener(self._opener_policy, self.probers)
         bzrlib.ui.ui_factory = LoggingUIFactory(logger=self._logger)
         try:
             self._logger.info(
                 "Getting exising bzr branch from central store.")
             bazaar_branch = self.getBazaarBranch()
             try:
-                remote_branch = opener.open(
-                    self.source_details.url, self._open_dir)
+                remote_branch = opener.open(self.source_details.url)
             except TooManyRedirections:
                 self._logger.info("Too many redirections.")
                 return CodeImportWorkerExitCode.FAILURE_INVALID
             except NotBranchError:
                 self._logger.info("No branch found at remote location.")
                 return CodeImportWorkerExitCode.FAILURE_INVALID
-            except BadUrl, e:
+            except BadUrl as e:
                 self._logger.info("Invalid URL: %s" % e)
                 return CodeImportWorkerExitCode.FAILURE_FORBIDDEN
-            except ConnectionError, e:
+            except ConnectionError as e:
                 self._logger.info("Unable to open remote branch: %s" % e)
                 return CodeImportWorkerExitCode.FAILURE_INVALID
             try:
@@ -780,7 +746,7 @@ class PullingImportWorker(ImportWorker):
                         result = CodeImportWorkerExitCode.SUCCESS_NOCHANGE
                 else:
                     result = CodeImportWorkerExitCode.SUCCESS_PARTIAL
-            except Exception, e:
+            except Exception as e:
                 if e.__class__ in self.unsupported_feature_exceptions:
                     self._logger.info(
                         "Unable to import branch because of limitations in "
@@ -879,79 +845,6 @@ class GitImportWorker(PullingImportWorker):
         return non_trivial
 
 
-class HgImportWorker(PullingImportWorker):
-    """An import worker for Mercurial imports.
-
-    The only behaviour we add is preserving the id-sha map between runs.
-    """
-
-    @property
-    def invalid_branch_exceptions(self):
-        return [
-            NoRepositoryPresent,
-            NotBranchError,
-            ConnectionError,
-        ]
-
-    @property
-    def unsupported_feature_exceptions(self):
-        return [
-            InvalidEntryName,
-        ]
-
-    @property
-    def broken_remote_exceptions(self):
-        return []
-
-    @property
-    def probers(self):
-        """See `PullingImportWorker.probers`."""
-        from bzrlib.plugins.hg import HgProber
-        return [HgProber]
-
-    def getRevisionLimit(self):
-        """See `PullingImportWorker.getRevisionLimit`."""
-        return config.codeimport.hg_revisions_import_limit
-
-    def getBazaarBranch(self):
-        """See `ImportWorker.getBazaarBranch`.
-
-        In addition to the superclass' behaviour, we retrieve the bzr-hg's
-        caches, both legacy and current and put them where bzr-hg will find
-        them in the Bazaar tree, that is at '.bzr/repository/hg-v2.db' and
-        '.bzr/repository/hg'.
-        """
-        branch = PullingImportWorker.getBazaarBranch(self)
-        # Fetch the legacy cache from the store, if present.
-        self.import_data_store.fetch(
-            'hg-v2.db', branch.repository._transport)
-        # The cache dir from newer bzr-hgs is stored as a tarball.
-        local_name = 'hg-cache.tar.gz'
-        if self.import_data_store.fetch(local_name):
-            repo_transport = branch.repository._transport
-            repo_transport.mkdir('hg')
-            hg_db_dir = os.path.join(
-                local_path_from_url(repo_transport.base), 'hg')
-            extract_tarball(local_name, hg_db_dir)
-        return branch
-
-    def pushBazaarBranch(self, bazaar_branch):
-        """See `ImportWorker.pushBazaarBranch`.
-
-        In addition to the superclass' behaviour, we store the hg cache
-        that bzr-hg will have created at .bzr/repository/hg into
-        the import data store.
-        """
-        non_trivial = PullingImportWorker.pushBazaarBranch(
-            self, bazaar_branch)
-        repo_base = bazaar_branch.repository._transport.base
-        hg_db_dir = os.path.join(local_path_from_url(repo_base), 'hg')
-        local_name = 'hg-cache.tar.gz'
-        create_tarball(hg_db_dir, local_name)
-        self.import_data_store.put(local_name)
-        return non_trivial
-
-
 class BzrSvnImportWorker(PullingImportWorker):
     """An import worker for importing Subversion via bzr-svn."""
 
@@ -995,6 +888,7 @@ class BzrImportWorker(PullingImportWorker):
         ConnectionError,
         ]
     unsupported_feature_exceptions = []
+    broken_remote_exceptions = []
 
     def getRevisionLimit(self):
         """See `PullingImportWorker.getRevisionLimit`."""

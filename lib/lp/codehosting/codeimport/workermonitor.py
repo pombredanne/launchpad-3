@@ -1,8 +1,6 @@
 # Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=W0702
-
 """Code to talk to the database about what the worker script is doing."""
 
 __metaclass__ = type
@@ -22,15 +20,15 @@ from twisted.python import failure
 from twisted.web import xmlrpc
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.launchpad.webapp import errorlog
-from canonical.launchpad.xmlrpc.faults import NoSuchCodeImportJob
-from canonical.librarian.interfaces import IFileUploadClient
 from lp.code.enums import CodeImportResultStatus
 from lp.codehosting.codeimport.worker import CodeImportWorkerExitCode
+from lp.services.config import config
+from lp.services.librarian.interfaces.client import IFileUploadClient
 from lp.services.twistedsupport.processmonitor import (
     ProcessMonitorProtocolWithTimeout,
     )
+from lp.services.webapp import errorlog
+from lp.xmlrpc.faults import NoSuchCodeImportJob
 
 
 class CodeImportWorkerMonitorProtocol(ProcessMonitorProtocolWithTimeout):
@@ -144,7 +142,7 @@ class CodeImportWorkerMonitor:
         config = errorlog.globalErrorUtility._oops_config
         context = {
             'twisted_failure': failure,
-            'request': errorlog.ScriptRequest(
+            'http_request': errorlog.ScriptRequest(
                 [('code_import_job_id', self._job_id)], self._branch_url),
             }
         report = config.create(context)
@@ -297,7 +295,8 @@ class CodeImportWorkerMonitor:
         if status == CodeImportResultStatus.FAILURE:
             self._log_file.write("Import failed:\n")
             reason.printTraceback(self._log_file)
-            self._logOopsFromFailure(reason)
+            self._logger.info(
+                "Import failed: %s: %s" % (reason.type, reason.value))
         else:
             self._logger.info('Import succeeded.')
         return self.finishJob(status)

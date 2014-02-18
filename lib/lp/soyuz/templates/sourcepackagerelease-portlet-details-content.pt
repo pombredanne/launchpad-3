@@ -25,7 +25,7 @@
   <b>Architectures:</b>
   <span tal:replace="context/architecturehintlist">i386, ppc</span><br />
 </div>
-<div style="font-size: 80%;">
+<div class="lesser">
 <sup>*</sup> actual publishing details may vary in this distribution, these
 are just the package defaults.
 </div>

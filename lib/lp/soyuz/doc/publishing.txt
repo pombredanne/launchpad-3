@@ -27,7 +27,7 @@ to make sure verifyObject will work.
 
 Verify if the object follows its interface contracts:
 
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.testing import verifyObject
     >>> from lp.registry.interfaces.distroseries import IDistroSeries
     >>> from lp.registry.interfaces.sourcepackage import ISourcePackage
     >>> from lp.soyuz.interfaces.distributionsourcepackagerelease import (
@@ -114,7 +114,7 @@ The pmount source has no packageupload in the sampledata:
 
 The iceweasel source has good data:
 
-    >>> pub = spph.archive.getPublishedSources(name="iceweasel").first()
+    >>> pub = spph.archive.getPublishedSources(name=u"iceweasel").first()
     >>> print pub.changesFileUrl()
     http://launchpad.dev/ubuntu/+archive/primary/+files/mozilla-firefox_0.9_i386.changes
 
@@ -159,7 +159,7 @@ augments the IBuildSet.getStatusSummaryForBuilds() method to include the
     ...     sourcename='abc', architecturehintlist='any')
     >>> builds = spph.createMissingBuilds()
     >>> for build in builds:
-    ...     build.status = BuildStatus.FULLYBUILT
+    ...     build.updateStatus(BuildStatus.FULLYBUILT)
 
 Create a helper for printing the build status summary:
 
@@ -218,7 +218,7 @@ Nor will it be included in the unpublished builds:
 By default, only FULLYBUILT builds are included in the returned
 unpublished builds:
 
-    >>> builds[1].status = BuildStatus.SUPERSEDED
+    >>> builds[1].updateStatus(BuildStatus.SUPERSEDED)
     >>> for build in spph.getUnpublishedBuilds():
     ...     print build.title
 
@@ -233,7 +233,7 @@ But the returned build-states can be set explicitly:
 
 Just switch it back to FULLYBUILT before continuing:
 
-    >>> builds[1].status = BuildStatus.FULLYBUILT
+    >>> builds[1].updateStatus(BuildStatus.FULLYBUILT)
 
 After publishing the second binary, the status changes to FULLYBUILT as
 per normal:
@@ -272,8 +272,8 @@ that build:
     >>> spph = test_publisher.getPubSource(
     ...     sourcename='def', architecturehintlist='any')
     >>> builds = spph.createMissingBuilds()
-    >>> builds[0].status = BuildStatus.SUPERSEDED
-    >>> builds[1].status = BuildStatus.FULLYBUILT
+    >>> builds[0].updateStatus(BuildStatus.SUPERSEDED)
+    >>> builds[1].updateStatus(BuildStatus.FULLYBUILT)
     >>> build_status_summary = spph.getStatusSummaryForBuilds()
     >>> print_build_status_summary(build_status_summary)
     FULLYBUILT_PENDING
@@ -349,6 +349,11 @@ The archive index is also available in in compressed formats.
     Directory: pool/main/a/alsa-utils
     Files:
      01234567890123456789012345678925 3 alsa-utils_1.0.8-1ubuntu1.dsc
+    Checksums-Sha1:
+     a10856bfea3f0bdb09550dd41f3c5bc275da8a33 3 alsa-utils_1.0.8-1ubuntu1.dsc
+    Checksums-Sha256:
+     0123456789012345678901234567890123456789012345678901234567890123 3 alsa-utils_1.0.8-1ubuntu1.dsc
+
 
 Empty fields like are suppressed, like 'Build-Depends' or
 'Build-Depends-Indep' to avoid extra charge on download.
@@ -379,12 +384,14 @@ requestDeletion requires a removed_by (IPerson) and optionally a
 removal_comment argument.
 
     >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.series import SeriesStatus
     >>> mark = getUtility(IPersonSet).getByName('mark')
+    >>> spph.distroseries.status = SeriesStatus.DEVELOPMENT
     >>> spph.requestDeletion(mark, "testing deletion")
 
 Inspecting the modified record shows it's ready for domination:
 
-    >>> from canonical.database.sqlbase import get_transaction_timestamp
+    >>> from lp.services.database.sqlbase import get_transaction_timestamp
     >>> transaction_timestamp = get_transaction_timestamp()
 
     >>> modified_spph = spph
@@ -413,6 +420,8 @@ pockets for stable distroseries):
 
     >>> modified_spph.scheduleddeletiondate == transaction_timestamp
     True
+
+    >>> spph.distroseries.status = SeriesStatus.CURRENT
 
 
 Copying and published binarypackages lookup
@@ -476,6 +485,7 @@ including its binaries.
 'distroseries' and 'archive' will be constant.
 
     >>> distroseries = source.distroseries
+    >>> distroseries.status = SeriesStatus.CURRENT
     >>> archive = source.archive
 
 'pocket' will be UPDATES.
@@ -935,6 +945,7 @@ Generating respective "Packages" stanzas:
     Size: 3
     MD5sum: 01234567890123456789012345678926
     SHA1: 5a04c7b5ea3f0fdbc95d0dd47f3c5bc275da8a33
+    SHA256: 0123456789012345678901234567890123456789012345678901234567890123
     Description: Mozilla Firefox Web Browser
      Mozilla Firefox Web Browser is .....
 
@@ -1005,7 +1016,6 @@ IPublishingSet
 
 This utility implements the following methods:
 
- * newBinaryPublication();
  * newSourcePublication();
 
 which create new publishing records, and:
@@ -1051,11 +1061,11 @@ publications.
 Creating new publication records
 --------------------------------
 
-newSourcePublication() and newBinaryPublication() will create source and
-binary publication records respectively.  They are already implicitly tested
-above via the copyTo methods which use them to create new records.  However,
-they have one extra feature which is important for PPAs - they will ensure
-that the published component is always 'main'.
+newSourcePublication() will create a source publication record. It is
+already implicitly tested above via the copyTo method which uses it to
+create new records.  However, it has one extra feature which is
+important for PPAs - it will ensure that the published component is
+always 'main'.
 
 When copying publications from non-main components in the primary archive,
 the PPA publication will always be main:
@@ -1069,22 +1079,6 @@ the PPA publication will always be main:
     ...     component=test_source_pub.component,
     ...     section=test_source_pub.section,
     ...     pocket=test_source_pub.pocket)
-    >>> print ppa_pub.component.name
-    main
-
-    >>> test_bin_pubs = test_publisher.getPubBinaries(
-    ...     pub_source=test_source_pub)
-    >>> test_bin_pub = test_bin_pubs[0]
-    >>> ppa_pub = publishing_set.newBinaryPublication(
-    ...     archive=mark.archive,
-    ...     binarypackagerelease=test_bin_pub.binarypackagerelease,
-    ...     distroarchseries=test_bin_pub.distroarchseries,
-    ...     component=test_bin_pub.component,
-    ...     section=test_bin_pub.section,
-    ...     priority=test_bin_pub.priority,
-    ...     pocket=test_bin_pub.pocket)
-    >>> print ppa_pub.binarypackagerelease.component.name
-    universe
     >>> print ppa_pub.component.name
     main
 
@@ -1186,7 +1180,7 @@ is correct:
     ...     sourcename='stu', architecturehintlist='any')
     ...     missing_builds = spph.createMissingBuilds()
     ...     for build in missing_builds:
-    ...         build.status = BuildStatus.FULLYBUILT
+    ...         build.updateStatus(BuildStatus.FULLYBUILT)
     ...         builds.append(build)
     ...     sources.append(spph)
     >>> len(builds)
@@ -1323,7 +1317,7 @@ For testing purposes we will create a `PackageDiff` for Celso's
     >>> print iceweasel_diff.title
     diff from 0.1-1 (in Ubuntu) to 1.0
 
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
 
 The `PackageDiff` are availble via getPackageDiffsForSources() even if
@@ -1334,7 +1328,7 @@ they are not completed yet.
 
 Let's fulfill the file related with the 'pmount' diff.
 
-    >>> from canonical.launchpad.interfaces.librarian import (
+    >>> from lp.services.librarian.interfaces import (
     ...     ILibraryFileAliasSet)
 
     >>> diff_file = getUtility(ILibraryFileAliasSet)[1]
@@ -1751,117 +1745,3 @@ required archive parameter will be ignored:
     ...         [firefox_source_pub.id, foo_pub.id],
     ...         archive=ubuntu.main_archive)
     >>> print_build_summaries(build_summaries)
-
-
-IPublishing ancestry lookup and override
-========================================
-
-`IPublishing` is implemented by both kinds of package publications we
-have `SourcePackagePublishingHistory` and
-`BinaryPackagePublishingHistory`.
-
-This interface allows, among other features, easy ancestry lookup and
-pre-publication overrides via:
-
- * getAncestry
- * overrideFromAncestry
-
-    # Setup a publishing scenario for illustrating ancestry lookup.
-    >>> ubuntu_source_ancestry = test_publisher.getPubSource(
-    ...     sourcename='testing', version='1.0',
-    ...     architecturehintlist='i386', component='multiverse',
-    ...     status=PackagePublishingStatus.PUBLISHED)
-    >>> ubuntu_binary_ancestry = test_publisher.getPubBinaries(
-    ...     binaryname='testing-bin', pub_source=ubuntu_source_ancestry,
-    ...     status=PackagePublishingStatus.PUBLISHED)[0]
-    >>> ppa_source_ancestry = test_publisher.getPubSource(
-    ...     sourcename='testing', version='1.1', component='main',
-    ...     architecturehintlist='i386', archive=cprov.archive,
-    ...     status=PackagePublishingStatus.PUBLISHED)
-    >>> ppa_binary_ancestry = test_publisher.getPubBinaries(
-    ...     binaryname='testing-bin', pub_source=ppa_source_ancestry,
-    ...     status=PackagePublishingStatus.PUBLISHED)[0]
-    >>> test_source = test_publisher.getPubSource(
-    ...     sourcename='testing', version='2.0', component='universe',
-    ...     architecturehintlist='i386')
-    >>> test_binary = test_publisher.getPubBinaries(
-    ...     binaryname='testing-bin', pub_source=test_source)[0]
-
-We will create a helper function to inspect ancestries. It simply pass
-any given keyword argument to 'test_source' and 'test_binary'
-getAncestry() method.
-
-    >>> def print_ancestries(**kwargs):
-    ...     def print_displayname(pub):
-    ...         if pub is not None:
-    ...             print pub.displayname
-    ...         else:
-    ...             print pub
-    ...     print_displayname(test_source.getAncestry(**kwargs))
-    ...     print_displayname(test_binary.getAncestry(**kwargs))
-
-The 'test_source' and 'test_binary' ancestries in the same context,
-i.e. ubuntu primary archive.
-
-    >>> print_ancestries()
-    testing 1.0 in breezy-autotest
-    testing-bin 1.0 in breezy-autotest i386
-
-Call sites may quickly adjust the context where the ancestries are
-looked up.
-
-    >>> print_ancestries(archive=cprov.archive)
-    testing 1.1 in breezy-autotest
-    testing-bin 1.1 in breezy-autotest i386
-
-    >>> print_ancestries(distroseries=test_source.distroseries)
-    testing 1.0 in breezy-autotest
-    testing-bin 1.0 in breezy-autotest i386
-
-    >>> print_ancestries(pocket=test_source.pocket)
-    testing 1.0 in breezy-autotest
-    testing-bin 1.0 in breezy-autotest i386
-
-The default 'status' filter is set to PUBLISHED ancestries, however
-call sites may decide differently.
-
-    >>> print_ancestries(status=PackagePublishingStatus.PUBLISHED)
-    testing 1.0 in breezy-autotest
-    testing-bin 1.0 in breezy-autotest i386
-
-On the lack of ancestry, None is returned.
-
-    >>> from lp.soyuz.interfaces.publishing import (
-    ...     inactive_publishing_status)
-    >>> print_ancestries(status=inactive_publishing_status)
-    None
-    None
-
-`overrideFromAncestry` operates directly on top of the default
-behavior of `getAncestry`. It looks up the most recent ancestry for a
-publication and override it in place.  If there is no previous publication
-then the package's component is used.
-
-    >>> print test_source.component.name
-    universe
-
-    >>> test_source.overrideFromAncestry()
-    >>> print test_source.component.name
-    multiverse
-
-It works in the same way for binaries.
-
-    >>> multiverse = getUtility(IComponentSet)['multiverse']
-    >>> test_binary.binarypackagerelease.component = multiverse
-
-    >>> print test_binary.component.name
-    universe
-
-    >>> copied_binary = test_binary.copyTo(
-    ...     hoary_test, test_source.pocket, archive=test_binary.archive)[0]
-    >>> print copied_binary.component.name
-    universe
-
-    >>> copied_binary.overrideFromAncestry()
-    >>> print copied_binary.component.name
-    multiverse

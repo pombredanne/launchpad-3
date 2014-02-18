@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Interfaces to do with conversations on Launchpad entities."""
@@ -18,15 +18,18 @@ from zope.interface import Interface
 from zope.schema import (
     Bool,
     Datetime,
+    Int,
     Text,
     TextLine,
     )
 
-from canonical.launchpad import _
+from lp import _
 
 
 class IComment(Interface):
     """A comment which may have a body or footer."""
+
+    index = Int(title=u'The comment number', required=True, readonly=True)
 
     extra_css_class = TextLine(
         description=_("A css class to apply to the comment's outer div."))
@@ -39,8 +42,23 @@ class IComment(Interface):
         description=_("Does the comment have a footer?"),
         readonly=True)
 
+    too_long = Bool(
+        title=u'Whether the comment body is too long to display in full.',
+        readonly=True)
+
+    too_long_to_render = Bool(
+        title=(u'Whether the comment body is so long that rendering is'
+        ' inappropriate.'), readonly=True)
+
+    text_for_display = Text(
+        title=u'The comment text to be displayed in the UI.', readonly=True)
+
     body_text = Text(
         description=_("The body text of the comment."),
+        readonly=True)
+
+    download_url = Text(
+        description=_("URL for downloading full text."),
         readonly=True)
 
     comment_author = Reference(

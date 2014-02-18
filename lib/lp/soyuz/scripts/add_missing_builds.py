@@ -1,25 +1,22 @@
-#
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import sys
 
-from canonical.config import config
 from lp.app.errors import NotFoundError
 from lp.services.scripts.base import LaunchpadScriptFailure
-from lp.soyuz.pas import BuildDaemonPackagesArchSpecific
+from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.scripts.ftpmasterbase import (
     SoyuzScript,
     SoyuzScriptError,
     )
-from lp.soyuz.enums import PackagePublishingStatus
 
 
 class AddMissingBuilds(SoyuzScript):
     """Helper class to create builds in PPAs for requested architectures."""
 
-    def add_missing_builds(self, archive, required_arches, pas_verify,
-                           distroseries, pocket):
+    def add_missing_builds(self, archive, required_arches, distroseries,
+                           pocket):
         """Create builds in an archive as necessary.
 
         :param archive: The `Archive`.
@@ -71,8 +68,7 @@ class AddMissingBuilds(SoyuzScript):
         for pubrec in sources:
             self.logger.info("Considering %s" % pubrec.displayname)
             builds = pubrec.createMissingBuilds(
-                architectures_available=doable_arch_set,
-                pas_verify=pas_verify, logger=self.logger)
+                architectures_available=doable_arch_set, logger=self.logger)
             if len(builds) > 0:
                 self.logger.info("Created %s build(s)" % len(builds))
 
@@ -87,7 +83,7 @@ class AddMissingBuilds(SoyuzScript):
         """Entry point for `LaunchpadScript`s."""
         try:
             self.setupLocation()
-        except SoyuzScriptError, err:
+        except SoyuzScriptError as err:
             raise LaunchpadScriptFailure(err)
 
         if not self.options.arch_tags:
@@ -103,17 +99,14 @@ class AddMissingBuilds(SoyuzScript):
                     "%s not a valid architecture for %s" % (
                         arch_tag, self.location.distroseries.name))
 
-        pas_verify = BuildDaemonPackagesArchSpecific(
-            config.builddmaster.root, self.location.distroseries)
-
         # I'm tired of parsing options.  Let's do it.
         try:
             self.add_missing_builds(
-                self.location.archive, arches, pas_verify,
-                self.location.distroseries, self.location.pocket)
+                self.location.archive, arches, self.location.distroseries,
+                self.location.pocket)
             self.txn.commit()
             self.logger.info("Finished adding builds.")
-        except Exception, err:
+        except Exception as err:
             self.logger.error(err)
             self.txn.abort()
             self.logger.info("Errors, aborted transaction.")

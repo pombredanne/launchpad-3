@@ -29,8 +29,7 @@ it for source packages (tested and documented separately).
     Download : Translations...
 
     >>> user_browser.getControl('Request Download').click()
-    >>> for message in get_feedback_messages(user_browser.contents):
-    ...     print message
+    >>> print_feedback_messages(user_browser.contents)
     Your request has been received.  Expect to receive an email shortly.
 
 
@@ -74,7 +73,7 @@ Only logged-in users get the option to request downloads.
 
 We can't see its placeholder in non-development mode:
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> config.devmode
     True
     >>> config.devmode = False

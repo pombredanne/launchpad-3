@@ -95,7 +95,7 @@ CURRENT or DEVELOPMENT.
 If the latest sourcepackage does not have a link to an upstream project,
 this page will display a form to add one.
 
-    >>> from canonical.launchpad.testing.pages import find_tag_by_id
+    >>> from lp.testing.pages import find_tag_by_id
     >>> upstream_portlet = find_tag_by_id(view.render(), 'upstream')
     >>> print upstream_portlet.find(id='field.actions.link')['value']
     Link to Upstream Project

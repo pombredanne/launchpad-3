@@ -106,6 +106,7 @@ The page to edit a person's subscription also allows the user to
 unsubscribe.
 
     >>> browser.getLink('Edit your subscription').click()
+    >>> form_url = browser.url
     >>> browser.getControl('Unsubscribe').click()
 
 The user is taken back to the branch details page, and a message is
@@ -119,13 +120,16 @@ shown to the user.
 Clicking the back button and then clicking on either Change or
 Unsubscribe will give a message that we are not subscribed.
 
-    >>> browser.goBack(count=1)
-    >>> browser.getControl('Change').click()
+    >>> from urllib import urlencode
+    >>> browser.addHeader('Referer', 'https://launchpad.dev/')
+    >>> browser.open(
+    ...     form_url,
+    ...     data=urlencode({'field.actions.change': 'Change'}))
     >>> print_informational_message(browser.contents)
     You are not subscribed to this branch.
-
-    >>> browser.goBack(count=1)
-    >>> browser.getControl('Unsubscribe').click()
+    >>> browser.open(
+    ...     form_url,
+    ...     data=urlencode({'field.actions.unsubscribe': 'Unsubscribe'}))
     >>> print_informational_message(browser.contents)
     You are not subscribed to this branch.
 
@@ -162,8 +166,7 @@ specify the person to subscribe.  The person field is required.
     ...     '5000 lines']
     >>> browser.getControl('Subscribe').click()
 
-    >>> for message in get_feedback_messages(browser.contents):
-    ...     print extract_text(message)
+    >>> print_feedback_messages(browser.contents)
     There is 1 error.
     Required input is missing.
 
@@ -218,7 +221,7 @@ Editing a team subscription
 ===========================
 
 In order to edit a team subscription the logged in user needs to be a member
-of the team that is subscribed, or must the the person who subscribed the team
+of the team that is subscribed, or must the person who subscribed the team
 to the branch.  There is a link shown in the subscriptions portlet to edit the
 subscription of a team that the logged in user is a member of.
 
@@ -254,43 +257,36 @@ From this page the branch subscription can be altered...
     Mark Shuttleworth
 
 
-Private team exclusion
-======================
+Private team's in public subscriptions
+======================================
 
-If a private team is subscribed to the branch, it is excluded from the list of
-subscribers if the user is not an admin or a member of the team.
+If a private team is subscribed to a publicthe branch, it is visible
+to everyone.
 
-    >>> from lp.testing import ANONYMOUS, login, logout
-    >>> login('admin@canonical.com')
+    >>> from lp.testing import login, logout
     >>> from lp.registry.interfaces.person import PersonVisibility
-    >>> private_team = factory.makeTeam(
-    ...     name='shh', displayname='Shh',
-    ...     visibility=PersonVisibility.PRIVATE)
-    >>> member = factory.makePerson(
-    ...     email='shh@example.com', password='test')
-    >>> ignored = private_team.addMember(member, private_team.teamowner)
-    >>> owner = factory.makePerson(name='branch-owner')
-    >>> branch = factory.makeAnyBranch(owner=owner)
     >>> from lp.code.enums import (
     ...     BranchSubscriptionNotificationLevel,
     ...     CodeReviewNotificationLevel)
+
+    >>> login('admin@canonical.com')
+    >>> private_team = factory.makeTeam(
+    ...     name='shh', displayname='Shh',
+    ...     visibility=PersonVisibility.PRIVATE)
+    >>> member = factory.makePerson(email='shh@example.com')
+    >>> ignored = private_team.addMember(member, private_team.teamowner)
+    >>> owner = factory.makePerson(name='branch-owner')
+    >>> branch = factory.makeAnyBranch(owner=owner)
     >>> ignored = branch.subscribe(
     ...     private_team, BranchSubscriptionNotificationLevel.NOEMAIL, None,
     ...     CodeReviewNotificationLevel.NOEMAIL, private_team.teamowner)
     >>> url = canonical_url(branch)
     >>> logout()
 
-No-priv is not a member of the private team, so the private team is not shown
-as a subscriber.
+No-priv is not a member of the private team, but he can see the team's
+display name in the subscriber list.
 
     >>> browser.open(url)
     >>> print_subscribers(browser.contents)
-    Branch-owner
-
-A team member looking at the branch will see the private team subscribed.
-
-    >>> private_browser = setupBrowser(auth='Basic shh@example.com:test')
-    >>> private_browser.open(url)
-    >>> print_subscribers(private_browser.contents)
     Branch-owner
     Shh

@@ -11,7 +11,8 @@ __all__ = [
 from lazr.delegates import delegates
 from zope.interface import implements
 
-from canonical.launchpad.interfaces.launchpad import IPrivacy
+from lp.app.interfaces.informationtype import IInformationType
+from lp.app.interfaces.launchpad import IPrivacy
 from lp.code.interfaces.branch import (
     BzrIdentityMixin,
     IBranch,
@@ -25,7 +26,7 @@ class DecoratedBranch(BzrIdentityMixin):
     This avoids repeated db queries.
     """
     implements(IPrivacy)
-    delegates(IBranch, 'branch')
+    delegates([IBranch, IInformationType], 'branch')
 
     def __init__(self, branch):
         self.branch = branch
@@ -92,10 +93,9 @@ class DecoratedBranch(BzrIdentityMixin):
         list of subscribers anyway, a simple check over the list is
         sufficient.
         """
-        for sub in self.subscriptions:
-            if sub.person == user:
-                return True
-        return False
+        if user is None:
+            return False
+        return user.id in [sub.personID for sub in self.subscriptions]
 
     @cachedproperty
     def latest_revisions(self):

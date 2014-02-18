@@ -1,8 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213
-
 """Interface for a QuestionReopening."""
 
 __metaclass__ = type
@@ -18,9 +16,9 @@ from zope.schema import (
     Object,
     )
 
-from canonical.launchpad import _
-from lp.answers.interfaces.question import IQuestion
+from lp import _
 from lp.answers.enums import QuestionStatus
+from lp.answers.interfaces.question import IQuestion
 from lp.registry.interfaces.person import IPerson
 
 

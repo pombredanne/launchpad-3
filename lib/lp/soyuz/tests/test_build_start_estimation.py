@@ -7,11 +7,11 @@ from datetime import (
     datetime,
     timedelta,
     )
+
 import pytz
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
@@ -19,6 +19,7 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.testing.sampledata import (
     ADMIN_EMAIL,
     BOB_THE_BUILDER_NAME,
@@ -40,8 +41,7 @@ class TestBuildStartEstimation(TestCaseWithFactory):
         self.distroseries = self.factory.makeDistroSeries()
         self.bob = getUtility(IBuilderSet).getByName(BOB_THE_BUILDER_NAME)
         das = self.factory.makeDistroArchSeries(
-            distroseries=self.distroseries,
-            processorfamily=self.bob.processor.id,
+            distroseries=self.distroseries, processor=self.bob.processor,
             architecturetag='i386', supports_virtualized=True)
         with person_logged_in(self.admin):
             self.distroseries.nominatedarchindep = das

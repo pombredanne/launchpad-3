@@ -8,7 +8,7 @@
 
     <browser:page
         name="+yuitest"
-        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+        for="lp.services.webapp.interfaces.ILaunchpadRoot"
         class="lp.testing.yuixhr.YUITestFixtureControllerView"
         attribute="__call__"
         permission="zope.Public"/>

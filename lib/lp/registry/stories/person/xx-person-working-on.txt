@@ -17,7 +17,7 @@ displayed there.
     # Go behind the scenes and create a bug and a blueprint, both assigned to
     # a single person.
     >>> login('foo.bar@canonical.com')
-    >>> from canonical.launchpad.webapp import canonical_url
+    >>> from lp.services.webapp import canonical_url
     >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
     >>> from lp.blueprints.enums import SpecificationImplementationStatus
     >>> spec = factory.makeSpecification()

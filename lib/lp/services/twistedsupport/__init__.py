@@ -137,7 +137,7 @@ def no_traceback_failures(func):
     def wrapped(*args, **kwargs):
         try:
             return func(*args, **kwargs)
-        except BaseException, e:
+        except BaseException as e:
             return Failure(e)
 
     return wrapped

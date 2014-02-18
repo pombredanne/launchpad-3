@@ -9,11 +9,7 @@
   <h2><span tal:replace="context/title">source package "foobar"
   2.3.1-2</span></h2>
 
-  <div class="portletBody portletContent">
-
-    <div tal:replace="structure context/@@+portlet-details-content" />
-
-  </div>
+  <div tal:replace="structure context/@@+portlet-details-content" />
 
 </div>
 </tal:root>

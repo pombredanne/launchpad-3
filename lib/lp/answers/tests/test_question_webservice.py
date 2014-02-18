@@ -9,14 +9,8 @@ from BeautifulSoup import BeautifulSoup
 from lazr.restfulclient.errors import HTTPError
 from simplejson import dumps
 import transaction
-from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
-from canonical.testing.layers import (
-    AppServerLayer,
-    DatabaseFunctionalLayer,
-    FunctionalLayer,
-    )
 from lp.answers.errors import (
     AddAnswerContactError,
     FAQTargetError,
@@ -26,17 +20,21 @@ from lp.answers.errors import (
     NotQuestionOwnerError,
     QuestionTargetError,
     )
-from lp.registry.interfaces.person import IPersonSet
-from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import (
-    TestCase,
-    TestCaseWithFactory,
     celebrity_logged_in,
     launchpadlib_for,
     logout,
     person_logged_in,
+    TestCase,
+    TestCaseWithFactory,
     ws_object,
     )
+from lp.testing.layers import (
+    AppServerLayer,
+    DatabaseFunctionalLayer,
+    FunctionalLayer,
+    )
+from lp.testing.pages import LaunchpadWebServiceCaller
 from lp.testing.views import create_webservice_error_view
 
 
@@ -84,6 +82,7 @@ class TestQuestionRepresentation(TestCaseWithFactory):
         with celebrity_logged_in('admin'):
             self.question = self.factory.makeQuestion(
                 title="This is a question")
+            self.target_name = self.question.target.name
 
         self.webservice = LaunchpadWebServiceCaller(
             'launchpad-library', 'salgado-change-anything')
@@ -106,7 +105,7 @@ class TestQuestionRepresentation(TestCaseWithFactory):
     def test_GET_xhtml_representation(self):
         # A question's xhtml representation is available on the api.
         response = self.webservice.get(
-            '/%s/+question/%d' % (self.question.target.name,
+            '/%s/+question/%d' % (self.target_name,
                 self.question.id),
             'application/xhtml+xml')
         self.assertEqual(response.status, 200)
@@ -120,7 +119,7 @@ class TestQuestionRepresentation(TestCaseWithFactory):
         new_title = "No, this is a question"
 
         question_json = self.webservice.get(
-            '/%s/+question/%d' % (self.question.target.name,
+            '/%s/+question/%d' % (self.target_name,
                 self.question.id)).jsonBody()
 
         response = self.webservice.patch(
@@ -143,13 +142,11 @@ class TestSetCommentVisibility(TestCaseWithFactory):
 
     def setUp(self):
         super(TestSetCommentVisibility, self).setUp()
-        self.person_set = getUtility(IPersonSet)
-        admins = self.person_set.getByName('admins')
-        self.admin = admins.teamowner
-        with person_logged_in(self.admin):
+        self.commenter = self.factory.makePerson()
+        with person_logged_in(self.commenter):
             self.question = self.factory.makeQuestion()
             self.message = self.question.addComment(
-                self.admin, 'Some comment')
+                self.commenter, 'Some comment')
         transaction.commit()
 
     def _get_question_for_user(self, user=None):
@@ -157,7 +154,7 @@ class TestSetCommentVisibility(TestCaseWithFactory):
         # End any open lplib instance.
         logout()
         lp = launchpadlib_for("test", user)
-        return ws_object(lp, self.question)
+        return ws_object(lp, removeSecurityProxy(self.question))
 
     def _set_visibility(self, question):
         """Method to set visibility; needed for assertRaises."""
@@ -168,8 +165,8 @@ class TestSetCommentVisibility(TestCaseWithFactory):
     def test_random_user_cannot_set_visible(self):
         # Logged in users without privs can't set question comment
         # visibility.
-        nopriv = self.person_set.getByName('no-priv')
-        question = self._get_question_for_user(nopriv)
+        random_user = self.factory.makePerson()
+        question = self._get_question_for_user(random_user)
         self.assertRaises(
             HTTPError,
             self._set_visibility,
@@ -184,13 +181,18 @@ class TestSetCommentVisibility(TestCaseWithFactory):
             self._set_visibility,
             question)
 
+    def test_comment_owner_can_set_visible(self):
+        # Members of registry experts can set question comment
+        # visibility.
+        question = self._get_question_for_user(self.commenter)
+        self._set_visibility(question)
+        self.assertFalse(self.message.visible)
+
     def test_registry_admin_can_set_visible(self):
         # Members of registry experts can set question comment
         # visibility.
-        registry = self.person_set.getByName('registry')
-        person = self.factory.makePerson()
-        with person_logged_in(registry.teamowner):
-            registry.addMember(person, registry.teamowner)
+        with celebrity_logged_in('registry_experts') as registry:
+            person = registry
         question = self._get_question_for_user(person)
         self._set_visibility(question)
         self.assertFalse(self.message.visible)
@@ -198,10 +200,8 @@ class TestSetCommentVisibility(TestCaseWithFactory):
     def test_admin_can_set_visible(self):
         # Admins can set question comment
         # visibility.
-        admins = self.person_set.getByName('admins')
-        person = self.factory.makePerson()
-        with person_logged_in(admins.teamowner):
-            admins.addMember(person, admins.teamowner)
+        with celebrity_logged_in('admin') as admin:
+            person = admin
         question = self._get_question_for_user(person)
         self._set_visibility(question)
         self.assertFalse(self.message.visible)

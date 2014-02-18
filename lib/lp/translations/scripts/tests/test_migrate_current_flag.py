@@ -5,8 +5,9 @@ __metaclass__ = type
 
 import logging
 
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.testing import TestCaseWithFactory
+from lp.testing.dbuser import switch_dbuser
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.translations.scripts.migrate_current_flag import (
     MigrateCurrentFlagProcess,
     TranslationMessageImportedFlagUpdater,
@@ -21,7 +22,7 @@ class TestMigrateCurrentFlag(TestCaseWithFactory):
         # This test needs the privileges of rosettaadmin (to update
         # TranslationMessages) but it also needs to set up test conditions
         # which requires other privileges.
-        self.layer.switchDbUser('postgres')
+        switch_dbuser('postgres')
         super(TestMigrateCurrentFlag, self).setUp(user='mark@example.com')
         self.migrate_process = MigrateCurrentFlagProcess(self.layer.txn)
 
@@ -65,8 +66,7 @@ class TestMigrateCurrentFlag(TestCaseWithFactory):
             potemplate=potemplate,
             sequence=1)
         pofile = self.factory.makePOFile(potemplate=potemplate)
-        translation = self.factory.makeSuggestion(
-            pofile=pofile, potmsgset=potmsgset)
+        self.factory.makeSuggestion(pofile=pofile, potmsgset=potmsgset)
         results = list(
             self.migrate_process.getCurrentNonimportedTranslations(
                 potemplate.productseries.product))
@@ -113,7 +113,7 @@ class TestUpdaterLoop(TestCaseWithFactory):
         # This test needs the privileges of rosettaadmin (to update
         # TranslationMessages) but it also needs to set up test conditions
         # which requires other privileges.
-        self.layer.switchDbUser('postgres')
+        switch_dbuser('postgres')
         super(TestUpdaterLoop, self).setUp(user='mark@example.com')
         self.logger = logging.getLogger("migrate-current-flag")
         self.migrate_loop = TranslationMessageImportedFlagUpdater(

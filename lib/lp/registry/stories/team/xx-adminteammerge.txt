@@ -8,8 +8,7 @@ members should be deactivated before the teams are merged.
     >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> login('foo.bar@canonical.com')
-    >>> registry_expert = factory.makePerson(
-    ...     email='reg@example.com', password='test')
+    >>> registry_expert = factory.makePerson(email='reg@example.com')
     >>> new_team = factory.makeTeam(
     ...     name="new-team", email="new_team@example.com")
     >>> registry_experts = getUtility(IPersonSet).getByName('registry')
@@ -25,7 +24,7 @@ members should be deactivated before the teams are merged.
 
     >>> registry_browser.url
     'http://launchpad.dev/people/+adminteammerge'
-    >>> print get_feedback_messages(registry_browser.contents)[0]
+    >>> print_feedback_messages(registry_browser.contents)
     New Team has 1 active members which will have to be deactivated
     before the teams can be merged.
 
@@ -33,5 +32,5 @@ members should be deactivated before the teams are merged.
     >>> registry_browser.url
     'http://launchpad.dev/~guadamen'
 
-    >>> print get_feedback_messages(registry_browser.contents)[0]
+    >>> print_feedback_messages(registry_browser.contents)
     A merge is queued and is expected to complete in a few minutes.

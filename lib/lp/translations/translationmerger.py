@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -18,20 +18,20 @@ from storm.locals import (
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.scripts.logger import (
-    DEBUG2,
-    log,
-    )
-from canonical.launchpad.utilities.orderingcheck import OrderingCheck
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.packaging import Packaging
+from lp.services.database.interfaces import IStore
+from lp.services.orderingcheck import OrderingCheck
 from lp.services.scripts.base import (
     LaunchpadScript,
     LaunchpadScriptFailure,
+    )
+from lp.services.scripts.logger import (
+    DEBUG2,
+    log,
     )
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.side import TranslationSide
@@ -56,7 +56,7 @@ def get_potmsgset_key(potmsgset):
         potmsgset.context)
 
 
-def merge_pofiletranslators(from_potmsgset, to_template):
+def merge_pofiletranslators(from_template, to_template):
     """Merge POFileTranslator entries from one template into another.
     """
     # Import here to avoid circular import.
@@ -64,7 +64,7 @@ def merge_pofiletranslators(from_potmsgset, to_template):
         IPOFileTranslatorSet)
 
     pofiletranslatorset = getUtility(IPOFileTranslatorSet)
-    affected_rows = pofiletranslatorset.getForPOTMsgSet(from_potmsgset)
+    affected_rows = pofiletranslatorset.getForTemplate(from_template)
     for pofiletranslator in affected_rows:
         person = pofiletranslator.person
         from_pofile = pofiletranslator.pofile
@@ -112,7 +112,7 @@ def merge_translationtemplateitems(subordinate, representative,
             item.potmsgset = representative
             templates.add(item.potemplate)
 
-        merge_pofiletranslators(item.potmsgset, representative_template)
+        merge_pofiletranslators(item.potemplate, representative_template)
 
 
 def filter_clashes(clashing_ubuntu, clashing_upstream, twin):
@@ -273,8 +273,10 @@ class MessageSharingMerge(LaunchpadScript):
         subset = self.template_set.getSharingSubset(
                 product=product, distribution=distribution,
                 sourcepackagename=sourcepackagename)
-        equivalence_classes = subset.groupEquivalentPOTemplates(
-                                                self.options.template_names)
+        template_regex = self.options.template_names
+        if isinstance(template_regex, str):
+            template_regex = template_regex.decode('utf-8')
+        equivalence_classes = subset.groupEquivalentPOTemplates(template_regex)
 
         class_count = len(equivalence_classes)
         log.info("Merging %d template equivalence classes." % class_count)

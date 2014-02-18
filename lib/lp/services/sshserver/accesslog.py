@@ -9,6 +9,7 @@ __all__ = [
     ]
 
 import logging
+from logging.handlers import WatchedFileHandler
 
 from twisted.python import log as tplog
 from zope.component import (
@@ -19,7 +20,6 @@ from zope.component import (
 # This non-standard import is necessary to hook up the event system.
 import zope.component.event
 
-from canonical.launchpad.scripts import WatchedFileHandler
 from lp.services.sshserver.events import ILoggingEvent
 from lp.services.utils import synchronize
 

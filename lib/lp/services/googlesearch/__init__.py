@@ -1,8 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213
-
 """Interfaces for searching and working with results."""
 
 __metaclass__ = type
@@ -13,20 +11,19 @@ __all__ = [
     'PageMatches',
     ]
 
-import xml.etree.cElementTree as ET
 import urllib
 import urllib2
 from urlparse import (
-    urlunparse,
     parse_qsl,
+    urlunparse,
     )
+import xml.etree.cElementTree as ET
 
 from lazr.restful.utils import get_current_browser_request
 from lazr.uri import URI
 from zope.interface import implements
 
-from canonical.config import config
-from canonical.lazr.timeout import TimeoutError
+from lp.services.config import config
 from lp.services.googlesearch.interfaces import (
     GoogleResponseError,
     GoogleWrongGSPVersion,
@@ -34,8 +31,9 @@ from lp.services.googlesearch.interfaces import (
     ISearchResults,
     ISearchService,
     )
-from canonical.launchpad.webapp import urlparse
 from lp.services.timeline.requesttimeline import get_request_timeline
+from lp.services.timeout import TimeoutError
+from lp.services.webapp import urlparse
 
 
 class PageMatch:
@@ -205,13 +203,13 @@ class GoogleSearchService:
         :raise: `GoogleWrongGSPVersion` if the xml cannot be parsed.
         """
         search_url = self.create_search_url(terms, start=start)
-        from canonical.lazr.timeout import urlfetch
+        from lp.services.timeout import urlfetch
         request = get_current_browser_request()
         timeline = get_request_timeline(request)
         action = timeline.start("google-search-api", search_url)
         try:
             gsp_xml = urlfetch(search_url)
-        except (TimeoutError, urllib2.HTTPError, urllib2.URLError), error:
+        except (TimeoutError, urllib2.HTTPError, urllib2.URLError) as error:
             # Google search service errors are not code errors. Let the
             # call site choose to handle the unavailable service.
             raise GoogleResponseError(

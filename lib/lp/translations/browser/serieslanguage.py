@@ -12,14 +12,13 @@ __all__ = [
     'ProductSeriesLanguageView',
     ]
 
-from canonical.launchpad.readonly import is_read_only
-from canonical.launchpad.webapp import LaunchpadView
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.publisher import Navigation
 from lp.app.browser.tales import PersonFormatterAPI
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.database.bulk import load_related
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import LaunchpadView
+from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.publisher import Navigation
 from lp.translations.enums import TranslationPermission
 from lp.translations.interfaces.distroserieslanguage import (
     IDistroSeriesLanguage,
@@ -85,12 +84,6 @@ class BaseSeriesLanguageView(LaunchpadView):
     @property
     def access_level_description(self):
         """Must not be called when there's no translation group."""
-
-        if is_read_only():
-            return (
-                "No work can be done on these translations while Launchpad "
-                "is in read-only mode.")
-
         if self.user is None:
             return ("You are not logged in. Please log in to work "
                     "on translations.")

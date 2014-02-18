@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -12,28 +12,30 @@ import time
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.testing.layers import LaunchpadZopelessLayer
-from canonical.testing.layers import DatabaseLayer
-from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.enums import (
+    BuildQueueStatus,
+    BuildStatus,
+    )
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
-from lp.services.job.interfaces.job import JobStatus
+from lp.services.config import config
 from lp.services.log.logger import BufferLogger
-from lp.soyuz.enums import ArchivePurpose
-from lp.soyuz.interfaces.archive import (
-    IArchiveSet,
+from lp.soyuz.adapters.packagelocation import PackageLocationError
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    PackagePublishingStatus,
     )
-from lp.soyuz.enums import PackagePublishingStatus
+from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
-from lp.soyuz.scripts.ftpmaster import (
-    PackageLocationError,
-    SoyuzScriptError,
-    )
+from lp.soyuz.scripts.ftpmasterbase import SoyuzScriptError
 from lp.soyuz.scripts.populate_archive import ArchivePopulator
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
 from lp.testing.faketransaction import FakeTransaction
+from lp.testing.layers import (
+    DatabaseLayer,
+    LaunchpadZopelessLayer,
+    )
 
 
 def get_spn(build):
@@ -43,7 +45,7 @@ def get_spn(build):
 
 
 class TestPopulateArchiveScript(TestCaseWithFactory):
-    """Test the copy-package.py script."""
+    """Test the populate-archive.py script."""
 
     layer = LaunchpadZopelessLayer
     expected_build_spns = [
@@ -463,7 +465,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
             exception_type=SoyuzScriptError,
             exception_text="Invalid origin archive name: '//'")
 
-    def testInvalidProcessorFamilyName(self):
+    def testInvalidProcessorName(self):
         """Try copy archive population with an invalid architecture tag.
 
         This test should provoke a `SoyuzScriptError` exception.
@@ -474,11 +476,11 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
             exception_type=SoyuzScriptError,
             exception_text="Invalid architecture tag: 'wintel'")
 
-    def testFamiliesForExistingArchives(self):
-        """Try specifying processor family names for existing archive.
+    def testProcessorsForExistingArchives(self):
+        """Try specifying processor names for existing archive.
 
-        The user is not supposed to specify processor families on the command
-        line for existing copy archives. The processor families will be read
+        The user is not supposed to specify processor on the command
+        line for existing copy archives. The processor will be read
         from the database instead. Please see also the end of the
         testMultipleArchTags test.
 
@@ -549,7 +551,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
             exception_text=(
                 "error: archive 'hello-1' already exists for 'ubuntu'."))
 
-    def testMissingProcessorFamily(self):
+    def testMissingProcessor(self):
         """Try copy archive population without a single architecture tag.
 
         This test should provoke a `SoyuzScriptError` exception.
@@ -565,7 +567,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
             """True if the given build is not (pending and suspended)."""
             return not (
                 build.status == BuildStatus.NEEDSBUILD and
-                build.buildqueue_record.job.status == JobStatus.SUSPENDED)
+                build.buildqueue_record.status == BuildQueueStatus.SUSPENDED)
         hoary = getUtility(IDistributionSet)['ubuntu']['hoary']
 
         # Verify that we have the right source packages in the sample data.
@@ -676,7 +678,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
             archive=ubuntu.main_archive)
         sources = ubuntu.main_archive.getPublishedSources(
             distroseries=hoary, status=self.pending_statuses,
-            name='alsa-utils')
+            name=u'alsa-utils')
         for src in sources:
             if src.source_package_version != '2.0':
                 src.supersede()

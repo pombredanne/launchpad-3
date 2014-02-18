@@ -3,8 +3,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=C0103,W0403
-
 # This script updates the cached source package information in the system.
 # We use this for fast source package searching (as opposed to joining
 # through gazillions of publishing tables).
@@ -16,7 +14,8 @@ from zope.component import getUtility
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.services.scripts.base import LaunchpadCronScript
 from lp.soyuz.model.distributionsourcepackagecache import (
-    DistributionSourcePackageCache)
+    DistributionSourcePackageCache,
+    )
 from lp.soyuz.model.distroseriespackagecache import DistroSeriesPackageCache
 
 

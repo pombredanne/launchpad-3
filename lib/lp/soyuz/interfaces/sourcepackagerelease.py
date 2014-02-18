@@ -1,8 +1,6 @@
 # Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213
-
 """Source package release interfaces."""
 
 __metaclass__ = type
@@ -23,7 +21,7 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
+from lp import _
 
 
 class ISourcePackageRelease(Interface):
@@ -135,8 +133,6 @@ class ISourcePackageRelease(Interface):
     distrosourcepackage = Attribute(
         "The magic DistroSourcePackage for the sourcepackagename and "
         "distribution of this object.")
-    productrelease = Attribute("The best guess we have as to the Launchpad "
-        "ProductRelease associated with this SourcePackageRelease.")
 
     current_publishings = Attribute("A list of the current places where "
         "this source package is published, in the form of a list of "
@@ -172,6 +168,21 @@ class ISourcePackageRelease(Interface):
         in this package.
         """
 
+    def getFileByName(filename):
+        """Return the corresponding `ILibraryFileAlias` in this context.
+
+        The following file types (and extension) can be looked up in the
+        SourcePackageRelease context:
+
+         * Source files: '.orig.tar.gz', 'tar.gz', '.diff.gz' and '.dsc'.
+
+        :param filename: the exact filename to be looked up.
+
+        :raises NotFoundError if no file could be found.
+
+        :return the corresponding `ILibraryFileAlias` if the file was found.
+        """
+
     def createBuild(distroarchseries, pocket, archive, processor=None,
                     status=None):
         """Create a build for a given distroarchseries/pocket/archive
@@ -196,19 +207,6 @@ class ISourcePackageRelease(Interface):
 
         All arguments are optional and can be set individually. A non-passed
         argument remains untouched.
-        """
-
-    def attachTranslationFiles(tarball_alias, by_maintainer, importer=None):
-        """Attach a tarball with translations to be imported into Rosetta.
-
-        :tarball_alias: is a Librarian alias that references to a tarball with
-            translations.
-        :by_maintainer: indicates if the imported files where uploaded by
-            the maintainer of the project or package.
-        :importer: is the person that did the import.
-
-        raise DownloadFailed if we are not able to fetch the file from
-            :tarball_alias:.
         """
 
     package_diffs = Attribute(

@@ -9,19 +9,14 @@ from storm.locals import (
     Storm,
     Unicode,
     )
-from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
 from lp.services.apachelogparser.interfaces.parsedapachelog import (
     IParsedApacheLog,
     )
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.interfaces import IStore
 
 
 class ParsedApacheLog(Storm):
@@ -39,4 +34,4 @@ class ParsedApacheLog(Storm):
         super(ParsedApacheLog, self).__init__()
         self.first_line = unicode(first_line)
         self.bytes_read = bytes_read
-        getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR).add(self)
+        IStore(self.__class__).add(self)

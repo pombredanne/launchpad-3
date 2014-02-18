@@ -1,7 +1,6 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213,W0611
 """Interfaces that define common roles associated with objects."""
 
 __metaclass__ = type
@@ -22,7 +21,8 @@ from zope.schema import (
     Bool,
     Choice,
     )
-from canonical.launchpad import _
+
+from lp import _
 
 
 class IHasOwner(Interface):
@@ -100,14 +100,14 @@ class IPersonRoles(Interface):
     in_ppa_key_guard = Bool(
         title=_("True if this person is the ppa key guard."),
         required=True, readonly=True)
+    in_ppa_self_admins = Bool(
+        title=_("True if this person is a PPA self admin."),
+        required=True, readonly=True)
     in_registry_experts = Bool(
         title=_("True if this person is a registry expert."),
         required=True, readonly=True)
     in_rosetta_experts = Bool(
         title=_("True if this person is a rosetta expert."),
-        required=True, readonly=True)
-    in_ubuntu_security = Bool(
-        title=_("True if this person is on the Ubuntu security team."),
         required=True, readonly=True)
     in_ubuntu_techboard = Bool(
         title=_("True if this person is on the Ubuntu tech board."),
@@ -119,7 +119,8 @@ class IPersonRoles(Interface):
     def inTeam(team):
         """Is this person a member or the owner of `team`?
 
-        Passed through to the same method in 'IPersonPublic'.
+        Passed through to the *unproxied* same method in
+        `IPersonViewRestricted`.
         """
 
     def isOwner(obj):
@@ -130,9 +131,6 @@ class IPersonRoles(Interface):
 
     def isBugSupervisor(obj):
         """Is this person the bug supervisor of the object?"""
-
-    def isSecurityContact(obj):
-        """Is this person the security contact of the object?"""
 
     def isOneOfDrivers(obj):
         """Is this person on of the drivers of the object?

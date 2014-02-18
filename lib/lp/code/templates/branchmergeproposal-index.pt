@@ -114,18 +114,6 @@
     <tal:widget replace="structure view/description_html"/>
   </div>
 
-  <div class="yui-g" tal:condition="view/has_bug_or_spec">
-      <div id="related-bugs-and-blueprints" class="related-bugs-list"
-        tal:define="branch context/source_branch">
-        <div class="actions">
-          <metal:bug-branch-links use-macro="branch/@@+macros/bug-branch-links"/>
-        </div>
-        <div class="actions">
-          <metal:spec-branch-links use-macro="branch/@@+macros/spec-branch-links"/>
-        </div>
-      </div>
-  </div>
-
   <div class="yui-g">
     <tal:not-logged-in condition="not: view/user">
       <div align="center" id="add-comment-login-first">
@@ -156,6 +144,7 @@
         <div id="add-comment-review-fields">
             Review: <tal:review replace="structure comment_form/widgets/vote"/>
             Review type: <tal:review replace="structure comment_form/widgets/review_type"/>
+            <tal:publish_inline_comments condition="features/code.inline_diff_comments.enabled">Publish inline comments: <tal:review replace="structure comment_form/widgets/publish_inline_comments" tal:condition="features/code.inline_diff_comments.enabled"/></tal:publish_inline_comments>
             <div class="actions"
                  tal:content="structure comment_form/actions/field.actions.add/render" />
         </div>
@@ -184,9 +173,12 @@
     <div class="yui-g" tal:condition="view/pending_diff">
       <div class="pending-update" id="diff-pending-update">
         <h3>Updating diff...</h3>
-        <p>
+        <p tal:condition="not: features/longpoll.merge_proposals.enabled">
           An updated diff will be available in a few minutes. Reload to see the
           changes.
+        </p>
+        <p tal:condition="features/longpoll.merge_proposals.enabled">
+          An updated diff is being calculated and will appear automatically when ready.
         </p>
       </div>
     </div>
@@ -202,11 +194,11 @@
   replace="structure
   string:&lt;script id='codereview-script' type='text/javascript'&gt;" />
   conf = <tal:status-config replace="view/status_config" />
-  <!--
-  LPS.use('io-base', 'lp.code.branchmergeproposal.reviewcomment',
+  LPJS.use('io-base', 'lp.code.branchmergeproposal.reviewcomment',
           'lp.code.branchmergeproposal.status', 'lp.app.comment',
           'lp.code.branchmergeproposal.updater', 'lp.app.widgets.expander',
-          'lp.code.branch.revisionexpander', function(Y) {
+          'lp.code.branch.revisionexpander',
+          'lp.code.branchmergeproposal.inlinecomments', function(Y) {
 
     Y.on('load', function() {
         var logged_in = LP.links['me'] !== undefined;
@@ -215,10 +207,26 @@
             var comment = new Y.lp.app.comment.CodeReviewComment();
             comment.render();
 
-            if(Y.UA.ie) {
-                return;
+            comment._add_comment_success = function () {
+                var lp_client = new Y.lp.client.Launchpad();
+                var ns = Y.lp.code.branchmergeproposal.inlinecomments;
+                var diff_timestamp = (
+                    LP.cache.preview_diff_timestamps.slice(-1)[0]);
+                var config = {
+                    on: {
+                        success: function (r) {
+                            LP.cache.published_inline_comments = r;
+                            LP.cache.draft_inline_comments = null;
+                            ns.populate_existing_comments();
+                        },
+                    },
+                    parameters: {
+                        diff_timestamp: diff_timestamp,
+                    }
+                };
+                lp_client.named_get(
+                    LP.cache.context.self_link, 'getInlineComments', config);
             }
-
             Y.lp.code.branchmergeproposal.status.connect_status(conf);
         }
         Y.lp.code.branchmergeproposal.reviewcomment.connect_links();
@@ -227,7 +235,10 @@
 
         if (Y.Lang.isValue(LP.cache.merge_proposal_event_key)) {
             var updater = new Y.lp.code.branchmergeproposal.updater.UpdaterWidget(
-                {srcNode: Y.one('#diff-area')});
+                {
+                 srcNode: Y.one('#diff-area'),
+                 summary_node: Y.one('#proposal-summary')
+                });
             Y.on(LP.cache.merge_proposal_event_key, function(data) {
                 if (Y.lp.code.branchmergeproposal.updater.is_mp_diff_updated(data)) {
                     updater.update();
@@ -248,9 +259,9 @@
             '.expander-content',
             false,
             Y.lp.code.branch.revisionexpander.bmp_diff_loader);
+        Y.lp.code.branchmergeproposal.inlinecomments.setup_inline_comments();
     });
   });
-  -->
 <tal:script replace="structure string:&lt;/script&gt;" />
 
 </div>

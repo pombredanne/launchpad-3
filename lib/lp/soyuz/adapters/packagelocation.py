@@ -101,7 +101,7 @@ def build_package_location(distribution_name, suite=None, purpose=None,
 
     try:
         distribution = getUtility(IDistributionSet)[distribution_name]
-    except NotFoundError, err:
+    except NotFoundError as err:
         raise PackageLocationError(
             "Could not find distribution %s" % err)
 
@@ -147,7 +147,7 @@ def build_package_location(distribution_name, suite=None, purpose=None,
         try:
             distroseries, pocket = distribution.getDistroSeriesAndPocket(
                 suite)
-        except NotFoundError, err:
+        except NotFoundError as err:
             raise PackageLocationError(
                 "Could not find suite %s" % err)
     else:
@@ -161,7 +161,7 @@ def build_package_location(distribution_name, suite=None, purpose=None,
             try:
                 packageset = packageset_set.getByName(
                     packageset_name, distroseries=distroseries)
-            except NotFoundError, err:
+            except NotFoundError as err:
                 raise PackageLocationError(
                     "Could not find packageset %s" % err)
             packagesets.append(packageset)

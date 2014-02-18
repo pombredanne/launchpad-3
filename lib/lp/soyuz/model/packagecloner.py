@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Logic for bulk copying of source/binary publishing history data."""
@@ -16,20 +16,17 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.constants import UTC_NOW
-from canonical.database.sqlbase import (
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.interfaces import IStore
+from lp.services.database.sqlbase import (
     quote,
     sqlvalues,
     )
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
-from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.packagecloner import IPackageCloner
+from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
 
 
 def clone_packages(origin, destination, distroarchseries_list=None):
@@ -61,7 +58,7 @@ class PackageCloner:
     implements(IPackageCloner)
 
     def clonePackages(self, origin, destination, distroarchseries_list=None,
-                      proc_families=None, sourcepackagenames=None,
+                      processors=None, sourcepackagenames=None,
                       always_create=False):
         """Copies packages from origin to destination package location.
 
@@ -76,8 +73,8 @@ class PackageCloner:
             distroarchseries instances.
         @param distroarchseries_list: the binary packages will be copied
             for the distroarchseries pairs specified (if any).
-        @param proc_families: the processor families to create builds for.
-        @type proc_families: Iterable
+        @param processors: the processors to create builds for.
+        @type processors: Iterable
         @param sourcepackagenames: the sourcepackages to copy to the
             destination
         @type sourcepackagenames: Iterable
@@ -97,22 +94,21 @@ class PackageCloner:
                     origin, destination, origin_das, destination_das,
                     sourcepackagenames)
 
-        if proc_families is None:
-            proc_families = []
+        if processors is None:
+            processors = []
 
         self._create_missing_builds(
             destination.distroseries, destination.archive,
-            distroarchseries_list, proc_families, always_create)
+            distroarchseries_list, processors, always_create)
 
-    def _create_missing_builds(
-        self, distroseries, archive, distroarchseries_list,
-        proc_families, always_create):
+    def _create_missing_builds(self, distroseries, archive,
+                               distroarchseries_list, processors,
+                               always_create):
         """Create builds for all cloned source packages.
 
         :param distroseries: the distro series for which to create builds.
         :param archive: the archive for which to create builds.
-        :param proc_families: the list of processor families for
-            which to create builds.
+        :param processors: the list of processors for which to create builds.
         """
         # Avoid circular imports.
         from lp.soyuz.interfaces.publishing import active_publishing_status
@@ -122,9 +118,9 @@ class PackageCloner:
         architectures = list(distroseries.architectures)
 
         # Filter the list of DistroArchSeries so that only the ones
-        # specified in proc_families remain
+        # specified in processors remain.
         architectures = [architecture for architecture in architectures
-             if architecture.processorfamily in proc_families]
+             if architecture.processor in processors]
 
         if len(architectures) == 0:
             return
@@ -170,7 +166,6 @@ class PackageCloner:
             the copy to
         @type sourcepackagenames: Iterable
         """
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         use_names = (sourcepackagenames and len(sourcepackagenames) > 0)
         clause_tables = "FROM BinaryPackagePublishingHistory AS bpph"
         if use_names:
@@ -180,23 +175,36 @@ class PackageCloner:
                 SourcePackageRelease AS spr,
                 SourcePackageName AS spn
                 """
+        # We do not need to set phased_update_percentage; that is heavily
+        # context-dependent and should be set afresh for the new location if
+        # required.
         query = """
             INSERT INTO BinaryPackagePublishingHistory (
                 binarypackagerelease, distroarchseries, status,
                 component, section, priority, archive, datecreated,
-                datepublished, pocket)
-            SELECT bpph.binarypackagerelease, %s as distroarchseries,
-                   bpph.status, bpph.component, bpph.section, bpph.priority,
-                   %s as archive, %s as datecreated, %s as datepublished,
-                   %s as pocket
+                datepublished, pocket, binarypackagename)
+            SELECT
+                bpph.binarypackagerelease,
+                %s as distroarchseries,
+                bpph.status,
+                bpph.component,
+                bpph.section,
+                bpph.priority,
+                %s as archive,
+                %s as datecreated,
+                %s as datepublished,
+                %s as pocket,
+                bpph.binarypackagename
             """ % sqlvalues(
                 destination_das, destination.archive, UTC_NOW, UTC_NOW,
                 destination.pocket)
         query += clause_tables
         query += """
-            WHERE bpph.distroarchseries = %s AND bpph.status in (%s, %s)
-            AND
-                bpph.pocket = %s and bpph.archive = %s
+            WHERE
+                bpph.distroarchseries = %s AND
+                bpph.status in (%s, %s) AND
+                bpph.pocket = %s AND
+                bpph.archive = %s
             """ % sqlvalues(
                 origin_das,
                 PackagePublishingStatus.PENDING,
@@ -212,7 +220,7 @@ class PackageCloner:
                 AND spn.name IN %s
             """ % sqlvalues(sourcepackagenames)
 
-        store.execute(query)
+        IStore(BinaryPackagePublishingHistory).execute(query)
 
     def mergeCopy(self, origin, destination):
         """Please see `IPackageCloner`."""
@@ -221,17 +229,19 @@ class PackageCloner:
         self.packageSetDiff(origin, destination)
 
         # Now copy the fresher or new packages.
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store = IStore(BinaryPackagePublishingHistory)
         store.execute("""
             INSERT INTO SourcePackagePublishingHistory (
                 sourcepackagerelease, distroseries, status, component,
-                section, archive, datecreated, datepublished, pocket)
+                section, archive, datecreated, datepublished, pocket,
+                sourcepackagename)
             SELECT
                 mcd.s_sourcepackagerelease AS sourcepackagerelease,
                 %s AS distroseries, mcd.s_status AS status,
                 mcd.s_component AS component, mcd.s_section AS section,
                 %s AS archive, %s AS datecreated, %s AS datepublished,
-                %s AS pocket
+                %s AS pocket,
+                sourcepackagename_id
             FROM tmp_merge_copy_data mcd
             WHERE mcd.obsoleted = True OR mcd.missing = True
             """ % sqlvalues(
@@ -253,17 +263,13 @@ class PackageCloner:
             """ % sqlvalues(
                 PackagePublishingStatus.SUPERSEDED, UTC_NOW))
 
-        def get_family(archivearch):
-            """Extract the processor family from an `IArchiveArch`."""
-            return removeSecurityProxy(archivearch).processorfamily
-
-        proc_families = [
-            get_family(archivearch) for archivearch
+        processors = [
+            removeSecurityProxy(archivearch).processor for archivearch
             in getUtility(IArchiveArchSet).getByArchive(destination.archive)]
 
         self._create_missing_builds(
             destination.distroseries, destination.archive, (),
-            proc_families, False)
+            processors, False)
 
     def _compute_packageset_delta(self, origin):
         """Given a source/target archive find obsolete or missing packages.
@@ -271,7 +277,7 @@ class PackageCloner:
         This means finding out which packages in a given source archive are
         fresher or new with respect to a target archive.
         """
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store = IStore(BinaryPackagePublishingHistory)
         # The query below will find all packages in the source archive that
         # are fresher than their counterparts in the target archive.
         find_newer_packages = """
@@ -284,8 +290,9 @@ class PackageCloner:
                 s_component = secsrc.component,
                 s_section = secsrc.section
             FROM
-                sourcepackagepublishinghistory secsrc,
-                sourcepackagerelease spr, sourcepackagename spn
+                SourcePackagePublishingHistory secsrc,
+                SourcePackageRelease spr,
+                SourcePackageName spn
             WHERE
                 secsrc.archive = %s AND secsrc.status IN (%s, %s) AND
                 secsrc.distroseries = %s AND secsrc.pocket = %s AND
@@ -308,22 +315,29 @@ class PackageCloner:
         # the target archive.
         find_origin_only_packages = """
             INSERT INTO tmp_merge_copy_data (
-                s_sspph, s_sourcepackagerelease, sourcepackagename, s_version,
-                missing, s_status, s_component, s_section)
+                s_sspph, s_sourcepackagerelease, sourcepackagename,
+                sourcepackagename_id, s_version, missing, s_status,
+                s_component, s_section)
             SELECT
                 secsrc.id AS s_sspph,
                 secsrc.sourcepackagerelease AS s_sourcepackagerelease,
-                spn.name AS sourcepackagename, spr.version AS s_version,
-                True AS missing, secsrc.status AS s_status,
-                secsrc.component AS s_component, secsrc.section AS s_section
-            FROM
-                sourcepackagepublishinghistory secsrc,
-                sourcepackagerelease spr, sourcepackagename spn
+                spn.name AS sourcepackagename,
+                spn.id AS sourcepackagename_id,
+                spr.version AS s_version,
+                True AS missing,
+                secsrc.status AS s_status,
+                secsrc.component AS s_component,
+                secsrc.section AS s_section
+            FROM SourcePackagePublishingHistory secsrc
+            JOIN SourcePackageRelease AS spr ON
+                spr.id = secsrc.sourcepackagerelease
+            JOIN SourcePackageName AS spn ON
+                spn.id = spr.sourcepackagename
             WHERE
-                secsrc.archive = %s AND secsrc.status IN (%s, %s) AND
-                secsrc.distroseries = %s AND secsrc.pocket = %s AND
-                secsrc.sourcepackagerelease = spr.id AND
-                spr.sourcepackagename = spn.id AND
+                secsrc.archive = %s AND
+                secsrc.status IN (%s, %s) AND
+                secsrc.distroseries = %s AND
+                secsrc.pocket = %s AND
                 spn.name NOT IN (
                     SELECT sourcepackagename FROM tmp_merge_copy_data)
         """ % sqlvalues(
@@ -350,7 +364,7 @@ class PackageCloner:
         table that lists what packages exist in the target archive
         (additionally considering the distroseries, pocket and component).
         """
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store = IStore(BinaryPackagePublishingHistory)
         # Use a temporary table to hold the data needed for the package set
         # delta computation. This will prevent multiple, parallel delta
         # calculations from interfering with each other.
@@ -373,7 +387,8 @@ class PackageCloner:
                 -- recent source package.
                 obsoleted boolean DEFAULT false NOT NULL,
                 missing boolean DEFAULT false NOT NULL,
-                sourcepackagename text NOT NULL
+                sourcepackagename text NOT NULL,
+                sourcepackagename_id integer NOT NULL
             );
             CREATE INDEX source_name_index
             ON tmp_merge_copy_data USING btree (sourcepackagename);
@@ -382,19 +397,24 @@ class PackageCloner:
         # archive considering the distroseries, pocket and component.
         pop_query = """
             INSERT INTO tmp_merge_copy_data (
-                t_sspph, t_sourcepackagerelease, sourcepackagename, t_version)
+                t_sspph, t_sourcepackagerelease, sourcepackagename,
+                sourcepackagename_id, t_version)
             SELECT
                 secsrc.id AS t_sspph,
                 secsrc.sourcepackagerelease AS t_sourcepackagerelease,
-                spn.name AS sourcepackagerelease, spr.version AS t_version
-            FROM
-                sourcepackagepublishinghistory secsrc,
-                sourcepackagerelease spr, sourcepackagename spn
+                spn.name AS sourcepackagerelease,
+                spn.id AS sourcepackagename_id,
+                spr.version AS t_version
+            FROM SourcePackagePublishingHistory secsrc
+            JOIN SourcePackageRelease AS spr ON
+                spr.id = secsrc.sourcepackagerelease
+            JOIN SourcePackageName AS spn ON
+                spn.id = spr.sourcepackagename
             WHERE
-                secsrc.archive = %s AND secsrc.status IN (%s, %s) AND
-                secsrc.distroseries = %s AND secsrc.pocket = %s AND
-                secsrc.sourcepackagerelease = spr.id AND
-                spr.sourcepackagename = spn.id
+                secsrc.archive = %s AND
+                secsrc.status IN (%s, %s) AND
+                secsrc.distroseries = %s AND
+                secsrc.pocket = %s
         """ % sqlvalues(
                 destination.archive,
                 PackagePublishingStatus.PENDING,
@@ -420,18 +440,29 @@ class PackageCloner:
         @param sourcepackagenames: List of source packages to restrict
             the copy to
         """
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store = IStore(BinaryPackagePublishingHistory)
         query = '''
             INSERT INTO SourcePackagePublishingHistory (
                 sourcepackagerelease, distroseries, status, component,
-                section, archive, datecreated, datepublished, pocket)
-            SELECT spph.sourcepackagerelease, %s as distroseries,
-                   spph.status, spph.component, spph.section, %s as archive,
-                   %s as datecreated, %s as datepublished,
-                   %s as pocket
+                section, archive, datecreated, datepublished, pocket,
+                sourcepackagename)
+            SELECT
+                spph.sourcepackagerelease,
+                %s as distroseries,
+                spph.status,
+                spph.component,
+                spph.section,
+                %s as archive,
+                %s as datecreated,
+                %s as datepublished,
+                %s as pocket,
+                spph.sourcepackagename
             FROM SourcePackagePublishingHistory AS spph
-            WHERE spph.distroseries = %s AND spph.status in (%s, %s) AND
-                  spph.pocket = %s and spph.archive = %s
+            WHERE
+                spph.distroseries = %s AND
+                spph.status in (%s, %s) AND
+                spph.pocket = %s AND
+                spph.archive = %s
             ''' % sqlvalues(
                 destination.distroseries, destination.archive, UTC_NOW,
                 UTC_NOW, destination.pocket, origin.distroseries,
@@ -440,24 +471,26 @@ class PackageCloner:
                 origin.pocket, origin.archive)
 
         if sourcepackagenames and len(sourcepackagenames) > 0:
-            query += '''AND spph.sourcepackagerelease IN (
-                            (SELECT spr.id
-                            FROM SourcePackageRelease AS spr,
-                            SourcePackageName AS spn
-                        WHERE spr.sourcepackagename = spn.id
-                        AND spn.name IN %s))''' % sqlvalues(
-                            sourcepackagenames)
+            query += '''
+                AND spph.sourcepackagerelease IN (
+                    SELECT spr.id
+                    FROM SourcePackageRelease AS spr
+                    JOIN SourcePackageName AS spn ON
+                        spn.id = spr.sourcepackagename
+                    WHERE spn.name IN %s
+                )''' % sqlvalues(sourcepackagenames)
 
         if origin.packagesets:
-            query += '''AND spph.sourcepackagerelease IN
-                            (SELECT spr.id
-                             FROM SourcePackageRelease AS spr,
-                                  packagesetsources AS pss,
-                                  flatpackagesetinclusion AS fpsi
-                             WHERE spr.sourcepackagename
-                                    = pss.sourcepackagename
-                             AND pss.packageset = fpsi.child
-                             AND fpsi.parent in %s)
+            query += '''
+                AND spph.sourcepackagerelease IN (
+                    SELECT spr.id
+                    FROM SourcePackageRelease AS spr
+                    JOIN PackagesetSources AS pss ON
+                        PSS.sourcepackagename = spr.sourcepackagename
+                    JOIN FlatPackagesetInclusion AS fpsi ON
+                        fpsi.child = pss.packageset
+                    WHERE fpsi.parent in %s
+                )
                      ''' % sqlvalues([p.id for p in origin.packagesets])
 
         if origin.component:
@@ -468,7 +501,7 @@ class PackageCloner:
     def packageSetDiff(self, origin, destination, logger=None):
         """Please see `IPackageCloner`."""
         # Find packages that are obsolete or missing in the target archive.
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store = IStore(BinaryPackagePublishingHistory)
         self._init_packageset_delta(destination)
         self._compute_packageset_delta(origin)
 
@@ -502,14 +535,16 @@ class PackageCloner:
         """
         fresher_info = sorted(store.execute("""
             SELECT sourcepackagename, s_version, t_version
-            FROM tmp_merge_copy_data WHERE obsoleted = True;
+            FROM tmp_merge_copy_data
+            WHERE obsoleted = True;
         """))
         logger.info('Fresher packages: %d' % len(fresher_info))
         for info in fresher_info:
             logger.info('* %s (%s > %s)' % info)
         new_info = sorted(store.execute("""
             SELECT sourcepackagename, s_version
-            FROM tmp_merge_copy_data WHERE missing = True;
+            FROM tmp_merge_copy_data
+            WHERE missing = True;
         """))
         logger.info('New packages: %d' % len(new_info))
         for info in new_info:

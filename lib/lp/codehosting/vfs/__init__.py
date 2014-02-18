@@ -21,8 +21,4 @@ from lp.codehosting.vfs.branchfs import (
     get_rw_server,
     LaunchpadServer,
     )
-from lp.codehosting.vfs.branchfsclient import (
-    BranchFileSystemClient,
-    )
-
-
+from lp.codehosting.vfs.branchfsclient import BranchFileSystemClient

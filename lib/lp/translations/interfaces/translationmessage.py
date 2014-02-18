@@ -1,8 +1,6 @@
 # Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213
-
 from lazr.enum import (
     DBEnumeratedType,
     DBItem,
@@ -21,7 +19,7 @@ from zope.schema import (
     Text,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.registry.interfaces.person import IPerson
 from lp.translations.interfaces.pofile import IPOFile
 from lp.translations.interfaces.potemplate import IPOTemplate

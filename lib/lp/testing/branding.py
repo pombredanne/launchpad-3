@@ -1,8 +1,6 @@
 # Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=W0401
-
 __metaclass__ = type
 __all__ = ['set_branding']
 
@@ -26,13 +24,13 @@ def set_branding(browser, icon=True, logo=True, mugshot=True):
     # make sure we have relevant-sized files handy
     icon_file = os.path.join(
       os.path.dirname(canonical.launchpad.__file__),
-      'images/nyet-icon.png')
+      'images/team.png')
     logo_file = os.path.join(
       os.path.dirname(canonical.launchpad.__file__),
-      'images/nyet-logo.png')
+      'images/team-logo.png')
     mugshot_file = os.path.join(
       os.path.dirname(canonical.launchpad.__file__),
-      'images/nyet-mugshot.png')
+      'images/team-mugshot.png')
     # set each of the branding elements in turn, if requested
     if icon:
         browser.getControl(name='field.icon.action').value = ['change']

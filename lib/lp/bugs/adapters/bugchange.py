@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementations for bug changes."""
@@ -23,6 +23,7 @@ __all__ = [
     'BugConvertedToQuestion',
     'BugDescriptionChange',
     'BugDuplicateChange',
+    'BugInformationTypeChange',
     'BugTagsChange',
     'BugTaskAdded',
     'BugTaskAssigneeChange',
@@ -33,7 +34,6 @@ __all__ = [
     'BugTaskStatusChange',
     'BugTaskTargetChange',
     'BugTitleChange',
-    'BugVisibilityChange',
     'BugWatchAdded',
     'BugWatchRemoved',
     'CveLinkedToBug',
@@ -49,9 +49,7 @@ from textwrap import dedent
 from zope.interface import implements
 from zope.security.proxy import isinstance as zope_isinstance
 
-from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
-from canonical.launchpad.webapp.publisher import canonical_url
-from lp.bugs.enum import BugNotificationLevel
+from lp.bugs.enums import BugNotificationLevel
 from lp.bugs.interfaces.bugchange import IBugChange
 from lp.bugs.interfaces.bugtask import (
     IBugTask,
@@ -59,6 +57,8 @@ from lp.bugs.interfaces.bugtask import (
     UNRESOLVED_BUGTASK_STATUSES,
     )
 from lp.registry.interfaces.product import IProduct
+from lp.services.librarian.browser import ProxiedLibraryFileAlias
+from lp.services.webapp.publisher import canonical_url
 
 # These are used lp.bugs.model.bugactivity.BugActivity.attribute to normalize
 # the output from these change objects into the attribute that actually
@@ -102,10 +102,8 @@ def get_bug_changes(bug_delta):
     # The order of the field names in this list is important; this is
     # the order in which changes will appear both in the bug activity
     # log and in notification emails.
-    bug_change_field_names = [
-        'duplicateof', 'title', 'description', 'private', 'security_related',
-        'tags', 'attachment',
-        ]
+    bug_change_field_names = ['duplicateof', 'title', 'description',
+        'information_type', 'tags', 'attachment']
     for field_name in bug_change_field_names:
         field_delta = getattr(bug_delta, field_name)
         if field_delta is not None:
@@ -228,6 +226,8 @@ class BugConvertedToQuestion(BugChangeBase):
 class BugTaskAdded(BugChangeBase):
     """A bug task got added to the bug."""
 
+    change_level = BugNotificationLevel.LIFECYCLE
+
     def __init__(self, when, person, bug_task):
         super(BugTaskAdded, self).__init__(when, person)
         self.bug_task = bug_task
@@ -263,6 +263,8 @@ class BugTaskAdded(BugChangeBase):
 
 class BugTaskDeleted(BugChangeBase):
     """A bugtask was removed from the bug."""
+
+    change_level = BugNotificationLevel.LIFECYCLE
 
     def __init__(self, when, person, bugtask):
         super(BugTaskDeleted, self).__init__(when, person)
@@ -398,7 +400,7 @@ class BugDescriptionChange(AttributeChange):
     """Describes a change to a bug's description."""
 
     def getBugNotification(self):
-        from canonical.launchpad.mailnotification import get_unified_diff
+        from lp.services.mail.notification import get_unified_diff
         description_diff = get_unified_diff(
             self.old_value, self.new_value, 72)
         notification_text = (
@@ -540,66 +542,20 @@ class BugTitleChange(AttributeChange):
         return {'text': notification_text}
 
 
-class BugVisibilityChange(AttributeChange):
-    """Describes a change to a bug's visibility."""
-
-    def _getVisibilityString(self, private):
-        """Return a string representation of `private`.
-
-        :return: 'Public' if private is False, 'Private' if
-            private is True.
-        """
-        if private:
-            return 'Private'
-        else:
-            return 'Public'
+class BugInformationTypeChange(AttributeChange):
+    """Used to represent a change to the information_type of an `IBug`."""
 
     def getBugActivity(self):
-        # Use _getVisibilityString() to set old and new values
-        # correctly. We lowercase them for UI consistency in the
-        # activity log.
-        old_value = self._getVisibilityString(self.old_value)
-        new_value = self._getVisibilityString(self.new_value)
         return {
-           'oldvalue': old_value.lower(),
-           'newvalue': new_value.lower(),
-           'whatchanged': 'visibility',
-           }
-
-    def getBugNotification(self):
-        visibility_string = self._getVisibilityString(self.new_value)
-        return {'text': "** Visibility changed to: %s" % visibility_string}
-
-
-class BugSecurityChange(AttributeChange):
-    """Describes a change to a bug's security setting."""
-
-    activity_mapping = {
-        (False, True): ('no', 'yes'),
-        (True, False): ('yes', 'no'),
-        }
-
-    notification_mapping = {
-        (False, True):
-            u"** This bug has been flagged as a security vulnerability",
-        (True, False):
-            u"** This bug is no longer flagged as a security vulnerability",
-        }
-
-    def getBugActivity(self):
-        old_value, new_value = self.activity_mapping[
-            (self.old_value, self.new_value)]
-        return {
-           'oldvalue': old_value,
-           'newvalue': new_value,
-           'whatchanged': 'security vulnerability',
-           }
+            'newvalue': self.new_value.title,
+            'oldvalue': self.old_value.title,
+            'whatchanged': 'information type'
+             }
 
     def getBugNotification(self):
         return {
-            'text': self.notification_mapping[
-                (self.old_value, self.new_value)],
-            }
+            'text': "** Information type changed from %s to %s" % (
+                self.old_value.title, self.new_value.title)}
 
 
 class BugTagsChange(AttributeChange):
@@ -888,6 +844,8 @@ class BugTaskAssigneeChange(AttributeChange):
 class BugTaskTargetChange(AttributeChange):
     """Used to represent a change in a BugTask's target."""
 
+    change_level = BugNotificationLevel.LIFECYCLE
+
     def __init__(self, bug_task, when, person,
                  what_changed, old_value, new_value):
         super(BugTaskTargetChange, self).__init__(
@@ -916,8 +874,7 @@ class BugTaskTargetChange(AttributeChange):
 
 BUG_CHANGE_LOOKUP = {
     'description': BugDescriptionChange,
-    'private': BugVisibilityChange,
-    'security_related': BugSecurityChange,
+    'information_type': BugInformationTypeChange,
     'tags': BugTagsChange,
     'title': BugTitleChange,
     'attachment': BugAttachmentChange,

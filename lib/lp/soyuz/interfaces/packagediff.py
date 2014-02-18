@@ -1,8 +1,6 @@
 # Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213
-
 """Interfaces related to package-diff system."""
 
 __metaclass__ = type
@@ -26,8 +24,8 @@ from zope.schema import (
     Object,
     )
 
-from canonical.launchpad import _
-from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
+from lp import _
+from lp.services.librarian.interfaces import ILibraryFileAlias
 from lp.soyuz.enums import PackageDiffStatus
 
 
@@ -93,14 +91,6 @@ class IPackageDiffSet(Interface):
 
     def get(diff_id):
         """Retrieve a `PackageDiff` for the given id."""
-
-    def getPendingDiffs(limit=None):
-        """Return all pending `PackageDiff` records.
-
-        :param limit: optional results limitation.
-
-        :return a `SelectResult` ordered by id respecting the given limit.
-        """
 
     def getDiffsToReleases(sprs, preload_for_display=False):
         """Return all diffs that targetting a set of source package releases.

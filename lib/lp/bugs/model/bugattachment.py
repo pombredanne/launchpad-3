@@ -1,8 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0611,W0212
-
 __metaclass__ = type
 __all__ = ['BugAttachment', 'BugAttachmentSet']
 
@@ -19,14 +17,14 @@ from storm.store import Store
 from zope.event import notify
 from zope.interface import implements
 
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase
 from lp.app.errors import NotFoundError
 from lp.bugs.interfaces.bugattachment import (
     BugAttachmentType,
     IBugAttachment,
     IBugAttachmentSet,
     )
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.sqlbase import SQLBase
 from lp.services.propertycache import cachedproperty
 
 

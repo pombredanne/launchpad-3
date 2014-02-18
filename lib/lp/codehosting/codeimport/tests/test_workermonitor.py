@@ -5,8 +5,8 @@
 
 __metaclass__ = type
 __all__ = [
-    'nuke_codeimport_sample_data']
-
+    'nuke_codeimport_sample_data',
+    ]
 
 import os
 import shutil
@@ -33,13 +33,6 @@ from twisted.python import log
 from twisted.web import xmlrpc
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.launchpad.xmlrpc.faults import NoSuchCodeImportJob
-from canonical.launchpad.webapp import errorlog
-from canonical.testing.layers import (
-    LaunchpadZopelessLayer,
-    ZopelessAppServerLayer,
-    )
 from lp.code.enums import (
     CodeImportResultStatus,
     CodeImportReviewStatus,
@@ -49,12 +42,10 @@ from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.code.interfaces.codeimportjob import ICodeImportJobSet
 from lp.code.model.codeimport import CodeImport
 from lp.code.model.codeimportjob import CodeImportJob
-from lp.codehosting import load_optional_plugin
 from lp.codehosting.codeimport.tests.servers import (
     BzrServer,
     CVSServer,
     GitServer,
-    MercurialServer,
     SubversionServer,
     )
 from lp.codehosting.codeimport.tests.test_worker import (
@@ -70,12 +61,14 @@ from lp.codehosting.codeimport.workermonitor import (
     CodeImportWorkerMonitorProtocol,
     ExitQuietly,
     )
+from lp.services.config import config
 from lp.services.log.logger import BufferLogger
 from lp.services.twistedsupport import suppress_stderr
 from lp.services.twistedsupport.tests.test_processmonitor import (
     makeFailure,
     ProcessTestsMixin,
     )
+from lp.services.webapp import errorlog
 from lp.testing import (
     login,
     logout,
@@ -83,6 +76,11 @@ from lp.testing import (
     )
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.layers import (
+    LaunchpadZopelessLayer,
+    ZopelessAppServerLayer,
+    )
+from lp.xmlrpc.faults import NoSuchCodeImportJob
 
 
 class TestWorkerMonitorProtocol(ProcessTestsMixin, TestCase):
@@ -218,12 +216,6 @@ class TestWorkerMonitorUnit(TestCase):
 
         def _logOopsFromFailure(self, failure):
             log.err(failure)
-
-    def assertOopsesLogged(self, exc_types):
-        failures = flush_logged_errors()
-        self.assertEqual(len(exc_types), len(failures))
-        for fail, exc_type in zip(failures, exc_types):
-            self.assert_(fail.check(exc_type))
 
     def makeWorkerMonitorWithJob(self, job_id=1, job_data=()):
         return self.WorkerMonitor(
@@ -402,7 +394,6 @@ class TestWorkerMonitorUnit(TestCase):
                 error.ProcessTerminated,
                 exitCode=CodeImportWorkerExitCode.FAILURE))
         self.assertEqual(calls, [CodeImportResultStatus.FAILURE])
-        self.assertOopsesLogged([error.ProcessTerminated])
         # We return the deferred that callFinishJob returns -- if
         # callFinishJob did not swallow the error, this will fail the test.
         return ret
@@ -418,7 +409,6 @@ class TestWorkerMonitorUnit(TestCase):
                 error.ProcessTerminated,
                 exitCode=CodeImportWorkerExitCode.SUCCESS_NOCHANGE))
         self.assertEqual(calls, [CodeImportResultStatus.SUCCESS_NOCHANGE])
-        self.assertOopsesLogged([])
         # We return the deferred that callFinishJob returns -- if
         # callFinishJob did not swallow the error, this will fail the test.
         return ret
@@ -432,7 +422,6 @@ class TestWorkerMonitorUnit(TestCase):
         calls = self.patchOutFinishJob(worker_monitor)
         ret = worker_monitor.callFinishJob(makeFailure(RuntimeError))
         self.assertEqual(calls, [CodeImportResultStatus.FAILURE])
-        self.assertOopsesLogged([RuntimeError])
         # We return the deferred that callFinishJob returns -- if
         # callFinishJob did not swallow the error, this will fail the test.
         return ret
@@ -448,7 +437,6 @@ class TestWorkerMonitorUnit(TestCase):
                 error.ProcessTerminated,
                 exitCode=CodeImportWorkerExitCode.SUCCESS_PARTIAL))
         self.assertEqual(calls, [CodeImportResultStatus.SUCCESS_PARTIAL])
-        self.assertOopsesLogged([])
         # We return the deferred that callFinishJob returns -- if
         # callFinishJob did not swallow the error, this will fail the test.
         return ret
@@ -464,7 +452,6 @@ class TestWorkerMonitorUnit(TestCase):
                 error.ProcessTerminated,
                 exitCode=CodeImportWorkerExitCode.FAILURE_INVALID))
         self.assertEqual(calls, [CodeImportResultStatus.FAILURE_INVALID])
-        self.assertOopsesLogged([])
         # We return the deferred that callFinishJob returns -- if
         # callFinishJob did not swallow the error, this will fail the test.
         return ret
@@ -480,7 +467,6 @@ class TestWorkerMonitorUnit(TestCase):
             exitCode=CodeImportWorkerExitCode.FAILURE_UNSUPPORTED_FEATURE))
         self.assertEqual(
             calls, [CodeImportResultStatus.FAILURE_UNSUPPORTED_FEATURE])
-        self.assertOopsesLogged([])
         # We return the deferred that callFinishJob returns -- if
         # callFinishJob did not swallow the error, this will fail the test.
         return ret
@@ -497,7 +483,6 @@ class TestWorkerMonitorUnit(TestCase):
                 exitCode=CodeImportWorkerExitCode.FAILURE_REMOTE_BROKEN))
         self.assertEqual(
             calls, [CodeImportResultStatus.FAILURE_REMOTE_BROKEN])
-        self.assertOopsesLogged([])
         # We return the deferred that callFinishJob returns -- if
         # callFinishJob did not swallow the error, this will fail the test.
         return ret
@@ -511,14 +496,10 @@ class TestWorkerMonitorUnit(TestCase):
         ret = worker_monitor.callFinishJob(makeFailure(RuntimeError))
 
         def check_log_file(ignored):
-            failures = flush_logged_errors(RuntimeError)
-            self.assertEqual(1, len(failures))
-            fail = failures[0]
-            traceback_file = StringIO.StringIO()
-            fail.printTraceback(traceback_file)
             worker_monitor._log_file.seek(0)
             log_text = worker_monitor._log_file.read()
-            self.assertIn(traceback_file.read(), log_text)
+            self.assertIn('Traceback (most recent call last)', log_text)
+            self.assertIn('RuntimeError', log_text)
         return ret.addCallback(check_log_file)
 
     def test_callFinishJobRespects_call_finish_job(self):
@@ -688,7 +669,7 @@ class CIWorkerMonitorForTesting(CodeImportWorkerMonitor):
 class TestWorkerMonitorIntegration(BzrTestCase):
 
     layer = ZopelessAppServerLayer
-    run_tests_with = AsynchronousDeferredRunTest.make_factory(timeout=20)
+    run_tests_with = AsynchronousDeferredRunTest.make_factory(timeout=60)
 
     def setUp(self):
         BzrTestCase.setUp(self)
@@ -742,7 +723,6 @@ class TestWorkerMonitorIntegration(BzrTestCase):
 
     def makeGitCodeImport(self):
         """Make a `CodeImport` that points to a real Git repository."""
-        load_optional_plugin('git')
         self.git_server = GitServer(self.repo_path, use_server=False)
         self.git_server.start_server()
         self.addCleanup(self.git_server.stop_server)
@@ -752,19 +732,6 @@ class TestWorkerMonitorIntegration(BzrTestCase):
 
         return self.factory.makeCodeImport(
             git_repo_url=self.git_server.get_url())
-
-    def makeHgCodeImport(self):
-        """Make a `CodeImport` that points to a real Mercurial repository."""
-        load_optional_plugin('hg')
-        self.hg_server = MercurialServer(self.repo_path, use_server=False)
-        self.hg_server.start_server()
-        self.addCleanup(self.hg_server.stop_server)
-
-        self.hg_server.makeRepo([('README', 'contents')])
-        self.foreign_commit_count = 1
-
-        return self.factory.makeCodeImport(
-            hg_repo_url=self.hg_server.get_url())
 
     def makeBzrCodeImport(self):
         """Make a `CodeImport` that points to a real Bazaar branch."""
@@ -806,8 +773,7 @@ class TestWorkerMonitorIntegration(BzrTestCase):
         url = get_default_bazaar_branch_store()._getMirrorURL(
             code_import.branch.id)
         branch = Branch.open(url)
-        self.assertEqual(
-            self.foreign_commit_count, len(branch.revision_history()))
+        self.assertEqual(self.foreign_commit_count, branch.revno())
 
     def assertImported(self, ignored, code_import_id):
         """Assert that the `CodeImport` of the given id was imported."""
@@ -845,9 +811,7 @@ class TestWorkerMonitorIntegration(BzrTestCase):
 
         return deferred.addBoth(save_protocol_object)
 
-    # XXX 2011-09-05 wgrant, bug=841556: This test fails
-    # occasionally in buildbot.
-    def DISABLED_test_import_cvs(self):
+    def test_import_cvs(self):
         # Create a CVS CodeImport and import it.
         job = self.getStartedJobForImport(self.makeCVSCodeImport())
         code_import_id = job.code_import.id
@@ -856,9 +820,7 @@ class TestWorkerMonitorIntegration(BzrTestCase):
         result = self.performImport(job_id)
         return result.addCallback(self.assertImported, code_import_id)
 
-    # XXX 2011-09-05 wgrant, bug=841556: This test fails
-    # occasionally in buildbot.
-    def DISABLED_test_import_subversion(self):
+    def test_import_subversion(self):
         # Create a Subversion CodeImport and import it.
         job = self.getStartedJobForImport(self.makeSVNCodeImport())
         code_import_id = job.code_import.id
@@ -867,9 +829,7 @@ class TestWorkerMonitorIntegration(BzrTestCase):
         result = self.performImport(job_id)
         return result.addCallback(self.assertImported, code_import_id)
 
-    # XXX 2011-09-09 gary, bug=841556: This test fails
-    # occasionally in buildbot.
-    def DISABLED_test_import_git(self):
+    def test_import_git(self):
         # Create a Git CodeImport and import it.
         job = self.getStartedJobForImport(self.makeGitCodeImport())
         code_import_id = job.code_import.id
@@ -878,20 +838,7 @@ class TestWorkerMonitorIntegration(BzrTestCase):
         result = self.performImport(job_id)
         return result.addCallback(self.assertImported, code_import_id)
 
-    # XXX 2011-09-09 gary, bug=841556: This test fails
-    # occasionally in buildbot.
-    def DISABLED_test_import_hg(self):
-        # Create a Mercurial CodeImport and import it.
-        job = self.getStartedJobForImport(self.makeHgCodeImport())
-        code_import_id = job.code_import.id
-        job_id = job.id
-        self.layer.txn.commit()
-        result = self.performImport(job_id)
-        return result.addCallback(self.assertImported, code_import_id)
-
-    # XXX 2011-09-05 wgrant, bug=841556: This test fails
-    # occasionally in buildbot.
-    def DISABLED_test_import_bzr(self):
+    def test_import_bzr(self):
         # Create a Bazaar CodeImport and import it.
         job = self.getStartedJobForImport(self.makeBzrCodeImport())
         code_import_id = job.code_import.id
@@ -900,9 +847,7 @@ class TestWorkerMonitorIntegration(BzrTestCase):
         result = self.performImport(job_id)
         return result.addCallback(self.assertImported, code_import_id)
 
-    # XXX 2011-09-05 wgrant, bug=841556: This test fails
-    # frequently in buildbot.
-    def DISABLED_test_import_bzrsvn(self):
+    def test_import_bzrsvn(self):
         # Create a Subversion-via-bzr-svn CodeImport and import it.
         job = self.getStartedJobForImport(self.makeBzrSvnCodeImport())
         code_import_id = job.code_import.id

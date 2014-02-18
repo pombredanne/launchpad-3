@@ -15,13 +15,11 @@ from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
 from zope.security.interfaces import Unauthorized
 
-from canonical.launchpad.ftests import logout
-from canonical.testing.layers import LaunchpadFunctionalLayer
-from canonical.launchpad.webapp.publisher import (
+from lp.registry.interfaces.person import IPersonSet
+from lp.services.webapp.publisher import (
     canonical_url,
     RedirectionView,
     )
-from lp.registry.interfaces.person import IPersonSet
 from lp.soyuz.browser.publishing import (
     SourcePackagePublishingHistoryNavigation,
     )
@@ -31,9 +29,11 @@ from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
     BrowserTestCase,
     FakeLaunchpadRequest,
+    logout,
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.testing.sampledata import ADMIN_EMAIL
 
 
@@ -45,11 +45,10 @@ class TestSourcePublicationListingExtra(BrowserTestCase):
         self.admin = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)
         # Create everything we need to create builds, such as a
         # DistroArchSeries and a builder.
-        self.pf = self.factory.makeProcessorFamily()
-        pf_proc = self.pf.addProcessor(self.factory.getUniqueString(), '', '')
+        self.processor = self.factory.makeProcessor()
         self.distroseries = self.factory.makeDistroSeries()
         self.das = self.factory.makeDistroArchSeries(
-            distroseries=self.distroseries, processorfamily=self.pf,
+            distroseries=self.distroseries, processor=self.processor,
             supports_virtualized=True)
         self.archive = self.factory.makeArchive(
             distribution=self.distroseries.distribution)
@@ -58,7 +57,8 @@ class TestSourcePublicationListingExtra(BrowserTestCase):
             self.publisher.prepareBreezyAutotest()
             self.distroseries.nominatedarchindep = self.das
             self.publisher.addFakeChroots(distroseries=self.distroseries)
-            self.builder = self.factory.makeBuilder(processor=pf_proc)
+            self.builder = self.factory.makeBuilder(
+                processors=[self.processor])
 
     def test_view_with_source_package_recipe(self):
         # When a SourcePackageRelease is linked to a

@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for publisher class."""
@@ -15,17 +15,13 @@ import shutil
 import stat
 import tempfile
 from textwrap import dedent
+import time
 
 from debian.deb822 import Release
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.database.constants import UTC_NOW
-from canonical.launchpad.ftests.keys_for_tests import gpgkeysdir
-from canonical.launchpad.interfaces.gpghandler import IGPGHandler
-from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.diskpool import DiskPool
 from lp.archivepublisher.interfaces.archivesigningkey import (
@@ -38,12 +34,16 @@ from lp.archivepublisher.publishing import (
     )
 from lp.archivepublisher.utils import RepositoryIndexFile
 from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import (
     PackagePublishingPocket,
     pocketsuffix,
     )
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.config import config
+from lp.services.database.constants import UTC_NOW
+from lp.services.gpg.interfaces import IGPGHandler
 from lp.services.log.logger import (
     BufferLogger,
     DevNullLogger,
@@ -58,7 +58,10 @@ from lp.soyuz.enums import (
 from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.tests.test_publishing import TestNativePublishingBase
 from lp.testing import TestCaseWithFactory
+from lp.testing.fakemethod import FakeMethod
+from lp.testing.gpgkeys import gpgkeysdir
 from lp.testing.keyserver import KeyServerTac
+from lp.testing.layers import ZopelessDatabaseLayer
 
 
 RELEASE = PackagePublishingPocket.RELEASE
@@ -145,8 +148,27 @@ class TestPublisher(TestPublisherBase):
         ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
         test_archive = getUtility(IArchiveSet).new(
             distribution=self.ubuntutest, owner=ubuntu_team,
-            purpose=ArchivePurpose.PPA)
+            purpose=ArchivePurpose.PPA, name='testing')
+
+        # Create some source and binary publications, including an
+        # orphaned NBS binary.
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            archive=test_archive)
+        bpph = self.factory.makeBinaryPackagePublishingHistory(
+            archive=test_archive)
+        orphaned_bpph = self.factory.makeBinaryPackagePublishingHistory(
+            archive=test_archive)
+        bpb = orphaned_bpph.binarypackagerelease.build
+        bpb.current_source_publication.supersede()
+        dead_spph = self.factory.makeSourcePackagePublishingHistory(
+            archive=test_archive)
+        dead_spph.supersede()
+        dead_bpph = self.factory.makeBinaryPackagePublishingHistory(
+            archive=test_archive)
+        dead_bpph.supersede()
+
         publisher = getPublisher(test_archive, None, self.logger)
+        publisher.setupArchiveDirs()
 
         self.assertTrue(os.path.exists(publisher._config.archiveroot))
 
@@ -165,6 +187,21 @@ class TestPublisher(TestPublisherBase):
         self.assertFalse(os.path.exists(publisher._config.metaroot))
         self.assertEqual(ArchiveStatus.DELETED, test_archive.status)
         self.assertEqual(False, test_archive.publish)
+        self.assertEqual(u'testing-deletedppa', test_archive.name)
+
+        # All of the archive's active publications have been marked
+        # DELETED, and dateremoved has been set early because they've
+        # already been removed from disk.
+        for pub in (spph, bpph, orphaned_bpph):
+            self.assertEqual(PackagePublishingStatus.DELETED, pub.status)
+            self.assertEqual(u'janitor', pub.removed_by.name)
+            self.assertIsNot(None, pub.dateremoved)
+
+        # The SUPERSEDED publications now have dateremoved set, even
+        # though p-d-r hasn't run over them.
+        for pub in (dead_spph, dead_bpph):
+            self.assertIs(None, pub.scheduleddeletiondate)
+            self.assertIsNot(None, pub.dateremoved)
 
         # Trying to delete it again won't fail, in the corner case where
         # some admin manually deleted the repo.
@@ -177,6 +214,7 @@ class TestPublisher(TestPublisherBase):
             purpose=ArchivePurpose.PPA)
         logger = BufferLogger()
         publisher = getPublisher(test_archive, None, logger)
+        publisher.setupArchiveDirs()
 
         self.assertTrue(os.path.exists(publisher._config.archiveroot))
 
@@ -191,6 +229,15 @@ class TestPublisher(TestPublisherBase):
         self.assertFalse(os.path.exists(root_dir))
         self.assertNotIn('WARNING', logger.getLogBuffer())
         self.assertNotIn('ERROR', logger.getLogBuffer())
+
+    def testDeletingPPARename(self):
+        a1 = self.factory.makeArchive(purpose=ArchivePurpose.PPA, name='test')
+        getPublisher(a1, None, self.logger).deleteArchive()
+        self.assertEqual('test-deletedppa', a1.name)
+        a2 = self.factory.makeArchive(
+            purpose=ArchivePurpose.PPA, name='test', owner=a1.owner)
+        getPublisher(a2, None, self.logger).deleteArchive()
+        self.assertEqual('test-deletedppa1', a2.name)
 
     def testPublishPartner(self):
         """Test that a partner package is published to the right place."""
@@ -431,6 +478,45 @@ class TestPublisher(TestPublisherBase):
         # remove locally created dir
         shutil.rmtree(test_pool_dir)
 
+    def testPublishingSkipsObsoleteFuturePrimarySeries(self):
+        """Publisher skips OBSOLETE/FUTURE series in PRIMARY archives."""
+        publisher = Publisher(
+            self.logger, self.config, self.disk_pool,
+            self.ubuntutest.main_archive)
+        # Remove security proxy so that the publisher can call our fake
+        # method.
+        publisher.distro = removeSecurityProxy(publisher.distro)
+
+        for status in (SeriesStatus.OBSOLETE, SeriesStatus.FUTURE):
+            naked_breezy_autotest = publisher.distro['breezy-autotest']
+            naked_breezy_autotest.status = status
+            naked_breezy_autotest.publish = FakeMethod(result=set())
+
+            publisher.A_publish(False)
+
+            self.assertEqual(0, naked_breezy_autotest.publish.call_count)
+
+    def testPublishingConsidersObsoleteFuturePPASeries(self):
+        """Publisher does not skip OBSOLETE/FUTURE series in PPA archives."""
+        ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
+        test_archive = getUtility(IArchiveSet).new(
+            distribution=self.ubuntutest, owner=ubuntu_team,
+            purpose=ArchivePurpose.PPA)
+        publisher = Publisher(
+            self.logger, self.config, self.disk_pool, test_archive)
+        # Remove security proxy so that the publisher can call our fake
+        # method.
+        publisher.distro = removeSecurityProxy(publisher.distro)
+
+        for status in (SeriesStatus.OBSOLETE, SeriesStatus.FUTURE):
+            naked_breezy_autotest = publisher.distro['breezy-autotest']
+            naked_breezy_autotest.status = status
+            naked_breezy_autotest.publish = FakeMethod(result=set())
+
+            publisher.A_publish(False)
+
+            self.assertEqual(1, naked_breezy_autotest.publish.call_count)
+
     def testPublisherBuilderFunctions(self):
         """Publisher can be initialized via provided helper function.
 
@@ -568,6 +654,7 @@ class TestPublisher(TestPublisherBase):
         allowed_suites = []
 
         cprov = getUtility(IPersonSet).getByName('cprov')
+        cprov.archive.publish_debug_symbols = True
 
         archive_publisher = getPublisher(
             cprov.archive, allowed_suites, self.logger)
@@ -581,7 +668,8 @@ class TestPublisher(TestPublisherBase):
             pub_source=pub_source,
             description="   My leading spaces are normalised to a single "
                         "space but not trailing.  \n    It does nothing, "
-                        "though")[0]
+                        "though",
+            with_debug=True)
 
         # Ignored (deleted) source publication that will not be listed in
         # the index and a pending 'udeb' binary package.
@@ -618,6 +706,12 @@ class TestPublisher(TestPublisherBase):
              'Directory: pool/main/f/foo',
              'Files:',
              ' 3e25960a79dbc69b674cd4ec67a72c62 11 foo_1.dsc',
+             'Checksums-Sha1:',
+             ' 7b502c3a1f48c8609ae212cdfb639dee39673f5e 11 foo_1.dsc',
+             'Checksums-Sha256:',
+             ' 64ec88ca00b268e5ba1a35678a1b5316d212f4f366b2477232534a8aeca37f'
+             '3c 11 foo_1.dsc',
+
              ''],
             index_contents)
 
@@ -644,6 +738,8 @@ class TestPublisher(TestPublisherBase):
              'Size: 18',
              'MD5sum: 008409e7feb1c24a6ccab9f6a62d24c5',
              'SHA1: 30b7b4e583fa380772c5a40e428434628faef8cf',
+             'SHA256: 006ca0f356f54b1916c24c282e6fd19961f4356441401f4b0966f2a'
+             '00bb3e945',
              'Description: Foo app is great',
              ' My leading spaces are normalised to a single space but not '
              'trailing.  ',
@@ -677,8 +773,43 @@ class TestPublisher(TestPublisherBase):
              'Size: 18',
              'MD5sum: 008409e7feb1c24a6ccab9f6a62d24c5',
              'SHA1: 30b7b4e583fa380772c5a40e428434628faef8cf',
+             'SHA256: 006ca0f356f54b1916c24c282e6fd19961f4356441401f4b0966f2a'
+             '00bb3e945',
              'Description: Foo app is great',
              ' nice udeb',
+             ''],
+            index_contents)
+
+        # 'debug' too, when publish_debug_symbols is enabled.
+        index_contents = self._checkCompressedFile(
+            archive_publisher,
+            os.path.join('debug', 'binary-i386', 'Packages.bz2'),
+            os.path.join('debug', 'binary-i386', 'Packages'))
+
+        index_contents = self._checkCompressedFile(
+            archive_publisher,
+            os.path.join('debug', 'binary-i386', 'Packages.gz'),
+            os.path.join('debug', 'binary-i386', 'Packages'))
+
+        self.assertEqual(
+            ['Package: foo-bin-dbgsym',
+             'Source: foo',
+             'Priority: standard',
+             'Section: base',
+             'Installed-Size: 100',
+             'Maintainer: Foo Bar <foo@bar.com>',
+             'Architecture: all',
+             'Version: 666',
+             'Filename: pool/main/f/foo/foo-bin-dbgsym_666_all.ddeb',
+             'Size: 18',
+             'MD5sum: 008409e7feb1c24a6ccab9f6a62d24c5',
+             'SHA1: 30b7b4e583fa380772c5a40e428434628faef8cf',
+             'SHA256: 006ca0f356f54b1916c24c282e6fd19961f4356441401f4b0966f2a'
+             '00bb3e945',
+             'Description: Foo app is great',
+             ' My leading spaces are normalised to a single space but not '
+             'trailing.  ',
+             ' It does nothing, though',
              ''],
             index_contents)
 
@@ -1042,6 +1173,47 @@ class TestPublisher(TestPublisherBase):
             self.assertReleaseContentsMatch(
                 release, 'main/i18n/Index', i18n_index_file.read())
 
+    def testCreateSeriesAliasesNoAlias(self):
+        """createSeriesAliases has nothing to do by default."""
+        publisher = Publisher(
+            self.logger, self.config, self.disk_pool,
+            self.ubuntutest.main_archive)
+        publisher.createSeriesAliases()
+        self.assertEqual([], os.listdir(self.config.distsroot))
+
+    def _assertPublishesSeriesAlias(self, publisher, expected):
+        publisher.A_publish(False)
+        publisher.C_writeIndexes(False)
+        publisher.createSeriesAliases()
+        self.assertTrue(os.path.exists(os.path.join(
+            self.config.distsroot, expected)))
+        for pocket, suffix in pocketsuffix.items():
+            path = os.path.join(self.config.distsroot, "devel%s" % suffix)
+            expected_path = os.path.join(
+                self.config.distsroot, expected + suffix)
+            # A symlink for the RELEASE pocket exists.  Symlinks for other
+            # pockets only exist if the respective targets exist.
+            if not suffix or os.path.exists(expected_path):
+                self.assertTrue(os.path.islink(path))
+                self.assertEqual(expected + suffix, os.readlink(path))
+            else:
+                self.assertFalse(os.path.islink(path))
+
+    def testCreateSeriesAliasesChangesAlias(self):
+        """createSeriesAliases tracks the latest published series."""
+        publisher = Publisher(
+            self.logger, self.config, self.disk_pool,
+            self.ubuntutest.main_archive)
+        self.ubuntutest.development_series_alias = "devel"
+        # Oddly, hoary-test has a higher version than breezy-autotest.
+        self.getPubSource(distroseries=self.ubuntutest["breezy-autotest"])
+        self._assertPublishesSeriesAlias(publisher, "breezy-autotest")
+        hoary_pub = self.getPubSource(
+            distroseries=self.ubuntutest["hoary-test"])
+        self._assertPublishesSeriesAlias(publisher, "hoary-test")
+        hoary_pub.requestDeletion(self.ubuntutest.owner)
+        self._assertPublishesSeriesAlias(publisher, "breezy-autotest")
+
     def testHtaccessForPrivatePPA(self):
         # A htaccess file is created for new private PPA's.
 
@@ -1050,8 +1222,8 @@ class TestPublisher(TestPublisherBase):
         ppa.buildd_secret = "geheim"
 
         # Set up the publisher for it and publish its repository.
-        # 'getPublisher' is what actually configures the htaccess file.
-        getPublisher(ppa, [], self.logger)
+        # setupArchiveDirs is what actually configures the htaccess file.
+        getPublisher(ppa, [], self.logger).setupArchiveDirs()
         pubconf = getPubConfig(ppa)
         htaccess_path = os.path.join(pubconf.htaccessroot, ".htaccess")
         self.assertTrue(os.path.exists(htaccess_path))
@@ -1091,7 +1263,7 @@ class TestPublisher(TestPublisherBase):
         # Write a zero-length Translation-en file and compressed versions of
         # it.
         translation_en_index = RepositoryIndexFile(
-            i18n_root, self.config.temproot, 'Translation-en')
+            os.path.join(i18n_root, 'Translation-en'), self.config.temproot)
         translation_en_index.close()
 
         all_files = set()
@@ -1417,9 +1589,11 @@ class TestPublisherLite(TestCaseWithFactory):
         return self.factory.makeSourcePackagePublishingHistory(
             distroseries=series, status=PackagePublishingStatus.PENDING)
 
-    def makePublisher(self, series):
-        """Create a publisher for a given distroseries."""
-        return getPublisher(series.main_archive, None, DevNullLogger())
+    def makePublisher(self, archive_or_series):
+        """Create a publisher for a given archive or distroseries."""
+        if IDistroSeries.providedBy(archive_or_series):
+            archive_or_series = archive_or_series.main_archive
+        return getPublisher(archive_or_series, None, DevNullLogger())
 
     def makeFakeReleaseData(self):
         """Create a fake `debian.deb822.Release`.
@@ -1465,3 +1639,37 @@ class TestPublisherLite(TestCaseWithFactory):
         self.makePublisher(series)._writeReleaseFile(suite, release_data)
 
         self.assertTrue(file_exists(release_path))
+
+    def test_syncTimestamps_makes_timestamps_match_latest(self):
+        root = unicode(self.makeTemporaryDirectory())
+        series = self.makePublishableSeries(root)
+        location = self.getReleaseFileDir(root, series, series.name)
+        os.makedirs(location)
+        now = time.time()
+        path_times = (("a", now), ("b", now - 1), ("c", now - 2))
+        for path, timestamp in path_times:
+            with open(os.path.join(location, path), "w"):
+                pass
+            os.utime(os.path.join(location, path), (timestamp, timestamp))
+
+        paths = [path for path, _ in path_times]
+        self.makePublisher(series)._syncTimestamps(series.name, set(paths))
+
+        timestamps = set(
+            os.stat(os.path.join(location, path)).st_mtime for path in paths)
+        self.assertEqual(1, len(timestamps))
+        # The filesystem may round off subsecond parts of timestamps.
+        self.assertEqual(int(now), int(list(timestamps)[0]))
+
+    def test_subcomponents(self):
+        primary = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        self.assertEqual(
+            ['debian-installer'],
+            self.makePublisher(primary).subcomponents)
+        primary.publish_debug_symbols = True
+        self.assertEqual(
+            ['debian-installer', 'debug'],
+            self.makePublisher(primary).subcomponents)
+
+        partner = self.factory.makeArchive(purpose=ArchivePurpose.PARTNER)
+        self.assertEqual([], self.makePublisher(partner).subcomponents)

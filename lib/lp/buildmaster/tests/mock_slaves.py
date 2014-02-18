@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Mock Build objects for tests soyuz buildd-system."""
@@ -6,47 +6,33 @@
 __metaclass__ = type
 
 __all__ = [
-    'AbortedSlave',
     'AbortingSlave',
     'BrokenSlave',
     'BuildingSlave',
-    'CorruptBehavior',
     'DeadProxy',
     'LostBuildingBrokenSlave',
     'make_publisher',
     'MockBuilder',
     'OkSlave',
     'SlaveTestHelpers',
-    'TrivialBehavior',
+    'TrivialBehaviour',
     'WaitingSlave',
     ]
 
-import fixtures
 import os
 import types
-
 import xmlrpclib
 
+import fixtures
+from lpbuildd.tests.harness import BuilddSlaveTestSetup
 from testtools.content import Content
 from testtools.content_type import UTF8_TEXT
-
 from twisted.internet import defer
 from twisted.web import xmlrpc
 
-from lpbuildd.tests.harness import BuilddSlaveTestSetup
-
-from lp.buildmaster.interfaces.builder import (
-    CannotFetchFile,
-    CorruptBuildCookie,
-    )
-from lp.buildmaster.model.builder import (
-    BuilderSlave,
-    rescueBuilderIfLost,
-    updateBuilderStatus,
-    )
-from lp.soyuz.model.binarypackagebuildbehavior import (
-    BinaryPackageBuildBehavior,
-    )
+from lp.buildmaster.interactor import BuilderSlave
+from lp.buildmaster.interfaces.builder import CannotFetchFile
+from lp.services.config import config
 from lp.testing.sampledata import I386_ARCHITECTURE_NAME
 
 
@@ -60,48 +46,22 @@ def make_publisher():
 class MockBuilder:
     """Emulates a IBuilder class."""
 
-    def __init__(self, name, slave, behavior=None):
-        if behavior is None:
-            self.current_build_behavior = BinaryPackageBuildBehavior(None)
-        else:
-            self.current_build_behavior = behavior
-
-        self.slave = slave
-        self.builderok = True
-        self.manual = False
-        self.url = 'http://fake:0000'
-        slave.url = self.url
+    def __init__(self, name='mock-builder', builderok=True, manual=False,
+                 virtualized=True, vm_host=None, url='http://fake:0000',
+                 version=None):
+        self.currentjob = None
+        self.builderok = builderok
+        self.manual = manual
+        self.url = url
         self.name = name
-        self.virtualized = True
+        self.virtualized = virtualized
+        self.vm_host = vm_host
+        self.failnotes = None
+        self.version = version
 
     def failBuilder(self, reason):
         self.builderok = False
         self.failnotes = reason
-
-    def slaveStatusSentence(self):
-        return self.slave.status()
-
-    def verifySlaveBuildCookie(self, slave_build_id):
-        return self.current_build_behavior.verifySlaveBuildCookie(
-            slave_build_id)
-
-    def cleanSlave(self):
-        return self.slave.clean()
-
-    def requestAbort(self):
-        return self.slave.abort()
-
-    def resumeSlave(self, logger):
-        return ('out', 'err')
-
-    def checkSlaveAlive(self):
-        pass
-
-    def rescueIfLost(self, logger=None):
-        return rescueBuilderIfLost(self, logger)
-
-    def updateStatus(self, logger=None):
-        return defer.maybeDeferred(updateBuilderStatus, self, logger)
 
 
 # XXX: It would be *really* nice to run some set of tests against the real
@@ -111,12 +71,16 @@ class OkSlave:
 
     The architecture tag can be customised during initialization."""
 
-    def __init__(self, arch_tag=I386_ARCHITECTURE_NAME):
+    def __init__(self, arch_tag=I386_ARCHITECTURE_NAME, version=None):
         self.call_log = []
         self.arch_tag = arch_tag
+        self.version = version
 
     def status(self):
-        return defer.succeed(('BuilderStatus.IDLE', ''))
+        slave_status = {'builder_status': 'BuilderStatus.IDLE'}
+        if self.version is not None:
+            slave_status['builder_version'] = self.version
+        return defer.succeed(slave_status)
 
     def ensurepresent(self, sha1, url, user=None, password=None):
         self.call_log.append(('ensurepresent', url, user, password))
@@ -150,9 +114,11 @@ class OkSlave:
 
     def sendFileToSlave(self, sha1, url, username="", password=""):
         d = self.ensurepresent(sha1, url, username, password)
+
         def check_present((present, info)):
             if not present:
                 raise CannotFetchFile(url, info)
+
         return d.addCallback(check_present)
 
     def cacheFile(self, logger, libraryfilealias):
@@ -176,8 +142,11 @@ class BuildingSlave(OkSlave):
     def status(self):
         self.call_log.append('status')
         buildlog = xmlrpclib.Binary("This is a build log")
-        return defer.succeed(
-            ('BuilderStatus.BUILDING', self.build_id, buildlog))
+        return defer.succeed({
+            'builder_status': 'BuilderStatus.BUILDING',
+            'build_id': self.build_id,
+            'logtail': buildlog,
+            })
 
     def getFile(self, sum, file_to_write):
         self.call_log.append('getFile')
@@ -209,9 +178,13 @@ class WaitingSlave(OkSlave):
 
     def status(self):
         self.call_log.append('status')
-        return defer.succeed((
-            'BuilderStatus.WAITING', self.state, self.build_id, self.filemap,
-            self.dependencies))
+        return defer.succeed({
+            'builder_status': 'BuilderStatus.WAITING',
+            'build_status': self.state,
+            'build_id': self.build_id,
+            'filemap': self.filemap,
+            'dependencies': self.dependencies,
+            })
 
     def getFile(self, hash, file_to_write):
         self.call_log.append('getFile')
@@ -229,19 +202,10 @@ class AbortingSlave(OkSlave):
 
     def status(self):
         self.call_log.append('status')
-        return defer.succeed(('BuilderStatus.ABORTING', '1-1'))
-
-
-class AbortedSlave(OkSlave):
-    """A mock slave that looks like it's aborted."""
-
-    def clean(self):
-        self.call_log.append('clean')
-        return defer.succeed(None)
-
-    def status(self):
-        self.call_log.append('status')
-        return defer.succeed(('BuilderStatus.ABORTED', '1-1'))
+        return defer.succeed({
+            'builder_status': 'BuilderStatus.ABORTING',
+            'build_id': '1-1',
+            })
 
 
 class LostBuildingBrokenSlave:
@@ -255,11 +219,18 @@ class LostBuildingBrokenSlave:
 
     def status(self):
         self.call_log.append('status')
-        return defer.succeed(('BuilderStatus.BUILDING', '1000-10000'))
+        return defer.succeed({
+            'builder_status': 'BuilderStatus.BUILDING',
+            'build_id': '1000-10000',
+            })
 
     def abort(self):
         self.call_log.append('abort')
         return defer.fail(xmlrpclib.Fault(8002, "Could not abort"))
+
+    def resume(self):
+        self.call_log.append('resume')
+        return defer.succeed(("", "", 0))
 
 
 class BrokenSlave:
@@ -273,16 +244,10 @@ class BrokenSlave:
         return defer.fail(xmlrpclib.Fault(8001, "Broken slave"))
 
 
-class CorruptBehavior:
+class TrivialBehaviour:
 
-    def verifySlaveBuildCookie(self, cookie):
-        raise CorruptBuildCookie("Bad value: %r" % (cookie,))
-
-
-class TrivialBehavior:
-
-    def verifySlaveBuildCookie(self, cookie):
-        pass
+    def getBuildCookie(self):
+        return 'trivial'
 
 
 class DeadProxy(xmlrpc.Proxy):
@@ -320,7 +285,8 @@ class SlaveTestHelpers(fixtures.Fixture):
         Points to a fixed URL that is also used by `BuilddSlaveTestSetup`.
         """
         return BuilderSlave.makeBuilderSlave(
-            self.BASE_URL, 'vmhost', reactor, proxy)
+            self.BASE_URL, 'vmhost', config.builddmaster.socket_timeout,
+            reactor, proxy)
 
     def makeCacheFile(self, tachandler, filename):
         """Make a cache file available on the remote slave.

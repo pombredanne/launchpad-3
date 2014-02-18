@@ -6,14 +6,14 @@ import re
 
 import pytz
 from z3c.ptcompat import ViewPageTemplateFile
-from zope.app.form.browser.textwidgets import (
-    TextAreaWidget,
-    TextWidget,
-    )
-from zope.app.form.interfaces import ConversionError
 from zope.datetime import (
     DateTimeError,
     parse,
+    )
+from zope.formlib.interfaces import ConversionError
+from zope.formlib.textwidgets import (
+    TextAreaWidget,
+    TextWidget,
     )
 
 from lp.app.errors import UnexpectedFormData
@@ -106,7 +106,7 @@ class LocalDateTimeWidget(TextWidget):
             micro = round(micro * 1000000)
             dt = datetime.datetime(year, month, day,
                                    hour, minute, int(second), int(micro))
-        except (DateTimeError, ValueError, IndexError), v:
+        except (DateTimeError, ValueError, IndexError) as v:
             raise ConversionError('Invalid date value', v)
         tz = pytz.timezone(self.timeZoneName)
         return tz.localize(dt)
@@ -144,7 +144,7 @@ class LocalDateTimeWidget(TextWidget):
         return value.astimezone(tz).strftime('%Y-%m-%d %H:%M:%S')
 
 
-class URIWidget(TextWidget):
+class URIWidget(StrippedTextWidget):
     """A widget that represents a URI."""
 
     displayWidth = 44
@@ -157,7 +157,7 @@ class URIWidget(TextWidget):
     def _toFieldValue(self, input):
         if isinstance(input, list):
             raise UnexpectedFormData('Only a single value is expected')
-        return TextWidget._toFieldValue(self, input)
+        return super(URIWidget, self)._toFieldValue(input)
 
 
 class URIComponentWidget(LowerCaseTextWidget):

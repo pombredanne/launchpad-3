@@ -28,7 +28,7 @@ to allow binary package searching.
     This archive contains 5 software packages.
     Details for Ubuntu Warty i386
     Architecture tag: i386
-    Processor family: Intel 386 compatible chips
+    Processor: Intel 386
     Port registrant: Mark Shuttleworth
     5 binary packages
 
@@ -54,10 +54,12 @@ More details are available by clicking on the binary package name.
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'search-results'))
     1 &rarr; 3 of 3 results
-    First &#149; Previous &#149; Next &#149; Last
+    First &bull; Previous &bull; Next &bull; Last
     mozilla-firefox: Mozilla Firefox Web Browser
     mozilla-firefox-data: Mozilla Firefox Data
     mozilla-firefox: ff from iceweasel
+    1 &rarr; 3 of 3 results
+    First &bull; Previous &bull; Next &bull; Last
 
 A search may yield no result. In this case, we describe the search
 that was done, and explain that no matches were found.
@@ -125,8 +127,7 @@ DistroArchSeries page.
 
 There's also a notification message announcing the success of the change:
 
-    >>> for message in get_feedback_messages(admin_browser.contents):
-    ...     print message
+    >>> print_feedback_messages(admin_browser.contents)
     Successfully updated
 
 Navigating back to the admin page shows the change was made:
@@ -154,10 +155,7 @@ This change also affects the way distroarchseries are listed in the
 distroseries page. We will use a small helper function to extract the
 current distroseries architecture list.
 
-    >>> from canonical.testing.layers import MemcachedLayer
-
     >>> def check_arch_list(distroseries='warty'):
-    ...     MemcachedLayer.purge()
     ...     anon_browser.open("http://launchpad.dev/ubuntu/%s" % distroseries)
     ...     print extract_text(find_tag_by_id(
     ...         anon_browser.contents, 'portlet-architectures-list'))
@@ -209,7 +207,7 @@ allow duplications.
     (unofficial)
 
     >>> admin_browser.getControl("Architecture Tag").value = 'i386'
-    >>> admin_browser.getControl("Processor Family").value = ['x86']
+    >>> admin_browser.getControl("Processor:").value = ['386']
     >>> admin_browser.getControl("Official Support").selected = True
     >>> admin_browser.getControl("PPA support available").selected = True
 
@@ -218,7 +216,7 @@ to open an already installed architecture instead of a
 traceback. Although It's not a big problem because this form is very
 restricted and rarely used.
 
-    admin_browser.getControl("Add").click()
+    admin_browser.getControl("Continue").click()
     Traceback (most recent call last):
     ...
     RetryPsycopgIntegrityError: ERROR:  duplicate key violates unique
@@ -241,7 +239,7 @@ An administrator can open new distinct architecture, for instance,
     >>> admin_browser.getLink("Add architecture").click()
 
     >>> admin_browser.getControl("Architecture Tag").value = 'amd64'
-    >>> admin_browser.getControl("Processor Family").value = ['amd64']
+    >>> admin_browser.getControl("Processor:").value = ['amd64']
     >>> admin_browser.getControl("Official Support").selected = True
     >>> admin_browser.getControl("PPA support available").selected = True
     >>> admin_browser.getControl("Continue").click()

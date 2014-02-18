@@ -4,8 +4,6 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # This script uses relative imports.
-# pylint: disable-msg=W0403
-
 """Script run by cronscripts/supermirror-pull.py to mirror single branches.
 
 Do NOT run this script yourself unless you really know what you are doing. Use
@@ -29,6 +27,7 @@ Where:
 
 
 import _pythonpath
+
 from optparse import OptionParser
 import os
 import resource
@@ -38,8 +37,11 @@ import bzrlib.repository
 
 from lp.code.enums import BranchType
 from lp.codehosting.puller.worker import (
-    install_worker_ui_factory, PullerWorker, PullerWorkerProtocol)
-from canonical.launchpad.webapp.errorlog import globalErrorUtility
+    install_worker_ui_factory,
+    PullerWorker,
+    PullerWorkerProtocol,
+    )
+from lp.services.webapp.errorlog import globalErrorUtility
 
 
 branch_type_map = {

@@ -21,4 +21,8 @@
     <adapter factory=".adapters.openid.OpenIDPersistentIdentity" />
     <adapter factory=".adapters.openid.person_to_openidpersistentidentity" />
 
+    <utility
+        provides=".interfaces.openidconsumer.IOpenIDConsumerStore"
+        factory=".model.openidconsumer.OpenIDConsumerStore" />
+
 </configure>

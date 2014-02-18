@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Helpers to work with tar files more easily."""
@@ -24,6 +24,7 @@ import time
 # If we get separate StringCol and UnicodeCol column types, we won't need this
 # any longer.
 # -- Dafydd Harries, 2005-04-07.
+
 
 class LaunchpadWriteTarFile:
     """Convenience wrapper around the tarfile module.
@@ -66,36 +67,46 @@ class LaunchpadWriteTarFile:
         self.tarfile.close()
         self.closed = True
 
-    def add_file(self, path, contents):
-        """Add a file to the archive."""
-        assert not self.closed, "Can't add a file to a closed archive"
+    def _make_skeleton_tarinfo(self, path, now):
+        """Make a basic TarInfo object to be fleshed out by the caller."""
+        tarinfo = tarfile.TarInfo(path)
+        tarinfo.mtime = now
+        tarinfo.uname = 'launchpad'
+        tarinfo.gname = 'launchpad'
+        return tarinfo
 
-        now = int(time.time())
+    def _ensure_directories(self, path, now):
+        """Ensure that all the directories in the path are present."""
         path_bits = path.split(os.path.sep)
 
-        # Ensure that all the directories in the path are present in the
-        # archive.
         for i in range(1, len(path_bits)):
             joined_path = os.path.join(*path_bits[:i])
 
             try:
                 self.tarfile.getmember(joined_path)
             except KeyError:
-                tarinfo = tarfile.TarInfo(joined_path)
+                tarinfo = self._make_skeleton_tarinfo(joined_path, now)
                 tarinfo.type = tarfile.DIRTYPE
-                tarinfo.mtime = now
                 tarinfo.mode = 0755
-                tarinfo.uname = 'launchpad'
-                tarinfo.gname = 'launchpad'
                 self.tarfile.addfile(tarinfo)
 
-        tarinfo = tarfile.TarInfo(path)
-        tarinfo.time = now
-        tarinfo.mtime = now
+    def add_directory(self, path):
+        """Add a directory to the archive."""
+        assert not self.closed, "Can't add a directory to a closed archive"
+
+        now = int(time.time())
+        self._ensure_directories(os.path.join(path, "."), now)
+
+    def add_file(self, path, contents):
+        """Add a file to the archive."""
+        assert not self.closed, "Can't add a file to a closed archive"
+
+        now = int(time.time())
+        self._ensure_directories(path, now)
+
+        tarinfo = self._make_skeleton_tarinfo(path, now)
         tarinfo.mode = 0644
         tarinfo.size = len(contents)
-        tarinfo.uname = 'launchpad'
-        tarinfo.gname = 'launchpad'
         self.tarfile.addfile(tarinfo, StringIO(contents))
 
     def add_files(self, files):
@@ -106,3 +117,15 @@ class LaunchpadWriteTarFile:
 
         for filename in sorted(files.keys()):
             self.add_file(filename, files[filename])
+
+    def add_symlink(self, path, target):
+        """Add a symbolic link to the archive."""
+        assert not self.closed, "Can't add a symlink to a closed archive"
+
+        now = int(time.time())
+        self._ensure_directories(path, now)
+
+        tarinfo = self._make_skeleton_tarinfo(path, now)
+        tarinfo.type = tarfile.SYMTYPE
+        tarinfo.linkname = target
+        self.tarfile.addfile(tarinfo)

@@ -17,23 +17,18 @@ from zope.component import (
     getUtility,
     )
 
-from canonical.config import config
-from canonical.database.sqlbase import block_implicit_flushes
-from canonical.launchpad.helpers import (
-    get_contact_email_addresses,
-    get_email_template,
-    )
-from canonical.launchpad.interfaces.launchpad import ILaunchpadRoot
-from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.launchpad.webapp.url import urlappend
+from lp.registry.enums import TeamMembershipPolicy
 from lp.registry.interfaces.mailinglist import IHeldMessageDetails
-from lp.registry.interfaces.person import (
-    IPersonSet,
-    TeamSubscriptionPolicy,
-    )
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,
     TeamMembershipStatus,
+    )
+from lp.services.config import config
+from lp.services.database.sqlbase import block_implicit_flushes
+from lp.services.mail.helpers import (
+    get_contact_email_addresses,
+    get_email_template,
     )
 from lp.services.mail.mailwrapper import MailWrapper
 from lp.services.mail.notificationrecipientset import NotificationRecipientSet
@@ -46,6 +41,9 @@ from lp.services.messages.interfaces.message import (
     IDirectEmailAuthorization,
     QuotaReachedError,
     )
+from lp.services.webapp.interfaces import ILaunchpadRoot
+from lp.services.webapp.publisher import canonical_url
+from lp.services.webapp.url import urlappend
 
 # Silence lint warnings.
 NotificationRecipientSet
@@ -65,7 +63,7 @@ def notify_invitation_to_join_team(event):
     to be sent to users as well, but for now we only use it for teams.
     """
     member = event.member
-    assert member.isTeam()
+    assert member.is_team
     team = event.team
     membership = getUtility(ITeamMembershipSet).getByPersonAndTeam(
         member, team)
@@ -131,7 +129,7 @@ def notify_team_join(event):
         member_addrs = get_contact_email_addresses(person)
 
         headers = {}
-        if person.isTeam():
+        if person.is_team:
             templatename = 'new-member-notification-for-teams.txt'
             subject = '%s joined %s' % (person.name, team.name)
             header_rational = "Indirect member (%s)" % team.name
@@ -180,7 +178,7 @@ def notify_team_join(event):
         return
 
     # Open teams do not notify admins about new members.
-    if team.subscriptionpolicy == TeamSubscriptionPolicy.OPEN:
+    if team.membership_policy == TeamMembershipPolicy.OPEN:
         return
 
     replacements = {
@@ -215,7 +213,7 @@ def notify_team_join(event):
     for address in admin_addrs:
         recipient = getUtility(IPersonSet).getByEmail(address)
         replacements['recipient_name'] = recipient.displayname
-        if recipient.isTeam():
+        if recipient.is_team:
             header_rationale = 'Admin (%s via %s)' % (
                 team.name, recipient.name)
             footer_rationale = (
@@ -398,15 +396,7 @@ def send_direct_contact_email(
         message['X-Launchpad-Message-Rationale'] = rational_header
         # Send the message.
         sendmail(message, bulk=False)
-    # BarryWarsaw 19-Nov-2008: If any messages were sent, record the fact that
-    # the sender contacted the team.  This is not perfect though because we're
-    # really recording the fact that the person contacted the last member of
-    # the team.  There's little we can do better though because the team has
-    # no contact address, and so there isn't actually an address to record as
-    # the team's recipient.  It currently doesn't matter though because we
-    # don't actually do anything with the recipient information yet.  All we
-    # care about is the sender, for quota purposes.  We definitely want to
-    # record the contact outside the above loop though, because if there are
-    # 10 members of the team with no contact address, one message should not
-    # consume the sender's entire quota.
-    authorization.record(message)
+    # Use the information from the last message sent to record the action
+    # taken. The record will be used to throttle user-to-user emails.
+    if message is not None:
+        authorization.record(message)

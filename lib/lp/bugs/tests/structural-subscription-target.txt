@@ -8,7 +8,7 @@ Let's subscribe ubuntu-team.
     >>> ubuntu_team = personset.getByName("ubuntu-team")
     >>> no_priv = personset.getByName("no-priv")
     >>> foobar = personset.getByName("name16")
-    >>> from canonical.launchpad.ftests import login
+    >>> from lp.testing import login
     >>> login("foo.bar@canonical.com")
     >>> target.addBugSubscription(ubuntu_team, foobar)
     <...StructuralSubscription ...>

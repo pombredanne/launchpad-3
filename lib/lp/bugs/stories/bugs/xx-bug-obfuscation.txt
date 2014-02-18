@@ -13,7 +13,7 @@ description in the bug page.
     ...     'http://bugs.launchpad.dev'
     ...     '/debian/sarge/+source/mozilla-firefox/+bug/3')
     >>> user_browser.title
-    'Bug #3 in mozilla-firefox (Debian Sarge): ...Bug Title Test...'
+    'Bug #3 ...'
 
     >>> description = find_tag_by_id(
     ...     user_browser.contents, 'edit-description')
@@ -26,7 +26,7 @@ An anonymous cannot see the email address anywhere in the page.
     ...     'http://bugs.launchpad.dev'
     ...     '/debian/sarge/+source/mozilla-firefox/+bug/3')
     >>> print anon_browser.title
-    Bug #3 in mozilla-firefox (Debian Sarge): ...
+    Bug #3 ...
 
     >>> 'user@domain.org' in anon_browser.contents
     False

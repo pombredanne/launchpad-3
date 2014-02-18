@@ -6,16 +6,16 @@ __metaclass__ = type
 from datetime import datetime
 
 import pytz
-from zope.app.form import CustomWidgetFactory
-from zope.app.form.browser.widget import (
-    ISimpleInputWidget,
-    SimpleInputWidget,
-    )
-from zope.app.form.interfaces import (
+from zope.formlib import form
+from zope.formlib.interfaces import (
     ConversionError,
+    ISimpleInputWidget,
     WidgetInputError,
     )
-from zope.formlib import form
+from zope.formlib.widget import (
+    CustomWidgetFactory,
+    SimpleInputWidget,
+    )
 from zope.interface import implements
 from zope.schema import (
     Choice,
@@ -26,12 +26,12 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from canonical.launchpad import _
-from canonical.launchpad.webapp.interfaces import IAlwaysSubmittedWidget
+from lp import _
 from lp.app.validators import LaunchpadValidationError
 from lp.app.widgets.date import DateTimeWidget
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
 from lp.registry.interfaces.announcement import IAnnouncement
+from lp.services.webapp.interfaces import IAlwaysSubmittedWidget
 
 
 class IAnnouncementDateWidget(ISimpleInputWidget):
@@ -90,7 +90,6 @@ class AnnouncementDateWidget(SimpleInputWidget):
             SimpleTerm(name, name, label) for name, label in action_names]
         return SimpleVocabulary(terms)
 
-    # pylint: disable-msg=W0706
     def getInputValue(self):
         self._error = None
         action = self.action_widget.getInputValue()

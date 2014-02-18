@@ -17,6 +17,7 @@ button:
   >>> print http(r"""
   ... POST /ubuntu/+source/mozilla-firefox/+bug/1/+editstatus HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Referer: https://launchpad.dev/
   ... Content-Type: multipart/form-data; boundary=---------------------------19759086281403130373932339922
   ... 
   ... -----------------------------19759086281403130373932339922
@@ -89,6 +90,7 @@ But, you can also assign the task to another person, of course:
   >>> print http(r"""
   ... POST /ubuntu/+source/mozilla-firefox/+bug/1/+editstatus HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Referer: https://launchpad.dev/
   ... Content-Length: 1999
   ... Content-Type: multipart/form-data; boundary=---------------------------19759086281403130373932339922
   ... 
@@ -162,6 +164,7 @@ Lastly, the widget also allows you to simply assign the task to nobody
   >>> print http(r"""
   ... POST /ubuntu/+source/mozilla-firefox/+bug/1/+editstatus HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Referer: https://launchpad.dev/
   ... Content-Length: 1999
   ... Content-Type: multipart/form-data; boundary=---------------------------19759086281403130373932339922
   ... 

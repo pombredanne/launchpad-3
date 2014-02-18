@@ -1,8 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213
-
 """Interfaces for things which have Questions."""
 
 __metaclass__ = type
@@ -12,15 +10,6 @@ __all__ = [
     'IQuestionTarget',
     'ISearchQuestionsForm',
     ]
-
-from zope.interface import Interface
-from zope.schema import (
-    Choice,
-    Int,
-    List,
-    Set,
-    TextLine,
-    )
 
 from lazr.restful.declarations import (
     call_with,
@@ -33,15 +22,23 @@ from lazr.restful.declarations import (
     REQUEST_USER,
     )
 from lazr.restful.fields import Reference
-
-from canonical.launchpad import _
-from lp.answers.interfaces.questioncollection import (
-    ISearchableByQuestionOwner,
+from zope.interface import Interface
+from zope.schema import (
+    Choice,
+    Int,
+    List,
+    Set,
+    TextLine,
     )
+
+from lp import _
 from lp.answers.enums import (
+    QUESTION_STATUS_DEFAULT_SEARCH,
     QuestionSort,
     QuestionStatus,
-    QUESTION_STATUS_DEFAULT_SEARCH,
+    )
+from lp.answers.interfaces.questioncollection import (
+    ISearchableByQuestionOwner,
     )
 from lp.registry.interfaces.person import IPerson
 from lp.services.fields import PublicPersonChoice
@@ -163,7 +160,7 @@ class IQuestionTargetView(Interface):
         :language: An ILanguage. If that parameter is omitted, the question
                  is assumed to be created in English.
         :datecreated:  A datetime object that will be used for the datecreated
-                attribute. Defaults to canonical.database.constants.UTC_NOW.
+                attribute. Defaults to lp.services.database.constants.UTC_NOW.
         """
 
     def createQuestionFromBug(bug):

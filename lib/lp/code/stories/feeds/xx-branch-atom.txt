@@ -5,7 +5,7 @@ using BeautifulStoneSoup instead of BeautifulSoup or the helper functions.
 
     >>> from BeautifulSoup import BeautifulStoneSoup as BSS
     >>> from BeautifulSoup import SoupStrainer
-    >>> from canonical.launchpad.ftests.feeds_helper import (
+    >>> from lp.services.feeds.tests.helper import (
     ...     parse_ids, parse_links, validate_feed)
 
 == Create some specific branches to use for this test ==
@@ -33,7 +33,7 @@ using BeautifulStoneSoup instead of BeautifulSoup or the helper functions.
     >>> make_branch(mike, product2, 'fourth')
     >>> make_branch(mary, product1, 'fifth')
     >>> make_branch(mary, product2, 'sixth')
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
     >>> logout()
 
@@ -99,17 +99,17 @@ still be hidden:
 
 If a branch is marked private it will not be displayed.  The Landscape
 developers team has two branches which are both private.
+
     >>> from zope.component import getUtility
     >>> from zope.security.proxy import removeSecurityProxy
     >>> from lp.code.model.branch import Branch
-    >>> from lp.code.interfaces.branchcollection import (
-    ...     IAllBranches)
+    >>> from lp.code.interfaces.branchcollection import IAllBranches
     >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> login(ANONYMOUS)
-    >>> person_set = getUtility(IPersonSet)
-    >>> landscape_team = person_set.getByName('landscape-developers')
-    >>> test_user = person_set.getByEmail('test@canonical.com')
-    >>> branches = getUtility(IAllBranches).relatedTo(landscape_team)
+    >>> test_user = getUtility(IPersonSet).getByEmail('test@canonical.com')
+    >>> landscape = getUtility(IProductSet)['landscape']
+    >>> branches = getUtility(IAllBranches).inProduct(landscape)
     >>> branches = branches.visibleByUser(
     ...     test_user).getBranches().order_by(Branch.id)
     >>> for branch in branches:

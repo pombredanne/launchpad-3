@@ -1,8 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0611,W0212
-
 """Database classes related to and including CodeImportEvent."""
 
 __metaclass__ = type
@@ -20,10 +18,6 @@ from sqlobject import (
     )
 from zope.interface import implements
 
-from canonical.database.constants import DEFAULT, UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase
 from lp.code.enums import (
     CodeImportEventDataType,
     CodeImportEventType,
@@ -36,6 +30,13 @@ from lp.code.interfaces.codeimportevent import (
     ICodeImportEventToken,
     )
 from lp.registry.interfaces.person import validate_public_person
+from lp.services.database.constants import (
+    DEFAULT,
+    UTC_NOW,
+    )
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.sqlbase import SQLBase
 
 
 class CodeImportEvent(SQLBase):
@@ -269,7 +270,6 @@ class CodeImportEventSet:
         if code_import.rcs_type in (RevisionControlSystems.SVN,
                                     RevisionControlSystems.BZR_SVN,
                                     RevisionControlSystems.GIT,
-                                    RevisionControlSystems.HG,
                                     RevisionControlSystems.BZR):
             yield 'URL', code_import.url
         elif code_import.rcs_type == RevisionControlSystems.CVS:

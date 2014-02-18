@@ -16,12 +16,12 @@
         This membership is going to expire in
         <span tal:replace="view/time_before_expiration/fmt:approximateduration"
           /> from now;
-        <tal:is-team condition="context/person/isTeam">
+        <tal:is-team condition="context/person/is_team">
           if you want this team to remain a member of
           <span tal:replace="structure context/team/fmt:link" />,
           you must renew it.
         </tal:is-team>
-        <tal:not-team condition="not: context/person/isTeam">
+        <tal:not-team condition="not: context/person/is_team">
           if you want to remain a member of
           <span tal:replace="structure context/team/fmt:link" />,
           you must renew it.

@@ -13,14 +13,14 @@ __all__ = [
 from lazr.restful.utils import smartquote
 from zope.component import getUtility
 
-from canonical.launchpad.webapp import (
-    LaunchpadView,
-    Navigation,
-    )
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifferenceSource,
+    )
+from lp.services.webapp import (
+    LaunchpadView,
+    Navigation,
     )
 
 

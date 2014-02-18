@@ -3,16 +3,15 @@
 # Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=W0403
 import _pythonpath
 
 import time
 
-from canonical.config import config
-from lp.services.scripts.base import LaunchpadCronScript
 from lp.bugs.scripts.bzremotecomponentfinder import (
     BugzillaRemoteComponentFinder,
     )
+from lp.services.config import config
+from lp.services.scripts.base import LaunchpadCronScript
 
 
 class UpdateRemoteComponentsFromBugzilla(LaunchpadCronScript):

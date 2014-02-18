@@ -1,8 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=W0702,W0231
-
 """Transport utilities for the codehosting system.
 
 The code hosting filesystem is implemented using Bazaar transports. This
@@ -135,7 +133,7 @@ class AsyncVirtualTransport(Transport):
             method = getattr(transport, method_name)
             try:
                 return method(path, *args, **kwargs)
-            except BaseException, e:
+            except BaseException as e:
                 # It's much cheaper to explicitly construct a Failure than to
                 # let Deferred build automatically, because the automatic one
                 # will capture the traceback and perform an expensive
@@ -264,6 +262,12 @@ class SynchronousAdapter(Transport):
     def _abspath(self, relpath):
         return self._async_transport._abspath(relpath)
 
+    def get_segment_parameters(self):
+        return self._async_transport.get_segment_parameters()
+
+    def set_segment_parameter(self, name, value):
+        return self._async_transport.set_segment_parameter(name, value)
+
     def clone(self, offset=None):
         """See `bzrlib.transport.Transport`."""
         cloned_async = self._async_transport.clone(offset)
@@ -385,7 +389,6 @@ class AsyncVirtualServer(Server):
         """
         # bzrlib's Server class does not have a constructor, so we cannot
         # safely upcall it.
-        # pylint: disable-msg=W0231
         self._scheme = scheme
         self._is_started = False
 

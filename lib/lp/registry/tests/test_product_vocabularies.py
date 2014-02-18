@@ -5,12 +5,19 @@
 
 __metaclass__ = type
 
-from canonical.testing.layers import DatabaseFunctionalLayer
+from zope.component import getUtility
+
+from lp.app.enums import InformationType
+from lp.app.interfaces.services import IService
+from lp.registry.enums import SharingPermission
 from lp.registry.vocabularies import ProductVocabulary
 from lp.testing import (
+    ANONYMOUS,
     celebrity_logged_in,
+    person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestProductVocabulary(TestCaseWithFactory):
@@ -66,6 +73,16 @@ class TestProductVocabulary(TestCaseWithFactory):
         self.assertEqual(
             [quux_product, bar_product], list(result))
 
+    def test_search_with_or_expression(self):
+        # Searches for either of two or more names are possible.
+        blah_product = self.factory.makeProduct(
+            name='blah', displayname='Blah', summary='Blah blather')
+        baz_product = self.factory.makeProduct(
+            name='baz', displayname='Baz')
+        result = self.vocabulary.search('blah OR baz')
+        self.assertEqual(
+            [blah_product, baz_product], list(result))
+
     def test_exact_match_is_first(self):
         # When the flag is enabled, an exact name match always wins.
         the_quux_product = self.factory.makeProduct(
@@ -82,3 +99,43 @@ class TestProductVocabulary(TestCaseWithFactory):
             self.product.active = False
         result = self.vocabulary.search('bedbugs')
         self.assertEqual([], list(result))
+
+    def test_private_products(self):
+        # Embargoed and proprietary products are only returned if
+        # the current user can see them.
+        public_product = self.factory.makeProduct('quux-public')
+        embargoed_owner = self.factory.makePerson()
+        embargoed_product = self.factory.makeProduct(
+            name='quux-embargoed', owner=embargoed_owner,
+            information_type=InformationType.EMBARGOED)
+        proprietary_owner = self.factory.makePerson()
+        proprietary_product = self.factory.makeProduct(
+            name='quux-proprietary', owner=proprietary_owner,
+            information_type=InformationType.PROPRIETARY)
+
+        # Anonymous users see only the public product.
+        with person_logged_in(ANONYMOUS):
+            result = self.vocabulary.search('quux')
+            self.assertEqual([public_product], list(result))
+
+        # Ordinary logged in users see only the public product.
+        user = self.factory.makePerson()
+        with person_logged_in(user):
+            result = self.vocabulary.search('quux')
+            self.assertEqual([public_product], list(result))
+
+        # People with grants on a private product can see this product.
+        with person_logged_in(embargoed_owner):
+            getUtility(IService, 'sharing').sharePillarInformation(
+                embargoed_product, user, embargoed_owner,
+                {InformationType.EMBARGOED: SharingPermission.ALL})
+        with person_logged_in(user):
+            result = self.vocabulary.search('quux')
+            self.assertEqual([embargoed_product, public_product], list(result))
+
+        # Admins can see all products.
+        with celebrity_logged_in('admin'):
+            result = self.vocabulary.search('quux')
+            self.assertEqual(
+                [embargoed_product, proprietary_product, public_product],
+                list(result))

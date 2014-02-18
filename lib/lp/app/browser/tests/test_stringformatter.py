@@ -13,19 +13,22 @@ from testtools.matchers import (
     Equals,
     Matcher,
     )
-
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.launchpad.testing.pages import find_tags_by_class
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.browser.stringformatter import (
     FormattersAPI,
     linkify_bug_numbers,
     )
-from lp.testing import TestCase
+from lp.services.config import config
 from lp.services.features.testing import FeatureFixture
+from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.publisher import canonical_url
+from lp.testing import (
+    TestCase,
+    TestCaseWithFactory,
+    )
+from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.pages import find_tags_by_class
 
 
 def test_split_paragraphs():
@@ -74,18 +77,18 @@ def test_add_word_breaks():
       >>> from lp.app.browser.stringformatter import add_word_breaks
 
       >>> print add_word_breaks('abcdefghijklmnop')
-      abcdefghijklmno<wbr></wbr>p
+      abcdefghijklmno<wbr />p
 
       >>> print add_word_breaks('abcdef/ghijklmnop')
-      abcdef/<wbr></wbr>ghijklmnop
+      abcdef/<wbr />ghijklmnop
 
       >>> print add_word_breaks('ab/cdefghijklmnop')
-      ab/cdefghijklmn<wbr></wbr>op
+      ab/cdefghijklmn<wbr />op
 
     The string can contain HTML entities, which do not get split:
 
       >>> print add_word_breaks('abcdef&anentity;hijklmnop')
-      abcdef&anentity;<wbr></wbr>hijklmnop
+      abcdef&anentity;<wbr />hijklmnop
     """
 
 
@@ -101,13 +104,13 @@ def test_break_long_words():
       1234567890123456
 
       >>> print break_long_words('12345678901234567890')
-      123456789012345<wbr></wbr>67890
+      123456789012345<wbr />67890
 
       >>> print break_long_words('<tag a12345678901234567890="foo"></tag>')
       <tag a12345678901234567890="foo"></tag>
 
       >>> print break_long_words('12345678901234567890 1234567890.1234567890')
-      123456789012345<wbr></wbr>67890 1234567890.<wbr></wbr>1234567890
+      123456789012345<wbr />67890 1234567890.<wbr />1234567890
 
       >>> print break_long_words('1234567890&abcdefghi;123')
       1234567890&abcdefghi;123
@@ -161,7 +164,9 @@ class TestLinkifyingBugs(TestCase):
             linkify_bug_numbers(text))
 
 
-class TestLinkifyingProtocols(TestCase):
+class TestLinkifyingProtocols(TestCaseWithFactory):
+    
+    layer = DatabaseFunctionalLayer
 
     def test_normal_set(self):
         test_strings = [
@@ -173,13 +178,13 @@ class TestLinkifyingProtocols(TestCase):
 
         expected_strings = [
             ('<p><a rel="nofollow" href="http://example.com">'
-             'http://<wbr></wbr>example.<wbr></wbr>com</a></p>'),
+             'http://<wbr />example.<wbr />com</a></p>'),
             ('<p><a rel="nofollow" href="http://example.com/">'
-             'http://<wbr></wbr>example.<wbr></wbr>com/</a></p>'),
+             'http://<wbr />example.<wbr />com/</a></p>'),
             ('<p><a rel="nofollow" href="http://example.com/path">'
-             'http://<wbr></wbr>example.<wbr></wbr>com/path</a></p>'),
+             'http://<wbr />example.<wbr />com/path</a></p>'),
             ('<p><a rel="nofollow" href="http://example.com/path/">'
-             'http://<wbr></wbr>example.<wbr></wbr>com/path/</a></p>'),
+             'http://<wbr />example.<wbr />com/path/</a></p>'),
             ]
 
         self.assertEqual(
@@ -197,23 +202,23 @@ class TestLinkifyingProtocols(TestCase):
 
         expected_html = [
             ('<p>(<a rel="nofollow" href="http://example.com">'
-             'http://<wbr></wbr>example.<wbr></wbr>com</a>)</p>'),
+             'http://<wbr />example.<wbr />com</a>)</p>'),
             ('<p><a rel="nofollow" '
              'href="http://example.com/path_(with_parens)">'
-             'http://<wbr></wbr>example.<wbr></wbr>com/path_'
-             '<wbr></wbr>(with_parens)</a></p>'),
+             'http://<wbr />example.<wbr />com/path_'
+             '<wbr />(with_parens)</a></p>'),
             ('<p>(<a rel="nofollow" '
              'href="http://example.com/path_(with_parens)">'
-             'http://<wbr></wbr>example.<wbr></wbr>com/path_'
-             '<wbr></wbr>(with_parens)</a>)</p>'),
+             'http://<wbr />example.<wbr />com/path_'
+             '<wbr />(with_parens)</a>)</p>'),
             ('<p>(<a rel="nofollow" '
              'href="http://example.com/path_(with_parens)and_stuff">'
-             'http://<wbr></wbr>example.<wbr></wbr>com'
-             '/path_<wbr></wbr>(with_parens)<wbr></wbr>and_stuff</a>)</p>'),
+             'http://<wbr />example.<wbr />com'
+             '/path_<wbr />(with_parens)<wbr />and_stuff</a>)</p>'),
             ('<p><a rel="nofollow" '
              'href="http://example.com/path_(with_parens">'
-             'http://<wbr></wbr>example.<wbr></wbr>com'
-             '/path_<wbr></wbr>(with_parens</a></p>'),
+             'http://<wbr />example.<wbr />com'
+             '/path_<wbr />(with_parens</a></p>'),
             ]
 
         self.assertEqual(
@@ -223,12 +228,12 @@ class TestLinkifyingProtocols(TestCase):
     def test_protocol_alone_does_not_link(self):
         test_string = "This doesn't link: apt:"
         html = FormattersAPI(test_string).text_to_html()
-        expected_html = "<p>This doesn't link: apt:</p>"
+        expected_html = "<p>This doesn&#x27;t link: apt:</p>"
         self.assertEqual(expected_html, html)
 
         test_string = "This doesn't link: http://"
         html = FormattersAPI(test_string).text_to_html()
-        expected_html = "<p>This doesn't link: http://</p>"
+        expected_html = "<p>This doesn&#x27;t link: http://</p>"
         self.assertEqual(expected_html, html)
 
     def test_apt_is_linked(self):
@@ -237,7 +242,7 @@ class TestLinkifyingProtocols(TestCase):
         expected_html = (
             '<p>This becomes a link: '
             '<a rel="nofollow" '
-                'href="apt:some-package">apt:some-<wbr></wbr>package</a></p>')
+                'href="apt:some-package">apt:some-<wbr />package</a></p>')
         self.assertEqual(expected_html, html)
 
         # Do it again for apt://
@@ -246,40 +251,42 @@ class TestLinkifyingProtocols(TestCase):
         expected_html = (
             '<p>This becomes a link: '
             '<a rel="nofollow" '
-            'href="apt://some-package">apt://some-<wbr></wbr>package</a></p>')
+            'href="apt://some-package">apt://some-<wbr />package</a></p>')
         self.assertEqual(expected_html, html)
 
     def test_file_is_not_linked(self):
         test_string = "This doesn't become a link: file://some/file.txt"
         html = FormattersAPI(test_string).text_to_html()
         expected_html = (
-            "<p>This doesn't become a link: "
-            "file://<wbr></wbr>some/file.<wbr></wbr>txt</p>")
-        self.assertEqual(expected_html, html)
-
-    def test_data_is_linked(self):
-        test_string = "This becomes a link: data:text/plain,test"
-        html = FormattersAPI(test_string).text_to_html()
-        expected_html = (
-            "<p>This becomes a link: "
-            '<a rel="nofollow" '
-            'href="data:text/plain,test">'
-            'data:text/<wbr></wbr>plain,test</a></p>')
+            "<p>This doesn&#x27;t become a link: "
+            "file://<wbr />some/file.<wbr />txt</p>")
         self.assertEqual(expected_html, html)
 
     def test_no_link_with_linkify_text_false(self):
         test_string = "This doesn't become a link: http://www.example.com/"
         html = FormattersAPI(test_string).text_to_html(linkify_text=False)
         expected_html = (
-            "<p>This doesn't become a link: http://www.example.com/</p>")
+            "<p>This doesn&#x27;t become a link: http://www.example.com/</p>")
         self.assertEqual(expected_html, html)
 
     def test_no_link_html_code_with_linkify_text_false(self):
         test_string = '<a href="http://example.com/">http://example.com/</a>'
         html = FormattersAPI(test_string).text_to_html(linkify_text=False)
         expected_html = (
-            '<p>&lt;a href="http://example.com/"&gt;'
+            '<p>&lt;a href=&quot;http://example.com/&quot;&gt;'
             'http://example.com/&lt;/a&gt;</p>')
+        self.assertEqual(expected_html, html)
+
+    def test_double_email_in_linkify_email(self):
+        person = self.factory.makePerson(email='foo@example.org')
+        test_string = (
+            ' * Foo. &lt;foo@example.org&gt;\n * Bar &lt;foo@example.org&gt;')
+        html = FormattersAPI(test_string).linkify_email()
+        url = canonical_url(person)
+        expected_html = (
+            ' * Foo. &lt;<a href="%s" class="sprite person">foo@example.org'
+            '</a>&gt;\n * Bar &lt;<a href="%s" class="sprite person">'
+            'foo@example.org</a>&gt;' % (url, url))
         self.assertEqual(expected_html, html)
 
 
@@ -303,15 +310,16 @@ class TestDiffFormatter(TestCase):
     def test_almostEmptyString(self):
         # White space doesn't count as empty, and is formtted.
         self.assertEqual(
-            '<table class="diff"><tr><td class="line-no">1</td>'
-            '<td class="text"> </td></tr></table>',
+            '<table class="diff"><tr id="diff-line-1">'
+            '<td class="line-no">1</td><td class="text"> </td></tr></table>',
             FormattersAPI(' ').format_diff())
 
     def test_format_unicode(self):
         # Sometimes the strings contain unicode, those should work too.
         self.assertEqual(
-            u'<table class="diff"><tr><td class="line-no">1</td>'
-            u'<td class="text">Unicode \u1010</td></tr></table>',
+            u'<table class="diff"><tr id="diff-line-1">'
+            u'<td class="line-no">1</td><td class="text">'
+            u'Unicode \u1010</td></tr></table>',
             FormattersAPI(u'Unicode \u1010').format_diff())
 
     def test_cssClasses(self):
@@ -374,6 +382,11 @@ class TestOOPSFormatter(TestCase):
 
     layer = DatabaseFunctionalLayer
 
+    def _setDeveloper(self, value):
+        """Override ILaunchBag.developer for testing purposes."""
+        launch_bag = getUtility(ILaunchBag)
+        launch_bag.setDeveloper(value)
+
     def test_doesnt_linkify_for_non_developers(self):
         # OOPS IDs won't be linkified for non-developers.
         oops_id = 'OOPS-12345TEST'
@@ -385,17 +398,11 @@ class TestOOPSFormatter(TestCase):
             "Formatted string should be '%s', was '%s'" % (
                 oops_id, formatted_string))
 
-    def _setDeveloper(self):
-        """Override ILaunchBag.developer for testing purposes."""
-        launch_bag = getUtility(ILaunchBag)
-        launch_bag.setDeveloper(True)
-
     def test_linkifies_for_developers(self):
         # OOPS IDs will be linkified for Launchpad developers.
         oops_id = 'OOPS-12345TEST'
         formatter = FormattersAPI(oops_id)
-
-        self._setDeveloper()
+        self._setDeveloper(True)
         formatted_string = formatter.oops_id()
 
         expected_string = '<a href="%s">%s</a>' % (
@@ -436,7 +443,8 @@ class TestMarkdownDisabled(TestCase):
 class TestMarkdown(TestCase):
     """Test for Markdown integration within Launchpad.
 
-    Not an exhaustive test, more of a check for our integration and configuration.
+    Not an exhaustive test, more of a check for our integration and
+    configuration.
     """
 
     layer = DatabaseFunctionalLayer  # Fixtures need the database for now

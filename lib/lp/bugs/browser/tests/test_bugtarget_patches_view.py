@@ -4,18 +4,17 @@
 __metaclass__ = type
 
 
-import unittest
-
-from canonical.launchpad.ftests import login
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.bugs.browser.bugtarget import BugsPatchesView
 from lp.bugs.browser.bugtask import (
     BugListingPortletStatsView,
     DISPLAY_BUG_STATUS_FOR_PATCHES,
     )
-from lp.bugs.interfaces.bugtask import BugTaskStatus
-from lp.testing import TestCaseWithFactory
+from lp.services.webapp.servers import LaunchpadTestRequest
+from lp.testing import (
+    login,
+    TestCaseWithFactory,
+    )
+from lp.testing.layers import LaunchpadFunctionalLayer
 
 
 class TestBugTargetPatchCountBase(TestCaseWithFactory):
@@ -29,7 +28,7 @@ class TestBugTargetPatchCountBase(TestCaseWithFactory):
 
     def makeBugWithPatch(self, status):
         bug = self.factory.makeBug(
-            product=self.product, owner=self.product.owner)
+            target=self.product, owner=self.product.owner)
         self.factory.makeBugAttachment(bug=bug, is_patch=True)
         bug.default_bugtask.transitionToStatus(status, user=bug.owner)
 

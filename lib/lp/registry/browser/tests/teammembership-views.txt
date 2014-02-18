@@ -9,7 +9,7 @@ Breadcrumbs
 Team membership breadcrumbs uses the member's displayname to create
 "<displayname>'s membership".
 
-    >>> from canonical.lazr.testing.menus import make_fake_request
+    >>> from lp.testing.menu import make_fake_request
     >>> from lp.registry.interfaces.teammembership import ITeamMembershipSet
 
     >>> team_owner = factory.makePerson(name='team-owner')
@@ -61,10 +61,10 @@ is applied during the stepto traversal--it is not a named view in ZCML.
 
     >>> from lp.registry.browser.team import TeamInvitationView
 
-    >>> login_person(team_owner)
+    >>> ignored = login_person(team_owner)
     >>> ignored = super_team.addMember(team, team_owner)
     >>> membership = membership_set.getByPersonAndTeam(team, super_team)
-    >>> login_person(team.teamowner)
+    >>> ignored = login_person(team.teamowner)
     >>> view = TeamInvitationView(membership, request)
     >>> print view.label
     Make Bassists a member of Us

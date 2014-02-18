@@ -6,14 +6,16 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from canonical.launchpad.ftests import login_person
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.packaging import (
     IPackagingUtil,
     PackagingType,
     )
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    login_person,
+    TestCaseWithFactory,
+    )
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.views import create_initialized_view
 
 
@@ -29,7 +31,7 @@ class TestProductBugTaskCreationStep(TestCaseWithFactory):
         self.sourcepackage = self.factory.makeSourcePackage(
             sourcepackagename=self.sourcepackagename,
             distroseries=self.ubuntu_series)
-        self.distrosourcepackage = self.factory.makeDistributionSourcePackage(
+        self.dsp = self.factory.makeDistributionSourcePackage(
             sourcepackagename=self.sourcepackagename, distribution=ubuntu)
         self.factory.makeSourcePackagePublishingHistory(
             sourcepackagename=self.sourcepackagename,
@@ -39,7 +41,7 @@ class TestProductBugTaskCreationStep(TestCaseWithFactory):
         self.user = self.factory.makePerson()
         login_person(self.user)
         self.bug_task = self.factory.makeBugTask(
-            target=self.distrosourcepackage, owner=self.user)
+            target=self.dsp, owner=self.user)
         self.bug = self.bug_task.bug
 
     def test_choose_product_when_packaging_does_not_exist(self):
@@ -158,3 +160,22 @@ class TestProductBugTaskCreationStep(TestCaseWithFactory):
             self.sourcepackagename, self.ubuntu_series,
             product.development_focus)
         self.assertTrue(has_packaging)
+
+    def test_register_project_create_upstream_bugtask_no_series(self):
+        # Adding a task that affects a product where the distribution has
+        # no series does not error.
+        dsp = self.factory.makeDistributionSourcePackage(
+            sourcepackagename=self.sourcepackagename)
+        self.bug_task = self.factory.makeBugTask(
+            target=dsp, owner=self.user)
+        form = {
+            'field.bug_url': 'http://bugs.foo.org/bugs/show_bug.cgi?id=8',
+            'field.name': 'fruit',
+            'field.displayname': 'Fruit',
+            'field.summary': 'The Fruit summary',
+            'field.add_packaging': 'on',
+            'field.actions.continue': 'Continue',
+            }
+        view = create_initialized_view(
+            self.bug_task, '+affects-new-product', form=form)
+        self.assertEqual([], view.errors)
