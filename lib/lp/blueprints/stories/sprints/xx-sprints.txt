@@ -255,7 +255,7 @@ We should be able to see the workload of a sprint:
 
   >>> anon_browser.open('http://launchpad.dev/sprints/ubz/+assignments')
   >>> print anon_browser.title
-  Assignments : Ubuntu Below Zero : Meetings
+  Assignments : Blueprints : Ubuntu Below Zero : Meetings
 
 We should be able to see the spec assignment table of a sprint:
 
