@@ -225,37 +225,37 @@
         name="translations"
         provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.distribution.IDistribution"
-        factory="lp.translations.browser.translations.TranslationsVHostBreadcrumb"
+        factory="lp.translations.browser.translations.TranslationsFacetBreadcrumb"
         permission="zope.Public"/>
     <adapter
         name="translations"
         provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.distroseries.IDistroSeries"
-        factory="lp.translations.browser.translations.TranslationsVHostBreadcrumb"
+        factory="lp.translations.browser.translations.TranslationsFacetBreadcrumb"
         permission="zope.Public"/>
     <adapter
         name="translations"
         provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.product.IProduct"
-        factory="lp.translations.browser.translations.TranslationsVHostBreadcrumb"
+        factory="lp.translations.browser.translations.TranslationsFacetBreadcrumb"
         permission="zope.Public"/>
     <adapter
         name="translations"
         provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.productseries.IProductSeries"
-        factory="lp.translations.browser.translations.TranslationsVHostBreadcrumb"
+        factory="lp.translations.browser.translations.TranslationsFacetBreadcrumb"
         permission="zope.Public"/>
     <adapter
         name="translations"
         provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.projectgroup.IProjectGroup"
-        factory="lp.translations.browser.translations.TranslationsVHostBreadcrumb"
+        factory="lp.translations.browser.translations.TranslationsFacetBreadcrumb"
         permission="zope.Public"/>
     <adapter
         name="translations"
         provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.person.IPerson"
-        factory="lp.translations.browser.translations.TranslationsVHostBreadcrumb"
+        factory="lp.translations.browser.translations.TranslationsFacetBreadcrumb"
         permission="zope.Public"/>
 
     <!-- Subscribers to registry objects -->

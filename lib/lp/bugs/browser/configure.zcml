@@ -269,7 +269,7 @@
         name="bugs"
         provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.person.IPerson"
-        factory="lp.bugs.browser.bugtarget.BugsVHostBreadcrumb"
+        factory="lp.bugs.browser.bugtarget.BugsFacetBreadcrumb"
         permission="zope.Public"/>
     <browser:page
         for="lp.registry.interfaces.person.IPerson"
