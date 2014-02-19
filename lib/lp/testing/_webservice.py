@@ -1,8 +1,6 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# We like global statements!
-# pylint: disable-msg=W0602,W0603
 __metaclass__ = type
 
 __all__ = [
@@ -22,17 +20,17 @@ from launchpadlib.credentials import (
     )
 from launchpadlib.launchpad import Launchpad
 import transaction
-from zope.app.publication.interfaces import IEndRequestEvent
 from zope.app.testing import ztapi
 from zope.component import getUtility
+from zope.publisher.interfaces import IEndRequestEvent
 import zope.testing.cleanup
 
-from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
-from canonical.launchpad.webapp.adapter import get_request_statements
-from canonical.launchpad.webapp.interaction import ANONYMOUS
-from canonical.launchpad.webapp.interfaces import OAuthPermission
-from canonical.launchpad.webapp.publisher import canonical_url
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.oauth.interfaces import IOAuthConsumerSet
+from lp.services.webapp.adapter import get_request_statements
+from lp.services.webapp.interaction import ANONYMOUS
+from lp.services.webapp.interfaces import OAuthPermission
+from lp.services.webapp.publisher import canonical_url
 from lp.testing._login import (
     login,
     logout,
@@ -70,7 +68,7 @@ def oauth_access_token_for(consumer_name, person, permission, context=None):
     if isinstance(context, basestring):
         # Turn an OAuth context string into the corresponding object.
         # Avoid an import loop by importing from launchpad.browser here.
-        from canonical.launchpad.browser.oauth import lookup_oauth_context
+        from lp.services.oauth.browser import lookup_oauth_context
         context = lookup_oauth_context(context)
     if isinstance(permission, basestring):
         # Look up a permission by its token string.
@@ -171,7 +169,7 @@ class QueryCollector:
 
     :ivar count: The count of db queries the last web request made.
     :ivar queries: The list of queries made. See
-        canonical.launchpad.webapp.adapter.get_request_statements for more
+        lp.services.webapp.adapter.get_request_statements for more
         information.
     """
 
@@ -190,6 +188,10 @@ class QueryCollector:
         ztapi.subscribe((IEndRequestEvent, ), None, self)
         self._active = True
 
+    def __enter__(self):
+        self.register()
+        return self
+
     def __call__(self, event):
         if self._active:
             self.queries = get_request_statements()
@@ -197,3 +199,6 @@ class QueryCollector:
 
     def unregister(self):
         self._active = False
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.unregister()

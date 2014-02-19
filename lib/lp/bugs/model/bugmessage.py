@@ -1,8 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0611,W0212
-
 __metaclass__ = type
 __all__ = ['BugMessage', 'BugMessageSet']
 
@@ -16,7 +14,12 @@ from sqlobject import (
 from storm.store import Store
 from zope.interface import implements
 
-from canonical.database.sqlbase import (
+from lp.bugs.interfaces.bugmessage import (
+    IBugMessage,
+    IBugMessageSet,
+    )
+from lp.registry.interfaces.person import validate_public_person
+from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
@@ -24,11 +27,6 @@ from lp.services.messages.model.message import (
     Message,
     MessageChunk,
     )
-from lp.bugs.interfaces.bugmessage import (
-    IBugMessage,
-    IBugMessageSet,
-    )
-from lp.registry.interfaces.person import validate_public_person
 
 
 class BugMessage(SQLBase):
@@ -64,12 +62,12 @@ class BugMessage(SQLBase):
 
 
 class BugMessageSet:
-    """See canonical.launchpad.interfaces.IBugMessageSet."""
+    """See `IBugMessageSet`."""
 
     implements(IBugMessageSet)
 
     def createMessage(self, subject, bug, owner, content=None):
-        """See canonical.launchpad.interfaces.IBugMessageSet."""
+        """See `IBugMessageSet`."""
         msg = Message(
             parent=bug.initial_message, owner=owner,
             rfc822msgid=make_msgid('malone'), subject=subject)
@@ -84,11 +82,11 @@ class BugMessageSet:
         return bugmsg
 
     def get(self, bugmessageid):
-        """See canonical.launchpad.interfaces.IBugMessageSet."""
+        """See `IBugMessageSet`."""
         return BugMessage.get(bugmessageid)
 
     def getByBugAndMessage(self, bug, message):
-        """See canonical.launchpad.interfaces.IBugMessageSet."""
+        """See`IBugMessageSet`."""
         return BugMessage.selectOneBy(bug=bug, message=message)
 
     def getImportedBugMessages(self, bug):

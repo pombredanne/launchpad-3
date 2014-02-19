@@ -3,12 +3,12 @@
 
 __metaclass__ = type
 
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.blueprints.browser.specification import (
     SpecificationActionMenu,
     SpecificationContextMenu,
     )
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.menu import check_menu_links
 
 

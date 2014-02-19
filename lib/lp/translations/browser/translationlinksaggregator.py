@@ -7,7 +7,7 @@ __all__ = [
     'TranslationLinksAggregator',
     ]
 
-from canonical.launchpad.webapp import canonical_url
+from lp.services.webapp import canonical_url
 from lp.translations.interfaces.pofile import IPOFile
 from lp.translations.model.productserieslanguage import ProductSeriesLanguage
 

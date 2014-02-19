@@ -3,7 +3,7 @@ specifically Hoary.
 
     >>> browser.open('http://localhost/ubuntu/hoary/+bugs')
     >>> print browser.title
-    Bugs : Hoary : Hoary (5.04) : Ubuntu 
+    Bugs : Hoary : Bugs : Hoary (5.04) : Ubuntu 
 
 This page checks that we can see a list of bugs on the distributions, in
 this case Ubuntu.
@@ -19,12 +19,9 @@ comment to a bug.
 In this case, let's add a simple comment to bug #2 as user Foo
 Bar. First, let's clear out the notification table:
 
-  >>> from zope.component import getUtility
   >>> from lp.bugs.model.bugnotification import BugNotification
-  >>> from canonical.launchpad.webapp.interfaces import (
-  ...     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-
-  >>> store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+  >>> from lp.services.database.interfaces import IStore
+  >>> store = IStore(BugNotification)
   >>> store.execute("DELETE FROM BugNotification", noresult=True)
 
   >>> user_browser.open(

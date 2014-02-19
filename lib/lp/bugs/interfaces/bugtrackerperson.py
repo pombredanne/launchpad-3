@@ -1,8 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213
-
 """BugTrackerPerson interface."""
 
 __metaclass__ = type
@@ -17,9 +15,9 @@ from zope.schema import (
     Text,
     )
 
-from canonical.launchpad import _
-from canonical.launchpad.interfaces.launchpad import IHasBug
+from lp import _
 from lp.bugs.interfaces.bugtracker import IBugTracker
+from lp.bugs.interfaces.hasbug import IHasBug
 from lp.registry.interfaces.person import IPerson
 
 

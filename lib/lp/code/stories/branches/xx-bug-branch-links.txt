@@ -57,14 +57,15 @@ requires the user to enter a bug number.
     >>> browser.getControl('Continue').click()
     >>> printBugBranchLinks(browser)
     Bug #4: Reflow problems with complex page layouts
+    Medium
+    New
 
 Attempting to link to the same bug again gives no error.
 
     >>> browser.getLink('Link a bug report').click()
     >>> browser.getControl('Bug #').value = "4"
     >>> browser.getControl('Continue').click()
-    >>> for message in get_feedback_messages(browser.contents):
-    ...     print message
+    >>> print_feedback_messages(browser.contents)
 
 The bug-branch link is also shown on the bug page.
 
@@ -81,12 +82,11 @@ If the bug is private, then the bug branch link isn't shows on the
 branch page for people that are not able to see it.  Get an admin
 to mark the bug private.
 
-    >>> admin_browser.open('http://launchpad.dev/bugs/4')
-    >>> admin_browser.getLink('This report is public').click()
-    >>> admin_browser.getControl('This bug report should be private').click()
+    >>> admin_browser.open('http://launchpad.dev/firefox/+bug/4/+secrecy')
+    >>> admin_browser.getControl('Private', index=1).click()
     >>> admin_browser.getControl('Change').click()
     >>> print extract_text(find_tag_by_id(admin_browser.contents, 'privacy'))
-    This report is private
+    This report contains Private information...
 
 Sample person can see it...
 
@@ -94,6 +94,8 @@ Sample person can see it...
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/klingon')
     >>> printBugBranchLinks(browser)
     Bug #4: Reflow problems with complex page layouts
+    Medium
+    New
 
 ... but an anonymous user cannot.
 
@@ -133,6 +135,7 @@ links to a page restricted with the launchpad.AnyPerson permission.
     >>> browser.getLink('~name12/gnome-terminal/scanned').click()
     >>> printBugBranchLinks(browser)
     Bug #11: Make Jokosher use autoaudiosink
+    Undecided New
 
 
 Quick branch registration

@@ -8,6 +8,8 @@
   >
 <body>
   <tal:heading metal:fill-slot="heading">
+    <meta itemprop="name"
+      tal:attributes="content context/displayname" />
     <h1 tal:condition="context/enabled"
         tal:replace="structure view/displayname_edit_widget">
       PPA for user
@@ -146,7 +148,7 @@
             >Celso Providelo</a>.</p>
 
         <script type="text/javascript">
-          LPS.use('lp.app.widgets.expander', function(Y) {
+          LPJS.use('lp.app.widgets.expander', function(Y) {
               var widget_header = Y.one('#ppa-install .widget-header');
               var content = Y.one('.widget-body');
               var expander = new Y.lp.app.widgets.expander.Expander(
@@ -207,15 +209,15 @@
             tal:content="structure view/menu:overview/packages/fmt:link">
         View package details</span>
       <h2>Overview of published packages</h2>
-        <form class="package-search-filter" action="" method="GET"
-              style="display:inline;font-size:90%">
-          <label for="field.series_filter">Published in:</label>
-          <tal:series_filter
-            replace="structure view/plain_series_filter_widget" />
-          <input type="submit" value="Filter" />
-        </form>
 
-      <div style="padding-top: 1em;" tal:define="batch view/batched_sources">
+      <form class="package-search-filter" action="" method="GET">
+        <label for="field.series_filter">Published in:</label>
+        <tal:series_filter
+          replace="structure view/plain_series_filter_widget" />
+        <input type="submit" value="Filter" />
+      </form>
+
+      <div tal:define="batch view/batched_sources">
 
         <tal:navigation_top
           replace="structure view/batchnav/@@+navigation-links-upper" />

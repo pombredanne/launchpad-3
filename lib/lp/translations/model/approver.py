@@ -141,6 +141,9 @@ class TranslationBranchApprover(object):
                 return entry
             # No (possibly) matching entry found: create one.
             name = make_name(domain)
+            if not self._potemplateset.isNameUnique(name):
+                # The name probably matches an inactive template.
+                return entry
             potemplate = self._potemplateset.new(
                 name, domain, entry.path, entry.importer)
             self._potemplates[entry.path] = potemplate
@@ -206,6 +209,9 @@ class TranslationBuildApprover(object):
             else:
                 domain = self._potemplateset.sourcepackagename.name
             name = domain
+            if not self._potemplateset.isNameUnique(name):
+                # The name probably matches an inactive template.
+                return None
             return self._potemplateset.new(name, domain, path, self.owner)
         elif potemplateset_size == 1:
             # Use the one template that is there.
@@ -240,6 +246,9 @@ class TranslationBuildApprover(object):
                 potemplate = self._potemplateset.getPOTemplateByName(name)
                 if potemplate is None:
                     # Still no template found, create a new one.
+                    if not self._potemplateset.isNameUnique(name):
+                        # The name probably matches an inactive template.
+                        return None
                     potemplate = self._potemplateset.new(
                         name, domain, path, self.owner)
         return potemplate

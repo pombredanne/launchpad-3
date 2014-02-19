@@ -7,7 +7,6 @@
 <div id="mailing-lists" class="portlet">
   <h2>Mailing list</h2>
 
-  <div class="portletBody portletContent">
     <div
       tal:define="archive_url view/archive_url"
       tal:condition="archive_url">
@@ -56,6 +55,5 @@
           replace="structure context/menu:overview/moderate_mailing_list/fmt:link-icon" />
       </li>
     </ul>
-  </div>
 </div>
 </tal:root>

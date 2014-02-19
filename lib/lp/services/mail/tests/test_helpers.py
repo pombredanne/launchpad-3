@@ -12,11 +12,11 @@ from zope.interface import (
     directlyProvides,
     )
 
-from canonical.launchpad.webapp.interaction import get_current_principal
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.registry.interfaces.person import PersonVisibility
 from lp.services.mail.helpers import (
     ensure_not_weakly_authenticated,
     ensure_sane_signature_timestamp,
+    get_contact_email_addresses,
     get_person_or_team,
     IncomingEmailError,
     parse_commands,
@@ -25,11 +25,13 @@ from lp.services.mail.interfaces import (
     EmailProcessingError,
     IWeaklyAuthenticatedPrincipal,
     )
+from lp.services.webapp.interaction import get_current_principal
 from lp.testing import (
     login_person,
     TestCase,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestParseCommands(TestCase):
@@ -37,28 +39,42 @@ class TestParseCommands(TestCase):
 
     def test_parse_commandsEmpty(self):
         """Empty messages have no commands."""
-        self.assertEqual([], parse_commands('', ['command']))
+        self.assertEqual([], parse_commands('', {'command': True}))
 
     def test_parse_commandsNoIndent(self):
         """Commands with no indent are not commands."""
-        self.assertEqual([], parse_commands('command', ['command']))
+        self.assertEqual([], parse_commands('command',  {'command': True}))
 
     def test_parse_commandsSpaceIndent(self):
         """Commands indented with spaces are recognized."""
         self.assertEqual(
-            [('command', [])], parse_commands(' command', ['command']))
+            [('command', [])], parse_commands(' command', {'command': True}))
 
     def test_parse_commands_args(self):
         """Commands indented with spaces are recognized."""
         self.assertEqual(
             [('command', ['arg1', 'arg2'])],
-            parse_commands(' command arg1 arg2', ['command']))
+            parse_commands(' command arg1 arg2', {'command': True}))
+
+    def test_parse_commands_args_uppercase_unchanged(self):
+        """Commands and args containing uppercase letters are not
+        converted to lowercase if the flag is False."""
+        self.assertEqual(
+            [('command', ['Arg1', 'aRg2'])],
+            parse_commands(' comMand Arg1 aRg2', {'command': False}))
+
+    def test_parse_commands_args_uppercase_to_lowercase(self):
+        """Commands and args containing uppercase letters are converted to
+        lowercase."""
+        self.assertEqual(
+            [('command', ['arg1', 'arg2'])],
+            parse_commands(' comMand Arg1 aRg2', {'command': True}))
 
     def test_parse_commands_args_quoted(self):
         """Commands indented with spaces are recognized."""
         self.assertEqual(
             [('command', ['"arg1', 'arg2"'])],
-            parse_commands(' command "arg1 arg2"', ['command']))
+            parse_commands(' command "arg1 arg2"', {'command': True}))
 
     def test_parse_commandsTabIndent(self):
         """Commands indented with tabs are recognized.
@@ -66,29 +82,30 @@ class TestParseCommands(TestCase):
         (Tabs?  What are we, make?)
         """
         self.assertEqual(
-            [('command', [])], parse_commands('\tcommand', ['command']))
+            [('command', [])], parse_commands('\tcommand', {'command': True}))
 
     def test_parse_commandsDone(self):
         """The 'done' pseudo-command halts processing."""
         self.assertEqual(
             [('command', []), ('command', [])],
-            parse_commands(' command\n command', ['command']))
+            parse_commands(' command\n command', {'command': True}))
         self.assertEqual(
             [('command', [])],
-            parse_commands(' command\n done\n command', ['command']))
+            parse_commands(' command\n done\n command', {'command': True}))
         # done takes no arguments.
         self.assertEqual(
             [('command', []), ('command', [])],
-            parse_commands(' command\n done commands\n command', ['command']))
+            parse_commands(
+                ' command\n done commands\n command', {'command': True}))
 
     def test_parse_commands_optional_colons(self):
         """Colons at the end of commands are accepted and stripped."""
         self.assertEqual(
             [('command', ['arg1', 'arg2'])],
-            parse_commands(' command: arg1 arg2', ['command']))
+            parse_commands(' command: arg1 arg2', {'command': True}))
         self.assertEqual(
             [('command', [])],
-            parse_commands(' command:', ['command']))
+            parse_commands(' command:', {'command': True}))
 
 
 class TestEnsureSaneSignatureTimestamp(unittest.TestCase):
@@ -160,7 +177,8 @@ class TestEnsureNotWeaklyAuthenticated(TestCaseWithFactory):
             signed_msg, 'test')
         self.assertEqual(
             "The message you sent included commands to modify the test,\n"
-            "but you didn't sign the message with your OpenPGP key.\n",
+            "but you didn't sign the message with an OpenPGP key that is\n"
+            "registered in Launchpad.\n",
             error.message)
 
     def test_weakly_authenticated_with_sig(self):
@@ -220,6 +238,34 @@ class TestGetPersonOrTeam(TestCaseWithFactory):
             owner=owner, email='fooix-devs@lists.example.com')
         self.assertEqual(
             team, get_person_or_team('fooix-devs@lists.example.com'))
+
+
+class Testget_contact_email_addresses(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_person_with_hidden_email(self):
+        user = self.factory.makePerson(
+            email='user@canonical.com',
+            hide_email_addresses=True,
+            name='user')
+        result = get_contact_email_addresses(user)
+        self.assertEqual(set(['user@canonical.com']), result)
+
+    def test_user_with_preferredemail(self):
+        user = self.factory.makePerson(
+            email='user@canonical.com', name='user',)
+        result = get_contact_email_addresses(user)
+        self.assertEqual(set(['user@canonical.com']), result)
+
+    def test_private_team(self):
+        email = 'team@canonical.com'
+        team = self.factory.makeTeam(
+            name='breaks-things',
+            email=email,
+            visibility=PersonVisibility.PRIVATE)
+        result = get_contact_email_addresses(team)
+        self.assertEqual(set(['team@canonical.com']), result)
 
 
 def test_suite():

@@ -6,7 +6,6 @@
 from storm.store import Store
 from testtools.matchers import Equals
 
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.model.distroseriessourcepackagerelease import (
     DistroSeriesSourcePackageRelease,
@@ -15,6 +14,7 @@ from lp.testing import (
     StormStatementRecorder,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import HasQueryCount
 
 
@@ -38,7 +38,8 @@ class TestDistroSeriesSourcePackageRelease(TestCaseWithFactory):
             source_package_release=self.sourcepackagerelease,
             distroarchseries=self.distroarchseries)
         bp_release = self.factory.makeBinaryPackageRelease(
-            build=bp_build, binarypackagename=name)
+            build=bp_build, binarypackagename=name,
+            version=self.factory.getUniqueString())
         sourcepackagename = self.sourcepackagerelease.sourcepackagename
         self.factory.makeSourcePackagePublishingHistory(
             sourcepackagename=sourcepackagename,

@@ -3,9 +3,6 @@
 # Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# Stop pylint complaining about the _pythonpath relative import.
-# pylint: disable-msg=W0403
-
 """Queue/Accepted processor
 
 Given a distribution to run on, obtains all the queue items for the

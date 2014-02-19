@@ -86,12 +86,10 @@ The email contains a URL linking to where the exported file can be downloaded.
 Let's download it and make sure the contents look ok.
 
     >>> import urllib2
-    >>> from canonical.launchpad.helpers import string_to_tarfile
+    >>> from lp.services.helpers import string_to_tarfile
     >>> tarball = string_to_tarfile(urllib2.urlopen(url).read())
     >>> for name in sorted(tarball.getnames()):
-    ...     # XXX: 2010-04-26, Salgado, bug=570244: The .rstrip('/') is to
-    ...     # make this pass on python2.5 and 2.6.
-    ...     print name.rstrip('/')
+    ...     print name
     evolution-2.2
     evolution-2.2/evolution-2.2-es.po
     po

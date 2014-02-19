@@ -1,3 +1,6 @@
+# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """build.py - Minifies and creates the JS build directory."""
 
 __metaclass__ = type
@@ -6,14 +9,15 @@ __all__ = [
     'JSComboFile',
     ]
 
+from glob import glob
 import optparse
 import os
 import re
 import sys
 
-from glob import glob
-
 import cssutils
+from cssutils import settings
+
 
 HERE = os.path.dirname(__file__)
 BUILD_DIR = os.path.normpath(os.path.join(
@@ -177,6 +181,7 @@ class CSSComboFile(ComboFile):
 
                 stylesheet = ESCAPE_STAR_PROPERTY_RE.sub(
                     r'\1_ie_star_hack:', file_content)
+                settings.set('DXImageTransform.Microsoft', True)
                 parser = cssutils.CSSParser(raiseExceptions=True)
                 css = parser.parseString(stylesheet)
                 stylesheet = UNESCAPE_STAR_PROPERTY_RE.sub(

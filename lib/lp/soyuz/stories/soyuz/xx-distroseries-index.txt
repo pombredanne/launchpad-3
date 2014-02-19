@@ -12,10 +12,13 @@ packages within the distroseries in context:
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'search-results'))
     1 &rarr; 3 of 3 results
-    First &#149; Previous &#149; Next &#149; Last
+    First &bull; Previous &bull; Next &bull; Last
     foobar: foobar is bad
     mozilla-firefox: Mozilla Firefox Web Browser
     at: at the mountains of madness
+    1 &rarr; 3 of 3 results
+    First &bull; Previous &bull; Next &bull; Last
+
 
 == Latest uploads page ==
 

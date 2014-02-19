@@ -14,7 +14,7 @@ The owner of Landscape Developers applies for a mailing list.
     >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> browser.open('http://launchpad.dev/~landscape-developers')
     >>> browser.getLink(url='+mailinglist').click()
-    >>> from canonical.launchpad.helpers import backslashreplace
+    >>> from lp.services.helpers import backslashreplace
     >>> print backslashreplace(browser.title)
     Mailing list configuration...
 
@@ -29,8 +29,7 @@ He thinks for a second whether his mailing list is for Ubuntu or not.
     >>> browser.getControl('Create new Mailing List').click()
     >>> print browser.title
     Landscape Developers in Launchpad
-    >>> for msg in get_feedback_messages(browser.contents):
-    ...     print msg
+    >>> print_feedback_messages(browser.contents)
     The mailing list is being created and will be available for use in a few minutes.
 
 Once the mailing list is created, the button to create it is not shown
@@ -92,7 +91,7 @@ The team's overview page also displays the posting address.
 Now that the mailing list is active, it can be used as the team's contact
 address.
 
-    >>> from canonical.launchpad.testing.pages import strip_label
+    >>> from lp.testing.pages import strip_label
 
     >>> browser.getLink(url='+mailinglist').click()
     >>> print extract_text(find_tag_by_id(browser.contents,
@@ -187,8 +186,7 @@ An inactive mailing list can be reactivated.
     >>> browser.getControl('Reactivate this Mailing List').click()
     >>> mailing_list_status_message(browser.contents)
     ''
-    >>> for msg in get_feedback_messages(browser.contents):
-    ...     print msg
+    >>> print_feedback_messages(browser.contents)
     The mailing list will be reactivated within a few minutes.
     >>> act()
     >>> transaction.commit()
@@ -246,7 +244,7 @@ The same is true for normal users who are not team members.
 Members who are not owners can see the link.
 
     >>> cprov_browser = setupBrowser(
-    ...     auth='Basic celso.providelo@canonical.com:cprov')
+    ...     auth='Basic celso.providelo@canonical.com:test')
     >>> cprov_browser.open('http://launchpad.dev/~bassists')
     Traceback (most recent call last):
     ...

@@ -1,8 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213
-
 """Interfaces for linking Specifications and Branches."""
 
 __metaclass__ = type
@@ -26,8 +24,8 @@ from lazr.restful.fields import (
 from zope.interface import Interface
 from zope.schema import Int
 
-from canonical.launchpad import _
-from canonical.launchpad.interfaces.launchpad import IHasDateCreated
+from lp import _
+from lp.app.interfaces.launchpad import IHasDateCreated
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.code.interfaces.branch import IBranch
 from lp.registry.interfaces.person import IPerson

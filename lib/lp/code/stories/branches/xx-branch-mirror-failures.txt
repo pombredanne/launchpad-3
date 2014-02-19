@@ -3,15 +3,14 @@
 If a branch fails to mirror, that information is displayed in the mirror's
 page, together with the last failure message we got when mirroring.
 
-    >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
+    >>> from lp.testing import ANONYMOUS, login, logout
     >>> login(ANONYMOUS)
-    >>> eric = factory.makePerson(
-    ...     name='eric', email='eric@example.com', password='test')
+    >>> eric = factory.makePerson(name='eric', email='eric@example.com')
     >>> from lp.code.enums import BranchType
     >>> mirror_branch = factory.makeAnyBranch(
     ...     branch_type=BranchType.MIRRORED, owner=eric)
     >>> mirror_name = mirror_branch.unique_name
-    >>> from canonical.launchpad.webapp import canonical_url
+    >>> from lp.services.webapp import canonical_url
     >>> branch_location = str(canonical_url(mirror_branch))
     >>> mirror_branch.startMirroring()
     >>> mirror_branch.mirrorFailed(
@@ -134,7 +133,7 @@ report the absence of an error message.
     >>> login('eric@example.com') # To get Launchpad.Edit on the branch.
     >>> mirror_branch = getUtility(IBranchLookup).getByUniqueName(mirror_name)
     >>> mirror_branch.mirror_status_message = None
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
     >>> logout()
 

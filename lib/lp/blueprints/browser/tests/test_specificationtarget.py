@@ -1,36 +1,41 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
 
 from BeautifulSoup import BeautifulSoup
-
+from fixtures import FakeLogger
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.testing.pages import find_tag_by_id
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.app.enums import (
+    InformationType,
+    ServiceUsage,
+    )
+from lp.blueprints.browser.specificationtarget import HasSpecificationsView
+from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.blueprints.interfaces.specificationtarget import (
     IHasSpecifications,
     ISpecificationTarget,
     )
-from lp.app.enums import ServiceUsage
-from lp.blueprints.browser.specificationtarget import HasSpecificationsView
-from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.blueprints.publisher import BlueprintsLayer
 from lp.testing import (
+    BrowserTestCase,
     login_person,
+    person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import IsConfiguredBatchNavigator
+from lp.testing.pages import find_tag_by_id
 from lp.testing.views import (
-    create_view,
     create_initialized_view,
+    create_view,
     )
 
 
-class TestRegisterABlueprintButtonView(TestCaseWithFactory):
+class TestRegisterABlueprintButtonPortlet(TestCaseWithFactory):
     """Test specification menus links."""
     layer = DatabaseFunctionalLayer
 
@@ -70,6 +75,9 @@ class TestHasSpecificationsViewInvolvement(TestCaseWithFactory):
         TestCaseWithFactory.setUp(self)
         self.user = self.factory.makePerson(name="macadamia")
         login_person(self.user)
+        # Use a FakeLogger fixture to prevent Memcached warnings to be
+        # printed to stdout while browsing pages.
+        self.useFixture(FakeLogger())
 
     def verify_involvment(self, context):
         self.assertTrue(IHasSpecifications.providedBy(context))
@@ -122,6 +130,12 @@ class TestHasSpecificationsViewInvolvement(TestCaseWithFactory):
 class TestAssignments(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestAssignments, self).setUp()
+        # Use a FakeLogger fixture to prevent Memcached warnings to be
+        # printed to stdout while browsing pages.
+        self.useFixture(FakeLogger())
 
     def test_assignments_are_batched(self):
         product = self.factory.makeProduct()
@@ -247,6 +261,9 @@ class TestSpecificationsRobots(TestCaseWithFactory):
         super(TestSpecificationsRobots, self).setUp()
         self.product = self.factory.makeProduct()
         self.naked_product = removeSecurityProxy(self.product)
+        # Use a FakeLogger fixture to prevent Memcached warnings to be
+        # printed to stdout while browsing pages.
+        self.useFixture(FakeLogger())
 
     def _configure_project(self, usage):
         self.naked_product.blueprints_usage = usage
@@ -303,3 +320,26 @@ class SpecificationSetViewTestCase(TestCaseWithFactory):
         self.assertIn(picker_vocab, text)
         focus_script = "setFocusByName('field.search_text')"
         self.assertIn(focus_script, text)
+
+
+class TestPrivacy(BrowserTestCase):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_product_specs(self):
+        # Proprietary specs are only listed for users who can see them.
+        # Other users see the page, but not the private specs.
+        proprietary = self.factory.makeSpecification(
+            information_type=InformationType.PROPRIETARY)
+        product = proprietary.product
+        public = self.factory.makeSpecification(product=product)
+        with person_logged_in(product.owner):
+            product.blueprints_usage = ServiceUsage.LAUNCHPAD
+            browser = self.getViewBrowser(product, '+specs')
+        self.assertIn(public.name, browser.contents)
+        self.assertNotIn(proprietary.name, browser.contents)
+        with person_logged_in(None):
+            browser = self.getViewBrowser(product, '+specs',
+                                          user=product.owner)
+        self.assertIn(public.name, browser.contents)
+        self.assertIn(proprietary.name, browser.contents)

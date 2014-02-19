@@ -21,15 +21,14 @@ import socket
 import subprocess
 import time
 
-from canonical.config import config
-from canonical.launchpad.webapp.url import urlsplit
-from canonical.lazr.pidfile import (
+from lp.services.config import config
+from lp.services.osutils import ensure_directory_exists
+from lp.services.pidfile import (
     get_pid,
     make_pidfile,
     pidfile_path,
     )
-
-from lp.services.osutils import ensure_directory_exists
+from lp.services.webapp.url import urlsplit
 
 # Set up basic logging.
 log = logging.getLogger(__name__)
@@ -133,7 +132,7 @@ def wait_for_service(timeout=15.0):
         while True:
             try:
                 sock.connect((host, port))
-            except socket.error, err:
+            except socket.error as err:
                 if err.args[0] in [errno.ECONNREFUSED, errno.ECONNABORTED]:
                     elapsed = (time.time() - start)
                     if elapsed > timeout:
@@ -167,7 +166,7 @@ def wait_for_service_shutdown(seconds_to_wait=10.0):
             try:
                 sock.connect((host, port))
                 sock.close()
-            except socket.error, err:
+            except socket.error as err:
                 if err.args[0] == errno.ECONNREFUSED:
                     # Success!  The socket is closed.
                     return
@@ -212,7 +211,6 @@ def start_as_process():
 
 def kill_running_process():
     """Find and kill any running web service processes."""
-    # pylint: disable-msg=W0602
     global service_name
     try:
         pid = get_pid(service_name)
@@ -232,7 +230,7 @@ def kill_running_process():
                 # between freeing the socket in the killed process, and
                 # opening it in the current one.
                 wait_for_service_shutdown()
-            except os.error, err:
+            except os.error as err:
                 if err.errno == errno.ESRCH:
                     # Whoops, we got a 'No such process' error. The PID file
                     # is probably stale, so we'll remove it to prevent trash
@@ -247,7 +245,7 @@ def safe_unlink(filepath):
     """Unlink a file, but don't raise an error if the file is missing."""
     try:
         os.unlink(filepath)
-    except os.error, err:
+    except os.error as err:
         if err.errno != errno.ENOENT:
             raise
 
@@ -255,7 +253,6 @@ def safe_unlink(filepath):
 def main():
     """Run the HTTP server."""
     # Redirect our service output to a log file.
-    # pylint: disable-msg=W0602
     global log
     ensure_directory_exists(os.path.dirname(config.google_test_service.log))
     filelog = logging.FileHandler(config.google_test_service.log)

@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Person-related translations view classes."""
@@ -20,30 +20,32 @@ import urllib
 
 import pytz
 from z3c.ptcompat import ViewPageTemplateFile
-from zope.app.form.browser import TextWidget
 from zope.component import getUtility
+from zope.formlib.widgets import TextWidget
 from zope.interface import (
     implements,
     Interface,
     )
 
-from canonical.launchpad import _
-from canonical.launchpad.webapp import (
-    canonical_url,
-    Link,
-    )
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.menu import NavigationMenu
-from canonical.launchpad.webapp.publisher import LaunchpadView
+from lp import _
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadFormView,
     )
+from lp.app.enums import ServiceUsage
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    canonical_url,
+    Link,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.menu import NavigationMenu
+from lp.services.webapp.publisher import LaunchpadView
 from lp.translations.browser.translationlinksaggregator import (
     TranslationLinksAggregator,
     )
@@ -210,6 +212,7 @@ class PersonTranslationView(LaunchpadView):
         # will result in faster queries (cache effects).
         today = now.replace(minute=0, second=0, microsecond=0)
         self.history_horizon = today - timedelta(90, 0, 0)
+        self.user_can_edit = check_permission('launchpad.Edit', self.context)
 
     @property
     def page_title(self):
@@ -229,7 +232,11 @@ class PersonTranslationView(LaunchpadView):
             if potemplate is None:
                 return True
             product = potemplate.product
-            return product is None or product.active
+            product_is_active = (
+                product is None or (
+                product.active and
+                product.translations_usage == ServiceUsage.LAUNCHPAD))
+            return product_is_active
 
         active_entries = (entry for entry in all_entries if is_active(entry))
         return [ActivityDescriptor(self.context, entry)
@@ -265,7 +272,7 @@ class PersonTranslationView(LaunchpadView):
     @property
     def person_is_translator(self):
         """Is this person active in translations?"""
-        if self.context.isTeam():
+        if self.context.is_team:
             return False
         person = ITranslationsPerson(self.context)
         history = person.getTranslationHistory(self.history_horizon).any()
@@ -283,7 +290,7 @@ class PersonTranslationView(LaunchpadView):
     @property
     def requires_preferred_languages(self):
         """Does this person need to set preferred languages?"""
-        return not self.context.isTeam() and len(self.context.languages) == 0
+        return not self.context.is_team and len(self.context.languages) == 0
 
     def should_display_message(self, translationmessage):
         """Should a certain `TranslationMessage` be displayed.
@@ -311,21 +318,6 @@ class PersonTranslationView(LaunchpadView):
 
         return ReviewLinksAggregator().aggregate(pofiles)
 
-    def _suggestTargetsForReview(self, max_fetch):
-        """Find random translation targets for review.
-
-        :param max_fetch: Maximum number of `POFile`s to fetch while
-            looking for these.
-        :return: a list of at most `max_fetch` translation targets.
-            Multiple `POFile`s may be aggregated together into a single
-            target.
-        """
-        person = ITranslationsPerson(self.context)
-        pofiles = person.suggestReviewableTranslationFiles(
-            no_older_than=self.history_horizon)[:max_fetch]
-
-        return ReviewLinksAggregator().aggregate(pofiles)
-
     def _getTargetsForTranslation(self, max_fetch=None):
         """Get translation targets for this person to translate.
 
@@ -338,17 +330,6 @@ class PersonTranslationView(LaunchpadView):
 
         if max_fetch is not None:
             pofiles = pofiles[:abs(max_fetch)]
-
-        return TranslateLinksAggregator().aggregate(pofiles)
-
-    def _suggestTargetsForTranslation(self, max_fetch=None):
-        """Suggest translations this person could be helping complete."""
-        person = ITranslationsPerson(self.context)
-        pofiles = person.suggestTranslatableFiles(
-            no_older_than=self.history_horizon)
-
-        if max_fetch is not None:
-            pofiles = pofiles[:max_fetch]
 
         return TranslateLinksAggregator().aggregate(pofiles)
 
@@ -403,17 +384,8 @@ class PersonTranslationView(LaunchpadView):
         # Start out with the translations that the person has recently
         # worked on.
         recent = self._review_targets
-        overall = self._addToTargetsList(
+        return self._addToTargetsList(
             [], recent, max_known_targets, list_length)
-
-        # Fill out the list with other, randomly suggested translations
-        # that the person could also be reviewing.
-        fetch = 5 * (list_length - len(overall))
-        suggestions = self._suggestTargetsForReview(fetch)
-        overall = self._addToTargetsList(
-            overall, suggestions, list_length, list_length)
-
-        return overall
 
     @cachedproperty
     def num_projects_and_packages_to_review(self):
@@ -425,10 +397,10 @@ class PersonTranslationView(LaunchpadView):
         """Suggest translations for this person to help complete."""
         # Maximum number of translations to list that need the most work
         # done.
-        max_urgent_targets = 3
+        max_urgent_targets = 5
         # Maximum number of translations to list that are almost
         # complete.
-        max_almost_complete_targets = 3
+        max_almost_complete_targets = 5
         # Length of overall list to display.
         list_length = 10
 
@@ -443,13 +415,7 @@ class PersonTranslationView(LaunchpadView):
             overall, almost_complete, max_almost_complete_targets,
             list_length)
 
-        fetch = 5 * (list_length - len(overall))
-        suggestions = self._suggestTargetsForTranslation(fetch)
-        overall = self._addToTargetsList(
-            overall, suggestions, list_length, list_length)
-
         return overall
-
 
     to_complete_template = ViewPageTemplateFile(
         '../templates/person-translations-to-complete-table.pt')
@@ -457,13 +423,11 @@ class PersonTranslationView(LaunchpadView):
     def translations_to_complete_table(self):
         return self.to_complete_template(dict(view=self))
 
-
     to_review_template = ViewPageTemplateFile(
         '../templates/person-translations-to-review-table.pt')
 
     def translations_to_review_table(self):
         return self.to_review_template(dict(view=self))
-
 
 
 class PersonTranslationReviewView(PersonTranslationView):

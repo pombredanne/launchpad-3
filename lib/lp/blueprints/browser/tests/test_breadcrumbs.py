@@ -3,16 +3,16 @@
 
 __metaclass__ = type
 
-from canonical.launchpad.webapp.publisher import canonical_url
+from lp.services.webapp.publisher import canonical_url
 from lp.testing.breadcrumbs import BaseBreadcrumbTestCase
 
 
-class TestHasSpecificationsBreadcrumbOnBlueprintsVHost(
+class TestHasSpecificationsBreadcrumbOnBlueprintsFacet(
         BaseBreadcrumbTestCase):
     """Test Breadcrumbs for IHasSpecifications on the blueprints vhost."""
 
     def setUp(self):
-        super(TestHasSpecificationsBreadcrumbOnBlueprintsVHost, self).setUp()
+        super(TestHasSpecificationsBreadcrumbOnBlueprintsFacet, self).setUp()
         self.person = self.factory.makePerson()
         self.person_specs_url = canonical_url(
             self.person, rootsite='blueprints')

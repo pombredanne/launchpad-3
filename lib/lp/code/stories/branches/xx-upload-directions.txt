@@ -9,7 +9,13 @@ shows contextual directions on how to upload to it.
 We will need multiple browsers, logged in with different users. Set them up
 now.
 
-    >>> name12_browser = setupBrowser(auth='Basic test@canonical.com:test')
+    >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.testing.pages import setupBrowserFreshLogin
+    >>> login(ANONYMOUS)
+    >>> name12 = getUtility(IPersonSet).getByEmail('test@canonical.com')
+    >>> logout()
+    >>> name12_browser = setupBrowserFreshLogin(name12)
     >>> ddaa_browser = setupBrowser(
     ...     auth='Basic david.allouche@canonical.com:test')
 
@@ -70,7 +76,7 @@ URL for the branch.
     >>> instructions = find_tag_by_id(content, 'upload-directions')
     >>> print extract_text(instructions)
     Update this branch:
-    bzr push --use-existing lp://dev/~name12/gnome-terminal/pushed
+    bzr push --use-existing-dir lp://dev/~name12/gnome-terminal/pushed
 
 
 == SSH key directions ==
@@ -177,7 +183,7 @@ owning team's name.
     >>> instructions = find_tag_by_id(content, 'upload-directions')
     >>> print extract_text(instructions)
     Update this branch:
-    bzr push --use-existing
+    bzr push --use-existing-dir
     lp://dev/~landscape-developers/gnome-terminal/pushed
 
 

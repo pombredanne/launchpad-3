@@ -1,20 +1,10 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213
-
 __metaclass__ = type
 __all__ = [
     'IQuestionsPerson',
     ]
-
-from zope.interface import Interface
-from zope.schema import (
-    Bool,
-    Choice,
-    List,
-    TextLine,
-    )
 
 from lazr.restful.declarations import (
     export_read_operation,
@@ -23,13 +13,20 @@ from lazr.restful.declarations import (
     operation_returns_collection_of,
     )
 from lazr.restful.fields import ReferenceChoice
+from zope.interface import Interface
+from zope.schema import (
+    Bool,
+    Choice,
+    List,
+    TextLine,
+    )
 
-from canonical.launchpad import _
+from lp import _
 from lp.answers.enums import (
+    QUESTION_STATUS_DEFAULT_SEARCH,
     QuestionParticipation,
     QuestionSort,
     QuestionStatus,
-    QUESTION_STATUS_DEFAULT_SEARCH,
     )
 from lp.answers.interfaces.questioncollection import IQuestionCollection
 

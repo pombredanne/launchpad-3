@@ -1,8 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213
-
 """Internal Codehosting API interfaces."""
 
 __metaclass__ = type
@@ -13,6 +11,7 @@ __all__ = [
     'BRANCH_TRANSPORT',
     'compose_public_url',
     'CONTROL_TRANSPORT',
+    'IBazaarApplication',
     'ICodehostingAPI',
     'ICodehostingApplication',
     'LAUNCHPAD_ANONYMOUS',
@@ -28,9 +27,9 @@ import urllib
 from lazr.uri import URI
 from zope.interface import Interface
 
-from canonical.config import config
-from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 from lp.app.validators.name import valid_name
+from lp.services.config import config
+from lp.services.webapp.interfaces import ILaunchpadApplication
 
 # When LAUNCHPAD_SERVICES is provided as a login ID to XML-RPC methods, they
 # bypass the normal security checks and give read-only access to all branches.
@@ -68,6 +67,10 @@ def branch_id_alias(branch):
 
 # The scheme types that are supported for codehosting.
 SUPPORTED_SCHEMES = 'bzr+ssh', 'http'
+
+
+class IBazaarApplication(ILaunchpadApplication):
+    """Bazaar Application"""
 
 
 class ICodehostingApplication(ILaunchpadApplication):

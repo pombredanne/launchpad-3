@@ -1,8 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0611,W0212
-
 __metaclass__ = type
 __all__ = [
     'BinaryAndSourcePackageName',
@@ -13,8 +11,8 @@ from sqlobject import StringCol
 from zope.interface import implements
 from zope.schema.vocabulary import SimpleTerm
 
-from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.webapp.vocabulary import (
+from lp.services.database.sqlbase import SQLBase
+from lp.services.webapp.vocabulary import (
     BatchedCountableIterator,
     NamedSQLObjectHugeVocabulary,
     )

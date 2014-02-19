@@ -7,11 +7,11 @@ are usually bound to a view.
 
     >>> from zope.component import provideAdapter
     >>> from zope.interface import implements, Interface
-    >>> from canonical.launchpad.webapp.interfaces import INavigationMenu
-    >>> from canonical.launchpad.webapp.menu import (
+    >>> from lp.services.webapp.interfaces import INavigationMenu
+    >>> from lp.services.webapp.menu import (
     ...     enabled_with_permission, Link, NavigationMenu)
-    >>> from canonical.launchpad.webapp.publisher import LaunchpadView
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.publisher import LaunchpadView
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
 
     >>> class IEditMenuMarker(Interface):
     ...     """A marker for a menu and a view."""

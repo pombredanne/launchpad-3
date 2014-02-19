@@ -1,8 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0611,W0212,W0231
-
 """An implementation of `DistroSeriesLanguage` objects."""
 
 __metaclass__ = type
@@ -22,12 +20,12 @@ from sqlobject import (
     )
 from zope.interface import implements
 
-from canonical.database.constants import (
+from lp.services.database.constants import (
     DEFAULT,
     UTC_NOW,
     )
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.sqlbase import (
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )

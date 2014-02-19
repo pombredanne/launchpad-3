@@ -11,7 +11,7 @@ import os
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
 
 
 def _libType(fname):
@@ -51,5 +51,4 @@ def checkLibraryForFile(path, filename):
     digest = digester.hexdigest()
     openfile.close()
     librarian = getUtility(ILibraryFileAliasSet)
-    return librarian.findBySHA1(digest).count() > 0
-
+    return not librarian.findBySHA1(digest).is_empty()

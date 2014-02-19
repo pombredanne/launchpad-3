@@ -34,14 +34,14 @@ def monkey_patch(mailman_path, config):
     # Instead, anything that's needed from config should be written to the
     # mm_cfg.py file now.
     #
-    # Calculate the parent directory of the canonical package.  This directory
+    # Calculate the parent directory of the lp module.  This directory
     # will get appended to Mailman's sys.path.
-    import canonical
+    import lp
     from lp.services.mailman.config import configure_siteowner
-    launchpad_top = os.path.dirname(
-        os.path.dirname(os.path.dirname(canonical.__file__)))
+    launchpad_top = os.path.abspath(
+        os.path.join(os.path.dirname(lp.__file__), os.pardir, os.pardir))
     # Read the email footer template for all Launchpad messages.
-    from canonical.launchpad.helpers import get_email_template
+    from lp.services.mail.helpers import get_email_template
     footer = get_email_template(
         'mailinglist-footer.txt', app='services/mailman/monkeypatches')
     # Write the mm_cfg.py file, filling in the dynamic values now.

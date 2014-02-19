@@ -16,16 +16,16 @@ import gpgme
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.config import config
-from canonical.launchpad.interfaces.gpghandler import IGPGHandler
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.interfaces.archivesigningkey import (
     IArchiveSigningKey,
     )
-from lp.registry.interfaces.gpg import (
+from lp.registry.interfaces.gpg import IGPGKeySet
+from lp.services.config import config
+from lp.services.gpg.interfaces import (
     GPGKeyAlgorithm,
-    IGPGKeySet,
+    IGPGHandler,
     )
 
 

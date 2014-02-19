@@ -1,7 +1,5 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=E0211,E0213
 
 __metaclass__ = type
 
@@ -11,7 +9,6 @@ __all__ = [
     'IIndexedMessage',
     'IMessage',
     'IMessageChunk',
-    'IMessageJob',
     'IMessageSet',
     'IUserToUserEmail',
     'IndexedMessage',
@@ -24,8 +21,11 @@ __all__ = [
 
 from lazr.delegates import delegates
 from lazr.restful.declarations import (
+    accessor_for,
     export_as_webservice_entry,
+    export_read_operation,
     exported,
+    operation_for_version,
     )
 from lazr.restful.fields import (
     CollectionField,
@@ -45,10 +45,9 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
-from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
+from lp import _
 from lp.app.errors import NotFoundError
-from lp.services.job.interfaces.job import IJob
+from lp.services.librarian.interfaces import ILibraryFileAlias
 
 
 class IMessage(Interface):
@@ -85,7 +84,7 @@ class IMessage(Interface):
                     schema=ILibraryFileAlias, required=False, readonly=True)
     bugs = CollectionField(
         title=_('Bug List'),
-        value_type=Reference(schema=Interface)) # Redefined in bug.py
+        value_type=Reference(schema=Interface))  # Redefined in bug.py
 
     chunks = Attribute(_('Message pieces'))
 
@@ -94,15 +93,8 @@ class IMessage(Interface):
                      'unicode string.')),
         exported_as='content')
 
-    followup_title = TextLine(
-        title=_('Candidate title for a followup message.'),
-        readonly=True)
     title = TextLine(
         title=_('The message title, usually just the subject.'),
-        readonly=True)
-    has_new_title = Bool(
-        title=_("Whether or not the title of this message "
-                "is different to that of its parent."),
         readonly=True)
     visible = Bool(title=u"This message is visible or not.", required=False,
         default=True)
@@ -116,6 +108,12 @@ class IMessage(Interface):
 
     def __iter__():
         """Iterate over all the message chunks."""
+
+    @accessor_for(parent)
+    @export_read_operation()
+    @operation_for_version('beta')
+    def getAPIParent():
+        """Return None because messages are not threaded over the API."""
 
 
 # Fix for self-referential schema.
@@ -136,34 +134,28 @@ class IMessageSet(Interface):
         """Construct a Message from a text string and return it."""
 
     def fromEmail(email_message, owner=None, filealias=None,
-            parsed_message=None, fallback_parent=None, date_created=None):
+                  parsed_message=None, fallback_parent=None, date_created=None,
+                  restricted=False):
         """Construct a Message from an email message and return it.
 
-        `email_message` should be the original email as a string.
-
-        `owner` specifies the owner of the new Message. The default
-        is calculated using the From: or Reply-To: headers, and will raise
-        a UnknownSender error if they cannot be found.
-
-        `filealias` is the LibraryFileAlias of the raw email if it has
-        already been stuffed into the Librarian. Default is for this
-        method to stuff it into the Librarian for you. It should be an
-        ILibraryFileAlias.
-
-        `parsed_message` may be an email.Message.Message instance. If given,
-        it is used internally instead of building one from the raw
-        email_message. This is purely an optimization step, significant
-        in many places because the emails we are handling may contain huge
-        attachments and we should avoid reparsing them if possible.
-
-        'fallback_parent' can be specified if you want a parent to be
-        set, if no parent could be identified.
-
-        `date_created` may be a datetime, and can be specified if you
-        wish to force the created date for a message. This is
-        particularly useful when the email_message being passed might
-        not contain a Date field. Any Date field in the passed message
-        will be ignored in favour of the value of `date_created`.
+        :param email_message: The original email as a string.
+        :param owner: Specifies the owner of the new Message. The default
+            is calculated using the From: or Reply-To: headers, and will raise
+            a UnknownSender error if they cannot be found.
+        :param filealias: The `LibraryFileAlias` of the raw email if it has
+            already been uploaded to the Librarian.
+        :param parsed_message: An email.Message.Message instance. If given,
+            it is used internally instead of building one from the raw
+            email_message. This is purely an optimization step, significant
+            in many places because the emails we are handling may contain huge
+            attachments and we should avoid reparsing them if possible.
+        :param fallback_parent: The parent message if it could not be
+            identified.
+        :param date_created: Force a created date for the message. If
+            specified, the value in the Date field in the passed message will
+            be ignored.
+        :param restricted: If set, the `LibraryFileAlias` will be uploaded to
+            the restricted librarian.
 
         Callers may want to explicitly handle the following exceptions:
             * UnknownSender
@@ -292,22 +284,6 @@ class IDirectEmailAuthorization(Interface):
         :param message: The email message that was sent.
         :type message: `email.Message.Message`
         """
-
-
-class IMessageJob(Interface):
-    """Interface for jobs triggered by messages."""
-
-    job = Object(schema=IJob, required=True)
-
-    message_bytes = Object(
-        title=_('Full MIME content of Email.'), required=True,
-        schema=ILibraryFileAlias)
-
-    def getMessage():
-        """Return an email.Message representing this job's message."""
-
-    def destroySelf():
-        """Remove this object (and its job) from the database."""
 
 
 class UnknownSender(NotFoundError):

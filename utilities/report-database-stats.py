@@ -6,6 +6,8 @@
 
 __metaclass__ = type
 
+import _pythonpath
+
 from datetime import datetime
 from operator import attrgetter
 from textwrap import (
@@ -13,15 +15,13 @@ from textwrap import (
     fill,
     )
 
-import _pythonpath
-
-from canonical.database.sqlbase import (
+from lp.scripts.helpers import LPOptionParser
+from lp.services.database.namedrow import named_fetchall
+from lp.services.database.sqlbase import (
     connect,
     sqlvalues,
     )
-from canonical.launchpad.scripts import db_options
-from lp.scripts.helpers import LPOptionParser
-from lp.services.database.namedrow import named_fetchall
+from lp.services.scripts import db_options
 
 
 class Table:

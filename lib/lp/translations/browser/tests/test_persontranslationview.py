@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -7,10 +7,17 @@ import urllib
 
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import LaunchpadZopelessLayer
-from lp.testing import TestCaseWithFactory
+from lp.app.enums import ServiceUsage
+from lp.services.webapp import canonical_url
+from lp.services.webapp.servers import LaunchpadTestRequest
+from lp.testing import (
+    BrowserTestCase,
+    TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 from lp.translations.browser.person import PersonTranslationView
 from lp.translations.model.translator import TranslatorSet
 
@@ -161,20 +168,13 @@ class TestPersonTranslationView(TestCaseWithFactory):
 
     def test_top_projects_and_packages_to_review(self):
         # top_projects_and_packages_to_review tries to name at least one
-        # translation target that the person has worked on, and at least
-        # one random suggestion that the person hasn't worked on.
+        # translation target that the person has worked on.
         self._makeReviewer()
         pofile_worked_on = self._makePOFiles(1, previously_worked_on=True)[0]
-        pofile_not_worked_on = self._makePOFiles(
-            1, previously_worked_on=False)[0]
-
         targets = self.view.top_projects_and_packages_to_review
 
         pofile_suffix = '/+translate?show=new_suggestions'
-        expected_links = [
-            canonical_url(pofile_worked_on) + pofile_suffix,
-            canonical_url(pofile_not_worked_on) + pofile_suffix,
-            ]
+        expected_links = [canonical_url(pofile_worked_on) + pofile_suffix]
         self.assertEqual(
             set(expected_links), set(item['link'] for item in targets))
 
@@ -189,6 +189,12 @@ class TestPersonTranslationView(TestCaseWithFactory):
 
         # and make one which has not been worked on (will be excluded)
         self._makePOFiles(1, previously_worked_on=False)
+
+        # and make one which has a product no longer using translations (will
+        # be excluded)
+        [pofile] = self._makePOFiles(1, previously_worked_on=True)
+        naked_product = removeSecurityProxy(pofile.potemplate.product)
+        naked_product.translations_usage = ServiceUsage.NOT_APPLICABLE
 
         pofiles_worked_on = self._makePOFiles(11, previously_worked_on=True)
 
@@ -215,29 +221,16 @@ class TestPersonTranslationView(TestCaseWithFactory):
         self.assertEqual(9, len(targets))
         self.assertEqual(9, len(set(item['link'] for item in targets)))
 
-    def test_top_p_n_p_to_review_caps_suggestions(self):
-        # top_projects_and_packages will suggest at most 10 POFiles that
-        # the person has not worked on.
-        self._makeReviewer()
-        self._makePOFiles(11, previously_worked_on=False)
-
-        targets = self.view.top_projects_and_packages_to_review
-
-        self.assertEqual(10, len(targets))
-        self.assertEqual(10, len(set(item['link'] for item in targets)))
-
     def test_top_p_n_p_to_review_caps_total(self):
-        # top_projects_and_packages will show at most 10 POFiles
-        # overall.  The last one will be a suggestion.
+        # top_projects_and_packages will show at most 9 POFiles
+        # overall.
         self._makeReviewer()
         pofiles_worked_on = self._makePOFiles(11, previously_worked_on=True)
-        pofiles_not_worked_on = self._makePOFiles(
-            11, previously_worked_on=False)
 
         targets = self.view.top_projects_and_packages_to_review
 
-        self.assertEqual(10, len(targets))
-        self.assertEqual(10, len(set(item['link'] for item in targets)))
+        self.assertEqual(9, len(targets))
+        self.assertEqual(9, len(set(item['link'] for item in targets)))
 
     def test_person_is_translator_false(self):
         # By default, a user is not a translator.
@@ -315,38 +308,9 @@ class TestPersonTranslationView(TestCaseWithFactory):
             nonurgent_pofile.potemplate.productseries.product,
             descriptions[0]['target'])
 
-    def test_suggestTargetsForTranslation(self):
-        # suggestTargetsForTranslation finds targets that the person
-        # could help translate.
-        previous_contrib = self._makePOFiles(1, previously_worked_on=True)
-        pofile = self._makePOFiles(1, previously_worked_on=False)[0]
-        self._addUntranslatedMessages(pofile, 1)
-
-        descriptions = self.view._suggestTargetsForTranslation()
-
-        self.assertEqual(1, len(descriptions))
-        self.assertEqual(
-            pofile.potemplate.productseries.product,
-            descriptions[0]['target'])
-
-    def test_suggestTargetsForTranslation_limits_query(self):
-        # The max_fetch argument limits how many POFiles
-        # suggestTargetsForTranslation fetches.
-        previous_contrib = self._makePOFiles(1, previously_worked_on=True)
-        pofiles = self._makePOFiles(3, previously_worked_on=False)
-        for pofile in pofiles:
-            self._addUntranslatedMessages(pofile, 1)
-
-        descriptions = self.view._suggestTargetsForTranslation(max_fetch=2)
-
-        self.assertEqual(2, len(descriptions))
-        self.assertNotEqual(
-            descriptions[0]['target'], descriptions[1]['target'])
-
     def test_top_projects_and_packages_to_translate(self):
         # top_projects_and_packages_to_translate lists targets that the
-        # user has worked on and could help translate, followed by
-        # randomly suggested ones that also need translation.
+        # user has worked on and could help translate.
         worked_on = self._makePOFiles(1, previously_worked_on=True)[0]
         self._addUntranslatedMessages(worked_on, 1)
         not_worked_on = self._makePOFiles(1, previously_worked_on=False)[0]
@@ -354,16 +318,13 @@ class TestPersonTranslationView(TestCaseWithFactory):
 
         descriptions = self.view.top_projects_and_packages_to_translate
 
-        self.assertEqual(2, len(descriptions))
+        self.assertEqual(1, len(descriptions))
         self.assertEqual(
             worked_on.potemplate.productseries.product,
             descriptions[0]['target'])
-        self.assertEqual(
-            not_worked_on.potemplate.productseries.product,
-            descriptions[1]['target'])
 
     def test_top_p_n_p_to_translate_caps_existing_involvement(self):
-        # top_projects_and_packages_to_translate shows no more than 6
+        # top_projects_and_packages_to_translate shows up to ten
         # targets that the user has already worked on.
         pofiles = self._makePOFiles(7, previously_worked_on=True)
         for pofile in pofiles:
@@ -371,12 +332,12 @@ class TestPersonTranslationView(TestCaseWithFactory):
 
         descriptions = self.view.top_projects_and_packages_to_translate
 
-        self.assertEqual(6, len(descriptions))
+        self.assertEqual(7, len(descriptions))
 
     def test_top_p_n_p_to_translate_lists_most_and_least_translated(self):
-        # Of the maximum of 6 translations that the user has already
-        # worked on, the first 3 will be the ones with the most
-        # untranslated strings; the last 3 will have the fewest.
+        # Of the maximum of ten translations that the user has already
+        # worked on, the first 5 will be the ones with the most
+        # untranslated strings; the last 5 will have the fewest.
         # We create a lot more POFiles because internally the property
         # will fetch many POFiles.
         pofiles = self._makePOFiles(50, previously_worked_on=True)
@@ -387,15 +348,15 @@ class TestPersonTranslationView(TestCaseWithFactory):
 
         descriptions = self.view.top_projects_and_packages_to_translate
 
-        self.assertEqual(6, len(descriptions))
+        self.assertEqual(10, len(descriptions))
         targets = [item['target'] for item in descriptions]
 
-        # We happen to know that no more than 15 POFiles are fetched for
-        # each of the two categories, so the top 3 targets must be taken
-        # from the last 15 pofiles and the next 3 must be taken from the
-        # first 15 pofiles.
-        self.assertTrue(set(targets[:3]).issubset(products[15:]))
-        self.assertTrue(set(targets[3:]).issubset(products[:15]))
+        # We happen to know that no more than 25 POFiles are fetched for
+        # each of the two categories, so the top 5 targets must be taken
+        # from the last 25 pofiles and the next 5 must be taken from the
+        # first 25 pofiles.
+        self.assertTrue(set(targets[:5]).issubset(products[25:]))
+        self.assertTrue(set(targets[5:]).issubset(products[:25]))
 
         # No target is mentioned more than once in the listing.
         self.assertEqual(len(targets), len(set(targets)))
@@ -422,3 +383,38 @@ class TestPersonTranslationView(TestCaseWithFactory):
         # languages.
         self.view.context.removeLanguage(self.language)
         self.assertTrue(self.view.requires_preferred_languages)
+
+
+class TestPersonTranslationViewPermissions(BrowserTestCase):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestPersonTranslationViewPermissions, self).setUp()
+        self.context = self.factory.makePerson()
+        self.language = self.factory.makeLanguage()
+        self.context.addLanguage(self.language)
+        owner = self.factory.makePerson()
+        self.translationgroup = self.factory.makeTranslationGroup(owner=owner)
+        TranslatorSet().new(
+            translationgroup=self.translationgroup, language=self.language,
+            translator=self.context)
+
+    def test_links_anon(self):
+        browser = self.getViewBrowser(
+            self.context, "+translations", no_login=True)
+        self.assertFalse("+editmylanguages" in browser.contents)
+        self.assertFalse("+edit" in browser.contents)
+
+    def test_links_unauthorized(self):
+        group = self.factory.makeTranslationGroup()
+        browser = self.getViewBrowser(self.context, "+translations")
+        self.assertFalse("+editmylanguages" in browser.contents)
+        self.assertFalse("+edit" in browser.contents)
+
+    def test_links_authorized(self):
+        group = self.factory.makeTranslationGroup()
+        browser = self.getViewBrowser(
+            self.context, "+translations", user=self.context)
+        self.assertTrue("+editmylanguages" in browser.contents)
+        self.assertTrue("+edit" in browser.contents)

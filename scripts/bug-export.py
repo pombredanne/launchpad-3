@@ -2,18 +2,15 @@
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-# pylint: disable-msg=W0403
-
 import _pythonpath
 
 import sys
 
 import transaction
-
 from zope.component import getUtility
-from lp.registry.interfaces.product import IProductSet
 
 from lp.bugs.scripts.bugexport import export_bugtasks
+from lp.registry.interfaces.product import IProductSet
 from lp.services.scripts.base import LaunchpadScript
 
 

@@ -10,7 +10,7 @@ lp.sfood:
 	$(LIB_DIR)/lp 2>/dev/null | grep -v contrib/ \
 	| grep -v sqlobject | grep -v BeautifulSoup | grep -v psycopg \
 	| grep -v schoolbell | grep -v '/tests/' | grep -v '/ftests/' \
-    | grep -v 'canonical/config' > lp.sfood.tmp
+    | grep -v 'lp/services/config' > lp.sfood.tmp
 	mv lp.sfood.tmp lp.sfood
 
 

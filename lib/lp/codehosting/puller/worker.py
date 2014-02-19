@@ -8,15 +8,15 @@ import socket
 import sys
 import urllib2
 
-import lp.codehosting  # Needed to load bzr plugins.
-lp  # squelch lint.sh
+# FIRST Ensure correct plugins are loaded. Do not delete this comment or the
+# line below this comment.
+import lp.codehosting
 
 from bzrlib import (
     errors,
     urlutils,
     )
 from bzrlib.branch import Branch
-from bzrlib.bzrdir import BzrDir
 from bzrlib.plugins.loom.branch import LoomSupport
 from bzrlib.plugins.weave_fmt.branch import BzrBranchFormat4
 from bzrlib.plugins.weave_fmt.repository import (
@@ -32,8 +32,6 @@ from lazr.uri import (
     URI,
     )
 
-from canonical.config import config
-from canonical.launchpad.webapp import errorlog
 from lp.code.bzr import (
     BranchFormat,
     RepositoryFormat,
@@ -48,6 +46,8 @@ from lp.codehosting.safe_open import (
     BranchReferenceForbidden,
     SafeBranchOpener,
     )
+from lp.services.config import config
+from lp.services.webapp import errorlog
 
 
 __all__ = [
@@ -214,7 +214,7 @@ class BranchMirrorer(object):
         :return: The destination branch.
         """
         return self.opener.runWithTransformFallbackLocationHookInstalled(
-            BzrDir.open, self.policy.createDestinationBranch, source_branch,
+            self.policy.createDestinationBranch, source_branch,
             destination_url)
 
     def openDestinationBranch(self, source_branch, destination_url):
@@ -384,7 +384,7 @@ class PullerWorker:
         # add further encountered errors from the production runs here
         # ------ HERE ---------
         #
-        except urllib2.HTTPError, e:
+        except urllib2.HTTPError as e:
             msg = str(e)
             if int(e.code) == httplib.UNAUTHORIZED:
                 # Maybe this will be caught in bzrlib one day, and then we'll
@@ -393,19 +393,19 @@ class PullerWorker:
                 msg = "Authentication required."
             self._mirrorFailed(msg)
 
-        except socket.error, e:
+        except socket.error as e:
             msg = 'A socket error occurred: %s' % str(e)
             self._mirrorFailed(msg)
 
-        except errors.UnsupportedFormatError, e:
+        except errors.UnsupportedFormatError as e:
             msg = ("Launchpad does not support branches from before "
                    "bzr 0.7. Please upgrade the branch using bzr upgrade.")
             self._mirrorFailed(msg)
 
-        except errors.UnknownFormatError, e:
+        except errors.UnknownFormatError as e:
             self._mirrorFailed(e)
 
-        except (errors.ParamikoNotPresent, BadUrlSsh), e:
+        except (errors.ParamikoNotPresent, BadUrlSsh) as e:
             msg = ("Launchpad cannot mirror branches from SFTP and SSH URLs."
                    " Please register a HTTP location for this branch.")
             self._mirrorFailed(msg)
@@ -414,11 +414,11 @@ class PullerWorker:
             msg = "Launchpad does not mirror branches from Launchpad."
             self._mirrorFailed(msg)
 
-        except BadUrlScheme, e:
+        except BadUrlScheme as e:
             msg = "Launchpad does not mirror %s:// URLs." % e.scheme
             self._mirrorFailed(msg)
 
-        except errors.NotBranchError, e:
+        except errors.NotBranchError as e:
             hosted_branch_error = errors.NotBranchError(
                 "lp:%s" % self.unique_name)
             message_by_type = {
@@ -428,19 +428,19 @@ class PullerWorker:
             msg = message_by_type.get(self.branch_type, str(e))
             self._mirrorFailed(msg)
 
-        except BranchReferenceForbidden, e:
+        except BranchReferenceForbidden as e:
             msg = ("Branch references are not allowed for branches of type "
                    "%s." % (self.branch_type.title,))
             self._mirrorFailed(msg)
 
-        except BranchLoopError, e:
+        except BranchLoopError as e:
             msg = "Circular branch reference."
             self._mirrorFailed(msg)
 
-        except errors.BzrError, e:
+        except errors.BzrError as e:
             self._mirrorFailed(e)
 
-        except InvalidURIError, e:
+        except InvalidURIError as e:
             self._mirrorFailed(e)
 
         except (KeyboardInterrupt, SystemExit):

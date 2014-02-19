@@ -5,7 +5,7 @@ Person karma view
 The ~person/+karma page is controlled by the PersonKarmaView.
 
     >>> geddy = factory.makePerson(name='geddy', displayname='Geddy Lee')
-    >>> login_person(geddy)
+    >>> ignored = login_person(geddy)
     >>> view = create_initialized_view(geddy, '+karma')
 
 The view's label shows the person who's karma we're looking at...

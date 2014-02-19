@@ -65,8 +65,7 @@ PPA, the name is pre-filled with a suggestion of "ppa":
 
     >>> sample_browser.getControl("Activate").click()
 
-    >>> for error in get_feedback_messages(sample_browser.contents):
-    ...     print error
+    >>> print_feedback_messages(sample_browser.contents)
     There is 1 error.
     Required input is missing.
 
@@ -79,8 +78,7 @@ error with a specific message.
     ...     name="field.displayname").value = 'Sample PPA'
     >>> sample_browser.getControl("Activate").click()
 
-    >>> for error in get_feedback_messages(sample_browser.contents):
-    ...     print error
+    >>> print_feedback_messages(sample_browser.contents)
     There is 1 error.
     PPA Terms of Service must be accepted to activate a PPA.
 
@@ -100,7 +98,7 @@ Where Sample person user can see the description previously entered.
 
     >>> print extract_text(
     ...     find_tag_by_id(sample_browser.contents, 'edit-description'))
-    PPA description
+    Edit PPA description
     Hoohay for PPA.
 
 The PPA owner is able to edit PPA 'displayname' and 'description'.
@@ -122,7 +120,7 @@ where he can see the updated information.
 
     >>> print extract_text(
     ...     find_tag_by_id(sample_browser.contents, 'edit-description'))
-    PPA description
+    Edit PPA description
     Howdy, cowboys !
 
 Empty 'description' fields are not rendered.
@@ -147,8 +145,7 @@ user can't have an emtpy displayname on his PPA.
     >>> print sample_browser.title
     Change details : Sample testing PPA...
 
-    >>> for error in get_feedback_messages(sample_browser.contents):
-    ...     print error
+    >>> print_feedback_messages(sample_browser.contents)
     There is 1 error.
     Required input is missing.
 
@@ -160,7 +157,7 @@ Similarly to the user PPAs activation, team PPAs can be activated by
 anyone with 'launchpad.Edit' permission in the team in question:
 /
     >>> cprov_browser = setupBrowser(
-    ...     auth="Basic celso.providelo@canonical.com:cprov")
+    ...     auth="Basic celso.providelo@canonical.com:test")
     >>> cprov_browser.open("http://launchpad.dev/~landscape-developers")
 
     >>> print find_tag_by_id(cprov_browser.contents, 'ppas')
@@ -214,7 +211,7 @@ That understood, the PPA gets activated.
 
     >>> print extract_text(
     ...     find_tag_by_id(sample_browser.contents, 'edit-description'))
-    PPA description
+    Edit PPA description
     Hoohay for Team PPA.
 
 Any team administrator can edit the description contents,
@@ -234,7 +231,7 @@ exactly the same as for a user-PPA, see above:
 
     >>> print extract_text(
     ...     find_tag_by_id(sample_browser.contents, 'edit-description'))
-    PPA description
+    Edit PPA description
     Yay, I can change it.
 
 Cancelling the 'Edit' form will redirect the user to the PPA overview
@@ -250,7 +247,7 @@ page and discard the changes.
 
     >>> print extract_text(
     ...     find_tag_by_id(sample_browser.contents, 'edit-description'))
-    PPA description
+    Edit PPA description
     Yay, I can change it.
 
 Create a publication in the team's PPA.
@@ -304,7 +301,7 @@ name of other users or teams:
 
     >>> print extract_text(
     ...     find_tag_by_id(admin_browser.contents, 'edit-description'))
-    PPA description
+    Edit PPA description
     Go for it, you lazy !
 
 LP-admins can also 'edit' PPAs of other people:
@@ -362,7 +359,8 @@ build on a virtualized builder.
     True
     >>> admin_browser.getControl(name="field.private").value
     False
-    >>> admin_browser.getControl(name="field.commercial").value
+    >>> admin_browser.getControl(
+    ...     name="field.suppress_subscription_notifications").value
     False
     >>> admin_browser.getControl(name="field.require_virtualized").value
     True
@@ -373,8 +371,8 @@ build on a virtualized builder.
 
     >>> admin_browser.getControl(name="field.enabled").value = False
     >>> admin_browser.getControl(name="field.private").value = True
-    >>> admin_browser.getControl(name="field.commercial").value = True
-    >>> admin_browser.getControl(name="field.buildd_secret").value = "secret"
+    >>> admin_browser.getControl(
+    ...     name="field.suppress_subscription_notifications").value = True
     >>> admin_browser.getControl(
     ...     name="field.require_virtualized").value = True
     >>> admin_browser.getControl(name="field.authorized_size").value = '1'
@@ -391,8 +389,7 @@ see some of the updated information.
     >>> print admin_browser.title
     Hack PPA : James Blackwell
 
-    >>> for msg in get_feedback_messages(admin_browser.contents):
-    ...     print msg
+    >>> print_feedback_messages(admin_browser.contents)
     This PPA has been disabled.
 
 We need go back to the "Administer archive" page to see the build score and
@@ -411,28 +408,9 @@ a sources.list entry.  If the field fails validation an error is displayed.
     ...     name="field.external_dependencies"
     ...     ).value = "deb not_a_url"
     >>> admin_browser.getControl("Save").click()
-    >>> for error in get_feedback_messages(admin_browser.contents):
-    ...     print error
+    >>> print_feedback_messages(admin_browser.contents)
     There is 1 error.
-    'deb not_a_url' is not a complete and valid sources.list entry
-
-
-Setting the buildd secret for non-private archives also generates
-an error.  Because the "commercial" flag is also currently set, removing
-privacy will also trigger a validation error because the commercial flag can
-only be set on private archives:
-
-    >>> admin_browser.getControl(
-    ...     name="field.external_dependencies").value = ""
-    >>> admin_browser.getControl(name="field.private").value = False
-    >>> admin_browser.getControl(name="field.buildd_secret").value = "secret"
-    >>> admin_browser.getControl("Save").click()
-
-    >>> for error in get_feedback_messages(admin_browser.contents):
-    ...     print error
-    There are 2 errors.
-    Can only set commericial for private archives.
-    Do not specify for non-private archives
+    &#x27;deb not_a_url&#x27; is not a complete and valid sources.list entry
 
 
 There is a maximum value allowed for `IArchive.authorized_size`, it is
@@ -459,8 +437,7 @@ will result in an error:
     ...     name="field.authorized_size").value = str(limit + 1)
     >>> admin_browser.getControl("Save").click()
 
-    >>> for error in get_feedback_messages(admin_browser.contents):
-    ...     print error
+    >>> print_feedback_messages(admin_browser.contents)
     There is 1 error.
     Value is too big
 
@@ -518,7 +495,7 @@ Activate the PPA in the first browser:
 
     >>> print extract_text(
     ...     find_tag_by_id(browser1.contents, 'edit-description'))
-    PPA description
+    Edit PPA description
     PPA rocks!
 
 Activating the default PPA in the second browser results in an error
@@ -526,10 +503,9 @@ and the rendered form contains the 'name' field.
 
     >>> browser2.getControl("Activate").click()
 
-    >>> for error in get_feedback_messages(browser2.contents):
-    ...     print error
+    >>> print_feedback_messages(browser2.contents)
     There is 1 error.
-    You already have a PPA named 'boomppa'.
+    You already have a PPA named &#x27;boomppa&#x27;.
 
     >>> print browser2.getControl(name="field.name").value
     boomppa
@@ -590,8 +566,7 @@ an error is raised.
     ...     name="field.displayname").value = 'Edge PPA'
     >>> cprov_browser.getControl("Activate").click()
 
-    >>> for error in get_feedback_messages(cprov_browser.contents):
-    ...     print error
+    >>> print_feedback_messages(cprov_browser.contents)
     There is 1 error.
     Required input is missing.
 
@@ -602,8 +577,7 @@ also enforced by the widget in the browser.
     >>> cprov_browser.getControl(name="field.name").value = 'ExPeRiMeNtAl!'
     >>> cprov_browser.getControl("Activate").click()
 
-    >>> for error in get_feedback_messages(cprov_browser.contents):
-    ...     print error
+    >>> print_feedback_messages(cprov_browser.contents)
     There is 1 error.
     Invalid name 'experimental!'. Names must be at least two characters ...
 
@@ -613,10 +587,9 @@ If Celso, by mistake, uses the same name of one of his existing PPAs
     >>> cprov_browser.getControl(name="field.name").value = 'ppa'
     >>> cprov_browser.getControl("Activate").click()
 
-    >>> for error in get_feedback_messages(cprov_browser.contents):
-    ...     print error
+    >>> print_feedback_messages(cprov_browser.contents)
     There is 1 error.
-    You already have a PPA named 'ppa'.
+    You already have a PPA named &#x27;ppa&#x27;.
 
 If the PPA is named as the distribution it is targeted for it cannot
 be created, mainly because of the way we publish repositories
@@ -625,8 +598,7 @@ including the distribution name automatically.
     >>> cprov_browser.getControl(name="field.name").value = 'ubuntu'
     >>> cprov_browser.getControl("Activate").click()
 
-    >>> for error in get_feedback_messages(cprov_browser.contents):
-    ...     print error
+    >>> print_feedback_messages(cprov_browser.contents)
     There is 1 error.
     A PPA cannot have the same name as its distribution.
 
@@ -695,6 +667,20 @@ And direct access to the PPA page is also denied.
     Traceback (most recent call last):
     ...
     Unauthorized: ...
+
+Deleted PPAs don't even show up for the owner.
+
+    >>> from lp.soyuz.enums import ArchiveStatus
+    >>> login('admin@canonical.com')
+    >>> cprov = getUtility(IPersonSet).getByName('cprov')
+    >>> cprov.getPPAByName('edge').status = ArchiveStatus.DELETED
+    >>> logout()
+
+    >>> cprov_browser.open("http://launchpad.dev/~cprov")
+    >>> print_tag_with_id(cprov_browser.contents, 'ppas')
+    Personal package archives
+    PPA for Celso Providelo
+    Create a new PPA
 
 
 Enabling or disabling of PPAs by the owner
@@ -791,10 +777,9 @@ contain a notification message that the deletion is in progress.
     >>> print no_priv_browser.url
     http://launchpad.dev/~no-priv
 
-    >>> for msg in get_feedback_messages(no_priv_browser.contents):
-    ...     print msg
-    Deletion of 'PPA for No Privileges Person' has been requested and
-    the repository will be removed shortly.
+    >>> print_feedback_messages(no_priv_browser.contents)
+    Deletion of &#x27;PPA for No Privileges Person&#x27; has been
+    requested and the repository will be removed shortly.
 
 The deleted PPA is still available to browse via a link on the profile page
 so you can see its build history, etc.:
@@ -820,3 +805,22 @@ no longer "Delete packages", "Edit PPA dependencies", or "Change details".
     ...
     LinkNotFoundError
 
+Even if someone URL-hacks to the edit form, it's not possible to
+reenable the PPA or turn on publishing.
+
+    >>> no_priv_browser.open(
+    ...     "http://launchpad.dev/~no-priv/+archive/ppa/+edit")
+    >>> no_priv_browser.getControl(name='field.enabled').value = True
+    >>> no_priv_browser.getControl('Save').click()
+    >>> "Deleted PPAs can&#x27;t be enabled." in no_priv_browser.contents
+    True
+    >>> no_priv_browser.open(
+    ...     "http://launchpad.dev/~no-priv/+archive/ppa/+edit")
+    >>> no_priv_browser.getControl(name='field.publish').value = True
+    >>> no_priv_browser.getControl('Save').click()
+    >>> "Deleted PPAs can&#x27;t be enabled." in no_priv_browser.contents
+    True
+    >>> no_priv_browser.getLink('Cancel').click()
+    >>> print extract_text(
+    ...     first_tag_by_class(no_priv_browser.contents, 'warning message'))
+    This PPA has been deleted.

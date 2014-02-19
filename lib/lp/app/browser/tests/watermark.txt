@@ -67,7 +67,7 @@ Any HTML in the context title will be escaped to avoid XSS vulnerabilities.
     >>> person = factory.makePerson(
     ...     displayname="Fubar<br/><script>alert('XSS')</script>")
     >>> print test_tales('view/watermark:heading', view=view(person))
-    <h...>Fubar&lt;br/&gt;&lt;script&gt;alert('XSS')&lt;/script&gt;</h...>
+    <h...>Fubar&lt;br/&gt;&lt;script&gt;alert(&#x27;XSS&#x27;)&lt;/script&gt;</h...>
 
 
 Watermark images

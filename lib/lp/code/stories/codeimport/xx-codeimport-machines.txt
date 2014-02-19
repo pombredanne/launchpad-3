@@ -24,7 +24,7 @@ Initially only the machine in sample data is shown.
 If we create some jobs that are running, then we can see the currently
 running jobs in the table.
 
-    >>> from canonical.launchpad.ftests import login, logout
+    >>> from lp.testing import login, logout
     >>> login('admin@canonical.com')
 
     >>> apollo, odin, saturn = (
@@ -32,7 +32,7 @@ running jobs in the table.
     ...     factory.makeCodeImportMachine(set_online=True, hostname='odin'),
     ...     factory.makeCodeImportMachine(hostname='saturn'))
 
-    >>> from canonical.launchpad.testing.codeimporthelpers import (
+    >>> from lp.code.tests.codeimporthelpers import (
     ...     make_running_import)
     >>> ignored = make_running_import(
     ...    factory=factory, machine=apollo,

@@ -3,8 +3,6 @@
 # Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=C0103,W0403
-
 """Librarian garbage collector.
 
 This script is run on the Librarian server to merge duplicate files,
@@ -14,14 +12,14 @@ rows in the database.
 
 __metaclass__ = type
 
-import logging
-
 import _pythonpath
 
-from canonical.config import config
-from canonical.launchpad.database.librarian import LibraryFileAlias
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.librarian import librariangc
+import logging
+
+from lp.services.config import config
+from lp.services.database.interfaces import IStore
+from lp.services.librarian.model import LibraryFileAlias
+from lp.services.librarianserver import librariangc
 from lp.services.scripts.base import LaunchpadCronScript
 
 
@@ -95,6 +93,5 @@ class LibrarianGC(LaunchpadCronScript):
 
 
 if __name__ == '__main__':
-    script = LibrarianGC('librarian-gc',
-                         dbuser=config.librarian_gc.dbuser)
+    script = LibrarianGC('librarian-gc', dbuser=config.librarian_gc.dbuser)
     script.lock_and_run(isolation='autocommit')

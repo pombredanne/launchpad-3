@@ -8,10 +8,6 @@
 
   <h2>Translation groups in Launchpad</h2>
 
-  <div class="portletBody">
-
-    <div class="portletContent">
-
       <ul>
         <li tal:repeat="group context/translation_groups">
           <a tal:attributes="href string:/translations/groups/${group/name}/"
@@ -19,7 +15,5 @@
         </li>
       </ul>
 
-    </div>
-  </div>
 </div>
 </tal:root>

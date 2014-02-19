@@ -1,24 +1,22 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=F0401
-
 """Unit tests for TestSourcePackageReleaseFiles."""
 
 __metaclass__ = type
 __all__ = [
     'TestSourcePackageReleaseFiles',
-    'test_suite',
+    'TestSourcePackageReleaseView',
     ]
 
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing.layers import (
+from lp.testing import TestCaseWithFactory
+from lp.testing.factory import remove_security_proxy_and_shout_at_engineer
+from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )
-from lp.testing import TestCaseWithFactory
-from lp.testing.factory import remove_security_proxy_and_shout_at_engineer
 from lp.testing.views import create_initialized_view
 
 

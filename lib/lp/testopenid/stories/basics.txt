@@ -55,9 +55,9 @@ Get the association handle, which we will need for later tests.
 checkid_setup Mode
 ==================
 
-When we go to the OpenID setup URL, we are presented with a login
-form.  By entering an email address and password, we are directed back
-to the consumer, completing the OpenID request:
+When we go to the OpenID setup URL, we are presented with a login form.
+By entering an email address we are directed back to the consumer,
+completing the OpenID request:
 
     >>> args = urlencode({
     ...     'openid.mode': 'checkid_setup',
@@ -71,7 +71,6 @@ to the consumer, completing the OpenID request:
     >>> print user_browser.title
     Login
     >>> user_browser.getControl(name='field.email').value = 'mark@example.com'
-    >>> user_browser.getControl(name='field.password').value = 'test'
     >>> user_browser.getControl('Continue').click()
 
     >>> print user_browser.url
@@ -128,7 +127,6 @@ fields that were signed.
     ...     })
     >>> user_browser.open('http://testopenid.dev/+openid?%s' % args)
     >>> user_browser.getControl(name='field.email').value = 'mark@example.com'
-    >>> user_browser.getControl(name='field.password').value = 'test'
     >>> user_browser.getControl('Continue').click()
     >>> print user_browser.contents
     Request method: GET

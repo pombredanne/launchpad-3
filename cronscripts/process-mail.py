@@ -3,18 +3,19 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=C0103,W0403
 """Fetches mail from the mail box and feeds them to the handlers."""
 
 import _pythonpath
 
 from zope.component.interfaces import ComponentLookupError
 
-from canonical.config import config
-from lp.services.scripts.base import (
-    LaunchpadCronScript, LaunchpadScriptFailure)
+from lp.services.config import config
 from lp.services.mail.incoming import handleMail
-from canonical.launchpad.interfaces.mailbox import IMailBox
+from lp.services.mail.mailbox import IMailBox
+from lp.services.scripts.base import (
+    LaunchpadCronScript,
+    LaunchpadScriptFailure,
+    )
 
 
 class ProcessMail(LaunchpadCronScript):
@@ -25,7 +26,7 @@ class ProcessMail(LaunchpadCronScript):
     def main(self):
         try:
             handleMail(self.txn)
-        except ComponentLookupError, lookup_error:
+        except ComponentLookupError as lookup_error:
             if lookup_error.args[0] != IMailBox:
                 raise
             raise LaunchpadScriptFailure(

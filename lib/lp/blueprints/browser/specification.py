@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Specification views."""
@@ -21,6 +21,7 @@ __all__ = [
     'SpecificationEditStatusView',
     'SpecificationEditView',
     'SpecificationEditWhiteboardView',
+    'SpecificationEditWorkItemsView',
     'SpecificationGoalDecideView',
     'SpecificationGoalProposeView',
     'SpecificationLinkBranchView',
@@ -44,50 +45,40 @@ from subprocess import (
     Popen,
     )
 
-from lazr.restful.interface import use_template
+from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.lifecycle.snapshot import Snapshot
+from lazr.restful.interface import (
+    copy_field,
+    use_template,
+    )
 from lazr.restful.interfaces import (
     IFieldHTMLRenderer,
+    IJSONRequestCache,
     IWebServiceClientRequest,
     )
 from zope import component
-from zope.app.form.browser import (
+from zope.component import getUtility
+from zope.error.interfaces import IErrorReportingUtility
+from zope.event import notify
+from zope.formlib import form
+from zope.formlib.form import Fields
+from zope.formlib.widgets import (
     TextAreaWidget,
     TextWidget,
     )
-from zope.app.form.browser.itemswidgets import DropdownWidget
-from zope.component import getUtility
-from zope.error.interfaces import IErrorReportingUtility
-from zope.formlib import form
-from zope.formlib.form import Fields
 from zope.interface import (
     implementer,
     Interface,
+    providedBy,
     )
 from zope.schema import (
     Bool,
     Choice,
-    )
-from zope.schema.vocabulary import (
-    SimpleTerm,
-    SimpleVocabulary,
+    TextLine,
     )
 
-from canonical.config import config
-from canonical.launchpad import _
-from canonical.launchpad.webapp import (
-    canonical_url,
-    LaunchpadView,
-    Navigation,
-    stepthrough,
-    stepto,
-    )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.menu import (
-    ContextMenu,
-    enabled_with_permission,
-    Link,
-    NavigationMenu,
-    )
+from lp import _
+from lp.app.browser.informationtype import InformationTypePortletMixin
 from lp.app.browser.launchpad import AppFrontPageSearchView
 from lp.app.browser.launchpadform import (
     action,
@@ -107,11 +98,20 @@ from lp.app.browser.tales import (
     DateTimeFormatterAPI,
     format_link,
     )
+from lp.app.enums import (
+    InformationType,
+    PUBLIC_PROPRIETARY_INFORMATION_TYPES,
+    )
+from lp.app.utilities import json_dump_information_types
+from lp.app.vocabularies import InformationTypeVocabulary
+from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 from lp.blueprints.browser.specificationtarget import HasSpecificationsView
 from lp.blueprints.enums import (
     NewSpecificationDefinitionStatus,
     SpecificationDefinitionStatus,
+    SpecificationFilter,
     SpecificationImplementationStatus,
+    SpecificationSort,
     )
 from lp.blueprints.errors import TargetAlreadyHasSpecification
 from lp.blueprints.interfaces.specification import (
@@ -123,21 +123,32 @@ from lp.blueprints.interfaces.sprintspecification import ISprintSpecification
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.productseries import IProductSeries
+from lp.services.config import config
+from lp.services.fields import WorkItemsText
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    canonical_url,
+    LaunchpadView,
+    Navigation,
+    stepthrough,
+    stepto,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.menu import (
+    ContextMenu,
+    enabled_with_permission,
+    Link,
+    NavigationMenu,
+    )
 
 
 class INewSpecification(Interface):
     """A schema for a new specification."""
 
     use_template(ISpecification, include=[
-        'name',
-        'title',
-        'specurl',
-        'summary',
-        'assignee',
-        'drafter',
-        'approver',
-        ])
+        'name', 'title', 'specurl', 'summary', 'assignee', 'drafter',
+        'approver'])
 
     definition_status = Choice(
         title=_('Definition Status'),
@@ -195,22 +206,50 @@ class NewSpecificationView(LaunchpadFormView):
     page_title = 'Register a blueprint in Launchpad'
     label = "Register a new blueprint"
 
+    custom_widget('specurl', TextWidget, displayWidth=60)
+    custom_widget('information_type', LaunchpadRadioWidgetWithDescription)
+
+    def append_info_type(self, fields):
+        """Append an InformationType field for creating a Specification.
+
+        Does nothing if the user cannot select different information types or
+        the feature flag is not enabled.
+        """
+        if len(self.info_types) < 2:
+            return fields
+        info_type_field = copy_field(ISpecification['information_type'],
+            readonly=False,
+            vocabulary=InformationTypeVocabulary(types=self.info_types))
+        return fields + Fields(info_type_field)
+
+    def initialize(self):
+        cache = IJSONRequestCache(self.request)
+        json_dump_information_types(cache, self.info_types)
+        super(NewSpecificationView, self).initialize()
+
     @action(_('Register Blueprint'), name='register')
     def register(self, action, data):
         """Registers a new specification."""
         self.transform(data)
+        information_type = data.get('information_type')
+        if information_type is None and (
+            IProduct.providedBy(self.context) or
+            IProductSeries.providedBy(self.context)):
+            information_type = (
+                self.context.getDefaultSpecificationInformationType())
         spec = getUtility(ISpecificationSet).new(
-            owner = self.user,
-            name = data.get('name'),
-            title = data.get('title'),
-            specurl = data.get('specurl'),
-            summary = data.get('summary'),
-            product = data.get('product'),
-            drafter = data.get('drafter'),
-            assignee = data.get('assignee'),
-            approver = data.get('approver'),
-            distribution = data.get('distribution'),
-            definition_status = data.get('definition_status'))
+            owner=self.user,
+            name=data.get('name'),
+            title=data.get('title'),
+            specurl=data.get('specurl'),
+            summary=data.get('summary'),
+            product=data.get('product'),
+            drafter=data.get('drafter'),
+            assignee=data.get('assignee'),
+            approver=data.get('approver'),
+            distribution=data.get('distribution'),
+            definition_status=data.get('definition_status'),
+            information_type=information_type)
         # Propose the specification as a series goal, if specified.
         series = data.get('series')
         if series is not None:
@@ -253,6 +292,47 @@ class NewSpecificationView(LaunchpadFormView):
         """
         return self._next_url
 
+    @property
+    def initial_values(self):
+        """Set initial values to honor sharing policy default value."""
+        information_type = InformationType.PUBLIC
+        if (IProduct.providedBy(self.context) or
+            IProductSeries.providedBy(self.context)):
+            information_type = (
+                self.context.getDefaultSpecificationInformationType())
+        values = {'information_type': information_type}
+        return values
+
+    def validate(self, data):
+        """See `LaunchpadFormView`.`"""
+        super(NewSpecificationView, self).validate(data)
+        information_type = data.get('information_type', None)
+        if information_type is None:
+            # We rely on the model to set the correct default value.
+            return
+        else:
+            # In the case of views outside a target context it's part of the
+            # form.
+            product = IProduct(data.get('target', None), None)
+
+            if (IProduct.providedBy(self.context) or
+                IProductSeries.providedBy(self.context)):
+                product = self.context
+
+            if product:
+                allowed = product.getAllowedSpecificationInformationTypes()
+                # Check that the information type is a valid one for this
+                # Product.
+                if information_type not in allowed:
+                    error = ('This information type is not permitted for '
+                             'this product')
+                    self.setFieldError('information_type', error)
+
+    def setUpWidgets(self):
+        super(NewSpecificationView, self).setUpWidgets()
+        widget = self.widgets['drafter']
+        widget.setRenderedValue(self.user)
+
 
 class NewSpecificationFromTargetView(NewSpecificationView):
     """An abstract view for creating a specification from a target context.
@@ -260,8 +340,14 @@ class NewSpecificationFromTargetView(NewSpecificationView):
     The context must correspond to a unique specification target.
     """
 
-    schema = Fields(INewSpecification,
-                    INewSpecificationSprint)
+    @property
+    def info_types(self):
+        return self.context.getAllowedSpecificationInformationTypes()
+
+    @property
+    def schema(self):
+        fields = Fields(INewSpecification, INewSpecificationSprint)
+        return self.append_info_type(fields)
 
 
 class NewSpecificationFromDistributionView(NewSpecificationFromTargetView):
@@ -281,9 +367,12 @@ class NewSpecificationFromProductView(NewSpecificationFromTargetView):
 class NewSpecificationFromSeriesView(NewSpecificationFromTargetView):
     """An abstract view for creating a specification from a series."""
 
-    schema = Fields(INewSpecification,
-                    INewSpecificationSprint,
-                    INewSpecificationSeriesGoal)
+    @property
+    def schema(self):
+        fields = Fields(INewSpecification,
+                        INewSpecificationSprint,
+                        INewSpecificationSeriesGoal)
+        return self.append_info_type(fields)
 
     def transform(self, data):
         if data['goal']:
@@ -312,6 +401,7 @@ class NewSpecificationFromNonTargetView(NewSpecificationView):
     The context may not correspond to a unique specification target. Hence
     sub-classes must define a schema requiring the user to specify a target.
     """
+    info_types = PUBLIC_PROPRIETARY_INFORMATION_TYPES
 
     def transform(self, data):
         data['distribution'] = IDistribution(data['target'], None)
@@ -322,6 +412,7 @@ class NewSpecificationFromNonTargetView(NewSpecificationView):
 
         The name must be unique within the context of the chosen target.
         """
+        super(NewSpecificationFromNonTargetView, self).validate(data)
         name = data.get('name')
         target = data.get('target')
         if name is not None and target is not None:
@@ -333,24 +424,32 @@ class NewSpecificationFromNonTargetView(NewSpecificationView):
 class NewSpecificationFromProjectView(NewSpecificationFromNonTargetView):
     """A view for creating a specification from a project."""
 
-    schema = Fields(INewSpecificationProjectTarget,
-                    INewSpecification,
-                    INewSpecificationSprint)
+    @property
+    def schema(self):
+        fields = Fields(INewSpecificationProjectTarget,
+                        INewSpecification,
+                        INewSpecificationSprint)
+        return self.append_info_type(fields)
 
 
 class NewSpecificationFromRootView(NewSpecificationFromNonTargetView):
     """A view for creating a specification from the root of Launchpad."""
 
-    schema = Fields(INewSpecificationTarget,
-                    INewSpecification,
-                    INewSpecificationSprint)
+    @property
+    def schema(self):
+        fields = Fields(INewSpecificationTarget,
+                        INewSpecification,
+                        INewSpecificationSprint)
+        return self.append_info_type(fields)
 
 
 class NewSpecificationFromSprintView(NewSpecificationFromNonTargetView):
     """A view for creating a specification from a sprint."""
 
-    schema = Fields(INewSpecificationTarget,
-                    INewSpecification)
+    @property
+    def schema(self):
+        fields = Fields(INewSpecificationTarget, INewSpecification)
+        return self.append_info_type(fields)
 
     def transform(self, data):
         super(NewSpecificationFromSprintView, self).transform(data)
@@ -409,20 +508,11 @@ class SpecificationActionMenu(NavigationMenu, SpecificationEditLinksMixin):
 class SpecificationContextMenu(ContextMenu, SpecificationEditLinksMixin):
 
     usedfor = ISpecification
-    links = ['edit', 'people', 'status', 'priority',
-             'whiteboard', 'proposegoal',
-             'milestone', 'requestfeedback', 'givefeedback', 'subscription',
-             'addsubscriber',
-             'linkbug', 'unlinkbug', 'linkbranch',
-             'adddependency', 'removedependency',
-             'dependencytree', 'linksprint', 'supersede',
-             'retarget']
-
-    def givefeedback(self):
-        text = 'Give feedback'
-        enabled = (self.user is not None and
-                   bool(self.context.getFeedbackRequests(self.user)))
-        return Link('+givefeedback', text, icon='edit', enabled=enabled)
+    links = ['edit', 'people', 'status', 'priority', 'whiteboard',
+             'proposegoal', 'workitems', 'milestone', 'subscription',
+             'addsubscriber', 'linkbug', 'unlinkbug', 'linkbranch',
+             'adddependency', 'removedependency', 'dependencytree',
+             'linksprint', 'supersede', 'retarget', 'information_type']
 
     @enabled_with_permission('launchpad.Edit')
     def milestone(self):
@@ -438,11 +528,6 @@ class SpecificationContextMenu(ContextMenu, SpecificationEditLinksMixin):
     def priority(self):
         text = 'Change priority'
         return Link('+priority', text, icon='edit')
-
-    @enabled_with_permission('launchpad.AnyPerson')
-    def requestfeedback(self):
-        text = 'Request feedback'
-        return Link('+requestfeedback', text, icon='add')
 
     @enabled_with_permission('launchpad.AnyPerson')
     def proposegoal(self):
@@ -500,13 +585,13 @@ class SpecificationContextMenu(ContextMenu, SpecificationEditLinksMixin):
     @enabled_with_permission('launchpad.Edit')
     def removedependency(self):
         text = 'Remove dependency'
-        enabled = bool(self.context.dependencies)
+        enabled = bool(self.context.getDependencies(self.user))
         return Link('+removedependency', text, icon='remove', enabled=enabled)
 
     def dependencytree(self):
         text = 'Show dependencies'
-        enabled = (bool(self.context.dependencies) or
-                   bool(self.context.blocked_specs))
+        enabled = (bool(self.context.getDependencies(self.user)) or
+                   bool(self.context.getBlockedSpecs(self.user)))
         return Link('+deptree', text, icon='info', enabled=enabled)
 
     @enabled_with_permission('launchpad.AnyPerson')
@@ -520,26 +605,32 @@ class SpecificationContextMenu(ContextMenu, SpecificationEditLinksMixin):
         return Link('+whiteboard', text, icon='edit')
 
     @enabled_with_permission('launchpad.AnyPerson')
+    def workitems(self):
+        text = 'Edit work items'
+        return Link('+workitems', text, icon='edit')
+
+    @enabled_with_permission('launchpad.AnyPerson')
     def linkbranch(self):
-        if self.context.linked_branches.count() > 0:
+        if len(self.context.linked_branches) > 0:
             text = 'Link to another branch'
         else:
             text = 'Link a related branch'
         return Link('+linkbranch', text, icon='add')
 
+    @enabled_with_permission('launchpad.Edit')
+    def information_type(self):
+        """Return the 'Set privacy/security' Link."""
+        text = 'Change privacy/security'
+        return Link('#', text)
 
-class SpecificationSimpleView(LaunchpadView):
+
+class SpecificationSimpleView(InformationTypePortletMixin, LaunchpadView):
     """Used to render portlets and listing items that need browser code."""
 
     @cachedproperty
-    def feedbackrequests(self):
-        if self.user is None:
-            return []
-        return list(self.context.getFeedbackRequests(self.user))
-
-    @cachedproperty
     def has_dep_tree(self):
-        return self.context.dependencies or self.context.blocked_specs
+        return (self.context.getDependencies(self.user) or
+            self.context.getBlockedSpecs(self.user))
 
     @cachedproperty
     def linked_branches(self):
@@ -549,6 +640,13 @@ class SpecificationSimpleView(LaunchpadView):
     @cachedproperty
     def bug_links(self):
         return self.context.getLinkedBugTasks(self.user)
+
+    @cachedproperty
+    def privacy_portlet_css(self):
+        if self.context.private:
+            return 'portlet private'
+        else:
+            return 'portlet public'
 
 
 class SpecificationView(SpecificationSimpleView):
@@ -562,17 +660,17 @@ class SpecificationView(SpecificationSimpleView):
     def page_title(self):
         return self.label
 
+    @property
+    def page_description(self):
+        return self.context.summary
+
     def initialize(self):
+        super(SpecificationView, self).initialize()
         # The review that the user requested on this spec, if any.
         self.notices = []
 
         if not self.user:
             return
-
-        if self.feedbackrequests:
-            msg = "You have %d feedback request(s) on this blueprint."
-            msg %= len(self.feedbackrequests)
-            self.notices.append(msg)
 
     @property
     def approver_widget(self):
@@ -626,7 +724,9 @@ class SpecificationView(SpecificationSimpleView):
     def title_widget(self):
         field = ISpecification['title']
         title = "Edit the blueprint title"
-        return TextLineEditorWidget(self.context, field, title, 'h1')
+        return TextLineEditorWidget(
+            self.context, field, title, 'h1', max_width='95%',
+            truncate_lines=2)
 
     @property
     def summary_widget(self):
@@ -640,6 +740,14 @@ class SpecificationView(SpecificationSimpleView):
         return TextAreaEditorWidget(
             self.context, ISpecification['whiteboard'], title="Whiteboard",
             edit_view='+whiteboard', edit_title='Edit whiteboard',
+            hide_empty=False)
+
+    @property
+    def workitems_text_widget(self):
+        """The Work Items text as a widget."""
+        return TextAreaEditorWidget(
+            self.context, ISpecification['workitems_text'], title="Work Items",
+            edit_view='+workitems', edit_title='Edit work items',
             hide_empty=False)
 
     @property
@@ -671,6 +779,12 @@ class SpecificationEditSchema(ISpecification):
             "The state of progress being made on the actual "
             "implementation or delivery of this feature."))
 
+    workitems_text = WorkItemsText(
+        title=_('Work Items'), required=True,
+        description=_(
+            "Work items for this specification input in a text format. "
+            "Your changes will override the current work items."))
+
 
 class SpecificationEditView(LaunchpadEditFormView):
 
@@ -679,7 +793,7 @@ class SpecificationEditView(LaunchpadEditFormView):
     label = 'Edit specification'
     custom_widget('summary', TextAreaWidget, height=5)
     custom_widget('whiteboard', TextAreaWidget, height=10)
-    custom_widget('specurl', TextWidget, width=60)
+    custom_widget('specurl', TextWidget, displayWidth=60)
 
     @property
     def adapters(self):
@@ -705,6 +819,20 @@ class SpecificationEditWhiteboardView(SpecificationEditView):
     custom_widget('whiteboard', TextAreaWidget, height=15)
 
 
+class SpecificationEditWorkItemsView(SpecificationEditView):
+    label = 'Edit specification work items'
+    field_names = ['workitems_text']
+    custom_widget('workitems_text', TextAreaWidget, height=15)
+
+    @action(_('Change'), name='change')
+    def change_action(self, action, data):
+        old_spec = Snapshot(self.context, providing=providedBy(self.context))
+        self.context.setWorkItems(data['workitems_text'])
+        notify(ObjectModifiedEvent(
+            self.context, old_spec, edited_fields=['workitems_text']))
+        self.next_url = canonical_url(self.context)
+
+
 class SpecificationEditPeopleView(SpecificationEditView):
     label = 'Change the people involved'
     field_names = ['assignee', 'drafter', 'approver', 'whiteboard']
@@ -723,6 +851,52 @@ class SpecificationEditPriorityView(SpecificationEditView):
 class SpecificationEditStatusView(SpecificationEditView):
     label = 'Change status'
     field_names = ['definition_status', 'implementation_status', 'whiteboard']
+
+
+class SpecificationInformationTypeEditView(LaunchpadFormView):
+    """Form for marking a bug as a private/public."""
+
+    @property
+    def label(self):
+        return 'Set information type'
+
+    page_title = label
+
+    field_names = ['information_type']
+
+    custom_widget('information_type', LaunchpadRadioWidgetWithDescription)
+
+    @property
+    def schema(self):
+        """Schema for editing the information type of a `IBug`."""
+        info_types = self.context.getAllowedInformationTypes(self.user)
+
+        class information_type_schema(Interface):
+            information_type_field = copy_field(
+                ISpecification['information_type'], readonly=False,
+                vocabulary=InformationTypeVocabulary(types=info_types))
+        return information_type_schema
+
+    @property
+    def next_url(self):
+        """Return the next URL to call when this call completes."""
+        return None
+
+    cancel_url = next_url
+
+    @property
+    def initial_values(self):
+        """See `LaunchpadFormView.`"""
+        return {'information_type': self.context.information_type}
+
+    @action('Change', name='change',
+        failure=LaunchpadFormView.ajax_failure_handler)
+    def change_action(self, action, data):
+        """Update the bug."""
+        data = dict(data)
+        information_type = data.pop('information_type')
+        self.context.transitionToInformationType(information_type, self.user)
+        return ''
 
 
 class SpecificationEditMilestoneView(SpecificationEditView):
@@ -848,52 +1022,44 @@ class SpecificationRetargetingView(LaunchpadFormView):
         return canonical_url(self.context)
 
 
-class SupersededByWidget(DropdownWidget):
-    """Custom select widget for specification superseding.
-
-    This is just a standard DropdownWidget with the (no value) text
-    rendered as something meaningful to the user, as per Bug #4116.
-
-    TODO: This should be replaced with something more scalable as there
-    is no upper limit to the number of specifications.
-    -- StuartBishop 20060704
-    """
-    _messageNoValue = _("(Not Superseded)")
-
-
 class SpecificationSupersedingView(LaunchpadFormView):
     schema = ISpecification
     field_names = ['superseded_by']
     label = _('Mark blueprint superseded')
-    custom_widget('superseded_by', SupersededByWidget)
 
     @property
     def initial_values(self):
-        return {
-            'superseded_by': self.context.superseded_by,
-            }
+        name = None
+        if self.context.superseded_by:
+            name = self.context.superseded_by.name
+        return {'superseded_by': name}
 
     def setUpFields(self):
         """Override the setup to define own fields."""
-        if self.context.target is None:
-            raise AssertionError("No target found for this spec.")
-        specs = sorted(self.context.target.specifications(),
-                       key=attrgetter('name'))
-        terms = [SimpleTerm(spec, spec.name, spec.title)
-                 for spec in specs if spec != self.context]
-
         self.form_fields = form.Fields(
-            Choice(
+            TextLine(
                 __name__='superseded_by',
                 title=_("Superseded by"),
-                vocabulary=SimpleVocabulary(terms),
                 required=False,
                 description=_(
                     "The blueprint which supersedes this one. Note "
-                    "that selecting a blueprint here and pressing "
+                    "that entering a blueprint here and pressing "
                     "Continue will change the blueprint status "
                     "to Superseded.")),
             render_context=self.render_context)
+
+    def validate(self, data):
+        """See `LaunchpadFormView`.`"""
+        super(SpecificationSupersedingView, self).validate(data)
+        if data['superseded_by']:
+            spec = getUtility(ISpecificationSet).getByName(
+                self.context.target, data['superseded_by'])
+            if spec:
+                data['superseded_by'] = spec
+            else:
+                self.setFieldError(
+                    'superseded_by',
+                    "No blueprint named '%s'." % data['superseded_by'])
 
     @action(_('Continue'), name='supersede')
     def supersede_action(self, action, data):
@@ -933,10 +1099,11 @@ class SpecGraph:
     # containing one '%s' replacement marker.
     url_pattern_for_testing = None
 
-    def __init__(self):
+    def __init__(self, user=None):
         self.nodes = set()
         self.edges = set()
         self.root_node = None
+        self.user = user
 
     def newNode(self, spec, root=False):
         """Return a new node based on the given spec.
@@ -945,8 +1112,10 @@ class SpecGraph:
 
         There can be at most one root node set.
         """
-        assert self.getNode(spec.name) is None, (
-            "A spec called %s is already in the graph" % spec.name)
+        if self.getNode(spec) is not None:
+            raise ValueError(
+            "A spec called %s/+spec/%s is already in the graph" %
+            (spec.target.name, spec.name))
         node = SpecGraphNode(spec, root=root,
                 url_pattern_for_testing=self.url_pattern_for_testing)
         self.nodes.add(node)
@@ -955,14 +1124,11 @@ class SpecGraph:
             self.root_node = node
         return node
 
-    def getNode(self, name):
-        """Return the node with the given name.
-
-        Return None if there is no such node.
-        """
-        # Efficiency: O(n)
+    def getNode(self, spec):
+        """Return the node with the given spec, or None if not matched."""
+        unique_name = '%s-%s' % (spec.target.name, spec.name)
         for node in self.nodes:
-            if node.name == name:
+            if node.name == unique_name:
                 return node
         return None
 
@@ -972,7 +1138,7 @@ class SpecGraph:
         If there is already a node for spec.name, return that node.
         Otherwise, create a new node for the spec, and return that.
         """
-        node = self.getNode(spec.name)
+        node = self.getNode(spec)
         if node is None:
             node = self.newNode(spec)
         return node
@@ -988,7 +1154,8 @@ class SpecGraph:
         """Add nodes for the specs that the given spec depends on,
         transitively.
         """
-        get_related_specs_fn = attrgetter('dependencies')
+        def get_related_specs_fn(spec):
+            return spec.getDependencies(self.user)
 
         def link_nodes_fn(node, dependency):
             self.link(dependency, node)
@@ -996,7 +1163,8 @@ class SpecGraph:
 
     def addBlockedNodes(self, spec):
         """Add nodes for specs that the given spec blocks, transitively."""
-        get_related_specs_fn = attrgetter('blocked_specs')
+        def get_related_specs_fn(spec):
+            return spec.getBlockedSpecs(self.user)
 
         def link_nodes_fn(node, blocked_spec):
             self.link(node, blocked_spec)
@@ -1126,9 +1294,9 @@ class SpecGraphNode:
     """
 
     def __init__(self, spec, root=False, url_pattern_for_testing=None):
-        self.name = spec.name
+        self.name = '%s-%s' % (spec.target.name, spec.name)
         if url_pattern_for_testing:
-            self.URL = url_pattern_for_testing % self.name
+            self.URL = url_pattern_for_testing % spec.name
         else:
             self.URL = canonical_url(spec)
         self.isRoot = root
@@ -1227,7 +1395,7 @@ class SpecificationTreeGraphView(LaunchpadView):
     def makeSpecGraph(self):
         """Return a SpecGraph object rooted on the spec that is self.context.
         """
-        graph = SpecGraph()
+        graph = SpecGraph(self.user)
         graph.newNode(self.context, root=True)
         graph.addDependencyNodes(self.context)
         graph.addBlockedNodes(self.context)
@@ -1259,6 +1427,9 @@ class SpecificationTreeGraphView(LaunchpadView):
         process.stdin.close()
         output = process.stdout.read()
         err = process.stderr.read()
+        # XXX Abel Deuring 2012-12-06, bug 1087314
+        # err may just contain a warning, while the image might be rendered
+        # correctly. We should not raise an error in this case.
         if err:
             raise ProblemRenderingGraph(err, output)
         return output
@@ -1285,7 +1456,7 @@ class SpecificationTreePNGView(SpecificationTreeGraphView):
         try:
             image = self.renderGraphvizGraph('png')
             self.request.response.setHeader('Content-type', 'image/png')
-        except (ProblemRenderingGraph, OSError), error:
+        except (ProblemRenderingGraph, OSError) as error:
             # The subprocess or command can raise errors that might not
             # occur if we used a Python bindings for GraphViz. Instead of
             # sending the generated image, return the fail-over image
@@ -1305,7 +1476,7 @@ class SpecificationTreeImageTag(SpecificationTreeGraphView):
         """Render the image and image map tags for this dependency graph."""
         try:
             image_map = self.renderGraphvizGraph('cmapx').decode('UTF-8')
-        except (ProblemRenderingGraph, OSError), error:
+        except (ProblemRenderingGraph, OSError) as error:
             # The subprocess or command can raise errors that might not
             # occur if we used a Python bindings for GraphViz. Instead
             # of rendering an image map, return an explanation that the
@@ -1352,22 +1523,34 @@ class SpecificationLinkBranchView(LaunchpadFormView):
 
     @action(_('Continue'), name='continue')
     def continue_action(self, action, data):
-        self.context.linkBranch(branch=data['branch'],
-                                registrant=self.user)
+        self.context.linkBranch(branch=data['branch'], registrant=self.user)
 
     @property
     def next_url(self):
         return canonical_url(self.context)
 
-    @property
-    def cancel_url(self):
-        return canonical_url(self.context)
+    cancel_url = next_url
 
 
 class SpecificationSetView(AppFrontPageSearchView, HasSpecificationsView):
     """View for the Blueprints index page."""
 
     label = 'Blueprints'
+
+    @property
+    def latest_specifications(self):
+        return self.context.specifications(
+            self.user, sort=SpecificationSort.DATE, quantity=5)
+
+    @property
+    def latest_completed_specifications(self):
+        return self.context.specifications(
+            self.user, sort=SpecificationSort.DATE, quantity=5,
+            filter=[SpecificationFilter.COMPLETE])
+
+    @property
+    def specification_count(self):
+        return self.context.specificationCount(self.user)
 
     @safe_action
     @action('Find blueprints', name="search")
@@ -1400,8 +1583,7 @@ def starter_xhtml_representation(context, field, request):
         if starter is None:
             return ''
         date_formatter = DateTimeFormatterAPI(context.date_started)
-        return "%s %s" % (
-            format_link(starter), date_formatter.displaydate())
+        return "%s %s" % (format_link(starter), date_formatter.displaydate())
     return render
 
 
@@ -1415,6 +1597,5 @@ def completer_xhtml_representation(context, field, request):
         if completer is None:
             return ''
         date_formatter = DateTimeFormatterAPI(context.date_completed)
-        return "%s %s" % (
-            format_link(completer), date_formatter.displaydate())
+        return "%s %s" % (format_link(completer), date_formatter.displaydate())
     return render

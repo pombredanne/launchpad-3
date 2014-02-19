@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """The actual script class to allocate revisions."""
@@ -23,15 +23,6 @@ class RevisionKarmaAllocator(LaunchpadCronScript):
         There are a number of circumstances where this doesn't happen:
           * The revision author is not linked to a Launchpad person
           * The branch is +junk
-
-        When a branch is moved from +junk to a project we want to be able to
-        allocate karma for the revisions that are now in the project.
-
-        When a person validates an email address, a link is made with a
-        `RevisionAuthor` if the revision author has that email address.  In
-        this situation we want to allocate karma for the revisions that have
-        the newly linked revision author as the and allocate karma for the
-        person.
         """
         self.logger.info("Updating revision karma")
 
@@ -49,14 +40,7 @@ class RevisionKarmaAllocator(LaunchpadCronScript):
                 # allocate karma for junk branches.
                 branch = revision.getBranch(
                     allow_private=True, allow_junk=False)
-                karma = revision.allocateKarma(branch)
-                if karma is None:
-                    error_msg = (
-                        'No karma generated for revid: %s (%s)' %
-                        (revision.revision_id, revision.id))
-                    self.logger.critical(error_msg)
-                    # Stop now to avoid infinite loop.
-                    raise AssertionError(error_msg)
+                revision.allocateKarma(branch)
                 count += 1
             self.logger.debug("%s processed", count)
             transaction.commit()

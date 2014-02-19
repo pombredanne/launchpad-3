@@ -1,7 +1,5 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=E0213
 
 """Specification message interfaces."""
 
@@ -13,13 +11,10 @@ __all__ = [
 
 from lazr.restful.fields import Reference
 from zope.interface import Interface
-from zope.schema import (
-    Bool,
-    Int,
-    )
+from zope.schema import Bool
 
-from lp.services.messages.interfaces.message import IMessage
 from lp.blueprints.interfaces.specification import ISpecification
+from lp.services.messages.interfaces.message import IMessage
 
 
 class ISpecificationMessage(Interface):

@@ -14,7 +14,3 @@
     background-image: url(/@@/blue-bar.png); /* sprite-ref: group1 */
     background-repeat: repeat-x;
 }
-.large-flame {
-    background-image: url(/@@/flame-large.png); /* sprite-ref: group1 */
-    background-repeat: no-repeat;
-}

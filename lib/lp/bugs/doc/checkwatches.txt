@@ -6,8 +6,8 @@ can't test it properly, since we don't yet have a mock HTTP server we
 can use for testing, so let's just make sure that it doesn't try to
 contact any external servers.
 
-    >>> from canonical.database.sqlbase import cursor, sqlvalues
-    >>> from canonical.database.constants import UTC_NOW
+    >>> from lp.services.database.sqlbase import cursor, sqlvalues
+    >>> from lp.services.database.constants import UTC_NOW
     >>> cur = cursor()
     >>> cur.execute("UPDATE BugWatch SET lastchecked=%s" %
     ...     sqlvalues(UTC_NOW))
@@ -64,7 +64,7 @@ require no action from the Launchpad end.
     >>> from lp.testing.fixture import CaptureOops
     >>> capture = CaptureOops()
     >>> capture.setUp()
-    >>> def do_not_urlopen(url=None, data=None):
+    >>> def do_not_urlopen(url=None, data=None, timeout=None):
     ...     raise socket.timeout("Connection timed out.")
     >>> try:
     ...     urllib2.urlopen = do_not_urlopen

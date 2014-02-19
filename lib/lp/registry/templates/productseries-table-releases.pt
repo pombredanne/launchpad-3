@@ -1,8 +1,7 @@
 <tal:root
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
-  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  tal:content="cache:anonymous, 1 hour">
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n">
 
 <tal:navigation_top
       replace="structure view/milestone_batch_navigator/@@+navigation-links-upper" />

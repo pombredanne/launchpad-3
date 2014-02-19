@@ -114,8 +114,7 @@ The XMLRPCRedirectHandler
 The UrlLib2Transport uses a custom HTTP redirection handler to handle
 redirect responses. This is a subclass of urllib2's HTTPRedirectHandler.
 
-    >>> from lp.bugs.externalbugtracker.xmlrpc import (
-    ...     XMLRPCRedirectHandler)
+    >>> from lp.bugs.externalbugtracker.xmlrpc import XMLRPCRedirectHandler
     >>> from urllib2 import HTTPRedirectHandler, Request
 
     >>> transport.opener.handlers
@@ -145,6 +144,7 @@ to the new target URL).
     ... """
     >>> request_to_be_redirected = Request(
     ...     'http://www.example.com', data=request_body)
+    >>> request_to_be_redirected.timeout = 30
 
     >>> handler = XMLRPCRedirectHandler()
     >>> redirected_request = handler.redirect_request(
@@ -173,11 +173,14 @@ be the XML-RPC method call.
         </param>
       </params>
     </methodCall>
+    >>> redirected_request.timeout == request_to_be_redirected.timeout
+    True
 
 If an XMLRPCRedirectHandler is passed a GET request to redirect, the new
 request will be a GET request with no payload.
 
     >>> request_to_be_redirected = Request('http://www.example.com')
+    >>> request_to_be_redirected.timeout = 30
     >>> redirected_request = handler.redirect_request(
     ...     request_to_be_redirected, None, 302, 'Moved', {},
     ...     newurl='http://www.example.com/redirected')

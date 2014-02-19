@@ -17,16 +17,14 @@ from zope.component import getUtility
 from zope.component.interfaces import ComponentLookupError
 from zope.interface import implements
 
-from canonical.launchpad.webapp.interfaces import ILaunchpadPrincipal
-from lp.archivepublisher.interfaces.publisherconfig import (
-    IPublisherConfigSet,
-    )
+from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.registry.interfaces.poll import (
     IPollSet,
     IPollSubset,
     PollAlgorithm,
     PollStatus,
     )
+from lp.services.webapp.interfaces import ILaunchpadPrincipal
 
 
 def sourcepackage_to_distribution(source_package):
@@ -135,3 +133,8 @@ def distribution_to_publisherconfig(distro):
 def package_to_sourcepackagename(package):
     """Adapts a package to its `ISourcePackageName`."""
     return package.sourcepackagename
+
+
+def information_type_from_product(milestone):
+    """Adapts a milestone to product for information_type."""
+    return milestone.product

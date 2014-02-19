@@ -8,8 +8,8 @@ __all__ = [
     'generate_bug_add_email',
     ]
 
-from canonical.launchpad.webapp.publisher import canonical_url
 from lp.services.mail.mailwrapper import MailWrapper
+from lp.services.webapp.publisher import canonical_url
 
 
 def generate_bug_add_email(bug, new_recipients=False, reason=None,

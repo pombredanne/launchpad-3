@@ -6,7 +6,10 @@
 __metaclass__ = type
 __all__ = [
     'CaptureOops',
+    'DemoMode',
+    'DisableTriggerFixture',
     'PGBouncerFixture',
+    'PGNotReadyError',
     'Urllib2Fixture',
     'ZopeAdapterFixture',
     'ZopeEventHandlerFixture',
@@ -15,6 +18,7 @@ __all__ = [
 
 from ConfigParser import SafeConfigParser
 import os.path
+import socket
 import time
 
 import amqplib.client_0_8 as amqp
@@ -47,12 +51,19 @@ from zope.security.checker import (
     undefineChecker,
     )
 
-from canonical.config import config
-from canonical.launchpad import webapp
-from canonical.launchpad.webapp.errorlog import ErrorReportEvent
+from lp.services import webapp
+from lp.services.config import config
+from lp.services.database.interfaces import IStore
+from lp.services.librarian.model import LibraryFileAlias
 from lp.services.messaging.interfaces import MessagingUnavailable
 from lp.services.messaging.rabbit import connect
 from lp.services.timeline.requesttimeline import get_request_timeline
+from lp.services.webapp.errorlog import ErrorReportEvent
+from lp.testing.dbuser import dbuser
+
+
+class PGNotReadyError(Exception):
+    pass
 
 
 class PGBouncerFixture(pgbouncer.fixture.PGBouncerFixture):
@@ -66,7 +77,7 @@ class PGBouncerFixture(pgbouncer.fixture.PGBouncerFixture):
         super(PGBouncerFixture, self).__init__()
 
         # Known databases
-        from canonical.testing.layers import DatabaseLayer
+        from lp.testing.layers import DatabaseLayer
         dbnames = [
             DatabaseLayer._db_fixture.dbname,
             DatabaseLayer._db_template_fixture.dbname,
@@ -113,12 +124,28 @@ class PGBouncerFixture(pgbouncer.fixture.PGBouncerFixture):
         as we are using a test layer that doesn't provide database
         connections.
         """
-        from canonical.testing.layers import (
+        from lp.testing.layers import (
             reconnect_stores,
             is_ca_available,
             )
         if is_ca_available():
             reconnect_stores()
+
+    def start(self, retries=20, sleep=0.5):
+        """Start PGBouncer, waiting for it to accept connections if neccesary.
+        """
+        super(PGBouncerFixture, self).start()
+        for i in xrange(retries):
+            try:
+                socket.create_connection((self.host, self.port))
+            except socket.error:
+                # Try again.
+                pass
+            else:
+                break
+            time.sleep(sleep)
+        else:
+            raise PGNotReadyError("Not ready after %d attempts." % retries)
 
 
 class ZopeAdapterFixture(Fixture):
@@ -232,7 +259,7 @@ class Urllib2Fixture(Fixture):
 
     def setUp(self):
         # Work around circular import.
-        from canonical.testing.layers import wsgi_application
+        from lp.testing.layers import wsgi_application
         super(Urllib2Fixture, self).setUp()
         add_wsgi_intercept('launchpad.dev', 80, lambda: wsgi_application)
         self.addCleanup(remove_wsgi_intercept, 'launchpad.dev', 80)
@@ -344,3 +371,49 @@ class CaptureTimeline(Fixture):
         self.timeline = get_request_timeline(
             get_current_browser_request())
         self.addCleanup(webapp.adapter.clear_request_started)
+
+
+class DemoMode(Fixture):
+    """Run with an is_demo configuration.
+
+    This changes the page styling, feature flag permissions, and perhaps
+    other things.
+    """
+
+    def setUp(self):
+        Fixture.setUp(self)
+        config.push('demo-fixture', '''
+[launchpad]
+is_demo: true
+site_message = This is a demo site mmk. \
+<a href="http://example.com">File a bug</a>.
+            ''')
+        self.addCleanup(lambda: config.pop('demo-fixture'))
+
+
+class DisableTriggerFixture(Fixture):
+    """Let tests disable database triggers."""
+
+    def __init__(self, table_triggers=None):
+        self.table_triggers = table_triggers or {}
+
+    def setUp(self):
+        super(DisableTriggerFixture, self).setUp()
+        self._disable_triggers()
+        self.addCleanup(self._enable_triggers)
+
+    def _process_triggers(self, mode):
+        with dbuser('postgres'):
+            for table, trigger in self.table_triggers.items():
+                sql = ("ALTER TABLE %(table)s %(mode)s trigger "
+                       "%(trigger)s") % {
+                    'table': table,
+                    'mode': mode,
+                    'trigger': trigger}
+                IStore(LibraryFileAlias).execute(sql)
+
+    def _disable_triggers(self):
+        self._process_triggers(mode='DISABLE')
+
+    def _enable_triggers(self):
+        self._process_triggers(mode='ENABLE')

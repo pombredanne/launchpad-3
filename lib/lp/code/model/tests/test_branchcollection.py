@@ -1,27 +1,28 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for branch collections."""
 
 __metaclass__ = type
 
-from datetime import datetime
+from datetime import (
+    datetime,
+    timedelta,
+    )
+from operator import attrgetter
 
 import pytz
-from storm.store import EmptyResultSet
+from storm.store import (
+    EmptyResultSet,
+    Store,
+    )
+from testtools.matchers import Equals
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.testing.databasehelpers import (
-    remove_all_sample_data_branches,
-    )
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.services import IService
 from lp.code.enums import (
     BranchLifecycleStatus,
     BranchMergeProposalStatus,
@@ -38,12 +39,23 @@ from lp.code.interfaces.branchcollection import (
 from lp.code.interfaces.codehosting import LAUNCHPAD_SERVICES
 from lp.code.model.branch import Branch
 from lp.code.model.branchcollection import GenericBranchCollection
+from lp.code.tests.helpers import remove_all_sample_data_branches
+from lp.registry.enums import PersonVisibility
+from lp.registry.interfaces.person import TeamMembershipPolicy
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.database.interfaces import IStore
+from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
     person_logged_in,
     run_with_login,
+    StormStatementRecorder,
     TestCaseWithFactory,
     )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
+from lp.testing.matchers import HasQueryCount
 
 
 class TestBranchCollectionAdaptation(TestCaseWithFactory):
@@ -51,47 +63,36 @@ class TestBranchCollectionAdaptation(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def assertCollection(self, target):
+        self.assertIsNot(None, IBranchCollection(target, None))
+
     def test_product(self):
         # A product can be adapted to a branch collection.
-        product = self.factory.makeProduct()
-        collection = IBranchCollection(product, None)
-        self.assertIsNot(None, collection)
+        self.assertCollection(self.factory.makeProduct())
 
     def test_project(self):
         # A project can be adapted to a branch collection.
-        project = self.factory.makeProject()
-        collection = IBranchCollection(project, None)
-        self.assertIsNot(None, collection)
+        self.assertCollection(self.factory.makeProject())
 
     def test_person(self):
         # A person can be adapted to a branch collection.
-        person = self.factory.makePerson()
-        collection = IBranchCollection(person, None)
-        self.assertIsNot(None, collection)
+        self.assertCollection(self.factory.makePerson())
 
     def test_distribution(self):
         # A distribution can be adapted to a branch collection.
-        distribution = self.factory.makeDistribution()
-        collection = IBranchCollection(distribution, None)
-        self.assertIsNot(None, collection)
+        self.assertCollection(self.factory.makeDistribution())
 
     def test_distro_series(self):
         # A distro series can be adapted to a branch collection.
-        distro_series = self.factory.makeDistroSeries()
-        collection = IBranchCollection(distro_series, None)
-        self.assertIsNot(None, collection)
+        self.assertCollection(self.factory.makeDistroSeries())
 
     def test_source_package(self):
         # A source package can be adapted to a branch collection.
-        source_package = self.factory.makeSourcePackage()
-        collection = IBranchCollection(source_package, None)
-        self.assertIsNot(None, collection)
+        self.assertCollection(self.factory.makeSourcePackage())
 
     def test_distribution_source_package(self):
         # A distribution source pakcage can be adapted to a branch collection.
-        distro_source_package = self.factory.makeDistributionSourcePackage()
-        collection = IBranchCollection(distro_source_package, None)
-        self.assertIsNot(None, collection)
+        self.assertCollection(self.factory.makeDistributionSourcePackage())
 
 
 class TestGenericBranchCollection(TestCaseWithFactory):
@@ -99,10 +100,9 @@ class TestGenericBranchCollection(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        TestCaseWithFactory.setUp(self)
+        super(TestGenericBranchCollection, self).setUp()
         remove_all_sample_data_branches()
-        self.store = getUtility(IStoreSelector).get(
-            MAIN_STORE, DEFAULT_FLAVOR)
+        self.store = IStore(Branch)
 
     def test_provides_branchcollection(self):
         # `GenericBranchCollection` provides the `IBranchCollection`
@@ -132,6 +132,31 @@ class TestGenericBranchCollection(TestCaseWithFactory):
             self.store, [Branch.product == branch.product])
         self.assertEqual([branch], list(collection.getBranches()))
 
+    def test_getBranches_caches_viewers(self):
+        # getBranches() caches the user as a known viewer so that
+        # branch.visibleByUser() does not have to hit the database.
+        collection = GenericBranchCollection(self.store)
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        branch = self.factory.makeProductBranch(
+            owner=owner, product=product,
+            information_type=InformationType.USERDATA)
+        someone = self.factory.makePerson()
+        with person_logged_in(owner):
+            getUtility(IService, 'sharing').ensureAccessGrants(
+                [someone], owner, branches=[branch], ignore_permissions=True)
+        [branch] = list(collection.visibleByUser(someone).getBranches())
+        with StormStatementRecorder() as recorder:
+            self.assertTrue(branch.visibleByUser(someone))
+            self.assertThat(recorder, HasQueryCount(Equals(0)))
+
+    def test_getBranchIds(self):
+        branch = self.factory.makeProductBranch()
+        self.factory.makeAnyBranch()
+        collection = GenericBranchCollection(
+            self.store, [Branch.product == branch.product])
+        self.assertEqual([branch.id], list(collection.getBranchIds()))
+
     def test_count(self):
         # The 'count' property of a collection is the number of elements in
         # the collection.
@@ -160,7 +185,8 @@ class TestGenericBranchCollection(TestCaseWithFactory):
         for i in range(branch_number):
             branches.append(
                 self.factory.makeStackedOnBranchChain(
-                    owner=person, private=True, depth=depth))
+                    owner=person, depth=depth,
+                    information_type=InformationType.USERDATA))
         with person_logged_in(person):
             all_branches = (
                 GenericBranchCollection.preloadVisibleStackedOnBranches(
@@ -174,8 +200,7 @@ class TestGenericBranchCollection(TestCaseWithFactory):
         branches = []
         for i in range(branch_number):
             branches.append(
-                self.factory.makeStackedOnBranchChain(
-                    private=False, depth=depth))
+                self.factory.makeStackedOnBranchChain(depth=depth))
         all_branches = (
             GenericBranchCollection.preloadVisibleStackedOnBranches(branches))
         self.assertEqual(len(all_branches), branch_number * depth)
@@ -189,7 +214,7 @@ class TestGenericBranchCollection(TestCaseWithFactory):
         for i in range(branch_number):
             branches.append(
                 self.factory.makeStackedOnBranchChain(
-                    owner=person, private=False, depth=depth))
+                    owner=person, depth=depth))
         with person_logged_in(person):
             all_branches = (
                 GenericBranchCollection.preloadVisibleStackedOnBranches(
@@ -223,7 +248,7 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
         # IBranchCollection.count() returns the number of branches that
         # getBranches() yields, even when the visibleByUser filter is applied.
         branch = self.factory.makeAnyBranch()
-        self.factory.makeAnyBranch(private=True)
+        self.factory.makeAnyBranch(information_type=InformationType.USERDATA)
         collection = self.all_branches.visibleByUser(branch.owner)
         self.assertEqual(1, collection.getBranches().count())
         self.assertEqual(1, len(list(collection.getBranches())))
@@ -271,6 +296,65 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
         collection = self.all_branches.inProject(project)
         self.assertEqual([branch], list(collection.getBranches()))
 
+    def test_isExclusive(self):
+        # 'isExclusive' is restricted to branches owned by exclusive
+        # teams and users.
+        user = self.factory.makePerson()
+        team = self.factory.makeTeam(
+            membership_policy=TeamMembershipPolicy.RESTRICTED)
+        other_team = self.factory.makeTeam(
+            membership_policy=TeamMembershipPolicy.OPEN)
+        team_branch = self.factory.makeAnyBranch(owner=team)
+        user_branch = self.factory.makeAnyBranch(owner=user)
+        self.factory.makeAnyBranch(owner=other_team)
+        collection = self.all_branches.isExclusive()
+        self.assertContentEqual(
+            [team_branch, user_branch], list(collection.getBranches()))
+
+    def test_inProduct_and_isExclusive(self):
+        # 'inProduct' and 'isExclusive' can combine to form a collection that
+        # is restricted to branches of a particular product owned exclusive
+        # teams and users.
+        team = self.factory.makeTeam(
+            membership_policy=TeamMembershipPolicy.RESTRICTED)
+        other_team = self.factory.makeTeam(
+            membership_policy=TeamMembershipPolicy.OPEN)
+        product = self.factory.makeProduct()
+        branch = self.factory.makeProductBranch(product=product, owner=team)
+        self.factory.makeAnyBranch(owner=team)
+        self.factory.makeProductBranch(product=product, owner=other_team)
+        collection = self.all_branches.inProduct(product).isExclusive()
+        self.assertEqual([branch], list(collection.getBranches()))
+        collection = self.all_branches.isExclusive().inProduct(product)
+        self.assertEqual([branch], list(collection.getBranches()))
+
+    def test_isSeries(self):
+        # 'isSeries' is restricted to branches linked to product series.
+        series = self.factory.makeProductSeries()
+        branch = self.factory.makeAnyBranch(product=series.product)
+        with person_logged_in(series.product.owner):
+            series.branch = branch
+        self.factory.makeAnyBranch(product=series.product)
+        collection = self.all_branches.isSeries()
+        self.assertContentEqual([branch], list(collection.getBranches()))
+
+    def test_ownedBy_and_isSeries(self):
+        # 'ownedBy' and 'inSeries' can combine to form a collection that is
+        # restricted to branches linked to product series owned by a particular
+        # person.
+        person = self.factory.makePerson()
+        series = self.factory.makeProductSeries()
+        branch = self.factory.makeProductBranch(
+            product=series.product, owner=person)
+        with person_logged_in(series.product.owner):
+            series.branch = branch
+        self.factory.makeAnyBranch(owner=person)
+        self.factory.makeProductBranch(product=series.product)
+        collection = self.all_branches.isSeries().ownedBy(person)
+        self.assertEqual([branch], list(collection.getBranches()))
+        collection = self.all_branches.ownedBy(person).isSeries()
+        self.assertEqual([branch], list(collection.getBranches()))
+
     def test_ownedBy_and_inProduct(self):
         # 'ownedBy' and 'inProduct' can combine to form a collection that is
         # restricted to branches of a particular product owned by a particular
@@ -281,9 +365,23 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
         self.factory.makeAnyBranch(owner=person)
         self.factory.makeProductBranch(product=product)
         collection = self.all_branches.inProduct(product).ownedBy(person)
-        self.all_branches.inProduct(product).ownedBy(person)
         self.assertEqual([branch], list(collection.getBranches()))
         collection = self.all_branches.ownedBy(person).inProduct(product)
+        self.assertEqual([branch], list(collection.getBranches()))
+
+    def test_ownedBy_and_isPrivate(self):
+        # 'ownedBy' and 'isPrivate' can combine to form a collection that is
+        # restricted to private branches owned by a particular person.
+        person = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        branch = self.factory.makeProductBranch(
+            product=product, owner=person,
+            information_type=InformationType.USERDATA)
+        self.factory.makeAnyBranch(owner=person)
+        self.factory.makeProductBranch(product=product)
+        collection = self.all_branches.isPrivate().ownedBy(person)
+        self.assertEqual([branch], list(collection.getBranches()))
+        collection = self.all_branches.ownedBy(person).isPrivate()
         self.assertEqual([branch], list(collection.getBranches()))
 
     def test_ownedByTeamMember_and_inProduct(self):
@@ -431,6 +529,18 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
             sorted([branch1, branch3, branch4]),
             sorted(collection.getBranches()))
 
+    def test_withIds(self):
+        # 'withIds' returns a new collection that only has branches with the
+        # given ids.
+        branch1 = self.factory.makeAnyBranch()
+        branch2 = self.factory.makeAnyBranch()
+        self.factory.makeAnyBranch()
+        ids = [branch1.id, branch2.id]
+        collection = self.all_branches.withIds(*ids)
+        self.assertEqual(
+            sorted([branch1, branch2]),
+            sorted(collection.getBranches()))
+
     def test_registeredBy(self):
         # 'registeredBy' returns a new collection that only has branches that
         # were registered by the given user.
@@ -454,34 +564,6 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
             subscriber)
         collection = self.all_branches.subscribedBy(subscriber)
         self.assertEqual([branch], list(collection.getBranches()))
-
-    def test_relatedTo(self):
-        # 'relatedTo' returns a collection that has all branches that a user
-        # owns, is subscribed to or registered. No other branches are in this
-        # collection.
-        person = self.factory.makePerson()
-        team = self.factory.makeTeam(person)
-        owned_branch = self.factory.makeAnyBranch(owner=person)
-        # Unsubscribe the owner, to demonstrate that we show owned branches
-        # even if they aren't subscribed.
-        owned_branch.unsubscribe(person, person)
-        # Subscribe two other people to the owned branch to make sure
-        # that the BranchSubscription join is doing it right.
-        self.factory.makeBranchSubscription(branch=owned_branch)
-        self.factory.makeBranchSubscription(branch=owned_branch)
-
-        registered_branch = self.factory.makeAnyBranch(
-            owner=team, registrant=person)
-        subscribed_branch = self.factory.makeAnyBranch()
-        subscribed_branch.subscribe(
-            person, BranchSubscriptionNotificationLevel.NOEMAIL,
-            BranchSubscriptionDiffSize.NODIFF,
-            CodeReviewNotificationLevel.NOEMAIL,
-            person)
-        related_branches = self.all_branches.relatedTo(person)
-        self.assertEqual(
-            sorted([owned_branch, registered_branch, subscribed_branch]),
-            sorted(related_branches.getBranches()))
 
     def test_withBranchType(self):
         hosted_branch1 = self.factory.makeAnyBranch(
@@ -577,13 +659,13 @@ class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
         # We make private branch by stacking a public branch on top of a
         # private one.
         self.private_stacked_on_branch = self.factory.makeAnyBranch(
-            private=True)
+            information_type=InformationType.USERDATA)
         self.public_stacked_on_branch = self.factory.makeAnyBranch(
             stacked_on=self.private_stacked_on_branch)
         self.private_branch1 = self.factory.makeAnyBranch(
             stacked_on=self.public_stacked_on_branch, name='private1')
         self.private_branch2 = self.factory.makeAnyBranch(
-            private=True, name='private2')
+            name='private2', information_type=InformationType.USERDATA)
         self.all_branches = getUtility(IAllBranches)
 
     def test_all_branches(self):
@@ -624,20 +706,6 @@ class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
             sorted([self.public_branch, self.private_branch1]),
             sorted(branches.getBranches()))
 
-    def test_owner_member_sees_own_branches(self):
-        # Members of teams that own branches can see branches owned by those
-        # teams, as well as public branches.
-        team_owner = self.factory.makePerson()
-        team = self.factory.makeTeam(team_owner)
-        private_branch = self.factory.makeAnyBranch(
-            owner=team, stacked_on=self.private_stacked_on_branch,
-            name='team')
-        removeSecurityProxy(private_branch).unsubscribe(team, team_owner)
-        branches = self.all_branches.visibleByUser(team_owner)
-        self.assertEqual(
-            sorted([self.public_branch, private_branch]),
-            sorted(branches.getBranches()))
-
     def test_launchpad_services_sees_all(self):
         # The LAUNCHPAD_SERVICES special user sees *everything*.
         branches = self.all_branches.visibleByUser(LAUNCHPAD_SERVICES)
@@ -673,8 +741,11 @@ class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
         # A person in a team that is subscribed to a branch can see that
         # branch, even if it's private.
         team_owner = self.factory.makePerson()
-        team = self.factory.makeTeam(team_owner)
-        private_branch = self.factory.makeAnyBranch(private=True)
+        team = self.factory.makeTeam(
+            membership_policy=TeamMembershipPolicy.MODERATED,
+            owner=team_owner)
+        private_branch = self.factory.makeAnyBranch(
+            information_type=InformationType.USERDATA)
         # Subscribe the team.
         removeSecurityProxy(private_branch).subscribe(
             team, BranchSubscriptionNotificationLevel.NOEMAIL,
@@ -686,6 +757,30 @@ class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
         branches = self.all_branches.visibleByUser(team_owner)
         self.assertEqual(
             sorted([self.public_branch, private_branch]),
+            sorted(branches.getBranches()))
+
+    def test_private_teams_see_own_private_junk_branches(self):
+        # Private teams are given an acess grant to see their private +junk
+        # branches.
+        team_owner = self.factory.makePerson()
+        team = self.factory.makeTeam(
+            visibility=PersonVisibility.PRIVATE,
+            membership_policy=TeamMembershipPolicy.MODERATED,
+            owner=team_owner)
+        with person_logged_in(team_owner):
+            personal_branch = self.factory.makePersonalBranch(
+                owner=team,
+                information_type=InformationType.USERDATA)
+            # The team is automatically subscribed to the branch since they are
+            # the owner. We want to unsubscribe them so that they lose access
+            # conferred via subscription and rely instead on the APG.
+            personal_branch.unsubscribe(team, team_owner, True)
+            # Make another junk branch the team can't see.
+            self.factory.makePersonalBranch(
+                information_type=InformationType.USERDATA)
+            branches = self.all_branches.visibleByUser(team)
+        self.assertEqual(
+            sorted([self.public_branch, personal_branch]),
             sorted(branches.getBranches()))
 
 
@@ -770,11 +865,13 @@ class TestExtendedBranchRevisionDetails(TestCaseWithFactory):
         linked_bugtasks = []
         with person_logged_in(branch.owner):
             for x in range(0, 4):
-                private = x % 2
+                information_type = InformationType.PUBLIC
+                if x % 2:
+                    information_type = InformationType.USERDATA
                 bug = self.factory.makeBug(
-                    owner=branch.owner, private=private)
+                    owner=branch.owner, information_type=information_type)
                 merge_proposals[0].source_branch.linkBug(bug, branch.owner)
-                if not private:
+                if information_type == InformationType.PUBLIC:
                     linked_bugtasks.append(bug.default_bugtask)
         expected_rev_details[0]['linked_bugtasks'] = linked_bugtasks
 
@@ -786,7 +883,7 @@ class TestExtendedBranchRevisionDetails(TestCaseWithFactory):
 
 class TestBranchMergeProposals(TestCaseWithFactory):
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
@@ -800,7 +897,7 @@ class TestBranchMergeProposals(TestCaseWithFactory):
     def test_empty_branches_shortcut(self):
         # If you explicitly pass an empty collection of branches,
         # the method shortcuts and gives you an empty result set.  In this
-        # way, for_branches=None (the default) has a very different behavior
+        # way, for_branches=None (the default) has a very different behaviour
         # than for_branches=[]: the first is no restriction, while the second
         # excludes everything.
         self.factory.makeBranchMergeProposal()
@@ -811,7 +908,7 @@ class TestBranchMergeProposals(TestCaseWithFactory):
     def test_empty_revisions_shortcut(self):
         # If you explicitly pass an empty collection of revision numbers,
         # the method shortcuts and gives you an empty result set.  In this
-        # way, merged_revnos=None (the default) has a very different behavior
+        # way, merged_revnos=None (the default) has a very different behaviour
         # than merged_revnos=[]: the first is no restriction, while the second
         # excludes everything.
         self.factory.makeBranchMergeProposal()
@@ -847,6 +944,36 @@ class TestBranchMergeProposals(TestCaseWithFactory):
         proposals = collection.getMergeProposals()
         self.assertEqual(sorted([mp1, mp2]), sorted(proposals))
 
+    def test_preloading_for_previewdiff(self):
+        product = self.factory.makeProduct()
+        target = self.factory.makeBranch(product=product)
+        owner = self.factory.makePerson()
+        branch1 = self.factory.makeBranch(product=product, owner=owner)
+        branch2 = self.factory.makeBranch(product=product, owner=owner)
+        bmp1 = self.factory.makeBranchMergeProposal(
+            target_branch=target, source_branch=branch1)
+        bmp2 = self.factory.makeBranchMergeProposal(
+            target_branch=target, source_branch=branch2)
+        old_date = datetime.now(pytz.UTC) - timedelta(hours=1)
+        self.factory.makePreviewDiff(
+            merge_proposal=bmp1, date_created=old_date)
+        previewdiff1 = self.factory.makePreviewDiff(merge_proposal=bmp1)
+        self.factory.makePreviewDiff(
+            merge_proposal=bmp2, date_created=old_date)
+        previewdiff2 = self.factory.makePreviewDiff(merge_proposal=bmp2)
+        Store.of(bmp1).flush()
+        Store.of(bmp1).invalidate()
+        collection = self.all_branches.ownedBy(owner)
+        [pre_bmp1, pre_bmp2] = sorted(
+            collection.getMergeProposals(eager_load=True),
+            key=attrgetter('id'))
+        with StormStatementRecorder() as recorder:
+            self.assertEqual(
+                removeSecurityProxy(pre_bmp1.preview_diff).id, previewdiff1.id)
+            self.assertEqual(
+                removeSecurityProxy(pre_bmp2.preview_diff).id, previewdiff2.id)
+        self.assertThat(recorder, HasQueryCount(Equals(0)))
+
     def test_merge_proposals_in_product(self):
         mp1 = self.factory.makeBranchMergeProposal()
         self.factory.makeBranchMergeProposal()
@@ -876,8 +1003,10 @@ class TestBranchMergeProposals(TestCaseWithFactory):
     def test_target_branch_private(self):
         # The target branch must be in the branch collection, as must the
         # source branch.
-        mp1 = self.factory.makeBranchMergeProposal()
-        removeSecurityProxy(mp1.target_branch).explicitly_private = True
+        registrant = self.factory.makePerson()
+        mp1 = self.factory.makeBranchMergeProposal(registrant=registrant)
+        removeSecurityProxy(mp1.target_branch).transitionToInformationType(
+            InformationType.USERDATA, registrant, verify_policy=False)
         collection = self.all_branches.visibleByUser(None)
         proposals = collection.getMergeProposals()
         self.assertEqual([], list(proposals))
@@ -960,7 +1089,8 @@ class TestBranchMergeProposalsForReviewer(TestCaseWithFactory):
         # Don't include proposals if the target branch is private for
         # anonymous views.
         reviewer = self.factory.makePerson()
-        target_branch = self.factory.makeAnyBranch(private=True)
+        target_branch = self.factory.makeAnyBranch(
+            information_type=InformationType.USERDATA)
         proposal = self.factory.makeBranchMergeProposal(
             target_branch=target_branch)
         proposal.nominateReviewer(reviewer, reviewer)
@@ -974,7 +1104,7 @@ class TestBranchMergeProposalsForReviewer(TestCaseWithFactory):
         reviewer = self.factory.makePerson()
         product = self.factory.makeProduct()
         source_branch = self.factory.makeProductBranch(
-            product=product, private=True)
+            product=product, information_type=InformationType.USERDATA)
         target_branch = self.factory.makeProductBranch(product=product)
         proposal = self.factory.makeBranchMergeProposal(
             source_branch=source_branch, target_branch=target_branch)
@@ -1038,6 +1168,21 @@ class TestSearch(TestCaseWithFactory):
         search_results = self.collection.search(branch.codebrowse_url())
         self.assertEqual([branch], list(search_results))
 
+    def test_exact_match_with_lp_colon_url(self):
+        branch = self.factory.makeBranch()
+        lp_name = 'lp://dev/' + branch.unique_name
+        search_results = self.collection.search(lp_name)
+        self.assertEqual([branch], list(search_results))
+
+    def test_exact_match_full_url(self):
+        branch = self.factory.makeBranch()
+        url = canonical_url(branch)
+        self.assertEqual([branch], list(self.collection.search(url)))
+
+    def test_exact_match_bad_url(self):
+        search_results = self.collection.search('http:hahafail')
+        self.assertEqual([], list(search_results))
+
     def test_exact_match_bzr_identity(self):
         # If you search for the bzr identity of a branch, then you get a
         # single result with that branch.
@@ -1052,8 +1197,7 @@ class TestSearch(TestCaseWithFactory):
         fooix = self.factory.makeProduct(name='fooix')
         branch = self.factory.makeProductBranch(product=fooix)
         run_with_login(
-            fooix.owner, setattr, fooix.development_focus,
-            'branch', branch)
+            fooix.owner, setattr, fooix.development_focus, 'branch', branch)
         self.factory.makeAnyBranch()
         search_results = self.collection.search('lp://dev/fooix')
         self.assertEqual([branch], list(search_results))
@@ -1091,6 +1235,12 @@ class TestSearch(TestCaseWithFactory):
         search_results = self.collection.search('foo')
         self.assertEqual(sorted([branch1, branch2]), sorted(search_results))
 
+    def test_match_against_unique_name(self):
+        branch = self.factory.makeAnyBranch(name='fooa')
+        search_term = branch.product.name + '/foo'
+        search_results = self.collection.search(search_term)
+        self.assertEqual([branch], list(search_results))
+
     def test_match_sub_branch_name(self):
         # search returns all branches which have a name of which the search
         # term is a substring.
@@ -1100,73 +1250,9 @@ class TestSearch(TestCaseWithFactory):
         search_results = self.collection.search('foo')
         self.assertEqual(sorted([branch1, branch2]), sorted(search_results))
 
-    def test_match_exact_owner_name(self):
-        # search returns all branches which have an owner with a name matching
-        # the server.
-        person = self.factory.makePerson(name='foo')
-        branch1 = self.factory.makeAnyBranch(owner=person)
-        branch2 = self.factory.makeAnyBranch(owner=person)
-        self.factory.makeAnyBranch()
-        search_results = self.collection.search('foo')
-        self.assertEqual(sorted([branch1, branch2]), sorted(search_results))
-
-    def test_match_sub_owner_name(self):
-        # search returns all branches that have an owner name where the search
-        # term is a substring of the owner name.
-        person1 = self.factory.makePerson(name='foom')
-        branch1 = self.factory.makeAnyBranch(owner=person1)
-        person2 = self.factory.makePerson(name='afoo')
-        branch2 = self.factory.makeAnyBranch(owner=person2)
-        self.factory.makeAnyBranch()
-        search_results = self.collection.search('foo')
-        self.assertEqual(sorted([branch1, branch2]), sorted(search_results))
-
-    def test_match_exact_product_name(self):
-        # search returns all branches that have a product name where the
-        # product name is the same as the search term.
-        product = self.factory.makeProduct(name='foo')
-        branch1 = self.factory.makeAnyBranch(product=product)
-        branch2 = self.factory.makeAnyBranch(product=product)
-        self.factory.makeAnyBranch()
-        search_results = self.collection.search('foo')
-        self.assertEqual(sorted([branch1, branch2]), sorted(search_results))
-
-    def test_match_sub_product_name(self):
-        # search returns all branches that have a product name where the
-        # search terms is a substring of the product name.
-        product1 = self.factory.makeProduct(name='foom')
-        branch1 = self.factory.makeProductBranch(product=product1)
-        product2 = self.factory.makeProduct(name='afoo')
-        branch2 = self.factory.makeProductBranch(product=product2)
-        self.factory.makeAnyBranch()
-        search_results = self.collection.search('foo')
-        self.assertEqual(sorted([branch1, branch2]), sorted(search_results))
-
-    def test_match_sub_distro_name(self):
-        # search returns all branches that have a distro name where the search
-        # term is a substring of the distro name.
-        branch = self.factory.makePackageBranch()
-        self.factory.makeAnyBranch()
-        search_term = branch.distribution.name[1:]
-        search_results = self.collection.search(search_term)
-        self.assertEqual([branch], list(search_results))
-
-    def test_match_sub_distroseries_name(self):
-        # search returns all branches that have a distro series with a name
-        # that the search term is a substring of.
-        branch = self.factory.makePackageBranch()
-        self.factory.makeAnyBranch()
-        search_term = branch.distroseries.name[1:]
-        search_results = self.collection.search(search_term)
-        self.assertEqual([branch], list(search_results))
-
-    def test_match_sub_sourcepackage_name(self):
-        # search returns all branches that have a source package with a name
-        # that contains the search term.
-        branch = self.factory.makePackageBranch()
-        self.factory.makeAnyBranch()
-        search_term = branch.sourcepackagename.name[1:]
-        search_results = self.collection.search(search_term)
+    def test_match_ignores_case(self):
+        branch = self.factory.makeAnyBranch(name='foobar')
+        search_results = self.collection.search('FOOBAR')
         self.assertEqual([branch], list(search_results))
 
     def test_dont_match_product_if_in_product(self):

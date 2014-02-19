@@ -1,5 +1,6 @@
-<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
-     GNU Affero General Public License version 3 (see the file LICENSE).
+<!-- Copyright 2009, 2010, 2012 Canonical Ltd.  This software is licensed
+     under the GNU Affero General Public License version 3 (see the file
+     LICENSE).
 -->
 
 <configure
@@ -17,6 +18,7 @@
 
   <browser:pages
       for="lp.services.comments.interfaces.conversation.IComment"
+      class="lp.services.comments.browser.comment.CommentView"
       permission="zope.Public">
       <browser:page
           name="+render"
@@ -24,8 +26,13 @@
       <browser:page
           name="+comment-header"
           template="../templates/comment-header.pt"/>
+      <!-- Default comment body is just the body text, but implementations may
+      vary -->
       <browser:page
           name="+comment-body"
+          template="../templates/comment-body.pt"/>
+      <browser:page
+          name="+comment-body-text"
           template="../templates/comment-body.pt"/>
   </browser:pages>
 

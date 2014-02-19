@@ -23,12 +23,12 @@
         </p>
 
         <ul class="bulleted">
-          <li>The project license is only "I Don't Know".</li>
+          <li>The project licence is only "I Don't Know".</li>
           <li>The project has only <strong>Other/Open source</strong> selected
-              as a license and the license info field does not contain a link
-              to the license, or contains the whole license.
+              as a licence and the licence info field does not contain a link
+              to the licence, or contains the whole licence.
           </li>
-          <li>The <strong>Other/Open source</strong> license appears to
+          <li>The <strong>Other/Open source</strong> licence appears to
               discriminate against who can use the project, or how the
               project's work can be used.
           </li>
@@ -45,8 +45,8 @@
       <table class="listing" id="license-listing">
         <thead>
           <tr>
-            <th>Licenses</th>
-            <th>Description of additional licenses</th>
+            <th>Licences</th>
+            <th>Description of additional licences</th>
           </tr>
         </thead>
         <tbody>

@@ -65,7 +65,7 @@ class Version(changelog.Version):
 
         try:
             changelog.Version.__init__(self, ver)
-        except ValueError, e:
+        except ValueError as e:
             raise VersionError(e)
 
         if self.epoch is not None:

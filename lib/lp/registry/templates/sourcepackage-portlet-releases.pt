@@ -7,7 +7,6 @@
 <div class="portlet" id="portlet-releases">
   <h2>Releases in <span
   tal:replace="context/distribution/displayname" /></h2>
-  <div class="portletBody portletContent">
   <ul>
     <li tal:repeat="release context/releases">
       <a tal:content="release/version"
@@ -17,6 +16,5 @@
   <p tal:condition="not: context/releases">
     <i>No releases are currently registered for this package.</i>
   </p>
-  </div>
 </div>
 </tal:root>

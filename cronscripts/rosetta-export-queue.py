@@ -3,11 +3,9 @@
 # Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=C0103,W0403
-
 import _pythonpath
 
-from canonical.launchpad.webapp.dbpolicy import SlaveDatabasePolicy
+from lp.services.database.policy import SlaveDatabasePolicy
 from lp.services.scripts.base import LaunchpadCronScript
 from lp.translations.scripts.po_export_queue import process_queue
 

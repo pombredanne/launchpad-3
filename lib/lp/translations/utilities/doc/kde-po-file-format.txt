@@ -8,7 +8,7 @@ Such features include plural forms support and context support.
 
 == Helper imports ==
 
-    >>> from canonical.database.sqlbase import flush_database_caches
+    >>> from lp.services.database.sqlbase import flush_database_caches
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.product import IProductSet
     >>> from lp.translations.interfaces.translationfileformat import (

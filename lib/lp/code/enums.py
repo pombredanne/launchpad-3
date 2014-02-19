@@ -11,7 +11,6 @@ __all__ = [
     'BranchSubscriptionDiffSize',
     'BranchSubscriptionNotificationLevel',
     'BranchType',
-    'BranchVisibilityRule',
     'CodeImportEventDataType',
     'CodeImportEventType',
     'CodeImportJobState',
@@ -21,8 +20,8 @@ __all__ = [
     'CodeImportReviewStatus',
     'CodeReviewNotificationLevel',
     'CodeReviewVote',
+    'NON_CVS_RCS_TYPES',
     'RevisionControlSystems',
-    'TeamBranchVisibilityRule',
     'UICreatableBranchType',
     ]
 
@@ -305,40 +304,6 @@ class CodeReviewNotificationLevel(DBEnumeratedType):
         """)
 
 
-class BranchVisibilityRule(DBEnumeratedType):
-    """Branch Visibility Rules for defining branch visibility policy."""
-
-    PUBLIC = DBItem(1, """
-        Public
-
-        Branches are public by default.
-        """)
-
-    PRIVATE = DBItem(2, """
-        Private
-
-        Branches are private by default.
-        """)
-
-    PRIVATE_ONLY = DBItem(3, """
-        Private only
-
-        Branches are private by default. Branch owners are not able
-        to change the visibility of the branches to public.
-        """)
-
-    FORBIDDEN = DBItem(4, """
-        Forbidden
-
-        Users are not able to create branches in the context.
-        """)
-
-
-class TeamBranchVisibilityRule(EnumeratedType):
-    """The valid policy rules for teams."""
-    use_template(BranchVisibilityRule, exclude='FORBIDDEN')
-
-
 class RevisionControlSystems(DBEnumeratedType):
     """Revision Control Systems
 
@@ -374,7 +339,7 @@ class RevisionControlSystems(DBEnumeratedType):
     HG = DBItem(5, """
         Mercurial
 
-        Imports from Mercurial using bzr-hg.
+        Imports from Mercurial using bzr-hg. (no longer supported)
         """)
 
     BZR = DBItem(6, """
@@ -892,3 +857,7 @@ class CodeReviewVote(DBEnumeratedType):
 
         The reviewer needs more information before making a decision.
         """)
+
+NON_CVS_RCS_TYPES = (
+    RevisionControlSystems.SVN, RevisionControlSystems.BZR_SVN,
+    RevisionControlSystems.GIT, RevisionControlSystems.BZR)

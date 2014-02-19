@@ -1,8 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213
-
 """Interface for things that contains a collection of FAQs."""
 
 __metaclass__ = type
@@ -21,7 +19,7 @@ from lazr.enum import (
 from zope.interface import Interface
 from zope.schema import TextLine
 
-from canonical.launchpad import _
+from lp import _
 
 
 class FAQSort(EnumeratedType):

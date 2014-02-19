@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Mantis ExternalBugTracker utility."""
@@ -19,7 +19,6 @@ from BeautifulSoup import (
     SoupStrainer,
     )
 
-from canonical.launchpad.webapp.url import urlparse
 from lp.bugs.externalbugtracker import (
     BugNotFound,
     BugTrackerConnectError,
@@ -35,8 +34,8 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     )
 from lp.bugs.interfaces.externalbugtracker import UNKNOWN_REMOTE_IMPORTANCE
-from lp.services.database.isolation import ensure_no_transaction
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp.url import urlparse
 
 
 class MantisLoginHandler(urllib2.HTTPRedirectHandler):
@@ -159,7 +158,7 @@ class MantisBugBatchParser:
                 if bug is not None:
                     bugs[bug['id']] = bug
             return bugs
-        except csv.Error, error:
+        except csv.Error as error:
             raise UnparsableBugData("Exception parsing CSV file: %s." % error)
 
 
@@ -177,20 +176,9 @@ class Mantis(ExternalBugTracker):
         # Custom cookie aware opener that automatically sends anonymous
         # credentials to Mantis if (and only if) needed.
         self._cookie_handler = urllib2.HTTPCookieProcessor()
-        self._opener = urllib2.build_opener(
+        self.url_opener = urllib2.build_opener(
             self._cookie_handler, MantisLoginHandler())
         self._logger = logging.getLogger()
-
-    @ensure_no_transaction
-    def urlopen(self, request, data=None):
-        # We use urllib2 to make following cookies transparent.
-        # This is required for certain bugtrackers that require
-        # cookies that actually do anything (as is the case with
-        # Mantis). It's basically a drop-in replacement for
-        # urllib2.urlopen() that tracks cookies. We also have a
-        # customised urllib2 opener to handle transparent
-        # authentication.
-        return self._opener.open(request, data)
 
     @cachedproperty
     def csv_data(self):
@@ -254,7 +242,7 @@ class Mantis(ExternalBugTracker):
         # what's being viewed.
         try:
             csv_data = self._getPage("csv_export.php")
-        except BugTrackerConnectError, value:
+        except BugTrackerConnectError as value:
             # Some Mantis installations simply return a 500 error
             # when the csv_export.php page is accessed. Since the
             # bug data may be nevertheless available from ordinary
@@ -376,7 +364,7 @@ class Mantis(ExternalBugTracker):
         The Mantis bug view page uses HTML tables for both layout and
         representing tabular data, often within the same table. This
         method assumes that the key and value are on the same row,
-        adjacent to one another, with the key preceeding the value:
+        adjacent to one another, with the key preceding the value:
 
         ...
         <td>Key</td>
@@ -409,7 +397,7 @@ class Mantis(ExternalBugTracker):
         The Mantis bug view page uses HTML tables for both layout and
         representing tabular data, often within the same table. This
         method assumes that the key and value are within the same
-        column on adjacent rows, with the key preceeding the value:
+        column on adjacent rows, with the key preceding the value:
 
         ...
         <tr>...<td>Key</td>...</tr>

@@ -1,13 +1,14 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0611,W0212
-
 __metaclass__ = type
-__all__ = ['DistroArchSeries',
-           'DistroArchSeriesSet',
-           'PocketChroot'
-           ]
+__all__ = [
+    'DistroArchSeries',
+    'PocketChroot'
+    ]
+
+from cStringIO import StringIO
+import hashlib
 
 from sqlobject import (
     BoolCol,
@@ -18,49 +19,47 @@ from sqlobject import (
     StringCol,
     )
 from storm.locals import (
+    Int,
     Join,
-    SQL,
+    Or,
+    Reference,
     )
 from storm.store import EmptyResultSet
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.database.constants import DEFAULT
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import (
-    quote,
-    quote_like,
+from lp.registry.interfaces.person import validate_public_person
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.database.constants import DEFAULT
+from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.interfaces import IStore
+from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
+from lp.services.database.stormexpr import (
+    fti_search,
+    rank_by_fti,
     )
-from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector,
-    MAIN_STORE,
-    SLAVE_FLAVOR,
+from lp.services.helpers import shortlist
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
+from lp.services.webapp.publisher import (
+    get_raw_form_value_from_current_request,
     )
-from lp.registry.interfaces.person import validate_public_person
-from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageName
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.distroarchseries import (
     IDistroArchSeries,
-    IDistroArchSeriesSet,
+    InvalidChrootUploaded,
     IPocketChroot,
     )
 from lp.soyuz.interfaces.publishing import ICanPublishPackages
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
-from lp.soyuz.model.distroarchseriesbinarypackage import (
-    DistroArchSeriesBinaryPackage,
-    )
 from lp.soyuz.model.processor import Processor
-from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
 
 
 class DistroArchSeries(SQLBase):
@@ -70,8 +69,8 @@ class DistroArchSeries(SQLBase):
 
     distroseries = ForeignKey(dbName='distroseries',
         foreignKey='DistroSeries', notNull=True)
-    processorfamily = ForeignKey(dbName='processorfamily',
-        foreignKey='ProcessorFamily', notNull=True)
+    processor_id = Int(name='processor', allow_none=False)
+    processor = Reference(processor_id, Processor.id)
     architecturetag = StringCol(notNull=True)
     official = BoolCol(notNull=True)
     owner = ForeignKey(
@@ -90,27 +89,10 @@ class DistroArchSeries(SQLBase):
         return self.getBinaryPackage(name)
 
     @property
-    def default_processor(self):
-        """See `IDistroArchSeries`."""
-        # XXX cprov 2005-08-31:
-        # This could possibly be better designed; let's think about it in
-        # the future. Pick the first processor we found for this
-        # distroarchseries.processorfamily. The data model should
-        # change to have a default processor for a processorfamily
-        return self.processors[0]
-
-    @property
-    def processors(self):
-        """See `IDistroArchSeries`."""
-        return Processor.selectBy(family=self.processorfamily, orderBy='id')
-
-    @property
     def title(self):
         """See `IDistroArchSeries`."""
         return '%s for %s (%s)' % (
-            self.distroseries.title, self.architecturetag,
-            self.processorfamily.name
-            )
+            self.distroseries.title, self.architecturetag, self.processor.name)
 
     @property
     def displayname(self):
@@ -121,6 +103,8 @@ class DistroArchSeries(SQLBase):
 
     def updatePackageCount(self):
         """See `IDistroArchSeries`."""
+        from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
+
         query = """
             BinaryPackagePublishingHistory.distroarchseries = %s AND
             BinaryPackagePublishingHistory.archive IN %s AND
@@ -174,76 +158,98 @@ class DistroArchSeries(SQLBase):
 
         return pocket_chroot
 
+    def setChroot(self, data, sha1sum):
+        """See `IDistroArchSeries`."""
+        # XXX: StevenK 2013-06-06 bug=1116954: We should not need to refetch
+        # the file content from the request, since the passed in one has been
+        # wrongly encoded.
+        data = get_raw_form_value_from_current_request('data')
+        if isinstance(data, str):
+            filecontent = data
+        else:
+            filecontent = data.read()
+
+        # Due to http://bugs.python.org/issue1349106 launchpadlib sends
+        # MIME with \n line endings, which is illegal. lazr.restful
+        # parses each ending as \r\n, resulting in a binary that ends
+        # with \r getting the last byte chopped off. To cope with this
+        # on the server side we try to append \r if the SHA-1 doesn't
+        # match.
+        content_sha1sum = hashlib.sha1(filecontent).hexdigest()
+        if content_sha1sum != sha1sum:
+            filecontent += '\r'
+            content_sha1sum = hashlib.sha1(filecontent).hexdigest()
+        if content_sha1sum != sha1sum:
+            raise InvalidChrootUploaded("Chroot upload checksums do not match")
+
+        filename = 'chroot-%s-%s-%s.tar.bz2' % (
+            self.distroseries.distribution.name, self.distroseries.name,
+            self.architecturetag)
+        lfa = getUtility(ILibraryFileAliasSet).create(
+            name=filename, size=len(filecontent), file=StringIO(filecontent),
+            contentType='application/octet-stream')
+        if lfa.content.sha1 != sha1sum:
+            raise InvalidChrootUploaded("Chroot upload checksums do not match")
+        self.addOrUpdateChroot(lfa)
+
+    def removeChroot(self):
+        """See `IDistroArchSeries`."""
+        self.addOrUpdateChroot(None)
+
     def searchBinaryPackages(self, text):
         """See `IDistroArchSeries`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
+        from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
+
         origin = [
             BinaryPackageRelease,
             Join(
                 BinaryPackagePublishingHistory,
                 BinaryPackagePublishingHistory.binarypackagerelease ==
-                    BinaryPackageRelease.id
-                ),
+                    BinaryPackageRelease.id),
             Join(
                 BinaryPackageName,
                 BinaryPackageRelease.binarypackagename ==
-                    BinaryPackageName.id
-                )
-            ]
-        if text:
-            find_spec = (
-                BinaryPackageRelease,
-                BinaryPackageName,
-                SQL("rank(BinaryPackageRelease.fti, ftq(%s)) AS rank" %
-                    sqlvalues(text))
-                )
-        else:
-            find_spec = (
-                BinaryPackageRelease,
-                BinaryPackageName,
-                BinaryPackageName,  # dummy value
-                )
+                    BinaryPackageName.id)]
+
+        find_spec = [BinaryPackageRelease, BinaryPackageName]
         archives = self.distroseries.distribution.getArchiveIDList()
 
-        # Note: When attempting to convert the query below into straight
-        # Storm expressions, a 'tuple index out-of-range' error was always
-        # raised.
-        query = """
-            BinaryPackagePublishingHistory.distroarchseries = %s AND
-            BinaryPackagePublishingHistory.archive IN %s AND
-            BinaryPackagePublishingHistory.dateremoved is NULL
-            """ % (quote(self), quote(archives))
+        clauses = [
+            BinaryPackagePublishingHistory.distroarchseries == self,
+            BinaryPackagePublishingHistory.archiveID.is_in(archives),
+            BinaryPackagePublishingHistory.dateremoved == None]
+        order_by = [BinaryPackageName.name]
         if text:
-            query += """
-            AND (BinaryPackageRelease.fti @@ ftq(%s) OR
-            BinaryPackageName.name ILIKE '%%' || %s || '%%')
-            """ % (quote(text), quote_like(text))
-        result = store.using(*origin).find(
-            find_spec, query).config(distinct=True)
-
-        if text:
-            result = result.order_by("rank DESC, BinaryPackageName.name")
-        else:
-            result = result.order_by("BinaryPackageName.name")
+            ranking = rank_by_fti(BinaryPackageRelease, text)
+            find_spec.append(ranking)
+            clauses.append(
+                Or(
+                    fti_search(BinaryPackageRelease, text),
+                    BinaryPackageName.name.contains_string(text.lower())))
+            order_by.insert(0, ranking)
+        result = IStore(BinaryPackageName).using(*origin).find(
+            tuple(find_spec), *clauses).config(distinct=True).order_by(
+                *order_by)
 
         # import here to avoid circular import problems
         from lp.soyuz.model.distroarchseriesbinarypackagerelease import (
             DistroArchSeriesBinaryPackageRelease)
 
         # Create a function that will decorate the results, converting
-        # them from the find_spec above into DASBPRs:
-        def result_to_dasbpr(
-            (binary_package_release, binary_package_name, rank)):
+        # them from the find_spec above into DASBPRs.
+        def result_to_dasbpr(row):
             return DistroArchSeriesBinaryPackageRelease(
-                distroarchseries=self,
-                binarypackagerelease=binary_package_release)
+                distroarchseries=self, binarypackagerelease=row[0])
 
         # Return the decorated result set so the consumer of these
-        # results will only see DSPs
+        # results will only see DSPs.
         return DecoratedResultSet(result, result_to_dasbpr)
 
     def getBinaryPackage(self, name):
         """See `IDistroArchSeries`."""
+        from lp.soyuz.model.distroarchseriesbinarypackage import (
+            DistroArchSeriesBinaryPackage,
+            )
         if not IBinaryPackageName.providedBy(name):
             try:
                 name = BinaryPackageName.byName(name)
@@ -268,14 +274,14 @@ class DistroArchSeries(SQLBase):
 
         # Use the facility provided by IBinaryPackageBuildSet to
         # retrieve the records.
-        return getUtility(IBinaryPackageBuildSet).getBuildsByArchIds(
-            self.distroseries.distribution, [self.id], build_state, name,
-            pocket)
+        return getUtility(IBinaryPackageBuildSet).getBuildsForDistro(
+            self, build_state, name, pocket)
 
     def getReleasedPackages(self, binary_name, pocket=None,
-                            include_pending=False, exclude_pocket=None,
-                            archive=None):
+                            include_pending=False, archive=None):
         """See IDistroArchSeries."""
+        from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
+
         queries = []
 
         if not IBinaryPackageName.providedBy(binary_name):
@@ -289,9 +295,6 @@ class DistroArchSeries(SQLBase):
 
         if pocket is not None:
             queries.append("pocket=%s" % sqlvalues(pocket.value))
-
-        if exclude_pocket is not None:
-            queries.append("pocket!=%s" % sqlvalues(exclude_pocket.value))
 
         if include_pending:
             queries.append("status in (%s, %s)" % sqlvalues(
@@ -313,6 +316,8 @@ class DistroArchSeries(SQLBase):
 
     def getPendingPublications(self, archive, pocket, is_careful):
         """See `ICanPublishPackages`."""
+        from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
+
         queries = [
             "distroarchseries = %s AND archive = %s"
             % sqlvalues(self, archive)
@@ -359,53 +364,15 @@ class DistroArchSeries(SQLBase):
         return self.distroseries.distribution.main_archive
 
 
-class DistroArchSeriesSet:
-    """This class is to deal with DistroArchSeries related stuff"""
-
-    implements(IDistroArchSeriesSet)
-
-    def __iter__(self):
-        return iter(DistroArchSeries.select())
-
-    def get(self, dar_id):
-        """See `canonical.launchpad.interfaces.IDistributionSet`."""
-        return DistroArchSeries.get(dar_id)
-
-    def count(self):
-        return DistroArchSeries.select().count()
-
-    def getIdsForArchitectures(self, architectures, arch_tag=None):
-        """Filter architectures and return the ids.
-
-        This method is not exposed via the public interface as it is
-        used simply to keep trusted code DRY.
-
-        :param architectures: an iterable of architectures to process.
-        :param arch_tag: an optional architecture tag or a tag list with
-            which to filter the results.
-        :return: a list of the ids of the architectures matching arch_tag.
-        """
-        # If arch_tag was not provided, just return the ids without
-        # filtering.
-        if arch_tag is None:
-            return [arch.id for arch in architectures]
-        else:
-            if not isinstance(arch_tag, (list, tuple)):
-                arch_tag = (arch_tag, )
-            return [arch.id for arch in architectures
-                        if arch.architecturetag in arch_tag]
-
-
 class PocketChroot(SQLBase):
     implements(IPocketChroot)
     _table = "PocketChroot"
 
-    distroarchseries = ForeignKey(dbName='distroarchseries',
-                                   foreignKey='DistroArchSeries',
-                                   notNull=True)
+    distroarchseries = ForeignKey(
+        dbName='distroarchseries', foreignKey='DistroArchSeries', notNull=True)
 
-    pocket = EnumCol(schema=PackagePublishingPocket,
-                     default=PackagePublishingPocket.RELEASE,
-                     notNull=True)
+    pocket = EnumCol(
+        schema=PackagePublishingPocket,
+        default=PackagePublishingPocket.RELEASE, notNull=True)
 
     chroot = ForeignKey(dbName='chroot', foreignKey='LibraryFileAlias')

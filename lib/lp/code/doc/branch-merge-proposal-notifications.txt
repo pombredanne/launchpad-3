@@ -19,19 +19,16 @@ notification they would like to receive.
     >>> from lp.code.interfaces.branchmergeproposal import (
     ...     IBranchMergeProposalJobSource)
     >>> from lp.code.model.diff import PreviewDiff
-    >>> from lp.code.tests.helpers import (
-    ...     make_merge_proposal_without_reviewers)
+    >>> from lp.code.tests.helpers import make_merge_proposal_without_reviewers
     >>> from lp.testing.mail_helpers import pop_notifications
     >>> import transaction
     >>> login('test@canonical.com')
-    >>> diff_bytes = ''.join(unified_diff('', 'c'))
-    >>> preview_diff = PreviewDiff.create(diff_bytes, u'a', u'b', None, None)
-    >>> # Make Librarian happy.
-    >>> transaction.commit()
     >>> target_owner = factory.makePerson(email='target_owner@example.com')
     >>> target_branch = factory.makeBranch(owner=target_owner)
     >>> bmp = make_merge_proposal_without_reviewers(
     ...     factory, target_branch=target_branch)
+    >>> previewdiff = factory.makePreviewDiff(merge_proposal=bmp)
+    >>> transaction.commit()
     >>> source_subscriber = factory.makePerson(
     ...     email='source@example.com', displayname='Source Subscriber')
     >>> _unused = bmp.source_branch.subscribe(source_subscriber,
@@ -110,7 +107,8 @@ is created.  When those jobs are run, the email is sent from the registrant.
     >>> # To avoid needing to access branches, pre-populate diffs.
     >>> bmp = source_branch.addLandingTarget(
     ...     registrant, target_branch, needs_review=True)
-    >>> removeSecurityProxy(bmp).preview_diff = preview_diff
+    >>> previewdiff = factory.makePreviewDiff(merge_proposal=bmp)
+    >>> transaction.commit()
     >>> # Fake the update preview diff as done.
     >>> bmp.next_preview_diff_job.start()
     >>> bmp.next_preview_diff_job.complete()
@@ -164,10 +162,10 @@ in the email.
     ...     """)
     >>> bmp.deleteProposal()
     >>> bmp = source_branch.addLandingTarget(
-    ...     registrant, target_branch,
-    ...     description=initial_comment, review_requests=reviewers,
-    ...     needs_review=True)
-    >>> removeSecurityProxy(bmp).preview_diff = preview_diff
+    ...     registrant, target_branch, description=initial_comment,
+    ...     review_requests=reviewers, needs_review=True)
+    >>> previewdiff = factory.makePreviewDiff(merge_proposal=bmp)
+    >>> transaction.commit()
     >>> # Fake the update preview diff as done.
     >>> bmp.next_preview_diff_job.start()
     >>> bmp.next_preview_diff_job.complete()

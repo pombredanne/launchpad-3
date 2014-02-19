@@ -226,7 +226,7 @@ class LookupTree:
                 elif len(more) >= 1:
                     try:
                         return branch.result.find(*more)
-                    except KeyError, ex:
+                    except KeyError as ex:
                         raise KeyError((key,) + ex.args)
                 else:
                     raise KeyError(key)

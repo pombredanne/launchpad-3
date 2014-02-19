@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """The implementation of the Notification Rec."""
@@ -14,11 +14,11 @@ from operator import attrgetter
 from zope.interface import implements
 from zope.security.proxy import isinstance as zope_isinstance
 
-from canonical.launchpad.interfaces.launchpad import (
+from lp.registry.interfaces.person import IPerson
+from lp.services.mail.interfaces import (
     INotificationRecipientSet,
     UnknownRecipientError,
     )
-from lp.registry.interfaces.person import IPerson
 
 
 class NotificationRecipientSet:
@@ -102,7 +102,7 @@ class NotificationRecipientSet:
                 # Bypass zope's security because IEmailAddress.email is not
                 # public.
                 preferred_email = removeSecurityProxy(
-                    receiving_person.preferredemail)
+                    receiving_person).preferredemail
                 email = str(preferred_email.email)
                 self._receiving_people.add((email, receiving_person))
                 old_person = self._emailToPerson.get(email)
@@ -110,7 +110,7 @@ class NotificationRecipientSet:
                 # no association or if the previous one was to a team and
                 # the newer one is to a person.
                 if (old_person is None
-                    or (old_person.isTeam() and not person.isTeam())):
+                    or (old_person.is_team and not person.is_team)):
                     self._emailToPerson[email] = person
 
     def remove(self, persons):

@@ -25,10 +25,6 @@ from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.externalbugtracker import (
     BugTrackerConnectError,
@@ -48,9 +44,14 @@ from lp.bugs.tests.externalbugtracker import UrlLib2TransportTestHandler
 from lp.registry.interfaces.person import IPersonSet
 from lp.testing import (
     login,
+    login_celebrity,
     login_person,
     TestCase,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
     )
 from lp.testing.sampledata import ADMIN_EMAIL
 
@@ -63,19 +64,42 @@ class TestBugTrackerSet(TestCaseWithFactory):
         tracker = self.factory.makeBugTracker()
         trackers = BugTrackerSet()
         # Active trackers are in all trackers,
-        self.assertTrue(tracker in trackers.trackers())
+        self.assertTrue(tracker in trackers.getAllTrackers())
         # and active,
-        self.assertTrue(tracker in trackers.trackers(active=True))
+        self.assertTrue(tracker in trackers.getAllTrackers(active=True))
         # But not inactive.
-        self.assertFalse(tracker in trackers.trackers(active=False))
+        self.assertFalse(tracker in trackers.getAllTrackers(active=False))
         login(ADMIN_EMAIL)
         tracker.active = False
         # Inactive trackers are in all trackers
-        self.assertTrue(tracker in trackers.trackers())
+        self.assertTrue(tracker in trackers.getAllTrackers())
         # and inactive,
-        self.assertTrue(tracker in trackers.trackers(active=False))
+        self.assertTrue(tracker in trackers.getAllTrackers(active=False))
         # but not in active.
-        self.assertFalse(tracker in trackers.trackers(active=True))
+        self.assertFalse(tracker in trackers.getAllTrackers(active=True))
+
+    def test_inactive_products_in_pillars(self):
+        # the list of pillars should only contain active
+        # products and projects
+        tracker = self.factory.makeBugTracker()
+        trackers = BugTrackerSet()
+        product1 = self.factory.makeProduct()
+        product2 = self.factory.makeProduct()
+        project1 = self.factory.makeProject()
+        project2 = self.factory.makeProject()
+        login_celebrity('admin')
+        product1.bugtracker = tracker
+        product2.bugtracker = tracker
+        project1.bugtracker = tracker
+        project2.bugtracker = tracker
+        pillars = trackers.getPillarsForBugtrackers(trackers)
+        self.assertContentEqual(
+            [product1, product2, project1, project2], pillars[tracker])
+        product1.active = False
+        project2.active = False
+        pillars = trackers.getPillarsForBugtrackers(trackers)
+        self.assertContentEqual(
+            [product2, project1], pillars[tracker])
 
 
 class BugTrackerTestCase(TestCaseWithFactory):
@@ -288,7 +312,7 @@ class TestMantis(TestCaseWithFactory):
         test_handler = UrlLib2TransportTestHandler()
         test_handler.setRedirect('http://mantis.example.com/login_page.php'
             '?return=%2Fsome%2Fpage')
-        opener = tracker._opener
+        opener = tracker.url_opener
         opener.add_handler(test_handler)
         opener.open('http://mantis.example.com/some/page')
         # We should now have two entries in the test handler's list
@@ -305,7 +329,7 @@ class TestMantis(TestCaseWithFactory):
         # handles cookies.
         tracker = Mantis('http://mantis.example.com')
         test_handler = UrlLib2TransportTestHandler()
-        opener = tracker._opener
+        opener = tracker.url_opener
         opener.add_handler(test_handler)
         opener.open('http://mantis.example.com', '')
         cookies = list(tracker._cookie_handler.cookiejar)
@@ -320,7 +344,7 @@ class TestMantis(TestCaseWithFactory):
         # thus set csv_data to None.
         tracker = Mantis('http://mantis.example.com')
         test_handler = UrlLib2TransportTestHandler()
-        opener = tracker._opener
+        opener = tracker.url_opener
         opener.add_handler(test_handler)
         test_handler.setError(
             HTTPError(
@@ -334,7 +358,7 @@ class TestMantis(TestCaseWithFactory):
         # they appear as BugTrackerConnectErrors.
         tracker = Mantis('http://mantis.example.com')
         test_handler = UrlLib2TransportTestHandler()
-        opener = tracker._opener
+        opener = tracker.url_opener
         opener.add_handler(test_handler)
         test_handler.setError(
             HTTPError(

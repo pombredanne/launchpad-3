@@ -18,8 +18,9 @@ from optparse import (
 
 from zope.component import getUtility
 
-from canonical.database.postgresql import drop_tables
-from canonical.database.sqlbase import (
+from lp.registry.interfaces.person import IPersonSet
+from lp.services.database.postgresql import drop_tables
+from lp.services.database.sqlbase import (
     cursor,
     sqlvalues,
     )
@@ -84,9 +85,6 @@ def get_id(identifier, lookup_function=None):
 
 def get_person_id(name):
     """`get_id` helper.  Look up person by name."""
-    # XXX sinzui 2010-10-04 bug=654537: Account and EmailAddress cause cyclic
-    # imports because they are not in the lp tree.
-    from lp.registry.interfaces.person import IPersonSet
     person = getUtility(IPersonSet).getByName(name)
     if person is None:
         return None
@@ -190,7 +188,7 @@ class RemoveTranslations(LaunchpadScript):
         Option(
             '-x', '--reject-license', action='store_true',
             dest='reject_license',
-            help="Match submitters who rejected the license agreement."),
+            help="Match submitters who rejected the licence agreement."),
         Option(
             '-i', '--id', action='append', dest='ids', type='int',
             help="ID of message to delete.  May be specified multiple "
@@ -255,26 +253,26 @@ class RemoveTranslations(LaunchpadScript):
         if self.options.reject_license:
             if self.options.is_current_upstream == False:
                 # "Remove non-is_current_upstream messages submitted by users
-                # who rejected the license."
+                # who rejected the licence."
                 return (True, None)
 
             rosettaweb_key = RosettaTranslationOrigin.ROSETTAWEB.value
             if self.options.origin == rosettaweb_key:
                 # "Remove messages submitted directly in Launchpad by
-                # users who rejected the license."
+                # users who rejected the licence."
                 return (True, None)
 
             if forced:
                 return (
                     True,
                     "Safety override in effect.  Removing translations "
-                    "by users who rejected the license, regardless of "
+                    "by users who rejected the licence, regardless of "
                     "origin.")
 
             return (
                 False,
                 "To delete the translations by users who "
-                "rejected the translations license, specify at least "
+                "rejected the translations licence, specify at least "
                 "--origin=ROSETTAWEB or --is-imported=False.")
 
         return (

@@ -1,8 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213
-
 """Question message interface."""
 
 __metaclass__ = type
@@ -11,6 +9,11 @@ __all__ = [
     'IQuestionMessage',
     ]
 
+from lazr.restful.declarations import (
+    export_as_webservice_entry,
+    exported,
+    )
+from lazr.restful.fields import Reference
 from zope.interface import Interface
 from zope.schema import (
     Bool,
@@ -18,18 +21,12 @@ from zope.schema import (
     Int,
     )
 
-from lazr.restful.declarations import (
-    export_as_webservice_entry,
-    exported,
-    )
-from lazr.restful.fields import Reference
-
-from canonical.launchpad import _
-from lp.services.messages.interfaces.message import IMessage
+from lp import _
 from lp.answers.enums import (
     QuestionAction,
     QuestionStatus,
     )
+from lp.services.messages.interfaces.message import IMessage
 
 
 class IQuestionMessage(IMessage):

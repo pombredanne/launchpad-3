@@ -61,7 +61,7 @@ First choose a driver for the UDS Guacamole sprint.
 Any member of the Ubuntu-Team can now approve and/or decline items to the UDS 
 Guacamole agenda.
 
-  >>> cprov_browser = setupBrowser(auth='Basic celso.providelo@canonical.com:cprov')
+  >>> cprov_browser = setupBrowser(auth='Basic celso.providelo@canonical.com:test')
   >>> cprov_browser.open('http://launchpad.dev/sprints/uds-guacamole')
   >>> cprov_browser.getLink('Blueprints').click()
   >>> cprov_browser.url

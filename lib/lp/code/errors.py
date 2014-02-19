@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Errors used in the lp/code modules."""
@@ -8,8 +8,6 @@ __all__ = [
     'AlreadyLatestFormat',
     'BadBranchMergeProposalSearchContext',
     'BadStateTransition',
-    'BranchCannotBePrivate',
-    'BranchCannotBePublic',
     'BranchCreationException',
     'BranchCreationForbidden',
     'BranchCreatorNotMemberOfOwnerTeam',
@@ -29,6 +27,7 @@ __all__ = [
     'CodeImportAlreadyRunning',
     'CodeImportNotInReviewedState',
     'ClaimReviewFailed',
+    'DiffNotFound',
     'InvalidBranchMergeProposal',
     'InvalidMergeQueueConfig',
     'InvalidNamespace',
@@ -147,14 +146,6 @@ class BranchTypeError(Exception):
     """
 
 
-class BranchCannotBePublic(Exception):
-    """The branch cannot be made public."""
-
-
-class BranchCannotBePrivate(Exception):
-    """The branch cannot be made private."""
-
-
 class InvalidBranchException(Exception):
     """Base exception for an error resolving a branch for a component.
 
@@ -217,6 +208,7 @@ class ClaimReviewFailed(Exception):
     """The user cannot claim the pending review."""
 
 
+@error_status(httplib.BAD_REQUEST)
 class InvalidBranchMergeProposal(Exception):
     """Raised during the creation of a new branch merge proposal.
 
@@ -296,7 +288,7 @@ class ReviewNotPending(Exception):
 
 
 class UpdatePreviewDiffNotReady(Exception):
-    """Raised if the the preview diff is not ready to run."""
+    """Raised if the preview diff is not ready to run."""
 
 
 class UserHasExistingReview(Exception):
@@ -393,3 +385,8 @@ class InvalidMergeQueueConfig(Exception):
     def __init__(self):
         message = ('The configuration specified is not a valid JSON string.')
         Exception.__init__(self, message)
+
+
+@error_status(httplib.BAD_REQUEST)
+class DiffNotFound(Exception):
+    """A `IPreviewDiff` with the timestamp was not found."""

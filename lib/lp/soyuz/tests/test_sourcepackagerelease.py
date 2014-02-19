@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+# NOTE: The first line above must stay first; do not move the copyright
+# notice to the top.  See http://www.python.org/dev/peps/pep-0263/.
+#
 # Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
@@ -11,14 +15,8 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing.layers import (
-    LaunchpadFunctionalLayer,
-    LaunchpadZopelessLayer,
-    ZopelessDatabaseLayer,
-    )
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.services.tarfile_helpers import LaunchpadWriteTarFile
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
@@ -30,12 +28,11 @@ from lp.soyuz.interfaces.sourcepackageformat import (
     )
 from lp.soyuz.scripts.packagecopier import do_copy
 from lp.testing import (
-    person_logged_in,
     TestCaseWithFactory,
     )
-from lp.testing.dbuser import dbuser
-from lp.translations.interfaces.translationimportqueue import (
-    ITranslationImportQueue,
+from lp.testing.layers import (
+    LaunchpadFunctionalLayer,
+    ZopelessDatabaseLayer,
     )
 
 
@@ -110,6 +107,24 @@ class TestSourcePackageRelease(TestCaseWithFactory):
             since_version="1.0")
         self.assertEqual(expected_changelog, observed)
 
+    def test_aggregate_changelog_invalid_utf8(self):
+        # aggregate_changelog copes with invalid UTF-8.
+        changelog_main = dedent(u"""\
+            foo (1.0) unstable; urgency=low
+
+              * 1.0 (héllo).""").encode("ISO-8859-1")
+        changelog_trailer = (
+            u" -- Føo Bær <foo@example.com>  "
+            u"Tue, 01 Jan 1970 01:50:41 +0000").encode("ISO-8859-1")
+        changelog_text = changelog_main + b"\n\n" + changelog_trailer
+        changelog = self.factory.makeLibraryFileAlias(content=changelog_text)
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename="foo", version="1.0", changelog=changelog)
+        transaction.commit()
+        observed = spph.sourcepackagerelease.aggregate_changelog(
+            since_version=None)
+        self.assertEqual(changelog_main.decode("UTF-8", "replace"), observed)
+
 
 class TestGetActiveArchSpecificPublications(TestCaseWithFactory):
 
@@ -130,18 +145,20 @@ class TestGetActiveArchSpecificPublications(TestCaseWithFactory):
         Since the tests need to create a pocket mismatch, it is guaranteed
         that the BPPHs are for the UPDATES pocket.
         """
+        das = self.factory.makeDistroArchSeries()
+        distroseries = das.distroseries
+        archive = distroseries.main_archive
+        pocket = PackagePublishingPocket.UPDATES
+
         bpbs = [
-            self.factory.makeBinaryPackageBuild(source_package_release=spr)
+            self.factory.makeBinaryPackageBuild(
+                source_package_release=spr, distroarchseries=das)
             for counter in range(number)]
         bprs = [
             self.factory.makeBinaryPackageRelease(
                 build=bpb, architecturespecific=True)
             for bpb in bpbs]
 
-        das = self.factory.makeDistroArchSeries()
-        distroseries = das.distroseries
-        archive = distroseries.main_archive
-        pocket = PackagePublishingPocket.UPDATES
         return [
             removeSecurityProxy(
                 self.factory.makeBinaryPackagePublishingHistory(
@@ -225,7 +242,7 @@ class TestSourcePackageReleaseGetBuildByArch(TestCaseWithFactory):
         # archtag as the parent.
         das_derived = self.factory.makeDistroArchSeries(
             dsp.derived_series, architecturetag=das.architecturetag,
-            processorfamily=das.processorfamily, supports_virtualized=True)
+            processor=das.processor, supports_virtualized=True)
         # Now copy the package to the derived series, with binary.
         derived_archive = dsp.derived_series.main_archive
         getUtility(ISourcePackageFormatSelectionSet).add(
@@ -267,65 +284,13 @@ class TestFindBuildsByArchitecture(TestCaseWithFactory):
         # The series also has other architectures.
         self.factory.makeDistroArchSeries(distroseries=distroseries)
 
-        for das in distroseries.architectures:
-            self.factory.makeBinaryPackagePublishingHistory(
-                binarypackagerelease=bpr, distroarchseries=das,
-                archive=archive)
+        # makeBinaryPackagePublishingHistory will actually publish an
+        # arch-indep BPR everywhere.
+        self.factory.makeBinaryPackagePublishingHistory(
+            binarypackagerelease=bpr, archive=archive,
+            distroarchseries=distroseries.nominatedarchindep)
 
         naked_spr = removeSecurityProxy(spr)
         self.assertEqual(
             {distroseries.nominatedarchindep.architecturetag: bpr.build},
             naked_spr.findBuildsByArchitecture(distroseries, archive))
-
-
-class TestSourcePackageReleaseTranslationFiles(TestCaseWithFactory):
-    """Tests for attachTranslationFiles on a different layer."""
-
-    layer = LaunchpadZopelessLayer
-
-    def makeTranslationsLFA(self):
-        """Create an LibraryFileAlias containing dummy translation data."""
-        test_tar_content = {
-            'source/po/foo.pot': 'Foo template',
-            'source/po/eo.po': 'Foo translation',
-            }
-        tarfile_content = LaunchpadWriteTarFile.files_to_string(
-            test_tar_content)
-        return self.factory.makeLibraryFileAlias(content=tarfile_content)
-
-    def test_attachTranslationFiles__no_translation_sharing(self):
-        # If translation sharing is disabled,
-        # SourcePackageRelease.attachTranslationFiles() creates a job
-        # in the translation import queue.
-        spr = self.factory.makeSourcePackageRelease()
-        self.assertFalse(spr.sourcepackage.has_sharing_translation_templates)
-        lfa = self.makeTranslationsLFA()
-        transaction.commit()
-        with dbuser('queued'):
-            spr.attachTranslationFiles(lfa, True, spr.maintainer)
-        translation_import_queue = getUtility(ITranslationImportQueue)
-        entries_in_queue = translation_import_queue.getAllEntries(
-                target=spr.sourcepackage).count()
-        self.assertEqual(2, entries_in_queue)
-
-    def test_attachTranslationFiles__translation_sharing(self):
-        # If translation sharing is enabled,
-        # SourcePackageRelease.attachTranslationFiles() only attaches
-        # templates.
-        spr = self.factory.makeSourcePackageRelease()
-        sourcepackage = spr.sourcepackage
-        productseries = self.factory.makeProductSeries()
-        self.factory.makePOTemplate(productseries=productseries)
-        with person_logged_in(sourcepackage.distroseries.owner):
-            sourcepackage.setPackaging(
-                productseries, sourcepackage.distroseries.owner)
-        self.assertTrue(sourcepackage.has_sharing_translation_templates)
-        lfa = self.makeTranslationsLFA()
-        transaction.commit()
-        with dbuser('queued'):
-            spr.attachTranslationFiles(lfa, True, spr.maintainer)
-        translation_import_queue = getUtility(ITranslationImportQueue)
-        entries = translation_import_queue.getAllEntries(
-                target=sourcepackage)
-        self.assertEqual(1, entries.count())
-        self.assertTrue(entries[0].path.endswith('.pot'))

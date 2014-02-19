@@ -1,7 +1,5 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=E0611,W0212
 
 """Classes to represent binary package releases in a
 distributionarchitecture release."""
@@ -14,11 +12,11 @@ __all__ = [
 
 from zope.interface import implements
 
-from canonical.database.sqlbase import sqlvalues
+from lp.services.database.sqlbase import sqlvalues
 from lp.soyuz.interfaces.distroarchseriesbinarypackagerelease import (
     IDistroArchSeriesBinaryPackageRelease,
     )
-from lp.soyuz.enums import PackagePublishingStatus
+from lp.soyuz.interfaces.publishing import active_publishing_status
 from lp.soyuz.model.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease,
     )
@@ -84,11 +82,7 @@ class DistroArchSeriesBinaryPackageRelease:
     @property
     def current_publishing_record(self):
         """See `IDistroArchSeriesBinaryPackageRelease`."""
-        status = [
-            PackagePublishingStatus.PENDING,
-            PackagePublishingStatus.PUBLISHED]
-        record = self._latest_publishing_record(status=status)
-        return record
+        return self._latest_publishing_record(status=active_publishing_status)
 
 # XXX cprov 20071026: heavy queries should be moved near to the related
 # content classes in order to be better maintained. In this specific case
@@ -102,7 +96,7 @@ class DistroArchSeriesBinaryPackageRelease:
                         self.distribution.all_distro_archive_ids)
 
         if status is not None:
-            if not isinstance(status, list):
+            if not isinstance(status, (tuple, list)):
                 status = [status]
             query += " AND status IN %s" % sqlvalues(status)
 
@@ -161,6 +155,14 @@ class DistroArchSeriesBinaryPackageRelease:
         if pub is None:
             return None
         return pub.priority
+
+    @property
+    def phased_update_percentage(self):
+        """See `IDistroArchSeriesBinaryPackageRelease`."""
+        pub = self._latest_publishing_record()
+        if pub is None:
+            return None
+        return pub.phased_update_percentage
 
     # map the BinaryPackageRelease attributes up to this class so it
     # responds to the same interface

@@ -3,10 +3,16 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   omit-tag="">
 <div
+  itemscope=""
+  itemtype="http://schema.org/UserComments"
   tal:define="css_classes view/getBoardCommentCSSClass"
   tal:attributes="class string:${css_classes};
                   id string:comment-${context/index}">
   <div class="boardCommentDetails">
+    <table>
+      <tbody>
+        <tr>
+    <td>
     <tal:bestanswer condition="view/isBestAnswer">
       <img src="/@@/favourite-yes" style="float:right;" alt="Best"
            title="Marked as best answer" />
@@ -15,16 +21,23 @@
       <tal:comment_owner replace="structure context/owner/fmt:link-display-name-id" />
     </tal:comment_has_owner>
     said
-    <span
-      tal:attributes="title context/datecreated/fmt:datetime"
+    <time
+      itemprop="commentTime"
+      tal:attributes="title context/datecreated/fmt:datetime;
+        datetime context/datecreated/fmt:isodate"
       tal:content="context/datecreated/fmt:displaydate">Thursday
-    13:21</span>:
-    <span style="float:right;"
-       tal:content="string: #${context/display_index}" />
+    13:21</time>:
+    </td>
+    <td class="bug-comment-index">
+      <a
+	tal:content="string: #${context/display_index}" />
+    </td>
+  </tr></tbody></table>
   </div>
 
   <div class="boardCommentBody"
     tal:attributes="class view/getBodyCSSClass"
+    itemprop="commentText"
     tal:content="structure
       context/text_contents/fmt:obfuscate-email/fmt:email-to-html">
     Message text.

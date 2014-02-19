@@ -7,8 +7,6 @@
 <div class="portlet" id="portlet-details">
 
   <h2>Meeting details</h2>
-
-  <div class="portletBody portletContent">
     <tal:has_home_page condition="context/home_page">
       <img src="/@@/link" />
       <a tal:attributes="href context/home_page">
@@ -33,8 +31,6 @@
       <span tal:replace="context/address" />
       <br />
     </tal:has_address>
-
-  </div>
 
 </div>
 </tal:root>

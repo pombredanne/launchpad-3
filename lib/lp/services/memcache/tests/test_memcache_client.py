@@ -8,10 +8,10 @@ __metaclass__ = type
 from lazr.restful.utils import get_current_browser_request
 from zope.component import getUtility
 
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.services.memcache.interfaces import IMemcacheClient
 from lp.services.timeline.requesttimeline import get_request_timeline
 from lp.testing import TestCase
+from lp.testing.layers import LaunchpadZopelessLayer
 
 
 class MemcacheClientTestCase(TestCase):

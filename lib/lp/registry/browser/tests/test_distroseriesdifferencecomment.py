@@ -8,9 +8,9 @@ __metaclass__ = type
 from lxml import html
 from zope.component import getUtility
 
-from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.testing.views import create_initialized_view
 
 

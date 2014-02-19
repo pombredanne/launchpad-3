@@ -32,6 +32,7 @@ And for every distribution we publish most of its attributes.
     date_created: u'2006-10-16T18:31:43.415195+00:00'
     derivatives_collection_link: u'http://.../ubuntu/derivatives'
     description: u'Ubuntu is a new approach...'
+    development_series_alias: None
     display_name: u'Ubuntu'
     domain_name: u'ubuntulinux.org'
     driver_link: None
@@ -39,14 +40,15 @@ And for every distribution we publish most of its attributes.
     icon_link: u'http://.../ubuntu/icon'
     logo_link: u'http://.../ubuntu/logo'
     main_archive_link: u'http://.../ubuntu/+archive/primary'
+    members_link: u'http://.../~ubuntu-team'
     mirror_admin_link: u'http://.../~ubuntu-mirror-admins'
     mugshot_link: u'http://.../ubuntu/mugshot'
     name: u'ubuntu'
     official_bug_tags: []
     owner_link: u'http://.../~ubuntu-team'
+    redirect_release_uploads: False
     registrant_link: u'http://.../~registry'
     resource_type_link: u'http://.../#distribution'
-    security_contact_link: None
     self_link: u'http://.../ubuntu'
     series_collection_link: u'http://.../ubuntu/series'
     summary: u'Ubuntu is a new approach to Linux Distribution...'
@@ -164,10 +166,11 @@ packages matching (substring) the given text.
 "getCountryMirror" returns the country DNS mirror for a given country;
 returning None if there isn't one.
 
-    >>> # Prepare stuff.
+Prepare stuff.
+
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.testing.pages import webservice_for_person
-    >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
+    >>> from lp.testing.pages import webservice_for_person
+    >>> from lp.services.webapp.interfaces import OAuthPermission
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from simplejson import dumps
@@ -179,7 +182,6 @@ returning None if there isn't one.
     ...     http_url="http://mirror.showa.antarctica.org/ubuntu",
     ...     official_candidate=True)
     >>> showa_station_log = factory.makeMirrorProbeRecord(showa_station)
-    >>> logout()
 
     >>> login(ANONYMOUS)
     >>> karl_db = getUtility(IPersonSet).getByName('karl')
@@ -187,7 +189,8 @@ returning None if there isn't one.
     ...     permission=OAuthPermission.WRITE_PUBLIC)
     >>> logout()
 
-    >>> # Mark new mirror as official and a country mirror.
+Mark new mirror as official and a country mirror.
+
     >>> patch = {
     ...     u'status': 'Official',
     ...     u'country_dns_mirror': True

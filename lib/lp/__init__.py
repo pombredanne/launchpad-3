@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """The lp namespace package.
@@ -41,3 +41,10 @@ Here are these layers:
     - lp.coop
     - lp.app
 """
+
+# Modules should 'from lp import _' instead of constructing their
+# own MessageFactory
+from zope.i18nmessageid import MessageFactory
+
+
+_ = MessageFactory("launchpad")

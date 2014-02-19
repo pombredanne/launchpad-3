@@ -36,7 +36,7 @@ class POBasicTestCase(unittest.TestCase):
             self.assertTrue(
                 False,
                 "Importing an empty file succeeded; it should have failed.")
-        except TranslationFormatSyntaxError, exception:
+        except TranslationFormatSyntaxError as exception:
             message = exception.represent("Default error message!")
 
         self.assertEqual(message, "File contains no messages.")

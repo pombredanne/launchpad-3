@@ -13,6 +13,10 @@ from datetime import (
     )
 import os.path
 
+# FIRST Ensure correct plugins are loaded. Do not delete this comment or the
+# line below this comment.
+import lp.codehosting
+
 from bzrlib.errors import NotBranchError
 from bzrlib.revision import NULL_REVISION
 import pytz
@@ -22,22 +26,6 @@ from storm.expr import (
     )
 from zope.component import getUtility
 
-# Load the normal plugin set. Lint complains but keep this in.
-import lp.codehosting
-
-from canonical.config import config
-from canonical.launchpad.helpers import (
-    get_contact_email_addresses,
-    get_email_template,
-    shortlist,
-    )
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
-from canonical.launchpad.webapp import errorlog
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector,
-    MAIN_STORE,
-    SLAVE_FLAVOR,
-    )
 from lp.app.enums import ServiceUsage
 from lp.code.errors import StaleLastMirrored
 from lp.code.interfaces.branch import get_db_branch_info
@@ -48,11 +36,22 @@ from lp.code.model.directbranchcommit import (
     DirectBranchCommit,
     )
 from lp.codehosting.vfs import get_rw_server
+from lp.services.config import config
+from lp.services.database.interfaces import (
+    IMasterStore,
+    ISlaveStore,
+    )
+from lp.services.helpers import shortlist
+from lp.services.mail.helpers import (
+    get_contact_email_addresses,
+    get_email_template,
+    )
 from lp.services.mail.sendmail import (
     format_address,
     simple_sendmail,
     )
 from lp.services.scripts.base import LaunchpadCronScript
+from lp.services.webapp import errorlog
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 
 
@@ -184,7 +183,7 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
             master_branch = IMasterStore(branch).get(Branch, branch.id)
             master_branch.branchChanged(**get_db_branch_info(**e.info))
             self.logger.warning(
-                'Skipped %s due to stale DB info and scheduled scan.',
+                "Skipped %s due to stale DB info, and scheduled a new scan.",
                 branch.bzr_identity)
             if self.txn:
                 self.txn.commit()
@@ -266,7 +265,9 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
                     self.txn.commit()
             except Exception as e:
                 items_failed += 1
-                self.logger.error("Failure: %s" % repr(e))
+                self.logger.error(
+                    "Failure in %s/%s: %s", source.product.name, source.name,
+                    repr(e))
                 if self.txn:
                     self.txn.abort()
 
@@ -313,7 +314,7 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
 
         self.logger.info("Exporting to translations branches.")
 
-        self.store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
+        self.store = ISlaveStore(Product)
 
         product_join = Join(
             ProductSeries, Product, ProductSeries.product == Product.id)

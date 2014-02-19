@@ -1,8 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213
-
 """Binary package name interfaces."""
 
 __metaclass__ = type
@@ -19,7 +17,7 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.app.validators.name import name_validator
 
 
@@ -40,9 +38,6 @@ class IBinaryPackageNameSet(Interface):
 
     def getAll():
         """return an iselectresults representing all package names"""
-
-    def findByName(name):
-        """Find binarypackagenames by its name or part of it"""
 
     def queryByName(name):
         """Return a binary package name.

@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+# SKIP this file when reformatting, due to the sys mangling.
 import datetime
 
 from storm.exceptions import NotOneError as SQLObjectMoreThanOneResultError

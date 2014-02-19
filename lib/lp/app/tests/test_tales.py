@@ -1,44 +1,48 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """tales.py doctests."""
 
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 
 from lxml import html
 from pytz import utc
 from zope.component import (
     getAdapter,
-    getUtility
+    getUtility,
     )
 from zope.traversing.interfaces import (
     IPathAdapter,
     TraversalError,
     )
-from canonical.launchpad.webapp.authorization import (
-    clear_cache,
-    precache_permission_for_objects,
-    )
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    FunctionalLayer,
-    LaunchpadFunctionalLayer,
-    )
 from lp.app.browser.tales import (
-    format_link,
     DateTimeFormatterAPI,
+    format_link,
     ObjectImageDisplayAPI,
     PersonFormatterAPI,
     )
 from lp.registry.interfaces.irc import IIrcIDSet
 from lp.registry.interfaces.person import PersonVisibility
+from lp.services.webapp.authorization import (
+    check_permission,
+    clear_cache,
+    precache_permission_for_objects,
+    )
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
     login_person,
     test_tales,
     TestCase,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    FunctionalLayer,
+    LaunchpadFunctionalLayer,
     )
 
 
@@ -149,18 +153,20 @@ class TestPersonFormatterAPI(TestCaseWithFactory):
         self.assertEqual(expected, result)
 
 
-class TestTalesFormatterAPI(TestCaseWithFactory):
-    """ Test permissions required to access TalesFormatterAPI methods.
+class TestTeamFormatterAPI(TestCaseWithFactory):
+    """ Test permissions required to access TeamFormatterAPI methods.
 
     A user must have launchpad.LimitedView permission to use
-    TestTalesFormatterAPI with private teams.
+    TeamFormatterAPI with private teams.
     """
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def setUp(self):
-        super(TestTalesFormatterAPI, self).setUp()
+        super(TestTeamFormatterAPI, self).setUp()
+        icon = self.factory.makeLibraryFileAlias(
+            filename='smurf.png', content_type='image/png')
         self.team = self.factory.makeTeam(
-            name='team', displayname='a team',
+            name='team', displayname='a team', icon=icon,
             visibility=PersonVisibility.PRIVATE)
 
     def _make_formatter(self, cache_permission=False):
@@ -175,10 +181,11 @@ class TestTalesFormatterAPI(TestCaseWithFactory):
                 request, 'launchpad.LimitedView', [self.team])
         return formatter, request, any_person
 
-    def _tales_value(self, attr, request):
+    def _tales_value(self, attr, request, path='fmt'):
         # Evaluate the given formatted attribute value on team.
-        return test_tales(
-            "team/fmt:%s" % attr, team=self.team, request=request)
+        result = test_tales(
+            "team/%s:%s" % (path, attr), team=self.team, request=request)
+        return result
 
     def _test_can_view_attribute_no_login(self, attr, hidden=None):
         # Test attribute access with no login.
@@ -227,6 +234,10 @@ class TestTalesFormatterAPI(TestCaseWithFactory):
 
     def test_can_view_url(self):
         self._test_can_view_attribute('url')
+
+    def test_can_view_icon(self):
+        self._test_can_view_attribute(
+            'icon', '<span class="sprite team private"></span>')
 
 
 class TestObjectFormatterAPI(TestCaseWithFactory):
@@ -386,7 +397,7 @@ class TestIRCNicknameFormatterAPI(TestCaseWithFactory):
             'nick/fmt:formatted_displayname', nick=ircID)
         self.assertEquals(
             u'<strong>fred</strong>\n'
-            '<span class="discreet"> on </span>\n'
+            '<span class="lesser"> on </span>\n'
             '<strong>&lt;b&gt;irc.canonical.com&lt;/b&gt;</strong>\n',
             expected_html)
 
@@ -464,3 +475,35 @@ class TestDateTimeFormatterAPI(TestCase):
         """Values in seconds are reported as "less than a minute."""
         self.assertEqual('less than a minute',
             self.getDurationsince(timedelta(0, 59)))
+
+
+class TestPackageBuildFormatterAPI(TestCaseWithFactory):
+    """Tests for PackageBuildFormatterAPI."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def _make_public_build_for_private_team(self):
+        spph = self.factory.makeSourcePackagePublishingHistory()
+        team_owner = self.factory.makePerson()
+        private_team = self.factory.makeTeam(
+            owner=team_owner, visibility=PersonVisibility.PRIVATE)
+        p3a = self.factory.makeArchive(owner=private_team, private=True)
+        build = self.factory.makeBinaryPackageBuild(
+            source_package_release=spph.sourcepackagerelease, archive=p3a)
+        return build, p3a, team_owner
+
+    def test_public_build_private_team_no_permission(self):
+        # A `PackageBuild` for a public `SourcePackageRelease` in an archive
+        # for a private team is rendered gracefully when the user has no
+        # permission.
+        build, _, _ = self._make_public_build_for_private_team()
+        # Make sure this is a valid test; the build itself must be public.
+        self.assertTrue(check_permission('launchpad.View', build))
+        self.assertEqual('private job', format_link(build))
+
+    def test_public_build_private_team_with_permission(self):
+        # Members of a private team can see their builds.
+        build, p3a, team_owner = self._make_public_build_for_private_team()
+        login_person(team_owner)
+        self.assertIn(
+            "[%s/%s]" % (p3a.owner.name, p3a.name), format_link(build))

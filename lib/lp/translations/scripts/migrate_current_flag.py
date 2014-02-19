@@ -8,21 +8,22 @@ __all__ = ['MigrateCurrentFlagProcess']
 
 import logging
 
-from zope.component import getUtility
+from storm.expr import (
+    And,
+    Count,
+    Or,
+    Select,
+    )
+from storm.info import ClassAlias
 from zope.interface import implements
 
-from storm.info import ClassAlias
-from storm.expr import And, Count, Or, Select
-
-from canonical.launchpad.interfaces.looptuner import ITunableLoop
-from canonical.launchpad.utilities.looptuner import DBLoopTuner
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector,
-    MAIN_STORE,
-    MASTER_FLAVOR,
-    )
 from lp.registry.model.product import Product
 from lp.registry.model.productseries import ProductSeries
+from lp.services.database.interfaces import IMasterStore
+from lp.services.looptuner import (
+    DBLoopTuner,
+    ITunableLoop,
+    )
 from lp.translations.model.potemplate import POTemplate
 from lp.translations.model.translationmessage import TranslationMessage
 from lp.translations.model.translationtemplateitem import (
@@ -43,7 +44,7 @@ class TranslationMessageImportedFlagUpdater:
         self.total = len(self.tm_ids)
         self.logger.info(
             "Fixing up a total of %d TranslationMessages." % (self.total))
-        self.store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        self.store = IMasterStore(Product)
 
     def isDone(self):
         """See `ITunableLoop`."""
@@ -119,7 +120,7 @@ class MigrateCurrentFlagProcess:
         self.logger = logger
         if logger is None:
             self.logger = logging.getLogger("migrate-current-flag")
-        self.store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        self.store = IMasterStore(Product)
 
     def getProductsWithTemplates(self):
         """Get Product.ids for projects with any translations templates."""

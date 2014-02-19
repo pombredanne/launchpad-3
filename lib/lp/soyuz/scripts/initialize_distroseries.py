@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Initialize a distroseries from its parent distroseries."""
@@ -14,15 +14,16 @@ from operator import methodcaller
 import transaction
 from zope.component import getUtility
 
-from canonical.database.sqlbase import sqlvalues
-from canonical.launchpad.helpers import ensure_unicode
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from lp.app.errors import NotFoundError
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.distroseriesparent import IDistroSeriesParentSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.model.distroseries import DistroSeries
 from lp.services.database import bulk
+from lp.services.database.interfaces import IMasterStore
+from lp.services.database.sqlbase import sqlvalues
+from lp.services.helpers import ensure_unicode
 from lp.soyuz.adapters.packagelocation import PackageLocation
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -33,7 +34,6 @@ from lp.soyuz.interfaces.archive import (
     CannotCopy,
     IArchiveSet,
     )
-from lp.soyuz.interfaces.buildpackagejob import COPY_ARCHIVE_SCORE_PENALTY
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.distributionjob import (
     IDistroSeriesDifferenceJobSource,
@@ -44,6 +44,7 @@ from lp.soyuz.interfaces.packageset import (
     NoSuchPackageSet,
     )
 from lp.soyuz.interfaces.queue import IPackageUploadSet
+from lp.soyuz.model.binarypackagebuild import COPY_ARCHIVE_SCORE_PENALTY
 from lp.soyuz.model.packageset import Packageset
 from lp.soyuz.scripts.packagecopier import do_copy
 
@@ -103,9 +104,6 @@ class InitializeDistroSeries:
         self, distroseries, parents=(), arches=(), archindep_archtag=None,
         packagesets=(), rebuild=False, overlays=(), overlay_pockets=(),
         overlay_components=()):
-        # Avoid circular imports
-        from lp.registry.model.distroseries import DistroSeries
-
         self.distroseries = distroseries
         self.parent_ids = [int(id) for id in parents]
         # Load parent objects in bulk...
@@ -284,6 +282,7 @@ class InitializeDistroSeries:
         self._set_nominatedarchindep()
         self._copy_packages()
         self._copy_packagesets()
+        self._copy_pocket_permissions()
         self._create_dsds()
         self._set_initialized()
         transaction.commit()
@@ -381,12 +380,12 @@ class InitializeDistroSeries:
                 sqlvalues(self.arches))
         self._store.execute("""
             INSERT INTO DistroArchSeries
-            (distroseries, processorfamily, architecturetag, owner, official,
+            (distroseries, processor, architecturetag, owner, official,
              supports_virtualized)
-            SELECT %s, processorfamily, architecturetag, %s,
+            SELECT %s, processor, architecturetag, %s,
                 bool_and(official), bool_or(supports_virtualized)
             FROM DistroArchSeries WHERE enabled = TRUE %s
-            GROUP BY processorfamily, architecturetag
+            GROUP BY processor, architecturetag
             """ % (sqlvalues(self.distroseries, self.distroseries.owner)
             + (das_filter, )))
         self._store.flush()
@@ -500,7 +499,7 @@ class InitializeDistroSeries:
         We copy all PENDING and PUBLISHED records as PENDING into our own
         publishing records.
 
-        We copy only the RELEASE pocket in the PRIMARY and DEBUG archives.
+        We copy only the RELEASE pocket in the PRIMARY archive.
         """
         archive_set = getUtility(IArchiveSet)
 
@@ -517,8 +516,7 @@ class InitializeDistroSeries:
 
             distroarchseries_list = distroarchseries_lists[parent]
             for archive in parent.distribution.all_distro_archives:
-                if archive.purpose not in (
-                    ArchivePurpose.PRIMARY, ArchivePurpose.DEBUG):
+                if archive.purpose != ArchivePurpose.PRIMARY:
                     continue
 
                 target_archive = archive_set.getByDistroPurpose(
@@ -533,15 +531,14 @@ class InitializeDistroSeries:
                     destination = PackageLocation(
                         target_archive, self.distroseries.distribution,
                         self.distroseries, PackagePublishingPocket.RELEASE)
-                    proc_families = None
+                    processors = None
                     if self.rebuild:
-                        proc_families = [
-                            das[1].processorfamily
-                            for das in distroarchseries_list]
+                        processors = [
+                            das[1].processor for das in distroarchseries_list]
                         distroarchseries_list = ()
                     getUtility(IPackageCloner).clonePackages(
                         origin, destination, distroarchseries_list,
-                        proc_families, spns, self.rebuild)
+                        processors, spns, self.rebuild)
                 else:
                     # There is only one available pocket in an unreleased
                     # series.
@@ -569,7 +566,7 @@ class InitializeDistroSeries:
                                    list(self.distroseries.architectures))
                                 rebuilds.extend(builds)
                             self._rescore_rebuilds(rebuilds)
-                    except CannotCopy, error:
+                    except CannotCopy as error:
                         raise InitializationError(error)
 
     def _rescore_rebuilds(self, builds):
@@ -655,11 +652,9 @@ class InitializeDistroSeries:
 
     def _copy_packagesets(self):
         """Copy packagesets from the parent distroseries."""
-        # Avoid circular imports.
-        from lp.registry.model.distroseries import DistroSeries
-
         packagesets = self._store.find(
-            Packageset, DistroSeries.id.is_in(self.derivation_parent_ids))
+            Packageset,
+            Packageset.distroseries_id.is_in(self.derivation_parent_ids))
         parent_to_child = {}
         # Create the packagesets and any archivepermissions if we're not
         # copying cross-distribution.
@@ -706,3 +701,17 @@ class InitializeDistroSeries:
                 new_series_ps.add(parent_to_child[old_series_child])
             new_series_ps.add(old_series_ps.sourcesIncluded(
                 direct_inclusion=True))
+
+    def _copy_pocket_permissions(self):
+        """Copy per-distroseries/pocket permissions from the parent series."""
+        for parent in self.derivation_parents:
+            if self.distroseries.distribution == parent.distribution:
+                self._store.execute("""
+                    INSERT INTO Archivepermission
+                    (person, permission, archive, pocket, distroseries)
+                    SELECT person, permission, %s, pocket, %s
+                    FROM Archivepermission
+                    WHERE pocket IS NOT NULL AND distroseries = %s
+                    """ % sqlvalues(
+                        self.distroseries.main_archive, self.distroseries.id,
+                        parent.id))

@@ -3,18 +3,18 @@
 
 __metaclass__ = type
 
+from lazr.restfulclient.errors import HTTPError
 from zope.component import getUtility
 
-from canonical.testing.layers import DatabaseFunctionalLayer
-from lazr.restfulclient.errors import HTTPError
 from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,
     TeamMembershipStatus,
     )
 from lp.testing import (
-    TestCaseWithFactory,
     launchpadlib_for,
+    TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestTeamMembershipTransitions(TestCaseWithFactory):
@@ -29,7 +29,7 @@ class TestTeamMembershipTransitions(TestCaseWithFactory):
             name='some-team',
             owner=owner)
         membership_set = getUtility(ITeamMembershipSet)
-        membership = membership_set.new(
+        membership_set.new(
             self.person,
             self.team,
             TeamMembershipStatus.APPROVED,
@@ -43,7 +43,7 @@ class TestTeamMembershipTransitions(TestCaseWithFactory):
         team_membership = team.members_details[1]
         # The error in this instance should be a valueerror, b/c the
         # WADL used by launchpadlib will enforce the method args.
-        api_exception = self.assertRaises(
+        self.assertRaises(
             ValueError,
             team_membership.setStatus,
             status='NOTVALIDSTATUS')

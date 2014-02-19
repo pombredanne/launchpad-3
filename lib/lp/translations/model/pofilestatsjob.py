@@ -12,28 +12,26 @@ __all__ = [
     ]
 
 import logging
-from zope.component import getUtility
 
 from storm.locals import (
     And,
     Int,
     Reference,
     )
+from zope.component import getUtility
 from zope.interface import (
     classProvides,
     implements,
     )
 
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
+from lp.services.config import config
+from lp.services.database.interfaces import IStore
 from lp.services.database.stormbase import StormBase
 from lp.services.job.interfaces.job import IRunnableJob
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
 from lp.translations.interfaces.pofilestatsjob import IPOFileStatsJobSource
+from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.model.pofile import POFile
 
 
@@ -41,6 +39,8 @@ class POFileStatsJob(StormBase, BaseRunnableJob):
     """The details for a POFile status update job."""
 
     __storm_table__ = 'POFileStatsJob'
+
+    config = config.IPOFileStatsJobSource
 
     # Instances of this class are runnable jobs.
     implements(IRunnableJob)
@@ -74,15 +74,48 @@ class POFileStatsJob(StormBase, BaseRunnableJob):
         logger.info('Updating statistics for %s' % self.pofile.title)
         self.pofile.updateStatistics()
 
+        # Next we have to find any POFiles that share translations with the
+        # above POFile so we can update their statistics too.  To do that we
+        # first have to find the set of shared templates.
+        subset = getUtility(IPOTemplateSet).getSharingSubset(
+            product=self.pofile.potemplate.product,
+            distribution=self.pofile.potemplate.distribution,
+            sourcepackagename=self.pofile.potemplate.sourcepackagename)
+        shared_templates = subset.getSharingPOTemplates(
+            self.pofile.potemplate.name)
+        # Now we have to find any POFiles that translate the shared templates
+        # into the same language as the POFile this job is about.
+        for template in shared_templates:
+            pofile = template.getPOFileByLang(self.pofile.language.code)
+            if pofile is None:
+                continue
+            pofile.updateStatistics()
+
     @staticmethod
     def iterReady():
         """See `IJobSource`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        return store.find((POFileStatsJob),
+        return IStore(POFileStatsJob).find((POFileStatsJob),
             And(POFileStatsJob.job == Job.id,
                 Job.id.is_in(Job.ready_jobs)))
+
+    def makeDerived(self):
+        """Support UniversalJobSource.
+
+        (Most Job ORM classes are generic, because their database table is
+        used for several related job types.  Therefore, they have derived
+        classes to implement the specific Job.
+
+        POFileStatsJob implements the specific job, so its makeDerived returns
+        itself.)
+        """
+        return self
+
+    def getDBClass(self):
+        return self.__class__
 
 
 def schedule(pofile):
     """Schedule a job to update a POFile's stats."""
-    return POFileStatsJob(pofile)
+    job = POFileStatsJob(pofile)
+    job.celeryRunOnCommit()
+    return job

@@ -19,7 +19,7 @@
       var template_domains = {'name1': 'domain1', 'name2': 'domain2'};
     </script>
     <script type="text/javascript">
-      LPS.use('node', 'lp.translations.importqueueentry',
+      LPJS.use('node', 'lp.translations.importqueueentry',
       function (Y) {
         Y.on('domready', Y.lp.translations.importqueueentry.setup_page);
       });

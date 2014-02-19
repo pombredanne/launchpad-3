@@ -1,8 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0611,W0212
-
 """Launchpad Pillars share a namespace.
 
 Pillars are currently Product, ProjectGroup and Distribution.
@@ -22,20 +20,11 @@ from storm.info import ClassAlias
 from storm.locals import SQL
 from storm.store import Store
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import (
+    classProvides,
+    implements,
+    )
 
-from canonical.config import config
-from canonical.database.sqlbase import (
-    cursor,
-    SQLBase,
-    sqlvalues,
-    )
-from canonical.launchpad.helpers import ensure_unicode
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.distribution import (
     IDistribution,
@@ -44,6 +33,8 @@ from lp.registry.interfaces.distribution import (
 from lp.registry.interfaces.pillar import (
     IPillarName,
     IPillarNameSet,
+    IPillarPerson,
+    IPillarPersonFactory,
     )
 from lp.registry.interfaces.product import (
     IProduct,
@@ -51,6 +42,13 @@ from lp.registry.interfaces.product import (
     )
 from lp.registry.interfaces.projectgroup import IProjectGroupSet
 from lp.registry.model.featuredproject import FeaturedProject
+from lp.services.config import config
+from lp.services.database.interfaces import IStore
+from lp.services.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
+from lp.services.helpers import ensure_unicode
 
 
 __all__ = [
@@ -58,6 +56,7 @@ __all__ = [
     'HasAliasMixin',
     'PillarNameSet',
     'PillarName',
+    'PillarPerson',
     ]
 
 
@@ -85,9 +84,8 @@ class PillarNameSet:
 
     def __contains__(self, name):
         """See `IPillarNameSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         name = ensure_unicode(name)
-        result = store.execute("""
+        result = IStore(PillarName).execute("""
             SELECT TRUE
             FROM PillarName
             WHERE (id IN (SELECT alias_for FROM PillarName WHERE name=?)
@@ -116,21 +114,21 @@ class PillarNameSet:
         # the Project, Product and Distribution tables (and this approach
         # works better with SQLObject too.
 
-
         # Retrieve information out of the PillarName table.
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        cur = cursor()
         query = """
             SELECT id, product, project, distribution
             FROM PillarName
-            WHERE (id IN (SELECT alias_for FROM PillarName WHERE name=?)
+            WHERE (id = (SELECT alias_for FROM PillarName WHERE name=?)
                    OR name=?)
-                AND alias_for IS NULL
+                AND alias_for IS NULL%s
+            LIMIT 1
             """
         if ignore_inactive:
-            query += " AND active IS TRUE"
+            query %= " AND active IS TRUE"
+        else:
+            query %= ""
         name = ensure_unicode(name)
-        result = store.execute(query, [name, name])
+        result = IStore(PillarName).execute(query, [name, name])
         row = result.get_one()
         if row is None:
             return None
@@ -181,12 +179,12 @@ class PillarNameSet:
                  lower(Distribution.title) = lower(%(text)s)
                 )
             ''' % sqlvalues(text=ensure_unicode(text)))
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         columns = [
             PillarName, OtherPillarName, Product, ProjectGroup, Distribution]
         for column in extra_columns:
             columns.append(column)
-        return store.using(*origin).find(tuple(columns), conditions)
+        return IStore(PillarName).using(*origin).find(
+            tuple(columns), conditions)
 
     def count_search_matches(self, text):
         result = self.build_search_query(text)
@@ -199,8 +197,8 @@ class PillarNameSet:
         if limit is None:
             limit = config.launchpad.default_batch_size
 
-        # Pull out the licenses as a subselect which is converted
-        # into a PostgreSQL array so that multiple licenses per product
+        # Pull out the licences as a subselect which is converted
+        # into a PostgreSQL array so that multiple licences per product
         # can be retrieved in a single row for each product.
         extra_column = ProductWithLicenses.composeLicensesColumn()
         result = self.build_search_query(text, [extra_column])
@@ -332,3 +330,18 @@ class HasAliasMixin:
             assert pillar_name.alias_for == self_pillar, (
                 "Can't remove an alias of another pillar.")
             store.remove(pillar_name)
+
+
+class PillarPerson:
+
+    implements(IPillarPerson)
+
+    classProvides(IPillarPersonFactory)
+
+    def __init__(self, pillar, person):
+        self.pillar = pillar
+        self.person = person
+
+    @staticmethod
+    def create(pillar, person):
+        return PillarPerson(pillar, person)

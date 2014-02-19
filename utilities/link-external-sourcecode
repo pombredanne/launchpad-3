@@ -29,6 +29,7 @@ from urlparse import urlparse
 # etc.
 from bzrlib.trace import enable_default_logging
 enable_default_logging()
+
 from bzrlib.branch import Branch
 from bzrlib.plugin import load_plugins
 load_plugins()
@@ -74,7 +75,7 @@ def link(source, destination):
         if islink(destination):
             unlink(destination)
         symlink(source, destination)
-    except OSError, error:
+    except OSError as error:
         stderr.write(
             '  Error linking %s: %s\n' % (basename(destination), error))
     else:
@@ -137,7 +138,7 @@ if __name__ == '__main__':
     for source, destination in missing_files:
         link(source, destination)
 
-    for folder_name in ('download-cache', 'eggs', 'yui'):
+    for folder_name in ('download-cache', 'eggs'):
         source = abspath(join(options.parent, folder_name))
         destination = abspath(join(options.target, folder_name))
         if not exists(destination):
@@ -147,5 +148,3 @@ if __name__ == '__main__':
                     (source, destination))
             else:
                 link(source, destination)
-
-# End

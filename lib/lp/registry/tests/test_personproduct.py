@@ -5,24 +5,32 @@
 
 __metaclass__ = type
 
-from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.launchpad.webapp.url import urlappend
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.model.personproduct import PersonProduct
+from lp.services.webapp.interfaces import IBreadcrumb
+from lp.services.webapp.publisher import canonical_url
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
-class TestPersonProductCanonicalUrl(TestCaseWithFactory):
-    """Tests for the canonical url of `IPersonProduct`s."""
+class TestPersonProduct(TestCaseWithFactory):
+    """Tests for `IPersonProduct`s."""
 
     layer = DatabaseFunctionalLayer
 
-    def test_canonical_url(self):
-        # The canonical_url of a person product is ~person/product.
+    def _makePersonProduct(self):
         person = self.factory.makePerson()
         product = self.factory.makeProduct()
-        pp = PersonProduct(person, product)
-        self.assertEqual(
-            urlappend(canonical_url(person),
-                      product.name),
-            canonical_url(pp))
+        return PersonProduct(person, product)
+
+    def test_canonical_url(self):
+        # The canonical_url of a person product is ~person/product.
+        pp = self._makePersonProduct()
+        expected = 'http://launchpad.dev/~%s/%s' % (
+            pp.person.name, pp.product.name)
+        self.assertEqual(expected, canonical_url(pp))
+
+    def test_breadcrumb(self):
+        # Person products give the product as their breadcrumb url.
+        pp = self._makePersonProduct()
+        breadcrumb = IBreadcrumb(pp, None)
+        self.assertEqual(canonical_url(pp.product), breadcrumb.url)

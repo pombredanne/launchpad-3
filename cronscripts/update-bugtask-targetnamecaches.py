@@ -3,16 +3,15 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=C0103,W0403
-
 # This script updates the cached stats in the system
 
 import _pythonpath
 
-from lp.services.scripts.base import LaunchpadCronScript
 from lp.bugs.scripts.bugtasktargetnamecaches import (
-    BugTaskTargetNameCacheUpdater)
-from canonical.config import config
+    BugTaskTargetNameCacheUpdater,
+    )
+from lp.services.config import config
+from lp.services.scripts.base import LaunchpadCronScript
 
 
 class UpdateBugTaskTargetNameCaches(LaunchpadCronScript):

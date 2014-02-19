@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test initializing a distroseries using
@@ -6,22 +6,13 @@ IDistroSeries.initDerivedDistroSeries."""
 
 __metaclass__ = type
 
-import transaction
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing.layers import (
-    LaunchpadFunctionalLayer,
-    LaunchpadZopelessLayer,
-    )
 from lp.registry.interfaces.distroseries import DerivationError
-from lp.services.features.testing import FeatureFixture
 from lp.soyuz.interfaces.distributionjob import (
     IInitializeDistroSeriesJobSource,
-    )
-from lp.soyuz.model.distroseriesdifferencejob import (
-    FEATURE_FLAG_ENABLE_MODULE,
     )
 from lp.soyuz.scripts.tests.test_initialize_distroseries import (
     InitializationHelperTestCase,
@@ -32,7 +23,12 @@ from lp.testing import (
     login_person,
     TestCaseWithFactory,
     )
+from lp.testing.dbuser import switch_dbuser
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.layers import (
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 
 
 class TestDeriveDistroSeries(TestCaseWithFactory):
@@ -103,44 +99,21 @@ class TestDeriveDistroSeriesMultipleParents(InitializationHelperTestCase):
         parent1, parent2 = self.setUpParents(
             packages1={'p1': '0.1-1'}, packages2={'p2': '2.1'})
         child = self.factory.makeDistroSeries()
-        transaction.commit()
-        self.layer.switchDbUser('initializedistroseries')
+        switch_dbuser('initializedistroseries')
 
         child = self._fullInitialize(
             [parent1, parent2], child=child)
         self.assertBinPackagesAndVersions(
             child,
             [(u'p1', u'0.1-1'), (u'p2', u'2.1')])
-
-    def test_multiple_parents_dsd_flag_on(self):
-        # An initialization can happen if the flag for distroseries
-        # difference creation is on.
-        self.useFixture(FeatureFixture({FEATURE_FLAG_ENABLE_MODULE: u'on'}))
-        parent1, parent2 = self.setUpParents(
-            packages1={'p1': '0.1-1'}, packages2={'p2': '2.1'})
-        child = self.factory.makeDistroSeries()
-        transaction.commit()
-        self.layer.switchDbUser('initializedistroseries')
-
-        child = self._fullInitialize(
-            [parent1, parent2], child=child)
-        # Make sure the initialization was successful.
-        self.assertBinPackagesAndVersions(
-            child,
-            [(u'p1', u'0.1-1'), (u'p2', u'2.1')])
-        # Switch back to launchpad_main to be able to cleanup the
-        # feature flags.
-        self.layer.switchDbUser('launchpad_main')
 
     def test_multiple_parents_do_not_close_bugs(self):
         # The initialization does not close the bugs on the copied
         # publications (and thus does not try to access the bug table).
-        self.useFixture(FeatureFixture({FEATURE_FLAG_ENABLE_MODULE: u'on'}))
         parent1, parent2 = self.setUpParents(
             packages1={'p1': '0.1-1'}, packages2={'p2': '2.1'})
         child = self.factory.makeDistroSeries()
-        transaction.commit()
-        self.layer.switchDbUser('initializedistroseries')
+        switch_dbuser('initializedistroseries')
 
         # Patch close_bugs_for_sourcepublication to be able to record if
         # the method has been called.
@@ -164,7 +137,7 @@ class TestDeriveDistroSeriesMultipleParents(InitializationHelperTestCase):
             fakeCloseBugs.call_count)
         # Switch back to launchpad_main to be able to cleanup the
         # feature flags.
-        self.layer.switchDbUser('launchpad_main')
+        switch_dbuser('launchpad_main')
 
     def test_packageset_check_performed(self):
         # Packagesets passed to initDerivedDistroSeries are passed down

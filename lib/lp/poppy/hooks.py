@@ -158,7 +158,7 @@ class Hooks:
         #        self.logger.debug("Accepting login for %s" % user)
         #        self.clients[fsroot]["distro"] = user
         #        return True
-        #except object, e:
+        #except object as e:
         #    print e
         #return False
 

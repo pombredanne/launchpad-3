@@ -198,7 +198,7 @@ a distribution.  There are several sections of information.
 
 The page has an appropriate title and main heading.
 
-    >>> from canonical.launchpad.helpers import backslashreplace
+    >>> from lp.services.helpers import backslashreplace
     >>> print backslashreplace(user_browser.title)
     \u201ciceweasel\u201d package : Ubuntu
 
@@ -238,7 +238,7 @@ the time elapsed since it was published.
     >>> print extract_text(find_tag_by_id(
     ...     user_browser.contents, 'packages_list'))
     The Warty Warthog Release (current stable release)      Set upstream link
-      1.0  release  (main)  ... weeks ago
+      1.0  release  (main)  2006-04-11
 
 Each 'version' line contains an expandable row that shows more information
 about that version.  To show it, click the expander icon.  If the user has
@@ -247,9 +247,9 @@ javascript enabled, the information is shown in-place.
     >>> expander_url = find_tags_by_class(
     ...     user_browser.contents, 'expander')[0]
     >>> print expander_url
-    <a class="expander" href="/ubuntu/+archive/primary/+sourcepub/26/+listing-archive-extra" id="pub26-expander">
-      &nbsp;
-    </a>
+    <a class="expander"
+    href="/ubuntu/+archive/primary/+sourcepub/26/+listing-archive-extra"
+    id="pub26-expander"></a>
 
     >>> browser.open(user_browser.getLink(id="pub26-expander").url)
     >>> print extract_text(browser.contents)
@@ -276,7 +276,8 @@ There's also a section on the page that gives some package information:
     Component:* main
     Architectures:* any
     Latest upload: 1.0
-    *actual publishing details may vary in this distribution, these are just the package defaults.
+    *actual publishing details may vary in this distribution, these are just
+    the package defaults.
 
 And if the source has direct packaging linkage, the upstream's description
 is used in another section:
@@ -379,8 +380,7 @@ are displayed.
 A link to further PPA searches is also included.
 
     >>> link = browser.getLink(
-    ...     url='http://launchpad.dev/ubuntutest/+ppas?'
-    ...         'name_filter=netapplet')
+    ...     url='http://launchpad.dev/ubuntutest/+ppas?name_filter=netapplet')
     >>> link.text
     "...other untrusted versions of..."
 
@@ -388,10 +388,10 @@ A link to further PPA searches is also included.
 Source package change logs
 --------------------------
 
-/$DISTRO/+source/$PACKAGE/+changelog pages contain a version history that lists
-each published version of a package with its changelog entry for that version.
-To navigate to this page, click on the "View full change log" link from
-the index page.
+/$DISTRO/+source/$PACKAGE/+changelog pages contain a version history that
+lists each published version of a package with its changelog entry for that
+version.  To navigate to this page, click on the "View full change log" link
+from the index page.
 
     >>> browser.open("http://launchpad.dev/ubuntu/+source/foobar/")
     >>> browser.getLink("View full change log").click()
@@ -496,8 +496,7 @@ Packages that are not published
 If the package being viewed has no publishing history, a blank table is
 displayed:
 
-    >>> user_browser.open(
-    ...     "http://launchpad.dev/ubuntu/+source/a52dec/")
+    >>> user_browser.open("http://launchpad.dev/ubuntu/+source/a52dec/")
     >>> print extract_text(find_tag_by_id(
     ...     user_browser.contents, 'packages_list'))
 
@@ -536,11 +535,8 @@ We will create 4 new versions of 'alsa-utils' sourcepackages.
     >>> versions = ['2.0', '2.1', '2.2', '2.3']
 
     >>> from zope.component import getUtility
-    >>> from canonical.database.sqlbase import flush_database_updates
-    >>> from canonical.launchpad.ftests import login, logout
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> from lp.registry.interfaces.distribution import IDistributionSet
-    >>> from lp.soyuz.tests.test_publishing import (
-    ...      SoyuzTestPublisher)
 
     >>> login("foo.bar@canonical.com")
 
@@ -556,16 +552,18 @@ We will create 4 new versions of 'alsa-utils' sourcepackages.
     >>> flush_database_updates()
     >>> logout()
 
-When the page is reload all versions are presented in descending order.
+After a reload the page lists each version, batched in descending order.
 
     >>> anon_browser.reload()
-
     >>> print_displayed_versions(anon_browser.contents)
     2.3
     2.2
     2.1
     2.0
     1.0.9a-4ubuntu1
+
+    >>> anon_browser.getLink('Next').click()
+    >>> print_displayed_versions(anon_browser.contents)
     1.0.9a-4
     1.0.8-1ubuntu1
 
@@ -581,7 +579,7 @@ Publishing History
 ------------------
 
 Users can inspect the full publishing history by clicking on a link in
-the action menu on the the distribution source package index page.
+the action menu on the distribution source package index page.
 
     >>> anon_browser.getLink('View full publishing history').click()
 

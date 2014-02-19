@@ -6,7 +6,7 @@ admins and registry admins teams can list, create, or review them.
 
     >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
     >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> from lp.services.webapp.authorization import check_permission
     >>> login('no-priv@canonical.com')
     >>> project_set = getUtility(IProjectGroupSet)
 
@@ -30,7 +30,7 @@ The view provides a page_title.
 A regular user cannot access the view.
 
     >>> user = factory.makePerson()
-    >>> login_person(user)
+    >>> ignored = login_person(user)
     >>> celebs = getUtility(ILaunchpadCelebrities)
     >>> registry = celebs.registry_experts
     >>> user.inTeam(registry)
@@ -47,7 +47,7 @@ A member of the registry team has permission.
     >>> registry_member.inTeam(registry)
     True
 
-    >>> login_person(registry_member)
+    >>> ignored = login_person(registry_member)
     >>> check_permission('launchpad.Moderate', view)
     True
 
@@ -69,13 +69,13 @@ The view provides a page_title.
 
 A regular user cannot access the view.
 
-    >>> login_person(user)
+    >>> ignored = login_person(user)
     >>> check_permission('launchpad.Moderate', view)
     False
 
 A member of the registry team has permission.
 
-    >>> login_person(registry_member)
+    >>> ignored = login_person(registry_member)
     >>> check_permission('launchpad.Moderate', view)
     True
 
@@ -95,12 +95,12 @@ A Launchpad admin has permission to access the +new view.
 
 A regular user cannot access the view.
 
-    >>> login_person(user)
+    >>> ignored = login_person(user)
     >>> check_permission('launchpad.Moderate', view)
     False
 
 A member of the registry team has permission.
 
-    >>> login_person(registry_member)
+    >>> ignored = login_person(registry_member)
     >>> check_permission('launchpad.Moderate', view)
     True

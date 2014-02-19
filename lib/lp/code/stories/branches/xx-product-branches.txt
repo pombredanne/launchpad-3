@@ -49,7 +49,7 @@ If there are not any branches, a helpful message is shown.
       by registering a Mirrored branch. Read more.
     Launchpad can also act as a primary location for Bazaar branches of
       Gnome Applets. Read more.
-    Launchpad can import code from CVS, Subversion, Mercurial or Git
+    Launchpad can import code from CVS, Subversion or Git
       into Bazaar branches. Read more...
 
 The 'Help' links go to the help wiki.
@@ -116,11 +116,11 @@ The initial branch listing has the following branches in order:
 If a branch is associated with more than one series, it is only shown
 once, but both series are shown in the listing.
 
-    >>> admin_browser.open('http://launchpad.dev/firefox/trunk/+linkbranch')
-    >>> admin_browser.getControl('Branch').value = '~name12/firefox/main'
+    >>> admin_browser.open('http://launchpad.dev/firefox/trunk/+setbranch')
+    >>> admin_browser.getControl('Branch:').value = '~name12/firefox/main'
     >>> admin_browser.getControl('Update').click()
-    >>> admin_browser.open('http://launchpad.dev/firefox/1.0/+linkbranch')
-    >>> admin_browser.getControl('Branch').value = '~name12/firefox/main'
+    >>> admin_browser.open('http://launchpad.dev/firefox/1.0/+setbranch')
+    >>> admin_browser.getControl('Branch:').value = '~name12/firefox/main'
     >>> admin_browser.getControl('Update').click()
 
     >>> browser.open('http://code.launchpad.dev/firefox')
@@ -133,8 +133,8 @@ once, but both series are shown in the listing.
 
 Firstly lets associate release--0.9.1 with the 1.0 series.
 
-    >>> admin_browser.open('http://launchpad.dev/firefox/1.0/+linkbranch')
-    >>> admin_browser.getControl('Branch').value = (
+    >>> admin_browser.open('http://launchpad.dev/firefox/1.0/+setbranch')
+    >>> admin_browser.getControl('Branch:').value = (
     ...     '~mark/firefox/release--0.9.1')
     >>> admin_browser.getControl('Update').click()
 
@@ -169,19 +169,21 @@ default listings.
 Involvement portlet
 ===================
 
-There are several links in the side portlet:  'Register a branch',
-'Import a branch', 'Configure code hosting', and 'Define branch
-visibility'.  The links are only shown if the user has permission to
-perform the task.
+There are two links in the side portlet:
+'Import a branch' and 'Configure code hosting'
+The links are only shown if the user has permission to perform the task.
 
     >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.testing import celebrity_logged_in
+    >>> from lp.testing.factory import LaunchpadObjectFactory
+    >>> factory = LaunchpadObjectFactory()
     >>> login(ANONYMOUS)
     >>> product = getUtility(IProductSet).getByName('firefox')
+    >>> owner = product.owner
     >>> old_branch = product.development_focus.branch
-    >>> login_person(product.owner)
+    >>> ignored = login_person(product.owner)
     >>> product.development_focus.branch = None
-    >>> logout()
     >>> def print_links(browser):
     ...     links = find_tag_by_id(browser.contents, 'involvement')
     ...     if links is None:
@@ -191,31 +193,30 @@ perform the task.
     ...         print extract_text(link)
 
     >>> def setup_code_hosting(productname):
-    ...     admin_browser.open('http://code.launchpad.dev/%s' % productname)
-    ...     admin_browser.getLink('Configure code hosting').click()
-    ...     admin_browser.getControl(
-    ...         'Create a new, empty branch').click()
-    ...     admin_browser.getControl('Branch name').value = 'trunk'
-    ...     admin_browser.getControl('Update').click()
+    ...     with celebrity_logged_in('admin'):
+    ...         product = getUtility(IProductSet).getByName(productname)
+    ...         branch = factory.makeProductBranch(product=product)
+    ...         product.development_focus.branch = branch
 
 The involvement portlet is not shown if the product does not have code
 hosting configured or if it is not using Launchpad.
 
     >>> print product.codehosting_usage.name
     UNKNOWN
+    >>> logout()
     >>> admin_browser.open('http://code.launchpad.dev/firefox')
     >>> print_links(admin_browser)
     None
 
     >>> setup_code_hosting('firefox')
+    >>> login(ANONYMOUS)
     >>> print product.codehosting_usage.name
     LAUNCHPAD
+    >>> logout()
     >>> admin_browser.open('http://code.launchpad.dev/firefox')
     >>> print_links(admin_browser)
-    Register a branch
     Import a branch
     Configure code hosting
-    Define branch visibility
 
 The owner of the project sees the links for the activities he can
 perform, everything except defining branch visibility.
@@ -223,7 +224,6 @@ perform, everything except defining branch visibility.
     >>> owner_browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> owner_browser.open('http://code.launchpad.dev/firefox')
     >>> print_links(owner_browser)
-    Register a branch
     Import a branch
     Configure code hosting
 
@@ -231,18 +231,16 @@ And a regular user can only register and import branches.
 
     >>> user_browser.open('http://code.launchpad.dev/firefox')
     >>> print_links(user_browser)
-    Register a branch
     Import a branch
 
 If the product specifies that it officially uses Launchpad code, then
 the 'Import a branch' button is still shown.
 
-    >>> login_person(product.owner)
+    >>> ignored = login_person(owner)
     >>> product.development_focus.branch = old_branch
     >>> logout()
     >>> browser.open('http://code.launchpad.dev/firefox')
     >>> print_links(browser)
-    Register a branch
     Import a branch
 
 
@@ -267,7 +265,8 @@ shows correct singular and plural forms.
 
     >>> setup_code_hosting('gnome-terminal')
     >>> print_portlet('gnome-terminal')
-    GNOME Terminal has 9 active branches owned by 2 people and 2 teams. There were 0 commits in the last month.
+    GNOME Terminal has 9 active branches owned by 2 people and 2 teams.
+    There were 0 commits in the last month.
 
     >>> from lp.testing import ANONYMOUS, login, logout
     >>> login(ANONYMOUS)
@@ -276,17 +275,20 @@ shows correct singular and plural forms.
     >>> logout()
     >>> setup_code_hosting('fooix')
     >>> print_portlet('fooix')
-    Fooix has 2 active branches owned by 2 people. There were 0 commits in the last month.
+    Fooix has 2 active branches owned by 2 people.
+    There were 0 commits in the last month.
 
     >>> print_portlet('evolution')
-    Evolution has 3 active branches owned by 1 person and 1 team. There were 0 commits in the last month.
+    Evolution has 3 active branches owned by 1 person and 1 team.
+    There were 0 commits in the last month.
 
     >>> login(ANONYMOUS)
     >>> dinky = factory.makeProduct('dinky')
     >>> logout()
     >>> setup_code_hosting('dinky')
     >>> print_portlet('dinky')
-    Dinky has 1 active branch owned by 1 person. There were 0 commits in the last month.
+    Dinky has 1 active branch owned by 1 person. There were 0 commits in
+    the last month.
 
 
 Product has Branches, but none initially visible

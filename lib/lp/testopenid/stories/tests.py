@@ -1,9 +1,10 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 import os
 import unittest
 
-from canonical.launchpad.testing.pages import PageTestSuite
+from lp.testing.pages import PageTestSuite
 
 
 here = os.path.dirname(os.path.realpath(__file__))

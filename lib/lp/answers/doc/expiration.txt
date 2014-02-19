@@ -10,7 +10,7 @@ The expiration period is set using the
 config.answertracker.days_before_expiration configuration variable. It
 defaults to 15 days.
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> config.answertracker.days_before_expiration
     15
 
@@ -42,7 +42,7 @@ somebody are subject to expiration.
     >>> now = datetime.now(UTC)
     >>> two_weeks_ago = now - timedelta(days=14)
     >>> a_month_ago = now - timedelta(days=31)
-    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
+    >>> from lp.services.webapp.interfaces import ILaunchBag
     >>> from lp.answers.interfaces.questioncollection import IQuestionSet
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> login('no-priv@canonical.com')
@@ -123,7 +123,7 @@ somebody are subject to expiration.
     # test unless we commit.
     # XXX flacoste 2006-10-03 bug=3989: Unecessary flush_database_updates
     # required.
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
     >>> import transaction
     >>> transaction.commit()
@@ -150,7 +150,7 @@ somebody are subject to expiration.
 
     # Now we flush the caches, so that the above defined objects gets
     # their content from the modified DB.
-    >>> from canonical.database.sqlbase import flush_database_caches
+    >>> from lp.services.database.sqlbase import flush_database_caches
     >>> flush_database_caches()
 
 The status of the OPEN and NEEDSINFO questions that had recent activity

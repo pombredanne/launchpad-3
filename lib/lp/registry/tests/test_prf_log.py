@@ -3,9 +3,9 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Tests for canonical.launchpad.productreleasefinder.log."""
+"""Tests for productreleasefinder.log."""
 
-__author__    = "Scott James Remnant <scott@canonical.com>"
+__author__ = "Scott James Remnant <scott@canonical.com>"
 
 import unittest
 
@@ -39,6 +39,6 @@ class GetLogger(unittest.TestCase):
         """get_logger works if deep-level logger is given."""
         from lp.registry.scripts.productreleasefinder.log import get_logger
         from logging import getLogger
-        parent1 = getLogger("foo")
+        getLogger("foo")
         parent2 = getLogger("foo.bar")
         self.assertEquals(get_logger("test", parent2).name, "foo.bar.test")

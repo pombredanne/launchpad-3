@@ -1,8 +1,6 @@
 # Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213
-
 __metaclass__ = type
 __all__ = [
     'LinkCheckerAPI',
@@ -11,13 +9,9 @@ __all__ = [
 import simplejson
 from zope.component import getUtility
 
-from canonical.launchpad.searchbuilder import any
-from canonical.launchpad.webapp import LaunchpadView
 from lp.app.errors import NotFoundError
-from lp.bugs.interfaces.bugtask import (
-    BugTaskSearchParams,
-    IBugTaskSet,
-    )
+from lp.bugs.interfaces.bugtask import IBugTaskSet
+from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
 from lp.code.errors import (
     CannotHaveLinkedBranch,
     InvalidNamespace,
@@ -26,6 +20,8 @@ from lp.code.errors import (
     )
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.registry.interfaces.product import InvalidProductName
+from lp.services.searchbuilder import any
+from lp.services.webapp import LaunchpadView
 
 
 class LinkCheckerAPI(LaunchpadView):

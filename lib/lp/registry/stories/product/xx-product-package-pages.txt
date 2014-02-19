@@ -62,8 +62,7 @@ Packaging links can be deleted if they were created in error.
     >>> print evo_owner.title
     Linked packages...
 
-    >>> for message in get_feedback_messages(evo_owner.contents):
-    ...     print message
+    >>> print_feedback_messages(evo_owner.contents)
     Removed upstream association between Evolution trunk series and Warty.
 
     >>> print extract_text(find_tag_by_id(

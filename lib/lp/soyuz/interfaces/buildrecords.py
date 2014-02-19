@@ -1,8 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213
-
 """IHasBuildRecords interface.
 
 Implemented by any object that can have `IPackageBuild` records related to it.
@@ -33,7 +31,7 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
+from lp import _
 
 
 @error_status(httplib.BAD_REQUEST)

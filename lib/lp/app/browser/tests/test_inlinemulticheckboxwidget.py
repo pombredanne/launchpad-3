@@ -5,21 +5,20 @@
 
 __metaclass__ = type
 
+from lazr.enum import (
+    EnumeratedType,
+    Item,
+    )
 import simplejson
-
 from zope.interface import Interface
 from zope.schema import List
 from zope.schema._field import Choice
 from zope.schema.vocabulary import getVocabularyRegistry
 
-from lazr.enum import EnumeratedType, Item
-
-from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.browser.lazrjs import InlineMultiCheckboxWidget
-from lp.testing import (
-    TestCaseWithFactory,
-    )
+from lp.services.webapp.publisher import canonical_url
+from lp.testing import TestCaseWithFactory
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class Alphabet(EnumeratedType):

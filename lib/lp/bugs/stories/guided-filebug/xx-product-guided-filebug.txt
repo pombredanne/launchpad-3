@@ -24,7 +24,7 @@ If no title is entered, the user is asked to supply one.
     There is 1 error.
     >>> for message in top_portlet.findAll(attrs={'class': 'message'}):
     ...     print message.renderContents()
-    A summary is required.
+    Required input is missing.
 
 The user fills in some keywords, and clicks a button to search existing
 bugs.
@@ -107,8 +107,7 @@ This one matches, so we mark it as affecting us.
     >>> print user_browser.url
     http://bugs.launchpad.dev/firefox/+bug/1
 
-    >>> for message in get_feedback_messages(user_browser.contents):
-    ...     print message
+    >>> print_feedback_messages(user_browser.contents)
     This bug has been marked as affecting you.
 
 It's also possible to subscribe to the suggested duplicates. This is
@@ -128,8 +127,7 @@ set to ensure that we get subscribed to the bug.
     >>> user_browser.getControl(
     ...     "Yes, this is the bug I'm trying to report").click()
 
-    >>> for message in get_feedback_messages(user_browser.contents):
-    ...     print message
+    >>> print_feedback_messages(user_browser.contents)
     This bug is already marked as affecting you.
     You have subscribed to this bug report.
 
@@ -165,7 +163,5 @@ user to the bug page.
     >>> user_browser.url
     'http://bugs.launchpad.dev/firefox/+bug/...'
 
-    >>> user_browser.title
-    "Bug #... in Mozilla Firefox: ...Frankenzombulon reanimated..."
-
-
+    >>> print user_browser.title
+    Bug #...Frankenzombulon reanimated... : Bugs : Mozilla Firefox

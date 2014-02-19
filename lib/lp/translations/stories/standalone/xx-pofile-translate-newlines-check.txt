@@ -95,7 +95,7 @@ And, as we can see, we get the trailing new line char
     23.
     <input type="hidden" name="msgset_165" />
     --
-    <code>%s</code>: option `<code>%s</code>' is ambiguous...
+    <code>%s</code>: option `<code>%s</code>&#x27; is ambiguous...
     --
     <code>%s</code>: la opcion «<code>%s</code>» es ambigua<img alt="" src="/@@/translation-newline" /><br />
     --
@@ -125,7 +125,7 @@ And, as we can see, we get the same output, just one trailing newline char.
     23.
     <input type="hidden" name="msgset_165" />
     --
-    <code>%s</code>: option `<code>%s</code>' is ambiguous...
+    <code>%s</code>: option `<code>%s</code>&#x27; is ambiguous...
     --
     <code>%s</code>: la opcion «<code>%s</code>» es ambigua<img alt="" src="/@@/translation-newline" /><br />
     --
@@ -155,7 +155,7 @@ And Launchpad comes to the rescue and stores just one!
     23.
     <input type="hidden" name="msgset_165" />
     --
-    <code>%s</code>: option `<code>%s</code>' is ambiguous...
+    <code>%s</code>: option `<code>%s</code>&#x27; is ambiguous...
     --
     <code>%s</code>: la opcion «<code>%s</code>» es ambigua<img alt="" src="/@@/translation-newline" /><br />
     --

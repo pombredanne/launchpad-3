@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for Soyuz publishing records."""
@@ -17,19 +17,19 @@ from operator import attrgetter
 from lazr.delegates import delegates
 from zope.interface import implements
 
-from canonical.launchpad.browser.librarian import (
+from lp.services.librarian.browser import (
     FileNavigationMixin,
     ProxiedLibraryFileAlias,
     )
-from canonical.launchpad.webapp import Navigation
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
-from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.publisher import (
+from lp.services.propertycache import cachedproperty
+from lp.services.webapp import Navigation
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.escaping import structured
+from lp.services.webapp.interfaces import ICanonicalUrlData
+from lp.services.webapp.publisher import (
     canonical_url,
     LaunchpadView,
     )
-from lp.services.propertycache import cachedproperty
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.binarypackagebuild import BuildSetStatus
 from lp.soyuz.interfaces.packagediff import IPackageDiff
@@ -189,6 +189,14 @@ class BasePublishingRecordView(LaunchpadView):
             removal_comment = u'None provided.'
 
         return removal_comment
+
+    @property
+    def phased_update_percentage(self):
+        """Return the formatted phased update percentage, or empty."""
+        if (self.is_binary and
+            self.context.phased_update_percentage is not None):
+            return u"%d%% of users" % self.context.phased_update_percentage
+        return u""
 
 
 class SourcePublishingRecordView(BasePublishingRecordView):

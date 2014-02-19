@@ -15,7 +15,7 @@
     <view
         type="zope.publisher.interfaces.browser.IBrowserRequest"
         for=".exception.WidgetInputError"
-        provides="zope.app.form.browser.interfaces.IWidgetInputErrorView"
+        provides="zope.formlib.interfaces.IWidgetInputErrorView"
         factory=".exception.WidgetInputErrorView"
         permission="zope.Public"
         />

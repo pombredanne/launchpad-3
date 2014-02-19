@@ -28,8 +28,8 @@ from zope.interface import (
     Interface,
     )
 
-from canonical.launchpad.interfaces.launchpad import IHasIcon
 from lp.answers.interfaces.questionsperson import IQuestionsPerson
+from lp.app.interfaces.launchpad import IHasIcon
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
@@ -70,7 +70,6 @@ class PillarAffiliation(object):
         'maintainer': 1,
         'driver': 2,
         'bug supervisor': 3,
-        'security contact': 4,
     }
 
     def __init__(self, context):
@@ -150,7 +149,7 @@ class PillarAffiliation(object):
                 result.append([])
                 continue
 
-            # Sort the affiliation list according the the importance of each
+            # Sort the affiliation list according to the importance of each
             # affiliation role.
             badges.sort(
                 key=lambda badge:
@@ -173,7 +172,6 @@ class BugTaskPillarAffiliation(PillarAffiliation):
         - owner of bugtask pillar
         - driver of bugtask pillar
         - bug supervisor of bugtask pillar
-        - security contact of bugtask pillar
         """
         super_instance = super(BugTaskPillarAffiliation, self)
         result = super_instance._getAffiliationTeamRoles(pillars)
@@ -182,10 +180,6 @@ class BugTaskPillarAffiliation(PillarAffiliation):
                 self.getIconUrl(pillar),
                 pillar.displayname,
                 'bug supervisor')] = [pillar.bug_supervisor]
-            result[BadgeDetails(
-                self.getIconUrl(pillar),
-                pillar.displayname,
-                'security contact')] = [pillar.security_contact]
         return result
 
 

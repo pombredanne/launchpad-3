@@ -20,7 +20,7 @@ the Debian task in bug 1
 
 Now we can create a widget using a test request:
 
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> from lp.bugs.browser.widgets.bugtask import BugTaskBugWatchWidget
     >>> request = LaunchpadTestRequest()
     >>> bugwatch_widget = BugTaskBugWatchWidget(
