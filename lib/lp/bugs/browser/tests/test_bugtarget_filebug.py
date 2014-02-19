@@ -30,7 +30,6 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskStatus,
     )
-from lp.bugs.publisher import BugsLayer
 from lp.registry.enums import BugSharingPolicy
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.services.temporaryblobstorage.interfaces import (
@@ -811,7 +810,7 @@ class TestFileBugSourcePackage(TestCaseWithFactory):
                     sourcepackage.distribution.name),
                 'field.packagename': 'my-package',
                 'field.actions.submit_bug': 'Submit Bug Request',
-            }, layer=BugsLayer, principal=user)
+            }, principal=user)
         msg = "\n".join([
             notification.message
             for notification in view.request.response.notifications])

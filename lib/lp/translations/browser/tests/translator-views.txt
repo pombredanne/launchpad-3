@@ -23,9 +23,7 @@ TranslatorAdminView
 
 Translator +admin view provides a nice page title and a form label.
 
-    >>> from lp.translations.publisher import TranslationsLayer
-    >>> view = create_initialized_view(translator, '+admin',
-    ...                                layer=TranslationsLayer)
+    >>> view = create_initialized_view(translator, '+admin')
     >>> print view.label
     Edit Serbian translation team in Test translators
 
@@ -45,9 +43,7 @@ Translator +edit view allows one to only set translation guidelines
 for a language in a TranslationGroup, and page title and form label
 describe that appropriately.
 
-    >>> from lp.translations.publisher import TranslationsLayer
-    >>> view = create_initialized_view(translator, '+edit',
-    ...                                layer=TranslationsLayer)
+    >>> view = create_initialized_view(translator, '+edit')
     >>> print view.label
     Set Serbian guidelines for Test translators
 
@@ -66,9 +62,7 @@ TranslatorRemoveView
 Translator +edit view allows one to only set translation guidelines
 for a language in a TranslationGroup.
 
-    >>> from lp.translations.publisher import TranslationsLayer
-    >>> view = create_initialized_view(translator, '+remove',
-    ...                                layer=TranslationsLayer)
+    >>> view = create_initialized_view(translator, '+remove')
     >>> print view.label
     Unset 'Bad translators' as the Serbian translator in Test translators
 
