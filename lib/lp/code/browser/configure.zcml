@@ -1013,10 +1013,10 @@
         template="../templates/active-reviews.pt"/>
 
     <adapter
-        name="code"
+        name="branches"
         provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.code.interfaces.hasbranches.IHasBranches"
-        factory="lp.code.browser.branchlisting.CodeVHostBreadcrumb"
+        factory="lp.code.browser.branchlisting.CodeFacetBreadcrumb"
         permission="zope.Public"/>
 
     <adapter

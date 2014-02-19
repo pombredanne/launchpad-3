@@ -9,7 +9,7 @@ blueprints, branches, bugs, merge proposals and questions.
 
     >>> anon_browser.open('http://launchpad.dev/~ubuntu-team/+subscriptions')
     >>> print anon_browser.title
-    Subscriptions : “Ubuntu Team” team
+    Subscriptions : Bugs : “Ubuntu Team” team
 
 The user can see that the Ubuntu Team does not have any direct bug
 subscriptions.
@@ -161,7 +161,7 @@ structural subscriptions.
     >>> admin_browser.url
     'http://launchpad.dev/~name16/+structural-subscriptions'
     >>> admin_browser.title
-    'Structural subscriptions : Foo Bar'
+    'Structural subscriptions : Bugs : Foo Bar'
 
 The structures to which the user is subscribed are displayed in a
 list. The title of the structure links to the structure itself, and is

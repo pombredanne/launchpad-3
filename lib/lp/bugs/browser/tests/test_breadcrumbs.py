@@ -81,7 +81,7 @@ class TestBugTrackerBreadcrumbs(BaseBreadcrumbTestCase):
         self.assertBreadcrumbs(expected_breadcrumbs, self.bug_tracker)
 
 
-class BugsVHostBreadcrumbTestCase(BaseBreadcrumbTestCase):
+class BugsFacetBreadcrumbTestCase(BaseBreadcrumbTestCase):
 
     def test_person(self):
         person = self.factory.makePerson(name='snarf')

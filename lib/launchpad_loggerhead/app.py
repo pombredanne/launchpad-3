@@ -63,7 +63,7 @@ Disallow: /
 robots_app = DataApp(robots_txt, content_type='text/plain')
 
 
-thread_transports = threading.local()
+thread_locals = threading.local()
 
 
 def check_fault(fault, *fault_classes):
@@ -82,17 +82,22 @@ class RootApp:
 
     def __init__(self, session_var):
         self.graph_cache = lru_cache.LRUCache(10)
-        self.branchfs = xmlrpclib.ServerProxy(
-            config.codehosting.codehosting_endpoint)
         self.session_var = session_var
         self.log = logging.getLogger('lp-loggerhead')
 
     def get_transport(self):
-        t = getattr(thread_transports, 'transport', None)
+        t = getattr(thread_locals, 'transport', None)
         if t is None:
-            thread_transports.transport = get_transport(
+            thread_locals.transport = get_transport(
                 config.codehosting.internal_branch_by_id_root)
-        return thread_transports.transport
+        return thread_locals.transport
+
+    def get_branchfs(self):
+        t = getattr(thread_locals, 'branchfs', None)
+        if t is None:
+            thread_locals.branchfs = xmlrpclib.ServerProxy(
+                config.codehosting.codehosting_endpoint)
+        return thread_locals.branchfs
 
     def _make_consumer(self, environ):
         """Build an OpenID `Consumer` object with standard arguments."""
@@ -196,7 +201,8 @@ class RootApp:
         try:
 
             try:
-                transport_type, info, trail = self.branchfs.translatePath(
+                branchfs = self.get_branchfs()
+                transport_type, info, trail = branchfs.translatePath(
                     user, urlutils.escape(path))
             except xmlrpclib.Fault as f:
                 if check_fault(f, faults.PathTranslationError):

@@ -6,7 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
-    'AnswersVHostBreadcrumb',
+    'AnswersFacetBreadcrumb',
     'AskAQuestionButtonPortlet',
     'ManageAnswerContactView',
     'SearchQuestionsView',
@@ -991,6 +991,6 @@ class QuestionTargetAnswersMenu(QuestionCollectionAnswersMenu):
         return Link('+answer-contact', text, icon='edit')
 
 
-class AnswersVHostBreadcrumb(Breadcrumb):
+class AnswersFacetBreadcrumb(Breadcrumb):
     rootsite = 'answers'
     text = 'Questions'
