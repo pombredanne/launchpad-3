@@ -19,7 +19,7 @@ from lp.translations.interfaces.productserieslanguage import (
 from lp.translations.interfaces.translationgroup import ITranslationGroupSet
 
 
-class TestTranslationsVHostBreadcrumb(BaseBreadcrumbTestCase):
+class TestTranslationsFacetBreadcrumb(BaseBreadcrumbTestCase):
 
     def test_product(self):
         product = self.factory.makeProduct(

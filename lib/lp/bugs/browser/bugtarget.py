@@ -6,7 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
-    "BugsVHostBreadcrumb",
+    "BugsFacetBreadcrumb",
     "BugsPatchesView",
     "BugTargetBugListingView",
     "BugTargetBugTagsView",
@@ -1271,7 +1271,7 @@ class OfficialBugTagsManageView(LaunchpadEditFormView):
         return canonical_url(self.context)
 
 
-class BugsVHostBreadcrumb(Breadcrumb):
+class BugsFacetBreadcrumb(Breadcrumb):
     rootsite = 'bugs'
     text = 'Bugs'
 

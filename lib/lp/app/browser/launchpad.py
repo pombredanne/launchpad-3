@@ -30,7 +30,6 @@ import re
 import time
 import urllib
 
-from lazr.uri import URI
 from zope import i18n
 from zope.component import (
     getGlobalSiteManager,
@@ -138,9 +137,9 @@ from lp.services.webapp.interfaces import (
     ILaunchpadRoot,
     INavigationMenu,
     )
+from lp.services.webapp.menu import get_facet
 from lp.services.webapp.publisher import RedirectionView
 from lp.services.webapp.url import urlappend
-from lp.services.webapp.vhosts import allvhosts
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
@@ -261,21 +260,18 @@ class Hierarchy(LaunchpadView):
             if breadcrumb is not None:
                 breadcrumbs.append(breadcrumb)
 
-        host = URI(self.request.getURL()).host
-        mainhost = allvhosts.configs['mainsite'].hostname
-        if (len(breadcrumbs) != 0 and
-            host != mainhost and
+        facet = get_facet(self._naked_context_view)
+        if (len(breadcrumbs) != 0 and facet is not None and
             self.vhost_breadcrumb):
-            # We have breadcrumbs and we're not on the mainsite, so we'll
-            # sneak an extra breadcrumb for the vhost we're on.
-            vhost = host.split('.')[0]
+            # We have breadcrumbs and we're on a custom facet, so we'll
+            # sneak an extra breadcrumb for the facet we're on.
 
             # Iterate over the context of our breadcrumbs in reverse order and
-            # for the first one we find an adapter named after the vhost we're
+            # for the first one we find an adapter named after the facet we're
             # on, generate an extra breadcrumb and insert it in our list.
             for idx, breadcrumb in reversed(list(enumerate(breadcrumbs))):
                 extra_breadcrumb = queryAdapter(
-                    breadcrumb.context, IBreadcrumb, name=vhost)
+                    breadcrumb.context, IBreadcrumb, name=facet)
                 if extra_breadcrumb is not None:
                     breadcrumbs.insert(idx + 1, extra_breadcrumb)
                     break
