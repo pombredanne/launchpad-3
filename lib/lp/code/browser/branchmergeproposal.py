@@ -638,8 +638,6 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
                 self.context).event_key
         if getFeatureFlag("code.inline_diff_comments.enabled"):
             cache.objects['inline_diff_comments'] = True
-            cache.objects['preview_diff_timestamps'] = [
-                pd.date_created for pd in self.context.preview_diffs]
 
     @action('Claim', name='claim')
     def claim_action(self, action, data):

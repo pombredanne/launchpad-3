@@ -205,8 +205,6 @@
           'lp.code.branch.revisionexpander', 'lp.anin',
           'lp.code.branchmergeproposal.inlinecomments', function(Y) {
 
-    // XXX only loads inline comments for the latest diff atm.
-    var latest_diff_timestamp = LP.cache.preview_diff_timestamps.slice(-1)[0];
     var ic = Y.lp.code.branchmergeproposal.inlinecomments;
 
     Y.on('load', function() {
@@ -216,7 +214,7 @@
             var comment = new Y.lp.app.comment.CodeReviewComment();
             comment.render();
             comment._add_comment_success = function () {
-                ic.populate_existing_comments(latest_diff_timestamp);
+                ic.populate_existing_comments();
             }
             Y.lp.code.branchmergeproposal.status.connect_status(conf);
         }
@@ -238,9 +236,6 @@
             updater.on(updater.NAME + '.updated', function() {
                 (new Y.lp.code.branchmergeproposal.reviewcomment.NumberToggle()
                     ).render();
-                // Setup inline comments for the updated diff
-                ic.setup_inline_comments(latest_diff_timestamp);
-
             });
         }
 
@@ -254,13 +249,15 @@
             false,
             Y.lp.code.branch.revisionexpander.bmp_diff_loader);
 
-        // Setup inline comments for the latest diff presented on load.
-        ic.setup_inline_comments(latest_diff_timestamp);
-
         // XXX Temporary hack 
         var diff_choice = Y.one('#available_diffs_choice');
-        diff_choice.on('click', function() {
+
+        // Setup inline comments for the latest diff presented on load.
+        ic.setup_inline_comments(diff_choice.get('value'));
+
+        diff_choice.on('change', function() {
             var lp_client = new Y.lp.client.Launchpad();
+            var diff_id = diff_choice.get('value');
             var diff_node = Y.one('.diff-content');
             var config = {
                 on: {
@@ -268,8 +265,7 @@
                         diff_node.set('innerHTML', diff_text);
                         var rc = Y.lp.code.branchmergeproposal.reviewcomment;
                         (new rc.NumberToggle()).render();
-                        // XXX
-                        ic.setup_inline_comments(latest_diff_timestamp);
+                        ic.setup_inline_comments(diff_id);
                     },
                     failure: function(ignore, response, args) {
                         diff_node.set('innerHTML', response.statusText);
@@ -279,7 +275,7 @@
             };
             var mp_uri = LP.cache.context.web_link;
             var diff_path = (
-                '/+preview-diff/' + diff_choice.get('value') + '/+diff');
+                '/+preview-diff/' + diff_id + '/+diff');
             lp_client.get(mp_uri + diff_path, config);
         });
 
