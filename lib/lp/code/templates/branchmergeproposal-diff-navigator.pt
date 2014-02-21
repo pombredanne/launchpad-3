@@ -1,0 +1,13 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+>
+
+  <select id="available_diffs_choice" name="available_diffs_choice">
+    <option tal:repeat="available_diff context/preview_diffs"
+            tal:attributes="value available_diff/id; selected
+            python:available_diff.id == view.preview_diff.id"
+            tal:content="available_diff/date_created/fmt:datetime"
+            >Diff date</option>
+  </select>
+
+</tal:root>
