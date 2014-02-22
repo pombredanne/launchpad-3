@@ -2,7 +2,8 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
 >
 
-  <select id="available_diffs_choice" name="available_diffs_choice">
+  <select id="available_diffs_choice" name="available_diffs_choice"
+          tal:condition="context/preview_diffs">
     <option tal:repeat="available_diff context/preview_diffs"
             tal:attributes="value available_diff/id; selected
             python:available_diff.id == view.preview_diff.id"
