@@ -14,7 +14,6 @@ First, we need some imports.
     ...     ITranslationImportQueue)
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.translations.interfaces.potemplate import IPOTemplateSet
-    >>> from lp.translations.publisher import TranslationsLayer
     >>> from lp.registry.interfaces.sourcepackagename import (
     ...     ISourcePackageNameSet)
     >>> from lp.services.worlddata.interfaces.language import ILanguageSet
@@ -36,8 +35,7 @@ Now it's time to test the initialization of the view class.
     >>> potemplate = potemplatesubset['evolution-2.2']
     >>> pofile_es = potemplate.getPOFileByLang('es')
     >>> form = {'show': 'all' }
-    >>> pofile_view = create_view(
-    ...     pofile_es, '+translate', form=form, layer=TranslationsLayer)
+    >>> pofile_view = create_view(pofile_es, '+translate', form=form)
     >>> pofile_view.initialize()
 
 An IPOFile knows (or sometimes has to guess) its number of pluralforms.  In
@@ -62,8 +60,7 @@ the plural form information.
     >>> language_tlh = getUtility(ILanguageSet).getLanguageByCode('tlh')
     >>> pofile_tlh = potemplate.getDummyPOFile(language_tlh)
     >>> form = {'show': 'all' }
-    >>> pofile_view = create_view(
-    ...     pofile_tlh, '+translate', form=form, layer=TranslationsLayer)
+    >>> pofile_view = create_view(pofile_tlh, '+translate', form=form)
     >>> pofile_view.initialize()
 
 Here we can see that it's lacking that information.
@@ -79,8 +76,7 @@ And the view class detects it correctly.
 Check the argument to filter messagesets.
 
     >>> form = {'show': 'translated'}
-    >>> pofile_view = create_view(
-    ...     pofile_es, '+translate', form=form, layer=TranslationsLayer)
+    >>> pofile_view = create_view(pofile_es, '+translate', form=form)
     >>> pofile_view.initialize()
 
 Yeah, it detects it correctly and stores the attribute as it should be.
@@ -93,15 +89,13 @@ Let's move to the navigation URLS testing.
 We get a request without any argument.
 
     >>> form = {'show': 'all' }
-    >>> pofile_view = create_view(
-    ...     pofile_es, '+translate', form=form, layer=TranslationsLayer)
+    >>> pofile_view = create_view(pofile_es, '+translate', form=form)
     >>> pofile_view.initialize()
 
 It's time to test that we get the right message sets from the submitted form.
 
     >>> form = {'show': 'all' }
-    >>> pofile_view = create_view(
-    ...     pofile_es, '+translate', form=form, layer=TranslationsLayer)
+    >>> pofile_view = create_view(pofile_es, '+translate', form=form)
     >>> pofile_view.initialize()
 
 We get the first entry that should be in the form, the one with id == 130.
@@ -197,8 +191,7 @@ Now we do a submission with new translations:
     ...         'msgset_138_es_translation_0_new',
     ...     'msgset_138_es_translation_0_new': 'Bar',
     ...     'submit_translations': 'Save &amp; Continue'}
-    >>> pofile_view = create_view(
-    ...     pofile_es, '+translate', form=form, layer=TranslationsLayer)
+    >>> pofile_view = create_view(pofile_es, '+translate', form=form)
     >>> pofile_view.request.method = 'POST'
     >>> pofile_view.initialize()
 
@@ -272,8 +265,7 @@ their sequence is 0.
     ...         'msgset_161_es_translation_0_new',
     ...     'msgset_161_es_translation_0_new': 'Foo',
     ...     'submit_translations': 'Save &amp; Continue'}
-    >>> pofile_view = create_view(
-    ...     pofile_es, '+translate', form=form, layer=TranslationsLayer)
+    >>> pofile_view = create_view(pofile_es, '+translate', form=form)
     >>> pofile_view.request.method = 'POST'
     >>> pofile_view.initialize()
     >>> flush_database_caches()
@@ -359,8 +351,7 @@ Now, we are going to check the alternative language submission.
 #    ...     'start': '10',
 #    ...     'field.alternative_language': 'fr',
 #    ...     'select_alternate_language': 'Change'}
-#    >>> pofile_view = create_view(
-#    ...     pofile_es, '+translate', form=form, layer=TranslationsLayer)
+#    >>> pofile_view = create_view(pofile_es, '+translate', form=form)
 #    >>> pofile_view.initialize()
 #    >>> pofile_view.second_lang_code
 #    'fr'
@@ -395,8 +386,7 @@ Now, we do the upload.
     ...     'file': FileUpload(FileUploadArgument()),
     ...     'upload_type': 'upstream',
     ...     'pofile_upload': 'Upload'}
-    >>> pofile_view = create_view(
-    ...     pofile_es, '+upload', form=form, layer=TranslationsLayer)
+    >>> pofile_view = create_view(pofile_es, '+upload', form=form)
     >>> pofile_view.request.method = 'POST'
     >>> pofile_view.initialize()
 
@@ -498,8 +488,7 @@ index page.
 
     # Request the download.
     >>> form = {'format': 'PO' }
-    >>> pofile_view = create_view(
-    ...     pofile_es, '+export', form=form, layer=TranslationsLayer)
+    >>> pofile_view = create_view(pofile_es, '+export', form=form)
     >>> pofile_view.request.method = 'POST'
     >>> pofile_view.initialize()
 

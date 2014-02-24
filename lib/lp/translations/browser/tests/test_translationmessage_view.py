@@ -38,7 +38,6 @@ from lp.translations.enums import TranslationPermission
 from lp.translations.interfaces.side import ITranslationSideTraitsSet
 from lp.translations.interfaces.translations import TranslationConstants
 from lp.translations.interfaces.translationsperson import ITranslationsPerson
-from lp.translations.publisher import TranslationsLayer
 
 
 class TestCurrentTranslationMessage_can_dismiss(TestCaseWithFactory):
@@ -266,8 +265,7 @@ class TestResetTranslations(TestCaseWithFactory):
 
         url = canonical_url(self.current_translation) + '/+translate'
         view = create_view(
-            self.current_translation, '+translate', form=form,
-            layer=TranslationsLayer, server_url=url)
+            self.current_translation, '+translate', form=form, server_url=url)
         view.request.method = 'POST'
         view.initialize()
 

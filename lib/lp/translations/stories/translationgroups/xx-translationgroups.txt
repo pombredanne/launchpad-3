@@ -317,7 +317,7 @@ First make sure it uses Launchpad for translations.
     >>> netapplet_owner_browser.getLink(
     ...   'Configure translations').click()
     >>> print netapplet_owner_browser.title
-    Configure translations : NetApplet
+    Configure translations : Translations : NetApplet
 
     >>> netapplet_owner_browser.getControl('Launchpad').click()
     >>> netapplet_owner_browser.getControl('Change').click()

@@ -268,19 +268,19 @@
       name="answers"
       provides="lp.services.webapp.interfaces.IBreadcrumb"
       for="lp.answers.interfaces.questiontarget.IQuestionTarget"
-      factory="lp.answers.browser.questiontarget.AnswersVHostBreadcrumb"
+      factory="lp.answers.browser.questiontarget.AnswersFacetBreadcrumb"
       permission="zope.Public"/>
   <adapter
       name="answers"
       provides="lp.services.webapp.interfaces.IBreadcrumb"
       for="lp.registry.interfaces.projectgroup.IProjectGroup"
-      factory="lp.answers.browser.questiontarget.AnswersVHostBreadcrumb"
+      factory="lp.answers.browser.questiontarget.AnswersFacetBreadcrumb"
       permission="zope.Public"/>
   <adapter
       name="answers"
       provides="lp.services.webapp.interfaces.IBreadcrumb"
       for="lp.registry.interfaces.person.IPerson"
-      factory="lp.answers.browser.questiontarget.AnswersVHostBreadcrumb"
+      factory="lp.answers.browser.questiontarget.AnswersFacetBreadcrumb"
       permission="zope.Public"/>
 
   <webservice:register module="lp.answers.interfaces.webservice" />

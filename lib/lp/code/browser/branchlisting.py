@@ -12,7 +12,7 @@ __all__ = [
     'DistributionSourcePackageBranchesView',
     'DistroSeriesBranchListingView',
     'GroupedDistributionSourcePackageBranchesView',
-    'CodeVHostBreadcrumb',
+    'CodeFacetBreadcrumb',
     'PersonBranchesMenu',
     'PersonCodeSummaryView',
     'PersonOwnedBranchesView',
@@ -136,7 +136,7 @@ from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.services.webapp.publisher import LaunchpadView
 
 
-class CodeVHostBreadcrumb(Breadcrumb):
+class CodeFacetBreadcrumb(Breadcrumb):
     rootsite = 'code'
     text = 'Code'
 

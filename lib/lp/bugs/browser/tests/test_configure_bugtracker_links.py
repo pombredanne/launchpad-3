@@ -5,7 +5,6 @@
 
 __metaclass__ = type
 
-from lp.bugs.publisher import BugsLayer
 from lp.registry.browser.distribution import DistributionBugsMenu
 from lp.registry.browser.distributionsourcepackage import (
     DistributionSourcePackageBugsMenu,
@@ -30,8 +29,7 @@ class TestConfigureBugTrackerBase(TestCaseWithFactory):
         login('test@canonical.com')
         self.target = self.makeTarget()
         self.menu = self.getMenu()
-        self.view = create_initialized_view(self.target, name="+index",
-                                            layer=BugsLayer)
+        self.view = create_initialized_view(self.target, name="+index")
 
     def makeTarget(self):
         raise NotImplementedError

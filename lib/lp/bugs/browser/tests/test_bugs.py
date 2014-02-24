@@ -6,12 +6,10 @@
 __metaclass__ = type
 
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import InformationType
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.interfaces.malone import IMaloneApplication
-from lp.bugs.publisher import BugsLayer
 from lp.registry.enums import BugSharingPolicy
 from lp.registry.interfaces.product import License
 from lp.services.webapp.publisher import canonical_url
@@ -38,7 +36,7 @@ class TestMaloneView(TestCaseWithFactory):
         bug = self.factory.makeBug()
         form = dict(id=str(bug.id))
         view = create_initialized_view(
-            self.application, name='+index', layer=BugsLayer, form=form)
+            self.application, name='+index', form=form)
         self.assertEqual(None, view.error_message)
         self.assertEqual(
             canonical_url(bug), view.request.response.getHeader('Location'))
@@ -50,7 +48,7 @@ class TestMaloneView(TestCaseWithFactory):
             bug.name = 'bingo'
         form = dict(id='bingo')
         view = create_initialized_view(
-            self.application, name='+index', layer=BugsLayer, form=form)
+            self.application, name='+index', form=form)
         self.assertEqual(None, view.error_message)
         self.assertEqual(
             canonical_url(bug), view.request.response.getHeader('Location'))
@@ -60,7 +58,7 @@ class TestMaloneView(TestCaseWithFactory):
         # found.
         form = dict(id='fnord')
         view = create_initialized_view(
-            self.application, name='+index', layer=BugsLayer, form=form)
+            self.application, name='+index', form=form)
         self.assertEqual(
             "Bug 'fnord' is not registered.", view.error_message)
         self.assertEqual(None, view.request.response.getHeader('Location'))
@@ -70,7 +68,7 @@ class TestMaloneView(TestCaseWithFactory):
         # instead of a string.
         form = dict(id=['fnord', 'pting'])
         view = create_initialized_view(
-            self.application, name='+index', layer=BugsLayer, form=form)
+            self.application, name='+index', form=form)
         self.assertEqual(
             "Bug ['fnord', 'pting'] is not registered.", view.error_message)
         self.assertEqual(None, view.request.response.getHeader('Location'))

@@ -8,7 +8,7 @@ from lp.testing import login_person
 from lp.testing.breadcrumbs import BaseBreadcrumbTestCase
 
 
-class TestQuestionTargetProjectAndPersonBreadcrumbOnAnswersVHost(
+class TestQuestionTargetProjectAndPersonBreadcrumbOnAnswersFacet(
         BaseBreadcrumbTestCase):
     """Test Breadcrumbs for IQuestionTarget, IProjectGroup and IPerson on the
     answers vhost.
@@ -19,7 +19,7 @@ class TestQuestionTargetProjectAndPersonBreadcrumbOnAnswersVHost(
     """
 
     def setUp(self):
-        super(TestQuestionTargetProjectAndPersonBreadcrumbOnAnswersVHost,
+        super(TestQuestionTargetProjectAndPersonBreadcrumbOnAnswersFacet,
               self).setUp()
         self.person = self.factory.makePerson()
         self.person_questions_url = canonical_url(

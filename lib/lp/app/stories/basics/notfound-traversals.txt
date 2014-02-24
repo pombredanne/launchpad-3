@@ -37,23 +37,11 @@ to the translations site. This way, we don't break existing links to it.
 Before removing this, you must be completely sure that no supported
 Ubuntu release is still pointing to this old URL (see bug #138090).
 
-    >>> check_redirect("/mozilla/+translations", status=301)
     >>> check_redirect("/products", status=301)
-    >>> check_redirect("/firefox/1.0/+translations", status=301)
-    >>> check_redirect("/firefox/+translations", status=301)
     >>> check_redirect("/projects/firefox", status=301)
     >>> check_redirect("/ubuntu/+source/evolution/+editbugcontact")
-    >>> check_redirect("/ubuntu/hoary/+translations", status=301)
-    >>> check_redirect("/ubuntu/hoary/+latest-full-language-pack",
-    ...       host="translations.launchpad.dev")
-    >>> check_redirect("/ubuntu/hoary/+source/evolution/+translations",
-    ...     status=301)
-    >>> check_redirect("/ubuntu/hoary/+source/mozilla-firefox/+pots",
-    ...     host='translations.launchpad.dev')
-    >>> check_redirect(
-    ...     "/ubuntu/hoary/+source/pmount/+pots/pmount/apa/+translate",
-    ...     status=301)
-    >>> check_redirect("/~name18/+translations", status=301)
+    >>> check_redirect("/ubuntu/hoary/+latest-full-language-pack")
+    >>> check_redirect("/ubuntu/hoary/+source/mozilla-firefox/+pots")
 
 Viewing a bug in the context of an upstream where the bug has already
 been reported (including checking the various pages that hang off that

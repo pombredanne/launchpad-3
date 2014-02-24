@@ -20,7 +20,6 @@ from lp.app.enums import (
     )
 from lp.code.enums import BranchType
 from lp.code.interfaces.revision import IRevisionSet
-from lp.code.publisher import CodeLayer
 from lp.registry.enums import BranchSharingPolicy
 from lp.services.webapp import canonical_url
 from lp.testing import (
@@ -398,11 +397,11 @@ class TestCanConfigureBranches(TestCaseWithFactory):
 
     def test_cannot_configure_branches_product_no_edit_permission(self):
         product = self.factory.makeProduct()
-        view = create_view(product, '+branches', layer=CodeLayer)
+        view = create_view(product, '+branches')
         self.assertEqual(False, view.can_configure_branches())
 
     def test_can_configure_branches_product_with_edit_permission(self):
         product = self.factory.makeProduct()
         login_person(product.owner)
-        view = create_view(product, '+branches', layer=CodeLayer)
+        view = create_view(product, '+branches')
         self.assertTrue(view.can_configure_branches())

@@ -854,13 +854,11 @@ The SearchQuestionsView has two attributes that control the columns of
 the question listing table. Products display the default columns of
 Summary, Created, Submitter, Assignee, and Status.
 
-    >>> from lp.answers.publisher import AnswersLayer
     >>> from lp.testing.pages import (
     ...     extract_text, find_tag_by_id)
 
     >>> view = create_initialized_view(
-    ...     firefox, name="+questions", layer=AnswersLayer,
-    ...     principal=question_three.owner)
+    ...     firefox, name="+questions", principal=question_three.owner)
     >>> view.display_sourcepackage_column
     False
 
@@ -877,8 +875,7 @@ Distribution display the "Source Package" column. The name of the source
 package is displayed if it exists.
 
     >>> view = create_initialized_view(
-    ...     ubuntu, name="+questions", layer=AnswersLayer,
-    ...     principal=question_three.owner)
+    ...     ubuntu, name="+questions", principal=question_three.owner)
     >>> view.display_sourcepackage_column
     True
 
@@ -898,8 +895,7 @@ ProjectGroups display the "In" column to show the product name.
     >>> mozilla = getUtility(IProjectGroupSet).getByName('mozilla')
 
     >>> view = create_initialized_view(
-    ...     mozilla, name="+questions", layer=AnswersLayer,
-    ...     principal=question_three.owner)
+    ...     mozilla, name="+questions", principal=question_three.owner)
     >>> view.display_sourcepackage_column
     False
 
@@ -919,8 +915,7 @@ to the question, or an m-dash if there is no assignee.
     >>> question_six.assignee = factory.makePerson(
     ...     name="bob", displayname="Bob")
     >>> view = create_initialized_view(
-    ...     firefox, name="+questions", layer=AnswersLayer,
-    ...     principal=question_three.owner)
+    ...     firefox, name="+questions", principal=question_three.owner)
     >>> view.display_sourcepackage_column
     False
 
