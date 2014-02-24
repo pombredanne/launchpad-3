@@ -285,17 +285,16 @@ class CodeReviewCommentAddView(LaunchpadFormView):
         vote = data.get('vote')
         review_type = data.get('review_type')
         inline_comments = {}
-        diff_timestamp = None
+        diff_id = None
         if (getFeatureFlag('code.inline_diff_comments.enabled') and
             data.get('publish_inline_comments')):
-            diff_timestamp = self.previewdiff.date_created
+            diff_id = self.previewdiff.id
             inline_comments = (
-                self.branch_merge_proposal.getDraftInlineComments(
-                    diff_timestamp))
+                self.branch_merge_proposal.getDraftInlineComments(diff_id))
         comment = self.branch_merge_proposal.createComment(
             self.user, subject=None, content=data['comment'],
             parent=self.reply_to, vote=vote, review_type=review_type,
-            diff_timestamp=diff_timestamp, inline_comments=inline_comments)
+            diff_id=diff_id, inline_comments=inline_comments)
 
     @property
     def next_url(self):
