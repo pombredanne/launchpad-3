@@ -7,7 +7,6 @@ __all__ = [
     'RosettaApplicationView',
     'RosettaStatsView',
     'RosettaApplicationNavigation',
-    'TranslateRedirectView',
     'TranslationsLanguageBreadcrumb',
     'TranslationsMixin',
     'TranslationsRedirectView',
@@ -153,16 +152,6 @@ class RosettaApplicationNavigation(Navigation):
     def products(self):
         # DEPRECATED
         return getUtility(IProductSet)
-
-
-class TranslateRedirectView(RedirectionView):
-    """Redirects to translations site for +translate page."""
-
-    def __init__(self, context, request):
-        target = canonical_url(
-            context, rootsite='translations', view_name='+translate')
-        super(TranslateRedirectView, self).__init__(
-            target, request, status=301)
 
 
 class TranslationsRedirectView(RedirectionView):

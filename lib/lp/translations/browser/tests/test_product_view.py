@@ -33,7 +33,6 @@ from lp.testing.views import (
     create_view,
     )
 from lp.translations.browser.product import ProductView
-from lp.translations.publisher import TranslationsLayer
 
 
 class TestProduct(TestCaseWithFactory):
@@ -115,20 +114,19 @@ class TestCanConfigureTranslations(TestCaseWithFactory):
 
     def test_cannot_configure_translations_product_no_edit_permission(self):
         product = self.factory.makeProduct()
-        view = create_view(product, '+translations', layer=TranslationsLayer)
+        view = create_view(product, '+translations')
         self.assertEqual(False, view.can_configure_translations())
 
     def test_can_configure_translations_product_with_edit_permission(self):
         product = self.factory.makeProduct()
         login_person(product.owner)
-        view = create_view(product, '+translations', layer=TranslationsLayer)
+        view = create_view(product, '+translations')
         self.assertEqual(True, view.can_configure_translations())
 
     def test_rosetta_expert_can_configure_translations(self):
         product = self.factory.makeProduct()
         with celebrity_logged_in('rosetta_experts'):
-            view = create_view(product, '+translations',
-                               layer=TranslationsLayer)
+            view = create_view(product, '+translations')
             self.assertEqual(True, view.can_configure_translations())
 
     def test_launchpad_not_listed_for_proprietary(self):
@@ -137,8 +135,7 @@ class TestCanConfigureTranslations(TestCaseWithFactory):
             for info_type in PUBLIC_PROPRIETARY_INFORMATION_TYPES:
                 product.information_type = info_type
                 view = create_initialized_view(
-                    product, '+configure-translations',
-                    layer=TranslationsLayer)
+                    product, '+configure-translations')
                 if product.private:
                     self.assertNotIn(
                         ServiceUsage.LAUNCHPAD,
@@ -159,9 +156,8 @@ class TestCanConfigureTranslations(TestCaseWithFactory):
 
     @classmethod
     def getTranslationsContent(cls, product):
-        view = create_initialized_view(product, '+translations',
-                                       layer=TranslationsLayer,
-                                       principal=product.owner)
+        view = create_initialized_view(
+            product, '+translations', principal=product.owner)
         return cls.getViewContent(view)
 
     def test_no_sync_links_for_proprietary(self):
