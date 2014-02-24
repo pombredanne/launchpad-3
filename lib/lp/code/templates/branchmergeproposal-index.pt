@@ -215,9 +215,11 @@
             var comment = new Y.lp.app.comment.CodeReviewComment();
             comment.render();
             comment._add_comment_success = function () {
-                // No need to re-setup line-handlers because the diff
-                // content did not change. Only updates the comments.
-                ic.populate_existing_comments();
+                if (LP.cache.inline_diff_comments === true) {
+                    // No need to re-setup diff-line click handlers because
+                    // the diff content did not change.
+                    ic.populate_existing_comments();
+                }
             }
             Y.lp.code.branchmergeproposal.status.connect_status(conf);
         }
