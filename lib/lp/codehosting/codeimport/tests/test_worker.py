@@ -556,17 +556,6 @@ class TestForeignTreeStore(WorkerTest):
             store._getForeignTree = _getForeignTree
         return store
 
-    def test_getForeignTreeSubversion(self):
-        # _getForeignTree() returns a Subversion working tree for Subversion
-        # code imports.
-        source_details = self.factory.makeCodeImportSourceDetails(
-            rcstype='svn')
-        store = self.makeForeignTreeStore(source_details)
-        working_tree = store._getForeignTree('path')
-        self.assertIsSameRealPath(working_tree.local_path, 'path')
-        self.assertEqual(
-            working_tree.remote_url, source_details.url)
-
     def test_getForeignTreeCVS(self):
         # _getForeignTree() returns a CVS working tree for CVS code imports.
         source_details = self.factory.makeCodeImportSourceDetails(
@@ -1013,17 +1002,6 @@ class SubversionImportHelpers:
             stacked_on_url=stacked_on_url)
 
 
-class TestSubversionImport(WorkerTest, SubversionImportHelpers,
-                           CSCVSActualImportMixin):
-    """Tests for the worker importing and syncing a Subversion branch."""
-
-    rcstype = 'svn'
-
-    def setUp(self):
-        WorkerTest.setUp(self)
-        self.setUpImport()
-
-
 class PullingImportWorkerTests:
     """Tests for the PullingImportWorker subclasses."""
 
@@ -1435,13 +1413,13 @@ class CodeImportSourceDetailsTests(TestCaseWithFactory):
             ':pserver:foo@example.com/bar', 'bar'],
             arguments)
 
-    def test_svn_arguments(self):
+    def test_bzr_svn_arguments(self):
         code_import = self.factory.makeCodeImport(
                 svn_branch_url='svn://svn.example.com/trunk')
         arguments = CodeImportSourceDetails.fromCodeImport(
             code_import).asArguments()
         self.assertEquals([
-            str(code_import.branch.id), 'svn',
+            str(code_import.branch.id), 'bzr-svn',
             'svn://svn.example.com/trunk'],
             arguments)
 
