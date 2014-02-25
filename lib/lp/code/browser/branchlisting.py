@@ -1127,7 +1127,7 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
 
     @property
     def form_action(self):
-        return "+branches"
+        return "+all-branches"
 
     @property
     def initial_values(self):

@@ -103,7 +103,7 @@
         </li>
       </tal:series-branches>
     </tal:distro-series>
-    <li><a tal:attributes="href context/fmt:url:code/+branches">
+    <li><a tal:attributes="href context/fmt:url:code/+all-branches">
       All branches for the <tal:name replace="context/title"/>
     </a></li>
     </ul>

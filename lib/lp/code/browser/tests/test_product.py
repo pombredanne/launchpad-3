@@ -397,11 +397,11 @@ class TestCanConfigureBranches(TestCaseWithFactory):
 
     def test_cannot_configure_branches_product_no_edit_permission(self):
         product = self.factory.makeProduct()
-        view = create_view(product, '+branches')
+        view = create_view(product, '+all-branches')
         self.assertEqual(False, view.can_configure_branches())
 
     def test_can_configure_branches_product_with_edit_permission(self):
         product = self.factory.makeProduct()
         login_person(product.owner)
-        view = create_view(product, '+branches')
+        view = create_view(product, '+all-branches')
         self.assertTrue(view.can_configure_branches())
