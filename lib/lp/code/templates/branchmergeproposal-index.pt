@@ -185,9 +185,9 @@
     <div id="review-diff" tal:condition="view/preview_diff">
       <h2>Preview Diff </h2>
 
-      <div class="diff-navigator">
-        <div tal:condition="features/code.inline_diff_comments.enabled"
-             tal:replace="structure context/@@++diff-nav"/>
+      <div class="diff-navigator"
+           tal:condition="features/code.inline_diff_comments.enabled">
+        <div tal:replace="structure context/@@++diff-nav"/>
       </div>
 
       <div class="diff-content">

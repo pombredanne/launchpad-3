@@ -140,5 +140,8 @@ class IPreviewDiff(IDiff):
                 'compared to the tip revisions of the source, target, and '
                 'possibly prerequisite branches.')))
 
+    displayname = TextLine(
+        title=_('DisplayName'), description=_('PreviewDiff displayname.'))
+
     def getFileByName(filename):
         """Return the file under +files with specified name."""

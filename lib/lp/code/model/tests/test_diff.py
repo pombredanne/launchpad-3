@@ -341,6 +341,10 @@ class TestPreviewDiff(DiffTestCase):
             prerequisite_revision_id = u'rev-c'
         if content is None:
             content = ''.join(unified_diff('', 'content'))
+        self.factory.makeBranchRevision(
+            branch=mp.source_branch, revision_id='rev-a', sequence=10)
+        self.factory.makeBranchRevision(
+            branch=mp.target_branch, revision_id='rev-b', sequence=1)
         mp.updatePreviewDiff(
             content, u'rev-a', u'rev-b',
             prerequisite_revision_id=prerequisite_revision_id)
@@ -368,6 +372,7 @@ class TestPreviewDiff(DiffTestCase):
         # branches will be empty.
         mp = self._createProposalWithPreviewDiff(content='')
         preview = mp.preview_diff
+        self.assertEqual('r10 into r1', preview.displayname)
         self.assertIs(None, preview.diff_text)
         self.assertEqual(0, preview.diff_lines_count)
         self.assertEqual(mp, preview.branch_merge_proposal)

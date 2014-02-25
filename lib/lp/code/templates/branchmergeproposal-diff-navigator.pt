@@ -4,11 +4,14 @@
 
   <select id="available_diffs_choice" name="available_diffs_choice"
           tal:condition="context/preview_diffs">
-    <option tal:repeat="available_diff context/preview_diffs"
-            tal:attributes="value available_diff/id; selected
-            python:available_diff.id == view.preview_diff.id"
-            tal:content="available_diff/date_created/fmt:datetime"
-            >Diff date</option>
+    <option tal:repeat="diff context/preview_diffs"
+            tal:attributes="value diff/id; selected
+            python:diff.id == view.preview_diff.id">
+      <tal:displayname replace="diff/displayname"
+        >r10 into r5</tal:displayname>
+      <tal:date replace="diff/date_created/fmt:displaydate"
+        >on 2014-01-25</tal:date>
+    </option>
   </select>
 
 </tal:root>

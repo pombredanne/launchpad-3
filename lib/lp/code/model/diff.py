@@ -371,6 +371,27 @@ class PreviewDiff(Storm):
     conflicts = Unicode()
 
     @property
+    def displayname(self):
+        """See `IPreviewDiff`."""
+        bmp = self.branch_merge_proposal
+
+        source_branch = bmp.source_branch.getBranchRevision(
+            revision_id=self.source_revision_id)
+        if source_branch is not None:
+            source_revno = source_branch.sequence
+        else:
+            source_revno = u'?' 
+
+        target_branch = bmp.target_branch.getBranchRevision(
+            revision_id=self.target_revision_id)
+        if target_branch is not None:
+            target_revno = target_branch.sequence
+        else:
+            target_revno = u'?' 
+
+        return u'r{0} into r{1}'.format(source_revno, target_revno)
+
+    @property
     def has_conflicts(self):
         return self.conflicts is not None and self.conflicts != ''
 
