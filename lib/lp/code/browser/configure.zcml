@@ -698,7 +698,7 @@
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
         class="lp.code.browser.branchlisting.GroupedDistributionSourcePackageBranchesView"
         permission="zope.Public"
-        name="+code-index"
+        name="+branches"
         template="../templates/distributionsourcepackage-branches-grouped.pt"/>
     <browser:page
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
@@ -780,7 +780,7 @@
         for="lp.registry.interfaces.product.IProduct"
         class="lp.code.browser.branchlisting.ProductCodeIndexView"
         permission="zope.Public"
-        name="+code-index"
+        name="+branches"
         template="../templates/product-branches.pt"/>
    <browser:page
       for="lp.registry.interfaces.product.IProduct"
@@ -813,7 +813,7 @@
     <browser:defaultView
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
         layer="lp.code.publisher.CodeLayer"
-        name="+code-index"/>
+        name="+branches"/>
 
     <browser:defaultView
         for="lp.registry.interfaces.distribution.IDistribution"

@@ -612,8 +612,7 @@ class TestGroupedDistributionSourcePackageBranchesView(TestCaseWithFactory):
         dsp = source_package.distribution.getSourcePackage(
             source_package.sourcepackagename)
         branch = self.factory.makeBranch(sourcepackage=source_package)
-        view = create_initialized_view(
-            dsp, name='+code-index', rootsite='code')
+        view = create_initialized_view(dsp, name='+branches', rootsite='code')
         root = html.fromstring(view())
         [series_branches_table] = root.cssselect("table#series-branches")
         series_branches_last_row = series_branches_table.cssselect("tr")[-1]

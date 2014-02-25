@@ -1345,7 +1345,7 @@
         name="+index"/>
     <browser:defaultView
         for="lp.registry.interfaces.product.IProduct"
-        name="+code-index"
+        name="+branches"
         layer="lp.code.publisher.CodeLayer"/>
     <browser:defaultView
         for="lp.registry.interfaces.product.IProduct"
