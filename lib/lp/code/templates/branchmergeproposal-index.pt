@@ -203,7 +203,7 @@
   LPJS.use('io-base', 'lp.code.branchmergeproposal.reviewcomment',
           'lp.code.branchmergeproposal.status', 'lp.app.comment',
           'lp.code.branchmergeproposal.updater', 'lp.app.widgets.expander',
-          'lp.code.branch.revisionexpander'',
+          'lp.code.branch.revisionexpander',
           'lp.code.branchmergeproposal.inlinecomments', function(Y) {
 
     var ic = Y.lp.code.branchmergeproposal.inlinecomments;

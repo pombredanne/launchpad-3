@@ -374,9 +374,9 @@ class PreviewDiff(Storm):
     def displayname(self):
         """See `IPreviewDiff`."""
         bmp = self.branch_merge_proposal
-        source_branch = bmp.source_branch.getBranchRevision(
+        source_revno = bmp.source_branch.getBranchRevision(
             revision_id=self.source_revision_id).sequence
-        target_branch = bmp.target_branch.getBranchRevision(
+        target_revno = bmp.target_branch.getBranchRevision(
             revision_id=self.target_revision_id).sequence
 
         return u'r{0} into r{1}'.format(source_revno, target_revno)
