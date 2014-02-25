@@ -29,10 +29,10 @@
   <browser:defaultView
       for="lp.registry.interfaces.product.IProductSet"
       layer="lp.code.publisher.CodeLayer"
-      name="+project-cloud"/>
+      name="+branches"/>
   <browser:page
       for="lp.registry.interfaces.product.IProductSet"
-      name="+project-cloud"
+      name="+branches"
       class="lp.code.browser.bazaar.BazaarProductView"
       template="../templates/code-in-branches.pt"
       permission="zope.Public"
@@ -692,13 +692,13 @@
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
         class="lp.code.browser.branchlisting.DistributionSourcePackageBranchesView"
         permission="zope.Public"
-        name="+branches"
+        name="+all-branches"
         template="../templates/generic-branch-listing.pt"/>
     <browser:page
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
         class="lp.code.browser.branchlisting.GroupedDistributionSourcePackageBranchesView"
         permission="zope.Public"
-        name="+code-index"
+        name="+branches"
         template="../templates/distributionsourcepackage-branches-grouped.pt"/>
     <browser:page
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
@@ -774,13 +774,13 @@
         for="lp.registry.interfaces.product.IProduct"
         class="lp.code.browser.branchlisting.ProductBranchesView"
         permission="zope.Public"
-        name="+branches"
+        name="+all-branches"
         template="../templates/product-branches.pt"/>
     <browser:page
         for="lp.registry.interfaces.product.IProduct"
         class="lp.code.browser.branchlisting.ProductCodeIndexView"
         permission="zope.Public"
-        name="+code-index"
+        name="+branches"
         template="../templates/product-branches.pt"/>
    <browser:page
       for="lp.registry.interfaces.product.IProduct"
@@ -813,7 +813,7 @@
     <browser:defaultView
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
         layer="lp.code.publisher.CodeLayer"
-        name="+code-index"/>
+        name="+branches"/>
 
     <browser:defaultView
         for="lp.registry.interfaces.distribution.IDistribution"

@@ -217,7 +217,7 @@ We display badges for associated bugs.
     ...         for img in cells[1].findAll('img'):
     ...             print img['title']
 
-    >>> browser.open('http://code.launchpad.dev/firefox/+branches')
+    >>> browser.open('http://code.launchpad.dev/firefox/+all-branches')
     >>> branchSummary(browser)
     /~mark/firefox/release--0.9.1
     /~mark/firefox/release-0.8
@@ -236,7 +236,7 @@ badge is not shown.
 
 Now the badge is still shown for Sample Person...
 
-    >>> browser.open('http://code.launchpad.dev/firefox/+branches')
+    >>> browser.open('http://code.launchpad.dev/firefox/+all-branches')
     >>> branchSummary(browser)
     /~mark/firefox/release--0.9.1
     /~mark/firefox/release-0.8
@@ -248,7 +248,7 @@ Now the badge is still shown for Sample Person...
 
 ... but not for an anonymous user.
 
-    >>> anon_browser.open('http://code.launchpad.dev/firefox/+branches')
+    >>> anon_browser.open('http://code.launchpad.dev/firefox/+all-branches')
     >>> branchSummary(anon_browser)
     /~mark/firefox/release--0.9.1
     /~mark/firefox/release-0.8
@@ -285,7 +285,7 @@ On a listing that can only have branches from one product, the default
 is to sort by lifecycle status, and product name is not one of the
 options that can be selected.
 
-    >>> browser.open('http://code.launchpad.dev/gnome-terminal/+branches')
+    >>> browser.open('http://code.launchpad.dev/gnome-terminal/+all-branches')
     >>> sort_by_control = browser.getControl(name='field.sort_by')
     >>> sort_by_control.value
     ['by status']
@@ -307,7 +307,7 @@ options that can be selected.
 If you filter by a specific lifecycle status then ordering by
 lifecycle ceases to be relevant, and the default is to sort by registrant.
 
-    >>> browser.open('http://code.launchpad.dev/gnome-terminal/+branches')
+    >>> browser.open('http://code.launchpad.dev/gnome-terminal/+all-branches')
     >>> status_control = browser.getControl(name='field.lifecycle')
     >>> status_control.value = ['MATURE']
     >>> browser.getControl('Filter').click()
@@ -324,7 +324,7 @@ The implicitly sorted listings do not have an ordering widget at all.
 
 Finally, sorting by a particular criterion has the desired effect.
 
-    >>> browser.open('http://code.launchpad.dev/gnome-terminal/+branches')
+    >>> browser.open('http://code.launchpad.dev/gnome-terminal/+all-branches')
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> for row in table.tbody.fetch('tr'):
     ...     print extract_text(row)
@@ -463,7 +463,7 @@ revision number is linked to codebrowse.  The revision author is
 shown in the column after the last commit to allow the user to sort on
 the revision author column.
 
-    >>> browser.open('http://code.launchpad.dev/firefox/+branches')
+    >>> browser.open('http://code.launchpad.dev/firefox/+all-branches')
     >>> for commit in find_tags_by_class(browser.contents, 'lastCommit'):
     ...     print extract_text(commit)
     1.  Import of Mozilla Firefox 0.9.1

@@ -47,7 +47,7 @@ Answers page and goes there to check.
 
     >>> browser.open('http://launchpad.dev/ubuntu/+questions')
     >>> print browser.title
-    Questions for Ubuntu : Questions : Ubuntu
+    Questions : Ubuntu
 
 He sees a listing of the current questions posted on Ubuntu:
 
@@ -66,7 +66,7 @@ results. There, he finds only one other question:
 
     >>> browser.getLink('Next').click()
     >>> print browser.title
-    Questions for Ubuntu : Questions : Ubuntu
+    Questions : Ubuntu
     >>> soup = find_main_content(browser.contents)
     >>> for question in soup.fetch('td', 'questionTITLE'):
     ...     print question.first('a').renderContents()
@@ -196,7 +196,7 @@ enters his search key and hit the 'Search' button.
 Unfortunately, the search doesn't return any similar questions:
 
     >>> print browser.title
-    Questions matching "firefox is slow" for Ubuntu : Questions : Ubuntu
+    Questions : Ubuntu
     >>> search_summary = find_main_content(browser.contents)
     >>> print search_summary
     <...
@@ -292,7 +292,7 @@ recent questions on Mozilla Firefox.
     >>> browser.open('http://launchpad.dev/firefox/+questions')
     >>> browser.getLink('Open').click()
     >>> print browser.title
-    Open questions for Mozilla Firefox : Questions : Mozilla Firefox
+    Questions : Mozilla Firefox
     >>> questions = find_tag_by_id(browser.contents, 'question-listing')
     >>> for question in questions.fetch('td', 'questionTITLE'):
     ...     print question.first('a').renderContents()
@@ -329,7 +329,7 @@ questions.)
     >>> browser.open('http://launchpad.dev/ubuntu/+questions')
     >>> browser.getLink('Answered').click()
     >>> print browser.title
-    Answered questions for Ubuntu : Questions : Ubuntu
+    Questions : Ubuntu
     >>> statuses = browser.getControl(name='field.status').displayValue
     >>> [strip_label(status) for status in statuses]
     ['Answered', 'Solved']
