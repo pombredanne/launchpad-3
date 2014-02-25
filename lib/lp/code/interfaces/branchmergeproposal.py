@@ -549,14 +549,14 @@ class IBranchMergeProposalAnyAllowedPerson(Interface):
         subject=Text(), content=Text(),
         vote=Choice(vocabulary=CodeReviewVote), review_type=Text(),
         parent=Reference(schema=Interface),
-        diff_id=Int(),
+        previewdiff_id=Int(),
         inline_comments=Dict(key_type=TextLine(), value_type=Text()))
     @call_with(owner=REQUEST_USER)
     # ICodeReviewComment supplied as Interface to avoid circular imports.
     @export_factory_operation(Interface, [])
     def createComment(owner, subject, content=None, vote=None,
                       review_type=None, parent=None,
-                      diff_id=None, inline_comments=None):
+                      previewdiff_id=None, inline_comments=None):
         """Create an ICodeReviewComment associated with this merge proposal.
 
         :param owner: The person who the message is from.
@@ -565,8 +565,7 @@ class IBranchMergeProposalAnyAllowedPerson(Interface):
             unspecified, the text of the merge proposal is used.
         :param parent: The previous CodeReviewComment in the thread.  If
             unspecified, the root message is used.
-        :param diff_id: the context diff creation ID which will be used to
-            retrive the actual `PreviewDiff` register.
+        :param previewdiff_id: the inline comments PreviewDiff ID context.
         :param inline_comments: a dictionary containing the draft inline
             comments keyed by the diff line number.
         """
@@ -583,31 +582,31 @@ class IBranchMergeProposalAnyAllowedPerson(Interface):
 
     @export_read_operation()
     @operation_parameters(
-        diff_id=Int())
+        previewdiff_id=Int())
     @operation_for_version('devel')
-    def getInlineComments(diff_id):
+    def getInlineComments(previewdiff_id):
         """Return a list of inline comments related to this MP.
 
         The return value is an list of dictionaries (objects), each one
         representing a comment with 'line_number', 'person', 'text' and
         'date' attributes.
 
-        :param diff_id: The ID of the target `PreviewDiff`.
+        :param previewdiff_id: The ID of the target `PreviewDiff`.
         """
 
     @export_read_operation()
     @operation_parameters(
-        diff_id=Int())
+        previewdiff_id=Int())
     @call_with(person=REQUEST_USER)
     @operation_for_version('devel')
-    def getDraftInlineComments(diff_id, person):
+    def getDraftInlineComments(previewdiff_id, person):
         """Return the draft inline comments related to this MP.
 
         The return value is a dictionary (object) where the keys are the
         diff lines and their values are the actual draft comment created
         by the given person.
 
-        :param diff_id: The ID of the target `PreviewDiff`.
+        :param previewdiff_id: The ID of the target `PreviewDiff`.
         :param person: The `IPerson` owner of the draft comments.
         """
 
@@ -619,14 +618,14 @@ class IBranchMergeProposalAnyAllowedPerson(Interface):
 
     @export_write_operation()
     @operation_parameters(
-        diff_id=Int(),
+        previewdiff_id=Int(),
         comments=Dict(key_type=TextLine(), value_type=Text()))
     @call_with(person=REQUEST_USER)
     @operation_for_version('devel')
-    def saveDraftInlineComment(diff_id, person, comments):
+    def saveDraftInlineComment(previewdiff_id, person, comments):
         """Save `ICodeReviewInlineCommentDraft`
 
-        :param diff_id: The ID of the target `PreviewDiff`.
+        :param previewdiff_id: The ID of the target `PreviewDiff`.
         :param person: The `IPerson` making the comments.
         :param comments: The comments.
         """

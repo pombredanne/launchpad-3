@@ -24,7 +24,7 @@
     >>> proposal = source.addLandingTarget(bob, target)
     >>> logout()
 
-    >>> browser.open('http://code.launchpad.dev/firefox/+branches')
+    >>> browser.open('http://code.launchpad.dev/firefox/+all-branches')
     >>> branchSummary(browser)
     /~bob/firefox/review
     Has a merge proposal

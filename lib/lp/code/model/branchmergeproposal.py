@@ -752,7 +752,7 @@ class BranchMergeProposal(SQLBase):
 
     def createComment(self, owner, subject, content=None, vote=None,
                       review_type=None, parent=None, _date_created=DEFAULT,
-                      diff_id=None, inline_comments=None,
+                      previewdiff_id=None, inline_comments=None,
                       _notify_listeners=True):
         """See `IBranchMergeProposal`."""
         #:param _date_created: The date the message was created.  Provided
@@ -788,10 +788,10 @@ class BranchMergeProposal(SQLBase):
 
         if getFeatureFlag("code.inline_diff_comments.enabled"):
             if inline_comments:
-                assert diff_id is not None, (
+                assert previewdiff_id is not None, (
                     'Inline comments must be associated with a '
                     'previewdiff ID.')
-                previewdiff = self.getPreviewDiff(diff_id)
+                previewdiff = self.getPreviewDiff(previewdiff_id)
                 getUtility(ICodeReviewInlineCommentSet).ensureDraft(
                     previewdiff, owner, inline_comments)
                 getUtility(ICodeReviewInlineCommentSet).publishDraft(
@@ -888,15 +888,15 @@ class BranchMergeProposal(SQLBase):
                     code_review_message, original_email))
         return code_review_message
 
-    def getInlineComments(self, diff_id):
+    def getInlineComments(self, previewdiff_id):
         """See `IBranchMergeProposal`."""
-        previewdiff = self.getPreviewDiff(diff_id)
+        previewdiff = self.getPreviewDiff(previewdiff_id)
         return getUtility(ICodeReviewInlineCommentSet).getPublished(
             previewdiff)
 
-    def getDraftInlineComments(self, diff_id, person):
+    def getDraftInlineComments(self, previewdiff_id, person):
         """See `IBranchMergeProposal`."""
-        previewdiff = self.getPreviewDiff(diff_id)
+        previewdiff = self.getPreviewDiff(previewdiff_id)
         return getUtility(ICodeReviewInlineCommentSet).getDraft(
             previewdiff, person)
 
@@ -908,11 +908,11 @@ class BranchMergeProposal(SQLBase):
             raise WrongBranchMergeProposal
         return previewdiff
 
-    def saveDraftInlineComment(self, diff_id, person, comments):
+    def saveDraftInlineComment(self, previewdiff_id, person, comments):
         """See `IBranchMergeProposal`."""
         if not getFeatureFlag("code.inline_diff_comments.enabled"):
             return
-        previewdiff = self.getPreviewDiff(diff_id)
+        previewdiff = self.getPreviewDiff(previewdiff_id)
         getUtility(ICodeReviewInlineCommentSet).ensureDraft(
             previewdiff, person, comments)
 

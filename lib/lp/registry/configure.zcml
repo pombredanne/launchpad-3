@@ -1375,7 +1375,10 @@
         <require
             permission="launchpad.LimitedView"
             attributes="
-                bugtargetdisplayname"/>
+                bugtargetdisplayname
+                getBugTaskWeightFunction
+                pillar
+                searchTasks"/>
 
         <require
             permission="launchpad.View"
@@ -1384,10 +1387,7 @@
                 bug_reporting_guidelines
                 bugtargetname
                 createBug
-                enable_bugfiling_duplicate_search
-                getBugTaskWeightFunction
-                pillar
-                searchTasks"/>
+                enable_bugfiling_duplicate_search"/>
 
         <!-- IHasAliases -->
 
