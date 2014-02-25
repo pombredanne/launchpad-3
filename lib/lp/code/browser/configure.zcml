@@ -29,10 +29,10 @@
   <browser:defaultView
       for="lp.registry.interfaces.product.IProductSet"
       layer="lp.code.publisher.CodeLayer"
-      name="+project-cloud"/>
+      name="+branches"/>
   <browser:page
       for="lp.registry.interfaces.product.IProductSet"
-      name="+project-cloud"
+      name="+branches"
       class="lp.code.browser.bazaar.BazaarProductView"
       template="../templates/code-in-branches.pt"
       permission="zope.Public"
