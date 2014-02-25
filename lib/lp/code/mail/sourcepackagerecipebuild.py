@@ -77,7 +77,7 @@ class SourcePackageRecipeBuildMailer(BaseMailer):
             duration_formatter = DurationFormatterAPI(self.build.duration)
             params['duration'] = duration_formatter.approximateduration()
         if self.build.log is not None:
-            params['log_url'] = self.build.log.getURL()
+            params['log_url'] = self.build.log_url
         if self.build.upload_log is not None:
             params['upload_log_url'] = self.build.upload_log_url
         return params
