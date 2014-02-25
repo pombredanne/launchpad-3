@@ -902,8 +902,9 @@ class BranchMergeProposal(SQLBase):
 
     def getPreviewDiff(self, id):
         """See `IBranchMergeProposal`."""
-        previewdiff = IStore(self).find(
-            PreviewDiff, PreviewDiff.id == id).one()
+        previewdiff = IStore(self).get(PreviewDiff, id)
+        if previewdiff is None:
+            raise DiffNotFound
         if previewdiff.branch_merge_proposal != self:
             raise WrongBranchMergeProposal
         return previewdiff
