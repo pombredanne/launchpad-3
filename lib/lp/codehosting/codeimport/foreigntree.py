@@ -1,17 +1,14 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Support for CVS and Subversion branches."""
+"""Support for CVS branches."""
 
 __metaclass__ = type
-__all__ = ['CVSWorkingTree', 'SubversionWorkingTree']
+__all__ = ['CVSWorkingTree']
 
 import os
 
 import CVS
-import subvertpy
-import subvertpy.client
-import subvertpy.ra
 
 
 class CVSWorkingTree:
@@ -39,37 +36,3 @@ class CVSWorkingTree:
     def update(self):
         tree = CVS.tree(self.local_path)
         tree.update()
-
-
-class SubversionWorkingTree:
-    """Represents a Subversion working tree."""
-
-    def __init__(self, url, path):
-        """Construct a `SubversionWorkingTree`.
-
-        :param url: The URL of the branch for this tree.
-        :param path: The path to the working tree.
-        """
-        self.remote_url = url
-        self.local_path = path
-
-    def _get_client(self):
-        username_provider = subvertpy.ra.get_username_provider()
-        auth = subvertpy.ra.Auth([username_provider])
-        auth.set_parameter(subvertpy.AUTH_PARAM_DEFAULT_USERNAME, "lptest2")
-        return subvertpy.client.Client(auth=auth)
-
-    def checkout(self):
-        client = self._get_client()
-        client.checkout(
-            self.remote_url, self.local_path, rev="HEAD",
-            ignore_externals=True)
-
-    def commit(self):
-        client = self._get_client()
-        client.log_msg_func = lambda c: 'Log message'
-        client.commit([self.local_path], recurse=True)
-
-    def update(self):
-        client = self._get_client()
-        client.update(self.local_path, "HEAD", True, True)

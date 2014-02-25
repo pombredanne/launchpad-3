@@ -106,8 +106,6 @@ class CodeImport(SQLBase):
         default_interval_dict = {
             RevisionControlSystems.CVS:
                 config.codeimport.default_interval_cvs,
-            RevisionControlSystems.SVN:
-                config.codeimport.default_interval_subversion,
             RevisionControlSystems.BZR_SVN:
                 config.codeimport.default_interval_subversion,
             RevisionControlSystems.GIT:
