@@ -74,8 +74,7 @@ class TestSourcePackageRecipeBuildMailer(TestCaseWithFactory):
             u'[recipe build #%d] of ~person recipe in distroseries: '
             'Successfully built' % (build.id), ctrl.subject)
         body, footer = ctrl.body.split('\n-- \n')
-        self.assertEqual(
-            expected_body % build.log.getURL(), body)
+        self.assertEqual(expected_body % build.log_url, body)
         build_url = canonical_url(build)
         self.assertEqual(
             '%s\nYou are the requester of the build.\n' % build_url, footer)
