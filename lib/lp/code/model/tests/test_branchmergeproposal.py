@@ -717,6 +717,32 @@ class TestMergeProposalGetVoteReference(TestCaseWithFactory):
                           self.vote.id)
 
 
+class TestMergeProposalGetPreviewDiff(TestCaseWithFactory):
+    """Tests for `BranchMergeProposal.getPreviewDiff`."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self, user='foo.bar@canonical.com')
+        self.mp_one = self.factory.makeBranchMergeProposal()
+        self.mp_two = self.factory.makeBranchMergeProposal()
+        self.preview_diff = self.mp_one.updatePreviewDiff(
+            u'Some diff', u"source_id", u"target_id")
+        transaction.commit()
+
+    def test_getPreviewDiff(self):
+        """We can get a preview-diff."""
+        self.assertEqual(
+            self.preview_diff,
+            self.mp_one.getPreviewDiff(self.preview_diff.id))
+
+    def test_getPreviewDiffWrongBranchMergeProposal(self):
+        """An error is raised if the given id does not match the MP."""
+        self.assertRaises(
+            WrongBranchMergeProposal,
+            self.mp_two.getPreviewDiff, self.preview_diff.id)
+
+
 class TestMergeProposalNotification(TestCaseWithFactory):
     """Test that events are created when merge proposals are manipulated"""
 

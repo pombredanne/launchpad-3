@@ -625,15 +625,21 @@ The text of the review diff is in the page.
     u'Preview Diff\nDownload diff\n1\n...Fake Diff\u1010'
 
 There is also a link to the diff URL, which is the preview diff URL plus
-"+files/preview.diff". It redirects to the file in the restricted librarian.
+"+files/preview.diff". It redirects logged in users to the file in the
+restricted librarian.
+
+    >>> link = get_review_diff().find('a')
+    >>> print extract_text(link)
+    Download diff
+
+    >>> print link['href']
+    http://.../+preview-diff/.../+files/preview.diff
 
     >>> from lazr.uri import URI
-    >>> link = get_review_diff().find('a')
-    >>> print link['href']
-    http.../+preview-diff/+files/preview.diff
-    >>> print http(
-    ...     """GET %s HTTP/1.1
-    ...     """ % URI(link['href']).path)
+    >>> print http(r"""
+    ... GET %s HTTP/1.1
+    ... Authorization: Basic no-priv@canonical.com:test        
+    ... """ % URI(link['href']).path)
     HTTP/1.1 303 See Other
     ...
     Location: https://...restricted.../...txt?token=...
