@@ -50,16 +50,6 @@ class TestImportDetails(TestCaseWithFactory):
         self.assertSvnDetailsDisplayed(
             svn_details, RevisionControlSystems.BZR_SVN)
 
-    def test_cscvs_svn_import(self):
-        # The branch page for a cscvs-imported svn branch contains a summary
-        # of the import details.
-        bzr_svn_import = self.factory.makeCodeImport(
-            rcs_type=RevisionControlSystems.SVN)
-        browser = self.getUserBrowser(canonical_url(bzr_svn_import.branch))
-        svn_details = find_tag_by_id(browser.contents, 'svn-import-details')
-        self.assertSvnDetailsDisplayed(
-            svn_details, RevisionControlSystems.SVN)
-
     def test_branch_owner_of_import_forbidden(self):
         # Unauthorized users are forbidden to edit an import.
         cimport = self.factory.makeCodeImport()

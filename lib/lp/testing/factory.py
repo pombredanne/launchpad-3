@@ -490,8 +490,8 @@ class ObjectFactory:
         if branch_id is None:
             branch_id = self.getUniqueInteger()
         if rcstype is None:
-            rcstype = 'svn'
-        if rcstype in ['svn', 'bzr-svn', 'bzr']:
+            rcstype = 'bzr-svn'
+        if rcstype in ['bzr-svn', 'bzr']:
             assert cvs_root is cvs_module is None
             if url is None:
                 url = self.getUniqueURL()
@@ -2237,13 +2237,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         code_import_set = getUtility(ICodeImportSet)
         if svn_branch_url is not None:
-            if rcs_type is None:
-                rcs_type = RevisionControlSystems.SVN
-            else:
-                assert rcs_type in (RevisionControlSystems.SVN,
-                                    RevisionControlSystems.BZR_SVN)
+            assert rcs_type in (None, RevisionControlSystems.BZR_SVN)
             return code_import_set.new(
-                registrant, target, branch_name, rcs_type=rcs_type,
+                registrant, target, branch_name,
+                rcs_type=RevisionControlSystems.BZR_SVN,
                 url=svn_branch_url, review_status=review_status)
         elif git_repo_url is not None:
             assert rcs_type in (None, RevisionControlSystems.GIT)

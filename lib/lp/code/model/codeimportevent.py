@@ -267,8 +267,7 @@ class CodeImportEventSet:
 
     def _iterSourceDetails(self, code_import):
         """Yield key-value tuples describing the source of the import."""
-        if code_import.rcs_type in (RevisionControlSystems.SVN,
-                                    RevisionControlSystems.BZR_SVN,
+        if code_import.rcs_type in (RevisionControlSystems.BZR_SVN,
                                     RevisionControlSystems.GIT,
                                     RevisionControlSystems.BZR):
             yield 'URL', code_import.url
