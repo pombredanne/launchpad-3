@@ -101,6 +101,14 @@ class TestExtraBreadcrumbForLeafPageOnHierarchyView(BaseBreadcrumbTestCase):
             '%s project files' % self.product.displayname,
             crumbs[-1].text)
 
+    def test_facet_default_page(self):
+        crumbs = self.getBreadcrumbsForObject(self.product, '+bugs')
+        bugs_url = self.product_url.replace('launchpad', 'bugs.launchpad')
+        self.assertEquals(
+            [self.product_url, bugs_url],
+            [crumb.url for crumb in crumbs])
+        self.assertEquals('Bugs', crumbs[-1].text)
+
     def test_zope_i18n_Messages_are_interpolated(self):
         # Views can use zope.i18nmessageid.Message as their title when they
         # want to i18n it, but when that's the case we need to

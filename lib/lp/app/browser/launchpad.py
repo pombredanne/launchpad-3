@@ -296,14 +296,27 @@ class Hierarchy(LaunchpadView):
         The `IBreadcrumb` for the requested page is created using the current
         URL and the page's name (i.e. the last path segment of the URL).
 
-        If the requested page (as specified in self.request) is the default
-        one for our parent view's context, return None.
+        If the view is the default one for the object or the current
+        facet, return None -- we'll have injected a *FacetBreadcrumb
+        earlier in the hierarchy which links here.
         """
+        # XXX wgrant 2014-02-25: We should eventually define the
+        # facet-level defaults in app-level ZCML rather than hardcoding
+        # them centrally.
+        facet_defaults = {
+            'answers': '+questions',
+            'branches': '+branches',
+            'bugs': '+bugs',
+            'specifications': '+specs',
+            'translations': '+translations',
+            }
+
         url = self.request.getURL()
         obj = self.request.traversed_objects[-2]
         default_view_name = getDefaultViewName(obj, self.request)
         view = self._naked_context_view
-        if view.__name__ != default_view_name:
+        facet = get_facet(view)
+        if view.__name__ not in (default_view_name, facet_defaults.get(facet)):
             title = getattr(view, 'page_title', None)
             if title is None:
                 title = getattr(view, 'label', None)
