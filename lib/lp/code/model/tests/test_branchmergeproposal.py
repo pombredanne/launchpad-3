@@ -736,6 +736,11 @@ class TestMergeProposalGetPreviewDiff(TestCaseWithFactory):
             self.preview_diff,
             self.mp_one.getPreviewDiff(self.preview_diff.id))
 
+    def test_getPreviewDiff_NotFound(self):
+        """DiffNotFound is raised if a PreviewDiff cannot be found."""
+        self.assertRaises(
+            DiffNotFound, self.mp_one.getPreviewDiff, 1000)
+
     def test_getPreviewDiffWrongBranchMergeProposal(self):
         """An error is raised if the given id does not match the MP."""
         self.assertRaises(

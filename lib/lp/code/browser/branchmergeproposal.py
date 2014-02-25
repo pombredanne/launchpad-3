@@ -88,6 +88,7 @@ from lp.code.enums import (
 from lp.code.errors import (
     BranchMergeProposalExists,
     ClaimReviewFailed,
+    DiffNotFound,
     InvalidBranchMergeProposal,
     WrongBranchMergeProposal,
     )
@@ -470,7 +471,7 @@ class BranchMergeProposalNavigation(Navigation):
             return None
         try:
             return self.context.getPreviewDiff(id)
-        except WrongBranchMergeProposal:
+        except (DiffNotFound, WrongBranchMergeProposal):
             return None
 
     @stepthrough('+review')
