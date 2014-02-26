@@ -7,24 +7,9 @@ __metaclass__ = type
 
 __all__ = [
     'LaunchpadStatisticSet',
-    'LaunchpadStatisticSetFacets',
     ]
 
-from lp.services.statistics.interfaces.statistic import ILaunchpadStatisticSet
-from lp.services.webapp import (
-    LaunchpadView,
-    StandardLaunchpadFacets,
-    )
-
-
-class LaunchpadStatisticSetFacets(StandardLaunchpadFacets):
-    """The links that will appear in the facet menu for the
-    ILaunchpadStatisticSet.
-    """
-
-    usedfor = ILaunchpadStatisticSet
-
-    enable_only = ['overview',]
+from lp.services.webapp import LaunchpadView
 
 
 class LaunchpadStatisticSet(LaunchpadView):

@@ -30,7 +30,6 @@ __all__ = [
     'DistributionSetActionNavigationMenu',
     'DistributionSetBreadcrumb',
     'DistributionSetContextMenu',
-    'DistributionSetFacets',
     'DistributionSetNavigation',
     'DistributionSetView',
     'DistributionSpecificationsMenu',
@@ -216,13 +215,6 @@ class DistributionFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
 class DistributionSetBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `IDistributionSet`."""
     text = 'Distributions'
-
-
-class DistributionSetFacets(StandardLaunchpadFacets):
-
-    usedfor = IDistributionSet
-
-    enable_only = ['overview', ]
 
 
 class DistributionSetContextMenu(ContextMenu):

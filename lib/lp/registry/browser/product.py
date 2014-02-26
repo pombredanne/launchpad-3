@@ -31,7 +31,6 @@ __all__ = [
     'ProductReviewLicenseView',
     'ProductSeriesSetView',
     'ProductSetBreadcrumb',
-    'ProductSetFacets',
     'ProductSetNavigation',
     'ProductSetReviewLicensesView',
     'ProductSetView',
@@ -634,14 +633,6 @@ def _cmp_distros(a, b):
 class ProductSetBreadcrumb(Breadcrumb):
     """Return a breadcrumb for an `IProductSet`."""
     text = "Projects"
-
-
-class ProductSetFacets(StandardLaunchpadFacets):
-    """The links that will appear in the facet menu for the IProductSet."""
-
-    usedfor = IProductSet
-
-    enable_only = ['overview', 'branches']
 
 
 class SortSeriesMixin:

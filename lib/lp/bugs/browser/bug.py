@@ -200,8 +200,10 @@ class BugNavigation(Navigation):
 class BugFacets(StandardLaunchpadFacets):
     """The links that will appear in the facet menu for an `IBug`.
 
-    However, we never show this, but it does apply to things like
-    bug nominations, by 'acquisition'.
+    This is rarely seen, as most bug views are actually on BugTask. But
+    it's inherited by views on objects subordinate to the Bug itself,
+    eg.  nominations and attachments, where we don't have a pillar
+    context to switch within.
     """
 
     usedfor = IBug
