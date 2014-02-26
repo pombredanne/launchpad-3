@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'ALL_LINKS',
     'enabled_with_permission',
     'get_current_view',
     'get_facet',
