@@ -58,6 +58,7 @@ Branch merge proposals can be created through the API.
     merged_revno: None
     prerequisite_branch_link: u'http://api.launchpad.dev/devel/~...'
     preview_diff_link: None
+    preview_diffs_collection_link: u'http://.../preview_diffs'
     private: False
     queue_position: None
     queue_status: u'Needs review'
@@ -156,6 +157,7 @@ We use the webservice as an unrelated, unprivileged user.
     merged_revno: None
     prerequisite_branch_link: None
     preview_diff_link: None
+    preview_diffs_collection_link: u'http://.../preview_diffs'
     private: False
     queue_position: None
     queue_status: u'Work in progress'

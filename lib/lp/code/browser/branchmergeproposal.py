@@ -88,6 +88,7 @@ from lp.code.enums import (
 from lp.code.errors import (
     BranchMergeProposalExists,
     ClaimReviewFailed,
+    DiffNotFound,
     InvalidBranchMergeProposal,
     WrongBranchMergeProposal,
     )
@@ -461,10 +462,17 @@ class BranchMergeProposalNavigation(Navigation):
         except WrongBranchMergeProposal:
             return None
 
-    @stepto("+preview-diff")
-    def preview_diff(self):
-        """Step to the preview diff."""
-        return self.context.preview_diff
+    @stepthrough("+preview-diff")
+    def traverse_preview_diff(self, id):
+        """Navigate to a PreviewDiff through its BMP."""
+        try:
+            id = int(id)
+        except ValueError:
+            return None
+        try:
+            return self.context.getPreviewDiff(id)
+        except (DiffNotFound, WrongBranchMergeProposal):
+            return None
 
     @stepthrough('+review')
     def review(self, id):
@@ -631,15 +639,14 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
                 self.context).event_key
         if getFeatureFlag("code.inline_diff_comments.enabled"):
             cache.objects['inline_diff_comments'] = True
-            cache.objects['preview_diff_timestamps'] = [
-                pd.date_created for pd in self.context.preview_diffs]
+            cache.objects['previewdiff_ids'] = [
+                pd.id for pd in self.context.preview_diffs]
             if self.context.preview_diff:
                 cache.objects['published_inline_comments'] = (
-                    self.context.getInlineComments(
-                        self.preview_diff.date_created))
+                    self.context.getInlineComments(self.preview_diff.id))
                 cache.objects['draft_inline_comments'] = (
                     self.context.getDraftInlineComments(
-                        self.preview_diff.date_created, self.user))
+                        self.preview_diff.id, self.user))
             else:
                 cache.objects['published_inline_comments'] = []
                 cache.objects['draft_inline_comments'] = []
