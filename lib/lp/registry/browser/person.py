@@ -542,46 +542,14 @@ class PersonFacets(StandardLaunchpadFacets):
     """The links that will appear in the facet menu for an IPerson."""
 
     usedfor = IPerson
-
-    enable_only = ['overview', 'bugs', 'answers', 'specifications',
-                   'branches', 'translations']
-
-    def overview(self):
-        text = 'Overview'
-        summary = 'General information about %s' % self.context.displayname
-        return Link('', text, summary)
-
-    def bugs(self):
-        text = 'Bugs'
-        summary = (
-            'Bug reports that %s is involved with' % self.context.displayname)
-        return Link('', text, summary)
-
-    def specifications(self):
-        text = 'Blueprints'
-        summary = (
-            'Feature specifications that %s is involved with' %
-            self.context.displayname)
-        return Link('', text, summary)
-
-    def branches(self):
-        text = 'Code'
-        summary = ('Bazaar Branches and revisions registered and authored '
-                   'by %s' % self.context.displayname)
-        return Link('', text, summary)
-
-    def answers(self):
-        text = 'Answers'
-        summary = (
-            'Questions that %s is involved with' % self.context.displayname)
-        return Link('', text, summary)
-
-    def translations(self):
-        text = 'Translations'
-        summary = (
-            'Software that %s is involved in translating' %
-            self.context.displayname)
-        return Link('', text, summary)
+    enable_only = [
+        'overview',
+        'branches',
+        'bugs',
+        'specifications',
+        'translations',
+        'answers',
+        ]
 
 
 class CommonMenuLinks:

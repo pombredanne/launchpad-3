@@ -177,36 +177,23 @@ class ProjectFacets(StandardLaunchpadFacets):
 
     usedfor = IProjectGroup
 
-    enable_only = ['overview', 'branches', 'bugs', 'specifications',
-                   'answers', 'translations']
-
     @cachedproperty
     def has_products(self):
         return self.context.hasProducts()
 
-    def branches(self):
-        text = 'Code'
-        return Link('', text, enabled=self.has_products)
-
-    def bugs(self):
-        site = 'bugs'
-        text = 'Bugs'
-        return Link('', text, enabled=self.has_products, site=site)
-
-    def answers(self):
-        site = 'answers'
-        text = 'Answers'
-        return Link('', text, enabled=self.has_products, site=site)
-
-    def specifications(self):
-        site = 'blueprints'
-        text = 'Blueprints'
-        return Link('', text, enabled=self.has_products, site=site)
-
-    def translations(self):
-        site = 'translations'
-        text = 'Translations'
-        return Link('', text, enabled=self.has_products, site=site)
+    @property
+    def enable_only(self):
+        if self.has_products:
+            return [
+                'overview',
+                'branches',
+                'bugs',
+                'specifications',
+                'translations',
+                'answers',
+                ]
+        else:
+            return ['overview']
 
 
 class ProjectAdminMenuMixin:

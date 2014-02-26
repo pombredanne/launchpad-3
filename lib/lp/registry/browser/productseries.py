@@ -199,11 +199,17 @@ class ProductSeriesFacets(StandardLaunchpadFacets):
     """A class that provides the series facets."""
     usedfor = IProductSeries
     enable_only = [
-        'overview', 'branches', 'bugs', 'specifications', 'translations']
+        'overview',
+        'branches',
+        'bugs',
+        'specifications',
+        'translations',
+        ]
 
     def branches(self):
         """Return a link to view the branches related to this series."""
-        # Override to go to the branches for the product.
+        # XXX wgrant 2014-02-26 bug=183433: Override to go to the
+        # branches for the product. This is inconsistent and weird. Ew.
         text = 'Code'
         summary = 'View related branches of code'
         link = canonical_url(self.context.product, rootsite='code')

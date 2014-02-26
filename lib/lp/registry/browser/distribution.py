@@ -193,20 +193,14 @@ class DistributionSetNavigation(Navigation):
 class DistributionFacets(StandardLaunchpadFacets):
 
     usedfor = IDistribution
-
     enable_only = [
         'overview',
         'branches',
         'bugs',
-        'answers',
         'specifications',
+        'answers',
         'translations',
         ]
-
-    def specifications(self):
-        text = 'Blueprints'
-        summary = 'Feature specifications for %s' % self.context.displayname
-        return Link('', text, summary)
 
 
 class DistributionSetBreadcrumb(Breadcrumb):

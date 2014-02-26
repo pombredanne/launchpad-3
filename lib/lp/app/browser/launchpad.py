@@ -457,9 +457,14 @@ class MaintenanceMessage:
 class LaunchpadRootFacets(StandardLaunchpadFacets):
 
     usedfor = ILaunchpadRoot
-
-    enable_only = ['overview', 'bugs', 'answers', 'specifications',
-                   'translations', 'branches']
+    enable_only = [
+        'overview',
+        'branches',
+        'bugs',
+        'specifications',
+        'translations',
+        'answers',
+        ]
 
     def overview(self):
         target = ''
@@ -479,20 +484,17 @@ class LaunchpadRootFacets(StandardLaunchpadFacets):
     def answers(self):
         target = ''
         text = 'Answers'
-        summary = 'Launchpad Answer Tracker'
-        return Link(target, text, summary)
+        return Link(target, text)
 
     def specifications(self):
         target = ''
         text = 'Blueprints'
-        summary = 'Launchpad feature specification tracker.'
-        return Link(target, text, summary)
+        return Link(target, text)
 
     def branches(self):
         target = ''
         text = 'Code'
-        summary = 'The Code Bazaar'
-        return Link(target, text, summary)
+        return Link(target, text)
 
 
 class LoginStatus:

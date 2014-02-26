@@ -84,10 +84,23 @@ class StandardLaunchpadFacets(FacetMenu):
     # provide your own 'usedfor' in subclasses.
     #   usedfor = IWhatever
 
-    links = ['overview', 'branches', 'bugs', 'specifications', 'translations',
-             'answers']
+    links = [
+        'overview',
+        'branches',
+        'bugs',
+        'specifications',
+        'translations',
+        'answers',
+        ]
 
-    enable_only = ['overview', 'bugs', 'specifications', 'translations']
+    # We disable answers and branches by default out of the delusion
+    # that few objects apparently have them.
+    enable_only = [
+        'overview',
+        'bugs',
+        'specifications',
+        'translations',
+        ]
 
     defaultlink = 'overview'
 
@@ -120,20 +133,13 @@ class StandardLaunchpadFacets(FacetMenu):
         return Link('', text)
 
     def answers(self):
-        # This facet is visible but unavailable by default.
-        # See the enable_only list above.
         text = 'Answers'
-        summary = 'Launchpad Answer Tracker'
-        return Link('', text, summary)
+        return Link('', text)
 
     def specifications(self):
         text = 'Blueprints'
-        summary = 'Blueprints and specifications'
-        return Link('', text, summary)
+        return Link('', text)
 
     def branches(self):
-        # this is disabled by default, because relatively few objects have
-        # branch views
         text = 'Code'
-        summary = 'View related code'
-        return Link('', text, summary=summary)
+        return Link('', text)

@@ -116,23 +116,12 @@ class DistributionSourcePackageBreadcrumb(Breadcrumb):
 class DistributionSourcePackageFacets(StandardLaunchpadFacets):
 
     usedfor = IDistributionSourcePackage
-    enable_only = ['overview', 'bugs', 'answers', 'branches']
-
-    def overview(self):
-        text = 'Overview'
-        summary = u'General information about {0}'.format(
-            self.context.displayname)
-        return Link('', text, summary)
-
-    def bugs(self):
-        text = 'Bugs'
-        summary = u'Bugs reported about {0}'.format(self.context.displayname)
-        return Link('', text, summary)
-
-    def branches(self):
-        text = 'Code'
-        summary = u'Branches for {0}'.format(self.context.displayname)
-        return Link('', text, summary)
+    enable_only = [
+        'overview',
+        'branches',
+        'bugs',
+        'answers',
+        ]
 
 
 class DistributionSourcePackageLinksMixin:
