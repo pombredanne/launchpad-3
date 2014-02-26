@@ -341,10 +341,6 @@ class TestPreviewDiff(DiffTestCase):
             prerequisite_revision_id = u'rev-c'
         if content is None:
             content = ''.join(unified_diff('', 'content'))
-        self.factory.makeBranchRevision(
-            branch=mp.source_branch, revision_id='rev-a', sequence=10)
-        self.factory.makeBranchRevision(
-            branch=mp.target_branch, revision_id='rev-b', sequence=1)
         mp.updatePreviewDiff(
             content, u'rev-a', u'rev-b',
             prerequisite_revision_id=prerequisite_revision_id)
@@ -367,12 +363,34 @@ class TestPreviewDiff(DiffTestCase):
                 canonical_url(mp), mp.preview_diff.id),
             canonical_url(mp.preview_diff))
 
+    def test_title(self):
+        # PreviewDiff has title and it copes with absent
+        # BranchRevision{.sequence} when branches get overridden/rebased. 
+        mp = self._createProposalWithPreviewDiff(content='')
+        preview = mp.preview_diff
+        # Both, source and target, branch revisions are absent,
+        # revision_ids are used in the title.
+        self.assertEqual('rev-a into rev-b', preview.title)
+        # Let's create the corresponding source revision with empty
+        # sequence. The title will continue to use source_revision_id.
+        source_rev = self.factory.makeBranchRevision(
+            branch=mp.source_branch, revision_id='rev-a', sequence=None)
+        self.assertEqual('rev-a into rev-b', preview.title)
+        # Revision number is used only when it (sequence) is defined.
+        source_rev.sequence = 10
+        self.assertEqual('r10 into rev-b', preview.title)
+        # Same behavior is applied to the target_branch information.
+        target_rev = self.factory.makeBranchRevision(
+            branch=mp.target_branch, revision_id='rev-b', sequence=None)
+        self.assertEqual('r10 into rev-b', preview.title)
+        target_rev.sequence = 1
+        self.assertEqual('r10 into r1', preview.title)
+
     def test_empty_diff(self):
         # Once the source is merged into the target, the diff between the
         # branches will be empty.
         mp = self._createProposalWithPreviewDiff(content='')
         preview = mp.preview_diff
-        self.assertEqual('r10 into r1', preview.displayname)
         self.assertIs(None, preview.diff_text)
         self.assertEqual(0, preview.diff_lines_count)
         self.assertEqual(mp, preview.branch_merge_proposal)

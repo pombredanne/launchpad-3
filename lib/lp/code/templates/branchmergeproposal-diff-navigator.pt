@@ -7,8 +7,7 @@
     <option tal:repeat="diff context/preview_diffs"
             tal:attributes="value diff/id; selected
             python:diff.id == view.preview_diff.id">
-      <tal:displayname replace="diff/displayname"
-        >r10 into r5</tal:displayname>
+      <tal:title replace="diff/title">r10 into r5</tal:title>
       <tal:date replace="diff/date_created/fmt:displaydate"
         >on 2014-01-25</tal:date>
     </option>
