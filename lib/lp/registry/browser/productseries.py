@@ -210,10 +210,9 @@ class ProductSeriesFacets(StandardLaunchpadFacets):
         """Return a link to view the branches related to this series."""
         # XXX wgrant 2014-02-26 bug=183433: Override to go to the
         # branches for the product. This is inconsistent and weird. Ew.
-        text = 'Code'
-        summary = 'View related branches of code'
-        link = canonical_url(self.context.product, rootsite='code')
-        return Link(link, text, summary=summary)
+        link = super(ProductSeriesFacets, self).branches()
+        link.target = canonical_url(self.context.product, rootsite='code')
+        return link
 
 
 class IProductSeriesInvolved(Interface):

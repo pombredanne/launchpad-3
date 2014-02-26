@@ -152,7 +152,6 @@ from lp.registry.browser.pillar import (
     PillarNavigationMixin,
     PillarViewMixin,
     )
-from lp.registry.browser.productseries import get_series_branch_error
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import (
     IProduct,
@@ -1569,6 +1568,7 @@ class ProductAddSeriesView(LaunchpadFormView):
 
     def validate(self, data):
         """See `LaunchpadFormView`."""
+        from lp.registry.browser.productseries import get_series_branch_error
         branch = data.get('branch')
         if branch is not None:
             message = get_series_branch_error(self.context, branch)
