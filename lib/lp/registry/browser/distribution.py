@@ -193,14 +193,6 @@ class DistributionSetNavigation(Navigation):
 class DistributionFacets(StandardLaunchpadFacets):
 
     usedfor = IDistribution
-    enable_only = [
-        'overview',
-        'branches',
-        'bugs',
-        'specifications',
-        'answers',
-        'translations',
-        ]
 
 
 class DistributionSetBreadcrumb(Breadcrumb):

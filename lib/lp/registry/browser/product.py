@@ -306,14 +306,6 @@ class ProductFacets(StandardLaunchpadFacets):
     """The links that will appear in the facet menu for an IProduct."""
 
     usedfor = IProduct
-    enable_only = [
-        'overview',
-        'branches',
-        'bugs',
-        'specifications',
-        'translations',
-        'answers',
-        ]
 
 
 class ProductInvolvementView(PillarInvolvementView):

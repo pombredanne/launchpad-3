@@ -542,14 +542,6 @@ class PersonFacets(StandardLaunchpadFacets):
     """The links that will appear in the facet menu for an IPerson."""
 
     usedfor = IPerson
-    enable_only = [
-        'overview',
-        'branches',
-        'bugs',
-        'specifications',
-        'translations',
-        'answers',
-        ]
 
 
 class CommonMenuLinks:

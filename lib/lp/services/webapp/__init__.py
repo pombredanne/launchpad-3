@@ -93,15 +93,6 @@ class StandardLaunchpadFacets(FacetMenu):
         'answers',
         ]
 
-    # We disable answers and branches by default out of the delusion
-    # that few objects apparently have them.
-    enable_only = [
-        'overview',
-        'bugs',
-        'specifications',
-        'translations',
-        ]
-
     defaultlink = 'overview'
 
     def _filterLink(self, name, link):
@@ -124,22 +115,22 @@ class StandardLaunchpadFacets(FacetMenu):
         text = 'Overview'
         return Link('', text)
 
-    def translations(self):
-        text = 'Translations'
+    def branches(self):
+        text = 'Code'
         return Link('', text)
 
     def bugs(self):
         text = 'Bugs'
         return Link('', text)
 
-    def answers(self):
-        text = 'Answers'
-        return Link('', text)
-
     def specifications(self):
         text = 'Blueprints'
         return Link('', text)
 
-    def branches(self):
-        text = 'Code'
+    def translations(self):
+        text = 'Translations'
+        return Link('', text)
+
+    def answers(self):
+        text = 'Answers'
         return Link('', text)

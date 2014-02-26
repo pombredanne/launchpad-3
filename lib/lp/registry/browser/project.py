@@ -110,7 +110,10 @@ from lp.services.webapp import (
     )
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.breadcrumb import Breadcrumb
-from lp.services.webapp.menu import NavigationMenu
+from lp.services.webapp.menu import (
+    ALL_LINKS,
+    NavigationMenu,
+    )
 
 
 class ProjectNavigation(Navigation,
@@ -183,17 +186,10 @@ class ProjectFacets(StandardLaunchpadFacets):
 
     @property
     def enable_only(self):
-        if self.has_products:
-            return [
-                'overview',
-                'branches',
-                'bugs',
-                'specifications',
-                'translations',
-                'answers',
-                ]
-        else:
+        if not self.has_products:
             return ['overview']
+        else:
+            return ALL_LINKS
 
 
 class ProjectAdminMenuMixin:
