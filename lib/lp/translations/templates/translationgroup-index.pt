@@ -86,7 +86,7 @@
                      condition="not:view/user_can_edit">
                     <a tal:condition="
                          translator/context/required:launchpad.Edit"
-                         tal:attributes="href string:${translator/code}/+edit"
+                         tal:attributes="href translator/context/fmt:url/+edit"
                          class="edit sprite action-icon"></a>
                   </tal:notadmin>
                 </td>
@@ -99,11 +99,11 @@
                 </td>
                 <td tal:condition="view/user_can_edit">
                   <a tal:attributes="
-                      href translator/code;
+                      href translator/context/fmt:url;
                       id string:edit-${translator/code}-translator"
                      title="Change translator and documentation link"
                      alt="Change" class="edit sprite"></a>
-                  <a tal:attributes="href string:${translator/code}/+remove"
+                  <a tal:attributes="href translator/context/fmt:url/+remove"
                      alt="Remove" title="Remove translator"
                      class="remove sprite"></a>
                 </td>
