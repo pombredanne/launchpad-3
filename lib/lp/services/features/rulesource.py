@@ -6,6 +6,7 @@
 __all__ = [
     'DuplicatePriorityError',
     'FeatureRuleSource',
+    'MemoryFeatureRuleSource',
     'NullFeatureRuleSource',
     'StormFeatureRuleSource',
     ]

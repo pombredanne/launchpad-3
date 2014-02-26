@@ -7,11 +7,17 @@ __metaclass__ = type
 __all__ = []
 
 from lp.services.features import (
-    getFeatureFlag,
     get_relevant_feature_controller,
+    getFeatureFlag,
     )
-from lp.services.features.rulesource import StormFeatureRuleSource
-from lp.services.features.testing import FeatureFixture
+from lp.services.features.rulesource import (
+    MemoryFeatureRuleSource,
+    StormFeatureRuleSource,
+    )
+from lp.services.features.testing import (
+    FeatureFixture,
+    MemoryFeatureFixture,
+    )
 from lp.testing import (
     layers,
     TestCase,
@@ -77,3 +83,17 @@ class TestFeatureFixture(FeatureFixturesTestsMixin, TestCase):
         self.assertIsInstance(
             get_relevant_feature_controller().rule_source,
             StormFeatureRuleSource)
+
+
+class TestMemoryFeatureFixture(FeatureFixturesTestsMixin, TestCase):
+    """Tests for the feature flags test fixture."""
+
+    layer = layers.FunctionalLayer
+
+    fixture_cls = MemoryFeatureFixture
+
+    def test_fixture_uses_memory(self):
+        self.useFixture(self.fixture_cls({'one': '1'}))
+        self.assertIsInstance(
+            get_relevant_feature_controller().rule_source,
+            MemoryFeatureRuleSource)
