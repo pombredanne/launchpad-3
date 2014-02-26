@@ -202,26 +202,23 @@
 
     Y.on('load', function() {
         var logged_in = LP.links['me'] !== undefined;
-
+        var ic = Y.lp.code.branchmergeproposal.inlinecomments;
         if (logged_in) {
             var comment = new Y.lp.app.comment.CodeReviewComment();
             comment.render();
 
             comment._add_comment_success = function () {
                 var lp_client = new Y.lp.client.Launchpad();
-                var ns = Y.lp.code.branchmergeproposal.inlinecomments;
-                var diff_timestamp = (
-                    LP.cache.preview_diff_timestamps.slice(-1)[0]);
                 var config = {
                     on: {
                         success: function (r) {
                             LP.cache.published_inline_comments = r;
                             LP.cache.draft_inline_comments = null;
-                            ns.populate_existing_comments();
+                            ic.populate_existing_comments();
                         },
                     },
                     parameters: {
-                        diff_timestamp: diff_timestamp,
+                        previewdiff_id: ic.current_previewdiff_id,
                     }
                 };
                 lp_client.named_get(
@@ -259,7 +256,9 @@
             '.expander-content',
             false,
             Y.lp.code.branch.revisionexpander.bmp_diff_loader);
-        Y.lp.code.branchmergeproposal.inlinecomments.setup_inline_comments();
+        var previewdiff_id = LP.cache.previewdiff_ids.slice(-1)[0];
+        var ic = Y.lp.code.branchmergeproposal.inlinecomments;
+        ic.setup_inline_comments(previewdiff_id);
     });
   });
 <tal:script replace="structure string:&lt;/script&gt;" />
