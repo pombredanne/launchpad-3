@@ -182,7 +182,6 @@
         classes="
             SprintFacets
             SprintOverviewMenu
-            SprintSetFacets
             SprintSetNavigationMenu
             SprintSpecificationsMenu
             "
