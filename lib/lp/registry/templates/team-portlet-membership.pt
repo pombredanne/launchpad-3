@@ -60,7 +60,7 @@
           <tal:user condition="not: context/teamowner/is_team">
             You are the owner of this team.
           </tal:user>
-          <tal:absentee-owner condition="not: view/user_is_active_member">
+          <tal:absentee-owner condition="not: view/userIsParticipant">
             You are not currently an active member.
           </tal:absentee-owner>
       </tal:is-owner>

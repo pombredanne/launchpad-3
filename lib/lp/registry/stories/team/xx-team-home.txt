@@ -129,6 +129,14 @@ that, though.
     You are a member of the team that owns this team.
     You are not currently an active member...
 
+    >>> browser.getLink('Add member').click()
+    >>> browser.getControl('New member').value = 'admins'
+    >>> browser.getControl('Add Member').click()
+    >>> browser.open('http://launchpad.dev/~rosetta-admins')
+    >>> print extract_text(
+    ...     find_tag_by_id(browser.contents, 'your-involvement'))
+    You are a member of the team that owns this team.
+
     >>> browser.open('http://launchpad.dev/~ubuntu-team')
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'your-involvement'))
