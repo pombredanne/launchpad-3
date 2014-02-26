@@ -13,7 +13,10 @@ from lp.services.features import (
     install_feature_controller,
     )
 from lp.services.features.flags import FeatureController
-from lp.services.features.rulesource import StormFeatureRuleSource
+from lp.services.features.rulesource import (
+    MemoryFeatureRuleSource,
+    StormFeatureRuleSource,
+    )
 from lp.testing import (
     layers,
     TestCase,
@@ -207,19 +210,17 @@ test_rules_list = [
     ]
 
 
-class TestStormFeatureRuleSource(TestCase):
-
-    layer = layers.DatabaseFunctionalLayer
+class FeatureRuleSourceTestsMixin:
 
     def test_getAllRulesAsTuples(self):
-        source = StormFeatureRuleSource()
+        source = self.makeSource()
         source.setAllRules(test_rules_list)
         self.assertEquals(
             test_rules_list,
             list(source.getAllRulesAsTuples()))
 
     def test_getAllRulesAsText(self):
-        source = StormFeatureRuleSource()
+        source = self.makeSource()
         source.setAllRules(test_rules_list)
         self.assertEquals(
             """\
@@ -232,7 +233,7 @@ ui.icing\tdefault\t100\t3.0
 
     def test_setAllRulesFromText(self):
         # We will overwrite existing data.
-        source = StormFeatureRuleSource()
+        source = self.makeSource()
         source.setAllRules(test_rules_list)
         source.setAllRulesFromText("""
 
@@ -250,3 +251,19 @@ flag2   default     0\ton
                 ],
             },
             source.getAllRulesAsDict())
+
+
+class TestStormFeatureRuleSource(FeatureRuleSourceTestsMixin, TestCase):
+
+    layer = layers.DatabaseFunctionalLayer
+
+    def makeSource(self):
+        return StormFeatureRuleSource()
+
+
+class TestMemoryFeatureRuleSource(FeatureRuleSourceTestsMixin, TestCase):
+
+    layer = layers.FunctionalLayer
+
+    def makeSource(self):
+        return MemoryFeatureRuleSource()

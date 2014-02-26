@@ -152,6 +152,24 @@ class StormFeatureRuleSource(FeatureRuleSource):
         store.flush()
 
 
+class MemoryFeatureRuleSource(FeatureRuleSource):
+    """Access feature rules stored in non-persistent memory.
+    """
+
+    def __init__(self):
+        self.rules = []
+
+    def getAllRulesAsTuples(self):
+        return self.rules
+
+    def setAllRules(self, new_rules):
+        """Replace all existing rules with a new set.
+
+        :param new_rules: List of (name, scope, priority, value) tuples.
+        """
+        self.rules = [Rule(*r) for r in new_rules]
+
+
 class NullFeatureRuleSource(FeatureRuleSource):
     """For use in testing: everything is turned off"""
 
