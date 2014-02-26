@@ -727,7 +727,7 @@ class TestMergeProposalGetPreviewDiff(TestCaseWithFactory):
         self.mp_one = self.factory.makeBranchMergeProposal()
         self.mp_two = self.factory.makeBranchMergeProposal()
         self.preview_diff = self.mp_one.updatePreviewDiff(
-            u'Some diff', u"source_id", u"target_id")
+            'Some diff', u"source_id", u"target_id")
         transaction.commit()
 
     def test_getPreviewDiff(self):
