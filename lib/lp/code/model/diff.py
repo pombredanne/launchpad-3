@@ -371,15 +371,29 @@ class PreviewDiff(Storm):
     conflicts = Unicode()
 
     @property
-    def displayname(self):
+    def title(self):
         """See `IPreviewDiff`."""
         bmp = self.branch_merge_proposal
-        source_branch = bmp.source_branch.getBranchRevision(
-            revision_id=self.source_revision_id).sequence
-        target_branch = bmp.target_branch.getBranchRevision(
-            revision_id=self.target_revision_id).sequence
+        # XXX cprov 20140224: we fallback to revision_ids when the
+        # diff was generated for absent branch revisions (e.g. the source
+        # or target branch was overwritten). Which means some entries for
+        # the same BMP may have much wider titles depending on the
+        # branch history. It is particulary bad for rendering the diff
+        # navigator 'select' widget in the UI.
+        source_rev = bmp.source_branch.getBranchRevision(
+            revision_id=self.source_revision_id)
+        if source_rev and source_rev.sequence:
+            source_revno = u'r{0}'.format(source_rev.sequence)
+        else:
+            source_revno = self.source_revision_id
+        target_rev = bmp.target_branch.getBranchRevision(
+            revision_id=self.target_revision_id)
+        if target_rev and target_rev.sequence:
+            target_revno = u'r{0}'.format(target_rev.sequence)
+        else:
+            target_revno = self.target_revision_id
 
-        return u'r{0} into r{1}'.format(source_revno, target_revno)
+        return u'{0} into {1}'.format(source_revno, target_revno)
 
     @property
     def has_conflicts(self):
