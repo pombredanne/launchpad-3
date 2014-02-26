@@ -55,13 +55,13 @@
     <div id="your-involvement" tal:condition="request/lp:person">
       <tal:is-owner condition="view/userIsOwner">
           <tal:team condition="context/teamowner/is_team">
-            You are a member of the team that owns this team.
+            You indirectly own this team.
           </tal:team>
           <tal:user condition="not: context/teamowner/is_team">
-            You are the owner of this team.
+            You own this team.
           </tal:user>
-          <tal:absentee-owner condition="not: view/user_is_active_member">
-            You are not currently an active member.
+          <tal:absentee-owner condition="not: view/userIsParticipant">
+            You are not currently a member.
           </tal:absentee-owner>
       </tal:is-owner>
 
