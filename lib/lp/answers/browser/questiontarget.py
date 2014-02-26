@@ -16,7 +16,6 @@ __all__ = [
     'QuestionCollectionNeedAttentionView',
     'QuestionCollectionOpenCountView',
     'QuestionCollectionAnswersMenu',
-    'QuestionTargetFacetMixin',
     'QuestionTargetPortletAnswerContactsWithDetails',
     'QuestionTargetTraversalMixin',
     'QuestionTargetAnswersMenu',
@@ -884,16 +883,6 @@ class QuestionTargetPortletAnswerContactsWithDetails(LaunchpadView):
         """Override the default render() to return only JSON."""
         self.request.response.setHeader('content-type', 'application/json')
         return self.answercontact_data_js
-
-
-class QuestionTargetFacetMixin:
-    """Mixin for questiontarget facet definition."""
-
-    def answers(self):
-        """Return the link for Answers."""
-        summary = (
-            'Questions for %s' % self.context.displayname)
-        return Link('', 'Answers', summary)
 
 
 class QuestionTargetTraversalMixin:

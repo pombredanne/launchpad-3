@@ -45,10 +45,7 @@ from zope.schema import Choice
 
 from lp import _
 from lp.answers.browser.question import QuestionAddView
-from lp.answers.browser.questiontarget import (
-    QuestionCollectionAnswersMenu,
-    QuestionTargetFacetMixin,
-    )
+from lp.answers.browser.questiontarget import QuestionCollectionAnswersMenu
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -175,7 +172,7 @@ class ProjectSetContextMenu(ContextMenu):
         return Link('+all', text, icon='list')
 
 
-class ProjectFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
+class ProjectFacets(StandardLaunchpadFacets):
     """The links that will appear in the facet menu for an IProjectGroup."""
 
     usedfor = IProjectGroup

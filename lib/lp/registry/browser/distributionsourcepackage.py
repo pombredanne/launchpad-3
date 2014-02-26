@@ -33,7 +33,6 @@ from zope.interface import (
 
 from lp.answers.browser.questiontarget import (
     QuestionTargetAnswersMenu,
-    QuestionTargetFacetMixin,
     QuestionTargetTraversalMixin,
     )
 from lp.answers.enums import QuestionStatus
@@ -114,8 +113,7 @@ class DistributionSourcePackageBreadcrumb(Breadcrumb):
             self.context.sourcepackagename.name)
 
 
-class DistributionSourcePackageFacets(QuestionTargetFacetMixin,
-                                      StandardLaunchpadFacets):
+class DistributionSourcePackageFacets(StandardLaunchpadFacets):
 
     usedfor = IDistributionSourcePackage
     enable_only = ['overview', 'bugs', 'answers', 'branches']

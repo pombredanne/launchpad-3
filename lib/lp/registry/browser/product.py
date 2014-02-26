@@ -74,10 +74,7 @@ from zope.schema.vocabulary import (
 
 from lp import _
 from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
-from lp.answers.browser.questiontarget import (
-    QuestionTargetFacetMixin,
-    QuestionTargetTraversalMixin,
-    )
+from lp.answers.browser.questiontarget import QuestionTargetTraversalMixin
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -305,7 +302,7 @@ class ProductLicenseMixin:
             pass
 
 
-class ProductFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
+class ProductFacets(StandardLaunchpadFacets):
     """The links that will appear in the facet menu for an IProduct."""
 
     usedfor = IProduct
