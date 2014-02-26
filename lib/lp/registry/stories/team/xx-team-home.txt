@@ -121,13 +121,13 @@ that, though.
     >>> browser.open('http://launchpad.dev/~guadamen')
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'your-involvement'))
-    You are the owner of this team...
+    You own this team...
 
     >>> browser.open('http://launchpad.dev/~rosetta-admins')
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'your-involvement'))
-    You are a member of the team that owns this team.
-    You are not currently an active member...
+    You indirectly own this team.
+    You are not currently a member...
 
     >>> browser.getLink('Add member').click()
     >>> browser.getControl('New member').value = 'admins'
@@ -135,7 +135,7 @@ that, though.
     >>> browser.open('http://launchpad.dev/~rosetta-admins')
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'your-involvement'))
-    You are a member of the team that owns this team.
+    You indirectly own this team.
 
     >>> browser.open('http://launchpad.dev/~ubuntu-team')
     >>> print extract_text(
