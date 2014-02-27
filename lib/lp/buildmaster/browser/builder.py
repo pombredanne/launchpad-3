@@ -6,12 +6,10 @@
 __metaclass__ = type
 
 __all__ = [
-    'BuilderFacets',
     'BuilderOverviewMenu',
     'BuilderNavigation',
     'BuilderSetAddView',
     'BuilderSetBreadcrumb',
-    'BuilderSetFacets',
     'BuilderSetOverviewMenu',
     'BuilderSetNavigation',
     'BuilderSetView',
@@ -54,7 +52,6 @@ from lp.services.webapp import (
     LaunchpadView,
     Link,
     Navigation,
-    StandardLaunchpadFacets,
     stepthrough,
     )
 from lp.services.webapp.batching import StormRangeFactory
@@ -85,20 +82,6 @@ class BuilderSetBreadcrumb(Breadcrumb):
 
 class BuilderNavigation(Navigation):
     """Navigation methods for IBuilder."""
-    usedfor = IBuilder
-
-
-class BuilderSetFacets(StandardLaunchpadFacets):
-    """The links that will appear in the facet menu for an IBuilderSet."""
-    enable_only = ['overview']
-
-    usedfor = IBuilderSet
-
-
-class BuilderFacets(StandardLaunchpadFacets):
-    """The links that will appear in the facet menu for an IBuilder."""
-    enable_only = ['overview']
-
     usedfor = IBuilder
 
 

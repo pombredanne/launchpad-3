@@ -15,7 +15,6 @@ __all__ = [
     'SprintNavigation',
     'SprintOverviewMenu',
     'SprintSetBreadcrumb',
-    'SprintSetFacets',
     'SprintSetNavigation',
     'SprintSetView',
     'SprintSpecificationsMenu',
@@ -155,13 +154,6 @@ class SprintSetNavigation(GetitemNavigation):
 class SprintSetBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `ISprintSet`."""
     text = 'Meetings'
-
-
-class SprintSetFacets(StandardLaunchpadFacets):
-    """The facet menu for an ISprintSet."""
-
-    usedfor = ISprintSet
-    enable_only = ['overview', ]
 
 
 class HasSprintsView(LaunchpadView):

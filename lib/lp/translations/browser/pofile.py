@@ -7,7 +7,6 @@ __metaclass__ = type
 
 __all__ = [
     'POExportView',
-    'POFileFacets',
     'POFileFilteredView',
     'POFileNavigation',
     'POFileNavigationMenu',
@@ -44,7 +43,6 @@ from lp.services.webapp.batching import BatchNavigator
 from lp.services.webapp.escaping import structured
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.translations.browser.poexportrequest import BaseExportView
-from lp.translations.browser.potemplate import POTemplateFacets
 from lp.translations.browser.translationmessage import (
     BaseTranslationView,
     CurrentTranslationMessageView,
@@ -88,13 +86,6 @@ class POFileNavigation(Navigation):
                 "%r is not a valid sequence number." % name)
 
         return potmsgset.getCurrentTranslationMessageOrDummy(self.context)
-
-
-class POFileFacets(POTemplateFacets):
-    usedfor = IPOFile
-
-    def __init__(self, context):
-        POTemplateFacets.__init__(self, context.potemplate)
 
 
 class POFileMenuMixin:
