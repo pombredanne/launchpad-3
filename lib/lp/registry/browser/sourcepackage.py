@@ -202,29 +202,12 @@ class SourcePackageBreadcrumb(Breadcrumb):
 class SourcePackageFacets(StandardLaunchpadFacets):
 
     usedfor = ISourcePackage
-    enable_only = ['overview', 'bugs', 'branches', 'translations']
-
-    def overview(self):
-        text = 'Overview'
-        summary = u'General information about {0}'.format(
-            self.context.displayname)
-        return Link('', text, summary)
-
-    def bugs(self):
-        text = 'Bugs'
-        summary = u'Bugs reported about {0}'.format(self.context.displayname)
-        return Link('', text, summary)
-
-    def branches(self):
-        text = 'Code'
-        summary = u'Branches for {0}'.format(self.context.displayname)
-        return Link('', text, summary)
-
-    def translations(self):
-        text = 'Translations'
-        summary = u'Translations of {0} in Launchpad'.format(
-            self.context.displayname)
-        return Link('', text, summary)
+    enable_only = [
+        'overview',
+        'branches',
+        'bugs',
+        'translations',
+        ]
 
 
 class SourcePackageOverviewMenu(ApplicationMenu):

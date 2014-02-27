@@ -500,10 +500,6 @@
             name="+portlet-published"
             template="../templates/distroseriesbinarypackage-portlet-published.pt"/>
     </browser:pages>
-    <browser:menus
-        classes="
-            DistroSeriesBinaryPackageFacets"
-        module="lp.soyuz.browser.distroseriesbinarypackage"/>
 
         <browser:defaultView
             for="lp.soyuz.interfaces.distroarchseries.IDistroArchSeries"

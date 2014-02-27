@@ -88,13 +88,9 @@
         permission="launchpad.Edit"
         template="../templates/builder-edit.pt"/>
     <browser:menus
-        classes="
-            BuilderSetFacets
-            BuilderSetOverviewMenu"
+        classes="BuilderSetOverviewMenu"
         module="lp.buildmaster.browser.builder"/>
     <browser:menus
-        classes="
-            BuilderFacets
-            BuilderOverviewMenu"
+        classes="BuilderOverviewMenu"
         module="lp.buildmaster.browser.builder"/>
 </configure>

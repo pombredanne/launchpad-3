@@ -31,7 +31,6 @@ __all__ = [
     'ProductReviewLicenseView',
     'ProductSeriesSetView',
     'ProductSetBreadcrumb',
-    'ProductSetFacets',
     'ProductSetNavigation',
     'ProductSetReviewLicensesView',
     'ProductSetView',
@@ -75,10 +74,7 @@ from zope.schema.vocabulary import (
 
 from lp import _
 from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
-from lp.answers.browser.questiontarget import (
-    QuestionTargetFacetMixin,
-    QuestionTargetTraversalMixin,
-    )
+from lp.answers.browser.questiontarget import QuestionTargetTraversalMixin
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -306,40 +302,10 @@ class ProductLicenseMixin:
             pass
 
 
-class ProductFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
+class ProductFacets(StandardLaunchpadFacets):
     """The links that will appear in the facet menu for an IProduct."""
 
     usedfor = IProduct
-
-    enable_only = ['overview', 'bugs', 'answers', 'specifications',
-                   'translations', 'branches']
-
-    links = StandardLaunchpadFacets.links
-
-    def overview(self):
-        text = 'Overview'
-        summary = 'General information about %s' % self.context.displayname
-        return Link('', text, summary)
-
-    def bugs(self):
-        text = 'Bugs'
-        summary = 'Bugs reported about %s' % self.context.displayname
-        return Link('', text, summary)
-
-    def branches(self):
-        text = 'Code'
-        summary = 'Branches for %s' % self.context.displayname
-        return Link('', text, summary)
-
-    def specifications(self):
-        text = 'Blueprints'
-        summary = 'Feature specifications for %s' % self.context.displayname
-        return Link('', text, summary)
-
-    def translations(self):
-        text = 'Translations'
-        summary = 'Translations of %s in Launchpad' % self.context.displayname
-        return Link('', text, summary)
 
 
 class ProductInvolvementView(PillarInvolvementView):
@@ -634,14 +600,6 @@ def _cmp_distros(a, b):
 class ProductSetBreadcrumb(Breadcrumb):
     """Return a breadcrumb for an `IProductSet`."""
     text = "Projects"
-
-
-class ProductSetFacets(StandardLaunchpadFacets):
-    """The links that will appear in the facet menu for the IProductSet."""
-
-    usedfor = IProductSet
-
-    enable_only = ['overview', 'branches']
 
 
 class SortSeriesMixin:
