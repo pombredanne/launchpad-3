@@ -15,7 +15,6 @@ __all__ = [
     'SprintNavigation',
     'SprintOverviewMenu',
     'SprintSetBreadcrumb',
-    'SprintSetFacets',
     'SprintSetNavigation',
     'SprintSetView',
     'SprintSpecificationsMenu',
@@ -85,12 +84,10 @@ class SprintFacets(StandardLaunchpadFacets):
     """The links that will appear in the facet menu for an ISprint."""
 
     usedfor = ISprint
-    enable_only = ['overview', 'specifications']
-
-    def specifications(self):
-        text = 'Blueprints'
-        summary = 'Topics for discussion at %s' % self.context.title
-        return Link('', text, summary)
+    enable_only = [
+        'overview',
+        'specifications',
+        ]
 
 
 class SprintNavigation(Navigation):
@@ -155,13 +152,6 @@ class SprintSetNavigation(GetitemNavigation):
 class SprintSetBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `ISprintSet`."""
     text = 'Meetings'
-
-
-class SprintSetFacets(StandardLaunchpadFacets):
-    """The facet menu for an ISprintSet."""
-
-    usedfor = ISprintSet
-    enable_only = ['overview', ]
 
 
 class HasSprintsView(LaunchpadView):

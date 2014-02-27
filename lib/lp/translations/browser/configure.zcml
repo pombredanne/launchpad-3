@@ -68,6 +68,11 @@
         <browser:defaultView
             for="lp.translations.interfaces.translator.ITranslator"
             name="+admin"/>
+        <browser:url
+            for="lp.translations.interfaces.translator.ITranslator"
+            path_expression="string:${language/code}"
+            attribute_to_parent="translationgroup"
+            rootsite="translations"/>
         <browser:page
             name="+admin"
             for="lp.translations.interfaces.translator.ITranslator"
@@ -158,9 +163,7 @@
             rootsite="translations"/>
         <browser:menus
             module="lp.translations.browser.pofile"
-            classes="
-                POFileFacets
-                POFileNavigationMenu"/>
+            classes="POFileNavigationMenu"/>
         <browser:defaultView
             for="lp.translations.interfaces.pofile.IPOFile"
             name="+translate"/>
@@ -358,9 +361,7 @@
             class="lp.translations.browser.potemplate.POTemplateExportView"/>
         <browser:menus
             module="lp.translations.browser.potemplate"
-            classes="
-                POTemplateFacets
-                POTemplateMenu"/>
+            classes="POTemplateMenu"/>
         <browser:url
             for="lp.translations.interfaces.potemplate.IPOTemplateSubset"
             urldata="lp.translations.browser.potemplate.POTemplateSubsetURL"/>
@@ -453,9 +454,7 @@
             rootsite="translations"/>
         <browser:menus
             module="lp.translations.browser.translationmessage"
-            classes="
-                CurrentTranslationMessageFacets
-                CurrentTranslationMessageAppMenus"/>
+            classes="CurrentTranslationMessageAppMenus"/>
         <browser:defaultView
             for="lp.translations.interfaces.translationmessage.ITranslationMessage"
             name="+index"/>

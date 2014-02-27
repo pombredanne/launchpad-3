@@ -111,6 +111,7 @@ from lp.registry.interfaces.projectgroup import IProjectGroupSet
 from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.services.config import config
+from lp.services.features import getFeatureFlag
 from lp.services.helpers import intOrZero
 from lp.services.identity.interfaces.account import AccountStatus
 from lp.services.propertycache import cachedproperty
@@ -457,42 +458,49 @@ class MaintenanceMessage:
 class LaunchpadRootFacets(StandardLaunchpadFacets):
 
     usedfor = ILaunchpadRoot
-
-    enable_only = ['overview', 'bugs', 'answers', 'specifications',
-                   'translations', 'branches']
+    enable_only = [
+        'overview',
+        'branches',
+        'bugs',
+        'specifications',
+        'translations',
+        'answers',
+        ]
 
     def overview(self):
         target = ''
         text = 'Launchpad Home'
-        return Link(target, text)
+        return Link(target, text, site='mainsite')
 
     def translations(self):
-        target = ''
         text = 'Translations'
-        return Link(target, text)
+        target = 'translations' if self.mainsite_only else ''
+        site = 'mainsite' if self.mainsite_only else 'translations'
+        return Link(target, text, site=site)
 
     def bugs(self):
-        target = ''
         text = 'Bugs'
-        return Link(target, text)
+        target = 'bugs' if self.mainsite_only else ''
+        site = 'mainsite' if self.mainsite_only else 'bugs'
+        return Link(target, text, site=site)
 
     def answers(self):
-        target = ''
         text = 'Answers'
-        summary = 'Launchpad Answer Tracker'
-        return Link(target, text, summary)
+        target = 'questions' if self.mainsite_only else ''
+        site = 'mainsite' if self.mainsite_only else 'answers'
+        return Link(target, text, site=site)
 
     def specifications(self):
-        target = ''
         text = 'Blueprints'
-        summary = 'Launchpad feature specification tracker.'
-        return Link(target, text, summary)
+        target = 'specs' if self.mainsite_only else ''
+        site = 'mainsite' if self.mainsite_only else 'blueprints'
+        return Link(target, text, site=site)
 
     def branches(self):
-        target = ''
         text = 'Code'
-        summary = 'The Code Bazaar'
-        return Link(target, text, summary)
+        target = '+code' if self.mainsite_only else ''
+        site = 'mainsite' if self.mainsite_only else 'code'
+        return Link(target, text, site=site)
 
 
 class LoginStatus:

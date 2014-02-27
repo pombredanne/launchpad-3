@@ -10,7 +10,6 @@ __all__ = [
     'contains_translations',
     'convert_translationmessage_to_submission',
     'CurrentTranslationMessageAppMenus',
-    'CurrentTranslationMessageFacets',
     'CurrentTranslationMessageIndexView',
     'CurrentTranslationMessagePageView',
     'CurrentTranslationMessageView',
@@ -56,7 +55,6 @@ from lp.translations.browser.browser_helpers import (
     count_lines,
     text_to_html,
     )
-from lp.translations.browser.potemplate import POTemplateFacets
 from lp.translations.interfaces.pofile import IPOFileAlternativeLanguage
 from lp.translations.interfaces.side import ITranslationSideTraitsSet
 from lp.translations.interfaces.translationmessage import (
@@ -190,13 +188,6 @@ class CustomDropdownWidget(DropdownWidget):
     def _div(self, cssClass, contents, **kw):
         """Render the select widget without the div tag."""
         return contents
-
-
-class CurrentTranslationMessageFacets(POTemplateFacets):
-    usedfor = ITranslationMessage
-
-    def __init__(self, context):
-        POTemplateFacets.__init__(self, context.browser_pofile.potemplate)
 
 
 class CurrentTranslationMessageAppMenus(ApplicationMenu):

@@ -30,7 +30,6 @@ __all__ = [
     'DistributionSetActionNavigationMenu',
     'DistributionSetBreadcrumb',
     'DistributionSetContextMenu',
-    'DistributionSetFacets',
     'DistributionSetNavigation',
     'DistributionSetView',
     'DistributionSpecificationsMenu',
@@ -53,10 +52,7 @@ from zope.security.checker import canWrite
 from zope.security.interfaces import Unauthorized
 
 from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
-from lp.answers.browser.questiontarget import (
-    QuestionTargetFacetMixin,
-    QuestionTargetTraversalMixin,
-    )
+from lp.answers.browser.questiontarget import QuestionTargetTraversalMixin
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -194,35 +190,14 @@ class DistributionSetNavigation(Navigation):
         return self.redirectSubTree(canonical_url(distribution))
 
 
-class DistributionFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
+class DistributionFacets(StandardLaunchpadFacets):
 
     usedfor = IDistribution
-
-    enable_only = [
-        'overview',
-        'branches',
-        'bugs',
-        'answers',
-        'specifications',
-        'translations',
-        ]
-
-    def specifications(self):
-        text = 'Blueprints'
-        summary = 'Feature specifications for %s' % self.context.displayname
-        return Link('', text, summary)
 
 
 class DistributionSetBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `IDistributionSet`."""
     text = 'Distributions'
-
-
-class DistributionSetFacets(StandardLaunchpadFacets):
-
-    usedfor = IDistributionSet
-
-    enable_only = ['overview', ]
 
 
 class DistributionSetContextMenu(ContextMenu):

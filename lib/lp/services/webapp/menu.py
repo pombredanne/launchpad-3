@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'ALL_LINKS',
     'enabled_with_permission',
     'get_current_view',
     'get_facet',
@@ -346,13 +347,8 @@ class FacetMenu(MenuBase):
     # See IFacetMenu.
     defaultlink = None
 
-    def _filterLink(self, name, link):
-        """Hook to allow subclasses to alter links based on the name used."""
-        return link
-
     def _get_link(self, name):
-        return IFacetLink(
-            self._filterLink(name, MenuBase._get_link(self, name)))
+        return IFacetLink(MenuBase._get_link(self, name))
 
     def initLink(self, linkname, request_url=None):
         link = super(FacetMenu, self).initLink(linkname, request_url)

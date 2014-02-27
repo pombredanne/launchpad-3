@@ -8,7 +8,6 @@ __all__ = [
     'POTemplateAdminView',
     'POTemplateBreadcrumb',
     'POTemplateEditView',
-    'POTemplateFacets',
     'POTemplateExportView',
     'POTemplateMenu',
     'POTemplateNavigation',
@@ -52,11 +51,7 @@ from lp.app.enums import (
     )
 from lp.app.errors import NotFoundError
 from lp.app.validators.name import valid_name
-from lp.registry.browser.productseries import ProductSeriesFacets
-from lp.registry.browser.sourcepackage import SourcePackageFacets
-from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.role import IPersonRoles
-from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.packaging import Packaging
 from lp.registry.model.product import Product
 from lp.registry.model.productseries import ProductSeries
@@ -70,7 +65,6 @@ from lp.services.webapp import (
     Link,
     Navigation,
     NavigationMenu,
-    StandardLaunchpadFacets,
     )
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.breadcrumb import Breadcrumb
@@ -144,61 +138,6 @@ class POTemplateNavigation(Navigation):
             # check the kind of POST we got.  A logout will also be a
             # POST and we should not create a POFile in that case.
             return self.context.newPOFile(name, owner=user)
-
-
-class POTemplateFacets(StandardLaunchpadFacets):
-    usedfor = IPOTemplate
-
-    def __init__(self, context):
-        StandardLaunchpadFacets.__init__(self, context)
-        target = context.translationtarget
-        if IProductSeries.providedBy(target):
-            self._is_product_series = True
-            self.target_facets = ProductSeriesFacets(target)
-        elif ISourcePackage.providedBy(target):
-            self._is_product_series = False
-            self.target_facets = SourcePackageFacets(target)
-        else:
-            # We don't know yet how to handle this target.
-            raise NotImplementedError
-
-        # Enable only the menus that the translation target uses.
-        self.enable_only = self.target_facets.enable_only
-
-        # From an IPOTemplate URL, we reach its translationtarget (either
-        # ISourcePackage or IProductSeries using self.target.
-        self.target = '../../'
-
-    def overview(self):
-        overview_link = self.target_facets.overview()
-        overview_link.target = self.target
-        return overview_link
-
-    def translations(self):
-        translations_link = self.target_facets.translations()
-        translations_link.target = self.target
-        return translations_link
-
-    def bugs(self):
-        bugs_link = self.target_facets.bugs()
-        bugs_link.target = self.target
-        return bugs_link
-
-    def answers(self):
-        answers_link = self.target_facets.answers()
-        answers_link.target = self.target
-        return answers_link
-
-    def specifications(self):
-        specifications_link = self.target_facets.specifications()
-        specifications_link.target = self.target
-        return specifications_link
-
-    def branches(self):
-        branches_link = self.target_facets.branches()
-        if not self._is_product_series:
-            branches_link.target = self.target
-        return branches_link
 
 
 class POTemplateMenu(NavigationMenu):
@@ -807,28 +746,18 @@ class POTemplateSubsetURL:
     implements(ICanonicalUrlData)
 
     rootsite = 'mainsite'
+    path = '+pots'
 
     def __init__(self, context):
         self.context = context
-
-    @property
-    def path(self):
-        potemplatesubset = self.context
-        if potemplatesubset.distroseries is not None:
-            assert potemplatesubset.productseries is None
-            assert potemplatesubset.sourcepackagename is not None
-            return '+source/%s/+pots' % (
-                potemplatesubset.sourcepackagename.name)
-        else:
-            assert potemplatesubset.productseries is not None
-            return '+pots'
 
     @property
     def inside(self):
         potemplatesubset = self.context
         if potemplatesubset.distroseries is not None:
             assert potemplatesubset.productseries is None
-            return potemplatesubset.distroseries
+            return potemplatesubset.distroseries.getSourcePackage(
+                potemplatesubset.sourcepackagename)
         else:
             assert potemplatesubset.productseries is not None
             return potemplatesubset.productseries
