@@ -65,12 +65,4 @@ class PersonProductFacets(StandardLaunchpadFacets):
     """The links that will appear in the facet menu for an IPerson."""
 
     usedfor = IPersonProduct
-
     enable_only = ['branches']
-
-    def branches(self):
-        text = 'Code'
-        summary = ('Bazaar Branches of %s owned by %s' %
-                   (self.context.product.displayname,
-                    self.context.person.displayname))
-        return Link('', text, summary)

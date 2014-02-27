@@ -84,12 +84,10 @@ class SprintFacets(StandardLaunchpadFacets):
     """The links that will appear in the facet menu for an ISprint."""
 
     usedfor = ISprint
-    enable_only = ['overview', 'specifications']
-
-    def specifications(self):
-        text = 'Blueprints'
-        summary = 'Topics for discussion at %s' % self.context.title
-        return Link('', text, summary)
+    enable_only = [
+        'overview',
+        'specifications',
+        ]
 
 
 class SprintNavigation(Navigation):

@@ -207,8 +207,13 @@ class DistroSeriesBreadcrumb(Breadcrumb):
 class DistroSeriesFacets(StandardLaunchpadFacets):
 
     usedfor = IDistroSeries
-    enable_only = ['overview', 'branches', 'bugs', 'specifications',
-                   'translations']
+    enable_only = [
+        'overview',
+        'branches',
+        'bugs',
+        'specifications',
+        'translations',
+        ]
 
 
 class DistroSeriesOverviewMenu(
