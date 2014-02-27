@@ -706,6 +706,14 @@ def canonical_url(
             raise NoCanonicalUrl(obj, obj)
         rootsite = obj_urldata.rootsite
 
+    # The app.mainsite_only.canonical_url feature flag forces facet
+    # vhost links to mainsite.
+    facet_rootsites = (
+        'answers', 'blueprints', 'code', 'bugs', 'translations')
+    if (getFeatureFlag('app.mainsite_only.canonical_url')
+            and rootsite in facet_rootsites):
+        rootsite = 'mainsite'
+
     # The request is needed when there's no rootsite specified.
     if request is None:
         # Look for a request from the interaction.
