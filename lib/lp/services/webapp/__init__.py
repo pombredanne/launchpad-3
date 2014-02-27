@@ -37,6 +37,7 @@ __all__ = [
     'Utf8PreferredCharsets',
     ]
 
+from lp.services.features import getFeatureFlag
 from lp.services.webapp.escaping import structured
 from lp.services.webapp.menu import (
     ApplicationMenu,
@@ -95,42 +96,40 @@ class StandardLaunchpadFacets(FacetMenu):
 
     defaultlink = 'overview'
 
-    def _filterLink(self, name, link):
-        if link.site is None:
-            if name == 'specifications':
-                link.site = 'blueprints'
-            elif name == 'branches':
-                link.site = 'code'
-            elif name == 'translations':
-                link.site = 'translations'
-            elif name == 'answers':
-                link.site = 'answers'
-            elif name == 'bugs':
-                link.site = 'bugs'
-            else:
-                link.site = 'mainsite'
-        return link
+    @property
+    def mainsite_only(self):
+        return getFeatureFlag('app.mainsite_only.canonical_url')
 
     def overview(self):
         text = 'Overview'
-        return Link('', text)
+        return Link('', text, site='mainsite')
 
     def branches(self):
         text = 'Code'
-        return Link('', text)
+        target = '+branches' if self.mainsite_only else ''
+        site = 'mainsite' if self.mainsite_only else 'code'
+        return Link(target, text, site=site)
 
     def bugs(self):
         text = 'Bugs'
-        return Link('', text)
+        target = '+bugs' if self.mainsite_only else ''
+        site = 'mainsite' if self.mainsite_only else 'bugs'
+        return Link(target, text, site=site)
 
     def specifications(self):
         text = 'Blueprints'
-        return Link('', text)
+        target = '+specs' if self.mainsite_only else ''
+        site = 'mainsite' if self.mainsite_only else 'blueprints'
+        return Link(target, text, site=site)
 
     def translations(self):
         text = 'Translations'
-        return Link('', text)
+        target = '+translations' if self.mainsite_only else ''
+        site = 'mainsite' if self.mainsite_only else 'translations'
+        return Link(target, text, site=site)
 
     def answers(self):
         text = 'Answers'
-        return Link('', text)
+        target = '+questions' if self.mainsite_only else ''
+        site = 'mainsite' if self.mainsite_only else 'answers'
+        return Link(target, text, site=site)
