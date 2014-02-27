@@ -746,28 +746,18 @@ class POTemplateSubsetURL:
     implements(ICanonicalUrlData)
 
     rootsite = 'mainsite'
+    path = '+pots'
 
     def __init__(self, context):
         self.context = context
-
-    @property
-    def path(self):
-        potemplatesubset = self.context
-        if potemplatesubset.distroseries is not None:
-            assert potemplatesubset.productseries is None
-            assert potemplatesubset.sourcepackagename is not None
-            return '+source/%s/+pots' % (
-                potemplatesubset.sourcepackagename.name)
-        else:
-            assert potemplatesubset.productseries is not None
-            return '+pots'
 
     @property
     def inside(self):
         potemplatesubset = self.context
         if potemplatesubset.distroseries is not None:
             assert potemplatesubset.productseries is None
-            return potemplatesubset.distroseries
+            return potemplatesubset.distroseries.getSourcePackage(
+                potemplatesubset.sourcepackagename)
         else:
             assert potemplatesubset.productseries is not None
             return potemplatesubset.productseries
