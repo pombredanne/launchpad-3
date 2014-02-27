@@ -757,7 +757,7 @@ class POTemplateSubsetURL:
         if potemplatesubset.distroseries is not None:
             assert potemplatesubset.productseries is None
             return potemplatesubset.distroseries.getSourcePackage(
-                potemplatesubset.sourcepackagename.name)
+                potemplatesubset.sourcepackagename)
         else:
             assert potemplatesubset.productseries is not None
             return potemplatesubset.productseries
