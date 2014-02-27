@@ -185,9 +185,7 @@
     <div id="review-diff" tal:condition="view/preview_diff">
       <h2>Preview Diff </h2>
 
-      <div class="diff-navigator"
-           tal:condition="features/code.inline_diff_comments.enabled">
-        <div tal:replace="structure context/@@++diff-nav"/>
+      <div class="diff-navigator">
       </div>
 
       <div class="diff-content">
@@ -205,8 +203,6 @@
           'lp.code.branchmergeproposal.updater', 'lp.app.widgets.expander',
           'lp.code.branch.revisionexpander',
           'lp.code.branchmergeproposal.inlinecomments', function(Y) {
-
-    var ic = Y.lp.code.branchmergeproposal.inlinecomments;
 
     Y.on('load', function() {
         var logged_in = LP.links['me'] !== undefined;

@@ -165,9 +165,6 @@
             name="++diff"
             template="../templates/branchmergeproposal-diff.pt"/>
         <browser:page
-            name="++diff-nav"
-            template="../templates/branchmergeproposal-diff-navigator.pt"/>
-        <browser:page
             name="++diff-stats"
             template="../templates/branchmergeproposal-diff-stats.pt"/>
         <browser:page
