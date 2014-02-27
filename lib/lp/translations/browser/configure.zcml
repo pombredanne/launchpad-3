@@ -68,6 +68,11 @@
         <browser:defaultView
             for="lp.translations.interfaces.translator.ITranslator"
             name="+admin"/>
+        <browser:url
+            for="lp.translations.interfaces.translator.ITranslator"
+            path_expression="string:${language/code}"
+            attribute_to_parent="translationgroup"
+            rootsite="translations"/>
         <browser:page
             name="+admin"
             for="lp.translations.interfaces.translator.ITranslator"
