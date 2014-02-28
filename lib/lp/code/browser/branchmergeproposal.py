@@ -639,17 +639,6 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
                 self.context).event_key
         if getFeatureFlag("code.inline_diff_comments.enabled"):
             cache.objects['inline_diff_comments'] = True
-            cache.objects['previewdiff_ids'] = [
-                pd.id for pd in self.context.preview_diffs]
-            if self.context.preview_diff:
-                cache.objects['published_inline_comments'] = (
-                    self.context.getInlineComments(self.preview_diff.id))
-                cache.objects['draft_inline_comments'] = (
-                    self.context.getDraftInlineComments(
-                        self.preview_diff.id, self.user))
-            else:
-                cache.objects['published_inline_comments'] = []
-                cache.objects['draft_inline_comments'] = []
 
     @action('Claim', name='claim')
     def claim_action(self, action, data):
