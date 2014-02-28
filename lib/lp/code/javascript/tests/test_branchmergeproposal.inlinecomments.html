@@ -53,6 +53,7 @@ GNU Affero General Public License version 3 (see the file LICENSE).
               src="../../../../../build/js/lp/app/inlineedit/editor.js"></script>
 
       <!-- The module under test. -->
+      <script type="text/javascript" src="../branchmergeproposal.reviewcomment.js"></script>
       <script type="text/javascript" src="../branchmergeproposal.inlinecomments.js"></script>
 
       <!-- The test suite -->
@@ -70,6 +71,22 @@ GNU Affero General Public License version 3 (see the file LICENSE).
         <ul id="suites">
             <li>lp.code.branchmergeproposal.inlinecomments.test</li>
         </ul>
+
+      <div id="review-diff">
+
+        <h2>Preview Diff</h2>
+
+        <div class="diff-navigator">
+        </div>
+
+        <div class="diff-content">
+
+        <div>
+        <div>
+           <ul class="horizontal">
+           </ul>
+        </div>
+
         <table class="diff">
             <tbody>
                 <tr id="diff-line-1">
@@ -86,5 +103,11 @@ GNU Affero General Public License version 3 (see the file LICENSE).
                 </tr>
             </tbody>
         </table>
+
+        </div>
+        </div>
+
+      </div>
+
     </body>
 </html>
