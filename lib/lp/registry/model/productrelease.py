@@ -160,7 +160,7 @@ class ProductRelease(SQLBase):
         # wrongly encoded.
         if from_api:
             file_content = get_raw_form_value_from_current_request(
-                'file_content')
+                file_content, 'file_content')
         file_obj, file_size = self._getFileObjectAndSize(file_content)
 
         alias = getUtility(ILibraryFileAliasSet).create(
@@ -172,7 +172,7 @@ class ProductRelease(SQLBase):
             # one has been wrongly encoded.
             if from_api:
                 signature_content = get_raw_form_value_from_current_request(
-                    'signature_content')
+                    signature_content, 'signature_content')
             signature_obj, signature_size = self._getFileObjectAndSize(
                 signature_content)
             signature_filename = self.normalizeFilename(signature_filename)
