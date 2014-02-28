@@ -1271,7 +1271,7 @@ class Bug(SQLBase, InformationTypeMixin):
         # the file content from the request, since the passed in one has been
         # wrongly encoded.
         if from_api:
-            data = get_raw_form_value_from_current_request('data')
+            data = get_raw_form_value_from_current_request(data, 'data')
         if isinstance(data, str):
             filecontent = data
         else:
