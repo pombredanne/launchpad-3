@@ -99,6 +99,27 @@ string of text. The supplied user is the person linking the CVEs.
     True
     >>> b.unlinkCVE(cve, user=no_priv)
 
+== 2014 CVE identification format changes =  
+
+Since 2014, CVEs can have an identifier (sequence) longer than 4-digits.
+
+CVEs creation accepts 2014 format:
+
+    >>> cve_2014 = cveset.new(sequence="2014-999999",
+    ...     description="A new-style CVE sequence", status=CveStatus.ENTRY,
+    ...     )
+    >>> cve_2014.displayname
+    u'CVE-2014-999999'
+
+Text references to CVEs using 2014 format can be found:
+ 
+    >>> b.findCvesInText('''
+    ...     This bug is related to CVE-2014-999999
+    ... ''', user=no_priv)
+    >>> cve_2014 in b.cves
+    True
+    >>> b.unlinkCVE(cve_2014, user=no_priv)
+
 == CVE Reports ==
 
 Launchpad offers distributions, distribution releases and products with
