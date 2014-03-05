@@ -3,7 +3,7 @@
 
 SET client_min_messages=ERROR;
 
-DROP VIEW exclusivelocks;
-DROP VIEW alllocks;
+DROP VIEW IF EXISTS exclusivelocks;
+DROP VIEW IF EXISTS alllocks;
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 53, 4);
