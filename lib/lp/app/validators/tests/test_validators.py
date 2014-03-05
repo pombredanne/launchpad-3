@@ -27,7 +27,8 @@ def test_suite():
     suite.addTest(
         DocTestSuite(validators, optionflags=ELLIPSIS | NORMALIZE_WHITESPACE))
 
-    from lp.app.validators import email, name, url, version
+    from lp.app.validators import cve, email, name, url, version
+    suite.addTest(suitefor(cve))
     suite.addTest(suitefor(email))
     suite.addTest(suitefor(name))
     suite.addTest(suitefor(url))
