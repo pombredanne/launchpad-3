@@ -83,3 +83,31 @@ But Joe can not query the entry of cprov:
     HTTP/1.1 401 Unauthorized
     ...
 
+Subscription / AuthToken deactivation
+-------------------------------------
+
+Active (with valid tokens) subscriptions for a given person can be
+obtained from 'getArchiveSubscriptions' named get operation on the
+person object:
+
+    >>> subscriptions = joe_webservice.named_get(
+    ...   joe['self_link'], 'getArchiveSubscriptions').jsonBody()
+
+It returns a collection of `ArchiveSubscriber` objects:
+
+    >>> from lazr.restful.testing.webservice import pprint_collection
+    >>> pprint_collection(subscriptions)
+    start: 0
+    total_size: 1
+    ---
+    archive_link: u'http://.../+archive/commercial'
+    date_created: ...
+    date_expires: None
+    description: None
+    registrant_link: u'http://.../~software-center-agent'
+    resource_type_link: u'http://.../#archive_subscriber'
+    self_link: u'http://.../~team-name-100004/+archive/commercial/+subscriptions/joe'
+    status: u'Active'
+    subscriber_link: u'http://.../~joe'
+    web_link: u'http://.../+archive/commercial/+subscriptions/joe'
+    ---

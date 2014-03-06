@@ -194,3 +194,17 @@ class PersonArchiveSubscriptions(TestCaseWithFactory):
                     subscriber, '+archivesubscriptions', principal=subscriber)
                 view.render()
         self.assertThat(recorder, HasQueryCount(Equals(9)))
+
+    def test_getArchiveSubscriptions(self):
+        # Anyone with 'View' permission on a given person is able to
+        # retrieve its active (with valid token) archive subscriptions.
+        owner = self.factory.makePerson()
+        ppa_owner = self.factory.makeTeam(members=[owner])
+        ppa = self.factory.makeArchive(owner=ppa_owner, private=True)
+        person = self.factory.makePerson()
+        with person_logged_in(ppa.owner):
+            ppa.newSubscription(person, owner)
+            ppa.newAuthToken(person)
+        with person_logged_in(person):
+            subscriptions = person.getArchiveSubscriptions(person)
+            self.assertEqual(1, len(subscriptions))
