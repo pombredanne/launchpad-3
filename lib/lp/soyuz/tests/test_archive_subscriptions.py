@@ -204,7 +204,6 @@ class PersonArchiveSubscriptions(TestCaseWithFactory):
         person = self.factory.makePerson()
         with person_logged_in(ppa.owner):
             ppa.newSubscription(person, owner)
-            ppa.newAuthToken(person)
         with person_logged_in(person):
             subscriptions = person.getArchiveSubscriptions(person)
-            self.assertEqual(1, len(subscriptions))
+            self.assertEqual(1, subscriptions.count())

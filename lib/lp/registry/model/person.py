@@ -32,7 +32,10 @@ from datetime import (
     datetime,
     timedelta,
     )
-from operator import attrgetter
+from operator import (
+    attrgetter,
+    itemgetter,
+    )
 import random
 import re
 import subprocess
@@ -2979,11 +2982,8 @@ class Person(
     def getArchiveSubscriptions(self, requester):
         """See `IPerson`."""
         subscriptions = getUtility(
-            IArchiveSubscriberSet).getBySubscriberWithActiveToken(
-                subscriber=self)
-        return [subscription
-                for (subscription, token) in subscriptions
-                if token is not None]
+            IArchiveSubscriberSet).getBySubscriber(subscriber=self)
+        return subscriptions
 
     def getArchiveSubscriptionURLs(self, requester):
         """See `IPerson`."""

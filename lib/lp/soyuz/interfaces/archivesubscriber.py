@@ -13,9 +13,14 @@ __all__ = [
     ]
 
 from lazr.restful.declarations import (
+    call_with,
     export_as_webservice_entry,
+    export_write_operation,
     exported,
+    operation_for_version,
+    REQUEST_USER,
     )
+
 from lazr.restful.fields import Reference
 from zope.interface import (
     Attribute,
@@ -105,6 +110,9 @@ class IArchiveSubscriberView(Interface):
 class IArchiveSubscriberEdit(Interface):
     """An interface for launchpad.Edit ops on archive subscribers."""
 
+    @call_with(cancelled_by=REQUEST_USER)
+    @export_write_operation()
+    @operation_for_version('beta')
     def cancel(cancelled_by):
         """Cancel a subscription.
 
