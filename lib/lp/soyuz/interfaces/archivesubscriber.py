@@ -20,7 +20,6 @@ from lazr.restful.declarations import (
     operation_for_version,
     REQUEST_USER,
     )
-
 from lazr.restful.fields import Reference
 from zope.interface import (
     Attribute,
