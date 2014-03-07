@@ -159,7 +159,7 @@ class ArchiveSubscriberSet:
         :param with_active_tokens: Indicates whether the tokens for the given
             subscribers subscriptions should be included in the resultset.
             By default the tokens are not included in the resultset.
-^       """
+        """
         # Grab the extra Storm expressions, for this query,
         # depending on the params:
         extra_exprs = self._getExprsForSubscriptionQueries(

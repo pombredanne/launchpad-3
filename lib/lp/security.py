@@ -2600,6 +2600,7 @@ class ViewArchiveSubscriber(DelegatedAuthorization):
 
     def checkAuthenticated(self, user):
         return (user.inTeam(self.obj.subscriber) or
+                user.in_commercial_admin or
                 super(ViewArchiveSubscriber, self).checkAuthenticated(user))
 
 
