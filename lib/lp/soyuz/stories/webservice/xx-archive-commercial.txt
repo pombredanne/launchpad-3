@@ -47,7 +47,7 @@ Subscribe our test user to the commercial archive.
 The agent can query the sources.list entry for an archive for any user, which
 will include an AuthToken, and create it if needed:
 
-    >>> response = agent_webservice.named_get(
+    >>> response = agent_webservice.named_post(
     ...   joe['self_link'], 'getArchiveSubscriptionURL', {},
     ...   archive=cp3a['self_link'])
     >>> print response
@@ -66,7 +66,7 @@ The agent can also query all sources.list entries for any user:
 
 Joe can query his own entry:
 
-    >>> response = joe_webservice.named_get(
+    >>> response = joe_webservice.named_post(
     ...   joe['self_link'], 'getArchiveSubscriptionURL', {},
     ...   archive=cp3a['self_link'])
     >>> print response
@@ -76,7 +76,7 @@ Joe can query his own entry:
 
 But Joe can not query the entry of cprov:
 
-    >>> response = joe_webservice.named_get(
+    >>> response = joe_webservice.named_post(
     ...   cprov['self_link'], 'getArchiveSubscriptionURL', {},
     ...   archive=cp3a['self_link'])
     >>> print response
