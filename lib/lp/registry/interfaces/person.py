@@ -1029,7 +1029,7 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
 
     @call_with(requester=REQUEST_USER)
     @export_read_operation()
-    @operation_returns_collection_of(Interface)   # Really IArchive
+    @operation_returns_collection_of(Interface) # Really IArchiveSubscriber
     @operation_for_version("beta")
     def getArchiveSubscriptions(requester):
         """Return (private) archives subscription for this person."""
