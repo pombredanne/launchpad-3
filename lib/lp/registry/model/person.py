@@ -2976,6 +2976,12 @@ class Person(
         """See `IPerson`."""
         return getUtility(IArchiveSet).getPPAOwnedByPerson(self)
 
+    def getArchiveSubscriptions(self, requester):
+        """See `IPerson`."""
+        subscriptions = getUtility(
+            IArchiveSubscriberSet).getBySubscriber(subscriber=self)
+        return subscriptions
+
     def getArchiveSubscriptionURLs(self, requester):
         """See `IPerson`."""
         agent = getUtility(ILaunchpadCelebrities).software_center_agent

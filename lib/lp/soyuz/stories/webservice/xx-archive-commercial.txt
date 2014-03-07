@@ -83,3 +83,100 @@ But Joe can not query the entry of cprov:
     HTTP/1.1 401 Unauthorized
     ...
 
+
+Archive Subscriptions deactivation
+----------------------------------
+
+Archive subscriptions allow users to be part of a private Archive (P3A)
+workflow (repository access and notifications, mainly).
+
+The archive publisher invalidates existing authorization tokens (prior
+to any publication) for inactive subscriptions on each cycle (~ 10 min).
+
+In order to block access for a person, e.g. when one leaves the company,
+its individual subscriptions have to be canceled. Team subscriptions
+automatically lose effect when a person leaves the team.
+
+This section requires methods only available in the 'devel' API
+version. Let's fetch the corresponding test user references:
+
+    >>> joe = webservice.get('/~joe', api_version='devel').jsonBody()
+
+Active subscriptions for a given person can be obtained from
+'getArchiveSubscriptions' named get operation on the person object:
+
+    >>> subscriptions = joe_webservice.named_get(
+    ...   joe['self_link'], 'getArchiveSubscriptions',
+    ...   api_version='devel').jsonBody()
+
+It returns a collection of `ArchiveSubscriber` objects:
+
+    >>> from lazr.restful.testing.webservice import pprint_collection
+    >>> pprint_collection(subscriptions)
+    start: 0
+    total_size: 1
+    ---
+    archive_link: u'http://.../+archive/commercial'
+    date_created: ...
+    date_expires: None
+    description: None
+    registrant_link: u'http://.../~software-center-agent'
+    resource_type_link: u'http://.../#archive_subscriber'
+    self_link: u'http://.../+archive/commercial/+subscriptions/joe'
+    status: u'Active'
+    subscriber_link: u'http://.../~joe'
+    web_link: u'http://.../+archive/commercial/+subscriptions/joe'
+    ---
+
+Additionally to the person itself, the subscriptions can be inspected
+by anyone with 'Edit' permission on the P3A (P3A owner or team members)
+and it includes 'commercial-admins' users:
+
+    >>> login('admin@canonical.com')
+    >>> commercial_admin = getUtility(
+    ...     ILaunchpadCelebrities).commercial_admin
+    >>> logout()
+    >>> commercial_webservice = webservice_for_person(
+    ...     celebrity, permission=OAuthPermission.WRITE_PRIVATE)
+
+    >>> subscriptions = commercial_webservice.named_get(
+    ...     joe['self_link'], 'getArchiveSubscriptions',
+    ...     api_version='devel').jsonBody()
+    >>> pprint_collection(subscriptions)
+    start: 0
+    total_size: 1
+    ---
+    archive_link: u'http://.../+archive/commercial'
+    date_created: ...
+    date_expires: None
+    description: None
+    registrant_link: u'http://.../~software-center-agent'
+    resource_type_link: u'http://.../#archive_subscriber'
+    self_link: u'http://.../+archive/commercial/+subscriptions/joe'
+    status: u'Active'
+    subscriber_link: u'http://.../~joe'
+    web_link: u'http://.../+archive/commercial/+subscriptions/joe'
+    ---
+
+Subscription cancellation can be performed by invoking 'cancel' operation
+on it:
+
+    >>> subscription_link = subscriptions['entries'][0]['self_link']
+    >>> response = commercial_webservice.named_post(
+    ...     subscription_link, 'cancel', api_version='devel')
+    >>> print response
+    HTTP/1.1 200 Ok
+    ...
+
+Once canceled, the subscription is not reachable anymore:
+
+    >>> subscriptions = commercial_webservice.named_get(
+    ...     joe['self_link'], 'getArchiveSubscriptions',
+    ...     api_version='devel').jsonBody()
+    >>> pprint_collection(subscriptions)
+    start: 0
+    total_size: 0
+    ---
+
+At this point it is just a matter of waiting the publisher run and
+deactivate the corresponding authorization token.
