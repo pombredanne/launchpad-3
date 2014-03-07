@@ -97,6 +97,11 @@ In order to block access for a person, e.g. when one leaves the company,
 its individual subscriptions have to be canceled. Team subscriptions
 automatically lose effect when a person leaves the team.
 
+This section requires methods only available in the 'devel' API
+version. Let's fetch the corresponding test user references:
+
+    >>> joe = webservice.get('/~joe', api_version='devel').jsonBody()
+
 Active subscriptions for a given person can be obtained from
 'getArchiveSubscriptions' named get operation on the person object:
 

@@ -111,7 +111,7 @@ class IArchiveSubscriberEdit(Interface):
 
     @call_with(cancelled_by=REQUEST_USER)
     @export_write_operation()
-    @operation_for_version('beta')
+    @operation_for_version('devel')
     def cancel(cancelled_by):
         """Cancel a subscription.
 
