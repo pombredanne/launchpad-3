@@ -91,10 +91,10 @@ Archive subscriptions allow users to be part of a private Archive (P3A)
 workflow (repository access and notifications, mainly).
 
 The archive publisher invalidates existing authorization tokens (prior
-to any publication ) for inactive subscriptions on each cycle (~ 10 min). 
+to any publication) for inactive subscriptions on each cycle (~ 10 min).
 
 In order to block access for a person, e.g. when one leaves the company,
-its individual subscriptions have to be cancelled. Team subscriptions
+its individual subscriptions have to be canceled. Team subscriptions
 automatically lose effect when a person leaves the team.
 
 Active subscriptions for a given person can be obtained from
@@ -163,7 +163,7 @@ on it:
     HTTP/1.1 200 Ok
     ...
 
-Once cancelled, the subscription is not reachable anymore:
+Once canceled, the subscription is not reachable anymore:
 
     >>> subscriptions = commercial_webservice.named_get(
     ...     joe['self_link'], 'getArchiveSubscriptions',
@@ -173,5 +173,5 @@ Once cancelled, the subscription is not reachable anymore:
     total_size: 0
     ---
 
-At this point it is just a matter of wainting the publisher run and
+At this point it is just a matter of waiting the publisher run and
 deactivate the corresponding authorization token.

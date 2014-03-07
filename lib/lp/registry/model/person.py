@@ -32,10 +32,7 @@ from datetime import (
     datetime,
     timedelta,
     )
-from operator import (
-    attrgetter,
-    itemgetter,
-    )
+from operator import attrgetter
 import random
 import re
 import subprocess
