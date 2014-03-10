@@ -389,6 +389,8 @@ class PreviewDiffPruner(BulkPruner):
                 ORDER BY PreviewDiff.date_created DESC) AS pos
             FROM previewdiff) AS ss
         WHERE pos > 1
+        EXCEPT SELECT previewdiff FROM CodeReviewInlineComment
+        EXCEPT SELECT previewdiff FROM CodeReviewInlineCommentDraft
         """
 
 
