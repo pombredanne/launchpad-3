@@ -532,16 +532,20 @@ class PublishFTPMaster(LaunchpadCronScript):
         self.runParts(distribution, 'finalize.d', env)
 
     def publishSecurityUploads(self, distribution):
-        """Quickly process just the pending security uploads."""
+        """Quickly process just the pending security uploads.
+
+        Returns True if publications were made, False otherwise.
+        """
         self.logger.debug("Expediting security uploads.")
         security_suites = self.getDirtySecuritySuites(distribution)
         if len(security_suites) == 0:
             self.logger.debug("Nothing to do for security publisher.")
-            return
+            return False
 
         self.publishDistroArchive(
             distribution, distribution.main_archive,
             security_suites=security_suites)
+        return True
 
     def publishDistroUploads(self, distribution):
         """Publish the distro's complete uploads."""
@@ -559,12 +563,17 @@ class PublishFTPMaster(LaunchpadCronScript):
             updates on the main archive.  This is much faster, so it
             makes sense to do a security-only run before the main
             event to expedite critical fixes.
+        :return has_published: True if any publication was made to the
+            archive.
         """
+        has_published = False
         try:
             if security_only:
-                self.publishSecurityUploads(distribution)
+                has_published = self.publishSecurityUploads(distribution)
             else:
                 self.publishDistroUploads(distribution)
+                # Let's assume the main archive is always modified
+                has_published = True
 
             # Swizzle the now-updated backup dists and the current dists
             # around.
@@ -577,6 +586,8 @@ class PublishFTPMaster(LaunchpadCronScript):
             # system problems.
             self.recoverWorkingDists()
             raise
+
+        return has_published
 
     def prepareFreshSeries(self, distribution):
         """If there are any new distroseries, prepare them for publishing.
@@ -614,8 +625,8 @@ class PublishFTPMaster(LaunchpadCronScript):
         self.processAccepted(distribution)
 
         self.rsyncBackupDists(distribution)
-        self.publish(distribution, security_only=True)
-        self.runFinalizeParts(distribution, security_only=True)
+        if self.publish(distribution, security_only=True):
+            self.runFinalizeParts(distribution, security_only=True)
 
         if not self.options.security_only:
             self.rsyncBackupDists(distribution)

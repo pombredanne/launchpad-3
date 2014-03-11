@@ -658,8 +658,22 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         distro = script.distributions[0]
         script.setUpDirs()
         script.installDists = FakeMethod()
-        script.publishSecurityUploads(distro)
+        has_published = script.publishSecurityUploads(distro)
+        self.assertFalse(has_published)
         self.assertEqual(0, script.installDists.call_count)
+
+    def test_publishSecurityUploads_returns_true_when_publishes(self):
+        distro = self.makeDistroWithPublishDirectory()
+        distroseries = self.factory.makeDistroSeries(distribution=distro)
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=distroseries,
+            pocket=PackagePublishingPocket.SECURITY)
+        script = self.makeScript(distro)
+        script.setUp()
+        script.setUpDirs()
+        script.installDists = FakeMethod()
+        has_published = script.publishSecurityUploads(distro)
+        self.assertTrue(has_published)
 
     def test_publishDistroUploads_publishes_all_distro_archives(self):
         distro = self.makeDistroWithPublishDirectory()
@@ -721,11 +735,21 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
 
     def test_security_run_publishes_only_security_updates(self):
         script = self.makeScript(extra_args=['--security-only'])
-        script.publish = FakeMethod()
+        script.runFinalizeParts = FakeMethod()
+        script.publish = FakeMethod(result=True)
         script.main()
         self.assertEqual(1, script.publish.call_count)
         args, kwargs = script.publish.calls[0]
         self.assertEqual({'security_only': True}, kwargs)
+        self.assertEqual(1, script.runFinalizeParts.call_count)
+
+    def test_security_run_empty_security_does_not_finalize(self):
+        script = self.makeScript(extra_args=['--security-only'])
+        script.runFinalizeParts = FakeMethod()
+        script.publish = FakeMethod(result=False)
+        script.main()
+        self.assertEqual(1, script.publish.call_count)
+        self.assertEqual(0, script.runFinalizeParts.call_count)
 
     def test_publishDistroUploads_processes_all_archives(self):
         distro = self.makeDistroWithPublishDirectory()
@@ -785,6 +809,32 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
                 read_marker_file([archive_root, "marker file"]).rstrip(),
                 "Did not find expected marker for %s."
                 % archive.purpose.title)
+
+    def test_publish_always_returns_true_for_primary(self):
+        script = self.makeScript()
+        script.publishDistroUploads = FakeMethod()
+        script.setUp()
+        script.setUpDirs()
+        result = script.publish(script.distributions[0], security_only=False)
+        self.assertTrue(result)
+
+    def test_publish_returns_true_for_non_empty_security(self):
+        script = self.makeScript(extra_args=['--security-only'])
+        script.setUp()
+        script.setUpDirs()
+        script.installDists = FakeMethod()
+        script.publishSecurityUploads = FakeMethod(result=True)
+        result = script.publish(script.distributions[0], security_only=True)
+        self.assertTrue(result)
+
+    def test_publish_returns_false_for_empty_security(self):
+        script = self.makeScript(extra_args=['--security-only'])
+        script.setUp()
+        script.setUpDirs()
+        script.installDists = FakeMethod()
+        script.publishSecurityUploads = FakeMethod(result=False)
+        result = script.publish(script.distributions[0], security_only=True)
+        self.assertFalse(result)
 
     def test_publish_reraises_exception(self):
         # If an Exception comes up while publishing, it bubbles up out
