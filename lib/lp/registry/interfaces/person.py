@@ -1048,7 +1048,7 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
     @call_with(requester=REQUEST_USER)
     @operation_parameters(
         archive=Reference(schema=Interface))  # Really IArchive
-    @export_read_operation()
+    @export_write_operation()
     @operation_for_version("beta")
     def getArchiveSubscriptionURL(requester, archive):
         """Get a text line that is suitable to be used for a sources.list
