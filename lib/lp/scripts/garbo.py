@@ -379,6 +379,8 @@ class PreviewDiffPruner(BulkPruner):
     """A BulkPruner to remove old PreviewDiffs.
 
     We remove all but the latest PreviewDiff for each BranchMergeProposal.
+    All PreviewDiffs containing published or draft inline comments
+    (CodeReviewInlineComment{,Draft}) are also preserved.
     """
     target_table_class = PreviewDiff
     ids_to_prune_query = """
