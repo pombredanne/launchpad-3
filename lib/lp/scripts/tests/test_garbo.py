@@ -111,8 +111,10 @@ from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.model.reporting import LatestPersonSourcePackageReleaseCache
 from lp.testing import (
-    FakeAdapterMixin,
+    feature_flags,
     person_logged_in,
+    set_feature_flag,
+    FakeAdapterMixin,
     TestCase,
     TestCaseWithFactory,
     )
@@ -659,6 +661,33 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         mp2_diff_ids = [removeSecurityProxy(p).id for p in mp2.preview_diffs]
         self.assertEqual([mp1_diff.id], mp1_diff_ids)
         self.assertEqual([mp2_diff.id], mp2_diff_ids)
+
+    def test_PreviewDiffPruner_with_inline_comments(self):
+        # Old PreviewDiffs with published or draft inline comments
+        # are not removed.
+        switch_dbuser('testadmin')
+        mp1 = self.factory.makeBranchMergeProposal()
+        now = datetime.now(UTC)
+        mp1_diff_comment =  self.factory.makePreviewDiff(
+            merge_proposal=mp1, date_created=now - timedelta(hours=2))
+        mp1_diff_draft =  self.factory.makePreviewDiff(
+            merge_proposal=mp1, date_created=now - timedelta(hours=1))
+        mp1_diff = self.factory.makePreviewDiff(merge_proposal=mp1)
+        # Enabled 'inline_diff_comments' feature flag and attach comments
+        # on the old diffs, so they are kept in DB.
+        self.useContext(feature_flags())
+        set_feature_flag(u'code.inline_diff_comments.enabled', u'enabled')
+        mp1.createComment(
+            owner=mp1.registrant, previewdiff_id=mp1_diff_comment.id,
+            subject='Hold this diff!', inline_comments={'1': '!!!'})
+        mp1.saveDraftInlineComment(
+            previewdiff_id=mp1_diff_draft.id,
+            person=mp1.registrant, comments={'1': '???'})
+        # Run the 'garbo' and verify the old diffs were not removed.
+        self.runDaily()
+        self.assertEqual(
+            [mp1_diff_comment.id, mp1_diff_draft.id, mp1_diff.id],
+            [p.id for p in mp1.preview_diffs])
 
     def test_DiffPruner(self):
         switch_dbuser('testadmin')

@@ -3003,7 +3003,18 @@ class Person(
         # software center agent, deny them
         if requester.id != agent.id:
             if self.id != requester.id:
-                raise Unauthorized
+                raise Unauthorized(
+                    'Only the context user can call this method')
+        # Verify if the user has a valid subscription on the given
+        # archive and return None if it doesn't.
+        subscription = getUtility(
+            IArchiveSubscriberSet).getBySubscriber(
+                subscriber=self, archive=archive)
+        if subscription.is_empty():
+            raise Unauthorized(
+                'This person does not have a valid subscription for the '
+                'target archive')
+        # Find the corresponding authorization token or create a new one.
         token = archive.getAuthToken(self)
         if token is None:
             token = archive.newAuthToken(self)
