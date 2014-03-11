@@ -1121,7 +1121,7 @@ class Person(
             ownership_participation = ClassAlias(TeamParticipation)
             clauses.extend([
                 Product._ownerID == ownership_participation.teamID,
-                ownership_participation.person == self,
+                ownership_participation.personID == self.id,
                 ])
         else:
             clauses.append(Product._ownerID == self.id)
