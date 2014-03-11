@@ -1160,7 +1160,11 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
         maintains, drives, or is the bug supervisor for.
         """
 
-    def getOwnedProjects(match_name=None):
+    @call_with(user=REQUEST_USER)
+    @operation_returns_collection_of(Interface)  # Really IProduct.
+    @export_read_operation()
+    @operation_for_version("devel")
+    def getOwnedProjects(match_name=None, transitive=False, user=None):
         """Projects owned by this person or teams to which she belongs.
 
         :param match_name: string optional project name to screen the results.
