@@ -29,13 +29,30 @@ And fetch our objects:
     >>> joe = webservice.get('/~joe').jsonBody()
     >>> cprov = webservice.get('/~cprov').jsonBody()
     >>> cp3a = webservice.get(url).jsonBody()
+
+Setup webservice handler for the agent and the test user:
+
     >>> agent_webservice = webservice_for_person(
     ...   celebrity, permission=OAuthPermission.WRITE_PRIVATE)
 
-Subscribe our test user to the commercial archive.
-
     >>> joe_webservice = webservice_for_person(
     ...   person, permission=OAuthPermission.WRITE_PRIVATE)
+
+When the agent tries to get a URL for accessing the commercial
+archive as the test user, nothing is returned since there is no
+valid subscription for it.
+
+    >>> response = agent_webservice.named_post(
+    ...   joe['self_link'], 'getArchiveSubscriptionURL', {},
+    ...   archive=cp3a['self_link'])
+    >>> print response
+    HTTP/1.1 200 Ok
+    ...
+    null
+
+In order to allow access for the test user, the agent has to subscribe
+him first.
+
     >>> response = agent_webservice.named_post(cp3a['self_link'],
     ...   'newSubscription', subscriber=joe['self_link'])
     >>> print response
@@ -44,8 +61,9 @@ Subscribe our test user to the commercial archive.
     Location: http://api.launchpad.dev/beta/.../+subscriptions/joe
     ...
 
-The agent can query the sources.list entry for an archive for any user, which
-will include an AuthToken, and create it if needed:
+Now the agent can query the sources.list entry for an archive for the
+the test user (or any other user), which will include an AuthToken,
+which is create on demand if necessary:
 
     >>> response = agent_webservice.named_post(
     ...   joe['self_link'], 'getArchiveSubscriptionURL', {},
@@ -55,7 +73,8 @@ will include an AuthToken, and create it if needed:
     ...
     "http://joe:...@private-ppa.launchpad.dev/.../commercial/ubuntu"
 
-The agent can also query all sources.list entries for any user:
+The agent can also query all sources.list entries for the test user
+(and any other user too):
 
     >>> response = agent_webservice.named_get(
     ...   joe['self_link'], 'getArchiveSubscriptionURLs')

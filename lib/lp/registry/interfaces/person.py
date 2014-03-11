@@ -1054,7 +1054,9 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
         """Get a text line that is suitable to be used for a sources.list
         entry.
 
-        It will create a new IArchiveAuthToken if one doesn't already exist.
+        It retuns None if the user does not have a valid subscription
+        for the given archive. Otherwise, it will create a new
+        IArchiveAuthToken if one doesn't already exist.
         """
 
     def getVisiblePPAs(user):
