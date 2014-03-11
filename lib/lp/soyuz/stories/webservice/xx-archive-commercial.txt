@@ -39,16 +39,16 @@ Setup webservice handler for the agent and the test user:
     ...   person, permission=OAuthPermission.WRITE_PRIVATE)
 
 When the agent tries to get a URL for accessing the commercial
-archive as the test user, nothing is returned since there is no
+archive as the test user, an error is returned since there is no
 valid subscription for it.
 
     >>> response = agent_webservice.named_post(
     ...   joe['self_link'], 'getArchiveSubscriptionURL', {},
     ...   archive=cp3a['self_link'])
     >>> print response
-    HTTP/1.1 200 Ok
+    HTTP/1.1 401 Unauthorized
     ...
-    null
+    This person does not have a valid subscription for the target archive
 
 In order to allow access for the test user, the agent has to subscribe
 him first.
@@ -101,6 +101,7 @@ But Joe can not query the entry of cprov:
     >>> print response
     HTTP/1.1 401 Unauthorized
     ...
+    Only the context user can call this method
 
 
 Archive Subscriptions deactivation
