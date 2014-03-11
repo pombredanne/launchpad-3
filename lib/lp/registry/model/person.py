@@ -1103,16 +1103,22 @@ class Person(
 
         return DecoratedResultSet(results, get_pillar_name)
 
-    def getOwnedProjects(self, match_name=None):
+    def getOwnedProjects(self, match_name=None, transitive=False):
         """See `IPerson`."""
         # Import here to work around a circular import problem.
         from lp.registry.model.product import Product
 
         clauses = [
             Product.active == True,
-            Product._ownerID == TeamParticipation.teamID,
-            TeamParticipation.person == self,
             ]
+
+        if transitive:
+            clauses.extend([
+                Product._ownerID == TeamParticipation.teamID,
+                TeamParticipation.person == self,
+                ])
+        else:
+            clauses.append(Product._ownerID == self.id)
 
         # We only want to use the extra query if match_name is not None and it
         # is not the empty string ('' or u'').
@@ -1122,6 +1128,7 @@ class Person(
                     Product.name.contains_string(match_name),
                     Product.displayname.contains_string(match_name),
                     fti_search(Product, match_name)))
+
         return IStore(Product).find(
             Product, *clauses
             ).config(distinct=True).order_by(Product.displayname)

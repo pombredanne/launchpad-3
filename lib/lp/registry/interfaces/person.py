@@ -1156,7 +1156,7 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
         maintains, drives, or is the bug supervisor for.
         """
 
-    def getOwnedProjects(match_name=None):
+    def getOwnedProjects(match_name=None, transitive=False):
         """Projects owned by this person or teams to which she belongs.
 
         :param match_name: string optional project name to screen the results.
