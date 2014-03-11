@@ -57,7 +57,7 @@ signing_only_param = """
 <GnupgKeyParms format="internal">
   Key-Type: RSA
   Key-Usage: sign
-  Key-Length: 1024
+  Key-Length: 4096
   Name-Real: %(name)s
   Expire-Date: 0
 </GnupgKeyParms>
