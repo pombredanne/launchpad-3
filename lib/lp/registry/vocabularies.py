@@ -1438,7 +1438,7 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
         if self.is_commercial_admin:
             projects = self.product_set.search(user, query)
         else:
-            projects = user.getOwnedProjects(match_name=query)
+            projects = user.getOwnedProjects(match_name=query, transitive=True)
         return projects
 
     def toTerm(self, project):
