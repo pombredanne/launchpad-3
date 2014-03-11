@@ -1055,6 +1055,10 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
         entry.
 
         It will create a new IArchiveAuthToken if one doesn't already exist.
+
+        It raises `Unauthorized` if the context user does not have a
+        valid subscription for the target archive or the caller is not
+        context user itself.
         """
 
     def getVisiblePPAs(user):
