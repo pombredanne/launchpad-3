@@ -49,9 +49,18 @@ class UbuntuMaintenance(object):
         ("9m", SUPPORTED_SEEDS),
         ]
 
+    # shorter than normal support timeframe
+    # time, seed
+    SUPPORT_TIMEFRAME_SHORT = [
+        ]
+
     # distro names that we check the seeds for
     DISTRO_NAMES = [
         "ubuntu",
+        ]
+
+    # distro names for shorter than default support cycles
+    DISTRO_NAMES_SHORT = [
         ]
 
 
@@ -126,10 +135,28 @@ class TrustyUbuntuMaintenance(UbuntuMaintenance):
         ("9m", UbuntuMaintenance.SUPPORTED_SEEDS),
         ]
 
+    SUPPORT_TIMEFRAME_SHORT = [
+        ("3y", UbuntuMaintenance.SERVER_SEEDS),
+        ("3y", UbuntuMaintenance.DESKTOP_SEEDS),
+        ("9m", UbuntuMaintenance.SUPPORTED_SEEDS),
+        ]
+        
     # on a LTS this is significant, it defines what names get LTS support
+    #
+    # Kylin is not in this list, becuase it's not seed managed =/,
+    # it is LTS however as per 2014-03-17 Ubuntu TechBoard meeting
     DISTRO_NAMES = [
         "ubuntu",
         "kubuntu",
+        "edubuntu",
+        ]
+
+    DISTRO_NAMES_SHORT = [
+        "ubuntu-gnome",
+        "xubuntu",
+        "mythbuntu",
+        "ubuntustudio",
+        "lubuntu",
         ]
 
 
@@ -405,19 +432,21 @@ if __name__ == "__main__":
 
     # go over the distros we need to check
     pkg_support_time = {}
-    for name in ubuntu_maintenance.DISTRO_NAMES:
+    for names, support_timeframe in (
+            (ubuntu_maintenance.DISTRO_NAMES_SHORT, ubuntu_maintenance.SUPPORT_TIMEFRAME_SHORT),
+            (ubuntu_maintenance.DISTRO_NAMES, ubuntu_maintenance.SUPPORT_TIMEFRAME),
+            ):
+        for name in names:
+            # get basic structure file
+            try:
+                structure = get_structure(name, distro)
+            except urllib2.HTTPError:
+                logging.error("Can not get structure for '%s'." % name)
+                continue
 
-        # get basic structure file
-        try:
-            structure = get_structure(name, distro)
-        except urllib2.HTTPError:
-            logging.error("Can not get structure for '%s'." % name)
-            continue
-
-        # get dicts of pkgname -> support timeframe string
-        support_timeframe = ubuntu_maintenance.SUPPORT_TIMEFRAME
-        get_packages_support_time(
-            structure, name, pkg_support_time, support_timeframe)
+            # get dicts of pkgname -> support timeframe string
+            get_packages_support_time(
+                structure, name, pkg_support_time, support_timeframe)
 
     # now go over the bits in main that we have not seen (because
     # they are not in any seed and got added manually into "main"
