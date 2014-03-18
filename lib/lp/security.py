@@ -2618,6 +2618,7 @@ class EditArchiveSubscriber(DelegatedAuthorization):
 
     def checkAuthenticated(self, user):
         return (user.in_admin or
+                user.in_commercial_admin or
                 super(EditArchiveSubscriber, self).checkAuthenticated(user))
 
 

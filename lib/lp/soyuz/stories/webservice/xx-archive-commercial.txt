@@ -153,11 +153,13 @@ by anyone with 'Edit' permission on the P3A (P3A owner or team members)
 and it includes 'commercial-admins' users:
 
     >>> login('admin@canonical.com')
-    >>> commercial_admin = getUtility(
+    >>> commercial_admin = factory.makePerson()
+    >>> commercial_celebrity = getUtility(
     ...     ILaunchpadCelebrities).commercial_admin
+    >>> ignore = commercial_celebrity.addMember(commercial_admin, owner)
     >>> logout()
     >>> commercial_webservice = webservice_for_person(
-    ...     celebrity, permission=OAuthPermission.WRITE_PRIVATE)
+    ...     commercial_admin, permission=OAuthPermission.WRITE_PRIVATE)
 
     >>> subscriptions = commercial_webservice.named_get(
     ...     joe['self_link'], 'getArchiveSubscriptions',
