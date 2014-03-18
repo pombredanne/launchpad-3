@@ -116,7 +116,8 @@ else:
 options = ServerOptions()
 options.parseOptions()
 logfile = options.get("logfile")
-set_up_oops_reporting('librarian', 'librarian', logfile)
+observer = set_up_oops_reporting('librarian', 'librarian', logfile)
+application.addComponent(observer, ignoreClass=1)
 
 # Allow use of feature flags.
 setup_feature_controller('librarian')
