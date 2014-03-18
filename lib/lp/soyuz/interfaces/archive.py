@@ -1526,6 +1526,11 @@ class IArchiveAppend(Interface):
                     from_series=None, include_binaries=False, person=None):
         """Synchronise (copy) named sources into this archive from another.
 
+        DEPRECATED: syncSource and syncSources are deprecated, and will
+        be removed entirely in the future. Use the asynchronous
+        copyPackage method instead, and poll getPublishedSources if you
+        need to await completion.
+
         It will copy the most recent PUBLISHED versions of the named
         sources to the destination archive if necessary.
 
@@ -1578,6 +1583,11 @@ class IArchiveAppend(Interface):
     def syncSource(source_name, version, from_archive, to_pocket,
                    to_series=None, include_binaries=False, person=None):
         """Synchronise (copy) a single named source into this archive.
+
+        DEPRECATED: syncSource and syncSources are deprecated, and will
+        be removed entirely in the future. Use the asynchronous
+        copyPackage method instead, and poll getPublishedSources if you
+        need to await completion.
 
         Copy a specific version of a named source to the destination
         archive if necessary.
