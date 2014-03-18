@@ -5,7 +5,6 @@ __metaclass__ = type
 
 __all__ = [
     'DistroSeriesBinaryPackageBreadcrumb',
-    'DistroSeriesBinaryPackageFacets',
     'DistroSeriesBinaryPackageNavigation',
     'DistroSeriesBinaryPackageView',
     ]
@@ -16,20 +15,11 @@ from lp.services.webapp import (
     ApplicationMenu,
     LaunchpadView,
     Navigation,
-    StandardLaunchpadFacets,
     )
 from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.soyuz.interfaces.distroseriesbinarypackage import (
     IDistroSeriesBinaryPackage,
     )
-
-
-class DistroSeriesBinaryPackageFacets(StandardLaunchpadFacets):
-    # XXX mpt 2006-10-04: A DistroArchSeriesBinaryPackage is not a structural
-    # object. It should inherit all navigation from its distro series.
-
-    usedfor = IDistroSeriesBinaryPackage
-    enable_only = ['overview']
 
 
 class DistroSeriesBinaryPackageOverviewMenu(ApplicationMenu):

@@ -163,7 +163,7 @@ class DistroArchSeries(SQLBase):
         # XXX: StevenK 2013-06-06 bug=1116954: We should not need to refetch
         # the file content from the request, since the passed in one has been
         # wrongly encoded.
-        data = get_raw_form_value_from_current_request('data')
+        data = get_raw_form_value_from_current_request(data, 'data')
         if isinstance(data, str):
             filecontent = data
         else:

@@ -2063,17 +2063,16 @@ class TeamReassignmentView(ObjectReassignmentView):
             else:
                 relationship = 'an indirect member'
                 full_path = [self.context] + path
-                path_string = '(%s)' % '&rArr;'.join(
-                    team.displayname for team in full_path)
+		path_template = '&rArr;'.join(['%s'] * len(full_path))
+                path_string = structured(
+                    '(%s)' % path_template, *[team.displayname for team in full_path])
             error = structured(
                 'Circular team memberships are not allowed. '
                 '%(new)s cannot be the new team owner, since %(context)s '
                 'is %(relationship)s of %(new)s. '
-                '<span style="white-space: nowrap">%(path)s</span>'
-                % dict(new=new_owner.displayname,
-                        context=self.context.displayname,
-                        relationship=relationship,
-                        path=path_string))
+                '<span style="white-space: nowrap">%(path)s</span>',
+                new=new_owner.displayname, context=self.context.displayname,
+                relationship=relationship, path=path_string)
             self.setFieldError(self.ownerOrMaintainerName, error)
 
     @property

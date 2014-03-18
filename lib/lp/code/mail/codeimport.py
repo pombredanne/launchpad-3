@@ -47,7 +47,6 @@ def new_import(code_import, event):
         location = code_import.url
     rcs_type_map = {
         RevisionControlSystems.CVS: 'CVS',
-        RevisionControlSystems.SVN: 'subversion',
         RevisionControlSystems.BZR_SVN: 'subversion',
         RevisionControlSystems.GIT: 'git',
         RevisionControlSystems.BZR: 'bazaar',
@@ -120,8 +119,7 @@ def make_email_body_for_code_import_update(
             body.append(
                 details_change_prefix + '\n' + new_details +
                 "\ninstead of:\n" + old_details)
-    elif code_import.rcs_type in (RevisionControlSystems.SVN,
-                                  RevisionControlSystems.BZR_SVN,
+    elif code_import.rcs_type in (RevisionControlSystems.BZR_SVN,
                                   RevisionControlSystems.GIT,
                                   RevisionControlSystems.BZR):
         if CodeImportEventDataType.OLD_URL in event_data:

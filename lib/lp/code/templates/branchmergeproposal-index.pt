@@ -184,6 +184,10 @@
     </div>
     <div id="review-diff" tal:condition="view/preview_diff">
       <h2>Preview Diff </h2>
+
+      <div class="diff-navigator">
+      </div>
+
       <div class="diff-content">
         <div tal:replace="structure context/@@++diff"/>
       </div>
@@ -202,36 +206,21 @@
 
     Y.on('load', function() {
         var logged_in = LP.links['me'] !== undefined;
-
+        var ic = Y.lp.code.branchmergeproposal.inlinecomments;
         if (logged_in) {
             var comment = new Y.lp.app.comment.CodeReviewComment();
             comment.render();
-
             comment._add_comment_success = function () {
-                var lp_client = new Y.lp.client.Launchpad();
-                var ns = Y.lp.code.branchmergeproposal.inlinecomments;
-                var diff_timestamp = (
-                    LP.cache.preview_diff_timestamps.slice(-1)[0]);
-                var config = {
-                    on: {
-                        success: function (r) {
-                            LP.cache.published_inline_comments = r;
-                            LP.cache.draft_inline_comments = null;
-                            ns.populate_existing_comments();
-                        },
-                    },
-                    parameters: {
-                        diff_timestamp: diff_timestamp,
-                    }
-                };
-                lp_client.named_get(
-                    LP.cache.context.self_link, 'getInlineComments', config);
+                if (LP.cache.inline_diff_comments === true) {
+                    // No need to re-setup diff-line click handlers because
+                    // the diff content did not change.
+                    ic.populate_existing_comments();
+                }
             }
             Y.lp.code.branchmergeproposal.status.connect_status(conf);
         }
         Y.lp.code.branchmergeproposal.reviewcomment.connect_links();
-        (new Y.lp.code.branchmergeproposal.reviewcomment.NumberToggle()
-            ).render();
+        (new ic.DiffNav({srcNode: Y.one('#review-diff')})).render();
 
         if (Y.Lang.isValue(LP.cache.merge_proposal_event_key)) {
             var updater = new Y.lp.code.branchmergeproposal.updater.UpdaterWidget(
@@ -245,11 +234,9 @@
                 }
             });
             updater.on(updater.NAME + '.updated', function() {
-                (new Y.lp.code.branchmergeproposal.reviewcomment.NumberToggle()
-                    ).render();
+                (new ic.DiffNav({srcNode: Y.one('#review-diff')})).render();
             });
         }
-
       }, window);
 
     Y.on('domready', function() {
@@ -259,7 +246,6 @@
             '.expander-content',
             false,
             Y.lp.code.branch.revisionexpander.bmp_diff_loader);
-        Y.lp.code.branchmergeproposal.inlinecomments.setup_inline_comments();
     });
   });
 <tal:script replace="structure string:&lt;/script&gt;" />

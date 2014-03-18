@@ -58,7 +58,7 @@ We can get some information about the import using this URL.
     >>> print representation['review_status']
     Reviewed
     >>> print representation['rcs_type']
-    Subversion via CSCVS
+    Subversion via bzr-svn
     >>> print representation['url']
     http://svn.domain.com/source
     >>> print representation['cvs_root']
@@ -108,7 +108,7 @@ and there is information available about the import itsef.
     >>> print representation['review_status']
     Reviewed
     >>> print representation['rcs_type']
-    Subversion via CSCVS
+    Subversion via bzr-svn
     >>> print representation['url']
     http://svn.domain.com/package_source
     >>> print representation['cvs_root']

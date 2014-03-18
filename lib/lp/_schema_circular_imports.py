@@ -352,8 +352,10 @@ patch_plain_parameter_type(IPerson, 'createRecipe', 'daily_build_archive',
                            IArchive)
 patch_plain_parameter_type(IPerson, 'getArchiveSubscriptionURL', 'archive',
                            IArchive)
-
+patch_collection_return_type(
+    IPerson, 'getArchiveSubscriptions', IArchiveSubscriber)
 patch_entry_return_type(IPerson, 'getRecipe', ISourcePackageRecipe)
+patch_collection_return_type(IPerson, 'getOwnedProjects', IProduct)
 
 # IHasRecipe
 patch_collection_property(

@@ -6,7 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
-    'AnswersVHostBreadcrumb',
+    'AnswersFacetBreadcrumb',
     'AskAQuestionButtonPortlet',
     'ManageAnswerContactView',
     'SearchQuestionsView',
@@ -16,7 +16,6 @@ __all__ = [
     'QuestionCollectionNeedAttentionView',
     'QuestionCollectionOpenCountView',
     'QuestionCollectionAnswersMenu',
-    'QuestionTargetFacetMixin',
     'QuestionTargetPortletAnswerContactsWithDetails',
     'QuestionTargetTraversalMixin',
     'QuestionTargetAnswersMenu',
@@ -886,16 +885,6 @@ class QuestionTargetPortletAnswerContactsWithDetails(LaunchpadView):
         return self.answercontact_data_js
 
 
-class QuestionTargetFacetMixin:
-    """Mixin for questiontarget facet definition."""
-
-    def answers(self):
-        """Return the link for Answers."""
-        summary = (
-            'Questions for %s' % self.context.displayname)
-        return Link('', 'Answers', summary)
-
-
 class QuestionTargetTraversalMixin:
     """Navigation mixin for IQuestionTarget."""
 
@@ -991,6 +980,6 @@ class QuestionTargetAnswersMenu(QuestionCollectionAnswersMenu):
         return Link('+answer-contact', text, icon='edit')
 
 
-class AnswersVHostBreadcrumb(Breadcrumb):
+class AnswersFacetBreadcrumb(Breadcrumb):
     rootsite = 'answers'
     text = 'Questions'

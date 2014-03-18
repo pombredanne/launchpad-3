@@ -1064,6 +1064,13 @@ ordered by displayname.
     >>> for project in mark.getOwnedProjects():
     ...     print project.displayname
     Derby
+    alsa-utils
+
+We can also ask for projects owned through team memberships.
+
+    >>> for project in mark.getOwnedProjects(transitive=True):
+    ...     print project.displayname
+    Derby
     Tomcat
     alsa-utils
 
@@ -1079,7 +1086,7 @@ The method does not return inactive projects.
     >>> ignored = login_person(registry_member)
     >>> derby = getUtility(IProductSet).getByName('derby')
     >>> derby.active = False
-    >>> for project in mark.getOwnedProjects():
+    >>> for project in mark.getOwnedProjects(transitive=True):
     ...     print project.displayname
     Tomcat
     alsa-utils
@@ -1096,7 +1103,8 @@ David does not own any projects.
 The results returned can be filtered by providing a token to refine the
 search.
 
-    >>> for project in mark.getOwnedProjects(match_name=u'java'):
+    >>> for project in mark.getOwnedProjects(
+    ...     match_name=u'java', transitive=True):
     ...     print project.displayname
     Tomcat
 

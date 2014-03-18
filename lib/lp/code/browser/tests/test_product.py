@@ -20,7 +20,6 @@ from lp.app.enums import (
     )
 from lp.code.enums import BranchType
 from lp.code.interfaces.revision import IRevisionSet
-from lp.code.publisher import CodeLayer
 from lp.registry.enums import BranchSharingPolicy
 from lp.services.webapp import canonical_url
 from lp.testing import (
@@ -104,7 +103,7 @@ class TestProductCodeIndexView(ProductTestBase):
     def test_product_code_page_visible_with_private_dev_focus(self):
         # If a user cannot see the product's development focus branch but can
         # see at least one branch for the product they can still see the
-        # +code-index page.
+        # +branches page.
         product, branch = self.makeProductAndDevelopmentFocusBranch(
             information_type=InformationType.USERDATA)
         self.factory.makeProductBranch(product=product)
@@ -114,7 +113,7 @@ class TestProductCodeIndexView(ProductTestBase):
     def test_initial_branches_contains_dev_focus_branch(self):
         product, branch = self.makeProductAndDevelopmentFocusBranch()
         view = create_initialized_view(
-            product, '+code-index', rootsite='code')
+            product, '+branches', rootsite='code')
         self.assertIn(branch, view.initial_branches)
 
     def test_initial_branches_does_not_contain_private_dev_focus_branch(self):
@@ -122,7 +121,7 @@ class TestProductCodeIndexView(ProductTestBase):
             information_type=InformationType.USERDATA)
         login(ANONYMOUS)
         view = create_initialized_view(
-            product, '+code-index', rootsite='code')
+            product, '+branches', rootsite='code')
         self.assertNotIn(branch, view.initial_branches)
 
     def test_committer_count_with_revision_authors(self):
@@ -138,8 +137,7 @@ class TestProductCodeIndexView(ProductTestBase):
             date_generator=date_generator)
         getUtility(IRevisionSet).updateRevisionCacheForBranch(branch)
 
-        view = create_initialized_view(product, '+code-index',
-                                       rootsite='code')
+        view = create_initialized_view(product, '+branches', rootsite='code')
         self.assertEqual(view.committer_count, 1)
 
     def test_committers_count_private_branch(self):
@@ -157,7 +155,7 @@ class TestProductCodeIndexView(ProductTestBase):
             date_generator=date_generator)
         getUtility(IRevisionSet).updateRevisionCacheForBranch(branch)
 
-        view = create_initialized_view(product, '+code-index',
+        view = create_initialized_view(product, '+branches',
                                        rootsite='code', principal=fsm)
         self.assertEqual(view.committer_count, 1)
 
@@ -181,7 +179,7 @@ class TestProductCodeIndexView(ProductTestBase):
 
         observer = self.factory.makePerson()
         login_person(observer)
-        view = create_initialized_view(product, '+code-index',
+        view = create_initialized_view(product, '+branches',
                                        rootsite='code', principal=observer)
         self.assertEqual(view.branch_count, 0)
         self.assertEqual(view.committer_count, 1)
@@ -191,12 +189,12 @@ class TestProductCodeIndexView(ProductTestBase):
     def test_initial_branches_contains_push_instructions(self):
         product, branch = self.makeProductAndDevelopmentFocusBranch()
         view = create_initialized_view(
-            product, '+code-index', rootsite='code', principal=product.owner)
+            product, '+branches', rootsite='code', principal=product.owner)
         content = view()
         self.assertIn('bzr push lp:~', content)
 
     def test_product_code_index_with_private_imported_branch(self):
-        # Product:+code-index will not crash if the devfoocs is a private
+        # Product:+branches will not crash if the devfoocs is a private
         # imported branch.
         product, branch = self.makeProductAndDevelopmentFocusBranch(
             information_type=InformationType.USERDATA,
@@ -204,7 +202,7 @@ class TestProductCodeIndexView(ProductTestBase):
         user = self.factory.makePerson()
         with person_logged_in(user):
             view = create_initialized_view(
-                product, '+code-index', rootsite='code', principal=user)
+                product, '+branches', rootsite='code', principal=user)
             html = view()
         expected = 'There are no branches for %s' % product.displayname
         self.assertIn(expected, html)
@@ -318,7 +316,7 @@ class TestProductCodeIndexServiceUsages(ProductTestBase, BrowserTestCase):
         url = "http://example.com/mybranch"
         product, branch = self.makeProductAndDevelopmentFocusBranch(
             branch_type=BranchType.MIRRORED, url=url)
-        view = create_initialized_view(product, '+code-index', rootsite='code')
+        view = create_initialized_view(product, '+branches', rootsite='code')
         self.assertEqual(url, view.mirror_location)
 
 
@@ -370,8 +368,7 @@ class TestProductBranchesViewPortlets(ProductTestBase, BrowserTestCase):
         login_person(product.owner)
         product.development_focus.branch = branch
         view = create_initialized_view(
-            product, '+code-index', rootsite='code',
-            principal=product.owner)
+            product, '+branches', rootsite='code', principal=product.owner)
         text = extract_text(find_tag_by_id(view.render(), 'privacy'))
         expected = (
             "New branches for %(name)s are Proprietary.*"
@@ -398,11 +395,11 @@ class TestCanConfigureBranches(TestCaseWithFactory):
 
     def test_cannot_configure_branches_product_no_edit_permission(self):
         product = self.factory.makeProduct()
-        view = create_view(product, '+branches', layer=CodeLayer)
+        view = create_view(product, '+all-branches')
         self.assertEqual(False, view.can_configure_branches())
 
     def test_can_configure_branches_product_with_edit_permission(self):
         product = self.factory.makeProduct()
         login_person(product.owner)
-        view = create_view(product, '+branches', layer=CodeLayer)
+        view = create_view(product, '+all-branches')
         self.assertTrue(view.can_configure_branches())

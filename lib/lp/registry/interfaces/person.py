@@ -1029,6 +1029,13 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
 
     @call_with(requester=REQUEST_USER)
     @export_read_operation()
+    @operation_returns_collection_of(Interface) # Really IArchiveSubscriber
+    @operation_for_version('devel')
+    def getArchiveSubscriptions(requester):
+        """Return (private) archives subscription for this person."""
+
+    @call_with(requester=REQUEST_USER)
+    @export_read_operation()
     @operation_for_version("beta")
     def getArchiveSubscriptionURLs(requester):
         """Return private archive URLs that this person can see.
@@ -1048,6 +1055,10 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
         entry.
 
         It will create a new IArchiveAuthToken if one doesn't already exist.
+
+        It raises `Unauthorized` if the context user does not have a
+        valid subscription for the target archive or the caller is not
+        context user itself.
         """
 
     def getVisiblePPAs(user):
@@ -1149,7 +1160,11 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
         maintains, drives, or is the bug supervisor for.
         """
 
-    def getOwnedProjects(match_name=None):
+    @call_with(user=REQUEST_USER)
+    @operation_returns_collection_of(Interface)  # Really IProduct.
+    @export_read_operation()
+    @operation_for_version("devel")
+    def getOwnedProjects(match_name=None, transitive=False, user=None):
         """Projects owned by this person or teams to which she belongs.
 
         :param match_name: string optional project name to screen the results.

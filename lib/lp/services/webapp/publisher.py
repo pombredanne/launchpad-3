@@ -706,6 +706,14 @@ def canonical_url(
             raise NoCanonicalUrl(obj, obj)
         rootsite = obj_urldata.rootsite
 
+    # The app.mainsite_only.canonical_url feature flag forces facet
+    # vhost links to mainsite.
+    facet_rootsites = (
+        'answers', 'blueprints', 'code', 'bugs', 'translations')
+    if (getFeatureFlag('app.mainsite_only.canonical_url')
+            and rootsite in facet_rootsites):
+        rootsite = 'mainsite'
+
     # The request is needed when there's no rootsite specified.
     if request is None:
         # Look for a request from the interaction.
@@ -801,7 +809,7 @@ def nearest(obj, *interfaces):
         return None
 
 
-def get_raw_form_value_from_current_request(field_name):
+def get_raw_form_value_from_current_request(field, field_name):
     # XXX: StevenK 2013-02-06 bug=1116954: We should not need to refetch
     # the file content from the request, since the passed in one has been
     # wrongly encoded.
@@ -816,6 +824,8 @@ def get_raw_form_value_from_current_request(field_name):
         request._environ['wsgi.input'].seek(0)
         fs = FieldStorage(fp=request._body_instream, environ=request._environ)
         return fs[field_name].value
+    else:
+        return field
 
 
 class RootObject:

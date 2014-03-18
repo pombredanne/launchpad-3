@@ -62,7 +62,7 @@
           </p>
         </tal:bzr-import>
 
-        <tal:svn-import condition="view/is_svn_import">
+        <tal:svn-import condition="code_import/rcs_type/enumvalue:BZR_SVN">
           <p id="svn-import-details">
             This branch is an import of the
             <span tal:attributes="title code_import/rcs_type/title">Subversion</span>

@@ -12,7 +12,7 @@ __all__ = [
     'DistributionSourcePackageBranchesView',
     'DistroSeriesBranchListingView',
     'GroupedDistributionSourcePackageBranchesView',
-    'CodeVHostBreadcrumb',
+    'CodeFacetBreadcrumb',
     'PersonBranchesMenu',
     'PersonCodeSummaryView',
     'PersonOwnedBranchesView',
@@ -136,7 +136,7 @@ from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.services.webapp.publisher import LaunchpadView
 
 
-class CodeVHostBreadcrumb(Breadcrumb):
+class CodeFacetBreadcrumb(Breadcrumb):
     rootsite = 'code'
     text = 'Code'
 
@@ -1027,18 +1027,12 @@ class ProductBranchesMenu(ApplicationMenu):
     usedfor = IProduct
     facet = 'branches'
     links = [
-        'list_branches',
         'active_reviews',
         'code_import',
         ]
     extra_attributes = [
         'active_review_count',
         ]
-
-    def list_branches(self):
-        text = 'List branches'
-        summary = 'List the branches for this project'
-        return Link('+branches', text, summary, icon='add', site='code')
 
     @cachedproperty
     def active_review_count(self):
@@ -1133,7 +1127,7 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
 
     @property
     def form_action(self):
-        return "+branches"
+        return "+all-branches"
 
     @property
     def initial_values(self):

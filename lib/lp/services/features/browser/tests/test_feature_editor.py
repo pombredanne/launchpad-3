@@ -81,10 +81,10 @@ class TestFeatureControlPage(BrowserTestCase):
         browser.open(self.getFeatureRulesViewURL())
         textarea = browser.getControl(name="field.feature_rules")
         self.assertThat(
-            textarea.value.replace('\r', ''),
+            textarea.value.replace('\r', '').strip(),
             Equals(
                 "ui.icing\tbeta_user\t300\t4.0\n"
-                "ui.icing\tdefault\t100\t3.0\n"))
+                "ui.icing\tdefault\t100\t3.0"))
 
     def test_feature_rules_anonymous_unauthorized(self):
         browser = self.getUserBrowser()

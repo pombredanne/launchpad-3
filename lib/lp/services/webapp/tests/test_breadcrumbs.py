@@ -101,6 +101,14 @@ class TestExtraBreadcrumbForLeafPageOnHierarchyView(BaseBreadcrumbTestCase):
             '%s project files' % self.product.displayname,
             crumbs[-1].text)
 
+    def test_facet_default_page(self):
+        crumbs = self.getBreadcrumbsForObject(self.product, '+bugs')
+        bugs_url = self.product_url.replace('launchpad', 'bugs.launchpad')
+        self.assertEquals(
+            [self.product_url, bugs_url],
+            [crumb.url for crumb in crumbs])
+        self.assertEquals('Bugs', crumbs[-1].text)
+
     def test_zope_i18n_Messages_are_interpolated(self):
         # Views can use zope.i18nmessageid.Message as their title when they
         # want to i18n it, but when that's the case we need to
@@ -118,18 +126,16 @@ class TestExtraBreadcrumbForLeafPageOnHierarchyView(BaseBreadcrumbTestCase):
         self.assertEquals(breadcrumb.text, 'breadcrumb test')
 
 
-class TestExtraVHostBreadcrumbsOnHierarchyView(BaseBreadcrumbTestCase):
-    """How our breadcrumbs behave when using a vhost other than the main one?
+class TestExtraFacetBreadcrumbsOnHierarchyView(BaseBreadcrumbTestCase):
+    """How our breadcrumbs behave when using a facet other than the main one?
 
-    When we go to bugs.lp.net/ubuntu, we only traversed the Ubuntu distro, so
+    When we go to lp.net/ubuntu/+bugs, we only traversed the Ubuntu distro, so
     that's what we'd have a breadcrumb for, but we also want to generate a
-    breadcrumb for bugs on Ubuntu, given that we're on the bugs vhost.
-
-    The behaviour is similar to other vhosts; read on for more.
+    breadcrumb for bugs on Ubuntu, given that we're in the bugs facet.
     """
 
     def setUp(self):
-        super(TestExtraVHostBreadcrumbsOnHierarchyView, self).setUp()
+        super(TestExtraFacetBreadcrumbsOnHierarchyView, self).setUp()
         login('test@canonical.com')
         self.product = self.factory.makeProduct(name='crumb-tester')
         self.product_url = canonical_url(self.product)

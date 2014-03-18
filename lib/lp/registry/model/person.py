@@ -1103,16 +1103,28 @@ class Person(
 
         return DecoratedResultSet(results, get_pillar_name)
 
-    def getOwnedProjects(self, match_name=None):
+    def getOwnedProjects(self, match_name=None, transitive=False, user=None):
         """See `IPerson`."""
         # Import here to work around a circular import problem.
-        from lp.registry.model.product import Product
+        from lp.registry.model.product import (
+            Product,
+            ProductSet,
+            )
 
         clauses = [
             Product.active == True,
-            Product._ownerID == TeamParticipation.teamID,
-            TeamParticipation.person == self,
             ]
+
+        if transitive:
+            # getProductPrivacyFilter may also use TeamParticipation, so
+            # ensure we use a different one.
+            ownership_participation = ClassAlias(TeamParticipation)
+            clauses.extend([
+                Product._ownerID == ownership_participation.teamID,
+                ownership_participation.personID == self.id,
+                ])
+        else:
+            clauses.append(Product._ownerID == self.id)
 
         # We only want to use the extra query if match_name is not None and it
         # is not the empty string ('' or u'').
@@ -1122,6 +1134,10 @@ class Person(
                     Product.name.contains_string(match_name),
                     Product.displayname.contains_string(match_name),
                     fti_search(Product, match_name)))
+
+        if user is not None:
+            clauses.append(ProductSet.getProductPrivacyFilter(user))
+
         return IStore(Product).find(
             Product, *clauses
             ).config(distinct=True).order_by(Product.displayname)
@@ -2976,6 +2992,12 @@ class Person(
         """See `IPerson`."""
         return getUtility(IArchiveSet).getPPAOwnedByPerson(self)
 
+    def getArchiveSubscriptions(self, requester):
+        """See `IPerson`."""
+        subscriptions = getUtility(
+            IArchiveSubscriberSet).getBySubscriber(subscriber=self)
+        return subscriptions
+
     def getArchiveSubscriptionURLs(self, requester):
         """See `IPerson`."""
         agent = getUtility(ILaunchpadCelebrities).software_center_agent
@@ -2997,7 +3019,18 @@ class Person(
         # software center agent, deny them
         if requester.id != agent.id:
             if self.id != requester.id:
-                raise Unauthorized
+                raise Unauthorized(
+                    'Only the context user can call this method')
+        # Verify if the user has a valid subscription on the given
+        # archive and return None if it doesn't.
+        subscription = getUtility(
+            IArchiveSubscriberSet).getBySubscriber(
+                subscriber=self, archive=archive)
+        if subscription.is_empty():
+            raise Unauthorized(
+                'This person does not have a valid subscription for the '
+                'target archive')
+        # Find the corresponding authorization token or create a new one.
         token = archive.getAuthToken(self)
         if token is None:
             token = archive.newAuthToken(self)

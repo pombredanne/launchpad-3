@@ -410,6 +410,17 @@ Overriding the rootsite from the default request:
     >>> canonical_url(country_instance, rootsite='code')
     u'http://code.launchpad.dev/countries/England'
 
+Webapp vhost overrides can be ignored by setting the
+app.mainsite_only.canonical_url feature flag, so all links end up on
+mainsite. Non-webapp vhosts (eg. api and feeds) are unaffected.
+
+    >>> from lp.services.features.testing import MemoryFeatureFixture
+    >>> with MemoryFeatureFixture({'app.mainsite_only.canonical_url': 'on'}):
+    ...     canonical_url(country_instance, rootsite='code')
+    ...     canonical_url(country_instance, rootsite='api')
+    u'http://launchpad.dev/countries/England'
+    u'http://api.launchpad.dev/countries/England'
+
 Overriding the rootsite from the specified request:
 
     >>> canonical_url(country_instance, mandrill_request)
@@ -444,6 +455,9 @@ And if the configuration does provide a rootsite:
     u'http://code.launchpad.dev/countries/England'
     >>> canonical_url(country_instance, mandrill_request, rootsite='code')
     u'http://code.launchpad.dev/countries/England'
+    >>> with MemoryFeatureFixture({'app.mainsite_only.canonical_url': 'on'}):
+    ...     canonical_url(country_instance)
+    u'http://launchpad.dev/countries/England'
 
 
 == canonical_url and named views ==

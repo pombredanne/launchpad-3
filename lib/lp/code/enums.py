@@ -859,5 +859,5 @@ class CodeReviewVote(DBEnumeratedType):
         """)
 
 NON_CVS_RCS_TYPES = (
-    RevisionControlSystems.SVN, RevisionControlSystems.BZR_SVN,
-    RevisionControlSystems.GIT, RevisionControlSystems.BZR)
+    RevisionControlSystems.BZR_SVN, RevisionControlSystems.GIT,
+    RevisionControlSystems.BZR)

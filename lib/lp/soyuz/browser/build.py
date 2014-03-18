@@ -69,7 +69,6 @@ from lp.services.webapp import (
     GetitemNavigation,
     LaunchpadView,
     Link,
-    StandardLaunchpadFacets,
     stepthrough,
     )
 from lp.services.webapp.authorization import check_permission
@@ -149,14 +148,6 @@ class BuildNavigationMixin:
                 build_id)
         except NotFoundError:
             return None
-
-
-class BuildFacets(StandardLaunchpadFacets):
-    """The links that will appear in the facet menu for an
-    IBinaryPackageBuild."""
-    enable_only = ['overview']
-
-    usedfor = IBinaryPackageBuild
 
 
 class BuildContextMenu(ContextMenu):

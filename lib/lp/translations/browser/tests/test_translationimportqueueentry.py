@@ -6,26 +6,21 @@
 from datetime import datetime
 
 from pytz import timezone
-from zope.component import (
-    getMultiAdapter,
-    getUtility,
-    )
+from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import ServiceUsage
-from lp.layers import setFirstLayer
 from lp.services.webapp import canonical_url
-from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
     TestCase,
     TestCaseWithFactory,
     )
 from lp.testing.layers import LaunchpadFunctionalLayer
+from lp.testing.views import create_initialized_view
 from lp.translations.browser.translationimportqueue import escape_js_string
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
     )
-from lp.translations.publisher import TranslationsLayer
 
 
 class TestTranslationImportQueueEntryView(TestCaseWithFactory):
@@ -45,14 +40,6 @@ class TestTranslationImportQueueEntryView(TestCaseWithFactory):
         product.translations_usage = ServiceUsage.LAUNCHPAD
         return product.getSeries('trunk')
 
-    def _makeView(self, entry):
-        """Create view for a queue entry."""
-        request = LaunchpadTestRequest()
-        setFirstLayer(request, TranslationsLayer)
-        view = getMultiAdapter((entry, request), name='+index')
-        view.initialize()
-        return view
-
     def _makeEntry(self, productseries=None, distroseries=None,
                    sourcepackagename=None, filename=None, potemplate=None):
         if filename is None:
@@ -69,7 +56,7 @@ class TestTranslationImportQueueEntryView(TestCaseWithFactory):
         # import_target returns.
         series = self._makeProductSeries()
         entry = self._makeEntry(productseries=series)
-        view = self._makeView(entry)
+        view = create_initialized_view(entry, '+index')
 
         self.assertEqual(series, view.import_target)
 
@@ -81,7 +68,7 @@ class TestTranslationImportQueueEntryView(TestCaseWithFactory):
         package = self.factory.makeSourcePackage(packagename, series)
         entry = self._makeEntry(
             distroseries=series, sourcepackagename=packagename)
-        view = self._makeView(entry)
+        view = create_initialized_view(entry, '+index')
 
         self.assertEqual(package, view.import_target)
 
@@ -90,7 +77,7 @@ class TestTranslationImportQueueEntryView(TestCaseWithFactory):
         # to, the series' templates.
         series = self._makeProductSeries()
         entry = self._makeEntry(productseries=series)
-        view = self._makeView(entry)
+        view = create_initialized_view(entry, '+index')
 
         # If there are no templates, there is no link.
         self.assertEqual("no templates", view.productseries_templates_link)
@@ -109,7 +96,7 @@ class TestTranslationImportQueueEntryView(TestCaseWithFactory):
         series = self._makeProductSeries()
         product = series.product
         entry = self._makeEntry(productseries=series)
-        view = self._makeView(entry)
+        view = create_initialized_view(entry, '+index')
 
         # No translatable series.
         series_text = view.product_translatable_series
@@ -152,7 +139,7 @@ class TestTranslationImportQueueEntryView(TestCaseWithFactory):
         # status change.
         series = self._makeProductSeries()
         entry = self._makeEntry(productseries=series)
-        view = self._makeView(entry)
+        view = create_initialized_view(entry, '+index')
 
         # If the date equals the upload date, there's no need to show
         # anything.
@@ -173,7 +160,7 @@ class TestTranslationImportQueueEntryView(TestCaseWithFactory):
         series = self._makeProductSeries()
         entry = self._makeEntry(
             productseries=series, filename="My_Domain.pot")
-        view = self._makeView(entry)
+        view = create_initialized_view(entry, '+index')
 
         self.assertEqual(
             "My_Domain", view.initial_values['translation_domain'])
@@ -187,7 +174,7 @@ class TestTranslationImportQueueEntryView(TestCaseWithFactory):
             productseries=series, translation_domain=domain)
         entry = self._makeEntry(
             productseries=series, potemplate=potemplate)
-        view = self._makeView(entry)
+        view = create_initialized_view(entry, '+index')
 
         self.assertEqual(domain, view.initial_values['translation_domain'])
 
@@ -197,7 +184,7 @@ class TestTranslationImportQueueEntryView(TestCaseWithFactory):
         series = self._makeProductSeries()
         entry = self._makeEntry(
             productseries=series, filename="My_Domain.pot")
-        view = self._makeView(entry)
+        view = create_initialized_view(entry, '+index')
 
         self.assertEqual("my-domain", view.initial_values['name'])
 
@@ -210,7 +197,7 @@ class TestTranslationImportQueueEntryView(TestCaseWithFactory):
             productseries=series, name=name)
         entry = self._makeEntry(
             productseries=series, potemplate=potemplate)
-        view = self._makeView(entry)
+        view = create_initialized_view(entry, '+index')
 
         self.assertEqual(name, view.initial_values['name'])
 
