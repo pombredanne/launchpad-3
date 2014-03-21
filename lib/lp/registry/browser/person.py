@@ -355,7 +355,9 @@ class BranchTraversalMixin:
                 self.context, pillar)
             # If accessed through an alias, redirect to the proper name.
             if pillar.name != pillar_name:
-                return self.redirectSubTree(canonical_url(person_product))
+                return self.redirectSubTree(
+                    canonical_url(person_product, request=self.request),
+                    status=301)
             getUtility(IOpenLaunchBag).add(pillar)
             return person_product
         # Otherwise look for a branch.
