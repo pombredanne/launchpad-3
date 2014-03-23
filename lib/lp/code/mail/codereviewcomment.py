@@ -5,6 +5,10 @@
 
 
 __metaclass__ = type
+__all__ = [
+    'build_inline_comments_section',
+    'CodeReviewCommentMailer',
+    ]
 
 
 from zope.component import getUtility
@@ -13,6 +17,9 @@ from zope.security.proxy import removeSecurityProxy
 from lp.code.enums import CodeReviewNotificationLevel
 from lp.code.interfaces.branchmergeproposal import (
     ICodeReviewCommentEmailJobSource,
+    )
+from lp.code.interfaces.codereviewinlinecomment import (
+    ICodeReviewInlineCommentSet,
     )
 from lp.code.mail.branchmergeproposal import BMPMailer
 from lp.services.mail.sendmail import (
@@ -95,6 +102,16 @@ class CodeReviewCommentMailer(BMPMailer):
             self.body_prefix = 'Review: %s%s\n\n' % (
                 self.code_review_comment.vote.title, vote_tag)
         self.body_main = self.message.text_contents
+
+        # Append the Inline Comments section to the message body if there
+        # are associated inline comments.
+        inline_comment = getUtility(
+            ICodeReviewInlineCommentSet).getByReviewComment(
+                self.code_review_comment)
+        if inline_comment is not None:
+            self.body_main += build_inline_comments_section(
+                inline_comment.comments, inline_comment.previewdiff.text)
+
         self.proposal_url = canonical_url(self.merge_proposal)
 
     def _getBody(self, email, recipient):
@@ -150,3 +167,19 @@ class CodeReviewCommentMailer(BMPMailer):
             # Append directly to the controller's list.
             ctrl.addAttachment(
                 content, content_type=content_type, filename=filename)
+
+
+def build_inline_comments_section(comments, diff_text):
+    """Return a formatted text section with contextualized comments."""
+    result_lines = []
+    diff_lines = diff_text.splitlines()
+    for i in range(1, len(diff_lines)):
+        result_lines.append(diff_lines[i])
+        comment = comments.get(str(i))
+        if comment is not None:
+            result_lines.extend(
+                ['*** %s' % line for line in comment.splitlines()])
+
+    result_text = '\n'.join(result_lines)
+
+    return '\n\nInline comments:\n\n%s\n\n' % result_text

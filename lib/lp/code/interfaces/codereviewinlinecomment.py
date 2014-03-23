@@ -71,3 +71,10 @@ class ICodeReviewInlineCommentSet(Interface):
 
         :param previewdiff: The `PreviewDiff` these comments are for.
         """
+
+    def getByReviewComment(comment):
+        """Return published comments for a given `CodeReviewComment`.
+
+        :param comment: The `CodeReviewComment` for linked to the inline
+            comments. 
+        """
