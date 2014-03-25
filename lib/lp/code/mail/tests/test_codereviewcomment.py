@@ -245,7 +245,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
         set_feature_flag(u'code.inline_diff_comments.enabled', u'enabled')
 
         comment = self.makeCommentWithInlineComments(
-            inline_comments={'1': 'Is this from Planet Earth ?'})
+            inline_comments={'1': u'Is this from Planet Earth\xa9 ?'})
         mailer = CodeReviewCommentMailer.forCreation(comment)
         commenter = comment.branch_merge_proposal.registrant 
         ctrl = mailer.generateEmail(
@@ -256,7 +256,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
             'Inline comments:',
             '',
             '--- yvo/yc/pbqr/vagresnprf/qvss.cl      2009-10-01 13:25:12 +0000',
-            '*** Is this from Planet Earth ?',
+            u'*** Is this from Planet Earth\xa9 ?',
             '+++ yvo/yc/pbqr/vagresnprf/qvss.cl      2010-02-02 15:48:56 +0000'
         ]
         self.assertEqual(expected_lines, ctrl.body.splitlines()[1:7])
@@ -467,4 +467,15 @@ class TestInlineCommentsSection(testtools.TestCase):
              '*** Foo',
              '@@ -1,3 +0,0 @@',
              '*** Bar'],
+            self.getSection(comments).splitlines()[4:8])
+
+    def test_unicode_comments(self):
+        # inline comments section is unicode and will be
+        # properly encoded for mailling later on.
+        comments = {'1': u'Polui\xe7\xe3o\u00a9 not \uf200 material!'}
+        self.assertEqual(
+            [u'+++ bar\t1969-12-31 19:00:00.000000000 -0500',
+             u'*** Polui\xe7\xe3o\xa9 not \uf200 material!',
+             u'@@ -1,3 +0,0 @@',
+             u'-a'],
             self.getSection(comments).splitlines()[4:8])
