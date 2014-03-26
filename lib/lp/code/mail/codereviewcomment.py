@@ -174,12 +174,11 @@ def build_inline_comments_section(comments, diff_text):
     result_lines = []
     diff_lines = diff_text.splitlines()
     for i in range(1, len(diff_lines)):
-        result_lines.append(diff_lines[i])
+        result_lines.append('> {}'.format(diff_lines[i]))
         comment = comments.get(str(i))
         if comment is not None:
-            result_lines.extend(
-                [u'*** {}'.format(line) for line in comment.splitlines()])
+            result_lines.extend(comment.splitlines())
 
-    result_text = u'\n'.join(result_lines)
+    result_text = '\n'.join(result_lines)
 
-    return u'\n\nInline comments:\n\n%s\n\n' % result_text
+    return '\n\nInline comments:\n\n%s\n\n' % result_text

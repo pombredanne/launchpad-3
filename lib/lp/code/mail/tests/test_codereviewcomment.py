@@ -255,9 +255,11 @@ class TestCodeReviewComment(TestCaseWithFactory):
             '',
             'Inline comments:',
             '',
-            '--- yvo/yc/pbqr/vagresnprf/qvss.cl      2009-10-01 13:25:12 +0000',
-            u'*** Is this from Planet Earth\xa9 ?',
-            '+++ yvo/yc/pbqr/vagresnprf/qvss.cl      2010-02-02 15:48:56 +0000'
+            '> --- yvo/yc/pbqr/vagresnprf/qvss.cl      '
+            '2009-10-01 13:25:12 +0000',
+            u'Is this from Planet Earth\xa9 ?',
+            '> +++ yvo/yc/pbqr/vagresnprf/qvss.cl      '
+            '2010-02-02 15:48:56 +0000'
         ]
         self.assertEqual(expected_lines, ctrl.body.splitlines()[1:7])
 
@@ -430,11 +432,11 @@ class TestInlineCommentsSection(testtools.TestCase):
              '',
              'Inline comments:',
              '',
-             '+++ bar\t1969-12-31 19:00:00.000000000 -0500'],
+             '> +++ bar\t1969-12-31 19:00:00.000000000 -0500'],
             header)
         footer = section[-2:]
         self.assertEqual(
-            ['+e',
+            ['> +e',
              ''],
             footer)
 
@@ -443,30 +445,30 @@ class TestInlineCommentsSection(testtools.TestCase):
         # and prefixed with '>>> '
         comments = {'1': 'Foo'}
         self.assertEqual(
-            ['+++ bar\t1969-12-31 19:00:00.000000000 -0500',
-             '*** Foo',
-             '@@ -1,3 +0,0 @@',
-             '-a'],
+            ['> +++ bar\t1969-12-31 19:00:00.000000000 -0500',
+             'Foo',
+             '> @@ -1,3 +0,0 @@',
+             '> -a'],
             self.getSection(comments).splitlines()[4:8])
 
     def test_multi_line_comment(self):
         # Inline comments with multiple lines are rendered appropriately. 
         comments = {'1': 'Foo\nBar'}
         self.assertEqual(
-            ['+++ bar\t1969-12-31 19:00:00.000000000 -0500',
-             '*** Foo',
-             '*** Bar',
-             '@@ -1,3 +0,0 @@'],
+            ['> +++ bar\t1969-12-31 19:00:00.000000000 -0500',
+             'Foo',
+             'Bar',
+             '> @@ -1,3 +0,0 @@'],
             self.getSection(comments).splitlines()[4:8])
 
     def test_multiple_comments(self):
         # Multiple inline comments are redered appropriately.
         comments = {'1': 'Foo', '2': 'Bar'}
         self.assertEqual(
-            ['+++ bar\t1969-12-31 19:00:00.000000000 -0500',
-             '*** Foo',
-             '@@ -1,3 +0,0 @@',
-             '*** Bar'],
+            ['> +++ bar\t1969-12-31 19:00:00.000000000 -0500',
+             'Foo',
+             '> @@ -1,3 +0,0 @@',
+             'Bar'],
             self.getSection(comments).splitlines()[4:8])
 
     def test_unicode_comments(self):
@@ -474,8 +476,8 @@ class TestInlineCommentsSection(testtools.TestCase):
         # properly encoded for mailling later on.
         comments = {'1': u'Polui\xe7\xe3o\u00a9 not \uf200 material!'}
         self.assertEqual(
-            [u'+++ bar\t1969-12-31 19:00:00.000000000 -0500',
-             u'*** Polui\xe7\xe3o\xa9 not \uf200 material!',
-             u'@@ -1,3 +0,0 @@',
-             u'-a'],
+            ['> +++ bar\t1969-12-31 19:00:00.000000000 -0500',
+             u'Polui\xe7\xe3o\xa9 not \uf200 material!',
+             '> @@ -1,3 +0,0 @@',
+             '> -a'],
             self.getSection(comments).splitlines()[4:8])
