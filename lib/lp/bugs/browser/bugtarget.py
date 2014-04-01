@@ -63,7 +63,6 @@ from lp.app.enums import (
     InformationType,
     PRIVATE_INFORMATION_TYPES,
     PUBLIC_INFORMATION_TYPES,
-    SECURITY_INFORMATION_TYPES,
     ServiceUsage,
     )
 from lp.app.errors import (
@@ -640,7 +639,7 @@ class FileBugViewBase(LaunchpadFormView):
         # Give the user some feedback on the bug just opened.
         for notification in notifications:
             self.request.response.addNotification(notification)
-        if bug.information_type in SECURITY_INFORMATION_TYPES:
+        if bug.information_type == InformationType.PRIVATESECURITY:
             self.request.response.addNotification(
                 structured(
                 'Security-related bugs are by default private '
