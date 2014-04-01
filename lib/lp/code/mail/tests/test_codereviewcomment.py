@@ -4,6 +4,7 @@
 """Test CodeReviewComment emailing functionality."""
 
 
+import testtools
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -13,13 +14,18 @@ from lp.code.enums import (
     CodeReviewNotificationLevel,
     CodeReviewVote,
     )
-from lp.code.mail.codereviewcomment import CodeReviewCommentMailer
+from lp.code.mail.codereviewcomment import (
+    build_inline_comments_section,
+    CodeReviewCommentMailer,
+    )
 from lp.services.mail.sendmail import format_address
 from lp.services.messages.interfaces.message import IMessageSet
 from lp.services.webapp import canonical_url
 from lp.testing import (
+    feature_flags,
     login,
     login_person,
+    set_feature_flag,
     TestCaseWithFactory,
     )
 from lp.testing.layers import LaunchpadFunctionalLayer
@@ -208,6 +214,70 @@ class TestCodeReviewComment(TestCaseWithFactory):
         self.assertEqual(ctrl.body.splitlines()[2:-3],
                          mailer.message.text_contents.splitlines())
 
+    def makeCommentWithInlineComments(self, subject=None, content=None,
+                                      inline_comments=None):
+        """Create a `CodeReviewComment` with inline (diff) comments."""
+        bmp = self.factory.makeBranchMergeProposal()
+        bmp.source_branch.subscribe(bmp.registrant,
+            BranchSubscriptionNotificationLevel.NOEMAIL, None,
+            CodeReviewNotificationLevel.FULL, bmp.registrant)
+        previewdiff = self.factory.makePreviewDiff(merge_proposal=bmp)
+        transaction.commit()
+        if subject is None:
+            subject = 'A comment'
+        if inline_comments is None:
+            inline_comments = {'1': 'foo'}
+        comment = bmp.createComment(
+            owner=bmp.registrant,
+            subject=subject,
+            content=content,
+            previewdiff_id=previewdiff.id,
+            inline_comments=inline_comments)
+        return comment
+
+    def test_generateEmailWithInlineComments(self):
+        """Review comments emails consider the inline comments.
+
+        See `build_inline_comments_section` tests for formatting details.
+        """
+        # Enabled corresponding feature flag.
+        self.useContext(feature_flags())
+        set_feature_flag(u'code.inline_diff_comments.enabled', u'enabled')
+
+        comment = self.makeCommentWithInlineComments(
+            inline_comments={'1': u'Is this from Planet Earth\xa9 ?'})
+        mailer = CodeReviewCommentMailer.forCreation(comment)
+        commenter = comment.branch_merge_proposal.registrant 
+        ctrl = mailer.generateEmail(
+            commenter.preferredemail.email, commenter)
+
+        expected_lines = [
+            '',
+            'Inline comments:',
+            '',
+            '> --- yvo/yc/pbqr/vagresnprf/qvss.cl      '
+            '2009-10-01 13:25:12 +0000',
+            u'Is this from Planet Earth\xa9 ?',
+            '> +++ yvo/yc/pbqr/vagresnprf/qvss.cl      '
+            '2010-02-02 15:48:56 +0000'
+        ]
+        self.assertEqual(expected_lines, ctrl.body.splitlines()[1:7])
+
+    def test_generateEmailWithInlineComments_feature_disabled(self):
+        """Inline comments are not considered if the flag is not enabled."""
+        # Do not enable (set, actually) the corresponding feature flag
+        # ('code.inline_diff_comments.enabled').
+        content = 'CoNtEnT'
+        comment = self.makeCommentWithInlineComments(content=content)
+        mailer = CodeReviewCommentMailer.forCreation(comment)
+        commenter = comment.branch_merge_proposal.registrant 
+        ctrl = mailer.generateEmail(
+            commenter.preferredemail.email, commenter)
+        # Only the comment content (footer is ignored) is included in
+        # email body.
+        self.assertEqual(
+            [content], ctrl.body.splitlines()[:-3])
+
     def makeComment(self, email_message):
         message = getUtility(IMessageSet).fromEmail(email_message.as_string())
         bmp = self.factory.makeBranchMergeProposal()
@@ -320,3 +390,94 @@ class TestCodeReviewComment(TestCaseWithFactory):
         mailer = CodeReviewCommentMailer.forCreation(reply)
         to = mailer._getToAddresses(second_commenter, 'comment2@gmail.com')
         self.assertEqual([mailer.merge_proposal.address], to)
+
+
+class TestInlineCommentsSection(testtools.TestCase):
+    """Tests for `build_inline_comments_section`."""
+
+    diff_text = (
+        "--- bar\t2009-08-26 15:53:34.000000000 -0400\n"
+        "+++ bar\t1969-12-31 19:00:00.000000000 -0500\n"
+        "@@ -1,3 +0,0 @@\n"
+        "-a\n"
+        "-b\n"
+        "-c\n"
+        "--- baz\t1969-12-31 19:00:00.000000000 -0500\n"
+        "+++ baz\t2009-08-26 15:53:57.000000000 -0400\n"
+        "@@ -0,0 +1,2 @@\n"
+        "+a\n"
+        "+b\n"
+        "--- foo\t2009-08-26 15:53:23.000000000 -0400\n"
+        "+++ foo\t2009-08-26 15:56:43.000000000 -0400\n"
+        "@@ -1,3 +1,4 @@\n"
+        " a\n"
+        "-b\n"
+        " c\n"
+        "+d\n"
+        "+e\n")
+
+    def getSection(self, comments, diff_text=None):
+        """Call `build_inline_comments_section` with the test-diff."""
+        if diff_text is None:
+            diff_text = self.diff_text
+        return build_inline_comments_section(comments, diff_text)
+
+    def test_section_header_and_footer(self):
+        # The inline comments section starts with a 4-lines header
+        # (empty lines and title) and ends with an empty line.
+        section = self.getSection({}).splitlines() 
+        header = section[:5]
+        self.assertEqual(
+            ['',
+             '',
+             'Inline comments:',
+             '',
+             '> +++ bar\t1969-12-31 19:00:00.000000000 -0500'],
+            header)
+        footer = section[-2:]
+        self.assertEqual(
+            ['> +e',
+             ''],
+            footer)
+
+    def test_single_line_comment(self):
+        # The inline comments are correctly contextualized in the diff.
+        # and prefixed with '>>> '
+        comments = {'1': 'Foo'}
+        self.assertEqual(
+            ['> +++ bar\t1969-12-31 19:00:00.000000000 -0500',
+             'Foo',
+             '> @@ -1,3 +0,0 @@',
+             '> -a'],
+            self.getSection(comments).splitlines()[4:8])
+
+    def test_multi_line_comment(self):
+        # Inline comments with multiple lines are rendered appropriately. 
+        comments = {'1': 'Foo\nBar'}
+        self.assertEqual(
+            ['> +++ bar\t1969-12-31 19:00:00.000000000 -0500',
+             'Foo',
+             'Bar',
+             '> @@ -1,3 +0,0 @@'],
+            self.getSection(comments).splitlines()[4:8])
+
+    def test_multiple_comments(self):
+        # Multiple inline comments are redered appropriately.
+        comments = {'1': 'Foo', '2': 'Bar'}
+        self.assertEqual(
+            ['> +++ bar\t1969-12-31 19:00:00.000000000 -0500',
+             'Foo',
+             '> @@ -1,3 +0,0 @@',
+             'Bar'],
+            self.getSection(comments).splitlines()[4:8])
+
+    def test_unicode_comments(self):
+        # inline comments section is unicode and will be
+        # properly encoded for mailling later on.
+        comments = {'1': u'Polui\xe7\xe3o\u00a9 not \uf200 material!'}
+        self.assertEqual(
+            ['> +++ bar\t1969-12-31 19:00:00.000000000 -0500',
+             u'Polui\xe7\xe3o\xa9 not \uf200 material!',
+             '> @@ -1,3 +0,0 @@',
+             '> -a'],
+            self.getSection(comments).splitlines()[4:8])
