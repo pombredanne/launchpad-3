@@ -1945,6 +1945,10 @@ def list_result(product, filter=None, user=None):
     return list(result)
 
 
+def get_specs(product, user=None, **kwargs):
+    return product.specifications(user, **kwargs)
+
+
 class TestSpecifications(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
@@ -1969,11 +1973,10 @@ class TestSpecifications(TestCaseWithFactory):
         product = self.factory.makeProduct()
         for count in range(10):
             self.factory.makeSpecification(product=product)
-        self.assertEqual(10, product.specifications(None).count())
-        result = product.specifications(None, quantity=None).count()
-        self.assertEqual(10, result)
-        self.assertEqual(8, product.specifications(None, quantity=8).count())
-        self.assertEqual(10, product.specifications(None, quantity=11).count())
+        self.assertEqual(10, get_specs(product).count())
+        self.assertEqual(10, get_specs(product, quantity=None).count())
+        self.assertEqual(8, get_specs(product, quantity=8).count())
+        self.assertEqual(10, get_specs(product, quantity=11).count())
 
     def test_date_sort(self):
         # Sort on date_created.
@@ -2005,9 +2008,9 @@ class TestSpecifications(TestCaseWithFactory):
         blueprint3 = self.makeSpec(
             product, priority=SpecificationPriority.LOW,
             status=SpecificationDefinitionStatus.NEW)
-        result = product.specifications(None)
+        result = get_specs(product)
         self.assertEqual([blueprint3, blueprint1, blueprint2], list(result))
-        result = product.specifications(None, sort=SpecificationSort.PRIORITY)
+        result = get_specs(product, sort=SpecificationSort.PRIORITY)
         self.assertEqual([blueprint3, blueprint1, blueprint2], list(result))
 
     def test_priority_sort_fallback_status(self):
@@ -2020,9 +2023,9 @@ class TestSpecifications(TestCaseWithFactory):
             product, status=SpecificationDefinitionStatus.APPROVED, name='c')
         blueprint3 = self.makeSpec(
             product, status=SpecificationDefinitionStatus.DISCUSSION, name='b')
-        result = product.specifications(None)
+        result = get_specs(product)
         self.assertEqual([blueprint2, blueprint3, blueprint1], list(result))
-        result = product.specifications(None, sort=SpecificationSort.PRIORITY)
+        result = get_specs(product, sort=SpecificationSort.PRIORITY)
         self.assertEqual([blueprint2, blueprint3, blueprint1], list(result))
 
     def test_priority_sort_fallback_name(self):
@@ -2031,9 +2034,9 @@ class TestSpecifications(TestCaseWithFactory):
         product = blueprint1.product
         blueprint2 = self.makeSpec(product, name='c')
         blueprint3 = self.makeSpec(product, name='a')
-        result = product.specifications(None)
+        result = get_specs(product)
         self.assertEqual([blueprint3, blueprint1, blueprint2], list(result))
-        result = product.specifications(None, sort=SpecificationSort.PRIORITY)
+        result = get_specs(product, sort=SpecificationSort.PRIORITY)
         self.assertEqual([blueprint3, blueprint1, blueprint2], list(result))
 
     def test_informational(self):
@@ -2043,11 +2046,10 @@ class TestSpecifications(TestCaseWithFactory):
             implementation_status=enum.INFORMATIONAL)
         product = informational.product
         plain = self.factory.makeSpecification(product=product)
-        result = product.specifications(None)
+        result = get_specs(product)
         self.assertIn(informational, result)
         self.assertIn(plain, result)
-        result = product.specifications(
-            None, filter=[SpecificationFilter.INFORMATIONAL])
+        result = get_specs(product, filter=[SpecificationFilter.INFORMATIONAL])
         self.assertIn(informational, result)
         self.assertNotIn(plain, result)
 
@@ -2060,17 +2062,14 @@ class TestSpecifications(TestCaseWithFactory):
             implementation_status=enum.IMPLEMENTED)
         product = implemented.product
         non_implemented = self.factory.makeSpecification(product=product)
-        result = product.specifications(
-            None, filter=[SpecificationFilter.COMPLETE])
+        result = get_specs(product, filter=[SpecificationFilter.COMPLETE])
         self.assertIn(implemented, result)
         self.assertNotIn(non_implemented, result)
 
-        result = product.specifications(
-            None, filter=[SpecificationFilter.INCOMPLETE])
+        result = get_specs(product, filter=[SpecificationFilter.INCOMPLETE])
         self.assertNotIn(implemented, result)
         self.assertIn(non_implemented, result)
-        result = product.specifications(
-            None)
+        result = get_specs(product)
         self.assertNotIn(implemented, result)
         self.assertIn(non_implemented, result)
 
@@ -2081,7 +2080,7 @@ class TestSpecifications(TestCaseWithFactory):
             implementation_status=enum.IMPLEMENTED)
         product = implemented.product
         non_implemented = self.factory.makeSpecification(product=product)
-        result = product.specifications(None, filter=[SpecificationFilter.ALL])
+        result = get_specs(product, filter=[SpecificationFilter.ALL])
         self.assertContentEqual([implemented, non_implemented], result)
 
     def test_valid(self):
@@ -2096,7 +2095,7 @@ class TestSpecifications(TestCaseWithFactory):
                                        status=d_enum.SUPERSEDED)
         self.factory.makeSpecification(product=product, status=d_enum.OBSOLETE)
         filter = [SpecificationFilter.VALID, SpecificationFilter.COMPLETE]
-        results = product.specifications(None, filter=filter)
+        results = get_specs(product, filter=filter)
         self.assertContentEqual([implemented], results)
 
     def test_text_search(self):
