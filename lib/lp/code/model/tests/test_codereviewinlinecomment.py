@@ -138,3 +138,29 @@ class TestCodeReviewInlineComment(TestCaseWithFactory):
              {'line_number': '2', 'person': person, 'text': 'foobar',
               'date': comment.date_created}],
             getUtility(ICodeReviewInlineCommentSet).getPublished(previewdiff))
+
+    def test_get_by_review_comment(self):
+        # Inline comments can be retrieved for the `CodeReviewComment`
+        # they were published.
+        previewdiff = self.factory.makePreviewDiff()
+        person = self.factory.makePerson()
+        comment_one = self.factory.makeCodeReviewComment()
+        inline_one = self.makeCodeReviewInlineComment(
+            previewdiff=previewdiff, person=person, comment=comment_one,
+            comments={'1': 'one'})
+        comment_two = self.factory.makeCodeReviewComment()
+        inline_two =self.makeCodeReviewInlineComment(
+            previewdiff=previewdiff, person=person, comment=comment_two,
+            comments={'2': 'two'})
+        cric_set = getUtility(ICodeReviewInlineCommentSet)
+        # Get only the inline comments related to the 'comment_one'
+        # review comment.
+        self.assertEqual(
+            inline_one, cric_set.getByReviewComment(comment_one))
+        # Get only the inline comments related to the 'comment_two'
+        # review comment.
+        self.assertEqual(
+            inline_two, cric_set.getByReviewComment(comment_two))
+        # Lookups for comments with no inline comments return an empty list.
+        comment_empty = self.factory.makeCodeReviewComment()
+        self.assertIsNone(cric_set.getByReviewComment(comment_empty))
