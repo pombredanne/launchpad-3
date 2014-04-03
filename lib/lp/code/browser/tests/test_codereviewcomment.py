@@ -10,10 +10,14 @@ from soupmatchers import (
     Tag,
     )
 from testtools.matchers import Not
+from zope.component import getUtility
 
 from lp.code.browser.codereviewcomment import (
     CodeReviewDisplayComment,
     ICodeReviewDisplayComment,
+    )
+from lp.code.interfaces.codereviewinlinecomment import (
+    ICodeReviewInlineCommentSet,
     )
 from lp.services.webapp import canonical_url
 from lp.services.webapp.interfaces import IPrimaryContext
@@ -23,7 +27,10 @@ from lp.testing import (
     TestCaseWithFactory,
     verifyObject,
     )
-from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 
 
 class TestCodeReviewComments(TestCaseWithFactory):
@@ -52,6 +59,37 @@ class TestCodeReviewComments(TestCaseWithFactory):
         display_comment = CodeReviewDisplayComment(comment)
 
         verifyObject(ICodeReviewDisplayComment, display_comment)
+
+
+class TestCodeReviewCommentInlineComments(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_display_comment_inline_comment(self):
+        # The CodeReviewDisplayComment links to related inline comments
+        # when they exist.
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            comment = self.factory.makeCodeReviewComment()
+        # `CodeReviewDisplayComment.previewdiff_id` is None if there
+        # is no related inline-comments.
+        display_comment = CodeReviewDisplayComment(comment)
+        self.assertIsNone(display_comment.previewdiff_id)
+        # Create a `PreviewDiff` and add inline-comments in
+        # the context of this review comment.
+        with person_logged_in(person):
+            previewdiff = self.factory.makePreviewDiff()
+            getUtility(ICodeReviewInlineCommentSet).ensureDraft(
+                previewdiff, person, {'1': 'Foo'})
+            getUtility(ICodeReviewInlineCommentSet).publishDraft(
+                previewdiff, person, comment)
+        # 'previewdiff_id' property is cached, so its value did not
+        # change on the existing object.
+        self.assertIsNone(display_comment.previewdiff_id)
+        # On a new object, it successfully returns the `PreviewDiff.id`
+        # containing inline-comments related with this review comment.
+        display_comment = CodeReviewDisplayComment(comment)
+        self.assertEqual(previewdiff.id, display_comment.previewdiff_id)
 
 
 class TestCodeReviewCommentHtml(BrowserTestCase):
