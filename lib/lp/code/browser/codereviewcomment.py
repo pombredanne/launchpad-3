@@ -102,7 +102,7 @@ class CodeReviewDisplayComment(MessageComment):
         inline_comment = getUtility(
             ICodeReviewInlineCommentSet).getByReviewComment(self.comment)
         if inline_comment is not None:
-            return inline_comment.previewdiff.id
+            return inline_comment.previewdiff_id
         return None
 
     @cachedproperty
