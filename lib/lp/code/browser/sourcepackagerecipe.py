@@ -884,7 +884,7 @@ class SourcePackageRecipeEditView(RecipeRelatedBranchesMixin,
             owner_field = self.schema['owner']
             any_owner_choice = PersonChoice(
                 __name__='owner', title=owner_field.title,
-                description=(u"As an administrator you are able to reassign"
+                description=(u"As an administrator you are able to assign"
                              u" this branch to any person or team."),
                 required=True, vocabulary='ValidPersonOrTeam')
             any_owner_field = form.Fields(
