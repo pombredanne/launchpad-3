@@ -98,6 +98,14 @@ class CodeReviewDisplayComment(MessageComment):
             return ''
 
     @cachedproperty
+    def previewdiff_id(self):
+        inline_comment = getUtility(
+            ICodeReviewInlineCommentSet).getByReviewComment(self.comment)
+        if inline_comment is not None:
+            return inline_comment.previewdiff.id
+        return None
+
+    @cachedproperty
     def body_text(self):
         """Get the body text for the message."""
         return self.comment.message_body
