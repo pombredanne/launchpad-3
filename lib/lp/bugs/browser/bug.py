@@ -260,8 +260,8 @@ class BugContextMenu(ContextMenu):
         return Link('+choose-affected-product', text, icon='add')
 
     def adddistro(self):
-        """Return the 'Also affects distribution' Link."""
-        text = 'Also affects distribution'
+        """Return the 'Also affects distribution/package' Link."""
+        text = 'Also affects distribution/package'
         return Link('+distrotask', text, icon='add')
 
     def subscription(self):
