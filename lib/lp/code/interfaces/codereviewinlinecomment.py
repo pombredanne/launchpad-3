@@ -14,10 +14,7 @@ from zope.interface import (
     Attribute,
     Interface,
     )
-from zope.schema import (
-    Datetime,
-    TextLine,
-    )
+from zope.schema import Datetime
 
 from lp import _
 from lp.code.interfaces.codereviewcomment import ICodeReviewComment
@@ -26,6 +23,8 @@ from lp.registry.interfaces.person import IPerson
 
 
 class ICodeReviewInlineComment(Interface):
+
+    previewdiff_id = Attribute(_('The preview diff ID'))
     previewdiff = Reference(
         title=_('The preview diff'), schema=IPreviewDiff, required=True,
         readonly=True)
@@ -76,5 +75,17 @@ class ICodeReviewInlineCommentSet(Interface):
         """Return published comments for a given `CodeReviewComment`.
 
         :param comment: The `CodeReviewComment` for linked to the inline
-            comments. 
+            comments.
+        """
+
+    def getPreviewDiffsForComments(comments):
+        """Return a dictionary container related comments and diffs.
+
+        Used for prepopulating `BranchMergeProposal` view caches.
+        `CodeReviewComment` and `PreviewDiff` are related by the existence
+        of `CodeReviewInlineComment`.
+
+        :param comments: a list of `CodeReviewComment`s
+        :return: a dictionary containing the given `CodeReviewComment.id`s
+            and the corresponding `PreviewDiff.id` or None.
         """

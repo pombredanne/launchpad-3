@@ -207,37 +207,35 @@
     Y.on('load', function() {
         var logged_in = LP.links['me'] !== undefined;
         var ic = Y.lp.code.branchmergeproposal.inlinecomments;
+        var diffnav = new ic.DiffNav({srcNode: Y.one('#review-diff')});
         if (logged_in) {
             var comment = new Y.lp.app.comment.CodeReviewComment();
             comment.render();
-            comment._add_comment_success = function () {
-                if (LP.cache.inline_diff_comments === true) {
-                    // No need to re-setup diff-line click handlers because
-                    // the diff content did not change.
-                    ic.populate_existing_comments();
-                }
-            }
+            comment.on('CodeReviewComment.appended', function () {
+                diffnav.update_on_new_comment();
+            });
             Y.lp.code.branchmergeproposal.status.connect_status(conf);
         }
         Y.lp.code.branchmergeproposal.reviewcomment.connect_links();
-        (new ic.DiffNav({srcNode: Y.one('#review-diff')})).render();
+        diffnav.render();
 
         if (Y.Lang.isValue(LP.cache.merge_proposal_event_key)) {
-            var updater = new Y.lp.code.branchmergeproposal.updater.UpdaterWidget(
-                {
+            var upt = Y.lp.code.branchmergeproposal.updater;
+            var cfg = {
                  srcNode: Y.one('#diff-area'),
                  summary_node: Y.one('#proposal-summary')
-                });
+            };
+            var updater = new upt.UpdaterWidget(cfg);
             Y.on(LP.cache.merge_proposal_event_key, function(data) {
-                if (Y.lp.code.branchmergeproposal.updater.is_mp_diff_updated(data)) {
+                if (upt.is_mp_diff_updated(data)) {
                     updater.update();
                 }
             });
             updater.on(updater.NAME + '.updated', function() {
-                (new ic.DiffNav({srcNode: Y.one('#review-diff')})).render();
+                diffnav.render();
             });
         }
-      }, window);
+    }, window);
 
     Y.on('domready', function() {
         Y.lp.app.widgets.expander.createByCSS(

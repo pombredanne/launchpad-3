@@ -98,6 +98,14 @@ class CodeReviewDisplayComment(MessageComment):
             return ''
 
     @cachedproperty
+    def previewdiff_id(self):
+        inline_comment = getUtility(
+            ICodeReviewInlineCommentSet).getByReviewComment(self.comment)
+        if inline_comment is not None:
+            return inline_comment.previewdiff_id
+        return None
+
+    @cachedproperty
     def body_text(self):
         """Get the body text for the message."""
         return self.comment.message_body
@@ -290,8 +298,9 @@ class CodeReviewCommentAddView(LaunchpadFormView):
             data.get('publish_inline_comments')):
             previewdiff_id = self.previewdiff.id
             inline_comments = (
-                self.branch_merge_proposal.getDraftInlineComments(diff_id))
-        comment = self.branch_merge_proposal.createComment(
+                self.branch_merge_proposal.getDraftInlineComments(
+                    previewdiff_id))
+        self.branch_merge_proposal.createComment(
             self.user, subject=None, content=data['comment'],
             parent=self.reply_to, vote=vote, review_type=review_type,
             previewdiff_id=previewdiff_id, inline_comments=inline_comments)
