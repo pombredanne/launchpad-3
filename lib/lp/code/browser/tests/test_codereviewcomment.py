@@ -9,7 +9,10 @@ from soupmatchers import (
     HTMLContains,
     Tag,
     )
-from testtools.matchers import Not
+from testtools.matchers import (
+    Equals,
+    Not,
+    )
 from zope.component import getUtility
 
 from lp.code.browser.codereviewcomment import (
@@ -24,6 +27,7 @@ from lp.services.webapp.interfaces import IPrimaryContext
 from lp.testing import (
     BrowserTestCase,
     person_logged_in,
+    StormStatementRecorder,
     TestCaseWithFactory,
     verifyObject,
     )
@@ -31,6 +35,7 @@ from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )
+from lp.testing.matchers import HasQueryCount
 
 
 class TestCodeReviewComments(TestCaseWithFactory):
@@ -62,8 +67,22 @@ class TestCodeReviewComments(TestCaseWithFactory):
 
 
 class TestCodeReviewCommentInlineComments(TestCaseWithFactory):
+    """Test `CodeReviewDisplayComment` integration with inline-comments."""
 
     layer = LaunchpadFunctionalLayer
+
+    def makeInlineComment(self, person, comment, previewdiff=None,
+                          comments=None):
+        # Test helper for creating inline comments.
+        if previewdiff is None:
+            previewdiff = self.factory.makePreviewDiff()
+        if comments is None:
+            comments = {'1': 'Foo'}
+        getUtility(ICodeReviewInlineCommentSet).ensureDraft(
+            previewdiff, person, comments)
+        cric = getUtility(ICodeReviewInlineCommentSet).publishDraft(
+            previewdiff, person, comment)
+        return cric
 
     def test_display_comment_inline_comment(self):
         # The CodeReviewDisplayComment links to related inline comments
@@ -79,10 +98,7 @@ class TestCodeReviewCommentInlineComments(TestCaseWithFactory):
         # the context of this review comment.
         with person_logged_in(person):
             previewdiff = self.factory.makePreviewDiff()
-            getUtility(ICodeReviewInlineCommentSet).ensureDraft(
-                previewdiff, person, {'1': 'Foo'})
-            getUtility(ICodeReviewInlineCommentSet).publishDraft(
-                previewdiff, person, comment)
+            self.makeInlineComment(person, comment, previewdiff)
         # 'previewdiff_id' property is cached, so its value did not
         # change on the existing object.
         self.assertIsNone(display_comment.previewdiff_id)
@@ -90,6 +106,23 @@ class TestCodeReviewCommentInlineComments(TestCaseWithFactory):
         # containing inline-comments related with this review comment.
         display_comment = CodeReviewDisplayComment(comment)
         self.assertEqual(previewdiff.id, display_comment.previewdiff_id)
+
+    def test_conversation_with_previewdiffs_populated(self):
+        # `CodeReviewConversation` comments have 'previewdiff_id'
+        # property pre-populated in view.
+        person = self.factory.makePerson()
+        merge_proposal = self.factory.makeBranchMergeProposal()
+        with person_logged_in(person):
+            for i in range(5):
+                comment = self.factory.makeCodeReviewComment(
+                    merge_proposal=merge_proposal)
+                self.makeInlineComment(person, comment)
+        from lp.testing.views import create_initialized_view
+        view = create_initialized_view(merge_proposal, '+index')
+        conversation = view.conversation
+        with StormStatementRecorder() as recorder:
+            [c.previewdiff_id for c in conversation.comments]
+        self.assertThat(recorder, HasQueryCount(Equals(0)))
 
 
 class TestCodeReviewCommentHtml(BrowserTestCase):
