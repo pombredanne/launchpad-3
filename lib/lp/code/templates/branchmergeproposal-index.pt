@@ -211,7 +211,7 @@
         if (logged_in) {
             var comment = new Y.lp.app.comment.CodeReviewComment();
             comment.render();
-            comment.on('CodeReviewComment.updated', function () {
+            comment.on('CodeReviewComment.appended', function () {
                 diffnav.update_on_new_comment();
             });
             Y.lp.code.branchmergeproposal.status.connect_status(conf);
