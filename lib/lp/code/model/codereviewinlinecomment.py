@@ -10,6 +10,7 @@ __all__ = [
     'CodeReviewInlineCommentSet',
     ]
 
+from storm.expr import LeftJoin
 from storm.locals import (
     Int,
     Reference,
@@ -128,4 +129,17 @@ class CodeReviewInlineCommentSet:
         return IStore(CodeReviewInlineComment).find(
             CodeReviewInlineComment,
             CodeReviewInlineComment.comment_id == comment.id).one()
-        
+
+    def getPreviewDiffsForComments(self, comments):
+        """See `ICodeReviewInlineCommentSet`."""
+        origin = [
+            CodeReviewComment,
+            LeftJoin(CodeReviewInlineComment,
+                     CodeReviewComment.id ==
+                     CodeReviewInlineComment.comment_id),
+        ]
+        relations = IStore(CodeReviewInlineComment).using(*origin).find(
+            (CodeReviewComment.id,
+             CodeReviewInlineComment.previewdiff_id),
+            CodeReviewComment.id.is_in(c.id for c in comments))
+        return dict(relations)

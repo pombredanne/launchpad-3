@@ -26,6 +26,11 @@
               tal:attributes="href context/branch_merge_proposal/fmt:url">a
               previous version</a>
             of this proposal</span>
+        <span style="float: right;" tal:condition="context/previewdiff_id">
+          <a class="inline-comment-scroller" href=""
+             tal:attributes="data-previewdiff-id context/previewdiff_id"
+            >View inline comments</a>
+        </span>
       </td>
 
       <td class="bug-comment-index">

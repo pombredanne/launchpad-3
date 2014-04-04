@@ -61,7 +61,6 @@ from zope.schema.vocabulary import (
     SimpleTerm,
     SimpleVocabulary,
     )
-from zope.security.proxy import removeSecurityProxy
 
 from lp import _
 from lp.app.browser.launchpadform import (
@@ -112,7 +111,10 @@ from lp.services.fields import (
     )
 from lp.services.librarian.interfaces.client import LibrarianServerError
 from lp.services.messages.interfaces.message import IMessageSet
-from lp.services.propertycache import cachedproperty
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
 from lp.services.webapp import (
     canonical_url,
     ContextMenu,
@@ -121,7 +123,6 @@ from lp.services.webapp import (
     Link,
     Navigation,
     stepthrough,
-    stepto,
     )
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.breadcrumb import Breadcrumb
@@ -684,7 +685,21 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
                 for comment in merge_proposal.all_comments)
             merge_proposal = merge_proposal.supersedes
         comments = sorted(comments, key=operator.attrgetter('date'))
+        self._populate_previewdiffs(comments)
         return CodeReviewConversation(comments)
+
+    def _populate_previewdiffs(self, comments):
+        """Lookup and populate caches for 'previewdiff_id'.
+
+        Only operated on objects providing `ICodeReviewComment`.
+        """
+        comments = [comment for comment in comments
+                    if ICodeReviewComment.providedBy(comment)]
+        cric_set = getUtility(ICodeReviewInlineCommentSet)
+        relations = cric_set.getPreviewDiffsForComments(comments)
+        for comment in comments:
+            get_property_cache(
+                comment).previewdiff_id = relations.get(comment.id)
 
     @property
     def comments(self):
