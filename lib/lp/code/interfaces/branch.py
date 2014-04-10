@@ -721,8 +721,7 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
         """Can this branch be deleted in its current state.
 
         A branch is considered deletable if it has no revisions, is not
-        linked to any bugs, specs, productseries, or code imports, and
-        has no subscribers.
+        linked to any bugs, specs, productseries, or code imports.
         """
 
     def deletionRequirements():
