@@ -70,7 +70,7 @@ A summary of the builds for the PPA is also presented.
     ...     anon_browser.contents, "View all builds Package build summary")
     >>> print extract_text(build_summary)
     View...
-    A total of 4 builds have been dispatched for this PPA.
+    A total of 4 builds have been created for this PPA.
     Completed builds
     3 successful
     1 failed
