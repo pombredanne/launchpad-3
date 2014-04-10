@@ -239,6 +239,7 @@ known_canonical_non_lp_devs = \
                               u'Steve Langasek',
                               u'Dustin Kirkland',
                               u'John Arbash Meinel',
+                              u'Chris Johnston',
                               )]
 
 # Some people have made commits using various names and/or email
