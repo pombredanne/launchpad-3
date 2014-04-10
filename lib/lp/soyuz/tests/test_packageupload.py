@@ -34,6 +34,7 @@ from lp.services.mail import stub
 from lp.services.mail.sendmail import format_address_for_person
 from lp.soyuz.adapters.overrides import SourceOverride
 from lp.soyuz.enums import (
+    PackagePublishingStatus,
     PackageUploadCustomFormat,
     PackageUploadStatus,
     )
@@ -1134,6 +1135,21 @@ class TestPackageUploadWebservice(TestCaseWithFactory):
         for ws_binary_file_url in ws_binary_file_urls:
             self.assertCanOpenRedirectedUrl(browser, ws_binary_file_url)
         self.assertCanOpenRedirectedUrl(browser, ws_upload.changes_file_url)
+
+    def test_binary_is_new(self):
+        # The is_new property is False if a binary with this name has
+        # already been published in the same DistroArchSeries.
+        person = self.makeQueueAdmin([self.universe])
+        upload, ws_upload = self.makeBinaryPackageUpload(
+            person, binarypackagename="hello")
+        self.assertTrue(ws_upload.getBinaryProperties()[1]['is_new'])
+        with person_logged_in(person):
+            das = upload.builds[0].build.distro_arch_series
+            self.factory.makeBinaryPackagePublishingHistory(
+                binarypackagename="hello", archive=das.main_archive,
+                distroarchseries=das, status=PackagePublishingStatus.PUBLISHED)
+            transaction.commit()
+        self.assertFalse(ws_upload.getBinaryProperties()[1]['is_new'])
 
     def test_overrideBinaries_limited_component_permissions(self):
         # Overriding between two components requires queue admin of both.

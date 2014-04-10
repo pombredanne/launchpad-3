@@ -1150,6 +1150,27 @@ class PackageUpload(SQLBase):
         return made_changes
 
 
+def get_properties_for_binary(bpr):
+    # XXX wgrant 2014-04-08: This is so, so wrong, as it assumes that
+    # the BPR is only ever published where it was built. But that holds
+    # whenever this code is called for now, as copies don't use
+    # PackageUploadBuild.
+    das = bpr.build.distro_arch_series
+    distroarchseries_binary_package = das.getBinaryPackage(
+        bpr.binarypackagename)
+    is_new = distroarchseries_binary_package.currentrelease is None
+
+    return {
+        "name": bpr.name,
+        "version": bpr.version,
+        "is_new": is_new,
+        "architecture": bpr.build.arch_tag,
+        "component": bpr.component.name,
+        "section": bpr.section.name,
+        "priority": bpr.priority.name,
+        }
+
+
 class PackageUploadBuild(SQLBase):
     """A Queue item's related builds."""
     implements(IPackageUploadBuild)
@@ -1166,7 +1187,7 @@ class PackageUploadBuild(SQLBase):
     def binaries(self):
         """See `IPackageUploadBuild`."""
         for binary in self.build.binarypackages:
-            yield binary.properties
+            yield get_properties_for_binary(binary)
 
     def checkComponentAndSection(self):
         """See `IPackageUploadBuild`."""
