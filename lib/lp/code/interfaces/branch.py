@@ -720,7 +720,7 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
     def canBeDeleted():
         """Can this branch be deleted in its current state.
 
-        A branch is considered deletable if it has no revisions, is not
+        A branch is considered deletable if it has no revisions and is not
         linked to any bugs, specs, productseries, or code imports.
         """
 
