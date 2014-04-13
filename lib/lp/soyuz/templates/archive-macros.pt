@@ -254,7 +254,7 @@ div.package-details {
     <p>A total of
       <span class="build-count total"
             tal:content="view/build_counters/total">100</span> builds have
-      been dispatched for this PPA.</p>
+      been created for this PPA.</p>
 
     <dl>
       <dt>Completed builds</dt>

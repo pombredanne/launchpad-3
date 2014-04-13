@@ -71,10 +71,9 @@
   <p/>
     Launchpad.net is free to use for software projects that share
     their source code and comply with these
-    <a tal:define="config modules/lp.services.config/config"
-       tal:attributes="href config/commercial/licensing_policy_url">
-      licensing policies.
-    </a>
+    <a target="_blank" tal:define="config modules/lp.services.config/config"
+       tal:attributes="href config/commercial/licensing_policy_url" class="sprite new-window">
+      licensing policies</a>.
     <br/>
     <div id="proprietary" class="hidden">
       Commercial and proprietary projects do not qualify for free hosting;
