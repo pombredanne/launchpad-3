@@ -476,23 +476,6 @@ class PublishFTPMaster(LaunchpadCronScript):
             os.rename(backup_dists, dists)
             os.rename(temp_dists, backup_dists)
 
-    def generateListings(self, distribution):
-        """Create ls-lR.gz listings."""
-        self.logger.debug("Creating ls-lR.gz...")
-        lslr = "ls-lR.gz"
-        lslr_new = "." + lslr + ".new"
-        for purpose, archive_config in self.configs[distribution].iteritems():
-            lslr_file = os.path.join(archive_config.archiveroot, lslr)
-            new_lslr_file = os.path.join(archive_config.archiveroot, lslr_new)
-            if file_exists(new_lslr_file):
-                os.remove(new_lslr_file)
-            self.executeShell(
-                "cd -- '%s' ; TZ=UTC ls -lR | gzip -9n >'%s'"
-                % (archive_config.archiveroot, lslr_new),
-                failure=LaunchpadScriptFailure(
-                    "Failed to create %s for %s." % (lslr, purpose.title)))
-            os.rename(new_lslr_file, lslr_file)
-
     def clearEmptyDirs(self, distribution):
         """Clear out any redundant empty directories."""
         for archive_config in self.configs[distribution].itervalues():
@@ -631,7 +614,6 @@ class PublishFTPMaster(LaunchpadCronScript):
         if not self.options.security_only:
             self.rsyncBackupDists(distribution)
             self.publish(distribution, security_only=False)
-            self.generateListings(distribution)
             self.clearEmptyDirs(distribution)
             self.runFinalizeParts(distribution, security_only=False)
 
