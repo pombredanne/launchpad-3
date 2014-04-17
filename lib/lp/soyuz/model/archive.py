@@ -490,6 +490,17 @@ class Archive(SQLBase):
             return getUtility(IBuildFarmJobSet).getBuildsForArchive(
                 self, status=build_state)
 
+    def _getPublishedSources(self, name=None, version=None, status=None,
+                             distroseries=None, pocket=None,
+                             exact_match=False, created_since_date=None,
+                             eager_load=False, component_name=None,
+                             include_removed=True):
+        """See `IArchive`."""
+        published_sources = self.getPublishedSources(
+            name, version, status, distroseries, pocket, exact_match,
+            created_since_date, eager_load, component_name, include_removed)
+        return published_sources
+
     def getPublishedSources(self, name=None, version=None, status=None,
                             distroseries=None, pocket=None,
                             exact_match=False, created_since_date=None,

@@ -13,6 +13,7 @@ import doctest
 from pytz import UTC
 from testtools.matchers import (
     DocTestMatches,
+    Equals,
     MatchesRegex,
     MatchesStructure,
     )
@@ -94,6 +95,7 @@ from lp.testing import (
     celebrity_logged_in,
     login,
     login_person,
+    logout,
     person_logged_in,
     TestCaseWithFactory,
     )
@@ -102,6 +104,9 @@ from lp.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )
+from lp.testing.matchers import HasQueryCount
+from lp.testing.pages import LaunchpadWebServiceCaller
+from lp.testing._webservice import QueryCollector
 
 
 class TestGetPublicationsInArchive(TestCaseWithFactory):
@@ -2124,6 +2129,29 @@ class TestGetPublishedSources(TestCaseWithFactory):
         [filtered] = distroseries.main_archive.getPublishedSources(
             component_name='universe')
         self.assertEqual('universe', filtered.component.name)
+
+
+class GetPublishedSourcesWebServiceTests(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(GetPublishedSourcesWebServiceTests, self).setUp()
+        self.webservice = LaunchpadWebServiceCaller()
+
+    def test_query_count(self):
+        # IArchive.getPublishedSources() webservice is exposed
+        # via a wrapper to improving performance (by reducing the
+        # number of queries issued)
+        collector = QueryCollector()
+        collector.register()
+        self.addCleanup(collector.unregister)
+        logout()
+        response = self.webservice.named_get(
+            "/ubuntu/+archive/primary", 'getPublishedSources')
+        self.assertEqual(200, response.status)
+        self.assertEqual(20, response.jsonBody()['total_size'])
+        self.assertThat(collector, HasQueryCount(Equals(20)))
 
 
 class TestCopyPackage(TestCaseWithFactory):
