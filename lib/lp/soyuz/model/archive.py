@@ -500,13 +500,28 @@ class Archive(SQLBase):
             name, version, status, distroseries, pocket, exact_match,
             created_since_date, eager_load, component_name, include_removed)
 
-        def prefill_published_archives(rows):
+        def cache_related(rows):
+            # Load and organise related `PackageUploadSources`.
+            from lp.soyuz.model.queue import PackageUploadSource
+            pu_ids = set(map(attrgetter('packageuploadID'), rows))
+            pu_sources = Store.of(self).find(
+                PackageUploadSource,
+                PackageUploadSource.packageuploadID.is_in(pu_ids))
+            pu_sources_dict = dict(zip(pu_ids, pu_sources))
+            # Fill publishing records.
             for pub_source in rows:
+                # Bypass PackageUpload security-check query by caching
+                # `SourcePackageRelease.published_archives` results.
                 spr = pub_source.sourcepackagerelease
-                #get_property_cache(spr).published_archives = [self]
+                get_property_cache(spr).published_archives = [self]
+                # Cache `PackageUpload.sources`.
+                if pub_source.packageupload is not None:
+                    upload = pub_source.packageupload
+                    get_property_cache(upload).sources = [
+                        pu_sources_dict.get(upload.id)]
 
         return DecoratedResultSet(published_sources,
-                                  pre_iter_hook=prefill_published_archives)
+                                  pre_iter_hook=cache_related)
 
     def getPublishedSources(self, name=None, version=None, status=None,
                             distroseries=None, pocket=None,
@@ -592,6 +607,8 @@ class Archive(SQLBase):
             # \o/ circular imports.
             from lp.registry.model.distroseries import DistroSeries
             from lp.registry.model.gpgkey import GPGKey
+            from lp.registry.model.sourcepackagename import SourcePackageName
+            from lp.soyuz.model.queue import PackageUpload
             ids = set(map(attrgetter('distroseriesID'), rows))
             ids.discard(None)
             if ids:
@@ -600,6 +617,10 @@ class Archive(SQLBase):
             ids.discard(None)
             if ids:
                 list(store.find(Section, Section.id.is_in(ids)))
+            ids = set(map(attrgetter('packageuploadID'), rows))
+            ids.discard(None)
+            if ids:
+                list(store.find(PackageUpload, PackageUpload.id.is_in(ids)))
             ids = set(map(attrgetter('sourcepackagereleaseID'), rows))
             ids.discard(None)
             if not ids:
@@ -614,14 +635,12 @@ class Archive(SQLBase):
             ids.discard(None)
             if ids:
                 list(store.find(GPGKey, GPGKey.id.is_in(ids)))
-            from lp.registry.model.sourcepackagename import (
-                SourcePackageName,
-                )
             ids = set(map(attrgetter('sourcepackagenameID'), releases))
             ids.discard(None)
             if ids:
                 list(store.find(SourcePackageName,
                                 SourcePackageName.id.is_in(ids)))
+
 
         return DecoratedResultSet(resultset, pre_iter_hook=eager_load)
 

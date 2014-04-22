@@ -13,7 +13,7 @@ import doctest
 from pytz import UTC
 from testtools.matchers import (
     DocTestMatches,
-    Equals,
+    LessThan,
     MatchesRegex,
     MatchesStructure,
     )
@@ -2132,27 +2132,37 @@ class TestGetPublishedSources(TestCaseWithFactory):
         self.assertEqual('universe', filtered.component.name)
 
 
+
 class GetPublishedSourcesWebServiceTests(TestCaseWithFactory):
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def setUp(self):
         super(GetPublishedSourcesWebServiceTests, self).setUp()
 
     def create_testing_ppa(self):
+        """Creates and populates a PPA for API performance tests.
+
+        Creates a public PPA and populates it with 5 distinct source
+        publications with corresponding `PackageUpload` records.
+        """
         ppa = self.factory.makeArchive(
-            name='ppa', purpose=ArchivePurpose.PPA, private=True)
-        other = self.factory.makeArchive(
-            name='other', purpose=ArchivePurpose.PPA,
-            owner=ppa.owner, private=True)
+            name='ppa', purpose=ArchivePurpose.PPA)
         distroseries = self.factory.makeDistroSeries()
+        # XXX cprov 2014-04-22: currently the target archive owner cannot
+        # 'addSource' to a `PackageUpload` ('launchpad.Edit'). It seems
+        # too restrive to me.
+        from zope.security.proxy import removeSecurityProxy
         with person_logged_in(ppa.owner):
             for i in range(5):
+                upload = self.factory.makePackageUpload(
+                    distroseries=distroseries, archive=ppa)
                 pub = self.factory.makeSourcePackagePublishingHistory(
                     archive=ppa, distroseries=distroseries,
                     creator=ppa.owner, spr_creator=ppa.owner,
-                    maintainer=ppa.owner)
-                #pub.copyTo(pub.distroseries, pub.pocket, ppa)
+                    maintainer=ppa.owner, packageupload=upload)
+                naked_upload = removeSecurityProxy(upload)
+                naked_upload.addSource(pub.sourcepackagerelease)
         return ppa
 
     def test_query_count(self):
@@ -2170,14 +2180,9 @@ class GetPublishedSourcesWebServiceTests(TestCaseWithFactory):
 
         response = webservice.named_get(ppa_url, 'getPublishedSources')
 
-        #print 30 * '*'
-        #for q in collector.queries:
-        #    print q[3]
-        #    print 30 * '*'
-
         self.assertEqual(200, response.status)
         self.assertEqual(5, response.jsonBody()['total_size'])
-        self.assertThat(collector, HasQueryCount(Equals(29)))
+        self.assertThat(collector, HasQueryCount(LessThan(28)))
 
 
 class TestCopyPackage(TestCaseWithFactory):

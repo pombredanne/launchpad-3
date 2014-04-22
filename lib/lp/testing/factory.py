@@ -3625,6 +3625,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                            scheduleddeletiondate=None,
                                            ancestor=None,
                                            creator=None,
+                                           packageupload=None,
                                            spr_creator=None,
                                            **kwargs):
         """Make a `SourcePackagePublishingHistory`.
@@ -3683,7 +3684,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             spph = getUtility(IPublishingSet).newSourcePublication(
                 archive, sourcepackagerelease, distroseries,
                 sourcepackagerelease.component, sourcepackagerelease.section,
-                pocket, ancestor=ancestor, creator=creator)
+                pocket, ancestor=ancestor, creator=creator,
+                packageupload=packageupload)
 
         naked_spph = removeSecurityProxy(spph)
         naked_spph.status = status
