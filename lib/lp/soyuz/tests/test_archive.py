@@ -96,7 +96,6 @@ from lp.testing import (
     celebrity_logged_in,
     login,
     login_person,
-    logout,
     person_logged_in,
     TestCaseWithFactory,
     )
@@ -2130,7 +2129,6 @@ class TestGetPublishedSources(TestCaseWithFactory):
         [filtered] = distroseries.main_archive.getPublishedSources(
             component_name='universe')
         self.assertEqual('universe', filtered.component.name)
-
 
 
 class GetPublishedSourcesWebServiceTests(TestCaseWithFactory):
