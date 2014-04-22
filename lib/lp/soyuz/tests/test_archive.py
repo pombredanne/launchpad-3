@@ -42,6 +42,7 @@ from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import sqlvalues
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.propertycache import clear_property_cache
+from lp.services.webapp.interfaces import OAuthPermission
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.soyuz.adapters.archivedependencies import (
     get_sources_list_for_building,
@@ -105,7 +106,7 @@ from lp.testing.layers import (
     LaunchpadZopelessLayer,
     )
 from lp.testing.matchers import HasQueryCount
-from lp.testing.pages import LaunchpadWebServiceCaller
+from lp.testing.pages import webservice_for_person
 from lp.testing._webservice import QueryCollector
 
 
@@ -2137,21 +2138,46 @@ class GetPublishedSourcesWebServiceTests(TestCaseWithFactory):
 
     def setUp(self):
         super(GetPublishedSourcesWebServiceTests, self).setUp()
-        self.webservice = LaunchpadWebServiceCaller()
+
+    def create_testing_ppa(self):
+        ppa = self.factory.makeArchive(
+            name='ppa', purpose=ArchivePurpose.PPA, private=True)
+        other = self.factory.makeArchive(
+            name='other', purpose=ArchivePurpose.PPA,
+            owner=ppa.owner, private=True)
+        distroseries = self.factory.makeDistroSeries()
+        with person_logged_in(ppa.owner):
+            for i in range(5):
+                pub = self.factory.makeSourcePackagePublishingHistory(
+                    archive=ppa, distroseries=distroseries,
+                    creator=ppa.owner, spr_creator=ppa.owner,
+                    maintainer=ppa.owner)
+                #pub.copyTo(pub.distroseries, pub.pocket, ppa)
+        return ppa
 
     def test_query_count(self):
         # IArchive.getPublishedSources() webservice is exposed
         # via a wrapper to improving performance (by reducing the
         # number of queries issued)
+        ppa = self.create_testing_ppa()
+        ppa_url = '/~{}/+archive/ppa'.format(ppa.owner.name)
+        webservice = webservice_for_person(
+            ppa.owner, permission=OAuthPermission.READ_PRIVATE)
+
         collector = QueryCollector()
         collector.register()
         self.addCleanup(collector.unregister)
-        logout()
-        response = self.webservice.named_get(
-            "/ubuntu/+archive/primary", 'getPublishedSources')
+
+        response = webservice.named_get(ppa_url, 'getPublishedSources')
+
+        #print 30 * '*'
+        #for q in collector.queries:
+        #    print q[3]
+        #    print 30 * '*'
+
         self.assertEqual(200, response.status)
-        self.assertEqual(20, response.jsonBody()['total_size'])
-        self.assertThat(collector, HasQueryCount(Equals(20)))
+        self.assertEqual(5, response.jsonBody()['total_size'])
+        self.assertThat(collector, HasQueryCount(Equals(29)))
 
 
 class TestCopyPackage(TestCaseWithFactory):

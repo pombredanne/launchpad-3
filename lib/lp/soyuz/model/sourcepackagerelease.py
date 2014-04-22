@@ -265,6 +265,8 @@ class SourcePackageRelease(SQLBase):
 
     @cachedproperty
     def published_archives(self):
+        print 30 * '*'
+        print 'PUB_ARCHIVE'
         archives = set(
             pub.archive for pub in self.publishings.prejoin(['archive']))
         return sorted(archives, key=operator.attrgetter('id'))

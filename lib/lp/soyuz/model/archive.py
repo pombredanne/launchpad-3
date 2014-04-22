@@ -499,7 +499,14 @@ class Archive(SQLBase):
         published_sources = self.getPublishedSources(
             name, version, status, distroseries, pocket, exact_match,
             created_since_date, eager_load, component_name, include_removed)
-        return published_sources
+
+        def prefill_published_archives(rows):
+            for pub_source in rows:
+                spr = pub_source.sourcepackagerelease
+                #get_property_cache(spr).published_archives = [self]
+
+        return DecoratedResultSet(published_sources,
+                                  pre_iter_hook=prefill_published_archives)
 
     def getPublishedSources(self, name=None, version=None, status=None,
                             distroseries=None, pocket=None,
@@ -607,6 +614,15 @@ class Archive(SQLBase):
             ids.discard(None)
             if ids:
                 list(store.find(GPGKey, GPGKey.id.is_in(ids)))
+            from lp.registry.model.sourcepackagename import (
+                SourcePackageName,
+                )
+            ids = set(map(attrgetter('sourcepackagenameID'), releases))
+            ids.discard(None)
+            if ids:
+                list(store.find(SourcePackageName,
+                                SourcePackageName.id.is_in(ids)))
+
         return DecoratedResultSet(resultset, pre_iter_hook=eager_load)
 
     def getSourcesForDeletion(self, name=None, status=None, distroseries=None):
