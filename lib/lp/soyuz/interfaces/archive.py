@@ -438,7 +438,6 @@ class IArchiveSubscriberView(Interface):
             required=False),
         component_name=TextLine(title=_("Component name"), required=False),
         )
-    @call_with(eager_load=True)
     # Really returns ISourcePackagePublishingHistory, see below for
     # patch to avoid circular import.
     @operation_returns_collection_of(Interface)
@@ -446,7 +445,7 @@ class IArchiveSubscriberView(Interface):
     def _getPublishedSources(name=None, version=None, status=None,
                              distroseries=None, pocket=None,
                              exact_match=False, created_since_date=None,
-                             eager_load=False, component_name=None):
+                             component_name=None):
         """Wrapper for getPublishedSources.
 
         Prefills `SourcePackageRelease.published_archives` with the

@@ -493,28 +493,48 @@ class Archive(SQLBase):
     def _getPublishedSources(self, name=None, version=None, status=None,
                              distroseries=None, pocket=None,
                              exact_match=False, created_since_date=None,
-                             eager_load=False, component_name=None,
-                             include_removed=True):
+                             component_name=None):
         """See `IArchive`."""
+        # 'eager_load' and 'include_removed' arguments are always True
+        # for API calls.
         published_sources = self.getPublishedSources(
             name, version, status, distroseries, pocket, exact_match,
-            created_since_date, eager_load, component_name, include_removed)
+            created_since_date, True, component_name, True)
 
         def cache_related(rows):
-            # Load and organise related `PackageUploadSources`.
-            from lp.soyuz.model.queue import PackageUploadSource
+            # Cache extra related-objects immediately used by API calls.
+            from lp.registry.model.sourcepackagename import SourcePackageName
+            from lp.soyuz.model.queue import (
+                PackageUpload,
+                PackageUploadSource,
+                )
+            store = Store.of(self)
+            # Pre-cache related `PackageUpload`s, needed for security checks.
             pu_ids = set(map(attrgetter('packageuploadID'), rows))
-            pu_sources = Store.of(self).find(
+            list(store.find(PackageUpload, PackageUpload.id.is_in(pu_ids)))
+            # Pre-cache related `SourcePackageName`s, needed for the published
+            # record title (materialized in the API).
+            spn_ids = set(map(
+                attrgetter('sourcepackagerelease.sourcepackagenameID'), rows))
+            list(store.find(SourcePackageName,
+                            SourcePackageName.id.is_in(spn_ids)))
+            # Load and organise related `PackageUploadSources` for filling
+            # `PackageUpload.sources` cachedproperty.
+            pu_sources = store.find(
                 PackageUploadSource,
                 PackageUploadSource.packageuploadID.is_in(pu_ids))
             pu_sources_dict = dict(zip(pu_ids, pu_sources))
+
             # Fill publishing records.
             for pub_source in rows:
                 # Bypass PackageUpload security-check query by caching
                 # `SourcePackageRelease.published_archives` results.
+                # All published sources are visible to the user, since they
+                # are published in the context archive. No need to check
+                # additional archives the source is published.
                 spr = pub_source.sourcepackagerelease
                 get_property_cache(spr).published_archives = [self]
-                # Cache `PackageUpload.sources`.
+                # Fill `PackageUpload.sources`.
                 if pub_source.packageupload is not None:
                     upload = pub_source.packageupload
                     get_property_cache(upload).sources = [
@@ -607,8 +627,6 @@ class Archive(SQLBase):
             # \o/ circular imports.
             from lp.registry.model.distroseries import DistroSeries
             from lp.registry.model.gpgkey import GPGKey
-            from lp.registry.model.sourcepackagename import SourcePackageName
-            from lp.soyuz.model.queue import PackageUpload
             ids = set(map(attrgetter('distroseriesID'), rows))
             ids.discard(None)
             if ids:
@@ -617,10 +635,6 @@ class Archive(SQLBase):
             ids.discard(None)
             if ids:
                 list(store.find(Section, Section.id.is_in(ids)))
-            ids = set(map(attrgetter('packageuploadID'), rows))
-            ids.discard(None)
-            if ids:
-                list(store.find(PackageUpload, PackageUpload.id.is_in(ids)))
             ids = set(map(attrgetter('sourcepackagereleaseID'), rows))
             ids.discard(None)
             if not ids:
@@ -635,13 +649,6 @@ class Archive(SQLBase):
             ids.discard(None)
             if ids:
                 list(store.find(GPGKey, GPGKey.id.is_in(ids)))
-            ids = set(map(attrgetter('sourcepackagenameID'), releases))
-            ids.discard(None)
-            if ids:
-                list(store.find(SourcePackageName,
-                                SourcePackageName.id.is_in(ids)))
-
-
         return DecoratedResultSet(resultset, pre_iter_hook=eager_load)
 
     def getSourcesForDeletion(self, name=None, status=None, distroseries=None):
