@@ -2760,9 +2760,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if owner is None:
             owner = self.makePerson()
 
-        return getUtility(IBuilderSet).new(
-            processors, url, name, title, owner, active, virtualized, vm_host,
-            manual=manual)
+        with admin_logged_in():
+            return getUtility(IBuilderSet).new(
+                processors, url, name, title, owner, active,
+                virtualized, vm_host, manual=manual)
 
     def makeRecipeText(self, *branches):
         if len(branches) == 0:

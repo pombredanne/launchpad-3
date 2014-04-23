@@ -17,15 +17,18 @@ __all__ = [
     ]
 
 from lazr.restful.declarations import (
+    call_with,
     collection_default_content,
     export_as_webservice_collection,
     export_as_webservice_entry,
+    export_factory_operation,
     export_read_operation,
     exported,
     operation_for_version,
     operation_parameters,
     operation_returns_collection_of,
     operation_returns_entry,
+    REQUEST_USER,
     )
 from lazr.restful.fields import (
     Reference,
@@ -165,7 +168,7 @@ class IBuilder(IHasBuildRecords, IHasOwner):
                       'buildd-slave, e.g.: foobar-host.ppa')))
 
     active = exported(Bool(
-        title=_('Publicly Visible'), required=True, default=True,
+        title=_('Publicly Visible'), required=False, default=True,
         description=_('Whether or not to present the builder publicly.')))
 
     currentjob = Attribute("BuildQueue instance for job being processed.")
@@ -210,7 +213,25 @@ class IBuilder(IHasBuildRecords, IHasOwner):
         """
 
 
-class IBuilderSet(Interface):
+class IBuilderSetAdmin(Interface):
+
+    @call_with(owner=REQUEST_USER)
+    @export_factory_operation(
+        IBuilder,
+        ['processors', 'url', 'name', 'title', 'active', 'virtualized',
+         'vm_host'])
+    @operation_for_version('devel')
+    def new(processors, url, name, title, owner, active=True,
+            virtualized=False, vm_host=None):
+        """Create a new builder.
+
+        The builder will be set to manual. An admin needs to verify its
+        configuration and set it to automatic before jobs will be
+        dispatched.
+        """
+
+
+class IBuilderSet(IBuilderSetAdmin):
     """Collections of builders.
 
     IBuilderSet provides access to all Builders in the system,
@@ -219,7 +240,6 @@ class IBuilderSet(Interface):
     methods that affect a single Builder should be on IBuilder.
     """
     export_as_webservice_collection(IBuilder)
-
     title = Attribute('Title')
 
     def __iter__():
@@ -234,18 +254,6 @@ class IBuilderSet(Interface):
     @export_read_operation()
     def getByName(name):
         """Retrieve a builder by name"""
-
-    def new(processors, url, name, title, owner, active=True,
-            virtualized=False, vm_host=None):
-        """Create a new Builder entry.
-
-        Additionally to the given arguments, builder are created with
-        'builderok' and 'manual' set to True.
-
-        It means that, once created, they will be presented as 'functional'
-        in the UI but will not receive any job until an administrator move
-        it to the automatic mode.
-        """
 
     def count():
         """Return the number of builders in the system."""
