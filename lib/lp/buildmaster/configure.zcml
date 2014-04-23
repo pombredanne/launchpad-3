@@ -29,6 +29,9 @@
         provides="lp.buildmaster.interfaces.builder.IBuilderSet">
         <allow
             interface="lp.buildmaster.interfaces.builder.IBuilderSet"/>
+        <require
+            permission="launchpad.Admin"
+            interface="lp.buildmaster.interfaces.builder.IBuilderSetAdmin"/>
     </securedutility>
     <adapter
         provides="lp.services.webapp.interfaces.IBreadcrumb"
