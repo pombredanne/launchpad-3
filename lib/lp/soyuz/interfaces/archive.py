@@ -442,14 +442,14 @@ class IArchiveSubscriberView(Interface):
     # patch to avoid circular import.
     @operation_returns_collection_of(Interface)
     @export_read_operation()
-    def _getPublishedSources(name=None, version=None, status=None,
-                             distroseries=None, pocket=None,
-                             exact_match=False, created_since_date=None,
-                             component_name=None):
-        """Wrapper for getPublishedSources.
+    def api_getPublishedSources(name=None, version=None, status=None,
+                                distroseries=None, pocket=None,
+                                exact_match=False, created_since_date=None,
+                                component_name=None):
+        """API wrapper for getPublishedSources.
 
-        Prefills `SourcePackageRelease.published_archives` with the
-        context `Archive` so the security checks do not hit the DB.
+        It loads additional related objects only needed in the API call
+        context (i.e. security checks and entries marshalling).
         """
 
     def getPublishedSources(name=None, version=None, status=None,

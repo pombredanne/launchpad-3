@@ -2138,7 +2138,7 @@ class GetPublishedSourcesWebServiceTests(TestCaseWithFactory):
     def setUp(self):
         super(GetPublishedSourcesWebServiceTests, self).setUp()
 
-    def create_testing_ppa(self):
+    def createTestingPPA(self):
         """Creates and populates a PPA for API performance tests.
 
         Creates a public PPA and populates it with 5 distinct source
@@ -2167,7 +2167,7 @@ class GetPublishedSourcesWebServiceTests(TestCaseWithFactory):
         # IArchive.getPublishedSources() webservice is exposed
         # via a wrapper to improving performance (by reducing the
         # number of queries issued)
-        ppa = self.create_testing_ppa()
+        ppa = self.createTestingPPA()
         ppa_url = '/~{}/+archive/ppa'.format(ppa.owner.name)
         webservice = webservice_for_person(
             ppa.owner, permission=OAuthPermission.READ_PRIVATE)

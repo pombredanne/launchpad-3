@@ -77,7 +77,10 @@ from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.config import config
-from lp.services.database.bulk import load_related
+from lp.services.database.bulk import (
+    load_referencing,
+    load_related,
+    )
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.decoratedresultset import DecoratedResultSet
@@ -490,10 +493,10 @@ class Archive(SQLBase):
             return getUtility(IBuildFarmJobSet).getBuildsForArchive(
                 self, status=build_state)
 
-    def _getPublishedSources(self, name=None, version=None, status=None,
-                             distroseries=None, pocket=None,
-                             exact_match=False, created_since_date=None,
-                             component_name=None):
+    def api_getPublishedSources(self, name=None, version=None, status=None,
+                                distroseries=None, pocket=None,
+                                exact_match=False, created_since_date=None,
+                                component_name=None):
         """See `IArchive`."""
         # 'eager_load' and 'include_removed' arguments are always True
         # for API calls.
@@ -501,47 +504,37 @@ class Archive(SQLBase):
             name, version, status, distroseries, pocket, exact_match,
             created_since_date, True, component_name, True)
 
-        def cache_related(rows):
-            # Cache extra related-objects immediately used by API calls.
-            from lp.registry.model.sourcepackagename import SourcePackageName
-            from lp.soyuz.model.queue import (
-                PackageUpload,
-                PackageUploadSource,
-                )
-            store = Store.of(self)
-            # Pre-cache related `PackageUpload`s, needed for security checks.
-            pu_ids = set(map(attrgetter('packageuploadID'), rows))
-            list(store.find(PackageUpload, PackageUpload.id.is_in(pu_ids)))
-            # Pre-cache related `SourcePackageName`s, needed for the published
-            # record title (materialized in the API).
+        def load_api_extra_objects(rows):
+            """Load extra related-objects needed by API calls."""
+            # Pre-cache related `PackageUpload`s and `PackageUploadSource`s
+            # which are immediatelly used in the API context for checking
+            # permissions on the returned entries.
+            uploads = load_related(PackageUpload, rows, ['packageuploadID'])
+            pu_sources = load_referencing(
+                PackageUploadSource, uploads, ['packageuploadID'])
+            for pu_source in pu_sources:
+                upload = pu_source.packageupload
+                get_property_cache(upload).sources = [pu_source]
+            # Pre-cache `SourcePackageName`s which are immediatelly used
+            # in the API context for materializing the returned entries.
+            # XXX cprov 2014-04-23: load_related() does not support
+            # nested attributes as foreign keys (uses getattr instead of
+            # attrgetter).
             spn_ids = set(map(
                 attrgetter('sourcepackagerelease.sourcepackagenameID'), rows))
-            list(store.find(SourcePackageName,
-                            SourcePackageName.id.is_in(spn_ids)))
-            # Load and organise related `PackageUploadSources` for filling
-            # `PackageUpload.sources` cachedproperty.
-            pu_sources = store.find(
-                PackageUploadSource,
-                PackageUploadSource.packageuploadID.is_in(pu_ids))
-            pu_sources_dict = dict(zip(pu_ids, pu_sources))
-
-            # Fill publishing records.
+            list(Store.of(self).find(
+                SourcePackageName, SourcePackageName.id.is_in(spn_ids)))
+            # Bypass PackageUpload security-check query by caching
+            # `SourcePackageRelease.published_archives` results.
+            # All published sources are visible to the user, since they
+            # are published in the context archive. No need to check
+            # additional archives the source is published.
             for pub_source in rows:
-                # Bypass PackageUpload security-check query by caching
-                # `SourcePackageRelease.published_archives` results.
-                # All published sources are visible to the user, since they
-                # are published in the context archive. No need to check
-                # additional archives the source is published.
                 spr = pub_source.sourcepackagerelease
                 get_property_cache(spr).published_archives = [self]
-                # Fill `PackageUpload.sources`.
-                if pub_source.packageupload is not None:
-                    upload = pub_source.packageupload
-                    get_property_cache(upload).sources = [
-                        pu_sources_dict.get(upload.id)]
 
         return DecoratedResultSet(published_sources,
-                                  pre_iter_hook=cache_related)
+                                  pre_iter_hook=load_api_extra_objects)
 
     def getPublishedSources(self, name=None, version=None, status=None,
                             distroseries=None, pocket=None,
