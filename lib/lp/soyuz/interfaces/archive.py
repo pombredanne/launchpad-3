@@ -446,11 +446,9 @@ class IArchiveSubscriberView(Interface):
                                 distroseries=None, pocket=None,
                                 exact_match=False, created_since_date=None,
                                 component_name=None):
-        """API wrapper for getPublishedSources.
-
-        It loads additional related objects only needed in the API call
-        context (i.e. security checks and entries marshalling).
-        """
+        """All `ISourcePackagePublishingHistory` target to this archive."""
+        # It loads additional related objects only needed in the API call
+        # context (i.e. security checks and entries marshalling).
 
     def getPublishedSources(name=None, version=None, status=None,
                             distroseries=None, pocket=None,
