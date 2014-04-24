@@ -77,7 +77,10 @@ from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.config import config
-from lp.services.database.bulk import load_related
+from lp.services.database.bulk import (
+    load_referencing,
+    load_related,
+    )
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.decoratedresultset import DecoratedResultSet
@@ -489,6 +492,49 @@ class Archive(SQLBase):
                     "with binary_only=True.")
             return getUtility(IBuildFarmJobSet).getBuildsForArchive(
                 self, status=build_state)
+
+    def api_getPublishedSources(self, name=None, version=None, status=None,
+                                distroseries=None, pocket=None,
+                                exact_match=False, created_since_date=None,
+                                component_name=None):
+        """See `IArchive`."""
+        # 'eager_load' and 'include_removed' arguments are always True
+        # for API calls.
+        published_sources = self.getPublishedSources(
+            name, version, status, distroseries, pocket, exact_match,
+            created_since_date, True, component_name, True)
+
+        def load_api_extra_objects(rows):
+            """Load extra related-objects needed by API calls."""
+            # Pre-cache related `PackageUpload`s and `PackageUploadSource`s
+            # which are immediatelly used in the API context for checking
+            # permissions on the returned entries.
+            uploads = load_related(PackageUpload, rows, ['packageuploadID'])
+            pu_sources = load_referencing(
+                PackageUploadSource, uploads, ['packageuploadID'])
+            for pu_source in pu_sources:
+                upload = pu_source.packageupload
+                get_property_cache(upload).sources = [pu_source]
+            # Pre-cache `SourcePackageName`s which are immediatelly used
+            # in the API context for materializing the returned entries.
+            # XXX cprov 2014-04-23: load_related() does not support
+            # nested attributes as foreign keys (uses getattr instead of
+            # attrgetter).
+            spn_ids = set(map(
+                attrgetter('sourcepackagerelease.sourcepackagenameID'), rows))
+            list(Store.of(self).find(
+                SourcePackageName, SourcePackageName.id.is_in(spn_ids)))
+            # Bypass PackageUpload security-check query by caching
+            # `SourcePackageRelease.published_archives` results.
+            # All published sources are visible to the user, since they
+            # are published in the context archive. No need to check
+            # additional archives the source is published.
+            for pub_source in rows:
+                spr = pub_source.sourcepackagerelease
+                get_property_cache(spr).published_archives = [self]
+
+        return DecoratedResultSet(published_sources,
+                                  pre_iter_hook=load_api_extra_objects)
 
     def getPublishedSources(self, name=None, version=None, status=None,
                             distroseries=None, pocket=None,
