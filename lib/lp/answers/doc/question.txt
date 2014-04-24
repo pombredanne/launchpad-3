@@ -38,16 +38,6 @@ distribution.
     >>> verifyObject(IQuestionTarget, questiontarget)
     True
 
-Similarly, it is possible to adapt an ISourcePackageRelease into an
-IQuestionTarget.
-
-    >>> firefox_in_warty = ubuntu_warty.getSourcePackage('mozilla-firefox')
-    >>> firefox_release_in_warty = firefox_in_warty.currentrelease
-
-    >>> questiontarget = IQuestionTarget(firefox_release_in_warty)
-    >>> verifyObject(IQuestionTarget, questiontarget)
-    True
-
 SourcePackages are can be adapted to QuestionTargets.
 
     >>> evolution_in_hoary = ubuntu.currentseries.getSourcePackage(

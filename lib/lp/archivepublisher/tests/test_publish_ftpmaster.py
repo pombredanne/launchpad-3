@@ -314,12 +314,6 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         distro = self.factory.makeDistribution(no_pubconf=True)
         self.makeScript(distro).main()
 
-    def test_produces_listings(self):
-        distro = self.makeDistroWithPublishDirectory()
-        self.makeScript(distro).main()
-        self.assertTrue(
-            path_exists(get_archive_root(get_pub_config(distro)), 'ls-lR.gz'))
-
     def test_can_run_twice(self):
         test_publisher = SoyuzTestPublisher()
         distroseries = test_publisher.setUpDefaultDistroSeries()
@@ -531,14 +525,6 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
             "ARCHIVEROOT", "DISTSROOT", "OVERRIDEROOT"])
         missing_parameters = required_parameters.difference(set(env.keys()))
         self.assertEqual(set(), missing_parameters)
-
-    def test_generateListings_writes_ls_lR_gz(self):
-        distro = self.makeDistroWithPublishDirectory()
-        script = self.makeScript(distro)
-        script.setUp()
-        script.setUpDirs()
-        script.generateListings(distro)
-        pass
 
     def test_clearEmptyDirs_cleans_up_empty_directories(self):
         distro = self.makeDistroWithPublishDirectory()

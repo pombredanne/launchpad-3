@@ -83,10 +83,6 @@
             name="+portlet-breaks"
             template="../templates/binarypackagerelease-portlet-breaks.pt"/>
     </browser:pages>
-    <browser:url
-        for="lp.soyuz.interfaces.sourcepackagerelease.ISourcePackageRelease"
-        path_expression="string:${version}"
-        attribute_to_parent="sourcepackage"/>
     <browser:pages
         for="lp.soyuz.interfaces.sourcepackagerelease.ISourcePackageRelease"
         permission="zope.Public">
@@ -106,11 +102,6 @@
             name="+diffs"
             template="../templates/sourcepackagerelease-diffs.pt"/>
     </browser:pages>
-    <browser:page
-        for="lp.soyuz.interfaces.sourcepackagerelease.ISourcePackageRelease"
-        class="lp.answers.browser.questiontarget.QuestionCollectionOpenCountView"
-        name="+open_questions_count"
-        permission="zope.Public"/>
     <browser:pages
         for="lp.soyuz.interfaces.sourcepackagerelease.ISourcePackageRelease"
         class="lp.soyuz.browser.sourcepackagerelease.SourcePackageReleaseView"

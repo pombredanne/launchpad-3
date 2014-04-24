@@ -5,13 +5,21 @@
 
 __metaclass__ = type
 
+from zope.component import getUtility
+
+from lp.registry.interfaces.person import IPersonSet
+from lp.services.webapp.interfaces import OAuthPermission
 from lp.testing import (
+    admin_logged_in,
     api_url,
     logout,
     TestCaseWithFactory,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
-from lp.testing.pages import LaunchpadWebServiceCaller
+from lp.testing.pages import (
+    LaunchpadWebServiceCaller,
+    webservice_for_person,
+    )
 
 
 class TestBuildersCollection(TestCaseWithFactory):
@@ -48,6 +56,27 @@ class TestBuildersCollection(TestCaseWithFactory):
         self.assertEquals(
             ['quantum_builder1', 'quantum_builder2'],
             sorted(builder['name'] for builder in results['entries']))
+
+    def test_new(self):
+        person = self.factory.makePerson()
+        badmins = getUtility(IPersonSet).getByName('launchpad-buildd-admins')
+        webservice = webservice_for_person(
+            person, permission=OAuthPermission.WRITE_PRIVATE)
+        args = dict(
+            name='foo', processors=['/+processors/386'], title='foobar',
+            url='http://foo.buildd:8221/', virtualized=False,
+            api_version='devel')
+
+        response = webservice.named_post('/builders', 'new', **args)
+        self.assertEqual(401, response.status)
+
+        with admin_logged_in():
+            badmins.addMember(person, badmins)
+        response = webservice.named_post('/builders', 'new', **args)
+        self.assertEqual(201, response.status)
+
+        self.assertEqual(
+            'foobar', webservice.get('/builders/foo').jsonBody()['title'])
 
 
 class TestBuilderEntry(TestCaseWithFactory):

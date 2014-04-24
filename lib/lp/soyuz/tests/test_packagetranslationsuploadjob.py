@@ -58,8 +58,10 @@ class LocalTestHelper(TestCaseWithFactory):
 
         libraryfilealias = self.makeTranslationsLFA(tar_content)
 
-        return (spr, getUtility(IPackageTranslationsUploadJobSource).create(
-            distroseries, libraryfilealias, sourcepackagename, requester))
+        return (
+            spr, distroseries.getSourcePackage(sourcepackagename),
+            getUtility(IPackageTranslationsUploadJobSource).create(
+                distroseries, libraryfilealias, sourcepackagename, requester))
 
     def makeTranslationsLFA(self, tar_content=None):
         """Create an LibraryFileAlias containing dummy translation data."""
@@ -78,7 +80,7 @@ class TestPackageTranslationsUploadJob(LocalTestHelper):
     layer = LaunchpadZopelessLayer
 
     def test_job_implements_IPackageTranslationsUploadJob(self):
-        _, job = self.makeJob()
+        _, _, job = self.makeJob()
         self.assertTrue(verifyObject(IPackageTranslationsUploadJob, job))
 
     def test_job_source_implements_IPackageTranslationsUploadJobSource(self):
@@ -87,21 +89,21 @@ class TestPackageTranslationsUploadJob(LocalTestHelper):
                                      job_source))
 
     def test_iterReady(self):
-        _, job1 = self.makeJob()
+        _, _, job1 = self.makeJob()
         removeSecurityProxy(job1).job._status = JobStatus.COMPLETED
-        _, job2 = self.makeJob()
+        _, _, job2 = self.makeJob()
         jobs = list(PackageTranslationsUploadJob.iterReady())
         self.assertEqual(1, len(jobs))
 
     def test_getErrorRecipients_requester(self):
-        _, job = self.makeJob()
+        _, _, job = self.makeJob()
         email = format_address_for_person(job.requester)
         self.assertEquals([email], job.getErrorRecipients())
         removeSecurityProxy(job).requester = None
         self.assertEquals([], job.getErrorRecipients())
 
     def test_run(self):
-        _, job = self.makeJob()
+        _, _, job = self.makeJob()
         method = FakeMethod()
         removeSecurityProxy(job).attachTranslationFiles = method
         transaction.commit()
@@ -112,7 +114,7 @@ class TestPackageTranslationsUploadJob(LocalTestHelper):
         tar_content = {
             'source/po/foobar.pot': 'FooBar template',
         }
-        spr, job = self.makeJob(tar_content=tar_content)
+        spr, sp, job = self.makeJob(tar_content=tar_content)
         transaction.commit()
         out, err, exit_code = run_script(
             "LP_DEBUG_SQL=1 cronscripts/process-job-source.py -vv %s" % (
@@ -123,8 +125,7 @@ class TestPackageTranslationsUploadJob(LocalTestHelper):
 
         self.assertEqual(0, exit_code)
         translation_import_queue = getUtility(ITranslationImportQueue)
-        entries_in_queue = translation_import_queue.getAllEntries(
-            target=spr.sourcepackage)
+        entries_in_queue = translation_import_queue.getAllEntries(target=sp)
 
         self.assertEqual(1, entries_in_queue.count())
         # Check if the file in tar_content is queued:
@@ -141,12 +142,12 @@ class TestViaCelery(LocalTestHelper):
             'jobs.celery.enabled_classes': 'PackageTranslationsUploadJob',
         }))
 
-        spr, job = self.makeJob()
+        spr, sp, job = self.makeJob()
         with block_on_job(self):
             transaction.commit()
         translation_import_queue = getUtility(ITranslationImportQueue)
         entries_in_queue = translation_import_queue.getAllEntries(
-            target=spr.sourcepackage).count()
+            target=sp).count()
         self.assertEqual(2, entries_in_queue)
 
 
@@ -159,16 +160,16 @@ class TestAttachTranslationFiles(LocalTestHelper):
         # If translation sharing is disabled, attachTranslationFiles() creates
         # a job in the translation import queue.
 
-        spr, job = self.makeJob()
+        spr, sp, job = self.makeJob()
 
-        self.assertFalse(spr.sourcepackage.has_sharing_translation_templates)
+        self.assertFalse(sp.has_sharing_translation_templates)
 
         transaction.commit()
         with dbuser('upload_package_translations_job'):
             job.attachTranslationFiles(True)
         translation_import_queue = getUtility(ITranslationImportQueue)
         entries_in_queue = translation_import_queue.getAllEntries(
-            target=spr.sourcepackage).count()
+            target=sp).count()
         self.assertEqual(2, entries_in_queue)
 
     def test_attachTranslationFiles__translation_sharing(self):
@@ -185,16 +186,17 @@ class TestAttachTranslationFiles(LocalTestHelper):
             distroseries=distroseries)
 
         productseries = self.factory.makeProductSeries()
-        sourcepackage = spr.sourcepackage
+        sourcepackage = spr.upload_distroseries.getSourcePackage(
+            spr.sourcepackagename)
 
         self.factory.makePOTemplate(productseries=productseries)
         with person_logged_in(sourcepackage.distroseries.owner):
             sourcepackage.setPackaging(
                 productseries, sourcepackage.distroseries.owner)
 
-        spr, job = self.makeJob(sourcepackagerelease=spr)
+        spr, _, job = self.makeJob(sourcepackagerelease=spr)
 
-        self.assertTrue(spr.sourcepackage.has_sharing_translation_templates)
+        self.assertTrue(sourcepackage.has_sharing_translation_templates)
 
         transaction.commit()
         with dbuser('upload_package_translations_job'):

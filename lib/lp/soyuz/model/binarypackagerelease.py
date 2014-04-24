@@ -107,16 +107,6 @@ class BinaryPackageRelease(SQLBase):
         return self.binarypackagename.name
 
     @property
-    def distributionsourcepackagerelease(self):
-        """See `IBinaryPackageRelease`."""
-        # import here to avoid circular import problems
-        from lp.soyuz.model.distributionsourcepackagerelease \
-            import DistributionSourcePackageRelease
-        return DistributionSourcePackageRelease(
-            distribution=self.build.distribution,
-            sourcepackagerelease=self.build.source_package_release)
-
-    @property
     def sourcepackagename(self):
         """See `IBinaryPackageRelease`."""
         return self.build.source_package_release.sourcepackagename.name

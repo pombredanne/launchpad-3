@@ -101,12 +101,12 @@ class TestDistroSeriesQueueRosettaTranslationsTarball(
                 ".po" in file_]
 
     def _getQueuePaths(self, import_status=None):
+        sp = self.breezy_autotest.getSourcePackage(self.spr.sourcepackagename)
         if import_status is not None:
             entries = self.translation_import_queue.getAllEntries(
-                target=self.spr.sourcepackage, import_status=import_status)
+                target=sp, import_status=import_status)
         else:
-            entries = self.translation_import_queue.getAllEntries(
-                target=self.spr.sourcepackage)
+            entries = self.translation_import_queue.getAllEntries(target=sp)
         return [entry.path for entry in entries]
 
     def test_publish(self):

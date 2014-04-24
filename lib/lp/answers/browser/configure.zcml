@@ -31,12 +31,6 @@
     />
   <browser:page
     for="lp.answers.interfaces.questioncollection.IQuestionCollection"
-    class=".questiontarget.QuestionCollectionOpenCountView"
-    name="+open_questions_count"
-    permission="zope.Public"
-    />
-  <browser:page
-    for="lp.answers.interfaces.questioncollection.IQuestionCollection"
     class=".questiontarget.QuestionCollectionLatestQuestionsPortlet"
     name="+portlet-latestquestions"
     permission="zope.Public"

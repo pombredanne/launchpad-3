@@ -405,6 +405,7 @@ class IArchiveSubscriberView(Interface):
         :return: A IArchiveAuthToken, or None if the user has none.
         """
 
+    @export_operation_as('getPublishedSources')
     @rename_parameters_as(name="source_name", distroseries="distro_series")
     @operation_parameters(
         name=TextLine(title=_("Source package name"), required=False),
@@ -439,9 +440,16 @@ class IArchiveSubscriberView(Interface):
         )
     # Really returns ISourcePackagePublishingHistory, see below for
     # patch to avoid circular import.
-    @call_with(eager_load=True)
     @operation_returns_collection_of(Interface)
     @export_read_operation()
+    def api_getPublishedSources(name=None, version=None, status=None,
+                                distroseries=None, pocket=None,
+                                exact_match=False, created_since_date=None,
+                                component_name=None):
+        """All `ISourcePackagePublishingHistory` target to this archive."""
+        # It loads additional related objects only needed in the API call
+        # context (i.e. security checks and entries marshalling).
+
     def getPublishedSources(name=None, version=None, status=None,
                             distroseries=None, pocket=None,
                             exact_match=False, created_since_date=None,

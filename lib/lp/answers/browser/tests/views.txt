@@ -930,19 +930,6 @@ to the question, or an m-dash if there is no assignee.
     4 ...    2005-09-05  Foo Bar        &mdash;   Open ...
 
 
-QuestionCollectionOpenCountView
--------------------------------
-
-There is a helper view that is available on all IQuestionCollection that
-returns the number of questions in the Open and Needs information states
-on that target.
-
-    >>> view = getMultiAdapter(
-    ...     (firefox, LaunchpadTestRequest()), name='+open_questions_count')
-    >>> view()
-    u'3'
-
-
 ManageAnswerContactView
 -----------------------
 

@@ -201,13 +201,6 @@ class SourcePackageRelease(SQLBase):
         now = datetime.datetime.now(pytz.timezone('UTC'))
         return now - self.dateuploaded
 
-    @property
-    def latest_build(self):
-        builds = self._cached_builds
-        if len(builds) > 0:
-            return builds[0]
-        return None
-
     def failed_builds(self):
         return [build for build in self._cached_builds
                 if build.buildstate == BuildStatus.FAILEDTOBUILD]
@@ -231,25 +224,6 @@ class SourcePackageRelease(SQLBase):
     @property
     def name(self):
         return self.sourcepackagename.name
-
-    @property
-    def sourcepackage(self):
-        """See ISourcePackageRelease."""
-        # By supplying the sourcepackagename instead of its string name,
-        # we avoid doing an extra query doing getSourcepackage.
-        # XXX 2008-06-16 mpt bug=241298: cprov says this property "won't be as
-        # useful as it looks once we start supporting derivation ... [It] is
-        # dangerous and should be renamed (or removed)".
-        series = self.upload_distroseries
-        return series.getSourcePackage(self.sourcepackagename)
-
-    @property
-    def distrosourcepackage(self):
-        """See ISourcePackageRelease."""
-        # By supplying the sourcepackagename instead of its string name,
-        # we avoid doing an extra query doing getSourcepackage
-        distribution = self.upload_distroseries.distribution
-        return distribution.getSourcePackage(self.sourcepackagename)
 
     @property
     def title(self):

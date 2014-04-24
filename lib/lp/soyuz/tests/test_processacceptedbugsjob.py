@@ -171,7 +171,9 @@ class TestProcessAcceptedBugsJob(TestCaseWithFactory):
         spr = self.factory.makeSourcePackageRelease(
             distroseries=self.distroseries, changelog_entry="changelog")
         bug = self.factory.makeBug()
-        bugtask = self.factory.makeBugTask(target=spr.sourcepackage, bug=bug)
+        bugtask = self.factory.makeBugTask(
+            target=self.distroseries.getSourcePackage(spr.sourcepackagename),
+            bug=bug)
         self.assertEqual(BugTaskStatus.NEW, bugtask.status)
         job = self.makeJob(spr=spr, bug_ids=[bug.id])
         JobRunner([job]).runAll()
@@ -181,7 +183,9 @@ class TestProcessAcceptedBugsJob(TestCaseWithFactory):
         spr = self.factory.makeSourcePackageRelease(
             distroseries=self.distroseries, changelog_entry="changelog")
         bug = self.factory.makeBug()
-        bugtask = self.factory.makeBugTask(target=spr.sourcepackage, bug=bug)
+        bugtask = self.factory.makeBugTask(
+            target=self.distroseries.getSourcePackage(spr.sourcepackagename),
+            bug=bug)
         self.assertEqual(BugTaskStatus.NEW, bugtask.status)
         self.makeJob(spr=spr, bug_ids=[bug.id])
         transaction.commit()
@@ -212,7 +216,9 @@ class TestViaCelery(TestCaseWithFactory):
         spr = self.factory.makeSourcePackageRelease(
             distroseries=distroseries, changelog_entry="changelog")
         bug = self.factory.makeBug()
-        bugtask = self.factory.makeBugTask(target=spr.sourcepackage, bug=bug)
+        bugtask = self.factory.makeBugTask(
+            target=distroseries.getSourcePackage(spr.sourcepackagename),
+            bug=bug)
         self.assertEqual(BugTaskStatus.NEW, bugtask.status)
         job = getUtility(IProcessAcceptedBugsJobSource).create(
             distroseries, spr, [bug.id])

@@ -438,13 +438,13 @@ patch_plain_parameter_type(
     IArchive, 'getArchiveDependency', 'dependency', IArchive)
 patch_entry_return_type(IArchive, 'getArchiveDependency', IArchiveDependency)
 patch_plain_parameter_type(
-    IArchive, 'getPublishedSources', 'distroseries', IDistroSeries)
+    IArchive, 'api_getPublishedSources', 'distroseries', IDistroSeries)
 patch_collection_return_type(
-    IArchive, 'getPublishedSources', ISourcePackagePublishingHistory)
+    IArchive, 'api_getPublishedSources', ISourcePackagePublishingHistory)
 patch_choice_parameter_type(
-    IArchive, 'getPublishedSources', 'status', PackagePublishingStatus)
+    IArchive, 'api_getPublishedSources', 'status', PackagePublishingStatus)
 patch_choice_parameter_type(
-    IArchive, 'getPublishedSources', 'pocket', PackagePublishingPocket)
+    IArchive, 'api_getPublishedSources', 'pocket', PackagePublishingPocket)
 patch_plain_parameter_type(
     IArchive, 'getAllPublishedBinaries', 'distroarchseries',
     IDistroArchSeries)
@@ -761,7 +761,7 @@ patch_operations_explicit_version(
     "getBuildSummariesForSourceIds", "getComponentsForQueueAdmin",
     "getPackagesetsForSource", "getPackagesetsForSourceUploader",
     "getPackagesetsForUploader", "getPermissionsForPerson",
-    "getPublishedSources", "getQueueAdminsForComponent",
+    "api_getPublishedSources", "getQueueAdminsForComponent",
     "getUploadersForComponent", "getUploadersForPackage",
     "getUploadersForPackageset", "isSourceUploadAllowed",
     "newComponentUploader", "newPackageUploader", "newPackagesetUploader",

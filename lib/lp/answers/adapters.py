@@ -20,11 +20,6 @@ def series_to_questiontarget(series):
     return series.parent
 
 
-def sourcepackagerelease_to_questiontarget(sourcepackagerelease):
-    """Adapts an ISourcePackageRelease into an IQuestionTarget."""
-    return sourcepackagerelease.distrosourcepackage
-
-
 def sourcepackage_to_questiontarget(sourcepackage):
     """Adapts an ISourcePackage into an IQuestionTarget."""
     return sourcepackage.distribution_sourcepackage
