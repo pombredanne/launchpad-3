@@ -106,11 +106,6 @@
             name="+diffs"
             template="../templates/sourcepackagerelease-diffs.pt"/>
     </browser:pages>
-    <browser:page
-        for="lp.soyuz.interfaces.sourcepackagerelease.ISourcePackageRelease"
-        class="lp.answers.browser.questiontarget.QuestionCollectionOpenCountView"
-        name="+open_questions_count"
-        permission="zope.Public"/>
     <browser:pages
         for="lp.soyuz.interfaces.sourcepackagerelease.ISourcePackageRelease"
         class="lp.soyuz.browser.sourcepackagerelease.SourcePackageReleaseView"
