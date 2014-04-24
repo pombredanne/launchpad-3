@@ -58,9 +58,8 @@ class TestClosingBugs(TestCaseWithFactory):
         bugs = []
         for i in range(6):
             if target_series is None:
-                target = spr.sourcepackage
-            else:
-                target = target_series.getSourcePackage(spr.sourcepackagename)
+                target_series = spr.upload_distroseries
+            target = target_series.getSourcePackage(spr.sourcepackagename)
             bug = self.factory.makeBug()
             bugtask = self.factory.makeBugTask(target=target, bug=bug)
             bugs.append((bug, bugtask))

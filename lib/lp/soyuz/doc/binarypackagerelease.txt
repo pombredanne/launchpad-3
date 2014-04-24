@@ -26,15 +26,6 @@ Useful properties:
    >>> hoary.name
    u'hoary'
 
-Retrieve the respective DistributionSourcePackageRelease, which allow
-us to easily link to a source reference published in the web-ui.
-
-   >>> from lp.soyuz.interfaces.distributionsourcepackagerelease import IDistributionSourcePackageRelease
-   >>> verifyObject(
-   ...    IDistributionSourcePackageRelease,
-   ...    firefox_bin_release.distributionsourcepackagerelease)
-   True
-
 The IBinaryPackageNameSet.getNotNewByNames() returns all the
 BinaryPackageName records for BinaryPackageReleases that are published
 in the supplied distroseries in the archives with the supplied

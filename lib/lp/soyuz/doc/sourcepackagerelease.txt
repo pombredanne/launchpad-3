@@ -80,15 +80,6 @@ All the builds returned are for non-PPA archives:
    >>> set(build.archive.purpose.name for build in spr.builds)
    set(['PRIMARY'])
 
-We can use the sourcepackage and distrosourcepackage properties to
-grab magical objects representing that package in the distribution to
-which it was uploaded:
-
-   >>> print spr.sourcepackage.displayname
-   mozilla-firefox in Ubuntu Warty
-   >>> print spr.distrosourcepackage.displayname
-   mozilla-firefox in Ubuntu
-
 Check that the uploaded changesfile works:
 
    >>> commercial = SourcePackageRelease.get(36)

@@ -86,11 +86,6 @@ class IBinaryPackageRelease(Interface):
     sourcepackagename = Attribute(
         "The name of the source package from where this binary was built.")
 
-    # Properties.
-    distributionsourcepackagerelease = Attribute(
-        "The sourcepackage release in this distribution from which this "
-        "binary was built.")
-
     def addFile(file):
         """Create a BinaryPackageFile record referencing this build
         and attach the provided library file alias (file).

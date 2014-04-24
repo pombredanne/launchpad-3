@@ -1246,12 +1246,14 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             version="2.8-0", status=PackagePublishingStatus.PUBLISHED,
             archive=target_archive)
 
+        sp = self.distroseries.getSourcePackage(spr.sourcepackagename)
+
         bugtask280 = self.factory.makeBugTask(
-            target=spr.sourcepackage, bug=bug280, publish=False)
+            target=sp, bug=bug280, publish=False)
         bugtask281 = self.factory.makeBugTask(
-            target=spr.sourcepackage, bug=bug281, publish=False)
+            target=sp, bug=bug281, publish=False)
         bugtask282 = self.factory.makeBugTask(
-            target=spr.sourcepackage, bug=bug282, publish=False)
+            target=sp, bug=bug282, publish=False)
 
         # Run the copy job.
         requester = self.factory.makePerson()
