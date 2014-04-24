@@ -14,7 +14,6 @@ __all__ = [
     'QuestionCollectionLatestQuestionsPortlet',
     'QuestionCollectionMyQuestionsView',
     'QuestionCollectionNeedAttentionView',
-    'QuestionCollectionOpenCountView',
     'QuestionCollectionAnswersMenu',
     'QuestionTargetPortletAnswerContactsWithDetails',
     'QuestionTargetTraversalMixin',
@@ -167,23 +166,6 @@ class QuestionCollectionLatestQuestionsPortlet:
         """
         question_collection = IQuestionCollection(self.context)
         return list(question_collection.searchQuestions()[:quantity])
-
-
-class QuestionCollectionOpenCountView:
-    """View used to render the number of open questions.
-
-    This view is used to render the number of open questions on
-    each IDistributionSourcePackage on the person-packages-templates.pt.
-    It is simpler to define generic view and an adapter (since
-    SourcePackageRelease does not provide IQuestionCollection), than
-    to write a specific view for that template.
-    """
-
-    def __call__(self):
-        questiontarget = IQuestionCollection(self.context)
-        open_questions = questiontarget.searchQuestions(
-            status=[QuestionStatus.OPEN, QuestionStatus.NEEDSINFO])
-        return unicode(open_questions.count())
 
 
 class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
