@@ -13,6 +13,7 @@ import doctest
 from pytz import UTC
 from testtools.matchers import (
     DocTestMatches,
+    LessThan,
     MatchesRegex,
     MatchesStructure,
     )
@@ -41,6 +42,7 @@ from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import sqlvalues
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.propertycache import clear_property_cache
+from lp.services.webapp.interfaces import OAuthPermission
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.soyuz.adapters.archivedependencies import (
     get_sources_list_for_building,
@@ -102,6 +104,9 @@ from lp.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )
+from lp.testing.matchers import HasQueryCount
+from lp.testing.pages import webservice_for_person
+from lp.testing._webservice import QueryCollector
 
 
 class TestGetPublicationsInArchive(TestCaseWithFactory):
@@ -2124,6 +2129,58 @@ class TestGetPublishedSources(TestCaseWithFactory):
         [filtered] = distroseries.main_archive.getPublishedSources(
             component_name='universe')
         self.assertEqual('universe', filtered.component.name)
+
+
+class GetPublishedSourcesWebServiceTests(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(GetPublishedSourcesWebServiceTests, self).setUp()
+
+    def createTestingPPA(self):
+        """Creates and populates a PPA for API performance tests.
+
+        Creates a public PPA and populates it with 5 distinct source
+        publications with corresponding `PackageUpload` records.
+        """
+        ppa = self.factory.makeArchive(
+            name='ppa', purpose=ArchivePurpose.PPA)
+        distroseries = self.factory.makeDistroSeries()
+        # XXX cprov 2014-04-22: currently the target archive owner cannot
+        # 'addSource' to a `PackageUpload` ('launchpad.Edit'). It seems
+        # too restrive to me.
+        from zope.security.proxy import removeSecurityProxy
+        with person_logged_in(ppa.owner):
+            for i in range(5):
+                upload = self.factory.makePackageUpload(
+                    distroseries=distroseries, archive=ppa)
+                pub = self.factory.makeSourcePackagePublishingHistory(
+                    archive=ppa, distroseries=distroseries,
+                    creator=ppa.owner, spr_creator=ppa.owner,
+                    maintainer=ppa.owner, packageupload=upload)
+                naked_upload = removeSecurityProxy(upload)
+                naked_upload.addSource(pub.sourcepackagerelease)
+        return ppa
+
+    def test_query_count(self):
+        # IArchive.getPublishedSources() webservice is exposed
+        # via a wrapper to improving performance (by reducing the
+        # number of queries issued)
+        ppa = self.createTestingPPA()
+        ppa_url = '/~{}/+archive/ppa'.format(ppa.owner.name)
+        webservice = webservice_for_person(
+            ppa.owner, permission=OAuthPermission.READ_PRIVATE)
+
+        collector = QueryCollector()
+        collector.register()
+        self.addCleanup(collector.unregister)
+
+        response = webservice.named_get(ppa_url, 'getPublishedSources')
+
+        self.assertEqual(200, response.status)
+        self.assertEqual(5, response.jsonBody()['total_size'])
+        self.assertThat(collector, HasQueryCount(LessThan(28)))
 
 
 class TestCopyPackage(TestCaseWithFactory):
