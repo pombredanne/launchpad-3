@@ -27,7 +27,11 @@ class TestSourcePackageReleaseFiles(TestCaseWithFactory):
 
     def setUp(self):
         super(TestSourcePackageReleaseFiles, self).setUp()
-        self.source_package_release = self.factory.makeSourcePackageRelease()
+        # SourcePackageRelease itself is contextless, so wrap it in DSPR
+        # to give it a URL.
+        self.source_package_release = (
+            self.factory.makeDistroSeries().getSourcePackageRelease(
+                self.factory.makeSourcePackageRelease()))
 
     def test_spr_files_none(self):
         # The snippet renders appropriately when there are no files.
