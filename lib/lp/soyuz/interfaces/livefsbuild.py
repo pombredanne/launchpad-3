@@ -146,15 +146,6 @@ class ILiveFSBuildEdit(Interface):
 
     @export_write_operation()
     @operation_for_version("devel")
-    def retry():
-        """Restore the build record to its initial state.
-
-        The build record loses its history, is moved to NEEDSBUILD, and a
-        new non-scored BuildQueue entry is created for it.
-        """
-
-    @export_write_operation()
-    @operation_for_version("devel")
     def cancel():
         """Cancel the build if it is either pending or in progress.
 
