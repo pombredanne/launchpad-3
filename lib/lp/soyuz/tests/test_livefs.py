@@ -7,7 +7,6 @@ __metaclass__ = type
 
 from datetime import timedelta
 
-from lazr.restfulclient.errors import BadRequest
 from storm.locals import Store
 from testtools.matchers import Equals
 import transaction
@@ -22,7 +21,7 @@ from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.features.testing import FeatureFixture
-from lp.services.webapp.publisher import canonical_url
+from lp.services.webapp.interfaces import OAuthPermission
 from lp.soyuz.interfaces.livefs import (
     ILiveFS,
     ILiveFSSet,
@@ -34,15 +33,14 @@ from lp.soyuz.interfaces.livefs import (
 from lp.soyuz.interfaces.livefsbuild import ILiveFSBuild
 from lp.testing import (
     ANONYMOUS,
-    launchpadlib_for,
+    api_url,
     login,
+    logout,
     person_logged_in,
     StormStatementRecorder,
     TestCaseWithFactory,
-    ws_object,
     )
 from lp.testing.layers import (
-    AppServerLayer,
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
     )
@@ -231,16 +229,19 @@ class TestLiveFS(TestCaseWithFactory):
 
 class TestLiveFSWebservice(TestCaseWithFactory):
 
-    layer = AppServerLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         super(TestLiveFSWebservice, self).setUp()
         self.useFixture(FeatureFixture({LIVEFS_FEATURE_FLAG: u"on"}))
         self.person = self.factory.makePerson()
-        self.webservice = launchpadlib_for(
-            "testing", self.person,
-            service_root=self.layer.appserver_root_url("api"))
+        self.webservice = webservice_for_person(
+            self.person, permission=OAuthPermission.WRITE_PUBLIC)
+        self.webservice.default_api_version = "devel"
         login(ANONYMOUS)
+
+    def getURL(self, obj):
+        return self.webservice.getAbsoluteUrl(api_url(obj))
 
     def makeLiveFS(self, registrant=None, owner=None, distroseries=None,
                    metadata=None):
@@ -253,112 +254,131 @@ class TestLiveFSWebservice(TestCaseWithFactory):
         if distroseries is None:
             distroseries = self.factory.makeDistroSeries(registrant=registrant)
         transaction.commit()
-        ws_distroseries = ws_object(self.webservice, distroseries)
-        ws_registrant = ws_object(self.webservice, registrant)
-        ws_owner = ws_object(self.webservice, owner)
-        livefs = ws_registrant.createLiveFS(
-            owner=ws_owner, distroseries=ws_distroseries,
-            name="flavour-desktop", metadata=metadata)
-        transaction.commit()
-        return livefs, ws_distroseries
+        distroseries_url = api_url(distroseries)
+        registrant_url = api_url(registrant)
+        owner_url = api_url(owner)
+        logout()
+        response = self.webservice.named_post(
+            registrant_url, "createLiveFS", owner=owner_url,
+            distroseries=distroseries_url, name="flavour-desktop",
+            metadata=metadata)
+        self.assertEqual(201, response.status)
+        livefs = self.webservice.get(response.getHeader("Location")).jsonBody()
+        return livefs, distroseries_url
+
+    def getCollectionLinks(self, entry, member):
+        """Return a list of self_link attributes of entries in a collection."""
+        collection = self.webservice.get(
+            entry["%s_collection_link" % member]).jsonBody()
+        return [entry["self_link"] for entry in collection["entries"]]
 
     def test_createLiveFS(self):
         # Ensure LiveFS creation works.
         team = self.factory.makeTeam(owner=self.person)
-        livefs, ws_distroseries = self.makeLiveFS(owner=team)
-        self.assertEqual(self.person.name, livefs.registrant.name)
-        self.assertEqual(team.name, livefs.owner.name)
-        self.assertEqual("flavour-desktop", livefs.name)
-        self.assertEqual(ws_distroseries, livefs.distroseries)
-        self.assertEqual({"project": "flavour"}, livefs.metadata)
+        livefs, distroseries_url = self.makeLiveFS(owner=team)
+        with person_logged_in(self.person):
+            self.assertEqual(
+                self.getURL(self.person), livefs["registrant_link"])
+            self.assertEqual(self.getURL(team), livefs["owner_link"])
+            self.assertEqual("flavour-desktop", livefs["name"])
+            self.assertEqual(
+                self.webservice.getAbsoluteUrl(distroseries_url),
+                livefs["distroseries_link"])
+            self.assertEqual({"project": "flavour"}, livefs["metadata"])
 
     def test_requestBuild(self):
         # Build requests can be performed and end up in livefs.builds.
         distroseries = self.factory.makeDistroSeries(registrant=self.person)
         distroarchseries = self.factory.makeDistroArchSeries(
             distroseries=distroseries, owner=self.person)
-        livefs, ws_distroseries = self.makeLiveFS(
-            registrant=self.person, distroseries=distroseries)
-        build = livefs.requestBuild(
-            archive=ws_distroseries.main_archive,
-            distroarchseries=ws_object(self.webservice, distroarchseries),
-            pocket="Release")
-        self.assertEqual([build], list(livefs.builds))
+        distroarchseries_url = api_url(distroarchseries)
+        archive_url = api_url(distroseries.main_archive)
+        livefs, distroseries_url = self.makeLiveFS(distroseries=distroseries)
+        response = self.webservice.named_post(
+            livefs["self_link"], "requestBuild", archive=archive_url,
+            distroarchseries=distroarchseries_url, pocket="Release")
+        self.assertEqual(201, response.status)
+        build = self.webservice.get(response.getHeader("Location")).jsonBody()
+        builds_collection = self.webservice.get(
+            livefs["builds_collection_link"]).jsonBody()
+        self.assertEqual(
+            [build["self_link"]], self.getCollectionLinks(livefs, "builds"))
 
     def test_requestBuild_rejects_repeats(self):
         # Build requests are rejected if already pending.
         distroseries = self.factory.makeDistroSeries(registrant=self.person)
         distroarchseries = self.factory.makeDistroArchSeries(
             distroseries=distroseries, owner=self.person)
-        livefs, ws_distroseries = self.makeLiveFS(
-            registrant=self.person, distroseries=distroseries)
-        ws_distroarchseries = ws_object(self.webservice, distroarchseries)
-        livefs.requestBuild(
-            archive=ws_distroseries.main_archive,
-            distroarchseries=ws_distroarchseries, pocket="Release")
-        e = self.assertRaises(
-            BadRequest, livefs.requestBuild,
-            archive=ws_distroseries.main_archive,
-            distroarchseries=ws_distroarchseries, pocket="Release")
-        self.assertIn(
+        distroarchseries_url = api_url(distroarchseries)
+        archive_url = api_url(distroseries.main_archive)
+        livefs, ws_distroseries = self.makeLiveFS(distroseries=distroseries)
+        response = self.webservice.named_post(
+            livefs["self_link"], "requestBuild", archive=archive_url,
+            distroarchseries=distroarchseries_url, pocket="Release")
+        self.assertEqual(201, response.status)
+        response = self.webservice.named_post(
+            livefs["self_link"], "requestBuild", archive=archive_url,
+            distroarchseries=distroarchseries_url, pocket="Release")
+        self.assertEqual(400, response.status)
+        self.assertEqual(
             "An identical build of this live filesystem image is already "
-            "pending.", str(e))
+            "pending.", response.body)
 
     def test_getBuilds(self):
         # builds and last_completed_build are as expected.
         distroseries = self.factory.makeDistroSeries(registrant=self.person)
         distroarchseries = self.factory.makeDistroArchSeries(
             distroseries=distroseries, owner=self.person)
+        distroarchseries_url = api_url(distroarchseries)
         archives = [
             self.factory.makeArchive(
                 distribution=distroseries.distribution, owner=self.person)
             for x in range(4)]
-        livefs, ws_distroseries = self.makeLiveFS(
-            registrant=self.person, distroseries=distroseries)
-        ws_distroarchseries = ws_object(self.webservice, distroarchseries)
+        archive_urls = [api_url(archive) for archive in archives]
+        livefs, distroseries_url = self.makeLiveFS(distroseries=distroseries)
         builds = []
-        for archive in archives:
-            ws_archive = ws_object(self.webservice, archive)
-            builds.insert(0, livefs.requestBuild(
-                archive=ws_archive, distroarchseries=ws_distroarchseries,
-                pocket="Proposed"))
-        self.assertEqual(builds, list(livefs.builds))
-        self.assertIsNone(livefs.last_completed_build)
-        transaction.commit()
+        for archive_url in archive_urls:
+            response = self.webservice.named_post(
+                livefs["self_link"], "requestBuild", archive=archive_url,
+                distroarchseries = distroarchseries_url, pocket="Proposed")
+            self.assertEqual(201, response.status)
+            build = self.webservice.get(
+                response.getHeader("Location")).jsonBody()
+            builds.insert(0, build["self_link"])
+        self.assertEqual(builds, self.getCollectionLinks(livefs, "builds"))
+        livefs = self.webservice.get(livefs["self_link"]).jsonBody()
+        self.assertIsNone(livefs["last_completed_build_link"])
 
-        db_livefs = getUtility(ILiveFSSet).get(
-            self.person, distroseries, livefs.name)
-        db_builds = list(db_livefs.builds)
-        db_builds[0].updateStatus(
-            BuildStatus.BUILDING, date_started=db_livefs.date_created)
-        db_builds[0].updateStatus(
-            BuildStatus.FULLYBUILT,
-            date_finished=db_livefs.date_created + timedelta(minutes=10))
-        transaction.commit()
-        livefs = ws_object(self.webservice, db_livefs)
-        self.assertEqual(
-            builds[0].self_link, livefs.last_completed_build.self_link)
+        with person_logged_in(self.person):
+            db_livefs = getUtility(ILiveFSSet).get(
+                self.person, distroseries, livefs["name"])
+            db_builds = list(db_livefs.builds)
+            db_builds[0].updateStatus(
+                BuildStatus.BUILDING, date_started=db_livefs.date_created)
+            db_builds[0].updateStatus(
+                BuildStatus.FULLYBUILT,
+                date_finished=db_livefs.date_created + timedelta(minutes=10))
+        livefs = self.webservice.get(livefs["self_link"]).jsonBody()
+        self.assertEqual(builds[0], livefs["last_completed_build_link"])
 
-        db_builds[1].updateStatus(
-            BuildStatus.BUILDING, date_started=db_livefs.date_created)
-        db_builds[1].updateStatus(
-            BuildStatus.FULLYBUILT,
-            date_finished=db_livefs.date_created + timedelta(minutes=20))
-        transaction.commit()
-        livefs = ws_object(self.webservice, db_livefs)
-        self.assertEqual(
-            builds[1].self_link, livefs.last_completed_build.self_link)
+        with person_logged_in(self.person):
+            db_builds[1].updateStatus(
+                BuildStatus.BUILDING, date_started=db_livefs.date_created)
+            db_builds[1].updateStatus(
+                BuildStatus.FULLYBUILT,
+                date_finished=db_livefs.date_created + timedelta(minutes=20))
+        livefs = self.webservice.get(livefs["self_link"]).jsonBody()
+        self.assertEqual(builds[1], livefs["last_completed_build_link"])
 
     def test_query_count(self):
         # LiveFS has a reasonable query count.
         livefs = self.factory.makeLiveFS(
             registrant=self.person, owner=self.person)
-        webservice = webservice_for_person(self.person)
-        with person_logged_in(self.person):
-            url = canonical_url(livefs, force_local_path=True)
+        url = api_url(livefs)
+        logout()
         store = Store.of(livefs)
         store.flush()
         store.invalidate()
         with StormStatementRecorder() as recorder:
-            webservice.get(url)
-        self.assertThat(recorder, HasQueryCount(Equals(19)))
+            self.webservice.get(url)
+        self.assertThat(recorder, HasQueryCount(Equals(22)))
