@@ -375,7 +375,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
                     ppa.owner, distroseries, PackagePublishingPocket.RELEASE)
 
     def test_requestBuildScore(self):
-        """Normal build requests have a relatively low queue score (2405)."""
+        """Normal build requests have a relatively low queue score (2505)."""
         recipe = self.factory.makeSourcePackageRecipe()
         build = recipe.requestBuild(recipe.daily_build_archive,
             recipe.owner, list(recipe.distroseries)[0],
@@ -385,7 +385,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         self.assertEqual(2505, queue_record.lastscore)
 
     def test_requestBuildManualScore(self):
-        """Normal build requests have a score equivalent to binary builds."""
+        """Manual build requests have a score equivalent to binary builds."""
         recipe = self.factory.makeSourcePackageRecipe()
         build = recipe.requestBuild(recipe.daily_build_archive,
             recipe.owner, list(recipe.distroseries)[0],

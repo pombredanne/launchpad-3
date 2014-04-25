@@ -1,4 +1,4 @@
-# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Code to build recipes on the buildfarm."""
@@ -24,7 +24,6 @@ from lp.buildmaster.model.buildfarmjobbehaviour import (
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild,
     )
-from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.config import config
 from lp.soyuz.adapters.archivedependencies import (
     get_primary_current_component,
@@ -64,10 +63,7 @@ class RecipeBuildBehaviour(BuildFarmJobBehaviourBase):
         """
         # Build extra arguments.
         args = {}
-        suite = self.build.distroseries.name
-        if self.build.pocket != PackagePublishingPocket.RELEASE:
-            suite += "-%s" % (self.build.pocket.name.lower())
-        args['suite'] = suite
+        args['suite'] = self.build.distroseries.getSuite(self.build.pocket)
         args['arch_tag'] = distroarchseries.architecturetag
         requester = self.build.requester
         if requester.preferredemail is None:
