@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for builds."""
@@ -84,6 +84,7 @@ from lp.soyuz.interfaces.binarypackagebuild import (
     IBinaryPackageBuildSet,
     IBuildRescoreForm,
     )
+from lp.soyuz.interfaces.livefsbuild import ILiveFSBuildSet
 
 
 class BuildUrl:
@@ -146,6 +147,17 @@ class BuildNavigationMixin:
         try:
             return getUtility(ISourcePackageRecipeBuildSource).getByID(
                 build_id)
+        except NotFoundError:
+            return None
+
+    @stepthrough('+livefsbuild')
+    def traverse_livefsbuild(self, name):
+        try:
+            build_id = int(name)
+        except ValueError:
+            return None
+        try:
+            return getUtility(ILiveFSBuildSet).getByID(build_id)
         except NotFoundError:
             return None
 

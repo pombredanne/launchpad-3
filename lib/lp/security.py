@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Security policies for using content objects."""
@@ -196,6 +196,8 @@ from lp.soyuz.interfaces.binarypackagerelease import (
     IBinaryPackageReleaseDownloadCount,
     )
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
+from lp.soyuz.interfaces.livefs import ILiveFS
+from lp.soyuz.interfaces.livefsbuild import ILiveFSBuild
 from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJob
 from lp.soyuz.interfaces.packageset import (
     IPackageset,
@@ -2872,3 +2874,46 @@ class EditSourcePackage(AuthorizationBase):
             sourcepackagename=self.obj.sourcepackagename,
             component=None, strict_component=False)
         return reason is None
+
+
+class ViewLiveFS(DelegatedAuthorization):
+    permission = 'launchpad.View'
+    usedfor = ILiveFS
+
+    def __init__(self, obj):
+        super(ViewLiveFS, self).__init__(obj, obj.owner, 'launchpad.View')
+
+
+class EditLiveFS(EditByOwnersOrAdmins):
+    usedfor = ILiveFS
+
+
+class ViewLiveFSBuild(DelegatedAuthorization):
+    permission = 'launchpad.View'
+    usedfor = ILiveFSBuild
+
+    def __init__(self, obj):
+        super(ViewLiveFSBuild, self).__init__(
+            obj, obj.livefs, 'launchpad.View')
+
+
+class EditLiveFSBuild(AdminByBuilddAdmin):
+    permission = 'launchpad.Edit'
+    usedfor = ILiveFSBuild
+
+    def checkAuthenticated(self, user):
+        """Check edit access for live filesystem builds.
+
+        Allow admins, buildd admins, the owner of the live filesystem, and
+        the requester of the live filesystem build.
+        """
+        if user.inTeam(self.obj.requester):
+            return True
+        auth_livefs = EditLiveFS(self.obj.livefs)
+        if auth_livefs.checkAuthenticated(user):
+            return True
+        return super(EditLiveFSBuild, self).checkAuthenticated(user)
+
+
+class AdminLiveFSBuild(AdminByBuilddAdmin):
+    usedfor = ILiveFSBuild

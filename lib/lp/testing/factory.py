@@ -2,7 +2,7 @@
 # NOTE: The first line above must stay first; do not move the copyright
 # notice to the top.  See http://www.python.org/dev/peps/pep-0263/.
 #
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Testing infrastructure for the Launchpad application.
@@ -283,6 +283,8 @@ from lp.soyuz.interfaces.component import (
     IComponent,
     IComponentSet,
     )
+from lp.soyuz.interfaces.livefs import ILiveFSSet
+from lp.soyuz.interfaces.livefsbuild import ILiveFSBuildSet
 from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.interfaces.processor import IProcessorSet
@@ -4315,6 +4317,66 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         product = self.makeProduct(owner=person)
         product.redeemSubscriptionVoucher(
             self.getUniqueString(), person, person, months)
+
+    def makeLiveFS(self, registrant=None, owner=None, distroseries=None,
+                   name=None, metadata=None, date_created=DEFAULT):
+        """Make a new LiveFS."""
+        if registrant is None:
+            registrant = self.makePerson()
+        if owner is None:
+            owner = self.makePerson()
+        if distroseries is None:
+            distroseries = self.makeDistroSeries()
+        if name is None:
+            name = self.getUniqueString(u"livefs-name")
+        if metadata is None:
+            metadata = {}
+        livefs = getUtility(ILiveFSSet).new(
+            registrant, owner, distroseries, name, metadata,
+            date_created=date_created)
+        IStore(livefs).flush()
+        return livefs
+
+    def makeLiveFSBuild(self, requester=None, livefs=None, archive=None,
+                        distroarchseries=None, pocket=None, unique_key=None,
+                        metadata_override=None, date_created=DEFAULT,
+                        status=BuildStatus.NEEDSBUILD, duration=None,
+                        **kwargs):
+        """Make a new LiveFSBuild."""
+        if livefs is None:
+            if "distroseries" in kwargs:
+                distroseries = kwargs["distroseries"]
+                del kwargs["distroseries"]
+            elif distroarchseries is not None:
+                distroseries = distroarchseries.distroseries
+            elif archive is not None:
+                distroseries = self.makeDistroSeries(
+                    distribution=archive.distribution)
+            else:
+                distroseries = None
+            livefs = self.makeLiveFS(distroseries=distroseries, **kwargs)
+        if requester is None:
+            requester = self.makePerson()
+        if archive is None:
+            archive = livefs.distroseries.main_archive
+        if distroarchseries is None:
+            distroarchseries = self.makeDistroArchSeries(
+                distroseries=livefs.distroseries)
+        if pocket is None:
+            pocket = PackagePublishingPocket.RELEASE
+        livefsbuild = getUtility(ILiveFSBuildSet).new(
+            requester, livefs, archive, distroarchseries, pocket,
+            unique_key=unique_key, metadata_override=metadata_override,
+            date_created=date_created)
+        if duration is not None:
+            removeSecurityProxy(livefsbuild).updateStatus(
+                BuildStatus.BUILDING, date_started=livefsbuild.date_created)
+            removeSecurityProxy(livefsbuild).updateStatus(
+                status, date_finished=livefsbuild.date_started + duration)
+        else:
+            removeSecurityProxy(livefsbuild).updateStatus(status)
+        IStore(livefsbuild).flush()
+        return livefsbuild
 
 
 # Some factory methods return simple Python types. We don't add

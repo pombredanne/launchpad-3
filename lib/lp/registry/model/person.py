@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementation classes for a Person."""
@@ -311,6 +311,7 @@ from lp.soyuz.enums import (
     )
 from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
+from lp.soyuz.interfaces.livefs import ILiveFSSet
 from lp.soyuz.model.archive import (
     Archive,
     validate_ppa,
@@ -2950,6 +2951,13 @@ class Person(
         return Store.of(self).find(
             SourcePackageRecipe, SourcePackageRecipe.owner == self,
             SourcePackageRecipe.name == name).one()
+
+    def createLiveFS(self, registrant, owner, distroseries, name, metadata):
+        """See `IPerson`."""
+        livefs = getUtility(ILiveFSSet).new(
+            registrant, owner, distroseries, name, metadata)
+        Store.of(livefs).flush()
+        return livefs
 
     def getMergeQueue(self, name):
         from lp.code.model.branchmergequeue import BranchMergeQueue
