@@ -258,26 +258,6 @@ class TestLiveFSBuildWebservice(TestCaseWithFactory):
             self.assertFalse(build["can_be_retried"])
             self.assertFalse(build["can_be_cancelled"])
 
-    def test_retry(self):
-        # The owner of a build can retry it.
-        db_build = self.factory.makeLiveFSBuild(requester=self.person)
-        db_build.updateStatus(BuildStatus.BUILDING)
-        db_build.updateStatus(BuildStatus.FAILEDTOBUILD)
-        build_url = api_url(db_build)
-        unpriv_webservice = webservice_for_person(
-            self.factory.makePerson(), permission=OAuthPermission.WRITE_PUBLIC)
-        logout()
-        build = self.webservice.get(build_url).jsonBody()
-        self.assertTrue(build["can_be_retried"])
-        response = unpriv_webservice.named_post(build["self_link"], "retry")
-        self.assertEqual(401, response.status)
-        response = self.webservice.named_post(build["self_link"], "retry")
-        self.assertEqual(200, response.status)
-        build = self.webservice.get(build_url).jsonBody()
-        self.assertFalse(build["can_be_retried"])
-        with person_logged_in(self.person):
-            self.assertEqual(BuildStatus.NEEDSBUILD, db_build.status)
-
     def test_cancel(self):
         # The owner of a build can cancel it.
         db_build = self.factory.makeLiveFSBuild(requester=self.person)

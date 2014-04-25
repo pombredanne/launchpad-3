@@ -206,14 +206,10 @@ class LiveFSBuild(PackageBuildMixin, Storm):
     @property
     def can_be_retried(self):
         """See `ILiveFSBuild`."""
-        failed_statuses = [
-            BuildStatus.FAILEDTOBUILD,
-            BuildStatus.MANUALDEPWAIT,
-            BuildStatus.CHROOTWAIT,
-            BuildStatus.FAILEDTOUPLOAD,
-            BuildStatus.CANCELLED,
-            ]
-        return self.status in failed_statuses
+        # We provide this property for API convenience, but live filesystem
+        # builds cannot be retried.  Request another build using
+        # LiveFS.requestBuild instead.
+        return False
 
     @property
     def can_be_rescored(self):
@@ -231,19 +227,6 @@ class LiveFSBuild(PackageBuildMixin, Storm):
             BuildStatus.NEEDSBUILD,
             ]
         return self.status in cancellable_statuses
-
-    def retry(self):
-        """See `ILiveFSBuild`."""
-        assert self.can_be_retried, "Build %s cannot be retried" % self.id
-        self.build_farm_job.status = self.status = BuildStatus.NEEDSBUILD
-        self.build_farm_job.date_finished = self.date_finished = None
-        self.date_started = None
-        self.build_farm_job.builder = self.builder = None
-        self.log = None
-        self.upload_log = None
-        self.dependencies = None
-        self.failure_count = 0
-        self.queueBuild()
 
     def rescore(self, score):
         """See `ILiveFSBuild`."""
