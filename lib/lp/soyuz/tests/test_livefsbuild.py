@@ -177,8 +177,7 @@ class TestLiveFSBuild(TestCaseWithFactory):
         self.addFakeBuildLog(self.build)
         self.assertEqual(
             "http://launchpad.dev/%s/+archive/primary/+livefsbuild/%d/+files/"
-            "mybuildlog.txt" % (
-                self.build.distribution.name, self.build.build_farm_job.id),
+            "mybuildlog.txt" % (self.build.distribution.name, self.build.id),
             self.build.log_url)
 
 
