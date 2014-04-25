@@ -21,6 +21,13 @@ COMMENT ON COLUMN LiveFS.distroseries IS 'The DistroSeries for which the image s
 COMMENT ON COLUMN LiveFS.name IS 'The name of the live filesystem image, unique per DistroSeries.';
 COMMENT ON COLUMN LiveFS.json_data IS 'A JSON struct containing data for the image build.';
 
+CREATE INDEX livefs__registrant__idx
+    ON LiveFS (registrant);
+CREATE INDEX livefs__owner__idx
+    ON LiveFS (owner);
+CREATE INDEX livefs__distroseries__idx
+    ON LiveFS (distroseries);
+
 CREATE TABLE LiveFSBuild (
     id serial PRIMARY KEY,
     requester integer NOT NULL REFERENCES person,
@@ -66,6 +73,14 @@ COMMENT ON COLUMN LiveFSBuild.dependencies IS 'A Debian-like dependency line spe
 COMMENT ON COLUMN LiveFSBuild.failure_count IS 'The number of consecutive failures on this job.  If excessive, the job may be terminated.';
 COMMENT ON COLUMN LiveFSBuild.build_farm_job IS 'The build farm job with the base information.';
 
+CREATE INDEX livefsbuild__requester__idx
+    ON LiveFSBuild (requester);
+CREATE INDEX livefsbuild__livefs__idx
+    ON LiveFSBuild (livefs);
+CREATE INDEX livefsbuild__archive__idx
+    ON LiveFSBuild (archive);
+CREATE INDEX livefsbuild__distroarchseries__idx
+    ON LiveFSBuild (distroarchseries);
 CREATE INDEX livefsbuild__log__idx
     ON LiveFSBuild (log);
 CREATE INDEX livefsbuild__upload_log__idx
@@ -82,5 +97,8 @@ CREATE TABLE LiveFSFile (
 COMMENT ON TABLE LiveFSFile IS 'A link between a live filesystem build and a file in the librarian that it produces.';
 COMMENT ON COLUMN LiveFSFile.livefsbuild IS 'The live filesystem build producing this file.';
 COMMENT ON COLUMN LiveFSFile.libraryfile IS 'A file in the librarian.';
+
+CREATE INDEX livefsfile__livefsbuild__idx
+    ON LiveFSFile (livefsbuild);
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 56, 0);
