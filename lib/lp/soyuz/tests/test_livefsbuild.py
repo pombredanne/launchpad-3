@@ -5,17 +5,23 @@
 
 __metaclass__ = type
 
-from datetime import timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 
+import pytz
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.errors import NotFoundError
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.buildmaster.interfaces.packagebuild import IPackageBuild
 from lp.services.database.interfaces import IStore
 from lp.services.features.testing import FeatureFixture
+from lp.services.webapp.interfaces import OAuthPermission
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.livefs import (
     LIVEFS_FEATURE_FLAG,
@@ -25,9 +31,20 @@ from lp.soyuz.interfaces.livefsbuild import (
     ILiveFSBuild,
     ILiveFSBuildSet,
     )
-from lp.testing import TestCaseWithFactory
-from lp.testing.layers import LaunchpadZopelessLayer
+from lp.testing import (
+    ANONYMOUS,
+    api_url,
+    login,
+    logout,
+    person_logged_in,
+    TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 from lp.testing.mail_helpers import pop_notifications
+from lp.testing.pages import webservice_for_person
 
 
 class TestLiveFSBuildFeatureFlag(TestCaseWithFactory):
@@ -195,3 +212,109 @@ class TestLiveFSBuildSet(TestCaseWithFactory):
     def test_getByBuildFarmJobs_works_empty(self):
         self.assertContentEqual(
             [], getUtility(ILiveFSBuildSet).getByBuildFarmJobs([]))
+
+
+class TestLiveFSBuildWebservice(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestLiveFSBuildWebservice, self).setUp()
+        self.useFixture(FeatureFixture({LIVEFS_FEATURE_FLAG: u"on"}))
+        self.person = self.factory.makePerson()
+        self.webservice = webservice_for_person(
+            self.person, permission=OAuthPermission.WRITE_PUBLIC)
+        self.webservice.default_api_version = "devel"
+        login(ANONYMOUS)
+
+    def getURL(self, obj):
+        return self.webservice.getAbsoluteUrl(api_url(obj))
+
+    def test_properties(self):
+        # The basic properties of a LiveFSBuild are sensible.
+        db_build = self.factory.makeLiveFSBuild(
+            requester=self.person, unique_key=u"foo",
+            metadata_override={"image_format": "plain"},
+            date_created=datetime(2014, 04, 25, 10, 38, 0, tzinfo=pytz.UTC))
+        build_url = api_url(db_build)
+        logout()
+        build = self.webservice.get(build_url).jsonBody()
+        with person_logged_in(self.person):
+            self.assertEqual(self.getURL(self.person), build["requester_link"])
+            self.assertEqual(
+                self.getURL(db_build.livefs), build["livefs_link"])
+            self.assertEqual(
+                self.getURL(db_build.archive), build["archive_link"])
+            self.assertEqual(
+                self.getURL(db_build.distroarchseries),
+                build["distroarchseries_link"])
+            self.assertEqual("Release", build["pocket"])
+            self.assertEqual("foo", build["unique_key"])
+            self.assertEqual(
+                {"image_format": "plain"}, build["metadata_override"])
+            self.assertEqual("20140425-103800", build["version"])
+            self.assertIsNone(build["score"])
+            self.assertTrue(build["can_be_rescored"])
+            self.assertFalse(build["can_be_retried"])
+            self.assertFalse(build["can_be_cancelled"])
+
+    def test_retry(self):
+        # The owner of a build can retry it.
+        db_build = self.factory.makeLiveFSBuild(requester=self.person)
+        db_build.updateStatus(BuildStatus.BUILDING)
+        db_build.updateStatus(BuildStatus.FAILEDTOBUILD)
+        build_url = api_url(db_build)
+        unpriv_webservice = webservice_for_person(
+            self.factory.makePerson(), permission=OAuthPermission.WRITE_PUBLIC)
+        logout()
+        build = self.webservice.get(build_url).jsonBody()
+        self.assertTrue(build["can_be_retried"])
+        response = unpriv_webservice.named_post(build["self_link"], "retry")
+        self.assertEqual(401, response.status)
+        response = self.webservice.named_post(build["self_link"], "retry")
+        self.assertEqual(200, response.status)
+        build = self.webservice.get(build_url).jsonBody()
+        self.assertFalse(build["can_be_retried"])
+        with person_logged_in(self.person):
+            self.assertEqual(BuildStatus.NEEDSBUILD, db_build.status)
+
+    def test_cancel(self):
+        # The owner of a build can cancel it.
+        db_build = self.factory.makeLiveFSBuild(requester=self.person)
+        db_build.queueBuild()
+        build_url = api_url(db_build)
+        unpriv_webservice = webservice_for_person(
+            self.factory.makePerson(), permission=OAuthPermission.WRITE_PUBLIC)
+        logout()
+        build = self.webservice.get(build_url).jsonBody()
+        self.assertTrue(build["can_be_cancelled"])
+        response = unpriv_webservice.named_post(build["self_link"], "cancel")
+        self.assertEqual(401, response.status)
+        response = self.webservice.named_post(build["self_link"], "cancel")
+        self.assertEqual(200, response.status)
+        build = self.webservice.get(build_url).jsonBody()
+        self.assertFalse(build["can_be_cancelled"])
+        with person_logged_in(self.person):
+            self.assertEqual(BuildStatus.CANCELLED, db_build.status)
+
+    def test_rescore(self):
+        # Buildd administrators can rescore builds.
+        db_build = self.factory.makeLiveFSBuild(requester=self.person)
+        db_build.queueBuild()
+        build_url = api_url(db_build)
+        buildd_admin = self.factory.makePerson(
+            member_of=[getUtility(ILaunchpadCelebrities).buildd_admin])
+        buildd_admin_webservice = webservice_for_person(
+            buildd_admin, permission=OAuthPermission.WRITE_PUBLIC)
+        logout()
+        build = self.webservice.get(build_url).jsonBody()
+        self.assertEqual(2505, build["score"])
+        self.assertTrue(build["can_be_rescored"])
+        response = self.webservice.named_post(
+            build["self_link"], "rescore", score=5000)
+        self.assertEqual(401, response.status)
+        response = buildd_admin_webservice.named_post(
+            build["self_link"], "rescore", score=5000)
+        self.assertEqual(200, response.status)
+        build = self.webservice.get(build_url).jsonBody()
+        self.assertEqual(5000, build["score"])
