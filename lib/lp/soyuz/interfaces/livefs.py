@@ -24,11 +24,11 @@ from lazr.restful.declarations import (
     call_with,
     error_status,
     export_as_webservice_entry,
+    export_factory_operation,
     export_write_operation,
     exported,
     operation_for_version,
     operation_parameters,
-    operation_returns_entry,
     REQUEST_USER,
     )
 from lazr.restful.fields import (
@@ -127,7 +127,7 @@ class ILiveFSView(Interface):
             title=_("A JSON string with a dict of data about the image."),
             key_type=TextLine(), required=False))
     # Really ILiveFSBuild, patched in _schema_circular_imports.py.
-    @operation_returns_entry(Interface)
+    @export_factory_operation(Interface, [])
     @export_write_operation()
     @operation_for_version("devel")
     def requestBuild(requester, archive, distroarchseries, pocket,
