@@ -14,7 +14,7 @@ CREATE TABLE LiveFS (
     CONSTRAINT valid_name CHECK (valid_name(name))
 );
 
-COMMENT ON TABLE LiveFS IS 'A buildable live filesystem image.';
+COMMENT ON TABLE LiveFS IS 'A class of buildable live filesystem images.  Rows in this table only partially define how to build an image; the rest of the information comes from LiveFSBuild.';
 COMMENT ON COLUMN LiveFS.registrant IS 'The user who registered the live filesystem image.';
 COMMENT ON COLUMN LiveFS.owner IS 'The owner of the live filesystem image.';
 COMMENT ON COLUMN LiveFS.distroseries IS 'The DistroSeries for which the image should be built.';
