@@ -299,6 +299,7 @@ from lp.soyuz.model.files import (
     BinaryPackageFile,
     SourcePackageReleaseFile,
     )
+from lp.soyuz.model.livefsbuild import LiveFSFile
 from lp.soyuz.model.packagediff import PackageDiff
 from lp.testing import (
     admin_logged_in,
@@ -4377,6 +4378,13 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             removeSecurityProxy(livefsbuild).updateStatus(status)
         IStore(livefsbuild).flush()
         return livefsbuild
+
+    def makeLiveFSFile(self, livefsbuild=None, libraryfile=None):
+        if livefsbuild is None:
+            livefsbuild = self.makeLiveFSBuild()
+        if libraryfile is None:
+            libraryfile = self.makeLibraryFileAlias()
+        return LiveFSFile(livefsbuild=livefsbuild, libraryfile=libraryfile)
 
 
 # Some factory methods return simple Python types. We don't add

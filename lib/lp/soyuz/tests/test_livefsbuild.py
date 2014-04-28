@@ -9,10 +9,16 @@ from datetime import (
     datetime,
     timedelta,
     )
+from urllib2 import (
+    HTTPError,
+    urlopen,
+    )
 
 import pytz
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
+from zope.testbrowser.browser import Browser
+from zope.testbrowser.testing import PublisherMechanizeBrowser
 
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
@@ -21,6 +27,7 @@ from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.buildmaster.interfaces.packagebuild import IPackageBuild
 from lp.services.database.interfaces import IStore
 from lp.services.features.testing import FeatureFixture
+from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.services.webapp.interfaces import OAuthPermission
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.livefs import (
@@ -40,7 +47,7 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.layers import (
-    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )
 from lp.testing.mail_helpers import pop_notifications
@@ -213,9 +220,17 @@ class TestLiveFSBuildSet(TestCaseWithFactory):
             [], getUtility(ILiveFSBuildSet).getByBuildFarmJobs([]))
 
 
+class NonRedirectingMechanizeBrowser(PublisherMechanizeBrowser):
+    """A `mechanize.Browser` that does not handle redirects."""
+
+    default_features = [
+        feature for feature in PublisherMechanizeBrowser.default_features
+        if feature != "_redirect"]
+
+
 class TestLiveFSBuildWebservice(TestCaseWithFactory):
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def setUp(self):
         super(TestLiveFSBuildWebservice, self).setUp()
@@ -297,3 +312,37 @@ class TestLiveFSBuildWebservice(TestCaseWithFactory):
         self.assertEqual(200, response.status)
         build = self.webservice.get(build_url).jsonBody()
         self.assertEqual(5000, build["score"])
+
+    def makeNonRedirectingBrowser(self, person):
+        # The test browser can only work with the appserver, not the
+        # librarian, so follow one layer of redirection through the
+        # appserver and then ask the librarian for the real file.
+        browser = Browser(mech_browser=NonRedirectingMechanizeBrowser())
+        browser.handleErrors = False
+        with person_logged_in(person):
+            browser.addHeader(
+                "Authorization", "Basic %s:test" % person.preferredemail.email)
+        return browser
+
+    def assertCanOpenRedirectedUrl(self, browser, url):
+        redirection = self.assertRaises(HTTPError, browser.open, url)
+        self.assertEqual(303, redirection.code)
+        urlopen(redirection.hdrs["Location"]).close()
+
+    def test_getFileUrls(self):
+        # API clients can fetch files attached to builds.
+        db_build = self.factory.makeLiveFSBuild(requester=self.person)
+        db_files = [
+            self.factory.makeLiveFSFile(livefsbuild=db_build)
+            for i in range(2)]
+        build_url = api_url(db_build)
+        file_urls = [
+            ProxiedLibraryFileAlias(file.libraryfile, db_build).http_url
+            for file in db_files]
+        logout()
+        response = self.webservice.named_get(build_url, "getFileUrls")
+        self.assertEqual(200, response.status)
+        self.assertContentEqual(file_urls, response.jsonBody())
+        browser = self.makeNonRedirectingBrowser(self.person)
+        for file_url in file_urls:
+            self.assertCanOpenRedirectedUrl(browser, file_url)

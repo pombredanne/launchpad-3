@@ -45,7 +45,10 @@ from lp.services.database.interfaces import (
     )
 from lp.services.features import getFeatureFlag
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
-from lp.services.librarian.model import LibraryFileAlias
+from lp.services.librarian.model import (
+    LibraryFileAlias,
+    LibraryFileContent,
+    )
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.livefs import (
     LIVEFS_FEATURE_FLAG,
@@ -74,6 +77,12 @@ class LiveFSFile(Storm):
 
     libraryfile_id = Int(name='libraryfile', allow_none=False)
     libraryfile = Reference(libraryfile_id, 'LibraryFileAlias.id')
+
+    def __init__(self, livefsbuild, libraryfile):
+        """Construct a `LiveFSFile`."""
+        super(LiveFSFile, self).__init__()
+        self.livefsbuild = livefsbuild
+        self.libraryfile = libraryfile
 
 
 class LiveFSBuild(PackageBuildMixin, Storm):
@@ -271,9 +280,10 @@ class LiveFSBuild(PackageBuildMixin, Storm):
         """See `ILiveFSBuild`."""
         store = Store.of(self)
         result = store.find(
-            LiveFSFile,
+            (LiveFSFile, LibraryFileAlias, LibraryFileContent),
             LiveFSFile.livefsbuild == self.id,
-            LibraryFileAlias.id == LiveFSFile.libraryfile_id)
+            LibraryFileAlias.id == LiveFSFile.libraryfile_id,
+            LibraryFileContent.id == LibraryFileAlias.contentID)
         return result.order_by(
             [LibraryFileAlias.filename, LiveFSFile.id]).config(distinct=True)
 
@@ -285,7 +295,7 @@ class LiveFSBuild(PackageBuildMixin, Storm):
             file_object = self.upload_log
         else:
             file_object = Store.of(self).find(
-                LiveFSFile,
+                LibraryFileAlias,
                 LiveFSFile.livefsbuild == self.id,
                 LibraryFileAlias.id == LiveFSFile.libraryfile_id,
                 LibraryFileAlias.filename == filename).one()
@@ -327,6 +337,9 @@ class LiveFSBuild(PackageBuildMixin, Storm):
     def upload_log_url(self):
         """See `IPackageBuild`."""
         return self.lfaUrl(self.upload_log)
+
+    def getFileUrls(self):
+        return [self.lfaUrl(lfa) for _, lfa, _ in self.getFiles()]
 
 
 class LiveFSBuildSet(SpecificBuildFarmJobSourceMixin):

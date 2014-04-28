@@ -13,6 +13,7 @@ __all__ = [
 
 from lazr.restful.declarations import (
     export_as_webservice_entry,
+    export_read_operation,
     export_write_operation,
     exported,
     operation_for_version,
@@ -121,7 +122,8 @@ class ILiveFSBuildView(IPackageBuild):
     def getFiles():
         """Retrieve the build's `ILiveFSFile` records.
 
-        :return: A result set of `ILiveFSFile` records.
+        :return: A result set of (`ILiveFSFile`, `ILibraryFileAlias`,
+            `ILibraryFileContent`).
         """
 
     def getFileByName(filename):
@@ -139,6 +141,13 @@ class ILiveFSBuildView(IPackageBuild):
         :raises NotFoundError: if no file exists with the given name.
         :return: The corresponding `ILibraryFileAlias`.
         """
+
+    @export_read_operation()
+    @operation_for_version("devel")
+    def getFileUrls():
+        """URLs for all the files produced by this build.
+
+        :return: A collection of URLs for this build."""
 
 
 class ILiveFSBuildEdit(Interface):

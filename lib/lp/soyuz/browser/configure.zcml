@@ -738,5 +738,9 @@
         path_expression="string:+livefsbuild/${id}"
         attribute_to_parent="archive"
         />
+    <browser:navigation
+        module="lp.soyuz.browser.livefsbuild"
+        classes="LiveFSBuildNavigation"
+        />
     </facet>
 </configure>
