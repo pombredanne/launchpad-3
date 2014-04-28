@@ -89,6 +89,22 @@ CREATE INDEX livefsbuild__upload_log__idx
 CREATE INDEX livefsbuild__build_farm_job__idx
     ON LiveFSBuild (build_farm_job);
 
+-- LiveFS.requestBuild
+CREATE INDEX livefsbuild__livefs__archive__das__pocket__unique_key__status__idx
+    ON LiveFSBuild (
+        livefs, archive, distroarchseries, pocket, unique_key, status);
+
+-- LiveFS.builds
+CREATE INDEX livefsbuild__livefs__started__finished__created__id__idx
+    ON LiveFSBuild (
+        livefs, GREATEST(date_started, date_finished) DESC, date_created DESC,
+        id DESC);
+
+-- LiveFSBuild.getMedianBuildDuration
+CREATE INDEX livefsbuild__livefs__das__finished__idx
+    ON LiveFSBuild (livefs, distroarchseries, date_finished DESC)
+    WHERE date_finished IS NOT NULL;
+
 CREATE TABLE LiveFSFile (
     id serial PRIMARY KEY,
     livefsbuild integer NOT NULL REFERENCES livefsbuild,
