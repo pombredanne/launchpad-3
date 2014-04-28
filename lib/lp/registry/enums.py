@@ -237,7 +237,7 @@ class TeamMembershipPolicy(DBEnumeratedType):
     RESTRICTED = DBItem(3, """
         Restricted Team
 
-        Membership is exlusive; team administrators can invite users and
+        Membership is exclusive; team administrators can invite users and
         exclusive teams to join.
         """)
 
