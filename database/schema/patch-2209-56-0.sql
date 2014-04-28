@@ -11,7 +11,8 @@ CREATE TABLE LiveFS (
     distroseries integer NOT NULL REFERENCES distroseries,
     name text NOT NULL,
     json_data text,
-    CONSTRAINT valid_name CHECK (valid_name(name))
+    CONSTRAINT valid_name CHECK (valid_name(name)),
+    CONSTRAINT livefs__owner__distroseries__name__key UNIQUE (owner, distroseries, name)
 );
 
 COMMENT ON TABLE LiveFS IS 'A class of buildable live filesystem images.  Rows in this table only partially define how to build an image; the rest of the information comes from LiveFSBuild.';
