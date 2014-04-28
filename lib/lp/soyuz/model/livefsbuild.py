@@ -13,6 +13,7 @@ import pytz
 from storm.locals import (
     Bool,
     DateTime,
+    Desc,
     Int,
     JSON,
     Reference,
@@ -258,16 +259,16 @@ class LiveFSBuild(PackageBuildMixin, Storm):
         """Return the median duration of builds of this live filesystem."""
         store = IStore(self)
         result = store.find(
-            LiveFSBuild,
+            (LiveFSBuild.date_started, LiveFSBuild.date_finished),
             LiveFSBuild.livefs == self.livefs_id,
             LiveFSBuild.distroarchseries == self.distroarchseries_id,
             LiveFSBuild.date_finished != None)
-        durations = [
-            build.date_finished - build.date_started for build in result]
+        result.order_by(Desc(LiveFSBuild.date_finished))
+        durations = [row[1] - row[0] for row in result[:9]]
         if len(durations) == 0:
             return None
-        durations.sort(reverse=True)
-        return durations[len(durations) / 2]
+        durations.sort()
+        return durations[len(durations) // 2]
 
     def estimateDuration(self):
         """See `IBuildFarmJob`."""
