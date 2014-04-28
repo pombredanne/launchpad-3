@@ -96,7 +96,7 @@ class TestLiveFS(TestCaseWithFactory):
             registrant=registrant,
             owner=self.factory.makeTeam(owner=registrant),
             distroseries=self.factory.makeDistroSeries(),
-            name=self.factory.getUniqueString(u"recipe-name"),
+            name=self.factory.getUniqueString(u"livefs-name"),
             metadata=metadata)
 
     def test_creation(self):
