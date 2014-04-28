@@ -154,12 +154,6 @@ class ILiveFSView(Interface):
         # Really ILiveFSBuild, patched in _schema_circular_imports.py.
         value_type=Reference(schema=Interface), readonly=True)))
 
-    last_completed_build = exported(Reference(
-        # Really ILiveFSBuild, patched in _schema_circular_imports.py.
-        Interface,
-        title=_("The most recent completed build of this live filesystem."),
-        readonly=True))
-
 
 class ILiveFSEditableAttributes(IHasOwner):
     """`ILiveFS` attributes that can be edited.

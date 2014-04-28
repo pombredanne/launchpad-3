@@ -219,12 +219,10 @@ class TestLiveFS(TestCaseWithFactory):
         builds.reverse()
 
         self.assertEqual(builds, list(livefs.builds))
-        self.assertIsNone(livefs.last_completed_build)
 
         # Change the status of one of the builds and retest.
         builds[0].updateStatus(BuildStatus.FULLYBUILT)
         self.assertEqual(builds, list(livefs.builds))
-        self.assertEqual(builds[0], livefs.last_completed_build)
 
 
 class TestLiveFSWebservice(TestCaseWithFactory):
@@ -323,7 +321,7 @@ class TestLiveFSWebservice(TestCaseWithFactory):
             "pending.", response.body)
 
     def test_getBuilds(self):
-        # builds and last_completed_build are as expected.
+        # The builds property is as expected.
         distroseries = self.factory.makeDistroSeries(registrant=self.person)
         distroarchseries = self.factory.makeDistroArchSeries(
             distroseries=distroseries, owner=self.person)
@@ -345,7 +343,6 @@ class TestLiveFSWebservice(TestCaseWithFactory):
             builds.insert(0, build["self_link"])
         self.assertEqual(builds, self.getCollectionLinks(livefs, "builds"))
         livefs = self.webservice.get(livefs["self_link"]).jsonBody()
-        self.assertIsNone(livefs["last_completed_build_link"])
 
         with person_logged_in(self.person):
             db_livefs = getUtility(ILiveFSSet).get(
@@ -357,7 +354,6 @@ class TestLiveFSWebservice(TestCaseWithFactory):
                 BuildStatus.FULLYBUILT,
                 date_finished=db_livefs.date_created + timedelta(minutes=10))
         livefs = self.webservice.get(livefs["self_link"]).jsonBody()
-        self.assertEqual(builds[0], livefs["last_completed_build_link"])
 
         with person_logged_in(self.person):
             db_builds[1].updateStatus(
@@ -366,7 +362,6 @@ class TestLiveFSWebservice(TestCaseWithFactory):
                 BuildStatus.FULLYBUILT,
                 date_finished=db_livefs.date_created + timedelta(minutes=20))
         livefs = self.webservice.get(livefs["self_link"]).jsonBody()
-        self.assertEqual(builds[1], livefs["last_completed_build_link"])
 
     def test_query_count(self):
         # LiveFS has a reasonable query count.
@@ -379,4 +374,4 @@ class TestLiveFSWebservice(TestCaseWithFactory):
         store.invalidate()
         with StormStatementRecorder() as recorder:
             self.webservice.get(url)
-        self.assertThat(recorder, HasQueryCount(Equals(22)))
+        self.assertThat(recorder, HasQueryCount(Equals(21)))

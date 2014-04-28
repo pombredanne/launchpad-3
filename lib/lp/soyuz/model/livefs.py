@@ -138,13 +138,6 @@ class LiveFS(Storm):
             Desc(LiveFSBuild.id))
         return self._getBuilds(None, order_by)
 
-    @property
-    def last_completed_build(self):
-        """See `ILiveFS`."""
-        filter_term = (LiveFSBuild.status != BuildStatus.NEEDSBUILD)
-        return self._getBuilds(
-            filter_term, Desc(LiveFSBuild.date_finished)).first()
-
 
 class LiveFSSet:
     """See `ILiveFSSet`."""
