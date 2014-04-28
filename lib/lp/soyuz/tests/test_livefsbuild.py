@@ -342,6 +342,20 @@ class TestLiveFSBuildWebservice(TestCaseWithFactory):
         self.assertEqual(303, redirection.code)
         urlopen(redirection.hdrs["Location"]).close()
 
+    def test_logs(self):
+        # API clients can fetch the build and upload logs.
+        db_build = self.factory.makeLiveFSBuild(requester=self.person)
+        db_build.setLog(self.factory.makeLibraryFileAlias("buildlog.txt.gz"))
+        db_build.storeUploadLog("uploaded")
+        build_url = api_url(db_build)
+        logout()
+        build = self.webservice.get(build_url).jsonBody()
+        browser = self.makeNonRedirectingBrowser(self.person)
+        self.assertIsNotNone(build["build_log_url"])
+        self.assertCanOpenRedirectedUrl(browser, build["build_log_url"])
+        self.assertIsNotNone(build["upload_log_url"])
+        self.assertCanOpenRedirectedUrl(browser, build["upload_log_url"])
+
     def test_getFileUrls(self):
         # API clients can fetch files attached to builds.
         db_build = self.factory.makeLiveFSBuild(requester=self.person)
