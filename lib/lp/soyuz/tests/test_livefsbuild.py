@@ -151,7 +151,7 @@ class TestLiveFSBuild(TestCaseWithFactory):
             status=BuildStatus.FULLYBUILT, duration=timedelta(seconds=335))
         self.assertEqual(335, self.build.estimateDuration().seconds)
 
-    def test_getFileByName(self):
+    def test_getFileByName_logs(self):
         # getFileByName returns the logs when requested by name.
         self.build.setLog(
             self.factory.makeLibraryFileAlias(filename="buildlog.txt.gz"))
@@ -163,7 +163,20 @@ class TestLiveFSBuild(TestCaseWithFactory):
             self.build.upload_log,
             self.build.getFileByName(self.build.upload_log.filename))
 
-    # TODO getFileByName on other files
+    def test_getFileByName_uploaded_files(self):
+        # getFileByName returns uploaded files when requested by name.
+        filenames = ("ubuntu.squashfs", "ubuntu.manifest")
+        lfas = []
+        for filename in filenames:
+            lfa = self.factory.makeLibraryFileAlias(filename=filename)
+            lfas.append(lfa)
+            self.factory.makeLiveFSFile(
+                livefsbuild=self.build, libraryfile=lfa)
+        self.assertContentEqual(
+            lfas, [row[1] for row in self.build.getFiles()])
+        for filename, lfa in zip(filenames, lfas):
+            self.assertEqual(lfa, self.build.getFileByName(filename))
+        self.assertRaises(NotFoundError, self.build.getFileByName, "missing")
 
     def test_notify_fullybuilt(self):
         # notify does not send mail when a LiveFSBuild completes normally.
