@@ -299,8 +299,6 @@ class TestLiveFSWebservice(TestCaseWithFactory):
             distroarchseries=distroarchseries_url, pocket="Release")
         self.assertEqual(201, response.status)
         build = self.webservice.get(response.getHeader("Location")).jsonBody()
-        builds_collection = self.webservice.get(
-            livefs["builds_collection_link"]).jsonBody()
         self.assertEqual(
             [build["self_link"]], self.getCollectionLinks(livefs, "builds"))
 
