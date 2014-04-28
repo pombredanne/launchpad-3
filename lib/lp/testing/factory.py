@@ -4384,7 +4384,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             livefsbuild = self.makeLiveFSBuild()
         if libraryfile is None:
             libraryfile = self.makeLibraryFileAlias()
-        return LiveFSFile(livefsbuild=livefsbuild, libraryfile=libraryfile)
+        return ProxyFactory(
+            LiveFSFile(livefsbuild=livefsbuild, libraryfile=libraryfile))
 
 
 # Some factory methods return simple Python types. We don't add

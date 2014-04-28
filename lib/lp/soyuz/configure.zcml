@@ -1027,6 +1027,15 @@
         factory=".model.livefsbuildbehaviour.LiveFSBuildBehaviour"
         permission="zope.Public"/>
 
+    <!-- LiveFSFile -->
+    <class class=".model.livefsbuild.LiveFSFile">
+        <allow
+            interface=".interfaces.livefsbuild.ILiveFSFile"/>
+        <require
+            permission="launchpad.Edit"
+            set_schema=".interfaces.livefsbuild.ILiveFSFile"/>
+    </class>
+
     <webservice:register module="lp.soyuz.interfaces.webservice" />
 
 </configure>
