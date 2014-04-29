@@ -29,14 +29,15 @@ class LiveFSBuildMailer(BaseMailer):
         requester = build.requester
         recipients = {requester: RecipientReason.forBuildRequester(requester)}
         return cls(
-            "[LiveFS build #%(build_id)d] %(build_title)s", recipients,
+            "[LiveFS build #%(build_id)d] %(build_title)s",
+            "livefsbuild-notification.txt", recipients,
             config.canonical.noreply_from_address, build)
 
     def __init__(self, subject, template_name, recipients, from_address,
                  build):
         super(LiveFSBuildMailer, self).__init__(
             subject, template_name, recipients, from_address,
-            notification_type="livefs-build")
+            notification_type="livefs-build-status")
         self.build = build
 
     def _getHeaders(self, email):
