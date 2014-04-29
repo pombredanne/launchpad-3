@@ -153,6 +153,13 @@ class ILiveFSBuildView(IPackageBuild):
 class ILiveFSBuildEdit(Interface):
     """`ILiveFSBuild` attributes that require launchpad.Edit."""
 
+    def addFile(lfa):
+        """Add a file to this build.
+
+        :param lfa: An `ILibraryFileAlias`.
+        :return: An `ILiveFSFile`.
+        """
+
     @export_write_operation()
     @operation_for_version("devel")
     def cancel():

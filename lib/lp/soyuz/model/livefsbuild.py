@@ -311,6 +311,10 @@ class LiveFSBuild(PackageBuildMixin, Storm):
 
         raise NotFoundError(filename)
 
+    def addFile(self, lfa):
+        """See `ILiveFSBuild`."""
+        return LiveFSFile(livefsbuild=self, libraryfile=lfa)
+
     def verifySuccessfulUpload(self):
         """See `IPackageBuild`."""
         return not self.getFiles().is_empty()
