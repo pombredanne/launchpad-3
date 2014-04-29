@@ -345,6 +345,7 @@ class TestLiveFSBuildWebservice(TestCaseWithFactory):
         build_url = api_url(db_build)
         unpriv_webservice = webservice_for_person(
             self.factory.makePerson(), permission=OAuthPermission.WRITE_PUBLIC)
+        unpriv_webservice.default_api_version = "devel"
         logout()
         build = self.webservice.get(build_url).jsonBody()
         self.assertTrue(build["can_be_cancelled"])
@@ -366,6 +367,7 @@ class TestLiveFSBuildWebservice(TestCaseWithFactory):
             member_of=[getUtility(ILaunchpadCelebrities).buildd_admin])
         buildd_admin_webservice = webservice_for_person(
             buildd_admin, permission=OAuthPermission.WRITE_PUBLIC)
+        buildd_admin_webservice.default_api_version = "devel"
         logout()
         build = self.webservice.get(build_url).jsonBody()
         self.assertEqual(2505, build["score"])
