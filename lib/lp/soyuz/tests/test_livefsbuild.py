@@ -25,7 +25,7 @@ from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.buildmaster.interfaces.packagebuild import IPackageBuild
-from lp.services.database.interfaces import IStore
+from lp.services.config import config
 from lp.services.features.testing import FeatureFixture
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.services.webapp.interfaces import OAuthPermission
@@ -38,6 +38,7 @@ from lp.soyuz.interfaces.livefsbuild import (
     ILiveFSBuild,
     ILiveFSBuildSet,
     )
+from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.testing import (
     ANONYMOUS,
     api_url,
@@ -64,6 +65,21 @@ class TestLiveFSBuildFeatureFlag(TestCaseWithFactory):
             LiveFSFeatureDisabled, getUtility(ILiveFSBuildSet).new,
             None, None, self.factory.makeArchive(),
             self.factory.makeDistroArchSeries(), None, None, None)
+
+
+expected_body = """\
+ * Live Filesystem: livefs-1
+ * Version: 20140425-103800
+ * Archive: distro primary archive
+ * Distroseries: distro unstable
+ * Architecture: i386
+ * Pocket: RELEASE
+ * State: Failed to build
+ * Duration: 10 minutes
+ * Build Log: %s
+ * Upload Log: %s
+ * Builder: http://launchpad.dev/builders/bob
+"""
 
 
 class TestLiveFSBuild(TestCaseWithFactory):
@@ -181,13 +197,50 @@ class TestLiveFSBuild(TestCaseWithFactory):
     def test_notify_fullybuilt(self):
         # notify does not send mail when a LiveFSBuild completes normally.
         person = self.factory.makePerson(name="person")
-        build = self.factory.makeLiveFSBuild(requester=person)
-        build.updateStatus(BuildStatus.FULLYBUILT)
-        IStore(build).flush()
+        build = self.factory.makeLiveFSBuild(
+            requester=person, status=BuildStatus.FULLYBUILT)
         build.notify()
         self.assertEqual(0, len(pop_notifications()))
 
-    # TODO real notification
+    def test_notify_packagefail(self):
+        # notify sends mail when a LiveFSBuild fails.
+        person = self.factory.makePerson(name="person")
+        distribution = self.factory.makeDistribution(name="distro")
+        distroseries = self.factory.makeDistroSeries(
+            distribution=distribution, name="unstable")
+        processor = getUtility(IProcessorSet).getByName("386")
+        distroarchseries = self.factory.makeDistroArchSeries(
+            distroseries=distroseries, architecturetag="i386",
+            processor=processor)
+        build = self.factory.makeLiveFSBuild(
+            name=u"livefs-1", requester=person,
+            distroarchseries=distroarchseries,
+            date_created=datetime(2014, 04, 25, 10, 38, 0, tzinfo=pytz.UTC),
+            status=BuildStatus.FAILEDTOBUILD,
+            builder=self.factory.makeBuilder(name="bob"),
+            duration=timedelta(minutes=10))
+        build.setLog(self.factory.makeLibraryFileAlias())
+        build.notify()
+        [notification] = pop_notifications()
+        self.assertEqual(
+            config.canonical.noreply_from_address, notification["From"])
+        self.assertEqual(
+            "Person <%s>" % person.preferredemail.email, notification["To"])
+        self.assertEqual(
+            "[LiveFS build #%d] i386 build of livefs-1 in distro unstable "
+            "RELEASE" % build.id, notification["Subject"])
+        self.assertEqual(
+            "Requester", notification["X-Launchpad-Message-Rationale"])
+        self.assertEqual(
+            "livefs-build-status",
+            notification["X-Launchpad-Notification-Type"])
+        self.assertEqual(
+            "FAILEDTOBUILD", notification["X-Launchpad-Build-State"])
+        body, footer = notification.get_payload(decode=True).split("\n-- \n")
+        self.assertEqual(expected_body % (build.log_url, ""), body)
+        self.assertEqual(
+            "http://launchpad.dev/distro/+archive/primary/+livefsbuild/%d\n"
+            "You are the requester of the build.\n" % build.id, footer)
 
     def addFakeBuildLog(self, build):
         build.setLog(self.factory.makeLibraryFileAlias("mybuildlog.txt"))
