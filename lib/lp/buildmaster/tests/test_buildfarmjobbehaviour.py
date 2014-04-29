@@ -77,6 +77,13 @@ class TestBuildFarmJobBehaviourBase(TestCaseWithFactory):
             '%s-%s' % (build.job_type.name, build.id),
             behaviour.getBuildCookie())
 
+    def test_getUploadDirBase(self):
+        # getUploadDirBase returns "incoming" or "failed", depending on
+        # whether the copy from the slave succeeded.
+        behaviour = self._makeBehaviour()
+        self.assertEqual("incoming", behaviour.getUploadDirBase(True))
+        self.assertEqual("failed", behaviour.getUploadDirBase(False))
+
     def test_getUploadDirLeaf(self):
         # getUploadDirLeaf returns the current time, followed by the build
         # cookie.
@@ -121,6 +128,8 @@ class TestHandleStatusMixin:
     """
 
     layer = LaunchpadZopelessLayer
+    incoming_dir = "incoming"
+    failed_dir = "failed"
 
     def makeBuild(self):
         """Allow classes to override the build with which the test runs."""
@@ -166,7 +175,7 @@ class TestHandleStatusMixin:
         # the slave resulting in a URL error in this test case.
         def got_status(ignored):
             self.assertEqual(BuildStatus.UPLOADING, self.build.status)
-            self.assertResultCount(1, "incoming")
+            self.assertResultCount(1, self.incoming_dir)
 
         d = self.behaviour.handleStatus(
             self.build.buildqueue_record, 'OK',
@@ -178,7 +187,7 @@ class TestHandleStatusMixin:
         # the upload directory will result in a failed upload.
         def got_status(ignored):
             self.assertEqual(BuildStatus.FAILEDTOUPLOAD, self.build.status)
-            self.assertResultCount(0, "failed")
+            self.assertResultCount(0, self.failed_dir)
             self.assertIdentical(None, self.build.buildqueue_record)
 
         d = self.behaviour.handleStatus(
@@ -191,7 +200,7 @@ class TestHandleStatusMixin:
         # the upload directory will result in a failed upload.
         def got_status(ignored):
             self.assertEqual(BuildStatus.FAILEDTOUPLOAD, self.build.status)
-            self.assertResultCount(0, "failed")
+            self.assertResultCount(0, self.failed_dir)
 
         d = self.behaviour.handleStatus(
             self.build.buildqueue_record, 'OK',

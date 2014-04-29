@@ -41,6 +41,16 @@ class IBuildFarmJobBehaviour(Interface):
     def getBuildCookie():
         """Return a string which uniquely identifies the job."""
 
+    def getUploadDirBase(successful_copy_from_slave):
+        """Return the base directory name where uploads should be stored.
+
+        The returned string will be joined to the builddmaster root
+        directory.
+
+        :param successful_copy_from_slave: Whether all the files in the
+            filemap were copied successfully from the slave.
+        """
+
     def handleStatus(bq, status, slave_status):
         """Update the build from a WAITING slave result.
 

@@ -56,6 +56,13 @@ class BuildFarmJobBehaviourBase:
         """See `IPackageBuild`."""
         return '%s-%s' % (self.build.job_type.name, self.build.id)
 
+    def getUploadDirBase(self, successful_copy_from_slave):
+        """See `IBuildFarmJobBehaviour`."""
+        if successful_copy_from_slave:
+            return "incoming"
+        else:
+            return "failed"
+
     def getUploadDirLeaf(self, build_cookie, now=None):
         """See `IPackageBuild`."""
         if now is None:
@@ -237,14 +244,14 @@ class BuildFarmJobBehaviourBase:
             logger.info(
                 "Gathered %s %d completely. Moving %s to uploader queue."
                 % (build.__class__.__name__, build.id, upload_leaf))
-            target_dir = os.path.join(root, "incoming")
         else:
             logger.warning(
                 "Copy from slave for build %s was unsuccessful.", build.id)
             if notify:
                 build.notify(
                     extra_info='Copy from slave was unsuccessful.')
-            target_dir = os.path.join(root, "failed")
+        target_dir = os.path.join(
+            root, self.getUploadDirBase(successful_copy_from_slave))
 
         if not os.path.exists(target_dir):
             os.mkdir(target_dir)

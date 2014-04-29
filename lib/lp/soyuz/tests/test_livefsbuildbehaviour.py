@@ -211,3 +211,6 @@ class TestHandleStatusForLiveFSBuild(
     MakeLiveFSBuildMixin, TestHandleStatusMixin, TrialTestCase,
     fixtures.TestWithFixtures):
     """IPackageBuild.handleStatus works with LiveFS builds."""
+
+    incoming_dir = "livefs-incoming"
+    failed_dir = "livefs-failed"
