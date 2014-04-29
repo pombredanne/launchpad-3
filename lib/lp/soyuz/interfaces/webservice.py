@@ -29,6 +29,8 @@ __all__ = [
     'IBinaryPackagePublishingHistory',
     'IBinaryPackageReleaseDownloadCount',
     'IDistroArchSeries',
+    'ILiveFS',
+    'ILiveFSBuild',
     'IPackageUpload',
     'IPackageset',
     'IPackagesetSet',
