@@ -131,10 +131,3 @@ class LiveFSBuildBehaviour(BuildFarmJobBehaviourBase):
             info,
             )
         logger.info(message)
-
-    def getUploadDirBase(self, successful_copy_from_slave):
-        """See `IBuildFarmJobBehaviour`."""
-        if successful_copy_from_slave:
-            return "livefs-incoming"
-        else:
-            return "livefs-failed"
