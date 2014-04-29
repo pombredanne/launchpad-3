@@ -8,6 +8,7 @@ __metaclass__ = type
 from datetime import datetime
 from textwrap import dedent
 
+import fixtures
 import pytz
 from testtools import run_test_with
 from testtools.deferredruntest import (
@@ -16,9 +17,11 @@ from testtools.deferredruntest import (
     )
 import transaction
 from twisted.internet import defer
+from twisted.trial.unittest import TestCase as TrialTestCase
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.builder import CannotBuild
 from lp.buildmaster.interfaces.buildfarmjobbehaviour import (
     IBuildFarmJobBehaviour,
@@ -26,6 +29,10 @@ from lp.buildmaster.interfaces.buildfarmjobbehaviour import (
 from lp.buildmaster.tests.mock_slaves import (
     MockBuilder,
     OkSlave,
+    )
+from lp.buildmaster.tests.test_buildfarmjobbehaviour import (
+    TestGetUploadMethodsMixin,
+    TestHandleStatusMixin,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.features.testing import FeatureFixture
@@ -183,3 +190,24 @@ class TestLiveFSBuildBehaviour(TestCaseWithFactory):
         job.setBuilder(builder, OkSlave())
         d = job.dispatchBuildToSlave("someid", BufferLogger())
         return assert_fails_with(d, CannotBuild)
+
+
+class MakeLiveFSBuildMixin:
+    """Provide the common makeBuild method returning a queued build."""
+
+    def makeBuild(self):
+        self.useFixture(FeatureFixture({LIVEFS_FEATURE_FLAG: u"on"}))
+        build = self.factory.makeLiveFSBuild(status=BuildStatus.BUILDING)
+        build.queueBuild()
+        return build
+
+
+class TestGetUploadMethodsForLiveFSBuild(
+    MakeLiveFSBuildMixin, TestGetUploadMethodsMixin, TestCaseWithFactory):
+    """IPackageBuild.getUpload-related methods work with LiveFS builds."""
+
+
+class TestHandleStatusForLiveFSBuild(
+    MakeLiveFSBuildMixin, TestHandleStatusMixin, TrialTestCase,
+    fixtures.TestWithFixtures):
+    """IPackageBuild.handleStatus works with LiveFS builds."""
