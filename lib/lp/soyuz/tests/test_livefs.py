@@ -336,7 +336,7 @@ class TestLiveFSWebservice(TestCaseWithFactory):
         for archive_url in archive_urls:
             response = self.webservice.named_post(
                 livefs["self_link"], "requestBuild", archive=archive_url,
-                distroarchseries = distroarchseries_url, pocket="Proposed")
+                distroarchseries=distroarchseries_url, pocket="Proposed")
             self.assertEqual(201, response.status)
             build = self.webservice.get(
                 response.getHeader("Location")).jsonBody()
