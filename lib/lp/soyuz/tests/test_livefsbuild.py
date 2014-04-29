@@ -202,6 +202,11 @@ class TestLiveFSBuild(TestCaseWithFactory):
             self.assertEqual(lfa, self.build.getFileByName(filename))
         self.assertRaises(NotFoundError, self.build.getFileByName, "missing")
 
+    def test_verifySuccessfulUpload(self):
+        self.assertFalse(self.build.verifySuccessfulUpload())
+        self.factory.makeLiveFSFile(livefsbuild=self.build)
+        self.assertTrue(self.build.verifySuccessfulUpload())
+
     def test_notify_fullybuilt(self):
         # notify does not send mail when a LiveFSBuild completes normally.
         person = self.factory.makePerson(name="person")

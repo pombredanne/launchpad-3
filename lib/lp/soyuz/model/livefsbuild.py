@@ -313,7 +313,7 @@ class LiveFSBuild(PackageBuildMixin, Storm):
 
     def verifySuccessfulUpload(self):
         """See `IPackageBuild`."""
-        return bool(self.getFiles())
+        return not self.getFiles().is_empty()
 
     def notify(self, extra_info=None):
         """See `IPackageBuild`."""
