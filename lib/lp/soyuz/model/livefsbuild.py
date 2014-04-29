@@ -167,6 +167,11 @@ class LiveFSBuild(PackageBuildMixin, Storm):
         self.status = BuildStatus.NEEDSBUILD
 
     @property
+    def is_private(self):
+        """See `IBuildFarmJob`."""
+        return self.livefs.owner.private or self.archive.private
+
+    @property
     def is_virtualized(self):
         """See `ILiveFSBuild`."""
         return self.archive.require_virtualized

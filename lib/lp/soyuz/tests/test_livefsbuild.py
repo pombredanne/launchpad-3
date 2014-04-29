@@ -25,6 +25,7 @@ from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.buildmaster.interfaces.packagebuild import IPackageBuild
+from lp.registry.enums import PersonVisibility
 from lp.services.config import config
 from lp.services.features.testing import FeatureFixture
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
@@ -121,10 +122,17 @@ class TestLiveFSBuild(TestCaseWithFactory):
         self.assertEqual("main", build.current_component.name)
 
     def test_is_private(self):
-        # A LiveFSBuild is private iff its owner is.
+        # A LiveFSBuild is private iff its LiveFS and archive are.
         self.assertFalse(self.build.is_private)
-        # TODO archive too?  need to override PackageBuild.is_private in
-        # LiveFSBuild?
+        private_team = self.factory.makeTeam(
+            visibility=PersonVisibility.PRIVATE)
+        with person_logged_in(private_team.teamowner):
+            build = self.factory.makeLiveFSBuild(owner=private_team)
+            self.assertTrue(build.is_private)
+        private_archive = self.factory.makeArchive(private=True)
+        with person_logged_in(private_archive.owner):
+            build = self.factory.makeLiveFSBuild(archive=private_archive)
+            self.assertTrue(build.is_private)
 
     def test_can_be_cancelled(self):
         # For all states that can be cancelled, can_be_cancelled returns True.
@@ -337,6 +345,44 @@ class TestLiveFSBuildWebservice(TestCaseWithFactory):
             self.assertTrue(build["can_be_rescored"])
             self.assertFalse(build["can_be_retried"])
             self.assertFalse(build["can_be_cancelled"])
+
+    def test_public(self):
+        # A LiveFSBuild with a public LiveFS and archive is itself public.
+        db_build = self.factory.makeLiveFSBuild()
+        build_url = api_url(db_build)
+        unpriv_webservice = webservice_for_person(
+            self.factory.makePerson(), permission=OAuthPermission.WRITE_PUBLIC)
+        unpriv_webservice.default_api_version = "devel"
+        logout()
+        self.assertEqual(200, self.webservice.get(build_url).status)
+        self.assertEqual(200, unpriv_webservice.get(build_url).status)
+
+    def test_private_livefs(self):
+        # A LiveFSBuild with a private LiveFS is private.
+        db_team = self.factory.makeTeam(
+            owner=self.person, visibility=PersonVisibility.PRIVATE)
+        with person_logged_in(self.person):
+            db_build = self.factory.makeLiveFSBuild(owner=db_team)
+            build_url = api_url(db_build)
+        unpriv_webservice = webservice_for_person(
+            self.factory.makePerson(), permission=OAuthPermission.WRITE_PUBLIC)
+        unpriv_webservice.default_api_version = "devel"
+        logout()
+        self.assertEqual(200, self.webservice.get(build_url).status)
+        self.assertEqual(401, unpriv_webservice.get(build_url).status)
+
+    def test_private_archive(self):
+        # A LiveFSBuild with a private archive is private.
+        db_archive = self.factory.makeArchive(owner=self.person, private=True)
+        with person_logged_in(self.person):
+            db_build = self.factory.makeLiveFSBuild(archive=db_archive)
+            build_url = api_url(db_build)
+        unpriv_webservice = webservice_for_person(
+            self.factory.makePerson(), permission=OAuthPermission.WRITE_PUBLIC)
+        unpriv_webservice.default_api_version = "devel"
+        logout()
+        self.assertEqual(200, self.webservice.get(build_url).status)
+        self.assertEqual(401, unpriv_webservice.get(build_url).status)
 
     def test_cancel(self):
         # The owner of a build can cancel it.

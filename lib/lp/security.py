@@ -2892,9 +2892,9 @@ class ViewLiveFSBuild(DelegatedAuthorization):
     permission = 'launchpad.View'
     usedfor = ILiveFSBuild
 
-    def __init__(self, obj):
-        super(ViewLiveFSBuild, self).__init__(
-            obj, obj.livefs, 'launchpad.View')
+    def iter_objects(self):
+        yield self.obj.livefs
+        yield self.obj.archive
 
 
 class EditLiveFSBuild(AdminByBuilddAdmin):
