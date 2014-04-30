@@ -672,9 +672,9 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         switch_dbuser('testadmin')
         mp1 = self.factory.makeBranchMergeProposal()
         now = datetime.now(UTC)
-        mp1_diff_comment =  self.factory.makePreviewDiff(
+        mp1_diff_comment = self.factory.makePreviewDiff(
             merge_proposal=mp1, date_created=now - timedelta(hours=2))
-        mp1_diff_draft =  self.factory.makePreviewDiff(
+        mp1_diff_draft = self.factory.makePreviewDiff(
             merge_proposal=mp1, date_created=now - timedelta(hours=1))
         mp1_diff = self.factory.makePreviewDiff(merge_proposal=mp1)
         # Enabled 'inline_diff_comments' feature flag and attach comments
