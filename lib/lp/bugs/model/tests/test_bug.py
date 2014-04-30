@@ -676,13 +676,12 @@ class TestBugPrivateAndSecurityRelatedUpdatesProject(TestCaseWithFactory):
         # should include:
         # - the bug reporter
         # - the person changing the state
-        # - and bug/pillar owners, drivers if they are already subscribed
 
         (bug, bug_owner, bugtask_a, bugtask_b, default_bugtask) = (
             self.createBugTasksAndSubscribers())
         initial_subscribers = set((
             self.factory.makePerson(name='subscriber'), bugtask_a.owner,
-            bug_owner, bugtask_a.pillar.driver))
+            bug_owner))
         initial_subscribers.update(bug.getDirectSubscribers())
 
         with person_logged_in(bug_owner):
@@ -692,22 +691,18 @@ class TestBugPrivateAndSecurityRelatedUpdatesProject(TestCaseWithFactory):
             bug.transitionToInformationType(
                 InformationType.PRIVATESECURITY, who=who)
             subscribers = bug.getDirectSubscribers(filter_visible=True)
-        expected_subscribers = set((
-            default_bugtask.pillar.driver, bug_owner, who))
-        self.assertContentEqual(expected_subscribers, subscribers)
+        self.assertContentEqual([bug_owner, who], subscribers)
 
     def test_transition_to_USERDATA_information_type(self):
         # When a bug is marked as USERDATA, the direct subscribers should
         # include:
         # - the bug reporter
         # - the person changing the state
-        # - and bug/pillar owners, drivers if they are already subscribed
 
         (bug, bug_owner, bugtask_a, bugtask_b, default_bugtask) = (
                 self.createBugTasksAndSubscribers())
         initial_subscribers = set((
-            self.factory.makePerson(name='subscriber'), bug_owner,
-            bugtask_a.pillar.driver))
+            self.factory.makePerson(name='subscriber'), bug_owner))
 
         with person_logged_in(bug_owner):
             for subscriber in initial_subscribers:
@@ -715,12 +710,7 @@ class TestBugPrivateAndSecurityRelatedUpdatesProject(TestCaseWithFactory):
             who = self.factory.makePerson(name='who')
             bug.transitionToInformationType(InformationType.USERDATA, who)
             subscribers = bug.getDirectSubscribers(filter_visible=True)
-        expected_subscribers = set((
-            default_bugtask.pillar.bug_supervisor,
-            default_bugtask.pillar.driver,
-            bug_owner,
-            who))
-        self.assertContentEqual(expected_subscribers, subscribers)
+        self.assertContentEqual([bug_owner, who], subscribers)
 
     def test_transition_to_PUBLICSECURITY_information_type(self):
         # When a security bug is unembargoed, direct subscribers should
@@ -765,38 +755,6 @@ class TestBugPrivateAndSecurityRelatedUpdatesProject(TestCaseWithFactory):
         self.assertContentEqual(
             subscribers_before_public,
             subscribers_after_public)
-
-    def test_setPillarOwnerSubscribedIfNoBugSupervisor(self):
-        # The pillar owner is subscribed if the bug supervisor is not set and
-        # the bug is marked as USERDATA.
-
-        bug_owner = self.factory.makePerson(name='bugowner')
-        bug = self.factory.makeBug(owner=bug_owner)
-        with person_logged_in(bug_owner):
-            who = self.factory.makePerson()
-            bug.transitionToInformationType(InformationType.USERDATA, who)
-            subscribers = bug.getDirectSubscribers()
-        naked_bugtask = removeSecurityProxy(bug).default_bugtask
-        self.assertContentEqual(
-            set((naked_bugtask.pillar.owner, bug_owner, who)),
-            subscribers)
-
-    def test_structural_bug_supervisor_becomes_direct_on_private(self):
-        # If a bug supervisor has a structural subscription to the bug, and
-        # the bug is marked as private, the supervisor should get a direct
-        # subscription. Otherwise they should be removed, per other tests.
-        bug_supervisor = self.factory.makePerson()
-        product = self.factory.makeProduct(bug_supervisor=bug_supervisor)
-        bug_owner = self.factory.makePerson()
-        bug = self.factory.makeBug(owner=bug_owner, target=product)
-        with person_logged_in(product.owner):
-            product.addSubscription(bug_supervisor, bug_supervisor)
-
-        self.assertFalse(bug_supervisor in bug.getDirectSubscribers())
-        with person_logged_in(bug_owner):
-            who = self.factory.makePerson(name="who")
-            bug.transitionToInformationType(InformationType.USERDATA, who)
-        self.assertTrue(bug_supervisor in bug.getDirectSubscribers())
 
 
 class TestBugPrivacy(TestCaseWithFactory):

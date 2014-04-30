@@ -340,44 +340,11 @@ bug.
     >>> linux_source_bug.getSubscribersFromDuplicates()
     ()
 
-When a bug is marked private, specific people like the person marking private
-will be subscribed. People without pre-existing access and aren't one of the
-special users will be removed.
-
-    >>> from zope.event import notify
-
-    >>> from lazr.lifecycle.event import ObjectModifiedEvent
-    >>> from lazr.lifecycle.snapshot import Snapshot
-    >>> from lp.bugs.interfaces.bug import IBug
-
-    >>> print_displayname(linux_source_bug.getDirectSubscribers())
-    Foo Bar
-    Mark Shuttleworth
-
-    >>> bug_before_modification = Snapshot(linux_source_bug, providing=IBug)
-    >>> linux_source_bug.setPrivate(True, getUtility(ILaunchBag).user)
-    True
-
-    >>> notify(
-    ...     ObjectModifiedEvent(
-    ...         linux_source_bug, bug_before_modification, ["private"]))
-
-    >>> print_displayname(linux_source_bug.getDirectSubscribers())
-    Foo Bar
-    Mark Shuttleworth
-    Robert Collins
-
 Direct subscriptions always take precedence over indirect subscriptions.
-So, if we unmark the above bug as private, indirect_subscribers will include
-any subscribers not converted to direct subscribers.
-
-    >>> linux_source_bug.setPrivate(False, getUtility(ILaunchBag).user)
-    True
 
     >>> print_displayname(linux_source_bug.getDirectSubscribers())
     Foo Bar
     Mark Shuttleworth
-    Robert Collins
 
     >>> print_displayname(linux_source_bug.getIndirectSubscribers())
     No Privileges Person
@@ -402,7 +369,6 @@ You can query for the addresses and reasons:
     [('foo.bar@canonical.com', 'Subscriber'),
      ('mark@example.com', 'Subscriber'),
      ('no-priv@canonical.com', u'Subscriber (linux-source-2.6.15 in Ubuntu)'),
-     ('robertc@robertcollins.net', 'Subscriber'),
      ('test@canonical.com', 'Assignee')]
 
 If IBug.getBugNotificationRecipients() is passed a  BugNotificationLevel
@@ -415,7 +381,6 @@ notification level or higher will be returned.
     >>> [(address, recipients.getReason(address)[1]) for address in addresses]
     [('foo.bar@canonical.com', 'Subscriber'),
      ('mark@example.com', 'Subscriber'),
-     ('robertc@robertcollins.net', 'Subscriber'),
      ('test@canonical.com', 'Assignee')]
 
 When Sample Person is unsubscribed from linux_source_bug, he is no
@@ -429,7 +394,6 @@ the COMMENTS level...
     >>> [(address, recipients.getReason(address)[1]) for address in addresses]
     [('foo.bar@canonical.com', 'Subscriber'),
      ('mark@example.com', 'Subscriber'),
-     ('robertc@robertcollins.net', 'Subscriber'),
      ('test@canonical.com', 'Assignee')]
 
 ...but remains included for the level LIFECYCLE.
@@ -442,7 +406,6 @@ the COMMENTS level...
     [('foo.bar@canonical.com', 'Subscriber'),
      ('mark@example.com', 'Subscriber'),
      ('no-priv@canonical.com', u'Subscriber (linux-source-2.6.15 in Ubuntu)'),
-     ('robertc@robertcollins.net', 'Subscriber'),
      ('test@canonical.com', 'Assignee')]
 
 To find out if someone is already directly subscribed to a bug, call
