@@ -194,8 +194,7 @@ class TestLiveFSBuild(TestCaseWithFactory):
         for filename in filenames:
             lfa = self.factory.makeLibraryFileAlias(filename=filename)
             lfas.append(lfa)
-            self.factory.makeLiveFSFile(
-                livefsbuild=self.build, libraryfile=lfa)
+            self.build.addFile(lfa)
         self.assertContentEqual(
             lfas, [row[1] for row in self.build.getFiles()])
         for filename, lfa in zip(filenames, lfas):
