@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the database garbage collector."""
@@ -41,6 +41,7 @@ from lp.bugs.model.bugnotification import (
     BugNotification,
     BugNotificationRecipient,
     )
+from lp.buildmaster.enums import BuildStatus
 from lp.code.bzr import (
     BranchFormat,
     RepositoryFormat,
@@ -87,6 +88,7 @@ from lp.services.database.constants import (
     )
 from lp.services.database.interfaces import IMasterStore
 from lp.services.features.model import FeatureFlag
+from lp.services.features.testing import FeatureFixture
 from lp.services.identity.interfaces.account import AccountStatus
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.services.job.model.job import Job
@@ -109,6 +111,8 @@ from lp.services.verification.interfaces.authtoken import LoginTokenType
 from lp.services.verification.model.logintoken import LoginToken
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.soyuz.enums import PackagePublishingStatus
+from lp.soyuz.interfaces.livefs import LIVEFS_FEATURE_FLAG
+from lp.soyuz.model.livefsbuild import LiveFSFile
 from lp.soyuz.model.reporting import LatestPersonSourcePackageReleaseCache
 from lp.testing import (
     feature_flags,
@@ -1316,6 +1320,43 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         job_data = load_garbo_job_state(
             'PopulateLatestPersonSourcePackageReleaseCache')
         self.assertEqual(spph_2.id, job_data['last_spph_id'])
+
+    def _test_LiveFSFilePruner(self, content_type, interval, expected_count=0):
+        # Garbo should (or should not, if `expected_count=1`) remove LiveFS
+        # files of MIME type `content_type` that finished more than
+        # `interval` days ago.
+        now = datetime.now(UTC)
+        switch_dbuser('testadmin')
+        self.useFixture(FeatureFixture({LIVEFS_FEATURE_FLAG: u'on'}))
+        store = IMasterStore(LiveFSFile)
+
+        db_build = self.factory.makeLiveFSBuild(
+            date_created=now - timedelta(days=interval, minutes=15),
+            status=BuildStatus.FULLYBUILT, duration=timedelta(minutes=10))
+        db_lfa = self.factory.makeLibraryFileAlias(content_type=content_type)
+        db_file = self.factory.makeLiveFSFile(
+            livefsbuild=db_build, libraryfile=db_lfa)
+        Store.of(db_file).flush()
+        self.assertEqual(1, store.find(LiveFSFile).count())
+
+        self.runDaily()
+
+        switch_dbuser('testadmin')
+        self.assertEqual(expected_count, store.find(LiveFSFile).count())
+
+    def test_LiveFSFilePruner_old_binary_files(self):
+        # LiveFS binary files attached to builds over a day old are pruned.
+        self._test_LiveFSFilePruner('application/octet-stream', 1)
+
+    def test_LiveFSFilePruner_old_text_files(self):
+        # LiveFS text files attached to builds over a day old are retained.
+        self._test_LiveFSFilePruner('text/plain', 1, expected_count=1)
+
+    def test_LiveFSFilePruner_recent_binary_files(self):
+        # LiveFS binary files attached to builds less than a day old are
+        # retained.
+        self._test_LiveFSFilePruner(
+            'application/octet-stream', 0, expected_count=1)
 
 
 class TestGarboTasks(TestCaseWithFactory):
