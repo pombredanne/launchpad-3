@@ -984,7 +984,8 @@
                        .interfaces.livefs.ILiveFSEditableAttributes"/>
         <require
             permission="launchpad.Edit"
-            set_schema=".interfaces.livefs.ILiveFSEditableAttributes"/>
+            set_schema=".interfaces.livefs.ILiveFSEditableAttributes"
+            set_attributes="date_last_modified"/>
     </class>
     <subscriber
         for=".interfaces.livefs.ILiveFS zope.lifecycleevent.interfaces.IObjectModifiedEvent"
