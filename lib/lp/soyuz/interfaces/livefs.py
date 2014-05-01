@@ -160,6 +160,9 @@ class ILiveFSEditableAttributes(IHasOwner):
 
     These attributes need launchpad.View to see, and launchpad.Edit to change.
     """
+    date_last_modified = exported(Datetime(
+        title=_("Date last modified"), required=True, readonly=True))
+
     owner = exported(PersonChoice(
         title=_("Owner"), required=True, readonly=False,
         vocabulary="AllUserTeamsParticipationPlusSelf",

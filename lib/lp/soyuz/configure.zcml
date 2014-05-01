@@ -986,6 +986,9 @@
             permission="launchpad.Edit"
             set_schema=".interfaces.livefs.ILiveFSEditableAttributes"/>
     </class>
+    <subscriber
+        for=".interfaces.livefs.ILiveFS zope.lifecycleevent.interfaces.IObjectModifiedEvent"
+        handler=".model.livefs.livefs_modified"/>
 
     <!-- LiveFSSet -->
     <securedutility

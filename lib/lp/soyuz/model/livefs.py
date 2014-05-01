@@ -32,7 +32,10 @@ from lp.registry.interfaces.person import (
     NoSuchPerson,
     )
 from lp.registry.interfaces.role import IHasOwner
-from lp.services.database.constants import DEFAULT
+from lp.services.database.constants import (
+    DEFAULT,
+    UTC_NOW,
+    )
 from lp.services.database.interfaces import (
     IMasterStore,
     IStore,
@@ -53,6 +56,15 @@ from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.livefsbuild import LiveFSBuild
 
 
+def livefs_modified(livefs, event):
+    """Update the date_last_modified property when a LiveFS is modified.
+
+    This method is registered as a subscriber to `IObjectModifiedEvent`
+    events on live filesystems.
+    """
+    livefs.date_last_modified = UTC_NOW
+
+
 class LiveFS(Storm):
     """See `ILiveFS`."""
 
@@ -67,6 +79,8 @@ class LiveFS(Storm):
 
     date_created = DateTime(
         name='date_created', tzinfo=pytz.UTC, allow_none=False)
+    date_last_modified = DateTime(
+        name='date_last_modified', tzinfo=pytz.UTC, allow_none=False)
 
     registrant_id = Int(name='registrant', allow_none=False)
     registrant = Reference(registrant_id, 'Person.id')
@@ -93,6 +107,7 @@ class LiveFS(Storm):
         self.name = name
         self.metadata = metadata
         self.date_created = date_created
+        self.date_last_modified = date_created
 
     def requestBuild(self, requester, archive, distroarchseries, pocket,
                      unique_key=None, metadata_override=None):

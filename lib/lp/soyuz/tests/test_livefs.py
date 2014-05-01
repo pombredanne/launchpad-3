@@ -5,12 +5,18 @@
 
 __metaclass__ = type
 
-from datetime import timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 
+from lazr.lifecycle.event import ObjectModifiedEvent
+import pytz
 from storm.locals import Store
 from testtools.matchers import Equals
 import transaction
 from zope.component import getUtility
+from zope.event import notify
 from zope.security.proxy import removeSecurityProxy
 
 from lp.buildmaster.enums import (
@@ -20,6 +26,7 @@ from lp.buildmaster.enums import (
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.database.constants import UTC_NOW
 from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.interfaces import OAuthPermission
 from lp.soyuz.interfaces.livefs import (
@@ -110,6 +117,22 @@ class TestLiveFS(TestCaseWithFactory):
         self.assertEqual(components["distroseries"], livefs.distroseries)
         self.assertEqual(components["name"], livefs.name)
         self.assertEqual(components["metadata"], livefs.metadata)
+
+    def test_initial_date_last_modified(self):
+        # The initial value of date_last_modified is date_created.
+        livefs = self.factory.makeLiveFS(
+            date_created=datetime(2014, 04, 25, 10, 38, 0, tzinfo=pytz.UTC))
+        self.assertEqual(livefs.date_created, livefs.date_last_modified)
+
+    def test_modifiedevent_sets_date_last_modified(self):
+        # When a LiveFS receives an object modified event, the last modified
+        # date is set to UTC_NOW.
+        livefs = self.factory.makeLiveFS(
+            date_created=datetime(2014, 04, 25, 10, 38, 0, tzinfo=pytz.UTC))
+        notify(ObjectModifiedEvent(
+            removeSecurityProxy(livefs), livefs, [ILiveFS["name"]]))
+        self.assertSqlAttributeEqualsDate(
+            livefs, "date_last_modified", UTC_NOW)
 
     def test_exists(self):
         # ILiveFSSet.exists checks for matching LiveFSes.
