@@ -6,6 +6,7 @@ SET client_min_messages=ERROR;
 CREATE TABLE LiveFS (
     id serial PRIMARY KEY,
     date_created timestamp without time zone DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC') NOT NULL,
+    date_last_modified timestamp without time zone DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC') NOT NULL,
     registrant integer NOT NULL REFERENCES person,
     owner integer NOT NULL REFERENCES person,
     distroseries integer NOT NULL REFERENCES distroseries,
