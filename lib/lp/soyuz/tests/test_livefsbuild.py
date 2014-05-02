@@ -168,11 +168,18 @@ class TestLiveFSBuild(TestCaseWithFactory):
         self.assertEqual(1800, self.build.estimateDuration().seconds)
 
     def test_estimateDuration_with_history(self):
-        # Previous builds of the same live filesystem are used for estimates.
+        # Previous successful builds of the same live filesystem are used
+        # for estimates.
         self.factory.makeLiveFSBuild(
             requester=self.build.requester, livefs=self.build.livefs,
             distroarchseries=self.build.distroarchseries,
             status=BuildStatus.FULLYBUILT, duration=timedelta(seconds=335))
+        for i in range(3):
+            self.factory.makeLiveFSBuild(
+                requester=self.build.requester, livefs=self.build.livefs,
+                distroarchseries=self.build.distroarchseries,
+                status=BuildStatus.FAILEDTOBUILD,
+                duration=timedelta(seconds=20))
         self.assertEqual(335, self.build.estimateDuration().seconds)
 
     def test_getFileByName_logs(self):

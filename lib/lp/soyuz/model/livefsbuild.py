@@ -261,13 +261,14 @@ class LiveFSBuild(PackageBuildMixin, Storm):
         return 2505 + self.archive.relative_build_score
 
     def getMedianBuildDuration(self):
-        """Return the median duration of builds of this live filesystem."""
+        """Return the median duration of our successful builds."""
         store = IStore(self)
         result = store.find(
             (LiveFSBuild.date_started, LiveFSBuild.date_finished),
             LiveFSBuild.livefs == self.livefs_id,
             LiveFSBuild.distroarchseries == self.distroarchseries_id,
-            LiveFSBuild.date_finished != None)
+            LiveFSBuild.date_finished != None,
+            LiveFSBuild.status == BuildStatus.FULLYBUILT)
         result.order_by(Desc(LiveFSBuild.date_finished))
         durations = [row[1] - row[0] for row in result[:9]]
         if len(durations) == 0:
