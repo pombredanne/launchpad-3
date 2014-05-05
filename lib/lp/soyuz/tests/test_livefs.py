@@ -392,8 +392,6 @@ class TestLiveFSWebservice(TestCaseWithFactory):
             db_builds[0].updateStatus(
                 BuildStatus.FULLYBUILT,
                 date_finished=db_livefs.date_created + timedelta(minutes=10))
-            for build in db_builds:
-                print build.date_started, build.date_finished, build.date_created
         livefs = self.webservice.get(livefs["self_link"]).jsonBody()
         # Builds that have not yet been started are listed first (since DESC
         # defaults to NULLS FIRST).
