@@ -153,6 +153,26 @@ class LiveFS(Storm):
             Desc(LiveFSBuild.id))
         return self._getBuilds(None, order_by)
 
+    @property
+    def completed_builds(self):
+        """See `ILiveFS`."""
+        filter_term = (LiveFSBuild.status != BuildStatus.NEEDSBUILD)
+        order_by = (
+            Desc(Greatest(
+                LiveFSBuild.date_started,
+                LiveFSBuild.date_finished)),
+            Desc(LiveFSBuild.id))
+        return self._getBuilds(filter_term, order_by)
+
+    @property
+    def pending_builds(self):
+        """See `ILiveFS`."""
+        filter_term = (LiveFSBuild.status == BuildStatus.NEEDSBUILD)
+        # We want to order by date_created but this is the same as ordering
+        # by id (since id increases monotonically) and is less expensive.
+        order_by = Desc(LiveFSBuild.id)
+        return self._getBuilds(filter_term, order_by)
+
 
 class LiveFSSet:
     """See `ILiveFSSet`."""

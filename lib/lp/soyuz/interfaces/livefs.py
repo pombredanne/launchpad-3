@@ -154,6 +154,22 @@ class ILiveFSView(Interface):
         # Really ILiveFSBuild, patched in _schema_circular_imports.py.
         value_type=Reference(schema=Interface), readonly=True)))
 
+    completed_builds = exported(doNotSnapshot(CollectionField(
+        title=_("Completed builds of this live filesystem."),
+        description=_(
+            "Completed builds of this live filesystem, sorted in descending "
+            "order of finishing."),
+        # Really ILiveFSBuild, patched in _schema_circular_imports.py.
+        value_type=Reference(schema=Interface), readonly=True)))
+
+    pending_builds = exported(doNotSnapshot(CollectionField(
+        title=_("Pending builds of this live filesystem."),
+        description=_(
+            "Pending builds of this live filesystem, sorted in descending "
+            "order of creation."),
+        # Really ILiveFSBuild, patched in _schema_circular_imports.py.
+        value_type=Reference(schema=Interface), readonly=True)))
+
 
 class ILiveFSEditableAttributes(IHasOwner):
     """`ILiveFS` attributes that can be edited.

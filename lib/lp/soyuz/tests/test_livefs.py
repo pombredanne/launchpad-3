@@ -86,10 +86,11 @@ class TestLiveFS(TestCaseWithFactory):
         # The LiveFS class implements ILiveFSSet.
         self.assertProvides(getUtility(ILiveFSSet), ILiveFSSet)
 
-    def test_avoids_problematic_snapshot(self):
+    def test_avoids_problematic_snapshots(self):
         self.assertThat(
             self.factory.makeLiveFS(),
-            DoesNotSnapshot(["builds"], ILiveFSView))
+            DoesNotSnapshot(
+                ["builds", "completed_builds", "pending_builds"], ILiveFSView))
 
     def makeLiveFSComponents(self, metadata={}):
         """Return a dict of values that can be used to make a LiveFS.
@@ -242,10 +243,14 @@ class TestLiveFS(TestCaseWithFactory):
         builds.reverse()
 
         self.assertEqual(builds, list(livefs.builds))
+        self.assertEqual([], list(livefs.completed_builds))
+        self.assertEqual(builds, list(livefs.pending_builds))
 
         # Change the status of one of the builds and retest.
         builds[0].updateStatus(BuildStatus.FULLYBUILT)
         self.assertEqual(builds, list(livefs.builds))
+        self.assertEqual(builds[:1], list(livefs.completed_builds))
+        self.assertEqual(builds[1:], list(livefs.pending_builds))
 
 
 class TestLiveFSWebservice(TestCaseWithFactory):
@@ -308,7 +313,8 @@ class TestLiveFSWebservice(TestCaseWithFactory):
             self.assertEqual({"project": "flavour"}, livefs["metadata"])
 
     def test_requestBuild(self):
-        # Build requests can be performed and end up in livefs.builds.
+        # Build requests can be performed and end up in livefs.builds and
+        # livefs.pending_builds.
         distroseries = self.factory.makeDistroSeries(registrant=self.person)
         distroarchseries = self.factory.makeDistroArchSeries(
             distroseries=distroseries, owner=self.person)
@@ -322,6 +328,11 @@ class TestLiveFSWebservice(TestCaseWithFactory):
         build = self.webservice.get(response.getHeader("Location")).jsonBody()
         self.assertEqual(
             [build["self_link"]], self.getCollectionLinks(livefs, "builds"))
+        self.assertEqual(
+            [], self.getCollectionLinks(livefs, "completed_builds"))
+        self.assertEqual(
+            [build["self_link"]],
+            self.getCollectionLinks(livefs, "pending_builds"))
 
     def test_requestBuild_rejects_repeats(self):
         # Build requests are rejected if already pending.
@@ -344,7 +355,8 @@ class TestLiveFSWebservice(TestCaseWithFactory):
             "pending.", response.body)
 
     def test_getBuilds(self):
-        # The builds property is as expected.
+        # The builds, completed_builds, and pending_builds properties are as
+        # expected.
         distroseries = self.factory.makeDistroSeries(registrant=self.person)
         distroarchseries = self.factory.makeDistroArchSeries(
             distroseries=distroseries, owner=self.person)
@@ -365,6 +377,10 @@ class TestLiveFSWebservice(TestCaseWithFactory):
                 response.getHeader("Location")).jsonBody()
             builds.insert(0, build["self_link"])
         self.assertEqual(builds, self.getCollectionLinks(livefs, "builds"))
+        self.assertEqual(
+            [], self.getCollectionLinks(livefs, "completed_builds"))
+        self.assertEqual(
+            builds, self.getCollectionLinks(livefs, "pending_builds"))
         livefs = self.webservice.get(livefs["self_link"]).jsonBody()
 
         with person_logged_in(self.person):
@@ -376,7 +392,17 @@ class TestLiveFSWebservice(TestCaseWithFactory):
             db_builds[0].updateStatus(
                 BuildStatus.FULLYBUILT,
                 date_finished=db_livefs.date_created + timedelta(minutes=10))
+            for build in db_builds:
+                print build.date_started, build.date_finished, build.date_created
         livefs = self.webservice.get(livefs["self_link"]).jsonBody()
+        # Builds that have not yet been started are listed first (since DESC
+        # defaults to NULLS FIRST).
+        self.assertEqual(
+            builds[1:] + builds[:1], self.getCollectionLinks(livefs, "builds"))
+        self.assertEqual(
+            builds[:1], self.getCollectionLinks(livefs, "completed_builds"))
+        self.assertEqual(
+            builds[1:], self.getCollectionLinks(livefs, "pending_builds"))
 
         with person_logged_in(self.person):
             db_builds[1].updateStatus(
@@ -385,6 +411,14 @@ class TestLiveFSWebservice(TestCaseWithFactory):
                 BuildStatus.FULLYBUILT,
                 date_finished=db_livefs.date_created + timedelta(minutes=20))
         livefs = self.webservice.get(livefs["self_link"]).jsonBody()
+        self.assertEqual(
+            [builds[2], builds[3], builds[1], builds[0]],
+            self.getCollectionLinks(livefs, "builds"))
+        self.assertEqual(
+            [builds[1], builds[0]],
+            self.getCollectionLinks(livefs, "completed_builds"))
+        self.assertEqual(
+            builds[2:], self.getCollectionLinks(livefs, "pending_builds"))
 
     def test_query_count(self):
         # LiveFS has a reasonable query count.

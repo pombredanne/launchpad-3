@@ -594,6 +594,8 @@ patch_reference_property(ILiveFSFile, 'livefsbuild', ILiveFSBuild)
 # ILiveFSView
 patch_entry_return_type(ILiveFSView, 'requestBuild', ILiveFSBuild)
 ILiveFSView['builds'].value_type.schema = ILiveFSBuild
+ILiveFSView['completed_builds'].value_type.schema = ILiveFSBuild
+ILiveFSView['pending_builds'].value_type.schema = ILiveFSBuild
 
 # IPackageset
 patch_collection_return_type(
