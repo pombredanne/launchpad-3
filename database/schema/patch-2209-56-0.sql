@@ -95,11 +95,11 @@ CREATE INDEX livefsbuild__livefs__archive__das__pocket__unique_key__status__idx
     ON LiveFSBuild (
         livefs, archive, distroarchseries, pocket, unique_key, status);
 
--- LiveFS.builds
-CREATE INDEX livefsbuild__livefs__started__finished__created__id__idx
+-- LiveFS.builds, LiveFS.completed_builds, LiveFS.pending_builds
+CREATE INDEX livefsbuild__livefs__status__started__finished__created__id__idx
     ON LiveFSBuild (
-        livefs, GREATEST(date_started, date_finished) DESC, date_created DESC,
-        id DESC);
+        livefs, status, GREATEST(date_started, date_finished) DESC,
+        date_created DESC, id DESC);
 
 -- LiveFSBuild.getMedianBuildDuration
 CREATE INDEX livefsbuild__livefs__das__finished__status__idx
