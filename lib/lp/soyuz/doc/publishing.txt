@@ -175,10 +175,13 @@ Create a helper for printing the build status summary:
     hppa build of abc 666 in ubuntutest breezy-autotest RELEASE
     i386 build of abc 666 in ubuntutest breezy-autotest RELEASE
 
-The underlying method being used here is getUnpublishedBuilds():
+The underlying method being used here is getUnpublishedBuildsForSources():
 
-    >>> unpublished_builds = spph.getUnpublishedBuilds()
-    >>> for build in sorted(unpublished_builds, key=lambda b:b.title):
+    >>> from lp.soyuz.interfaces.publishing import (
+    ...     IPublishingSet)
+    >>> ps = getUtility(IPublishingSet)
+    >>> unpublished_builds = ps.getUnpublishedBuildsForSources([spph])
+    >>> for _, build, _ in sorted(unpublished_builds, key=lambda b:b[1].title):
     ...     print build.title
     hppa build of abc 666 in ubuntutest breezy-autotest RELEASE
     i386 build of abc 666 in ubuntutest breezy-autotest RELEASE
@@ -211,7 +214,7 @@ If one of the builds becomes published, it will not appear in the summary:
 
 Nor will it be included in the unpublished builds:
 
-    >>> for build in spph.getUnpublishedBuilds():
+    >>> for _, build, _ in ps.getUnpublishedBuildsForSources([spph]):
     ...     print build.title
     i386 build of abc 666 in ubuntutest breezy-autotest RELEASE
 
@@ -219,15 +222,14 @@ By default, only FULLYBUILT builds are included in the returned
 unpublished builds:
 
     >>> builds[1].updateStatus(BuildStatus.SUPERSEDED)
-    >>> for build in spph.getUnpublishedBuilds():
+    >>> for _, build, _ in ps.getUnpublishedBuildsForSources([spph]):
     ...     print build.title
 
 But the returned build-states can be set explicitly:
 
-    >>> for build in spph.getUnpublishedBuilds(build_states=[
-    ...     BuildStatus.FULLYBUILT,
-    ...     BuildStatus.SUPERSEDED
-    ...     ]):
+    >>> for _, build, _ in ps.getUnpublishedBuildsForSources(
+    ...     [spph],
+    ...     build_states=[BuildStatus.FULLYBUILT, BuildStatus.SUPERSEDED]):
     ...     print build.title
     i386 build of abc 666 in ubuntutest breezy-autotest RELEASE
 
@@ -249,7 +251,7 @@ per normal:
 
 There are no longer any unpublished builds for the source package:
 
-    >>> for build in spph.getUnpublishedBuilds():
+    >>> for _, build, _ in ps.getUnpublishedBuildsForSources([spph]):
     ...     print build.title
 
 If a build is deleted, it does not cause the build status summary to change:
@@ -1049,11 +1051,7 @@ simply use the IPublishing methods passing only a single source
 publication. Now we will document how they work for multiple source
 publications.
 
-    >>> from lp.soyuz.interfaces.publishing import (
-    ...     IPublishingSet)
-
     >>> publishing_set = getUtility(IPublishingSet)
-
     >>> verifyObject(IPublishingSet, publishing_set)
     True
 
@@ -1629,20 +1627,6 @@ publications.
 
     >>> verifyObject(ISourcePackagePublishingHistory, decorated_pub)
     True
-
-`ArchiveSourcePublication` caches the returned values for following
-methods:
-  * sourcepackagerelease;
-  * getBuilds;
-  * getUnpublishedBuilds.
-
-    >>> compare_ids(real_pub.getBuilds(), decorated_pub.getBuilds())
-    Matches
-
-    >>> compare_ids(
-    ...     real_pub.getUnpublishedBuilds(),
-    ...     decorated_pub.getUnpublishedBuilds())
-    Matches
 
 The 'sourcepackagerelease' attribute from a decorated
 `ArchiveSourcePublication` object is also another decorated object,

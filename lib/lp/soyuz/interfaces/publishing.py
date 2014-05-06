@@ -563,20 +563,6 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
         :return: the changelog file URL for this source (a string).
         """
 
-    def getUnpublishedBuilds(build_states=None):
-        """Return a resultset of `IBuild` objects in this context that are
-        not published.
-
-        Note that this is convenience glue for
-        PublishingSet.getUnpublishedBuildsForSources - and that method should
-        be considered authoritative.
-
-        :param build_states: list of build states to which the result should
-            be limited. Defaults to BuildStatus.FULLYBUILT if none are
-            specified.
-        :return: a result set of `IBuilds`.
-        """
-
     def createMissingBuilds(architectures_available=None, logger=None):
         """Create missing Build records for a published source.
 

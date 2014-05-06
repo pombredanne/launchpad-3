@@ -548,13 +548,6 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         result_set = publishing_set.getBuildsForSources([self])
         return SourcePackagePublishingHistory._convertBuilds(result_set)
 
-    def getUnpublishedBuilds(self, build_states=None):
-        """See `ISourcePackagePublishingHistory`."""
-        publishing_set = getUtility(IPublishingSet)
-        result_set = publishing_set.getUnpublishedBuildsForSources(
-            self, build_states)
-        return DecoratedResultSet(result_set, itemgetter(1))
-
     def getFileByName(self, name):
         """See `ISourcePackagePublishingHistory`."""
         changelog = self.sourcepackagerelease.changelog
