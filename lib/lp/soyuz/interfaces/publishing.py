@@ -418,13 +418,6 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
     meta_sourcepackage = Attribute(
         "Return an ISourcePackage meta object correspondent to the "
         "sourcepackagerelease attribute inside a specific distroseries")
-    meta_sourcepackagerelease = Attribute(
-        "Return an IDistributionSourcePackageRelease meta object "
-        "correspondent to the sourcepackagerelease attribute")
-    meta_supersededby = Attribute(
-        "Return an IDistributionSourcePackageRelease meta object "
-        "correspondent to the supersededby attribute. if supersededby "
-        "is None return None.")
     meta_distroseriessourcepackagerelease = Attribute(
         "Return an IDistroSeriesSourcePackageRelease meta object "
         "correspondent to the sourcepackagerelease attribute inside "
@@ -561,20 +554,6 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
         """The URL for this source package release's changelog.
 
         :return: the changelog file URL for this source (a string).
-        """
-
-    def getUnpublishedBuilds(build_states=None):
-        """Return a resultset of `IBuild` objects in this context that are
-        not published.
-
-        Note that this is convenience glue for
-        PublishingSet.getUnpublishedBuildsForSources - and that method should
-        be considered authoritative.
-
-        :param build_states: list of build states to which the result should
-            be limited. Defaults to BuildStatus.FULLYBUILT if none are
-            specified.
-        :return: a result set of `IBuilds`.
         """
 
     def createMissingBuilds(architectures_available=None, logger=None):

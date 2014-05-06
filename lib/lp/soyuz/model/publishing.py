@@ -548,13 +548,6 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         result_set = publishing_set.getBuildsForSources([self])
         return SourcePackagePublishingHistory._convertBuilds(result_set)
 
-    def getUnpublishedBuilds(self, build_states=None):
-        """See `ISourcePackagePublishingHistory`."""
-        publishing_set = getUtility(IPublishingSet)
-        result_set = publishing_set.getUnpublishedBuildsForSources(
-            self, build_states)
-        return DecoratedResultSet(result_set, itemgetter(1))
-
     def getFileByName(self, name):
         """See `ISourcePackagePublishingHistory`."""
         changelog = self.sourcepackagerelease.changelog
@@ -683,24 +676,10 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             self.sourcepackagerelease.sourcepackagename)
 
     @property
-    def meta_sourcepackagerelease(self):
-        """see `ISourcePackagePublishingHistory`."""
-        return self.distroseries.distribution.getSourcePackageRelease(
-            self.sourcepackagerelease)
-
-    @property
     def meta_distroseriessourcepackagerelease(self):
         """see `ISourcePackagePublishingHistory`."""
         return self.distroseries.getSourcePackageRelease(
             self.sourcepackagerelease)
-
-    @property
-    def meta_supersededby(self):
-        """see `ISourcePackagePublishingHistory`."""
-        if not self.supersededby:
-            return None
-        return self.distroseries.distribution.getSourcePackageRelease(
-            self.supersededby)
 
     # XXX: StevenK 2011-09-13 bug=848563: This can die when
     # self.sourcepackagename is populated.
