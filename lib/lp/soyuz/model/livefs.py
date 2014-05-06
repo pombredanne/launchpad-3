@@ -212,11 +212,7 @@ class LiveFSSet:
 
     def exists(self, owner, distroseries, name):
         """See `ILiveFSSet`."""
-        livefs = self.get(owner, distroseries, name)
-        if livefs:
-            return True
-        else:
-            return False
+        return self.get(owner, distroseries, name) is not None
 
     def get(self, owner, distroseries, name):
         """See `ILiveFSSet`."""
