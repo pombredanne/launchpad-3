@@ -281,7 +281,7 @@ class LiveFSBuild(PackageBuildMixin, Storm):
             LibraryFileAlias.id == LiveFSFile.libraryfile_id,
             LibraryFileContent.id == LibraryFileAlias.contentID)
         return result.order_by(
-            [LibraryFileAlias.filename, LiveFSFile.id]).config(distinct=True)
+            [LibraryFileAlias.filename, LiveFSFile.id]).config()
 
     def getFileByName(self, filename):
         """See `ILiveFSBuild`."""
