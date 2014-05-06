@@ -61,7 +61,7 @@ from lp.services.webapp.batching import StormRangeFactory
 from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.soyuz.browser.build import (
     BuildRecordsView,
-    get_build_by_name,
+    get_build_by_id_str,
     )
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 
@@ -72,14 +72,14 @@ class BuilderSetNavigation(GetitemNavigation):
 
     @stepthrough('+build')
     def traverse_build(self, name):
-        build = get_build_by_name(IBinaryPackageBuildSet, name)
+        build = get_build_by_id_str(IBinaryPackageBuildSet, name)
         if build is None:
             return None
         return self.redirectSubTree(canonical_url(build))
 
     @stepthrough('+recipebuild')
     def traverse_recipebuild(self, name):
-        build = get_build_by_name(ISourcePackageRecipeBuildSource, name)
+        build = get_build_by_id_str(ISourcePackageRecipeBuildSource, name)
         if build is None:
             return None
         return self.redirectSubTree(canonical_url(build))

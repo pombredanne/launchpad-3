@@ -15,7 +15,7 @@ __all__ = [
     'BuildUrl',
     'BuildView',
     'DistributionBuildRecordsView',
-    'get_build_by_name',
+    'get_build_by_id_str',
     ]
 
 
@@ -81,7 +81,7 @@ from lp.soyuz.interfaces.binarypackagebuild import (
     )
 
 
-def get_build_by_name(utility, name):
+def get_build_by_id_str(utility, id_str):
     """Find a build by a utility interface and ID string.
 
     Designed for Navigation implementations.
@@ -89,7 +89,7 @@ def get_build_by_name(utility, name):
     Returns None if the ID doesn't match a build.
     """
     try:
-        build_id = int(name)
+        build_id = int(id_str)
     except ValueError:
         return None
     try:

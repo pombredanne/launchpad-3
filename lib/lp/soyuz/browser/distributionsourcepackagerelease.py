@@ -26,7 +26,7 @@ from lp.services.webapp import (
     stepthrough,
     )
 from lp.services.webapp.breadcrumb import Breadcrumb
-from lp.soyuz.browser.build import get_build_by_name
+from lp.soyuz.browser.build import get_build_by_id_str
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.distributionsourcepackagerelease import (
@@ -47,7 +47,7 @@ class DistributionSourcePackageReleaseNavigation(Navigation):
 
     @stepthrough('+build')
     def traverse_build(self, name):
-        build = get_build_by_name(IBinaryPackageBuildSet, name)
+        build = get_build_by_id_str(IBinaryPackageBuildSet, name)
         if (build is None
             or build.archive not in
                 self.context.distribution.all_distro_archives

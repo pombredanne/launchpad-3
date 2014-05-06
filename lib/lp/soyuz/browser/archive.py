@@ -124,7 +124,7 @@ from lp.soyuz.adapters.archivesourcepublication import (
     )
 from lp.soyuz.browser.build import (
     BuildRecordsView,
-    get_build_by_name,
+    get_build_by_id_str,
     )
 from lp.soyuz.browser.sourceslist import SourcesListEntriesWidget
 from lp.soyuz.browser.widgets.archive import PPANameWidget
@@ -237,14 +237,14 @@ class ArchiveNavigation(Navigation, FileNavigationMixin):
 
     @stepthrough('+build')
     def traverse_build(self, name):
-        build = get_build_by_name(IBinaryPackageBuildSet, name)
+        build = get_build_by_id_str(IBinaryPackageBuildSet, name)
         if build is None or build.archive != self.context:
             return None
         return build
 
     @stepthrough('+recipebuild')
     def traverse_recipebuild(self, name):
-        build = get_build_by_name(ISourcePackageRecipeBuildSource, name)
+        build = get_build_by_id_str(ISourcePackageRecipeBuildSource, name)
         if build is None or build.archive != self.context:
             return None
         return build

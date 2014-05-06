@@ -254,11 +254,11 @@ class BranchNavigation(Navigation):
     @stepthrough("+translation-templates-build")
     def traverse_translation_templates_build(self, id_string):
         """Traverses to a `TranslationTemplatesBuild`."""
-        from lp.soyuz.browser.build import get_build_by_name
-        build = get_build_by_name(ITranslationTemplatesBuildSource, id_string)
-        if build is None or build.branch != self.context:
+        from lp.soyuz.browser.build import get_build_by_id_str
+        ttb = get_build_by_id_str(ITranslationTemplatesBuildSource, id_string)
+        if ttb is None or ttb.branch != self.context:
             return None
-        return build
+        return ttb
 
 
 class BranchEditMenu(NavigationMenu):
