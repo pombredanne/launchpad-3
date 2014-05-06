@@ -29,6 +29,8 @@ CREATE INDEX livefs__owner__idx
     ON LiveFS (owner);
 CREATE INDEX livefs__distroseries__idx
     ON LiveFS (distroseries);
+CREATE INDEX livefs__name__idx
+    ON LiveFS (name);
 
 CREATE TABLE LiveFSBuild (
     id serial PRIMARY KEY,
