@@ -222,8 +222,11 @@ class ILiveFSEditableAttributes(IHasOwner):
 class ILiveFS(ILiveFSView, ILiveFSEditableAttributes):
     """A buildable live filesystem image."""
 
+    # XXX cjwatson 2014-05-06 bug=760849: "beta" is a lie to get WADL
+    # generation working.  Individual attributes must set their version to
+    # "devel".
     export_as_webservice_entry(
-        singular_name="livefs", plural_name="livefses", as_of="devel")
+        singular_name="livefs", plural_name="livefses", as_of="beta")
 
 
 class ILiveFSSet(Interface):

@@ -190,7 +190,10 @@ class ILiveFSBuildAdmin(Interface):
 class ILiveFSBuild(ILiveFSBuildView, ILiveFSBuildEdit, ILiveFSBuildAdmin):
     """Build information for live filesystem builds."""
 
-    export_as_webservice_entry(singular_name="livefs_build", as_of="devel")
+    # XXX cjwatson 2014-05-06 bug=760849: "beta" is a lie to get WADL
+    # generation working.  Individual attributes must set their version to
+    # "devel".
+    export_as_webservice_entry(singular_name="livefs_build", as_of="beta")
 
 
 class ILiveFSBuildSet(ISpecificBuildFarmJobSource):
