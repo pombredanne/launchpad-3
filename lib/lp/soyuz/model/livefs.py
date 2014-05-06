@@ -206,7 +206,7 @@ class LiveFSSet:
 
     def get(self, owner, distroseries, name):
         """See `ILiveFSSet`."""
-        store = IMasterStore(LiveFS)
+        store = IStore(LiveFS)
         return store.find(
             LiveFS,
             LiveFS.owner == owner,
