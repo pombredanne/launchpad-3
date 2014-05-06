@@ -495,19 +495,22 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
         """Traverse to this person's merge queues."""
         return self.context.getMergeQueue(name)
 
-    @stepto('+livefs')
-    def traverse_livefs(self):
+    @stepthrough('+livefs')
+    def traverse_livefs(self, distribution_name):
         """Traverse to this person's live filesystem images."""
-        def get_segments(pillar_name):
-            base = [self.context.name, pillar_name]
-            return itertools.chain(iter(base), iter(self.request.stepstogo))
+        if len(self.request.stepstogo) < 2:
+            return None
 
-        pillar_name = self.request.stepstogo.next()
-        livefs = getUtility(ILiveFSSet).traverse(get_segments(pillar_name))
+        distroseries_name = self.request.stepstogo.consume()
+        livefs_name = self.request.stepstogo.consume()
+        livefs = getUtility(ILiveFSSet).interpret(
+            self.context.name, distribution_name, distroseries_name,
+            livefs_name)
+
         if livefs is None:
             raise NotFoundError
 
-        if livefs.distroseries.distribution.name != pillar_name:
+        if livefs.distroseries.distribution.name != distribution_name:
             # This live filesystem was accessed through one of its
             # distribution's aliases, so we must redirect to its canonical
             # URL.

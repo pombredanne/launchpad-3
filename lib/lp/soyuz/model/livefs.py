@@ -47,12 +47,10 @@ from lp.soyuz.interfaces.livefs import (
     DuplicateLiveFSName,
     ILiveFS,
     ILiveFSSet,
-    InvalidLiveFSNamespace,
     LIVEFS_FEATURE_FLAG,
     LiveFSBuildAlreadyPending,
     LiveFSFeatureDisabled,
     LiveFSNotOwner,
-    NoSuchLiveFS,
     )
 from lp.soyuz.interfaces.livefsbuild import ILiveFSBuildSet
 from lp.soyuz.model.archive import Archive
@@ -229,6 +227,16 @@ class LiveFSSet:
             LiveFS.distroseries == distroseries,
             LiveFS.name == name).one()
 
+    def _findOrRaise(self, error, name, finder, *args):
+        if name is None:
+            return None
+        args = list(args)
+        args.append(name)
+        result = finder(*args)
+        if result is None:
+            raise error(name)
+        return result
+
     def interpret(self, owner_name, distribution_name, distroseries_name,
                   name):
         """See `ILiveFSSet`."""
@@ -246,42 +254,3 @@ class LiveFSSet:
         """See `ILiveFSSet`."""
         store = IStore(LiveFS)
         return store.find(LiveFS).order_by("name")
-
-    def _findOrRaise(self, error, name, finder, *args):
-        if name is None:
-            return None
-        args = list(args)
-        args.append(name)
-        result = finder(*args)
-        if result is None:
-            raise error(name)
-        return result
-
-    def traverse(self, segments):
-        """See `ILiveFSSet`."""
-        traversed_segments = []
-
-        def get_next_segment():
-            try:
-                result = segments.next()
-            except StopIteration:
-                raise InvalidLiveFSNamespace("/".join(traversed_segments))
-            if result is None:
-                raise AssertionError("None segment passed to traverse()")
-            traversed_segments.append(result)
-            return result
-
-        person_name = get_next_segment()
-        person = self._findOrRaise(
-            NoSuchPerson, person_name, getUtility(IPersonSet).getByName)
-        distribution_name = get_next_segment()
-        distribution = self._findOrRaise(
-            NoSuchDistribution, distribution_name,
-            getUtility(IDistributionSet).getByName)
-        distroseries_name = get_next_segment()
-        distroseries = self._findOrRaise(
-            NoSuchDistroSeries, distroseries_name,
-            getUtility(IDistroSeriesSet).queryByName, distribution)
-        livefs_name = get_next_segment()
-        return self._findOrRaise(
-            NoSuchLiveFS, livefs_name, self.get, person, distroseries)

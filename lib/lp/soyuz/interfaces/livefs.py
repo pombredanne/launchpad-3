@@ -11,12 +11,10 @@ __all__ = [
     'ILiveFSEditableAttributes',
     'ILiveFSSet',
     'ILiveFSView',
-    'InvalidLiveFSNamespace',
     'LIVEFS_FEATURE_FLAG',
     'LiveFSBuildAlreadyPending',
     'LiveFSFeatureDisabled',
     'LiveFSNotOwner',
-    'NoSuchLiveFS',
     ]
 
 import httplib
@@ -50,7 +48,6 @@ from zope.schema import (
 from zope.security.interfaces import Unauthorized
 
 from lp import _
-from lp.app.errors import NameLookupFailed
 from lp.app.validators.name import name_validator
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -84,25 +81,6 @@ class LiveFSFeatureDisabled(Unauthorized):
         super(LiveFSFeatureDisabled, self).__init__(
             "You do not have permission to create new live filesystems or "
             "new live filesystem builds.")
-
-
-class InvalidLiveFSNamespace(Exception):
-    """Raised when someone tries to lookup a namespace with a bad name.
-
-    By 'bad', we mean that the name is unparsable.  It might be too short,
-    too long, or malformed in some other way.
-    """
-
-    def __init__(self, name):
-        self.name = name
-        super(InvalidLiveFSNamespace, self).__init__(
-            "Cannot understand namespace name: '%s'" % name)
-
-
-class NoSuchLiveFS(NameLookupFailed):
-    """Raised when we try to load a live filesystem that does not exist."""
-
-    _message_prefix = "No such live filesystem"
 
 
 @error_status(httplib.BAD_REQUEST)
@@ -256,26 +234,4 @@ class ILiveFSSet(Interface):
         """Return all of the live filesystems in Launchpad.
 
         :return: A (potentially empty) sequence of `ILiveFS` instances.
-        """
-
-    def traverse(segments):
-        """Look up the `ILiveFS` at the path given by 'segments'.
-
-        The iterable 'segments' will be consumed until a live filesystem is
-        found.  As soon as a live filesystem is found, it will be returned
-        and the consumption of segments will stop.  Thus, there will often
-        be unconsumed segments that can be used for further traversal.
-
-        :param segments: An iterable of names of Launchpad components.
-            The first segment is the username, *not* preceded by a '~'.
-        :raise InvalidNamespace: if there are not enough segments to define
-            a live filesystem.
-        :raise NoSuchPerson: if the person referred to cannot be found.
-        :raise NoSuchDistribution: if the distribution referred to cannot be
-            found.
-        :raise NoSuchDistroSeries: if the distroseries referred to cannot be
-            found.
-        :raise NoSuchLiveFS: if the live filesystem referred to cannot be
-            found.
-        :return: `ILiveFS`.
         """
