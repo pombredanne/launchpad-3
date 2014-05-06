@@ -229,6 +229,19 @@ class LiveFSSet:
             LiveFS.distroseries == distroseries,
             LiveFS.name == name).one()
 
+    def interpret(self, owner_name, distribution_name, distroseries_name,
+                  name):
+        """See `ILiveFSSet`."""
+        owner = self._findOrRaise(
+            NoSuchPerson, owner_name, getUtility(IPersonSet).getByName)
+        distribution = self._findOrRaise(
+            NoSuchDistribution, distribution_name,
+            getUtility(IDistributionSet).getByName)
+        distroseries = self._findOrRaise(
+            NoSuchDistroSeries, distroseries_name,
+            getUtility(IDistroSeriesSet).queryByName, distribution)
+        return self.get(owner, distroseries, name)
+
     def getAll(self):
         """See `ILiveFSSet`."""
         store = IStore(LiveFS)

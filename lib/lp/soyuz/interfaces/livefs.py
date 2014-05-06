@@ -245,6 +245,9 @@ class ILiveFSSet(Interface):
     def get(owner, distroseries, name):
         """Return the appropriate `ILiveFS` for the given objects."""
 
+    def interpret(owner_name, distribution_name, distroseries_name, name):
+        """Like `get`, but takes names of objects."""
+
     @collection_default_content()
     def getAll():
         """Return all of the live filesystems in Launchpad.
