@@ -121,7 +121,7 @@ class ILiveFSView(Interface):
             title=_("A unique key for this build, if required."),
             required=False),
         metadata_override=Dict(
-            title=_("A JSON string with a dict of data about the image."),
+            title=_("A dict of data about the image."),
             key_type=TextLine(), required=False))
     # Really ILiveFSBuild, patched in _schema_circular_imports.py.
     @export_factory_operation(Interface, [])
