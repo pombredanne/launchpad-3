@@ -4325,7 +4325,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if registrant is None:
             registrant = self.makePerson()
         if owner is None:
-            owner = self.makePerson()
+            owner = self.makeTeam(registrant)
         if distroseries is None:
             distroseries = self.makeDistroSeries()
         if name is None:
@@ -4338,12 +4338,14 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         IStore(livefs).flush()
         return livefs
 
-    def makeLiveFSBuild(self, requester=None, livefs=None, archive=None,
-                        distroarchseries=None, pocket=None, unique_key=None,
-                        metadata_override=None, date_created=DEFAULT,
-                        status=BuildStatus.NEEDSBUILD, builder=None,
-                        duration=None, **kwargs):
+    def makeLiveFSBuild(self, requester=None, registrant=None, livefs=None,
+                        archive=None, distroarchseries=None, pocket=None,
+                        unique_key=None, metadata_override=None,
+                        date_created=DEFAULT, status=BuildStatus.NEEDSBUILD,
+                        builder=None, duration=None, **kwargs):
         """Make a new LiveFSBuild."""
+        if requester is None:
+            requester = self.makePerson()
         if livefs is None:
             if "distroseries" in kwargs:
                 distroseries = kwargs["distroseries"]
@@ -4355,9 +4357,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                     distribution=archive.distribution)
             else:
                 distroseries = None
-            livefs = self.makeLiveFS(distroseries=distroseries, **kwargs)
-        if requester is None:
-            requester = self.makePerson()
+            if registrant is None:
+                registrant = requester
+            livefs = self.makeLiveFS(
+                registrant=registrant, distroseries=distroseries, **kwargs)
         if archive is None:
             archive = livefs.distroseries.main_archive
         if distroarchseries is None:

@@ -127,7 +127,8 @@ class TestLiveFSBuild(TestCaseWithFactory):
         private_team = self.factory.makeTeam(
             visibility=PersonVisibility.PRIVATE)
         with person_logged_in(private_team.teamowner):
-            build = self.factory.makeLiveFSBuild(owner=private_team)
+            build = self.factory.makeLiveFSBuild(
+                requester=private_team.teamowner, owner=private_team)
             self.assertTrue(build.is_private)
         private_archive = self.factory.makeArchive(private=True)
         with person_logged_in(private_archive.owner):
@@ -373,7 +374,8 @@ class TestLiveFSBuildWebservice(TestCaseWithFactory):
         db_team = self.factory.makeTeam(
             owner=self.person, visibility=PersonVisibility.PRIVATE)
         with person_logged_in(self.person):
-            db_build = self.factory.makeLiveFSBuild(owner=db_team)
+            db_build = self.factory.makeLiveFSBuild(
+                requester=self.person, owner=db_team)
             build_url = api_url(db_build)
         unpriv_webservice = webservice_for_person(
             self.factory.makePerson(), permission=OAuthPermission.WRITE_PUBLIC)

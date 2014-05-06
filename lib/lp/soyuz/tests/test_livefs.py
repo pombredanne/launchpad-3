@@ -64,9 +64,10 @@ class TestLiveFSFeatureFlag(TestCaseWithFactory):
 
     def test_feature_flag_disabled(self):
         # Without a feature flag, we will not create new LiveFSes.
+        person = self.factory.makePerson()
         self.assertRaises(
             LiveFSFeatureDisabled, getUtility(ILiveFSSet).new,
-            None, None, None, None, None)
+            person, person, None, None, None)
 
 
 class TestLiveFS(TestCaseWithFactory):
@@ -154,14 +155,13 @@ class TestLiveFS(TestCaseWithFactory):
     def test_requestBuild(self):
         # requestBuild creates a new LiveFSBuild.
         livefs = self.factory.makeLiveFS()
-        requester = self.factory.makePerson()
         distroarchseries = self.factory.makeDistroArchSeries(
             distroseries=livefs.distroseries)
         build = livefs.requestBuild(
-            requester, livefs.distroseries.main_archive, distroarchseries,
+            livefs.owner, livefs.distroseries.main_archive, distroarchseries,
             PackagePublishingPocket.RELEASE)
         self.assertTrue(ILiveFSBuild.providedBy(build))
-        self.assertEqual(requester, build.requester)
+        self.assertEqual(livefs.owner, build.requester)
         self.assertEqual(livefs.distroseries.main_archive, build.archive)
         self.assertEqual(distroarchseries, build.distroarchseries)
         self.assertEqual(PackagePublishingPocket.RELEASE, build.pocket)
@@ -260,7 +260,7 @@ class TestLiveFSWebservice(TestCaseWithFactory):
     def setUp(self):
         super(TestLiveFSWebservice, self).setUp()
         self.useFixture(FeatureFixture({LIVEFS_FEATURE_FLAG: u"on"}))
-        self.person = self.factory.makePerson()
+        self.person = self.factory.makePerson(displayname="Test Person")
         self.webservice = webservice_for_person(
             self.person, permission=OAuthPermission.WRITE_PUBLIC)
         self.webservice.default_api_version = "devel"
@@ -269,22 +269,25 @@ class TestLiveFSWebservice(TestCaseWithFactory):
     def getURL(self, obj):
         return self.webservice.getAbsoluteUrl(api_url(obj))
 
-    def makeLiveFS(self, owner=None, distroseries=None, metadata=None):
+    def makeLiveFS(self, owner=None, distroseries=None, metadata=None,
+                   webservice=None):
         if owner is None:
             owner = self.person
-        if metadata is None:
-            metadata = {"project": "flavour"}
         if distroseries is None:
             distroseries = self.factory.makeDistroSeries(registrant=owner)
+        if metadata is None:
+            metadata = {"project": "flavour"}
+        if webservice is None:
+            webservice = self.webservice
         transaction.commit()
         distroseries_url = api_url(distroseries)
         owner_url = api_url(owner)
         logout()
-        response = self.webservice.named_post(
+        response = webservice.named_post(
             "/livefses", "new", owner=owner_url, distroseries=distroseries_url,
             name="flavour-desktop", metadata=metadata)
         self.assertEqual(201, response.status)
-        livefs = self.webservice.get(response.getHeader("Location")).jsonBody()
+        livefs = webservice.get(response.getHeader("Location")).jsonBody()
         return livefs, distroseries_url
 
     def getCollectionLinks(self, entry, member):
@@ -321,6 +324,32 @@ class TestLiveFSWebservice(TestCaseWithFactory):
             "There is already a live filesystem with the same name, owner, "
             "and distroseries.", response.body)
 
+    def test_not_owner(self):
+        # If the registrant is not the owner or a member of the owner team,
+        # LiveFS creation fails.
+        other_person = self.factory.makePerson(displayname="Other Person")
+        other_team = self.factory.makeTeam(
+            owner=other_person, displayname="Other Team")
+        distroseries = self.factory.makeDistroSeries(registrant=self.person)
+        transaction.commit()
+        other_person_url = api_url(other_person)
+        other_team_url = api_url(other_team)
+        distroseries_url = api_url(distroseries)
+        logout()
+        response = self.webservice.named_post(
+            "/livefses", "new", owner=other_person_url,
+            distroseries=distroseries_url, name="dummy", metadata={})
+        self.assertEqual(401, response.status)
+        self.assertEqual(
+            "Test Person cannot create live filesystems owned by Other "
+            "Person.", response.body)
+        response = self.webservice.named_post(
+            "/livefses", "new", owner=other_team_url,
+            distroseries=distroseries_url, name="dummy", metadata={})
+        self.assertEqual(401, response.status)
+        self.assertEqual(
+            "Test Person is not a member of Other Team.", response.body)
+
     def test_requestBuild(self):
         # Build requests can be performed and end up in livefs.builds and
         # livefs.pending_builds.
@@ -329,7 +358,7 @@ class TestLiveFSWebservice(TestCaseWithFactory):
             distroseries=distroseries, owner=self.person)
         distroarchseries_url = api_url(distroarchseries)
         archive_url = api_url(distroseries.main_archive)
-        livefs, distroseries_url = self.makeLiveFS(distroseries=distroseries)
+        livefs, _ = self.makeLiveFS(distroseries=distroseries)
         response = self.webservice.named_post(
             livefs["self_link"], "requestBuild", archive=archive_url,
             distroarchseries=distroarchseries_url, pocket="Release")
@@ -350,7 +379,7 @@ class TestLiveFSWebservice(TestCaseWithFactory):
             distroseries=distroseries, owner=self.person)
         distroarchseries_url = api_url(distroarchseries)
         archive_url = api_url(distroseries.main_archive)
-        livefs, ws_distroseries = self.makeLiveFS(distroseries=distroseries)
+        livefs, _ = self.makeLiveFS(distroseries=distroseries)
         response = self.webservice.named_post(
             livefs["self_link"], "requestBuild", archive=archive_url,
             distroarchseries=distroarchseries_url, pocket="Release")
@@ -362,6 +391,30 @@ class TestLiveFSWebservice(TestCaseWithFactory):
         self.assertEqual(
             "An identical build of this live filesystem image is already "
             "pending.", response.body)
+
+    def test_requestBuild_not_owner(self):
+        # If the requester is not the owner or a member of the owner team,
+        # build requests are rejected.
+        other_team = self.factory.makeTeam(displayname="Other Team")
+        distroseries = self.factory.makeDistroSeries(registrant=self.person)
+        distroarchseries = self.factory.makeDistroArchSeries(
+            distroseries=distroseries, owner=self.person)
+        distroarchseries_url = api_url(distroarchseries)
+        archive_url = api_url(distroseries.main_archive)
+        other_webservice = webservice_for_person(
+            other_team.teamowner, permission=OAuthPermission.WRITE_PUBLIC)
+        other_webservice.default_api_version = "devel"
+        login(ANONYMOUS)
+        livefs, _ = self.makeLiveFS(
+            owner=other_team, distroseries=distroseries,
+            webservice=other_webservice)
+        response = self.webservice.named_post(
+            livefs["self_link"], "requestBuild", archive=archive_url,
+            distroarchseries=distroarchseries_url, pocket="Release")
+        self.assertEqual(401, response.status)
+        self.assertEqual(
+            "Test Person cannot create live filesystem builds owned by Other "
+            "Team.", response.body)
 
     def test_getBuilds(self):
         # The builds, completed_builds, and pending_builds properties are as
@@ -375,7 +428,7 @@ class TestLiveFSWebservice(TestCaseWithFactory):
                 distribution=distroseries.distribution, owner=self.person)
             for x in range(4)]
         archive_urls = [api_url(archive) for archive in archives]
-        livefs, distroseries_url = self.makeLiveFS(distroseries=distroseries)
+        livefs, _ = self.makeLiveFS(distroseries=distroseries)
         builds = []
         for archive_url in archive_urls:
             response = self.webservice.named_post(
@@ -429,7 +482,8 @@ class TestLiveFSWebservice(TestCaseWithFactory):
 
     def test_query_count(self):
         # LiveFS has a reasonable query count.
-        livefs = self.factory.makeLiveFS(owner=self.person)
+        livefs = self.factory.makeLiveFS(
+            registrant=self.person, owner=self.person)
         url = api_url(livefs)
         logout()
         store = Store.of(livefs)
@@ -437,4 +491,4 @@ class TestLiveFSWebservice(TestCaseWithFactory):
         store.invalidate()
         with StormStatementRecorder() as recorder:
             self.webservice.get(url)
-        self.assertThat(recorder, HasQueryCount(Equals(22)))
+        self.assertThat(recorder, HasQueryCount(Equals(21)))

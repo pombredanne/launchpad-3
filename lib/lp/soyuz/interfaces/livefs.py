@@ -15,6 +15,7 @@ __all__ = [
     'LIVEFS_FEATURE_FLAG',
     'LiveFSBuildAlreadyPending',
     'LiveFSFeatureDisabled',
+    'LiveFSNotOwner',
     'NoSuchLiveFS',
     ]
 
@@ -112,6 +113,11 @@ class DuplicateLiveFSName(Exception):
         super(DuplicateLiveFSName, self).__init__(
             "There is already a live filesystem with the same name, owner, "
             "and distroseries.")
+
+
+@error_status(httplib.UNAUTHORIZED)
+class LiveFSNotOwner(Unauthorized):
+    """The registrant/requester is not the owner or a member of its team."""
 
 
 class ILiveFSView(Interface):

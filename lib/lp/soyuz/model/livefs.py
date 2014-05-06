@@ -51,6 +51,7 @@ from lp.soyuz.interfaces.livefs import (
     LIVEFS_FEATURE_FLAG,
     LiveFSBuildAlreadyPending,
     LiveFSFeatureDisabled,
+    LiveFSNotOwner,
     NoSuchLiveFS,
     )
 from lp.soyuz.interfaces.livefsbuild import ILiveFSBuildSet
@@ -114,6 +115,11 @@ class LiveFS(Storm):
     def requestBuild(self, requester, archive, distroarchseries, pocket,
                      unique_key=None, metadata_override=None):
         """See `ILiveFS`."""
+        if not requester.inTeam(self.owner):
+            raise LiveFSNotOwner(
+                "%s cannot create live filesystem builds owned by %s." %
+                (requester.displayname, self.owner.displayname))
+
         pending = IStore(self).find(
             LiveFSBuild,
             LiveFSBuild.livefs_id == self.id,
@@ -184,6 +190,16 @@ class LiveFSSet:
     def new(self, registrant, owner, distroseries, name, metadata,
             date_created=DEFAULT):
         """See `ILiveFSSet`."""
+        if not registrant.inTeam(owner):
+            if owner.is_team:
+                raise LiveFSNotOwner(
+                    "%s is not a member of %s." %
+                    (registrant.displayname, owner.displayname))
+            else:
+                raise LiveFSNotOwner(
+                    "%s cannot create live filesystems owned by %s." %
+                    (registrant.displayname, owner.displayname))
+
         store = IMasterStore(LiveFS)
         livefs = LiveFS(
             registrant, owner, distroseries, name, metadata, date_created)
