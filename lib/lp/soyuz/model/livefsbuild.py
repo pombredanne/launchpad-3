@@ -360,7 +360,7 @@ class LiveFSBuildSet(SpecificBuildFarmJobSourceMixin):
     def getByID(self, build_id):
         """See `ISpecificBuildFarmJobSource`."""
         store = IMasterStore(LiveFSBuild)
-        return store.find(LiveFSBuild, LiveFSBuild.id == build_id).one()
+        return store.get(LiveFSBuild, build_id)
 
     def getByBuildFarmJob(self, build_farm_job):
         """See `ISpecificBuildFarmJobSource`."""
