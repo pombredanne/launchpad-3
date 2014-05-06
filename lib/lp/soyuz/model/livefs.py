@@ -71,9 +71,6 @@ class LiveFS(Storm):
 
     __storm_table__ = 'LiveFS'
 
-    def __str__(self):
-        return '%s %s' % (self.distroseries, self.name)
-
     implements(ILiveFS, IHasOwner)
 
     id = Int(primary=True)
