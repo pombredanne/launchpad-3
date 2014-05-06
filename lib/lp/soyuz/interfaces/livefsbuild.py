@@ -109,11 +109,6 @@ class ILiveFSBuildView(IPackageBuild):
         required=True, readonly=True,
         description=_("Whether this build record can be rescored manually.")))
 
-    can_be_retried = exported(Bool(
-        title=_("Can be retried"),
-        required=True, readonly=True,
-        description=_("Whether this build record can be retried.")))
-
     can_be_cancelled = exported(Bool(
         title=_("Can be cancelled"),
         required=True, readonly=True,

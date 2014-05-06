@@ -217,14 +217,6 @@ class LiveFSBuild(PackageBuildMixin, Storm):
             return self.buildqueue_record.lastscore
 
     @property
-    def can_be_retried(self):
-        """See `ILiveFSBuild`."""
-        # We provide this property for API convenience, but live filesystem
-        # builds cannot be retried.  Request another build using
-        # LiveFS.requestBuild instead.
-        return False
-
-    @property
     def can_be_rescored(self):
         """See `ILiveFSBuild`."""
         return self.status is BuildStatus.NEEDSBUILD
