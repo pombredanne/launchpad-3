@@ -83,7 +83,6 @@ from lp.app.browser.launchpadform import (
     )
 from lp.app.browser.lazrjs import EnumChoiceWidget
 from lp.app.enums import InformationType
-from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.vocabularies import InformationTypeVocabulary
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
@@ -107,7 +106,6 @@ from lp.code.enums import (
     BranchType,
     CodeImportResultStatus,
     CodeImportReviewStatus,
-    RevisionControlSystems,
     )
 from lp.code.errors import (
     BranchCreationForbidden,
@@ -256,12 +254,11 @@ class BranchNavigation(Navigation):
     @stepthrough("+translation-templates-build")
     def traverse_translation_templates_build(self, id_string):
         """Traverses to a `TranslationTemplatesBuild`."""
-        try:
-            ttbj_id = int(id_string)
-        except ValueError:
-            raise NotFoundError(id_string)
-        source = getUtility(ITranslationTemplatesBuildSource)
-        return source.getByID(ttbj_id)
+        from lp.soyuz.browser.build import get_build_by_name
+        build = get_build_by_name(ITranslationTemplatesBuildSource, id_string)
+        if build is None or build.branch != self.context:
+            return None
+        return build
 
 
 class BranchEditMenu(NavigationMenu):

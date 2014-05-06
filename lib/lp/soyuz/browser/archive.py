@@ -80,6 +80,9 @@ from lp.app.widgets.itemswidgets import (
     )
 from lp.app.widgets.textwidgets import StrippedTextWidget
 from lp.buildmaster.enums import BuildStatus
+from lp.code.interfaces.sourcepackagerecipebuild import (
+    ISourcePackageRecipeBuildSource,
+    )
 from lp.registry.enums import PersonVisibility
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -120,8 +123,8 @@ from lp.soyuz.adapters.archivesourcepublication import (
     ArchiveSourcePublications,
     )
 from lp.soyuz.browser.build import (
-    BuildNavigationMixin,
     BuildRecordsView,
+    get_build_by_name,
     )
 from lp.soyuz.browser.sourceslist import SourcesListEntriesWidget
 from lp.soyuz.browser.widgets.archive import PPANameWidget
@@ -142,7 +145,10 @@ from lp.soyuz.interfaces.archive import (
     )
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
-from lp.soyuz.interfaces.binarypackagebuild import BuildSetStatus
+from lp.soyuz.interfaces.binarypackagebuild import (
+    BuildSetStatus,
+    IBinaryPackageBuildSet,
+    )
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
@@ -224,11 +230,24 @@ class PPAURL:
         return u"+archive/%s" % self.context.name
 
 
-class ArchiveNavigation(Navigation, FileNavigationMixin,
-                        BuildNavigationMixin):
+class ArchiveNavigation(Navigation, FileNavigationMixin):
     """Navigation methods for IArchive."""
 
     usedfor = IArchive
+
+    @stepthrough('+build')
+    def traverse_build(self, name):
+        build = get_build_by_name(IBinaryPackageBuildSet, name)
+        if build is None or build.archive != self.context:
+            return None
+        return build
+
+    @stepthrough('+recipebuild')
+    def traverse_recipebuild(self, name):
+        build = get_build_by_name(ISourcePackageRecipeBuildSource, name)
+        if build is None or build.archive != self.context:
+            return None
+        return build
 
     @stepthrough('+sourcepub')
     def traverse_sourcepub(self, name):
@@ -1052,7 +1071,7 @@ class ArchivePackagesView(ArchiveSourcePackageListViewBase):
         count = job_source.getIncompleteJobsForArchive(self.context).count()
         if count > 5:
             return 'Showing 5 of %s' % count
-    
+
     @cachedproperty
     def has_append_perm(self):
         return check_permission('launchpad.Append', self.context)

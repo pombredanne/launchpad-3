@@ -38,6 +38,9 @@ from lp.buildmaster.interfaces.builder import (
     IBuilderSet,
     )
 from lp.buildmaster.model.buildqueue import BuildQueue
+from lp.code.interfaces.sourcepackagerecipebuild import (
+    ISourcePackageRecipeBuildSource,
+    )
 from lp.services.database.interfaces import IStore
 from lp.services.helpers import english_list
 from lp.services.propertycache import (
@@ -57,22 +60,29 @@ from lp.services.webapp import (
 from lp.services.webapp.batching import StormRangeFactory
 from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.soyuz.browser.build import (
-    BuildNavigationMixin,
     BuildRecordsView,
+    get_build_by_name,
     )
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 
 
-class BuilderSetNavigation(GetitemNavigation, BuildNavigationMixin):
+class BuilderSetNavigation(GetitemNavigation):
     """Navigation methods for IBuilderSet."""
     usedfor = IBuilderSet
 
     @stepthrough('+build')
     def traverse_build(self, name):
-        build = super(BuilderSetNavigation, self).traverse_build(name)
+        build = get_build_by_name(IBinaryPackageBuildSet, name)
         if build is None:
             return None
-        else:
-            return self.redirectSubTree(canonical_url(build))
+        return self.redirectSubTree(canonical_url(build))
+
+    @stepthrough('+recipebuild')
+    def traverse_recipebuild(self, name):
+        build = get_build_by_name(ISourcePackageRecipeBuildSource, name)
+        if build is None:
+            return None
+        return self.redirectSubTree(canonical_url(build))
 
 
 class BuilderSetBreadcrumb(Breadcrumb):

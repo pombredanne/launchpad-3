@@ -23,10 +23,12 @@ from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (
     LaunchpadView,
     Navigation,
+    stepthrough,
     )
 from lp.services.webapp.breadcrumb import Breadcrumb
-from lp.soyuz.browser.build import BuildNavigationMixin
+from lp.soyuz.browser.build import get_build_by_name
 from lp.soyuz.enums import PackagePublishingStatus
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.distributionsourcepackagerelease import (
     IDistributionSourcePackageRelease,
     )
@@ -40,9 +42,19 @@ class DistributionSourcePackageReleaseBreadcrumb(Breadcrumb):
         return self.context.version
 
 
-class DistributionSourcePackageReleaseNavigation(Navigation,
-                                                 BuildNavigationMixin):
+class DistributionSourcePackageReleaseNavigation(Navigation):
     usedfor = IDistributionSourcePackageRelease
+
+    @stepthrough('+build')
+    def traverse_build(self, name):
+        build = get_build_by_name(IBinaryPackageBuildSet, name)
+        if (build is None
+            or build.archive not in
+                self.context.distribution.all_distro_archives
+            or build.source_package_release !=
+                self.context.sourcepackagerelease):
+            return None
+        return build
 
 
 class DistributionSourcePackageReleaseView(LaunchpadView):
