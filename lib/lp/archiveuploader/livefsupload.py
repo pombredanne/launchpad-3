@@ -13,18 +13,27 @@ from lp.buildmaster.enums import BuildStatus
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 
 
+filename_ending_content_type_map = {
+    ".manifest": "text/plain",
+    ".manifest-remove": "text/plain",
+    ".size": "text/plain",
+    }
+
+
+def get_livefs_content_type(path):
+    for content_type_map in filename_ending_content_type_map.items():
+        ending, content_type = content_type_map
+        if path.endswith(ending):
+            return content_type
+    return "application/octet-stream"
+
+
 class LiveFSUpload:
     """A live filesystem upload.
 
     Unlike package uploads, these have no .changes files.  We simply attach
     all the files in the upload directory to the appropriate `ILiveFSBuild`.
     """
-
-    filename_ending_content_type_map = {
-        ".manifest": "text/plain",
-        ".manifest-remove": "text/plain",
-        ".size": "text/plain",
-        }
 
     def __init__(self, upload_path, logger):
         """Create a `LiveFSUpload`.
@@ -36,13 +45,6 @@ class LiveFSUpload:
         self.logger = logger
 
         self.librarian = getUtility(ILibraryFileAliasSet)
-
-    def content_type(self, path):
-        for content_type_map in self.filename_ending_content_type_map.items():
-            ending, content_type = content_type_map
-            if path.endswith(ending):
-                return content_type
-        return "application/octet-stream"
 
     def process(self, build):
         """Process this upload, loading it into the database."""
@@ -59,7 +61,7 @@ class LiveFSUpload:
                 libraryfile = self.librarian.create(
                     livefs_file, os.stat(livefs_path).st_size,
                     open(livefs_path, "rb"),
-                    self.content_type(livefs_path),
+                    get_livefs_content_type(livefs_path),
                     restricted=build.archive.private)
                 build.addFile(libraryfile)
 
