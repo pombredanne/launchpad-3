@@ -106,10 +106,8 @@ CREATE INDEX livefsbuild__livefs__status__started__finished__created__id__idx
 -- LiveFSBuild.getMedianBuildDuration
 CREATE INDEX livefsbuild__livefs__das__finished__status__idx
     ON LiveFSBuild (livefs, distroarchseries, date_finished DESC, status)
-    WHERE
-        date_finished IS NOT NULL
-        -- 1 == FULLYBUILT
-        AND status = 1;
+    -- 1 == FULLYBUILT
+    WHERE status = 1;
 
 CREATE TABLE LiveFSFile (
     id serial PRIMARY KEY,
