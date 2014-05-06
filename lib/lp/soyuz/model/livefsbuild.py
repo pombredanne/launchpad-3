@@ -329,10 +329,6 @@ class LiveFSBuild(PackageBuildMixin, Storm):
         mailer = LiveFSBuildMailer.forStatus(self)
         mailer.sendAll()
 
-    def getUploader(self, changes):
-        """See `IPackageBuild`."""
-        return self.requester
-
     def lfaUrl(self, lfa):
         """Return the URL for a LibraryFileAlias in this context."""
         if lfa is None:
