@@ -1028,12 +1028,11 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
     @call_with(registrant=REQUEST_USER)
     @operation_parameters(
         owner=Reference(
-            Interface,
-            title=_("The person who registered this live filesystem image.")),
-        distroseries=Reference(
             Interface, title=_("The owner of this live filesystem image.")),
-        name=TextLine(
+        distroseries=Reference(
+            Interface,
             title=_("The series for which the image should be built.")),
+        name=TextLine(title=_("The name of the live filesystem image.")),
         metadata=Dict(
             title=_(
                 "A dict of data about the image.  Entries here will be passed "
