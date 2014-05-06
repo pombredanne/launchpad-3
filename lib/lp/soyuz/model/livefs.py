@@ -7,6 +7,7 @@ __all__ = [
     ]
 
 import pytz
+from storm.exceptions import IntegrityError
 from storm.locals import (
     DateTime,
     Desc,
@@ -43,6 +44,7 @@ from lp.services.database.interfaces import (
 from lp.services.database.stormexpr import Greatest
 from lp.services.features import getFeatureFlag
 from lp.soyuz.interfaces.livefs import (
+    DuplicateLiveFSName,
     ILiveFS,
     ILiveFSSet,
     InvalidLiveFSNamespace,
@@ -186,6 +188,12 @@ class LiveFSSet:
         livefs = LiveFS(
             registrant, owner, distroseries, name, metadata, date_created)
         store.add(livefs)
+
+        try:
+            store.flush()
+        except IntegrityError:
+            raise DuplicateLiveFSName
+
         return livefs
 
     def exists(self, owner, distroseries, name):
@@ -204,6 +212,11 @@ class LiveFSSet:
             LiveFS.owner == owner,
             LiveFS.distroseries == distroseries,
             LiveFS.name == name).one()
+
+    def getAll(self):
+        """See `ILiveFSSet`."""
+        store = IStore(LiveFS)
+        return store.find(LiveFS).order_by("name")
 
     def _findOrRaise(self, error, name, finder, *args):
         if name is None:

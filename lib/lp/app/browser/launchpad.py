@@ -144,6 +144,7 @@ from lp.services.webapp.url import urlappend
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
+from lp.soyuz.interfaces.livefs import ILiveFSSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.testopenid.interfaces.server import ITestOpenIDApplication
@@ -689,6 +690,7 @@ class LaunchpadRootNavigation(Navigation):
         'karmaaction': IKarmaActionSet,
         '+imports': ITranslationImportQueue,
         '+languages': ILanguageSet,
+        'livefses': ILiveFSSet,
         '+nameblacklist': INameBlacklistSet,
         'package-sets': IPackagesetSet,
         'people': IPersonSet,

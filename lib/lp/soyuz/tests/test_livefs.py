@@ -30,6 +30,7 @@ from lp.services.database.constants import UTC_NOW
 from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.interfaces import OAuthPermission
 from lp.soyuz.interfaces.livefs import (
+    DuplicateLiveFSName,
     ILiveFS,
     ILiveFSSet,
     ILiveFSView,
@@ -269,25 +270,20 @@ class TestLiveFSWebservice(TestCaseWithFactory):
     def getURL(self, obj):
         return self.webservice.getAbsoluteUrl(api_url(obj))
 
-    def makeLiveFS(self, registrant=None, owner=None, distroseries=None,
-                   metadata=None):
-        if registrant is None:
-            registrant = self.person
+    def makeLiveFS(self, owner=None, distroseries=None, metadata=None):
         if owner is None:
-            owner = registrant
+            owner = self.person
         if metadata is None:
             metadata = {"project": "flavour"}
         if distroseries is None:
-            distroseries = self.factory.makeDistroSeries(registrant=registrant)
+            distroseries = self.factory.makeDistroSeries(registrant=owner)
         transaction.commit()
         distroseries_url = api_url(distroseries)
-        registrant_url = api_url(registrant)
         owner_url = api_url(owner)
         logout()
         response = self.webservice.named_post(
-            registrant_url, "createLiveFS", owner=owner_url,
-            distroseries=distroseries_url, name="flavour-desktop",
-            metadata=metadata)
+            "/livefses", "new", owner=owner_url, distroseries=distroseries_url,
+            name="flavour-desktop", metadata=metadata)
         self.assertEqual(201, response.status)
         livefs = self.webservice.get(response.getHeader("Location")).jsonBody()
         return livefs, distroseries_url
@@ -298,7 +294,7 @@ class TestLiveFSWebservice(TestCaseWithFactory):
             entry["%s_collection_link" % member]).jsonBody()
         return [entry["self_link"] for entry in collection["entries"]]
 
-    def test_createLiveFS(self):
+    def test_new(self):
         # Ensure LiveFS creation works.
         team = self.factory.makeTeam(owner=self.person)
         livefs, distroseries_url = self.makeLiveFS(owner=team)
@@ -311,6 +307,20 @@ class TestLiveFSWebservice(TestCaseWithFactory):
                 self.webservice.getAbsoluteUrl(distroseries_url),
                 livefs["distroseries_link"])
             self.assertEqual({"project": "flavour"}, livefs["metadata"])
+
+    def test_duplicate(self):
+        # An attempt to create a duplicate LiveFS fails.
+        team = self.factory.makeTeam(owner=self.person)
+        _, distroseries_url = self.makeLiveFS(owner=team)
+        with person_logged_in(self.person):
+            owner_url = api_url(team)
+        response = self.webservice.named_post(
+            "/livefses", "new", owner=owner_url, distroseries=distroseries_url,
+            name="flavour-desktop", metadata={})
+        self.assertEqual(400, response.status)
+        self.assertEqual(
+            "There is already a live filesystem with the same name, owner, "
+            "and distroseries.", response.body)
 
     def test_requestBuild(self):
         # Build requests can be performed and end up in livefs.builds and
@@ -420,8 +430,7 @@ class TestLiveFSWebservice(TestCaseWithFactory):
 
     def test_query_count(self):
         # LiveFS has a reasonable query count.
-        livefs = self.factory.makeLiveFS(
-            registrant=self.person, owner=self.person)
+        livefs = self.factory.makeLiveFS(owner=self.person)
         url = api_url(livefs)
         logout()
         store = Store.of(livefs)
@@ -429,4 +438,4 @@ class TestLiveFSWebservice(TestCaseWithFactory):
         store.invalidate()
         with StormStatementRecorder() as recorder:
             self.webservice.get(url)
-        self.assertThat(recorder, HasQueryCount(Equals(21)))
+        self.assertThat(recorder, HasQueryCount(Equals(22)))

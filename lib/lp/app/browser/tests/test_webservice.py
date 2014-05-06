@@ -115,6 +115,12 @@ class TestMissingLanguages(BaseMissingObjectWebService, TestCaseWithFactory):
     object_type = 'languages'
 
 
+class TestMissingLiveFSes(BaseMissingObjectWebService, TestCaseWithFactory):
+    """Test NotFound for webservice livefses requests."""
+
+    object_type = 'livefses'
+
+
 class TestMissingPackagesets(
     BaseMissingObjectWebService, TestCaseWithFactory):
     """Test NotFound for webservice packagesets requests."""

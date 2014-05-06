@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'DuplicateLiveFSName',
     'ILiveFS',
     'ILiveFSEditableAttributes',
     'ILiveFSSet',
@@ -22,7 +23,9 @@ import httplib
 from lazr.lifecycle.snapshot import doNotSnapshot
 from lazr.restful.declarations import (
     call_with,
+    collection_default_content,
     error_status,
+    export_as_webservice_collection,
     export_as_webservice_entry,
     export_factory_operation,
     export_write_operation,
@@ -99,6 +102,16 @@ class NoSuchLiveFS(NameLookupFailed):
     """Raised when we try to load a live filesystem that does not exist."""
 
     _message_prefix = "No such live filesystem"
+
+
+@error_status(httplib.BAD_REQUEST)
+class DuplicateLiveFSName(Exception):
+    """Raised for live filesystems with duplicate name/owner/distroseries."""
+
+    def __init__(self):
+        super(DuplicateLiveFSName, self).__init__(
+            "There is already a live filesystem with the same name, owner, "
+            "and distroseries.")
 
 
 class ILiveFSView(Interface):
@@ -210,6 +223,12 @@ class ILiveFS(ILiveFSView, ILiveFSEditableAttributes):
 class ILiveFSSet(Interface):
     """A utility to create and access live filesystems."""
 
+    export_as_webservice_collection(ILiveFS)
+
+    @call_with(registrant=REQUEST_USER)
+    @export_factory_operation(
+        ILiveFS, ["owner", "distroseries", "name", "metadata"])
+    @operation_for_version("devel")
     def new(registrant, owner, distroseries, name, metadata,
             date_created=None):
         """Create an `ILiveFS`."""
@@ -219,6 +238,13 @@ class ILiveFSSet(Interface):
 
     def get(owner, distroseries, name):
         """Return the appropriate `ILiveFS` for the given objects."""
+
+    @collection_default_content()
+    def getAll():
+        """Return all of the live filesystems in Launchpad.
+
+        :return: A (potentially empty) sequence of `ILiveFS` instances.
+        """
 
     def traverse(segments):
         """Look up the `ILiveFS` at the path given by 'segments'.

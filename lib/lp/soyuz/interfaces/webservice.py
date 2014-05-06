@@ -88,7 +88,10 @@ from lp.soyuz.interfaces.binarypackagerelease import (
     )
 from lp.soyuz.interfaces.buildrecords import IncompatibleArguments
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
-from lp.soyuz.interfaces.livefs import ILiveFS
+from lp.soyuz.interfaces.livefs import (
+    ILiveFS,
+    ILiveFSSet,
+    )
 from lp.soyuz.interfaces.livefsbuild import ILiveFSBuild
 from lp.soyuz.interfaces.packageset import (
     DuplicatePackagesetName,
