@@ -418,13 +418,6 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
     meta_sourcepackage = Attribute(
         "Return an ISourcePackage meta object correspondent to the "
         "sourcepackagerelease attribute inside a specific distroseries")
-    meta_sourcepackagerelease = Attribute(
-        "Return an IDistributionSourcePackageRelease meta object "
-        "correspondent to the sourcepackagerelease attribute")
-    meta_supersededby = Attribute(
-        "Return an IDistributionSourcePackageRelease meta object "
-        "correspondent to the supersededby attribute. if supersededby "
-        "is None return None.")
     meta_distroseriessourcepackagerelease = Attribute(
         "Return an IDistroSeriesSourcePackageRelease meta object "
         "correspondent to the sourcepackagerelease attribute inside "

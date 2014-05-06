@@ -676,24 +676,10 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             self.sourcepackagerelease.sourcepackagename)
 
     @property
-    def meta_sourcepackagerelease(self):
-        """see `ISourcePackagePublishingHistory`."""
-        return self.distroseries.distribution.getSourcePackageRelease(
-            self.sourcepackagerelease)
-
-    @property
     def meta_distroseriessourcepackagerelease(self):
         """see `ISourcePackagePublishingHistory`."""
         return self.distroseries.getSourcePackageRelease(
             self.sourcepackagerelease)
-
-    @property
-    def meta_supersededby(self):
-        """see `ISourcePackagePublishingHistory`."""
-        if not self.supersededby:
-            return None
-        return self.distroseries.distribution.getSourcePackageRelease(
-            self.supersededby)
 
     # XXX: StevenK 2011-09-13 bug=848563: This can die when
     # self.sourcepackagename is populated.
