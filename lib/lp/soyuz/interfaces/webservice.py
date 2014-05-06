@@ -31,6 +31,7 @@ __all__ = [
     'IDistroArchSeries',
     'ILiveFS',
     'ILiveFSBuild',
+    'ILiveFSSet',
     'IPackageUpload',
     'IPackageset',
     'IPackagesetSet',

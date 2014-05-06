@@ -111,7 +111,6 @@ from lp.registry.interfaces.projectgroup import IProjectGroupSet
 from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.services.config import config
-from lp.services.features import getFeatureFlag
 from lp.services.helpers import intOrZero
 from lp.services.identity.interfaces.account import AccountStatus
 from lp.services.propertycache import cachedproperty

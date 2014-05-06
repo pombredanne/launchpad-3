@@ -30,7 +30,6 @@ from lp.services.database.constants import UTC_NOW
 from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.interfaces import OAuthPermission
 from lp.soyuz.interfaces.livefs import (
-    DuplicateLiveFSName,
     ILiveFS,
     ILiveFSSet,
     ILiveFSView,
