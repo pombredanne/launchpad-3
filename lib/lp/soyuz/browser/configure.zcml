@@ -733,10 +733,14 @@
         path_expression="string:+livefs/${distroseries/distribution/name}/${distroseries/name}/${name}"
         attribute_to_parent="owner"
         />
+    <browser:navigation
+        module="lp.soyuz.browser.livefs"
+        classes="LiveFSNavigation"
+        />
     <browser:url
         for="lp.soyuz.interfaces.livefsbuild.ILiveFSBuild"
         path_expression="string:+livefsbuild/${id}"
-        attribute_to_parent="archive"
+        attribute_to_parent="livefs"
         />
     <browser:navigation
         module="lp.soyuz.browser.livefsbuild"

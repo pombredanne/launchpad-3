@@ -233,7 +233,7 @@ class TestLiveFSBuild(TestCaseWithFactory):
             distroseries=distroseries, architecturetag="i386",
             processor=processor)
         build = self.factory.makeLiveFSBuild(
-            name=u"livefs-1", requester=person,
+            name=u"livefs-1", requester=person, owner=person,
             distroarchseries=distroarchseries,
             date_created=datetime(2014, 04, 25, 10, 38, 0, tzinfo=pytz.UTC),
             status=BuildStatus.FAILEDTOBUILD,
@@ -259,7 +259,8 @@ class TestLiveFSBuild(TestCaseWithFactory):
         body, footer = notification.get_payload(decode=True).split("\n-- \n")
         self.assertEqual(expected_body % (build.log_url, ""), body)
         self.assertEqual(
-            "http://launchpad.dev/distro/+archive/primary/+livefsbuild/%d\n"
+            "http://launchpad.dev/~person/+livefs/distro/unstable/livefs-1/"
+            "+livefsbuild/%d\n"
             "You are the requester of the build.\n" % build.id, footer)
 
     def addFakeBuildLog(self, build):
@@ -269,8 +270,11 @@ class TestLiveFSBuild(TestCaseWithFactory):
         # The log URL for a live filesystem build will use the archive context.
         self.addFakeBuildLog(self.build)
         self.assertEqual(
-            "http://launchpad.dev/%s/+archive/primary/+livefsbuild/%d/+files/"
-            "mybuildlog.txt" % (self.build.distribution.name, self.build.id),
+            "http://launchpad.dev/~%s/+livefs/%s/%s/%s/+livefsbuild/%d/+files/"
+            "mybuildlog.txt" % (
+                self.build.livefs.owner.name, self.build.distribution.name,
+                self.build.distro_series.name, self.build.livefs.name,
+                self.build.id),
             self.build.log_url)
 
 
@@ -323,7 +327,7 @@ class TestLiveFSBuildWebservice(TestCaseWithFactory):
         self.useFixture(FeatureFixture({LIVEFS_FEATURE_FLAG: u"on"}))
         self.person = self.factory.makePerson()
         self.webservice = webservice_for_person(
-            self.person, permission=OAuthPermission.WRITE_PUBLIC)
+            self.person, permission=OAuthPermission.WRITE_PRIVATE)
         self.webservice.default_api_version = "devel"
         login(ANONYMOUS)
 
@@ -382,7 +386,8 @@ class TestLiveFSBuildWebservice(TestCaseWithFactory):
         unpriv_webservice.default_api_version = "devel"
         logout()
         self.assertEqual(200, self.webservice.get(build_url).status)
-        self.assertEqual(401, unpriv_webservice.get(build_url).status)
+        # 404 since we aren't allowed to know that the private team exists.
+        self.assertEqual(404, unpriv_webservice.get(build_url).status)
 
     def test_private_archive(self):
         # A LiveFSBuild with a private archive is private.
