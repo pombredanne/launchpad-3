@@ -104,8 +104,8 @@ CREATE INDEX livefsbuild__livefs__status__started__finished__created__id__idx
         date_created DESC, id DESC);
 
 -- LiveFSBuild.getMedianBuildDuration
-CREATE INDEX livefsbuild__livefs__das__finished__status__idx
-    ON LiveFSBuild (livefs, distroarchseries, date_finished DESC, status)
+CREATE INDEX livefsbuild__livefs__das__status__finished__idx
+    ON LiveFSBuild (livefs, distroarchseries, status, date_finished DESC)
     -- 1 == FULLYBUILT
     WHERE status = 1;
 
