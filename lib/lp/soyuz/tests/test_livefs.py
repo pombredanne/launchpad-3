@@ -166,7 +166,7 @@ class TestLiveFS(TestCaseWithFactory):
         self.assertEqual(distroarchseries, build.distroarchseries)
         self.assertEqual(PackagePublishingPocket.RELEASE, build.pocket)
         self.assertIsNone(build.unique_key)
-        self.assertEqual({}, build.metadata_override)
+        self.assertIsNone(build.metadata_override)
         self.assertEqual(BuildStatus.NEEDSBUILD, build.status)
         store = Store.of(build)
         store.flush()

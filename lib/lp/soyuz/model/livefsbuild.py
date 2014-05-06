@@ -160,8 +160,6 @@ class LiveFSBuild(PackageBuildMixin, Storm):
         self.processor = processor
         self.virtualized = virtualized
         self.unique_key = unique_key
-        if metadata_override is None:
-            metadata_override = {}
         self.metadata_override = metadata_override
         self.date_created = date_created
         self.status = BuildStatus.NEEDSBUILD
