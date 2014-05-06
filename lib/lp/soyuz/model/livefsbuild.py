@@ -303,7 +303,9 @@ class LiveFSBuild(PackageBuildMixin, Storm):
 
     def addFile(self, lfa):
         """See `ILiveFSBuild`."""
-        return LiveFSFile(livefsbuild=self, libraryfile=lfa)
+        livefsfile = LiveFSFile(livefsbuild=self, libraryfile=lfa)
+        IMasterStore(LiveFSFile).add(livefsfile)
+        return livefsfile
 
     def verifySuccessfulUpload(self):
         """See `IPackageBuild`."""
