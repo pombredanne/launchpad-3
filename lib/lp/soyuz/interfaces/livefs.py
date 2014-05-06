@@ -125,7 +125,6 @@ class ILiveFSView(Interface):
             key_type=TextLine(), required=False))
     # Really ILiveFSBuild, patched in _schema_circular_imports.py.
     @export_factory_operation(Interface, [])
-    @export_write_operation()
     @operation_for_version("devel")
     def requestBuild(requester, archive, distroarchseries, pocket,
                      unique_key=None, metadata_override=None):
