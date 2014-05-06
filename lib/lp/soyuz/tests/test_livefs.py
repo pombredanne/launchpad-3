@@ -229,6 +229,7 @@ class TestLiveFS(TestCaseWithFactory):
                 distroseries=livefs.distroseries),
             PackagePublishingPocket.RELEASE)
         # Changing the status of the old build allows a new build.
+        old_build.updateStatus(BuildStatus.BUILDING)
         old_build.updateStatus(BuildStatus.FULLYBUILT)
         livefs.requestBuild(
             livefs.owner, livefs.distroseries.main_archive, distroarchseries,
@@ -247,8 +248,9 @@ class TestLiveFS(TestCaseWithFactory):
         self.assertEqual(builds, list(livefs.pending_builds))
 
         # Change the status of one of the builds and retest.
+        builds[0].updateStatus(BuildStatus.BUILDING)
         builds[0].updateStatus(BuildStatus.FULLYBUILT)
-        self.assertEqual(builds, list(livefs.builds))
+        self.assertEqual(builds[1:] + builds[:1], list(livefs.builds))
         self.assertEqual(builds[:1], list(livefs.completed_builds))
         self.assertEqual(builds[1:], list(livefs.pending_builds))
 

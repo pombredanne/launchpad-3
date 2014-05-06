@@ -257,7 +257,6 @@ class LiveFSBuild(PackageBuildMixin, Storm):
             (LiveFSBuild.date_started, LiveFSBuild.date_finished),
             LiveFSBuild.livefs == self.livefs_id,
             LiveFSBuild.distroarchseries == self.distroarchseries_id,
-            LiveFSBuild.date_finished != None,
             LiveFSBuild.status == BuildStatus.FULLYBUILT)
         result.order_by(Desc(LiveFSBuild.date_finished))
         durations = [row[1] - row[0] for row in result[:9]]
