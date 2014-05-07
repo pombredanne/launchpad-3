@@ -10,22 +10,8 @@ import os
 from zope.component import getUtility
 
 from lp.buildmaster.enums import BuildStatus
+from lp.services.helpers import filenameToContentType
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
-
-
-filename_ending_content_type_map = {
-    ".manifest": "text/plain",
-    ".manifest-remove": "text/plain",
-    ".size": "text/plain",
-    }
-
-
-def get_livefs_content_type(path):
-    for content_type_map in filename_ending_content_type_map.items():
-        ending, content_type = content_type_map
-        if path.endswith(ending):
-            return content_type
-    return "application/octet-stream"
 
 
 class LiveFSUpload:
@@ -61,7 +47,7 @@ class LiveFSUpload:
                 libraryfile = self.librarian.create(
                     livefs_file, os.stat(livefs_path).st_size,
                     open(livefs_path, "rb"),
-                    get_livefs_content_type(livefs_path),
+                    filenameToContentType(livefs_path),
                     restricted=build.archive.private)
                 build.addFile(libraryfile)
 

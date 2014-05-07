@@ -232,6 +232,10 @@ def filenameToContentType(fname):
              ".txt": "text/plain",
              # For the build master logs
              ".txt.gz": "text/plain",
+             # For live filesystem builds
+             ".manifest": "text/plain",
+             ".manifest-remove": "text/plain",
+             ".size": "text/plain",
              }
     for ending in ftmap:
         if fname.endswith(ending):
