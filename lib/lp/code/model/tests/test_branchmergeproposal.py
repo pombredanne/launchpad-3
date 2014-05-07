@@ -2363,15 +2363,17 @@ class TestWebservice(WebServiceTestCase):
 
     def test_saveDraftInlineComment(self):
         # Creating and retrieving draft inline comments.
+        # These operations require an logged in user with permission
+        # to view the BMP.
 
         # Enabled inline_diff feature.
         self.useContext(feature_flags())
         set_feature_flag(u'code.inline_diff_comments.enabled', u'enabled')
 
         previewdiff = self.factory.makePreviewDiff()
-        user = previewdiff.branch_merge_proposal.target_branch.owner
-        ws_bmp = self.wsObject(previewdiff.branch_merge_proposal, user=user)
+        proposal = previewdiff.branch_merge_proposal
 
+        ws_bmp = self.wsObject(proposal, user=proposal.target_branch.owner)
         ws_bmp.saveDraftInlineComment(
             previewdiff_id=previewdiff.id,
             comments={'2': 'foo'})
@@ -2389,16 +2391,25 @@ class TestWebservice(WebServiceTestCase):
         set_feature_flag(u'code.inline_diff_comments.enabled', u'enabled')
 
         previewdiff = self.factory.makePreviewDiff()
-        user = previewdiff.branch_merge_proposal.target_branch.owner
-        ws_bmp = self.wsObject(previewdiff.branch_merge_proposal, user=user)
+        proposal = previewdiff.branch_merge_proposal
+        user = proposal.target_branch.owner
 
+        # Publishing inline-comments requires an logged in user with
+        # lp.Edit permission on the MP, in this case, the branch owner.
+        ws_bmp = self.wsObject(proposal, user=user)
         review_comment = ws_bmp.createComment(
             subject='Testing!',
             previewdiff_id=previewdiff.id,
             inline_comments={u'2': u'foo'})
         transaction.commit()
 
-        inline_comments = ws_bmp.getInlineComments(
+        # Retrieving published inline comments requires only lp.View
+        # permission on the MP, since the testing MP is public, even
+        # an anonymous user can view published inline comments.
+        launchpad = launchpadlib_for(
+            'test', None, service_root=self.layer.appserver_root_url('api'))
+        anon_bmp = ws_object(launchpad, proposal)
+        inline_comments = anon_bmp.getInlineComments(
             previewdiff_id=previewdiff.id)
 
         self.assertEqual(1, len(inline_comments))
