@@ -219,7 +219,9 @@ class LiveFSBuild(PackageBuildMixin, Storm):
     @property
     def can_be_rescored(self):
         """See `ILiveFSBuild`."""
-        return self.status is BuildStatus.NEEDSBUILD
+        return (
+            self.buildqueue_record is not None and
+            self.status is BuildStatus.NEEDSBUILD)
 
     @property
     def can_be_cancelled(self):

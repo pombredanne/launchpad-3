@@ -358,7 +358,7 @@ class TestLiveFSBuildWebservice(TestCaseWithFactory):
                 {"image_format": "plain"}, build["metadata_override"])
             self.assertEqual("20140425-103800", build["version"])
             self.assertIsNone(build["score"])
-            self.assertTrue(build["can_be_rescored"])
+            self.assertFalse(build["can_be_rescored"])
             self.assertFalse(build["can_be_cancelled"])
 
     def test_public(self):
