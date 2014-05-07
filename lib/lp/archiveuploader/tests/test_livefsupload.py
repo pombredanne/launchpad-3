@@ -10,7 +10,7 @@ import os
 from storm.store import Store
 from zope.component import getUtility
 
-from lp.archiveuploader.livefsupload import LiveFSUpload
+from lp.archiveuploader.livefsupload import get_livefs_content_type
 from lp.archiveuploader.tests.test_uploadprocessor import (
     TestUploadProcessorBase,
     )
@@ -25,21 +25,17 @@ from lp.services.osutils import write_file
 from lp.soyuz.interfaces.livefs import LIVEFS_FEATURE_FLAG
 from lp.soyuz.interfaces.livefsbuild import ILiveFSBuildSet
 from lp.testing import TestCase
-from lp.testing.layers import ZopelessDatabaseLayer
 
 
-class TestLiveFSUpload(TestCase):
-    """Test the `LiveFSUpload` class."""
+class TestGetLiveFSContentType(TestCase):
+    """Test the `get_livefs_content_type` function."""
 
-    layer = ZopelessDatabaseLayer
-
-    def test_content_type(self):
-        uploader = LiveFSUpload(None, None)
+    def test_get_livefs_content_type(self):
         self.assertEqual(
-            "text/plain", uploader.content_type("ubuntu.manifest"))
+            "text/plain", get_livefs_content_type("ubuntu.manifest"))
         self.assertEqual(
             "application/octet-stream",
-            uploader.content_type("ubuntu.squashfs"))
+            get_livefs_content_type("ubuntu.squashfs"))
 
 
 class TestLiveFSBuildUploads(TestUploadProcessorBase):

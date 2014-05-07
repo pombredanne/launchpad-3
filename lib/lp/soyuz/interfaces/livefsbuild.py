@@ -109,11 +109,6 @@ class ILiveFSBuildView(IPackageBuild):
         required=True, readonly=True,
         description=_("Whether this build record can be rescored manually.")))
 
-    can_be_retried = exported(Bool(
-        title=_("Can be retried"),
-        required=True, readonly=True,
-        description=_("Whether this build record can be retried.")))
-
     can_be_cancelled = exported(Bool(
         title=_("Can be cancelled"),
         required=True, readonly=True,
@@ -165,8 +160,8 @@ class ILiveFSBuildEdit(Interface):
     def cancel():
         """Cancel the build if it is either pending or in progress.
 
-        Call the can_be_cancelled() method prior to this one to find out if
-        cancelling the build is possible.
+        Check the can_be_cancelled property prior to calling this method to
+        find out if cancelling the build is possible.
 
         If the build is in progress, it is marked as CANCELLING until the
         buildd manager terminates the build and marks it CANCELLED.  If the
@@ -190,7 +185,10 @@ class ILiveFSBuildAdmin(Interface):
 class ILiveFSBuild(ILiveFSBuildView, ILiveFSBuildEdit, ILiveFSBuildAdmin):
     """Build information for live filesystem builds."""
 
-    export_as_webservice_entry(singular_name="livefs_build", as_of="devel")
+    # XXX cjwatson 2014-05-06 bug=760849: "beta" is a lie to get WADL
+    # generation working.  Individual attributes must set their version to
+    # "devel".
+    export_as_webservice_entry(singular_name="livefs_build", as_of="beta")
 
 
 class ILiveFSBuildSet(ISpecificBuildFarmJobSource):

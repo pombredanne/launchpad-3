@@ -160,8 +160,6 @@ class LiveFSBuild(PackageBuildMixin, Storm):
         self.processor = processor
         self.virtualized = virtualized
         self.unique_key = unique_key
-        if metadata_override is None:
-            metadata_override = {}
         self.metadata_override = metadata_override
         self.date_created = date_created
         self.status = BuildStatus.NEEDSBUILD
@@ -219,14 +217,6 @@ class LiveFSBuild(PackageBuildMixin, Storm):
             return self.buildqueue_record.lastscore
 
     @property
-    def can_be_retried(self):
-        """See `ILiveFSBuild`."""
-        # We provide this property for API convenience, but live filesystem
-        # builds cannot be retried.  Request another build using
-        # LiveFS.requestBuild instead.
-        return False
-
-    @property
     def can_be_rescored(self):
         """See `ILiveFSBuild`."""
         return self.status is BuildStatus.NEEDSBUILD
@@ -261,13 +251,13 @@ class LiveFSBuild(PackageBuildMixin, Storm):
         return 2505 + self.archive.relative_build_score
 
     def getMedianBuildDuration(self):
-        """Return the median duration of builds of this live filesystem."""
+        """Return the median duration of our successful builds."""
         store = IStore(self)
         result = store.find(
             (LiveFSBuild.date_started, LiveFSBuild.date_finished),
             LiveFSBuild.livefs == self.livefs_id,
             LiveFSBuild.distroarchseries == self.distroarchseries_id,
-            LiveFSBuild.date_finished != None)
+            LiveFSBuild.status == BuildStatus.FULLYBUILT)
         result.order_by(Desc(LiveFSBuild.date_finished))
         durations = [row[1] - row[0] for row in result[:9]]
         if len(durations) == 0:
@@ -291,7 +281,7 @@ class LiveFSBuild(PackageBuildMixin, Storm):
             LibraryFileAlias.id == LiveFSFile.libraryfile_id,
             LibraryFileContent.id == LibraryFileAlias.contentID)
         return result.order_by(
-            [LibraryFileAlias.filename, LiveFSFile.id]).config(distinct=True)
+            [LibraryFileAlias.filename, LiveFSFile.id]).config()
 
     def getFileByName(self, filename):
         """See `ILiveFSBuild`."""
@@ -313,7 +303,9 @@ class LiveFSBuild(PackageBuildMixin, Storm):
 
     def addFile(self, lfa):
         """See `ILiveFSBuild`."""
-        return LiveFSFile(livefsbuild=self, libraryfile=lfa)
+        livefsfile = LiveFSFile(livefsbuild=self, libraryfile=lfa)
+        IMasterStore(LiveFSFile).add(livefsfile)
+        return livefsfile
 
     def verifySuccessfulUpload(self):
         """See `IPackageBuild`."""
@@ -327,10 +319,6 @@ class LiveFSBuild(PackageBuildMixin, Storm):
             return
         mailer = LiveFSBuildMailer.forStatus(self)
         mailer.sendAll()
-
-    def getUploader(self, changes):
-        """See `IPackageBuild`."""
-        return self.requester
 
     def lfaUrl(self, lfa):
         """Return the URL for a LibraryFileAlias in this context."""
@@ -372,7 +360,7 @@ class LiveFSBuildSet(SpecificBuildFarmJobSourceMixin):
     def getByID(self, build_id):
         """See `ISpecificBuildFarmJobSource`."""
         store = IMasterStore(LiveFSBuild)
-        return store.find(LiveFSBuild, LiveFSBuild.id == build_id).one()
+        return store.get(LiveFSBuild, build_id)
 
     def getByBuildFarmJob(self, build_farm_job):
         """See `ISpecificBuildFarmJobSource`."""

@@ -984,8 +984,12 @@
                        .interfaces.livefs.ILiveFSEditableAttributes"/>
         <require
             permission="launchpad.Edit"
-            set_schema=".interfaces.livefs.ILiveFSEditableAttributes"/>
+            set_schema=".interfaces.livefs.ILiveFSEditableAttributes"
+            set_attributes="date_last_modified"/>
     </class>
+    <subscriber
+        for=".interfaces.livefs.ILiveFS zope.lifecycleevent.interfaces.IObjectModifiedEvent"
+        handler=".model.livefs.livefs_modified"/>
 
     <!-- LiveFSSet -->
     <securedutility
@@ -1031,9 +1035,6 @@
     <class class=".model.livefsbuild.LiveFSFile">
         <allow
             interface=".interfaces.livefsbuild.ILiveFSFile"/>
-        <require
-            permission="launchpad.Edit"
-            set_schema=".interfaces.livefsbuild.ILiveFSFile"/>
     </class>
 
     <webservice:register module="lp.soyuz.interfaces.webservice" />

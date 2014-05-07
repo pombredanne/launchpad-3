@@ -127,7 +127,8 @@ class TestLiveFSBuild(TestCaseWithFactory):
         private_team = self.factory.makeTeam(
             visibility=PersonVisibility.PRIVATE)
         with person_logged_in(private_team.teamowner):
-            build = self.factory.makeLiveFSBuild(owner=private_team)
+            build = self.factory.makeLiveFSBuild(
+                requester=private_team.teamowner, owner=private_team)
             self.assertTrue(build.is_private)
         private_archive = self.factory.makeArchive(private=True)
         with person_logged_in(private_archive.owner):
@@ -168,11 +169,18 @@ class TestLiveFSBuild(TestCaseWithFactory):
         self.assertEqual(1800, self.build.estimateDuration().seconds)
 
     def test_estimateDuration_with_history(self):
-        # Previous builds of the same live filesystem are used for estimates.
+        # Previous successful builds of the same live filesystem are used
+        # for estimates.
         self.factory.makeLiveFSBuild(
             requester=self.build.requester, livefs=self.build.livefs,
             distroarchseries=self.build.distroarchseries,
             status=BuildStatus.FULLYBUILT, duration=timedelta(seconds=335))
+        for i in range(3):
+            self.factory.makeLiveFSBuild(
+                requester=self.build.requester, livefs=self.build.livefs,
+                distroarchseries=self.build.distroarchseries,
+                status=BuildStatus.FAILEDTOBUILD,
+                duration=timedelta(seconds=20))
         self.assertEqual(335, self.build.estimateDuration().seconds)
 
     def test_getFileByName_logs(self):
@@ -194,8 +202,7 @@ class TestLiveFSBuild(TestCaseWithFactory):
         for filename in filenames:
             lfa = self.factory.makeLibraryFileAlias(filename=filename)
             lfas.append(lfa)
-            self.factory.makeLiveFSFile(
-                livefsbuild=self.build, libraryfile=lfa)
+            self.build.addFile(lfa)
         self.assertContentEqual(
             lfas, [row[1] for row in self.build.getFiles()])
         for filename, lfa in zip(filenames, lfas):
@@ -226,7 +233,7 @@ class TestLiveFSBuild(TestCaseWithFactory):
             distroseries=distroseries, architecturetag="i386",
             processor=processor)
         build = self.factory.makeLiveFSBuild(
-            name=u"livefs-1", requester=person,
+            name=u"livefs-1", requester=person, owner=person,
             distroarchseries=distroarchseries,
             date_created=datetime(2014, 04, 25, 10, 38, 0, tzinfo=pytz.UTC),
             status=BuildStatus.FAILEDTOBUILD,
@@ -252,7 +259,8 @@ class TestLiveFSBuild(TestCaseWithFactory):
         body, footer = notification.get_payload(decode=True).split("\n-- \n")
         self.assertEqual(expected_body % (build.log_url, ""), body)
         self.assertEqual(
-            "http://launchpad.dev/distro/+archive/primary/+livefsbuild/%d\n"
+            "http://launchpad.dev/~person/+livefs/distro/unstable/livefs-1/"
+            "+livefsbuild/%d\n"
             "You are the requester of the build.\n" % build.id, footer)
 
     def addFakeBuildLog(self, build):
@@ -262,8 +270,11 @@ class TestLiveFSBuild(TestCaseWithFactory):
         # The log URL for a live filesystem build will use the archive context.
         self.addFakeBuildLog(self.build)
         self.assertEqual(
-            "http://launchpad.dev/%s/+archive/primary/+livefsbuild/%d/+files/"
-            "mybuildlog.txt" % (self.build.distribution.name, self.build.id),
+            "http://launchpad.dev/~%s/+livefs/%s/%s/%s/+livefsbuild/%d/+files/"
+            "mybuildlog.txt" % (
+                self.build.livefs.owner.name, self.build.distribution.name,
+                self.build.distro_series.name, self.build.livefs.name,
+                self.build.id),
             self.build.log_url)
 
 
@@ -316,7 +327,7 @@ class TestLiveFSBuildWebservice(TestCaseWithFactory):
         self.useFixture(FeatureFixture({LIVEFS_FEATURE_FLAG: u"on"}))
         self.person = self.factory.makePerson()
         self.webservice = webservice_for_person(
-            self.person, permission=OAuthPermission.WRITE_PUBLIC)
+            self.person, permission=OAuthPermission.WRITE_PRIVATE)
         self.webservice.default_api_version = "devel"
         login(ANONYMOUS)
 
@@ -348,7 +359,6 @@ class TestLiveFSBuildWebservice(TestCaseWithFactory):
             self.assertEqual("20140425-103800", build["version"])
             self.assertIsNone(build["score"])
             self.assertTrue(build["can_be_rescored"])
-            self.assertFalse(build["can_be_retried"])
             self.assertFalse(build["can_be_cancelled"])
 
     def test_public(self):
@@ -367,14 +377,16 @@ class TestLiveFSBuildWebservice(TestCaseWithFactory):
         db_team = self.factory.makeTeam(
             owner=self.person, visibility=PersonVisibility.PRIVATE)
         with person_logged_in(self.person):
-            db_build = self.factory.makeLiveFSBuild(owner=db_team)
+            db_build = self.factory.makeLiveFSBuild(
+                requester=self.person, owner=db_team)
             build_url = api_url(db_build)
         unpriv_webservice = webservice_for_person(
             self.factory.makePerson(), permission=OAuthPermission.WRITE_PUBLIC)
         unpriv_webservice.default_api_version = "devel"
         logout()
         self.assertEqual(200, self.webservice.get(build_url).status)
-        self.assertEqual(401, unpriv_webservice.get(build_url).status)
+        # 404 since we aren't allowed to know that the private team exists.
+        self.assertEqual(404, unpriv_webservice.get(build_url).status)
 
     def test_private_archive(self):
         # A LiveFSBuild with a private archive is private.

@@ -7,6 +7,7 @@ __all__ = [
     ]
 
 import pytz
+from storm.exceptions import IntegrityError
 from storm.locals import (
     DateTime,
     Desc,
@@ -32,7 +33,10 @@ from lp.registry.interfaces.person import (
     NoSuchPerson,
     )
 from lp.registry.interfaces.role import IHasOwner
-from lp.services.database.constants import DEFAULT
+from lp.services.database.constants import (
+    DEFAULT,
+    UTC_NOW,
+    )
 from lp.services.database.interfaces import (
     IMasterStore,
     IStore,
@@ -40,17 +44,26 @@ from lp.services.database.interfaces import (
 from lp.services.database.stormexpr import Greatest
 from lp.services.features import getFeatureFlag
 from lp.soyuz.interfaces.livefs import (
+    DuplicateLiveFSName,
     ILiveFS,
     ILiveFSSet,
-    InvalidLiveFSNamespace,
     LIVEFS_FEATURE_FLAG,
     LiveFSBuildAlreadyPending,
     LiveFSFeatureDisabled,
-    NoSuchLiveFS,
+    LiveFSNotOwner,
     )
 from lp.soyuz.interfaces.livefsbuild import ILiveFSBuildSet
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.livefsbuild import LiveFSBuild
+
+
+def livefs_modified(livefs, event):
+    """Update the date_last_modified property when a LiveFS is modified.
+
+    This method is registered as a subscriber to `IObjectModifiedEvent`
+    events on live filesystems.
+    """
+    livefs.date_last_modified = UTC_NOW
 
 
 class LiveFS(Storm):
@@ -58,15 +71,14 @@ class LiveFS(Storm):
 
     __storm_table__ = 'LiveFS'
 
-    def __str__(self):
-        return '%s %s' % (self.distroseries, self.name)
-
     implements(ILiveFS, IHasOwner)
 
     id = Int(primary=True)
 
     date_created = DateTime(
         name='date_created', tzinfo=pytz.UTC, allow_none=False)
+    date_last_modified = DateTime(
+        name='date_last_modified', tzinfo=pytz.UTC, allow_none=False)
 
     registrant_id = Int(name='registrant', allow_none=False)
     registrant = Reference(registrant_id, 'Person.id')
@@ -93,10 +105,16 @@ class LiveFS(Storm):
         self.name = name
         self.metadata = metadata
         self.date_created = date_created
+        self.date_last_modified = date_created
 
     def requestBuild(self, requester, archive, distroarchseries, pocket,
                      unique_key=None, metadata_override=None):
         """See `ILiveFS`."""
+        if not requester.inTeam(self.owner):
+            raise LiveFSNotOwner(
+                "%s cannot create live filesystem builds owned by %s." %
+                (requester.displayname, self.owner.displayname))
+
         pending = IStore(self).find(
             LiveFSBuild,
             LiveFSBuild.livefs_id == self.id,
@@ -138,6 +156,26 @@ class LiveFS(Storm):
             Desc(LiveFSBuild.id))
         return self._getBuilds(None, order_by)
 
+    @property
+    def completed_builds(self):
+        """See `ILiveFS`."""
+        filter_term = (LiveFSBuild.status != BuildStatus.NEEDSBUILD)
+        order_by = (
+            Desc(Greatest(
+                LiveFSBuild.date_started,
+                LiveFSBuild.date_finished)),
+            Desc(LiveFSBuild.id))
+        return self._getBuilds(filter_term, order_by)
+
+    @property
+    def pending_builds(self):
+        """See `ILiveFS`."""
+        filter_term = (LiveFSBuild.status == BuildStatus.NEEDSBUILD)
+        # We want to order by date_created but this is the same as ordering
+        # by id (since id increases monotonically) and is less expensive.
+        order_by = Desc(LiveFSBuild.id)
+        return self._getBuilds(filter_term, order_by)
+
 
 class LiveFSSet:
     """See `ILiveFSSet`."""
@@ -147,23 +185,35 @@ class LiveFSSet:
     def new(self, registrant, owner, distroseries, name, metadata,
             date_created=DEFAULT):
         """See `ILiveFSSet`."""
+        if not registrant.inTeam(owner):
+            if owner.is_team:
+                raise LiveFSNotOwner(
+                    "%s is not a member of %s." %
+                    (registrant.displayname, owner.displayname))
+            else:
+                raise LiveFSNotOwner(
+                    "%s cannot create live filesystems owned by %s." %
+                    (registrant.displayname, owner.displayname))
+
         store = IMasterStore(LiveFS)
         livefs = LiveFS(
             registrant, owner, distroseries, name, metadata, date_created)
         store.add(livefs)
+
+        try:
+            store.flush()
+        except IntegrityError:
+            raise DuplicateLiveFSName
+
         return livefs
 
     def exists(self, owner, distroseries, name):
         """See `ILiveFSSet`."""
-        livefs = self.get(owner, distroseries, name)
-        if livefs:
-            return True
-        else:
-            return False
+        return self.get(owner, distroseries, name) is not None
 
     def get(self, owner, distroseries, name):
         """See `ILiveFSSet`."""
-        store = IMasterStore(LiveFS)
+        store = IStore(LiveFS)
         return store.find(
             LiveFS,
             LiveFS.owner == owner,
@@ -180,31 +230,20 @@ class LiveFSSet:
             raise error(name)
         return result
 
-    def traverse(self, segments):
+    def interpret(self, owner_name, distribution_name, distroseries_name,
+                  name):
         """See `ILiveFSSet`."""
-        traversed_segments = []
-
-        def get_next_segment():
-            try:
-                result = segments.next()
-            except StopIteration:
-                raise InvalidLiveFSNamespace("/".join(traversed_segments))
-            if result is None:
-                raise AssertionError("None segment passed to traverse()")
-            traversed_segments.append(result)
-            return result
-
-        person_name = get_next_segment()
-        person = self._findOrRaise(
-            NoSuchPerson, person_name, getUtility(IPersonSet).getByName)
-        distribution_name = get_next_segment()
+        owner = self._findOrRaise(
+            NoSuchPerson, owner_name, getUtility(IPersonSet).getByName)
         distribution = self._findOrRaise(
             NoSuchDistribution, distribution_name,
             getUtility(IDistributionSet).getByName)
-        distroseries_name = get_next_segment()
         distroseries = self._findOrRaise(
             NoSuchDistroSeries, distroseries_name,
             getUtility(IDistroSeriesSet).queryByName, distribution)
-        livefs_name = get_next_segment()
-        return self._findOrRaise(
-            NoSuchLiveFS, livefs_name, self.get, person, distroseries)
+        return self.get(owner, distroseries, name)
+
+    def getAll(self):
+        """See `ILiveFSSet`."""
+        store = IStore(LiveFS)
+        return store.find(LiveFS).order_by("name")

@@ -197,7 +197,6 @@ from lp.soyuz.interfaces.binarypackagerelease import (
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 from lp.soyuz.interfaces.livefs import (
-    ILiveFS,
     ILiveFSView,
     )
 from lp.soyuz.interfaces.livefsbuild import (
@@ -358,10 +357,6 @@ patch_list_parameter_type(IPerson, 'createRecipe', 'distroseries',
                           Reference(schema=IDistroSeries))
 patch_plain_parameter_type(IPerson, 'createRecipe', 'daily_build_archive',
                            IArchive)
-patch_entry_return_type(IPerson, 'createLiveFS', ILiveFS)
-patch_plain_parameter_type(IPerson, 'createLiveFS', 'owner', IPerson)
-patch_plain_parameter_type(IPerson, 'createLiveFS', 'distroseries',
-                           IDistroSeries)
 patch_plain_parameter_type(IPerson, 'getArchiveSubscriptionURL', 'archive',
                            IArchive)
 patch_collection_return_type(
@@ -594,6 +589,8 @@ patch_reference_property(ILiveFSFile, 'livefsbuild', ILiveFSBuild)
 # ILiveFSView
 patch_entry_return_type(ILiveFSView, 'requestBuild', ILiveFSBuild)
 ILiveFSView['builds'].value_type.schema = ILiveFSBuild
+ILiveFSView['completed_builds'].value_type.schema = ILiveFSBuild
+ILiveFSView['pending_builds'].value_type.schema = ILiveFSBuild
 
 # IPackageset
 patch_collection_return_type(

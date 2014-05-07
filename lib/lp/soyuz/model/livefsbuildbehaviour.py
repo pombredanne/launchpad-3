@@ -81,7 +81,8 @@ class LiveFSBuildBehaviour(BuildFarmJobBehaviourBase):
         """
         build = self.build
         args = dict(build.livefs.metadata)
-        args.update(build.metadata_override)
+        if build.metadata_override is not None:
+            args.update(build.metadata_override)
         args["suite"] = build.distroarchseries.distroseries.getSuite(
             build.pocket)
         args["arch_tag"] = build.distroarchseries.architecturetag

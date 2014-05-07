@@ -84,7 +84,6 @@ from zope.schema import (
     Bool,
     Choice,
     Datetime,
-    Dict,
     Int,
     List,
     Object,
@@ -1024,26 +1023,6 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
     @operation_for_version("beta")
     def getRecipe(name):
         """Return the person's recipe with the given name."""
-
-    @call_with(registrant=REQUEST_USER)
-    @operation_parameters(
-        owner=Reference(
-            Interface,
-            title=_("The person who registered this live filesystem image.")),
-        distroseries=Reference(
-            Interface, title=_("The owner of this live filesystem image.")),
-        name=TextLine(
-            title=_("The series for which the image should be built.")),
-        metadata=Dict(
-            title=_(
-                "A dict of data about the image.  Entries here will be passed "
-                "to the builder slave."),
-            key_type=TextLine()),
-        )
-    @export_factory_operation(Interface, [])
-    @operation_for_version("devel")
-    def createLiveFS(registrant, owner, distroseries, name, metadata):
-        """Create a `LiveFS` owned by this person."""
 
     def getMergeQueue(name):
         """Return the person's merge queue with the given name."""

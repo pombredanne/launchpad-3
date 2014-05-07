@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """BinaryPackageBuild interfaces."""
@@ -233,8 +233,8 @@ class IBinaryPackageBuildEdit(Interface):
     def cancel():
         """Cancel the build if it is either pending or in progress.
 
-        Call the can_be_cancelled() method prior to this one to find out if
-        cancelling the build is possible.
+        Check the can_be_cancelled property prior to calling this method to
+        find out if cancelling the build is possible.
 
         If the build is in progress, it is marked as CANCELLING until the
         buildd manager terminates the build and marks it CANCELLED. If the

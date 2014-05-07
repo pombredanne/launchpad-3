@@ -120,15 +120,15 @@ def get_primary_current_component(archive, distroseries, sourcepackagename):
     """
     primary_archive = archive.distribution.main_archive
     if sourcepackagename is None:
-        ancestries = []
+        ancestry = None
     else:
-        ancestries = primary_archive.getPublishedSources(
+        ancestry = primary_archive.getPublishedSources(
             name=sourcepackagename,
-            distroseries=distroseries, exact_match=True)
+            distroseries=distroseries, exact_match=True).first()
 
-    try:
-        return ancestries[0].component.name
-    except IndexError:
+    if ancestry is not None:
+        return ancestry.component.name
+    else:
         return 'universe'
 
 

@@ -10,12 +10,12 @@ __all__ = [
     'BuildCancelView',
     'BuildContextMenu',
     'BuildNavigation',
-    'BuildNavigationMixin',
     'BuildRecordsView',
     'BuildRescoringView',
     'BuildUrl',
     'BuildView',
     'DistributionBuildRecordsView',
+    'get_build_by_id_str',
     ]
 
 
@@ -54,9 +54,6 @@ from lp.buildmaster.interfaces.buildfarmjob import (
     )
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
-from lp.code.interfaces.sourcepackagerecipebuild import (
-    ISourcePackageRecipeBuildSource,
-    )
 from lp.services.librarian.browser import (
     FileNavigationMixin,
     ProxiedLibraryFileAlias,
@@ -69,7 +66,6 @@ from lp.services.webapp import (
     GetitemNavigation,
     LaunchpadView,
     Link,
-    stepthrough,
     )
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.batching import (
@@ -81,10 +77,25 @@ from lp.services.webapp.interfaces import ICanonicalUrlData
 from lp.soyuz.enums import PackageUploadStatus
 from lp.soyuz.interfaces.binarypackagebuild import (
     IBinaryPackageBuild,
-    IBinaryPackageBuildSet,
     IBuildRescoreForm,
     )
-from lp.soyuz.interfaces.livefsbuild import ILiveFSBuildSet
+
+
+def get_build_by_id_str(utility, id_str):
+    """Find a build by a utility interface and ID string.
+
+    Designed for Navigation implementations.
+
+    Returns None if the ID doesn't match a build.
+    """
+    try:
+        build_id = int(id_str)
+    except ValueError:
+        return None
+    try:
+        return getUtility(utility).getByID(build_id)
+    except NotFoundError:
+        return None
 
 
 class BuildUrl:
@@ -122,44 +133,6 @@ class BuildUrl:
 
 class BuildNavigation(GetitemNavigation, FileNavigationMixin):
     usedfor = IBinaryPackageBuild
-
-
-class BuildNavigationMixin:
-    """Provide a simple way to traverse to builds."""
-
-    @stepthrough('+build')
-    def traverse_build(self, name):
-        try:
-            build_id = int(name)
-        except ValueError:
-            return None
-        try:
-            return getUtility(IBinaryPackageBuildSet).getByID(build_id)
-        except NotFoundError:
-            return None
-
-    @stepthrough('+recipebuild')
-    def traverse_recipebuild(self, name):
-        try:
-            build_id = int(name)
-        except ValueError:
-            return None
-        try:
-            return getUtility(ISourcePackageRecipeBuildSource).getByID(
-                build_id)
-        except NotFoundError:
-            return None
-
-    @stepthrough('+livefsbuild')
-    def traverse_livefsbuild(self, name):
-        try:
-            build_id = int(name)
-        except ValueError:
-            return None
-        try:
-            return getUtility(ILiveFSBuildSet).getByID(build_id)
-        except NotFoundError:
-            return None
 
 
 class BuildContextMenu(ContextMenu):
