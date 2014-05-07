@@ -246,9 +246,10 @@ class TestLiveFSBuild(TestCaseWithFactory):
             config.canonical.noreply_from_address, notification["From"])
         self.assertEqual(
             "Person <%s>" % person.preferredemail.email, notification["To"])
+        subject = notification["Subject"].replace("\n ", " ")
         self.assertEqual(
-            "[LiveFS build #%d] i386 build of livefs-1 in distro unstable "
-            "RELEASE" % build.id, notification["Subject"])
+            "[LiveFS build #%d] i386 build of livefs-1 live filesystem in "
+            "distro unstable RELEASE" % build.id, subject)
         self.assertEqual(
             "Requester", notification["X-Launchpad-Message-Rationale"])
         self.assertEqual(
