@@ -388,13 +388,14 @@ class TestBugSecrecyViews(TestCaseWithFactory):
         self.assertContentEqual([], view.request.response.notifications)
 
     def _assert_secrecy_view_ajax_render(self, bug, new_type,
-                                         validate_change):
+                                         validate_change, person=None):
         # When the bug secrecy view is called from an ajax request, it should
         # provide a json encoded dict when rendered. The dict contains bug
         # subscription information resulting from the update to the bug
         # privacy as well as information used to populate the updated
         # subscribers list.
-        person = bug.owner
+        if person is None:
+            person = bug.owner
         with person_logged_in(person):
             bug.subscribe(person, person)
 
@@ -426,10 +427,12 @@ class TestBugSecrecyViews(TestCaseWithFactory):
         # An information type change request is processed as expected when the
         # bug remains visible to someone and visibility check is performed.
         bug = self.factory.makeBug()
+        with person_logged_in(bug.owner):
+            bug.unsubscribe(bug.owner, bug.owner)
         result_data = self._assert_secrecy_view_ajax_render(
-            bug, 'USERDATA', True)
+            bug, 'USERDATA', True, person=self.factory.makePerson())
         [subscriber_data] = result_data['subscription_data']
-        subscriber = removeSecurityProxy(bug).default_bugtask.pillar.owner
+        subscriber = removeSecurityProxy(bug).owner
         self.assertEqual(
             subscriber.name, subscriber_data['subscriber']['name'])
         self.assertEqual('Discussion', subscriber_data['subscription_level'])
