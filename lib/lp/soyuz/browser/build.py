@@ -79,7 +79,6 @@ from lp.soyuz.interfaces.binarypackagebuild import (
     IBinaryPackageBuild,
     IBuildRescoreForm,
     )
-from lp.soyuz.interfaces.livefsbuild import ILiveFSBuildSet
 
 
 def get_build_by_id_str(utility, id_str):

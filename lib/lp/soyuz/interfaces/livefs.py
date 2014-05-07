@@ -27,7 +27,6 @@ from lazr.restful.declarations import (
     export_as_webservice_collection,
     export_as_webservice_entry,
     export_factory_operation,
-    export_write_operation,
     exported,
     operation_for_version,
     operation_parameters,
