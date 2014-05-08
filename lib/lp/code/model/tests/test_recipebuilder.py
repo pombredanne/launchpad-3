@@ -1,4 +1,4 @@
-# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test RecipeBuildBehaviour."""
@@ -35,15 +35,18 @@ from lp.buildmaster.tests.mock_slaves import (
 from lp.buildmaster.tests.test_buildfarmjobbehaviour import (
     TestGetUploadMethodsMixin,
     TestHandleStatusMixin,
+    TestVerifySuccessfulBuildMixin,
     )
 from lp.code.model.recipebuilder import RecipeBuildBehaviour
 from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.series import SeriesStatus
 from lp.services.config import config
 from lp.services.log.logger import BufferLogger
 from lp.soyuz.adapters.archivedependencies import (
     get_sources_list_for_building,
     )
+from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
@@ -399,10 +402,24 @@ class MakeSPRecipeBuildMixin:
         build.queueBuild()
         return build
 
+    def makeUnmodifiableBuild(self):
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        build = self.factory.makeSourcePackageRecipeBuild(
+            archive=archive, status=BuildStatus.BUILDING)
+        build.distro_series.status = SeriesStatus.CURRENT
+        build.queueBuild()
+        return build
+
 
 class TestGetUploadMethodsForSPRecipeBuild(
     MakeSPRecipeBuildMixin, TestGetUploadMethodsMixin, TestCaseWithFactory):
     """IPackageBuild.getUpload-related methods work with SPRecipe builds."""
+
+
+class TestVerifySuccessfulBuildForSPRBuild(
+    MakeSPRecipeBuildMixin, TestVerifySuccessfulBuildMixin,
+    TestCaseWithFactory):
+    """IBuildFarmJobBehaviour.verifySuccessfulBuild works."""
 
 
 class TestHandleStatusForSPRBuild(

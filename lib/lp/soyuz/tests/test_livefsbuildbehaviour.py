@@ -33,8 +33,10 @@ from lp.buildmaster.tests.mock_slaves import (
 from lp.buildmaster.tests.test_buildfarmjobbehaviour import (
     TestGetUploadMethodsMixin,
     TestHandleStatusMixin,
+    TestVerifySuccessfulBuildMixin,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.series import SeriesStatus
 from lp.services.features.testing import FeatureFixture
 from lp.services.log.logger import BufferLogger
 from lp.soyuz.adapters.archivedependencies import get_sources_list_for_building
@@ -202,10 +204,22 @@ class MakeLiveFSBuildMixin:
         build.queueBuild()
         return build
 
+    def makeUnmodifiableBuild(self):
+        self.useFixture(FeatureFixture({LIVEFS_FEATURE_FLAG: u"on"}))
+        build = self.factory.makeLiveFSBuild(status=BuildStatus.BUILDING)
+        build.distro_series.status = SeriesStatus.OBSOLETE
+        build.queueBuild()
+        return build
+
 
 class TestGetUploadMethodsForLiveFSBuild(
     MakeLiveFSBuildMixin, TestGetUploadMethodsMixin, TestCaseWithFactory):
     """IPackageBuild.getUpload-related methods work with LiveFS builds."""
+
+
+class TestVerifySuccessfulBuildForLiveFSBuild(
+    MakeLiveFSBuildMixin, TestVerifySuccessfulBuildMixin, TestCaseWithFactory):
+    """IBuildFarmJobBehaviour.verifySuccessfulBuild works."""
 
 
 class TestHandleStatusForLiveFSBuild(

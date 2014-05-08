@@ -22,6 +22,7 @@ from lp.buildmaster.interfaces.buildfarmjobbehaviour import (
 from lp.buildmaster.model.buildfarmjobbehaviour import (
     BuildFarmJobBehaviourBase,
     )
+from lp.registry.interfaces.series import SeriesStatus
 from lp.soyuz.adapters.archivedependencies import get_sources_list_for_building
 from lp.soyuz.interfaces.livefsbuild import ILiveFSBuild
 
@@ -131,3 +132,12 @@ class LiveFSBuildBehaviour(BuildFarmJobBehaviourBase):
             info,
             )
         logger.info(message)
+
+    def verifySuccessfulBuild(self):
+        """See `IBuildFarmJobBehaviour`."""
+        # The implementation in BuildFarmJobBehaviourBase checks whether the
+        # target suite is modifiable in the target archive.  However, a
+        # `LiveFSBuild`'s archive is a source rather than a target, so that
+        # check does not make sense.  We do, however, refuse to build for
+        # obsolete series.
+        assert self.build.distro_series.status != SeriesStatus.OBSOLETE

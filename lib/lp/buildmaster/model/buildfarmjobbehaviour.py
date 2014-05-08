@@ -129,6 +129,17 @@ class BuildFarmJobBehaviourBase:
         self.build.setLog(lfa_id)
         transaction.commit()
 
+    def verifySuccessfulBuild(self):
+        """See `IBuildFarmJobBehaviour`."""
+        build = self.build
+
+        # Explode before collecting a binary that is denied in this
+        # distroseries/pocket/archive
+        assert build.archive.canModifySuite(
+            build.distro_series, build.pocket), (
+                "%s (%s) can not be built for pocket %s in %s: illegal status"
+                % (build.title, build.id, build.pocket.name, build.archive))
+
     # The list of build status values for which email notifications are
     # allowed to be sent. It is up to each callback as to whether it will
     # consider sending a notification but it won't do so if the status is not
@@ -178,12 +189,7 @@ class BuildFarmJobBehaviourBase:
                 self.build.buildqueue_record.destroySelf()
                 return
 
-        # Explode before collect a binary that is denied in this
-        # distroseries/pocket/archive
-        assert build.archive.canModifySuite(
-            build.distro_series, build.pocket), (
-                "%s (%s) can not be built for pocket %s in %s: illegal status"
-                % (build.title, build.id, build.pocket.name, build.archive))
+        self.verifySuccessfulBuild()
 
         # Ensure we have the correct build root as:
         # <BUILDMASTER_ROOT>/incoming/<UPLOAD_LEAF>/<TARGET_PATH>/[FILES]

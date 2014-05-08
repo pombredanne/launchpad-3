@@ -1,4 +1,4 @@
-# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for BuildFarmJobBehaviourBase."""
@@ -112,6 +112,40 @@ class TestGetUploadMethodsMixin:
         (job_type, job_id) = parse_build_upload_leaf_name(upload_leaf)
         self.assertEqual(
             (self.build.job_type.name, self.build.id), (job_type, job_id))
+
+
+class TestVerifySuccessfulBuildMixin:
+    """Tests for `IBuildFarmJobBehaviour`'s verifySuccessfulBuild method."""
+
+    layer = LaunchpadZopelessLayer
+
+    def makeBuild(self):
+        """Allow classes to override the build with which the test runs."""
+        raise NotImplementedError
+
+    def makeUnmodifiableBuild(self):
+        """Allow classes to override the build with which the test runs."""
+        raise NotImplementedError
+
+    def setUp(self):
+        super(TestVerifySuccessfulBuildMixin, self).setUp()
+        self.factory = LaunchpadObjectFactory()
+
+    def test_verifySuccessfulBuild_allows_modifiable_suite(self):
+        # verifySuccessfulBuild allows uploading to a suite that the archive
+        # says is modifiable.
+        build = self.makeBuild()
+        behaviour = IBuildFarmJobBehaviour(
+            build.buildqueue_record.specific_build)
+        behaviour.verifySuccessfulBuild()
+
+    def test_verifySuccessfulBuild_denies_unmodifiable_suite(self):
+        # verifySuccessfulBuild refuses to upload to a suite that the
+        # archive says is unmodifiable.
+        build = self.makeUnmodifiableBuild()
+        behaviour = IBuildFarmJobBehaviour(
+            build.buildqueue_record.specific_build)
+        self.assertRaises(AssertionError, behaviour.verifySuccessfulBuild)
 
 
 class TestHandleStatusMixin:
