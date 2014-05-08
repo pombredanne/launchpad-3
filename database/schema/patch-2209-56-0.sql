@@ -9,17 +9,17 @@ CREATE TABLE LiveFS (
     date_last_modified timestamp without time zone DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC') NOT NULL,
     registrant integer NOT NULL REFERENCES person,
     owner integer NOT NULL REFERENCES person,
-    distroseries integer NOT NULL REFERENCES distroseries,
+    distro_series integer NOT NULL REFERENCES distroseries,
     name text NOT NULL,
     json_data text,
     CONSTRAINT valid_name CHECK (valid_name(name)),
-    CONSTRAINT livefs__owner__distroseries__name__key UNIQUE (owner, distroseries, name)
+    CONSTRAINT livefs__owner__distro_series__name__key UNIQUE (owner, distro_series, name)
 );
 
 COMMENT ON TABLE LiveFS IS 'A class of buildable live filesystem images.  Rows in this table only partially define how to build an image; the rest of the information comes from LiveFSBuild.';
 COMMENT ON COLUMN LiveFS.registrant IS 'The user who registered the live filesystem image.';
 COMMENT ON COLUMN LiveFS.owner IS 'The owner of the live filesystem image.';
-COMMENT ON COLUMN LiveFS.distroseries IS 'The DistroSeries for which the image should be built.';
+COMMENT ON COLUMN LiveFS.distro_series IS 'The DistroSeries for which the image should be built.';
 COMMENT ON COLUMN LiveFS.name IS 'The name of the live filesystem image, unique per DistroSeries.';
 COMMENT ON COLUMN LiveFS.json_data IS 'A JSON struct containing data for the image build.';
 
@@ -27,8 +27,8 @@ CREATE INDEX livefs__registrant__idx
     ON LiveFS (registrant);
 CREATE INDEX livefs__owner__idx
     ON LiveFS (owner);
-CREATE INDEX livefs__distroseries__idx
-    ON LiveFS (distroseries);
+CREATE INDEX livefs__distro_series__idx
+    ON LiveFS (distro_series);
 CREATE INDEX livefs__name__idx
     ON LiveFS (name);
 
@@ -37,7 +37,7 @@ CREATE TABLE LiveFSBuild (
     requester integer NOT NULL REFERENCES person,
     livefs integer NOT NULL REFERENCES livefs,
     archive integer NOT NULL REFERENCES archive,
-    distroarchseries integer NOT NULL REFERENCES distroarchseries,
+    distro_arch_series integer NOT NULL REFERENCES distroarchseries,
     pocket integer NOT NULL,
     unique_key text,
     json_data_override text,
@@ -60,7 +60,7 @@ COMMENT ON TABLE LiveFSBuild IS 'A build record for a live filesystem image.';
 COMMENT ON COLUMN LiveFSBuild.requester IS 'The person who requested this live filesystem image build.';
 COMMENT ON COLUMN LiveFSBuild.livefs IS 'Live filesystem image to build.';
 COMMENT ON COLUMN LiveFSBuild.archive IS 'The archive that the live filesystem image should build from.';
-COMMENT ON COLUMN LiveFSBuild.distroarchseries IS 'The distroarchseries that the live filesystem image should build from.';
+COMMENT ON COLUMN LiveFSBuild.distro_arch_series IS 'The distroarchseries that the live filesystem image should build from.';
 COMMENT ON COLUMN LiveFSBuild.pocket IS 'The pocket that the live filesystem image should build from.';
 COMMENT ON COLUMN LiveFSBuild.unique_key IS 'A unique key distinguishing this build from others for the same livefs/archive/distroarchseries/pocket, or NULL.';
 COMMENT ON COLUMN LiveFSBuild.json_data_override IS 'A JSON struct containing data for the image build, each key of which overrides the same key from livefs.json_data.';
@@ -83,8 +83,8 @@ CREATE INDEX livefsbuild__livefs__idx
     ON LiveFSBuild (livefs);
 CREATE INDEX livefsbuild__archive__idx
     ON LiveFSBuild (archive);
-CREATE INDEX livefsbuild__distroarchseries__idx
-    ON LiveFSBuild (distroarchseries);
+CREATE INDEX livefsbuild__distro_arch_series__idx
+    ON LiveFSBuild (distro_arch_series);
 CREATE INDEX livefsbuild__log__idx
     ON LiveFSBuild (log);
 CREATE INDEX livefsbuild__upload_log__idx
@@ -95,7 +95,7 @@ CREATE INDEX livefsbuild__build_farm_job__idx
 -- LiveFS.requestBuild
 CREATE INDEX livefsbuild__livefs__archive__das__pocket__unique_key__status__idx
     ON LiveFSBuild (
-        livefs, archive, distroarchseries, pocket, unique_key, status);
+        livefs, archive, distro_arch_series, pocket, unique_key, status);
 
 -- LiveFS.builds, LiveFS.completed_builds, LiveFS.pending_builds
 CREATE INDEX livefsbuild__livefs__status__started__finished__created__id__idx
@@ -105,7 +105,7 @@ CREATE INDEX livefsbuild__livefs__status__started__finished__created__id__idx
 
 -- LiveFSBuild.getMedianBuildDuration
 CREATE INDEX livefsbuild__livefs__das__status__finished__idx
-    ON LiveFSBuild (livefs, distroarchseries, status, date_finished DESC)
+    ON LiveFSBuild (livefs, distro_arch_series, status, date_finished DESC)
     -- 1 == FULLYBUILT
     WHERE status = 1;
 
