@@ -510,7 +510,7 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
         if livefs is None:
             raise NotFoundError
 
-        if livefs.distroseries.distribution.name != distribution_name:
+        if livefs.distro_series.distribution.name != distribution_name:
             # This live filesystem was accessed through one of its
             # distribution's aliases, so we must redirect to its canonical
             # URL.

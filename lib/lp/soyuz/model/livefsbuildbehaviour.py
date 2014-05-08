@@ -47,7 +47,7 @@ class LiveFSBuildBehaviour(BuildFarmJobBehaviourBase):
         logger.info("startBuild(%s)", self.displayname)
 
     def getLogFileName(self):
-        das = self.build.distroarchseries
+        das = self.build.distro_arch_series
         archname = das.architecturetag
         if self.build.unique_key:
             archname += '_%s' % self.build.unique_key
@@ -70,10 +70,10 @@ class LiveFSBuildBehaviour(BuildFarmJobBehaviourBase):
             raise AssertionError(
                 "Attempt to build virtual item on a non-virtual builder.")
 
-        chroot = build.distroarchseries.getChroot()
+        chroot = build.distro_arch_series.getChroot()
         if chroot is None:
             raise CannotBuild(
-                "Missing chroot for %s" % build.distroarchseries.displayname)
+                "Missing chroot for %s" % build.distro_arch_series.displayname)
 
     def _extraBuildArgs(self):
         """
@@ -83,12 +83,11 @@ class LiveFSBuildBehaviour(BuildFarmJobBehaviourBase):
         args = dict(build.livefs.metadata)
         if build.metadata_override is not None:
             args.update(build.metadata_override)
-        args["suite"] = build.distroarchseries.distroseries.getSuite(
-            build.pocket)
-        args["arch_tag"] = build.distroarchseries.architecturetag
+        args["suite"] = build.distro_series.getSuite(build.pocket)
+        args["arch_tag"] = build.distro_arch_series.architecturetag
         args["datestamp"] = build.version
         args["archives"] = get_sources_list_for_building(
-            build, build.distroarchseries, None)
+            build, build.distro_arch_series, None)
         args["archive_private"] = build.archive.private
         return args
 
@@ -97,12 +96,12 @@ class LiveFSBuildBehaviour(BuildFarmJobBehaviourBase):
         """See `IBuildFarmJobBehaviour`."""
 
         # Start the build on the slave builder.  First we send the chroot.
-        distroarchseries = self.build.distroarchseries
-        chroot = distroarchseries.getChroot()
+        distro_arch_series = self.build.distro_arch_series
+        chroot = distro_arch_series.getChroot()
         if chroot is None:
             raise CannotBuild(
                 "Unable to find a chroot for %s" %
-                distroarchseries.displayname)
+                distro_arch_series.displayname)
         logger.info(
             "Sending chroot file for live filesystem build to %s" %
             self._builder.name)

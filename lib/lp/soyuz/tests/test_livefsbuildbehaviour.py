@@ -82,7 +82,8 @@ class TestLiveFSBuildBehaviour(TestCaseWithFactory):
         # displayname contains a reasonable description of the job.
         job = self.makeJob()
         self.assertEqual(
-            "i386 build of livefs in distro unstable RELEASE", job.displayname)
+            "i386 build of livefs live filesystem in distro unstable RELEASE",
+            job.displayname)
 
     def test_logStartBuild(self):
         # logStartBuild will properly report the image that's being built.
@@ -90,8 +91,8 @@ class TestLiveFSBuildBehaviour(TestCaseWithFactory):
         logger = BufferLogger()
         job.logStartBuild(logger)
         self.assertEqual(
-            "INFO startBuild(i386 build of livefs in distro unstable "
-            "RELEASE)\n", logger.getLogBuffer())
+            "INFO startBuild(i386 build of livefs live filesystem in distro "
+            "unstable RELEASE)\n", logger.getLogBuffer())
 
     def test_verifyBuildRequest_valid(self):
         # verifyBuildRequest doesn't raise any exceptions when called with a
@@ -99,7 +100,7 @@ class TestLiveFSBuildBehaviour(TestCaseWithFactory):
         job = self.makeJob()
         lfa = self.factory.makeLibraryFileAlias()
         transaction.commit()
-        job.build.distroarchseries.addOrUpdateChroot(lfa)
+        job.build.distro_arch_series.addOrUpdateChroot(lfa)
         builder = MockBuilder()
         job.setBuilder(builder, OkSlave())
         logger = BufferLogger()
@@ -112,7 +113,7 @@ class TestLiveFSBuildBehaviour(TestCaseWithFactory):
         job = self.makeJob()
         lfa = self.factory.makeLibraryFileAlias()
         transaction.commit()
-        job.build.distroarchseries.addOrUpdateChroot(lfa)
+        job.build.distro_arch_series.addOrUpdateChroot(lfa)
         builder = MockBuilder(virtualized=False)
         job.setBuilder(builder, OkSlave())
         logger = BufferLogger()
@@ -142,7 +143,7 @@ class TestLiveFSBuildBehaviour(TestCaseWithFactory):
             date_created=datetime(2014, 04, 25, 10, 38, 0, tzinfo=pytz.UTC),
             metadata={"project": "distro", "subproject": "special"})
         expected_archives = get_sources_list_for_building(
-            job.build, job.build.distroarchseries, None)
+            job.build, job.build.distro_arch_series, None)
         self.assertEqual({
             "archive_private": False,
             "archives": expected_archives,
@@ -160,7 +161,7 @@ class TestLiveFSBuildBehaviour(TestCaseWithFactory):
         job = self.makeJob()
         lfa = self.factory.makeLibraryFileAlias()
         transaction.commit()
-        job.build.distroarchseries.addOrUpdateChroot(lfa)
+        job.build.distro_arch_series.addOrUpdateChroot(lfa)
         slave = OkSlave()
         builder = MockBuilder("bob")
         builder.processor = getUtility(IProcessorSet).getByName("386")

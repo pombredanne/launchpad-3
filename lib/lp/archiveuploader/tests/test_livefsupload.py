@@ -10,7 +10,6 @@ import os
 from storm.store import Store
 from zope.component import getUtility
 
-from lp.archiveuploader.livefsupload import get_livefs_content_type
 from lp.archiveuploader.tests.test_uploadprocessor import (
     TestUploadProcessorBase,
     )
@@ -24,18 +23,6 @@ from lp.services.features.testing import FeatureFixture
 from lp.services.osutils import write_file
 from lp.soyuz.interfaces.livefs import LIVEFS_FEATURE_FLAG
 from lp.soyuz.interfaces.livefsbuild import ILiveFSBuildSet
-from lp.testing import TestCase
-
-
-class TestGetLiveFSContentType(TestCase):
-    """Test the `get_livefs_content_type` function."""
-
-    def test_get_livefs_content_type(self):
-        self.assertEqual(
-            "text/plain", get_livefs_content_type("ubuntu.manifest"))
-        self.assertEqual(
-            "application/octet-stream",
-            get_livefs_content_type("ubuntu.squashfs"))
 
 
 class TestLiveFSBuildUploads(TestUploadProcessorBase):
@@ -53,7 +40,7 @@ class TestLiveFSBuildUploads(TestUploadProcessorBase):
             requester=self.livefs.owner, livefs=self.livefs,
             archive=self.factory.makeArchive(
                 distribution=self.ubuntu, owner=self.livefs.owner),
-            distroarchseries=self.breezy["i386"],
+            distro_arch_series=self.breezy["i386"],
             pocket=PackagePublishingPocket.RELEASE)
         self.build.updateStatus(BuildStatus.UPLOADING)
         Store.of(self.build).flush()

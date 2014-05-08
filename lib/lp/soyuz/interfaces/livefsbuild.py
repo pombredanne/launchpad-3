@@ -72,7 +72,7 @@ class ILiveFSBuildView(IPackageBuild):
         title=_("The archive from which to build the live filesystem."),
         required=True, readonly=True))
 
-    distroarchseries = exported(Reference(
+    distro_arch_series = exported(Reference(
         IDistroArchSeries,
         title=_("The series and architecture for which to build."),
         required=True, readonly=True))
@@ -194,6 +194,6 @@ class ILiveFSBuild(ILiveFSBuildView, ILiveFSBuildEdit, ILiveFSBuildAdmin):
 class ILiveFSBuildSet(ISpecificBuildFarmJobSource):
     """Utility for `ILiveFSBuild`."""
 
-    def new(requester, livefs, archive, distroarchseries, pocket,
+    def new(requester, livefs, archive, distro_arch_series, pocket,
             unique_key=None, metadata_override=None, date_created=DEFAULT):
         """Create an `ILiveFSBuild`."""

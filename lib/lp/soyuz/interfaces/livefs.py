@@ -114,7 +114,7 @@ class ILiveFSView(Interface):
     @call_with(requester=REQUEST_USER)
     @operation_parameters(
         archive=Reference(schema=IArchive),
-        distroarchseries=Reference(schema=IDistroArchSeries),
+        distro_arch_series=Reference(schema=IDistroArchSeries),
         pocket=Choice(vocabulary=PackagePublishingPocket),
         unique_key=TextLine(
             title=_("A unique key for this build, if required."),
@@ -125,13 +125,13 @@ class ILiveFSView(Interface):
     # Really ILiveFSBuild, patched in _schema_circular_imports.py.
     @export_factory_operation(Interface, [])
     @operation_for_version("devel")
-    def requestBuild(requester, archive, distroarchseries, pocket,
+    def requestBuild(requester, archive, distro_arch_series, pocket,
                      unique_key=None, metadata_override=None):
         """Request that the live filesystem be built.
 
         :param requester: The person requesting the build.
         :param archive: The IArchive to associate the build with.
-        :param distroarchseries: The architecture to build for.
+        :param distro_arch_series: The architecture to build for.
         :param pocket: The pocket that should be targeted.
         :param unique_key: An optional unique key for this build; if set,
             this identifies a class of builds for this live filesystem.
@@ -179,7 +179,7 @@ class ILiveFSEditableAttributes(IHasOwner):
         vocabulary="AllUserTeamsParticipationPlusSelf",
         description=_("The owner of this live filesystem image.")))
 
-    distroseries = exported(Reference(
+    distro_series = exported(Reference(
         IDistroSeries, title=_("Distro Series"), required=True, readonly=False,
         description=_("The series for which the image should be built.")))
 
@@ -212,19 +212,19 @@ class ILiveFSSet(Interface):
 
     @call_with(registrant=REQUEST_USER)
     @export_factory_operation(
-        ILiveFS, ["owner", "distroseries", "name", "metadata"])
+        ILiveFS, ["owner", "distro_series", "name", "metadata"])
     @operation_for_version("devel")
-    def new(registrant, owner, distroseries, name, metadata,
+    def new(registrant, owner, distro_series, name, metadata,
             date_created=None):
         """Create an `ILiveFS`."""
 
-    def exists(owner, distroseries, name):
+    def exists(owner, distro_series, name):
         """Check to see if a matching live filesystem exists."""
 
-    def get(owner, distroseries, name):
+    def get(owner, distro_series, name):
         """Return the appropriate `ILiveFS` for the given objects."""
 
-    def interpret(owner_name, distribution_name, distroseries_name, name):
+    def interpret(owner_name, distribution_name, distro_series_name, name):
         """Like `get`, but takes names of objects."""
 
     @collection_default_content()

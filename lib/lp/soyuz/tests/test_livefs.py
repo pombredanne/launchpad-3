@@ -104,7 +104,7 @@ class TestLiveFS(TestCaseWithFactory):
         return dict(
             registrant=registrant,
             owner=self.factory.makeTeam(owner=registrant),
-            distroseries=self.factory.makeDistroSeries(),
+            distro_series=self.factory.makeDistroSeries(),
             name=self.factory.getUniqueString(u"livefs-name"),
             metadata=metadata)
 
@@ -116,7 +116,7 @@ class TestLiveFS(TestCaseWithFactory):
         transaction.commit()
         self.assertEqual(components["registrant"], livefs.registrant)
         self.assertEqual(components["owner"], livefs.owner)
-        self.assertEqual(components["distroseries"], livefs.distroseries)
+        self.assertEqual(components["distro_series"], livefs.distro_series)
         self.assertEqual(components["name"], livefs.name)
         self.assertEqual(components["metadata"], livefs.metadata)
 
@@ -141,29 +141,29 @@ class TestLiveFS(TestCaseWithFactory):
         livefs = self.factory.makeLiveFS()
         self.assertTrue(
             getUtility(ILiveFSSet).exists(
-                livefs.owner, livefs.distroseries, livefs.name))
+                livefs.owner, livefs.distro_series, livefs.name))
         self.assertFalse(
             getUtility(ILiveFSSet).exists(
-                self.factory.makePerson(), livefs.distroseries, livefs.name))
+                self.factory.makePerson(), livefs.distro_series, livefs.name))
         self.assertFalse(
             getUtility(ILiveFSSet).exists(
                 livefs.owner, self.factory.makeDistroSeries(), livefs.name))
         self.assertFalse(
             getUtility(ILiveFSSet).exists(
-                livefs.owner, livefs.distroseries, u"different"))
+                livefs.owner, livefs.distro_series, u"different"))
 
     def test_requestBuild(self):
         # requestBuild creates a new LiveFSBuild.
         livefs = self.factory.makeLiveFS()
         distroarchseries = self.factory.makeDistroArchSeries(
-            distroseries=livefs.distroseries)
+            distroseries=livefs.distro_series)
         build = livefs.requestBuild(
-            livefs.owner, livefs.distroseries.main_archive, distroarchseries,
+            livefs.owner, livefs.distro_series.main_archive, distroarchseries,
             PackagePublishingPocket.RELEASE)
         self.assertTrue(ILiveFSBuild.providedBy(build))
         self.assertEqual(livefs.owner, build.requester)
-        self.assertEqual(livefs.distroseries.main_archive, build.archive)
-        self.assertEqual(distroarchseries, build.distroarchseries)
+        self.assertEqual(livefs.distro_series.main_archive, build.archive)
+        self.assertEqual(distroarchseries, build.distro_arch_series)
         self.assertEqual(PackagePublishingPocket.RELEASE, build.pocket)
         self.assertIsNone(build.unique_key)
         self.assertIsNone(build.metadata_override)
@@ -176,7 +176,7 @@ class TestLiveFS(TestCaseWithFactory):
                 removeSecurityProxy(build).build_farm_job_id).one()
         self.assertProvides(build_queue, IBuildQueue)
         self.assertEqual(
-            livefs.distroseries.main_archive.require_virtualized,
+            livefs.distro_series.main_archive.require_virtualized,
             build_queue.virtualized)
         self.assertEqual(BuildQueueStatus.WAITING, build_queue.status)
 
@@ -184,9 +184,9 @@ class TestLiveFS(TestCaseWithFactory):
         # Build requests have a relatively low queue score (2505).
         livefs = self.factory.makeLiveFS()
         distroarchseries = self.factory.makeDistroArchSeries(
-            distroseries=livefs.distroseries)
+            distroseries=livefs.distro_series)
         build = livefs.requestBuild(
-            livefs.owner, livefs.distroseries.main_archive, distroarchseries,
+            livefs.owner, livefs.distro_series.main_archive, distroarchseries,
             PackagePublishingPocket.RELEASE)
         queue_record = build.buildqueue_record
         queue_record.score()
@@ -198,7 +198,7 @@ class TestLiveFS(TestCaseWithFactory):
         archive = self.factory.makeArchive(owner=livefs.owner)
         removeSecurityProxy(archive).relative_build_score = 100
         distroarchseries = self.factory.makeDistroArchSeries(
-            distroseries=livefs.distroseries)
+            distroseries=livefs.distro_series)
         build = livefs.requestBuild(
             livefs.owner, archive, distroarchseries,
             PackagePublishingPocket.RELEASE)
@@ -210,13 +210,13 @@ class TestLiveFS(TestCaseWithFactory):
         # requestBuild refuses if there is already a pending build.
         livefs = self.factory.makeLiveFS()
         distroarchseries = self.factory.makeDistroArchSeries(
-            distroseries=livefs.distroseries)
+            distroseries=livefs.distro_series)
         old_build = livefs.requestBuild(
-            livefs.owner, livefs.distroseries.main_archive, distroarchseries,
+            livefs.owner, livefs.distro_series.main_archive, distroarchseries,
             PackagePublishingPocket.RELEASE)
         self.assertRaises(
             LiveFSBuildAlreadyPending, livefs.requestBuild,
-            livefs.owner, livefs.distroseries.main_archive, distroarchseries,
+            livefs.owner, livefs.distro_series.main_archive, distroarchseries,
             PackagePublishingPocket.RELEASE)
         # We can build for a different archive.
         livefs.requestBuild(
@@ -224,15 +224,15 @@ class TestLiveFS(TestCaseWithFactory):
             distroarchseries, PackagePublishingPocket.RELEASE)
         # We can build for a different distroarchseries.
         livefs.requestBuild(
-            livefs.owner, livefs.distroseries.main_archive,
+            livefs.owner, livefs.distro_series.main_archive,
             self.factory.makeDistroArchSeries(
-                distroseries=livefs.distroseries),
+                distroseries=livefs.distro_series),
             PackagePublishingPocket.RELEASE)
         # Changing the status of the old build allows a new build.
         old_build.updateStatus(BuildStatus.BUILDING)
         old_build.updateStatus(BuildStatus.FULLYBUILT)
         livefs.requestBuild(
-            livefs.owner, livefs.distroseries.main_archive, distroarchseries,
+            livefs.owner, livefs.distro_series.main_archive, distroarchseries,
             PackagePublishingPocket.RELEASE)
 
     def test_getBuilds(self):
@@ -286,8 +286,9 @@ class TestLiveFSWebservice(TestCaseWithFactory):
         owner_url = api_url(owner)
         logout()
         response = webservice.named_post(
-            "/livefses", "new", owner=owner_url, distroseries=distroseries_url,
-            name="flavour-desktop", metadata=metadata)
+            "/livefses", "new", owner=owner_url,
+            distro_series=distroseries_url, name="flavour-desktop",
+            metadata=metadata)
         self.assertEqual(201, response.status)
         livefs = webservice.get(response.getHeader("Location")).jsonBody()
         return livefs, distroseries_url
@@ -309,7 +310,7 @@ class TestLiveFSWebservice(TestCaseWithFactory):
             self.assertEqual("flavour-desktop", livefs["name"])
             self.assertEqual(
                 self.webservice.getAbsoluteUrl(distroseries_url),
-                livefs["distroseries_link"])
+                livefs["distro_series_link"])
             self.assertEqual({"project": "flavour"}, livefs["metadata"])
 
     def test_duplicate(self):
@@ -319,8 +320,9 @@ class TestLiveFSWebservice(TestCaseWithFactory):
         with person_logged_in(self.person):
             owner_url = api_url(team)
         response = self.webservice.named_post(
-            "/livefses", "new", owner=owner_url, distroseries=distroseries_url,
-            name="flavour-desktop", metadata={})
+            "/livefses", "new", owner=owner_url,
+            distro_series=distroseries_url, name="flavour-desktop",
+            metadata={})
         self.assertEqual(400, response.status)
         self.assertEqual(
             "There is already a live filesystem with the same name, owner, "
@@ -340,14 +342,14 @@ class TestLiveFSWebservice(TestCaseWithFactory):
         logout()
         response = self.webservice.named_post(
             "/livefses", "new", owner=other_person_url,
-            distroseries=distroseries_url, name="dummy", metadata={})
+            distro_series=distroseries_url, name="dummy", metadata={})
         self.assertEqual(401, response.status)
         self.assertEqual(
             "Test Person cannot create live filesystems owned by Other "
             "Person.", response.body)
         response = self.webservice.named_post(
             "/livefses", "new", owner=other_team_url,
-            distroseries=distroseries_url, name="dummy", metadata={})
+            distro_series=distroseries_url, name="dummy", metadata={})
         self.assertEqual(401, response.status)
         self.assertEqual(
             "Test Person is not a member of Other Team.", response.body)
@@ -363,7 +365,7 @@ class TestLiveFSWebservice(TestCaseWithFactory):
         livefs, _ = self.makeLiveFS(distroseries=distroseries)
         response = self.webservice.named_post(
             livefs["self_link"], "requestBuild", archive=archive_url,
-            distroarchseries=distroarchseries_url, pocket="Release")
+            distro_arch_series=distroarchseries_url, pocket="Release")
         self.assertEqual(201, response.status)
         build = self.webservice.get(response.getHeader("Location")).jsonBody()
         self.assertEqual(
@@ -384,11 +386,11 @@ class TestLiveFSWebservice(TestCaseWithFactory):
         livefs, _ = self.makeLiveFS(distroseries=distroseries)
         response = self.webservice.named_post(
             livefs["self_link"], "requestBuild", archive=archive_url,
-            distroarchseries=distroarchseries_url, pocket="Release")
+            distro_arch_series=distroarchseries_url, pocket="Release")
         self.assertEqual(201, response.status)
         response = self.webservice.named_post(
             livefs["self_link"], "requestBuild", archive=archive_url,
-            distroarchseries=distroarchseries_url, pocket="Release")
+            distro_arch_series=distroarchseries_url, pocket="Release")
         self.assertEqual(400, response.status)
         self.assertEqual(
             "An identical build of this live filesystem image is already "
@@ -412,7 +414,7 @@ class TestLiveFSWebservice(TestCaseWithFactory):
             webservice=other_webservice)
         response = self.webservice.named_post(
             livefs["self_link"], "requestBuild", archive=archive_url,
-            distroarchseries=distroarchseries_url, pocket="Release")
+            distro_arch_series=distroarchseries_url, pocket="Release")
         self.assertEqual(401, response.status)
         self.assertEqual(
             "Test Person cannot create live filesystem builds owned by Other "
@@ -435,7 +437,7 @@ class TestLiveFSWebservice(TestCaseWithFactory):
         for archive_url in archive_urls:
             response = self.webservice.named_post(
                 livefs["self_link"], "requestBuild", archive=archive_url,
-                distroarchseries=distroarchseries_url, pocket="Proposed")
+                distro_arch_series=distroarchseries_url, pocket="Proposed")
             self.assertEqual(201, response.status)
             build = self.webservice.get(
                 response.getHeader("Location")).jsonBody()

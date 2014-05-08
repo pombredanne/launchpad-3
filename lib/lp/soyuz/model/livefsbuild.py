@@ -109,8 +109,9 @@ class LiveFSBuild(PackageBuildMixin, Storm):
     archive_id = Int(name='archive', allow_none=False)
     archive = Reference(archive_id, 'Archive.id')
 
-    distroarchseries_id = Int(name='distroarchseries', allow_none=False)
-    distroarchseries = Reference(distroarchseries_id, 'DistroArchSeries.id')
+    distro_arch_series_id = Int(name='distro_arch_series', allow_none=False)
+    distro_arch_series = Reference(
+        distro_arch_series_id, 'DistroArchSeries.id')
 
     pocket = DBEnum(enum=PackagePublishingPocket, allow_none=False)
 
@@ -145,8 +146,8 @@ class LiveFSBuild(PackageBuildMixin, Storm):
     failure_count = Int(name='failure_count', allow_none=False)
 
     def __init__(self, build_farm_job, requester, livefs, archive,
-                 distroarchseries, pocket, processor, virtualized, unique_key,
-                 metadata_override, date_created):
+                 distro_arch_series, pocket, processor, virtualized,
+                 unique_key, metadata_override, date_created):
         """Construct a `LiveFSBuild`."""
         if not getFeatureFlag(LIVEFS_FEATURE_FLAG):
             raise LiveFSFeatureDisabled
@@ -155,7 +156,7 @@ class LiveFSBuild(PackageBuildMixin, Storm):
         self.requester = requester
         self.livefs = livefs
         self.archive = archive
-        self.distroarchseries = distroarchseries
+        self.distro_arch_series = distro_arch_series
         self.pocket = pocket
         self.processor = processor
         self.virtualized = virtualized
@@ -176,23 +177,23 @@ class LiveFSBuild(PackageBuildMixin, Storm):
 
     @property
     def title(self):
-        das = self.distroarchseries
+        das = self.distro_arch_series
         name = self.livefs.name
         if self.unique_key is not None:
             name += " (%s)" % self.unique_key
-        return "%s build of %s in %s %s %s" % (
+        return "%s build of %s live filesystem in %s %s %s" % (
             das.architecturetag, name, das.distroseries.distribution.name,
             das.distroseries.name, self.pocket.name)
 
     @property
     def distribution(self):
         """See `IPackageBuild`."""
-        return self.distroarchseries.distroseries.distribution
+        return self.distro_arch_series.distroseries.distribution
 
     @property
     def distro_series(self):
         """See `IPackageBuild`."""
-        return self.distroarchseries.distroseries
+        return self.distro_arch_series.distroseries
 
     @property
     def current_component(self):
@@ -219,7 +220,9 @@ class LiveFSBuild(PackageBuildMixin, Storm):
     @property
     def can_be_rescored(self):
         """See `ILiveFSBuild`."""
-        return self.status is BuildStatus.NEEDSBUILD
+        return (
+            self.buildqueue_record is not None and
+            self.status is BuildStatus.NEEDSBUILD)
 
     @property
     def can_be_cancelled(self):
@@ -256,7 +259,7 @@ class LiveFSBuild(PackageBuildMixin, Storm):
         result = store.find(
             (LiveFSBuild.date_started, LiveFSBuild.date_finished),
             LiveFSBuild.livefs == self.livefs_id,
-            LiveFSBuild.distroarchseries == self.distroarchseries_id,
+            LiveFSBuild.distro_arch_series == self.distro_arch_series_id,
             LiveFSBuild.status == BuildStatus.FULLYBUILT)
         result.order_by(Desc(LiveFSBuild.date_finished))
         durations = [row[1] - row[0] for row in result[:9]]
@@ -343,7 +346,7 @@ class LiveFSBuild(PackageBuildMixin, Storm):
 class LiveFSBuildSet(SpecificBuildFarmJobSourceMixin):
     implements(ILiveFSBuildSet)
 
-    def new(self, requester, livefs, archive, distroarchseries, pocket,
+    def new(self, requester, livefs, archive, distro_arch_series, pocket,
             unique_key=None, metadata_override=None, date_created=DEFAULT):
         """See `ILiveFSBuildSet`."""
         store = IMasterStore(LiveFSBuild)
@@ -351,8 +354,8 @@ class LiveFSBuildSet(SpecificBuildFarmJobSourceMixin):
             LiveFSBuild.job_type, BuildStatus.NEEDSBUILD, date_created, None,
             archive)
         livefsbuild = LiveFSBuild(
-            build_farm_job, requester, livefs, archive, distroarchseries,
-            pocket, distroarchseries.processor, archive.require_virtualized,
+            build_farm_job, requester, livefs, archive, distro_arch_series,
+            pocket, distro_arch_series.processor, archive.require_virtualized,
             unique_key, metadata_override, date_created)
         store.add(livefsbuild)
         return livefsbuild

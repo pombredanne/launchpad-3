@@ -173,12 +173,12 @@ class TestLiveFSBuild(TestCaseWithFactory):
         # for estimates.
         self.factory.makeLiveFSBuild(
             requester=self.build.requester, livefs=self.build.livefs,
-            distroarchseries=self.build.distroarchseries,
+            distroarchseries=self.build.distro_arch_series,
             status=BuildStatus.FULLYBUILT, duration=timedelta(seconds=335))
         for i in range(3):
             self.factory.makeLiveFSBuild(
                 requester=self.build.requester, livefs=self.build.livefs,
-                distroarchseries=self.build.distroarchseries,
+                distroarchseries=self.build.distro_arch_series,
                 status=BuildStatus.FAILEDTOBUILD,
                 duration=timedelta(seconds=20))
         self.assertEqual(335, self.build.estimateDuration().seconds)
@@ -246,9 +246,10 @@ class TestLiveFSBuild(TestCaseWithFactory):
             config.canonical.noreply_from_address, notification["From"])
         self.assertEqual(
             "Person <%s>" % person.preferredemail.email, notification["To"])
+        subject = notification["Subject"].replace("\n ", " ")
         self.assertEqual(
-            "[LiveFS build #%d] i386 build of livefs-1 in distro unstable "
-            "RELEASE" % build.id, notification["Subject"])
+            "[LiveFS build #%d] i386 build of livefs-1 live filesystem in "
+            "distro unstable RELEASE" % build.id, subject)
         self.assertEqual(
             "Requester", notification["X-Launchpad-Message-Rationale"])
         self.assertEqual(
@@ -350,15 +351,15 @@ class TestLiveFSBuildWebservice(TestCaseWithFactory):
             self.assertEqual(
                 self.getURL(db_build.archive), build["archive_link"])
             self.assertEqual(
-                self.getURL(db_build.distroarchseries),
-                build["distroarchseries_link"])
+                self.getURL(db_build.distro_arch_series),
+                build["distro_arch_series_link"])
             self.assertEqual("Release", build["pocket"])
             self.assertEqual("foo", build["unique_key"])
             self.assertEqual(
                 {"image_format": "plain"}, build["metadata_override"])
             self.assertEqual("20140425-103800", build["version"])
             self.assertIsNone(build["score"])
-            self.assertTrue(build["can_be_rescored"])
+            self.assertFalse(build["can_be_rescored"])
             self.assertFalse(build["can_be_cancelled"])
 
     def test_public(self):
