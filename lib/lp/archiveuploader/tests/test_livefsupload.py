@@ -40,7 +40,7 @@ class TestLiveFSBuildUploads(TestUploadProcessorBase):
             requester=self.livefs.owner, livefs=self.livefs,
             archive=self.factory.makeArchive(
                 distribution=self.ubuntu, owner=self.livefs.owner),
-            distroarchseries=self.breezy["i386"],
+            distro_arch_series=self.breezy["i386"],
             pocket=PackagePublishingPocket.RELEASE)
         self.build.updateStatus(BuildStatus.UPLOADING)
         Store.of(self.build).flush()

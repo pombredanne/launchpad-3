@@ -730,7 +730,7 @@
     </browser:pages>
     <browser:url
         for="lp.soyuz.interfaces.livefs.ILiveFS"
-        path_expression="string:+livefs/${distroseries/distribution/name}/${distroseries/name}/${name}"
+        path_expression="string:+livefs/${distro_series/distribution/name}/${distro_series/name}/${name}"
         attribute_to_parent="owner"
         />
     <browser:navigation

@@ -86,14 +86,14 @@ class LiveFS(Storm):
     owner_id = Int(name='owner', allow_none=False)
     owner = Reference(owner_id, 'Person.id')
 
-    distroseries_id = Int(name='distroseries', allow_none=False)
-    distroseries = Reference(distroseries_id, 'DistroSeries.id')
+    distro_series_id = Int(name='distro_series', allow_none=False)
+    distro_series = Reference(distro_series_id, 'DistroSeries.id')
 
     name = Unicode(name='name', allow_none=False)
 
     metadata = JSON('json_data')
 
-    def __init__(self, registrant, owner, distroseries, name, metadata,
+    def __init__(self, registrant, owner, distro_series, name, metadata,
                  date_created):
         """Construct a `LiveFS`."""
         if not getFeatureFlag(LIVEFS_FEATURE_FLAG):
@@ -101,13 +101,13 @@ class LiveFS(Storm):
         super(LiveFS, self).__init__()
         self.registrant = registrant
         self.owner = owner
-        self.distroseries = distroseries
+        self.distro_series = distro_series
         self.name = name
         self.metadata = metadata
         self.date_created = date_created
         self.date_last_modified = date_created
 
-    def requestBuild(self, requester, archive, distroarchseries, pocket,
+    def requestBuild(self, requester, archive, distro_arch_series, pocket,
                      unique_key=None, metadata_override=None):
         """See `ILiveFS`."""
         if not requester.inTeam(self.owner):
@@ -119,7 +119,7 @@ class LiveFS(Storm):
             LiveFSBuild,
             LiveFSBuild.livefs_id == self.id,
             LiveFSBuild.archive_id == archive.id,
-            LiveFSBuild.distroarchseries_id == distroarchseries.id,
+            LiveFSBuild.distro_arch_series_id == distro_arch_series.id,
             LiveFSBuild.pocket == pocket,
             LiveFSBuild.unique_key == unique_key,
             LiveFSBuild.status == BuildStatus.NEEDSBUILD)
@@ -127,7 +127,7 @@ class LiveFS(Storm):
             raise LiveFSBuildAlreadyPending
 
         build = getUtility(ILiveFSBuildSet).new(
-            requester, self, archive, distroarchseries, pocket,
+            requester, self, archive, distro_arch_series, pocket,
             unique_key=unique_key, metadata_override=metadata_override)
         build.queueBuild()
         return build
@@ -182,7 +182,7 @@ class LiveFSSet:
 
     implements(ILiveFSSet)
 
-    def new(self, registrant, owner, distroseries, name, metadata,
+    def new(self, registrant, owner, distro_series, name, metadata,
             date_created=DEFAULT):
         """See `ILiveFSSet`."""
         if not registrant.inTeam(owner):
@@ -197,7 +197,7 @@ class LiveFSSet:
 
         store = IMasterStore(LiveFS)
         livefs = LiveFS(
-            registrant, owner, distroseries, name, metadata, date_created)
+            registrant, owner, distro_series, name, metadata, date_created)
         store.add(livefs)
 
         try:
@@ -207,17 +207,17 @@ class LiveFSSet:
 
         return livefs
 
-    def exists(self, owner, distroseries, name):
+    def exists(self, owner, distro_series, name):
         """See `ILiveFSSet`."""
-        return self.get(owner, distroseries, name) is not None
+        return self.get(owner, distro_series, name) is not None
 
-    def get(self, owner, distroseries, name):
+    def get(self, owner, distro_series, name):
         """See `ILiveFSSet`."""
         store = IStore(LiveFS)
         return store.find(
             LiveFS,
             LiveFS.owner == owner,
-            LiveFS.distroseries == distroseries,
+            LiveFS.distro_series == distro_series,
             LiveFS.name == name).one()
 
     def _findOrRaise(self, error, name, finder, *args):
@@ -230,7 +230,7 @@ class LiveFSSet:
             raise error(name)
         return result
 
-    def interpret(self, owner_name, distribution_name, distroseries_name,
+    def interpret(self, owner_name, distribution_name, distro_series_name,
                   name):
         """See `ILiveFSSet`."""
         owner = self._findOrRaise(
@@ -238,10 +238,10 @@ class LiveFSSet:
         distribution = self._findOrRaise(
             NoSuchDistribution, distribution_name,
             getUtility(IDistributionSet).getByName)
-        distroseries = self._findOrRaise(
-            NoSuchDistroSeries, distroseries_name,
+        distro_series = self._findOrRaise(
+            NoSuchDistroSeries, distro_series_name,
             getUtility(IDistroSeriesSet).queryByName, distribution)
-        return self.get(owner, distroseries, name)
+        return self.get(owner, distro_series, name)
 
     def getAll(self):
         """See `ILiveFSSet`."""

@@ -24,8 +24,8 @@ class TestLiveFSNavigation(TestCaseWithFactory):
         livefs = self.factory.makeLiveFS()
         obj, _, _ = test_traverse(
             "http://api.launchpad.dev/devel/~%s/+livefs/%s/%s/%s" % (
-                livefs.owner.name, livefs.distroseries.distribution.name,
-                livefs.distroseries.name, livefs.name))
+                livefs.owner.name, livefs.distro_series.distribution.name,
+                livefs.distro_series.name, livefs.name))
         self.assertEqual(livefs, obj)
 
 
@@ -41,12 +41,12 @@ class TestLiveFSSetNavigation(TestCaseWithFactory):
         livefs = self.factory.makeLiveFS()
         _, view, request = test_traverse(
             "http://launchpad.dev/livefses/%s/%s/%s/%s" % (
-                livefs.owner.name, livefs.distroseries.distribution.name,
-                livefs.distroseries.name, livefs.name))
+                livefs.owner.name, livefs.distro_series.distribution.name,
+                livefs.distro_series.name, livefs.name))
         view()
         self.assertEqual(301, request.response.getStatus())
         self.assertEqual(
             "http://launchpad.dev/~%s/+livefs/%s/%s/%s" % (
-                livefs.owner.name, livefs.distroseries.distribution.name,
-                livefs.distroseries.name, livefs.name),
+                livefs.owner.name, livefs.distro_series.distribution.name,
+                livefs.distro_series.name, livefs.name),
             request.response.getHeader("Location"))

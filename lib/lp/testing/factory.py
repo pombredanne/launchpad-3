@@ -4362,10 +4362,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             livefs = self.makeLiveFS(
                 registrant=registrant, distroseries=distroseries, **kwargs)
         if archive is None:
-            archive = livefs.distroseries.main_archive
+            archive = livefs.distro_series.main_archive
         if distroarchseries is None:
             distroarchseries = self.makeDistroArchSeries(
-                distroseries=livefs.distroseries)
+                distroseries=livefs.distro_series)
         if pocket is None:
             pocket = PackagePublishingPocket.RELEASE
         livefsbuild = getUtility(ILiveFSBuildSet).new(

@@ -173,12 +173,12 @@ class TestLiveFSBuild(TestCaseWithFactory):
         # for estimates.
         self.factory.makeLiveFSBuild(
             requester=self.build.requester, livefs=self.build.livefs,
-            distroarchseries=self.build.distroarchseries,
+            distroarchseries=self.build.distro_arch_series,
             status=BuildStatus.FULLYBUILT, duration=timedelta(seconds=335))
         for i in range(3):
             self.factory.makeLiveFSBuild(
                 requester=self.build.requester, livefs=self.build.livefs,
-                distroarchseries=self.build.distroarchseries,
+                distroarchseries=self.build.distro_arch_series,
                 status=BuildStatus.FAILEDTOBUILD,
                 duration=timedelta(seconds=20))
         self.assertEqual(335, self.build.estimateDuration().seconds)
@@ -351,8 +351,8 @@ class TestLiveFSBuildWebservice(TestCaseWithFactory):
             self.assertEqual(
                 self.getURL(db_build.archive), build["archive_link"])
             self.assertEqual(
-                self.getURL(db_build.distroarchseries),
-                build["distroarchseries_link"])
+                self.getURL(db_build.distro_arch_series),
+                build["distro_arch_series_link"])
             self.assertEqual("Release", build["pocket"])
             self.assertEqual("foo", build["unique_key"])
             self.assertEqual(
