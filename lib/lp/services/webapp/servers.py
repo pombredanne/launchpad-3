@@ -592,9 +592,9 @@ class BasicLaunchpadRequest(LaunchpadBrowserRequestMixin):
         if self.strict_transport_security:
             # And tell browsers that we always use SSL unless we're on
             # an insecure vhost.
-            # 2592000 = 30 days in seconds
+            # 15552000 = 180 days in seconds
             self.response.setHeader(
-                'Strict-Transport-Security', 'max-age=2592000')
+                'Strict-Transport-Security', 'max-age=15552000')
 
     @property
     def stepstogo(self):
