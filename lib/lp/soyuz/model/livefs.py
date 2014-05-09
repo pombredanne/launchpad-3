@@ -209,9 +209,9 @@ class LiveFSSet:
 
     def exists(self, owner, distro_series, name):
         """See `ILiveFSSet`."""
-        return self.get(owner, distro_series, name) is not None
+        return self.getByName(owner, distro_series, name) is not None
 
-    def get(self, owner, distro_series, name):
+    def getByName(self, owner, distro_series, name):
         """See `ILiveFSSet`."""
         store = IStore(LiveFS)
         return store.find(
@@ -241,7 +241,7 @@ class LiveFSSet:
         distro_series = self._findOrRaise(
             NoSuchDistroSeries, distro_series_name,
             getUtility(IDistroSeriesSet).queryByName, distribution)
-        return self.get(owner, distro_series, name)
+        return self.getByName(owner, distro_series, name)
 
     def getAll(self):
         """See `ILiveFSSet`."""

@@ -27,9 +27,11 @@ from lazr.restful.declarations import (
     export_as_webservice_collection,
     export_as_webservice_entry,
     export_factory_operation,
+    export_read_operation,
     exported,
     operation_for_version,
     operation_parameters,
+    operation_returns_entry,
     REQUEST_USER,
     )
 from lazr.restful.fields import (
@@ -50,6 +52,7 @@ from lp import _
 from lp.app.validators.name import name_validator
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.role import IHasOwner
 from lp.services.fields import (
     PersonChoice,
@@ -221,11 +224,19 @@ class ILiveFSSet(Interface):
     def exists(owner, distro_series, name):
         """Check to see if a matching live filesystem exists."""
 
-    def get(owner, distro_series, name):
+    @operation_parameters(
+        owner=Reference(IPerson, title=_("Owner"), required=True),
+        distro_series=Reference(
+            IDistroSeries, title=_("Distroseries"), required=True),
+        name=TextLine(title=_("Live filesystem name"), required=True))
+    @operation_returns_entry(ILiveFS)
+    @export_read_operation()
+    @operation_for_version("devel")
+    def getByName(owner, distro_series, name):
         """Return the appropriate `ILiveFS` for the given objects."""
 
     def interpret(owner_name, distribution_name, distro_series_name, name):
-        """Like `get`, but takes names of objects."""
+        """Like `getByName`, but takes names of objects."""
 
     @collection_default_content()
     def getAll():

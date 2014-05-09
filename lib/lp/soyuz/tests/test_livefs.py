@@ -450,7 +450,7 @@ class TestLiveFSWebservice(TestCaseWithFactory):
         livefs = self.webservice.get(livefs["self_link"]).jsonBody()
 
         with person_logged_in(self.person):
-            db_livefs = getUtility(ILiveFSSet).get(
+            db_livefs = getUtility(ILiveFSSet).getByName(
                 self.person, distroseries, livefs["name"])
             db_builds = list(db_livefs.builds)
             db_builds[0].updateStatus(
