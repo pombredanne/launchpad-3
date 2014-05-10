@@ -734,9 +734,8 @@ class TestSlaveWithLibrarian(TestCaseWithFactory):
             # Called back when getFiles finishes.  Make sure all the
             # content is as expected.
             for sha1, local_file in files:
-                file = open(local_file)
-                self.assertEqual(content_map[sha1], file.read())
-                file.close()
+                with open(local_file) as f:
+                    self.assertEqual(content_map[sha1], f.read())
 
         def finished_uploading(ignored):
             d = slave.getFiles(files)
