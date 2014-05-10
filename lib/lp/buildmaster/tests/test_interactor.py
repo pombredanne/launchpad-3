@@ -693,8 +693,7 @@ class TestSlaveWithLibrarian(TestCaseWithFactory):
         self.layer.txn.commit()
         self.slave_helper.getServerSlave()
         slave = self.slave_helper.getClientSlave()
-        d = slave.ensurepresent(
-            lf.content.sha1, lf.http_url, "", "")
+        d = slave.ensurepresent(lf.content.sha1, lf.http_url, "", "")
         d.addCallback(self.assertEqual, [True, 'Download'])
         return d
 
@@ -710,8 +709,7 @@ class TestSlaveWithLibrarian(TestCaseWithFactory):
             self.slave_helper.BASE_URL, lf.content.sha1)
         self.slave_helper.getServerSlave()
         slave = self.slave_helper.getClientSlave()
-        d = slave.ensurepresent(
-            lf.content.sha1, lf.http_url, "", "")
+        d = slave.ensurepresent(lf.content.sha1, lf.http_url, "", "")
 
         def check_file(ignored):
             d = getPage(expected_url.encode('utf8'))
