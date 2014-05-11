@@ -14,6 +14,7 @@ __all__ = [
 from twisted.internet import defer
 from zope.component import adapts
 from zope.interface import implements
+from zope.security.proxy import removeSecurityProxy
 
 from lp.buildmaster.interfaces.builder import CannotBuild
 from lp.buildmaster.interfaces.buildfarmjobbehaviour import (
@@ -81,9 +82,12 @@ class LiveFSBuildBehaviour(BuildFarmJobBehaviourBase):
         Return the extra arguments required by the slave for the given build.
         """
         build = self.build
-        args = dict(build.livefs.metadata)
+        # Non-trivial metadata values may have been security-wrapped, which
+        # is pointless here and just gets in the way of xmlrpclib
+        # serialisation.
+        args = dict(removeSecurityProxy(build.livefs.metadata))
         if build.metadata_override is not None:
-            args.update(build.metadata_override)
+            args.update(removeSecurityProxy(build.metadata_override))
         args["suite"] = build.distro_series.getSuite(build.pocket)
         args["arch_tag"] = build.distro_arch_series.architecturetag
         args["datestamp"] = build.version

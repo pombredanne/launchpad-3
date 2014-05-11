@@ -19,7 +19,10 @@ import transaction
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase as TrialTestCase
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
+from zope.security.proxy import (
+    Proxy,
+    removeSecurityProxy,
+    )
 
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.builder import CannotBuild
@@ -155,6 +158,15 @@ class TestLiveFSBuildBehaviour(TestCaseWithFactory):
             "subproject": "special",
             "suite": "unstable",
             }, job._extraBuildArgs())
+
+    def test_extraBuildArgs_no_security_proxy(self):
+        # _extraBuildArgs returns an object without security wrapping, even
+        # if values in the metadata are (say) lists and hence get proxied by
+        # Zope.
+        job = self.makeJob(metadata={"lb_args": ["--option=value"]})
+        args = job._extraBuildArgs()
+        self.assertEqual(["--option=value"], args["lb_args"])
+        self.assertIsNot(Proxy, type(args["lb_args"]))
 
     @run_test_with(AsynchronousDeferredRunTest)
     @defer.inlineCallbacks
