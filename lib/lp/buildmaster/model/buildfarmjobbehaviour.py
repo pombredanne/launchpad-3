@@ -203,7 +203,7 @@ class BuildFarmJobBehaviourBase:
         os.makedirs(upload_path)
 
         successful_copy_from_slave = True
-        filenames_to_download = {}
+        filenames_to_download = []
         for filename in filemap:
             logger.info("Grabbing file: %s" % filename)
             out_file_name = os.path.join(upload_path, filename)
@@ -216,7 +216,7 @@ class BuildFarmJobBehaviourBase:
                     "A slave tried to upload the file '%s' "
                     "for the build %d." % (filename, build.id))
                 break
-            filenames_to_download[filemap[filename]] = out_file_name
+            filenames_to_download.append((filemap[filename], out_file_name))
         yield self._slave.getFiles(filenames_to_download)
 
         status = (
