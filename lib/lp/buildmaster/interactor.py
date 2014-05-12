@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -138,18 +138,17 @@ class BuilderSlave(object):
         # change it.
         return downloadPage(file_url, file_to_write, followRedirect=0)
 
-    def getFiles(self, filemap):
+    def getFiles(self, files):
         """Fetch many files from the builder.
 
-        :param filemap: A Dictionary containing key values of the builder
-            file name to retrieve, which maps to a value containing the
-            file name or file object to write the file to.
+        :param files: A sequence of pairs of the builder file name to
+            retrieve and the file name or file object to write the file to.
 
         :return: A DeferredList that calls back when the download is done.
         """
         dl = defer.gatherResults([
-            self.getFile(builder_file, filemap[builder_file])
-            for builder_file in filemap])
+            self.getFile(builder_file, local_file)
+            for builder_file, local_file in files])
         return dl
 
     def resume(self, clock=None):
