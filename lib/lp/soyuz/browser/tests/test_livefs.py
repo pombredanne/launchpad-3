@@ -27,26 +27,3 @@ class TestLiveFSNavigation(TestCaseWithFactory):
                 livefs.owner.name, livefs.distro_series.distribution.name,
                 livefs.distro_series.name, livefs.name))
         self.assertEqual(livefs, obj)
-
-
-class TestLiveFSSetNavigation(TestCaseWithFactory):
-
-    layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        super(TestLiveFSSetNavigation, self).setUp()
-        self.useFixture(FeatureFixture({LIVEFS_FEATURE_FLAG: u"on"}))
-
-    def test_livefsset_redirects(self):
-        livefs = self.factory.makeLiveFS()
-        _, view, request = test_traverse(
-            "http://launchpad.dev/livefses/%s/%s/%s/%s" % (
-                livefs.owner.name, livefs.distro_series.distribution.name,
-                livefs.distro_series.name, livefs.name))
-        view()
-        self.assertEqual(301, request.response.getStatus())
-        self.assertEqual(
-            "http://launchpad.dev/~%s/+livefs/%s/%s/%s" % (
-                livefs.owner.name, livefs.distro_series.distribution.name,
-                livefs.distro_series.name, livefs.name),
-            request.response.getHeader("Location"))

@@ -742,10 +742,6 @@
         path_expression="string:livefses"
         parent_utility="lp.services.webapp.interfaces.ILaunchpadRoot"
         />
-    <browser:navigation
-        module="lp.soyuz.browser.livefs"
-        classes="LiveFSSetNavigation"
-        />
     <browser:url
         for="lp.soyuz.interfaces.livefsbuild.ILiveFSBuild"
         path_expression="string:+livefsbuild/${id}"
