@@ -102,7 +102,7 @@ class CodeReviewDisplayComment(MessageComment):
     # rely on the fixture to enable/disable the flag, but when cached
     # context/previewdiff_id does not change after the first access).
     # This needs a solution before landing!
-    @property
+    @cachedproperty
     def previewdiff_id(self):
         """`PreviewDiff.id` of the inline comments made in this context.
 
