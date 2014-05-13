@@ -224,7 +224,7 @@ td.inline-comment {
   font-family: Ubuntu,"Bitstream Vera Sans","DejaVu Sans",Tahoma,sans-serif;
   font-size: 12px;
   padding: 0 12px 0;
-  word-break: break-word;
+  word-break: break-all;
 }
 
 .inline-comment>div { line-height: 25px; }
