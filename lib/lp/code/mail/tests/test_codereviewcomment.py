@@ -448,30 +448,38 @@ class TestInlineCommentsSection(testtools.TestCase):
         comments = {'1': 'Foo'}
         self.assertEqual(
             ['> +++ bar\t1969-12-31 19:00:00.000000000 -0500',
+             '',
              'Foo',
+             '',
              '> @@ -1,3 +0,0 @@',
              '> -a'],
-            self.getSection(comments).splitlines()[4:8])
+            self.getSection(comments).splitlines()[4:10])
 
     def test_multi_line_comment(self):
         # Inline comments with multiple lines are rendered appropriately.
         comments = {'1': 'Foo\nBar'}
         self.assertEqual(
             ['> +++ bar\t1969-12-31 19:00:00.000000000 -0500',
+             '',
              'Foo',
              'Bar',
+             '',
              '> @@ -1,3 +0,0 @@'],
-            self.getSection(comments).splitlines()[4:8])
+            self.getSection(comments).splitlines()[4:10])
 
     def test_multiple_comments(self):
         # Multiple inline comments are redered appropriately.
         comments = {'1': 'Foo', '2': 'Bar'}
         self.assertEqual(
             ['> +++ bar\t1969-12-31 19:00:00.000000000 -0500',
+             '',
              'Foo',
+             '',
              '> @@ -1,3 +0,0 @@',
-             'Bar'],
-            self.getSection(comments).splitlines()[4:8])
+             '',
+             'Bar',
+             ''],
+            self.getSection(comments).splitlines()[4:12])
 
     def test_unicode_comments(self):
         # inline comments section is unicode and will be
@@ -479,7 +487,9 @@ class TestInlineCommentsSection(testtools.TestCase):
         comments = {'1': u'Polui\xe7\xe3o\u00a9 not \uf200 material!'}
         self.assertEqual(
             ['> +++ bar\t1969-12-31 19:00:00.000000000 -0500',
+             '',
              u'Polui\xe7\xe3o\xa9 not \uf200 material!',
+             '',
              '> @@ -1,3 +0,0 @@',
              '> -a'],
-            self.getSection(comments).splitlines()[4:8])
+            self.getSection(comments).splitlines()[4:10])
