@@ -26,11 +26,15 @@
               tal:attributes="href context/branch_merge_proposal/fmt:url">a
               previous version</a>
             of this proposal</span>
+        <tal:not-superseded
+          condition="not: context/from_superseded"
+          omit-tag="">
         <span style="float: right;" tal:condition="context/previewdiff_id">
           <a class="inline-comment-scroller" href=""
              tal:attributes="data-previewdiff-id context/previewdiff_id"
             >View inline comments</a>
         </span>
+        </tal:not-superseded>
       </td>
 
       <td class="bug-comment-index">

@@ -189,3 +189,114 @@ shown as part of the conversation at the time they were pushed to Launchpad.
     Testing commits in conversation
     4. By ... on 2009-09-12
     and it works!
+
+
+Inline Comments
+---------------
+
+Code review inline comments was almost entirely implemented in LP
+using Javascript. So inline comments are not visible without JS support.
+Although some auxiliary artifacts, like the "View inline comments"
+scroller-link are rendered in the code view context.
+
+First we will create a fresh branch merge proposal and review comments
+owned by the test user, 'Eric'.
+
+    >>> from lp.services.features.testing import FeatureFixture
+    >>> fixture = FeatureFixture(
+    ...     {'code.inline_diff_comments.enabled': 'enabled'})
+
+    >>> login('foo.bar@canonical.com')
+    >>> fixture.setUp()
+    >>> bmp = factory.makeBranchMergeProposal()
+    >>> previewdiff = factory.makePreviewDiff(merge_proposal=bmp)
+    >>> transaction.commit()
+    >>> bmp.saveDraftInlineComment(
+    ...    previewdiff.id, eric, {'1': 'Please!'})
+    >>> url = canonical_url(bmp)
+    >>> fixture.cleanUp()
+    >>> logout()
+
+With the feature flag disabled, Eric is not bothered by the
+"publish_inline_comments" checkbox, it's is omitted.
+
+    >>> eric_browser.open(url)
+    >>> eric_browser.getControl(name='field.publish_inline_comments')
+    Traceback (most recent call last):
+    ...
+    LookupError: name 'field.publish_inline_comments'
+
+Eric can see the "publish_inline_comments" checkbox once the feature
+flag is enabled. However he wants to create an overall review comment
+and keep his draft inline comments unpublished. He creates the review
+comment with "publish_inline_comments" uncheck.
+
+    >>> fixture.setUp()
+    >>> eric_browser.open(url)
+
+    >>> eric_browser.getLink('Add a review or comment').click()
+    >>> eric_browser.getControl(
+    ...     name='field.publish_inline_comments').value = False
+    >>> eric_browser.getControl(name='field.comment').value = (
+    ...     'No inline comments for now.')
+    >>> eric_browser.getControl(name='field.actions.add').click()
+
+The review comment was created and has no inline comments associated
+(the "View inline comments" link is absent):
+
+    >>> print_comments('boardCommentDetails', eric_browser)
+    Eric the Viking (eric) wrote a moment ago: #
+
+    >>> print_comments('boardCommentBody', eric_browser)
+    No inline comments for now.
+    Reply
+
+Happy with his drafts, Eric decides to publish them by creating a
+new review comment with "publish_inline_comments" checked this time.
+
+    >>> eric_browser.getLink('Add a review or comment').click()
+    >>> eric_browser.getControl(
+    ...     name='field.publish_inline_comments').value = True
+    >>> eric_browser.getControl(name='field.comment').value = (
+    ...     'Inline comments published.')
+    >>> eric_browser.getControl(name='field.actions.add').click()
+
+His new review comment and the associated inline comments are published.
+
+    >>> print_comments('boardCommentDetails', eric_browser, index=1)
+    Eric the Viking (eric) wrote a moment ago: View inline comments #
+
+    >>> print_comments('boardCommentBody', eric_browser, index=1)
+    Inline comments published.
+    Reply
+
+If the inline comments feature flag is disabled, the scroller is not
+rendered. Obviously because there will be no inline comments rendered.
+
+    >>> fixture.cleanUp()
+
+    >>> eric_browser.open(url)
+    >>> print_comments('boardCommentDetails', eric_browser, index=1)
+    Eric the Viking (eric) wrote a moment ago: #
+
+Also, if the merge propostal gets superseeded (resubmitted, really).
+The "View inline comments" rendering is suppressed in the new context,
+because nor the orginal diff or the corresponding inline comments are
+present.
+
+    >>> login('foo.bar@canonical.com')
+    >>> new_bmp = bmp.resubmit(eric)
+    >>> new_url = canonical_url(new_bmp)
+    >>> logout()
+
+    >>> fixture.setUp()
+    >>> eric_browser.open(url)
+    >>> print_comments('boardCommentDetails', eric_browser, index=1)
+    Eric the Viking (eric) wrote a moment ago: View inline comments #
+
+    >>> eric_browser.open(new_url)
+    >>> print_comments('boardCommentDetails', eric_browser, index=1)
+    Eric the Viking (eric) wrote a moment ago:
+    Posted in a previous version of this proposal #
+
+    >>> fixture.cleanUp()

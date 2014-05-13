@@ -97,8 +97,24 @@ class CodeReviewDisplayComment(MessageComment):
         else:
             return ''
 
-    @cachedproperty
+    # XXX cprov 20140513: since the feature_flag check is done inside
+    # this property it cannot be cached for passing the tests (which
+    # rely on the fixture to enable/disable the flag, but when cached
+    # context/previewdiff_id does not change after the first access).
+    # This needs a solution before landing!
+    @property
     def previewdiff_id(self):
+        """`PreviewDiff.id` of the inline comments made in this context.
+
+        Return None if 'inline_diff_comments' feature flag is not
+        enabled or no inline comments were made in this review comment
+        context.
+        """
+        # The feature flag logic check is done here because review
+        # comments are rendered from a template fragment and 'features'
+        # variable is only available in the 'main' template/macros.
+        if not getFeatureFlag('code.inline_diff_comments.enabled'):
+            return None
         inline_comment = getUtility(
             ICodeReviewInlineCommentSet).getByReviewComment(self.comment)
         if inline_comment is not None:
@@ -296,10 +312,17 @@ class CodeReviewCommentAddView(LaunchpadFormView):
         previewdiff_id = None
         if (getFeatureFlag('code.inline_diff_comments.enabled') and
             data.get('publish_inline_comments')):
-            previewdiff_id = self.previewdiff.id
-            inline_comments = (
+            previewdiff_id = self.context.preview_diff.id
+            # XXX cprov 2014-05-13: Automatically retrieving the existing
+            # draft inline comments to satisfy the createComment() API
+            # is a problem here, because the draft dictionary is proxied
+            # in the browser domain :-/. One alternative to preserve
+            # the overwrite ability in createComment() is to do the
+            # "existing drafts" lookup there and simply pass None here.
+            from zope.security.proxy import removeSecurityProxy
+            inline_comments = removeSecurityProxy(
                 self.branch_merge_proposal.getDraftInlineComments(
-                    previewdiff_id))
+                    previewdiff_id, self.user))
         self.branch_merge_proposal.createComment(
             self.user, subject=None, content=data['comment'],
             parent=self.reply_to, vote=vote, review_type=review_type,
