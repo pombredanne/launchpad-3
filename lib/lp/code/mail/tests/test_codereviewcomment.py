@@ -247,7 +247,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
         comment = self.makeCommentWithInlineComments(
             inline_comments={'1': u'Is this from Planet Earth\xa9 ?'})
         mailer = CodeReviewCommentMailer.forCreation(comment)
-        commenter = comment.branch_merge_proposal.registrant 
+        commenter = comment.branch_merge_proposal.registrant
         ctrl = mailer.generateEmail(
             commenter.preferredemail.email, commenter)
 
@@ -257,11 +257,13 @@ class TestCodeReviewComment(TestCaseWithFactory):
             '',
             '> --- yvo/yc/pbqr/vagresnprf/qvss.cl      '
             '2009-10-01 13:25:12 +0000',
+            '',
             u'Is this from Planet Earth\xa9 ?',
+            '',
             '> +++ yvo/yc/pbqr/vagresnprf/qvss.cl      '
             '2010-02-02 15:48:56 +0000'
         ]
-        self.assertEqual(expected_lines, ctrl.body.splitlines()[1:7])
+        self.assertEqual(expected_lines, ctrl.body.splitlines()[1:9])
 
     def test_generateEmailWithInlineComments_feature_disabled(self):
         """Inline comments are not considered if the flag is not enabled."""
@@ -270,7 +272,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
         content = 'CoNtEnT'
         comment = self.makeCommentWithInlineComments(content=content)
         mailer = CodeReviewCommentMailer.forCreation(comment)
-        commenter = comment.branch_merge_proposal.registrant 
+        commenter = comment.branch_merge_proposal.registrant
         ctrl = mailer.generateEmail(
             commenter.preferredemail.email, commenter)
         # Only the comment content (footer is ignored) is included in
@@ -425,7 +427,7 @@ class TestInlineCommentsSection(testtools.TestCase):
     def test_section_header_and_footer(self):
         # The inline comments section starts with a 4-lines header
         # (empty lines and title) and ends with an empty line.
-        section = self.getSection({}).splitlines() 
+        section = self.getSection({}).splitlines()
         header = section[:5]
         self.assertEqual(
             ['',
@@ -446,30 +448,38 @@ class TestInlineCommentsSection(testtools.TestCase):
         comments = {'1': 'Foo'}
         self.assertEqual(
             ['> +++ bar\t1969-12-31 19:00:00.000000000 -0500',
+             '',
              'Foo',
+             '',
              '> @@ -1,3 +0,0 @@',
              '> -a'],
-            self.getSection(comments).splitlines()[4:8])
+            self.getSection(comments).splitlines()[4:10])
 
     def test_multi_line_comment(self):
-        # Inline comments with multiple lines are rendered appropriately. 
+        # Inline comments with multiple lines are rendered appropriately.
         comments = {'1': 'Foo\nBar'}
         self.assertEqual(
             ['> +++ bar\t1969-12-31 19:00:00.000000000 -0500',
+             '',
              'Foo',
              'Bar',
+             '',
              '> @@ -1,3 +0,0 @@'],
-            self.getSection(comments).splitlines()[4:8])
+            self.getSection(comments).splitlines()[4:10])
 
     def test_multiple_comments(self):
         # Multiple inline comments are redered appropriately.
         comments = {'1': 'Foo', '2': 'Bar'}
         self.assertEqual(
             ['> +++ bar\t1969-12-31 19:00:00.000000000 -0500',
+             '',
              'Foo',
+             '',
              '> @@ -1,3 +0,0 @@',
-             'Bar'],
-            self.getSection(comments).splitlines()[4:8])
+             '',
+             'Bar',
+             ''],
+            self.getSection(comments).splitlines()[4:12])
 
     def test_unicode_comments(self):
         # inline comments section is unicode and will be
@@ -477,7 +487,9 @@ class TestInlineCommentsSection(testtools.TestCase):
         comments = {'1': u'Polui\xe7\xe3o\u00a9 not \uf200 material!'}
         self.assertEqual(
             ['> +++ bar\t1969-12-31 19:00:00.000000000 -0500',
+             '',
              u'Polui\xe7\xe3o\xa9 not \uf200 material!',
+             '',
              '> @@ -1,3 +0,0 @@',
              '> -a'],
-            self.getSection(comments).splitlines()[4:8])
+            self.getSection(comments).splitlines()[4:10])
