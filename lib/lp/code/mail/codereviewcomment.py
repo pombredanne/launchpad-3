@@ -177,7 +177,9 @@ def build_inline_comments_section(comments, diff_text):
         result_lines.append('> {0}'.format(diff_lines[i]))
         comment = comments.get(str(i))
         if comment is not None:
+            result_lines.append('')
             result_lines.extend(comment.splitlines())
+            result_lines.append('')
 
     result_text = '\n'.join(result_lines)
 

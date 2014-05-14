@@ -376,6 +376,26 @@ class IBranchMergeProposalView(Interface):
             Revisions.
         """
 
+    def getPreviewDiff(id):
+        """Return the preview diff with the given id.
+
+        :param id: The id of the target `PreviewDiff`.
+        """
+
+    @export_read_operation()
+    @operation_parameters(
+        previewdiff_id=Int())
+    @operation_for_version('devel')
+    def getInlineComments(previewdiff_id):
+        """Return a list of inline comments related to this MP.
+
+        The return value is an list of dictionaries (objects), each one
+        representing a comment with 'line_number', 'person', 'text' and
+        'date' attributes.
+
+        :param previewdiff_id: The ID of the target `PreviewDiff`.
+        """
+
 
 class IBranchMergeProposalEdit(Interface):
 
@@ -583,20 +603,6 @@ class IBranchMergeProposalAnyAllowedPerson(Interface):
     @export_read_operation()
     @operation_parameters(
         previewdiff_id=Int())
-    @operation_for_version('devel')
-    def getInlineComments(previewdiff_id):
-        """Return a list of inline comments related to this MP.
-
-        The return value is an list of dictionaries (objects), each one
-        representing a comment with 'line_number', 'person', 'text' and
-        'date' attributes.
-
-        :param previewdiff_id: The ID of the target `PreviewDiff`.
-        """
-
-    @export_read_operation()
-    @operation_parameters(
-        previewdiff_id=Int())
     @call_with(person=REQUEST_USER)
     @operation_for_version('devel')
     def getDraftInlineComments(previewdiff_id, person):
@@ -608,12 +614,6 @@ class IBranchMergeProposalAnyAllowedPerson(Interface):
 
         :param previewdiff_id: The ID of the target `PreviewDiff`.
         :param person: The `IPerson` owner of the draft comments.
-        """
-
-    def getPreviewDiff(id):
-        """Return the preview diff with the given id.
-
-        :param id: The id of the target `PreviewDiff`.
         """
 
     @export_write_operation()
