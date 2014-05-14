@@ -115,7 +115,7 @@ class SystemErrorView(LaunchpadView):
         """Returns the given HTML inside a div of an appropriate class."""
 
         return ('<div class="highlight" style="'
-                "font-family: 'Ubuntu Mono', monospace;"
+                "font-family: monospace;"
                 ' font-size: smaller;">'
                 '%s'
                 '</div>') % html

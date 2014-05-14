@@ -27,7 +27,7 @@
  */
 div#edit-description,
 div#edit-commit_message {
-    font-family: 'Ubuntu Mono', monospace;
+    font-family: monospace;
     margin: 1em 0;
     }
 
@@ -485,7 +485,7 @@ div.logtail {
     padding: 5px;
     border: solid gray;
     border-width: 1px;
-    font-family: 'Ubuntu Mono', monospace;
+    font-family: monospace;
     border-radius: 5px;
 }
 
