@@ -169,7 +169,7 @@ pre.changelog,
 table.diff,
 .comment-text,
 .bug-activity {
-    font-family: 'Ubuntu Mono', monospace;
+    font-family: monospace;
     }
 
 .cloud-size-smallest {
