@@ -733,9 +733,50 @@
         path_expression="string:+livefs/${distro_series/distribution/name}/${distro_series/name}/${name}"
         attribute_to_parent="owner"
         />
+    <browser:defaultView
+        for="lp.soyuz.interfaces.livefs.ILiveFS"
+        name="+index"
+        />
+    <browser:page
+        for="lp.soyuz.interfaces.livefs.ILiveFS"
+        class="lp.soyuz.browser.livefs.LiveFSView"
+        permission="launchpad.View"
+        name="+index"
+        template="../templates/livefs-index.pt"
+        />
+    <browser:menus
+        module="lp.soyuz.browser.livefs"
+        classes="LiveFSNavigationMenu"
+        />
     <browser:navigation
         module="lp.soyuz.browser.livefs"
         classes="LiveFSNavigation"
+        />
+    <browser:page
+        for="lp.registry.interfaces.person.IPerson"
+        class="lp.soyuz.browser.livefs.LiveFSAddView"
+        permission="launchpad.Edit"
+        name="+new-livefs"
+        template="../templates/livefs-new.pt"
+        />
+    <browser:page
+        for="lp.soyuz.interfaces.livefs.ILiveFS"
+        class="lp.soyuz.browser.livefs.LiveFSEditView"
+        permission="launchpad.Edit"
+        name="+edit"
+        template="../../app/templates/generic-edit.pt"/>
+    <browser:page
+        for="lp.soyuz.interfaces.livefs.ILiveFS"
+        class="lp.soyuz.browser.livefs.LiveFSHierarchy"
+        permission="zope.Public"
+        name="+hierarchy"
+        template="../../app/templates/launchpad-hierarchy.pt"
+        />
+    <adapter
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
+        for="lp.soyuz.interfaces.livefs.ILiveFS"
+        factory="lp.services.webapp.breadcrumb.NameBreadcrumb"
+        permission="zope.Public"
         />
     <browser:url
         for="lp.soyuz.interfaces.livefs.ILiveFSSet"
@@ -747,9 +788,44 @@
         path_expression="string:+livefsbuild/${id}"
         attribute_to_parent="livefs"
         />
+    <browser:menus
+        module="lp.soyuz.browser.livefsbuild"
+        classes="LiveFSBuildContextMenu"
+        />
     <browser:navigation
         module="lp.soyuz.browser.livefsbuild"
         classes="LiveFSBuildNavigation"
+        />
+    <browser:defaultView
+        for="lp.soyuz.interfaces.livefsbuild.ILiveFSBuild"
+        name="+index"
+        />
+    <browser:page
+        for="lp.soyuz.interfaces.livefsbuild.ILiveFSBuild"
+        class="lp.soyuz.browser.livefsbuild.LiveFSBuildView"
+        permission="launchpad.View"
+        name="+index"
+        template="../templates/livefsbuild-index.pt"
+        />
+    <browser:page
+        for="lp.soyuz.interfaces.livefsbuild.ILiveFSBuild"
+        class="lp.soyuz.browser.livefsbuild.LiveFSBuildCancelView"
+        permission="launchpad.Edit"
+        name="+cancel"
+        template="../../app/templates/generic-edit.pt"
+        />
+    <browser:page
+        for="lp.soyuz.interfaces.livefsbuild.ILiveFSBuild"
+        class="lp.soyuz.browser.livefsbuild.LiveFSBuildRescoreView"
+        permission="launchpad.Admin"
+        name="+rescore"
+        template="../../app/templates/generic-edit.pt"
+        />
+    <adapter
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
+        for="lp.soyuz.interfaces.livefsbuild.ILiveFSBuild"
+        factory="lp.services.webapp.breadcrumb.TitleBreadcrumb"
+        permission="zope.Public"
         />
     </facet>
 </configure>
