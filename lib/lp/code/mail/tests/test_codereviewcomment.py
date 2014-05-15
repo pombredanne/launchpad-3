@@ -401,7 +401,7 @@ class TestInlineCommentsSection(testtools.TestCase):
         "--- bar\t2009-08-26 15:53:34.000000000 -0400\n"
         "+++ bar\t1969-12-31 19:00:00.000000000 -0500\n"
         "@@ -1,3 +0,0 @@\n"
-        "-a\n"
+        "-\xc3\xa5\n"
         "-b\n"
         "-c\n"
         "--- baz\t1969-12-31 19:00:00.000000000 -0500\n"
@@ -445,14 +445,14 @@ class TestInlineCommentsSection(testtools.TestCase):
     def test_single_line_comment(self):
         # The inline comments are correctly contextualized in the diff.
         # and prefixed with '>>> '
-        comments = {'1': 'Foo'}
+        comments = {'1': u'\u03b4\u03bf\u03ba\u03b9\u03bc\u03ae'}
         self.assertEqual(
             ['> +++ bar\t1969-12-31 19:00:00.000000000 -0500',
              '',
-             'Foo',
+             u'\u03b4\u03bf\u03ba\u03b9\u03bc\u03ae',
              '',
              '> @@ -1,3 +0,0 @@',
-             '> -a'],
+             u'> -\xe5'],
             self.getSection(comments).splitlines()[4:10])
 
     def test_multi_line_comment(self):
@@ -480,16 +480,3 @@ class TestInlineCommentsSection(testtools.TestCase):
              'Bar',
              ''],
             self.getSection(comments).splitlines()[4:12])
-
-    def test_unicode_comments(self):
-        # inline comments section is unicode and will be
-        # properly encoded for mailling later on.
-        comments = {'1': u'Polui\xe7\xe3o\u00a9 not \uf200 material!'}
-        self.assertEqual(
-            ['> +++ bar\t1969-12-31 19:00:00.000000000 -0500',
-             '',
-             u'Polui\xe7\xe3o\xa9 not \uf200 material!',
-             '',
-             '> @@ -1,3 +0,0 @@',
-             '> -a'],
-            self.getSection(comments).splitlines()[4:10])
