@@ -1,4 +1,4 @@
-# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -246,7 +246,10 @@ class PackageCopyJobDerived(BaseRunnableJob):
 
     def getErrorRecipients(self):
         """See `IPlainPackageCopyJob`."""
-        return [format_address_for_person(self.requester)]
+        recipients = [self.requester]
+        if self.sponsored is not None:
+            recipients.append(self.sponsored)
+        return [format_address_for_person(person) for person in recipients]
 
     @property
     def copy_policy(self):
