@@ -195,9 +195,8 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
     def test_getErrorRecipients_sponsored(self):
         # If there is a sponsored person, they are notified of errors too.
         job = self.makeJob(sponsored=self.factory.makePerson())
-        emails = [
-            format_address_for_person(person)
-            for person in (job.requester, job.sponsored)]
+        recipients = (job.requester, job.sponsored)
+        emails = [format_address_for_person(person) for person in recipients]
         self.assertContentEqual(emails, job.getErrorRecipients())
 
     def test_create(self):
