@@ -51,6 +51,7 @@ from lp.soyuz.interfaces.livefs import (
     LiveFSBuildAlreadyPending,
     LiveFSFeatureDisabled,
     LiveFSNotOwner,
+    NoSuchLiveFS,
     )
 from lp.soyuz.interfaces.livefsbuild import ILiveFSBuildSet
 from lp.soyuz.model.archive import Archive
@@ -207,18 +208,24 @@ class LiveFSSet:
 
         return livefs
 
-    def exists(self, owner, distro_series, name):
-        """See `ILiveFSSet`."""
-        return self.getByName(owner, distro_series, name) is not None
-
-    def getByName(self, owner, distro_series, name):
-        """See `ILiveFSSet`."""
+    def _getByName(self, owner, distro_series, name):
         store = IStore(LiveFS)
         return store.find(
             LiveFS,
             LiveFS.owner == owner,
             LiveFS.distro_series == distro_series,
             LiveFS.name == name).one()
+
+    def exists(self, owner, distro_series, name):
+        """See `ILiveFSSet`."""
+        return self._getByName(owner, distro_series, name) is not None
+
+    def getByName(self, owner, distro_series, name):
+        """See `ILiveFSSet`."""
+        livefs = self._getByName(owner, distro_series, name)
+        if livefs is None:
+            raise NoSuchLiveFS(name)
+        return livefs
 
     def _findOrRaise(self, error, name, finder, *args):
         if name is None:
