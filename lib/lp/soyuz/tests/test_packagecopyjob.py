@@ -1,4 +1,4 @@
-# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for sync package jobs."""
@@ -191,6 +191,14 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         job = self.makeJob()
         email = format_address_for_person(job.requester)
         self.assertEqual([email], job.getErrorRecipients())
+
+    def test_getErrorRecipients_sponsored(self):
+        # If there is a sponsored person, they are notified of errors too.
+        job = self.makeJob(sponsored=self.factory.makePerson())
+        emails = [
+            format_address_for_person(person)
+            for person in (job.requester, job.sponsored)]
+        self.assertContentEqual(emails, job.getErrorRecipients())
 
     def test_create(self):
         # A PackageCopyJob can be created and stores its arguments.
