@@ -354,6 +354,30 @@ class TestLiveFSWebservice(TestCaseWithFactory):
         self.assertEqual(
             "Test Person is not a member of Other Team.", response.body)
 
+    def test_getByName(self):
+        # lp.livefses.getByName returns a matching LiveFS.
+        livefs, distroseries_url = self.makeLiveFS()
+        with person_logged_in(self.person):
+            owner_url = api_url(self.person)
+        response = self.webservice.named_get(
+            "/livefses", "getByName", owner=owner_url,
+            distro_series=distroseries_url, name="flavour-desktop")
+        self.assertEqual(200, response.status)
+        self.assertEqual(livefs, response.jsonBody())
+
+    def test_getByName_missing(self):
+        # lp.livefses.getByName returns 404 for a non-existent LiveFS.
+        livefs, distroseries_url = self.makeLiveFS()
+        with person_logged_in(self.person):
+            owner_url = api_url(self.person)
+        response = self.webservice.named_get(
+            "/livefses", "getByName", owner=owner_url,
+            distro_series=distroseries_url, name="nonexistent")
+        self.assertEqual(404, response.status)
+        self.assertEqual(
+            "No such live filesystem with this owner/distroseries: "
+            "'nonexistent'.", response.body)
+
     def test_requestBuild(self):
         # Build requests can be performed and end up in livefs.builds and
         # livefs.pending_builds.

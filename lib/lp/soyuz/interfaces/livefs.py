@@ -15,6 +15,7 @@ __all__ = [
     'LiveFSBuildAlreadyPending',
     'LiveFSFeatureDisabled',
     'LiveFSNotOwner',
+    'NoSuchLiveFS',
     ]
 
 import httplib
@@ -49,6 +50,7 @@ from zope.schema import (
 from zope.security.interfaces import Unauthorized
 
 from lp import _
+from lp.app.errors import NameLookupFailed
 from lp.app.validators.name import name_validator
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -98,6 +100,11 @@ class DuplicateLiveFSName(Exception):
 @error_status(httplib.UNAUTHORIZED)
 class LiveFSNotOwner(Unauthorized):
     """The registrant/requester is not the owner or a member of its team."""
+
+
+class NoSuchLiveFS(NameLookupFailed):
+    """The requested LiveFS does not exist."""
+    _message_prefix = "No such live filesystem with this owner/distroseries"
 
 
 class ILiveFSView(Interface):
