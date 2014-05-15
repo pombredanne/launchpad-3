@@ -144,7 +144,6 @@
         <div id="add-comment-review-fields">
             Review: <tal:review replace="structure comment_form/widgets/vote"/>
             Review type: <tal:review replace="structure comment_form/widgets/review_type"/>
-            <tal:publish_inline_comments condition="features/code.inline_diff_comments.enabled">Publish inline comments: <tal:review replace="structure comment_form/widgets/publish_inline_comments" tal:condition="features/code.inline_diff_comments.enabled"/></tal:publish_inline_comments>
             <div class="actions"
                  tal:content="structure comment_form/actions/field.actions.add/render" />
         </div>
