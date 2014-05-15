@@ -594,6 +594,9 @@ table.diff .line-no {
   color: #999;
   border-right: solid 4px white;
 }
+table.diff .line-no.active {
+  background: url(/@@/edit) #f6f6f6 center left no-repeat;
+}
 table.diff .diff-chunk, table.diff .diff-file, table.diff .diff-header {
  font-weight: bold;
 }
