@@ -66,6 +66,7 @@ from lp.soyuz.interfaces.livefs import (
     ILiveFSSet,
     LIVEFS_FEATURE_FLAG,
     LiveFSFeatureDisabled,
+    NoSuchLiveFS,
     )
 from lp.soyuz.interfaces.livefsbuild import ILiveFSBuildSet
 
@@ -330,11 +331,14 @@ class LiveFSEditView(LiveFSMetadataValidatorMixin, LaunchpadEditFormView):
         distro_series = data['distro_series']
         name = data.get('name', None)
         if owner and name:
-            livefs = getUtility(ILiveFSSet).getByName(
-                owner, distro_series, name)
-            if livefs is not None and livefs != self.context:
-                self.setFieldError(
-                    'name',
-                    'There is already a live filesystem for %s owned by %s '
-                    'with this name.' % (
-                        distro_series.displayname, owner.displayname))
+            try:
+                livefs = getUtility(ILiveFSSet).getByName(
+                    owner, distro_series, name)
+                if livefs != self.context:
+                    self.setFieldError(
+                        'name',
+                        'There is already a live filesystem for %s owned by '
+                        '%s with this name.' % (
+                            distro_series.displayname, owner.displayname))
+            except NoSuchLiveFS:
+                pass
