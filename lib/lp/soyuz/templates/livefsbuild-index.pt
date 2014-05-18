@@ -85,6 +85,18 @@
         <dt>Pocket:</dt>
           <dd><span tal:replace="context/pocket/title"/></dd>
       </dl>
+      <dl>
+        <dt>Metadata overrides:</dt>
+          <dd>
+            <table class="listing compressed">
+              <tbody>
+                <tr tal:repeat="pair view/sorted_metadata_override_items">
+                  <td tal:repeat="value pair" tal:content="value"/>
+                </tr>
+              </tbody>
+            </table>
+          </dd>
+      </dl>
     </div>
   </metal:macro>
 

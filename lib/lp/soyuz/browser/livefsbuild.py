@@ -116,6 +116,12 @@ class LiveFSBuildView(LaunchpadView):
     def has_files(self):
         return bool(self.files)
 
+    @property
+    def sorted_metadata_override_items(self):
+        if self.context.metadata_override is None:
+            return []
+        return sorted(self.context.metadata_override.items())
+
 
 class LiveFSBuildCancelView(LaunchpadFormView):
     """View for cancelling a live filesystem build."""
