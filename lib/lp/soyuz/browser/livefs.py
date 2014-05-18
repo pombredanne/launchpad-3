@@ -168,6 +168,8 @@ class LiveFSView(LaunchpadView):
 
     @property
     def sorted_metadata_items(self):
+        if self.context.metadata is None:
+            return []
         return sorted(self.context.metadata.items())
 
 
