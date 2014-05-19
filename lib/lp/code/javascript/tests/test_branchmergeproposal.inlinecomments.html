@@ -72,11 +72,30 @@ GNU Affero General Public License version 3 (see the file LICENSE).
             <li>lp.code.branchmergeproposal.inlinecomments.test</li>
         </ul>
 
-      <a id="scroll-one" class="inline-comment-scroller" href=""
-         data-previewdiff-id="101">Go to One</a>
+      <div>
+        <input id="field.review_type" type="text"></input>
+        <input id="field.actions.add" type="submit" value="Save"></input>
+      </div>
 
-      <a id="scroll-two" class="inline-comment-scroller" href=""
-         data-previewdiff-id="202">Go to Two</a>
+      <table class="conversation">
+      <tr>
+        <td data-previewdiff-id="102" data-from-superseded="True"
+            data-comment-id="10">
+           Comment from superseded </td>
+      </tr><tr>
+        <td data-previewdiff-id="101" data-from-superseded="False"
+            data-comment-id="1">
+           Comment One </td>
+      </tr><tr>
+        <td data-previewdiff-id="202" data-from-superseded="False"
+            data-comment-id="2">
+           Comment Two </td>
+      </tr><tr>
+        <td data-from-superseded="False"
+            data-comment-id="3">
+           No inlines </td>
+      </tr>
+      </table>
 
       <div id="review-diff">
 
