@@ -580,7 +580,7 @@ too.
 
     >>> irc_id = sorted(webservice.get(irc_ids_link).jsonBody()['entries'])[0]
     >>> pprint_entry(irc_id)
-    network: u'irc.freenode.net'
+    network: u'chat.freenode.net'
     nickname: u'mark'
     person_link: u'http://.../~mark'
     resource_type_link: u'http://.../#irc_id'
