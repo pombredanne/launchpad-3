@@ -602,6 +602,8 @@ table.diff .diff-chunk, table.diff .diff-file, table.diff .diff-header {
 }
 table.diff .diff-added { background-color: #92ED92; }
 table.diff .diff-removed { background-color: #FF7F7F; }
+table.diff .inline-comments > td > div { margin: 0px 1em; }
+
 .back-link { margin-top: 3em; }
 
 .reviews {
