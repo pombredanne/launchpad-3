@@ -15,7 +15,7 @@
           </li>
         </ul>
       </div>
-      <div class="boardCommentBody attachmentBody">
+      <div class="attachmentBody">
         <tal:diff replace="structure view/preview_diff_text/fmt:diff" />
         <tal:diff-not-available condition="not: view/diff_available">
             The diff is not available at this time. You can reload the
