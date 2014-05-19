@@ -170,7 +170,7 @@ table.diff td.line-no,
 table.diff td.text,
 .comment-text,
 .bug-activity {
-    font-family: 'Ubuntu Mono', monospace;
+    font-family: monospace;
     }
 
 .cloud-size-smallest {

@@ -292,18 +292,9 @@ class CodeReviewCommentAddView(LaunchpadFormView):
         """Create the comment..."""
         vote = data.get('vote')
         review_type = data.get('review_type')
-        inline_comments = {}
-        previewdiff_id = None
-        if (getFeatureFlag('code.inline_diff_comments.enabled') and
-            data.get('publish_inline_comments')):
-            previewdiff_id = self.previewdiff.id
-            inline_comments = (
-                self.branch_merge_proposal.getDraftInlineComments(
-                    previewdiff_id))
         self.branch_merge_proposal.createComment(
             self.user, subject=None, content=data['comment'],
-            parent=self.reply_to, vote=vote, review_type=review_type,
-            previewdiff_id=previewdiff_id, inline_comments=inline_comments)
+            parent=self.reply_to, vote=vote, review_type=review_type)
 
     @property
     def next_url(self):
