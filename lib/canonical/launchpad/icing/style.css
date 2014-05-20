@@ -611,7 +611,7 @@ table.diff .inline-comments > td > div {
 }
 table.diff .inline-comments .yui3-ieditor { padding-right:0!important; }
 table.diff .inline-comments .yui3-ieditor-multiline .yui3-ieditor-btns .bg-top-label button.lazr-btn {
-  text-indent: -9999px;
+  word-wrap: normal;
 }
 table.diff .inline-comments .yui3-ieditor-multiline .yui3-ieditor-btns .bg-top-label {
   background-image: none!important;
