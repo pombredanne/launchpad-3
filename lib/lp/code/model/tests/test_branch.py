@@ -1408,6 +1408,40 @@ class TestBranchDeletion(TestCaseWithFactory):
             branches=[branch1, branch2])
         branch2.destroySelf(break_references=True)
 
+    def test_destroySelf_with_inline_comments_draft(self):
+        # Draft inline comments related to a deleted branch (source
+        # or target MP branch) also get removed.
+        merge_proposal = self.factory.makeBranchMergeProposal(
+            registrant=self.user, target_branch=self.branch)
+        preview_diff = self.factory.makePreviewDiff(
+            merge_proposal=merge_proposal)
+        transaction.commit()
+        self.useFixture(FeatureFixture({
+            'code.inline_diff_comments.enabled': 'enabled'}))
+        merge_proposal.saveDraftInlineComment(
+            previewdiff_id=preview_diff.id,
+            person=self.user,
+            comments={'1': 'Should vanish.'})
+        self.branch.destroySelf(break_references=True)
+
+    def test_destroySelf_with_inline_comments_published(self):
+        # Published inline comments related to a deleted branch (source
+        # or target MP branch) also get removed.
+        merge_proposal = self.factory.makeBranchMergeProposal(
+            registrant=self.user, target_branch=self.branch)
+        preview_diff = self.factory.makePreviewDiff(
+            merge_proposal=merge_proposal)
+        transaction.commit()
+        self.useFixture(FeatureFixture({
+            'code.inline_diff_comments.enabled': 'enabled'}))
+        merge_proposal.createComment(
+            owner=self.user,
+            subject='Delete me!',
+            previewdiff_id=preview_diff.id,
+            inline_comments={'1': 'Must disappear.'},
+        )
+        self.branch.destroySelf(break_references=True)
+
 
 class TestBranchDeletionConsequences(TestCase):
     """Test determination and application of branch deletion consequences."""
