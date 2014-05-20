@@ -36,6 +36,9 @@
     #add-comment-review-fields div {
       display: inline;
     }
+    .yui3-publishdrafts {
+      padding-left: 3px;
+    }
     #proposal-summary th {
       font-weight: bold;
       color: #717171;
