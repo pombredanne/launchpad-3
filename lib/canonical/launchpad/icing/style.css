@@ -609,14 +609,11 @@ table.diff .inline-comments > td > div {
   word-wrap: break-word;
   font-family: monospace;
 }
-
-table.diff .inline-comments .boardComment { width: 100%; }
-
 table.diff .inline-comments .yui3-ieditor { padding-right:0!important; }
-table.diff .yui3-ieditor-multiline .yui3-ieditor-btns .bg-top-label button.lazr-btn {
+table.diff .inline-comments .yui3-ieditor-multiline .yui3-ieditor-btns .bg-top-label button.lazr-btn {
   text-indent: -9999px;
 }
-table.diff .yui3-ieditor-multiline .yui3-ieditor-btns .bg-top-label {
+table.diff .inline-comments .yui3-ieditor-multiline .yui3-ieditor-btns .bg-top-label {
   background-image: none!important;
   margin-right: -7px!important;
   margin-top: 18px!important;
