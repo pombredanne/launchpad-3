@@ -253,7 +253,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
 
         expected_lines = [
             '',
-            'Inline comments:',
+            'Diff comments:',
             '',
             '> --- yvo/yc/pbqr/vagresnprf/qvss.cl      '
             '2009-10-01 13:25:12 +0000',
@@ -432,7 +432,7 @@ class TestInlineCommentsSection(testtools.TestCase):
         self.assertEqual(
             ['',
              '',
-             'Inline comments:',
+             'Diff comments:',
              '',
              '> +++ bar\t1969-12-31 19:00:00.000000000 -0500'],
             header)

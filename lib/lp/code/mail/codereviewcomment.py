@@ -184,4 +184,4 @@ def build_inline_comments_section(comments, diff_text):
 
     result_text = u'\n'.join(result_lines)
 
-    return '\n\nInline comments:\n\n%s\n\n' % result_text
+    return '\n\nDiff comments:\n\n%s\n\n' % result_text

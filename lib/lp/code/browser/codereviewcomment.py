@@ -17,6 +17,7 @@ from zope.component import getUtility
 from zope.formlib.widgets import (
     DropdownWidget,
     TextAreaWidget,
+    TextWidget,
     )
 from zope.interface import (
     implements,
@@ -243,6 +244,7 @@ class CodeReviewCommentAddView(LaunchpadFormView):
 
     schema = IEditCodeReviewComment
 
+    custom_widget('review_type', TextWidget, displayWidth=15)
     custom_widget('comment', TextAreaWidget, cssClass='comment-text')
     custom_widget('vote', MyDropWidget)
 
