@@ -719,6 +719,9 @@ class BranchMergeProposal(SQLBase):
         # Delete the related CodeReviewVoteReferences.
         for vote in self.votes:
             vote.destroySelf()
+        # Delete published and draft inline comments related to this MP.
+        getUtility(ICodeReviewInlineCommentSet).removeFromDiffs(
+            [pd.id for pd in self._preview_diffs])
         # Delete the related CodeReviewComments.
         for comment in self.all_comments:
             comment.destroySelf()
