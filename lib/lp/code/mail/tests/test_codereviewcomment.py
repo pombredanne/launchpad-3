@@ -434,7 +434,7 @@ class TestInlineCommentsSection(testtools.TestCase):
              '',
              'Diff comments:',
              '',
-             '> +++ bar\t1969-12-31 19:00:00.000000000 -0500'],
+             '> --- bar\t2009-08-26 15:53:34.000000000 -0400'],
             header)
         footer = section[-2:]
         self.assertEqual(
@@ -445,7 +445,7 @@ class TestInlineCommentsSection(testtools.TestCase):
     def test_single_line_comment(self):
         # The inline comments are correctly contextualized in the diff.
         # and prefixed with '>>> '
-        comments = {'1': u'\u03b4\u03bf\u03ba\u03b9\u03bc\u03ae'}
+        comments = {'2': u'\u03b4\u03bf\u03ba\u03b9\u03bc\u03ae'}
         self.assertEqual(
             ['> +++ bar\t1969-12-31 19:00:00.000000000 -0500',
              '',
@@ -453,11 +453,11 @@ class TestInlineCommentsSection(testtools.TestCase):
              '',
              '> @@ -1,3 +0,0 @@',
              u'> -\xe5'],
-            self.getSection(comments).splitlines()[4:10])
+            self.getSection(comments).splitlines()[5:11])
 
     def test_multi_line_comment(self):
         # Inline comments with multiple lines are rendered appropriately.
-        comments = {'1': 'Foo\nBar'}
+        comments = {'2': 'Foo\nBar'}
         self.assertEqual(
             ['> +++ bar\t1969-12-31 19:00:00.000000000 -0500',
              '',
@@ -465,11 +465,11 @@ class TestInlineCommentsSection(testtools.TestCase):
              'Bar',
              '',
              '> @@ -1,3 +0,0 @@'],
-            self.getSection(comments).splitlines()[4:10])
+            self.getSection(comments).splitlines()[5:11])
 
     def test_multiple_comments(self):
         # Multiple inline comments are redered appropriately.
-        comments = {'1': 'Foo', '2': 'Bar'}
+        comments = {'2': 'Foo', '3': 'Bar'}
         self.assertEqual(
             ['> +++ bar\t1969-12-31 19:00:00.000000000 -0500',
              '',
@@ -479,4 +479,4 @@ class TestInlineCommentsSection(testtools.TestCase):
              '',
              'Bar',
              ''],
-            self.getSection(comments).splitlines()[4:12])
+            self.getSection(comments).splitlines()[5:13])
