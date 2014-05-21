@@ -594,7 +594,7 @@ table.diff .line-no {
   background-color: #f6f6f6;
   color: #999;
   border-right: solid 4px white;
-  width: 5%;
+  width: 4em;
 }
 table.diff .line-no.active {
   background: url(/@@/add) #f6f6f6 center left no-repeat;
@@ -605,15 +605,26 @@ table.diff .diff-chunk, table.diff .diff-file, table.diff .diff-header {
 table.diff .diff-added { background-color: #92ED92; }
 table.diff .diff-removed { background-color: #FF7F7F; }
 table.diff .inline-comments > td > div {
-  margin: 0px 1em;
+  margin: 0 1em 1.5em 1em;
+}
+
+table.diff .inline-comments .yui3-ieditor { padding-right:0!important; }
+table.diff .inline-comments .yui3-ieditor-multiline .yui3-ieditor-btns
+    .bg-top-label button.lazr-btn {
+  word-wrap: normal;
+}
+
+table.diff .inline-comments .boardComment {
+  margin: 1em 0;
+}
+
+table.diff .inline-comments .boardCommentBody {
   word-wrap: break-word;
   font-family: monospace;
 }
-table.diff .inline-comments .yui3-ieditor { padding-right:0!important; }
-table.diff .inline-comments .yui3-ieditor-multiline .yui3-ieditor-btns .bg-top-label button.lazr-btn {
-  word-wrap: normal;
-}
-table.diff .inline-comments .yui3-ieditor-multiline .yui3-ieditor-btns .bg-top-label {
+
+table.diff .inline-comments .yui3-ieditor-multiline .yui3-ieditor-btns
+    .bg-top-label {
   background-image: none!important;
   margin-right: -7px!important;
   margin-top: 18px!important;
@@ -629,7 +640,7 @@ table.diff .inline-comments .yui3-ieditor-input {
   margin-bottom: 5px;
   overflow: hidden;
 }
-  
+
 .back-link { margin-top: 3em; }
 
 .reviews {
