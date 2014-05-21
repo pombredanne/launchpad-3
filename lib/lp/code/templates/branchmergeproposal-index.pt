@@ -36,8 +36,8 @@
     #add-comment-review-fields div {
       display: inline;
     }
-    .yui3-publishdrafts {
-      padding-left: 3px;
+    .yui3-publishdrafts:before {
+      content: " ";
     }
     #proposal-summary th {
       font-weight: bold;
