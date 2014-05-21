@@ -4432,15 +4432,15 @@ ALTER TABLE incrementaldiff ENABLE TRIGGER ALL;
 
 ALTER TABLE ircid DISABLE TRIGGER ALL;
 
-INSERT INTO ircid (id, person, network, nickname) VALUES (1, 1, 'irc.freenode.net', 'mark');
-INSERT INTO ircid (id, person, network, nickname) VALUES (2, 11, 'irc.freenode.net', 'SteveA');
-INSERT INTO ircid (id, person, network, nickname) VALUES (3, 10, 'irc.freenode.net', 'limi');
-INSERT INTO ircid (id, person, network, nickname) VALUES (4, 8, 'irc.freenode.net', 'jblack');
-INSERT INTO ircid (id, person, network, nickname) VALUES (5, 3, 'irc.freenode.net', 'justdave');
-INSERT INTO ircid (id, person, network, nickname) VALUES (6, 9, 'irc.freenode.net', 'kiko');
-INSERT INTO ircid (id, person, network, nickname) VALUES (7, 4, 'irc.freenode.net', 'cjwatson');
-INSERT INTO ircid (id, person, network, nickname) VALUES (8, 5, 'irc.freenode.net', 'Keybuk');
-INSERT INTO ircid (id, person, network, nickname) VALUES (9, 6, 'irc.freenode.net', 'jeff');
+INSERT INTO ircid (id, person, network, nickname) VALUES (1, 1, 'chat.freenode.net', 'mark');
+INSERT INTO ircid (id, person, network, nickname) VALUES (2, 11, 'chat.freenode.net', 'SteveA');
+INSERT INTO ircid (id, person, network, nickname) VALUES (3, 10, 'chat.freenode.net', 'limi');
+INSERT INTO ircid (id, person, network, nickname) VALUES (4, 8, 'chat.freenode.net', 'jblack');
+INSERT INTO ircid (id, person, network, nickname) VALUES (5, 3, 'chat.freenode.net', 'justdave');
+INSERT INTO ircid (id, person, network, nickname) VALUES (6, 9, 'chat.freenode.net', 'kiko');
+INSERT INTO ircid (id, person, network, nickname) VALUES (7, 4, 'chat.freenode.net', 'cjwatson');
+INSERT INTO ircid (id, person, network, nickname) VALUES (8, 5, 'chat.freenode.net', 'Keybuk');
+INSERT INTO ircid (id, person, network, nickname) VALUES (9, 6, 'chat.freenode.net', 'jeff');
 
 
 ALTER TABLE ircid ENABLE TRIGGER ALL;
