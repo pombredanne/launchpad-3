@@ -144,7 +144,7 @@ class CodeReviewInlineCommentSet:
             CodeReviewComment.id.is_in(c.id for c in comments))
         return dict(relations)
 
-    def removeInlineComments(self, previewdiff_ids):
+    def removeFromDiffs(self, previewdiff_ids):
         """See `ICodeReviewInlineCommentSet`."""
         IStore(CodeReviewInlineComment).find(
             CodeReviewInlineComment,

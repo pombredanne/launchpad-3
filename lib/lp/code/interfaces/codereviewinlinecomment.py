@@ -90,7 +90,7 @@ class ICodeReviewInlineCommentSet(Interface):
             and the corresponding `PreviewDiff.id` or None.
         """
 
-    def removeInlineComments(previewdiff_ids):
+    def removeFromDiffs(previewdiff_ids):
         """Remove inline comments for the given `PreviewDiff` ids.
 
         Remove `CodeReviewInlineComment`s and `CodeReviewInlineCommentDraft`s
