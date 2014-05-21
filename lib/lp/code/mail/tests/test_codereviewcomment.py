@@ -245,7 +245,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
         set_feature_flag(u'code.inline_diff_comments.enabled', u'enabled')
 
         comment = self.makeCommentWithInlineComments(
-            inline_comments={'1': u'Is this from Planet Earth\xa9 ?'})
+            inline_comments={'2': u'Is this from Planet Earth\xa9 ?'})
         mailer = CodeReviewCommentMailer.forCreation(comment)
         commenter = comment.branch_merge_proposal.registrant
         ctrl = mailer.generateEmail(
@@ -255,6 +255,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
             '',
             'Diff comments:',
             '',
+            "> === zbqvsvrq svyr 'yvo/yc/pbqr/vagresnprf/qvss.cl'",
             '> --- yvo/yc/pbqr/vagresnprf/qvss.cl      '
             '2009-10-01 13:25:12 +0000',
             '',
@@ -263,7 +264,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
             '> +++ yvo/yc/pbqr/vagresnprf/qvss.cl      '
             '2010-02-02 15:48:56 +0000'
         ]
-        self.assertEqual(expected_lines, ctrl.body.splitlines()[1:9])
+        self.assertEqual(expected_lines, ctrl.body.splitlines()[1:10])
 
     def test_generateEmailWithInlineComments_feature_disabled(self):
         """Inline comments are not considered if the flag is not enabled."""
