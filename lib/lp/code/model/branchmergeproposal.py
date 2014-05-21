@@ -711,26 +711,6 @@ class BranchMergeProposal(SQLBase):
             notify(ReviewerNominatedEvent(vote_reference))
         return vote_reference
 
-    def _deleteInlineComments(self):
-        """Delete the related published and draft inline comments."""
-        # XXX cprov 2014-05-20: implement the removal queries localy
-        # since there is no need to expose them publicly.
-
-        # Avoid circular imports and also
-        from lp.code.model.codereviewinlinecomment import (
-            CodeReviewInlineCommentDraft,
-            CodeReviewInlineComment,
-        )
-        diff_ids = [pd.id for pd in self._preview_diffs]
-        IStore(CodeReviewInlineComment).find(
-            CodeReviewInlineComment,
-            CodeReviewInlineComment.previewdiff_id.is_in(diff_ids)
-        ).remove()
-        IStore(CodeReviewInlineCommentDraft).find(
-            CodeReviewInlineCommentDraft,
-            CodeReviewInlineCommentDraft.previewdiff_id.is_in(diff_ids)
-        ).remove()
-
     def deleteProposal(self):
         """See `IBranchMergeProposal`."""
         # Delete this proposal, but keep the superseded chain linked.
@@ -740,7 +720,8 @@ class BranchMergeProposal(SQLBase):
         for vote in self.votes:
             vote.destroySelf()
         # Delete published and draft inline comments related to this MP.
-        self._deleteInlineComments()
+        getUtility(ICodeReviewInlineCommentSet).removeInlineComments(
+            [pd.id for pd in self._preview_diffs])
         # Delete the related CodeReviewComments.
         for comment in self.all_comments:
             comment.destroySelf()

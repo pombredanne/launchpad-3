@@ -89,3 +89,12 @@ class ICodeReviewInlineCommentSet(Interface):
         :return: a dictionary containing the given `CodeReviewComment.id`s
             and the corresponding `PreviewDiff.id` or None.
         """
+
+    def removeInlineComments(previewdiff_ids):
+        """Remove inline comments for the given `PreviewDiff` ids.
+
+        Remove `CodeReviewInlineComment`s and `CodeReviewInlineCommentDraft`s
+        associated with a given list of `PreviewDiff` IDs.
+
+        :param comments: a list of `PreviewDiff` IDs.
+        """
