@@ -173,10 +173,9 @@ def build_inline_comments_section(comments, diff_text):
     """Return a formatted text section with contextualized comments."""
     result_lines = []
     diff_lines = diff_text.splitlines()
-    for i in range(1, len(diff_lines)):
-        result_lines.append(
-            u'> {0}'.format(diff_lines[i].decode('utf-8', 'replace')))
-        comment = comments.get(str(i))
+    for num, line in enumerate(diff_lines, 1):
+        result_lines.append(u'> {0}'.format(line.decode('utf-8', 'replace')))
+        comment = comments.get(str(num))
         if comment is not None:
             result_lines.append('')
             result_lines.extend(comment.splitlines())
