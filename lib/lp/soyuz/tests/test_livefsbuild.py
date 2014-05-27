@@ -249,7 +249,7 @@ class TestLiveFSBuild(TestCaseWithFactory):
         subject = notification["Subject"].replace("\n ", " ")
         self.assertEqual(
             "[LiveFS build #%d] i386 build of livefs-1 live filesystem in "
-            "distro unstable RELEASE" % build.id, subject)
+            "distro unstable" % build.id, subject)
         self.assertEqual(
             "Requester", notification["X-Launchpad-Message-Rationale"])
         self.assertEqual(
