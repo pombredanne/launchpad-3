@@ -181,9 +181,9 @@ class LiveFSBuild(PackageBuildMixin, Storm):
         name = self.livefs.name
         if self.unique_key is not None:
             name += " (%s)" % self.unique_key
-        return "%s build of %s live filesystem in %s %s %s" % (
+        return "%s build of %s live filesystem in %s %s" % (
             das.architecturetag, name, das.distroseries.distribution.name,
-            das.distroseries.name, self.pocket.name)
+            das.distroseries.getSuite(self.pocket))
 
     @property
     def distribution(self):

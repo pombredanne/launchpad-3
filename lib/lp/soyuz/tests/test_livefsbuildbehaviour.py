@@ -87,7 +87,7 @@ class TestLiveFSBuildBehaviour(TestCaseWithFactory):
         # displayname contains a reasonable description of the job.
         job = self.makeJob()
         self.assertEqual(
-            "i386 build of livefs live filesystem in distro unstable RELEASE",
+            "i386 build of livefs live filesystem in distro unstable",
             job.displayname)
 
     def test_logStartBuild(self):
@@ -97,7 +97,7 @@ class TestLiveFSBuildBehaviour(TestCaseWithFactory):
         job.logStartBuild(logger)
         self.assertEqual(
             "INFO startBuild(i386 build of livefs live filesystem in distro "
-            "unstable RELEASE)\n", logger.getLogBuffer())
+            "unstable)\n", logger.getLogBuffer())
 
     def test_verifyBuildRequest_valid(self):
         # verifyBuildRequest doesn't raise any exceptions when called with a
