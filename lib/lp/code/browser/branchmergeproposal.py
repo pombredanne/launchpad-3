@@ -624,6 +624,10 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
 
     implements(IBranchMergeProposalActionMenu)
 
+    related_features = {
+        'code.inline_diff_comments.enabled': True,
+        }
+
     schema = ClaimButton
 
     def initialize(self):
