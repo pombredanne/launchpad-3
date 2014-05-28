@@ -248,10 +248,14 @@ a.bg-image {
 }
 .boardCommentContent { line-height: 1.4em;}
 .boardCommentFooter {
-  background-color: #eee;
+  background-color: #F8F8F8;
   color: #666;
-  padding: 0.5em 12px;
+  padding: 0.15em 12px;
   border-top: 1px solid #ddd;
+  text-align: right;
+}
+.boardCommentFooter a {
+  margin-left: 1.5em;
 }
 .from-superseded {background-color: #ffffcc;}
 .adminHiddenComment {background-color:gray;}
@@ -607,22 +611,19 @@ table.diff .diff-removed { background-color: #FF7F7F; }
 table.diff .inline-comments > td > div {
   margin: 0 1em 1.5em 1em;
 }
-
 table.diff .inline-comments .yui3-ieditor { padding-right:0!important; }
 table.diff .inline-comments .yui3-ieditor-multiline .yui3-ieditor-btns
     .bg-top-label button.lazr-btn {
   word-wrap: normal;
 }
-
 table.diff .inline-comments .boardComment {
   margin: 1em 0;
 }
-
 table.diff .inline-comments .boardCommentBody {
   word-wrap: break-word;
   font-family: monospace;
+  padding-bottom: 0.5em;
 }
-
 table.diff .inline-comments .yui3-ieditor-multiline .yui3-ieditor-btns
     .bg-top-label {
   background-image: none!important;

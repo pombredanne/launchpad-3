@@ -17,7 +17,7 @@
          tal:content="structure context/@@+comment-body">
       The comment body
     </div>
-    <div class="boardCommentFooter"
+    <div class="boardBugActivityBody"
          tal:condition="context/has_footer"
          tal:content="structure context/@@+comment-footer">
       Activity or other footer details.
