@@ -573,9 +573,6 @@ table.code th, table.code td {
 .commentVote {
   float: right;
 }
-.replyLink {
-  text-align: right;
-}
 .codereviewcomment .attachment, #review-diff .attachment,
 div.diff .attachmentBody {
   background-color: #f6f6f6;
