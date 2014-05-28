@@ -96,11 +96,11 @@
   <div class="boardCommentFooter" tal:condition="comment/show_footer">
     <a tal:attributes="id string:mark-spam-${context/index};"
        tal:condition="view/show_spam_controls"
-       class="js-action sprite edit mark-spam" href="#">
+       class="js-action mark-spam" href="#">
        <tal:not-spam condition="not: context/visible"
-       >Unhide comment</tal:not-spam>
+       >Unhide</tal:not-spam>
        <tal:spam condition="context/visible"
-       >Hide comment</tal:spam>
+       >Hide</tal:spam>
     </a>
     <tal:activity
         define="activity_list comment/activity"
