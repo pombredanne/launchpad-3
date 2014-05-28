@@ -552,9 +552,14 @@ class LaunchpadView(UserAttributeCache):
              url) in flag_info:
             if flag_name not in self.related_features:
                 continue
+            # A feature is always in beta if it's not enabled for
+            # everyone, but the related_features dict can also force it.
             value = getFeatureFlag(flag_name)
+            is_beta = (
+                self.related_features[flag_name]
+                or defaultFlagValue(flag_name) != value)
             beta_info[flag_name] = {
-                'is_beta': (defaultFlagValue(flag_name) != value),
+                'is_beta': is_beta,
                 'title': title,
                 'url': url,
                 'value': value,

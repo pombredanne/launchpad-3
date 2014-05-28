@@ -222,11 +222,11 @@ flag_info = sorted([
      '',
      ''),
     ('code.inline_diff_comments.enabled',
-     'space delimited',
-     'Names of projects have inline diff comments enabled.',
-     '',
-     '',
-     ''),
+     'boolean',
+     'If true, reviewers can comment on parts of merge proposal diffs.',
+     'disabled',
+     'Inline diff comments',
+     'http://blog.launchpad.net/general/diff-comments'),
     ])
 
 # The set of all flag names that are documented.
