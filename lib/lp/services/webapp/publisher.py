@@ -556,8 +556,9 @@ class LaunchpadView(UserAttributeCache):
             # everyone, but the related_features dict can also force it.
             value = getFeatureFlag(flag_name)
             is_beta = (
-                self.related_features[flag_name]
-                or defaultFlagValue(flag_name) != value)
+                bool(value) and
+                (self.related_features[flag_name] or
+                 defaultFlagValue(flag_name) != value))
             beta_info[flag_name] = {
                 'is_beta': is_beta,
                 'title': title,

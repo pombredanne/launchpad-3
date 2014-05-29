@@ -277,7 +277,8 @@ class TestLaunchpadView(TestCaseWithFactory):
         #   * the default scope and a non-default scope are defined
         #     and have the same values,
         # then is_beta is false.
-        # Unless related_features forces it to beta.
+        # Unless related_features forces it to always be beta, and the
+        # flag is set.
         self.useFixture(FeatureFixture(
             {}, self.makeFeatureFlagDictionaries(u'on', u'on'),
             override_scope_lookup=lambda scope_name: True))
@@ -297,6 +298,16 @@ class TestLaunchpadView(TestCaseWithFactory):
             'title': 'title',
             'url': 'http://wiki.lp.dev/LEP/sample',
             'value': 'on',
+        }}, view.related_feature_info)
+
+        self.useFixture(FeatureFixture(
+            {}, self.makeFeatureFlagDictionaries(u'on', u''),
+            override_scope_lookup=lambda scope_name: True))
+        self.assertEqual({'test_feature': {
+            'is_beta': False,
+            'title': 'title',
+            'url': 'http://wiki.lp.dev/LEP/sample',
+            'value': '',
         }}, view.related_feature_info)
 
     def test_json_cache_has_related_features(self):
