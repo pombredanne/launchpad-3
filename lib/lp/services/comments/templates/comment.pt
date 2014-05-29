@@ -22,10 +22,10 @@
          tal:content="structure context/@@+comment-footer">
       Activity or other footer details.
     </div>
-    <div class="boardCommentFooter">
+    <div class="boardCommentFooter"
+         tal:define="link context/menu:context/reply | nothing"
+         tal:condition="link/enabled | nothing">
         <a itemprop="replyToUrl"
-             tal:define="link context/menu:context/reply"
-             tal:condition="link/enabled"
              tal:attributes="href link/fmt:url"
              tal:content="link/escapedtext">
              Reply
