@@ -21,7 +21,6 @@ __all__ = [
     'UpdatePreviewDiffJob',
     ]
 
-import contextlib
 from datetime import (
     datetime,
     timedelta,
@@ -101,8 +100,7 @@ from lp.services.job.runner import (
     BaseRunnableJobSource,
     )
 from lp.services.mail.sendmail import format_address_for_person
-from lp.services.webapp import errorlog
-
+from lp.services.webapp import canonical_url
 
 class BranchMergeProposalJobType(DBEnumeratedType):
     """Values that ICodeImportJob.state can take."""
@@ -351,15 +349,16 @@ class UpdatePreviewDiffJob(BranchMergeProposalJobDerived):
     def checkReady(self):
         """Is this job ready to run?"""
         bmp = self.branch_merge_proposal
+        url = canonical_url(bmp)
         if bmp.source_branch.last_scanned_id is None:
             raise UpdatePreviewDiffNotReady(
-                'The source branch has no revisions.')
+                'The source branch of %s has no revisions.' % url)
         if bmp.target_branch.last_scanned_id is None:
             raise UpdatePreviewDiffNotReady(
-                'The target branch has no revisions.')
+                'The target branch of %s has no revisions.' % url)
         if bmp.source_branch.pending_writes:
             raise BranchHasPendingWrites(
-                'The source branch has pending writes.')
+                'The source branch of %s has pending writes.' % url)
 
     def acquireLease(self, duration=600):
         return self.job.acquireLease(duration)

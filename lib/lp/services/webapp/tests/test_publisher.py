@@ -172,7 +172,7 @@ class TestLaunchpadView(TestCaseWithFactory):
         # no matching feature rules are defined, is_beta is False.
         request = LaunchpadTestRequest()
         view = LaunchpadView(object(), request)
-        view.related_features = ['test_feature']
+        view.related_features = {'test_feature': False}
         self.assertEqual({
             'test_feature': {
                 'is_beta': False,
@@ -197,7 +197,7 @@ class TestLaunchpadView(TestCaseWithFactory):
                 )))
         request = LaunchpadTestRequest()
         view = LaunchpadView(object(), request)
-        view.related_features = ['test_feature']
+        view.related_features = {'test_feature': False}
         self.assertEqual({'test_feature': {
             'is_beta': False,
             'title': 'title',
@@ -222,7 +222,7 @@ class TestLaunchpadView(TestCaseWithFactory):
             override_scope_lookup=lambda scope_name: True))
         request = LaunchpadTestRequest()
         view = LaunchpadView(object(), request)
-        view.related_features = ['test_feature']
+        view.related_features = {'test_feature': False}
         self.assertEqual({
             'test_feature': {
                 'is_beta': True,
@@ -260,7 +260,7 @@ class TestLaunchpadView(TestCaseWithFactory):
             override_scope_lookup=lambda scope_name: True))
         request = LaunchpadTestRequest()
         view = LaunchpadView(object(), request)
-        view.related_features = ['test_feature']
+        view.related_features = {'test_feature': False}
         self.assertEqual({
             'test_feature': {
                 'is_beta': True,
@@ -277,12 +277,14 @@ class TestLaunchpadView(TestCaseWithFactory):
         #   * the default scope and a non-default scope are defined
         #     and have the same values,
         # then is_beta is false.
+        # Unless related_features forces it to always be beta, and the
+        # flag is set.
         self.useFixture(FeatureFixture(
             {}, self.makeFeatureFlagDictionaries(u'on', u'on'),
             override_scope_lookup=lambda scope_name: True))
         request = LaunchpadTestRequest()
         view = LaunchpadView(object(), request)
-        view.related_features = ['test_feature']
+        view.related_features = {'test_feature': False}
         self.assertEqual({'test_feature': {
             'is_beta': False,
             'title': 'title',
@@ -290,10 +292,28 @@ class TestLaunchpadView(TestCaseWithFactory):
             'value': 'on',
         }}, view.related_feature_info)
 
+        view.related_features['test_feature'] = True
+        self.assertEqual({'test_feature': {
+            'is_beta': True,
+            'title': 'title',
+            'url': 'http://wiki.lp.dev/LEP/sample',
+            'value': 'on',
+        }}, view.related_feature_info)
+
+        self.useFixture(FeatureFixture(
+            {}, self.makeFeatureFlagDictionaries(u'on', u''),
+            override_scope_lookup=lambda scope_name: True))
+        self.assertEqual({'test_feature': {
+            'is_beta': False,
+            'title': 'title',
+            'url': 'http://wiki.lp.dev/LEP/sample',
+            'value': '',
+        }}, view.related_feature_info)
+
     def test_json_cache_has_related_features(self):
         # The property related_features is copied into the JSON cache.
         class TestView(LaunchpadView):
-            related_features = ['test_feature']
+            related_features = {'test_feature': False}
 
         self.useFixture(FeatureFixture(
             {}, self.makeFeatureFlagDictionaries(u'', u'on'),
@@ -315,10 +335,10 @@ class TestLaunchpadView(TestCaseWithFactory):
         # for example, from macros. Related features from these sub-views
         # are included in the JSON cache.
         class TestView(LaunchpadView):
-            related_features = ['test_feature']
+            related_features = {'test_feature': False}
 
         class TestView2(LaunchpadView):
-            related_features = ['test_feature_2']
+            related_features = {'test_feature_2': False}
 
         self.useFixture(FeatureFixture(
             {}, self.makeFeatureFlagDictionaries(u'', u'on'),
@@ -357,7 +377,7 @@ class TestLaunchpadView(TestCaseWithFactory):
 
     def test_view_beta_features_simple(self):
         class TestView(LaunchpadView):
-            related_features = ['test_feature']
+            related_features = {'test_feature': False}
 
         self.useFixture(FeatureFixture(
             {}, self.makeFeatureFlagDictionaries(u'', u'on'),
@@ -373,7 +393,7 @@ class TestLaunchpadView(TestCaseWithFactory):
         # With multiple related features, only those in a beta condition are
         # reported as beta features.
         class TestView(LaunchpadView):
-            related_features = ['test_feature', 'test_feature2']
+            related_features = {'test_feature': False, 'test_feature2': False}
 
         # Select one flag on 'default', one flag not on 'default. 'default'
         # setting determines whether flags correspond to 'beta' features.

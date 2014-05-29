@@ -43,8 +43,8 @@ to the main merge proposal page.
     This is a very long comment about what things should be done to the
     source branch to land it. When this comment is replied to, it should
     wrap the line properly.
-    Reply
     >>> print_comments('boardCommentFooter')
+    Reply
 
 The person's name links back to the main site for that person.
 
@@ -86,7 +86,6 @@ After this, we are taken to the main page for the merge proposal
     I wish I had time to review it properly
     This is a longer message with several lines
     Email me at eric@vikings-r-us.example.com for more details
-    Reply
 
 Email addresses in code review comments are hidden for users not logged in.
 
@@ -96,7 +95,6 @@ Email addresses in code review comments are hidden for users not logged in.
     I wish I had time to review it properly
     This is a longer message with several lines
     Email me at &lt;email address hidden&gt; for more details
-    Reply
 
 If a merge proposal is resubmitted, the comments on the superseded proposal
 are also displayed in the new proposal.
@@ -134,7 +132,7 @@ comment' link.
 
     >>> print_comments('boardCommentDetails', eric_browser, index=2)
     Eric the Viking ... ago: #
-    >>> print_comments('boardCommentFooter', eric_browser, index=0)
+    >>> print_comments('boardBugActivityBody', eric_browser, index=0)
     review: Abstain (timeless)
     >>> print_comments('boardCommentBody', eric_browser, index=2)
 
