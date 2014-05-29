@@ -238,11 +238,11 @@ a.bg-image {
     border-left: 1px solid #ddd;
 }
 .boardCommentBody {padding: 0.5em 12px 0;}
-.boardBugActivityBody {
+.boardCommentActivity {
   padding: 0.5em 12px;
   background-color: #fafafa;
 }
-.boardBugActivityBody table {
+.boardCommentActivity table {
   margin-bottom: 0.5em;
   margin-top: 0.5em;
 }
