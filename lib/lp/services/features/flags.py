@@ -226,7 +226,7 @@ flag_info = sorted([
      'If true, reviewers can comment on parts of merge proposal diffs.',
      'disabled',
      'Inline diff comments',
-     'http://blog.launchpad.net/general/diff-comments'),
+     ''),
     ])
 
 # The set of all flag names that are documented.
