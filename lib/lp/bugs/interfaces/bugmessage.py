@@ -132,7 +132,9 @@ class IBugComment(IMessage, IComment):
         'The URL for submitting replies to this comment.')
     activity = Attribute(
         "A list of BugActivityItems associated with this comment.")
-    show_footer = Attribute(
+    show_activity = Attribute(
+        "Whether or not to show an activity for the comment.")
+    show_spam_controls = Attribute(
         "Whether or not to show a footer for the comment.")
     patches = Attribute(
         "Patches attched to this comment.")
