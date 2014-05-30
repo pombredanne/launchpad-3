@@ -29,9 +29,9 @@ synchronized with the remote bug tracker, we display a simple reply form
 inlined, to make it clear that the comment will end up on the remote
 bug tracker.
 
-    >>> footer = remote_bug_comment.find(
-    ...     attrs={'class': 'boardCommentFooter'})
-    >>> print extract_text(footer)
+    >>> activity = remote_bug_comment.find(
+    ...     attrs={'class': 'boardCommentActivity'})
+    >>> print extract_text(activity)
     Reply on Debian Bug tracker...
 
 When javascript is not available, the link simply takes us to the
@@ -63,8 +63,8 @@ The comment isn't synchronized immediately. To make that clear, we
 mark the comment as 'awaiting synchronization' until it makes its way
 to the remote bug tracker.
 
-    >>> footer = new_bug_comment.find(attrs={'class': 'boardCommentFooter'})
-    >>> print extract_text(footer.findAll('td')[1])
+    >>> activity = new_bug_comment.find(attrs={'class': 'boardCommentActivity'})
+    >>> print extract_text(activity.findAll('td')[1])
     Awaiting synchronization
 
 When the comment is synchronized, it receives a remote comment id, and
@@ -107,7 +107,7 @@ hidden, since they can't be used anonymously anyway.
     >>> anon_browser.open('http://bugs.launchpad.dev/redfish/+bug/15')
     >>> remote_bug_comment = find_tags_by_class(
     ...     anon_browser.contents, 'remoteBugComment', only_first=True)
-    >>> footer = remote_bug_comment.find(
-    ...     attrs={'class': 'boardCommentFooter'})
-    >>> 'Reply' in extract_text(footer)
+    >>> activity = remote_bug_comment.find(
+    ...     attrs={'class': 'boardCommentActivity'})
+    >>> 'Reply' in extract_text(activity)
     False
