@@ -93,15 +93,7 @@
       replace="structure comment/@@+comment-body-text" />
   </div>
 
-  <div class="boardCommentFooter" tal:condition="comment/show_footer">
-    <a tal:attributes="id string:mark-spam-${context/index};"
-       tal:condition="view/show_spam_controls"
-       class="js-action mark-spam" href="#">
-       <tal:not-spam condition="not: context/visible"
-       >Unhide</tal:not-spam>
-       <tal:spam condition="context/visible"
-       >Hide</tal:spam>
-    </a>
+  <div class="boardCommentActivity" tal:condition="comment/show_activity">
     <tal:activity
         define="activity_list comment/activity"
         condition="comment/activity">
@@ -158,5 +150,15 @@
         </table>
       </div>
     </tal:bugwatch-footer>
+  </div>
+  <div class="boardCommentFooter" tal:condition="comment/show_spam_controls">
+    <a tal:attributes="id string:mark-spam-${context/index};"
+       tal:condition="view/show_spam_controls"
+       class="js-action mark-spam" href="#">
+       <tal:not-spam condition="not: context/visible"
+       >Unhide</tal:not-spam>
+       <tal:spam condition="context/visible"
+       >Hide</tal:spam>
+    </a>
   </div>
 </div>

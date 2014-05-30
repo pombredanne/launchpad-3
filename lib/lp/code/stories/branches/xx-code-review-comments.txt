@@ -132,7 +132,7 @@ comment' link.
 
     >>> print_comments('boardCommentDetails', eric_browser, index=2)
     Eric the Viking ... ago: #
-    >>> print_comments('boardBugActivityBody', eric_browser, index=0)
+    >>> print_comments('boardCommentActivity', eric_browser, index=0)
     review: Abstain (timeless)
     >>> print_comments('boardCommentBody', eric_browser, index=2)
 
