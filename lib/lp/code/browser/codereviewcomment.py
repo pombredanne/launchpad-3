@@ -23,10 +23,7 @@ from zope.interface import (
     implements,
     Interface,
     )
-from zope.schema import (
-    Bool,
-    Text,
-    )
+from zope.schema import Text
 
 from lp import _
 from lp.app.browser.launchpadform import (
@@ -230,9 +227,6 @@ class IEditCodeReviewComment(Interface):
                      'are performing.')
 
     comment = Text(title=_('Comment'), required=False)
-
-    publish_inline_comments = Bool(
-        title=_("Publish draft inline comments"), required=False)
 
 
 class CodeReviewCommentAddView(LaunchpadFormView):
