@@ -6,6 +6,8 @@
 __metaclass__ = type
 
 __all__ = [
+    'BuilderCleanStatus',
+    'BuilderResetProtocol',
     'BuildStatus',
     'BuildQueueStatus',
     'BuildFarmJobType',
@@ -182,4 +184,34 @@ class BuildQueueStatus(DBEnumeratedType):
         Suspended
 
         The job is suspended, so should not be run.
+        """)
+
+
+class BuilderCleanStatus(DBEnumeratedType):
+
+    CLEAN = DBItem(0, """
+        Clean
+
+        The builder slave is ready for use.
+        """)
+
+    DIRTY = DBItem(1, """
+        Dirty
+
+        The builder slave is dirty and needs to be cleaned before use.
+        """)
+
+    CLEANING = DBItem(2, """
+        Cleaning
+
+        The builder slave is being cleaned.
+        """)
+
+
+class BuilderResetProtocol(DBEnumeratedType):
+
+    PROTO_1_1 = DBItem(11, """
+        1.1
+
+        Original synchronous protocol with vm_host and buildd_name.
         """)

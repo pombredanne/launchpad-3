@@ -32,7 +32,11 @@ from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.errors import NotFoundError
-from lp.buildmaster.enums import BuildQueueStatus
+from lp.buildmaster.enums import (
+    BuilderCleanStatus,
+    BuilderResetProtocol,
+    BuildQueueStatus,
+    )
 from lp.buildmaster.interfaces.builder import (
     IBuilder,
     IBuilderSet,
@@ -46,6 +50,7 @@ from lp.buildmaster.model.buildqueue import (
 from lp.registry.interfaces.person import validate_public_person
 from lp.services.database.bulk import load
 from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.enumcol import EnumCol
 from lp.services.database.interfaces import (
     ISlaveStore,
     IStore,
@@ -92,6 +97,9 @@ class Builder(SQLBase):
     active = BoolCol(dbName='active', notNull=True, default=True)
     failure_count = IntCol(dbName='failure_count', default=0, notNull=True)
     version = StringCol(dbName='version')
+    clean_status = EnumCol(
+        enum=BuilderCleanStatus, default=BuilderCleanStatus.DIRTY)
+    vm_reset_protocol = EnumCol(enum=BuilderResetProtocol)
 
     # The number of times a builder can consecutively fail before we
     # reset its current job.
