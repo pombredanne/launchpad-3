@@ -187,7 +187,7 @@ class IBuilder(IHasBuildRecords, IHasOwner):
         description=_('The version of launchpad-buildd on the slave.')))
 
     clean_status = exported(Choice(
-        title=_("Clean status"), vocabulary=BuilderCleanStatus, readonly=True,
+        title=_("Clean status"), vocabulary=BuilderCleanStatus, readonly=False,
         description=_("The readiness of the slave to take a job.")))
 
     vm_reset_protocol = exported(Choice(

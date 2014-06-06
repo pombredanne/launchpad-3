@@ -21,6 +21,7 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
+from lp.buildmaster.enums import BuilderCleanStatus
 from lp.buildmaster.interfaces.builder import (
     BuildDaemonError,
     CannotFetchFile,
@@ -341,6 +342,13 @@ class BuilderInteractor(object):
         if not builder.builderok:
             raise BuildDaemonError(
                 "Attempted to start a build on a known-bad builder.")
+
+        if builder.clean_status != BuilderCleanStatus.CLEAN:
+            raise BuildDaemonError(
+                "Attempted to start build on a dirty slave.")
+
+        builder.clean_status = BuilderCleanStatus.DIRTY
+        transaction.commit()
 
         # If we are building a virtual build, resume the virtual
         # machine.  Before we try and contact the resumed slave, we're

@@ -16,19 +16,24 @@ from testtools.deferredruntest import (
     SynchronousDeferredRunTest,
     )
 from testtools.matchers import ContainsAll
+from testtools.testcase import ExpectedException
 from twisted.internet import defer
 from twisted.internet.task import Clock
 from twisted.python.failure import Failure
 from twisted.web.client import getPage
 from zope.security.proxy import removeSecurityProxy
 
-from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.enums import (
+    BuilderCleanStatus,
+    BuildStatus,
+    )
 from lp.buildmaster.interactor import (
     BuilderInteractor,
     BuilderSlave,
     extract_vitals_from_db,
     )
 from lp.buildmaster.interfaces.builder import (
+    BuildDaemonError,
     CannotFetchFile,
     CannotResumeHost,
     )
@@ -321,6 +326,7 @@ class TestBuilderInteractorDB(TestCaseWithFactory):
         processor = self.factory.makeProcessor(name="i386")
         builder = self.factory.makeBuilder(
             processors=[processor], virtualized=True, vm_host="bladh")
+        builder.clean_status = BuilderCleanStatus.CLEAN
         self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(OkSlave()))
         distroseries = self.factory.makeDistroSeries()
         das = self.factory.makeDistroArchSeries(
@@ -376,6 +382,31 @@ class TestBuilderInteractorDB(TestCaseWithFactory):
             self.assertEqual(BuildStatus.BUILDING, build.status)
 
         return d.addCallback(check_build_started)
+
+    @defer.inlineCallbacks
+    def test_findAndStartJob_requires_clean_slave(self):
+        # findAndStartJob ensures that its slave starts CLEAN.
+        builder, build = self._setupBinaryBuildAndBuilder()
+        builder.clean_status = BuilderCleanStatus.DIRTY
+        candidate = build.queueBuild()
+        removeSecurityProxy(builder)._findBuildCandidate = FakeMethod(
+            result=candidate)
+        vitals = extract_vitals_from_db(builder)
+        with ExpectedException(
+                BuildDaemonError,
+                "Attempted to start build on a dirty slave."):
+            yield BuilderInteractor.findAndStartJob(vitals, builder, OkSlave())
+
+    @defer.inlineCallbacks
+    def test_findAndStartJob_dirties_slave(self):
+        # findAndStartJob marks its builder DIRTY before dispatching.
+        builder, build = self._setupBinaryBuildAndBuilder()
+        candidate = build.queueBuild()
+        removeSecurityProxy(builder)._findBuildCandidate = FakeMethod(
+            result=candidate)
+        vitals = extract_vitals_from_db(builder)
+        yield BuilderInteractor.findAndStartJob(vitals, builder, OkSlave())
+        self.assertEqual(BuilderCleanStatus.DIRTY, builder.clean_status)
 
     def test_virtual_job_dispatch_pings_before_building(self):
         # We need to send a ping to the builder to work around a bug

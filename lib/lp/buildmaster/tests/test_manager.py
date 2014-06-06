@@ -25,6 +25,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.buildmaster.enums import (
+    BuilderCleanStatus,
     BuildQueueStatus,
     BuildStatus,
     )
@@ -151,6 +152,7 @@ class TestSlaveScannerScan(TestCase):
         # Set this to 1 here so that _checkDispatch can make sure it's
         # reset to 0 after a successful dispatch.
         builder.failure_count = 1
+        builder.clean_status = BuilderCleanStatus.CLEAN
 
         # Run 'scan' and check its result.
         switch_dbuser(config.builddmaster.dbuser)
