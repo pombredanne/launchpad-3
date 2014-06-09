@@ -74,12 +74,10 @@ def getPubConfig(archive):
         pubconf.overrideroot = pubconf.archiveroot + '-overrides'
         pubconf.cacheroot = pubconf.archiveroot + '-cache'
         pubconf.miscroot = pubconf.archiveroot + '-misc'
-        pubconf.germinateroot = pubconf.archiveroot + '-germinate'
     else:
         pubconf.overrideroot = None
         pubconf.cacheroot = None
         pubconf.miscroot = None
-        pubconf.germinateroot = None
 
     if archive.is_main:
         pubconf.uefiroot = pubconf.archiveroot + '-uefi'
@@ -117,7 +115,6 @@ class Config(object):
             self.cacheroot,
             self.overrideroot,
             self.miscroot,
-            self.germinateroot,
             self.temproot,
             ]
 
