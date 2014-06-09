@@ -176,7 +176,7 @@ class TestBuilderInteractor(TestCase):
             extract_vitals_from_db(MockBuilder()), slave, slave_status,
             'trivial')
         self.assertTrue(lost)
-        self.assertEqual([], slave.call_log)
+        self.assertEqual(['status'], slave.call_log)
 
     @defer.inlineCallbacks
     def test_recover_ok_slave(self):
@@ -186,7 +186,7 @@ class TestBuilderInteractor(TestCase):
         lost = yield BuilderInteractor.rescueIfLost(
             extract_vitals_from_db(MockBuilder()), slave, slave_status, None)
         self.assertFalse(lost)
-        self.assertEqual([], slave.call_log)
+        self.assertEqual(['status'], slave.call_log)
 
     @defer.inlineCallbacks
     def test_recover_waiting_slave_with_good_id(self):
