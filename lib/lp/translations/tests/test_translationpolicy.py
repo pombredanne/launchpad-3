@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test `TranslationPolicyMixin`."""
@@ -169,7 +169,7 @@ class TestTranslationPolicy(TestCaseWithFactory):
     def test_getEffectiveTranslationPermission_returns_maximum(self):
         # When combining permissions, getEffectiveTranslationPermission
         # returns the one with the highest numerical value.
-        parent = self._makeParentPolicy()
+        self._makeParentPolicy()
         for child_permission in TranslationPermission.items:
             for parent_permission in TranslationPermission.items:
                 self._setPermissions(child_permission, parent_permission)
