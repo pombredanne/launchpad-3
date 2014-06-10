@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from collections import defaultdict
@@ -94,6 +94,7 @@ tree "%(DISTS)s/%(DISTRORELEASEONDISK)s"
     %(HIDEEXTRA)sExtraOverride "override.%(DISTRORELEASE)s.extra.$(SECTION)";
     Packages::Extensions "%(EXTENSIONS)s";
     BinCacheDB "packages-%(CACHEINSERT)s$(ARCH).db";
+    SrcCacheDB "sources.db";
     Contents " ";
     LongDescription "%(LONGDESCRIPTION)s";
 }
