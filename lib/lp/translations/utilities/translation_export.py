@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Components for exporting translation files."""
@@ -91,7 +91,7 @@ class TranslationExporter:
                 output_format = target_format
             format_exporter = self.getExporterProducingTargetFileFormat(
                 output_format)
-            file_content = format_exporter.exportTranslationFile(
+            format_exporter.exportTranslationFile(
                 translation_file, storage, ignore_obsolete=ignore_obsolete,
                 force_utf8=force_utf8)
 

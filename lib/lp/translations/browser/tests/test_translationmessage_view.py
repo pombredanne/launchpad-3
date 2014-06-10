@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from __future__ import with_statement
@@ -477,12 +477,12 @@ class TestHelpers(TestCaseWithFactory):
             revert_unselected_translations(
                 new_translations, current_message, []))
 
+
 class TestBadSubmission(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
     def getSubmission(self, good=True):
-        original_translations = {0: self.getUniqueString()}
         pofile = self.factory.makePOFile()
         current = self.factory.makeCurrentTranslationMessage(pofile=pofile)
         message = self.factory.makeSuggestion(pofile=pofile)
