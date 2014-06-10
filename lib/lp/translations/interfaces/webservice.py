@@ -14,6 +14,7 @@ __all__ = [
     'IPOFile',
     'IPOTemplate',
     'ITranslationGroup',
+    'ITranslationGroupSet',
     'ITranslationImportQueue',
     'ITranslationImportQueueEntry',
     ]
