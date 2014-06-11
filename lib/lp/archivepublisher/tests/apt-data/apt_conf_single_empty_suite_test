@@ -35,6 +35,7 @@ tree "dists/hoary-test-updates"
     ExtraOverride "override.hoary-test-updates.extra.$(SECTION)";
     Packages::Extensions ".deb";
     BinCacheDB "packages-$(ARCH).db";
+    SrcCacheDB "sources.db";
     Contents " ";
     LongDescription "true";
 }
@@ -51,6 +52,7 @@ tree "dists/hoary-test-updates/main"
     // ExtraOverride "override.hoary-test-updates.main.extra.$(SECTION)";
     Packages::Extensions ".udeb";
     BinCacheDB "packages-debian-installer-$(ARCH).db";
+    SrcCacheDB "sources-debian-installer.db";
     Contents " ";
     LongDescription "true";
 }
@@ -67,6 +69,7 @@ tree "dists/hoary-test-updates/restricted"
     // ExtraOverride "override.hoary-test-updates.restricted.extra.$(SECTION)";
     Packages::Extensions ".udeb";
     BinCacheDB "packages-debian-installer-$(ARCH).db";
+    SrcCacheDB "sources-debian-installer.db";
     Contents " ";
     LongDescription "true";
 }
@@ -83,6 +86,7 @@ tree "dists/hoary-test-updates/universe"
     // ExtraOverride "override.hoary-test-updates.universe.extra.$(SECTION)";
     Packages::Extensions ".udeb";
     BinCacheDB "packages-debian-installer-$(ARCH).db";
+    SrcCacheDB "sources-debian-installer.db";
     Contents " ";
     LongDescription "true";
 }
@@ -99,6 +103,7 @@ tree "dists/hoary-test-updates/multiverse"
     // ExtraOverride "override.hoary-test-updates.multiverse.extra.$(SECTION)";
     Packages::Extensions ".udeb";
     BinCacheDB "packages-debian-installer-$(ARCH).db";
+    SrcCacheDB "sources-debian-installer.db";
     Contents " ";
     LongDescription "true";
 }
