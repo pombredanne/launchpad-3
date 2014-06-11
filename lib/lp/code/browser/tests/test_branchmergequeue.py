@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the branch merge queue view classes and templates."""
@@ -39,13 +39,8 @@ class TestBranchMergeQueue(BrowserTestCase):
         """Test the index page of a branch merge queue."""
         with person_logged_in(ANONYMOUS):
             queue = self.factory.makeBranchMergeQueue()
-            queue_owner = queue.owner.displayname
-            queue_registrant = queue.registrant.displayname
-            queue_description = queue.description
-            queue_url = canonical_url(queue)
 
             branch = self.factory.makeBranch()
-            branch_name = branch.bzr_identity
             with person_logged_in(branch.owner):
                 branch.addToQueue(queue)
 
@@ -77,7 +72,6 @@ class TestBranchMergeQueue(BrowserTestCase):
             rockstar = self.factory.makePerson(name='rockstar')
             branch = self.factory.makeBranch(owner=rockstar)
             self.factory.makeBranch(product=branch.product)
-            owner_name = branch.owner.name
 
         browser = self.getUserBrowser(canonical_url(branch), user=rockstar)
 
@@ -119,7 +113,6 @@ class TestBranchMergeQueue(BrowserTestCase):
             rockstar = self.factory.makePerson(name='rockstar')
             branch = self.factory.makeBranch(owner=rockstar)
             self.factory.makeBranch(product=branch.product)
-            owner_name = branch.owner.name
 
         browser = self.getUserBrowser(canonical_url(branch), user=rockstar)
         self.assertRaises(
