@@ -250,10 +250,7 @@ from lp.services.messages.model.message import (
     )
 from lp.services.oauth.interfaces import IOAuthConsumerSet
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
-from lp.services.propertycache import (
-    clear_property_cache,
-    get_property_cache,
-    )
+from lp.services.propertycache import clear_property_cache
 from lp.services.temporaryblobstorage.interfaces import (
     ITemporaryStorageManager,
     )
@@ -296,10 +293,7 @@ from lp.soyuz.model.component import ComponentSelection
 from lp.soyuz.model.distributionsourcepackagecache import (
     DistributionSourcePackageCache,
     )
-from lp.soyuz.model.files import (
-    BinaryPackageFile,
-    SourcePackageReleaseFile,
-    )
+from lp.soyuz.model.files import BinaryPackageFile
 from lp.soyuz.model.packagediff import PackageDiff
 from lp.testing import (
     admin_logged_in,
