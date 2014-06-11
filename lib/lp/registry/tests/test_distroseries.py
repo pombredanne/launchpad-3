@@ -360,7 +360,7 @@ class TestDistroSeries(TestCaseWithFactory):
 
 class TestDistroSeriesPackaging(TestCaseWithFactory):
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         super(TestDistroSeriesPackaging, self).setUp()
@@ -420,9 +420,9 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
         spr = spph.sourcepackagerelease
         for extension in ("dsc", "tar.gz"):
             filename = "%s_%s.%s" % (spr.name, spr.version, extension)
-            spr.addFile(self.factory.makeLibraryFileAlias(filename=filename))
+            spr.addFile(self.factory.makeLibraryFileAlias(
+                filename=filename, db_only=True))
         self.packages[name] = source_package
-        transaction.commit()
         return source_package
 
     def makeSeriesBinaryPackage(self, name=None, is_main=False,
@@ -443,8 +443,8 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
         bpr = bpph.binarypackagerelease
         filename = "%s_%s_%s.deb" % (
             bpr.name, bpr.version, das.architecturetag)
-        bpr.addFile(self.factory.makeLibraryFileAlias(filename=filename))
-        transaction.commit()
+        bpr.addFile(self.factory.makeLibraryFileAlias(
+            filename=filename, db_only=True))
         return bpph
 
     def linkPackage(self, name):
