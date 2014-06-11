@@ -247,7 +247,6 @@ class SourcePackageRelease(SQLBase):
             filetype = determine_source_file_type(file.filename)
         sprf = SourcePackageReleaseFile(
             sourcepackagerelease=self, filetype=filetype, libraryfile=file)
-        Store.of(self).flush()
         del get_property_cache(self).files
         return sprf
 
