@@ -1007,23 +1007,28 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             SourcePackagePublishingHistory.component == component,
             SourcePackagePublishingHistory.status ==
                 PackagePublishingStatus.PUBLISHED)
-        load_related(Section, spphs, ["sectionID"])
-        sprs = load_related(
-            SourcePackageRelease, spphs, ["sourcepackagereleaseID"])
-        load_related(SourcePackageName, sprs, ["sourcepackagenameID"])
-        spr_ids = set(map(attrgetter("id"), sprs))
-        sprfs = list(Store.of(self).find(
-            SourcePackageReleaseFile,
-            SourcePackageReleaseFile.sourcepackagereleaseID.is_in(
-                spr_ids)).order_by(SourcePackageReleaseFile.libraryfileID))
-        file_map = collections.defaultdict(list)
-        for sprf in sprfs:
-            file_map[sprf.sourcepackagerelease].append(sprf)
-        for spr, files in file_map.items():
-            get_property_cache(spr).files = files
-        lfas = load_related(LibraryFileAlias, sprfs, ["libraryfileID"])
-        load_related(LibraryFileContent, lfas, ["contentID"])
-        return spphs
+
+        def eager_load(spphs):
+            # Preload everything which will be used by
+            # SourcePackagePublishingHistory.buildIndexStanzaFields.
+            load_related(Section, spphs, ["sectionID"])
+            sprs = load_related(
+                SourcePackageRelease, spphs, ["sourcepackagereleaseID"])
+            load_related(SourcePackageName, sprs, ["sourcepackagenameID"])
+            spr_ids = set(map(attrgetter("id"), sprs))
+            sprfs = list(Store.of(self).find(
+                SourcePackageReleaseFile,
+                SourcePackageReleaseFile.sourcepackagereleaseID.is_in(
+                    spr_ids)).order_by(SourcePackageReleaseFile.libraryfileID))
+            file_map = collections.defaultdict(list)
+            for sprf in sprfs:
+                file_map[sprf.sourcepackagerelease].append(sprf)
+            for spr, files in file_map.items():
+                get_property_cache(spr).files = files
+            lfas = load_related(LibraryFileAlias, sprfs, ["libraryfileID"])
+            load_related(LibraryFileContent, lfas, ["contentID"])
+
+        return DecoratedResultSet(spphs, pre_iter_hook=eager_load)
 
     def getBinaryPackagePublishing(self, archtag, pocket, component, archive):
         """See `IDistroSeries`."""
@@ -1038,23 +1043,28 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             BinaryPackagePublishingHistory.component == component,
             BinaryPackagePublishingHistory.status ==
                 PackagePublishingStatus.PUBLISHED)
-        bprs = load_related(
-            BinaryPackageRelease, bpphs, ["binarypackagereleaseID"])
-        bpbs = load_related(BinaryPackageBuild, bprs, ["buildID"])
-        sprs = load_related(
-            SourcePackageRelease, bpbs, ["source_package_release_id"])
-        bpfs = load_referencing(
-            BinaryPackageFile, bprs, ["binarypackagereleaseID"])
-        file_map = collections.defaultdict(list)
-        for bpf in bpfs:
-            file_map[bpf.binarypackagerelease].append(bpf)
-        for bpr, files in file_map.items():
-            get_property_cache(bpr).files = files
-        lfas = load_related(LibraryFileAlias, bpfs, ["libraryfileID"])
-        load_related(LibraryFileContent, lfas, ["contentID"])
-        load_related(SourcePackageName, sprs, ["sourcepackagenameID"])
-        load_related(BinaryPackageName, bprs, ["binarypackagenameID"])
-        return bpphs
+
+        def eager_load(bpphs):
+            # Preload everything which will be used by
+            # BinaryPackagePublishingHistory.buildIndexStanzaFields.
+            bprs = load_related(
+                BinaryPackageRelease, bpphs, ["binarypackagereleaseID"])
+            bpbs = load_related(BinaryPackageBuild, bprs, ["buildID"])
+            sprs = load_related(
+                SourcePackageRelease, bpbs, ["source_package_release_id"])
+            bpfs = load_referencing(
+                BinaryPackageFile, bprs, ["binarypackagereleaseID"])
+            file_map = collections.defaultdict(list)
+            for bpf in bpfs:
+                file_map[bpf.binarypackagerelease].append(bpf)
+            for bpr, files in file_map.items():
+                get_property_cache(bpr).files = files
+            lfas = load_related(LibraryFileAlias, bpfs, ["libraryfileID"])
+            load_related(LibraryFileContent, lfas, ["contentID"])
+            load_related(SourcePackageName, sprs, ["sourcepackagenameID"])
+            load_related(BinaryPackageName, bprs, ["binarypackagenameID"])
+
+        return DecoratedResultSet(bpphs, pre_iter_hook=eager_load)
 
     def getBuildRecords(self, build_state=None, name=None, pocket=None,
                         arch_tag=None, user=None, binary_only=True):

@@ -534,6 +534,7 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
                 self.makeSeriesPackage, pocket=PackagePublishingPocket.RELEASE,
                 status=PackagePublishingStatus.PUBLISHED),
             5, 5)
+        self.assertThat(recorder1, HasQueryCount(Equals(11)))
         self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
 
     def test_getBinaryPackagePublishing_query_count(self):
@@ -553,6 +554,7 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
                 pocket=PackagePublishingPocket.RELEASE,
                 status=PackagePublishingStatus.PUBLISHED),
             5, 5)
+        self.assertThat(recorder1, HasQueryCount(Equals(15)))
         self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
 
 
