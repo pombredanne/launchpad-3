@@ -154,7 +154,7 @@ class ISourcePackageRelease(Interface):
         title=_("Source package recipe build"),
         required=False, readonly=True)
 
-    def addFile(file):
+    def addFile(file, filetype=None):
         """Add the provided library file alias (file) to the list of files
         in this package.
         """

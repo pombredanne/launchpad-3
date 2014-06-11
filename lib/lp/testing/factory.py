@@ -3546,12 +3546,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             library_file = self.makeLibraryFileAlias()
         if filetype is None:
             filetype = SourcePackageFileType.DSC
-        sprf = ProxyFactory(
-            SourcePackageReleaseFile(
-                sourcepackagerelease=sourcepackagerelease,
-                libraryfile=library_file, filetype=filetype))
-        del get_property_cache(sourcepackagerelease).files
-        return sprf
+        return ProxyFactory(
+            sourcepackagerelease.addFile(library_file, filetype=filetype))
 
     def makeBinaryPackageBuild(self, source_package_release=None,
             distroarchseries=None, archive=None, builder=None,
