@@ -13,6 +13,7 @@ __all__ = [
 import collections
 from cStringIO import StringIO
 import logging
+from operator import attrgetter
 
 import apt_pkg
 from lazr.delegates import delegates
@@ -1010,8 +1011,11 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         sprs = load_related(
             SourcePackageRelease, spphs, ["sourcepackagereleaseID"])
         load_related(SourcePackageName, sprs, ["sourcepackagenameID"])
-        sprfs = load_referencing(
-            SourcePackageReleaseFile, sprs, ["sourcepackagereleaseID"])
+        spr_ids = set(map(attrgetter("id"), sprs))
+        sprfs = list(Store.of(self).find(
+            SourcePackageReleaseFile,
+            SourcePackageReleaseFile.sourcepackagereleaseID.is_in(
+                spr_ids)).order_by(SourcePackageReleaseFile.libraryfileID))
         file_map = collections.defaultdict(list)
         for sprf in sprfs:
             file_map[sprf.sourcepackagerelease].append(sprf)
