@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database classes for a distribution series."""
@@ -90,6 +90,10 @@ from lp.registry.model.person import Person
 from lp.registry.model.series import SeriesMixin
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.services.database.bulk import (
+    load_referencing,
+    load_related,
+    )
 from lp.services.database.constants import (
     DEFAULT,
     UTC_NOW,
@@ -106,7 +110,10 @@ from lp.services.database.sqlbase import (
     )
 from lp.services.database.stormexpr import fti_search
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
-from lp.services.librarian.model import LibraryFileAlias
+from lp.services.librarian.model import (
+    LibraryFileAlias,
+    LibraryFileContent,
+    )
 from lp.services.mail.signedmessage import signed_message_from_string
 from lp.services.propertycache import (
     cachedproperty,
@@ -135,7 +142,9 @@ from lp.soyuz.interfaces.queue import (
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
     )
+from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.binarypackagename import BinaryPackageName
+from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.model.component import Component
 from lp.soyuz.model.distroarchseries import (
     DistroArchSeries,
@@ -145,6 +154,10 @@ from lp.soyuz.model.distroseriesbinarypackage import DistroSeriesBinaryPackage
 from lp.soyuz.model.distroseriespackagecache import DistroSeriesPackageCache
 from lp.soyuz.model.distroseriessourcepackagerelease import (
     DistroSeriesSourcePackageRelease,
+    )
+from lp.soyuz.model.files import (
+    BinaryPackageFile,
+    SourcePackageReleaseFile,
     )
 from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory,
@@ -985,7 +998,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def getSourcePackagePublishing(self, pocket, component, archive):
         """See `IDistroSeries`."""
-        return Store.of(self).find(
+        spphs = Store.of(self).find(
             SourcePackagePublishingHistory,
             SourcePackagePublishingHistory.archive == archive,
             SourcePackagePublishingHistory.distroseries == self,
@@ -993,10 +1006,22 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             SourcePackagePublishingHistory.component == component,
             SourcePackagePublishingHistory.status ==
                 PackagePublishingStatus.PUBLISHED)
+        load_related(Section, spphs, ["sectionID"])
+        sprs = load_related(
+            SourcePackageRelease, spphs, ["sourcepackagereleaseID"])
+        load_related(SourcePackageName, sprs, ["sourcepackagenameID"])
+        sprfs = load_referencing(
+            SourcePackageReleaseFile, sprs, ["sourcepackagereleaseID"])
+        for spr in sprs:
+            get_property_cache(spr).files = [
+                sprf for sprf in sprfs if sprf.sourcepackagerelease == spr]
+        lfas = load_related(LibraryFileAlias, sprfs, ["libraryfileID"])
+        load_related(LibraryFileContent, lfas, ["contentID"])
+        return spphs
 
     def getBinaryPackagePublishing(self, archtag, pocket, component, archive):
         """See `IDistroSeries`."""
-        return Store.of(self).find(
+        bpphs = Store.of(self).find(
             BinaryPackagePublishingHistory,
             DistroArchSeries.distroseries == self,
             DistroArchSeries.architecturetag == archtag,
@@ -1007,6 +1032,21 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             BinaryPackagePublishingHistory.component == component,
             BinaryPackagePublishingHistory.status ==
                 PackagePublishingStatus.PUBLISHED)
+        bprs = load_related(
+            BinaryPackageRelease, bpphs, ["binarypackagereleaseID"])
+        bpbs = load_related(BinaryPackageBuild, bprs, ["buildID"])
+        sprs = load_related(
+            SourcePackageRelease, bpbs, ["source_package_release_id"])
+        bpfs = load_referencing(
+            BinaryPackageFile, bprs, ["binarypackagereleaseID"])
+        for bpr in bprs:
+            get_property_cache(bpr).files = [
+                bpf for bpf in bpfs if bpf.binarypackagerelease == bpr]
+        lfas = load_related(LibraryFileAlias, bpfs, ["libraryfileID"])
+        load_related(LibraryFileContent, lfas, ["contentID"])
+        load_related(SourcePackageName, sprs, ["sourcepackagenameID"])
+        load_related(BinaryPackageName, bprs, ["binarypackagenameID"])
+        return bpphs
 
     def getBuildRecords(self, build_state=None, name=None, pocket=None,
                         arch_tag=None, user=None, binary_only=True):
