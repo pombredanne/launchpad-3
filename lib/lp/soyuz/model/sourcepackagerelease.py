@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -128,8 +128,6 @@ class SourcePackageRelease(SQLBase):
     dsc_binaries = StringCol(dbName='dsc_binaries')
 
     # MultipleJoins
-    files = SQLMultipleJoin('SourcePackageReleaseFile',
-        joinColumn='sourcepackagerelease', orderBy="libraryfile")
     publishings = SQLMultipleJoin('SourcePackagePublishingHistory',
         joinColumn='sourcepackagerelease', orderBy="-datecreated")
 
@@ -245,10 +243,20 @@ class SourcePackageRelease(SQLBase):
 
     def addFile(self, file):
         """See ISourcePackageRelease."""
-        return SourcePackageReleaseFile(
+        sprf = SourcePackageReleaseFile(
             sourcepackagerelease=self,
             filetype=determine_source_file_type(file.filename),
             libraryfile=file)
+        Store.of(self).flush()
+        del get_property_cache(self).files
+        return sprf
+
+    @cachedproperty
+    def files(self):
+        """See `ISourcePackageRelease`."""
+        return list(Store.of(self).find(
+            SourcePackageReleaseFile, sourcepackagerelease=self).order_by(
+                SourcePackageReleaseFile.libraryfileID))
 
     def getFileByName(self, filename):
         """See `ISourcePackageRelease`."""
