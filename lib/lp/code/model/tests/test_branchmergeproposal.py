@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for BranchMergeProposals."""
@@ -47,9 +47,6 @@ from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposal,
     IBranchMergeProposalGetter,
     notify_modified,
-    )
-from lp.code.interfaces.codereviewinlinecomment import (
-    ICodeReviewInlineCommentSet,
     )
 from lp.code.model.branchmergeproposal import (
     BranchMergeProposalGetter,
