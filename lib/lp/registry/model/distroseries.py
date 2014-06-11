@@ -1012,9 +1012,11 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         load_related(SourcePackageName, sprs, ["sourcepackagenameID"])
         sprfs = load_referencing(
             SourcePackageReleaseFile, sprs, ["sourcepackagereleaseID"])
-        for spr in sprs:
-            get_property_cache(spr).files = [
-                sprf for sprf in sprfs if sprf.sourcepackagerelease == spr]
+        file_map = collections.defaultdict(list)
+        for sprf in sprfs:
+            file_map[sprf.sourcepackagerelease].append(sprf)
+        for spr, files in file_map.items():
+            get_property_cache(spr).files = files
         lfas = load_related(LibraryFileAlias, sprfs, ["libraryfileID"])
         load_related(LibraryFileContent, lfas, ["contentID"])
         return spphs
@@ -1039,9 +1041,11 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             SourcePackageRelease, bpbs, ["source_package_release_id"])
         bpfs = load_referencing(
             BinaryPackageFile, bprs, ["binarypackagereleaseID"])
-        for bpr in bprs:
-            get_property_cache(bpr).files = [
-                bpf for bpf in bpfs if bpf.binarypackagerelease == bpr]
+        file_map = collections.defaultdict(list)
+        for bpf in bpfs:
+            file_map[bpf.binarypackagerelease].append(bpf)
+        for bpr, files in file_map.items():
+            get_property_cache(bpr).files = files
         lfas = load_related(LibraryFileAlias, bpfs, ["libraryfileID"])
         load_related(LibraryFileContent, lfas, ["contentID"])
         load_related(SourcePackageName, sprs, ["sourcepackagenameID"])
