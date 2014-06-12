@@ -767,7 +767,7 @@ class EditMilestoneByTargetOwnerOrAdmins(AuthorizationBase):
         """Authorize the product or distribution owner."""
         if user.in_admin:
             return True
-        if user.isDriver(self.obj.series_target):
+        if user.isOneOfDrivers(self.obj.series_target):
             return True
         return user.isOwner(self.obj.target)
 

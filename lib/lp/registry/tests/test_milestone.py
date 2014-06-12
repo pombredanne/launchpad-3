@@ -409,6 +409,15 @@ class MilestoneSecurityAdaperTestCase(TestCaseWithFactory):
             for permission, names in self.expected_set_permissions.items():
                 self.assertChangeAuthorized(names, self.proprietary_milestone)
 
+    def test_access_for_product_driver(self):
+        # The driver of a private product can changeattributes.
+        driver = self.factory.makePerson()
+        with person_logged_in(self.proprietary_product_owner):
+            self.proprietary_product.driver = driver
+        with person_logged_in(driver):
+            for permission, names in self.expected_set_permissions.items():
+                self.assertChangeAuthorized(names, self.proprietary_milestone)
+
 
 class HasMilestonesSnapshotTestCase(TestCaseWithFactory):
     """A TestCase for snapshots of pillars with milestones."""
