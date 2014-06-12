@@ -90,29 +90,22 @@ be used to check for any non-celebrity team.
 
 == isOwner, isDriver ==
 
-We can easily check for ownership and drivership. This is admittedly not much
-shorter than calling inTeam but clearer to read.
+We can easily check for ownership and drivership. If an object
+provides IHasDrivers, its ancestors' drivers will be checked too.
 
     >>> product = factory.makeProduct(owner=person)
     >>> print roles.isOwner(product)
     True
 
-    >>> print roles.isDriver(product)
+    >>> driver = factory.makePerson()
+    >>> driver_roles = IPersonRoles(driver)
+    >>> print driver_roles.isDriver(product)
     False
-    >>> product.driver = person
-    >>> print roles.isDriver(product)
+    >>> product.driver = driver
+    >>> print driver_roles.isDriver(product)
     True
-
-
-== isOneOfDrivers ==
-
-If an object implements IHasDrivers it lists all drivers of the object and
-possible parent objects. The method isOneOfDrivers lets us check for those.
-
     >>> productseries = factory.makeProductSeries(product=product)
-    >>> print roles.isDriver(productseries)
-    False
-    >>> print roles.isOneOfDrivers(productseries)
+    >>> print driver_roles.isDriver(productseries)
     True
 
 
