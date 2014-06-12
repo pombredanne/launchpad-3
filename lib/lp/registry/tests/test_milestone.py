@@ -24,7 +24,6 @@ from lp.registry.enums import (
     SharingPermission,
     SpecificationSharingPolicy,
     )
-from lp.registry.errors import ProprietaryProduct
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.milestone import (
     IHasMilestones,
@@ -410,7 +409,7 @@ class MilestoneSecurityAdaperTestCase(TestCaseWithFactory):
                 self.assertChangeAuthorized(names, self.proprietary_milestone)
 
     def test_access_for_product_driver(self):
-        # The driver of a private product can changeattributes.
+        # The driver of a private product can change attributes.
         driver = self.factory.makePerson()
         with person_logged_in(self.proprietary_product_owner):
             self.proprietary_product.driver = driver
