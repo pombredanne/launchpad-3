@@ -46,7 +46,7 @@ from lp.services.webapp.interfaces import OAuthPermission
 class JSONTokenMixin:
 
     def getJSONRepresentation(self, permissions, token=None,
-                              include_secret=False):
+                              secret=None):
         """Return a JSON representation of the authorization policy.
 
         This includes a description of some subset of OAuthPermission,
@@ -56,8 +56,8 @@ class JSONTokenMixin:
         if token is not None:
             structure['oauth_token'] = token.key
             structure['oauth_token_consumer'] = token.consumer.key
-            if include_secret:
-                structure['oauth_token_secret'] = token.secret
+            if secret is not None:
+                structure['oauth_token_secret'] = secret
         access_levels = [{
                 'value': permission.name,
                 'title': permission.title,
@@ -103,7 +103,7 @@ class OAuthRequestTokenView(LaunchpadFormView, JSONTokenMixin):
                 if (permission != OAuthPermission.DESKTOP_INTEGRATION)
                 ]
             return self.getJSONRepresentation(
-                permissions, token, include_secret=True)
+                permissions, token, secret=token.secret)
         return u'oauth_token=%s&oauth_token_secret=%s' % (
             token.key, token.secret)
 
