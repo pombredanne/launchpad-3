@@ -1579,7 +1579,8 @@ class CurrentTranslationMessageZoomedView(CurrentTranslationMessageView):
         # should point to the parent batch of messages.
         # XXX: kiko 2006-09-27: Preserve second_lang_code and other form
         # parameters?
-        batch_url = '/+translate?start=%d' % (self.sequence - 1)
+        assert self.context.browser_pofile == self.pofile
+        batch_url = '/+translate?start=%d' % (self.context.sequence - 1)
         return canonical_url(self.pofile) + batch_url
 
     @property
