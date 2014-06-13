@@ -83,6 +83,9 @@ class IOAuthConsumer(Interface):
         "desktop"). If the consumer is a specific web or desktop
         application, this is None.""")
 
+    def isSecretValid(secret):
+        """Check if a secret is valid for this consumer."""
+
     def newRequestToken():
         """Return a new `IOAuthRequestToken` with a random key and secret.
 
@@ -169,6 +172,9 @@ class IOAuthToken(Interface):
         required=False, readonly=True,
         description=_("A token may only be usable for a limited time, "
                       "after which it will expire."))
+
+    def isSecretValid(secret):
+        """Check if a secret is valid for this token."""
 
 
 class IOAuthAccessToken(IOAuthToken):
