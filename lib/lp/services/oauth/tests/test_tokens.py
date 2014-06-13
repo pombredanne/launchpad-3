@@ -402,22 +402,6 @@ class TestHelperFunctions(TestOAuth):
             self.context)
         self.assertEquals(person.oauth_access_tokens.count(), 1)
 
-    def test_oauth_access_token_for_retrieves_existing_token(self):
-        # If there's already a token for a
-        # user/consumer key/permission/context, it's retrieved.
-        person = self.factory.makePerson()
-        self.assertEquals(person.oauth_access_tokens.count(), 0)
-        access_token = oauth_access_token_for(
-            self.consumer.key, person, OAuthPermission.WRITE_PUBLIC,
-            self.context)
-        self.assertEquals(person.oauth_access_tokens.count(), 1)
-
-        access_token_2 = oauth_access_token_for(
-            access_token.consumer.key, access_token.person,
-            access_token.permission, access_token.context)
-        self.assertEquals(person.oauth_access_tokens.count(), 1)
-        self.assertTrue(sameProxiedObjects(access_token, access_token_2))
-
     def test_oauth_access_token_string_permission(self):
         """You can pass in a string instead of an OAuthPermission."""
         access_token = oauth_access_token_for(

@@ -79,19 +79,7 @@ def oauth_access_token_for(consumer_name, person, permission, context=None):
     consumer = consumer_set.getByKey(consumer_name)
     if consumer is None:
         consumer = consumer_set.new(consumer_name)
-    else:
-        # We didn't have to create the consumer. Maybe this user
-        # already has an access token for this
-        # consumer+person+permission?
-        existing_token = [token for token in person.oauth_access_tokens
-                          if (token.consumer == consumer
-                              and token.permission == permission
-                              and token.context == context)]
-        if len(existing_token) >= 1:
-            return existing_token[0]
 
-    # There is no existing access token for this
-    # consumer+person+permission+context. Create one and review it.
     request_token, _ = consumer.newRequestToken()
     request_token.review(person, permission, context)
     access_token = request_token.createAccessToken()
