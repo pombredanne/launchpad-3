@@ -92,7 +92,7 @@ def oauth_access_token_for(consumer_name, person, permission, context=None):
 
     # There is no existing access token for this
     # consumer+person+permission+context. Create one and review it.
-    request_token = consumer.newRequestToken()
+    request_token, _ = consumer.newRequestToken()
     request_token.review(person, permission, context)
     access_token = request_token.createAccessToken()
     return access_token

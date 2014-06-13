@@ -87,10 +87,11 @@ class IOAuthConsumer(Interface):
         """Check if a secret is valid for this consumer."""
 
     def newRequestToken():
-        """Return a new `IOAuthRequestToken` with a random key and secret.
+        """Return a new `IOAuthRequestToken` and its random secret.
 
-        The other attributes of the token are supposed to be set whenever the
-        user logs into Launchpad and grants (or not) access to this consumer.
+        The key and secret are random, while the other attributes of the
+        token are supposed to be set whenever the user logs into
+        Launchpad and grants (or not) access to this consumer.
         """
 
     def getAccessToken(key):

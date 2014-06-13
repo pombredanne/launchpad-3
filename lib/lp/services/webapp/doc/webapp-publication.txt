@@ -919,7 +919,7 @@ the OAuthNonce table.
 
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
     >>> consumer = getUtility(IOAuthConsumerSet).getByKey('foobar123451432')
-    >>> token = consumer.newRequestToken()
+    >>> token, _ = consumer.newRequestToken()
     >>> token.review(salgado, OAuthPermission.WRITE_PUBLIC)
     >>> access_token = token.createAccessToken()
     >>> policy = getUtility(IStoreSelector).pop()
@@ -1107,7 +1107,7 @@ token.
     >>> getUtility(IStoreSelector).push(MasterDatabasePolicy())
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
     >>> consumer = getUtility(IOAuthConsumerSet).getByKey('foobar123451432')
-    >>> token = consumer.newRequestToken()
+    >>> token, _ = consumer.newRequestToken()
     >>> firefox = getUtility(IProductSet)['firefox']
     >>> token.review(salgado, OAuthPermission.WRITE_PUBLIC, context=firefox)
     >>> access_token = token.createAccessToken()

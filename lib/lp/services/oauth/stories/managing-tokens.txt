@@ -111,7 +111,7 @@ include that.
     >>> from lp.registry.interfaces.product import IProductSet
     >>> from lp.services.oauth.interfaces import IOAuthConsumerSet
     >>> login('salgado@ubuntu.com')
-    >>> token = getUtility(IOAuthConsumerSet).getByKey(
+    >>> token, _ = getUtility(IOAuthConsumerSet).getByKey(
     ...     'launchpad-library').newRequestToken()
     >>> token.review(salgado, OAuthPermission.WRITE_PUBLIC,
     ...              context=getUtility(IProductSet)['firefox'])

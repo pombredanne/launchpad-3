@@ -16,6 +16,7 @@ from datetime import (
     datetime,
     timedelta,
     )
+import hashlib
 import re
 
 import pytz
@@ -178,8 +179,8 @@ class OAuthConsumer(OAuthBase, SQLBase):
     def newRequestToken(self):
         """See `IOAuthConsumer`."""
         key, secret = create_token_key_and_secret(table=OAuthRequestToken)
-        return OAuthRequestToken(
-            consumer=self, key=key, secret=secret)
+        return (
+            OAuthRequestToken(consumer=self, key=key, secret=secret), secret)
 
     def getAccessToken(self, key):
         """See `IOAuthConsumer`."""

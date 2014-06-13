@@ -93,7 +93,7 @@ class OAuthRequestTokenView(LaunchpadFormView, JSONTokenMixin):
         if not check_oauth_signature(self.request, consumer, None):
             return u''
 
-        token = consumer.newRequestToken()
+        token, secret = consumer.newRequestToken()
         if self.request.headers.get('Accept') == HTTPResource.JSON_TYPE:
             # Don't show the client the DESKTOP_INTEGRATION access
             # level. If they have a legitimate need to use it, they'll
@@ -103,7 +103,7 @@ class OAuthRequestTokenView(LaunchpadFormView, JSONTokenMixin):
                 if (permission != OAuthPermission.DESKTOP_INTEGRATION)
                 ]
             return self.getJSONRepresentation(
-                permissions, token, secret=token.secret)
+                permissions, token, secret=secret)
         return u'oauth_token=%s&oauth_token_secret=%s' % (
             token.key, token.secret)
 

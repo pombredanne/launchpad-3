@@ -100,7 +100,7 @@ class TestWebServicePublication(TestCaseWithFactory):
 
         # Create an access token for our new person.
         consumer = getUtility(IOAuthConsumerSet).new('test-consumer')
-        request_token = consumer.newRequestToken()
+        request_token, _ = consumer.newRequestToken()
         request_token.review(
             person, permission=OAuthPermission.READ_PUBLIC, context=None)
         access_token = request_token.createAccessToken()
