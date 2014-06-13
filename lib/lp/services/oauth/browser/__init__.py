@@ -442,7 +442,7 @@ class OAuthAccessTokenView(LaunchpadView):
                 'End-user refused to authorize request token.')
 
         try:
-            access_token = token.createAccessToken()
+            access_token, access_secret = token.createAccessToken()
         except OAuthValidationError as e:
             return self._set_status_and_error(e)
 
@@ -450,5 +450,5 @@ class OAuthAccessTokenView(LaunchpadView):
         if access_token.context is not None:
             context_name = access_token.context.name
         body = u'oauth_token=%s&oauth_token_secret=%s&lp.context=%s' % (
-            access_token.key, access_token.secret, context_name)
+            access_token.key, access_secret, context_name)
         return body

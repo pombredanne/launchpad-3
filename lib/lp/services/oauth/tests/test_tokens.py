@@ -15,7 +15,6 @@ from datetime import (
 import pytz
 import transaction
 from zope.component import getUtility
-from zope.proxy import sameProxiedObjects
 from zope.security.interfaces import Unauthorized
 
 from lp.services.mail import stub
@@ -273,15 +272,17 @@ class TestAccessTokens(TestOAuth):
         # used to create the access token.
         request_token, _ = self.consumer.newRequestToken()
         request_token.review(self.person, OAuthPermission.WRITE_PRIVATE)
-        access_token = request_token.createAccessToken()
-        return request_token, access_token
+        access_token, access_secret = request_token.createAccessToken()
+        return request_token, access_token, access_secret
 
     def test_exchange_request_token_for_access_token(self):
         # Make sure the basic exchange of request token for access
         # token works.
-        request_token, access_token = (
+        request_token, access_token, access_secret = (
             self._exchange_request_token_for_access_token())
         verifyObject(IOAuthAccessToken, access_token)
+        self.assertIsInstance(access_secret, unicode)
+        self.assertEqual(access_token.secret, access_secret)
 
         # Make sure the security notification email went out that the new
         # token was created.
@@ -291,7 +292,7 @@ class TestAccessTokens(TestOAuth):
         self.assertIn('@example.com', to_addr[0])
 
     def test_access_token_inherits_data_fields_from_request_token(self):
-        request_token, access_token = (
+        request_token, access_token, _ = (
             self._exchange_request_token_for_access_token())
 
         self.assertEquals(request_token.consumer, access_token.consumer)
@@ -315,13 +316,13 @@ class TestAccessTokens(TestOAuth):
         request_token.review(
             self.person, OAuthPermission.WRITE_PRIVATE,
             context=context, date_expires=self.in_a_while)
-        access_token = request_token.createAccessToken()
+        access_token, _ = request_token.createAccessToken()
         self.assertEquals(request_token.context, access_token.context)
         self.assertEquals(
             request_token.date_expires, access_token.date_expires)
 
     def test_request_token_disappears_when_exchanged(self):
-        request_token, access_token = (
+        request_token, access_token, _ = (
             self._exchange_request_token_for_access_token())
         self.assertEquals(
             None, self.consumer.getRequestToken(request_token.key))
@@ -349,7 +350,7 @@ class TestAccessTokens(TestOAuth):
 
     def test_write_permission(self):
         """An access token can only be modified by its creator."""
-        access_token = self.factory.makeOAuthAccessToken()
+        access_token, _ = self.factory.makeOAuthAccessToken()
 
         def try_to_set():
             access_token.permission = AccessLevel.WRITE_PUBLIC
@@ -362,9 +363,9 @@ class TestAccessTokens(TestOAuth):
     def test_isSecretValid(self):
         request_token, _ = self.consumer.newRequestToken()
         request_token.review(self.person, OAuthPermission.WRITE_PRIVATE)
-        token = request_token.createAccessToken()
-        self.assertTrue(token.isSecretValid(token.secret))
-        self.assertFalse(token.isSecretValid(token.secret + 'a'))
+        token, secret = request_token.createAccessToken()
+        self.assertTrue(token.isSecretValid(secret))
+        self.assertFalse(token.isSecretValid(secret + 'a'))
 
     def test_get_access_tokens_for_person(self):
         """It's possible to get a person's access tokens."""
@@ -377,7 +378,7 @@ class TestAccessTokens(TestOAuth):
     def test_expired_access_token_disappears_from_list(self):
         person = self.factory.makePerson()
         self.assertEquals(person.oauth_access_tokens.count(), 0)
-        access_token = self.factory.makeOAuthAccessToken(
+        access_token, _ = self.factory.makeOAuthAccessToken(
             self.consumer, person)
         self.assertEquals(person.oauth_access_tokens.count(), 1)
 
@@ -404,7 +405,7 @@ class TestHelperFunctions(TestOAuth):
 
     def test_oauth_access_token_string_permission(self):
         """You can pass in a string instead of an OAuthPermission."""
-        access_token = oauth_access_token_for(
+        access_token, _ = oauth_access_token_for(
             self.consumer.key, self.person, 'WRITE_PUBLIC')
         self.assertEqual(access_token.permission, AccessLevel.WRITE_PUBLIC)
 

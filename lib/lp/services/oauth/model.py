@@ -402,7 +402,7 @@ class OAuthRequestToken(OAuthBase, SQLBase):
             "A new OAuth token consumer was enabled in Launchpad.")
 
         self.destroySelf()
-        return access_token
+        return access_token, secret
 
     @property
     def is_reviewed(self):

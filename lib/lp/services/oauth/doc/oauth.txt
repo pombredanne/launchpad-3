@@ -18,7 +18,7 @@ and a timestamp, the code will raise a NonceAlreadyUsed exception.
 Here's a quick demonstration of the behaviour.
 
    >>> login('foo.bar@canonical.com')
-   >>> access_token = factory.makeOAuthAccessToken()
+   >>> access_token, _ = factory.makeOAuthAccessToken()
    >>> logout()
 
 - We can use a nonce.

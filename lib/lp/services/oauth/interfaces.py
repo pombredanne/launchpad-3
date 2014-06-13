@@ -273,6 +273,8 @@ class IOAuthRequestToken(IOAuthToken):
     def createAccessToken():
         """Create an `IOAuthAccessToken` identical to this request token.
 
+        The new token and its secret are returned.
+
         After the access token is created, this one is deleted as it can't be
         used anymore.
 

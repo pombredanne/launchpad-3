@@ -717,7 +717,7 @@ def webservice_for_person(person, consumer_key='launchpad-library',
         consumer = oacs.new(consumer_key)
     request_token, _ = consumer.newRequestToken()
     request_token.review(person, permission, context)
-    access_token = request_token.createAccessToken()
+    access_token, _ = request_token.createAccessToken()
     logout()
     service = LaunchpadWebServiceCaller(consumer_key, access_token.key)
     service.user = person

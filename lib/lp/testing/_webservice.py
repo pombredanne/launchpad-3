@@ -60,7 +60,7 @@ def oauth_access_token_for(consumer_name, person, permission, context=None):
     :param context: The OAuth context for the credentials (or a string
         designating same).
 
-    :return: An OAuthAccessToken object.
+    :return: A tuple of an OAuthAccessToken object and its secret.
     """
     if isinstance(person, basestring):
         # Look up a person by name.
@@ -82,8 +82,8 @@ def oauth_access_token_for(consumer_name, person, permission, context=None):
 
     request_token, _ = consumer.newRequestToken()
     request_token.review(person, permission, context)
-    access_token = request_token.createAccessToken()
-    return access_token
+    access_token, access_secret = request_token.createAccessToken()
+    return access_token, access_secret
 
 
 def launchpadlib_credentials_for(
@@ -105,11 +105,10 @@ def launchpadlib_credentials_for(
     # PageTestLayer, when a Launchpad instance is running for
     # launchpadlib to use.
     login(ANONYMOUS)
-    access_token = oauth_access_token_for(
+    access_token, access_secret = oauth_access_token_for(
         consumer_name, person, permission, context)
     logout()
-    launchpadlib_token = AccessToken(
-        access_token.key, access_token.secret)
+    launchpadlib_token = AccessToken(access_token.key, access_secret)
     return Credentials(consumer_name=consumer_name,
                        access_token=launchpadlib_token)
 
