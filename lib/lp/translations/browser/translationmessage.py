@@ -1457,12 +1457,6 @@ class CurrentTranslationMessageView(LaunchpadView):
                 self.context.potmsgset),
             self.context.potmsgset.flags)
 
-    @cachedproperty
-    def sequence(self):
-        """Return the position number of this potmsgset in the pofile."""
-        return self.context.potmsgset.getSequence(
-            self.pofile.potemplate)
-
     @property
     def singular_text(self):
         """Return the singular form prepared to render in a web page."""
