@@ -254,6 +254,21 @@ class TestLiveFS(TestCaseWithFactory):
         self.assertEqual(builds[:1], list(livefs.completed_builds))
         self.assertEqual(builds[1:], list(livefs.pending_builds))
 
+    def test_getBuilds_privacy(self):
+        # The various getBuilds methods exclude builds against invisible
+        # archives.
+        livefs = self.factory.makeLiveFS()
+        archive = self.factory.makeArchive(
+            distribution=livefs.distro_series.distribution, owner=livefs.owner,
+            private=True)
+        with person_logged_in(livefs.owner):
+            build = self.factory.makeLiveFSBuild(
+                livefs=livefs, archive=archive)
+            self.assertEqual([build], list(livefs.builds))
+            self.assertEqual([build], list(livefs.pending_builds))
+        self.assertEqual([], list(livefs.builds))
+        self.assertEqual([], list(livefs.pending_builds))
+
 
 class TestLiveFSWebservice(TestCaseWithFactory):
 

@@ -43,6 +43,7 @@ from lp.services.database.interfaces import (
     )
 from lp.services.database.stormexpr import Greatest
 from lp.services.features import getFeatureFlag
+from lp.services.webapp.interfaces import ILaunchBag
 from lp.soyuz.interfaces.archive import ArchiveDisabled
 from lp.soyuz.interfaces.livefs import (
     DuplicateLiveFSName,
@@ -56,7 +57,10 @@ from lp.soyuz.interfaces.livefs import (
     NoSuchLiveFS,
     )
 from lp.soyuz.interfaces.livefsbuild import ILiveFSBuildSet
-from lp.soyuz.model.archive import Archive
+from lp.soyuz.model.archive import (
+    Archive,
+    get_enabled_archive_filter,
+    )
 from lp.soyuz.model.livefsbuild import LiveFSBuild
 
 
@@ -150,6 +154,9 @@ class LiveFS(Storm):
             LiveFSBuild.livefs == self,
             LiveFSBuild.archive_id == Archive.id,
             Archive._enabled == True,
+            get_enabled_archive_filter(
+                getUtility(ILaunchBag).user, include_public=True,
+                include_subscribed=True)
             ]
         if filter_term is not None:
             query_args.append(filter_term)
