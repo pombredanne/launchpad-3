@@ -73,7 +73,8 @@ class TestLiveFSBuildBehaviour(TestCaseWithFactory):
             processor=processor)
         build = self.factory.makeLiveFSBuild(
             distroarchseries=distroarchseries,
-            pocket=PackagePublishingPocket.RELEASE, name=u"livefs", **kwargs)
+            pocket=PackagePublishingPocket.RELEASE, name=u"test-livefs",
+            **kwargs)
         return IBuildFarmJobBehaviour(build)
 
     def test_provides_interface(self):
@@ -91,7 +92,7 @@ class TestLiveFSBuildBehaviour(TestCaseWithFactory):
         # displayname contains a reasonable description of the job.
         job = self.makeJob()
         self.assertEqual(
-            "i386 build of livefs live filesystem in distro unstable",
+            "i386 build of test-livefs livefs in distro unstable",
             job.displayname)
 
     def test_logStartBuild(self):
@@ -100,7 +101,7 @@ class TestLiveFSBuildBehaviour(TestCaseWithFactory):
         logger = BufferLogger()
         job.logStartBuild(logger)
         self.assertEqual(
-            "INFO startBuild(i386 build of livefs live filesystem in distro "
+            "INFO startBuild(i386 build of test-livefs livefs in distro "
             "unstable)\n", logger.getLogBuffer())
 
     def test_verifyBuildRequest_valid(self):
