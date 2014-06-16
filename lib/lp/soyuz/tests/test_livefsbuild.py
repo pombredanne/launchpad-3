@@ -261,7 +261,7 @@ class TestLiveFSBuild(TestCaseWithFactory):
         self.assertEqual(expected_body % (build.log_url, ""), body)
         self.assertEqual(
             "http://launchpad.dev/~person/+livefs/distro/unstable/livefs-1/"
-            "+livefsbuild/%d\n"
+            "+build/%d\n"
             "You are the requester of the build.\n" % build.id, footer)
 
     def addFakeBuildLog(self, build):
@@ -271,7 +271,7 @@ class TestLiveFSBuild(TestCaseWithFactory):
         # The log URL for a live filesystem build will use the archive context.
         self.addFakeBuildLog(self.build)
         self.assertEqual(
-            "http://launchpad.dev/~%s/+livefs/%s/%s/%s/+livefsbuild/%d/+files/"
+            "http://launchpad.dev/~%s/+livefs/%s/%s/%s/+build/%d/+files/"
             "mybuildlog.txt" % (
                 self.build.livefs.owner.name, self.build.distribution.name,
                 self.build.distro_series.name, self.build.livefs.name,

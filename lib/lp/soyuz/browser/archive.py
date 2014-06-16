@@ -151,7 +151,6 @@ from lp.soyuz.interfaces.binarypackagebuild import (
     )
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.component import IComponentSet
-from lp.soyuz.interfaces.livefsbuild import ILiveFSBuildSet
 from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
 from lp.soyuz.interfaces.packagecopyrequest import IPackageCopyRequestSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
@@ -246,13 +245,6 @@ class ArchiveNavigation(Navigation, FileNavigationMixin):
     @stepthrough('+recipebuild')
     def traverse_recipebuild(self, name):
         build = get_build_by_id_str(ISourcePackageRecipeBuildSource, name)
-        if build is None or build.archive != self.context:
-            return None
-        return build
-
-    @stepthrough('+livefsbuild')
-    def traverse_livefsbuild(self, name):
-        build = get_build_by_id_str(ILiveFSBuildSet, name)
         if build is None or build.archive != self.context:
             return None
         return build
