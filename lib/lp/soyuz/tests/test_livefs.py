@@ -25,6 +25,7 @@ from lp.buildmaster.enums import (
     )
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.buildmaster.model.buildqueue import BuildQueue
+from lp.registry.enums import PersonVisibility
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.database.constants import UTC_NOW
 from lp.services.features.testing import FeatureFixture
@@ -277,6 +278,31 @@ class TestLiveFSSet(TestCaseWithFactory):
         self.assertFalse(
             getUtility(ILiveFSSet).exists(
                 livefs.owner, livefs.distro_series, u"different"))
+
+    def test_getAll(self):
+        # ILiveFSSet.getAll returns all LiveFSes.
+        livefses = [self.factory.makeLiveFS() for i in range(3)]
+        self.assertContentEqual(livefses, getUtility(ILiveFSSet).getAll())
+
+    def test_getAll_privacy(self):
+        # ILiveFSSet.getAll hides LiveFSes whose owners are invisible.
+        registrants = [self.factory.makePerson() for i in range(2)]
+        owners = [
+            self.factory.makeTeam(owner=registrants[0]),
+            self.factory.makeTeam(
+                owner=registrants[1], visibility=PersonVisibility.PRIVATE),
+            ]
+        livefses = []
+        for registrant, owner in zip(registrants, owners):
+            with person_logged_in(registrant):
+                livefses.append(self.factory.makeLiveFS(
+                    registrant=registrant, owner=owner))
+        self.assertContentEqual([livefses[0]], getUtility(ILiveFSSet).getAll())
+        with person_logged_in(registrants[0]):
+            self.assertContentEqual(
+                [livefses[0]], getUtility(ILiveFSSet).getAll())
+        with person_logged_in(registrants[1]):
+            self.assertContentEqual(livefses, getUtility(ILiveFSSet).getAll())
 
 
 class TestLiveFSWebservice(TestCaseWithFactory):

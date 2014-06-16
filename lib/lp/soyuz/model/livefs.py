@@ -34,6 +34,10 @@ from lp.registry.interfaces.person import (
     NoSuchPerson,
     )
 from lp.registry.interfaces.role import IHasOwner
+from lp.registry.model.person import (
+    get_person_visibility_terms,
+    Person,
+    )
 from lp.services.database.constants import (
     DEFAULT,
     UTC_NOW,
@@ -282,4 +286,8 @@ class LiveFSSet:
     def getAll(self):
         """See `ILiveFSSet`."""
         store = IStore(LiveFS)
-        return store.find(LiveFS).order_by("name")
+        user = getUtility(ILaunchBag).user
+        return store.find(
+            LiveFS,
+            LiveFS.owner == Person.id,
+            get_person_visibility_terms(user)).order_by("name")
