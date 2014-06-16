@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests cronscript for retriving components from remote Bugzillas"""
@@ -196,7 +196,7 @@ class TestBugzillaRemoteComponentFinder(TestCaseWithFactory):
         self.assertEqual(u'Driver/Radeon', comp.name)
 
     def test_get_remote_products_and_components_encounters_301(self):
-        lp_bugtracker = self.factory.makeBugTracker()
+        self.factory.makeBugTracker()
         transaction.commit()
         bz_scraper = FaultyBugzillaRemoteComponentScraper(
             error=HTTPError("http://bugzilla.example.com",
@@ -207,7 +207,7 @@ class TestBugzillaRemoteComponentFinder(TestCaseWithFactory):
         self.assertGetRemoteProductsAndComponentsDoesNotAssert(finder)
 
     def test_get_remote_products_and_components_encounters_400(self):
-        lp_bugtracker = self.factory.makeBugTracker()
+        self.factory.makeBugTracker()
         transaction.commit()
         bz_scraper = FaultyBugzillaRemoteComponentScraper(
             error=HTTPError("http://bugzilla.example.com",
@@ -218,7 +218,7 @@ class TestBugzillaRemoteComponentFinder(TestCaseWithFactory):
         self.assertGetRemoteProductsAndComponentsDoesNotAssert(finder)
 
     def test_get_remote_products_and_components_encounters_404(self):
-        lp_bugtracker = self.factory.makeBugTracker()
+        self.factory.makeBugTracker()
         transaction.commit()
         bz_scraper = FaultyBugzillaRemoteComponentScraper(
             error=HTTPError("http://bugzilla.example.com",
@@ -229,7 +229,7 @@ class TestBugzillaRemoteComponentFinder(TestCaseWithFactory):
         self.assertGetRemoteProductsAndComponentsDoesNotAssert(finder)
 
     def test_get_remote_products_and_components_encounters_500(self):
-        lp_bugtracker = self.factory.makeBugTracker()
+        self.factory.makeBugTracker()
         transaction.commit()
         bz_scraper = FaultyBugzillaRemoteComponentScraper(
             error=HTTPError("http://bugzilla.example.com",

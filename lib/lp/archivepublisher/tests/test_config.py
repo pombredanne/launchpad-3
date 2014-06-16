@@ -45,8 +45,6 @@ class TestGetPubConfig(TestCaseWithFactory):
         self.assertEqual(archiveroot + "-cache", primary_config.cacheroot)
         self.assertEqual(archiveroot + "-misc", primary_config.miscroot)
         self.assertEqual(
-            archiveroot + "-germinate", primary_config.germinateroot)
-        self.assertEqual(
             self.root + "/ubuntutest-temp", primary_config.temproot)
         self.assertEqual(archiveroot + "-uefi", primary_config.uefiroot)
 
@@ -67,7 +65,6 @@ class TestGetPubConfig(TestCaseWithFactory):
         self.assertIsNone(partner_config.overrideroot)
         self.assertIsNone(partner_config.cacheroot)
         self.assertIsNone(partner_config.miscroot)
-        self.assertIsNone(partner_config.germinateroot)
         self.assertEqual(
             self.root + "/ubuntutest-temp", partner_config.temproot)
         self.assertEqual(archiveroot + "-uefi", partner_config.uefiroot)
@@ -89,8 +86,6 @@ class TestGetPubConfig(TestCaseWithFactory):
             archiveroot + "-overrides", copy_config.overrideroot)
         self.assertEqual(archiveroot + "-cache", copy_config.cacheroot)
         self.assertEqual(archiveroot + "-misc", copy_config.miscroot)
-        self.assertEqual(
-            archiveroot + "-germinate", copy_config.germinateroot)
         self.assertEqual(archiveroot + "-temp", copy_config.temproot)
         self.assertIsNone(copy_config.uefiroot)
 
@@ -125,7 +120,6 @@ class TestGetPubConfigPPA(TestCaseWithFactory):
         self.assertIsNone(self.ppa_config.overrideroot)
         self.assertIsNone(self.ppa_config.cacheroot)
         self.assertIsNone(self.ppa_config.miscroot)
-        self.assertIsNone(self.ppa_config.germinateroot)
         self.assertEqual(
             "/var/tmp/archive/ubuntutest-temp", self.ppa_config.temproot)
         uefiroot = "/var/tmp/ppa-signing-keys.test/uefi/%s/%s" % (
@@ -156,7 +150,6 @@ class TestGetPubConfigPPA(TestCaseWithFactory):
         self.assertIsNone(p3a_config.overrideroot)
         self.assertIsNone(p3a_config.cacheroot)
         self.assertIsNone(p3a_config.miscroot)
-        self.assertIsNone(p3a_config.germinateroot)
         self.assertEqual(
             "/var/tmp/archive/ubuntutest-temp", p3a_config.temproot)
         # It's OK for the signing keys to be in the same location as for

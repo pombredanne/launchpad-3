@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Source package release interfaces."""
@@ -154,7 +154,7 @@ class ISourcePackageRelease(Interface):
         title=_("Source package recipe build"),
         required=False, readonly=True)
 
-    def addFile(file):
+    def addFile(file, filetype=None):
         """Add the provided library file alias (file) to the list of files
         in this package.
         """

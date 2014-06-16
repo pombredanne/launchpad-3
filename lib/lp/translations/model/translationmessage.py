@@ -37,7 +37,10 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from lp.services.propertycache import cachedproperty
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
 from lp.translations.interfaces.side import TranslationSide
 from lp.translations.interfaces.translationmessage import (
     ITranslationMessage,
@@ -113,8 +116,9 @@ class TranslationMessageMixIn:
     def setPOFile(self, pofile):
         """See `ITranslationMessage`."""
         self.browser_pofile = pofile
+        del get_property_cache(self).sequence
 
-    @property
+    @cachedproperty
     def sequence(self):
         if self.browser_pofile:
             pofile = self.browser_pofile

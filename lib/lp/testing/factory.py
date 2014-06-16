@@ -2,7 +2,7 @@
 # NOTE: The first line above must stay first; do not move the copyright
 # notice to the top.  See http://www.python.org/dev/peps/pep-0263/.
 #
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Testing infrastructure for the Launchpad application.
@@ -293,10 +293,7 @@ from lp.soyuz.model.component import ComponentSelection
 from lp.soyuz.model.distributionsourcepackagecache import (
     DistributionSourcePackageCache,
     )
-from lp.soyuz.model.files import (
-    BinaryPackageFile,
-    SourcePackageReleaseFile,
-    )
+from lp.soyuz.model.files import BinaryPackageFile
 from lp.soyuz.model.packagediff import PackageDiff
 from lp.testing import (
     admin_logged_in,
@@ -3544,9 +3541,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if filetype is None:
             filetype = SourcePackageFileType.DSC
         return ProxyFactory(
-            SourcePackageReleaseFile(
-                sourcepackagerelease=sourcepackagerelease,
-                libraryfile=library_file, filetype=filetype))
+            sourcepackagerelease.addFile(library_file, filetype=filetype))
 
     def makeBinaryPackageBuild(self, source_package_release=None,
             distroarchseries=None, archive=None, builder=None,

@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -225,7 +225,7 @@ class TestPersonTranslationView(TestCaseWithFactory):
         # top_projects_and_packages will show at most 9 POFiles
         # overall.
         self._makeReviewer()
-        pofiles_worked_on = self._makePOFiles(11, previously_worked_on=True)
+        self._makePOFiles(11, previously_worked_on=True)
 
         targets = self.view.top_projects_and_packages_to_review
 
@@ -407,13 +407,13 @@ class TestPersonTranslationViewPermissions(BrowserTestCase):
         self.assertFalse("+edit" in browser.contents)
 
     def test_links_unauthorized(self):
-        group = self.factory.makeTranslationGroup()
+        self.factory.makeTranslationGroup()
         browser = self.getViewBrowser(self.context, "+translations")
         self.assertFalse("+editmylanguages" in browser.contents)
         self.assertFalse("+edit" in browser.contents)
 
     def test_links_authorized(self):
-        group = self.factory.makeTranslationGroup()
+        self.factory.makeTranslationGroup()
         browser = self.getViewBrowser(
             self.context, "+translations", user=self.context)
         self.assertTrue("+editmylanguages" in browser.contents)

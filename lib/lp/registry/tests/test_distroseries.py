@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for distroseries."""
@@ -9,6 +9,7 @@ __all__ = [
     'CurrentSourceReleasesMixin',
     ]
 
+from functools import partial
 from logging import getLogger
 
 from testtools.matchers import Equals
@@ -39,6 +40,7 @@ from lp.testing import (
     ANONYMOUS,
     login,
     person_logged_in,
+    record_two_runs,
     StormStatementRecorder,
     TestCase,
     TestCaseWithFactory,
@@ -385,9 +387,12 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
         transaction.commit()
         login(ANONYMOUS)
 
-    def makeSeriesPackage(self, name, is_main=False, bugs=None, messages=None,
-                          is_translations=False):
+    def makeSeriesPackage(self, name=None, is_main=False, bugs=None,
+                          messages=None, is_translations=False, pocket=None,
+                          status=None):
         # Make a published source package.
+        if name is None:
+            name = self.factory.getUniqueString()
         if is_main:
             component = self.main_component
         else:
@@ -397,9 +402,10 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
         else:
             section = 'web'
         sourcepackagename = self.factory.makeSourcePackageName(name)
-        self.factory.makeSourcePackagePublishingHistory(
+        spph = self.factory.makeSourcePackagePublishingHistory(
             sourcepackagename=sourcepackagename, distroseries=self.series,
-            component=component, section_name=section)
+            component=component, section_name=section, pocket=pocket,
+            status=status)
         source_package = self.factory.makeSourcePackage(
             sourcepackagename=sourcepackagename, distroseries=self.series)
         if bugs is not None:
@@ -411,8 +417,35 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
                 distroseries=self.series, sourcepackagename=sourcepackagename,
                 owner=self.user)
             removeSecurityProxy(template).messagecount = messages
+        spr = spph.sourcepackagerelease
+        for extension in ("dsc", "tar.gz"):
+            filename = "%s_%s.%s" % (spr.name, spr.version, extension)
+            spr.addFile(self.factory.makeLibraryFileAlias(
+                filename=filename, db_only=True))
         self.packages[name] = source_package
         return source_package
+
+    def makeSeriesBinaryPackage(self, name=None, is_main=False,
+                                is_translations=False, das=None, pocket=None,
+                                status=None):
+        # Make a published binary package.
+        if name is None:
+            name = self.factory.getUniqueString()
+        source = self.makeSeriesPackage(
+            name=name, is_main=is_main, is_translations=is_translations,
+            pocket=pocket, status=status)
+        spr = source.distinctreleases[0]
+        binarypackagename = self.factory.makeBinaryPackageName(name)
+        bpph = self.factory.makeBinaryPackagePublishingHistory(
+            binarypackagename=binarypackagename, distroarchseries=das,
+            component=spr.component, section_name=spr.section.name,
+            status=status, pocket=pocket, source_package_release=spr)
+        bpr = bpph.binarypackagerelease
+        filename = "%s_%s_%s.deb" % (
+            bpr.name, bpr.version, das.architecturetag)
+        bpr.addFile(self.factory.makeLibraryFileAlias(
+            filename=filename, db_only=True))
+        return bpph
 
     def linkPackage(self, name):
         product_series = self.factory.makeProductSeries()
@@ -485,6 +518,44 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
         names = [packaging.sourcepackagename.name for packaging in packagings]
         expected = [u'translatable', u'linked', u'importabletranslatable']
         self.assertEqual(expected, names)
+
+    def test_getSourcePackagePublishing_query_count(self):
+        # Check that the number of queries required to publish source
+        # packages is constant in the number of source packages.
+        def get_index_stanzas():
+            for spp in self.series.getSourcePackagePublishing(
+                    PackagePublishingPocket.RELEASE, self.universe_component,
+                    self.series.main_archive):
+                spp.getIndexStanza()
+
+        recorder1, recorder2 = record_two_runs(
+            get_index_stanzas,
+            partial(
+                self.makeSeriesPackage, pocket=PackagePublishingPocket.RELEASE,
+                status=PackagePublishingStatus.PUBLISHED),
+            5, 5)
+        self.assertThat(recorder1, HasQueryCount(Equals(11)))
+        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
+
+    def test_getBinaryPackagePublishing_query_count(self):
+        # Check that the number of queries required to publish binary
+        # packages is constant in the number of binary packages.
+        def get_index_stanzas(das):
+            for bpp in self.series.getBinaryPackagePublishing(
+                    das.architecturetag, PackagePublishingPocket.RELEASE,
+                    self.universe_component, self.series.main_archive):
+                bpp.getIndexStanza()
+
+        das = self.factory.makeDistroArchSeries(distroseries=self.series)
+        recorder1, recorder2 = record_two_runs(
+            partial(get_index_stanzas, das),
+            partial(
+                self.makeSeriesBinaryPackage, das=das,
+                pocket=PackagePublishingPocket.RELEASE,
+                status=PackagePublishingStatus.PUBLISHED),
+            5, 5)
+        self.assertThat(recorder1, HasQueryCount(Equals(15)))
+        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
 
 
 class TestDistroSeriesSet(TestCaseWithFactory):
