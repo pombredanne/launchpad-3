@@ -2904,11 +2904,10 @@ class EditLiveFSBuild(AdminByBuilddAdmin):
     def checkAuthenticated(self, user):
         """Check edit access for live filesystem builds.
 
-        Allow admins, buildd admins, the owner of the live filesystem, and
-        the requester of the live filesystem build.
+        Allow admins, buildd admins, and the owner of the live filesystem.
+        (Note that the requester of the build is required to be in the team
+        that owns the live filesystem.)
         """
-        if user.inTeam(self.obj.requester):
-            return True
         auth_livefs = EditLiveFS(self.obj.livefs)
         if auth_livefs.checkAuthenticated(user):
             return True
