@@ -48,7 +48,7 @@ class LiveFSUpload:
                     livefs_file, os.stat(livefs_path).st_size,
                     open(livefs_path, "rb"),
                     filenameToContentType(livefs_path),
-                    restricted=build.archive.private)
+                    restricted=build.is_private)
                 build.addFile(libraryfile)
 
         # The master verifies the status to confirm successful upload.
