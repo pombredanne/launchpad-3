@@ -17,15 +17,13 @@ from zope.component import getUtility
 from zope.formlib.widgets import (
     DropdownWidget,
     TextAreaWidget,
+    TextWidget,
     )
 from zope.interface import (
     implements,
     Interface,
     )
-from zope.schema import (
-    Bool,
-    Text,
-    )
+from zope.schema import Text
 
 from lp import _
 from lp.app.browser.launchpadform import (
@@ -230,9 +228,6 @@ class IEditCodeReviewComment(Interface):
 
     comment = Text(title=_('Comment'), required=False)
 
-    publish_inline_comments = Bool(
-        title=_("Publish draft inline comments"), required=False)
-
 
 class CodeReviewCommentAddView(LaunchpadFormView):
     """View for adding a CodeReviewComment."""
@@ -243,6 +238,7 @@ class CodeReviewCommentAddView(LaunchpadFormView):
 
     schema = IEditCodeReviewComment
 
+    custom_widget('review_type', TextWidget, displayWidth=15)
     custom_widget('comment', TextAreaWidget, cssClass='comment-text')
     custom_widget('vote', MyDropWidget)
 
@@ -292,18 +288,9 @@ class CodeReviewCommentAddView(LaunchpadFormView):
         """Create the comment..."""
         vote = data.get('vote')
         review_type = data.get('review_type')
-        inline_comments = {}
-        previewdiff_id = None
-        if (getFeatureFlag('code.inline_diff_comments.enabled') and
-            data.get('publish_inline_comments')):
-            previewdiff_id = self.previewdiff.id
-            inline_comments = (
-                self.branch_merge_proposal.getDraftInlineComments(
-                    previewdiff_id))
         self.branch_merge_proposal.createComment(
             self.user, subject=None, content=data['comment'],
-            parent=self.reply_to, vote=vote, review_type=review_type,
-            previewdiff_id=previewdiff_id, inline_comments=inline_comments)
+            parent=self.reply_to, vote=vote, review_type=review_type)
 
     @property
     def next_url(self):

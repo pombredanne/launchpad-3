@@ -257,10 +257,13 @@ class TestUpdatePreviewDiffJob(DiffTestCase):
         self.assertEqual(
             'Launchpad error while generating the diff for a merge proposal',
             email['subject'])
+        branch = bmp.source_branch
         self.assertEqual(
             'Launchpad encountered an error during the following operation: '
             'generating the diff for a merge proposal.  '
-            'The source branch has no revisions.',
+            'The source branch of http://code.launchpad.dev/~%s/%s/%s/'
+            '+merge/%d has no revisions.' % (
+                branch.owner.name, branch.target.name, branch.name, bmp.id),
             email.get_payload(decode=True))
 
     def test_run_branches_pending_writes(self):

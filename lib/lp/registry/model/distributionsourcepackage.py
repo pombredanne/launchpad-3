@@ -258,10 +258,12 @@ class DistributionSourcePackage(BugTargetBase,
             SourcePackagePublishingHistory.archive IN %s AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
+            SourcePackagePublishingHistory.sourcepackagename = %s AND
             SourcePackageRelease.sourcepackagename = %s AND
             SourcePackageRelease.version = %s
             """ % sqlvalues(self.distribution,
                             self.distribution.all_distro_archive_ids,
+                            self.sourcepackagename,
                             self.sourcepackagename,
                             version),
             orderBy='-datecreated',

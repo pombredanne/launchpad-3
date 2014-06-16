@@ -295,10 +295,7 @@ from lp.soyuz.model.component import ComponentSelection
 from lp.soyuz.model.distributionsourcepackagecache import (
     DistributionSourcePackageCache,
     )
-from lp.soyuz.model.files import (
-    BinaryPackageFile,
-    SourcePackageReleaseFile,
-    )
+from lp.soyuz.model.files import BinaryPackageFile
 from lp.soyuz.model.livefsbuild import LiveFSFile
 from lp.soyuz.model.packagediff import PackageDiff
 from lp.testing import (
@@ -3547,9 +3544,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if filetype is None:
             filetype = SourcePackageFileType.DSC
         return ProxyFactory(
-            SourcePackageReleaseFile(
-                sourcepackagerelease=sourcepackagerelease,
-                libraryfile=library_file, filetype=filetype))
+            sourcepackagerelease.addFile(library_file, filetype=filetype))
 
     def makeBinaryPackageBuild(self, source_package_release=None,
             distroarchseries=None, archive=None, builder=None,

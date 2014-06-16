@@ -141,7 +141,7 @@ class InitializeDistroSeriesJob(DistributionJobDerived):
         parts += ",".join(parents)
         pkgsets = [
             IStore(Packageset).get(Packageset, int(pkgsetid)).name
-            for pkgsetid in  self.packagesets]
+            for pkgsetid in self.packagesets]
         parts += ", architectures: %s" % (self.arches,)
         parts += ", archindep_archtag: %s" % self.archindep_archtag
         parts += ", packagesets: %s" % pkgsets
@@ -209,7 +209,7 @@ class InitializeDistroSeriesJob(DistributionJobDerived):
         ids.initialize()
 
     def notifyUserError(self, error):
-        """Calls up and slso saves the error text in this job's metadata.
+        """Calls up and also saves the error text in this job's metadata.
 
         See `BaseRunnableJob`.
         """

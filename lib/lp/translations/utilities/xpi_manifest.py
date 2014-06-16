@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -159,7 +159,6 @@ class XpiManifest:
                 deletions.append(index)
 
             paths.add(entry.path)
-            last_entry = entry
 
         for index in reversed(deletions):
             del locales[index]
@@ -236,4 +235,3 @@ class XpiManifest:
                     entry.path + chrome_path[len(entry.chrome):])
 
         return None
-

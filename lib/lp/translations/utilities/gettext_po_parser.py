@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # Originally based on code from msgfmt.py (available from python source
@@ -225,7 +225,7 @@ class POHeader:
         """Attempt to parse `date_string`, or return None if invalid."""
         try:
             return zope_datetime.parseDatetimetz(date_string)
-        except (ValueError, zope_datetime.DateTimeError) as exception:
+        except (ValueError, zope_datetime.DateTimeError):
             return None
 
     def _parseHeaderFields(self):
@@ -579,7 +579,7 @@ class POParser(object):
                 self._storeCurrentMessage()
             else:
                 raise TranslationFormatSyntaxError(
-                    line_number = self._lineno,
+                    line_number=self._lineno,
                     message='Got a truncated message!')
 
         return self._translation_file
@@ -1042,4 +1042,4 @@ class POParser(object):
                 line_number=self._lineno,
                 message='Invalid content: %r' % original_line)
 
-        self._parsed_content += line 
+        self._parsed_content += line
