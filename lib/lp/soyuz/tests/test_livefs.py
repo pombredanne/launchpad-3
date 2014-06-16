@@ -83,42 +83,11 @@ class TestLiveFS(TestCaseWithFactory):
         livefs = self.factory.makeLiveFS()
         self.assertProvides(livefs, ILiveFS)
 
-    def test_class_implements_interfaces(self):
-        # The LiveFS class implements ILiveFSSet.
-        self.assertProvides(getUtility(ILiveFSSet), ILiveFSSet)
-
     def test_avoids_problematic_snapshots(self):
         self.assertThat(
             self.factory.makeLiveFS(),
             DoesNotSnapshot(
                 ["builds", "completed_builds", "pending_builds"], ILiveFSView))
-
-    def makeLiveFSComponents(self, metadata={}):
-        """Return a dict of values that can be used to make a LiveFS.
-
-        Suggested use: provide as kwargs to ILiveFSSet.new.
-
-        :param metadata: A dict to set as LiveFS.metadata.
-        """
-        registrant = self.factory.makePerson()
-        return dict(
-            registrant=registrant,
-            owner=self.factory.makeTeam(owner=registrant),
-            distro_series=self.factory.makeDistroSeries(),
-            name=self.factory.getUniqueString(u"livefs-name"),
-            metadata=metadata)
-
-    def test_creation(self):
-        # The metadata entries supplied when a LiveFS is created are present
-        # on the new object.
-        components = self.makeLiveFSComponents(metadata={"project": "foo"})
-        livefs = getUtility(ILiveFSSet).new(**components)
-        transaction.commit()
-        self.assertEqual(components["registrant"], livefs.registrant)
-        self.assertEqual(components["owner"], livefs.owner)
-        self.assertEqual(components["distro_series"], livefs.distro_series)
-        self.assertEqual(components["name"], livefs.name)
-        self.assertEqual(components["metadata"], livefs.metadata)
 
     def test_initial_date_last_modified(self):
         # The initial value of date_last_modified is date_created.
@@ -135,22 +104,6 @@ class TestLiveFS(TestCaseWithFactory):
             removeSecurityProxy(livefs), livefs, [ILiveFS["name"]]))
         self.assertSqlAttributeEqualsDate(
             livefs, "date_last_modified", UTC_NOW)
-
-    def test_exists(self):
-        # ILiveFSSet.exists checks for matching LiveFSes.
-        livefs = self.factory.makeLiveFS()
-        self.assertTrue(
-            getUtility(ILiveFSSet).exists(
-                livefs.owner, livefs.distro_series, livefs.name))
-        self.assertFalse(
-            getUtility(ILiveFSSet).exists(
-                self.factory.makePerson(), livefs.distro_series, livefs.name))
-        self.assertFalse(
-            getUtility(ILiveFSSet).exists(
-                livefs.owner, self.factory.makeDistroSeries(), livefs.name))
-        self.assertFalse(
-            getUtility(ILiveFSSet).exists(
-                livefs.owner, livefs.distro_series, u"different"))
 
     def test_requestBuild(self):
         # requestBuild creates a new LiveFSBuild.
@@ -268,6 +221,62 @@ class TestLiveFS(TestCaseWithFactory):
             self.assertEqual([build], list(livefs.pending_builds))
         self.assertEqual([], list(livefs.builds))
         self.assertEqual([], list(livefs.pending_builds))
+
+
+class TestLiveFSSet(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestLiveFSSet, self).setUp()
+        self.useFixture(FeatureFixture({LIVEFS_FEATURE_FLAG: u"on"}))
+
+    def test_class_implements_interfaces(self):
+        # The LiveFSSet class implements ILiveFSSet.
+        self.assertProvides(getUtility(ILiveFSSet), ILiveFSSet)
+
+    def makeLiveFSComponents(self, metadata={}):
+        """Return a dict of values that can be used to make a LiveFS.
+
+        Suggested use: provide as kwargs to ILiveFSSet.new.
+
+        :param metadata: A dict to set as LiveFS.metadata.
+        """
+        registrant = self.factory.makePerson()
+        return dict(
+            registrant=registrant,
+            owner=self.factory.makeTeam(owner=registrant),
+            distro_series=self.factory.makeDistroSeries(),
+            name=self.factory.getUniqueString(u"livefs-name"),
+            metadata=metadata)
+
+    def test_creation(self):
+        # The metadata entries supplied when a LiveFS is created are present
+        # on the new object.
+        components = self.makeLiveFSComponents(metadata={"project": "foo"})
+        livefs = getUtility(ILiveFSSet).new(**components)
+        transaction.commit()
+        self.assertEqual(components["registrant"], livefs.registrant)
+        self.assertEqual(components["owner"], livefs.owner)
+        self.assertEqual(components["distro_series"], livefs.distro_series)
+        self.assertEqual(components["name"], livefs.name)
+        self.assertEqual(components["metadata"], livefs.metadata)
+
+    def test_exists(self):
+        # ILiveFSSet.exists checks for matching LiveFSes.
+        livefs = self.factory.makeLiveFS()
+        self.assertTrue(
+            getUtility(ILiveFSSet).exists(
+                livefs.owner, livefs.distro_series, livefs.name))
+        self.assertFalse(
+            getUtility(ILiveFSSet).exists(
+                self.factory.makePerson(), livefs.distro_series, livefs.name))
+        self.assertFalse(
+            getUtility(ILiveFSSet).exists(
+                livefs.owner, self.factory.makeDistroSeries(), livefs.name))
+        self.assertFalse(
+            getUtility(ILiveFSSet).exists(
+                livefs.owner, livefs.distro_series, u"different"))
 
 
 class TestLiveFSWebservice(TestCaseWithFactory):
