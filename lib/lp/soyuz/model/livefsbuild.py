@@ -277,14 +277,12 @@ class LiveFSBuild(PackageBuildMixin, Storm):
 
     def getFiles(self):
         """See `ILiveFSBuild`."""
-        store = Store.of(self)
-        result = store.find(
+        result = Store.of(self).find(
             (LiveFSFile, LibraryFileAlias, LibraryFileContent),
             LiveFSFile.livefsbuild == self.id,
             LibraryFileAlias.id == LiveFSFile.libraryfile_id,
             LibraryFileContent.id == LibraryFileAlias.contentID)
-        return result.order_by(
-            [LibraryFileAlias.filename, LiveFSFile.id]).config()
+        return result.order_by([LibraryFileAlias.filename, LiveFSFile.id])
 
     def getFileByName(self, filename):
         """See `ILiveFSBuild`."""
