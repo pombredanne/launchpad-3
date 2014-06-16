@@ -379,7 +379,7 @@ class PillarPersonSharingDriver(AuthorizationBase):
         """Maintainers, drivers, and admins can drive projects."""
         return (user.in_admin or
                 user.isOwner(self.obj.pillar) or
-                user.isOneOfDrivers(self.obj.pillar))
+                user.isDriver(self.obj.pillar))
 
 
 class EditAccountBySelfOrAdmin(AuthorizationBase):
@@ -588,11 +588,11 @@ class EditSpecificationByRelatedPeople(AuthorizationBase):
         assert self.obj.target
         goal = self.obj.goal
         if goal is not None:
-            if user.isOwner(goal) or user.isOneOfDrivers(goal):
+            if user.isOwner(goal) or user.isDriver(goal):
                 return True
         return (user.in_admin or
                 user.isOwner(self.obj.target) or
-                user.isOneOfDrivers(self.obj.target) or
+                user.isDriver(self.obj.target) or
                 user.isOneOf(
                     self.obj, ['owner', 'drafter', 'assignee', 'approver']))
 
@@ -604,7 +604,7 @@ class AdminSpecification(AuthorizationBase):
     def checkAuthenticated(self, user):
         assert self.obj.target
         return (user.isOwner(self.obj.target) or
-                user.isOneOfDrivers(self.obj.target) or
+                user.isDriver(self.obj.target) or
                 user.in_admin)
 
 
@@ -669,10 +669,10 @@ class EditSpecificationSubscription(AuthorizationBase):
 
     def checkAuthenticated(self, user):
         if self.obj.specification.goal is not None:
-            if user.isOneOfDrivers(self.obj.specification.goal):
+            if user.isDriver(self.obj.specification.goal):
                 return True
         else:
-            if user.isOneOfDrivers(self.obj.specification.target):
+            if user.isDriver(self.obj.specification.target):
                 return True
         return (user.inTeam(self.obj.person) or
                 user.isOneOf(
@@ -716,7 +716,7 @@ class AdminProductTranslations(AuthorizationBase):
         able to change translation settings for a product.
         """
         return (user.isOwner(self.obj) or
-                user.isOneOfDrivers(self.obj) or
+                user.isDriver(self.obj) or
                 user.in_rosetta_experts or
                 user.in_admin)
 
@@ -1373,7 +1373,7 @@ class ViewAnnouncement(AuthorizationBase):
         # Project drivers can view any project announcements.
         # Launchpad admins can view any announcement.
         assert self.obj.target
-        return (user.isOneOfDrivers(self.obj.target) or
+        return (user.isDriver(self.obj.target) or
                 user.isOwner(self.obj.target) or
                 user.in_admin)
 
@@ -1386,7 +1386,7 @@ class EditAnnouncement(AuthorizationBase):
         """Allow the project owner and drivers to edit any project news."""
 
         assert self.obj.target
-        return (user.isOneOfDrivers(self.obj.target) or
+        return (user.isDriver(self.obj.target) or
                 user.isOwner(self.obj.target) or
                 user.in_admin)
 
@@ -2178,7 +2178,7 @@ class AdminDistroSeriesTranslations(AuthorizationBase):
         Distribution translation managers and distribution series drivers
         can manage IDistroSeries translations.
         """
-        return (user.isOneOfDrivers(self.obj) or
+        return (user.isDriver(self.obj) or
                 self.forwardCheckAuthenticated(user, self.obj.distribution))
 
 
@@ -2200,7 +2200,7 @@ class AdminProductSeriesTranslations(AuthorizationBase):
         """Is the user able to manage `IProductSeries` translations."""
 
         return (user.isOwner(self.obj) or
-                user.isOneOfDrivers(self.obj) or
+                user.isDriver(self.obj) or
                 self.forwardCheckAuthenticated(user, self.obj.product))
 
 

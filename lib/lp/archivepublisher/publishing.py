@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __all__ = [
@@ -446,7 +446,6 @@ class Publisher(object):
                 for arch in distroseries.architectures:
                     if not arch.enabled:
                         continue
-                    arch_path = "binary-%s" % arch.architecturetag
                     yield get_packages_path(
                         self._config, suite_name, component, arch)
                     for subcomp in self.subcomponents:

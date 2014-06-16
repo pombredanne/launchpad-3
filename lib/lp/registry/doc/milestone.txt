@@ -427,8 +427,7 @@ product.
     >>> print fizzy_milestone.productseries.name
     2.0
 
-The driver for a milestone's target cannot change a milestone, but the
-driver of the series_target is a release manager can can make changes.
+The driver of a milestone's target or series can make changes.
 
     >>> from lp.services.webapp.authorization import check_permission
 
@@ -440,7 +439,7 @@ driver of the series_target is a release manager can can make changes.
 
     >>> ignored = login_person(driver)
     >>> check_permission('launchpad.Edit', fizzy_milestone)
-    False
+    True
 
     >>> ignored = login_person(release_manager)
     >>> check_permission('launchpad.Edit', fizzy_milestone)

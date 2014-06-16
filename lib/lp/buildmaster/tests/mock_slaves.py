@@ -76,7 +76,12 @@ class OkSlave:
         self.arch_tag = arch_tag
         self.version = version
 
+    @property
+    def method_log(self):
+        return [(x[0] if isinstance(x, tuple) else x) for x in self.call_log]
+
     def status(self):
+        self.call_log.append('status')
         slave_status = {'builder_status': 'BuilderStatus.IDLE'}
         if self.version is not None:
             slave_status['builder_version'] = self.version
@@ -138,10 +143,13 @@ class BuildingSlave(OkSlave):
     def __init__(self, build_id='1-1'):
         super(BuildingSlave, self).__init__()
         self.build_id = build_id
+        self.status_count = 0
 
     def status(self):
         self.call_log.append('status')
-        buildlog = xmlrpclib.Binary("This is a build log")
+        buildlog = xmlrpclib.Binary(
+            "This is a build log: %d" % self.status_count)
+        self.status_count += 1
         return defer.succeed({
             'builder_status': 'BuilderStatus.BUILDING',
             'build_id': self.build_id,

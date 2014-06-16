@@ -17,6 +17,6 @@ class HasDriversMixin:
     def personHasDriverRights(self, person):
         """See `IHasDrivers`."""
         person_roles = IPersonRoles(person)
-        return (person_roles.isOneOfDrivers(self) or
+        return (person_roles.isDriver(self) or
                 person_roles.isOwner(self) or
                 person_roles.in_admin)

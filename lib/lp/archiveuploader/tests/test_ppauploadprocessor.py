@@ -1144,7 +1144,7 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
 
         self.assertEqual(queue_item.status, PackageUploadStatus.DONE)
         self.assertEqual(
-            queue_item.sources[0].sourcepackagerelease.files.count(), 5)
+            len(queue_item.sources[0].sourcepackagerelease.files), 5)
 
 
 class TestPPAUploadProcessorQuotaChecks(TestPPAUploadProcessorBase):
