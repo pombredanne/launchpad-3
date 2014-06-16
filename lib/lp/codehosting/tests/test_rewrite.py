@@ -257,19 +257,26 @@ class TestBranchRewriterScript(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_script(self):
-        branches = [
+        # The .bzr subdirectory of all public branch types gets mapped
+        # to the internal by-ID branch store, but everything else, and
+        # all private branch requests, go through to loggerhead.
+        bs = [
             self.factory.makeProductBranch(),
             self.factory.makePersonalBranch(),
             self.factory.makePackageBranch()]
-        input_lines = [
-            "/%s/.bzr/README" % branch.unique_name for branch in branches] + [
-            "/%s/changes" % branch.unique_name for branch in branches]
-        expected_lines = [
-            'file:///var/tmp/bazaar.launchpad.dev/mirrors/%s/.bzr/README'
-            % branch_id_to_path(branch.id)
-            for branch in branches] + [
-            'http://localhost:8080/%s/changes' % branch.unique_name
-            for branch in branches]
+        privbranch = removeSecurityProxy(
+            self.factory.makeProductBranch(
+                information_type=InformationType.USERDATA))
+        allbs = bs + [privbranch]
+        input_lines = (
+            ["/%s/.bzr/README" % branch.unique_name for branch in allbs]
+            + ["/%s/changes" % branch.unique_name for branch in allbs])
+        expected_lines = (
+            ['file:///var/tmp/bazaar.launchpad.dev/mirrors/%s/.bzr/README'
+             % branch_id_to_path(branch.id) for branch in bs]
+            + ['http://localhost:8080/%s/.bzr/README' % privbranch.unique_name]
+            + ['http://localhost:8080/%s/changes' % b.unique_name for b in bs]
+            + ['http://localhost:8080/%s/changes' % privbranch.unique_name])
         transaction.commit()
         script_file = os.path.join(
             config.root, 'scripts', 'branch-rewrite.py')
@@ -287,7 +294,7 @@ class TestBranchRewriterScript(TestCaseWithFactory):
         # connected to the database, or edit a branch name that has already
         # been rewritten, both are rewritten successfully.
         new_branch = self.factory.makeAnyBranch()
-        edited_branch = removeSecurityProxy(branches[0])
+        edited_branch = removeSecurityProxy(bs[0])
         edited_branch.name = self.factory.getUniqueString()
         transaction.commit()
 

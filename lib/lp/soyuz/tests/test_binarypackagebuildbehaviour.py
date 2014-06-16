@@ -404,7 +404,7 @@ class TestBinaryBuildPackageBehaviourBuildCollection(TestCaseWithFactory):
         # The builder is still building the package.
         def got_update(ignored):
             # The fake log is returned from the BuildingSlave() mock.
-            self.assertEqual("This is a build log", self.candidate.logtail)
+            self.assertEqual("This is a build log: 0", self.candidate.logtail)
 
         d = self.updateBuild(self.candidate, BuildingSlave())
         return d.addCallback(got_update)

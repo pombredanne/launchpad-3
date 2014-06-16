@@ -273,12 +273,11 @@ class BugComment(MessageComment):
         return canonical_url(self, view_name='+download')
 
     @property
-    def show_footer(self):
-        """Return True if the footer should be shown for this comment."""
+    def show_activity(self):
+        """Return True if the activity should be shown for this comment."""
         return bool(
             len(self.activity) > 0 or
-            self.bugwatch or
-            self.show_spam_controls)
+            self.bugwatch)
 
 
 class BugCommentView(LaunchpadView):

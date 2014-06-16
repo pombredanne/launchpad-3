@@ -12,7 +12,7 @@ with the IRC ID, the IRC network and nickname.
 
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
     >>> irc_id = getUtility(IIrcIDSet).new(
-    ...     salgado, 'irc.freenode.net', 'salgado')
+    ...     salgado, 'chat.freenode.net', 'salgado')
 
 The returned IrcID object provides both IIrcID and IHasOwner.
 

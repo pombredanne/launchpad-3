@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for `ExportFileStorage`."""
@@ -19,7 +19,6 @@ class ExportFileStorageTestCase(unittest.TestCase):
 
     def testEmpty(self):
         """Behaviour of empty storage."""
-        mime = 'application/x-po'
         storage = ExportFileStorage()
         # Try not inserting any files, so the storage object remains empty.
         self.assertTrue(storage._store.isEmpty())

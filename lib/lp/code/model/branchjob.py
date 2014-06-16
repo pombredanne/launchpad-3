@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __all__ = [
@@ -12,7 +12,6 @@ __all__ = [
     'RosettaUploadJob',
 ]
 
-import contextlib
 import operator
 import os
 import shutil
@@ -118,10 +117,7 @@ from lp.services.job.runner import (
     BaseRunnableJobSource,
     )
 from lp.services.mail.sendmail import format_address_for_person
-from lp.services.webapp import (
-    canonical_url,
-    errorlog,
-    )
+from lp.services.webapp import canonical_url
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
     )

@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 """Test BuildQueue features."""
 
@@ -13,7 +13,6 @@ from lp.buildmaster.enums import (
     )
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.services.database.interfaces import IStore
-from lp.services.features.testing import FeatureFixture
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
