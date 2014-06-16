@@ -43,7 +43,11 @@ from lp.registry.interfaces.series import SeriesStatus
 from lp.services.features.testing import FeatureFixture
 from lp.services.log.logger import BufferLogger
 from lp.soyuz.adapters.archivedependencies import get_sources_list_for_building
-from lp.soyuz.interfaces.livefs import LIVEFS_FEATURE_FLAG
+from lp.soyuz.interfaces.archive import ArchiveDisabled
+from lp.soyuz.interfaces.livefs import (
+    LIVEFS_FEATURE_FLAG,
+    LiveFSBuildRequiresPublicArchive,
+    )
 from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.soyuz.model.livefsbuildbehaviour import LiveFSBuildBehaviour
 from lp.testing import TestCaseWithFactory
@@ -125,6 +129,34 @@ class TestLiveFSBuildBehaviour(TestCaseWithFactory):
         e = self.assertRaises(AssertionError, job.verifyBuildRequest, logger)
         self.assertEqual(
             "Attempt to build virtual item on a non-virtual builder.", str(e))
+
+    def test_verifyBuildRequest_archive_disabled(self):
+        archive = self.factory.makeArchive(
+            enabled=False, displayname="Disabled Archive")
+        job = self.makeJob(archive=archive)
+        lfa = self.factory.makeLibraryFileAlias()
+        transaction.commit()
+        job.build.distro_arch_series.addOrUpdateChroot(lfa)
+        builder = MockBuilder()
+        job.setBuilder(builder, OkSlave())
+        logger = BufferLogger()
+        e = self.assertRaises(ArchiveDisabled, job.verifyBuildRequest, logger)
+        self.assertEqual("Disabled Archive is disabled.", str(e))
+
+    def test_verifyBuildRequest_archive_private(self):
+        archive = self.factory.makeArchive(private=True)
+        job = self.makeJob(archive=archive)
+        lfa = self.factory.makeLibraryFileAlias()
+        transaction.commit()
+        job.build.distro_arch_series.addOrUpdateChroot(lfa)
+        builder = MockBuilder()
+        job.setBuilder(builder, OkSlave())
+        logger = BufferLogger()
+        e = self.assertRaises(
+            LiveFSBuildRequiresPublicArchive, job.verifyBuildRequest, logger)
+        self.assertEqual(
+            "Live filesystem builds against private archives are not "
+            "currently allowed.", str(e))
 
     def test_verifyBuildRequest_no_chroot(self):
         # verifyBuildRequest raises when the DAS has no chroot.

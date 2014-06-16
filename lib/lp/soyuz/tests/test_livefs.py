@@ -444,6 +444,42 @@ class TestLiveFSWebservice(TestCaseWithFactory):
             "Test Person cannot create live filesystem builds owned by Other "
             "Team.", response.body)
 
+    def test_requestBuild_archive_disabled(self):
+        # Build requests against a disabled archive are rejected.
+        distroseries = self.factory.makeDistroSeries(registrant=self.person)
+        distroarchseries = self.factory.makeDistroArchSeries(
+            distroseries=distroseries, owner=self.person)
+        distroarchseries_url = api_url(distroarchseries)
+        archive = self.factory.makeArchive(
+            distribution=distroseries.distribution, owner=self.person,
+            enabled=False, displayname="Disabled Archive")
+        archive_url = api_url(archive)
+        livefs, _ = self.makeLiveFS(distroseries=distroseries)
+        response = self.webservice.named_post(
+            livefs["self_link"], "requestBuild", archive=archive_url,
+            distro_arch_series=distroarchseries_url, pocket="Release")
+        self.assertEqual(403, response.status)
+        self.assertEqual("Disabled Archive is disabled.", response.body)
+
+    def test_requestBuild_archive_private(self):
+        # Build requests against a private archive are (currently) rejected.
+        distroseries = self.factory.makeDistroSeries(registrant=self.person)
+        distroarchseries = self.factory.makeDistroArchSeries(
+            distroseries=distroseries, owner=self.person)
+        distroarchseries_url = api_url(distroarchseries)
+        archive = self.factory.makeArchive(
+            distribution=distroseries.distribution, owner=self.person,
+            private=True)
+        archive_url = api_url(archive)
+        livefs, _ = self.makeLiveFS(distroseries=distroseries)
+        response = self.webservice.named_post(
+            livefs["self_link"], "requestBuild", archive=archive_url,
+            distro_arch_series=distroarchseries_url, pocket="Release")
+        self.assertEqual(403, response.status)
+        self.assertEqual(
+            "Live filesystem builds against private archives are not "
+            "currently allowed.", response.body)
+
     def test_getBuilds(self):
         # The builds, completed_builds, and pending_builds properties are as
         # expected.

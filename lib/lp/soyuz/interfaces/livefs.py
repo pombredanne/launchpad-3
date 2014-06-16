@@ -13,6 +13,7 @@ __all__ = [
     'ILiveFSView',
     'LIVEFS_FEATURE_FLAG',
     'LiveFSBuildAlreadyPending',
+    'LiveFSBuildRequiresPublicArchive',
     'LiveFSFeatureDisabled',
     'LiveFSNotOwner',
     'NoSuchLiveFS',
@@ -47,7 +48,10 @@ from zope.schema import (
     Int,
     TextLine,
     )
-from zope.security.interfaces import Unauthorized
+from zope.security.interfaces import (
+    Forbidden,
+    Unauthorized,
+    )
 
 from lp import _
 from lp.app.errors import NameLookupFailed
@@ -75,6 +79,16 @@ class LiveFSBuildAlreadyPending(Exception):
         super(LiveFSBuildAlreadyPending, self).__init__(
             "An identical build of this live filesystem image is already "
             "pending.")
+
+
+@error_status(httplib.FORBIDDEN)
+class LiveFSBuildRequiresPublicArchive(Forbidden):
+    """Builds may only use public archives."""
+
+    def __init__(self):
+        super(LiveFSBuildRequiresPublicArchive, self).__init__(
+            "Live filesystem builds against private archives are not "
+            "currently allowed.")
 
 
 @error_status(httplib.UNAUTHORIZED)
