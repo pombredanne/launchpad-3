@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for classes that implement IHasRecipes."""
@@ -24,9 +24,9 @@ class TestIHasRecipes(TestCaseWithFactory):
         # IBranch.recipes should provide all the SourcePackageRecipes attached
         # to that branch.
         base_branch = self.factory.makeBranch()
-        recipe1 = self.factory.makeSourcePackageRecipe(branches=[base_branch])
-        recipe2 = self.factory.makeSourcePackageRecipe(branches=[base_branch])
-        recipe_ignored = self.factory.makeSourcePackageRecipe()
+        self.factory.makeSourcePackageRecipe(branches=[base_branch])
+        self.factory.makeSourcePackageRecipe(branches=[base_branch])
+        self.factory.makeSourcePackageRecipe()
         self.assertEqual(2, base_branch.recipes.count())
 
     def test_branch_recipes_nonbase(self):
@@ -36,7 +36,7 @@ class TestIHasRecipes(TestCaseWithFactory):
         nonbase_branch = self.factory.makeBranch()
         recipe = self.factory.makeSourcePackageRecipe(
             branches=[base_branch, nonbase_branch])
-        recipe_ignored = self.factory.makeSourcePackageRecipe()
+        self.factory.makeSourcePackageRecipe()
         self.assertEqual(recipe, nonbase_branch.recipes.one())
 
     def test_person_implements_hasrecipes(self):
@@ -48,9 +48,9 @@ class TestIHasRecipes(TestCaseWithFactory):
         # IPerson.recipes should provide all the SourcePackageRecipes
         # owned by that person.
         person = self.factory.makePerson()
-        recipe1 = self.factory.makeSourcePackageRecipe(owner=person)
-        recipe2 = self.factory.makeSourcePackageRecipe(owner=person)
-        recipe_ignored = self.factory.makeSourcePackageRecipe()
+        self.factory.makeSourcePackageRecipe(owner=person)
+        self.factory.makeSourcePackageRecipe(owner=person)
+        self.factory.makeSourcePackageRecipe()
         self.assertEqual(2, person.recipes.count())
 
     def test_product_implements_hasrecipes(self):
@@ -63,7 +63,7 @@ class TestIHasRecipes(TestCaseWithFactory):
         # attached to that product's branches.
         product = self.factory.makeProduct()
         branch = self.factory.makeBranch(product=product)
-        recipe1 = self.factory.makeSourcePackageRecipe(branches=[branch])
-        recipe2 = self.factory.makeSourcePackageRecipe(branches=[branch])
-        recipe_ignored = self.factory.makeSourcePackageRecipe()
+        self.factory.makeSourcePackageRecipe(branches=[branch])
+        self.factory.makeSourcePackageRecipe(branches=[branch])
+        self.factory.makeSourcePackageRecipe()
         self.assertEqual(2, product.recipes.count())

@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -75,7 +75,7 @@ class TestPOTEmplateExportView(TestCaseWithFactory):
 
     def test_request_some_potemplate(self):
         # Using 'some' allows to select only the template.
-        pofile = self.factory.makePOFile(potemplate=self.potemplate)
+        self.factory.makePOFile(potemplate=self.potemplate)
         self._createView({'what': 'some', 'potemplate': True, 'format': 'PO'})
 
         self.assertContentEqual(
@@ -91,7 +91,7 @@ class TestPOTEmplateExportView(TestCaseWithFactory):
 
     def test_request_some_various(self):
         # Using 'some' allows to select various files.
-        pofile1 = self.factory.makePOFile(potemplate=self.potemplate)
+        self.factory.makePOFile(potemplate=self.potemplate)
         pofile2 = self.factory.makePOFile(potemplate=self.potemplate)
         self._createView({
             'what': 'some',

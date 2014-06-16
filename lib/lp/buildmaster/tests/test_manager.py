@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the renovated slave scanner aka BuilddManager."""
@@ -57,11 +57,15 @@ from lp.buildmaster.tests.mock_slaves import (
     MockBuilder,
     OkSlave,
     TrivialBehaviour,
+    WaitingSlave,
     )
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.services.config import config
 from lp.services.log.logger import BufferLogger
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
+from lp.soyuz.model.binarypackagebuildbehaviour import (
+    BinaryPackageBuildBehaviour,
+    )
 from lp.testing import (
     ANONYMOUS,
     login,
@@ -81,7 +85,7 @@ from lp.testing.matchers import HasQueryCount
 from lp.testing.sampledata import BOB_THE_BUILDER_NAME
 
 
-class TestSlaveScannerScan(TestCase):
+class TestSlaveScannerScan(TestCaseWithFactory):
     """Tests `SlaveScanner.scan` method.
 
     This method uses the old framework for scanning and dispatching builds.
@@ -229,7 +233,7 @@ class TestSlaveScannerScan(TestCase):
         self.assertTrue(builder.builderok)
 
         job = getUtility(IBuildQueueSet).get(job.id)
-        self.assertBuildingJob(job, builder, logtail='This is a build log')
+        self.assertBuildingJob(job, builder, logtail='This is a build log: 0')
 
     def testScanUpdatesBuildingJobs(self):
         # Enable sampledata builder attached to an appropriate testing
@@ -531,6 +535,84 @@ class TestSlaveScannerScan(TestCase):
         self.assertEqual(1, slave.call_log.count("abort"))
         self.assertEqual(1, slave.call_log.count("resume"))
         self.assertEqual(BuildStatus.CANCELLED, build.status)
+
+    @defer.inlineCallbacks
+    def test_end_to_end(self):
+        # Test that SlaveScanner.scan() successfully finds, dispatches,
+        # collects and cleans a build.
+        build = self.factory.makeBinaryPackageBuild()
+        build.distro_arch_series.addOrUpdateChroot(
+            self.factory.makeLibraryFileAlias(db_only=True))
+        bq = build.queueBuild()
+        bq.manualScore(9000)
+
+        builder = self.factory.makeBuilder(
+            processors=[bq.processor], manual=False, vm_host='VMHOST')
+        transaction.commit()
+
+        # Mock out the build behaviour's _handleStatus_OK so it doesn't
+        # try to upload things to the librarian or queue.
+        @defer.inlineCallbacks
+        def handleStatus_OK(self, slave_status, logger, notify):
+            build.updateStatus(
+                BuildStatus.UPLOADING, builder, slave_status=slave_status)
+            transaction.commit()
+            yield self._slave.clean()
+            bq.destroySelf()
+            transaction.commit()
+        self.patch(
+            BinaryPackageBuildBehaviour, '_handleStatus_OK', handleStatus_OK)
+
+        # And create a SlaveScanner with a slave and a clock that we
+        # control.
+        get_slave = FakeMethod(OkSlave())
+        clock = task.Clock()
+        scanner = SlaveScanner(
+            builder.name, BuilderFactory(), BufferLogger(),
+            slave_factory=get_slave, clock=clock)
+
+        # The slave is idle and there's a build candidate, so the first
+        # scan will reset the builder and dispatch the build.
+        yield scanner.scan()
+        self.assertEqual(
+            ['status', 'resume', 'echo', 'ensurepresent', 'build'],
+            get_slave.result.method_log)
+        self.assertEqual(bq, builder.currentjob)
+        self.assertEqual(BuildQueueStatus.RUNNING, bq.status)
+        self.assertEqual(BuildStatus.BUILDING, build.status)
+
+        # build() has been called, so switch in a BUILDING slave.
+        # Scans will now just do a status() each, as the logtail is
+        # updated.
+        get_slave.result = BuildingSlave(
+            IBuildFarmJobBehaviour(build).getBuildCookie())
+        yield scanner.scan()
+        self.assertEqual("This is a build log: 0", bq.logtail)
+        yield scanner.scan()
+        self.assertEqual("This is a build log: 1", bq.logtail)
+        yield scanner.scan()
+        self.assertEqual("This is a build log: 2", bq.logtail)
+        self.assertEqual(
+            ['status', 'status', 'status'], get_slave.result.method_log)
+
+        # When the build finishes, the scanner will notice, call
+        # handleStatus(), and then clean the builder.  Our fake
+        # _handleStatus_OK doesn't do anything special, but there'd
+        # usually be file retrievals in the middle.
+        get_slave.result = WaitingSlave(
+            build_id=IBuildFarmJobBehaviour(build).getBuildCookie())
+        yield scanner.scan()
+        self.assertEqual(['status', 'clean'], get_slave.result.method_log)
+        self.assertIs(None, builder.currentjob)
+        self.assertEqual(BuildStatus.UPLOADING, build.status)
+        self.assertEqual(builder, build.builder)
+
+        # We're clean, so let's flip back to an idle slave and
+        # confirm that a scan does nothing special.
+        get_slave.result = OkSlave()
+        yield scanner.scan()
+        self.assertEqual(['status'], get_slave.result.method_log)
+        self.assertIs(None, builder.currentjob)
 
 
 class TestPrefetchedBuilderFactory(TestCaseWithFactory):

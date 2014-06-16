@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version (see the file LICENSE).
 
 """Unit tests for linking bug tracker components to source packages."""
@@ -68,8 +68,7 @@ class BugTrackerEditComponentViewTextCase(TestCaseWithFactory):
         form = self._makeForm(dsp)
 
         self.assertIs(None, component.distro_source_package)
-        view = create_initialized_view(
-            component, name='+edit', form=form)
+        create_initialized_view(component, name='+edit', form=form)
         self.assertEqual(dsp, component.distro_source_package)
 
     def test_linking_notifications(self):

@@ -1457,12 +1457,6 @@ class CurrentTranslationMessageView(LaunchpadView):
                 self.context.potmsgset),
             self.context.potmsgset.flags)
 
-    @cachedproperty
-    def sequence(self):
-        """Return the position number of this potmsgset in the pofile."""
-        return self.context.potmsgset.getSequence(
-            self.pofile.potemplate)
-
     @property
     def singular_text(self):
         """Return the singular form prepared to render in a web page."""
@@ -1579,7 +1573,8 @@ class CurrentTranslationMessageZoomedView(CurrentTranslationMessageView):
         # should point to the parent batch of messages.
         # XXX: kiko 2006-09-27: Preserve second_lang_code and other form
         # parameters?
-        batch_url = '/+translate?start=%d' % (self.sequence - 1)
+        assert self.context.browser_pofile == self.pofile
+        batch_url = '/+translate?start=%d' % (self.context.sequence - 1)
         return canonical_url(self.pofile) + batch_url
 
     @property

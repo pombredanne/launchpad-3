@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from collections import defaultdict
@@ -93,7 +93,8 @@ tree "%(DISTS)s/%(DISTRORELEASEONDISK)s"
     SrcOverride "override.%(DISTRORELEASE)s.$(SECTION).src";
     %(HIDEEXTRA)sExtraOverride "override.%(DISTRORELEASE)s.extra.$(SECTION)";
     Packages::Extensions "%(EXTENSIONS)s";
-    BinCacheDB "packages-%(CACHEINSERT)s$(ARCH).db";
+    BinCacheDB "packages%(CACHEINSERT)s-$(ARCH).db";
+    SrcCacheDB "sources%(CACHEINSERT)s.db";
     Contents " ";
     LongDescription "%(LONGDESCRIPTION)s";
 }
@@ -782,7 +783,7 @@ class FTPArchiveHandler:
                         "ARCHITECTURES": " ".join(archs),
                         "SECTIONS": subcomp,
                         "EXTENSIONS": '.%s' % SUBCOMPONENT_TO_EXT[subcomp],
-                        "CACHEINSERT": "%s-" % subcomp,
+                        "CACHEINSERT": "-%s" % subcomp,
                         "DISTS": os.path.basename(self._config.distsroot),
                         "HIDEEXTRA": "// ",
                         "LONGDESCRIPTION": "true",

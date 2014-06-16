@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for `TranslationMessage`."""
@@ -76,6 +76,62 @@ class TestTranslationMessage(TestCaseWithFactory):
 
         self.assertEqual(reviewer, message.reviewer)
         self.assertEqual(tomorrow, message.date_reviewed)
+
+    def test_getOnePOFile(self):
+        language = self.factory.makeLanguage('sr@test')
+        pofile = self.factory.makePOFile(language.code)
+        tm = self.factory.makeCurrentTranslationMessage(pofile=pofile)
+        self.assertEquals(pofile, tm.getOnePOFile())
+
+    def test_getOnePOFile_shared(self):
+        language = self.factory.makeLanguage('sr@test')
+        pofile1 = self.factory.makePOFile(language.code)
+        pofile2 = self.factory.makePOFile(language.code)
+        tm = self.factory.makeCurrentTranslationMessage(pofile=pofile1)
+        # Share this POTMsgSet with the other POTemplate (and POFile).
+        tm.potmsgset.setSequence(pofile2.potemplate, 1)
+        self.assertTrue(tm.getOnePOFile() in [pofile1, pofile2])
+
+    def test_getOnePOFile_no_pofile(self):
+        # When POTMsgSet is obsolete (sequence=0), no matching POFile
+        # is returned.
+        language = self.factory.makeLanguage('sr@test')
+        pofile = self.factory.makePOFile(language.code)
+        tm = self.factory.makeCurrentTranslationMessage(pofile=pofile)
+        tm.potmsgset.setSequence(pofile.potemplate, 0)
+        self.assertEquals(None, tm.getOnePOFile())
+
+    def test_clone(self):
+        """Cloning a translation should produce a near-identical copy."""
+        translations = [self.factory.getUniqueString() for x in range(6)]
+        tm = self.factory.makeCurrentTranslationMessage(
+            date_created=self.factory.getUniqueDate(),
+            translations=translations, current_other=True)
+        tm.comment = self.factory.getUniqueString()
+        tm.was_obsolete_in_last_import = True
+        potmsgset = self.factory.makePOTMsgSet()
+        clone = tm.clone(potmsgset)
+        self.assertNotEqual(tm.id, clone.id)
+        self.assertIs(None, clone.potemplate)
+        self.assertEqual(potmsgset, clone.potmsgset)
+        self.assertEqual(tm.submitter, clone.submitter)
+        self.assertEqual(tm.language, clone.language)
+        self.assertEqual(tm.origin, clone.origin)
+        self.assertEqual(tm.date_created, clone.date_created)
+        self.assertEqual(tm.reviewer, clone.reviewer)
+        self.assertEqual(tm.date_reviewed, clone.date_reviewed)
+        self.assertEqual(tm.msgstr0, clone.msgstr0)
+        self.assertEqual(tm.msgstr1, clone.msgstr1)
+        self.assertEqual(tm.msgstr2, clone.msgstr2)
+        self.assertEqual(tm.msgstr3, clone.msgstr3)
+        self.assertEqual(tm.msgstr4, clone.msgstr4)
+        self.assertEqual(tm.msgstr5, clone.msgstr5)
+        self.assertEqual(tm.comment, clone.comment)
+        self.assertEqual(tm.validation_status, clone.validation_status)
+        self.assertEqual(tm.is_current_ubuntu, clone.is_current_ubuntu)
+        self.assertEqual(tm.is_current_upstream, clone.is_current_upstream)
+        self.assertEqual(
+            tm.was_obsolete_in_last_import, clone.was_obsolete_in_last_import)
 
 
 class TestApprove(TestCaseWithFactory):
@@ -277,7 +333,7 @@ class TestApprove(TestCaseWithFactory):
 
     def test_approve_clones_message_from_other_side_to_diverge(self):
         package = self.factory.makeSourcePackage()
-        template=self.factory.makePOTemplate(
+        template = self.factory.makePOTemplate(
             distroseries=package.distroseries,
             sourcepackagename=package.sourcepackagename)
         potmsgset = self.factory.makePOTMsgSet(potemplate=template)
@@ -759,68 +815,6 @@ class TestApproveAsDiverged(TestCaseWithFactory):
         self.assertEqual(suggestion.date_reviewed, pofile.date_changed)
 
 
-class TestTranslationMessage(TestCaseWithFactory):
-    """Basic unit tests for TranslationMessage class.
-    """
-    layer = ZopelessDatabaseLayer
-
-    def test_getOnePOFile(self):
-        language = self.factory.makeLanguage('sr@test')
-        pofile = self.factory.makePOFile(language.code)
-        tm = self.factory.makeCurrentTranslationMessage(pofile=pofile)
-        self.assertEquals(pofile, tm.getOnePOFile())
-
-    def test_getOnePOFile_shared(self):
-        language = self.factory.makeLanguage('sr@test')
-        pofile1 = self.factory.makePOFile(language.code)
-        pofile2 = self.factory.makePOFile(language.code)
-        tm = self.factory.makeCurrentTranslationMessage(pofile=pofile1)
-        # Share this POTMsgSet with the other POTemplate (and POFile).
-        tm.potmsgset.setSequence(pofile2.potemplate, 1)
-        self.assertTrue(tm.getOnePOFile() in [pofile1, pofile2])
-
-    def test_getOnePOFile_no_pofile(self):
-        # When POTMsgSet is obsolete (sequence=0), no matching POFile
-        # is returned.
-        language = self.factory.makeLanguage('sr@test')
-        pofile = self.factory.makePOFile(language.code)
-        tm = self.factory.makeCurrentTranslationMessage(pofile=pofile)
-        tm.potmsgset.setSequence(pofile.potemplate, 0)
-        self.assertEquals(None, tm.getOnePOFile())
-
-    def test_clone(self):
-        """Cloning a translation should produce a near-identical copy."""
-        translations = [self.factory.getUniqueString() for x in range(6)]
-        tm = self.factory.makeCurrentTranslationMessage(
-            date_created=self.factory.getUniqueDate(),
-            translations=translations, current_other=True)
-        tm.comment = self.factory.getUniqueString()
-        tm.was_obsolete_in_last_import = True
-        potmsgset = self.factory.makePOTMsgSet()
-        clone = tm.clone(potmsgset)
-        self.assertNotEqual(tm.id, clone.id)
-        self.assertIs(None, clone.potemplate)
-        self.assertEqual(potmsgset, clone.potmsgset)
-        self.assertEqual(tm.submitter, clone.submitter)
-        self.assertEqual(tm.language, clone.language)
-        self.assertEqual(tm.origin, clone.origin)
-        self.assertEqual(tm.date_created, clone.date_created)
-        self.assertEqual(tm.reviewer, clone.reviewer)
-        self.assertEqual(tm.date_reviewed, clone.date_reviewed)
-        self.assertEqual(tm.msgstr0, clone.msgstr0)
-        self.assertEqual(tm.msgstr1, clone.msgstr1)
-        self.assertEqual(tm.msgstr2, clone.msgstr2)
-        self.assertEqual(tm.msgstr3, clone.msgstr3)
-        self.assertEqual(tm.msgstr4, clone.msgstr4)
-        self.assertEqual(tm.msgstr5, clone.msgstr5)
-        self.assertEqual(tm.comment, clone.comment)
-        self.assertEqual(tm.validation_status, clone.validation_status)
-        self.assertEqual(tm.is_current_ubuntu, clone.is_current_ubuntu)
-        self.assertEqual(tm.is_current_upstream, clone.is_current_upstream)
-        self.assertEqual(
-            tm.was_obsolete_in_last_import, clone.was_obsolete_in_last_import)
-
-
 class TestTranslationMessageFindIdenticalMessage(TestCaseWithFactory):
     """Tests for `TranslationMessage.findIdenticalMessage`."""
 
@@ -995,7 +989,7 @@ class TestShareIfPossible(TestCaseWithFactory):
     def shareIfPossibleDeletes(translation):
         translation.shareIfPossible()
         result = Store.of(translation).find(
-            TranslationMessage, TranslationMessage.id==translation.id)
+            TranslationMessage, TranslationMessage.id == translation.id)
         return result.is_empty()
 
     def test_share_success(self):

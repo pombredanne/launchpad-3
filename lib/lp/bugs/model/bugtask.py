@@ -1294,8 +1294,7 @@ class BugTask(SQLBase):
         owner_context = context
         if IBugTarget.providedBy(context):
             owner_context = context.pillar
-        return (
-            role.isOwner(owner_context) or role.isOneOfDrivers(context))
+        return role.isOwner(owner_context) or role.isDriver(context)
 
     @classmethod
     def userHasBugSupervisorPrivilegesContext(cls, context, user):
