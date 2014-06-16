@@ -13,6 +13,7 @@ from storm.locals import (
     Desc,
     Int,
     JSON,
+    Not,
     Reference,
     Store,
     Storm,
@@ -176,9 +177,19 @@ class LiveFS(Storm):
         return self._getBuilds(None, order_by)
 
     @property
+    def _pending_states(self):
+        """All the build states we consider pending (non-final)."""
+        return [
+            BuildStatus.NEEDSBUILD,
+            BuildStatus.BUILDING,
+            BuildStatus.UPLOADING,
+            BuildStatus.CANCELLING,
+            ]
+
+    @property
     def completed_builds(self):
         """See `ILiveFS`."""
-        filter_term = (LiveFSBuild.status != BuildStatus.NEEDSBUILD)
+        filter_term = (Not(LiveFSBuild.status.is_in(self._pending_states)))
         order_by = (
             Desc(Greatest(
                 LiveFSBuild.date_started,
@@ -189,7 +200,7 @@ class LiveFS(Storm):
     @property
     def pending_builds(self):
         """See `ILiveFS`."""
-        filter_term = (LiveFSBuild.status == BuildStatus.NEEDSBUILD)
+        filter_term = (LiveFSBuild.status.is_in(self._pending_states))
         # We want to order by date_created but this is the same as ordering
         # by id (since id increases monotonically) and is less expensive.
         order_by = Desc(LiveFSBuild.id)
