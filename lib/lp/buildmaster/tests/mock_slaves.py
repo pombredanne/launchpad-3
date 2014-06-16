@@ -30,6 +30,7 @@ from testtools.content_type import UTF8_TEXT
 from twisted.internet import defer
 from twisted.web import xmlrpc
 
+from lp.buildmaster.enums import BuilderCleanStatus
 from lp.buildmaster.interactor import BuilderSlave
 from lp.buildmaster.interfaces.builder import CannotFetchFile
 from lp.services.config import config
@@ -48,7 +49,7 @@ class MockBuilder:
 
     def __init__(self, name='mock-builder', builderok=True, manual=False,
                  virtualized=True, vm_host=None, url='http://fake:0000',
-                 version=None):
+                 version=None, clean_status=BuilderCleanStatus.DIRTY):
         self.currentjob = None
         self.builderok = builderok
         self.manual = manual
@@ -58,6 +59,7 @@ class MockBuilder:
         self.vm_host = vm_host
         self.failnotes = None
         self.version = version
+        self.clean_status = clean_status
 
     def failBuilder(self, reason):
         self.builderok = False
