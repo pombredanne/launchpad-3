@@ -1011,10 +1011,6 @@ class SpecificationSet(HasSpecificationsMixin):
         self.title = 'Specifications registered in Launchpad'
         self.displayname = 'All Specifications'
 
-    def empty_list(self):
-        """See `ISpecificationSet`."""
-        return []
-
     def getStatusCountsForProductSeries(self, product_series):
         """See `ISpecificationSet`."""
         cur = cursor()
@@ -1115,3 +1111,23 @@ class SpecificationSet(HasSpecificationsMixin):
     def get(self, spec_id):
         """See lp.blueprints.interfaces.specification.ISpecificationSet."""
         return Specification.get(spec_id)
+
+    def empty_list(self):
+        """See `ISpecificationSet`."""
+        return []
+
+    def createSpecification(self, name, title, specurl, summary,
+                            definition_status, owner, target, approver=None,
+                            assignee=None, drafter=None, whiteboard=None,
+                            information_type=None,
+                            priority=SpecificationPriority.UNDEFINED):
+        """See `ISpecificationSet`."""
+        spec = self.new(
+            name=name, title=title, specurl=specurl, summary=summary,
+            definition_status=definition_status, owner=owner,
+            approver=approver,assignee=assignee, drafter=drafter,
+            whiteboard=whiteboard, priority=priority,
+            information_type=information_type
+        )
+        spec.setTarget(target)
+        return spec
