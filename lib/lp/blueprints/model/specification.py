@@ -1011,6 +1011,10 @@ class SpecificationSet(HasSpecificationsMixin):
         self.title = 'Specifications registered in Launchpad'
         self.displayname = 'All Specifications'
 
+    def empty_list(self):
+        """See `ISpecificationSet`."""
+        return []
+
     def getStatusCountsForProductSeries(self, product_series):
         """See `ISpecificationSet`."""
         cur = cursor()

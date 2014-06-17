@@ -48,6 +48,23 @@ class SpecificationWebserviceTestCase(TestCaseWithFactory):
         return launchpadlib.load(pillar_name)
 
 
+class SpecificationWebserviceTests(SpecificationWebserviceTestCase):
+    """Test accessing specification top-level webservice."""
+    layer = AppServerLayer
+
+    def test_collection(self):
+        # `ISpecificationSet` is exposed as a webservice via /specs
+        # and is represented by an empty collection.
+        user = self.factory.makePerson()
+        webservice = webservice_for_person(user)
+        response = webservice.get('/specs')
+        self.assertEqual(200, response.status)
+        self.assertEqual(
+            ['entries', 'resource_type_link', 'start', 'total_size'],
+            sorted(response.jsonBody().keys()))
+        self.assertEqual(0, response.jsonBody()['total_size'])
+
+
 class SpecificationAttributeWebserviceTests(SpecificationWebserviceTestCase):
     """Test accessing specification attributes over the webservice."""
     layer = AppServerLayer

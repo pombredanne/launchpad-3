@@ -18,7 +18,9 @@ import httplib
 
 from lazr.restful.declarations import (
     call_with,
+    collection_default_content,
     error_status,
+    export_as_webservice_collection,
     export_as_webservice_entry,
     export_operation_as,
     export_write_operation,
@@ -712,6 +714,11 @@ class ISpecification(ISpecificationPublic, ISpecificationView,
 
 class ISpecificationSet(IHasSpecifications):
     """A container for specifications."""
+    export_as_webservice_collection(ISpecification)
+
+    @collection_default_content()
+    def empty_list():
+        """Return an empty set - only exists to keep lazr.restful happy."""
 
     displayname = Attribute('Displayname')
 
