@@ -571,15 +571,25 @@ class TestSlaveScannerScan(TestCaseWithFactory):
             builder.name, BuilderFactory(), BufferLogger(),
             slave_factory=get_slave, clock=clock)
 
-        # The slave is idle and there's a build candidate, so the first
-        # scan will reset the builder and dispatch the build.
+        # The slave is idle and dirty, so the first scan will clean it
+        # with a reset.
+        self.assertEqual(BuilderCleanStatus.DIRTY, builder.clean_status)
+        yield scanner.scan()
+        self.assertEqual(['resume', 'echo'], get_slave.result.method_log)
+        self.assertEqual(BuilderCleanStatus.CLEAN, builder.clean_status)
+        self.assertIs(None, builder.currentjob)
+
+        # The slave is idle and clean, and there's a build candidate, so
+        # the next scan will dispatch the build.
+        get_slave.result = OkSlave()
         yield scanner.scan()
         self.assertEqual(
-            ['status', 'resume', 'echo', 'ensurepresent', 'build'],
+            ['status', 'ensurepresent', 'build'],
             get_slave.result.method_log)
         self.assertEqual(bq, builder.currentjob)
         self.assertEqual(BuildQueueStatus.RUNNING, bq.status)
         self.assertEqual(BuildStatus.BUILDING, build.status)
+        self.assertEqual(BuilderCleanStatus.DIRTY, builder.clean_status)
 
         # build() has been called, so switch in a BUILDING slave.
         # Scans will now just do a status() each, as the logtail is
@@ -598,7 +608,8 @@ class TestSlaveScannerScan(TestCaseWithFactory):
         # When the build finishes, the scanner will notice, call
         # handleStatus(), and then clean the builder.  Our fake
         # _handleStatus_OK doesn't do anything special, but there'd
-        # usually be file retrievals in the middle.
+        # usually be file retrievals in the middle. The builder remains
+        # dirty afterward.
         get_slave.result = WaitingSlave(
             build_id=IBuildFarmJobBehaviour(build).getBuildCookie())
         yield scanner.scan()
@@ -606,13 +617,15 @@ class TestSlaveScannerScan(TestCaseWithFactory):
         self.assertIs(None, builder.currentjob)
         self.assertEqual(BuildStatus.UPLOADING, build.status)
         self.assertEqual(builder, build.builder)
+        self.assertEqual(BuilderCleanStatus.DIRTY, builder.clean_status)
 
-        # We're clean, so let's flip back to an idle slave and
-        # confirm that a scan does nothing special.
+        # We're idle and dirty, so let's flip back to an idle slave and
+        # confirm that the slave gets cleaned.
         get_slave.result = OkSlave()
         yield scanner.scan()
-        self.assertEqual(['status'], get_slave.result.method_log)
+        self.assertEqual(['resume', 'echo'], get_slave.result.method_log)
         self.assertIs(None, builder.currentjob)
+        self.assertEqual(BuilderCleanStatus.CLEAN, builder.clean_status)
 
 
 class TestPrefetchedBuilderFactory(TestCaseWithFactory):

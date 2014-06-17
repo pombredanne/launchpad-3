@@ -459,36 +459,51 @@ class SlaveScanner:
         else:
             if not vitals.builderok:
                 return
-            # We think the builder is idle. Cleaning currently happens
-            # as part of the dispatch process, so just jump in there
-            # regardless of clean_status.
+            # We think the builder is idle. If it's clean, dispatch. If
+            # it's dirty, clean.
             # TODO: Doesn't fix lost slaves.
-            slave_status = yield slave.status()
-            self.updateVersion(vitals, slave_status)
-            if vitals.manual:
-                # If the builder is in manual mode, don't dispatch anything.
-                self.logger.debug(
-                    '%s is in manual mode, not dispatching.' % vitals.name)
-            else:
-                # See if there is a job we can dispatch to the builder slave.
+            if vitals.clean_status == BuilderCleanStatus.DIRTY:
+                # If we are building a virtual build, resume the virtual
+                # machine.  Before we try and contact the resumed slave,
+                # we're going to send it a message.  This is to ensure
+                # it's accepting packets from the outside world, because
+                # testing has shown that the first packet will randomly
+                # fail for no apparent reason.  This could be a quirk of
+                # the Xen guest, we're not sure.  We also don't care
+                # about the result from this message, just that it's
+                # sent, hence the "addBoth".  See bug 586359.
+                if vitals.virtualized:
+                    yield interactor.resumeSlaveHost(vitals, slave)
+                    yield slave.echo("ping")
+                # TODO: Attempt to clean a non-virt host.
                 builder = self.builder_factory[self.builder_name]
-                # XXX: Ew.
+                builder.clean_status = BuilderCleanStatus.CLEAN
+                transaction.commit()
+            elif vitals.clean_status == BuilderCleanStatus.CLEAN:
+                slave_status = yield slave.status()
+                # TODO: Explode bloodily.
                 assert (
                     slave_status.get('builder_status', '')
                     == 'BuilderStatus.IDLE')
-                builder.clean_status = BuilderCleanStatus.CLEAN
-                transaction.commit()
-                # Try to dispatch the job. If it fails, don't attempt to
-                # just retry the scan; we need to reset the job so the
-                # dispatch will be reattempted.
-                d = interactor.findAndStartJob(vitals, builder, slave)
-                d.addErrback(functools.partial(self._scanFailed, False))
-                yield d
-                if builder.currentjob is not None:
-                    # After a successful dispatch we can reset the
-                    # failure_count.
-                    builder.resetFailureCount()
-                    transaction.commit()
+                self.updateVersion(vitals, slave_status)
+                if vitals.manual:
+                    # If the builder is in manual mode, don't dispatch
+                    # anything.
+                    self.logger.debug(
+                        '%s is in manual mode, not dispatching.', vitals.name)
+                else:
+                    # Try to find and dispatch a job. If it fails, don't
+                    # attempt to just retry the scan; we need to reset
+                    # the job so the dispatch will be reattempted.
+                    builder = self.builder_factory[self.builder_name]
+                    d = interactor.findAndStartJob(vitals, builder, slave)
+                    d.addErrback(functools.partial(self._scanFailed, False))
+                    yield d
+                    if builder.currentjob is not None:
+                        # After a successful dispatch we can reset the
+                        # failure_count.
+                        builder.resetFailureCount()
+                        transaction.commit()
 
 
 class NewBuildersScanner:

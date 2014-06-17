@@ -351,18 +351,6 @@ class BuilderInteractor(object):
         builder.clean_status = BuilderCleanStatus.DIRTY
         transaction.commit()
 
-        # If we are building a virtual build, resume the virtual
-        # machine.  Before we try and contact the resumed slave, we're
-        # going to send it a message.  This is to ensure it's accepting
-        # packets from the outside world, because testing has shown that
-        # the first packet will randomly fail for no apparent reason.
-        # This could be a quirk of the Xen guest, we're not sure.  We
-        # also don't care about the result from this message, just that
-        # it's sent, hence the "addBoth".  See bug 586359.
-        if builder.virtualized:
-            yield cls.resumeSlaveHost(vitals, slave)
-            yield slave.echo("ping")
-
         yield behaviour.dispatchBuildToSlave(build_queue_item.id, logger)
 
     @classmethod
