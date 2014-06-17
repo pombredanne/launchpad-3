@@ -13,6 +13,7 @@ from testtools.deferredruntest import (
     AsynchronousDeferredRunTest,
     )
 from testtools.matchers import Equals
+from testtools.testcase import ExpectedException
 import transaction
 from twisted.internet import (
     defer,
@@ -34,7 +35,10 @@ from lp.buildmaster.interactor import (
     BuilderSlave,
     extract_vitals_from_db,
     )
-from lp.buildmaster.interfaces.builder import IBuilderSet
+from lp.buildmaster.interfaces.builder import (
+    BuildDaemonError,
+    IBuilderSet,
+    )
 from lp.buildmaster.interfaces.buildfarmjobbehaviour import (
     IBuildFarmJobBehaviour,
     )
@@ -809,21 +813,47 @@ class TestSlaveScannerWithoutDB(TestCase):
         # The next scan will see a dirty idle builder with a BUILDING
         # slave, and abort() it.
         yield scanner.scan()
-        print scanner.logger.getLogBuffer()
         self.assertEqual(['status', 'status', 'abort'], slave.call_log)
 
     @defer.inlineCallbacks
     def test_scan_recovers_lost_slave_when_idle(self):
         # SlaveScanner.scan identifies slaves that are building when
-        # they shouldn't be, resets the jobs, and then aborts the
-        # slaves.
+        # they shouldn't be and aborts them.
         slave = BuildingSlave()
         scanner = self.getScanner(slave=slave)
-
-        # A single scan will call status(), notice that the slave is lost,
-        # and abort() it.
         yield scanner.scan()
         self.assertEqual(['status', 'abort'], slave.call_log)
+
+    @defer.inlineCallbacks
+    def test_scan_building_but_not_dirty_builder_explodes(self):
+        # Builders with a build assigned must be dirty for safety
+        # reasons. If we run into one that's clean, we blow up.
+        slave = BuildingSlave()
+        builder = MockBuilder(clean_status=BuilderCleanStatus.CLEAN)
+        bq = FakeBuildQueue()
+        scanner = self.getScanner(
+            slave=slave, builder_factory=MockBuilderFactory(builder, bq))
+
+        with ExpectedException(
+                BuildDaemonError, "Non-dirty builder allegedly building."):
+            yield scanner.scan()
+        self.assertEqual([], slave.call_log)
+
+    @defer.inlineCallbacks
+    def test_scan_clean_but_not_idle_slave_explodes(self):
+        # Clean builders by definition have slaves that are idle. If
+        # an ostensibly clean slave isn't idle, blow up.
+        slave = BuildingSlave()
+        builder = MockBuilder(clean_status=BuilderCleanStatus.CLEAN)
+        scanner = self.getScanner(
+            slave=slave, builder_factory=MockBuilderFactory(builder, None))
+
+        with ExpectedException(
+                BuildDaemonError,
+                "Allegedly clean slave not idle "
+                "\('BuilderStatus.BUILDING' instead\)"):
+            yield scanner.scan()
+        self.assertEqual(['status'], slave.call_log)
 
     def test_getExpectedCookie_caches(self):
         bf = MockBuilderFactory(MockBuilder(), FakeBuildQueue())

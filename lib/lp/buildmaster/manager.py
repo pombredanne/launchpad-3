@@ -419,8 +419,7 @@ class SlaveScanner:
             if vitals.clean_status != BuilderCleanStatus.DIRTY:
                 # This is probably a grave bug with security implications,
                 # as a slave that has a job must be cleaned afterwards.
-                # TODO: Fail the builder, reset the job, and OOPS oops oops.
-                raise AssertionError("Non-dirty builder allegedly building.")
+                raise BuildDaemonError("Non-dirty builder allegedly building.")
 
             lost_reason = None
             if not vitals.builderok:
@@ -464,13 +463,12 @@ class SlaveScanner:
                 return
             # We think the builder is idle. If it's clean, dispatch. If
             # it's dirty, clean.
-            # TODO: Doesn't fix lost slaves.
             if vitals.clean_status == BuilderCleanStatus.CLEAN:
                 slave_status = yield slave.status()
-                # TODO: Explode bloodily.
-                assert (
-                    slave_status.get('builder_status', '')
-                    == 'BuilderStatus.IDLE')
+                if slave_status.get('builder_status') != 'BuilderStatus.IDLE':
+                    raise BuildDaemonError(
+                        'Allegedly clean slave not idle (%r instead)'
+                        % slave_status.get('builder_status'))
                 self.updateVersion(vitals, slave_status)
                 if vitals.manual:
                     # If the builder is in manual mode, don't dispatch
