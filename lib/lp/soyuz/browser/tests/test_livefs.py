@@ -12,6 +12,7 @@ from datetime import (
 import json
 
 from fixtures import FakeLogger
+from mechanize import LinkNotFoundError
 import pytz
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
@@ -24,6 +25,7 @@ from lp.services.features.testing import FeatureFixture
 from lp.services.webapp import canonical_url
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.soyuz.browser.livefs import (
+    LiveFSAdminView,
     LiveFSEditView,
     LiveFSView,
     )
@@ -34,6 +36,8 @@ from lp.soyuz.interfaces.livefs import (
 from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.testing import (
     BrowserTestCase,
+    login,
+    login_person,
     person_logged_in,
     TestCaseWithFactory,
     time_counter,
@@ -175,6 +179,60 @@ class TestLiveFSAddView(BrowserTestCase):
         json_error = str(self.assertRaises(ValueError, json.loads, "{"))
         self.assertEqual(
             json_error, get_feedback_messages(browser.contents)[1])
+
+
+class TestLiveFSAdminView(BrowserTestCase):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestLiveFSAdminView, self).setUp()
+        self.useFixture(FeatureFixture({LIVEFS_FEATURE_FLAG: u"on"}))
+        self.useFixture(FakeLogger())
+        self.person = self.factory.makePerson(
+            name="test-person", displayname="Test Person")
+
+    def test_unauthorized(self):
+        # A non-admin user cannot administer a live filesystem.
+        login_person(self.person)
+        livefs = self.factory.makeLiveFS(registrant=self.person)
+        livefs_url = canonical_url(livefs)
+        browser = self.getViewBrowser(livefs, user=self.person)
+        self.assertRaises(
+            LinkNotFoundError, browser.getLink, "Administer live filesystem")
+        self.assertRaises(
+            Unauthorized, self.getUserBrowser, livefs_url + "/+admin",
+            user=self.person)
+
+    def test_admin_livefs(self):
+        # Admins can change require_virtualized.
+        login("admin@canonical.com")
+        admins = getUtility(ILaunchpadCelebrities).commercial_admin
+        admins.addMember(self.person, admins)
+        login_person(self.person)
+        livefs = self.factory.makeLiveFS(registrant=self.person)
+        self.assertTrue(livefs.require_virtualized)
+        browser = self.getViewBrowser(livefs, user=self.person)
+        browser.getLink("Administer live filesystem").click()
+        browser.getControl("Require virtualized builders").selected = False
+        browser.getControl("Update live filesystem").click()
+        login_person(self.person)
+        self.assertFalse(livefs.require_virtualized)
+
+    def test_admin_livefs_sets_date_last_modified(self):
+        # Administering a live filesystem sets the date_last_modified property.
+        login("admin@canonical.com")
+        admins = getUtility(ILaunchpadCelebrities).commercial_admin
+        admins.addMember(self.person, admins)
+        login_person(self.person)
+        date_created = datetime(2000, 1, 1, tzinfo=pytz.UTC)
+        livefs = self.factory.makeLiveFS(
+            registrant=self.person, date_created=date_created)
+        view = LiveFSAdminView(livefs, LaunchpadTestRequest())
+        view.initialize()
+        view.request_action.success({"require_virtualized": False})
+        self.assertSqlAttributeEqualsDate(
+            livefs, "date_last_modified", UTC_NOW)
 
 
 class TestLiveFSEditView(BrowserTestCase):

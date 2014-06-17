@@ -127,7 +127,11 @@ class LiveFSNavigationMenu(NavigationMenu):
 
     facet = 'overview'
 
-    links = ('edit',)
+    links = ('admin', 'edit',)
+
+    @enabled_with_permission('launchpad.Admin')
+    def admin(self):
+        return Link('+admin', 'Administer live filesystem', icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -203,6 +207,7 @@ class ILiveFSEditSchema(Interface):
     use_template(ILiveFS, include=[
         'owner',
         'name',
+        'require_virtualized',
         ])
     distro_series = Choice(
         vocabulary='BuildableDistroSeries', title=u'Distribution series')
@@ -230,6 +235,7 @@ class LiveFSAddView(LiveFSMetadataValidatorMixin, LaunchpadFormView):
     title = label = 'Create a new live filesystem'
 
     schema = ILiveFSEditSchema
+    field_names = ['owner', 'name', 'distro_series', 'metadata']
     custom_widget('distro_series', LaunchpadRadioWidget)
 
     def initialize(self):
@@ -275,7 +281,43 @@ class LiveFSAddView(LiveFSMetadataValidatorMixin, LaunchpadFormView):
                         distro_series.displayname, owner.displayname))
 
 
-class LiveFSEditView(LiveFSMetadataValidatorMixin, LaunchpadEditFormView):
+class BaseLiveFSEditView(LaunchpadEditFormView):
+
+    schema = ILiveFSEditSchema
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
+    @action('Update live filesystem', name='update')
+    def request_action(self, action, data):
+        self.updateContextFromData(data)
+        self.next_url = canonical_url(self.context)
+
+    @property
+    def adapters(self):
+        """See `LaunchpadFormView`."""
+        return {ILiveFSEditSchema: self.context}
+
+
+class LiveFSAdminView(BaseLiveFSEditView):
+    """View for administering live filesystems."""
+
+    @property
+    def title(self):
+        return 'Administer %s live filesystem' % self.context.name
+
+    label = title
+
+    field_names = ['require_virtualized']
+
+    @property
+    def initial_values(self):
+        return {'require_virtualized': self.context.require_virtualized}
+
+
+
+class LiveFSEditView(LiveFSMetadataValidatorMixin, BaseLiveFSEditView):
     """View for editing live filesystems."""
 
     @property
@@ -284,7 +326,7 @@ class LiveFSEditView(LiveFSMetadataValidatorMixin, LaunchpadEditFormView):
 
     label = title
 
-    schema = ILiveFSEditSchema
+    field_names = ['owner', 'name', 'distro_series', 'metadata']
     custom_widget('distro_series', LaunchpadRadioWidget)
 
     @property
@@ -296,36 +338,12 @@ class LiveFSEditView(LiveFSMetadataValidatorMixin, LaunchpadEditFormView):
                 cls=ResourceJSONEncoder),
             }
 
-    @property
-    def cancel_url(self):
-        return canonical_url(self.context)
-
-    @action('Update live filesystem', name='update')
-    def request_action(self, action, data):
-        changed = False
-        livefs_before_modification = Snapshot(
-            self.context, providing=providedBy(self.context))
-
-        metadata = json.loads(data.pop('metadata'))
-        if self.context.metadata != metadata:
-            self.context.metadata = metadata
-            changed = True
-
-        if self.updateContextFromData(data, notify_modified=False):
-            changed = True
-
-        if changed:
-            field_names = [
-                form_field.__name__ for form_field in self.form_fields]
-            notify(ObjectModifiedEvent(
-                self.context, livefs_before_modification, field_names))
-
-        self.next_url = canonical_url(self.context)
-
-    @property
-    def adapters(self):
-        """See `LaunchpadFormView`."""
-        return {ILiveFSEditSchema: self.context}
+    def updateContextFromData(self, data, context=None, notify_modified=True):
+        """See `LaunchpadEditFormView`."""
+        if 'metadata' in data:
+            data['metadata'] = json.loads(data['metadata'])
+        super(LiveFSEditView, self).updateContextFromData(
+            data, context=context, notify_modified=notify_modified)
 
     def validate(self, data):
         super(LiveFSEditView, self).validate(data)

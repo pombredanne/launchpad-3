@@ -761,6 +761,12 @@
         />
     <browser:page
         for="lp.soyuz.interfaces.livefs.ILiveFS"
+        class="lp.soyuz.browser.livefs.LiveFSAdminView"
+        permission="launchpad.Admin"
+        name="+admin"
+        template="../../app/templates/generic-edit.pt"/>
+    <browser:page
+        for="lp.soyuz.interfaces.livefs.ILiveFS"
         class="lp.soyuz.browser.livefs.LiveFSEditView"
         permission="launchpad.Edit"
         name="+edit"
