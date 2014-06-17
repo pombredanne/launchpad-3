@@ -1125,9 +1125,8 @@ class SpecificationSet(HasSpecificationsMixin):
         spec = self.new(
             name=name, title=title, specurl=specurl, summary=summary,
             definition_status=definition_status, owner=owner,
-            approver=approver,assignee=assignee, drafter=drafter,
+            approver=approver, assignee=assignee, drafter=drafter,
             whiteboard=whiteboard, priority=priority,
-            information_type=information_type
-        )
+            information_type=information_type)
         spec.setTarget(target)
         return spec
