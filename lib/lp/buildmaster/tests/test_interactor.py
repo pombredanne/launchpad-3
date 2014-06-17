@@ -358,7 +358,7 @@ class TestBuilderInteractorDB(TestCaseWithFactory):
         processor = self.factory.makeProcessor(name="i386")
         builder = self.factory.makeBuilder(
             processors=[processor], virtualized=True, vm_host="bladh")
-        builder.clean_status = BuilderCleanStatus.CLEAN
+        builder.setCleanStatus(BuilderCleanStatus.CLEAN)
         self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(OkSlave()))
         distroseries = self.factory.makeDistroSeries()
         das = self.factory.makeDistroArchSeries(
@@ -419,7 +419,7 @@ class TestBuilderInteractorDB(TestCaseWithFactory):
     def test_findAndStartJob_requires_clean_slave(self):
         # findAndStartJob ensures that its slave starts CLEAN.
         builder, build = self._setupBinaryBuildAndBuilder()
-        builder.clean_status = BuilderCleanStatus.DIRTY
+        builder.setCleanStatus(BuilderCleanStatus.DIRTY)
         candidate = build.queueBuild()
         removeSecurityProxy(builder)._findBuildCandidate = FakeMethod(
             result=candidate)

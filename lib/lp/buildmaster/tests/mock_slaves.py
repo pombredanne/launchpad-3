@@ -61,6 +61,9 @@ class MockBuilder:
         self.version = version
         self.clean_status = clean_status
 
+    def setCleanStatus(self, clean_status):
+        self.clean_status = clean_status
+
     def failBuilder(self, reason):
         self.builderok = False
         self.failnotes = reason

@@ -118,7 +118,7 @@ class TestSlaveScannerScan(TestCaseWithFactory):
         job = builder.currentjob
         if job is not None:
             job.reset()
-        builder.clean_status = BuilderCleanStatus.CLEAN
+        builder.setCleanStatus(BuilderCleanStatus.CLEAN)
 
         transaction.commit()
 
@@ -161,7 +161,7 @@ class TestSlaveScannerScan(TestCaseWithFactory):
         # Set this to 1 here so that _checkDispatch can make sure it's
         # reset to 0 after a successful dispatch.
         builder.failure_count = 1
-        builder.clean_status = BuilderCleanStatus.CLEAN
+        builder.setCleanStatus(BuilderCleanStatus.CLEAN)
 
         # Run 'scan' and check its result.
         switch_dbuser(config.builddmaster.dbuser)
@@ -265,7 +265,7 @@ class TestSlaveScannerScan(TestCaseWithFactory):
     def test_scan_with_nothing_to_dispatch(self):
         factory = LaunchpadObjectFactory()
         builder = factory.makeBuilder()
-        builder.clean_status = BuilderCleanStatus.CLEAN
+        builder.setCleanStatus(BuilderCleanStatus.CLEAN)
         self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(OkSlave()))
         transaction.commit()
         scanner = self._getScanner(builder_name=builder.name)
@@ -443,7 +443,7 @@ class TestSlaveScannerScan(TestCaseWithFactory):
         builder = removeSecurityProxy(
             getUtility(IBuilderSet)[BOB_THE_BUILDER_NAME])
         self._resetBuilder(builder)
-        builder.clean_status = BuilderCleanStatus.DIRTY
+        builder.setCleanStatus(BuilderCleanStatus.DIRTY)
         builder.virtualized = True
         self.assertEqual(0, builder.failure_count)
         self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(slave))

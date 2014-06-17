@@ -353,7 +353,7 @@ class BuilderInteractor(object):
             raise BuildDaemonError(
                 "Attempted to start build on a dirty slave.")
 
-        builder.clean_status = BuilderCleanStatus.DIRTY
+        builder.setCleanStatus(BuilderCleanStatus.DIRTY)
         transaction.commit()
 
         yield behaviour.dispatchBuildToSlave(build_queue_item.id, logger)

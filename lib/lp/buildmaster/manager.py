@@ -496,7 +496,7 @@ class SlaveScanner:
                 done = yield interactor.cleanSlave(vitals, slave)
                 if done:
                     builder = self.builder_factory[self.builder_name]
-                    builder.clean_status = BuilderCleanStatus.CLEAN
+                    builder.setCleanStatus(BuilderCleanStatus.CLEAN)
                     self.logger.debug('%s has been cleaned.', vitals.name)
                     transaction.commit()
 
