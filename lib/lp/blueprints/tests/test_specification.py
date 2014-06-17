@@ -548,7 +548,7 @@ class TestSpecificationSet(TestCaseWithFactory):
         product = self.factory.makeProduct()
         spec = self.specification_set.new(
             name='plane', title='Place', specurl='http://eg.org/plane',
-            summary='summary', owner=product.owner, product=product,
+            summary='summary', owner=product.owner, target=product,
             definition_status=SpecificationDefinitionStatus.NEW)
         self.assertEqual(
             SpecificationDefinitionStatus.NEW, spec.definition_status)
@@ -561,7 +561,7 @@ class TestSpecificationSet(TestCaseWithFactory):
         product = self.factory.makeProduct()
         args = dict(
             name='plane', title='Place', specurl='http://eg.org/plane',
-            summary='summary', owner=product.owner, product=product,
+            summary='summary', owner=product.owner, target=product,
             definition_status=SpecificationDefinitionStatus.OBSOLETE)
         self.assertRaises(
             AssertionError, self.specification_set.new, **args)
@@ -585,9 +585,11 @@ class TestSpecifications(TestCaseWithFactory):
                  status=NewSpecificationDefinitionStatus.NEW,
                  name=None, priority=None, information_type=None):
         blueprint = self.factory.makeSpecification(
-            title=title, status=status, name=name, priority=priority,
+            title=title, status=status, name=name,
             information_type=information_type, product=product,
             )
+        if priority is not None:
+            removeSecurityProxy(blueprint).priority = priority
         removeSecurityProxy(blueprint).datecreated = (
             self.date_created + timedelta(date_created))
         return blueprint

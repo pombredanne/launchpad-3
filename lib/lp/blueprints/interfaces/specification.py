@@ -735,8 +735,7 @@ class ISpecificationSet(IHasSpecifications):
     def createSpecification(name, title, specurl, summary, definition_status,
                             owner, target, approver=None, assignee=None,
                             drafter=None, whiteboard=None,
-                            information_type=None,
-                            priority=SpecificationPriority.UNDEFINED):
+                            information_type=None):
         """Create a new Specification."""
 
     displayname = Attribute('Displayname')
@@ -766,9 +765,8 @@ class ISpecificationSet(IHasSpecifications):
         """
 
     def new(name, title, specurl, summary, definition_status, owner,
-            approver=None, product=None, distribution=None, assignee=None,
-            drafter=None, whiteboard=None, information_type=None,
-            priority=SpecificationPriority.UNDEFINED):
+            target, approver=None, assignee=None, drafter=None,
+            whiteboard=None, information_type=None):
         """Create a new specification."""
 
     def getDependencyDict(specifications):
