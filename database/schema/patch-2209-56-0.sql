@@ -11,6 +11,7 @@ CREATE TABLE LiveFS (
     owner integer NOT NULL REFERENCES person,
     distro_series integer NOT NULL REFERENCES distroseries,
     name text NOT NULL,
+    require_virtualized boolean DEFAULT true NOT NULL,
     json_data text,
     CONSTRAINT valid_name CHECK (valid_name(name)),
     CONSTRAINT livefs__owner__distro_series__name__key UNIQUE (owner, distro_series, name)
@@ -21,6 +22,7 @@ COMMENT ON COLUMN LiveFS.registrant IS 'The user who registered the live filesys
 COMMENT ON COLUMN LiveFS.owner IS 'The owner of the live filesystem image.';
 COMMENT ON COLUMN LiveFS.distro_series IS 'The DistroSeries for which the image should be built.';
 COMMENT ON COLUMN LiveFS.name IS 'The name of the live filesystem image, unique per DistroSeries.';
+COMMENT ON COLUMN LiveFS.require_virtualized IS 'If True, this live filesystem image must be built only on a virtual machine.';
 COMMENT ON COLUMN LiveFS.json_data IS 'A JSON struct containing data for the image build.';
 
 CREATE INDEX livefs__registrant__idx
