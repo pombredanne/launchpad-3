@@ -11,7 +11,9 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.blueprints.enums import SpecificationDefinitionStatus
 from lp.services.webapp.interaction import ANONYMOUS
+from lp.services.webapp.interfaces import OAuthPermission
 from lp.testing import (
+    api_url,
     launchpadlib_for,
     person_logged_in,
     TestCaseWithFactory,
@@ -63,6 +65,38 @@ class SpecificationWebserviceTests(SpecificationWebserviceTestCase):
             ['entries', 'resource_type_link', 'start', 'total_size'],
             sorted(response.jsonBody().keys()))
         self.assertEqual(0, response.jsonBody()['total_size'])
+
+    def test_creation_for_products(self):
+        # `ISpecificationSet.createSpecification` is exposed and
+        # allows specification creation for products.
+        user = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        product_url = api_url(product)
+        webservice = webservice_for_person(
+            user, permission=OAuthPermission.WRITE_PUBLIC)
+        response = webservice.named_post(
+            '/specs', 'createSpecification',
+            name='test-prod', title='Product', specurl='http://test.com',
+            definition_status='Approved', summary='A summary',
+            target=product_url,
+            api_version='devel')
+        self.assertEqual(201, response.status)
+
+    def test_creation_for_distribution(self):
+        # `ISpecificationSet.createSpecification` also allows
+        # specification creation for distributions.
+        user = self.factory.makePerson()
+        distribution = self.factory.makeDistribution()
+        distribution_url = api_url(distribution)
+        webservice = webservice_for_person(
+            user, permission=OAuthPermission.WRITE_PUBLIC)
+        response = webservice.named_post(
+            '/specs', 'createSpecification',
+            name='test-distro', title='Distro', specurl='http://test.com',
+            definition_status='Approved', summary='A summary',
+            target=distribution_url,
+            api_version='devel')
+        self.assertEqual(201, response.status)
 
 
 class SpecificationAttributeWebserviceTests(SpecificationWebserviceTestCase):

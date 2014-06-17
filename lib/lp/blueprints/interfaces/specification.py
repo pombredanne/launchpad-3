@@ -729,9 +729,8 @@ class ISpecificationSet(IHasSpecifications):
                    u"specification.")))
     @export_factory_operation(
         ISpecification, ['name', 'title', 'specurl', 'summary',
-                         'definition_status', 'owner', 'assignee',
-                         'drafter', 'whiteboard', 'information_type',
-                         'priority'])
+                         'definition_status', 'assignee', 'drafter',
+                         'whiteboard'])
     @operation_for_version('devel')
     def createSpecification(name, title, specurl, summary, definition_status,
                             owner, target, approver=None, assignee=None,
