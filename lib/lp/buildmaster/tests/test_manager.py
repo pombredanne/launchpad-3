@@ -114,6 +114,7 @@ class TestSlaveScannerScan(TestCaseWithFactory):
         job = builder.currentjob
         if job is not None:
             job.reset()
+        builder.clean_status = BuilderCleanStatus.CLEAN
 
         transaction.commit()
 
@@ -260,6 +261,7 @@ class TestSlaveScannerScan(TestCaseWithFactory):
     def test_scan_with_nothing_to_dispatch(self):
         factory = LaunchpadObjectFactory()
         builder = factory.makeBuilder()
+        builder.clean_status = BuilderCleanStatus.CLEAN
         self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(OkSlave()))
         transaction.commit()
         scanner = self._getScanner(builder_name=builder.name)
@@ -424,9 +426,9 @@ class TestSlaveScannerScan(TestCaseWithFactory):
         self.assertFalse(builder.builderok)
 
     @defer.inlineCallbacks
-    def test_fail_to_resume_slave_resets_job(self):
-        # If an attempt to resume and dispatch a slave fails, it should
-        # reset the job via job.reset()
+    def test_fail_to_resume_leaves_it_dirty(self):
+        # If an attempt to resume a slave fails, its failure count is
+        # incremented and it is left DIRTY.
 
         # Make a slave with a failing resume() method.
         slave = OkSlave()
@@ -437,26 +439,21 @@ class TestSlaveScannerScan(TestCaseWithFactory):
         builder = removeSecurityProxy(
             getUtility(IBuilderSet)[BOB_THE_BUILDER_NAME])
         self._resetBuilder(builder)
+        builder.clean_status = BuilderCleanStatus.DIRTY
+        builder.virtualized = True
         self.assertEqual(0, builder.failure_count)
         self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(slave))
         builder.vm_host = "fake_vm_host"
-
-        scanner = self._getScanner()
-
-        # Get the next job that will be dispatched.
-        job = removeSecurityProxy(builder._findBuildCandidate())
-        job.virtualized = True
-        builder.virtualized = True
         transaction.commit()
-        yield scanner.singleCycle()
 
-        # The failure_count will have been incremented on the builder, we
-        # can check that to see that a dispatch attempt did indeed occur.
+        # A spin of the scanner will see the DIRTY builder and reset it.
+        # Our patched reset will fail.
+        yield self._getScanner().singleCycle()
+
+        # The failure_count will have been incremented on the builder,
+        # and it will be left DIRTY.
         self.assertEqual(1, builder.failure_count)
-        # There should also be no builder set on the job.
-        self.assertIsNone(job.builder)
-        build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(job)
-        self.assertEqual(build.status, BuildStatus.NEEDSBUILD)
+        self.assertEqual(BuilderCleanStatus.DIRTY, builder.clean_status)
 
     @defer.inlineCallbacks
     def test_update_slave_version(self):
