@@ -325,6 +325,33 @@ class BuilderInteractor(object):
 
     @classmethod
     @defer.inlineCallbacks
+    def cleanSlave(cls, vitals, slave):
+        """Prepare a slave for a new build.
+
+        :return: A Deferred that fires when this stage of the resume
+            operations finishes. If the value is True, the slave is now clean.
+            If it's False, the clean is still in progress and this must be
+            called again later.
+        """
+        if vitals.virtualized:
+            # If we are building a virtual build, resume the virtual
+            # machine.  Before we try and contact the resumed slave,
+            # we're going to send it a message.  This is to ensure
+            # it's accepting packets from the outside world, because
+            # testing has shown that the first packet will randomly
+            # fail for no apparent reason.  This could be a quirk of
+            # the Xen guest, we're not sure.  We also don't care
+            # about the result from this message, just that it's
+            # sent, hence the "addBoth".  See bug 586359.
+            yield cls.resumeSlaveHost(vitals, slave)
+            yield slave.echo("ping")
+            defer.returnValue(True)
+        else:
+            # XXX: Clean up non-virt.
+            defer.returnValue(True)
+
+    @classmethod
+    @defer.inlineCallbacks
     def _startBuild(cls, build_queue_item, vitals, builder, slave, behaviour,
                     logger):
         """Start a build on this builder.

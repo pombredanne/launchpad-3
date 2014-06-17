@@ -462,24 +462,7 @@ class SlaveScanner:
             # We think the builder is idle. If it's clean, dispatch. If
             # it's dirty, clean.
             # TODO: Doesn't fix lost slaves.
-            if vitals.clean_status == BuilderCleanStatus.DIRTY:
-                # If we are building a virtual build, resume the virtual
-                # machine.  Before we try and contact the resumed slave,
-                # we're going to send it a message.  This is to ensure
-                # it's accepting packets from the outside world, because
-                # testing has shown that the first packet will randomly
-                # fail for no apparent reason.  This could be a quirk of
-                # the Xen guest, we're not sure.  We also don't care
-                # about the result from this message, just that it's
-                # sent, hence the "addBoth".  See bug 586359.
-                if vitals.virtualized:
-                    yield interactor.resumeSlaveHost(vitals, slave)
-                    yield slave.echo("ping")
-                # TODO: Attempt to clean a non-virt host.
-                builder = self.builder_factory[self.builder_name]
-                builder.clean_status = BuilderCleanStatus.CLEAN
-                transaction.commit()
-            elif vitals.clean_status == BuilderCleanStatus.CLEAN:
+            if vitals.clean_status == BuilderCleanStatus.CLEAN:
                 slave_status = yield slave.status()
                 # TODO: Explode bloodily.
                 assert (
@@ -491,19 +474,29 @@ class SlaveScanner:
                     # anything.
                     self.logger.debug(
                         '%s is in manual mode, not dispatching.', vitals.name)
-                else:
-                    # Try to find and dispatch a job. If it fails, don't
-                    # attempt to just retry the scan; we need to reset
-                    # the job so the dispatch will be reattempted.
+                    return
+                # Try to find and dispatch a job. If it fails, don't
+                # attempt to just retry the scan; we need to reset
+                # the job so the dispatch will be reattempted.
+                builder = self.builder_factory[self.builder_name]
+                d = interactor.findAndStartJob(vitals, builder, slave)
+                d.addErrback(functools.partial(self._scanFailed, False))
+                yield d
+                if builder.currentjob is not None:
+                    # After a successful dispatch we can reset the
+                    # failure_count.
+                    builder.resetFailureCount()
+                    transaction.commit()
+            else:
+                # Ask the BuilderInteractor to clean the slave. It might
+                # be immediately cleaned on return, in which case we go
+                # straight back to CLEAN, or we might have to spin
+                # through another few cycles.
+                done = yield interactor.cleanSlave(vitals, slave)
+                if done:
                     builder = self.builder_factory[self.builder_name]
-                    d = interactor.findAndStartJob(vitals, builder, slave)
-                    d.addErrback(functools.partial(self._scanFailed, False))
-                    yield d
-                    if builder.currentjob is not None:
-                        # After a successful dispatch we can reset the
-                        # failure_count.
-                        builder.resetFailureCount()
-                        transaction.commit()
+                    builder.clean_status = BuilderCleanStatus.CLEAN
+                    transaction.commit()
 
 
 class NewBuildersScanner:
