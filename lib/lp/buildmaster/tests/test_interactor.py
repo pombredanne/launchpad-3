@@ -440,22 +440,6 @@ class TestBuilderInteractorDB(TestCaseWithFactory):
         yield BuilderInteractor.findAndStartJob(vitals, builder, OkSlave())
         self.assertEqual(BuilderCleanStatus.DIRTY, builder.clean_status)
 
-    def test_virtual_job_dispatch_pings_before_building(self):
-        # We need to send a ping to the builder to work around a bug
-        # where sometimes the first network packet sent is dropped.
-        builder, build = self._setupBinaryBuildAndBuilder()
-        candidate = build.queueBuild()
-        removeSecurityProxy(builder)._findBuildCandidate = FakeMethod(
-            result=candidate)
-        vitals = extract_vitals_from_db(builder)
-        slave = OkSlave()
-        d = BuilderInteractor.findAndStartJob(vitals, builder, slave)
-
-        def check_build_started(candidate):
-            self.assertIn(('echo', 'ping'), slave.call_log)
-
-        return d.addCallback(check_build_started)
-
 
 class TestSlave(TestCase):
     """
