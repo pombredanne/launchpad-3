@@ -42,6 +42,7 @@ from lazr.restful.fields import (
     )
 from zope.interface import Interface
 from zope.schema import (
+    Bool,
     Choice,
     Datetime,
     Dict,
@@ -219,7 +220,18 @@ class ILiveFSEditableAttributes(IHasOwner):
         key_type=TextLine(), required=True, readonly=False))
 
 
-class ILiveFS(ILiveFSView, ILiveFSEditableAttributes):
+class ILiveFSAdminAttributes(Interface):
+    """`ILiveFS` attributes that can be edited by admins.
+
+    These attributes need launchpad.View to see, and launchpad.Admin to change.
+    """
+    require_virtualized = exported(Bool(
+        title=_("Require virtualized builders"), required=True, readonly=False,
+        description=_(
+            "Only build this live filesystem image on virtual builders.")))
+
+
+class ILiveFS(ILiveFSView, ILiveFSEditableAttributes, ILiveFSAdminAttributes):
     """A buildable live filesystem image."""
 
     # XXX cjwatson 2014-05-06 bug=760849: "beta" is a lie to get WADL
@@ -234,11 +246,11 @@ class ILiveFSSet(Interface):
 
     export_as_webservice_collection(ILiveFS)
 
-    @call_with(registrant=REQUEST_USER)
+    @call_with(registrant=REQUEST_USER, require_virtualized=True)
     @export_factory_operation(
         ILiveFS, ["owner", "distro_series", "name", "metadata"])
     @operation_for_version("devel")
-    def new(registrant, owner, distro_series, name, metadata,
+    def new(registrant, owner, distro_series, name, require_virtualized, metadata,
             date_created=None):
         """Create an `ILiveFS`."""
 

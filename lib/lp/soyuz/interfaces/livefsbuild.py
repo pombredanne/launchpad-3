@@ -93,7 +93,7 @@ class ILiveFSBuildView(IPackageBuild):
             "metadata dict for the live filesystem."),
         key_type=TextLine(), required=False, readonly=True))
 
-    is_virtualized = Bool(
+    virtualized = Bool(
         title=_("If True, this build is virtualized."), readonly=True)
 
     version = exported(TextLine(

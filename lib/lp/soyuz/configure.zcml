@@ -981,11 +981,15 @@
         <require
             permission="launchpad.View"
             interface=".interfaces.livefs.ILiveFSView
-                       .interfaces.livefs.ILiveFSEditableAttributes"/>
+                       .interfaces.livefs.ILiveFSEditableAttributes
+                       .interfaces.livefs.ILiveFSAdminAttributes"/>
         <require
             permission="launchpad.Edit"
             set_schema=".interfaces.livefs.ILiveFSEditableAttributes"
             set_attributes="date_last_modified"/>
+        <require
+            permission="launchpad.Admin"
+            set_schema=".interfaces.livefs.ILiveFSAdminAttributes"/>
     </class>
     <subscriber
         for=".interfaces.livefs.ILiveFS zope.lifecycleevent.interfaces.IObjectModifiedEvent"

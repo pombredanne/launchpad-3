@@ -171,11 +171,6 @@ class LiveFSBuild(PackageBuildMixin, Storm):
         return self.livefs.owner.private or self.archive.private
 
     @property
-    def is_virtualized(self):
-        """See `ILiveFSBuild`."""
-        return self.archive.require_virtualized
-
-    @property
     def title(self):
         das = self.distro_arch_series
         name = self.livefs.name
@@ -353,7 +348,8 @@ class LiveFSBuildSet(SpecificBuildFarmJobSourceMixin):
             archive)
         livefsbuild = LiveFSBuild(
             build_farm_job, requester, livefs, archive, distro_arch_series,
-            pocket, distro_arch_series.processor, archive.require_virtualized,
+            pocket, distro_arch_series.processor,
+            livefs.require_virtualized or archive.require_virtualized,
             unique_key, metadata_override, date_created)
         store.add(livefsbuild)
         return livefsbuild

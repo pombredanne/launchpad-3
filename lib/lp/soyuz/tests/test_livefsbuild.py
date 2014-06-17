@@ -62,9 +62,12 @@ class TestLiveFSBuildFeatureFlag(TestCaseWithFactory):
 
     def test_feature_flag_disabled(self):
         # Without a feature flag, we will not create new LiveFSBuilds.
+        class MockLiveFS:
+            require_virtualized = False
+
         self.assertRaises(
             LiveFSFeatureDisabled, getUtility(ILiveFSBuildSet).new,
-            None, None, self.factory.makeArchive(),
+            None, MockLiveFS(), self.factory.makeArchive(),
             self.factory.makeDistroArchSeries(), None, None, None)
 
 

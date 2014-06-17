@@ -72,7 +72,7 @@ class LiveFSBuildBehaviour(BuildFarmJobBehaviourBase):
          * Ensure that we have a chroot
         """
         build = self.build
-        if build.is_virtualized and not self._builder.virtualized:
+        if build.virtualized and not self._builder.virtualized:
             raise AssertionError(
                 "Attempt to build virtual item on a non-virtual builder.")
 

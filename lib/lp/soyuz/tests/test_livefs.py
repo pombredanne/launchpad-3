@@ -68,7 +68,7 @@ class TestLiveFSFeatureFlag(TestCaseWithFactory):
         person = self.factory.makePerson()
         self.assertRaises(
             LiveFSFeatureDisabled, getUtility(ILiveFSSet).new,
-            person, person, None, None, None)
+            person, person, None, None, True, None)
 
 
 class TestLiveFS(TestCaseWithFactory):
@@ -249,6 +249,7 @@ class TestLiveFSSet(TestCaseWithFactory):
             owner=self.factory.makeTeam(owner=registrant),
             distro_series=self.factory.makeDistroSeries(),
             name=self.factory.getUniqueString(u"livefs-name"),
+            require_virtualized=True,
             metadata=metadata)
 
     def test_creation(self):
@@ -261,6 +262,7 @@ class TestLiveFSSet(TestCaseWithFactory):
         self.assertEqual(components["owner"], livefs.owner)
         self.assertEqual(components["distro_series"], livefs.distro_series)
         self.assertEqual(components["name"], livefs.name)
+        self.assertTrue(livefs.require_virtualized)
         self.assertEqual(components["metadata"], livefs.metadata)
 
     def test_exists(self):
@@ -357,10 +359,11 @@ class TestLiveFSWebservice(TestCaseWithFactory):
             self.assertEqual(
                 self.getURL(self.person), livefs["registrant_link"])
             self.assertEqual(self.getURL(team), livefs["owner_link"])
-            self.assertEqual("flavour-desktop", livefs["name"])
             self.assertEqual(
                 self.webservice.getAbsoluteUrl(distroseries_url),
                 livefs["distro_series_link"])
+            self.assertEqual("flavour-desktop", livefs["name"])
+            self.assertTrue(livefs["require_virtualized"])
             self.assertEqual({"project": "flavour"}, livefs["metadata"])
 
     def test_duplicate(self):
