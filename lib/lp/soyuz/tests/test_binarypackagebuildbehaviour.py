@@ -19,6 +19,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.buildmaster.enums import (
+    BuilderCleanStatus,
     BuildQueueStatus,
     BuildStatus,
     )
@@ -146,6 +147,7 @@ class TestBinaryBuildPackageBehaviour(TestCaseWithFactory):
         archive = self.factory.makeArchive(virtualized=False)
         slave = OkSlave()
         builder = self.factory.makeBuilder(virtualized=False)
+        builder.clean_status = BuilderCleanStatus.CLEAN
         vitals = extract_vitals_from_db(builder)
         build = self.factory.makeBinaryPackageBuild(
             builder=builder, archive=archive)
@@ -170,6 +172,7 @@ class TestBinaryBuildPackageBehaviour(TestCaseWithFactory):
         slave = OkSlave()
         builder = self.factory.makeBuilder(
             virtualized=True, vm_host="foohost")
+        builder.clean_status = BuilderCleanStatus.CLEAN
         vitals = extract_vitals_from_db(builder)
         build = self.factory.makeBinaryPackageBuild(
             builder=builder, archive=archive)
@@ -198,6 +201,7 @@ class TestBinaryBuildPackageBehaviour(TestCaseWithFactory):
             virtualized=False, purpose=ArchivePurpose.PARTNER)
         slave = OkSlave()
         builder = self.factory.makeBuilder(virtualized=False)
+        builder.clean_status = BuilderCleanStatus.CLEAN
         vitals = extract_vitals_from_db(builder)
         build = self.factory.makeBinaryPackageBuild(
             builder=builder, archive=archive)
