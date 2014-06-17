@@ -156,44 +156,6 @@ class TestBuilderInteractor(TestCase):
         self.assertEqual(5, slave.timeout)
 
     @defer.inlineCallbacks
-    def test_rescueIfLost_aborts_lost_and_broken_slave(self):
-        # A slave that's 'lost' should be aborted; when the slave is
-        # broken then abort() should also throw a fault.
-        slave = LostBuildingBrokenSlave()
-        slave_status = yield slave.status()
-        try:
-            yield BuilderInteractor.rescueIfLost(
-                extract_vitals_from_db(MockBuilder()), slave, slave_status,
-                'trivial')
-        except xmlrpclib.Fault:
-            self.assertIn('abort', slave.call_log)
-        else:
-            self.fail("xmlrpclib.Fault not raised")
-
-    @defer.inlineCallbacks
-    def test_recover_idle_slave(self):
-        # An idle slave is not rescued, even if it's not meant to be
-        # idle. SlaveScanner.scan() will clean up the DB side, because
-        # we still report that it's lost.
-        slave = OkSlave()
-        slave_status = yield slave.status()
-        lost = yield BuilderInteractor.rescueIfLost(
-            extract_vitals_from_db(MockBuilder()), slave, slave_status,
-            'trivial')
-        self.assertTrue(lost)
-        self.assertEqual(['status'], slave.call_log)
-
-    @defer.inlineCallbacks
-    def test_recover_ok_slave(self):
-        # An idle slave that's meant to be idle is not rescued.
-        slave = OkSlave()
-        slave_status = yield slave.status()
-        lost = yield BuilderInteractor.rescueIfLost(
-            extract_vitals_from_db(MockBuilder()), slave, slave_status, None)
-        self.assertFalse(lost)
-        self.assertEqual(['status'], slave.call_log)
-
-    @defer.inlineCallbacks
     def test_recover_waiting_slave_with_good_id(self):
         # rescueIfLost does not attempt to abort or clean a builder that is
         # WAITING.
