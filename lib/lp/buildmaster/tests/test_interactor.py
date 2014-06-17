@@ -300,6 +300,20 @@ class TestBuilderInteractorCleanSlave(TestCase):
                 virtualized=False, clean_status=BuilderCleanStatus.DIRTY),
             WaitingSlave(), ['status', 'clean'], True)
 
+    @defer.inlineCallbacks
+    def test_nonvirtual_broken(self):
+        # A broken non-virtual builder is probably unrecoverable, so the
+        # method just crashes.
+        vitals = extract_vitals_from_db(MockBuilder(
+            virtualized=False, clean_status=BuilderCleanStatus.DIRTY))
+        slave = LostBuildingBrokenSlave()
+        try:
+            yield BuilderInteractor.cleanSlave(vitals, slave)
+        except xmlrpclib.Fault:
+            self.assertEqual(['status', 'abort'], slave.call_log)
+        else:
+            self.fail("abort() should crash.")
+
 
 class TestBuilderSlaveStatus(TestCase):
     # Verify what BuilderSlave.status returns with slaves in different
