@@ -46,7 +46,7 @@ from lp.soyuz.adapters.archivedependencies import get_sources_list_for_building
 from lp.soyuz.interfaces.archive import ArchiveDisabled
 from lp.soyuz.interfaces.livefs import (
     LIVEFS_FEATURE_FLAG,
-    LiveFSBuildRequiresPublicArchive,
+    LiveFSBuildArchiveOwnerMismatch,
     )
 from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.soyuz.model.livefsbuildbehaviour import LiveFSBuildBehaviour
@@ -144,7 +144,20 @@ class TestLiveFSBuildBehaviour(TestCaseWithFactory):
         e = self.assertRaises(ArchiveDisabled, job.verifyBuildRequest, logger)
         self.assertEqual("Disabled Archive is disabled.", str(e))
 
-    def test_verifyBuildRequest_archive_private(self):
+    def test_verifyBuildRequest_archive_private_owners_match(self):
+        archive = self.factory.makeArchive(private=True)
+        job = self.makeJob(
+            archive=archive, registrant=archive.owner, owner=archive.owner)
+        lfa = self.factory.makeLibraryFileAlias()
+        transaction.commit()
+        job.build.distro_arch_series.addOrUpdateChroot(lfa)
+        builder = MockBuilder()
+        job.setBuilder(builder, OkSlave())
+        logger = BufferLogger()
+        job.verifyBuildRequest(logger)
+        self.assertEqual("", logger.getLogBuffer())
+
+    def test_verifyBuildRequest_archive_private_owners_mismatch(self):
         archive = self.factory.makeArchive(private=True)
         job = self.makeJob(archive=archive)
         lfa = self.factory.makeLibraryFileAlias()
@@ -154,10 +167,11 @@ class TestLiveFSBuildBehaviour(TestCaseWithFactory):
         job.setBuilder(builder, OkSlave())
         logger = BufferLogger()
         e = self.assertRaises(
-            LiveFSBuildRequiresPublicArchive, job.verifyBuildRequest, logger)
+            LiveFSBuildArchiveOwnerMismatch, job.verifyBuildRequest, logger)
         self.assertEqual(
-            "Live filesystem builds against private archives are not "
-            "currently allowed.", str(e))
+            "Live filesystem builds against private archives are only allowed "
+            "if the live filesystem owner and the archive owner are equal.",
+            str(e))
 
     def test_verifyBuildRequest_no_chroot(self):
         # verifyBuildRequest raises when the DAS has no chroot.

@@ -13,7 +13,7 @@ __all__ = [
     'ILiveFSView',
     'LIVEFS_FEATURE_FLAG',
     'LiveFSBuildAlreadyPending',
-    'LiveFSBuildRequiresPublicArchive',
+    'LiveFSBuildArchiveOwnerMismatch',
     'LiveFSFeatureDisabled',
     'LiveFSNotOwner',
     'NoSuchLiveFS',
@@ -83,13 +83,22 @@ class LiveFSBuildAlreadyPending(Exception):
 
 
 @error_status(httplib.FORBIDDEN)
-class LiveFSBuildRequiresPublicArchive(Forbidden):
-    """Builds may only use public archives."""
+class LiveFSBuildArchiveOwnerMismatch(Forbidden):
+    """Builds into private archives require that owners match.
+
+    The LiveFS owner must have write permission on the archive, so that a
+    malicious live filesystem build can't steal any secrets that its owner
+    didn't already have access to.  Furthermore, we want to make sure that
+    future changes to the team owning the LiveFS don't grant it
+    retrospective access to information about a private archive.  For now,
+    the simplest way to do this is to require that the owners match exactly.
+    """
 
     def __init__(self):
-        super(LiveFSBuildRequiresPublicArchive, self).__init__(
-            "Live filesystem builds against private archives are not "
-            "currently allowed.")
+        super(LiveFSBuildArchiveOwnerMismatch, self).__init__(
+            "Live filesystem builds against private archives are only "
+            "allowed if the live filesystem owner and the archive owner are "
+            "equal.")
 
 
 @error_status(httplib.UNAUTHORIZED)

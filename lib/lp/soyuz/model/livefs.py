@@ -57,7 +57,7 @@ from lp.soyuz.interfaces.livefs import (
     ILiveFSSet,
     LIVEFS_FEATURE_FLAG,
     LiveFSBuildAlreadyPending,
-    LiveFSBuildRequiresPublicArchive,
+    LiveFSBuildArchiveOwnerMismatch,
     LiveFSFeatureDisabled,
     LiveFSNotOwner,
     NoSuchLiveFS,
@@ -132,13 +132,9 @@ class LiveFS(Storm):
                 (requester.displayname, self.owner.displayname))
         if not archive.enabled:
             raise ArchiveDisabled(archive.displayname)
-        if archive.private:
-            # XXX cjwatson: Allowing live filesystem builds against private
-            # archives requires more thought, as they may have private
-            # archive dependencies with varying access rules, and the set of
-            # people who can view a LiveFSBuild may change after its initial
-            # creation.
-            raise LiveFSBuildRequiresPublicArchive()
+        if archive.private and self.owner != archive.owner:
+            # See rationale in `LiveFSBuildArchiveOwnerMismatch` docstring.
+            raise LiveFSBuildArchiveOwnerMismatch()
 
         pending = IStore(self).find(
             LiveFSBuild,

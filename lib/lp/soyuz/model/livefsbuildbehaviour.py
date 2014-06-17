@@ -26,7 +26,7 @@ from lp.buildmaster.model.buildfarmjobbehaviour import (
 from lp.registry.interfaces.series import SeriesStatus
 from lp.soyuz.adapters.archivedependencies import get_sources_list_for_building
 from lp.soyuz.interfaces.archive import ArchiveDisabled
-from lp.soyuz.interfaces.livefs import LiveFSBuildRequiresPublicArchive
+from lp.soyuz.interfaces.livefs import LiveFSBuildArchiveOwnerMismatch
 from lp.soyuz.interfaces.livefsbuild import ILiveFSBuild
 
 
@@ -68,7 +68,8 @@ class LiveFSBuildBehaviour(BuildFarmJobBehaviourBase):
         The build request is checked:
          * Virtualized builds can't build on a non-virtual builder
          * The source archive may not be disabled
-         * The source archive may not (yet) be private
+         * If the source archive is private, the livefs owner must match the
+           archive owner (see `LiveFSBuildArchiveOwnerMismatch` docstring)
          * Ensure that we have a chroot
         """
         build = self.build
@@ -78,8 +79,8 @@ class LiveFSBuildBehaviour(BuildFarmJobBehaviourBase):
 
         if not build.archive.enabled:
             raise ArchiveDisabled(build.archive.displayname)
-        if build.archive.private:
-            raise LiveFSBuildRequiresPublicArchive()
+        if build.archive.private and build.livefs.owner != build.archive.owner:
+            raise LiveFSBuildArchiveOwnerMismatch()
 
         chroot = build.distro_arch_series.getChroot()
         if chroot is None:
