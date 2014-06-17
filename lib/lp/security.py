@@ -2888,6 +2888,16 @@ class EditLiveFS(EditByOwnersOrAdmins):
     usedfor = ILiveFS
 
 
+class AdminLiveFS(AdminByCommercialTeamOrAdmins):
+    """Restrict changing build settings on live filesystems.
+
+    The security of the non-virtualised build farm depends on these
+    settings, so they can only be changed by commercial admins.
+    """
+    permission = 'launchpad.Admin'
+    usedfor = ILiveFS
+
+
 class ViewLiveFSBuild(DelegatedAuthorization):
     permission = 'launchpad.View'
     usedfor = ILiveFSBuild

@@ -64,7 +64,7 @@ class TestCanonicalUrlForLiveFSBuild(TestCaseWithFactory):
             canonical_url(build),
             StartsWith(
                 "http://launchpad.dev/~person/+livefs/distro/unstable/livefs/"
-                "+livefsbuild/"))
+                "+build/"))
 
 
 class TestLiveFSBuildView(TestCaseWithFactory):

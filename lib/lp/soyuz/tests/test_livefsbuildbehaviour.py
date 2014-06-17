@@ -43,7 +43,11 @@ from lp.registry.interfaces.series import SeriesStatus
 from lp.services.features.testing import FeatureFixture
 from lp.services.log.logger import BufferLogger
 from lp.soyuz.adapters.archivedependencies import get_sources_list_for_building
-from lp.soyuz.interfaces.livefs import LIVEFS_FEATURE_FLAG
+from lp.soyuz.interfaces.archive import ArchiveDisabled
+from lp.soyuz.interfaces.livefs import (
+    LIVEFS_FEATURE_FLAG,
+    LiveFSBuildArchiveOwnerMismatch,
+    )
 from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.soyuz.model.livefsbuildbehaviour import LiveFSBuildBehaviour
 from lp.testing import TestCaseWithFactory
@@ -69,7 +73,8 @@ class TestLiveFSBuildBehaviour(TestCaseWithFactory):
             processor=processor)
         build = self.factory.makeLiveFSBuild(
             distroarchseries=distroarchseries,
-            pocket=PackagePublishingPocket.RELEASE, name=u"livefs", **kwargs)
+            pocket=PackagePublishingPocket.RELEASE, name=u"test-livefs",
+            **kwargs)
         return IBuildFarmJobBehaviour(build)
 
     def test_provides_interface(self):
@@ -87,7 +92,7 @@ class TestLiveFSBuildBehaviour(TestCaseWithFactory):
         # displayname contains a reasonable description of the job.
         job = self.makeJob()
         self.assertEqual(
-            "i386 build of livefs live filesystem in distro unstable",
+            "i386 build of test-livefs livefs in distro unstable",
             job.displayname)
 
     def test_logStartBuild(self):
@@ -96,7 +101,7 @@ class TestLiveFSBuildBehaviour(TestCaseWithFactory):
         logger = BufferLogger()
         job.logStartBuild(logger)
         self.assertEqual(
-            "INFO startBuild(i386 build of livefs live filesystem in distro "
+            "INFO startBuild(i386 build of test-livefs livefs in distro "
             "unstable)\n", logger.getLogBuffer())
 
     def test_verifyBuildRequest_valid(self):
@@ -125,6 +130,48 @@ class TestLiveFSBuildBehaviour(TestCaseWithFactory):
         e = self.assertRaises(AssertionError, job.verifyBuildRequest, logger)
         self.assertEqual(
             "Attempt to build virtual item on a non-virtual builder.", str(e))
+
+    def test_verifyBuildRequest_archive_disabled(self):
+        archive = self.factory.makeArchive(
+            enabled=False, displayname="Disabled Archive")
+        job = self.makeJob(archive=archive)
+        lfa = self.factory.makeLibraryFileAlias()
+        transaction.commit()
+        job.build.distro_arch_series.addOrUpdateChroot(lfa)
+        builder = MockBuilder()
+        job.setBuilder(builder, OkSlave())
+        logger = BufferLogger()
+        e = self.assertRaises(ArchiveDisabled, job.verifyBuildRequest, logger)
+        self.assertEqual("Disabled Archive is disabled.", str(e))
+
+    def test_verifyBuildRequest_archive_private_owners_match(self):
+        archive = self.factory.makeArchive(private=True)
+        job = self.makeJob(
+            archive=archive, registrant=archive.owner, owner=archive.owner)
+        lfa = self.factory.makeLibraryFileAlias()
+        transaction.commit()
+        job.build.distro_arch_series.addOrUpdateChroot(lfa)
+        builder = MockBuilder()
+        job.setBuilder(builder, OkSlave())
+        logger = BufferLogger()
+        job.verifyBuildRequest(logger)
+        self.assertEqual("", logger.getLogBuffer())
+
+    def test_verifyBuildRequest_archive_private_owners_mismatch(self):
+        archive = self.factory.makeArchive(private=True)
+        job = self.makeJob(archive=archive)
+        lfa = self.factory.makeLibraryFileAlias()
+        transaction.commit()
+        job.build.distro_arch_series.addOrUpdateChroot(lfa)
+        builder = MockBuilder()
+        job.setBuilder(builder, OkSlave())
+        logger = BufferLogger()
+        e = self.assertRaises(
+            LiveFSBuildArchiveOwnerMismatch, job.verifyBuildRequest, logger)
+        self.assertEqual(
+            "Live filesystem builds against private archives are only allowed "
+            "if the live filesystem owner and the archive owner are equal.",
+            str(e))
 
     def test_verifyBuildRequest_no_chroot(self):
         # verifyBuildRequest raises when the DAS has no chroot.

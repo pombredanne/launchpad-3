@@ -171,17 +171,12 @@ class LiveFSBuild(PackageBuildMixin, Storm):
         return self.livefs.owner.private or self.archive.private
 
     @property
-    def is_virtualized(self):
-        """See `ILiveFSBuild`."""
-        return self.archive.require_virtualized
-
-    @property
     def title(self):
         das = self.distro_arch_series
         name = self.livefs.name
         if self.unique_key is not None:
             name += " (%s)" % self.unique_key
-        return "%s build of %s live filesystem in %s %s" % (
+        return "%s build of %s livefs in %s %s" % (
             das.architecturetag, name, das.distroseries.distribution.name,
             das.distroseries.getSuite(self.pocket))
 
@@ -277,14 +272,12 @@ class LiveFSBuild(PackageBuildMixin, Storm):
 
     def getFiles(self):
         """See `ILiveFSBuild`."""
-        store = Store.of(self)
-        result = store.find(
+        result = Store.of(self).find(
             (LiveFSFile, LibraryFileAlias, LibraryFileContent),
             LiveFSFile.livefsbuild == self.id,
             LibraryFileAlias.id == LiveFSFile.libraryfile_id,
             LibraryFileContent.id == LibraryFileAlias.contentID)
-        return result.order_by(
-            [LibraryFileAlias.filename, LiveFSFile.id]).config()
+        return result.order_by([LibraryFileAlias.filename, LiveFSFile.id])
 
     def getFileByName(self, filename):
         """See `ILiveFSBuild`."""
@@ -355,7 +348,8 @@ class LiveFSBuildSet(SpecificBuildFarmJobSourceMixin):
             archive)
         livefsbuild = LiveFSBuild(
             build_farm_job, requester, livefs, archive, distro_arch_series,
-            pocket, distro_arch_series.processor, archive.require_virtualized,
+            pocket, distro_arch_series.processor,
+            livefs.require_virtualized or archive.require_virtualized,
             unique_key, metadata_override, date_created)
         store.add(livefsbuild)
         return livefsbuild

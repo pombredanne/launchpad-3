@@ -13,6 +13,7 @@ __all__ = [
     'ILiveFSView',
     'LIVEFS_FEATURE_FLAG',
     'LiveFSBuildAlreadyPending',
+    'LiveFSBuildArchiveOwnerMismatch',
     'LiveFSFeatureDisabled',
     'LiveFSNotOwner',
     'NoSuchLiveFS',
@@ -41,13 +42,17 @@ from lazr.restful.fields import (
     )
 from zope.interface import Interface
 from zope.schema import (
+    Bool,
     Choice,
     Datetime,
     Dict,
     Int,
     TextLine,
     )
-from zope.security.interfaces import Unauthorized
+from zope.security.interfaces import (
+    Forbidden,
+    Unauthorized,
+    )
 
 from lp import _
 from lp.app.errors import NameLookupFailed
@@ -75,6 +80,25 @@ class LiveFSBuildAlreadyPending(Exception):
         super(LiveFSBuildAlreadyPending, self).__init__(
             "An identical build of this live filesystem image is already "
             "pending.")
+
+
+@error_status(httplib.FORBIDDEN)
+class LiveFSBuildArchiveOwnerMismatch(Forbidden):
+    """Builds into private archives require that owners match.
+
+    The LiveFS owner must have write permission on the archive, so that a
+    malicious live filesystem build can't steal any secrets that its owner
+    didn't already have access to.  Furthermore, we want to make sure that
+    future changes to the team owning the LiveFS don't grant it
+    retrospective access to information about a private archive.  For now,
+    the simplest way to do this is to require that the owners match exactly.
+    """
+
+    def __init__(self):
+        super(LiveFSBuildArchiveOwnerMismatch, self).__init__(
+            "Live filesystem builds against private archives are only "
+            "allowed if the live filesystem owner and the archive owner are "
+            "equal.")
 
 
 @error_status(httplib.UNAUTHORIZED)
@@ -205,7 +229,18 @@ class ILiveFSEditableAttributes(IHasOwner):
         key_type=TextLine(), required=True, readonly=False))
 
 
-class ILiveFS(ILiveFSView, ILiveFSEditableAttributes):
+class ILiveFSAdminAttributes(Interface):
+    """`ILiveFS` attributes that can be edited by admins.
+
+    These attributes need launchpad.View to see, and launchpad.Admin to change.
+    """
+    require_virtualized = exported(Bool(
+        title=_("Require virtualized builders"), required=True, readonly=False,
+        description=_(
+            "Only build this live filesystem image on virtual builders.")))
+
+
+class ILiveFS(ILiveFSView, ILiveFSEditableAttributes, ILiveFSAdminAttributes):
     """A buildable live filesystem image."""
 
     # XXX cjwatson 2014-05-06 bug=760849: "beta" is a lie to get WADL
@@ -225,7 +260,7 @@ class ILiveFSSet(Interface):
         ILiveFS, ["owner", "distro_series", "name", "metadata"])
     @operation_for_version("devel")
     def new(registrant, owner, distro_series, name, metadata,
-            date_created=None):
+            require_virtualized=True, date_created=None):
         """Create an `ILiveFS`."""
 
     def exists(owner, distro_series, name):

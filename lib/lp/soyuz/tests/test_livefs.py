@@ -25,6 +25,7 @@ from lp.buildmaster.enums import (
     )
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.buildmaster.model.buildqueue import BuildQueue
+from lp.registry.enums import PersonVisibility
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.database.constants import UTC_NOW
 from lp.services.features.testing import FeatureFixture
@@ -67,7 +68,7 @@ class TestLiveFSFeatureFlag(TestCaseWithFactory):
         person = self.factory.makePerson()
         self.assertRaises(
             LiveFSFeatureDisabled, getUtility(ILiveFSSet).new,
-            person, person, None, None, None)
+            person, person, None, None, True, None)
 
 
 class TestLiveFS(TestCaseWithFactory):
@@ -83,42 +84,11 @@ class TestLiveFS(TestCaseWithFactory):
         livefs = self.factory.makeLiveFS()
         self.assertProvides(livefs, ILiveFS)
 
-    def test_class_implements_interfaces(self):
-        # The LiveFS class implements ILiveFSSet.
-        self.assertProvides(getUtility(ILiveFSSet), ILiveFSSet)
-
     def test_avoids_problematic_snapshots(self):
         self.assertThat(
             self.factory.makeLiveFS(),
             DoesNotSnapshot(
                 ["builds", "completed_builds", "pending_builds"], ILiveFSView))
-
-    def makeLiveFSComponents(self, metadata={}):
-        """Return a dict of values that can be used to make a LiveFS.
-
-        Suggested use: provide as kwargs to ILiveFSSet.new.
-
-        :param metadata: A dict to set as LiveFS.metadata.
-        """
-        registrant = self.factory.makePerson()
-        return dict(
-            registrant=registrant,
-            owner=self.factory.makeTeam(owner=registrant),
-            distro_series=self.factory.makeDistroSeries(),
-            name=self.factory.getUniqueString(u"livefs-name"),
-            metadata=metadata)
-
-    def test_creation(self):
-        # The metadata entries supplied when a LiveFS is created are present
-        # on the new object.
-        components = self.makeLiveFSComponents(metadata={"project": "foo"})
-        livefs = getUtility(ILiveFSSet).new(**components)
-        transaction.commit()
-        self.assertEqual(components["registrant"], livefs.registrant)
-        self.assertEqual(components["owner"], livefs.owner)
-        self.assertEqual(components["distro_series"], livefs.distro_series)
-        self.assertEqual(components["name"], livefs.name)
-        self.assertEqual(components["metadata"], livefs.metadata)
 
     def test_initial_date_last_modified(self):
         # The initial value of date_last_modified is date_created.
@@ -135,22 +105,6 @@ class TestLiveFS(TestCaseWithFactory):
             removeSecurityProxy(livefs), livefs, [ILiveFS["name"]]))
         self.assertSqlAttributeEqualsDate(
             livefs, "date_last_modified", UTC_NOW)
-
-    def test_exists(self):
-        # ILiveFSSet.exists checks for matching LiveFSes.
-        livefs = self.factory.makeLiveFS()
-        self.assertTrue(
-            getUtility(ILiveFSSet).exists(
-                livefs.owner, livefs.distro_series, livefs.name))
-        self.assertFalse(
-            getUtility(ILiveFSSet).exists(
-                self.factory.makePerson(), livefs.distro_series, livefs.name))
-        self.assertFalse(
-            getUtility(ILiveFSSet).exists(
-                livefs.owner, self.factory.makeDistroSeries(), livefs.name))
-        self.assertFalse(
-            getUtility(ILiveFSSet).exists(
-                livefs.owner, livefs.distro_series, u"different"))
 
     def test_requestBuild(self):
         # requestBuild creates a new LiveFSBuild.
@@ -254,6 +208,103 @@ class TestLiveFS(TestCaseWithFactory):
         self.assertEqual(builds[:1], list(livefs.completed_builds))
         self.assertEqual(builds[1:], list(livefs.pending_builds))
 
+    def test_getBuilds_privacy(self):
+        # The various getBuilds methods exclude builds against invisible
+        # archives.
+        livefs = self.factory.makeLiveFS()
+        archive = self.factory.makeArchive(
+            distribution=livefs.distro_series.distribution, owner=livefs.owner,
+            private=True)
+        with person_logged_in(livefs.owner):
+            build = self.factory.makeLiveFSBuild(
+                livefs=livefs, archive=archive)
+            self.assertEqual([build], list(livefs.builds))
+            self.assertEqual([build], list(livefs.pending_builds))
+        self.assertEqual([], list(livefs.builds))
+        self.assertEqual([], list(livefs.pending_builds))
+
+
+class TestLiveFSSet(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestLiveFSSet, self).setUp()
+        self.useFixture(FeatureFixture({LIVEFS_FEATURE_FLAG: u"on"}))
+
+    def test_class_implements_interfaces(self):
+        # The LiveFSSet class implements ILiveFSSet.
+        self.assertProvides(getUtility(ILiveFSSet), ILiveFSSet)
+
+    def makeLiveFSComponents(self, metadata={}):
+        """Return a dict of values that can be used to make a LiveFS.
+
+        Suggested use: provide as kwargs to ILiveFSSet.new.
+
+        :param metadata: A dict to set as LiveFS.metadata.
+        """
+        registrant = self.factory.makePerson()
+        return dict(
+            registrant=registrant,
+            owner=self.factory.makeTeam(owner=registrant),
+            distro_series=self.factory.makeDistroSeries(),
+            name=self.factory.getUniqueString(u"livefs-name"),
+            metadata=metadata)
+
+    def test_creation(self):
+        # The metadata entries supplied when a LiveFS is created are present
+        # on the new object.
+        components = self.makeLiveFSComponents(metadata={"project": "foo"})
+        livefs = getUtility(ILiveFSSet).new(**components)
+        transaction.commit()
+        self.assertEqual(components["registrant"], livefs.registrant)
+        self.assertEqual(components["owner"], livefs.owner)
+        self.assertEqual(components["distro_series"], livefs.distro_series)
+        self.assertEqual(components["name"], livefs.name)
+        self.assertEqual(components["metadata"], livefs.metadata)
+        self.assertTrue(livefs.require_virtualized)
+
+    def test_exists(self):
+        # ILiveFSSet.exists checks for matching LiveFSes.
+        livefs = self.factory.makeLiveFS()
+        self.assertTrue(
+            getUtility(ILiveFSSet).exists(
+                livefs.owner, livefs.distro_series, livefs.name))
+        self.assertFalse(
+            getUtility(ILiveFSSet).exists(
+                self.factory.makePerson(), livefs.distro_series, livefs.name))
+        self.assertFalse(
+            getUtility(ILiveFSSet).exists(
+                livefs.owner, self.factory.makeDistroSeries(), livefs.name))
+        self.assertFalse(
+            getUtility(ILiveFSSet).exists(
+                livefs.owner, livefs.distro_series, u"different"))
+
+    def test_getAll(self):
+        # ILiveFSSet.getAll returns all LiveFSes.
+        livefses = [self.factory.makeLiveFS() for i in range(3)]
+        self.assertContentEqual(livefses, getUtility(ILiveFSSet).getAll())
+
+    def test_getAll_privacy(self):
+        # ILiveFSSet.getAll hides LiveFSes whose owners are invisible.
+        registrants = [self.factory.makePerson() for i in range(2)]
+        owners = [
+            self.factory.makeTeam(owner=registrants[0]),
+            self.factory.makeTeam(
+                owner=registrants[1], visibility=PersonVisibility.PRIVATE),
+            ]
+        livefses = []
+        for registrant, owner in zip(registrants, owners):
+            with person_logged_in(registrant):
+                livefses.append(self.factory.makeLiveFS(
+                    registrant=registrant, owner=owner))
+        self.assertContentEqual([livefses[0]], getUtility(ILiveFSSet).getAll())
+        with person_logged_in(registrants[0]):
+            self.assertContentEqual(
+                [livefses[0]], getUtility(ILiveFSSet).getAll())
+        with person_logged_in(registrants[1]):
+            self.assertContentEqual(livefses, getUtility(ILiveFSSet).getAll())
+
 
 class TestLiveFSWebservice(TestCaseWithFactory):
 
@@ -307,11 +358,12 @@ class TestLiveFSWebservice(TestCaseWithFactory):
             self.assertEqual(
                 self.getURL(self.person), livefs["registrant_link"])
             self.assertEqual(self.getURL(team), livefs["owner_link"])
-            self.assertEqual("flavour-desktop", livefs["name"])
             self.assertEqual(
                 self.webservice.getAbsoluteUrl(distroseries_url),
                 livefs["distro_series_link"])
+            self.assertEqual("flavour-desktop", livefs["name"])
             self.assertEqual({"project": "flavour"}, livefs["metadata"])
+            self.assertTrue(livefs["require_virtualized"])
 
     def test_duplicate(self):
         # An attempt to create a duplicate LiveFS fails.
@@ -443,6 +495,60 @@ class TestLiveFSWebservice(TestCaseWithFactory):
         self.assertEqual(
             "Test Person cannot create live filesystem builds owned by Other "
             "Team.", response.body)
+
+    def test_requestBuild_archive_disabled(self):
+        # Build requests against a disabled archive are rejected.
+        distroseries = self.factory.makeDistroSeries(registrant=self.person)
+        distroarchseries = self.factory.makeDistroArchSeries(
+            distroseries=distroseries, owner=self.person)
+        distroarchseries_url = api_url(distroarchseries)
+        archive = self.factory.makeArchive(
+            distribution=distroseries.distribution, owner=self.person,
+            enabled=False, displayname="Disabled Archive")
+        archive_url = api_url(archive)
+        livefs, _ = self.makeLiveFS(distroseries=distroseries)
+        response = self.webservice.named_post(
+            livefs["self_link"], "requestBuild", archive=archive_url,
+            distro_arch_series=distroarchseries_url, pocket="Release")
+        self.assertEqual(403, response.status)
+        self.assertEqual("Disabled Archive is disabled.", response.body)
+
+    def test_requestBuild_archive_private_owners_match(self):
+        # Build requests against a private archive are allowed if the LiveFS
+        # and Archive owners match exactly.
+        distroseries = self.factory.makeDistroSeries(registrant=self.person)
+        distroarchseries = self.factory.makeDistroArchSeries(
+            distroseries=distroseries, owner=self.person)
+        distroarchseries_url = api_url(distroarchseries)
+        archive = self.factory.makeArchive(
+            distribution=distroseries.distribution, owner=self.person,
+            private=True)
+        archive_url = api_url(archive)
+        livefs, _ = self.makeLiveFS(distroseries=distroseries)
+        response = self.webservice.named_post(
+            livefs["self_link"], "requestBuild", archive=archive_url,
+            distro_arch_series=distroarchseries_url, pocket="Release")
+        self.assertEqual(201, response.status)
+
+    def test_requestBuild_archive_private_owners_mismatch(self):
+        # Build requests against a private archive are rejected if the
+        # LiveFS and Archive owners do not match exactly.
+        distroseries = self.factory.makeDistroSeries(registrant=self.person)
+        distroarchseries = self.factory.makeDistroArchSeries(
+            distroseries=distroseries, owner=self.person)
+        distroarchseries_url = api_url(distroarchseries)
+        archive = self.factory.makeArchive(
+            distribution=distroseries.distribution, private=True)
+        archive_url = api_url(archive)
+        livefs, _ = self.makeLiveFS(distroseries=distroseries)
+        response = self.webservice.named_post(
+            livefs["self_link"], "requestBuild", archive=archive_url,
+            distro_arch_series=distroarchseries_url, pocket="Release")
+        self.assertEqual(403, response.status)
+        self.assertEqual(
+            "Live filesystem builds against private archives are only allowed "
+            "if the live filesystem owner and the archive owner are equal.",
+            response.body)
 
     def test_getBuilds(self):
         # The builds, completed_builds, and pending_builds properties are as

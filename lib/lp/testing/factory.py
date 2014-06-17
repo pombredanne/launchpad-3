@@ -4315,7 +4315,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             self.getUniqueString(), person, person, months)
 
     def makeLiveFS(self, registrant=None, owner=None, distroseries=None,
-                   name=None, metadata=None, date_created=DEFAULT):
+                   name=None, metadata=None, require_virtualized=True,
+                   date_created=DEFAULT):
         """Make a new LiveFS."""
         if registrant is None:
             registrant = self.makePerson()
@@ -4329,7 +4330,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             metadata = {}
         livefs = getUtility(ILiveFSSet).new(
             registrant, owner, distroseries, name, metadata,
-            date_created=date_created)
+            require_virtualized=require_virtualized, date_created=date_created)
         IStore(livefs).flush()
         return livefs
 

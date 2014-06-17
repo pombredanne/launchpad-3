@@ -273,6 +273,7 @@ class TestLiveFSView(BrowserTestCase):
             processor=processor)
         self.person = self.factory.makePerson(
             name="test-person", displayname="Test Person")
+        self.factory.makeBuilder(virtualized=True)
 
     def makeLiveFS(self):
         return self.factory.makeLiveFS(

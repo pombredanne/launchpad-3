@@ -74,8 +74,8 @@ from lp.soyuz.interfaces.livefsbuild import ILiveFSBuildSet
 class LiveFSNavigation(Navigation):
     usedfor = ILiveFS
 
-    @stepthrough('+livefsbuild')
-    def traverse_livefsbuild(self, name):
+    @stepthrough('+build')
+    def traverse_build(self, name):
         build = get_build_by_id_str(ILiveFSBuildSet, name)
         if build is None or build.livefs != self.context:
             return None

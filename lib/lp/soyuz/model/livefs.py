@@ -9,10 +9,12 @@ __all__ = [
 import pytz
 from storm.exceptions import IntegrityError
 from storm.locals import (
+    Bool,
     DateTime,
     Desc,
     Int,
     JSON,
+    Not,
     Reference,
     Store,
     Storm,
@@ -33,6 +35,10 @@ from lp.registry.interfaces.person import (
     NoSuchPerson,
     )
 from lp.registry.interfaces.role import IHasOwner
+from lp.registry.model.person import (
+    get_person_visibility_terms,
+    Person,
+    )
 from lp.services.database.constants import (
     DEFAULT,
     UTC_NOW,
@@ -43,18 +49,24 @@ from lp.services.database.interfaces import (
     )
 from lp.services.database.stormexpr import Greatest
 from lp.services.features import getFeatureFlag
+from lp.services.webapp.interfaces import ILaunchBag
+from lp.soyuz.interfaces.archive import ArchiveDisabled
 from lp.soyuz.interfaces.livefs import (
     DuplicateLiveFSName,
     ILiveFS,
     ILiveFSSet,
     LIVEFS_FEATURE_FLAG,
     LiveFSBuildAlreadyPending,
+    LiveFSBuildArchiveOwnerMismatch,
     LiveFSFeatureDisabled,
     LiveFSNotOwner,
     NoSuchLiveFS,
     )
 from lp.soyuz.interfaces.livefsbuild import ILiveFSBuildSet
-from lp.soyuz.model.archive import Archive
+from lp.soyuz.model.archive import (
+    Archive,
+    get_enabled_archive_filter,
+    )
 from lp.soyuz.model.livefsbuild import LiveFSBuild
 
 
@@ -94,8 +106,10 @@ class LiveFS(Storm):
 
     metadata = JSON('json_data')
 
-    def __init__(self, registrant, owner, distro_series, name, metadata,
-                 date_created):
+    require_virtualized = Bool(name='require_virtualized')
+
+    def __init__(self, registrant, owner, distro_series, name,
+                 metadata, require_virtualized, date_created):
         """Construct a `LiveFS`."""
         if not getFeatureFlag(LIVEFS_FEATURE_FLAG):
             raise LiveFSFeatureDisabled
@@ -105,6 +119,7 @@ class LiveFS(Storm):
         self.distro_series = distro_series
         self.name = name
         self.metadata = metadata
+        self.require_virtualized = require_virtualized
         self.date_created = date_created
         self.date_last_modified = date_created
 
@@ -115,6 +130,11 @@ class LiveFS(Storm):
             raise LiveFSNotOwner(
                 "%s cannot create live filesystem builds owned by %s." %
                 (requester.displayname, self.owner.displayname))
+        if not archive.enabled:
+            raise ArchiveDisabled(archive.displayname)
+        if archive.private and self.owner != archive.owner:
+            # See rationale in `LiveFSBuildArchiveOwnerMismatch` docstring.
+            raise LiveFSBuildArchiveOwnerMismatch()
 
         pending = IStore(self).find(
             LiveFSBuild,
@@ -139,6 +159,9 @@ class LiveFS(Storm):
             LiveFSBuild.livefs == self,
             LiveFSBuild.archive_id == Archive.id,
             Archive._enabled == True,
+            get_enabled_archive_filter(
+                getUtility(ILaunchBag).user, include_public=True,
+                include_subscribed=True)
             ]
         if filter_term is not None:
             query_args.append(filter_term)
@@ -158,9 +181,19 @@ class LiveFS(Storm):
         return self._getBuilds(None, order_by)
 
     @property
+    def _pending_states(self):
+        """All the build states we consider pending (non-final)."""
+        return [
+            BuildStatus.NEEDSBUILD,
+            BuildStatus.BUILDING,
+            BuildStatus.UPLOADING,
+            BuildStatus.CANCELLING,
+            ]
+
+    @property
     def completed_builds(self):
         """See `ILiveFS`."""
-        filter_term = (LiveFSBuild.status != BuildStatus.NEEDSBUILD)
+        filter_term = (Not(LiveFSBuild.status.is_in(self._pending_states)))
         order_by = (
             Desc(Greatest(
                 LiveFSBuild.date_started,
@@ -171,7 +204,7 @@ class LiveFS(Storm):
     @property
     def pending_builds(self):
         """See `ILiveFS`."""
-        filter_term = (LiveFSBuild.status == BuildStatus.NEEDSBUILD)
+        filter_term = (LiveFSBuild.status.is_in(self._pending_states))
         # We want to order by date_created but this is the same as ordering
         # by id (since id increases monotonically) and is less expensive.
         order_by = Desc(LiveFSBuild.id)
@@ -184,7 +217,7 @@ class LiveFSSet:
     implements(ILiveFSSet)
 
     def new(self, registrant, owner, distro_series, name, metadata,
-            date_created=DEFAULT):
+            require_virtualized=True, date_created=DEFAULT):
         """See `ILiveFSSet`."""
         if not registrant.inTeam(owner):
             if owner.is_team:
@@ -198,7 +231,8 @@ class LiveFSSet:
 
         store = IMasterStore(LiveFS)
         livefs = LiveFS(
-            registrant, owner, distro_series, name, metadata, date_created)
+            registrant, owner, distro_series, name, metadata,
+            require_virtualized, date_created)
         store.add(livefs)
 
         try:
@@ -253,4 +287,8 @@ class LiveFSSet:
     def getAll(self):
         """See `ILiveFSSet`."""
         store = IStore(LiveFS)
-        return store.find(LiveFS).order_by("name")
+        user = getUtility(ILaunchBag).user
+        return store.find(
+            LiveFS,
+            LiveFS.owner == Person.id,
+            get_person_visibility_terms(user)).order_by("name")
