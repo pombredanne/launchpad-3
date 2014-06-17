@@ -245,6 +245,34 @@ class TestBuilderInteractor(TestCase):
         self.assertEqual(['status', 'abort'], building_slave.call_log)
 
 
+class TestBuilderInteractorCleanSlave(TestCase):
+
+    run_tests_with = AsynchronousDeferredRunTest
+
+    @defer.inlineCallbacks
+    def assertCleanCalls(self, builder, calls, done):
+        slave = OkSlave()
+        actually_done = yield BuilderInteractor.cleanSlave(
+            extract_vitals_from_db(builder), slave)
+        self.assertEqual(done, actually_done)
+        self.assertEqual(calls, slave.method_log)
+
+    @defer.inlineCallbacks
+    def test_virtual(self):
+        yield self.assertCleanCalls(
+            MockBuilder(
+                virtualized=True, vm_host='lol',
+                clean_status=BuilderCleanStatus.DIRTY),
+            ['resume', 'echo'], True)
+
+    @defer.inlineCallbacks
+    def test_nonvirtual(self):
+        yield self.assertCleanCalls(
+            MockBuilder(
+                virtualized=False, clean_status=BuilderCleanStatus.DIRTY),
+            [], True)
+
+
 class TestBuilderSlaveStatus(TestCase):
     # Verify what BuilderSlave.status returns with slaves in different
     # states.
