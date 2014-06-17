@@ -433,20 +433,25 @@ class SlaveScanner:
                     vitals, slave, interactor)
                 if cancelled:
                     return
-                assert slave_status is not None
-                lost = yield interactor.rescueIfLost(
-                    vitals, slave, slave_status,
-                    self.getExpectedCookie(vitals), self.logger)
-                if lost:
-                    lost_reason = '%s is lost' % vitals.name
+
+                # Ensure that the slave has the job that we think it
+                # should.
+                slave_cookie = slave_status.get('build_id')
+                expected_cookie = self.getExpectedCookie(vitals)
+                if slave_cookie != expected_cookie:
+                    lost_reason = (
+                        '%s is lost (expected %r, got %r)' % (
+                            vitals.name, expected_cookie, slave_cookie))
 
             if lost_reason is not None:
-                if vitals.build_queue is not None:
-                    self.logger.warn(
-                        "%s. Resetting BuildQueue %d.", lost_reason,
-                        vitals.build_queue.id)
-                    vitals.build_queue.reset()
-                    transaction.commit()
+                # The slave is either confused or disabled, so reset and
+                # requeue the job. The next scan cycle will clean up the
+                # slave if appropriate.
+                self.logger.warn(
+                    "%s. Resetting BuildQueue %d.", lost_reason,
+                    vitals.build_queue.id)
+                vitals.build_queue.reset()
+                transaction.commit()
                 return
 
             # The slave and DB agree on the builder's state.  Scan the
@@ -496,6 +501,7 @@ class SlaveScanner:
                 if done:
                     builder = self.builder_factory[self.builder_name]
                     builder.clean_status = BuilderCleanStatus.CLEAN
+                    self.logger.debug('%s has been cleaned.', vitals.name)
                     transaction.commit()
 
 
