@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for bzrutils."""
@@ -175,8 +175,6 @@ class TestExceptionLoggingHooks(TestCase):
 
     def test_doesnt_call_hook_for_non_important_exception(self):
         # Some exceptions are exempt from OOPSes.
-        exceptions = []
-
         self.assertEqual(0, len(self.oopses))
         hook = install_oops_handler(1000)
         self.addCleanup(remove_exception_logging_hook, hook)

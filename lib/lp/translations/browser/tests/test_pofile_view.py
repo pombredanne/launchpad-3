@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -304,7 +304,7 @@ class TestBrowser(BrowserTestCase):
         with person_logged_in(product.owner):
             product.translationpermission = TranslationPermission.CLOSED
         # Add credits so that they show in the UI
-        credits = self.factory.makePOTMsgSet(
+        self.factory.makePOTMsgSet(
             potemplate=pofile.potemplate, singular='translator-credits')
         browser = self.getViewBrowser(pofile)
         self.assertNotIn('This is a dummy translation', browser.contents)
@@ -313,10 +313,8 @@ class TestBrowser(BrowserTestCase):
     def test_anonymous_translation_credits(self):
         """Credits should be hidden for non-logged-in users."""
         pofile = self.factory.makePOFile()
-        # Restrict translations so that the translator cannot change it.
-        product = pofile.potemplate.productseries.product
         # Add credits so that they show in the UI
-        credits = self.factory.makePOTMsgSet(
+        self.factory.makePOTMsgSet(
             potemplate=pofile.potemplate, singular='translator-credits')
         browser = self.getViewBrowser(pofile, no_login=True)
         self.assertTextMatchesExpressionIgnoreWhitespace(

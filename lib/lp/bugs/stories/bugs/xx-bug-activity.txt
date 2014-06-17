@@ -228,7 +228,6 @@ bundled with that comment in the UI.
     ... ago:
     #2
     Lookit, a change!
-    ...
     Changed in mozilla-firefox (Ubuntu):
     status:
     New => Confirmed
@@ -236,6 +235,7 @@ bundled with that comment in the UI.
     Medium => Low
     status:
     Confirmed => New
+    Hide
     --------
 
 If a target of a bug task is changed the old and new value will be shown.
@@ -255,6 +255,7 @@ If a target of a bug task is changed the old and new value will be shown.
     ...
     affects:
     mozilla-firefox (Ubuntu) => linux-source-2.6.15 (Ubuntu)
+    Hide
     --------
 
 If a bug task is deleted the pillar no longer affected will be shown.

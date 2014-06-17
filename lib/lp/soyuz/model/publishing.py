@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -17,10 +17,7 @@ __all__ = [
 
 from collections import defaultdict
 from datetime import datetime
-from operator import (
-    attrgetter,
-    itemgetter,
-    )
+from operator import attrgetter
 import os
 import re
 import sys
@@ -58,7 +55,6 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.database import bulk
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
-from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.interfaces import (
     IMasterStore,
@@ -548,13 +544,6 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         result_set = publishing_set.getBuildsForSources([self])
         return SourcePackagePublishingHistory._convertBuilds(result_set)
 
-    def getUnpublishedBuilds(self, build_states=None):
-        """See `ISourcePackagePublishingHistory`."""
-        publishing_set = getUtility(IPublishingSet)
-        result_set = publishing_set.getUnpublishedBuildsForSources(
-            self, build_states)
-        return DecoratedResultSet(result_set, itemgetter(1))
-
     def getFileByName(self, name):
         """See `ISourcePackagePublishingHistory`."""
         changelog = self.sourcepackagerelease.changelog
@@ -683,24 +672,10 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             self.sourcepackagerelease.sourcepackagename)
 
     @property
-    def meta_sourcepackagerelease(self):
-        """see `ISourcePackagePublishingHistory`."""
-        return self.distroseries.distribution.getSourcePackageRelease(
-            self.sourcepackagerelease)
-
-    @property
     def meta_distroseriessourcepackagerelease(self):
         """see `ISourcePackagePublishingHistory`."""
         return self.distroseries.getSourcePackageRelease(
             self.sourcepackagerelease)
-
-    @property
-    def meta_supersededby(self):
-        """see `ISourcePackagePublishingHistory`."""
-        if not self.supersededby:
-            return None
-        return self.distroseries.distribution.getSourcePackageRelease(
-            self.supersededby)
 
     # XXX: StevenK 2011-09-13 bug=848563: This can die when
     # self.sourcepackagename is populated.

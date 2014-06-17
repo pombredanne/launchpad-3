@@ -43,8 +43,8 @@ to the main merge proposal page.
     This is a very long comment about what things should be done to the
     source branch to land it. When this comment is replied to, it should
     wrap the line properly.
-    Reply
     >>> print_comments('boardCommentFooter')
+    Reply
 
 The person's name links back to the main site for that person.
 
@@ -86,7 +86,6 @@ After this, we are taken to the main page for the merge proposal
     I wish I had time to review it properly
     This is a longer message with several lines
     Email me at eric@vikings-r-us.example.com for more details
-    Reply
 
 Email addresses in code review comments are hidden for users not logged in.
 
@@ -96,7 +95,6 @@ Email addresses in code review comments are hidden for users not logged in.
     I wish I had time to review it properly
     This is a longer message with several lines
     Email me at &lt;email address hidden&gt; for more details
-    Reply
 
 If a merge proposal is resubmitted, the comments on the superseded proposal
 are also displayed in the new proposal.
@@ -134,7 +132,7 @@ comment' link.
 
     >>> print_comments('boardCommentDetails', eric_browser, index=2)
     Eric the Viking ... ago: #
-    >>> print_comments('boardCommentFooter', eric_browser, index=0)
+    >>> print_comments('boardCommentActivity', eric_browser, index=0)
     review: Abstain (timeless)
     >>> print_comments('boardCommentBody', eric_browser, index=2)
 
@@ -189,3 +187,84 @@ shown as part of the conversation at the time they were pushed to Launchpad.
     Testing commits in conversation
     4. By ... on 2009-09-12
     and it works!
+
+
+Inline Comments
+---------------
+
+The code review inline comments support is entirely implemented in
+Javascript. The current implementation relies on comments being
+rendered with the following 'data-' attributes:
+
+    # Created a new review comment with associated inline comments
+    # on the superseded and on the new MP.
+    >>> from lp.services.features.testing import FeatureFixture
+    >>> fixture = FeatureFixture(
+    ...     {'code.inline_diff_comments.enabled': 'enabled'})
+
+    >>> login('foo.bar@canonical.com')
+    >>> fixture.setUp()
+    >>> previewdiff = factory.makePreviewDiff(merge_proposal=merge_proposal)
+    >>> new_previewdiff = factory.makePreviewDiff(
+    ...     merge_proposal=new_merge_proposal)
+    >>> transaction.commit()
+    >>> comment = merge_proposal.createComment(
+    ...    eric, None, content='a_content',
+    ...    previewdiff_id=previewdiff.id,
+    ...    inline_comments={'1': 'No!'}
+    ... )
+    >>> transaction.commit()
+    >>> comment = new_merge_proposal.createComment(
+    ...    eric, None, content='a_content',
+    ...    previewdiff_id=new_previewdiff.id,
+    ...    inline_comments={'1': 'Yes!'}
+    ... )
+    >>> fixture.cleanUp()
+    >>> logout()
+
+    # helper for printing review comment 'data-' attributes.
+    >>> def print_comment_attributes(contents):
+    ...     comments = find_tags_by_class(contents, 'boardCommentDetails')
+    ...     print 'Text', 'Comment', 'Diff', 'Superseded'
+    ...     for comment in comments:
+    ...         tds = comment.findAll('td')
+    ...         if len(tds) == 0:
+    ...            continue
+    ...         td = tds[0]
+    ...         print ' '.join(
+    ...             (extract_text(td),
+    ...              td['data-comment-id'],
+    ...              td.get('data-previewdiff-id', '-'),
+    ...              td.get('data-from-superseded', '-')))
+
+The 'data-' attributes:
+
+ * 'comment-id': The review comment ID, used to highlight related
+ *               inline comments.
+ * 'previewdiff-id': used to load the corresponding `PreviewDiff`.
+ * 'from_superseded': 'True' or 'False' whether the context MP is
+                      superseded by another. Used to supress context
+                      handlers on superseded comments.
+
+They are always available in `BranchMergeProposal` pages.
+
+    >>> anon_browser.open(merge_proposal_url)
+    >>> print_comment_attributes(anon_browser.contents)
+    Text    Comment Diff Superseded
+    Eric...     1     -    False
+    Eric...     2     -    False
+    Eric...     3     -    False
+    Eric...     4     1    False
+
+When visualized in the new merge proposal the comments from the original
+merge proposal are marked as 'superseded' and there is a new and
+non-superseded local comment.
+
+    >>> anon_browser.open(new_merge_proposal_url)
+    >>> print_comment_attributes(anon_browser.contents)
+    Text    Comment Diff Superseded
+    Eric...     1     -    True
+    Eric...     2     -    True
+    Eric...     3     -    True
+    Eric...     4     1    True
+    Eric...     5     2    False

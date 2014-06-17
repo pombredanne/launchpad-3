@@ -378,7 +378,7 @@ class TestBasicLaunchpadRequest(TestCase):
             response.getHeader('X-XSS-Protection'), '1; mode=block')
         self.assertEquals(
             response.getHeader(
-                'Strict-Transport-Security'), 'max-age=2592000')
+                'Strict-Transport-Security'), 'max-age=15552000')
 
     def test_baserequest_recovers_from_bad_path_info_encoding(self):
         # The request object recodes PATH_INFO to ensure sane_environment

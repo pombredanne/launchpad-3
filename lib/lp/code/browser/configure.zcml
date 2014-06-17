@@ -839,7 +839,7 @@
         name="+diff"
         for="lp.code.interfaces.diff.IPreviewDiff"
         class="lp.code.browser.branchmergeproposal.FormatPreviewDiffView"
-        permission="launchpad.AnyPerson"
+        permission="launchpad.View"
         template="../templates/branchmergeproposal-diff.pt"/>
 
     <browser:menus

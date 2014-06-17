@@ -1,4 +1,4 @@
-# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """IBugTarget-related browser views."""
@@ -26,7 +26,6 @@ from functools import partial
 import httplib
 from operator import itemgetter
 import urllib
-from urlparse import urljoin
 
 from lazr.restful.interface import copy_field
 from lazr.restful.interfaces import IJSONRequestCache

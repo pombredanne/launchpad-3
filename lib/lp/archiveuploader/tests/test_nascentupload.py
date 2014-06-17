@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test NascentUpload functionality."""
@@ -9,10 +9,7 @@ from testtools import TestCase
 from testtools.matchers import MatchesStructure
 
 from lp.archiveuploader.changesfile import determine_file_class_and_name
-from lp.archiveuploader.nascentupload import (
-    EarlyReturnUploadError,
-    NascentUpload,
-    )
+from lp.archiveuploader.nascentupload import NascentUpload
 from lp.archiveuploader.tests import (
     datadir,
     getPolicy,

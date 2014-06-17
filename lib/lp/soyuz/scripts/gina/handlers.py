@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Gina db handlers.
@@ -33,10 +33,7 @@ from zope.component import getUtility
 from lp.archivepublisher.diskpool import poolify
 from lp.archiveuploader.changesfile import ChangesFile
 from lp.archiveuploader.tagfiles import parse_tagfile
-from lp.archiveuploader.utils import (
-    determine_binary_file_type,
-    determine_source_file_type,
-    )
+from lp.archiveuploader.utils import determine_binary_file_type
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.person import (
     IPersonSet,
@@ -68,11 +65,7 @@ from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.model.component import Component
 from lp.soyuz.model.distroarchseries import DistroArchSeries
-from lp.soyuz.model.files import (
-    BinaryPackageFile,
-    SourcePackageReleaseFile,
-    )
-from lp.soyuz.model.processor import Processor
+from lp.soyuz.model.files import BinaryPackageFile
 from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory,
     SourcePackagePublishingHistory,
@@ -657,11 +650,7 @@ class SourcePackageHandler:
         # Insert file into the library and create the
         # SourcePackageReleaseFile entry on lp db.
         for fname, path in to_upload:
-            alias = getLibraryAlias(path, fname)
-            SourcePackageReleaseFile(
-                sourcepackagerelease=spr.id,
-                libraryfile=alias,
-                filetype=determine_source_file_type(fname))
+            spr.addFile(getLibraryAlias(path, fname))
             log.info('Package file %s included into library' % fname)
 
         return spr

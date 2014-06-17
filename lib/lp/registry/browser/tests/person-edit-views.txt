@@ -25,7 +25,7 @@ The +editircnickname provides a label and a title.
 The IRC form requires a nickname.
 
     >>> form = {
-    ...     'newnetwork': 'irc.freenode.net',
+    ...     'newnetwork': 'chat.freenode.net',
     ...     'newnick': '',
     ...     'field.actions.save': 'Save Changes',
     ...     }
@@ -67,7 +67,7 @@ The IRC form requires a network.
 The IRC nickname is added when both the nickname and network are submitted.
 
     >>> form = {
-    ...     'newnetwork': 'irc.freenode.net',
+    ...     'newnetwork': 'chat.freenode.net',
     ...     'newnick': 'basil',
     ...     'field.actions.save': 'Save Changes',
     ...     }
@@ -93,7 +93,7 @@ An IRC nickname can be removed.
 
     >>> id = ircnickname.id
     >>> form = {
-    ...     'newnetwork_%s' % ircnickname.id: 'irc.freenode.net',
+    ...     'newnetwork_%s' % ircnickname.id: 'chat.freenode.net',
     ...     'newnick_%s' % ircnickname.id: 'basil',
     ...     'remove_%s' % ircnickname.id: 'Remove',
     ...     'field.actions.save': 'Save Changes',

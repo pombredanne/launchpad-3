@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test BuilderInteractor features."""
@@ -176,7 +176,7 @@ class TestBuilderInteractor(TestCase):
             extract_vitals_from_db(MockBuilder()), slave, slave_status,
             'trivial')
         self.assertTrue(lost)
-        self.assertEqual([], slave.call_log)
+        self.assertEqual(['status'], slave.call_log)
 
     @defer.inlineCallbacks
     def test_recover_ok_slave(self):
@@ -186,7 +186,7 @@ class TestBuilderInteractor(TestCase):
         lost = yield BuilderInteractor.rescueIfLost(
             extract_vitals_from_db(MockBuilder()), slave, slave_status, None)
         self.assertFalse(lost)
-        self.assertEqual([], slave.call_log)
+        self.assertEqual(['status'], slave.call_log)
 
     @defer.inlineCallbacks
     def test_recover_waiting_slave_with_good_id(self):
@@ -693,8 +693,7 @@ class TestSlaveWithLibrarian(TestCaseWithFactory):
         self.layer.txn.commit()
         self.slave_helper.getServerSlave()
         slave = self.slave_helper.getClientSlave()
-        d = slave.ensurepresent(
-            lf.content.sha1, lf.http_url, "", "")
+        d = slave.ensurepresent(lf.content.sha1, lf.http_url, "", "")
         d.addCallback(self.assertEqual, [True, 'Download'])
         return d
 
@@ -710,8 +709,7 @@ class TestSlaveWithLibrarian(TestCaseWithFactory):
             self.slave_helper.BASE_URL, lf.content.sha1)
         self.slave_helper.getServerSlave()
         slave = self.slave_helper.getClientSlave()
-        d = slave.ensurepresent(
-            lf.content.sha1, lf.http_url, "", "")
+        d = slave.ensurepresent(lf.content.sha1, lf.http_url, "", "")
 
         def check_file(ignored):
             d = getPage(expected_url.encode('utf8'))
@@ -727,20 +725,18 @@ class TestSlaveWithLibrarian(TestCaseWithFactory):
         contents = ["content1", "content2", "content3"]
         self.slave_helper.getServerSlave()
         slave = self.slave_helper.getClientSlave()
-        filemap = {}
+        files = []
         content_map = {}
 
         def got_files(ignored):
             # Called back when getFiles finishes.  Make sure all the
             # content is as expected.
-            for sha1 in filemap:
-                local_file = filemap[sha1]
-                file = open(local_file)
-                self.assertEqual(content_map[sha1], file.read())
-                file.close()
+            for sha1, local_file in files:
+                with open(local_file) as f:
+                    self.assertEqual(content_map[sha1], f.read())
 
         def finished_uploading(ignored):
-            d = slave.getFiles(filemap)
+            d = slave.getFiles(files)
             return d.addCallback(got_files)
 
         # Set up some files on the builder and store details in
@@ -750,8 +746,12 @@ class TestSlaveWithLibrarian(TestCaseWithFactory):
             filename = content + '.txt'
             lf = self.factory.makeLibraryFileAlias(filename, content=content)
             content_map[lf.content.sha1] = content
-            fd, filemap[lf.content.sha1] = tempfile.mkstemp()
-            self.addCleanup(os.remove, filemap[lf.content.sha1])
+            files.append((lf.content.sha1, tempfile.mkstemp()[1]))
+            self.addCleanup(os.remove, files[-1][1])
+            # Add the same file contents again with a different name, to
+            # ensure that we can tolerate duplication.
+            files.append((lf.content.sha1, tempfile.mkstemp()[1]))
+            self.addCleanup(os.remove, files[-1][1])
             self.layer.txn.commit()
             d = slave.ensurepresent(lf.content.sha1, lf.http_url, "", "")
             dl.append(d)
