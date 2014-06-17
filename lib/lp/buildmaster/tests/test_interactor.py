@@ -250,8 +250,7 @@ class TestBuilderInteractorCleanSlave(TestCase):
     run_tests_with = AsynchronousDeferredRunTest
 
     @defer.inlineCallbacks
-    def assertCleanCalls(self, builder, calls, done):
-        slave = OkSlave()
+    def assertCleanCalls(self, builder, slave, calls, done):
         actually_done = yield BuilderInteractor.cleanSlave(
             extract_vitals_from_db(builder), slave)
         self.assertEqual(done, actually_done)
@@ -259,18 +258,47 @@ class TestBuilderInteractorCleanSlave(TestCase):
 
     @defer.inlineCallbacks
     def test_virtual(self):
+        # We don't care what the status of a virtual builder is; we just
+        # reset its VM and check that it's back.
         yield self.assertCleanCalls(
             MockBuilder(
                 virtualized=True, vm_host='lol',
                 clean_status=BuilderCleanStatus.DIRTY),
-            ['resume', 'echo'], True)
+            OkSlave(), ['resume', 'echo'], True)
 
     @defer.inlineCallbacks
-    def test_nonvirtual(self):
+    def test_nonvirtual_idle(self):
+        # An IDLE non-virtual slave is already as clean as we can get it.
         yield self.assertCleanCalls(
             MockBuilder(
                 virtualized=False, clean_status=BuilderCleanStatus.DIRTY),
-            [], True)
+            OkSlave(), ['status'], True)
+
+    @defer.inlineCallbacks
+    def test_nonvirtual_building(self):
+        # A BUILDING non-virtual slave needs to be aborted. It'll go
+        # through ABORTING and eventually be picked up from WAITING.
+        yield self.assertCleanCalls(
+            MockBuilder(
+                virtualized=False, clean_status=BuilderCleanStatus.DIRTY),
+            BuildingSlave(), ['status', 'abort'], False)
+
+    @defer.inlineCallbacks
+    def test_nonvirtual_aborting(self):
+        # An ABORTING non-virtual slave must be waited out. It should
+        # hit WAITING eventually.
+        yield self.assertCleanCalls(
+            MockBuilder(
+                virtualized=False, clean_status=BuilderCleanStatus.DIRTY),
+            AbortingSlave(), ['status'], False)
+
+    @defer.inlineCallbacks
+    def test_nonvirtual_waiting(self):
+        # A WAITING non-virtual slave just needs clean() called.
+        yield self.assertCleanCalls(
+            MockBuilder(
+                virtualized=False, clean_status=BuilderCleanStatus.DIRTY),
+            WaitingSlave(), ['status', 'clean'], True)
 
 
 class TestBuilderSlaveStatus(TestCase):

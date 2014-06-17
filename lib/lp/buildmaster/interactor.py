@@ -347,8 +347,24 @@ class BuilderInteractor(object):
             yield slave.echo("ping")
             defer.returnValue(True)
         else:
-            # XXX: Clean up non-virt.
-            defer.returnValue(True)
+            slave_status = yield slave.status()
+            status = slave_status.get('builder_status', None)
+            if status == 'BuilderStatus.IDLE':
+                # This is as clean as we can get it.
+                defer.returnValue(True)
+            elif status == 'BuilderStatus.BUILDING':
+                # Asynchronously abort() the slave and wait until WAITING.
+                yield slave.abort()
+                defer.returnValue(False)
+            elif status == 'BuilderStatus.ABORTING':
+                # Wait it out until WAITING.
+                defer.returnValue(False)
+            elif status == 'BuilderStatus.WAITING':
+                # Just a synchronous clean() call and we'll be idle.
+                yield slave.clean()
+                defer.returnValue(True)
+            raise BuildDaemonError(
+                "Invalid status during clean: %r" % status)
 
     @classmethod
     @defer.inlineCallbacks
