@@ -104,12 +104,12 @@ class LiveFS(Storm):
 
     name = Unicode(name='name', allow_none=False)
 
-    require_virtualized = Bool(name='require_virtualized')
-
     metadata = JSON('json_data')
 
+    require_virtualized = Bool(name='require_virtualized')
+
     def __init__(self, registrant, owner, distro_series, name,
-                 require_virtualized, metadata, date_created):
+                 metadata, require_virtualized, date_created):
         """Construct a `LiveFS`."""
         if not getFeatureFlag(LIVEFS_FEATURE_FLAG):
             raise LiveFSFeatureDisabled
@@ -118,8 +118,8 @@ class LiveFS(Storm):
         self.owner = owner
         self.distro_series = distro_series
         self.name = name
-        self.require_virtualized = require_virtualized
         self.metadata = metadata
+        self.require_virtualized = require_virtualized
         self.date_created = date_created
         self.date_last_modified = date_created
 
@@ -216,8 +216,8 @@ class LiveFSSet:
 
     implements(ILiveFSSet)
 
-    def new(self, registrant, owner, distro_series, name, require_virtualized,
-            metadata, date_created=DEFAULT):
+    def new(self, registrant, owner, distro_series, name, metadata,
+            require_virtualized=True, date_created=DEFAULT):
         """See `ILiveFSSet`."""
         if not registrant.inTeam(owner):
             if owner.is_team:
@@ -231,8 +231,8 @@ class LiveFSSet:
 
         store = IMasterStore(LiveFS)
         livefs = LiveFS(
-            registrant, owner, distro_series, name, require_virtualized,
-            metadata, date_created)
+            registrant, owner, distro_series, name, metadata,
+            require_virtualized, date_created)
         store.add(livefs)
 
         try:

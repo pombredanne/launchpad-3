@@ -249,7 +249,6 @@ class TestLiveFSSet(TestCaseWithFactory):
             owner=self.factory.makeTeam(owner=registrant),
             distro_series=self.factory.makeDistroSeries(),
             name=self.factory.getUniqueString(u"livefs-name"),
-            require_virtualized=True,
             metadata=metadata)
 
     def test_creation(self):
@@ -262,8 +261,8 @@ class TestLiveFSSet(TestCaseWithFactory):
         self.assertEqual(components["owner"], livefs.owner)
         self.assertEqual(components["distro_series"], livefs.distro_series)
         self.assertEqual(components["name"], livefs.name)
-        self.assertTrue(livefs.require_virtualized)
         self.assertEqual(components["metadata"], livefs.metadata)
+        self.assertTrue(livefs.require_virtualized)
 
     def test_exists(self):
         # ILiveFSSet.exists checks for matching LiveFSes.
@@ -363,8 +362,8 @@ class TestLiveFSWebservice(TestCaseWithFactory):
                 self.webservice.getAbsoluteUrl(distroseries_url),
                 livefs["distro_series_link"])
             self.assertEqual("flavour-desktop", livefs["name"])
-            self.assertTrue(livefs["require_virtualized"])
             self.assertEqual({"project": "flavour"}, livefs["metadata"])
+            self.assertTrue(livefs["require_virtualized"])
 
     def test_duplicate(self):
         # An attempt to create a duplicate LiveFS fails.

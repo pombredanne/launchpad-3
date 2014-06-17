@@ -255,12 +255,12 @@ class ILiveFSSet(Interface):
 
     export_as_webservice_collection(ILiveFS)
 
-    @call_with(registrant=REQUEST_USER, require_virtualized=True)
+    @call_with(registrant=REQUEST_USER)
     @export_factory_operation(
         ILiveFS, ["owner", "distro_series", "name", "metadata"])
     @operation_for_version("devel")
-    def new(registrant, owner, distro_series, name, require_virtualized, metadata,
-            date_created=None):
+    def new(registrant, owner, distro_series, name, metadata,
+            require_virtualized=True, date_created=None):
         """Create an `ILiveFS`."""
 
     def exists(owner, distro_series, name):
