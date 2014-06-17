@@ -7,6 +7,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.buildmaster.enums import (
+    BuilderCleanStatus,
     BuildQueueStatus,
     BuildStatus,
     )
@@ -59,6 +60,19 @@ class TestBuilder(TestCaseWithFactory):
         self.assertEqual(1, builder.failure_count)
         builder.builderok = True
         self.assertEqual(0, builder.failure_count)
+
+    def test_setting_builderok_dirties(self):
+        builder = removeSecurityProxy(self.factory.makeBuilder())
+        builder.builderok = False
+        builder.setCleanStatus(BuilderCleanStatus.CLEAN)
+        builder.builderok = True
+        self.assertEqual(BuilderCleanStatus.DIRTY, builder.clean_status)
+
+    def test_setCleanStatus(self):
+        builder = self.factory.makeBuilder()
+        self.assertEqual(BuilderCleanStatus.DIRTY, builder.clean_status)
+        builder.setCleanStatus(BuilderCleanStatus.CLEAN)
+        self.assertEqual(BuilderCleanStatus.CLEAN, builder.clean_status)
 
     def test_handleFailure_increments_failure_count(self):
         builder = self.factory.makeBuilder()

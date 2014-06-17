@@ -49,6 +49,8 @@ from lp.buildmaster.model.buildqueue import (
     )
 from lp.registry.interfaces.person import validate_public_person
 from lp.services.database.bulk import load
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.interfaces import (
@@ -100,6 +102,7 @@ class Builder(SQLBase):
     clean_status = EnumCol(
         enum=BuilderCleanStatus, default=BuilderCleanStatus.DIRTY)
     vm_reset_protocol = EnumCol(enum=BuilderResetProtocol)
+    date_clean_status_changed = UtcDateTimeCol()
 
     # The number of times a builder can consecutively fail before we
     # reset its current job.
@@ -121,6 +124,7 @@ class Builder(SQLBase):
         self._builderok = value
         if value is True:
             self.resetFailureCount()
+            self.setCleanStatus(BuilderCleanStatus.DIRTY)
 
     builderok = property(_getBuilderok, _setBuilderok)
 
@@ -180,6 +184,11 @@ class Builder(SQLBase):
     def currentjob(self):
         """See IBuilder"""
         return getUtility(IBuildQueueSet).getByBuilder(self)
+
+    def setCleanStatus(self, status):
+        """See `IBuilder`."""
+        self.clean_status = status
+        self.date_clean_status_changed = UTC_NOW
 
     def failBuilder(self, reason):
         """See IBuilder"""

@@ -195,6 +195,9 @@ class IBuilder(IHasBuildRecords, IHasOwner):
         readonly=False,
         description=_("The protocol version for resetting the VM.")))
 
+    def setCleanStatus(status):
+        """Update the clean status."""
+
     def gotFailure():
         """Increment failure_count on the builder."""
 
