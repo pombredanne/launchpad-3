@@ -26,6 +26,7 @@ from twisted.python import log
 from zope.component import getUtility
 
 from lp.buildmaster.enums import (
+    BuilderCleanStatus,
     BuildQueueStatus,
     BuildStatus,
     )
@@ -413,70 +414,81 @@ class SlaveScanner:
         vitals = self.builder_factory.getVitals(self.builder_name)
         interactor = self.interactor_factory()
         slave = self.slave_factory(vitals)
-        if vitals.builderok:
-            self.logger.debug("Scanning %s." % self.builder_name)
-            slave_status = yield slave.status()
-        else:
-            slave_status = None
 
-        # Confirm that the DB and slave sides are in a valid, mutually
-        # agreeable state.
-        lost_reason = None
-        if not vitals.builderok:
-            lost_reason = '%s is disabled' % vitals.name
-        else:
-            self.updateVersion(vitals, slave_status)
-            cancelled = yield self.checkCancellation(vitals, slave, interactor)
-            if cancelled:
-                return
-            assert slave_status is not None
-            lost = yield interactor.rescueIfLost(
-                vitals, slave, slave_status, self.getExpectedCookie(vitals),
-                self.logger)
-            if lost:
-                lost_reason = '%s is lost' % vitals.name
-
-        # The slave is lost or the builder is disabled. We can't
-        # continue to update the job status or dispatch a new job, so
-        # just rescue the assigned job, if any, so it can be dispatched
-        # to another slave.
-        if lost_reason is not None:
-            if vitals.build_queue is not None:
-                self.logger.warn(
-                    "%s. Resetting BuildQueue %d.", lost_reason,
-                    vitals.build_queue.id)
-                vitals.build_queue.reset()
-                transaction.commit()
-            return
-
-        # We've confirmed that the slave state matches the DB. Continue
-        # with updating the job status, or dispatching a new job if the
-        # builder is idle.
         if vitals.build_queue is not None:
-            # Scan the slave and get the logtail, or collect the build
-            # if it's ready.  Yes, "updateBuild" is a bad name.
+            if vitals.clean_status != BuilderCleanStatus.DIRTY:
+                # This is probably a grave bug with security implications,
+                # as a slave that has a job must be cleaned afterwards.
+                # TODO: Fail the builder, reset the job, and OOPS oops oops.
+                raise AssertionError("Non-dirty builder allegedly building.")
+
+            lost_reason = None
+            if not vitals.builderok:
+                lost_reason = '%s is disabled' % vitals.name
+            else:
+                slave_status = yield slave.status()
+                # XXX: checkCancellation should only happen once we're
+                # sure the slave and DB are in sync.
+                cancelled = yield self.checkCancellation(
+                    vitals, slave, interactor)
+                if cancelled:
+                    return
+                assert slave_status is not None
+                lost = yield interactor.rescueIfLost(
+                    vitals, slave, slave_status,
+                    self.getExpectedCookie(vitals), self.logger)
+                if lost:
+                    lost_reason = '%s is lost' % vitals.name
+
+            if lost_reason is not None:
+                if vitals.build_queue is not None:
+                    self.logger.warn(
+                        "%s. Resetting BuildQueue %d.", lost_reason,
+                        vitals.build_queue.id)
+                    vitals.build_queue.reset()
+                    transaction.commit()
+                return
+
+            # The slave and DB agree on the builder's state.  Scan the
+            # slave and get the logtail, or collect the build if it's
+            # ready.  Yes, "updateBuild" is a bad name.
             assert slave_status is not None
             yield interactor.updateBuild(
                 vitals, slave, slave_status, self.builder_factory,
                 self.behaviour_factory)
-        elif vitals.manual:
-            # If the builder is in manual mode, don't dispatch anything.
-            self.logger.debug(
-                '%s is in manual mode, not dispatching.' % vitals.name)
         else:
-            # See if there is a job we can dispatch to the builder slave.
-            builder = self.builder_factory[self.builder_name]
-            # Try to dispatch the job. If it fails, don't attempt to
-            # just retry the scan; we need to reset the job so the
-            # dispatch will be reattempted.
-            d = interactor.findAndStartJob(vitals, builder, slave)
-            d.addErrback(functools.partial(self._scanFailed, False))
-            yield d
-            if builder.currentjob is not None:
-                # After a successful dispatch we can reset the
-                # failure_count.
-                builder.resetFailureCount()
+            if not vitals.builderok:
+                return
+            # We think the builder is idle. Cleaning currently happens
+            # as part of the dispatch process, so just jump in there
+            # regardless of clean_status.
+            # TODO: Doesn't fix lost slaves.
+            slave_status = yield slave.status()
+            self.updateVersion(vitals, slave_status)
+            if vitals.manual:
+                # If the builder is in manual mode, don't dispatch anything.
+                self.logger.debug(
+                    '%s is in manual mode, not dispatching.' % vitals.name)
+            else:
+                # See if there is a job we can dispatch to the builder slave.
+                builder = self.builder_factory[self.builder_name]
+                # XXX: Ew.
+                assert (
+                    slave_status.get('builder_status', '')
+                    == 'BuilderStatus.IDLE')
+                builder.clean_status = BuilderCleanStatus.CLEAN
                 transaction.commit()
+                # Try to dispatch the job. If it fails, don't attempt to
+                # just retry the scan; we need to reset the job so the
+                # dispatch will be reattempted.
+                d = interactor.findAndStartJob(vitals, builder, slave)
+                d.addErrback(functools.partial(self._scanFailed, False))
+                yield d
+                if builder.currentjob is not None:
+                    # After a successful dispatch we can reset the
+                    # failure_count.
+                    builder.resetFailureCount()
+                    transaction.commit()
 
 
 class NewBuildersScanner:
