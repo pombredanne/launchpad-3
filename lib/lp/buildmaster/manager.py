@@ -427,13 +427,6 @@ class SlaveScanner:
                 lost_reason = '%s is disabled' % vitals.name
             else:
                 slave_status = yield slave.status()
-                # XXX: checkCancellation should only happen once we're
-                # sure the slave and DB are in sync.
-                cancelled = yield self.checkCancellation(
-                    vitals, slave, interactor)
-                if cancelled:
-                    return
-
                 # Ensure that the slave has the job that we think it
                 # should.
                 slave_cookie = slave_status.get('build_id')
@@ -452,6 +445,11 @@ class SlaveScanner:
                     vitals.build_queue.id)
                 vitals.build_queue.reset()
                 transaction.commit()
+                return
+
+            cancelled = yield self.checkCancellation(
+                vitals, slave, interactor)
+            if cancelled:
                 return
 
             # The slave and DB agree on the builder's state.  Scan the
