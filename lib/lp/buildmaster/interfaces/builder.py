@@ -41,6 +41,7 @@ from zope.interface import (
 from zope.schema import (
     Bool,
     Choice,
+    Datetime,
     Int,
     List,
     Text,
@@ -190,10 +191,17 @@ class IBuilder(IHasBuildRecords, IHasOwner):
         title=_("Clean status"), vocabulary=BuilderCleanStatus, readonly=False,
         description=_("The readiness of the slave to take a job.")))
 
+    date_clean_status_changed = exported(Datetime(
+        title=_("Date clean status changed"), readonly=True,
+        description=_("The date the builder's clean status last changed.")))
+
     vm_reset_protocol = exported(Choice(
         title=_("VM reset protocol"), vocabulary=BuilderResetProtocol,
         readonly=False,
         description=_("The protocol version for resetting the VM.")))
+
+    def setCleanStatus(status):
+        """Update the clean status."""
 
     def gotFailure():
         """Increment failure_count on the builder."""
