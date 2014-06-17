@@ -187,8 +187,9 @@ class Builder(SQLBase):
 
     def setCleanStatus(self, status):
         """See `IBuilder`."""
-        self.clean_status = status
-        self.date_clean_status_changed = UTC_NOW
+        if status != self.clean_status:
+            self.clean_status = status
+            self.date_clean_status_changed = UTC_NOW
 
     def failBuilder(self, reason):
         """See IBuilder"""
