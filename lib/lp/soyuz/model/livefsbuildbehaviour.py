@@ -24,7 +24,9 @@ from lp.buildmaster.model.buildfarmjobbehaviour import (
     BuildFarmJobBehaviourBase,
     )
 from lp.registry.interfaces.series import SeriesStatus
-from lp.soyuz.adapters.archivedependencies import get_sources_list_for_building
+from lp.soyuz.adapters.archivedependencies import (
+    get_sources_list_for_building,
+    )
 from lp.soyuz.interfaces.archive import ArchiveDisabled
 from lp.soyuz.interfaces.livefs import LiveFSBuildArchiveOwnerMismatch
 from lp.soyuz.interfaces.livefsbuild import ILiveFSBuild

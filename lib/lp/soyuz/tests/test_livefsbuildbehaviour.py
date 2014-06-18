@@ -42,7 +42,9 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.features.testing import FeatureFixture
 from lp.services.log.logger import BufferLogger
-from lp.soyuz.adapters.archivedependencies import get_sources_list_for_building
+from lp.soyuz.adapters.archivedependencies import (
+    get_sources_list_for_building,
+    )
 from lp.soyuz.interfaces.archive import ArchiveDisabled
 from lp.soyuz.interfaces.livefs import (
     LIVEFS_FEATURE_FLAG,

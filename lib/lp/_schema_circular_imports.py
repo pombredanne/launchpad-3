@@ -196,9 +196,7 @@ from lp.soyuz.interfaces.binarypackagerelease import (
     )
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
-from lp.soyuz.interfaces.livefs import (
-    ILiveFSView,
-    )
+from lp.soyuz.interfaces.livefs import ILiveFSView
 from lp.soyuz.interfaces.livefsbuild import (
     ILiveFSBuild,
     ILiveFSFile,
