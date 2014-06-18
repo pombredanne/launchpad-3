@@ -132,10 +132,7 @@ class TestBinaryBuildPackageBehaviour(TestCaseWithFactory):
         build_log = [
             ('build', cookie, 'binarypackage', chroot.content.sha1,
              filemap_names, extra_args)]
-        if builder.virtualized:
-            result = [('echo', 'ping')] + upload_logs + build_log
-        else:
-            result = upload_logs + build_log
+        result = upload_logs + build_log
         return result
 
     def test_non_virtual_ppa_dispatch(self):
@@ -166,8 +163,6 @@ class TestBinaryBuildPackageBehaviour(TestCaseWithFactory):
         return d
 
     def test_virtual_ppa_dispatch(self):
-        # Make sure the builder slave gets reset before a build is
-        # dispatched to it.
         archive = self.factory.makeArchive(virtualized=True)
         slave = OkSlave()
         builder = self.factory.makeBuilder(
@@ -185,16 +180,10 @@ class TestBinaryBuildPackageBehaviour(TestCaseWithFactory):
         d = interactor._startBuild(
             bq, vitals, builder, slave,
             interactor.getBuildBehaviour(bq, builder, slave), BufferLogger())
-
-        def check_build(ignored):
-            # We expect the first call to the slave to be a resume call,
-            # followed by the rest of the usual calls we expect.
-            expected_resume_call = slave.call_log.pop(0)
-            self.assertEqual('resume', expected_resume_call)
-            self.assertExpectedInteraction(
-                ignored, slave.call_log, builder, build, lf, archive,
-                ArchivePurpose.PPA)
-        return d.addCallback(check_build)
+        d.addCallback(
+            self.assertExpectedInteraction, slave.call_log, builder, build,
+            lf, archive, ArchivePurpose.PPA)
+        return d
 
     def test_partner_dispatch_no_publishing_history(self):
         archive = self.factory.makeArchive(
