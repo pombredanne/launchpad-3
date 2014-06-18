@@ -243,8 +243,7 @@ class LiveFSSet:
         return livefs
 
     def _getByName(self, owner, distro_series, name):
-        store = IStore(LiveFS)
-        return store.find(
+        return IStore(LiveFS).find(
             LiveFS,
             LiveFS.owner == owner,
             LiveFS.distro_series == distro_series,
@@ -286,9 +285,8 @@ class LiveFSSet:
 
     def getAll(self):
         """See `ILiveFSSet`."""
-        store = IStore(LiveFS)
         user = getUtility(ILaunchBag).user
-        return store.find(
+        return IStore(LiveFS).find(
             LiveFS,
             LiveFS.owner == Person.id,
             get_person_visibility_terms(user)).order_by("name")
