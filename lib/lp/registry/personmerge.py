@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Person/team merger implementation."""
@@ -34,6 +34,7 @@ from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
 from lp.services.mail.helpers import get_email_template
 from lp.soyuz.enums import ArchiveStatus
 from lp.soyuz.interfaces.archive import IArchiveSet
+from lp.soyuz.interfaces.livefs import ILiveFSSet
 
 
 def _merge_person_decoration(to_person, from_person, skip,
@@ -577,6 +578,24 @@ def _mergeCodeReviewInlineCommentDraft(cur, from_id, to_id):
     ''' % params)
 
 
+def _mergeLiveFS(cur, from_person, to_person):
+    # This shouldn't use removeSecurityProxy.
+    livefses = getUtility(ILiveFSSet).getByPerson(from_person)
+    existing_names = [
+        l.name for l in getUtility(ILiveFSSet).getByPerson(to_person)]
+    for livefs in livefses:
+        new_name = livefs.name
+        count = 1
+        while new_name in existing_names:
+            new_name = '%s-%s' % (livefs.name, count)
+            count += 1
+        naked_livefs = removeSecurityProxy(livefs)
+        naked_livefs.owner = to_person
+        naked_livefs.name = new_name
+    if not livefses.is_empty():
+        IStore(livefses[0]).flush()
+
+
 def _purgeUnmergableTeamArtifacts(from_team, to_team, reviewer):
     """Purge team artifacts that cannot be merged, but can be removed."""
     # A team cannot have more than one mailing list.
@@ -672,9 +691,6 @@ def merge_people(from_person, to_person, reviewer, delete=False):
         ('bugsummaryjournal', 'viewed_by'),
         ('latestpersonsourcepackagereleasecache', 'creator'),
         ('latestpersonsourcepackagereleasecache', 'maintainer'),
-        # This needs handling before we deploy the livefs code, but can be
-        # ignored for the purpose of deploying the database tables.
-        ('livefs', 'owner'),
         ]
 
     references = list(postgresql.listReferences(cur, 'person', 'id'))
@@ -798,6 +814,9 @@ def merge_people(from_person, to_person, reviewer, delete=False):
 
     _mergeCodeReviewInlineCommentDraft(cur, from_id, to_id)
     skip.append(('codereviewinlinecommentdraft', 'person'))
+
+    _mergeLiveFS(cur, from_person, to_person)
+    skip.append(('livefs', 'owner'))
 
     # Sanity check. If we have a reference that participates in a
     # UNIQUE index, it must have already been handled by this point.
