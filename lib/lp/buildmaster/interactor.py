@@ -21,6 +21,7 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
+from lp.buildmaster.enums import BuilderCleanStatus
 from lp.buildmaster.interfaces.builder import (
     BuildDaemonError,
     CannotFetchFile,
@@ -216,7 +217,7 @@ class BuilderSlave(object):
 BuilderVitals = namedtuple(
     'BuilderVitals',
     ('name', 'url', 'virtualized', 'vm_host', 'builderok', 'manual',
-     'build_queue', 'version'))
+     'build_queue', 'version', 'clean_status'))
 
 _BQ_UNSPECIFIED = object()
 
@@ -226,7 +227,8 @@ def extract_vitals_from_db(builder, build_queue=_BQ_UNSPECIFIED):
         build_queue = builder.currentjob
     return BuilderVitals(
         builder.name, builder.url, builder.virtualized, builder.vm_host,
-        builder.builderok, builder.manual, build_queue, builder.version)
+        builder.builderok, builder.manual, build_queue, builder.version,
+        builder.clean_status)
 
 
 class BuilderInteractor(object):
@@ -247,44 +249,6 @@ class BuilderInteractor(object):
         behaviour = IBuildFarmJobBehaviour(queue_item.specific_build)
         behaviour.setBuilder(builder, slave)
         return behaviour
-
-    @classmethod
-    @defer.inlineCallbacks
-    def rescueIfLost(cls, vitals, slave, slave_status, expected_cookie,
-                     logger=None):
-        """Reset the slave if its job information doesn't match the DB.
-
-        This checks the build ID reported in the slave status against
-        the given cookie. If it isn't building what we think it should
-        be, the current build will be aborted and the slave cleaned in
-        preparation for a new task.
-
-        :return: A Deferred that fires when the dialog with the slave is
-            finished.  Its return value is True if the slave is lost,
-            False otherwise.
-        """
-        # Determine the slave's current build cookie.
-        status = slave_status['builder_status']
-        slave_cookie = slave_status.get('build_id')
-
-        if slave_cookie == expected_cookie:
-            # The master and slave agree about the current job. Continue.
-            defer.returnValue(False)
-        else:
-            # The master and slave disagree. The master is our master,
-            # so try to rescue the slave.
-            # An IDLE slave doesn't need rescuing (SlaveScanner.scan
-            # will rescue the DB side instead), and we just have to wait
-            # out an ABORTING one.
-            if status == 'BuilderStatus.WAITING':
-                yield slave.clean()
-            elif status == 'BuilderStatus.BUILDING':
-                yield slave.abort()
-            if logger:
-                logger.info(
-                    "Builder slave '%s' rescued from %r (expected %r)." %
-                    (vitals.name, slave_cookie, expected_cookie))
-            defer.returnValue(True)
 
     @classmethod
     def resumeSlaveHost(cls, vitals, slave):
@@ -323,6 +287,49 @@ class BuilderInteractor(object):
 
     @classmethod
     @defer.inlineCallbacks
+    def cleanSlave(cls, vitals, slave):
+        """Prepare a slave for a new build.
+
+        :return: A Deferred that fires when this stage of the resume
+            operations finishes. If the value is True, the slave is now clean.
+            If it's False, the clean is still in progress and this must be
+            called again later.
+        """
+        if vitals.virtualized:
+            # If we are building a virtual build, resume the virtual
+            # machine.  Before we try and contact the resumed slave,
+            # we're going to send it a message.  This is to ensure
+            # it's accepting packets from the outside world, because
+            # testing has shown that the first packet will randomly
+            # fail for no apparent reason.  This could be a quirk of
+            # the Xen guest, we're not sure.  We also don't care
+            # about the result from this message, just that it's
+            # sent, hence the "addBoth".  See bug 586359.
+            yield cls.resumeSlaveHost(vitals, slave)
+            yield slave.echo("ping")
+            defer.returnValue(True)
+        else:
+            slave_status = yield slave.status()
+            status = slave_status.get('builder_status', None)
+            if status == 'BuilderStatus.IDLE':
+                # This is as clean as we can get it.
+                defer.returnValue(True)
+            elif status == 'BuilderStatus.BUILDING':
+                # Asynchronously abort() the slave and wait until WAITING.
+                yield slave.abort()
+                defer.returnValue(False)
+            elif status == 'BuilderStatus.ABORTING':
+                # Wait it out until WAITING.
+                defer.returnValue(False)
+            elif status == 'BuilderStatus.WAITING':
+                # Just a synchronous clean() call and we'll be idle.
+                yield slave.clean()
+                defer.returnValue(True)
+            raise BuildDaemonError(
+                "Invalid status during clean: %r" % status)
+
+    @classmethod
+    @defer.inlineCallbacks
     def _startBuild(cls, build_queue_item, vitals, builder, slave, behaviour,
                     logger):
         """Start a build on this builder.
@@ -342,17 +349,12 @@ class BuilderInteractor(object):
             raise BuildDaemonError(
                 "Attempted to start a build on a known-bad builder.")
 
-        # If we are building a virtual build, resume the virtual
-        # machine.  Before we try and contact the resumed slave, we're
-        # going to send it a message.  This is to ensure it's accepting
-        # packets from the outside world, because testing has shown that
-        # the first packet will randomly fail for no apparent reason.
-        # This could be a quirk of the Xen guest, we're not sure.  We
-        # also don't care about the result from this message, just that
-        # it's sent, hence the "addBoth".  See bug 586359.
-        if builder.virtualized:
-            yield cls.resumeSlaveHost(vitals, slave)
-            yield slave.echo("ping")
+        if builder.clean_status != BuilderCleanStatus.CLEAN:
+            raise BuildDaemonError(
+                "Attempted to start build on a dirty slave.")
+
+        builder.setCleanStatus(BuilderCleanStatus.DIRTY)
+        transaction.commit()
 
         yield behaviour.dispatchBuildToSlave(build_queue_item.id, logger)
 
@@ -448,9 +450,9 @@ class BuilderInteractor(object):
         :return: A Deferred that fires when the slave dialog is finished.
         """
         # IDLE is deliberately not handled here, because it should be
-        # impossible to get past rescueIfLost unless the slave matches
-        # the DB, and this method isn't called unless the DB says
-        # there's a job.
+        # impossible to get past the cookie check unless the slave
+        # matches the DB, and this method isn't called unless the DB
+        # says there's a job.
         builder_status = slave_status['builder_status']
         if builder_status == 'BuilderStatus.BUILDING':
             # Build still building, collect the logtail.
