@@ -40,6 +40,8 @@ from zope.interface import (
     )
 from zope.schema import (
     Bool,
+    Choice,
+    Datetime,
     Int,
     List,
     Text,
@@ -49,6 +51,10 @@ from zope.schema import (
 from lp import _
 from lp.app.validators.name import name_validator
 from lp.app.validators.url import builder_url_validator
+from lp.buildmaster.enums import (
+    BuilderCleanStatus,
+    BuilderResetProtocol,
+    )
 from lp.registry.interfaces.role import IHasOwner
 from lp.services.fields import (
     PersonChoice,
@@ -180,6 +186,22 @@ class IBuilder(IHasBuildRecords, IHasOwner):
     version = exported(Text(
         title=_('Version'), required=False,
         description=_('The version of launchpad-buildd on the slave.')))
+
+    clean_status = exported(Choice(
+        title=_("Clean status"), vocabulary=BuilderCleanStatus, readonly=True,
+        description=_("The readiness of the slave to take a job.")))
+
+    date_clean_status_changed = exported(Datetime(
+        title=_("Date clean status changed"), readonly=True,
+        description=_("The date the builder's clean status last changed.")))
+
+    vm_reset_protocol = exported(Choice(
+        title=_("VM reset protocol"), vocabulary=BuilderResetProtocol,
+        readonly=False,
+        description=_("The protocol version for resetting the VM.")))
+
+    def setCleanStatus(status):
+        """Update the clean status."""
 
     def gotFailure():
         """Increment failure_count on the builder."""
