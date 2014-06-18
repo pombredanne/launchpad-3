@@ -189,6 +189,27 @@ class TestLiveFS(TestCaseWithFactory):
             livefs.owner, livefs.distro_series.main_archive, distroarchseries,
             PackagePublishingPocket.RELEASE)
 
+    def test_requestBuild_virtualization(self):
+        # New builds are virtualized if either the livefs or the archive
+        # requires it.
+        distroarchseries = self.factory.makeDistroArchSeries()
+        for livefs_virt, archive_virt, build_virt in (
+                (False, False, False),
+                (False, True, True),
+                (True, False, True),
+                (True, True, True),
+                ):
+            livefs = self.factory.makeLiveFS(
+                distroseries=distroarchseries.distroseries,
+                require_virtualized=livefs_virt)
+            archive = self.factory.makeArchive(
+                distribution=distroarchseries.distroseries.distribution,
+                owner=livefs.owner, virtualized=archive_virt)
+            build = livefs.requestBuild(
+                livefs.owner, archive, distroarchseries,
+                PackagePublishingPocket.RELEASE)
+            self.assertEqual(build_virt, build.virtualized)
+
     def test_getBuilds(self):
         # Test the various getBuilds methods.
         livefs = self.factory.makeLiveFS()
