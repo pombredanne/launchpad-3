@@ -773,20 +773,22 @@ class TestSpecifications(TestCaseWithFactory):
             SpecificationSharingPolicy.PROPRIETARY_OR_PUBLIC)
         product = self.factory.makeProduct(
             specification_sharing_policy=specification_sharing_policy)
-        blueprint = self.makeSpec(
-            product=product, information_type=InformationType.PROPRIETARY)
         person_with_new_role = self.factory.makePerson()
         with person_logged_in(product.owner):
+            blueprint = self.makeSpec(
+                product=product,
+                information_type=InformationType.PROPRIETARY)
             setattr(blueprint, role_name, person_with_new_role)
             self.assertIsNot(
                 None, blueprint.subscription(person_with_new_role))
 
         # Assignees/drafters/approvers are not subscribed if they already
         # have a policy grant for the specification's target.
-        blueprint_2 = self.makeSpec(
-            product=product, information_type=InformationType.PROPRIETARY)
         person_with_new_role_2 = self.factory.makePerson()
         with person_logged_in(product.owner):
+            blueprint_2 = self.makeSpec(
+                product=product,
+                information_type=InformationType.PROPRIETARY)
             permissions = {
                 InformationType.PROPRIETARY: SharingPermission.ALL,
                 }

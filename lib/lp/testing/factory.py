@@ -2065,8 +2065,12 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             product = milestone.productseries.product
         if distribution is None and product is None:
             if proprietary:
-                specification_sharing_policy = (
-                    SpecificationSharingPolicy.EMBARGOED_OR_PROPRIETARY)
+                if information_type == InformationType.EMBARGOED:
+                    specification_sharing_policy = (
+                        SpecificationSharingPolicy.EMBARGOED_OR_PROPRIETARY)
+                else:
+                    specification_sharing_policy = (
+                        SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY)
             else:
                 specification_sharing_policy = None
             product = self.makeProduct(
