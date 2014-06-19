@@ -1059,14 +1059,16 @@ class SpecificationSet(HasSpecificationsMixin):
             limit=5)
 
     def new(self, name, title, specurl, summary, definition_status,
-        owner, approver=None, product=None, distribution=None, assignee=None,
-        drafter=None, whiteboard=None, workitems_text=None,
-        priority=SpecificationPriority.UNDEFINED, information_type=None):
+            owner, target, approver=None, assignee=None, drafter=None,
+            whiteboard=None, information_type=None):
         """See ISpecificationSet."""
+        # Calculates a the default information_type based on the context
+        # specification_sharing_policy.
+        if information_type is None:
+            information_type = (
+                target.pillar.getDefaultSpecificationInformationType())
         # Adapt the NewSpecificationDefinitionStatus item to a
         # SpecificationDefinitionStatus item.
-        if information_type is None:
-            information_type = InformationType.PUBLIC
         status_name = definition_status.name
         status_names = NewSpecificationDefinitionStatus.items.mapping.keys()
         if status_name not in status_names:
@@ -1074,11 +1076,12 @@ class SpecificationSet(HasSpecificationsMixin):
                 "definition_status must an item found in "
                 "NewSpecificationDefinitionStatus.")
         definition_status = SpecificationDefinitionStatus.items[status_name]
-        spec = Specification(name=name, title=title, specurl=specurl,
-            summary=summary, priority=priority,
+        spec = Specification(
+            name=name, title=title, specurl=specurl, summary=summary,
             definition_status=definition_status, owner=owner,
-            _approver=approver, product=product, distribution=distribution,
-            _assignee=assignee, _drafter=drafter, whiteboard=whiteboard)
+            _approver=approver, _assignee=assignee, _drafter=drafter,
+            whiteboard=whiteboard)
+        spec.setTarget(target)
         spec.transitionToInformationType(information_type, None)
         return spec
 
@@ -1111,3 +1114,7 @@ class SpecificationSet(HasSpecificationsMixin):
     def get(self, spec_id):
         """See lp.blueprints.interfaces.specification.ISpecificationSet."""
         return Specification.get(spec_id)
+
+    def empty_list(self):
+        """See `ISpecificationSet`."""
+        return []

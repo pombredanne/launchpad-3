@@ -45,8 +45,10 @@ class TestSpecifications(TestCaseWithFactory):
         if sprint is None:
             sprint = self.factory.makeSprint()
         blueprint = self.factory.makeSpecification(
-            title=title, status=status, name=name, priority=priority,
+            title=title, status=status, name=name,
             information_type=information_type)
+        if priority is not None:
+            removeSecurityProxy(blueprint).priority = priority
         link = blueprint.linkSprint(sprint, blueprint.owner)
         naked_link = removeSecurityProxy(link)
         if declined:

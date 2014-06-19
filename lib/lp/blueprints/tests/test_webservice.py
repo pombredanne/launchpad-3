@@ -11,7 +11,10 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.blueprints.enums import SpecificationDefinitionStatus
 from lp.services.webapp.interaction import ANONYMOUS
+from lp.services.webapp.interfaces import OAuthPermission
+from lp.registry.enums import SpecificationSharingPolicy
 from lp.testing import (
+    api_url,
     launchpadlib_for,
     person_logged_in,
     TestCaseWithFactory,
@@ -46,6 +49,80 @@ class SpecificationWebserviceTestCase(TestCaseWithFactory):
         pillar_name = pillar_obj.name
         launchpadlib = self.getLaunchpadlib()
         return launchpadlib.load(pillar_name)
+
+
+class SpecificationWebserviceTests(SpecificationWebserviceTestCase):
+    """Test accessing specification top-level webservice."""
+    layer = AppServerLayer
+
+    def test_collection(self):
+        # `ISpecificationSet` is exposed as a webservice via /specs
+        # and is represented by an empty collection.
+        user = self.factory.makePerson()
+        webservice = webservice_for_person(user)
+        response = webservice.get('/specs')
+        self.assertEqual(200, response.status)
+        self.assertEqual(
+            ['entries', 'resource_type_link', 'start', 'total_size'],
+            sorted(response.jsonBody().keys()))
+        self.assertEqual(0, response.jsonBody()['total_size'])
+
+    def test_creation_for_products(self):
+        # `ISpecificationSet.createSpecification` is exposed and
+        # allows specification creation for products.
+        user = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        product_url = api_url(product)
+        webservice = webservice_for_person(
+            user, permission=OAuthPermission.WRITE_PUBLIC)
+        response = webservice.named_post(
+            '/specs', 'createSpecification',
+            name='test-prod', title='Product', specurl='http://test.com',
+            definition_status='Approved', summary='A summary',
+            target=product_url,
+            api_version='devel')
+        self.assertEqual(201, response.status)
+
+    def test_creation_honor_product_sharing_policy(self):
+        # `ISpecificationSet.createSpecification` respect product
+        # specification_sharing_policy.
+        user = self.factory.makePerson()
+        product = self.factory.makeProduct(
+            owner=user,
+            specification_sharing_policy=(
+                SpecificationSharingPolicy.PROPRIETARY))
+        product_url = api_url(product)
+        webservice = webservice_for_person(
+            user, permission=OAuthPermission.WRITE_PRIVATE)
+        spec_name = 'test-prop'
+        response = webservice.named_post(
+            '/specs', 'createSpecification',
+            name=spec_name, title='Proprietary', specurl='http://test.com',
+            definition_status='Approved', summary='A summary',
+            target=product_url,
+            api_version='devel')
+        self.assertEqual(201, response.status)
+        # The new specification was created as PROPROETARY.
+        response = webservice.get('%s/+spec/%s' % (product_url, spec_name))
+        self.assertEqual(200, response.status)
+        self.assertEqual(
+            'Proprietary', response.jsonBody()['information_type'])
+
+    def test_creation_for_distribution(self):
+        # `ISpecificationSet.createSpecification` also allows
+        # specification creation for distributions.
+        user = self.factory.makePerson()
+        distribution = self.factory.makeDistribution()
+        distribution_url = api_url(distribution)
+        webservice = webservice_for_person(
+            user, permission=OAuthPermission.WRITE_PUBLIC)
+        response = webservice.named_post(
+            '/specs', 'createSpecification',
+            name='test-distro', title='Distro', specurl='http://test.com',
+            definition_status='Approved', summary='A summary',
+            target=distribution_url,
+            api_version='devel')
+        self.assertEqual(201, response.status)
 
 
 class SpecificationAttributeWebserviceTests(SpecificationWebserviceTestCase):

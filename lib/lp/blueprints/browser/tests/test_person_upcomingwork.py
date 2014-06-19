@@ -324,17 +324,14 @@ class TestPersonUpcomingWork(BrowserTestCase):
     def test_container_progressbar(self):
         """Check that the per-blueprint progress bar is present."""
         # Create two work items on separate specs. One of them is done and the
-        # other is in progress. Here we create the specs explicitly, using
-        # different priorities to force spec1 to show up first on the page.
+        # other is in progress. Here we create the specs explicitly and in
+        # order to force spec1 to show up first on the page.
         spec1 = self.factory.makeSpecification(
-            product=self.today_milestone.product,
-            priority=SpecificationPriority.HIGH)
+            product=self.today_milestone.product)
         spec2 = self.factory.makeSpecification(
-            product=self.today_milestone.product,
-            priority=SpecificationPriority.LOW)
+            product=self.today_milestone.product)
         spec3 = self.factory.makeSpecification(
-            product=self.today_milestone.product,
-            priority=SpecificationPriority.LOW)
+            product=self.today_milestone.product)
         self.factory.makeSpecificationWorkItem(
             specification=spec1, assignee=self.team.teamowner,
             milestone=self.today_milestone,
