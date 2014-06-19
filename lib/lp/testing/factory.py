@@ -283,6 +283,8 @@ from lp.soyuz.interfaces.component import (
     IComponent,
     IComponentSet,
     )
+from lp.soyuz.interfaces.livefs import ILiveFSSet
+from lp.soyuz.interfaces.livefsbuild import ILiveFSBuildSet
 from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.interfaces.processor import IProcessorSet
@@ -294,6 +296,7 @@ from lp.soyuz.model.distributionsourcepackagecache import (
     DistributionSourcePackageCache,
     )
 from lp.soyuz.model.files import BinaryPackageFile
+from lp.soyuz.model.livefsbuild import LiveFSFile
 from lp.soyuz.model.packagediff import PackageDiff
 from lp.testing import (
     admin_logged_in,
@@ -4316,6 +4319,81 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         product = self.makeProduct(owner=person)
         product.redeemSubscriptionVoucher(
             self.getUniqueString(), person, person, months)
+
+    def makeLiveFS(self, registrant=None, owner=None, distroseries=None,
+                   name=None, metadata=None, require_virtualized=True,
+                   date_created=DEFAULT):
+        """Make a new LiveFS."""
+        if registrant is None:
+            registrant = self.makePerson()
+        if owner is None:
+            owner = self.makeTeam(registrant)
+        if distroseries is None:
+            distroseries = self.makeDistroSeries()
+        if name is None:
+            name = self.getUniqueString(u"livefs-name")
+        if metadata is None:
+            metadata = {}
+        livefs = getUtility(ILiveFSSet).new(
+            registrant, owner, distroseries, name, metadata,
+            require_virtualized=require_virtualized, date_created=date_created)
+        IStore(livefs).flush()
+        return livefs
+
+    def makeLiveFSBuild(self, requester=None, registrant=None, livefs=None,
+                        archive=None, distroarchseries=None, pocket=None,
+                        unique_key=None, metadata_override=None,
+                        date_created=DEFAULT, status=BuildStatus.NEEDSBUILD,
+                        builder=None, duration=None, **kwargs):
+        """Make a new LiveFSBuild."""
+        if requester is None:
+            requester = self.makePerson()
+        if livefs is None:
+            if "distroseries" in kwargs:
+                distroseries = kwargs["distroseries"]
+                del kwargs["distroseries"]
+            elif distroarchseries is not None:
+                distroseries = distroarchseries.distroseries
+            elif archive is not None:
+                distroseries = self.makeDistroSeries(
+                    distribution=archive.distribution)
+            else:
+                distroseries = None
+            if registrant is None:
+                registrant = requester
+            livefs = self.makeLiveFS(
+                registrant=registrant, distroseries=distroseries, **kwargs)
+        if archive is None:
+            archive = livefs.distro_series.main_archive
+        if distroarchseries is None:
+            distroarchseries = self.makeDistroArchSeries(
+                distroseries=livefs.distro_series)
+        if pocket is None:
+            pocket = PackagePublishingPocket.RELEASE
+        livefsbuild = getUtility(ILiveFSBuildSet).new(
+            requester, livefs, archive, distroarchseries, pocket,
+            unique_key=unique_key, metadata_override=metadata_override,
+            date_created=date_created)
+        if duration is not None:
+            removeSecurityProxy(livefsbuild).updateStatus(
+                BuildStatus.BUILDING, builder=builder,
+                date_started=livefsbuild.date_created)
+            removeSecurityProxy(livefsbuild).updateStatus(
+                status, builder=builder,
+                date_finished=livefsbuild.date_started + duration)
+        else:
+            removeSecurityProxy(livefsbuild).updateStatus(
+                status, builder=builder)
+        IStore(livefsbuild).flush()
+        return livefsbuild
+
+    def makeLiveFSFile(self, livefsbuild=None, libraryfile=None):
+        if livefsbuild is None:
+            livefsbuild = self.makeLiveFSBuild()
+        if libraryfile is None:
+            libraryfile = self.makeLibraryFileAlias()
+        return ProxyFactory(
+            LiveFSFile(livefsbuild=livefsbuild, libraryfile=libraryfile))
 
 
 # Some factory methods return simple Python types. We don't add

@@ -40,6 +40,7 @@ from lp.buildmaster.tests.mock_slaves import (
 from lp.buildmaster.tests.test_buildfarmjobbehaviour import (
     TestGetUploadMethodsMixin,
     TestHandleStatusMixin,
+    TestVerifySuccessfulBuildMixin,
     )
 from lp.buildmaster.tests.test_manager import MockBuilderFactory
 from lp.registry.interfaces.pocket import (
@@ -530,11 +531,24 @@ class MakeBinaryPackageBuildMixin:
         build.queueBuild()
         return build
 
+    def makeUnmodifiableBuild(self):
+        build = self.factory.makeBinaryPackageBuild()
+        build.distro_series.status = SeriesStatus.CURRENT
+        build.updateStatus(BuildStatus.BUILDING)
+        build.queueBuild()
+        return build
+
 
 class TestGetUploadMethodsForBinaryPackageBuild(
     MakeBinaryPackageBuildMixin, TestGetUploadMethodsMixin,
     TestCaseWithFactory):
     """IPackageBuild.getUpload-related methods work with binary builds."""
+
+
+class TestVerifySuccessfulBuildForBinaryPackageBuild(
+    MakeBinaryPackageBuildMixin, TestVerifySuccessfulBuildMixin,
+    TestCaseWithFactory):
+    """IBuildFarmJobBehaviour.verifySuccessfulBuild works."""
 
 
 class TestHandleStatusForBinaryPackageBuild(
