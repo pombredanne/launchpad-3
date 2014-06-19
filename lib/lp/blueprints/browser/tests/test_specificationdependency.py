@@ -92,7 +92,8 @@ class TestDepTree(TestCaseWithFactory):
         proprietary_blocked = self.factory.makeBlueprint(
             product=product, information_type=InformationType.PROPRIETARY)
         public_blocked = self.factory.makeBlueprint(product=product)
-        proprietary_blocked.createDependency(root)
+        with person_logged_in(product.owner):
+            proprietary_blocked.createDependency(root)
         public_blocked.createDependency(root)
 
         # Anonymous can see only the public

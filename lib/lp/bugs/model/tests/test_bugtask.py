@@ -674,7 +674,7 @@ class TestBugTaskPrivacy(TestCaseWithFactory):
         bug = self.factory.makeBug()
         spec = self.factory.makeSpecification(
             information_type=InformationType.PROPRIETARY)
-        with person_logged_in(spec.product.owner):
+        with person_logged_in(removeSecurityProxy(spec).product.owner):
             spec.linkBug(bug)
         return spec, bug
 
@@ -690,7 +690,8 @@ class TestBugTaskPrivacy(TestCaseWithFactory):
     def test_bug_specifications_for_authorised_user(self):
         spec, bug = self._createBugAndSpecification()
         self.assertContentEqual(
-            [spec], bug.getSpecifications(spec.product.owner))
+            [spec],
+            bug.getSpecifications(removeSecurityProxy(spec).product.owner))
 
 
 class TestBugTaskDelta(TestCaseWithFactory):
