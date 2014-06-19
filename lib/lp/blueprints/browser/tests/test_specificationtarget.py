@@ -324,15 +324,16 @@ class TestPrivacy(BrowserTestCase):
         # Other users see the page, but not the private specs.
         proprietary = self.factory.makeSpecification(
             information_type=InformationType.PROPRIETARY)
-        product = proprietary.product
+        product = removeSecurityProxy(proprietary).product
         public = self.factory.makeSpecification(product=product)
         with person_logged_in(product.owner):
             product.blueprints_usage = ServiceUsage.LAUNCHPAD
             browser = self.getViewBrowser(product, '+specs')
         self.assertIn(public.name, browser.contents)
-        self.assertNotIn(proprietary.name, browser.contents)
+        self.assertNotIn(
+            removeSecurityProxy(proprietary).name, browser.contents)
         with person_logged_in(None):
             browser = self.getViewBrowser(product, '+specs',
                                           user=product.owner)
         self.assertIn(public.name, browser.contents)
-        self.assertIn(proprietary.name, browser.contents)
+        self.assertIn(removeSecurityProxy(proprietary).name, browser.contents)

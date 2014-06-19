@@ -522,13 +522,15 @@ class SpecificationTests(TestCaseWithFactory):
             spec.drafter = drafter
             address = owner.preferredemail.email
             drafter_address = drafter.preferredemail.email
-        self.assertContentEqual(
-            [address, drafter_address], spec.notificationRecipientAddresses())
+            self.assertContentEqual(
+                [address, drafter_address],
+                spec.notificationRecipientAddresses())
         # Remove the drafters access to the spec.
         artifact = self.factory.makeAccessArtifact(concrete=spec)
         getUtility(IAccessArtifactGrantSource).revokeByArtifact(
             [artifact], [drafter])
-        self.assertEqual([address], spec.notificationRecipientAddresses())
+        with person_logged_in(owner):
+            self.assertEqual([address], spec.notificationRecipientAddresses())
 
 
 class TestSpecificationSet(TestCaseWithFactory):
@@ -548,7 +550,7 @@ class TestSpecificationSet(TestCaseWithFactory):
         product = self.factory.makeProduct()
         spec = self.specification_set.new(
             name='plane', title='Place', specurl='http://eg.org/plane',
-            summary='summary', owner=product.owner, product=product,
+            summary='summary', owner=product.owner, target=product,
             definition_status=SpecificationDefinitionStatus.NEW)
         self.assertEqual(
             SpecificationDefinitionStatus.NEW, spec.definition_status)
@@ -561,7 +563,7 @@ class TestSpecificationSet(TestCaseWithFactory):
         product = self.factory.makeProduct()
         args = dict(
             name='plane', title='Place', specurl='http://eg.org/plane',
-            summary='summary', owner=product.owner, product=product,
+            summary='summary', owner=product.owner, target=product,
             definition_status=SpecificationDefinitionStatus.OBSOLETE)
         self.assertRaises(
             AssertionError, self.specification_set.new, **args)
@@ -585,9 +587,11 @@ class TestSpecifications(TestCaseWithFactory):
                  status=NewSpecificationDefinitionStatus.NEW,
                  name=None, priority=None, information_type=None):
         blueprint = self.factory.makeSpecification(
-            title=title, status=status, name=name, priority=priority,
+            title=title, status=status, name=name,
             information_type=information_type, product=product,
             )
+        if priority is not None:
+            removeSecurityProxy(blueprint).priority = priority
         removeSecurityProxy(blueprint).datecreated = (
             self.date_created + timedelta(date_created))
         return blueprint
@@ -759,7 +763,7 @@ class TestSpecifications(TestCaseWithFactory):
         # Proprietary blueprints are listed for users with a policy grant.
         spec = self.makeSpec(information_type=InformationType.PROPRIETARY)
         (policy,) = getUtility(IAccessPolicySource).find(
-            [(spec.product, InformationType.PROPRIETARY)])
+            [(removeSecurityProxy(spec).product, InformationType.PROPRIETARY)])
         grant = self.factory.makeAccessPolicyGrant(policy)
         self._assertInSpecifications(spec, grant)
 
@@ -771,20 +775,22 @@ class TestSpecifications(TestCaseWithFactory):
             SpecificationSharingPolicy.PROPRIETARY_OR_PUBLIC)
         product = self.factory.makeProduct(
             specification_sharing_policy=specification_sharing_policy)
-        blueprint = self.makeSpec(
-            product=product, information_type=InformationType.PROPRIETARY)
         person_with_new_role = self.factory.makePerson()
         with person_logged_in(product.owner):
+            blueprint = self.makeSpec(
+                product=product,
+                information_type=InformationType.PROPRIETARY)
             setattr(blueprint, role_name, person_with_new_role)
             self.assertIsNot(
                 None, blueprint.subscription(person_with_new_role))
 
         # Assignees/drafters/approvers are not subscribed if they already
         # have a policy grant for the specification's target.
-        blueprint_2 = self.makeSpec(
-            product=product, information_type=InformationType.PROPRIETARY)
         person_with_new_role_2 = self.factory.makePerson()
         with person_logged_in(product.owner):
+            blueprint_2 = self.makeSpec(
+                product=product,
+                information_type=InformationType.PROPRIETARY)
             permissions = {
                 InformationType.PROPRIETARY: SharingPermission.ALL,
                 }

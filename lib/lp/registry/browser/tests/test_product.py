@@ -423,20 +423,22 @@ class TestProductView(BrowserTestCase):
     def test_index_proprietary_specification(self):
         # Ordinary users can see page, but proprietary specs are only listed
         # for users with access to them.
+        proprietary_name = 'super-private'
         proprietary = self.factory.makeSpecification(
+            name=proprietary_name,
             information_type=InformationType.PROPRIETARY)
-        product = proprietary.product
+        product = removeSecurityProxy(proprietary).product
         with person_logged_in(product.owner):
             product.blueprints_usage = ServiceUsage.LAUNCHPAD
             public = self.factory.makeSpecification(product=product)
             browser = self.getViewBrowser(product, '+index')
         self.assertIn(public.name, browser.contents)
-        self.assertNotIn(proprietary.name, browser.contents)
+        self.assertNotIn(proprietary_name, browser.contents)
         with person_logged_in(None):
             browser = self.getViewBrowser(product, '+index',
                                           user=product.owner)
         self.assertIn(public.name, browser.contents)
-        self.assertIn(proprietary.name, browser.contents)
+        self.assertIn(proprietary_name, browser.contents)
 
 
 class TestProductEditView(BrowserTestCase):

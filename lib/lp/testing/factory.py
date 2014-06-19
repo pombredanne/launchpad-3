@@ -2047,13 +2047,17 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                           status=NewSpecificationDefinitionStatus.NEW,
                           implementation_status=None, goal=None, specurl=None,
                           assignee=None, drafter=None, approver=None,
-                          priority=None, whiteboard=None, milestone=None,
-                          information_type=None):
+                          whiteboard=None, milestone=None,
+                          information_type=None, priority=None):
         """Create and return a new, arbitrary Blueprint.
 
         :param product: The product to make the blueprint on.  If one is
             not specified, an arbitrary product is created.
         """
+        if distribution and product:
+            raise AssertionError(
+                'Cannot target a Specification to a distribution and '
+                'a product simultaneously.')
         proprietary = (information_type not in PUBLIC_INFORMATION_TYPES and
             information_type is not None)
         if (product is None and milestone is not None and
@@ -2061,8 +2065,12 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             product = milestone.productseries.product
         if distribution is None and product is None:
             if proprietary:
-                specification_sharing_policy = (
-                    SpecificationSharingPolicy.EMBARGOED_OR_PROPRIETARY)
+                if information_type == InformationType.EMBARGOED:
+                    specification_sharing_policy = (
+                        SpecificationSharingPolicy.EMBARGOED_OR_PROPRIETARY)
+                else:
+                    specification_sharing_policy = (
+                        SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY)
             else:
                 specification_sharing_policy = None
             product = self.makeProduct(
@@ -2075,8 +2083,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             title = self.getUniqueString('title')
         if owner is None:
             owner = self.makePerson()
-        if priority is None:
-            priority = SpecificationPriority.UNDEFINED
         status_names = NewSpecificationDefinitionStatus.items.mapping.keys()
         if status.name in status_names:
             definition_status = status
@@ -2094,10 +2100,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             assignee=assignee,
             drafter=drafter,
             approver=approver,
-            product=product,
-            distribution=distribution,
-            priority=priority)
+            target=product or distribution)
         naked_spec = removeSecurityProxy(spec)
+        if priority is not None:
+            naked_spec.priority = priority
         if status.name not in status_names:
             # Set the closed status after the status has a sane initial state.
             naked_spec.definition_status = status
@@ -2117,7 +2123,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             if proprietary:
                 naked_spec.target._ensurePolicies([information_type])
             naked_spec.transitionToInformationType(
-                information_type, removeSecurityProxy(spec.target).owner)
+                information_type, naked_spec.target.owner)
         return spec
 
     makeBlueprint = makeSpecification

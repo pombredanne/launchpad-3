@@ -322,7 +322,8 @@ class RemoveArtifactSubscriptionsJobTestCase(TestCaseWithFactory):
         spec_artifact = self.factory.makeAccessArtifact(specification)
         self.factory.makeAccessArtifactGrant(
             spec_artifact, artifact_indirect_grantee)
-        specification.subscribe(artifact_indirect_grantee, owner)
+        with person_logged_in(product.owner):
+            specification.subscribe(artifact_indirect_grantee, owner)
 
         # pick one of the concrete artifacts (bug, branch or spec)
         # and subscribe the teams and persons.
@@ -360,7 +361,8 @@ class RemoveArtifactSubscriptionsJobTestCase(TestCaseWithFactory):
         self.assertIn(artifact_team_grantee, subscribers)
         self.assertIn(artifact_indirect_grantee, bug.getDirectSubscribers())
         self.assertIn(artifact_indirect_grantee, branch.subscribers)
-        self.assertIn(artifact_indirect_grantee, specification.subscribers)
+        self.assertIn(artifact_indirect_grantee,
+                      removeSecurityProxy(specification).subscribers)
 
     def _assert_bug_change_unsubscribes(self, change_callback):
 
@@ -423,14 +425,14 @@ class RemoveArtifactSubscriptionsJobTestCase(TestCaseWithFactory):
         def configure_test(bug, branch, specification, policy_team_grantee,
                            policy_indirect_grantee, artifact_team_grantee,
                            owner):
-            concrete_artifact = specification
-            specification.subscribe(policy_team_grantee, owner)
-            specification.subscribe(policy_indirect_grantee, owner)
+            naked_spec = removeSecurityProxy(specification)
+            naked_spec.subscribe(policy_team_grantee, owner)
+            naked_spec.subscribe(policy_indirect_grantee, owner)
             spec_artifact = self.factory.makeAccessArtifact(specification)
             self.factory.makeAccessArtifactGrant(
                 spec_artifact, artifact_team_grantee)
-            specification.subscribe(artifact_team_grantee, owner)
-            return concrete_artifact, get_pillars, get_subscribers
+            naked_spec.subscribe(artifact_team_grantee, owner)
+            return naked_spec, get_pillars, get_subscribers
 
         self._assert_artifact_change_unsubscribes(
             change_callback, configure_test)

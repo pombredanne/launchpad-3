@@ -243,11 +243,10 @@ class NewSpecificationView(LaunchpadFormView):
             title=data.get('title'),
             specurl=data.get('specurl'),
             summary=data.get('summary'),
-            product=data.get('product'),
+            target=data.get('product') or data.get('distribution'),
             drafter=data.get('drafter'),
             assignee=data.get('assignee'),
             approver=data.get('approver'),
-            distribution=data.get('distribution'),
             definition_status=data.get('definition_status'),
             information_type=information_type)
         # Propose the specification as a series goal, if specified.
