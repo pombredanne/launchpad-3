@@ -280,6 +280,9 @@ class ILiveFSSet(Interface):
     def interpret(owner_name, distribution_name, distro_series_name, name):
         """Like `getByName`, but takes names of objects."""
 
+    def getByPerson(owner):
+        """Return all live filesystems with the given `owner`."""
+
     @collection_default_content()
     def getAll():
         """Return all of the live filesystems in Launchpad.

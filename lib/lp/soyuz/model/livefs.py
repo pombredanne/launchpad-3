@@ -283,6 +283,10 @@ class LiveFSSet:
             getUtility(IDistroSeriesSet).queryByName, distribution)
         return self.getByName(owner, distro_series, name)
 
+    def getByPerson(self, owner):
+        """See `ILiveFSSet`."""
+        return IStore(LiveFS).find(LiveFS, LiveFS.owner == owner)
+
     def getAll(self):
         """See `ILiveFSSet`."""
         user = getUtility(ILaunchBag).user
