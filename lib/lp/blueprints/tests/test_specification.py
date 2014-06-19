@@ -522,13 +522,15 @@ class SpecificationTests(TestCaseWithFactory):
             spec.drafter = drafter
             address = owner.preferredemail.email
             drafter_address = drafter.preferredemail.email
-        self.assertContentEqual(
-            [address, drafter_address], spec.notificationRecipientAddresses())
+            self.assertContentEqual(
+                [address, drafter_address],
+                spec.notificationRecipientAddresses())
         # Remove the drafters access to the spec.
         artifact = self.factory.makeAccessArtifact(concrete=spec)
         getUtility(IAccessArtifactGrantSource).revokeByArtifact(
             [artifact], [drafter])
-        self.assertEqual([address], spec.notificationRecipientAddresses())
+        with person_logged_in(owner):
+            self.assertEqual([address], spec.notificationRecipientAddresses())
 
 
 class TestSpecificationSet(TestCaseWithFactory):
@@ -761,7 +763,7 @@ class TestSpecifications(TestCaseWithFactory):
         # Proprietary blueprints are listed for users with a policy grant.
         spec = self.makeSpec(information_type=InformationType.PROPRIETARY)
         (policy,) = getUtility(IAccessPolicySource).find(
-            [(spec.product, InformationType.PROPRIETARY)])
+            [(removeSecurityProxy(spec).product, InformationType.PROPRIETARY)])
         grant = self.factory.makeAccessPolicyGrant(policy)
         self._assertInSpecifications(spec, grant)
 

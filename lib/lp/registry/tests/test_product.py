@@ -2131,14 +2131,13 @@ class TestSpecifications(TestCaseWithFactory):
         # Proprietary blueprints are listed for users with a policy grant.
         blueprint1 = self.makeSpec(
             information_type=InformationType.PROPRIETARY)
+        product = removeSecurityProxy(blueprint1).product
         policy_source = getUtility(IAccessPolicySource)
         (policy,) = policy_source.find(
-            [(blueprint1.product, InformationType.PROPRIETARY)])
+            [(product, InformationType.PROPRIETARY)])
         grant = self.factory.makeAccessPolicyGrant(policy)
         self.assertEqual(
-            [blueprint1],
-            list_result(removeSecurityProxy(blueprint1).product,
-                        user=grant.grantee))
+            [blueprint1], list_result(product, user=grant.grantee))
 
 
 class TestWebService(WebServiceTestCase):

@@ -1266,7 +1266,7 @@ class TestBranchDeletion(TestCaseWithFactory):
     def test_specBranchLinkDisablesDeletion(self):
         """A branch linked to a spec cannot be deleted."""
         spec = getUtility(ISpecificationSet).new(
-            name='some-spec', title='Some spec', product=self.product,
+            name='some-spec', title='Some spec', target=self.product,
             owner=self.user, summary='', specurl=None,
             definition_status=NewSpecificationDefinitionStatus.NEW)
         spec.linkBranch(self.branch, self.user)

@@ -17,10 +17,7 @@ from lp.blueprints.browser.person_upcomingwork import (
     getWorkItemsDueBefore,
     WorkItemContainer,
     )
-from lp.blueprints.enums import (
-    SpecificationPriority,
-    SpecificationWorkItemStatus,
-    )
+from lp.blueprints.enums import SpecificationWorkItemStatus
 from lp.testing import (
     anonymous_logged_in,
     BrowserTestCase,
@@ -394,8 +391,9 @@ class TestPersonUpcomingWork(BrowserTestCase):
         person = self.factory.makePerson()
         proprietary_spec = self.factory.makeSpecification(
             information_type=InformationType.PROPRIETARY)
+        product = removeSecurityProxy(proprietary_spec).product
         today_milestone = self.factory.makeMilestone(
-            dateexpected=self.today, product=proprietary_spec.product)
+            dateexpected=self.today, product=product)
         public_workitem = self.factory.makeSpecificationWorkItem(
             assignee=person, milestone=today_milestone)
         proprietary_workitem = self.factory.makeSpecificationWorkItem(
@@ -407,8 +405,7 @@ class TestPersonUpcomingWork(BrowserTestCase):
         self.assertNotIn(proprietary_workitem.specification.name,
                          browser.contents)
         browser = self.getViewBrowser(
-            person, view_name='+upcomingwork',
-            user=proprietary_workitem.specification.product.owner)
+            person, view_name='+upcomingwork', user=product.owner)
         self.assertIn(proprietary_workitem.specification.name,
                       browser.contents)
 
