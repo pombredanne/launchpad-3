@@ -1118,16 +1118,3 @@ class SpecificationSet(HasSpecificationsMixin):
     def empty_list(self):
         """See `ISpecificationSet`."""
         return []
-
-    def createSpecification(self, name, title, specurl, summary,
-                            definition_status, owner, target, approver=None,
-                            assignee=None, drafter=None, whiteboard=None,
-                            information_type=None):
-        """See `ISpecificationSet`."""
-        spec = self.new(
-            name=name, title=title, specurl=specurl, summary=summary,
-            definition_status=definition_status, owner=owner,
-            target=target, approver=approver, assignee=assignee,
-            drafter=drafter, whiteboard=whiteboard,
-            information_type=information_type)
-        return spec
