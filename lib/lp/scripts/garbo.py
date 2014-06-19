@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database garbage collection."""
@@ -118,6 +118,7 @@ from lp.services.scripts.base import (
 from lp.services.session.model import SessionData
 from lp.services.verification.model.logintoken import LoginToken
 from lp.soyuz.model.archive import Archive
+from lp.soyuz.model.livefsbuild import LiveFSFile
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.model.reporting import LatestPersonSourcePackageReleaseCache
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
@@ -1363,6 +1364,28 @@ class UnusedAccessPolicyPruner(TunableLoop):
         transaction.commit()
 
 
+class LiveFSFilePruner(BulkPruner):
+    """A BulkPruner to remove old `LiveFSFile`s.
+
+    We remove binary files attached to `LiveFSBuild`s that are more than a
+    day old; these files are very large and are only useful for builds in
+    progress.  Text files are typically small (<1MiB) and useful for
+    retrospective analysis, so we preserve those indefinitely.
+    """
+    target_table_class = LiveFSFile
+    ids_to_prune_query = """
+        SELECT DISTINCT LiveFSFile.id
+        FROM LiveFSFile, LiveFSBuild, LibraryFileAlias
+        WHERE
+            LiveFSFile.livefsbuild = LiveFSBuild.id
+            AND LiveFSFile.libraryfile = LibraryFileAlias.id
+            AND LiveFSBuild.date_finished <
+                CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+                - CAST('1 day' AS interval)
+            AND LibraryFileAlias.mimetype != 'text/plain'
+        """
+
+
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):
     """Abstract base class to run a collection of TunableLoops."""
     script_name = None  # Script name for locking and database user. Override.
@@ -1642,6 +1665,7 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         CodeImportEventPruner,
         CodeImportResultPruner,
         HWSubmissionEmailLinker,
+        LiveFSFilePruner,
         LoginTokenPruner,
         ObsoleteBugAttachmentPruner,
         OldTimeLimitedTokenDeleter,
