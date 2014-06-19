@@ -301,6 +301,19 @@ class TestLiveFSSet(TestCaseWithFactory):
             getUtility(ILiveFSSet).exists(
                 livefs.owner, livefs.distro_series, u"different"))
 
+    def test_getByPerson(self):
+        # ILiveFSSet.getByPerson returns all LiveFSes with the given owner.
+        owners = [self.factory.makePerson() for i in range(2)]
+        livefses = []
+        for owner in owners:
+            for i in range(2):
+                livefses.append(self.factory.makeLiveFS(
+                    registrant=owner, owner=owner))
+        self.assertContentEqual(
+            livefses[:2], getUtility(ILiveFSSet).getByPerson(owners[0]))
+        self.assertContentEqual(
+            livefses[2:], getUtility(ILiveFSSet).getByPerson(owners[1]))
+
     def test_getAll(self):
         # ILiveFSSet.getAll returns all LiveFSes.
         livefses = [self.factory.makeLiveFS() for i in range(3)]
