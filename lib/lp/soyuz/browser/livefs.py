@@ -143,9 +143,10 @@ class LiveFSView(LaunchpadView):
 
     @property
     def page_title(self):
-        return "%(name)s's %(livefs_name)s live filesystem" % {
+        return "%(name)s's %(livefs_name)s live filesystem in %(series)s" % {
             'name': self.context.owner.displayname,
             'livefs_name': self.context.name,
+            'series': self.context.distro_series.fullseriesname,
             }
 
     label = page_title
