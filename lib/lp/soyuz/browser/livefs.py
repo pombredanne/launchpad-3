@@ -14,19 +14,15 @@ __all__ = [
 
 import json
 
-from lazr.lifecycle.event import ObjectModifiedEvent
-from lazr.lifecycle.snapshot import Snapshot
 from lazr.restful import ResourceJSONEncoder
 from lazr.restful.interface import (
     copy_field,
     use_template,
     )
 from zope.component import getUtility
-from zope.event import notify
 from zope.interface import (
     implements,
     Interface,
-    providedBy,
     )
 from zope.schema import (
     Choice,
@@ -315,7 +311,6 @@ class LiveFSAdminView(BaseLiveFSEditView):
     @property
     def initial_values(self):
         return {'require_virtualized': self.context.require_virtualized}
-
 
 
 class LiveFSEditView(LiveFSMetadataValidatorMixin, BaseLiveFSEditView):
