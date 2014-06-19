@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for builders."""
@@ -64,6 +64,7 @@ from lp.soyuz.browser.build import (
     get_build_by_id_str,
     )
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
+from lp.soyuz.interfaces.livefsbuild import ILiveFSBuildSet
 
 
 class BuilderSetNavigation(GetitemNavigation):
@@ -80,6 +81,13 @@ class BuilderSetNavigation(GetitemNavigation):
     @stepthrough('+recipebuild')
     def traverse_recipebuild(self, name):
         build = get_build_by_id_str(ISourcePackageRecipeBuildSource, name)
+        if build is None:
+            return None
+        return self.redirectSubTree(canonical_url(build))
+
+    @stepthrough('+livefsbuild')
+    def traverse_livefsbuild(self, name):
+        build = get_build_by_id_str(ILiveFSBuildSet, name)
         if build is None:
             return None
         return self.redirectSubTree(canonical_url(build))

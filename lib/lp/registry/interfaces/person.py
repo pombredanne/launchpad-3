@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Person interfaces."""
@@ -1029,7 +1029,7 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
 
     @call_with(requester=REQUEST_USER)
     @export_read_operation()
-    @operation_returns_collection_of(Interface) # Really IArchiveSubscriber
+    @operation_returns_collection_of(Interface)  # Really IArchiveSubscriber
     @operation_for_version('devel')
     def getArchiveSubscriptions(requester):
         """Return (private) archives subscription for this person."""

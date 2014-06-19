@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Update the interface schema values due to circular imports.
@@ -196,6 +196,11 @@ from lp.soyuz.interfaces.binarypackagerelease import (
     )
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
+from lp.soyuz.interfaces.livefs import ILiveFSView
+from lp.soyuz.interfaces.livefsbuild import (
+    ILiveFSBuild,
+    ILiveFSFile,
+    )
 from lp.soyuz.interfaces.packageset import (
     IPackageset,
     IPackagesetSet,
@@ -575,6 +580,15 @@ IDistroSeriesDifferenceComment['comment_author'].schema = IPerson
 
 # IDistroArchSeries
 patch_reference_property(IDistroArchSeries, 'main_archive', IArchive)
+
+# ILiveFSFile
+patch_reference_property(ILiveFSFile, 'livefsbuild', ILiveFSBuild)
+
+# ILiveFSView
+patch_entry_return_type(ILiveFSView, 'requestBuild', ILiveFSBuild)
+ILiveFSView['builds'].value_type.schema = ILiveFSBuild
+ILiveFSView['completed_builds'].value_type.schema = ILiveFSBuild
+ILiveFSView['pending_builds'].value_type.schema = ILiveFSBuild
 
 # IPackageset
 patch_collection_return_type(

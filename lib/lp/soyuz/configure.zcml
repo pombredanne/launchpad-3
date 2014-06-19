@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -975,6 +975,72 @@
       <allow
       interface=".interfaces.packagetranslationsuploadjob.IPackageTranslationsUploadJob" />
     </class>
+
+    <!-- LiveFS -->
+    <class class=".model.livefs.LiveFS">
+        <require
+            permission="launchpad.View"
+            interface=".interfaces.livefs.ILiveFSView
+                       .interfaces.livefs.ILiveFSEditableAttributes
+                       .interfaces.livefs.ILiveFSAdminAttributes"/>
+        <require
+            permission="launchpad.Edit"
+            set_schema=".interfaces.livefs.ILiveFSEditableAttributes"
+            set_attributes="date_last_modified"/>
+        <require
+            permission="launchpad.Admin"
+            set_schema=".interfaces.livefs.ILiveFSAdminAttributes"/>
+    </class>
+    <subscriber
+        for=".interfaces.livefs.ILiveFS zope.lifecycleevent.interfaces.IObjectModifiedEvent"
+        handler=".model.livefs.livefs_modified"/>
+
+    <!-- LiveFSSet -->
+    <securedutility
+        class=".model.livefs.LiveFSSet"
+        provides=".interfaces.livefs.ILiveFSSet">
+        <allow interface=".interfaces.livefs.ILiveFSSet"/>
+    </securedutility>
+
+    <!-- LiveFSBuild -->
+    <class class=".model.livefsbuild.LiveFSBuild">
+        <require
+            permission="launchpad.View"
+            interface=".interfaces.livefsbuild.ILiveFSBuildView"/>
+        <require
+            permission="launchpad.Edit"
+            interface=".interfaces.livefsbuild.ILiveFSBuildEdit"/>
+        <require
+            permission="launchpad.Admin"
+            interface=".interfaces.livefsbuild.ILiveFSBuildAdmin"/>
+    </class>
+
+    <!-- LiveFSBuildSet -->
+    <securedutility
+        class=".model.livefsbuild.LiveFSBuildSet"
+        provides=".interfaces.livefsbuild.ILiveFSBuildSet">
+        <allow interface=".interfaces.livefsbuild.ILiveFSBuildSet"/>
+    </securedutility>
+    <securedutility
+        class=".model.livefsbuild.LiveFSBuildSet"
+        provides="lp.buildmaster.interfaces.buildfarmjob.ISpecificBuildFarmJobSource"
+        name="LIVEFSBUILD">
+        <allow interface="lp.buildmaster.interfaces.buildfarmjob.ISpecificBuildFarmJobSource"/>
+    </securedutility>
+
+    <!-- LiveFSBuildBehaviour -->
+    <adapter
+        for=".interfaces.livefsbuild.ILiveFSBuild"
+        provides="lp.buildmaster.interfaces.buildfarmjobbehaviour.IBuildFarmJobBehaviour"
+        factory=".model.livefsbuildbehaviour.LiveFSBuildBehaviour"
+        permission="zope.Public"/>
+
+    <!-- LiveFSFile -->
+    <class class=".model.livefsbuild.LiveFSFile">
+        <allow
+            interface=".interfaces.livefsbuild.ILiveFSFile"/>
+    </class>
+
     <webservice:register module="lp.soyuz.interfaces.webservice" />
 
 </configure>
