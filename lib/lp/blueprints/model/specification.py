@@ -1121,6 +1121,13 @@ class SpecificationSet(HasSpecificationsMixin):
                             assignee=None, drafter=None, whiteboard=None,
                             information_type=None):
         """See `ISpecificationSet`."""
+        # Calculates a the default information_type for specs in product
+        # or productseries contexts.
+        if information_type is None and (
+                IProduct.providedBy(target) or
+                IProductSeries.providedBy(target)):
+            information_type = (
+                target.getDefaultSpecificationInformationType())
         spec = self.new(
             name=name, title=title, specurl=specurl, summary=summary,
             definition_status=definition_status, owner=owner,

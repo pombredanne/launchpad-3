@@ -12,6 +12,7 @@ from zope.security.proxy import removeSecurityProxy
 from lp.blueprints.enums import SpecificationDefinitionStatus
 from lp.services.webapp.interaction import ANONYMOUS
 from lp.services.webapp.interfaces import OAuthPermission
+from lp.registry.enums import SpecificationSharingPolicy
 from lp.testing import (
     api_url,
     launchpadlib_for,
@@ -81,6 +82,31 @@ class SpecificationWebserviceTests(SpecificationWebserviceTestCase):
             target=product_url,
             api_version='devel')
         self.assertEqual(201, response.status)
+
+    def test_creation_honor_product_sharing_policy(self):
+        # `ISpecificationSet.createSpecification` respect product
+        # specification_sharing_policy.
+        user = self.factory.makePerson()
+        product = self.factory.makeProduct(
+            owner=user,
+            specification_sharing_policy=(
+                SpecificationSharingPolicy.PROPRIETARY))
+        product_url = api_url(product)
+        webservice = webservice_for_person(
+            user, permission=OAuthPermission.WRITE_PRIVATE)
+        spec_name = 'test-prop'
+        response = webservice.named_post(
+            '/specs', 'createSpecification',
+            name=spec_name, title='Proprietary', specurl='http://test.com',
+            definition_status='Approved', summary='A summary',
+            target=product_url,
+            api_version='devel')
+        self.assertEqual(201, response.status)
+        # The new specification was created as PROPROETARY.
+        response = webservice.get('%s/+spec/%s' % (product_url, spec_name))
+        self.assertEqual(200, response.status)
+        self.assertEqual(
+            'Proprietary', response.jsonBody()['information_type'])
 
     def test_creation_for_distribution(self):
         # `ISpecificationSet.createSpecification` also allows
