@@ -13,6 +13,7 @@ from testtools.deferredruntest import (
     AsynchronousDeferredRunTest,
     )
 from testtools.matchers import Equals
+from testtools.testcase import ExpectedException
 import transaction
 from twisted.internet import (
     defer,
@@ -25,6 +26,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.buildmaster.enums import (
+    BuilderCleanStatus,
     BuildQueueStatus,
     BuildStatus,
     )
@@ -33,7 +35,10 @@ from lp.buildmaster.interactor import (
     BuilderSlave,
     extract_vitals_from_db,
     )
-from lp.buildmaster.interfaces.builder import IBuilderSet
+from lp.buildmaster.interfaces.builder import (
+    BuildDaemonError,
+    IBuilderSet,
+    )
 from lp.buildmaster.interfaces.buildfarmjobbehaviour import (
     IBuildFarmJobBehaviour,
     )
@@ -113,6 +118,7 @@ class TestSlaveScannerScan(TestCaseWithFactory):
         job = builder.currentjob
         if job is not None:
             job.reset()
+        builder.setCleanStatus(BuilderCleanStatus.CLEAN)
 
         transaction.commit()
 
@@ -155,6 +161,7 @@ class TestSlaveScannerScan(TestCaseWithFactory):
         # Set this to 1 here so that _checkDispatch can make sure it's
         # reset to 0 after a successful dispatch.
         builder.failure_count = 1
+        builder.setCleanStatus(BuilderCleanStatus.CLEAN)
 
         # Run 'scan' and check its result.
         switch_dbuser(config.builddmaster.dbuser)
@@ -258,6 +265,7 @@ class TestSlaveScannerScan(TestCaseWithFactory):
     def test_scan_with_nothing_to_dispatch(self):
         factory = LaunchpadObjectFactory()
         builder = factory.makeBuilder()
+        builder.setCleanStatus(BuilderCleanStatus.CLEAN)
         self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(OkSlave()))
         transaction.commit()
         scanner = self._getScanner(builder_name=builder.name)
@@ -422,9 +430,9 @@ class TestSlaveScannerScan(TestCaseWithFactory):
         self.assertFalse(builder.builderok)
 
     @defer.inlineCallbacks
-    def test_fail_to_resume_slave_resets_job(self):
-        # If an attempt to resume and dispatch a slave fails, it should
-        # reset the job via job.reset()
+    def test_fail_to_resume_leaves_it_dirty(self):
+        # If an attempt to resume a slave fails, its failure count is
+        # incremented and it is left DIRTY.
 
         # Make a slave with a failing resume() method.
         slave = OkSlave()
@@ -435,26 +443,21 @@ class TestSlaveScannerScan(TestCaseWithFactory):
         builder = removeSecurityProxy(
             getUtility(IBuilderSet)[BOB_THE_BUILDER_NAME])
         self._resetBuilder(builder)
+        builder.setCleanStatus(BuilderCleanStatus.DIRTY)
+        builder.virtualized = True
         self.assertEqual(0, builder.failure_count)
         self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(slave))
         builder.vm_host = "fake_vm_host"
-
-        scanner = self._getScanner()
-
-        # Get the next job that will be dispatched.
-        job = removeSecurityProxy(builder._findBuildCandidate())
-        job.virtualized = True
-        builder.virtualized = True
         transaction.commit()
-        yield scanner.singleCycle()
 
-        # The failure_count will have been incremented on the builder, we
-        # can check that to see that a dispatch attempt did indeed occur.
+        # A spin of the scanner will see the DIRTY builder and reset it.
+        # Our patched reset will fail.
+        yield self._getScanner().singleCycle()
+
+        # The failure_count will have been incremented on the builder,
+        # and it will be left DIRTY.
         self.assertEqual(1, builder.failure_count)
-        # There should also be no builder set on the job.
-        self.assertIsNone(job.builder)
-        build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(job)
-        self.assertEqual(build.status, BuildStatus.NEEDSBUILD)
+        self.assertEqual(BuilderCleanStatus.DIRTY, builder.clean_status)
 
     @defer.inlineCallbacks
     def test_update_slave_version(self):
@@ -569,15 +572,25 @@ class TestSlaveScannerScan(TestCaseWithFactory):
             builder.name, BuilderFactory(), BufferLogger(),
             slave_factory=get_slave, clock=clock)
 
-        # The slave is idle and there's a build candidate, so the first
-        # scan will reset the builder and dispatch the build.
+        # The slave is idle and dirty, so the first scan will clean it
+        # with a reset.
+        self.assertEqual(BuilderCleanStatus.DIRTY, builder.clean_status)
+        yield scanner.scan()
+        self.assertEqual(['resume', 'echo'], get_slave.result.method_log)
+        self.assertEqual(BuilderCleanStatus.CLEAN, builder.clean_status)
+        self.assertIs(None, builder.currentjob)
+
+        # The slave is idle and clean, and there's a build candidate, so
+        # the next scan will dispatch the build.
+        get_slave.result = OkSlave()
         yield scanner.scan()
         self.assertEqual(
-            ['status', 'resume', 'echo', 'ensurepresent', 'build'],
+            ['status', 'ensurepresent', 'build'],
             get_slave.result.method_log)
         self.assertEqual(bq, builder.currentjob)
         self.assertEqual(BuildQueueStatus.RUNNING, bq.status)
         self.assertEqual(BuildStatus.BUILDING, build.status)
+        self.assertEqual(BuilderCleanStatus.DIRTY, builder.clean_status)
 
         # build() has been called, so switch in a BUILDING slave.
         # Scans will now just do a status() each, as the logtail is
@@ -596,7 +609,8 @@ class TestSlaveScannerScan(TestCaseWithFactory):
         # When the build finishes, the scanner will notice, call
         # handleStatus(), and then clean the builder.  Our fake
         # _handleStatus_OK doesn't do anything special, but there'd
-        # usually be file retrievals in the middle.
+        # usually be file retrievals in the middle. The builder remains
+        # dirty afterward.
         get_slave.result = WaitingSlave(
             build_id=IBuildFarmJobBehaviour(build).getBuildCookie())
         yield scanner.scan()
@@ -604,13 +618,15 @@ class TestSlaveScannerScan(TestCaseWithFactory):
         self.assertIs(None, builder.currentjob)
         self.assertEqual(BuildStatus.UPLOADING, build.status)
         self.assertEqual(builder, build.builder)
+        self.assertEqual(BuilderCleanStatus.DIRTY, builder.clean_status)
 
-        # We're clean, so let's flip back to an idle slave and
-        # confirm that a scan does nothing special.
+        # We're idle and dirty, so let's flip back to an idle slave and
+        # confirm that the slave gets cleaned.
         get_slave.result = OkSlave()
         yield scanner.scan()
-        self.assertEqual(['status'], get_slave.result.method_log)
+        self.assertEqual(['resume', 'echo'], get_slave.result.method_log)
         self.assertIs(None, builder.currentjob)
+        self.assertEqual(BuilderCleanStatus.CLEAN, builder.clean_status)
 
 
 class TestPrefetchedBuilderFactory(TestCaseWithFactory):
@@ -740,74 +756,104 @@ class TestSlaveScannerWithoutDB(TestCase):
 
     run_tests_with = AsynchronousDeferredRunTest
 
+    def getScanner(self, builder_factory=None, interactor=None, slave=None,
+                   behaviour=None):
+        if builder_factory is None:
+            builder_factory = MockBuilderFactory(
+                MockBuilder(virtualized=False), None)
+        if interactor is None:
+            interactor = BuilderInteractor()
+            interactor.updateBuild = FakeMethod()
+        if slave is None:
+            slave = OkSlave()
+        if behaviour is None:
+            behaviour = TrivialBehaviour()
+        return SlaveScanner(
+            'mock', builder_factory, BufferLogger(),
+            interactor_factory=FakeMethod(interactor),
+            slave_factory=FakeMethod(slave),
+            behaviour_factory=FakeMethod(behaviour))
+
     @defer.inlineCallbacks
     def test_scan_with_job(self):
         # SlaveScanner.scan calls updateBuild() when a job is building.
         slave = BuildingSlave('trivial')
         bq = FakeBuildQueue()
-
-        # Instrument updateBuild.
-        interactor = BuilderInteractor()
-        interactor.updateBuild = FakeMethod()
-
-        scanner = SlaveScanner(
-            'mock', MockBuilderFactory(MockBuilder(), bq), BufferLogger(),
-            interactor_factory=FakeMethod(interactor),
-            slave_factory=FakeMethod(slave),
-            behaviour_factory=FakeMethod(TrivialBehaviour()))
+        scanner = self.getScanner(
+            builder_factory=MockBuilderFactory(MockBuilder(), bq),
+            slave=slave)
 
         yield scanner.scan()
         self.assertEqual(['status'], slave.call_log)
-        self.assertEqual(1, interactor.updateBuild.call_count)
+        self.assertEqual(
+            1, scanner.interactor_factory.result.updateBuild.call_count)
         self.assertEqual(0, bq.reset.call_count)
 
     @defer.inlineCallbacks
-    def test_scan_aborts_lost_slave_with_job(self):
-        # SlaveScanner.scan uses BuilderInteractor.rescueIfLost to abort
-        # slaves that don't have the expected job.
+    def test_scan_recovers_lost_slave_with_job(self):
+        # SlaveScanner.scan identifies slaves that aren't building what
+        # they should be, resets the jobs, and then aborts the slaves.
         slave = BuildingSlave('nontrivial')
         bq = FakeBuildQueue()
-
-        # Instrument updateBuild.
-        interactor = BuilderInteractor()
-        interactor.updateBuild = FakeMethod()
-
-        scanner = SlaveScanner(
-            'mock', MockBuilderFactory(MockBuilder(), bq), BufferLogger(),
-            interactor_factory=FakeMethod(interactor),
-            slave_factory=FakeMethod(slave),
-            behaviour_factory=FakeMethod(TrivialBehaviour()))
+        builder = MockBuilder(virtualized=False)
+        scanner = self.getScanner(
+            builder_factory=MockBuilderFactory(builder, bq),
+            slave=slave)
 
         # A single scan will call status(), notice that the slave is lost,
-        # abort() the slave, then reset() the job without calling
-        # updateBuild().
+        # and reset() the job without calling updateBuild().
         yield scanner.scan()
-        self.assertEqual(['status', 'abort'], slave.call_log)
-        self.assertEqual(0, interactor.updateBuild.call_count)
+        self.assertEqual(['status'], slave.call_log)
+        self.assertEqual(
+            0, scanner.interactor_factory.result.updateBuild.call_count)
         self.assertEqual(1, bq.reset.call_count)
+        # The reset would normally have unset build_queue.
+        scanner.builder_factory.updateTestData(builder, None)
+
+        # The next scan will see a dirty idle builder with a BUILDING
+        # slave, and abort() it.
+        yield scanner.scan()
+        self.assertEqual(['status', 'status', 'abort'], slave.call_log)
 
     @defer.inlineCallbacks
-    def test_scan_aborts_lost_slave_when_idle(self):
-        # SlaveScanner.scan uses BuilderInteractor.rescueIfLost to abort
-        # slaves that aren't meant to have a job.
+    def test_scan_recovers_lost_slave_when_idle(self):
+        # SlaveScanner.scan identifies slaves that are building when
+        # they shouldn't be and aborts them.
         slave = BuildingSlave()
-
-        # Instrument updateBuild.
-        interactor = BuilderInteractor()
-        interactor.updateBuild = FakeMethod()
-
-        scanner = SlaveScanner(
-            'mock', MockBuilderFactory(MockBuilder(), None), BufferLogger(),
-            interactor_factory=FakeMethod(interactor),
-            slave_factory=FakeMethod(slave),
-            behaviour_factory=FakeMethod(None))
-
-        # A single scan will call status(), notice that the slave is lost,
-        # abort() the slave, then reset() the job without calling
-        # updateBuild().
+        scanner = self.getScanner(slave=slave)
         yield scanner.scan()
         self.assertEqual(['status', 'abort'], slave.call_log)
-        self.assertEqual(0, interactor.updateBuild.call_count)
+
+    @defer.inlineCallbacks
+    def test_scan_building_but_not_dirty_builder_explodes(self):
+        # Builders with a build assigned must be dirty for safety
+        # reasons. If we run into one that's clean, we blow up.
+        slave = BuildingSlave()
+        builder = MockBuilder(clean_status=BuilderCleanStatus.CLEAN)
+        bq = FakeBuildQueue()
+        scanner = self.getScanner(
+            slave=slave, builder_factory=MockBuilderFactory(builder, bq))
+
+        with ExpectedException(
+                BuildDaemonError, "Non-dirty builder allegedly building."):
+            yield scanner.scan()
+        self.assertEqual([], slave.call_log)
+
+    @defer.inlineCallbacks
+    def test_scan_clean_but_not_idle_slave_explodes(self):
+        # Clean builders by definition have slaves that are idle. If
+        # an ostensibly clean slave isn't idle, blow up.
+        slave = BuildingSlave()
+        builder = MockBuilder(clean_status=BuilderCleanStatus.CLEAN)
+        scanner = self.getScanner(
+            slave=slave, builder_factory=MockBuilderFactory(builder, None))
+
+        with ExpectedException(
+                BuildDaemonError,
+                "Allegedly clean slave not idle "
+                "\('BuilderStatus.BUILDING' instead\)"):
+            yield scanner.scan()
+        self.assertEqual(['status'], slave.call_log)
 
     def test_getExpectedCookie_caches(self):
         bf = MockBuilderFactory(MockBuilder(), FakeBuildQueue())
