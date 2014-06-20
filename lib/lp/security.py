@@ -2894,14 +2894,22 @@ class EditLiveFS(AuthorizationBase):
             user.in_commercial_admin or user.in_admin)
 
 
-class AdminLiveFS(AdminByCommercialTeamOrAdmins):
+class AdminLiveFS(AuthorizationBase):
     """Restrict changing build settings on live filesystems.
 
     The security of the non-virtualised build farm depends on these
-    settings, so they can only be changed by commercial admins.
+    settings, so they can only be changed by commercial admins, or by "PPA"
+    self admins on live filesystems that they can already edit.
     """
     permission = 'launchpad.Admin'
     usedfor = ILiveFS
+
+    def checkAuthenticated(self, user):
+        if user.in_commercial_admin or user.in_admin:
+            return True
+        return (
+            user.in_ppa_self_admins
+            and EditLiveFS(self.obj).checkAuthenticated(user))
 
 
 class ViewLiveFSBuild(DelegatedAuthorization):
