@@ -14,7 +14,10 @@ __all__ = [
     ]
 
 from lazr.enum import DBEnumeratedType
-from lazr.restful.declarations import exported
+from lazr.restful.declarations import (
+    export_as_webservice_entry,
+    exported,
+    )
 from lazr.restful.fields import Reference
 from zope.interface import (
     Attribute,
@@ -61,6 +64,8 @@ class IBuildFarmJobDB(Interface):
 
 class IBuildFarmJob(Interface):
     """Operations that jobs for the build farm must implement."""
+
+    export_as_webservice_entry(as_of='beta')
 
     id = Attribute('The build farm job ID.')
 
