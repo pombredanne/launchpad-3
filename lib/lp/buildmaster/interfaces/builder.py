@@ -179,6 +179,12 @@ class IBuilder(IHasBuildRecords, IHasOwner):
 
     currentjob = Attribute("BuildQueue instance for job being processed.")
 
+    current_build = exported(Reference(
+        title=_("Current build"), required=False, readonly=True,
+        schema=Interface,  # Really IBuildFarmJob.
+        description=_("The job current running on this builder.")),
+        as_of="devel")
+
     failure_count = exported(Int(
         title=_('Failure Count'), required=False, default=0,
        description=_("Number of consecutive failures for this builder.")))

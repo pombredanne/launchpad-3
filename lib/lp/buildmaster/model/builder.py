@@ -188,6 +188,12 @@ class Builder(SQLBase):
         """See IBuilder"""
         return getUtility(IBuildQueueSet).getByBuilder(self)
 
+    @property
+    def current_build(self):
+        if self.currentjob is None:
+            return None
+        return self.currentjob.specific_build
+
     def setCleanStatus(self, status):
         """See `IBuilder`."""
         if status != self.clean_status:

@@ -888,6 +888,7 @@ patch_entry_explicit_version(IBugWatch, 'beta')
 
 # IBuilder
 patch_entry_explicit_version(IBuilder, 'beta')
+IBuilder['current_build'].schema = IBuildFarmJob
 
 # IBuilderSet
 patch_operations_explicit_version(IBuilderSet, 'beta', "getByName")
