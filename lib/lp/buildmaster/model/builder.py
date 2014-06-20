@@ -378,7 +378,12 @@ class BuilderSet(object):
         rs = IStore(Builder).find(
             Builder, Builder.active == True).order_by(
                 Builder.virtualized, Builder.name)
-        return DecoratedResultSet(rs, pre_iter_hook=self._preloadProcessors)
+
+        def preload(rows):
+            self._preloadProcessors(rows)
+            bqs = getUtility(IBuildQueueSet).preloadForBuilders(rows)
+            BuildQueue.preloadSpecificBuild(bqs)
+        return DecoratedResultSet(rs, pre_iter_hook=preload)
 
     def getBuildQueueSizes(self):
         """See `IBuilderSet`."""
