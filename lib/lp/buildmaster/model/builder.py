@@ -48,7 +48,10 @@ from lp.buildmaster.model.buildqueue import (
     specific_build_farm_job_sources,
     )
 from lp.registry.interfaces.person import validate_public_person
-from lp.services.database.bulk import load
+from lp.services.database.bulk import (
+    load,
+    load_related,
+    )
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.decoratedresultset import DecoratedResultSet
@@ -375,12 +378,14 @@ class BuilderSet(object):
 
     def getBuilders(self):
         """See IBuilderSet."""
+        from lp.registry.model.person import Person
         rs = IStore(Builder).find(
             Builder, Builder.active == True).order_by(
                 Builder.virtualized, Builder.name)
 
         def preload(rows):
             self._preloadProcessors(rows)
+            load_related(Person, rows, ['ownerID'])
             bqs = getUtility(IBuildQueueSet).preloadForBuilders(rows)
             BuildQueue.preloadSpecificBuild(bqs)
         return DecoratedResultSet(rs, pre_iter_hook=preload)
