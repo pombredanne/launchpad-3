@@ -374,7 +374,7 @@ class TestSlaveScannerScan(TestCaseWithFactory):
         builder = getUtility(IBuilderSet)[scanner.builder_name]
 
         builder.failure_count = builder_count
-        naked_build = removeSecurityProxy(builder.currentjob.specific_build)
+        naked_build = removeSecurityProxy(builder.current_build)
         naked_build.failure_count = job_count
         # The _scanFailed() calls abort, so make sure our existing
         # failure counts are persisted.
@@ -390,7 +390,7 @@ class TestSlaveScannerScan(TestCaseWithFactory):
         self.assertEqual(expected_builder_count, builder.failure_count)
         self.assertEqual(
             expected_job_count,
-            builder.currentjob.specific_build.failure_count)
+            builder.current_build.failure_count)
         self.assertEqual(1, manager_module.assessFailureCounts.call_count)
 
     def test_scan_first_fail(self):

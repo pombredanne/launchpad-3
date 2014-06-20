@@ -136,5 +136,8 @@ class IBuildQueueSet(Interface):
         builder. If not found, return None.
         """
 
+    def preloadForBuilders(builders):
+        """Preload currentjob for the given IBuilders."""
+
     def preloadForBuildFarmJobs(builds):
         """Preload buildqueue_record for the given IBuildFarmJobs."""
