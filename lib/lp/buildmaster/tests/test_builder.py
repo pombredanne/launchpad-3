@@ -28,6 +28,7 @@ from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.testing import (
     admin_logged_in,
+    celebrity_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.layers import (
@@ -44,7 +45,8 @@ class TestBuilder(TestCaseWithFactory):
     def test_providesInterface(self):
         # Builder provides IBuilder
         builder = self.factory.makeBuilder()
-        self.assertProvides(builder, IBuilder)
+        with celebrity_logged_in('buildd_admin'):
+            self.assertProvides(builder, IBuilder)
 
     def test_default_values(self):
         builder = self.factory.makeBuilder()
@@ -71,7 +73,8 @@ class TestBuilder(TestCaseWithFactory):
     def test_setCleanStatus(self):
         builder = self.factory.makeBuilder()
         self.assertEqual(BuilderCleanStatus.DIRTY, builder.clean_status)
-        builder.setCleanStatus(BuilderCleanStatus.CLEAN)
+        with celebrity_logged_in('buildd_admin'):
+            builder.setCleanStatus(BuilderCleanStatus.CLEAN)
         self.assertEqual(BuilderCleanStatus.CLEAN, builder.clean_status)
 
     def test_handleFailure_increments_failure_count(self):
