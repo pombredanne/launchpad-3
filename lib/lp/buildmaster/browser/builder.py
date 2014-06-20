@@ -37,16 +37,13 @@ from lp.buildmaster.interfaces.builder import (
     IBuilder,
     IBuilderSet,
     )
+from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildSource,
     )
-from lp.services.database.interfaces import IStore
 from lp.services.helpers import english_list
-from lp.services.propertycache import (
-    cachedproperty,
-    get_property_cache,
-    )
+from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (
     ApplicationMenu,
     canonical_url,
@@ -151,19 +148,6 @@ class BuilderSetView(LaunchpadView):
     def builders(self):
         """All active builders"""
         builders = list(self.context.getBuilders())
-
-        # Populate builders' currentjob cachedproperty.
-        queues = IStore(BuildQueue).find(
-            BuildQueue,
-            BuildQueue.builderID.is_in(
-                builder.id for builder in builders))
-        queue_builders = dict(
-            (queue.builderID, queue) for queue in queues)
-        for builder in builders:
-            cache = get_property_cache(builder)
-            cache.currentjob = queue_builders.get(builder.id, None)
-        # Prefetch the jobs' data.
-        BuildQueue.preloadSpecificBuild(queues)
         return list(sorted(
             builders, key=lambda b: (
                 b.virtualized, tuple(p.id for p in b.processors), b.name)))

@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Builder interfaces."""
@@ -174,6 +174,12 @@ class IBuilderView(IHasBuildRecords, IHasOwner):
         description=_('Whether or not to present the builder publicly.')))
 
     currentjob = Attribute("BuildQueue instance for job being processed.")
+
+    current_build = exported(Reference(
+        title=_("Current build"), required=False, readonly=True,
+        schema=Interface,  # Really IBuildFarmJob.
+        description=_("The job currently running on this builder.")),
+        as_of="devel")
 
     failure_count = exported(Int(
         title=_('Failure Count'), required=False, default=0,

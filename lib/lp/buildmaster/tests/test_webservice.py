@@ -1,4 +1,4 @@
-# Copyright 2011-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the builders webservice ."""
@@ -7,9 +7,11 @@ __metaclass__ = type
 
 from json import dumps
 
+from testtools.matchers import Equals
 from zope.component import getUtility
 
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.webapp import canonical_url
 from lp.services.webapp.interfaces import OAuthPermission
 from lp.testing import (
     admin_logged_in,
@@ -17,7 +19,9 @@ from lp.testing import (
     logout,
     TestCaseWithFactory,
     )
+from lp.testing._webservice import QueryCollector
 from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.matchers import HasQueryCount
 from lp.testing.pages import (
     LaunchpadWebServiceCaller,
     webservice_for_person,
@@ -30,6 +34,46 @@ class TestBuildersCollection(TestCaseWithFactory):
     def setUp(self):
         super(TestBuildersCollection, self).setUp()
         self.webservice = LaunchpadWebServiceCaller()
+
+    def test_list(self):
+        names = ['bob', 'frog']
+        for i in range(3):
+            builder = self.factory.makeBuilder()
+            self.factory.makeBinaryPackageBuild().queueBuild().markAsBuilding(
+                builder)
+            names.append(builder.name)
+        logout()
+        with QueryCollector() as recorder:
+            builders = self.webservice.get(
+                '/builders', api_version='devel').jsonBody()
+        self.assertContentEqual(
+            names, [b['name'] for b in builders['entries']])
+        self.assertThat(recorder, HasQueryCount(Equals(21)))
+
+    def test_list_with_private_builds(self):
+        # Inaccessible private builds aren't linked in builders'
+        # current_build fields.
+        with admin_logged_in():
+            rbpb = self.factory.makeBinaryPackageBuild(
+                archive=self.factory.makeArchive(private=True))
+            rbpb.queueBuild().markAsBuilding(
+                self.factory.makeBuilder(name='restricted'))
+            bpb = self.factory.makeBinaryPackageBuild(
+                archive=self.factory.makeArchive(private=False))
+            bpb.queueBuild().markAsBuilding(
+                self.factory.makeBuilder(name='public'))
+            bpb_url = canonical_url(bpb, path_only_if_possible=True)
+        logout()
+
+        builders = self.webservice.get(
+            '/builders', api_version='devel').jsonBody()
+        current_builds = dict(
+            (b['name'], b['current_build_link']) for b in builders['entries'])
+        self.assertEqual(
+            'tag:launchpad.net:2008:redacted', current_builds['restricted'])
+        self.assertEqual(
+            'http://api.launchpad.dev/devel' + bpb_url,
+            current_builds['public'])
 
     def test_getBuildQueueSizes(self):
         logout()

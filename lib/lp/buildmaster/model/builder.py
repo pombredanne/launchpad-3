@@ -48,7 +48,10 @@ from lp.buildmaster.model.buildqueue import (
     specific_build_farm_job_sources,
     )
 from lp.registry.interfaces.person import validate_public_person
-from lp.services.database.bulk import load
+from lp.services.database.bulk import (
+    load,
+    load_related,
+    )
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.decoratedresultset import DecoratedResultSet
@@ -185,6 +188,12 @@ class Builder(SQLBase):
         """See IBuilder"""
         return getUtility(IBuildQueueSet).getByBuilder(self)
 
+    @property
+    def current_build(self):
+        if self.currentjob is None:
+            return None
+        return self.currentjob.specific_build
+
     def setCleanStatus(self, status):
         """See `IBuilder`."""
         if status != self.clean_status:
@@ -301,7 +310,7 @@ class Builder(SQLBase):
         """See IBuilder."""
         self.gotFailure()
         if self.currentjob is not None:
-            build_farm_job = self.currentjob.specific_build
+            build_farm_job = self.current_build
             build_farm_job.gotFailure()
             logger.info(
                 "Builder %s failure count: %s, job '%s' failure count: %s" % (
@@ -364,10 +373,10 @@ class BuilderSet(object):
         # Grab (Builder.id, Processor.id) pairs and stuff them into the
         # Builders' processor caches.
         store = IStore(Builder)
-        pairs = store.find(
+        pairs = list(store.find(
             (BuilderProcessor.builder_id, BuilderProcessor.processor_id),
             BuilderProcessor.builder_id.is_in([b.id for b in rows])).order_by(
-                BuilderProcessor.builder_id, BuilderProcessor.processor_id)
+                BuilderProcessor.builder_id, BuilderProcessor.processor_id))
         load(Processor, [pid for bid, pid in pairs])
         for row in rows:
             get_property_cache(row)._processors_cache = []
@@ -377,10 +386,17 @@ class BuilderSet(object):
 
     def getBuilders(self):
         """See IBuilderSet."""
+        from lp.registry.model.person import Person
         rs = IStore(Builder).find(
             Builder, Builder.active == True).order_by(
                 Builder.virtualized, Builder.name)
-        return DecoratedResultSet(rs, pre_iter_hook=self._preloadProcessors)
+
+        def preload(rows):
+            self._preloadProcessors(rows)
+            load_related(Person, rows, ['ownerID'])
+            bqs = getUtility(IBuildQueueSet).preloadForBuilders(rows)
+            BuildQueue.preloadSpecificBuild(bqs)
+        return DecoratedResultSet(rs, pre_iter_hook=preload)
 
     def getBuildQueueSizes(self):
         """See `IBuilderSet`."""
