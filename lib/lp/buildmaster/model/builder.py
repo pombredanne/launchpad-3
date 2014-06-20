@@ -362,10 +362,10 @@ class BuilderSet(object):
         # Grab (Builder.id, Processor.id) pairs and stuff them into the
         # Builders' processor caches.
         store = IStore(Builder)
-        pairs = store.find(
+        pairs = list(store.find(
             (BuilderProcessor.builder_id, BuilderProcessor.processor_id),
             BuilderProcessor.builder_id.is_in([b.id for b in rows])).order_by(
-                BuilderProcessor.builder_id, BuilderProcessor.processor_id)
+                BuilderProcessor.builder_id, BuilderProcessor.processor_id))
         load(Processor, [pid for bid, pid in pairs])
         for row in rows:
             get_property_cache(row)._processors_cache = []
