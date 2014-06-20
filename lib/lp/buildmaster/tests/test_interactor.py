@@ -161,19 +161,6 @@ class TestBuilderInteractor(TestCase):
         d = self.resumeSlaveHost(MockBuilder(virtualized=True, vm_host="pop"))
         return assert_fails_with(d, CannotResumeHost)
 
-    def test_resetOrFail_resume_failure(self):
-        reset_fail_config = """
-            [builddmaster]
-            vm_resume_command: /bin/false"""
-        config.push('reset fail', reset_fail_config)
-        self.addCleanup(config.pop, 'reset fail')
-        builder = MockBuilder(virtualized=True, vm_host="pop", builderok=True)
-        vitals = extract_vitals_from_db(builder)
-        d = BuilderInteractor.resetOrFail(
-            vitals, BuilderInteractor.makeSlaveFromVitals(vitals), builder,
-            DevNullLogger(), Exception())
-        return assert_fails_with(d, CannotResumeHost)
-
     @defer.inlineCallbacks
     def test_resetOrFail_nonvirtual(self):
         builder = MockBuilder(virtualized=False, builderok=True)

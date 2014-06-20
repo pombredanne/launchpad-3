@@ -386,11 +386,11 @@ class BuilderInteractor(object):
         the fault of failing jobs, or when the builder has entered an
         ABORTED state without having been asked to do so.
 
-        In case of a virtualized/PPA buildd slave an attempt will be made
-        to reset it (using `resumeSlaveHost`).
+        In case of a virtualized builder we ensure it's dirty so the
+        next scan will reset it.
 
-        Conversely, a non-virtualized buildd slave will be (marked as)
-        failed straightaway (using `failBuilder`).
+        A non-virtualized builder will be failed straightaway (using
+        `failBuilder`).
 
         :param logger: The logger object to be used for logging.
         :param exception: An exception to be used for logging.
@@ -399,15 +399,15 @@ class BuilderInteractor(object):
         """
         error_message = str(exception)
         if vitals.virtualized:
-            # Virtualized/PPA builder: attempt a reset, unless the failure
-            # was itself a failure to reset.  (In that case, the slave
-            # scanner will try again until we reach the failure threshold.)
-            if not isinstance(exception, CannotResumeHost):
-                logger.warn(
-                    "Resetting builder: %s -- %s" % (
-                        vitals.url, error_message),
-                    exc_info=True)
-                return cls.resumeSlaveHost(vitals, slave)
+            # Virtualized/PPA builder: mark it dirty so the next
+            # scan will attempt a reset.
+            logger.warn(
+                "Dirtying builder: %s -- %s" % (vitals.url, error_message),
+                exc_info=True)
+            if builder.clean_status != BuilderCleanStatus.DIRTY:
+                builder.setCleanStatus(BuilderCleanStatus.DIRTY)
+                transaction.commit()
+            return defer.succeed(True)
         else:
             # XXX: This should really let the failure bubble up to the
             # scan() method that does the failure counting.
