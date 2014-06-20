@@ -2884,8 +2884,14 @@ class ViewLiveFS(DelegatedAuthorization):
         super(ViewLiveFS, self).__init__(obj, obj.owner, 'launchpad.View')
 
 
-class EditLiveFS(EditByOwnersOrAdmins):
+class EditLiveFS(AuthorizationBase):
+    permission = 'launchpad.Edit'
     usedfor = ILiveFS
+
+    def checkAuthenticated(self, user):
+        return (
+            user.isOwner(self.obj) or
+            user.in_commercial_admin or user.in_admin)
 
 
 class AdminLiveFS(AdminByCommercialTeamOrAdmins):
