@@ -46,7 +46,10 @@ from lp.buildmaster.interfaces.buildqueue import (
     IBuildQueue,
     IBuildQueueSet,
     )
-from lp.services.database.bulk import load_related
+from lp.services.database.bulk import (
+    load_referencing,
+    load_related,
+    )
 from lp.services.database.constants import (
     DEFAULT,
     UTC_NOW,
@@ -240,6 +243,16 @@ class BuildQueueSet(object):
     def getByBuilder(self, builder):
         """See `IBuildQueueSet`."""
         return BuildQueue.selectOneBy(builder=builder)
+
+    def preloadForBuilders(self, builders):
+        # Populate builders' currentjob cachedproperty.
+        queues = load_referencing(BuildQueue, builders, ['builderID'])
+        queue_builders = dict(
+            (queue.builderID, queue) for queue in queues)
+        for builder in builders:
+            cache = get_property_cache(builder)
+            cache.currentjob = queue_builders.get(builder.id, None)
+        return queues
 
     def preloadForBuildFarmJobs(self, builds):
         """See `IBuildQueueSet`."""
