@@ -175,7 +175,5 @@ class TranslationTemplatesBuildBehaviour(BuildFarmJobBehaviourBase):
         transaction.commit()
 
         yield self.storeLogFromSlave(build_queue=queue_item)
-
-        yield self._slave.clean()
         queue_item.destroySelf()
         transaction.commit()

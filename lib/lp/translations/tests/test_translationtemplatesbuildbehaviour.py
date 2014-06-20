@@ -179,8 +179,6 @@ class TestTranslationTemplatesBuildBehaviour(
 
         def got_dispatch((status, info)):
             self.assertEqual(0, queue_item.destroySelf.call_count)
-            slave_call_log = slave.call_log
-            self.assertNotIn('clean', slave_call_log)
             self.assertEqual(0, behaviour._uploadTarball.call_count)
 
             return slave.status()
@@ -196,9 +194,7 @@ class TestTranslationTemplatesBuildBehaviour(
             self.assertEqual(BuildStatus.FULLYBUILT, behaviour.build.status)
             # Log file is stored.
             self.assertIsNotNone(behaviour.build.log)
-            slave_call_log = slave.call_log
             self.assertEqual(1, queue_item.destroySelf.call_count)
-            self.assertIn('clean', slave_call_log)
             self.assertEqual(1, behaviour._uploadTarball.call_count)
 
         d.addCallback(got_dispatch)
@@ -230,7 +226,6 @@ class TestTranslationTemplatesBuildBehaviour(
             # Log file is stored.
             self.assertIsNotNone(behaviour.build.log)
             self.assertEqual(1, queue_item.destroySelf.call_count)
-            self.assertIn('clean', slave.call_log)
             self.assertEqual(0, behaviour._uploadTarball.call_count)
 
         d.addCallback(got_dispatch)
@@ -260,7 +255,6 @@ class TestTranslationTemplatesBuildBehaviour(
         def build_updated(ignored):
             self.assertEqual(BuildStatus.FULLYBUILT, behaviour.build.status)
             self.assertEqual(1, queue_item.destroySelf.call_count)
-            self.assertIn('clean', slave.call_log)
             self.assertEqual(0, behaviour._uploadTarball.call_count)
 
         d.addCallback(got_dispatch)
