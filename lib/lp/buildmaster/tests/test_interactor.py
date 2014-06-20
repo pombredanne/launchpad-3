@@ -222,6 +222,28 @@ class TestBuilderInteractorCleanSlave(TestCase):
             builder, OkSlave(), ['resume', 'echo'], True)
 
     @defer.inlineCallbacks
+    def test_virtual_2_0_dirty(self):
+        # Virtual builders using protocol 2.0 get reset and set to
+        # CLEANING. It's then up to the non-Launchpad reset code to set
+        # the builder back to CLEAN using the webservice.
+        builder = MockBuilder(
+            virtualized=True, clean_status=BuilderCleanStatus.DIRTY,
+            vm_host='lol', vm_reset_protocol=BuilderResetProtocol.PROTO_2_0)
+        yield self.assertCleanCalls(builder, OkSlave(), ['resume'], False)
+        self.assertEqual(BuilderCleanStatus.CLEANING, builder.clean_status)
+
+    @defer.inlineCallbacks
+    def test_virtual_2_0_cleaning(self):
+        # Virtual builders using protocol 2.0 only get touched when
+        # they're DIRTY. Once they're cleaning, they're not our problem
+        # until they return to CLEAN, so we ignore them.
+        builder = MockBuilder(
+            virtualized=True, clean_status=BuilderCleanStatus.CLEANING,
+            vm_host='lol', vm_reset_protocol=BuilderResetProtocol.PROTO_2_0)
+        yield self.assertCleanCalls(builder, OkSlave(), [], False)
+        self.assertEqual(BuilderCleanStatus.CLEANING, builder.clean_status)
+
+    @defer.inlineCallbacks
     def test_virtual_no_protocol(self):
         # Virtual builders fail to clean unless vm_reset_protocol is
         # set.

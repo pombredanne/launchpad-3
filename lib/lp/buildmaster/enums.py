@@ -219,5 +219,16 @@ class BuilderResetProtocol(DBEnumeratedType):
     PROTO_1_1 = DBItem(11, """
         1.1
 
-        Original synchronous protocol with vm_host and buildd_name.
+        Original synchronous protocol with vm_host and buildd_name. The
+        reset trigger must exit cleanly once the slave is reset and
+        accepting requests.
+        """)
+
+    PROTO_2_0 = DBItem(20, """
+        2.0
+
+        Asynchronous protocol with vm_host and buildd_name. The reset
+        trigger must exit cleanly once the request is accepted, and use
+        the webservice to set Builder.clean_status back to 'Clean' when
+        the slave is reset and accepting requests.
         """)
