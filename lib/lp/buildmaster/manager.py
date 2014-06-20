@@ -493,7 +493,8 @@ class SlaveScanner:
                 # be immediately cleaned on return, in which case we go
                 # straight back to CLEAN, or we might have to spin
                 # through another few cycles.
-                done = yield interactor.cleanSlave(vitals, slave)
+                done = yield interactor.cleanSlave(
+                    vitals, slave, self.builder_factory)
                 if done:
                     builder = self.builder_factory[self.builder_name]
                     builder.setCleanStatus(BuilderCleanStatus.CLEAN)

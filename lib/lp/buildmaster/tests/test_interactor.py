@@ -3,6 +3,11 @@
 
 """Test BuilderInteractor features."""
 
+__all__ = [
+    'FakeBuildQueue',
+    'MockBuilderFactory',
+    ]
+
 import os
 import signal
 import tempfile
@@ -63,6 +68,43 @@ from lp.testing.layers import (
     LaunchpadZopelessLayer,
     ZopelessDatabaseLayer,
     )
+
+
+class FakeBuildQueue:
+
+    def __init__(self):
+        self.id = 1
+        self.reset = FakeMethod()
+        self.status = BuildQueueStatus.RUNNING
+
+
+class MockBuilderFactory:
+    """A mock builder factory which uses a preset Builder and BuildQueue."""
+
+    def __init__(self, builder, build_queue):
+        self.updateTestData(builder, build_queue)
+        self.get_call_count = 0
+        self.getVitals_call_count = 0
+
+    def update(self):
+        return
+
+    def prescanUpdate(self):
+        return
+
+    def updateTestData(self, builder, build_queue):
+        self._builder = builder
+        self._build_queue = build_queue
+
+    def __getitem__(self, name):
+        self.get_call_count += 1
+        return self._builder
+
+    def getVitals(self, name):
+        self.getVitals_call_count += 1
+        return extract_vitals_from_db(self._builder, self._build_queue)
+
+
 
 
 class TestBuilderInteractor(TestCase):
@@ -164,7 +206,8 @@ class TestBuilderInteractorCleanSlave(TestCase):
     @defer.inlineCallbacks
     def assertCleanCalls(self, builder, slave, calls, done):
         actually_done = yield BuilderInteractor.cleanSlave(
-            extract_vitals_from_db(builder), slave)
+            extract_vitals_from_db(builder), slave,
+            MockBuilderFactory(builder, None))
         self.assertEqual(done, actually_done)
         self.assertEqual(calls, slave.method_log)
 
@@ -189,7 +232,8 @@ class TestBuilderInteractorCleanSlave(TestCase):
         with ExpectedException(
                 CannotResumeHost, "Invalid vm_reset_protocol: None"):
             yield BuilderInteractor.cleanSlave(
-                extract_vitals_from_db(builder), OkSlave())
+                extract_vitals_from_db(builder), OkSlave(),
+                MockBuilderFactory(builder, None))
 
     @defer.inlineCallbacks
     def test_nonvirtual_idle(self):
@@ -229,11 +273,13 @@ class TestBuilderInteractorCleanSlave(TestCase):
     def test_nonvirtual_broken(self):
         # A broken non-virtual builder is probably unrecoverable, so the
         # method just crashes.
-        vitals = extract_vitals_from_db(MockBuilder(
-            virtualized=False, clean_status=BuilderCleanStatus.DIRTY))
+        builder = MockBuilder(
+            virtualized=False, clean_status=BuilderCleanStatus.DIRTY)
+        vitals = extract_vitals_from_db(builder)
         slave = LostBuildingBrokenSlave()
         try:
-            yield BuilderInteractor.cleanSlave(vitals, slave)
+            yield BuilderInteractor.cleanSlave(
+                vitals, slave, MockBuilderFactory(builder, None))
         except xmlrpclib.Fault:
             self.assertEqual(['status', 'abort'], slave.call_log)
         else:

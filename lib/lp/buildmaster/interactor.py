@@ -290,7 +290,7 @@ class BuilderInteractor(object):
 
     @classmethod
     @defer.inlineCallbacks
-    def cleanSlave(cls, vitals, slave):
+    def cleanSlave(cls, vitals, slave, builder_factory):
         """Prepare a slave for a new build.
 
         :return: A Deferred that fires when this stage of the resume
