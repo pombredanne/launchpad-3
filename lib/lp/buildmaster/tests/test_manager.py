@@ -538,7 +538,7 @@ class TestSlaveScannerScan(TestCaseWithFactory):
         clock.advance(SlaveScanner.CANCEL_TIMEOUT)
         yield scanner.scan()
         self.assertEqual(1, slave.call_log.count("abort"))
-        self.assertEqual(1, slave.call_log.count("resume"))
+        self.assertEqual(BuilderCleanStatus.DIRTY, builder.clean_status)
         self.assertEqual(BuildStatus.CANCELLED, build.status)
 
     @defer.inlineCallbacks
@@ -910,7 +910,7 @@ class TestCancellationChecking(TestCaseWithFactory):
     @defer.inlineCallbacks
     def test_cancelling_build_is_cancelled(self):
         # If a BuildQueue is CANCELLING and the cancel timeout expires,
-        # make sure True is returned and the slave was resumed.
+        # make sure True is returned and the slave is dirty.
         slave = OkSlave()
         self.builder.vm_host = "fake_vm_host"
         buildqueue = self.builder.currentjob
@@ -928,7 +928,7 @@ class TestCancellationChecking(TestCaseWithFactory):
         clock.advance(SlaveScanner.CANCEL_TIMEOUT)
         result = yield scanner.checkCancellation(
             self.vitals, slave, self.interactor)
-        self.assertEqual(1, slave.call_log.count("resume"))
+        self.assertEqual(BuilderCleanStatus.DIRTY, self.builder.clean_status)
         self.assertTrue(result)
         self.assertEqual(BuildStatus.CANCELLED, build.status)
 
@@ -943,7 +943,7 @@ class TestCancellationChecking(TestCaseWithFactory):
         build.cancel()
         result = yield self._getScanner().checkCancellation(
             self.vitals, slave, self.interactor)
-        self.assertEqual(1, slave.call_log.count("resume"))
+        self.assertEqual(BuilderCleanStatus.DIRTY, self.builder.clean_status)
         self.assertTrue(result)
         self.assertEqual(BuildStatus.CANCELLED, build.status)
 
@@ -1045,6 +1045,7 @@ class TestFailureAssessments(TestCaseWithFactory):
     def test_virtual_builder_reset_thresholds(self):
         self.builder.virtualized = True
         self.builder.vm_host = 'foo'
+        self.builder.setCleanStatus(BuilderCleanStatus.CLEAN)
 
         for failure_count in range(
             Builder.RESET_THRESHOLD - 1,
@@ -1053,9 +1054,15 @@ class TestFailureAssessments(TestCaseWithFactory):
             yield self._assessFailureCounts("failnotes")
             self.assertIs(None, self.builder.currentjob)
             self.assertEqual(self.build.status, BuildStatus.NEEDSBUILD)
-            self.assertEqual(
-                failure_count // Builder.RESET_THRESHOLD,
-                self.slave.call_log.count('resume'))
+            # The builder should be CLEAN until it hits the
+            # RESET_THRESHOLD.
+            if failure_count % Builder.RESET_THRESHOLD != 0:
+                self.assertEqual(
+                    BuilderCleanStatus.CLEAN, self.builder.clean_status)
+            else:
+                self.assertEqual(
+                    BuilderCleanStatus.DIRTY, self.builder.clean_status)
+                self.builder.setCleanStatus(BuilderCleanStatus.CLEAN)
             self.assertTrue(self.builder.builderok)
 
         self.builder.failure_count = (
@@ -1064,8 +1071,7 @@ class TestFailureAssessments(TestCaseWithFactory):
         self.assertIs(None, self.builder.currentjob)
         self.assertEqual(self.build.status, BuildStatus.NEEDSBUILD)
         self.assertEqual(
-            Builder.RESET_FAILURE_THRESHOLD - 1,
-            self.slave.call_log.count('resume'))
+            BuilderCleanStatus.CLEAN, self.builder.clean_status)
         self.assertFalse(self.builder.builderok)
         self.assertEqual("failnotes", self.builder.failnotes)
 
