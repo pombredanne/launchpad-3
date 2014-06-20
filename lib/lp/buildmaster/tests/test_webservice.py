@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+from testtools.matchers import Equals
 from zope.component import getUtility
 
 from lp.registry.interfaces.person import IPersonSet
@@ -16,10 +17,12 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.matchers import HasQueryCount
 from lp.testing.pages import (
     LaunchpadWebServiceCaller,
     webservice_for_person,
     )
+from lp.testing._webservice import QueryCollector
 
 
 class TestBuildersCollection(TestCaseWithFactory):
@@ -28,6 +31,21 @@ class TestBuildersCollection(TestCaseWithFactory):
     def setUp(self):
         super(TestBuildersCollection, self).setUp()
         self.webservice = LaunchpadWebServiceCaller()
+
+    def test_list(self):
+        names = ['bob', 'frog']
+        for i in range(3):
+            builder = self.factory.makeBuilder()
+            self.factory.makeBinaryPackageBuild().queueBuild().markAsBuilding(
+                builder)
+            names.append(builder.name)
+        logout()
+        with QueryCollector() as recorder:
+            builders = self.webservice.get(
+                '/builders', api_version='devel').jsonBody()
+        self.assertContentEqual(
+            names, [b['name'] for b in builders['entries']])
+        self.assertThat(recorder, HasQueryCount(Equals(21)))
 
     def test_getBuildQueueSizes(self):
         logout()
