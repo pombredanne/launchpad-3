@@ -67,6 +67,34 @@ notification alert.
 
     >>> print_feedback_messages(anon_browser.contents)
 
+Idle builders show more details of their status.
+
+    >>> from lp.buildmaster.enums import BuilderCleanStatus
+    >>> from lp.testing import admin_logged_in
+    >>> with admin_logged_in():
+    ...     builder = factory.makeBuilder(name='victim')
+    ...     builder.setCleanStatus(BuilderCleanStatus.DIRTY)
+    >>> anon_browser.open('http://launchpad.dev/builders/victim')
+    >>> print extract_text(find_portlet(
+    ...     anon_browser.contents, 'View full history Current status'))
+    View full history Current status
+    Cleaning
+    >>> with admin_logged_in():
+    ...     builder.setCleanStatus(BuilderCleanStatus.CLEANING)
+    >>> anon_browser.open(anon_browser.url)
+    >>> print extract_text(find_portlet(
+    ...     anon_browser.contents, 'View full history Current status'))
+    View full history Current status
+    Cleaning
+    >>> with admin_logged_in():
+    ...     builder.setCleanStatus(BuilderCleanStatus.CLEAN)
+    >>> anon_browser.open(anon_browser.url)
+    >>> print extract_text(find_portlet(
+    ...     anon_browser.contents, 'View full history Current status'))
+    View full history Current status
+    Idle
+
+
 Builder Actions
 ---------------
 
@@ -230,17 +258,18 @@ Farm list. Celso cannot see the link to it.
     >>> print extract_text(find_main_content(cprov_browser.contents))
     The Launchpad build farm
     Register a new build machine
-    0 available build machines, 1 disabled and 0 building of a total
-    of 1 registered.
+    1 available build machine, 1 disabled and 0 building of a total
+    of 2 registered.
     Builders
-    Name  Architectures Status
-    frog  386           Disabled
+    Name   Architectures Status
+    frog   386           Disabled
+    victim 386           Idle
     Updated on ...
     Official distributions build status
     Architecture Builders Queue
     PPA build status
     Architecture Builders Queue
-    386          0        empty
+    386          1        empty
 
     >>> cprov_browser.getLink('bob').click()
     Traceback (most recent call last):
