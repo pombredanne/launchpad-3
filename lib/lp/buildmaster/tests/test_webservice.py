@@ -5,6 +5,8 @@
 
 __metaclass__ = type
 
+from json import dumps
+
 from zope.component import getUtility
 
 from lp.registry.interfaces.person import IPersonSet
@@ -85,6 +87,30 @@ class TestBuilderEntry(TestCaseWithFactory):
     def setUp(self):
         super(TestBuilderEntry, self).setUp()
         self.webservice = LaunchpadWebServiceCaller()
+
+    def test_security(self):
+        # Attributes can only be set by buildd admins.
+        builder = self.factory.makeBuilder()
+        user = self.factory.makePerson()
+        user_webservice = webservice_for_person(
+            user, permission=OAuthPermission.WRITE_PUBLIC)
+        patch = dumps({'clean_status': 'Cleaning'})
+        logout()
+
+        # A normal user is unauthorized.
+        response = user_webservice.patch(
+            api_url(builder), 'application/json', patch, api_version='devel')
+        self.assertEqual(401, response.status)
+
+        # But a buildd admin can set the attribute.
+        with admin_logged_in():
+            buildd_admins = getUtility(IPersonSet).getByName(
+                'launchpad-buildd-admins')
+            buildd_admins.addMember(user, buildd_admins.teamowner)
+        response = user_webservice.patch(
+            api_url(builder), 'application/json', patch, api_version='devel')
+        self.assertEqual(209, response.status)
+        self.assertEqual('Cleaning', response.jsonBody()['clean_status'])
 
     def test_exports_processor(self):
         processor = self.factory.makeProcessor('s1')

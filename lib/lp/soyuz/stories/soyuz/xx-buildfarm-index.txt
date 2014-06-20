@@ -159,12 +159,14 @@ can also modify that while creating a builder.
 
     >>> print admin_browser.getControl('Virtualized').selected
     False
-    >>> admin_browser.getControl('Virtual Machine Host').value
+    >>> admin_browser.getControl('VM host').value
     ''
+    >>> admin_browser.getControl('VM reset protocol').value
+    ['']
 
     >>> admin_browser.getControl('Virtualized').selected = True
-    >>> admin_browser.getControl(
-    ...     'Virtual Machine Host').value = 'tubaina-host.ppa'
+    >>> admin_browser.getControl('VM host').value = 'tubaina-host.ppa'
+    >>> admin_browser.getControl('VM reset protocol').value = ['PROTO_1_1']
 
 Once the form is submitted the users will be redirected to the
 just-created builder page.
@@ -176,3 +178,9 @@ just-created builder page.
     Tubaina : Build Farm
     >>> 'amd64 and hppa' in admin_browser.contents
     True
+
+    >>> admin_browser.getLink("Change details").click()
+    >>> admin_browser.getControl('VM host').value
+    'tubaina-host.ppa'
+    >>> admin_browser.getControl('VM reset protocol').value
+    ['PROTO_1_1']

@@ -23,7 +23,9 @@ from lazr.restful.declarations import (
     export_as_webservice_entry,
     export_factory_operation,
     export_read_operation,
+    export_write_operation,
     exported,
+    mutator_for,
     operation_for_version,
     operation_parameters,
     operation_returns_collection_of,
@@ -34,6 +36,7 @@ from lazr.restful.fields import (
     Reference,
     ReferenceChoice,
     )
+from lazr.restful.interface import copy_field
 from zope.interface import (
     Attribute,
     Interface,
@@ -95,19 +98,7 @@ class BuildSlaveFailure(BuildDaemonError):
     """The build slave has suffered an error and cannot be used."""
 
 
-class IBuilder(IHasBuildRecords, IHasOwner):
-    """Build-slave information and state.
-
-    Builder instance represents a single builder slave machine within the
-    Launchpad Auto Build System. It should specify a 'processor' on which the
-    machine is based and is able to build packages for; a URL, by which the
-    machine is accessed through an XML-RPC interface; name, title for entity
-    identification and browsing purposes; an LP-like owner which has
-    unrestricted access to the instance; the build slave machine status
-    representation, including the field/properties: virtualized, builderok,
-    status, failnotes and currentjob.
-    """
-    export_as_webservice_entry()
+class IBuilderView(IHasBuildRecords, IHasOwner):
 
     id = Attribute("Builder identifier")
 
@@ -169,9 +160,14 @@ class IBuilder(IHasBuildRecords, IHasOwner):
         description=_('The reason for a builder not being ok')))
 
     vm_host = exported(TextLine(
-        title=_('Virtual Machine Host'), required=False,
+        title=_('VM host'), required=False,
         description=_('The machine hostname hosting the virtual '
                       'buildd-slave, e.g.: foobar-host.ppa')))
+
+    vm_reset_protocol = exported(Choice(
+        title=_("VM reset protocol"), vocabulary=BuilderResetProtocol,
+        readonly=False, required=False,
+        description=_("The protocol version for resetting the VM.")))
 
     active = exported(Bool(
         title=_('Publicly Visible'), required=False, default=True,
@@ -189,19 +185,13 @@ class IBuilder(IHasBuildRecords, IHasOwner):
 
     clean_status = exported(Choice(
         title=_("Clean status"), vocabulary=BuilderCleanStatus, readonly=True,
-        description=_("The readiness of the slave to take a job.")))
+        description=_(
+            "The readiness of the slave to take a job. Only internal build "
+            "infrastructure bots need to or should write to this.")))
 
     date_clean_status_changed = exported(Datetime(
         title=_("Date clean status changed"), readonly=True,
         description=_("The date the builder's clean status last changed.")))
-
-    vm_reset_protocol = exported(Choice(
-        title=_("VM reset protocol"), vocabulary=BuilderResetProtocol,
-        readonly=False,
-        description=_("The protocol version for resetting the VM.")))
-
-    def setCleanStatus(status):
-        """Update the clean status."""
 
     def gotFailure():
         """Increment failure_count on the builder."""
@@ -233,6 +223,31 @@ class IBuilder(IHasBuildRecords, IHasOwner):
 
         Increment builder and (if possible) job failure counts.
         """
+
+
+class IBuilderEdit(Interface):
+
+    @mutator_for(IBuilderView['clean_status'])
+    @operation_parameters(status=copy_field(IBuilderView['clean_status']))
+    @export_write_operation()
+    @operation_for_version('devel')
+    def setCleanStatus(status):
+        """Update the clean status."""
+
+
+class IBuilder(IBuilderEdit, IBuilderView):
+    """Build-slave information and state.
+
+    Builder instance represents a single builder slave machine within the
+    Launchpad Auto Build System. It should specify a 'processor' on which the
+    machine is based and is able to build packages for; a URL, by which the
+    machine is accessed through an XML-RPC interface; name, title for entity
+    identification and browsing purposes; an LP-like owner which has
+    unrestricted access to the instance; the build slave machine status
+    representation, including the field/properties: virtualized, builderok,
+    status, failnotes and currentjob.
+    """
+    export_as_webservice_entry()
 
 
 class IBuilderSetAdmin(Interface):
