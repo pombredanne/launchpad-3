@@ -1,4 +1,4 @@
-# Copyright 2011-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the builders webservice ."""
@@ -17,13 +17,13 @@ from lp.testing import (
     logout,
     TestCaseWithFactory,
     )
+from lp.testing._webservice import QueryCollector
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import HasQueryCount
 from lp.testing.pages import (
     LaunchpadWebServiceCaller,
     webservice_for_person,
     )
-from lp.testing._webservice import QueryCollector
 
 
 class TestBuildersCollection(TestCaseWithFactory):
