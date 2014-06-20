@@ -63,6 +63,10 @@ from lp.buildmaster.tests.mock_slaves import (
     TrivialBehaviour,
     WaitingSlave,
     )
+from lp.buildmaster.tests.test_interactor import (
+    FakeBuildQueue,
+    MockBuilderFactory,
+    )
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.services.config import config
 from lp.services.log.logger import BufferLogger
@@ -715,41 +719,6 @@ class TestPrefetchedBuilderFactory(TestCaseWithFactory):
         self.assertEqual(
             4, len([v for v in all_vitals if v.build_queue is not None]))
         self.assertContentEqual(BuilderFactory().iterVitals(), all_vitals)
-
-
-class FakeBuildQueue:
-
-    def __init__(self):
-        self.id = 1
-        self.reset = FakeMethod()
-        self.status = BuildQueueStatus.RUNNING
-
-
-class MockBuilderFactory:
-    """A mock builder factory which uses a preset Builder and BuildQueue."""
-
-    def __init__(self, builder, build_queue):
-        self.updateTestData(builder, build_queue)
-        self.get_call_count = 0
-        self.getVitals_call_count = 0
-
-    def update(self):
-        return
-
-    def prescanUpdate(self):
-        return
-
-    def updateTestData(self, builder, build_queue):
-        self._builder = builder
-        self._build_queue = build_queue
-
-    def __getitem__(self, name):
-        self.get_call_count += 1
-        return self._builder
-
-    def getVitals(self, name):
-        self.getVitals_call_count += 1
-        return extract_vitals_from_db(self._builder, self._build_queue)
 
 
 class TestSlaveScannerWithoutDB(TestCase):

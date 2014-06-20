@@ -353,11 +353,13 @@ class BuilderSet(object):
         return self.getByName(name)
 
     def new(self, processors, url, name, title, owner, active=True,
-            virtualized=False, vm_host=None, manual=True):
+            virtualized=False, vm_host=None, vm_reset_protocol=None,
+            manual=True):
         """See IBuilderSet."""
         return Builder(processors=processors, url=url, name=name, title=title,
                        owner=owner, active=active, virtualized=virtualized,
-                       vm_host=vm_host, _builderok=True, manual=manual)
+                       vm_host=vm_host, vm_reset_protocol=vm_reset_protocol,
+                       _builderok=True, manual=manual)
 
     def get(self, builder_id):
         """See IBuilderSet."""

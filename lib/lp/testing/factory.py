@@ -96,7 +96,10 @@ from lp.bugs.interfaces.cve import (
     ICveSet,
     )
 from lp.bugs.model.bug import FileBugData
-from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.enums import (
+    BuildStatus,
+    BuilderResetProtocol,
+    )
 from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.code.enums import (
     BranchMergeProposalStatus,
@@ -2748,7 +2751,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeBuilder(self, processors=None, url=None, name=None, title=None,
                     owner=None, active=True, virtualized=True, vm_host=None,
-                    manual=False):
+                    vm_reset_protocol=None, manual=False):
         """Make a new builder for i386 virtualized builds by default.
 
         Note: the builder returned will not be able to actually build -
@@ -2765,11 +2768,14 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             title = self.getUniqueString('builder-title')
         if owner is None:
             owner = self.makePerson()
+        if virtualized and vm_reset_protocol is None:
+            vm_reset_protocol = BuilderResetProtocol.PROTO_1_1
 
         with admin_logged_in():
             return getUtility(IBuilderSet).new(
                 processors, url, name, title, owner, active,
-                virtualized, vm_host, manual=manual)
+                virtualized, vm_host, manual=manual,
+                vm_reset_protocol=vm_reset_protocol)
 
     def makeRecipeText(self, *branches):
         if len(branches) == 0:
