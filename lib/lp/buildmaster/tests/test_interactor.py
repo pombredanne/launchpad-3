@@ -25,6 +25,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.buildmaster.enums import (
     BuilderCleanStatus,
+    BuilderResetProtocol,
     BuildStatus,
     )
 from lp.buildmaster.interactor import (
@@ -168,14 +169,27 @@ class TestBuilderInteractorCleanSlave(TestCase):
         self.assertEqual(calls, slave.method_log)
 
     @defer.inlineCallbacks
-    def test_virtual(self):
-        # We don't care what the status of a virtual builder is; we just
-        # reset its VM and check that it's back.
+    def test_virtual_1_1(self):
+        # Virtual builders using protocol 1.1 get reset, and once the
+        # trigger completes we're happy that it's clean.
+        builder = MockBuilder(
+            virtualized=True, clean_status=BuilderCleanStatus.DIRTY,
+            vm_host='lol', vm_reset_protocol=BuilderResetProtocol.PROTO_1_1)
         yield self.assertCleanCalls(
-            MockBuilder(
-                virtualized=True, vm_host='lol',
-                clean_status=BuilderCleanStatus.DIRTY),
-            OkSlave(), ['resume', 'echo'], True)
+            builder, OkSlave(), ['resume', 'echo'], True)
+
+    @defer.inlineCallbacks
+    def test_virtual_no_protocol(self):
+        # Virtual builders fail to clean unless vm_reset_protocol is
+        # set.
+        builder = MockBuilder(
+            virtualized=True, clean_status=BuilderCleanStatus.DIRTY,
+            vm_host='lol')
+        builder.vm_reset_protocol = None
+        with ExpectedException(
+                CannotResumeHost, "Invalid vm_reset_protocol: None"):
+            yield BuilderInteractor.cleanSlave(
+                extract_vitals_from_db(builder), OkSlave())
 
     @defer.inlineCallbacks
     def test_nonvirtual_idle(self):

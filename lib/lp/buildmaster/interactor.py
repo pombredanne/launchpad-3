@@ -21,7 +21,10 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
-from lp.buildmaster.enums import BuilderCleanStatus
+from lp.buildmaster.enums import (
+    BuilderCleanStatus,
+    BuilderResetProtocol,
+    )
 from lp.buildmaster.interfaces.builder import (
     BuildDaemonError,
     CannotFetchFile,
@@ -296,18 +299,22 @@ class BuilderInteractor(object):
             called again later.
         """
         if vitals.virtualized:
-            # If we are building a virtual build, resume the virtual
-            # machine.  Before we try and contact the resumed slave,
-            # we're going to send it a message.  This is to ensure
-            # it's accepting packets from the outside world, because
-            # testing has shown that the first packet will randomly
-            # fail for no apparent reason.  This could be a quirk of
-            # the Xen guest, we're not sure.  We also don't care
-            # about the result from this message, just that it's
-            # sent, hence the "addBoth".  See bug 586359.
-            yield cls.resumeSlaveHost(vitals, slave)
-            yield slave.echo("ping")
-            defer.returnValue(True)
+            if vitals.vm_reset_protocol == BuilderResetProtocol.PROTO_1_1:
+                # If we are building a virtual build, resume the virtual
+                # machine.  Before we try and contact the resumed slave,
+                # we're going to send it a message.  This is to ensure
+                # it's accepting packets from the outside world, because
+                # testing has shown that the first packet will randomly
+                # fail for no apparent reason.  This could be a quirk of
+                # the Xen guest, we're not sure.  We also don't care
+                # about the result from this message, just that it's
+                # sent, hence the "addBoth".  See bug 586359.
+                yield cls.resumeSlaveHost(vitals, slave)
+                yield slave.echo("ping")
+                defer.returnValue(True)
+            else:
+                raise CannotResumeHost(
+                    "Invalid vm_reset_protocol: %r" % vitals.vm_reset_protocol)
         else:
             slave_status = yield slave.status()
             status = slave_status.get('builder_status', None)
