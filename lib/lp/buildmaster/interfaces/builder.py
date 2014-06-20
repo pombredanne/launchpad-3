@@ -182,7 +182,7 @@ class IBuilder(IHasBuildRecords, IHasOwner):
     current_build = exported(Reference(
         title=_("Current build"), required=False, readonly=True,
         schema=Interface,  # Really IBuildFarmJob.
-        description=_("The job current running on this builder.")),
+        description=_("The job currently running on this builder.")),
         as_of="devel")
 
     failure_count = exported(Int(
