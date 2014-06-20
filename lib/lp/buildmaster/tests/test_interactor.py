@@ -31,6 +31,7 @@ from zope.security.proxy import removeSecurityProxy
 from lp.buildmaster.enums import (
     BuilderCleanStatus,
     BuilderResetProtocol,
+    BuildQueueStatus,
     BuildStatus,
     )
 from lp.buildmaster.interactor import (
@@ -103,8 +104,6 @@ class MockBuilderFactory:
     def getVitals(self, name):
         self.getVitals_call_count += 1
         return extract_vitals_from_db(self._builder, self._build_queue)
-
-
 
 
 class TestBuilderInteractor(TestCase):
