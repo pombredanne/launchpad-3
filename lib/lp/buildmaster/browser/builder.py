@@ -315,7 +315,7 @@ class BuilderSetAddView(LaunchpadFormView):
 
     field_names = [
         'name', 'title', 'processors', 'url', 'active', 'virtualized',
-        'vm_host', 'owner'
+        'vm_host', 'vm_reset_protocol', 'owner'
         ]
     custom_widget('owner', HiddenUserWidget)
     custom_widget('url', TextWidget, displayWidth=30)
@@ -334,6 +334,7 @@ class BuilderSetAddView(LaunchpadFormView):
             active=data.get('active'),
             virtualized=data.get('virtualized'),
             vm_host=data.get('vm_host'),
+            vm_reset_protocol=data.get('vm_reset_protocol'),
             )
         notify(ObjectCreatedEvent(builder))
         self.next_url = canonical_url(builder)
@@ -356,7 +357,8 @@ class BuilderEditView(LaunchpadEditFormView):
 
     field_names = [
         'name', 'title', 'processors', 'url', 'manual', 'owner',
-        'virtualized', 'builderok', 'failnotes', 'vm_host', 'active',
+        'virtualized', 'builderok', 'failnotes', 'vm_host',
+        'vm_reset_protocol', 'active',
         ]
     custom_widget('processors', LabeledMultiCheckBoxWidget)
 

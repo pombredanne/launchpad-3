@@ -16,10 +16,11 @@
     <class
         class="lp.buildmaster.model.builder.Builder">
         <allow
-            interface="lp.buildmaster.interfaces.builder.IBuilder"/>
+            interface="lp.buildmaster.interfaces.builder.IBuilderView"/>
         <require
             permission="launchpad.Edit"
-            set_schema="lp.buildmaster.interfaces.builder.IBuilder"/>
+            interface="lp.buildmaster.interfaces.builder.IBuilderEdit"
+            set_schema="lp.buildmaster.interfaces.builder.IBuilderView"/>
     </class>
 
 
