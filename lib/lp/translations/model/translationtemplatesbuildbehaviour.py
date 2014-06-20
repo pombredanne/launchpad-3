@@ -1,4 +1,4 @@
-# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """An `IBuildFarmJobBehaviour` for `TranslationTemplatesBuild`.
@@ -175,7 +175,5 @@ class TranslationTemplatesBuildBehaviour(BuildFarmJobBehaviourBase):
         transaction.commit()
 
         yield self.storeLogFromSlave(build_queue=queue_item)
-
-        yield self._slave.clean()
         queue_item.destroySelf()
         transaction.commit()

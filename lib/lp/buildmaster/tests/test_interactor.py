@@ -3,6 +3,11 @@
 
 """Test BuilderInteractor features."""
 
+__all__ = [
+    'FakeBuildQueue',
+    'MockBuilderFactory',
+    ]
+
 import os
 import signal
 import tempfile
@@ -25,6 +30,8 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.buildmaster.enums import (
     BuilderCleanStatus,
+    BuilderResetProtocol,
+    BuildQueueStatus,
     BuildStatus,
     )
 from lp.buildmaster.interactor import (
@@ -62,6 +69,41 @@ from lp.testing.layers import (
     LaunchpadZopelessLayer,
     ZopelessDatabaseLayer,
     )
+
+
+class FakeBuildQueue:
+
+    def __init__(self):
+        self.id = 1
+        self.reset = FakeMethod()
+        self.status = BuildQueueStatus.RUNNING
+
+
+class MockBuilderFactory:
+    """A mock builder factory which uses a preset Builder and BuildQueue."""
+
+    def __init__(self, builder, build_queue):
+        self.updateTestData(builder, build_queue)
+        self.get_call_count = 0
+        self.getVitals_call_count = 0
+
+    def update(self):
+        return
+
+    def prescanUpdate(self):
+        return
+
+    def updateTestData(self, builder, build_queue):
+        self._builder = builder
+        self._build_queue = build_queue
+
+    def __getitem__(self, name):
+        self.get_call_count += 1
+        return self._builder
+
+    def getVitals(self, name):
+        self.getVitals_call_count += 1
+        return extract_vitals_from_db(self._builder, self._build_queue)
 
 
 class TestBuilderInteractor(TestCase):
@@ -163,19 +205,56 @@ class TestBuilderInteractorCleanSlave(TestCase):
     @defer.inlineCallbacks
     def assertCleanCalls(self, builder, slave, calls, done):
         actually_done = yield BuilderInteractor.cleanSlave(
-            extract_vitals_from_db(builder), slave)
+            extract_vitals_from_db(builder), slave,
+            MockBuilderFactory(builder, None))
         self.assertEqual(done, actually_done)
         self.assertEqual(calls, slave.method_log)
 
     @defer.inlineCallbacks
-    def test_virtual(self):
-        # We don't care what the status of a virtual builder is; we just
-        # reset its VM and check that it's back.
+    def test_virtual_1_1(self):
+        # Virtual builders using protocol 1.1 get reset, and once the
+        # trigger completes we're happy that it's clean.
+        builder = MockBuilder(
+            virtualized=True, clean_status=BuilderCleanStatus.DIRTY,
+            vm_host='lol', vm_reset_protocol=BuilderResetProtocol.PROTO_1_1)
         yield self.assertCleanCalls(
-            MockBuilder(
-                virtualized=True, vm_host='lol',
-                clean_status=BuilderCleanStatus.DIRTY),
-            OkSlave(), ['resume', 'echo'], True)
+            builder, OkSlave(), ['resume', 'echo'], True)
+
+    @defer.inlineCallbacks
+    def test_virtual_2_0_dirty(self):
+        # Virtual builders using protocol 2.0 get reset and set to
+        # CLEANING. It's then up to the non-Launchpad reset code to set
+        # the builder back to CLEAN using the webservice.
+        builder = MockBuilder(
+            virtualized=True, clean_status=BuilderCleanStatus.DIRTY,
+            vm_host='lol', vm_reset_protocol=BuilderResetProtocol.PROTO_2_0)
+        yield self.assertCleanCalls(builder, OkSlave(), ['resume'], False)
+        self.assertEqual(BuilderCleanStatus.CLEANING, builder.clean_status)
+
+    @defer.inlineCallbacks
+    def test_virtual_2_0_cleaning(self):
+        # Virtual builders using protocol 2.0 only get touched when
+        # they're DIRTY. Once they're cleaning, they're not our problem
+        # until they return to CLEAN, so we ignore them.
+        builder = MockBuilder(
+            virtualized=True, clean_status=BuilderCleanStatus.CLEANING,
+            vm_host='lol', vm_reset_protocol=BuilderResetProtocol.PROTO_2_0)
+        yield self.assertCleanCalls(builder, OkSlave(), [], False)
+        self.assertEqual(BuilderCleanStatus.CLEANING, builder.clean_status)
+
+    @defer.inlineCallbacks
+    def test_virtual_no_protocol(self):
+        # Virtual builders fail to clean unless vm_reset_protocol is
+        # set.
+        builder = MockBuilder(
+            virtualized=True, clean_status=BuilderCleanStatus.DIRTY,
+            vm_host='lol')
+        builder.vm_reset_protocol = None
+        with ExpectedException(
+                CannotResumeHost, "Invalid vm_reset_protocol: None"):
+            yield BuilderInteractor.cleanSlave(
+                extract_vitals_from_db(builder), OkSlave(),
+                MockBuilderFactory(builder, None))
 
     @defer.inlineCallbacks
     def test_nonvirtual_idle(self):
@@ -215,11 +294,13 @@ class TestBuilderInteractorCleanSlave(TestCase):
     def test_nonvirtual_broken(self):
         # A broken non-virtual builder is probably unrecoverable, so the
         # method just crashes.
-        vitals = extract_vitals_from_db(MockBuilder(
-            virtualized=False, clean_status=BuilderCleanStatus.DIRTY))
+        builder = MockBuilder(
+            virtualized=False, clean_status=BuilderCleanStatus.DIRTY)
+        vitals = extract_vitals_from_db(builder)
         slave = LostBuildingBrokenSlave()
         try:
-            yield BuilderInteractor.cleanSlave(vitals, slave)
+            yield BuilderInteractor.cleanSlave(
+                vitals, slave, MockBuilderFactory(builder, None))
         except xmlrpclib.Fault:
             self.assertEqual(['status', 'abort'], slave.call_log)
         else:

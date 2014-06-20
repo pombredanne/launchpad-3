@@ -184,7 +184,6 @@ class BuildFarmJobBehaviourBase:
         if build.job_type == BuildFarmJobType.PACKAGEBUILD:
             build = build.buildqueue_record.specific_build
             if not build.current_source_publication:
-                yield self._slave.clean()
                 build.updateStatus(BuildStatus.SUPERSEDED)
                 self.build.buildqueue_record.destroySelf()
                 return
@@ -255,7 +254,6 @@ class BuildFarmJobBehaviourBase:
         if not os.path.exists(target_dir):
             os.mkdir(target_dir)
 
-        yield self._slave.clean()
         self.build.buildqueue_record.destroySelf()
         transaction.commit()
 
@@ -280,7 +278,6 @@ class BuildFarmJobBehaviourBase:
         yield self.storeLogFromSlave()
         if notify:
             self.build.notify()
-        yield self._slave.clean()
         self.build.buildqueue_record.destroySelf()
         transaction.commit()
 
@@ -324,9 +321,7 @@ class BuildFarmJobBehaviourBase:
             self._builder.handleFailure(logger)
             self.build.buildqueue_record.reset()
         transaction.commit()
-        yield self._slave.clean()
 
-    @defer.inlineCallbacks
     def _handleStatus_GIVENBACK(self, slave_status, logger, notify):
         """Handle automatic retry requested by builder.
 
@@ -334,6 +329,5 @@ class BuildFarmJobBehaviourBase:
         later, the build records is delayed by reducing the lastscore to
         ZERO.
         """
-        yield self._slave.clean()
         self.build.buildqueue_record.reset()
         transaction.commit()

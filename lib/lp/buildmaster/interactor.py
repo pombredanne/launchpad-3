@@ -21,7 +21,10 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
-from lp.buildmaster.enums import BuilderCleanStatus
+from lp.buildmaster.enums import (
+    BuilderCleanStatus,
+    BuilderResetProtocol,
+    )
 from lp.buildmaster.interfaces.builder import (
     BuildDaemonError,
     CannotFetchFile,
@@ -216,8 +219,8 @@ class BuilderSlave(object):
 
 BuilderVitals = namedtuple(
     'BuilderVitals',
-    ('name', 'url', 'virtualized', 'vm_host', 'builderok', 'manual',
-     'build_queue', 'version', 'clean_status'))
+    ('name', 'url', 'virtualized', 'vm_host', 'vm_reset_protocol',
+     'builderok', 'manual', 'build_queue', 'version', 'clean_status'))
 
 _BQ_UNSPECIFIED = object()
 
@@ -227,8 +230,8 @@ def extract_vitals_from_db(builder, build_queue=_BQ_UNSPECIFIED):
         build_queue = builder.currentjob
     return BuilderVitals(
         builder.name, builder.url, builder.virtualized, builder.vm_host,
-        builder.builderok, builder.manual, build_queue, builder.version,
-        builder.clean_status)
+        builder.vm_reset_protocol, builder.builderok, builder.manual,
+        build_queue, builder.version, builder.clean_status)
 
 
 class BuilderInteractor(object):
@@ -287,7 +290,7 @@ class BuilderInteractor(object):
 
     @classmethod
     @defer.inlineCallbacks
-    def cleanSlave(cls, vitals, slave):
+    def cleanSlave(cls, vitals, slave, builder_factory):
         """Prepare a slave for a new build.
 
         :return: A Deferred that fires when this stage of the resume
@@ -296,18 +299,35 @@ class BuilderInteractor(object):
             called again later.
         """
         if vitals.virtualized:
-            # If we are building a virtual build, resume the virtual
-            # machine.  Before we try and contact the resumed slave,
-            # we're going to send it a message.  This is to ensure
-            # it's accepting packets from the outside world, because
-            # testing has shown that the first packet will randomly
-            # fail for no apparent reason.  This could be a quirk of
-            # the Xen guest, we're not sure.  We also don't care
-            # about the result from this message, just that it's
-            # sent, hence the "addBoth".  See bug 586359.
-            yield cls.resumeSlaveHost(vitals, slave)
-            yield slave.echo("ping")
-            defer.returnValue(True)
+            if vitals.vm_reset_protocol == BuilderResetProtocol.PROTO_1_1:
+                # In protocol 1.1 the reset trigger is synchronous, so
+                # once resumeSlaveHost returns the slave should be
+                # running.
+                builder_factory[vitals.name].setCleanStatus(
+                    BuilderCleanStatus.CLEANING)
+                transaction.commit()
+                yield cls.resumeSlaveHost(vitals, slave)
+                # We ping the resumed slave before we try to do anything
+                # useful with it. This is to ensure it's accepting
+                # packets from the outside world, because testing has
+                # shown that the first packet will randomly fail for no
+                # apparent reason.  This could be a quirk of the Xen
+                # guest, we're not sure. See bug 586359.
+                yield slave.echo("ping")
+                defer.returnValue(True)
+            elif vitals.vm_reset_protocol == BuilderResetProtocol.PROTO_2_0:
+                # In protocol 2.0 the reset trigger is asynchronous.
+                # If the trigger succeeds we'll leave the slave in
+                # CLEANING, and the non-LP slave management code will
+                # set it back to CLEAN later using the webservice.
+                if vitals.clean_status == BuilderCleanStatus.DIRTY:
+                    yield cls.resumeSlaveHost(vitals, slave)
+                    builder_factory[vitals.name].setCleanStatus(
+                        BuilderCleanStatus.CLEANING)
+                    transaction.commit()
+                defer.returnValue(False)
+            raise CannotResumeHost(
+                "Invalid vm_reset_protocol: %r" % vitals.vm_reset_protocol)
         else:
             slave_status = yield slave.status()
             status = slave_status.get('builder_status', None)
