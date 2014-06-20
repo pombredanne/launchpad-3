@@ -169,9 +169,14 @@ class IBuilder(IHasBuildRecords, IHasOwner):
         description=_('The reason for a builder not being ok')))
 
     vm_host = exported(TextLine(
-        title=_('Virtual Machine Host'), required=False,
+        title=_('VM host'), required=False,
         description=_('The machine hostname hosting the virtual '
                       'buildd-slave, e.g.: foobar-host.ppa')))
+
+    vm_reset_protocol = exported(Choice(
+        title=_("VM reset protocol"), vocabulary=BuilderResetProtocol,
+        readonly=False, required=False,
+        description=_("The protocol version for resetting the VM.")))
 
     active = exported(Bool(
         title=_('Publicly Visible'), required=False, default=True,
@@ -194,11 +199,6 @@ class IBuilder(IHasBuildRecords, IHasOwner):
     date_clean_status_changed = exported(Datetime(
         title=_("Date clean status changed"), readonly=True,
         description=_("The date the builder's clean status last changed.")))
-
-    vm_reset_protocol = exported(Choice(
-        title=_("VM reset protocol"), vocabulary=BuilderResetProtocol,
-        readonly=False,
-        description=_("The protocol version for resetting the VM.")))
 
     def setCleanStatus(status):
         """Update the clean status."""

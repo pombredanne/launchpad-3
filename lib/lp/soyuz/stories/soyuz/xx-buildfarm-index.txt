@@ -159,12 +159,11 @@ can also modify that while creating a builder.
 
     >>> print admin_browser.getControl('Virtualized').selected
     False
-    >>> admin_browser.getControl('Virtual Machine Host').value
+    >>> admin_browser.getControl('VM host').value
     ''
 
     >>> admin_browser.getControl('Virtualized').selected = True
-    >>> admin_browser.getControl(
-    ...     'Virtual Machine Host').value = 'tubaina-host.ppa'
+    >>> admin_browser.getControl('VM host').value = 'tubaina-host.ppa'
 
 Once the form is submitted the users will be redirected to the
 just-created builder page.
