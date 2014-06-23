@@ -36,7 +36,6 @@ from lp.buildmaster.interactor import (
     extract_vitals_from_db,
     )
 from lp.buildmaster.interfaces.builder import (
-    BuildDaemonError,
     BuildDaemonIsolationError,
     IBuilderSet,
     )
