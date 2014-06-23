@@ -165,6 +165,7 @@ def judge_failure(builder_count, job_count, retry=True):
             return (False, True)
         elif builder_count % Builder.RESET_THRESHOLD == 0:
             return (True, True)
+        return (None, True)
     else:
         # The job has failed more than the builder. Fail it.
         return (None, False)

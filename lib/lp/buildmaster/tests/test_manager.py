@@ -884,7 +884,7 @@ class TestJudgeFailure(TestCase):
 
     def test_bad_builder_below_threshold(self):
         self.assertEqual(
-            (None, None),
+            (None, True),
             judge_failure(Builder.RESET_THRESHOLD - 1, 1))
 
     def test_bad_builder_at_reset_threshold(self):
@@ -894,7 +894,7 @@ class TestJudgeFailure(TestCase):
 
     def test_bad_builder_above_reset_threshold(self):
         self.assertEqual(
-            (None, None),
+            (None, True),
             judge_failure(
                 Builder.RESET_THRESHOLD + 1, Builder.RESET_THRESHOLD))
 
