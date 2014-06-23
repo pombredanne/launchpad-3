@@ -127,10 +127,10 @@ class BuildQueue(SQLBase):
         load_related(BuildFarmJob, queues, ['_build_farm_job_id'])
         bfj_to_bq = dict((bq._build_farm_job, bq) for bq in queues)
         key = attrgetter('_build_farm_job.job_type')
-        for job_type, grouped_queues in groupby(queues, key=key):
+        for job_type, group in groupby(sorted(queues, key=key), key=key):
             source = getUtility(ISpecificBuildFarmJobSource, job_type.name)
             builds = source.getByBuildFarmJobs(
-                [bq._build_farm_job for bq in grouped_queues])
+                [bq._build_farm_job for bq in group])
             for build in builds:
                 bq = bfj_to_bq[removeSecurityProxy(build).build_farm_job]
                 get_property_cache(bq).specific_build = build
