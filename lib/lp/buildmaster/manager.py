@@ -131,6 +131,48 @@ class PrefetchedBuilderFactory:
         return (b for n, b in sorted(self.vitals_map.iteritems()))
 
 
+def judge_failure(builder_count, job_count, retry=True):
+    """Judge how to recover from a scan failure.
+
+    Assesses the failure counts of a builder and its current job, and
+    determines the best course of action for recovery.
+
+    :param: builder_count: Count of consecutive failures of the builder.
+    :param: job_count: Count of consecutive failures of the job.
+    :param: exc: Exception that caused the failure, if any.
+    :param: retry: Whether to retry a few times without taking action.
+    :return: A tuple of (builder action, job action). True means reset,
+        False means fail, None means take no action.
+    """
+    if builder_count == job_count:
+        # We can't tell which is to blame. Retry a few times, and then
+        # reset the job so it can be retried elsewhere. If the job is at
+        # fault, it'll error on the next builder and fail out. If the
+        # builder is at fault, the job will work fine next time, and the
+        # builder will error on the next job and fail out.
+        if not retry or builder_count >= Builder.JOB_RESET_THRESHOLD:
+            return (None, True)
+    elif builder_count > job_count:
+        # The builder has failed more than the job, so the builder is at
+        # fault. We reset the job, and attempt to recover the builder.
+        # We retry a few times, then reset the builder. Then try a few
+        # more times, then reset it again. Then try yet again, after
+        # which we fail.
+        # XXX: Rescanning a virtual builder without resetting is stupid,
+        # as it will be reset anyway due to being dirty and idle.
+        if (builder_count >=
+                Builder.RESET_THRESHOLD * Builder.RESET_FAILURE_THRESHOLD):
+            return (False, True)
+        elif builder_count % Builder.RESET_THRESHOLD == 0:
+            return (True, True)
+    else:
+        # The job has failed more than the builder. Fail it.
+        return (None, False)
+
+    # Just retry.
+    return (None, None)
+
+
 @defer.inlineCallbacks
 def assessFailureCounts(logger, vitals, builder, slave, interactor, retry,
                         exception):
