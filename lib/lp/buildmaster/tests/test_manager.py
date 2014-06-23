@@ -806,7 +806,8 @@ class TestSlaveScannerWithoutDB(TestCase):
             slave=slave, builder_factory=MockBuilderFactory(builder, bq))
 
         with ExpectedException(
-                BuildDaemonError, "Non-dirty builder allegedly building."):
+                BuildDaemonIsolationError,
+                "Non-dirty builder allegedly building."):
             yield scanner.scan()
         self.assertEqual([], slave.call_log)
 
@@ -820,7 +821,7 @@ class TestSlaveScannerWithoutDB(TestCase):
             slave=slave, builder_factory=MockBuilderFactory(builder, None))
 
         with ExpectedException(
-                BuildDaemonError,
+                BuildDaemonIsolationError,
                 "Allegedly clean slave not idle "
                 "\('BuilderStatus.BUILDING' instead\)"):
             yield scanner.scan()

@@ -27,6 +27,7 @@ from lp.buildmaster.enums import (
     )
 from lp.buildmaster.interfaces.builder import (
     BuildDaemonError,
+    BuildDaemonIsolationError,
     CannotFetchFile,
     CannotResumeHost,
     )
@@ -366,11 +367,11 @@ class BuilderInteractor(object):
 
         # Set the build behaviour depending on the provided build queue item.
         if not builder.builderok:
-            raise BuildDaemonError(
+            raise BuildDaemonIsolationError(
                 "Attempted to start a build on a known-bad builder.")
 
         if builder.clean_status != BuilderCleanStatus.CLEAN:
-            raise BuildDaemonError(
+            raise BuildDaemonIsolationError(
                 "Attempted to start build on a dirty slave.")
 
         builder.setCleanStatus(BuilderCleanStatus.DIRTY)

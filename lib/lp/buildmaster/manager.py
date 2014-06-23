@@ -433,7 +433,8 @@ class SlaveScanner:
             if vitals.clean_status != BuilderCleanStatus.DIRTY:
                 # This is probably a grave bug with security implications,
                 # as a slave that has a job must be cleaned afterwards.
-                raise BuildDaemonError("Non-dirty builder allegedly building.")
+                raise BuildDaemonIsolationError(
+                    "Non-dirty builder allegedly building.")
 
             lost_reason = None
             if not vitals.builderok:
@@ -480,7 +481,7 @@ class SlaveScanner:
             if vitals.clean_status == BuilderCleanStatus.CLEAN:
                 slave_status = yield slave.status()
                 if slave_status.get('builder_status') != 'BuilderStatus.IDLE':
-                    raise BuildDaemonError(
+                    raise BuildDaemonIsolationError(
                         'Allegedly clean slave not idle (%r instead)'
                         % slave_status.get('builder_status'))
                 self.updateVersion(vitals, slave_status)
