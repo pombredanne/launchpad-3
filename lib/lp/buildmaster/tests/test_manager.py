@@ -37,6 +37,7 @@ from lp.buildmaster.interactor import (
     )
 from lp.buildmaster.interfaces.builder import (
     BuildDaemonError,
+    BuildDaemonIsolationError,
     IBuilderSet,
     )
 from lp.buildmaster.interfaces.buildfarmjobbehaviour import (
@@ -872,7 +873,7 @@ class TestJudgeFailure(TestCase):
             (None, None),
             judge_failure(
                 Builder.JOB_RESET_THRESHOLD - 1,
-                Builder.JOB_RESET_THRESHOLD - 1))
+                Builder.JOB_RESET_THRESHOLD - 1, Exception()))
 
     def test_same_count_exceeding_threshold(self):
         # Several consecutive failures suggest that something might be
@@ -880,38 +881,52 @@ class TestJudgeFailure(TestCase):
         self.assertEqual(
             (None, True),
             judge_failure(
-                Builder.JOB_RESET_THRESHOLD, Builder.JOB_RESET_THRESHOLD))
+                Builder.JOB_RESET_THRESHOLD, Builder.JOB_RESET_THRESHOLD,
+                Exception()))
+
+    def test_same_count_no_retries(self):
+        self.assertEqual(
+            (None, True),
+            judge_failure(
+                Builder.JOB_RESET_THRESHOLD - 1,
+                Builder.JOB_RESET_THRESHOLD - 1, Exception(), retry=False))
 
     def test_bad_builder_below_threshold(self):
         self.assertEqual(
             (None, True),
-            judge_failure(Builder.RESET_THRESHOLD - 1, 1))
+            judge_failure(Builder.RESET_THRESHOLD - 1, 1, Exception()))
 
     def test_bad_builder_at_reset_threshold(self):
         self.assertEqual(
             (True, True),
-            judge_failure(Builder.RESET_THRESHOLD, 1))
+            judge_failure(Builder.RESET_THRESHOLD, 1, Exception()))
 
     def test_bad_builder_above_reset_threshold(self):
         self.assertEqual(
             (None, True),
             judge_failure(
-                Builder.RESET_THRESHOLD + 1, Builder.RESET_THRESHOLD))
+                Builder.RESET_THRESHOLD + 1, Builder.RESET_THRESHOLD,
+                Exception()))
 
     def test_bad_builder_second_reset(self):
         self.assertEqual(
             (True, True),
-            judge_failure(Builder.RESET_THRESHOLD * 2, 1))
+            judge_failure(Builder.RESET_THRESHOLD * 2, 1, Exception()))
 
     def test_bad_builder_gives_up(self):
         self.assertEqual(
             (False, True),
-            judge_failure(Builder.RESET_THRESHOLD * 3, 1))
+            judge_failure(Builder.RESET_THRESHOLD * 3, 1, Exception()))
 
     def test_bad_job_fails(self):
         self.assertEqual(
             (None, False),
-            judge_failure(1, 2))
+            judge_failure(1, 2, Exception()))
+
+    def test_isolation_violation_double_kills(self):
+        self.assertEqual(
+            (False, False),
+            judge_failure(1, 1, BuildDaemonIsolationError()))
 
 
 class TestCancellationChecking(TestCaseWithFactory):
