@@ -182,65 +182,31 @@ def assessFailureCounts(logger, vitals, builder, slave, interactor, retry,
     :return: A Deferred that fires either immediately or after a virtual
         slave has been reset.
     """
-    # builder.currentjob hides a complicated query, don't run it twice.
-    # See bug 623281 (Note that currentjob is a cachedproperty).
-
     del get_property_cache(builder).currentjob
-    current_job = builder.currentjob
-    if current_job is None:
-        job_failure_count = 0
-    else:
-        job_failure_count = current_job.specific_build.failure_count
+    job = builder.currentjob
+    builder_action, job_action = judge_failure(
+        builder.failure_count, job.specific_build.failure_count if job else 0,
+        retry=retry)
 
-    if builder.failure_count == job_failure_count and current_job is not None:
-        # If the failure count for the builder is the same as the
-        # failure count for the job being built, then we cannot
-        # tell whether the job or the builder is at fault. We retry the
-        # scan a few times, but once we give up the best we can do is
-        # reset the job and hope it runs against a different builder,
-        # giving us a judgement on which is at fault.
-        if not retry or builder.failure_count >= Builder.JOB_RESET_THRESHOLD:
-            current_job.reset()
-            del get_property_cache(builder).currentjob
-        return
+    if job is not None:
+        if job_action == False:
+            # Fail and dequeue the job.
+            builder.resetFailureCount()
+            job.specific_build.updateStatus(BuildStatus.FAILEDTOBUILD)
+            job.destroySelf()
+        elif job_action == True:
+            # Reset the job so it will be retried elsewhere.
+            job.reset()
 
-    if builder.failure_count > job_failure_count:
-        # The builder has failed more than the jobs it's been
-        # running.
-
-        # Re-schedule the build if there is one.
-        if current_job is not None:
-            current_job.reset()
-
-        # We are a little more tolerant with failing builders than
-        # failing jobs because sometimes they get unresponsive due to
-        # human error, flaky networks etc.  We expect the builder to get
-        # better, whereas jobs are very unlikely to get better.
-        if builder.failure_count >= (
-                Builder.RESET_THRESHOLD * Builder.RESET_FAILURE_THRESHOLD):
-            # We've already tried resetting it enough times, so we have
-            # little choice but to give up.
-            builder.failBuilder(str(exception))
-        elif builder.failure_count % Builder.RESET_THRESHOLD == 0:
-            # The builder is dead, but in the virtual case it might be worth
-            # resetting it.
-            yield interactor.resetOrFail(
-                vitals, slave, builder, logger, exception)
-    else:
-        # The job is the culprit!  Override its status to 'failed'
-        # to make sure it won't get automatically dispatched again,
-        # and remove the buildqueue request.  The failure should
-        # have already caused any relevant slave data to be stored
-        # on the build record so don't worry about that here.
-        builder.resetFailureCount()
-        build_job = current_job.specific_build
-        build_job.updateStatus(BuildStatus.FAILEDTOBUILD)
-        builder.currentjob.destroySelf()
-
-        # N.B. We could try and call _handleStatus_PACKAGEFAIL here
-        # but that would cause us to query the slave for its status
-        # again, and if the slave is non-responsive it holds up the
-        # next buildd scan.
+    if builder_action == False:
+        # We've already tried resetting it enough times, so we have
+        # little choice but to give up.
+        builder.failBuilder(str(exception))
+    elif builder_action == True:
+        # The builder is dead, but in the virtual case it might be worth
+        # resetting it.
+        yield interactor.resetOrFail(
+            vitals, slave, builder, logger, exception)
     del get_property_cache(builder).currentjob
 
 
