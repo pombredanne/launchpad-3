@@ -465,6 +465,26 @@ class TestSlaveScannerScan(TestCaseWithFactory):
         self.assertEqual(BuilderCleanStatus.DIRTY, builder.clean_status)
 
     @defer.inlineCallbacks
+    def test_isolation_error_means_death(self):
+        # Certain failures immediately kill both the job and the
+        # builder. For example, a building builder that isn't dirty
+        # probably indicates some potentially grave security bug.
+        builder = getUtility(IBuilderSet)[BOB_THE_BUILDER_NAME]
+        build = builder.current_build
+        self.assertIsNotNone(build.buildqueue_record)
+        self.assertEqual(BuildStatus.BUILDING, build.status)
+        self.assertEqual(0, build.failure_count)
+        self.assertEqual(0, builder.failure_count)
+        builder.setCleanStatus(BuilderCleanStatus.CLEAN)
+        transaction.commit()
+        yield self._getScanner().singleCycle()
+        self.assertFalse(builder.builderok)
+        self.assertEqual(
+            'Non-dirty builder allegedly building.', builder.failnotes)
+        self.assertIsNone(build.buildqueue_record)
+        self.assertEqual(BuildStatus.FAILEDTOBUILD, build.status)
+
+    @defer.inlineCallbacks
     def test_update_slave_version(self):
         # If the reported slave version differs from the DB's record of it,
         # then scanning the builder updates the DB.
