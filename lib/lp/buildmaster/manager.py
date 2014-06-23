@@ -374,11 +374,10 @@ class SlaveScanner:
             self.date_cancel = None
             vitals.build_queue.markAsCancelled()
             transaction.commit()
-            value = yield interactor.resetOrFail(
+            resumed = yield interactor.resetOrFail(
                 vitals, slave, self.builder_factory[vitals.name], self.logger,
                 e)
-            # value is not None if we resumed a slave host.
-            defer.returnValue(value is not None)
+            defer.returnValue(resumed)
 
     def getExpectedCookie(self, vitals):
         """Return the build cookie expected to be held by the slave.
