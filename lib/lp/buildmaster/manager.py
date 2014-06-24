@@ -360,7 +360,6 @@ class SlaveScanner:
         """
         if vitals.build_queue.status != BuildQueueStatus.CANCELLING:
             self.date_cancel = None
-            defer.returnValue(False)
 
         if self.date_cancel is None:
             self.logger.info(
@@ -378,7 +377,6 @@ class SlaveScanner:
                     "Waiting for BuildQueue %d (%s) on %s to cancel",
                     vitals.build_queue.id, self.getExpectedCookie(vitals),
                     vitals.name)
-                defer.returnValue(False)
             else:
                 raise BuildSlaveFailure(
                     "Timeout waiting for BuildQueue %d (%s) on %s to "
