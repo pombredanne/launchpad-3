@@ -350,7 +350,7 @@ class SlaveScanner:
             transaction.abort()
 
     @defer.inlineCallbacks
-    def checkCancellation(self, vitals, slave, interactor):
+    def checkCancellation(self, vitals, slave):
         """See if there is a pending cancellation request.
 
         If the current build is in status CANCELLING then terminate it
@@ -453,7 +453,7 @@ class SlaveScanner:
                 transaction.commit()
                 return
 
-            yield self.checkCancellation(vitals, slave, interactor)
+            yield self.checkCancellation(vitals, slave)
 
             # The slave and DB agree on the builder's state.  Scan the
             # slave and get the logtail, or collect the build if it's

@@ -961,7 +961,6 @@ class TestCancellationChecking(TestCaseWithFactory):
         builder_name = BOB_THE_BUILDER_NAME
         self.builder = getUtility(IBuilderSet)[builder_name]
         self.builder.virtualized = True
-        self.interactor = BuilderInteractor()
 
     @property
     def vitals(self):
@@ -977,7 +976,7 @@ class TestCancellationChecking(TestCaseWithFactory):
         # If the active build is not in a CANCELLING state, ignore it.
         slave = BuildingSlave()
         scanner = self._getScanner()
-        yield scanner.checkCancellation(self.vitals, slave, self.interactor)
+        yield scanner.checkCancellation(self.vitals, slave)
         self.assertEqual([], slave.call_log)
 
     @defer.inlineCallbacks
@@ -986,12 +985,12 @@ class TestCancellationChecking(TestCaseWithFactory):
         slave = BuildingSlave()
         self.builder.current_build.cancel()
         scanner = self._getScanner()
-        yield scanner.checkCancellation(self.vitals, slave, self.interactor)
+        yield scanner.checkCancellation(self.vitals, slave)
         self.assertEqual(["abort"], slave.call_log)
 
         # A further scan is a no-op, as we remember that we've already
         # requested that the slave abort.
-        yield scanner.checkCancellation(self.vitals, slave, self.interactor)
+        yield scanner.checkCancellation(self.vitals, slave)
         self.assertEqual(["abort"], slave.call_log)
 
     @defer.inlineCallbacks
@@ -1005,15 +1004,14 @@ class TestCancellationChecking(TestCaseWithFactory):
         clock = task.Clock()
         scanner = self._getScanner(clock=clock)
 
-        yield scanner.checkCancellation(self.vitals, slave, self.interactor)
+        yield scanner.checkCancellation(self.vitals, slave)
         self.assertEqual(["abort"], slave.call_log)
         self.assertEqual(BuildStatus.CANCELLING, build.status)
 
         clock.advance(SlaveScanner.CANCEL_TIMEOUT)
         with ExpectedException(
                 BuildSlaveFailure, "Timeout waiting for .* to cancel"):
-            yield scanner.checkCancellation(
-                self.vitals, slave, self.interactor)
+            yield scanner.checkCancellation(self.vitals, slave)
 
     @defer.inlineCallbacks
     def test_failed_abort_errors(self):
@@ -1023,8 +1021,7 @@ class TestCancellationChecking(TestCaseWithFactory):
         self.builder.current_build.cancel()
         with ExpectedException(
                 xmlrpclib.Fault, "<Fault 8002: 'Could not abort'>"):
-            yield self._getScanner().checkCancellation(
-                self.vitals, slave, self.interactor)
+            yield self._getScanner().checkCancellation(self.vitals, slave)
 
 
 class TestBuilddManager(TestCase):
