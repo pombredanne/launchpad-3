@@ -360,8 +360,7 @@ class SlaveScanner:
         """
         if vitals.build_queue.status != BuildQueueStatus.CANCELLING:
             self.date_cancel = None
-
-        if self.date_cancel is None:
+        elif self.date_cancel is None:
             self.logger.info(
                 "Cancelling BuildQueue %d (%s) on %s",
                 vitals.build_queue.id, self.getExpectedCookie(vitals),
