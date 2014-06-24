@@ -37,6 +37,7 @@ from lp.buildmaster.interactor import (
     )
 from lp.buildmaster.interfaces.builder import (
     BuildDaemonIsolationError,
+    BuildSlaveFailure,
     IBuilderSet,
     )
 from lp.buildmaster.interfaces.buildfarmjobbehaviour import (
@@ -557,7 +558,7 @@ class TestSlaveScannerScan(TestCaseWithFactory):
         # we should have also called the resume() method on the slave that
         # resets the virtual machine.
         clock.advance(SlaveScanner.CANCEL_TIMEOUT)
-        yield scanner.scan()
+        yield scanner.singleCycle()
         self.assertEqual(1, slave.call_log.count("abort"))
         self.assertEqual(BuilderCleanStatus.DIRTY, builder.clean_status)
         self.assertEqual(BuildStatus.CANCELLED, build.status)
@@ -1013,11 +1014,10 @@ class TestCancellationChecking(TestCaseWithFactory):
         self.assertEqual(BuildStatus.CANCELLING, build.status)
 
         clock.advance(SlaveScanner.CANCEL_TIMEOUT)
-        result = yield scanner.checkCancellation(
-            self.vitals, slave, self.interactor)
-        self.assertEqual(BuilderCleanStatus.DIRTY, self.builder.clean_status)
-        self.assertTrue(result)
-        self.assertEqual(BuildStatus.CANCELLED, build.status)
+        with ExpectedException(
+                BuildSlaveFailure, "Timeout waiting for .* to cancel"):
+            yield scanner.checkCancellation(
+                self.vitals, slave, self.interactor)
 
     @defer.inlineCallbacks
     def test_lost_build_is_cancelled(self):
@@ -1028,11 +1028,10 @@ class TestCancellationChecking(TestCaseWithFactory):
         buildqueue = self.builder.currentjob
         build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(buildqueue)
         build.cancel()
-        result = yield self._getScanner().checkCancellation(
-            self.vitals, slave, self.interactor)
-        self.assertEqual(BuilderCleanStatus.DIRTY, self.builder.clean_status)
-        self.assertTrue(result)
-        self.assertEqual(BuildStatus.CANCELLED, build.status)
+        with ExpectedException(
+                xmlrpclib.Fault, "<Fault 8002: 'Could not abort'>"):
+            yield self._getScanner().checkCancellation(
+                self.vitals, slave, self.interactor)
 
 
 class TestBuilddManager(TestCase):

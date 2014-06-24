@@ -356,10 +356,9 @@ class SlaveScanner:
         If the current build is in status CANCELLING then terminate it
         immediately.
 
-        :return: A deferred whose value is True if we recovered the builder
-            by resuming a slave host, so that there is no need to update its
-            status.
+        :return: A deferred which fires when this cancellation cycle is done.
         """
+        # XXX: This isn't invoked if there is no build_queue.
         if vitals.build_queue is None:
             self.date_cancel = None
             defer.returnValue(False)
@@ -367,43 +366,29 @@ class SlaveScanner:
             self.date_cancel = None
             defer.returnValue(False)
 
-        try:
-            if self.date_cancel is None:
-                self.logger.info(
-                    "Cancelling BuildQueue %d (%s) on %s",
-                    vitals.build_queue.id, self.getExpectedCookie(vitals),
-                    vitals.name)
-                yield slave.abort()
-                self.date_cancel = self._clock.seconds() + self.CANCEL_TIMEOUT
-                defer.returnValue(False)
-            else:
-                # The BuildFarmJob will normally set the build's status to
-                # something other than CANCELLING once the builder responds to
-                # the cancel request.  This timeout is in case it doesn't.
-                if self._clock.seconds() < self.date_cancel:
-                    self.logger.info(
-                        "Waiting for BuildQueue %d (%s) on %s to cancel",
-                        vitals.build_queue.id, self.getExpectedCookie(vitals),
-                        vitals.name)
-                    defer.returnValue(False)
-                else:
-                    raise BuildSlaveFailure(
-                        "Timeout waiting for BuildQueue %d (%s) on %s to "
-                        "cancel" % (
-                        vitals.build_queue.id, self.getExpectedCookie(vitals),
-                        vitals.name))
-        except Exception as e:
+        if self.date_cancel is None:
             self.logger.info(
-                "Failure while cancelling BuildQueue %d (%s) on %s",
+                "Cancelling BuildQueue %d (%s) on %s",
                 vitals.build_queue.id, self.getExpectedCookie(vitals),
                 vitals.name)
-            self.date_cancel = None
-            vitals.build_queue.markAsCancelled()
-            transaction.commit()
-            resumed = yield interactor.resetOrFail(
-                vitals, slave, self.builder_factory[vitals.name], self.logger,
-                e)
-            defer.returnValue(resumed)
+            yield slave.abort()
+            self.date_cancel = self._clock.seconds() + self.CANCEL_TIMEOUT
+        else:
+            # The BuildFarmJob will normally set the build's status to
+            # something other than CANCELLING once the builder responds to
+            # the cancel request.  This timeout is in case it doesn't.
+            if self._clock.seconds() < self.date_cancel:
+                self.logger.info(
+                    "Waiting for BuildQueue %d (%s) on %s to cancel",
+                    vitals.build_queue.id, self.getExpectedCookie(vitals),
+                    vitals.name)
+                defer.returnValue(False)
+            else:
+                raise BuildSlaveFailure(
+                    "Timeout waiting for BuildQueue %d (%s) on %s to "
+                    "cancel" % (
+                    vitals.build_queue.id, self.getExpectedCookie(vitals),
+                    vitals.name))
 
     def getExpectedCookie(self, vitals):
         """Return the build cookie expected to be held by the slave.
@@ -472,10 +457,7 @@ class SlaveScanner:
                 transaction.commit()
                 return
 
-            cancelled = yield self.checkCancellation(
-                vitals, slave, interactor)
-            if cancelled:
-                return
+            yield self.checkCancellation(vitals, slave, interactor)
 
             # The slave and DB agree on the builder's state.  Scan the
             # slave and get the logtail, or collect the build if it's
