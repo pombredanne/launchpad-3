@@ -380,45 +380,6 @@ class BuilderInteractor(object):
         yield behaviour.dispatchBuildToSlave(build_queue_item.id, logger)
 
     @classmethod
-    def resetOrFail(cls, vitals, slave, builder, logger, exception):
-        """Handle "confirmed" build slave failures.
-
-        Call this when there have been multiple failures that are not just
-        the fault of failing jobs, or when the builder has entered an
-        ABORTED state without having been asked to do so.
-
-        In case of a virtualized builder we ensure it's dirty so the
-        next scan will reset it.
-
-        A non-virtualized builder will be failed straightaway (using
-        `failBuilder`).
-
-        :param logger: The logger object to be used for logging.
-        :param exception: An exception to be used for logging.
-        :return: True if the builder is to be resumed, None otherwise.
-        """
-        error_message = str(exception)
-        if vitals.virtualized:
-            # Virtualized/PPA builder: mark it dirty so the next
-            # scan will attempt a reset.
-            logger.warn(
-                "Dirtying builder: %s -- %s" % (vitals.url, error_message),
-                exc_info=True)
-            if builder.clean_status != BuilderCleanStatus.DIRTY:
-                builder.setCleanStatus(BuilderCleanStatus.DIRTY)
-                transaction.commit()
-            return True
-        else:
-            # XXX: This should really let the failure bubble up to the
-            # scan() method that does the failure counting.
-            # Mark builder as 'failed'.
-            logger.warn(
-                "Disabling builder: %s -- %s" % (vitals.url, error_message))
-            builder.failBuilder(error_message)
-            transaction.commit()
-            return False
-
-    @classmethod
     @defer.inlineCallbacks
     def findAndStartJob(cls, vitals, builder, slave):
         """Find a job to run and send it to the buildd slave.
