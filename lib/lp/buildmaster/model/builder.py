@@ -113,7 +113,7 @@ class Builder(SQLBase):
 
     # The number of times a builder can consecutively fail before we
     # mark it builderok=False.
-    RESET_THRESHOLD = 5
+    FAILURE_THRESHOLD = 5
 
     def _getBuilderok(self):
         return self._builderok

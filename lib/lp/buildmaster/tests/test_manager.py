@@ -427,7 +427,7 @@ class TestSlaveScannerScan(TestCaseWithFactory):
         scanner = self._getScanner()
         scanner.scan = failing_scan
         builder = getUtility(IBuilderSet)[scanner.builder_name]
-        builder.failure_count = Builder.RESET_THRESHOLD
+        builder.failure_count = Builder.FAILURE_THRESHOLD
         builder.currentjob.reset()
         transaction.commit()
 
@@ -919,13 +919,13 @@ class TestJudgeFailure(TestCase):
         # case, or just retrying for non-virts).
         self.assertEqual(
             (True, True),
-            judge_failure(Builder.RESET_THRESHOLD - 1, 1, Exception()))
+            judge_failure(Builder.FAILURE_THRESHOLD - 1, 1, Exception()))
 
     def test_bad_builder_gives_up(self):
         # A persistently bad builder resets its job and fails itself.
         self.assertEqual(
             (False, True),
-            judge_failure(Builder.RESET_THRESHOLD, 1, Exception()))
+            judge_failure(Builder.FAILURE_THRESHOLD, 1, Exception()))
 
     def test_bad_job_fails(self):
         self.assertEqual(
@@ -1130,7 +1130,7 @@ class TestFailureAssessments(TestCaseWithFactory):
         # The first few failures of a bad builder just reset the job and
         # mark the builder dirty. The next scan will reset a virtual
         # builder or attempt to clean up a non-virtual builder.
-        self.builder.failure_count = Builder.RESET_THRESHOLD - 1
+        self.builder.failure_count = Builder.FAILURE_THRESHOLD - 1
         self.assertIsNot(None, self.builder.currentjob)
         self._assessFailureCounts("failnotes")
         self.assertIs(None, self.builder.currentjob)
@@ -1139,7 +1139,7 @@ class TestFailureAssessments(TestCaseWithFactory):
 
         # But if the builder continues to cause trouble, it will be
         # disabled.
-        self.builder.failure_count = Builder.RESET_THRESHOLD
+        self.builder.failure_count = Builder.FAILURE_THRESHOLD
         self.buildqueue.markAsBuilding(self.builder)
         self._assessFailureCounts("failnotes")
         self.assertIs(None, self.builder.currentjob)
@@ -1149,7 +1149,7 @@ class TestFailureAssessments(TestCaseWithFactory):
 
     def test_builder_failing_with_no_attached_job(self):
         self.buildqueue.reset()
-        self.builder.failure_count = Builder.RESET_THRESHOLD
+        self.builder.failure_count = Builder.FAILURE_THRESHOLD
 
         self._assessFailureCounts("failnotes")
         self.assertFalse(self.builder.builderok)

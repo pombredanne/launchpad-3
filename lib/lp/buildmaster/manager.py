@@ -161,7 +161,7 @@ def judge_failure(builder_count, job_count, exc, retry=True):
     elif builder_count > job_count:
         # The builder has failed more than the job, so the builder is at
         # fault. We reset the job and attempt to recover the builder.
-        if builder_count < Builder.RESET_THRESHOLD:
+        if builder_count < Builder.FAILURE_THRESHOLD:
             # Let's dirty the builder and give it a few cycles to
             # recover. Since it's dirty and idle, this will
             # automatically attempt a reset if virtual.
