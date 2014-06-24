@@ -161,21 +161,14 @@ def judge_failure(builder_count, job_count, exc, retry=True):
     elif builder_count > job_count:
         # The builder has failed more than the job, so the builder is at
         # fault. We reset the job and attempt to recover the builder.
-
-        # Normally we just leave the builder alone, retrying the scan
-        # without a job.
-        # XXX: Rescanning a virtual builder without resetting is stupid,
-        # as it will be reset anyway due to being dirty and idle.
-        builder_action = None
-        if (builder_count >=
-                Builder.RESET_THRESHOLD * Builder.RESET_FAILURE_THRESHOLD):
-            # But if we've retried too many times, we fail it.
-            builder_action = False
-        elif builder_count % Builder.RESET_THRESHOLD == 0:
-            # And every few tries we reset a virtual builder, or fail a
-            # non-virt one.
-            builder_action = True
-        return (builder_action, True)
+        if builder_count < Builder.RESET_THRESHOLD:
+            # Let's dirty the builder and give it a few cycles to
+            # recover. Since it's dirty and idle, this will
+            # automatically attempt a reset if virtual.
+            return (True, True)
+        else:
+            # We've retried too many times, so fail the builder.
+            return (False, True)
     else:
         # The job has failed more than the builder. Fail it.
         return (None, False)
@@ -184,7 +177,6 @@ def judge_failure(builder_count, job_count, exc, retry=True):
     return (None, None)
 
 
-@defer.inlineCallbacks
 def assessFailureCounts(logger, vitals, builder, slave, interactor, retry,
                         exception):
     """View builder/job failure_count and work out which needs to die.
@@ -224,11 +216,10 @@ def assessFailureCounts(logger, vitals, builder, slave, interactor, retry,
         # little choice but to give up.
         builder.failBuilder(str(exception))
     elif builder_action == True:
-        # The builder is dead, but in the virtual case it might be worth
-        # resetting it.
-        yield interactor.resetOrFail(
-            vitals, slave, builder, logger, exception)
-    del get_property_cache(builder).currentjob
+        # Dirty the builder to attempt recovery. In the virtual case,
+        # the dirty idleness will cause a reset, giving us a good chance
+        # of recovery.
+        builder.setCleanStatus(BuilderCleanStatus.DIRTY)
 
 
 class SlaveScanner:

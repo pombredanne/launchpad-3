@@ -906,38 +906,27 @@ class TestJudgeFailure(TestCase):
                 Exception()))
 
     def test_same_count_no_retries(self):
+        # A single failure of both causes a job reset if retries are
+        # forbidden.
         self.assertEqual(
             (None, True),
             judge_failure(
                 Builder.JOB_RESET_THRESHOLD - 1,
                 Builder.JOB_RESET_THRESHOLD - 1, Exception(), retry=False))
 
-    def test_bad_builder_below_threshold(self):
+    def test_bad_builder(self):
+        # A bad builder resets its job and dirties itself. The next scan
+        # will do what it can to recover it (resetting in the virtual
+        # case, or just retrying for non-virts).
         self.assertEqual(
-            (None, True),
+            (True, True),
             judge_failure(Builder.RESET_THRESHOLD - 1, 1, Exception()))
 
-    def test_bad_builder_at_reset_threshold(self):
-        self.assertEqual(
-            (True, True),
-            judge_failure(Builder.RESET_THRESHOLD, 1, Exception()))
-
-    def test_bad_builder_above_reset_threshold(self):
-        self.assertEqual(
-            (None, True),
-            judge_failure(
-                Builder.RESET_THRESHOLD + 1, Builder.RESET_THRESHOLD,
-                Exception()))
-
-    def test_bad_builder_second_reset(self):
-        self.assertEqual(
-            (True, True),
-            judge_failure(Builder.RESET_THRESHOLD * 2, 1, Exception()))
-
     def test_bad_builder_gives_up(self):
+        # A persistently bad builder resets its job and fails itself.
         self.assertEqual(
             (False, True),
-            judge_failure(Builder.RESET_THRESHOLD * 3, 1, Exception()))
+            judge_failure(Builder.RESET_THRESHOLD, 1, Exception()))
 
     def test_bad_job_fails(self):
         self.assertEqual(
@@ -1143,54 +1132,26 @@ class TestFailureAssessments(TestCaseWithFactory):
         self.assertEqual(BuildStatus.CANCELLED, self.build.status)
 
     @defer.inlineCallbacks
-    def test_virtual_builder_reset_thresholds(self):
-        self.builder.virtualized = True
-        self.builder.vm_host = 'foo'
+    def test_bad_builder(self):
         self.builder.setCleanStatus(BuilderCleanStatus.CLEAN)
 
-        for failure_count in range(
-            Builder.RESET_THRESHOLD - 1,
-            Builder.RESET_THRESHOLD * Builder.RESET_FAILURE_THRESHOLD):
-            self.builder.failure_count = failure_count
-            yield self._assessFailureCounts("failnotes")
-            self.assertIs(None, self.builder.currentjob)
-            self.assertEqual(self.build.status, BuildStatus.NEEDSBUILD)
-            # The builder should be CLEAN until it hits the
-            # RESET_THRESHOLD.
-            if failure_count % Builder.RESET_THRESHOLD != 0:
-                self.assertEqual(
-                    BuilderCleanStatus.CLEAN, self.builder.clean_status)
-            else:
-                self.assertEqual(
-                    BuilderCleanStatus.DIRTY, self.builder.clean_status)
-                self.builder.setCleanStatus(BuilderCleanStatus.CLEAN)
-            self.assertTrue(self.builder.builderok)
-
-        self.builder.failure_count = (
-            Builder.RESET_THRESHOLD * Builder.RESET_FAILURE_THRESHOLD)
-        yield self._assessFailureCounts("failnotes")
-        self.assertIs(None, self.builder.currentjob)
-        self.assertEqual(self.build.status, BuildStatus.NEEDSBUILD)
-        self.assertEqual(
-            BuilderCleanStatus.CLEAN, self.builder.clean_status)
-        self.assertFalse(self.builder.builderok)
-        self.assertEqual("failnotes", self.builder.failnotes)
-
-    @defer.inlineCallbacks
-    def test_non_virtual_builder_reset_thresholds(self):
-        self.builder.virtualized = False
+        # The first few failures of a bad builder just reset the job and
+        # mark the builder dirty. The next scan will reset a virtual
+        # builder or attempt to clean up a non-virtual builder.
         self.builder.failure_count = Builder.RESET_THRESHOLD - 1
+        self.assertIsNot(None, self.builder.currentjob)
         yield self._assessFailureCounts("failnotes")
         self.assertIs(None, self.builder.currentjob)
-        self.assertEqual(self.build.status, BuildStatus.NEEDSBUILD)
-        self.assertEqual(0, self.slave.call_log.count('resume'))
+        self.assertEqual(BuilderCleanStatus.DIRTY, self.builder.clean_status)
         self.assertTrue(self.builder.builderok)
 
+        # But if the builder continues to cause trouble, it will be
+        # disabled.
         self.builder.failure_count = Builder.RESET_THRESHOLD
+        self.buildqueue.markAsBuilding(self.builder)
         yield self._assessFailureCounts("failnotes")
         self.assertIs(None, self.builder.currentjob)
-        self.assertEqual(self.build.status, BuildStatus.NEEDSBUILD)
-        self.assertEqual(0, self.slave.call_log.count('resume'))
+        self.assertEqual(BuilderCleanStatus.DIRTY, self.builder.clean_status)
         self.assertFalse(self.builder.builderok)
         self.assertEqual("failnotes", self.builder.failnotes)
 
