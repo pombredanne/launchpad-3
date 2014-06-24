@@ -7,6 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'BuildDaemonError',
+    'BuildDaemonIsolationError',
     'BuildSlaveFailure',
     'CannotBuild',
     'CannotFetchFile',
@@ -69,6 +70,10 @@ from lp.soyuz.interfaces.processor import IProcessor
 
 class BuildDaemonError(Exception):
     """The class of errors raised by the buildd classes"""
+
+
+class BuildDaemonIsolationError(BuildDaemonError):
+    """A build isolation violation has been detected."""
 
 
 class CannotFetchFile(BuildDaemonError):

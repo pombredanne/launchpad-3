@@ -27,6 +27,7 @@ from lp.buildmaster.enums import (
     )
 from lp.buildmaster.interfaces.builder import (
     BuildDaemonError,
+    BuildDaemonIsolationError,
     CannotFetchFile,
     CannotResumeHost,
     )
@@ -366,11 +367,11 @@ class BuilderInteractor(object):
 
         # Set the build behaviour depending on the provided build queue item.
         if not builder.builderok:
-            raise BuildDaemonError(
+            raise BuildDaemonIsolationError(
                 "Attempted to start a build on a known-bad builder.")
 
         if builder.clean_status != BuilderCleanStatus.CLEAN:
-            raise BuildDaemonError(
+            raise BuildDaemonIsolationError(
                 "Attempted to start build on a dirty slave.")
 
         builder.setCleanStatus(BuilderCleanStatus.DIRTY)
@@ -394,8 +395,7 @@ class BuilderInteractor(object):
 
         :param logger: The logger object to be used for logging.
         :param exception: An exception to be used for logging.
-        :return: A Deferred that fires after the virtual slave was resumed
-            or immediately if it's a non-virtual slave.
+        :return: True if the builder is to be resumed, None otherwise.
         """
         error_message = str(exception)
         if vitals.virtualized:
@@ -407,7 +407,7 @@ class BuilderInteractor(object):
             if builder.clean_status != BuilderCleanStatus.DIRTY:
                 builder.setCleanStatus(BuilderCleanStatus.DIRTY)
                 transaction.commit()
-            return defer.succeed(True)
+            return True
         else:
             # XXX: This should really let the failure bubble up to the
             # scan() method that does the failure counting.
@@ -416,7 +416,7 @@ class BuilderInteractor(object):
                 "Disabling builder: %s -- %s" % (vitals.url, error_message))
             builder.failBuilder(error_message)
             transaction.commit()
-        return defer.succeed(None)
+            return False
 
     @classmethod
     @defer.inlineCallbacks
