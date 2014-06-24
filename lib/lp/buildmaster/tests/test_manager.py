@@ -45,7 +45,6 @@ from lp.buildmaster.interfaces.buildfarmjobbehaviour import (
     )
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.manager import (
-    assessFailureCounts,
     BuilddManager,
     BUILDER_FAILURE_THRESHOLD,
     BuilderFactory,
@@ -53,6 +52,7 @@ from lp.buildmaster.manager import (
     judge_failure,
     NewBuildersScanner,
     PrefetchedBuilderFactory,
+    recover_failure,
     SlaveScanner,
     )
 from lp.buildmaster.tests.harness import BuilddManagerTestSetup
@@ -377,7 +377,7 @@ class TestSlaveScannerScan(TestCaseWithFactory):
         scanner = self._getScanner()
         scanner.scan = failing_scan
         from lp.buildmaster import manager as manager_module
-        self.patch(manager_module, 'assessFailureCounts', FakeMethod())
+        self.patch(manager_module, 'recover_failure', FakeMethod())
         builder = getUtility(IBuilderSet)[scanner.builder_name]
 
         builder.failure_count = builder_count
@@ -398,7 +398,7 @@ class TestSlaveScannerScan(TestCaseWithFactory):
         self.assertEqual(
             expected_job_count,
             builder.current_build.failure_count)
-        self.assertEqual(1, manager_module.assessFailureCounts.call_count)
+        self.assertEqual(1, manager_module.recover_failure.call_count)
 
     def test_scan_first_fail(self):
         # The first failure of a job should result in the failure_count
@@ -1060,9 +1060,9 @@ class TestFailureAssessments(TestCaseWithFactory):
         self.buildqueue.markAsBuilding(self.builder)
         self.slave = OkSlave()
 
-    def _assessFailureCounts(self, fail_notes, retry=True):
-        # Helper for assessFailureCounts boilerplate.
-        return assessFailureCounts(
+    def _recover_failure(self, fail_notes, retry=True):
+        # Helper for recover_failure boilerplate.
+        recover_failure(
             BufferLogger(), extract_vitals_from_db(self.builder), self.builder,
             retry, Exception(fail_notes))
 
@@ -1071,14 +1071,14 @@ class TestFailureAssessments(TestCaseWithFactory):
         self.builder.failure_count = JOB_RESET_THRESHOLD - 1
         naked_build.failure_count = JOB_RESET_THRESHOLD - 1
 
-        self._assessFailureCounts("failnotes")
+        self._recover_failure("failnotes")
         self.assertIsNot(None, self.builder.currentjob)
         self.assertEqual(self.build.status, BuildStatus.BUILDING)
 
         self.builder.failure_count += 1
         naked_build.failure_count += 1
 
-        self._assessFailureCounts("failnotes")
+        self._recover_failure("failnotes")
         self.assertIs(None, self.builder.currentjob)
         self.assertEqual(self.build.status, BuildStatus.NEEDSBUILD)
 
@@ -1087,7 +1087,7 @@ class TestFailureAssessments(TestCaseWithFactory):
         self.builder.failure_count = 1
         naked_build.failure_count = 1
 
-        self._assessFailureCounts("failnotes", retry=False)
+        self._recover_failure("failnotes", retry=False)
         self.assertIs(None, self.builder.currentjob)
         self.assertEqual(self.build.status, BuildStatus.NEEDSBUILD)
 
@@ -1099,7 +1099,7 @@ class TestFailureAssessments(TestCaseWithFactory):
         self.builder.failure_count = 1
         naked_build.failure_count = 1
 
-        self._assessFailureCounts("failnotes")
+        self._recover_failure("failnotes")
         self.assertIs(None, self.builder.currentjob)
         self.assertEqual(BuildStatus.CANCELLED, self.build.status)
 
@@ -1108,7 +1108,7 @@ class TestFailureAssessments(TestCaseWithFactory):
         self.build.gotFailure()
         self.builder.gotFailure()
 
-        self._assessFailureCounts("failnotes")
+        self._recover_failure("failnotes")
         self.assertIs(None, self.builder.currentjob)
         self.assertEqual(self.build.status, BuildStatus.FAILEDTOBUILD)
         self.assertEqual(0, self.builder.failure_count)
@@ -1120,7 +1120,7 @@ class TestFailureAssessments(TestCaseWithFactory):
         self.build.gotFailure()
         self.build.gotFailure()
         self.builder.gotFailure()
-        self._assessFailureCounts("failnotes")
+        self._recover_failure("failnotes")
         self.assertIs(None, self.builder.currentjob)
         self.assertEqual(BuildStatus.CANCELLED, self.build.status)
 
@@ -1132,7 +1132,7 @@ class TestFailureAssessments(TestCaseWithFactory):
         # builder or attempt to clean up a non-virtual builder.
         self.builder.failure_count = BUILDER_FAILURE_THRESHOLD - 1
         self.assertIsNot(None, self.builder.currentjob)
-        self._assessFailureCounts("failnotes")
+        self._recover_failure("failnotes")
         self.assertIs(None, self.builder.currentjob)
         self.assertEqual(BuilderCleanStatus.DIRTY, self.builder.clean_status)
         self.assertTrue(self.builder.builderok)
@@ -1141,7 +1141,7 @@ class TestFailureAssessments(TestCaseWithFactory):
         # disabled.
         self.builder.failure_count = BUILDER_FAILURE_THRESHOLD
         self.buildqueue.markAsBuilding(self.builder)
-        self._assessFailureCounts("failnotes")
+        self._recover_failure("failnotes")
         self.assertIs(None, self.builder.currentjob)
         self.assertEqual(BuilderCleanStatus.DIRTY, self.builder.clean_status)
         self.assertFalse(self.builder.builderok)
@@ -1151,7 +1151,7 @@ class TestFailureAssessments(TestCaseWithFactory):
         self.buildqueue.reset()
         self.builder.failure_count = BUILDER_FAILURE_THRESHOLD
 
-        self._assessFailureCounts("failnotes")
+        self._recover_failure("failnotes")
         self.assertFalse(self.builder.builderok)
         self.assertEqual("failnotes", self.builder.failnotes)
 

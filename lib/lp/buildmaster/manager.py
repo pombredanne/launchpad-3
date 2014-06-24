@@ -186,7 +186,7 @@ def judge_failure(builder_count, job_count, exc, retry=True):
     return (None, None)
 
 
-def assessFailureCounts(logger, vitals, builder, retry, exception):
+def recover_failure(logger, vitals, builder, retry, exception):
     """Recover from a scan failure by slapping the builder or job."""
     del get_property_cache(builder).currentjob
     job = builder.currentjob
@@ -336,8 +336,7 @@ class SlaveScanner:
         builder = self.builder_factory[self.builder_name]
         try:
             builder.handleFailure(self.logger)
-            assessFailureCounts(
-                self.logger, vitals, builder, retry, failure.value)
+            recover_failure(self.logger, vitals, builder, retry, failure.value)
             transaction.commit()
         except Exception:
             # Catastrophic code failure! Not much we can do.
