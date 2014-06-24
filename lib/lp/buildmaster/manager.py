@@ -190,14 +190,25 @@ def assessFailureCounts(logger, vitals, builder, slave, interactor, retry,
     """
     del get_property_cache(builder).currentjob
     job = builder.currentjob
+
+    # If a job is being cancelled we won't bother retrying a failure.
+    # Just mark it as cancelled and clear the builder for normal cleanup.
+    cancelling = job is not None and job.status == BuildQueueStatus.CANCELLING
     builder_action, job_action = judge_failure(
         builder.failure_count, job.specific_build.failure_count if job else 0,
-        exception, retry=retry)
+        exception, retry=retry and not cancelling)
 
-    if job is not None:
+    if job is not None and job_action is not None:
         if job_action == False:
-            # Fail and dequeue the job.
+            # We've decided the job is bad, so unblame the builder.
             builder.resetFailureCount()
+
+        if cancelling:
+            # We've previously been asked to cancel the job, so just set
+            # it to cancelled rather than retrying or failing.
+            job.markAsCancelled()
+        elif job_action == False:
+            # Fail and dequeue the job.
             job.specific_build.updateStatus(BuildStatus.FAILEDTOBUILD)
             job.destroySelf()
         elif job_action == True:
@@ -339,60 +350,38 @@ class SlaveScanner:
             transaction.abort()
 
     @defer.inlineCallbacks
-    def checkCancellation(self, vitals, slave, interactor):
+    def checkCancellation(self, vitals, slave):
         """See if there is a pending cancellation request.
 
         If the current build is in status CANCELLING then terminate it
         immediately.
 
-        :return: A deferred whose value is True if we recovered the builder
-            by resuming a slave host, so that there is no need to update its
-            status.
+        :return: A deferred which fires when this cancellation cycle is done.
         """
-        if vitals.build_queue is None:
-            self.date_cancel = None
-            defer.returnValue(False)
         if vitals.build_queue.status != BuildQueueStatus.CANCELLING:
             self.date_cancel = None
-            defer.returnValue(False)
-
-        try:
-            if self.date_cancel is None:
-                self.logger.info(
-                    "Cancelling BuildQueue %d (%s) on %s",
-                    vitals.build_queue.id, self.getExpectedCookie(vitals),
-                    vitals.name)
-                yield slave.abort()
-                self.date_cancel = self._clock.seconds() + self.CANCEL_TIMEOUT
-                defer.returnValue(False)
-            else:
-                # The BuildFarmJob will normally set the build's status to
-                # something other than CANCELLING once the builder responds to
-                # the cancel request.  This timeout is in case it doesn't.
-                if self._clock.seconds() < self.date_cancel:
-                    self.logger.info(
-                        "Waiting for BuildQueue %d (%s) on %s to cancel",
-                        vitals.build_queue.id, self.getExpectedCookie(vitals),
-                        vitals.name)
-                    defer.returnValue(False)
-                else:
-                    raise BuildSlaveFailure(
-                        "Timeout waiting for BuildQueue %d (%s) on %s to "
-                        "cancel" % (
-                        vitals.build_queue.id, self.getExpectedCookie(vitals),
-                        vitals.name))
-        except Exception as e:
+        elif self.date_cancel is None:
             self.logger.info(
-                "Failure while cancelling BuildQueue %d (%s) on %s",
+                "Cancelling BuildQueue %d (%s) on %s",
                 vitals.build_queue.id, self.getExpectedCookie(vitals),
                 vitals.name)
-            self.date_cancel = None
-            vitals.build_queue.markAsCancelled()
-            transaction.commit()
-            resumed = yield interactor.resetOrFail(
-                vitals, slave, self.builder_factory[vitals.name], self.logger,
-                e)
-            defer.returnValue(resumed)
+            yield slave.abort()
+            self.date_cancel = self._clock.seconds() + self.CANCEL_TIMEOUT
+        else:
+            # The BuildFarmJob will normally set the build's status to
+            # something other than CANCELLING once the builder responds to
+            # the cancel request.  This timeout is in case it doesn't.
+            if self._clock.seconds() < self.date_cancel:
+                self.logger.info(
+                    "Waiting for BuildQueue %d (%s) on %s to cancel",
+                    vitals.build_queue.id, self.getExpectedCookie(vitals),
+                    vitals.name)
+            else:
+                raise BuildSlaveFailure(
+                    "Timeout waiting for BuildQueue %d (%s) on %s to "
+                    "cancel" % (
+                    vitals.build_queue.id, self.getExpectedCookie(vitals),
+                    vitals.name))
 
     def getExpectedCookie(self, vitals):
         """Return the build cookie expected to be held by the slave.
@@ -461,10 +450,7 @@ class SlaveScanner:
                 transaction.commit()
                 return
 
-            cancelled = yield self.checkCancellation(
-                vitals, slave, interactor)
-            if cancelled:
-                return
+            yield self.checkCancellation(vitals, slave)
 
             # The slave and DB agree on the builder's state.  Scan the
             # slave and get the logtail, or collect the build if it's
