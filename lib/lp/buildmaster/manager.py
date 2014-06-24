@@ -160,18 +160,22 @@ def judge_failure(builder_count, job_count, exc, retry=True):
             return (None, True)
     elif builder_count > job_count:
         # The builder has failed more than the job, so the builder is at
-        # fault. We reset the job, and attempt to recover the builder.
-        # We retry a few times, then reset the builder. Then try a few
-        # more times, then reset it again. Then try yet again, after
-        # which we fail.
+        # fault. We reset the job and attempt to recover the builder.
+
+        # Normally we just leave the builder alone, retrying the scan
+        # without a job.
         # XXX: Rescanning a virtual builder without resetting is stupid,
         # as it will be reset anyway due to being dirty and idle.
+        builder_action = None
         if (builder_count >=
                 Builder.RESET_THRESHOLD * Builder.RESET_FAILURE_THRESHOLD):
-            return (False, True)
+            # But if we've retried too many times, we fail it.
+            builder_action = False
         elif builder_count % Builder.RESET_THRESHOLD == 0:
-            return (True, True)
-        return (None, True)
+            # And every few tries we reset a virtual builder, or fail a
+            # non-virt one.
+            builder_action = True
+        return (builder_action, True)
     else:
         # The job has failed more than the builder. Fail it.
         return (None, False)
