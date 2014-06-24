@@ -64,7 +64,7 @@ class TestLiveFSBuildBehaviour(TestCaseWithFactory):
         super(TestLiveFSBuildBehaviour, self).setUp()
         self.useFixture(FeatureFixture({LIVEFS_FEATURE_FLAG: u"on"}))
 
-    def makeJob(self, **kwargs):
+    def makeJob(self, pocket=PackagePublishingPocket.RELEASE, **kwargs):
         """Create a sample `ILiveFSBuildBehaviour`."""
         distribution = self.factory.makeDistribution(name="distro")
         distroseries = self.factory.makeDistroSeries(
@@ -74,9 +74,8 @@ class TestLiveFSBuildBehaviour(TestCaseWithFactory):
             distroseries=distroseries, architecturetag="i386",
             processor=processor)
         build = self.factory.makeLiveFSBuild(
-            distroarchseries=distroarchseries,
-            pocket=PackagePublishingPocket.RELEASE, name=u"test-livefs",
-            **kwargs)
+            distroarchseries=distroarchseries, pocket=pocket,
+            name=u"test-livefs", **kwargs)
         return IBuildFarmJobBehaviour(build)
 
     def test_provides_interface(self):
@@ -203,10 +202,21 @@ class TestLiveFSBuildBehaviour(TestCaseWithFactory):
             "archives": expected_archives,
             "arch_tag": "i386",
             "datestamp": "20140425-103800",
+            "pocket": "release",
             "project": "distro",
             "subproject": "special",
-            "suite": "unstable",
+            "series": "unstable",
             }, job._extraBuildArgs())
+
+    def test_extraBuildArgs_proposed(self):
+        # _extraBuildArgs returns appropriate arguments if asked to build a
+        # job for -proposed.
+        job = self.makeJob(
+            pocket=PackagePublishingPocket.PROPOSED,
+            metadata={"project": "distro"})
+        args = job._extraBuildArgs()
+        self.assertEqual("unstable", args["series"])
+        self.assertEqual("proposed", args["pocket"])
 
     def test_extraBuildArgs_no_security_proxy(self):
         # _extraBuildArgs returns an object without security wrapping, even
