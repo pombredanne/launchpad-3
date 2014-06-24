@@ -161,14 +161,6 @@ class TestBuilderInteractor(TestCase):
         d = self.resumeSlaveHost(MockBuilder(virtualized=True, vm_host="pop"))
         return assert_fails_with(d, CannotResumeHost)
 
-    def test_resetOrFail_nonvirtual(self):
-        builder = MockBuilder(virtualized=False, builderok=True)
-        vitals = extract_vitals_from_db(builder)
-        self.assertFalse(
-            BuilderInteractor().resetOrFail(
-                vitals, None, builder, DevNullLogger(), Exception()))
-        self.assertFalse(builder.builderok)
-
     def test_makeSlaveFromVitals(self):
         # Builder.slave is a BuilderSlave that points at the actual Builder.
         # The Builder is only ever used in scripts that run outside of the
