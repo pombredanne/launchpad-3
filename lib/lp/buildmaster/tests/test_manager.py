@@ -427,8 +427,7 @@ class TestSlaveScannerScan(TestCaseWithFactory):
         scanner = self._getScanner()
         scanner.scan = failing_scan
         builder = getUtility(IBuilderSet)[scanner.builder_name]
-        builder.failure_count = (
-            Builder.RESET_THRESHOLD * Builder.RESET_FAILURE_THRESHOLD)
+        builder.failure_count = Builder.RESET_THRESHOLD
         builder.currentjob.reset()
         transaction.commit()
 
@@ -1150,8 +1149,7 @@ class TestFailureAssessments(TestCaseWithFactory):
 
     def test_builder_failing_with_no_attached_job(self):
         self.buildqueue.reset()
-        self.builder.failure_count = (
-            Builder.RESET_THRESHOLD * Builder.RESET_FAILURE_THRESHOLD)
+        self.builder.failure_count = Builder.RESET_THRESHOLD
 
         self._assessFailureCounts("failnotes")
         self.assertFalse(self.builder.builderok)
