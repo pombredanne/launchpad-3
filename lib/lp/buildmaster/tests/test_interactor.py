@@ -40,7 +40,7 @@ from lp.buildmaster.interactor import (
     extract_vitals_from_db,
     )
 from lp.buildmaster.interfaces.builder import (
-    BuildDaemonError,
+    BuildDaemonIsolationError,
     CannotFetchFile,
     CannotResumeHost,
     )
@@ -442,7 +442,7 @@ class TestBuilderInteractorDB(TestCaseWithFactory):
             result=candidate)
         vitals = extract_vitals_from_db(builder)
         with ExpectedException(
-                BuildDaemonError,
+                BuildDaemonIsolationError,
                 "Attempted to start build on a dirty slave."):
             yield BuilderInteractor.findAndStartJob(vitals, builder, OkSlave())
 

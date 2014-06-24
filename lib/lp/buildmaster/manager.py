@@ -36,6 +36,7 @@ from lp.buildmaster.interactor import (
     )
 from lp.buildmaster.interfaces.builder import (
     BuildDaemonError,
+    BuildDaemonIsolationError,
     BuildSlaveFailure,
     CannotBuild,
     CannotFetchFile,
@@ -131,7 +132,7 @@ class PrefetchedBuilderFactory:
         return (b for n, b in sorted(self.vitals_map.iteritems()))
 
 
-def judge_failure(builder_count, job_count, retry=True):
+def judge_failure(builder_count, job_count, exc, retry=True):
     """Judge how to recover from a scan failure.
 
     Assesses the failure counts of a builder and its current job, and
@@ -144,6 +145,11 @@ def judge_failure(builder_count, job_count, retry=True):
     :return: A tuple of (builder action, job action). True means reset,
         False means fail, None means take no action.
     """
+    if isinstance(exc, BuildDaemonIsolationError):
+        # We have a potential security issue. Insta-kill both regardless
+        # of any failure counts.
+        return (False, False)
+
     if builder_count == job_count:
         # We can't tell which is to blame. Retry a few times, and then
         # reset the job so it can be retried elsewhere. If the job is at
@@ -186,7 +192,7 @@ def assessFailureCounts(logger, vitals, builder, slave, interactor, retry,
     job = builder.currentjob
     builder_action, job_action = judge_failure(
         builder.failure_count, job.specific_build.failure_count if job else 0,
-        retry=retry)
+        exception, retry=retry)
 
     if job is not None:
         if job_action == False:
@@ -427,7 +433,8 @@ class SlaveScanner:
             if vitals.clean_status != BuilderCleanStatus.DIRTY:
                 # This is probably a grave bug with security implications,
                 # as a slave that has a job must be cleaned afterwards.
-                raise BuildDaemonError("Non-dirty builder allegedly building.")
+                raise BuildDaemonIsolationError(
+                    "Non-dirty builder allegedly building.")
 
             lost_reason = None
             if not vitals.builderok:
@@ -474,7 +481,7 @@ class SlaveScanner:
             if vitals.clean_status == BuilderCleanStatus.CLEAN:
                 slave_status = yield slave.status()
                 if slave_status.get('builder_status') != 'BuilderStatus.IDLE':
-                    raise BuildDaemonError(
+                    raise BuildDaemonIsolationError(
                         'Allegedly clean slave not idle (%r instead)'
                         % slave_status.get('builder_status'))
                 self.updateVersion(vitals, slave_status)
