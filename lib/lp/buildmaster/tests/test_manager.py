@@ -1052,7 +1052,6 @@ class TestBuilddManager(TestCase):
 class TestFailureAssessments(TestCaseWithFactory):
 
     layer = ZopelessDatabaseLayer
-    run_tests_with = AsynchronousDeferredRunTest
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
@@ -1068,34 +1067,31 @@ class TestFailureAssessments(TestCaseWithFactory):
             BufferLogger(), extract_vitals_from_db(self.builder), self.builder,
             retry, Exception(fail_notes))
 
-    @defer.inlineCallbacks
     def test_job_reset_threshold_with_retry(self):
         naked_build = removeSecurityProxy(self.build)
         self.builder.failure_count = Builder.JOB_RESET_THRESHOLD - 1
         naked_build.failure_count = Builder.JOB_RESET_THRESHOLD - 1
 
-        yield self._assessFailureCounts("failnotes")
+        self._assessFailureCounts("failnotes")
         self.assertIsNot(None, self.builder.currentjob)
         self.assertEqual(self.build.status, BuildStatus.BUILDING)
 
         self.builder.failure_count += 1
         naked_build.failure_count += 1
 
-        yield self._assessFailureCounts("failnotes")
+        self._assessFailureCounts("failnotes")
         self.assertIs(None, self.builder.currentjob)
         self.assertEqual(self.build.status, BuildStatus.NEEDSBUILD)
 
-    @defer.inlineCallbacks
     def test_job_reset_threshold_no_retry(self):
         naked_build = removeSecurityProxy(self.build)
         self.builder.failure_count = 1
         naked_build.failure_count = 1
 
-        yield self._assessFailureCounts("failnotes", retry=False)
+        self._assessFailureCounts("failnotes", retry=False)
         self.assertIs(None, self.builder.currentjob)
         self.assertEqual(self.build.status, BuildStatus.NEEDSBUILD)
 
-    @defer.inlineCallbacks
     def test_reset_during_cancellation_cancels(self):
         self.buildqueue.cancel()
         self.assertEqual(BuildStatus.CANCELLING, self.build.status)
@@ -1104,22 +1100,20 @@ class TestFailureAssessments(TestCaseWithFactory):
         self.builder.failure_count = 1
         naked_build.failure_count = 1
 
-        yield self._assessFailureCounts("failnotes")
+        self._assessFailureCounts("failnotes")
         self.assertIs(None, self.builder.currentjob)
         self.assertEqual(BuildStatus.CANCELLED, self.build.status)
 
-    @defer.inlineCallbacks
     def test_job_failing_more_than_builder_fails_job(self):
         self.build.gotFailure()
         self.build.gotFailure()
         self.builder.gotFailure()
 
-        yield self._assessFailureCounts("failnotes")
+        self._assessFailureCounts("failnotes")
         self.assertIs(None, self.builder.currentjob)
         self.assertEqual(self.build.status, BuildStatus.FAILEDTOBUILD)
         self.assertEqual(0, self.builder.failure_count)
 
-    @defer.inlineCallbacks
     def test_failure_during_cancellation_cancels(self):
         self.buildqueue.cancel()
         self.assertEqual(BuildStatus.CANCELLING, self.build.status)
@@ -1127,11 +1121,10 @@ class TestFailureAssessments(TestCaseWithFactory):
         self.build.gotFailure()
         self.build.gotFailure()
         self.builder.gotFailure()
-        yield self._assessFailureCounts("failnotes")
+        self._assessFailureCounts("failnotes")
         self.assertIs(None, self.builder.currentjob)
         self.assertEqual(BuildStatus.CANCELLED, self.build.status)
 
-    @defer.inlineCallbacks
     def test_bad_builder(self):
         self.builder.setCleanStatus(BuilderCleanStatus.CLEAN)
 
@@ -1140,7 +1133,7 @@ class TestFailureAssessments(TestCaseWithFactory):
         # builder or attempt to clean up a non-virtual builder.
         self.builder.failure_count = Builder.RESET_THRESHOLD - 1
         self.assertIsNot(None, self.builder.currentjob)
-        yield self._assessFailureCounts("failnotes")
+        self._assessFailureCounts("failnotes")
         self.assertIs(None, self.builder.currentjob)
         self.assertEqual(BuilderCleanStatus.DIRTY, self.builder.clean_status)
         self.assertTrue(self.builder.builderok)
@@ -1149,19 +1142,18 @@ class TestFailureAssessments(TestCaseWithFactory):
         # disabled.
         self.builder.failure_count = Builder.RESET_THRESHOLD
         self.buildqueue.markAsBuilding(self.builder)
-        yield self._assessFailureCounts("failnotes")
+        self._assessFailureCounts("failnotes")
         self.assertIs(None, self.builder.currentjob)
         self.assertEqual(BuilderCleanStatus.DIRTY, self.builder.clean_status)
         self.assertFalse(self.builder.builderok)
         self.assertEqual("failnotes", self.builder.failnotes)
 
-    @defer.inlineCallbacks
     def test_builder_failing_with_no_attached_job(self):
         self.buildqueue.reset()
         self.builder.failure_count = (
             Builder.RESET_THRESHOLD * Builder.RESET_FAILURE_THRESHOLD)
 
-        yield self._assessFailureCounts("failnotes")
+        self._assessFailureCounts("failnotes")
         self.assertFalse(self.builder.builderok)
         self.assertEqual("failnotes", self.builder.failnotes)
 

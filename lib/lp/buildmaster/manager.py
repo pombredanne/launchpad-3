@@ -178,17 +178,16 @@ def judge_failure(builder_count, job_count, exc, retry=True):
 
 
 def assessFailureCounts(logger, vitals, builder, retry, exception):
-    """View builder/job failure_count and work out which needs to die.
-
-    :return: A Deferred that fires either immediately or after a virtual
-        slave has been reset.
-    """
+    """Recover from a scan failure by slapping the builder or job."""
     del get_property_cache(builder).currentjob
     job = builder.currentjob
 
     # If a job is being cancelled we won't bother retrying a failure.
     # Just mark it as cancelled and clear the builder for normal cleanup.
     cancelling = job is not None and job.status == BuildQueueStatus.CANCELLING
+
+    # judge_failure decides who is guilty and their sentences. We're
+    # just the executioner.
     builder_action, job_action = judge_failure(
         builder.failure_count, job.specific_build.failure_count if job else 0,
         exception, retry=retry and not cancelling)
@@ -298,16 +297,12 @@ class SlaveScanner:
     def _updateDateScanned(self, ignored):
         self.date_scanned = datetime.datetime.utcnow()
 
-    @defer.inlineCallbacks
     def _scanFailed(self, retry, failure):
         """Deal with failures encountered during the scan cycle.
 
         1. Print the error in the log
         2. Increment and assess failure counts on the builder and job.
            If asked to retry, a single failure may not be considered fatal.
-
-        :return: A Deferred that fires either immediately or after a virtual
-            slave has been reset.
         """
         # Make sure that pending database updates are removed as it
         # could leave the database in an inconsistent state (e.g. The
@@ -332,7 +327,7 @@ class SlaveScanner:
         builder = self.builder_factory[self.builder_name]
         try:
             builder.handleFailure(self.logger)
-            yield assessFailureCounts(
+            assessFailureCounts(
                 self.logger, vitals, builder, retry, failure.value)
             transaction.commit()
         except Exception:
