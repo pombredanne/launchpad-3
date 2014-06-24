@@ -100,7 +100,8 @@ class LiveFSBuildBehaviour(BuildFarmJobBehaviourBase):
         args = dict(removeSecurityProxy(build.livefs.metadata))
         if build.metadata_override is not None:
             args.update(removeSecurityProxy(build.metadata_override))
-        args["suite"] = build.distro_series.getSuite(build.pocket)
+        args["series"] = build.distro_series.name
+        args["pocket"] = build.pocket.name.lower()
         args["arch_tag"] = build.distro_arch_series.architecturetag
         args["datestamp"] = build.version
         args["archives"] = get_sources_list_for_building(
