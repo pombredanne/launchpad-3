@@ -107,14 +107,6 @@ class Builder(SQLBase):
     vm_reset_protocol = EnumCol(enum=BuilderResetProtocol)
     date_clean_status_changed = UtcDateTimeCol()
 
-    # The number of times a builder can consecutively fail before we
-    # reset its current job.
-    JOB_RESET_THRESHOLD = 3
-
-    # The number of times a builder can consecutively fail before we
-    # mark it builderok=False.
-    FAILURE_THRESHOLD = 5
-
     def _getBuilderok(self):
         return self._builderok
 

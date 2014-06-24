@@ -52,6 +52,15 @@ from lp.services.propertycache import get_property_cache
 BUILDD_MANAGER_LOG_NAME = "slave-scanner"
 
 
+# The number of times a builder can consecutively fail before we
+# reset its current job.
+JOB_RESET_THRESHOLD = 3
+
+# The number of times a builder can consecutively fail before we
+# mark it builderok=False.
+BUILDER_FAILURE_THRESHOLD = 5
+
+
 class BuilderFactory:
     """A dumb builder factory that just talks to the DB."""
 
@@ -156,12 +165,12 @@ def judge_failure(builder_count, job_count, exc, retry=True):
         # fault, it'll error on the next builder and fail out. If the
         # builder is at fault, the job will work fine next time, and the
         # builder will error on the next job and fail out.
-        if not retry or builder_count >= Builder.JOB_RESET_THRESHOLD:
+        if not retry or builder_count >= JOB_RESET_THRESHOLD:
             return (None, True)
     elif builder_count > job_count:
         # The builder has failed more than the job, so the builder is at
         # fault. We reset the job and attempt to recover the builder.
-        if builder_count < Builder.FAILURE_THRESHOLD:
+        if builder_count < BUILDER_FAILURE_THRESHOLD:
             # Let's dirty the builder and give it a few cycles to
             # recover. Since it's dirty and idle, this will
             # automatically attempt a reset if virtual.
