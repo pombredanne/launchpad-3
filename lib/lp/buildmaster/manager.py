@@ -190,14 +190,25 @@ def assessFailureCounts(logger, vitals, builder, slave, interactor, retry,
     """
     del get_property_cache(builder).currentjob
     job = builder.currentjob
+
+    # If a job is being cancelled we won't bother retrying a failure.
+    # Just mark it as cancelled and clear the builder for normal cleanup.
+    cancelling = job is not None and job.status == BuildQueueStatus.CANCELLING
     builder_action, job_action = judge_failure(
         builder.failure_count, job.specific_build.failure_count if job else 0,
-        exception, retry=retry)
+        exception, retry=retry and not cancelling)
 
-    if job is not None:
+    if job is not None and job_action is not None:
         if job_action == False:
-            # Fail and dequeue the job.
+            # We've decided the job is bad, so unblame the builder.
             builder.resetFailureCount()
+
+        if cancelling:
+            # We've previously been asked to cancel the job, so just set
+            # it to cancelled rather than retrying or failing.
+            job.markAsCancelled()
+        elif job_action == False:
+            # Fail and dequeue the job.
             job.specific_build.updateStatus(BuildStatus.FAILEDTOBUILD)
             job.destroySelf()
         elif job_action == True:

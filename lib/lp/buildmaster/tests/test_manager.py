@@ -1118,6 +1118,19 @@ class TestFailureAssessments(TestCaseWithFactory):
         self.assertEqual(self.build.status, BuildStatus.NEEDSBUILD)
 
     @defer.inlineCallbacks
+    def test_reset_during_cancellation_cancels(self):
+        self.buildqueue.cancel()
+        self.assertEqual(BuildStatus.CANCELLING, self.build.status)
+
+        naked_build = removeSecurityProxy(self.build)
+        self.builder.failure_count = 1
+        naked_build.failure_count = 1
+
+        yield self._assessFailureCounts("failnotes")
+        self.assertIs(None, self.builder.currentjob)
+        self.assertEqual(BuildStatus.CANCELLED, self.build.status)
+
+    @defer.inlineCallbacks
     def test_job_failing_more_than_builder_fails_job(self):
         self.build.gotFailure()
         self.build.gotFailure()
@@ -1127,6 +1140,18 @@ class TestFailureAssessments(TestCaseWithFactory):
         self.assertIs(None, self.builder.currentjob)
         self.assertEqual(self.build.status, BuildStatus.FAILEDTOBUILD)
         self.assertEqual(0, self.builder.failure_count)
+
+    @defer.inlineCallbacks
+    def test_failure_during_cancellation_cancels(self):
+        self.buildqueue.cancel()
+        self.assertEqual(BuildStatus.CANCELLING, self.build.status)
+
+        self.build.gotFailure()
+        self.build.gotFailure()
+        self.builder.gotFailure()
+        yield self._assessFailureCounts("failnotes")
+        self.assertIs(None, self.builder.currentjob)
+        self.assertEqual(BuildStatus.CANCELLED, self.build.status)
 
     @defer.inlineCallbacks
     def test_virtual_builder_reset_thresholds(self):
