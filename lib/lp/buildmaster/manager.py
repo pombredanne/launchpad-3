@@ -358,10 +358,6 @@ class SlaveScanner:
 
         :return: A deferred which fires when this cancellation cycle is done.
         """
-        # XXX: This isn't invoked if there is no build_queue.
-        if vitals.build_queue is None:
-            self.date_cancel = None
-            defer.returnValue(False)
         if vitals.build_queue.status != BuildQueueStatus.CANCELLING:
             self.date_cancel = None
             defer.returnValue(False)

@@ -980,15 +980,6 @@ class TestCancellationChecking(TestCaseWithFactory):
             self.vitals, None, self.interactor)
         return d.addCallback(self.assertFalse)
 
-    def test_ignores_no_buildqueue(self):
-        # If the builder has no buildqueue associated,
-        # make sure we return False.
-        buildqueue = self.builder.currentjob
-        buildqueue.reset()
-        d = self._getScanner().checkCancellation(
-            self.vitals, None, self.interactor)
-        return d.addCallback(self.assertFalse)
-
     def test_ignores_build_not_cancelling(self):
         # If the active build is not in a CANCELLING state, ignore it.
         d = self._getScanner().checkCancellation(
