@@ -177,8 +177,7 @@ def judge_failure(builder_count, job_count, exc, retry=True):
     return (None, None)
 
 
-def assessFailureCounts(logger, vitals, builder, slave, interactor, retry,
-                        exception):
+def assessFailureCounts(logger, vitals, builder, retry, exception):
     """View builder/job failure_count and work out which needs to die.
 
     :return: A Deferred that fires either immediately or after a virtual
@@ -334,8 +333,7 @@ class SlaveScanner:
         try:
             builder.handleFailure(self.logger)
             yield assessFailureCounts(
-                self.logger, vitals, builder, self.slave_factory(vitals),
-                self.interactor_factory(), retry, failure.value)
+                self.logger, vitals, builder, retry, failure.value)
             transaction.commit()
         except Exception:
             # Catastrophic code failure! Not much we can do.

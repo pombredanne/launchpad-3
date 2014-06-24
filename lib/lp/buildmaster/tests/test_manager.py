@@ -1066,7 +1066,7 @@ class TestFailureAssessments(TestCaseWithFactory):
         # Helper for assessFailureCounts boilerplate.
         return assessFailureCounts(
             BufferLogger(), extract_vitals_from_db(self.builder), self.builder,
-            self.slave, BuilderInteractor(), retry, Exception(fail_notes))
+            retry, Exception(fail_notes))
 
     @defer.inlineCallbacks
     def test_job_reset_threshold_with_retry(self):
