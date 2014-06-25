@@ -71,7 +71,8 @@ class BinaryPackageBuildBehaviour(BuildFarmJobBehaviourBase):
         dl = []
         private = self.build.archive.private
         if private:
-            dl.extend(self._cachePrivateSourceOnSlave(logger))
+            for args in self._cachePrivateSourceOnSlave(logger):
+                dl.append(self._slave.sendFileToSlave(**args))
         filemap = {}
         for source_file in self.build.source_package_release.files:
             lfa = source_file.libraryfile
@@ -187,7 +188,7 @@ class BinaryPackageBuildBehaviour(BuildFarmJobBehaviourBase):
         archive = self.build.archive
         archive_url = archive.archive_url
         component_name = self.build.current_component.name
-        dl = []
+        files = []
         for source_file in self.build.source_package_release.files:
             file_name = source_file.libraryfile.filename
             sha1 = source_file.libraryfile.content.sha1
@@ -198,10 +199,10 @@ class BinaryPackageBuildBehaviour(BuildFarmJobBehaviourBase):
             logger.debug("Asking builder on %s to ensure it has file %s "
                          "(%s, %s)" % (
                             self._builder.url, file_name, url, sha1))
-            dl.append(
-                self._slave.sendFileToSlave(
-                    sha1, url, "buildd", archive.buildd_secret))
-        return dl
+            files.append(
+                {'sha1': sha1, 'url': url,
+                 'username': 'buildd', 'password': archive.buildd_secret})
+        return files
 
     def _extraBuildArgs(self, build):
         """
