@@ -306,8 +306,7 @@ class TestRecipeBuilder(TestCaseWithFactory):
             self.assertThat(
                 logger.getLogBuffer(),
                 StartsWith(dedent("""\
-                  INFO Sending chroot file for recipe build to bob-de-bouwer
-                  INFO Initiating build 1-someid on http://fake:0000
+                  DEBUG Initiating build 1-someid on http://fake:0000
                   """)))
             self.assertEquals(["ensurepresent", "build"],
                               [call[0] for call in slave.call_log])

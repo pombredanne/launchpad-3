@@ -9,7 +9,6 @@ __all__ = [
     'BinaryPackageBuildBehaviour',
     ]
 
-from twisted.internet import defer
 from zope.interface import implements
 
 from lp.buildmaster.interfaces.builder import CannotBuild

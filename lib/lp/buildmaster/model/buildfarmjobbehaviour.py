@@ -23,6 +23,7 @@ from lp.buildmaster.enums import (
     BuildFarmJobType,
     BuildStatus,
     )
+from lp.buildmaster.interfaces.builder import CannotBuild
 from lp.services.config import config
 from lp.services.helpers import filenameToContentType
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
@@ -59,13 +60,16 @@ class BuildFarmJobBehaviourBase:
     @defer.inlineCallbacks
     def dispatchBuildToSlave(self, build_queue_id, logger):
         """See `IBuildFarmJobBehaviour`."""
-
-        # Start the binary package build on the slave builder. First
-        # we send the chroot.
         builder_type, das, files, args = self.composeBuildRequest(logger)
-        chroot = das.getChroot()
 
+        # First cache the chroot on the builder.
+        chroot = das.getChroot()
+        if chroot is None:
+            raise CannotBuild(
+                "Unable to find a chroot for %s" % das.displayname)
         yield self._slave.cacheFile(logger, chroot)
+
+        # Cache any other files that the job might need.
         filename_to_sha1 = {}
         dl = []
         for filename, params in files.items():
