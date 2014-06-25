@@ -63,7 +63,7 @@ class BinaryPackageBuildBehaviour(BuildFarmJobBehaviourBase):
             distroname, distroseriesname, archname, sourcename, version,
             state))
 
-    def _buildFilemapStructure(self):
+    def determineFilesToSend(self):
         # Build filemap structure with the files required in this build
         # and send them to the slave.
         if self.build.archive.private:
@@ -99,7 +99,7 @@ class BinaryPackageBuildBehaviour(BuildFarmJobBehaviourBase):
         yield self._slave.cacheFile(logger, chroot)
         filename_to_sha1 = {}
         dl = []
-        for filename, params in self._buildFilemapStructure().items():
+        for filename, params in self.determineFilesToSend().items():
             filename_to_sha1[filename] = params['sha1']
             dl.append(self._slave.sendFileToSlave(**params))
         yield defer.gatherResults(dl)
