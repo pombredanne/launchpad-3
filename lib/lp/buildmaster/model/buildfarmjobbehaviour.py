@@ -76,33 +76,21 @@ class BuildFarmJobBehaviourBase:
             dl.append(self._slave.sendFileToSlave(logger=logger, **params))
         yield defer.gatherResults(dl)
 
-        # Generate a string which can be used to cross-check when
-        # obtaining results so we know we are referring to the right
-        # database object in subsequent runs.
-        buildid = "%s-%s" % (self.build.id, build_queue_id)
+        # XXX: Sanitise args.
         cookie = self.getBuildCookie()
-        chroot_sha1 = chroot.content.sha1
-        logger.debug(
-            "Initiating build %s on %s" % (buildid, self._builder.url))
+        combined_args = {
+            'builder_type': builder_type, 'chroot_sha1': chroot.content.sha1,
+            'filemap': filename_to_sha1, 'args': args}
+        logger.info(
+            "Starting job %s (%s) on %s:\n%r"
+            % (cookie, self.build.title, self._builder.url, combined_args))
 
         (status, info) = yield self._slave.build(
-            cookie, builder_type, chroot_sha1, filename_to_sha1, args)
+            cookie, builder_type, chroot.content.sha1, filename_to_sha1, args)
 
-        message = """%s (%s):
-        ***** RESULT *****
-        %s
-        %s
-        %s: %s
-        ******************
-        """ % (
-            self._builder.name,
-            self._builder.url,
-            filename_to_sha1,
-            args,
-            status,
-            info,
-            )
-        logger.info(message)
+        logger.info(
+            "Job %s (%s) started on %s: %s %s"
+            % (cookie, self.build.title, self._builder.url, status, info))
 
     def getUploadDirLeaf(self, build_cookie, now=None):
         """See `IPackageBuild`."""

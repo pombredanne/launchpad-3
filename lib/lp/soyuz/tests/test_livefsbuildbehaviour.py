@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 from datetime import datetime
-from textwrap import dedent
 
 import fixtures
 import pytz
@@ -243,9 +242,8 @@ class TestLiveFSBuildBehaviour(TestCaseWithFactory):
         yield job.dispatchBuildToSlave("someid", logger)
         self.assertStartsWith(
             logger.getLogBuffer(),
-            dedent("""\
-                DEBUG Initiating build 1-someid on http://fake:0000
-                """))
+            "INFO Starting job LIVEFSBUILD-1 (i386 build of test-livefs "
+            "livefs in distro unstable) on http://fake:0000:")
         self.assertEqual(
             ["ensurepresent", "build"], [call[0] for call in slave.call_log])
         build_args = slave.call_log[1][1:]

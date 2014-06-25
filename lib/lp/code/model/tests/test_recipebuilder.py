@@ -7,7 +7,6 @@ __metaclass__ = type
 
 import shutil
 import tempfile
-from textwrap import dedent
 
 from testtools import run_test_with
 from testtools.deferredruntest import (
@@ -305,9 +304,9 @@ class TestRecipeBuilder(TestCaseWithFactory):
         def check_dispatch(ignored):
             self.assertThat(
                 logger.getLogBuffer(),
-                StartsWith(dedent("""\
-                  DEBUG Initiating build 1-someid on http://fake:0000
-                  """)))
+                StartsWith(
+                    "INFO Starting job RECIPEBRANCHBUILD-1 (~joe/someapp/pkg "
+                    "recipe build) on http://fake:0000:\n"))
             self.assertEquals(["ensurepresent", "build"],
                               [call[0] for call in slave.call_log])
             build_args = slave.call_log[1][1:]
