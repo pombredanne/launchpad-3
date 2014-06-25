@@ -61,9 +61,6 @@ class TranslationTemplatesBuildBehaviour(BuildFarmJobBehaviourBase):
             }
         return ("translation-templates", self._getDistroArchSeries(), {}, args)
 
-    def _getChroot(self):
-        return self._getDistroArchSeries().getChroot()
-
     def _getDistroArchSeries(self):
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         return ubuntu.currentseries.nominatedarchindep

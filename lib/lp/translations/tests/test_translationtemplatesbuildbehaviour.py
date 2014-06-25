@@ -131,23 +131,14 @@ class TestTranslationTemplatesBuildBehaviour(
                 behaviour.build.branch.composePublicURL())
         return d.addCallback(got_dispatch)
 
-    def test_getChroot(self):
-        # _getChroot produces the current chroot for the current Ubuntu
-        # release, on the nominated architecture for
-        # architecture-independent builds.
+    def test_getDistroArchSeries(self):
+        # _getDistroArchSeries produces the nominated arch-indep
+        # architecture for the current Ubuntu series.
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        current_ubuntu = ubuntu.currentseries
-        distroarchseries = current_ubuntu.nominatedarchindep
-
-        # Set an arbitrary chroot file.
-        fake_chroot_file = getUtility(ILibraryFileAliasSet)[1]
-        distroarchseries.addOrUpdateChroot(fake_chroot_file)
-
-        behaviour = self.makeBehaviour(use_fake_chroot=False)
-        chroot = behaviour._getChroot()
-
-        self.assertNotEqual(None, chroot)
-        self.assertEqual(fake_chroot_file, chroot)
+        behaviour = self.makeBehaviour()
+        self.assertEqual(
+            ubuntu.currentseries.nominatedarchindep,
+            behaviour._getDistroArchSeries())
 
     def test_readTarball(self):
         behaviour = self.makeBehaviour()
