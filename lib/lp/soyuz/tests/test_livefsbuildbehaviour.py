@@ -239,7 +239,7 @@ class TestLiveFSBuildBehaviour(TestCaseWithFactory):
         builder.processor = getUtility(IProcessorSet).getByName("386")
         job.setBuilder(builder, slave)
         logger = BufferLogger()
-        yield job.dispatchBuildToSlave("someid", logger)
+        yield job.dispatchBuildToSlave(logger)
         self.assertStartsWith(
             logger.getLogBuffer(),
             "INFO Starting job LIVEFSBUILD-1 (i386 build of test-livefs "
@@ -259,7 +259,7 @@ class TestLiveFSBuildBehaviour(TestCaseWithFactory):
         builder = MockBuilder()
         builder.processor = getUtility(IProcessorSet).getByName("386")
         job.setBuilder(builder, OkSlave())
-        d = job.dispatchBuildToSlave("someid", BufferLogger())
+        d = job.dispatchBuildToSlave(BufferLogger())
         return assert_fails_with(d, CannotBuild)
 
 

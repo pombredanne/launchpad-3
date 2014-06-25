@@ -34,10 +34,9 @@ class IBuildFarmJobBehaviour(Interface):
             {filename: `sendFileToSlave` arguments}, {extra build arguments})
         """
 
-    def dispatchBuildToSlave(build_queue_item_id, logger):
+    def dispatchBuildToSlave(logger):
         """Dispatch a specific build to the slave.
 
-        :param build_queue_item_id: An identifier for the build queue item.
         :param logger: A logger to be used to log diagnostic information.
         """
 

@@ -367,7 +367,7 @@ class BuilderInteractor(object):
         builder.setCleanStatus(BuilderCleanStatus.DIRTY)
         transaction.commit()
 
-        yield behaviour.dispatchBuildToSlave(build_queue_item.id, logger)
+        yield behaviour.dispatchBuildToSlave(logger)
 
     @classmethod
     @defer.inlineCallbacks

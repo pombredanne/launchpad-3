@@ -58,7 +58,7 @@ class BuildFarmJobBehaviourBase:
         return '%s-%s' % (self.build.job_type.name, self.build.id)
 
     @defer.inlineCallbacks
-    def dispatchBuildToSlave(self, build_queue_id, logger):
+    def dispatchBuildToSlave(self, logger):
         """See `IBuildFarmJobBehaviour`."""
         builder_type, das, files, args = self.composeBuildRequest(logger)
 

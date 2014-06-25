@@ -299,7 +299,7 @@ class TestRecipeBuilder(TestCaseWithFactory):
         builder.processor = getUtility(IProcessorSet).getByName('386')
         job.setBuilder(builder, slave)
         logger = BufferLogger()
-        d = defer.maybeDeferred(job.dispatchBuildToSlave, "someid", logger)
+        d = defer.maybeDeferred(job.dispatchBuildToSlave, logger)
 
         def check_dispatch(ignored):
             self.assertThat(
@@ -328,7 +328,7 @@ class TestRecipeBuilder(TestCaseWithFactory):
         builder.processor = getUtility(IProcessorSet).getByName('386')
         job.setBuilder(builder, OkSlave())
         logger = BufferLogger()
-        d = defer.maybeDeferred(job.dispatchBuildToSlave, "someid", logger)
+        d = defer.maybeDeferred(job.dispatchBuildToSlave, logger)
         return assert_fails_with(d, CannotBuild)
 
 

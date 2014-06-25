@@ -25,7 +25,6 @@ from lp.buildmaster.tests.mock_slaves import (
     WaitingSlave,
     )
 from lp.services.config import config
-from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.librarian.utils import copy_and_close
 from lp.testing import TestCaseWithFactory
 from lp.testing.dbuser import switch_dbuser
@@ -106,7 +105,7 @@ class TestTranslationTemplatesBuildBehaviour(
         behaviour = self.makeBehaviour(use_fake_chroot=False)
         switch_dbuser(config.builddmaster.dbuser)
         with ExpectedException(CannotBuild):
-            yield behaviour.dispatchBuildToSlave(None, logging)
+            yield behaviour.dispatchBuildToSlave(logging)
 
     def test_dispatchBuildToSlave(self):
         # dispatchBuildToSlave ultimately causes the slave's build
@@ -114,7 +113,7 @@ class TestTranslationTemplatesBuildBehaviour(
         # branch it should build from.
         behaviour = self.makeBehaviour()
         switch_dbuser(config.builddmaster.dbuser)
-        d = behaviour.dispatchBuildToSlave(FakeBuildQueue(behaviour), logging)
+        d = behaviour.dispatchBuildToSlave(logging)
 
         def got_dispatch(ignored):
             # call_log lives on the mock WaitingSlave and tells us what
@@ -167,7 +166,7 @@ class TestTranslationTemplatesBuildBehaviour(
         queue_item = FakeBuildQueue(behaviour)
         slave = behaviour._slave
 
-        d = behaviour.dispatchBuildToSlave(queue_item, logging)
+        d = behaviour.dispatchBuildToSlave(logging)
 
         def got_dispatch(ignored):
             self.assertEqual(0, queue_item.destroySelf.call_count)
@@ -200,7 +199,7 @@ class TestTranslationTemplatesBuildBehaviour(
         behaviour._uploadTarball = FakeMethod()
         queue_item = FakeBuildQueue(behaviour)
         slave = behaviour._slave
-        d = behaviour.dispatchBuildToSlave(queue_item, logging)
+        d = behaviour.dispatchBuildToSlave(logging)
 
         def got_dispatch(ignored):
             # Now that we've dispatched, get the status.
@@ -232,7 +231,7 @@ class TestTranslationTemplatesBuildBehaviour(
         behaviour._uploadTarball = FakeMethod()
         queue_item = FakeBuildQueue(behaviour)
         slave = behaviour._slave
-        d = behaviour.dispatchBuildToSlave(queue_item, logging)
+        d = behaviour.dispatchBuildToSlave(logging)
 
         def got_dispatch(ignored):
             return slave.status()
@@ -262,7 +261,7 @@ class TestTranslationTemplatesBuildBehaviour(
         queue_item = FakeBuildQueue(behaviour)
         slave = behaviour._slave
 
-        d = behaviour.dispatchBuildToSlave(queue_item, logging)
+        d = behaviour.dispatchBuildToSlave(logging)
 
         def fake_getFile(sum, file):
             dummy_tar = os.path.join(
