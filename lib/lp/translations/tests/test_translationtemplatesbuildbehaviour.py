@@ -9,6 +9,7 @@ import os
 
 import pytz
 from testtools.deferredruntest import AsynchronousDeferredRunTest
+from testtools.testcase import ExpectedException
 from twisted.internet import defer
 from zope.component import getUtility
 
@@ -67,9 +68,9 @@ class MakeBehaviourMixin(object):
         slave = WaitingSlave(**kwargs)
         behaviour.setBuilder(self.factory.makeBuilder(), slave)
         if use_fake_chroot:
-            lf = self.factory.makeLibraryFileAlias()
+            behaviour._getDistroArchSeries().addOrUpdateChroot(
+                self.factory.makeLibraryFileAlias(db_only=True))
             self.layer.txn.commit()
-            behaviour._getChroot = lambda: lf
         return behaviour
 
     def makeProductSeriesWithBranchForTranslation(self):
@@ -99,13 +100,13 @@ class TestTranslationTemplatesBuildBehaviour(
         b2 = self.makeBehaviour()
         self.assertNotEqual(b1.getLogFileName(), b2.getLogFileName())
 
+    @defer.inlineCallbacks
     def test_dispatchBuildToSlave_no_chroot_fails(self):
         # dispatchBuildToSlave will fail if the chroot does not exist.
         behaviour = self.makeBehaviour(use_fake_chroot=False)
         switch_dbuser(config.builddmaster.dbuser)
-        self.assertRaises(
-            CannotBuild, behaviour.dispatchBuildToSlave, None,
-            logging)
+        with ExpectedException(CannotBuild):
+            yield behaviour.dispatchBuildToSlave(None, logging)
 
     def test_dispatchBuildToSlave(self):
         # dispatchBuildToSlave ultimately causes the slave's build
@@ -115,7 +116,7 @@ class TestTranslationTemplatesBuildBehaviour(
         switch_dbuser(config.builddmaster.dbuser)
         d = behaviour.dispatchBuildToSlave(FakeBuildQueue(behaviour), logging)
 
-        def got_dispatch((status, info)):
+        def got_dispatch(ignored):
             # call_log lives on the mock WaitingSlave and tells us what
             # calls to the slave that the behaviour class made.
             call_log = behaviour._slave.call_log
@@ -177,7 +178,7 @@ class TestTranslationTemplatesBuildBehaviour(
 
         d = behaviour.dispatchBuildToSlave(queue_item, logging)
 
-        def got_dispatch((status, info)):
+        def got_dispatch(ignored):
             self.assertEqual(0, queue_item.destroySelf.call_count)
             self.assertEqual(0, behaviour._uploadTarball.call_count)
 
@@ -210,7 +211,7 @@ class TestTranslationTemplatesBuildBehaviour(
         slave = behaviour._slave
         d = behaviour.dispatchBuildToSlave(queue_item, logging)
 
-        def got_dispatch((status, info)):
+        def got_dispatch(ignored):
             # Now that we've dispatched, get the status.
             return slave.status()
 
@@ -242,7 +243,7 @@ class TestTranslationTemplatesBuildBehaviour(
         slave = behaviour._slave
         d = behaviour.dispatchBuildToSlave(queue_item, logging)
 
-        def got_dispatch((status, info)):
+        def got_dispatch(ignored):
             return slave.status()
 
         def got_status(status):
@@ -279,7 +280,7 @@ class TestTranslationTemplatesBuildBehaviour(
             copy_and_close(tar_file, file)
             return defer.succeed(None)
 
-        def got_dispatch((status, info)):
+        def got_dispatch(ignored):
             slave.getFile = fake_getFile
             return slave.status()
 
