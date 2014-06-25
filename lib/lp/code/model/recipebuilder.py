@@ -44,19 +44,6 @@ class RecipeBuildBehaviour(BuildFarmJobBehaviourBase):
     ALLOWED_STATUS_NOTIFICATIONS = [
         'OK', 'PACKAGEFAIL', 'DEPFAIL', 'CHROOTFAIL']
 
-    @property
-    def display_name(self):
-        ret = "%s, %s, %s" % (
-            self.build.distroseries.displayname, self.build.recipe.name,
-            self.build.recipe.owner.name)
-        if self._builder is not None:
-            ret += " (on %s)" % self._builder.url
-        return ret
-
-    def logStartBuild(self, logger):
-        """See `IBuildFarmJobBehaviour`."""
-        logger.info("startBuild(%s)", self.display_name)
-
     def _extraBuildArgs(self, distroarchseries, logger=None):
         """
         Return the extra arguments required by the slave for the given build.

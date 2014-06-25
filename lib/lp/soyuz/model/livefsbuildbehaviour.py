@@ -37,17 +37,6 @@ class LiveFSBuildBehaviour(BuildFarmJobBehaviourBase):
     adapts(ILiveFSBuild)
     implements(IBuildFarmJobBehaviour)
 
-    @property
-    def displayname(self):
-        ret = self.build.title
-        if self._builder is not None:
-            ret += " (on %s)" % self._builder.url
-        return ret
-
-    def logStartBuild(self, logger):
-        """See `IBuildFarmJobBehaviour`."""
-        logger.info("startBuild(%s)", self.displayname)
-
     def getLogFileName(self):
         das = self.build.distro_arch_series
         archname = das.architecturetag

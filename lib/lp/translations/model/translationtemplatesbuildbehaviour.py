@@ -40,9 +40,6 @@ class TranslationTemplatesBuildBehaviour(BuildFarmJobBehaviourBase):
     """Dispatches `TranslationTemplateBuildJob`s to slaves."""
     implements(IBuildFarmJobBehaviour)
 
-    # Identify the type of job to the slave.
-    build_type = 'translation-templates'
-
     # Filename for the tarball of templates that the slave builds.
     templates_tarball_path = 'translation-templates.tar.gz'
 
@@ -64,13 +61,6 @@ class TranslationTemplatesBuildBehaviour(BuildFarmJobBehaviourBase):
     def _getDistroArchSeries(self):
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         return ubuntu.currentseries.nominatedarchindep
-
-    def logStartBuild(self, logger):
-        """See `IBuildFarmJobBehaviour`."""
-        logger.info(
-            "Starting templates build %s for %s." % (
-            self.getBuildCookie(),
-            self.build.branch.bzr_identity))
 
     def _readTarball(self, buildqueue, filemap, logger):
         """Read tarball with generated translation templates from slave."""

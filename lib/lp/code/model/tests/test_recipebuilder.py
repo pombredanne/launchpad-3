@@ -93,20 +93,6 @@ class TestRecipeBuilder(TestCaseWithFactory):
         job = IBuildFarmJobBehaviour(build)
         self.assertProvides(job, IBuildFarmJobBehaviour)
 
-    def test_display_name(self):
-        # display_name contains a sane description of the job
-        job = self.makeJob()
-        self.assertEquals(job.display_name,
-            "Mydistro, recept, joe")
-
-    def test_logStartBuild(self):
-        # logStartBuild will properly report the package that's being built
-        job = self.makeJob()
-        logger = BufferLogger()
-        job.logStartBuild(logger)
-        self.assertEquals(logger.getLogBuffer(),
-            "INFO startBuild(Mydistro, recept, joe)\n")
-
     def test_verifyBuildRequest_valid(self):
         # VerifyBuildRequest won't raise any exceptions when called with a
         # valid builder set.
