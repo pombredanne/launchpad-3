@@ -63,7 +63,7 @@ class BinaryPackageBuildBehaviour(BuildFarmJobBehaviourBase):
             distroname, distroseriesname, archname, sourcename, version,
             state))
 
-    def _buildFilemapStructure(self, ignored, logger):
+    def _buildFilemapStructure(self):
         # Build filemap structure with the files required in this build
         # and send them to the slave.
         if self.build.archive.private:
@@ -76,68 +76,62 @@ class BinaryPackageBuildBehaviour(BuildFarmJobBehaviourBase):
                     self.build.source_package_release.sourcepackagename.name,
                     self.build.current_component.name))
         filemap = {}
-        dl = []
         for source_file in self.build.source_package_release.files:
             lfa = source_file.libraryfile
-            filemap[lfa.filename] = lfa.content.sha1
             if not self.build.archive.private:
-                dl.append(
-                    self._slave.cacheFile(logger, source_file.libraryfile))
+                filemap[lfa.filename] = {
+                    'sha1': lfa.content.sha1, 'url': lfa.http_url}
             else:
-                url = urlappend(pool_url, lfa.filename)
-                logger.debug(
-                    "Asking builder on %s to ensure it has file %s (%s, %s)"
-                    % (
-                        self._builder.url, lfa.filename, url,
-                        lfa.content.sha1))
-                dl.append(self._slave.sendFileToSlave(
-                    lfa.content.sha1, url, username='buildd',
-                    password=self.build.archive.buildd_secret))
-        d = defer.gatherResults(dl)
-        return d.addCallback(lambda ignored: filemap)
+                filemap[lfa.filename] = {
+                    'sha1': lfa.content.sha1,
+                    'url': urlappend(pool_url, lfa.filename),
+                    'username': 'buildd',
+                    'password': self.build.archive.buildd_secret}
+        return filemap
 
+    @defer.inlineCallbacks
     def dispatchBuildToSlave(self, build_queue_id, logger):
         """See `IBuildFarmJobBehaviour`."""
 
         # Start the binary package build on the slave builder. First
         # we send the chroot.
         chroot = self.build.distro_arch_series.getChroot()
-        d = self._slave.cacheFile(logger, chroot)
-        d.addCallback(self._buildFilemapStructure, logger)
+        yield self._slave.cacheFile(logger, chroot)
+        filename_to_sha1 = {}
+        dl = []
+        for filename, params in self._buildFilemapStructure().items():
+            filename_to_sha1[filename] = params['sha1']
+            dl.append(self._slave.sendFileToSlave(**params))
+        yield defer.gatherResults(dl)
 
-        def got_filemap(filemap):
-            # Generate a string which can be used to cross-check when
-            # obtaining results so we know we are referring to the right
-            # database object in subsequent runs.
-            buildid = "%s-%s" % (self.build.id, build_queue_id)
-            cookie = self.getBuildCookie()
-            chroot_sha1 = chroot.content.sha1
-            logger.debug(
-                "Initiating build %s on %s" % (buildid, self._builder.url))
+        # Generate a string which can be used to cross-check when
+        # obtaining results so we know we are referring to the right
+        # database object in subsequent runs.
+        buildid = "%s-%s" % (self.build.id, build_queue_id)
+        cookie = self.getBuildCookie()
+        chroot_sha1 = chroot.content.sha1
+        logger.debug(
+            "Initiating build %s on %s" % (buildid, self._builder.url))
 
-            args = self._extraBuildArgs(self.build)
-            d = self._slave.build(
-                cookie, "binarypackage", chroot_sha1, filemap, args)
+        args = self._extraBuildArgs(self.build)
+        (status, info) = yield self._slave.build(
+            cookie, "binarypackage", chroot_sha1, filename_to_sha1, args)
 
-            def got_build((status, info)):
-                message = """%s (%s):
-                ***** RESULT *****
-                %s
-                %s
-                %s: %s
-                ******************
-                """ % (
-                    self._builder.name,
-                    self._builder.url,
-                    filemap,
-                    args,
-                    status,
-                    info,
-                    )
-                logger.info(message)
-            return d.addCallback(got_build)
-
-        return d.addCallback(got_filemap)
+        message = """%s (%s):
+        ***** RESULT *****
+        %s
+        %s
+        %s: %s
+        ******************
+        """ % (
+            self._builder.name,
+            self._builder.url,
+            filename_to_sha1,
+            args,
+            status,
+            info,
+            )
+        logger.info(message)
 
     def verifyBuildRequest(self, logger):
         """Assert some pre-build checks.
