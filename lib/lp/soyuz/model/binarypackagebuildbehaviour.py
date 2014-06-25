@@ -26,6 +26,7 @@ from lp.soyuz.adapters.archivedependencies import (
     get_sources_list_for_building,
     )
 from lp.soyuz.enums import ArchivePurpose
+from lp.soyuz.model.publishing import makePoolPath
 
 
 class BinaryPackageBuildBehaviour(BuildFarmJobBehaviourBase):
@@ -65,22 +66,33 @@ class BinaryPackageBuildBehaviour(BuildFarmJobBehaviourBase):
     def _buildFilemapStructure(self, ignored, logger):
         # Build filemap structure with the files required in this build
         # and send them to the slave.
-        # If the build is private we tell the slave to get the files from the
-        # archive instead of the librarian because the slaves cannot
-        # access the restricted librarian.
-        dl = []
-        private = self.build.archive.private
-        if private:
-            for args in self._cachePrivateSourceOnSlave(logger):
-                dl.append(self._slave.sendFileToSlave(**args))
+        if self.build.archive.private:
+            # Builds in private archive may have restricted files that
+            # we can't obtain from the public librarian. Prepare a pool
+            # URL from which to fetch them.
+            pool_url = urlappend(
+                self.build.archive.archive_url,
+                makePoolPath(
+                    self.build.source_package_release.sourcepackagename.name,
+                    self.build.current_component.name))
         filemap = {}
+        dl = []
         for source_file in self.build.source_package_release.files:
             lfa = source_file.libraryfile
             filemap[lfa.filename] = lfa.content.sha1
-            if not private:
+            if not self.build.archive.private:
                 dl.append(
-                    self._slave.cacheFile(
-                        logger, source_file.libraryfile))
+                    self._slave.cacheFile(logger, source_file.libraryfile))
+            else:
+                url = urlappend(pool_url, lfa.filename)
+                logger.debug(
+                    "Asking builder on %s to ensure it has file %s (%s, %s)"
+                    % (
+                        self._builder.url, lfa.filename, url,
+                        lfa.content.sha1))
+                dl.append(self._slave.sendFileToSlave(
+                    lfa.content.sha1, url, username='buildd',
+                    password=self.build.archive.buildd_secret))
         d = defer.gatherResults(dl)
         return d.addCallback(lambda ignored: filemap)
 
@@ -170,39 +182,6 @@ class BinaryPackageBuildBehaviour(BuildFarmJobBehaviourBase):
                 "to the series status of %s." %
                     (build.title, build.id, build.pocket.name,
                      build.distro_series.name))
-
-    def _cachePrivateSourceOnSlave(self, logger):
-        """Ask the slave to download source files for a private build.
-
-        :param logger: A logger used for providing debug information.
-        :return: A list of Deferreds, each of which represents a request
-            to cache a file.
-        """
-        # The URL to the file in the archive consists of these parts:
-        # archive_url / makePoolPath() / filename
-        # Once this is constructed we add the http basic auth info.
-
-        # Avoid circular imports.
-        from lp.soyuz.model.publishing import makePoolPath
-
-        archive = self.build.archive
-        archive_url = archive.archive_url
-        component_name = self.build.current_component.name
-        files = []
-        for source_file in self.build.source_package_release.files:
-            file_name = source_file.libraryfile.filename
-            sha1 = source_file.libraryfile.content.sha1
-            spn = self.build.source_package_release.sourcepackagename
-            poolpath = makePoolPath(spn.name, component_name)
-            url = urlappend(archive_url, poolpath)
-            url = urlappend(url, file_name)
-            logger.debug("Asking builder on %s to ensure it has file %s "
-                         "(%s, %s)" % (
-                            self._builder.url, file_name, url, sha1))
-            files.append(
-                {'sha1': sha1, 'url': url,
-                 'username': 'buildd', 'password': archive.buildd_secret})
-        return files
 
     def _extraBuildArgs(self, build):
         """
