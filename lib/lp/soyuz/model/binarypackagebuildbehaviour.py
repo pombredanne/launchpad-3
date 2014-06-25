@@ -94,51 +94,6 @@ class BinaryPackageBuildBehaviour(BuildFarmJobBehaviourBase):
             "binarypackage", self.build.distro_arch_series,
             self.determineFilesToSend(), self._extraBuildArgs(self.build))
 
-    @defer.inlineCallbacks
-    def dispatchBuildToSlave(self, build_queue_id, logger):
-        """See `IBuildFarmJobBehaviour`."""
-
-        # Start the binary package build on the slave builder. First
-        # we send the chroot.
-        builder_type, das, files, args = self.composeBuildRequest(logger)
-        chroot = das.getChroot()
-
-        yield self._slave.cacheFile(logger, chroot)
-        filename_to_sha1 = {}
-        dl = []
-        for filename, params in files.items():
-            filename_to_sha1[filename] = params['sha1']
-            dl.append(self._slave.sendFileToSlave(**params))
-        yield defer.gatherResults(dl)
-
-        # Generate a string which can be used to cross-check when
-        # obtaining results so we know we are referring to the right
-        # database object in subsequent runs.
-        buildid = "%s-%s" % (self.build.id, build_queue_id)
-        cookie = self.getBuildCookie()
-        chroot_sha1 = chroot.content.sha1
-        logger.debug(
-            "Initiating build %s on %s" % (buildid, self._builder.url))
-
-        (status, info) = yield self._slave.build(
-            cookie, builder_type, chroot_sha1, filename_to_sha1, args)
-
-        message = """%s (%s):
-        ***** RESULT *****
-        %s
-        %s
-        %s: %s
-        ******************
-        """ % (
-            self._builder.name,
-            self._builder.url,
-            filename_to_sha1,
-            args,
-            status,
-            info,
-            )
-        logger.info(message)
-
     def verifyBuildRequest(self, logger):
         """Assert some pre-build checks.
 
