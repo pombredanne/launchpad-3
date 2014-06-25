@@ -8,21 +8,13 @@ __metaclass__ = type
 import shutil
 import tempfile
 
-from testtools import run_test_with
-from testtools.deferredruntest import (
-    assert_fails_with,
-    AsynchronousDeferredRunTest,
-    )
-from testtools.matchers import StartsWith
 import transaction
-from twisted.internet import defer
 from twisted.trial.unittest import TestCase as TrialTestCase
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interactor import BuilderInteractor
-from lp.buildmaster.interfaces.builder import CannotBuild
 from lp.buildmaster.interfaces.buildfarmjobbehaviour import (
     IBuildFarmJobBehaviour,
     )
@@ -288,48 +280,18 @@ class TestRecipeBuilder(TestCaseWithFactory):
         self.assertEquals(
             job.build, SourcePackageRecipeBuild.getByID(job.build.id))
 
-    @run_test_with(AsynchronousDeferredRunTest)
-    def test_dispatchBuildToSlave(self):
-        # Ensure dispatchBuildToSlave will make the right calls to the slave
+    def test_composeBuildRequest(self):
+        # Ensure composeBuildRequest is correct.
         job = self.makeJob()
         test_publisher = SoyuzTestPublisher()
         test_publisher.addFakeChroots(job.build.distroseries)
-        slave = OkSlave()
+        das = job.build.distroseries.nominatedarchindep
         builder = MockBuilder("bob-de-bouwer")
-        builder.processor = getUtility(IProcessorSet).getByName('386')
-        job.setBuilder(builder, slave)
-        logger = BufferLogger()
-        d = defer.maybeDeferred(job.dispatchBuildToSlave, logger)
-
-        def check_dispatch(ignored):
-            self.assertThat(
-                logger.getLogBuffer(),
-                StartsWith(
-                    "INFO Starting job RECIPEBRANCHBUILD-1 (~joe/someapp/pkg "
-                    "recipe build) on http://fake:0000:\n"))
-            self.assertEquals(["ensurepresent", "build"],
-                              [call[0] for call in slave.call_log])
-            build_args = slave.call_log[1][1:]
-            self.assertEquals(build_args[0], job.getBuildCookie())
-            self.assertEquals(build_args[1], "sourcepackagerecipe")
-            self.assertEquals(build_args[3], [])
-            distroarchseries = job.build.distroseries.architectures[0]
-            self.assertEqual(
-                build_args[4], job._extraBuildArgs(distroarchseries))
-        return d.addCallback(check_dispatch)
-
-    @run_test_with(AsynchronousDeferredRunTest)
-    def test_dispatchBuildToSlave_nochroot(self):
-        # dispatchBuildToSlave will fail when there is not chroot tarball
-        # available for the distroseries to build for.
-        job = self.makeJob()
-        #test_publisher = SoyuzTestPublisher()
-        builder = MockBuilder("bob-de-bouwer")
-        builder.processor = getUtility(IProcessorSet).getByName('386')
-        job.setBuilder(builder, OkSlave())
-        logger = BufferLogger()
-        d = defer.maybeDeferred(job.dispatchBuildToSlave, logger)
-        return assert_fails_with(d, CannotBuild)
+        builder.processor = das.processor
+        job.setBuilder(builder, None)
+        self.assertEqual(
+            ('sourcepackagerecipe', das, {}, job._extraBuildArgs(das)),
+            job.composeBuildRequest(None))
 
 
 class TestBuildNotifications(TrialTestCase):

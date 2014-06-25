@@ -9,13 +9,7 @@ from datetime import datetime
 
 import fixtures
 import pytz
-from testtools import run_test_with
-from testtools.deferredruntest import (
-    assert_fails_with,
-    AsynchronousDeferredRunTest,
-    )
 import transaction
-from twisted.internet import defer
 from twisted.trial.unittest import TestCase as TrialTestCase
 from zope.component import getUtility
 from zope.security.proxy import (
@@ -226,41 +220,14 @@ class TestLiveFSBuildBehaviour(TestCaseWithFactory):
         self.assertEqual(["--option=value"], args["lb_args"])
         self.assertIsNot(Proxy, type(args["lb_args"]))
 
-    @run_test_with(AsynchronousDeferredRunTest)
-    @defer.inlineCallbacks
-    def test_dispatchBuildToSlave(self):
-        # dispatchBuildToSlave makes the proper calls to the slave.
+    def test_composeBuildRequest(self):
         job = self.makeJob()
-        lfa = self.factory.makeLibraryFileAlias()
-        transaction.commit()
+        lfa = self.factory.makeLibraryFileAlias(db_only=True)
         job.build.distro_arch_series.addOrUpdateChroot(lfa)
-        slave = OkSlave()
-        builder = MockBuilder("bob")
-        builder.processor = getUtility(IProcessorSet).getByName("386")
-        job.setBuilder(builder, slave)
-        logger = BufferLogger()
-        yield job.dispatchBuildToSlave(logger)
-        self.assertStartsWith(
-            logger.getLogBuffer(),
-            "INFO Starting job LIVEFSBUILD-1 (i386 build of test-livefs "
-            "livefs in distro unstable) on http://fake:0000:")
         self.assertEqual(
-            ["ensurepresent", "build"], [call[0] for call in slave.call_log])
-        build_args = slave.call_log[1][1:]
-        self.assertEqual(job.getBuildCookie(), build_args[0])
-        self.assertEqual("livefs", build_args[1])
-        self.assertEqual([], build_args[3])
-        self.assertEqual(job._extraBuildArgs(), build_args[4])
-
-    @run_test_with(AsynchronousDeferredRunTest)
-    def test_dispatchBuildToSlave_no_chroot(self):
-        # dispatchBuildToSlave fails when the DAS has no chroot.
-        job = self.makeJob()
-        builder = MockBuilder()
-        builder.processor = getUtility(IProcessorSet).getByName("386")
-        job.setBuilder(builder, OkSlave())
-        d = job.dispatchBuildToSlave(BufferLogger())
-        return assert_fails_with(d, CannotBuild)
+            ('livefs', job.build.distro_arch_series, {},
+             job._extraBuildArgs()),
+            job.composeBuildRequest(None))
 
 
 class MakeLiveFSBuildMixin:

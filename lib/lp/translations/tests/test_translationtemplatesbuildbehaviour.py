@@ -9,14 +9,12 @@ import os
 
 import pytz
 from testtools.deferredruntest import AsynchronousDeferredRunTest
-from testtools.testcase import ExpectedException
 from twisted.internet import defer
 from zope.component import getUtility
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interactor import BuilderInteractor
-from lp.buildmaster.interfaces.builder import CannotBuild
 from lp.buildmaster.interfaces.buildfarmjobbehaviour import (
     IBuildFarmJobBehaviour,
     )
@@ -99,36 +97,14 @@ class TestTranslationTemplatesBuildBehaviour(
         b2 = self.makeBehaviour()
         self.assertNotEqual(b1.getLogFileName(), b2.getLogFileName())
 
-    @defer.inlineCallbacks
-    def test_dispatchBuildToSlave_no_chroot_fails(self):
-        # dispatchBuildToSlave will fail if the chroot does not exist.
-        behaviour = self.makeBehaviour(use_fake_chroot=False)
-        switch_dbuser(config.builddmaster.dbuser)
-        with ExpectedException(CannotBuild):
-            yield behaviour.dispatchBuildToSlave(logging)
-
-    def test_dispatchBuildToSlave(self):
-        # dispatchBuildToSlave ultimately causes the slave's build
-        # method to be invoked.  The slave receives the URL of the
-        # branch it should build from.
+    def test_composeBuildRequest(self):
         behaviour = self.makeBehaviour()
         switch_dbuser(config.builddmaster.dbuser)
-        d = behaviour.dispatchBuildToSlave(logging)
-
-        def got_dispatch(ignored):
-            # call_log lives on the mock WaitingSlave and tells us what
-            # calls to the slave that the behaviour class made.
-            call_log = behaviour._slave.call_log
-            build_params = call_log[-1]
-            self.assertEqual('build', build_params[0])
-            build_type = build_params[2]
-            self.assertEqual('translation-templates', build_type)
-            branch_url = build_params[-1]['branch_url']
-            # The slave receives the public http URL for the branch.
-            self.assertEqual(
-                branch_url,
-                behaviour.build.branch.composePublicURL())
-        return d.addCallback(got_dispatch)
+        self.assertEqual(
+            ('translation-templates', behaviour._getDistroArchSeries(), {},
+             {'arch_tag': behaviour._getDistroArchSeries().architecturetag,
+              'branch_url': behaviour.build.branch.composePublicURL()}),
+             behaviour.composeBuildRequest(None))
 
     def test_getDistroArchSeries(self):
         # _getDistroArchSeries produces the nominated arch-indep
