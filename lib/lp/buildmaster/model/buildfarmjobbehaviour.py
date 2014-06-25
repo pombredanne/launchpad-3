@@ -73,6 +73,11 @@ class BuildFarmJobBehaviourBase:
     @defer.inlineCallbacks
     def dispatchBuildToSlave(self, logger):
         """See `IBuildFarmJobBehaviour`."""
+        cookie = self.getBuildCookie()
+        logger.info(
+            "Preparing job %s (%s) on %s."
+            % (cookie, self.build.title, self._builder.url))
+
         builder_type, das, files, args = self.composeBuildRequest(logger)
 
         # First cache the chroot and any other files that the job needs.
@@ -80,6 +85,7 @@ class BuildFarmJobBehaviourBase:
         if chroot is None:
             raise CannotBuild(
                 "Unable to find a chroot for %s" % das.displayname)
+
         filename_to_sha1 = {}
         dl = []
         dl.append(self._slave.sendFileToSlave(
@@ -89,12 +95,11 @@ class BuildFarmJobBehaviourBase:
             dl.append(self._slave.sendFileToSlave(logger=logger, **params))
         yield defer.gatherResults(dl)
 
-        cookie = self.getBuildCookie()
         combined_args = {
             'builder_type': builder_type, 'chroot_sha1': chroot.content.sha1,
             'filemap': filename_to_sha1, 'args': args}
         logger.info(
-            "Starting job %s (%s) on %s:\n%s"
+            "Dispatching job %s (%s) to %s:\n%s"
             % (cookie, self.build.title, self._builder.url,
                sanitize_arguments(repr(combined_args))))
 

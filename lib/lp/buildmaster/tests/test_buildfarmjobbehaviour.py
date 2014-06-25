@@ -164,8 +164,10 @@ class TestDispatchBuildToSlave(TestCase):
         # with credentials redacted.
         self.assertStartsWith(
             logger.getLogBuffer(),
-            "INFO Starting job PACKAGEBUILD-1 (some job for something) on "
-            "http://fake:0000:\n")
+            "INFO Preparing job PACKAGEBUILD-1 (some job for something) on "
+            "http://fake:0000.\n"
+            "INFO Dispatching job PACKAGEBUILD-1 (some job for something) to "
+            "http://fake:0000:\n{")
         self.assertIn('http://<redacted>@blah/', logger.getLogBuffer())
         self.assertNotIn('sekrit', logger.getLogBuffer())
         self.assertEndsWith(
