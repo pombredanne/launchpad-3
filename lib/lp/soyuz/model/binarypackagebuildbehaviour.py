@@ -89,17 +89,23 @@ class BinaryPackageBuildBehaviour(BuildFarmJobBehaviourBase):
                     'password': self.build.archive.buildd_secret}
         return filemap
 
+    def composeBuildRequest(self):
+        return (
+            "binarypackage", self.build.distro_arch_series.getChroot(),
+            self.determineFilesToSend(), self._extraBuildArgs(self.build))
+
     @defer.inlineCallbacks
     def dispatchBuildToSlave(self, build_queue_id, logger):
         """See `IBuildFarmJobBehaviour`."""
 
         # Start the binary package build on the slave builder. First
         # we send the chroot.
-        chroot = self.build.distro_arch_series.getChroot()
+        builder_type, chroot, files, args = self.composeBuildRequest()
+
         yield self._slave.cacheFile(logger, chroot)
         filename_to_sha1 = {}
         dl = []
-        for filename, params in self.determineFilesToSend().items():
+        for filename, params in files.items():
             filename_to_sha1[filename] = params['sha1']
             dl.append(self._slave.sendFileToSlave(**params))
         yield defer.gatherResults(dl)
@@ -113,9 +119,8 @@ class BinaryPackageBuildBehaviour(BuildFarmJobBehaviourBase):
         logger.debug(
             "Initiating build %s on %s" % (buildid, self._builder.url))
 
-        args = self._extraBuildArgs(self.build)
         (status, info) = yield self._slave.build(
-            cookie, "binarypackage", chroot_sha1, filename_to_sha1, args)
+            cookie, builder_type, chroot_sha1, filename_to_sha1, args)
 
         message = """%s (%s):
         ***** RESULT *****
