@@ -89,9 +89,9 @@ class BinaryPackageBuildBehaviour(BuildFarmJobBehaviourBase):
                     'password': self.build.archive.buildd_secret}
         return filemap
 
-    def composeBuildRequest(self):
+    def composeBuildRequest(self, logger):
         return (
-            "binarypackage", self.build.distro_arch_series.getChroot(),
+            "binarypackage", self.build.distro_arch_series,
             self.determineFilesToSend(), self._extraBuildArgs(self.build))
 
     @defer.inlineCallbacks
@@ -100,7 +100,8 @@ class BinaryPackageBuildBehaviour(BuildFarmJobBehaviourBase):
 
         # Start the binary package build on the slave builder. First
         # we send the chroot.
-        builder_type, chroot, files, args = self.composeBuildRequest()
+        builder_type, das, files, args = self.composeBuildRequest(logger)
+        chroot = das.getChroot()
 
         yield self._slave.cacheFile(logger, chroot)
         filename_to_sha1 = {}

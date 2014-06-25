@@ -25,6 +25,15 @@ class IBuildFarmJobBehaviour(Interface):
         :param logger: A logger to be used to log diagnostic information.
         """
 
+    def composeBuildRequest(logger):
+        """Compose parameters for a slave build request.
+
+        :param logger: A logger to be used to log diagnostic information.
+        :return: A tuple of (
+            "builder type", `DistroArchSeries` to build against,
+            {filename: `sendFileToSlave` arguments}, {extra build arguments})
+        """
+
     def dispatchBuildToSlave(build_queue_item_id, logger):
         """Dispatch a specific build to the slave.
 
