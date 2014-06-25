@@ -104,8 +104,7 @@ class OkSlave:
     def build(self, buildid, buildtype, chroot, filemap, args):
         self.call_log.append(
             ('build', buildid, buildtype, chroot, filemap.keys(), args))
-        info = 'OkSlave BUILDING'
-        return defer.succeed(('BuildStatus.Building', info))
+        return defer.succeed(('BuildStatus.BUILDING', buildid))
 
     def echo(self, *args):
         self.call_log.append(('echo',) + args)

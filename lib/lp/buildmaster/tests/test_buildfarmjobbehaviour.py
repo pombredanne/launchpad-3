@@ -6,16 +6,21 @@
 __metaclass__ = type
 
 from datetime import datetime
+import hashlib
 import os
 import shutil
 import tempfile
 
+from testtools.deferredruntest import AsynchronousDeferredRunTest
 from twisted.internet import defer
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.archiveuploader.uploadprocessor import parse_build_upload_leaf_name
-from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.enums import (
+    BuildFarmJobType,
+    BuildStatus,
+    )
 from lp.buildmaster.interactor import BuilderInteractor
 from lp.buildmaster.interfaces.buildfarmjobbehaviour import (
     IBuildFarmJobBehaviour,
@@ -23,11 +28,19 @@ from lp.buildmaster.interfaces.buildfarmjobbehaviour import (
 from lp.buildmaster.model.buildfarmjobbehaviour import (
     BuildFarmJobBehaviourBase,
     )
-from lp.buildmaster.tests.mock_slaves import WaitingSlave
+from lp.buildmaster.tests.mock_slaves import (
+    MockBuilder,
+    OkSlave,
+    WaitingSlave,
+    )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.config import config
+from lp.services.log.logger import BufferLogger
 from lp.soyuz.interfaces.processor import IProcessorSet
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    TestCase,
+    TestCaseWithFactory,
+    )
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.fakemethod import FakeMethod
 from lp.testing.layers import (
@@ -39,7 +52,30 @@ from lp.testing.mail_helpers import pop_notifications
 
 class FakeBuildFarmJob:
     """Dummy BuildFarmJob."""
-    pass
+
+    id = 1
+    job_type = BuildFarmJobType.PACKAGEBUILD
+    title = 'some job for something'
+
+
+class FakeLibraryFileContent:
+
+    def __init__(self, filename):
+        self.sha1 = hashlib.sha1(filename).hexdigest()
+
+
+class FakeLibraryFileAlias:
+
+    def __init__(self, filename):
+        self.filename = filename
+        self.content = FakeLibraryFileContent(filename)
+        self.http_url = 'http://librarian.dev/%s' % filename
+
+
+class FakeDistroArchSeries:
+
+    def getChroot(self):
+        return FakeLibraryFileAlias('chroot-fooix-bar-y86.tar.bz2')
 
 
 class TestBuildFarmJobBehaviourBase(TestCaseWithFactory):
@@ -87,6 +123,55 @@ class TestBuildFarmJobBehaviourBase(TestCaseWithFactory):
         self.assertEqual(
             '%s-%s' % (now.strftime("%Y%m%d-%H%M%S"), build_cookie),
             upload_leaf)
+
+
+class TestDispatchBuildToSlave(TestCase):
+
+    run_tests_with = AsynchronousDeferredRunTest
+
+    @defer.inlineCallbacks
+    def test_dispatchBuildToSlave(self):
+        files = {
+            'foo.dsc': {'url': 'http://host/foo.dsc', 'sha1': '0'},
+            'bar.tar': {
+                'url': 'http://host/bar.tar', 'sha1': '0',
+                'username': 'admin', 'password': 'sekrit'}}
+
+        behaviour = BuildFarmJobBehaviourBase(FakeBuildFarmJob())
+        builder = MockBuilder()
+        slave = OkSlave()
+        logger = BufferLogger()
+        behaviour.composeBuildRequest = FakeMethod(
+            ('foobuild', FakeDistroArchSeries(), files,
+             {'some': 'arg', 'archives': ['http://admin:sekrit@blah/']}))
+        behaviour.setBuilder(builder, slave)
+        yield behaviour.dispatchBuildToSlave(logger)
+
+        # The slave's been asked to cache the chroot and both source
+        # files, and then to start the build.
+        expected_calls = [
+            ('ensurepresent',
+             'http://librarian.dev/chroot-fooix-bar-y86.tar.bz2', '', ''),
+            ('ensurepresent', 'http://host/bar.tar', 'admin', 'sekrit'),
+            ('ensurepresent', 'http://host/foo.dsc', '', ''),
+            ('build', 'PACKAGEBUILD-1', 'foobuild',
+             hashlib.sha1('chroot-fooix-bar-y86.tar.bz2').hexdigest(),
+             ['foo.dsc', 'bar.tar'],
+             {'archives': ['http://admin:sekrit@blah/'], 'some': 'arg'})]
+        self.assertEqual(expected_calls, slave.call_log)
+
+        # And details have been logged, including the build arguments
+        # with credentials redacted.
+        self.assertStartsWith(
+            logger.getLogBuffer(),
+            "INFO Starting job PACKAGEBUILD-1 (some job for something) on "
+            "http://fake:0000:\n")
+        self.assertIn('http://<redacted>@blah/', logger.getLogBuffer())
+        self.assertNotIn('sekrit', logger.getLogBuffer())
+        self.assertEndsWith(
+            logger.getLogBuffer(),
+            "INFO Job PACKAGEBUILD-1 (some job for something) started on "
+            "http://fake:0000: BuildStatus.BUILDING PACKAGEBUILD-1\n")
 
 
 class TestGetUploadMethodsMixin:
