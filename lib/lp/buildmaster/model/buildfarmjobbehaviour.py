@@ -62,16 +62,15 @@ class BuildFarmJobBehaviourBase:
         """See `IBuildFarmJobBehaviour`."""
         builder_type, das, files, args = self.composeBuildRequest(logger)
 
-        # First cache the chroot on the builder.
+        # First cache the chroot and any other files that the job needs.
         chroot = das.getChroot()
         if chroot is None:
             raise CannotBuild(
                 "Unable to find a chroot for %s" % das.displayname)
-        yield self._slave.cacheFile(logger, chroot)
-
-        # Cache any other files that the job might need.
         filename_to_sha1 = {}
         dl = []
+        dl.append(self._slave.sendFileToSlave(
+            logger=logger, url=chroot.http_url, sha1=chroot.content.sha1))
         for filename, params in files.items():
             filename_to_sha1[filename] = params['sha1']
             dl.append(self._slave.sendFileToSlave(logger=logger, **params))
