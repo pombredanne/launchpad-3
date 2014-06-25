@@ -13,6 +13,7 @@ import datetime
 import gzip
 import logging
 import os
+import re
 import tempfile
 
 import transaction
@@ -31,6 +32,18 @@ from lp.services.librarian.utils import copy_and_close
 
 
 SLAVE_LOG_FILENAME = 'buildlog'
+
+
+def sanitize_arguments(s):
+    """Sanitise a string of arguments for logging.
+
+    Some jobs are started with arguments that probably shouldn't be
+    logged in their entirety (usernames and passwords for P3As, for
+    example. This function removes them.
+    """
+    # Remove credentials from URLs.
+    password_re = re.compile('://([^:]+:[^@]+@)(\S+)')
+    return password_re.sub(r'://<redacted>@\2', s)
 
 
 class BuildFarmJobBehaviourBase:
@@ -76,14 +89,14 @@ class BuildFarmJobBehaviourBase:
             dl.append(self._slave.sendFileToSlave(logger=logger, **params))
         yield defer.gatherResults(dl)
 
-        # XXX: Sanitise args.
         cookie = self.getBuildCookie()
         combined_args = {
             'builder_type': builder_type, 'chroot_sha1': chroot.content.sha1,
             'filemap': filename_to_sha1, 'args': args}
         logger.info(
-            "Starting job %s (%s) on %s:\n%r"
-            % (cookie, self.build.title, self._builder.url, combined_args))
+            "Starting job %s (%s) on %s:\n%s"
+            % (cookie, self.build.title, self._builder.url,
+               sanitize_arguments(repr(combined_args))))
 
         (status, info) = yield self._slave.build(
             cookie, builder_type, chroot.content.sha1, filename_to_sha1, args)
