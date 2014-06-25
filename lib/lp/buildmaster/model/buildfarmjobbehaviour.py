@@ -34,7 +34,7 @@ from lp.services.librarian.utils import copy_and_close
 SLAVE_LOG_FILENAME = 'buildlog'
 
 
-def sanitize_arguments(s):
+def sanitise_arguments(s):
     """Sanitise a string of arguments for logging.
 
     Some jobs are started with arguments that probably shouldn't be
@@ -101,7 +101,7 @@ class BuildFarmJobBehaviourBase:
         logger.info(
             "Dispatching job %s (%s) to %s:\n%s"
             % (cookie, self.build.title, self._builder.url,
-               sanitize_arguments(repr(combined_args))))
+               sanitise_arguments(repr(combined_args))))
 
         (status, info) = yield self._slave.build(
             cookie, builder_type, chroot.content.sha1, filename_to_sha1, args)
