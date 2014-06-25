@@ -17,14 +17,6 @@ class IBuildFarmJobBehaviour(Interface):
     def setBuilder(builder, slave):
         """Sets the associated builder and slave for this instance."""
 
-    def logStartBuild(logger):
-        """Log the start of a specific build queue item.
-
-        The form of the log message will vary depending on the type of build.
-        :param build_queue_item: A BuildQueueItem to build.
-        :param logger: A logger to be used to log diagnostic information.
-        """
-
     def composeBuildRequest(logger):
         """Compose parameters for a slave build request.
 
