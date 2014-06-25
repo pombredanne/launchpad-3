@@ -181,16 +181,6 @@ class BuilderSlave(object):
         p.spawnProcess(resume_argv[0], tuple(resume_argv))
         return d
 
-    def cacheFile(self, logger, libraryfilealias):
-        """Make sure that the file at 'libraryfilealias' is on the slave.
-
-        :param logger: A python `Logger` object.
-        :param libraryfilealias: An `ILibraryFileAlias`.
-        """
-        return self.sendFileToSlave(
-            libraryfilealias.content.sha1, libraryfilealias.http_url,
-            logger=logger)
-
     @defer.inlineCallbacks
     def sendFileToSlave(self, sha1, url, username="", password="",
                         logger=None):

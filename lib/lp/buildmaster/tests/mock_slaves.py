@@ -137,10 +137,6 @@ class OkSlave:
 
         return d.addCallback(check_present)
 
-    def cacheFile(self, logger, libraryfilealias):
-        return self.sendFileToSlave(
-            libraryfilealias.content.sha1, libraryfilealias.http_url)
-
     def getFiles(self, files):
         dl = defer.gatherResults([
             self.getFile(builder_file, local_file)
