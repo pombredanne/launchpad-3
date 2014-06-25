@@ -74,7 +74,7 @@ class BuildFarmJobBehaviourBase:
         dl = []
         for filename, params in files.items():
             filename_to_sha1[filename] = params['sha1']
-            dl.append(self._slave.sendFileToSlave(**params))
+            dl.append(self._slave.sendFileToSlave(logger=logger, **params))
         yield defer.gatherResults(dl)
 
         # Generate a string which can be used to cross-check when
