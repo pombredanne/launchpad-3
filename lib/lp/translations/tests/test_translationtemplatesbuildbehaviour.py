@@ -166,13 +166,7 @@ class TestTranslationTemplatesBuildBehaviour(
         queue_item = FakeBuildQueue(behaviour)
         slave = behaviour._slave
 
-        d = behaviour.dispatchBuildToSlave(logging)
-
-        def got_dispatch(ignored):
-            self.assertEqual(0, queue_item.destroySelf.call_count)
-            self.assertEqual(0, behaviour._uploadTarball.call_count)
-
-            return slave.status()
+        d = slave.status()
 
         def got_status(status):
             return (
@@ -188,7 +182,6 @@ class TestTranslationTemplatesBuildBehaviour(
             self.assertEqual(1, queue_item.destroySelf.call_count)
             self.assertEqual(1, behaviour._uploadTarball.call_count)
 
-        d.addCallback(got_dispatch)
         d.addCallback(got_status)
         d.addCallback(build_updated)
         return d
@@ -199,11 +192,8 @@ class TestTranslationTemplatesBuildBehaviour(
         behaviour._uploadTarball = FakeMethod()
         queue_item = FakeBuildQueue(behaviour)
         slave = behaviour._slave
-        d = behaviour.dispatchBuildToSlave(logging)
 
-        def got_dispatch(ignored):
-            # Now that we've dispatched, get the status.
-            return slave.status()
+        d = slave.status()
 
         def got_status(status):
             del status['filemap']
@@ -219,7 +209,6 @@ class TestTranslationTemplatesBuildBehaviour(
             self.assertEqual(1, queue_item.destroySelf.call_count)
             self.assertEqual(0, behaviour._uploadTarball.call_count)
 
-        d.addCallback(got_dispatch)
         d.addCallback(got_status)
         d.addCallback(build_updated)
         return d
@@ -231,10 +220,8 @@ class TestTranslationTemplatesBuildBehaviour(
         behaviour._uploadTarball = FakeMethod()
         queue_item = FakeBuildQueue(behaviour)
         slave = behaviour._slave
-        d = behaviour.dispatchBuildToSlave(logging)
 
-        def got_dispatch(ignored):
-            return slave.status()
+        d = slave.status()
 
         def got_status(status):
             del status['filemap']
@@ -248,7 +235,6 @@ class TestTranslationTemplatesBuildBehaviour(
             self.assertEqual(1, queue_item.destroySelf.call_count)
             self.assertEqual(0, behaviour._uploadTarball.call_count)
 
-        d.addCallback(got_dispatch)
         d.addCallback(got_status)
         d.addCallback(build_updated)
         return d
@@ -261,8 +247,6 @@ class TestTranslationTemplatesBuildBehaviour(
         queue_item = FakeBuildQueue(behaviour)
         slave = behaviour._slave
 
-        d = behaviour.dispatchBuildToSlave(logging)
-
         def fake_getFile(sum, file):
             dummy_tar = os.path.join(
                 os.path.dirname(__file__), 'dummy_templates.tar.gz')
@@ -270,9 +254,8 @@ class TestTranslationTemplatesBuildBehaviour(
             copy_and_close(tar_file, file)
             return defer.succeed(None)
 
-        def got_dispatch(ignored):
-            slave.getFile = fake_getFile
-            return slave.status()
+        slave.getFile = fake_getFile
+        d = slave.status()
 
         def got_status(status):
             return behaviour.handleStatus(
@@ -293,7 +276,6 @@ class TestTranslationTemplatesBuildBehaviour(
             list2 = sorted([entry.path for entry in entries])
             self.assertEqual(list1, list2)
 
-        d.addCallback(got_dispatch)
         d.addCallback(got_status)
         d.addCallback(build_updated)
         return d
