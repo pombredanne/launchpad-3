@@ -350,7 +350,9 @@ class SlaveScanner:
         vitals = self.builder_factory.getVitals(self.builder_name)
         builder = self.builder_factory[self.builder_name]
         try:
-            builder.handleFailure(self.logger)
+            builder.gotFailure()
+            if builder.current_build is not None:
+                builder.current_build.gotFailure()
             recover_failure(self.logger, vitals, builder, retry, failure.value)
             transaction.commit()
         except Exception:
