@@ -68,7 +68,7 @@ class BuildFarmJobBehaviourBase:
 
     def getBuildCookie(self):
         """See `IPackageBuild`."""
-        return '%s-%s' % (self.build.job_type.name, self.build.id)
+        return self.build.build_cookie
 
     @defer.inlineCallbacks
     def dispatchBuildToSlave(self, logger):
