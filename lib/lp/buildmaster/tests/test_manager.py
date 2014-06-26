@@ -40,9 +40,6 @@ from lp.buildmaster.interfaces.builder import (
     BuildSlaveFailure,
     IBuilderSet,
     )
-from lp.buildmaster.interfaces.buildfarmjobbehaviour import (
-    IBuildFarmJobBehaviour,
-    )
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.manager import (
     BuilddManager,
@@ -530,8 +527,7 @@ class TestSlaveScannerScan(TestCaseWithFactory):
         transaction.commit()
         login(ANONYMOUS)
         buildqueue = builder.currentjob
-        behaviour = IBuildFarmJobBehaviour(buildqueue.specific_build)
-        slave.build_id = behaviour.getBuildCookie()
+        slave.build_id = buildqueue.build_cookie
         self.assertBuildingJob(buildqueue, builder)
 
         # Now set the build to CANCELLING.
@@ -621,8 +617,7 @@ class TestSlaveScannerScan(TestCaseWithFactory):
         # build() has been called, so switch in a BUILDING slave.
         # Scans will now just do a status() each, as the logtail is
         # updated.
-        get_slave.result = BuildingSlave(
-            IBuildFarmJobBehaviour(build).getBuildCookie())
+        get_slave.result = BuildingSlave(build.build_cookie)
         yield scanner.scan()
         self.assertEqual("This is a build log: 0", bq.logtail)
         yield scanner.scan()
@@ -637,8 +632,7 @@ class TestSlaveScannerScan(TestCaseWithFactory):
         # _handleStatus_OK doesn't do anything special, but there'd
         # usually be file retrievals in the middle. The builder remains
         # dirty afterward.
-        get_slave.result = WaitingSlave(
-            build_id=IBuildFarmJobBehaviour(build).getBuildCookie())
+        get_slave.result = WaitingSlave(build_id=build.build_cookie)
         yield scanner.scan()
         self.assertEqual(['status', 'clean'], get_slave.result.method_log)
         self.assertIs(None, builder.currentjob)
@@ -769,7 +763,7 @@ class TestSlaveScannerWithoutDB(TestCase):
     def test_scan_with_job(self):
         # SlaveScanner.scan calls updateBuild() when a job is building.
         slave = BuildingSlave('trivial')
-        bq = FakeBuildQueue()
+        bq = FakeBuildQueue('trivial')
         scanner = self.getScanner(
             builder_factory=MockBuilderFactory(MockBuilder(), bq),
             slave=slave)
@@ -785,7 +779,7 @@ class TestSlaveScannerWithoutDB(TestCase):
         # SlaveScanner.scan identifies slaves that aren't building what
         # they should be, resets the jobs, and then aborts the slaves.
         slave = BuildingSlave('nontrivial')
-        bq = FakeBuildQueue()
+        bq = FakeBuildQueue('trivial')
         builder = MockBuilder(virtualized=False)
         scanner = self.getScanner(
             builder_factory=MockBuilderFactory(builder, bq),
@@ -848,41 +842,31 @@ class TestSlaveScannerWithoutDB(TestCase):
         self.assertEqual(['status'], slave.call_log)
 
     def test_getExpectedCookie_caches(self):
-        bf = MockBuilderFactory(MockBuilder(), FakeBuildQueue())
+        bq = FakeBuildQueue('trivial')
+        bf = MockBuilderFactory(MockBuilder(), bq)
         scanner = SlaveScanner(
             'mock', bf, BufferLogger(), interactor_factory=FakeMethod(None),
             slave_factory=FakeMethod(None),
             behaviour_factory=FakeMethod(TrivialBehaviour()))
 
-        def assertCounts(expected):
-            self.assertEqual(
-                expected,
-                (scanner.interactor_factory.call_count,
-                 scanner.behaviour_factory.call_count,
-                 scanner.builder_factory.get_call_count))
-
-        # The first call will get a Builder and a BuildFarmJobBehaviour.
-        assertCounts((0, 0, 0))
+        # The first call retrieves the cookie from the BuildQueue.
         cookie1 = scanner.getExpectedCookie(bf.getVitals('foo'))
         self.assertEqual('trivial', cookie1)
-        assertCounts((0, 1, 1))
 
-        # A second call with the same BuildQueue will not reretrieve them.
+        # A second call with the same BuildQueue will not reretrieve it.
+        bq.build_cookie = 'nontrivial'
         cookie2 = scanner.getExpectedCookie(bf.getVitals('foo'))
-        self.assertEqual(cookie1, cookie2)
-        assertCounts((0, 1, 1))
+        self.assertEqual('trivial', cookie2)
 
         # But a call with a new BuildQueue will regrab.
-        bf.updateTestData(bf._builder, FakeBuildQueue())
+        bf.updateTestData(bf._builder, FakeBuildQueue('complicated'))
         cookie3 = scanner.getExpectedCookie(bf.getVitals('foo'))
-        self.assertEqual(cookie1, cookie3)
-        assertCounts((0, 2, 2))
+        self.assertEqual('complicated', cookie3)
 
         # And unsetting the BuildQueue returns None again.
         bf.updateTestData(bf._builder, None)
         cookie4 = scanner.getExpectedCookie(bf.getVitals('foo'))
         self.assertIs(None, cookie4)
-        assertCounts((0, 2, 2))
 
 
 class TestJudgeFailure(TestCase):
@@ -1062,23 +1046,27 @@ class TestFailureAssessments(TestCaseWithFactory):
 
     def _recover_failure(self, fail_notes, retry=True):
         # Helper for recover_failure boilerplate.
+        logger = BufferLogger()
         recover_failure(
-            BufferLogger(), extract_vitals_from_db(self.builder), self.builder,
+            logger, extract_vitals_from_db(self.builder), self.builder,
             retry, Exception(fail_notes))
+        return logger.getLogBuffer()
 
     def test_job_reset_threshold_with_retry(self):
         naked_build = removeSecurityProxy(self.build)
         self.builder.failure_count = JOB_RESET_THRESHOLD - 1
         naked_build.failure_count = JOB_RESET_THRESHOLD - 1
 
-        self._recover_failure("failnotes")
+        log = self._recover_failure("failnotes")
+        self.assertNotIn("Requeueing job", log)
         self.assertIsNot(None, self.builder.currentjob)
         self.assertEqual(self.build.status, BuildStatus.BUILDING)
 
         self.builder.failure_count += 1
         naked_build.failure_count += 1
 
-        self._recover_failure("failnotes")
+        log = self._recover_failure("failnotes")
+        self.assertIn("Requeueing job", log)
         self.assertIs(None, self.builder.currentjob)
         self.assertEqual(self.build.status, BuildStatus.NEEDSBUILD)
 
@@ -1087,7 +1075,8 @@ class TestFailureAssessments(TestCaseWithFactory):
         self.builder.failure_count = 1
         naked_build.failure_count = 1
 
-        self._recover_failure("failnotes", retry=False)
+        log = self._recover_failure("failnotes", retry=False)
+        self.assertIn("Requeueing job", log)
         self.assertIs(None, self.builder.currentjob)
         self.assertEqual(self.build.status, BuildStatus.NEEDSBUILD)
 
@@ -1099,7 +1088,8 @@ class TestFailureAssessments(TestCaseWithFactory):
         self.builder.failure_count = 1
         naked_build.failure_count = 1
 
-        self._recover_failure("failnotes")
+        log = self._recover_failure("failnotes")
+        self.assertIn("Cancelling job", log)
         self.assertIs(None, self.builder.currentjob)
         self.assertEqual(BuildStatus.CANCELLED, self.build.status)
 
@@ -1108,7 +1098,9 @@ class TestFailureAssessments(TestCaseWithFactory):
         self.build.gotFailure()
         self.builder.gotFailure()
 
-        self._recover_failure("failnotes")
+        log = self._recover_failure("failnotes")
+        self.assertIn("Failing job", log)
+        self.assertIn("Resetting failure count of builder", log)
         self.assertIs(None, self.builder.currentjob)
         self.assertEqual(self.build.status, BuildStatus.FAILEDTOBUILD)
         self.assertEqual(0, self.builder.failure_count)
@@ -1120,7 +1112,9 @@ class TestFailureAssessments(TestCaseWithFactory):
         self.build.gotFailure()
         self.build.gotFailure()
         self.builder.gotFailure()
-        self._recover_failure("failnotes")
+        log = self._recover_failure("failnotes")
+        self.assertIn("Cancelling job", log)
+        self.assertIn("Resetting failure count of builder", log)
         self.assertIs(None, self.builder.currentjob)
         self.assertEqual(BuildStatus.CANCELLED, self.build.status)
 
@@ -1132,7 +1126,9 @@ class TestFailureAssessments(TestCaseWithFactory):
         # builder or attempt to clean up a non-virtual builder.
         self.builder.failure_count = BUILDER_FAILURE_THRESHOLD - 1
         self.assertIsNot(None, self.builder.currentjob)
-        self._recover_failure("failnotes")
+        log = self._recover_failure("failnotes")
+        self.assertIn("Requeueing job RECIPEBRANCHBUILD-1", log)
+        self.assertIn("Dirtying builder %s" % self.builder.name, log)
         self.assertIs(None, self.builder.currentjob)
         self.assertEqual(BuilderCleanStatus.DIRTY, self.builder.clean_status)
         self.assertTrue(self.builder.builderok)
@@ -1141,7 +1137,9 @@ class TestFailureAssessments(TestCaseWithFactory):
         # disabled.
         self.builder.failure_count = BUILDER_FAILURE_THRESHOLD
         self.buildqueue.markAsBuilding(self.builder)
-        self._recover_failure("failnotes")
+        log = self._recover_failure("failnotes")
+        self.assertIn("Requeueing job", log)
+        self.assertIn("Failing builder", log)
         self.assertIs(None, self.builder.currentjob)
         self.assertEqual(BuilderCleanStatus.DIRTY, self.builder.clean_status)
         self.assertFalse(self.builder.builderok)
@@ -1151,7 +1149,9 @@ class TestFailureAssessments(TestCaseWithFactory):
         self.buildqueue.reset()
         self.builder.failure_count = BUILDER_FAILURE_THRESHOLD
 
-        self._recover_failure("failnotes")
+        log = self._recover_failure("failnotes")
+        self.assertIn("with no job", log)
+        self.assertIn("Failing builder", log)
         self.assertFalse(self.builder.builderok)
         self.assertEqual("failnotes", self.builder.failnotes)
 

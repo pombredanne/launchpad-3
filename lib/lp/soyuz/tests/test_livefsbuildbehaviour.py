@@ -160,13 +160,6 @@ class TestLiveFSBuildBehaviour(TestCaseWithFactory):
         e = self.assertRaises(CannotBuild, job.verifyBuildRequest, logger)
         self.assertIn("Missing chroot", str(e))
 
-    def test_getBuildCookie(self):
-        # A build cookie is made up of the job type and record id.  The
-        # uploadprocessor relies on this format.
-        job = self.makeJob()
-        cookie = removeSecurityProxy(job).getBuildCookie()
-        self.assertEqual("LIVEFSBUILD-%s" % job.build.id, cookie)
-
     def test_extraBuildArgs(self):
         # _extraBuildArgs returns a reasonable set of additional arguments.
         job = self.makeJob(

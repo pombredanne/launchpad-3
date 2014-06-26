@@ -259,9 +259,7 @@ class BrokenSlave:
 
 
 class TrivialBehaviour:
-
-    def getBuildCookie(self):
-        return 'trivial'
+    pass
 
 
 class DeadProxy(xmlrpc.Proxy):

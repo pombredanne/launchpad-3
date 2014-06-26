@@ -296,17 +296,8 @@ class Builder(SQLBase):
     def handleFailure(self, logger):
         """See IBuilder."""
         self.gotFailure()
-        if self.currentjob is not None:
-            build_farm_job = self.current_build
-            build_farm_job.gotFailure()
-            logger.info(
-                "Builder %s failure count: %s, job '%s' failure count: %s" % (
-                    self.name, self.failure_count,
-                    build_farm_job.title, build_farm_job.failure_count))
-        else:
-            logger.info(
-                "Builder %s failure count: %s" % (
-                    self.name, self.failure_count))
+        if self.current_build is not None:
+            self.current_build.gotFailure()
 
 
 class BuilderProcessor(StormBase):
