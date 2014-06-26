@@ -208,16 +208,31 @@ class BuildFarmJobBehaviourBase:
         from lp.buildmaster.manager import BUILDD_MANAGER_LOG_NAME
         logger = logging.getLogger(BUILDD_MANAGER_LOG_NAME)
         notify = status in self.ALLOWED_STATUS_NOTIFICATIONS
-        method = getattr(self, '_handleStatus_' + status, None)
-        if method is None:
-            raise BuildDaemonError(
-                "Build returned unknown status: %r" % status)
+        fail_status_map = {
+            'PACKAGEFAIL': BuildStatus.FAILEDTOBUILD,
+            'DEPFAIL': BuildStatus.MANUALDEPWAIT,
+            'CHROOTFAIL': BuildStatus.CHROOTWAIT,
+            }
+        if self.build.status == BuildStatus.CANCELLING:
+            fail_status_map['ABORTED'] = BuildStatus.CANCELLED
+
         logger.info(
-            'Processing finished %s build %s (%s) from builder %s'
-            % (status, self.build.build_cookie,
-               self.build.buildqueue_record.specific_build.title,
-               self.build.buildqueue_record.builder.name))
-        yield method(slave_status, logger, notify)
+            'Processing finished job %s (%s) from builder %s: %s'
+            % (self.build.build_cookie, self.build.title,
+               self.build.buildqueue_record.builder.name, status))
+        if status == 'OK':
+            yield self._handleStatus_OK(slave_status, logger, notify)
+        elif status in fail_status_map:
+            # XXX wgrant: The builder should be set long before here, but
+            # currently isn't.
+            self.build.updateStatus(
+                fail_status_map[status],
+                builder=self.build.buildqueue_record.builder,
+                slave_status=slave_status)
+            transaction.commit()
+        else:
+            raise BuildDaemonError(
+                "Build returned unexpected status: %r" % status)
         yield self.storeLogFromSlave()
         if notify:
             self.build.notify()
@@ -292,55 +307,3 @@ class BuildFarmJobBehaviourBase:
         if not os.path.exists(target_dir):
             os.mkdir(target_dir)
         os.rename(grab_dir, os.path.join(target_dir, upload_leaf))
-
-    def _handleStatus_generic_fail(self, status, slave_status, logger, notify):
-        """Handle a generic build failure.
-
-        The build, not the builder, has failed. Set its status, store
-        available information, and remove the queue entry.
-        """
-        # XXX wgrant: The builder should be set long before here, but
-        # currently isn't.
-        self.build.updateStatus(
-            status, builder=self.build.buildqueue_record.builder,
-            slave_status=slave_status)
-        transaction.commit()
-
-    def _handleStatus_PACKAGEFAIL(self, slave_status, logger, notify):
-        """Handle a package that had failed to build."""
-        return self._handleStatus_generic_fail(
-            BuildStatus.FAILEDTOBUILD, slave_status, logger, notify)
-
-    def _handleStatus_DEPFAIL(self, slave_status, logger, notify):
-        """Handle a package that had missing dependencies."""
-        return self._handleStatus_generic_fail(
-            BuildStatus.MANUALDEPWAIT, slave_status, logger, notify)
-
-    def _handleStatus_CHROOTFAIL(self, slave_status, logger, notify):
-        """Handle a package that had failed when unpacking the CHROOT."""
-        return self._handleStatus_generic_fail(
-            BuildStatus.CHROOTWAIT, slave_status, logger, notify)
-
-    def _handleStatus_ABORTED(self, slave_status, logger, notify):
-        """Handle a package that had failed when unpacking the CHROOT."""
-        if self.build.status != BuildStatus.CANCELLING:
-            raise BuildDaemonError(
-                "Build returned ABORTED without being cancelled.")
-        return self._handleStatus_generic_fail(
-            BuildStatus.CANCELLED, slave_status, logger, notify)
-
-    def _handleStatus_BUILDERFAIL(self, slave_status, logger, notify):
-        """Handle builder failures.
-
-        Fail the builder, and reset the job.
-        """
-        raise BuildDaemonError("Build returned BUILDERFAIL.")
-
-    def _handleStatus_GIVENBACK(self, slave_status, logger, notify):
-        """Handle automatic retry requested by builder.
-
-        GIVENBACK pseudo-state represents a request for automatic retry
-        later. We use normal buildd-manager failure counting to avoid
-        retrying infinitely.
-        """
-        raise BuildDaemonError("Build returned GIVENBACK.")

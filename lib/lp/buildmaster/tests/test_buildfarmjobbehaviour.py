@@ -369,7 +369,7 @@ class TestHandleStatusMixin:
 
         with ExpectedException(
                 BuildDaemonError,
-                "Build returned ABORTED without being cancelled."):
+                "Build returned unexpected status: 'ABORTED'"):
             yield self.behaviour.handleStatus(
                 self.build.buildqueue_record, "ABORTED", {})
 
@@ -396,20 +396,24 @@ class TestHandleStatusMixin:
 
     @defer.inlineCallbacks
     def test_givenback_collection(self):
-        with ExpectedException(BuildDaemonError, "Build returned GIVENBACK."):
+        with ExpectedException(
+                BuildDaemonError,
+                "Build returned unexpected status: 'GIVENBACK'"):
             yield self.behaviour.handleStatus(
                 self.build.buildqueue_record, "GIVENBACK", {})
 
     @defer.inlineCallbacks
     def test_builderfail_collection(self):
         with ExpectedException(
-                BuildDaemonError, "Build returned BUILDERFAIL."):
+                BuildDaemonError,
+                "Build returned unexpected status: 'BUILDERFAIL'"):
             yield self.behaviour.handleStatus(
                 self.build.buildqueue_record, "BUILDERFAIL", {})
 
     @defer.inlineCallbacks
     def test_invalid_status_collection(self):
         with ExpectedException(
-                BuildDaemonError, "Build returned unknown status: 'BORKED'"):
+                BuildDaemonError,
+                "Build returned unexpected status: 'BORKED'"):
             yield self.behaviour.handleStatus(
                 self.build.buildqueue_record, "BORKED", {})
