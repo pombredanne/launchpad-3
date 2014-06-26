@@ -39,9 +39,7 @@ from lp.buildmaster.enums import (
     BuildQueueStatus,
     BuildStatus,
     )
-from lp.buildmaster.interfaces.buildfarmjob import (
-    ISpecificBuildFarmJobSource,
-    )
+from lp.buildmaster.interfaces.buildfarmjob import ISpecificBuildFarmJobSource
 from lp.buildmaster.interfaces.buildqueue import (
     IBuildQueue,
     IBuildQueueSet,
@@ -116,6 +114,11 @@ class BuildQueue(SQLBase):
         bfj = self._build_farm_job
         specific_source = specific_build_farm_job_sources()[bfj.job_type]
         return specific_source.getByBuildFarmJob(bfj)
+
+    @property
+    def build_cookie(self):
+        """See `IBuildQueue`."""
+        return self.specific_build.build_cookie
 
     def _clear_specific_build_cache(self):
         del get_property_cache(self).specific_build

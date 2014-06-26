@@ -109,6 +109,9 @@ class IBuildQueue(Interface):
         IBuildFarmJob, title=_("Build farm job"),
         description=_("Concrete build farm job object."))
 
+    build_cookie = Attribute(
+        "A string which uniquely identifies the job in the build farm.")
+
     date_started = Datetime(
         title=_('Start time'),
         description=_('Time when the job started.'))
