@@ -11,7 +11,6 @@ __all__ = [
     'TranslationTemplatesBuildBehaviour',
     ]
 
-import logging
 import os
 import re
 import tempfile
@@ -44,6 +43,8 @@ class TranslationTemplatesBuildBehaviour(BuildFarmJobBehaviourBase):
     templates_tarball_path = 'translation-templates.tar.gz'
 
     unsafe_chars = '[^a-zA-Z0-9_+-]'
+
+    ALLOWED_STATUS_NOTIFICATIONS = []
 
     def getLogFileName(self):
         """See `IBuildFarmJob`."""
@@ -91,7 +92,7 @@ class TranslationTemplatesBuildBehaviour(BuildFarmJobBehaviourBase):
                 approver_factory=TranslationBuildApprover)
 
     @defer.inlineCallbacks
-    def handleStatus(self, queue_item, status, slave_status):
+    def _handleStatus_OK(self, slave_status, logger, notify):
         """Deal with a finished build job.
 
         Retrieves tarball and logs from the slave, then cleans up the
@@ -100,50 +101,37 @@ class TranslationTemplatesBuildBehaviour(BuildFarmJobBehaviourBase):
         If this fails for whatever unforeseen reason, a future run will
         retry it.
         """
-        from lp.buildmaster.manager import BUILDD_MANAGER_LOG_NAME
-        logger = logging.getLogger(BUILDD_MANAGER_LOG_NAME)
-        logger.info(
-            "Processing finished %s build %s (%s) from builder %s" % (
-            status, self.build.build_cookie,
-            queue_item.specific_build.branch.bzr_identity,
-            queue_item.builder.name))
-
-        if status == 'OK':
-            self.build.updateStatus(
-                BuildStatus.UPLOADING, builder=queue_item.builder)
-            transaction.commit()
-            logger.debug("Processing successful templates build.")
-            filemap = slave_status.get('filemap')
-            filename = yield self._readTarball(queue_item, filemap, logger)
-
-            # XXX 2010-11-12 bug=674575
-            # Please make addOrUpdateEntriesFromTarball() take files on
-            # disk; reading arbitrarily sized files into memory is
-            # dangerous.
-            if filename is None:
-                logger.error("Build produced no tarball.")
-                self.build.updateStatus(BuildStatus.FULLYBUILT)
-            else:
-                tarball_file = open(filename)
-                try:
-                    tarball = tarball_file.read()
-                    if tarball is None:
-                        logger.error("Build produced empty tarball.")
-                    else:
-                        logger.debug(
-                            "Uploading translation templates tarball.")
-                        self._uploadTarball(
-                            queue_item.specific_build.branch, tarball, logger)
-                        logger.debug("Upload complete.")
-                finally:
-                    self.build.updateStatus(BuildStatus.FULLYBUILT)
-                    tarball_file.close()
-                    os.remove(filename)
-        else:
-            self.build.updateStatus(
-                BuildStatus.FAILEDTOBUILD, builder=queue_item.builder)
+        self.build.updateStatus(
+            BuildStatus.UPLOADING,
+            builder=self.build.buildqueue_record.builder)
         transaction.commit()
+        logger.debug("Processing successful templates build.")
+        filemap = slave_status.get('filemap')
+        filename = yield self._readTarball(
+            self.build.buildqueue_record, filemap, logger)
 
-        yield self.storeLogFromSlave(build_queue=queue_item)
-        queue_item.destroySelf()
+        # XXX 2010-11-12 bug=674575
+        # Please make addOrUpdateEntriesFromTarball() take files on
+        # disk; reading arbitrarily sized files into memory is
+        # dangerous.
+        if filename is None:
+            logger.error("Build produced no tarball.")
+            self.build.updateStatus(BuildStatus.FULLYBUILT)
+        else:
+            tarball_file = open(filename)
+            try:
+                tarball = tarball_file.read()
+                if tarball is None:
+                    logger.error("Build produced empty tarball.")
+                else:
+                    logger.debug(
+                        "Uploading translation templates tarball.")
+                    self._uploadTarball(
+                        self.build.buildqueue_record.specific_build.branch,
+                        tarball, logger)
+                    logger.debug("Upload complete.")
+            finally:
+                self.build.updateStatus(BuildStatus.FULLYBUILT)
+                tarball_file.close()
+                os.remove(filename)
         transaction.commit()

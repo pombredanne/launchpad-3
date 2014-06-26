@@ -139,7 +139,8 @@ class TestTranslationTemplatesBuildBehaviour(
         behaviour = self.makeBehaviour(
             filemap={'translation-templates.tar.gz': 'foo'})
         behaviour._uploadTarball = FakeMethod()
-        queue_item = FakeBuildQueue(behaviour)
+        queue_item = behaviour.build.queueBuild()
+        queue_item.markAsBuilding(self.factory.makeBuilder())
         slave = behaviour._slave
 
         d = slave.status()
@@ -155,7 +156,7 @@ class TestTranslationTemplatesBuildBehaviour(
             self.assertEqual(BuildStatus.FULLYBUILT, behaviour.build.status)
             # Log file is stored.
             self.assertIsNotNone(behaviour.build.log)
-            self.assertEqual(1, queue_item.destroySelf.call_count)
+            self.assertIs(None, behaviour.build.buildqueue_record)
             self.assertEqual(1, behaviour._uploadTarball.call_count)
 
         d.addCallback(got_status)
@@ -164,9 +165,10 @@ class TestTranslationTemplatesBuildBehaviour(
 
     def test_handleStatus_failed(self):
         # Builds may also fail (and produce no tarball).
-        behaviour = self.makeBehaviour(state='BuildStatus.FAILEDTOBUILD')
+        behaviour = self.makeBehaviour(state='BuildStatus.PACKAGEFAIL')
         behaviour._uploadTarball = FakeMethod()
-        queue_item = FakeBuildQueue(behaviour)
+        queue_item = behaviour.build.queueBuild()
+        queue_item.markAsBuilding(self.factory.makeBuilder())
         slave = behaviour._slave
 
         d = slave.status()
@@ -182,7 +184,7 @@ class TestTranslationTemplatesBuildBehaviour(
             self.assertEqual(BuildStatus.FAILEDTOBUILD, behaviour.build.status)
             # Log file is stored.
             self.assertIsNotNone(behaviour.build.log)
-            self.assertEqual(1, queue_item.destroySelf.call_count)
+            self.assertIs(None, behaviour.build.buildqueue_record)
             self.assertEqual(0, behaviour._uploadTarball.call_count)
 
         d.addCallback(got_status)
@@ -194,7 +196,8 @@ class TestTranslationTemplatesBuildBehaviour(
         # not faze the Behaviour class.
         behaviour = self.makeBehaviour()
         behaviour._uploadTarball = FakeMethod()
-        queue_item = FakeBuildQueue(behaviour)
+        queue_item = behaviour.build.queueBuild()
+        queue_item.markAsBuilding(self.factory.makeBuilder())
         slave = behaviour._slave
 
         d = slave.status()
@@ -208,7 +211,7 @@ class TestTranslationTemplatesBuildBehaviour(
 
         def build_updated(ignored):
             self.assertEqual(BuildStatus.FULLYBUILT, behaviour.build.status)
-            self.assertEqual(1, queue_item.destroySelf.call_count)
+            self.assertIs(None, behaviour.build.buildqueue_record)
             self.assertEqual(0, behaviour._uploadTarball.call_count)
 
         d.addCallback(got_status)
@@ -220,7 +223,8 @@ class TestTranslationTemplatesBuildBehaviour(
         branch = productseries.branch
         behaviour = self.makeBehaviour(
             branch=branch, filemap={'translation-templates.tar.gz': 'foo'})
-        queue_item = FakeBuildQueue(behaviour)
+        queue_item = behaviour.build.queueBuild()
+        queue_item.markAsBuilding(self.factory.makeBuilder())
         slave = behaviour._slave
 
         def fake_getFile(sum, file):
