@@ -293,12 +293,6 @@ class Builder(SQLBase):
 
         return None
 
-    def handleFailure(self, logger):
-        """See IBuilder."""
-        self.gotFailure()
-        if self.current_build is not None:
-            self.current_build.gotFailure()
-
 
 class BuilderProcessor(StormBase):
     __storm_table__ = 'BuilderProcessor'

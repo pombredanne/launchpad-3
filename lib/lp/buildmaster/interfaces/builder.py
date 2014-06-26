@@ -229,12 +229,6 @@ class IBuilderView(IHasBuildRecords, IHasOwner):
         this code will need some sort of mutex.
         """
 
-    def handleFailure(logger):
-        """Handle buildd slave failures.
-
-        Increment builder and (if possible) job failure counts.
-        """
-
 
 class IBuilderEdit(Interface):
 

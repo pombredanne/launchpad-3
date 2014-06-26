@@ -19,7 +19,6 @@ from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.tests.mock_slaves import make_publisher
 from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import flush_database_updates
-from lp.services.log.logger import BufferLogger
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
@@ -76,12 +75,6 @@ class TestBuilder(TestCaseWithFactory):
         with celebrity_logged_in('buildd_admin'):
             builder.setCleanStatus(BuilderCleanStatus.CLEAN)
         self.assertEqual(BuilderCleanStatus.CLEAN, builder.clean_status)
-
-    def test_handleFailure_increments_failure_count(self):
-        builder = self.factory.makeBuilder()
-        self.assertEqual(0, builder.failure_count)
-        builder.handleFailure(BufferLogger())
-        self.assertEqual(1, builder.failure_count)
 
     def test_set_processors(self):
         builder = self.factory.makeBuilder()

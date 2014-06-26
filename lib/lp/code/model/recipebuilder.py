@@ -41,8 +41,7 @@ class RecipeBuildBehaviour(BuildFarmJobBehaviourBase):
     # allowed to be sent. It is up to each callback as to whether it will
     # consider sending a notification but it won't do so if the status is not
     # in this list.
-    ALLOWED_STATUS_NOTIFICATIONS = [
-        'OK', 'PACKAGEFAIL', 'DEPFAIL', 'CHROOTFAIL']
+    ALLOWED_STATUS_NOTIFICATIONS = ['PACKAGEFAIL', 'DEPFAIL', 'CHROOTFAIL']
 
     def _extraBuildArgs(self, distroarchseries, logger=None):
         """
