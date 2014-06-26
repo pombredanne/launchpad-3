@@ -287,8 +287,10 @@ class BuildFarmJobBehaviourBase:
 
         yield self.storeLogFromSlave()
 
-        # We only attempt the upload if we successfully copied all the
-        # files from the slave.
+        # Move the directory used to grab the binaries into incoming or
+        # failed atomically, so other bits don't have to deal with
+        # half-finished uploads. We only attempt the upload if we
+        # successfully copied all the files from the slave.
         if successful_copy_from_slave:
             logger.info(
                 "Gathered %s %d completely. Moving %s to uploader queue."
@@ -304,14 +306,10 @@ class BuildFarmJobBehaviourBase:
 
         if not os.path.exists(target_dir):
             os.mkdir(target_dir)
+        os.rename(grab_dir, os.path.join(target_dir, upload_leaf))
 
         self.build.buildqueue_record.destroySelf()
         transaction.commit()
-
-        # Move the directory used to grab the binaries into
-        # the incoming directory so the upload processor never
-        # sees half-finished uploads.
-        os.rename(grab_dir, os.path.join(target_dir, upload_leaf))
 
     @defer.inlineCallbacks
     def _handleStatus_generic_fail(self, status, slave_status, logger, notify):
