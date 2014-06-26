@@ -221,7 +221,7 @@ class BuildFarmJobBehaviourBase:
             % (self.build.build_cookie, self.build.title,
                self.build.buildqueue_record.builder.name, status))
         if status == 'OK':
-            yield self._handleStatus_OK(slave_status, logger, notify)
+            yield self.handleSuccess(slave_status, logger)
         elif status in fail_status_map:
             # XXX wgrant: The builder should be set long before here, but
             # currently isn't.
@@ -240,7 +240,7 @@ class BuildFarmJobBehaviourBase:
         transaction.commit()
 
     @defer.inlineCallbacks
-    def _handleStatus_OK(self, slave_status, logger, notify):
+    def handleSuccess(self, slave_status, logger):
         """Handle a package that built successfully.
 
         Once built successfully, we pull the files, store them in a

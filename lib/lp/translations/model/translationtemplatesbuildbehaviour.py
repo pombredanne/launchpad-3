@@ -92,7 +92,7 @@ class TranslationTemplatesBuildBehaviour(BuildFarmJobBehaviourBase):
                 approver_factory=TranslationBuildApprover)
 
     @defer.inlineCallbacks
-    def _handleStatus_OK(self, slave_status, logger, notify):
+    def handleSuccess(self, slave_status, logger):
         """Deal with a finished build job.
 
         Retrieves tarball and logs from the slave, then cleans up the
