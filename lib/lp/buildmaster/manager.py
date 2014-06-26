@@ -200,32 +200,47 @@ def recover_failure(logger, vitals, builder, retry, exception):
     builder_action, job_action = judge_failure(
         builder.failure_count, job.specific_build.failure_count if job else 0,
         exception, retry=retry and not cancelling)
+    if job is not None:
+        logger.info(
+            "Judged builder %s (%d failures) with job %s (%d failures): "
+            "%r, %r", builder.name, builder.failure_count, job.build_cookie,
+            job.specific_build.failure_count, builder_action, job_action)
+    else:
+        logger.info(
+            "Judged builder %s (%d failures) with no job: %r, %r",
+            builder.name, builder.failure_count, builder_action, job_action)
 
     if job is not None and job_action is not None:
-        if job_action == False:
-            # We've decided the job is bad, so unblame the builder.
-            builder.resetFailureCount()
-
         if cancelling:
             # We've previously been asked to cancel the job, so just set
             # it to cancelled rather than retrying or failing.
+            logger.info("Cancelling job %s.", job.build_cookie)
             job.markAsCancelled()
         elif job_action == False:
             # Fail and dequeue the job.
+            logger.info("Failing job %s.", job.build_cookie)
             job.specific_build.updateStatus(BuildStatus.FAILEDTOBUILD)
             job.destroySelf()
         elif job_action == True:
             # Reset the job so it will be retried elsewhere.
+            logger.info("Requeueing job %s.", job.build_cookie)
             job.reset()
+
+        if job_action == False:
+            # We've decided the job is bad, so unblame the builder.
+            logger.info("Resetting failure count of builder %s.", builder.name)
+            builder.resetFailureCount()
 
     if builder_action == False:
         # We've already tried resetting it enough times, so we have
         # little choice but to give up.
+        logger.info("Failing builder %s.", builder.name)
         builder.failBuilder(str(exception))
     elif builder_action == True:
         # Dirty the builder to attempt recovery. In the virtual case,
         # the dirty idleness will cause a reset, giving us a good chance
         # of recovery.
+        logger.info("Dirtying builder %s to attempt recovery.", builder.name)
         builder.setCleanStatus(BuilderCleanStatus.DIRTY)
 
 
