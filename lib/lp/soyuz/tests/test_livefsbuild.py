@@ -186,6 +186,10 @@ class TestLiveFSBuild(TestCaseWithFactory):
                 duration=timedelta(seconds=20))
         self.assertEqual(335, self.build.estimateDuration().seconds)
 
+    def test_build_cookie(self):
+        build = self.factory.makeLiveFSBuild()
+        self.assertEqual('LIVEFSBUILD-%d' % build.id, build.build_cookie)
+
     def test_getFileByName_logs(self):
         # getFileByName returns the logs when requested by name.
         self.build.setLog(

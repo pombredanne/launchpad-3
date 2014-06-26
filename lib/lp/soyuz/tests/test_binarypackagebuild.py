@@ -104,6 +104,10 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
         self.create_previous_build(335)
         self.assertEqual(335, self.build.estimateDuration().seconds)
 
+    def test_build_cookie(self):
+        build = self.factory.makeBinaryPackageBuild()
+        self.assertEqual('PACKAGEBUILD-%d' % build.id, build.build_cookie)
+
     def addFakeBuildLog(self, build):
         build.setLog(self.factory.makeLibraryFileAlias('mybuildlog.txt'))
 
