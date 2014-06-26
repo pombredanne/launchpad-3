@@ -218,6 +218,9 @@ class BuildFarmJobBehaviourBase:
                self.build.buildqueue_record.specific_build.title,
                self.build.buildqueue_record.builder.name))
         yield method(slave_status, logger, notify)
+        yield self.storeLogFromSlave()
+        if notify:
+            self.build.notify()
         self.build.buildqueue_record.destroySelf()
         transaction.commit()
 
@@ -279,8 +282,6 @@ class BuildFarmJobBehaviourBase:
             slave_status=slave_status)
         transaction.commit()
 
-        yield self.storeLogFromSlave()
-
         # Move the directory used to grab the binaries into incoming
         # atomically, so other bits don't have to deal with incomplete
         # uploads.
@@ -292,7 +293,6 @@ class BuildFarmJobBehaviourBase:
             os.mkdir(target_dir)
         os.rename(grab_dir, os.path.join(target_dir, upload_leaf))
 
-    @defer.inlineCallbacks
     def _handleStatus_generic_fail(self, status, slave_status, logger, notify):
         """Handle a generic build failure.
 
@@ -305,9 +305,6 @@ class BuildFarmJobBehaviourBase:
             status, builder=self.build.buildqueue_record.builder,
             slave_status=slave_status)
         transaction.commit()
-        yield self.storeLogFromSlave()
-        if notify:
-            self.build.notify()
 
     def _handleStatus_PACKAGEFAIL(self, slave_status, logger, notify):
         """Handle a package that had failed to build."""
