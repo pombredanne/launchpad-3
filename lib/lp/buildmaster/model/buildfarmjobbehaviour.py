@@ -345,27 +345,20 @@ class BuildFarmJobBehaviourBase:
         return self._handleStatus_generic_fail(
             BuildStatus.CHROOTWAIT, slave_status, logger, notify)
 
+    def _handleStatus_ABORTED(self, slave_status, logger, notify):
+        """Handle a package that had failed when unpacking the CHROOT."""
+        if self.build.status != BuildStatus.CANCELLING:
+            raise BuildDaemonError(
+                "Build returned ABORTED without being cancelled.")
+        return self._handleStatus_generic_fail(
+            BuildStatus.CANCELLED, slave_status, logger, notify)
+
     def _handleStatus_BUILDERFAIL(self, slave_status, logger, notify):
         """Handle builder failures.
 
         Fail the builder, and reset the job.
         """
         raise BuildDaemonError("Build returned BUILDERFAIL.")
-
-    @defer.inlineCallbacks
-    def _handleStatus_ABORTED(self, slave_status, logger, notify):
-        """Handle aborted builds.
-
-        If the build was explicitly cancelled, then mark it as such.
-        Otherwise something has gone awry; kill them all and let
-        recover_failure sort them out.
-        """
-        if self.build.status != BuildStatus.CANCELLING:
-            raise BuildDaemonError(
-                "Build returned ABORTED without being cancelled.")
-        yield self.storeLogFromSlave()
-        self.build.buildqueue_record.markAsCancelled()
-        transaction.commit()
 
     def _handleStatus_GIVENBACK(self, slave_status, logger, notify):
         """Handle automatic retry requested by builder.
