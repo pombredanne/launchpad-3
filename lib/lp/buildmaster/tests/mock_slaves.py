@@ -127,7 +127,8 @@ class OkSlave:
         self.call_log.append('resume')
         return defer.succeed(("", "", 0))
 
-    def sendFileToSlave(self, sha1, url, username="", password=""):
+    def sendFileToSlave(self, sha1, url, username="", password="",
+                        logger=None):
         d = self.ensurepresent(sha1, url, username, password)
 
         def check_present((present, info)):
@@ -135,10 +136,6 @@ class OkSlave:
                 raise CannotFetchFile(url, info)
 
         return d.addCallback(check_present)
-
-    def cacheFile(self, logger, libraryfilealias):
-        return self.sendFileToSlave(
-            libraryfilealias.content.sha1, libraryfilealias.http_url)
 
     def getFiles(self, files):
         dl = defer.gatherResults([

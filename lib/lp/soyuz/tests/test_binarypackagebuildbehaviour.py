@@ -18,6 +18,7 @@ from twisted.trial.unittest import TestCase as TrialTestCase
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.archivepublisher.diskpool import poolify
 from lp.buildmaster.enums import (
     BuilderCleanStatus,
     BuildQueueStatus,
@@ -48,6 +49,7 @@ from lp.registry.interfaces.pocket import (
     pocketsuffix,
     )
 from lp.registry.interfaces.series import SeriesStatus
+from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.services.config import config
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.log.logger import BufferLogger
@@ -79,16 +81,16 @@ class TestBinaryBuildPackageBehaviour(TestCaseWithFactory):
 
     def assertExpectedInteraction(self, ignored, call_log, builder, build,
                                   chroot, archive, archive_purpose,
-                                  component=None, extra_urls=None,
+                                  component=None, extra_uploads=None,
                                   filemap_names=None):
         expected = self.makeExpectedInteraction(
             builder, build, chroot, archive, archive_purpose, component,
-            extra_urls, filemap_names)
+            extra_uploads, filemap_names)
         self.assertEqual(call_log, expected)
 
     def makeExpectedInteraction(self, builder, build, chroot, archive,
                                 archive_purpose, component=None,
-                                extra_urls=None, filemap_names=None):
+                                extra_uploads=None, filemap_names=None):
         """Build the log of calls that we expect to be made to the slave.
 
         :param builder: The builder we are using to build the binary package.
@@ -113,12 +115,12 @@ class TestBinaryBuildPackageBehaviour(TestCaseWithFactory):
             component = build.current_component.name
         if filemap_names is None:
             filemap_names = []
-        if extra_urls is None:
-            extra_urls = []
+        if extra_uploads is None:
+            extra_uploads = []
 
         upload_logs = [
-            ('ensurepresent', url, '', '')
-            for url in [chroot.http_url] + extra_urls]
+            ('ensurepresent',) + upload
+            for upload in [(chroot.http_url, '', '')] + extra_uploads]
 
         extra_args = {
             'arch_indep': arch_indep,
@@ -184,6 +186,40 @@ class TestBinaryBuildPackageBehaviour(TestCaseWithFactory):
         d.addCallback(
             self.assertExpectedInteraction, slave.call_log, builder, build,
             lf, archive, ArchivePurpose.PPA)
+        return d
+
+    def test_private_source_dispatch(self):
+        archive = self.factory.makeArchive(private=True)
+        slave = OkSlave()
+        builder = self.factory.makeBuilder()
+        builder.setCleanStatus(BuilderCleanStatus.CLEAN)
+        vitals = extract_vitals_from_db(builder)
+        build = self.factory.makeBinaryPackageBuild(
+            builder=builder, archive=archive)
+        sprf = build.source_package_release.addFile(
+            self.factory.makeLibraryFileAlias(db_only=True),
+            filetype=SourcePackageFileType.ORIG_TARBALL)
+        sprf_url = (
+            'http://private-ppa.launchpad.dev/%s/%s/ubuntu/pool/%s/%s'
+            % (archive.owner.name, archive.name,
+               poolify(
+                   build.source_package_release.sourcepackagename.name,
+                   'main'),
+               sprf.libraryfile.filename))
+        lf = self.factory.makeLibraryFileAlias()
+        transaction.commit()
+        build.distro_arch_series.addOrUpdateChroot(lf)
+        bq = build.queueBuild()
+        bq.markAsBuilding(builder)
+        interactor = BuilderInteractor()
+        d = interactor._startBuild(
+            bq, vitals, builder, slave,
+            interactor.getBuildBehaviour(bq, builder, slave), BufferLogger())
+        d.addCallback(
+            self.assertExpectedInteraction, slave.call_log, builder, build,
+            lf, archive, ArchivePurpose.PPA,
+            extra_uploads=[(sprf_url, 'buildd', u'sekrit')],
+            filemap_names=[sprf.libraryfile.filename])
         return d
 
     def test_partner_dispatch_no_publishing_history(self):

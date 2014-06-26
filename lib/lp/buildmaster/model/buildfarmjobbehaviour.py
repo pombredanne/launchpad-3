@@ -23,6 +23,7 @@ from lp.buildmaster.enums import (
     BuildFarmJobType,
     BuildStatus,
     )
+from lp.buildmaster.interfaces.builder import CannotBuild
 from lp.services.config import config
 from lp.services.helpers import filenameToContentType
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
@@ -55,6 +56,53 @@ class BuildFarmJobBehaviourBase:
     def getBuildCookie(self):
         """See `IPackageBuild`."""
         return '%s-%s' % (self.build.job_type.name, self.build.id)
+
+    @defer.inlineCallbacks
+    def dispatchBuildToSlave(self, build_queue_id, logger):
+        """See `IBuildFarmJobBehaviour`."""
+        builder_type, das, files, args = self.composeBuildRequest(logger)
+
+        # First cache the chroot and any other files that the job needs.
+        chroot = das.getChroot()
+        if chroot is None:
+            raise CannotBuild(
+                "Unable to find a chroot for %s" % das.displayname)
+        filename_to_sha1 = {}
+        dl = []
+        dl.append(self._slave.sendFileToSlave(
+            logger=logger, url=chroot.http_url, sha1=chroot.content.sha1))
+        for filename, params in files.items():
+            filename_to_sha1[filename] = params['sha1']
+            dl.append(self._slave.sendFileToSlave(logger=logger, **params))
+        yield defer.gatherResults(dl)
+
+        # Generate a string which can be used to cross-check when
+        # obtaining results so we know we are referring to the right
+        # database object in subsequent runs.
+        buildid = "%s-%s" % (self.build.id, build_queue_id)
+        cookie = self.getBuildCookie()
+        chroot_sha1 = chroot.content.sha1
+        logger.debug(
+            "Initiating build %s on %s" % (buildid, self._builder.url))
+
+        (status, info) = yield self._slave.build(
+            cookie, builder_type, chroot_sha1, filename_to_sha1, args)
+
+        message = """%s (%s):
+        ***** RESULT *****
+        %s
+        %s
+        %s: %s
+        ******************
+        """ % (
+            self._builder.name,
+            self._builder.url,
+            filename_to_sha1,
+            args,
+            status,
+            info,
+            )
+        logger.info(message)
 
     def getUploadDirLeaf(self, build_cookie, now=None):
         """See `IPackageBuild`."""

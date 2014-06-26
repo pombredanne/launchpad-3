@@ -244,8 +244,7 @@ class TestLiveFSBuildBehaviour(TestCaseWithFactory):
         self.assertStartsWith(
             logger.getLogBuffer(),
             dedent("""\
-                INFO Sending chroot file for live filesystem build to bob
-                INFO Initiating build 1-someid on http://fake:0000
+                DEBUG Initiating build 1-someid on http://fake:0000
                 """))
         self.assertEqual(
             ["ensurepresent", "build"], [call[0] for call in slave.call_log])
