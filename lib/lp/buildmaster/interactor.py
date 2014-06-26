@@ -181,27 +181,17 @@ class BuilderSlave(object):
         p.spawnProcess(resume_argv[0], tuple(resume_argv))
         return d
 
-    def cacheFile(self, logger, libraryfilealias):
-        """Make sure that the file at 'libraryfilealias' is on the slave.
-
-        :param logger: A python `Logger` object.
-        :param libraryfilealias: An `ILibraryFileAlias`.
-        """
-        url = libraryfilealias.http_url
-        logger.info(
-            "Asking builder on %s to ensure it has file %s (%s, %s)" % (
-                self._file_cache_url, libraryfilealias.filename, url,
-                libraryfilealias.content.sha1))
-        return self.sendFileToSlave(libraryfilealias.content.sha1, url)
-
-    def sendFileToSlave(self, sha1, url, username="", password=""):
+    @defer.inlineCallbacks
+    def sendFileToSlave(self, sha1, url, username="", password="",
+                        logger=None):
         """Helper to send the file at 'url' with 'sha1' to this builder."""
-        d = self.ensurepresent(sha1, url, username, password)
-
-        def check_present((present, info)):
-            if not present:
-                raise CannotFetchFile(url, info)
-        return d.addCallback(check_present)
+        if logger is not None:
+            logger.info(
+                "Asking %s to ensure it has %s (%s%s)" % (
+                    self.url, sha1, url, ' with auth' if username else ''))
+        present, info = yield self.ensurepresent(sha1, url, username, password)
+        if not present:
+            raise CannotFetchFile(url, info)
 
     def build(self, buildid, builder_type, chroot_sha1, filemap, args):
         """Build a thing on this build slave.
@@ -362,7 +352,6 @@ class BuilderInteractor(object):
             value is None, or a Failure that contains an exception
             explaining what went wrong.
         """
-        behaviour.logStartBuild(logger)
         behaviour.verifyBuildRequest(logger)
 
         # Set the build behaviour depending on the provided build queue item.
@@ -377,7 +366,7 @@ class BuilderInteractor(object):
         builder.setCleanStatus(BuilderCleanStatus.DIRTY)
         transaction.commit()
 
-        yield behaviour.dispatchBuildToSlave(build_queue_item.id, logger)
+        yield behaviour.dispatchBuildToSlave(logger)
 
     @classmethod
     @defer.inlineCallbacks

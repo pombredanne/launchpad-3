@@ -25,7 +25,7 @@ Create a builder working on a TranslationTemplatesBuild for a branch.
     >>> class FakeSlave:
     ...     resume = FakeMethod(result=('stdout', 'stderr', 0))
     ...     build = FakeMethod()
-    ...     cacheFile = FakeMethod()
+    ...     sendFileToSlave = FakeMethod()
 
     >>> login(ANONYMOUS)
     >>> owner_email = factory.getUniqueString() + '@example.com'

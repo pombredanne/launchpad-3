@@ -13,6 +13,7 @@ import datetime
 import gzip
 import logging
 import os
+import re
 import tempfile
 
 import transaction
@@ -23,6 +24,7 @@ from lp.buildmaster.enums import (
     BuildFarmJobType,
     BuildStatus,
     )
+from lp.buildmaster.interfaces.builder import CannotBuild
 from lp.services.config import config
 from lp.services.helpers import filenameToContentType
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
@@ -30,6 +32,18 @@ from lp.services.librarian.utils import copy_and_close
 
 
 SLAVE_LOG_FILENAME = 'buildlog'
+
+
+def sanitise_arguments(s):
+    """Sanitise a string of arguments for logging.
+
+    Some jobs are started with arguments that probably shouldn't be
+    logged in their entirety (usernames and passwords for P3As, for
+    example. This function removes them.
+    """
+    # Remove credentials from URLs.
+    password_re = re.compile('://([^:]+:[^@]+@)(\S+)')
+    return password_re.sub(r'://<redacted>@\2', s)
 
 
 class BuildFarmJobBehaviourBase:
@@ -55,6 +69,46 @@ class BuildFarmJobBehaviourBase:
     def getBuildCookie(self):
         """See `IPackageBuild`."""
         return '%s-%s' % (self.build.job_type.name, self.build.id)
+
+    @defer.inlineCallbacks
+    def dispatchBuildToSlave(self, logger):
+        """See `IBuildFarmJobBehaviour`."""
+        cookie = self.getBuildCookie()
+        logger.info(
+            "Preparing job %s (%s) on %s."
+            % (cookie, self.build.title, self._builder.url))
+
+        builder_type, das, files, args = self.composeBuildRequest(logger)
+
+        # First cache the chroot and any other files that the job needs.
+        chroot = das.getChroot()
+        if chroot is None:
+            raise CannotBuild(
+                "Unable to find a chroot for %s" % das.displayname)
+
+        filename_to_sha1 = {}
+        dl = []
+        dl.append(self._slave.sendFileToSlave(
+            logger=logger, url=chroot.http_url, sha1=chroot.content.sha1))
+        for filename, params in files.items():
+            filename_to_sha1[filename] = params['sha1']
+            dl.append(self._slave.sendFileToSlave(logger=logger, **params))
+        yield defer.gatherResults(dl)
+
+        combined_args = {
+            'builder_type': builder_type, 'chroot_sha1': chroot.content.sha1,
+            'filemap': filename_to_sha1, 'args': args}
+        logger.info(
+            "Dispatching job %s (%s) to %s:\n%s"
+            % (cookie, self.build.title, self._builder.url,
+               sanitise_arguments(repr(combined_args))))
+
+        (status, info) = yield self._slave.build(
+            cookie, builder_type, chroot.content.sha1, filename_to_sha1, args)
+
+        logger.info(
+            "Job %s (%s) started on %s: %s %s"
+            % (cookie, self.build.title, self._builder.url, status, info))
 
     def getUploadDirLeaf(self, build_cookie, now=None):
         """See `IPackageBuild`."""

@@ -44,19 +44,6 @@ class RecipeBuildBehaviour(BuildFarmJobBehaviourBase):
     ALLOWED_STATUS_NOTIFICATIONS = [
         'OK', 'PACKAGEFAIL', 'DEPFAIL', 'CHROOTFAIL']
 
-    @property
-    def display_name(self):
-        ret = "%s, %s, %s" % (
-            self.build.distroseries.displayname, self.build.recipe.name,
-            self.build.recipe.owner.name)
-        if self._builder is not None:
-            ret += " (on %s)" % self._builder.url
-        return ret
-
-    def logStartBuild(self, logger):
-        """See `IBuildFarmJobBehaviour`."""
-        logger.info("startBuild(%s)", self.display_name)
-
     def _extraBuildArgs(self, distroarchseries, logger=None):
         """
         Return the extra arguments required by the slave for the given build.
@@ -110,56 +97,16 @@ class RecipeBuildBehaviour(BuildFarmJobBehaviourBase):
         args['distroseries_name'] = self.build.distroseries.name
         return args
 
-    def dispatchBuildToSlave(self, build_queue_id, logger):
-        """See `IBuildFarmJobBehaviour`."""
-
-        distroseries = self.build.distroseries
-        # Start the binary package build on the slave builder. First
-        # we send the chroot.
-        distroarchseries = distroseries.getDistroArchSeriesByProcessor(
+    def composeBuildRequest(self, logger):
+        das = self.build.distroseries.getDistroArchSeriesByProcessor(
             self._builder.processor)
-        if distroarchseries is None:
-            raise CannotBuild("Unable to find distroarchseries for %s in %s" %
+        if das is None:
+            raise CannotBuild(
+                "Unable to find distroarchseries for %s in %s" %
                 (self._builder.processor.name,
-                self.build.distroseries.displayname))
-        args = self._extraBuildArgs(distroarchseries, logger)
-        chroot = distroarchseries.getChroot()
-        if chroot is None:
-            raise CannotBuild("Unable to find a chroot for %s" %
-                              distroarchseries.displayname)
-        logger.info(
-            "Sending chroot file for recipe build to %s" % self._builder.name)
-        d = self._slave.cacheFile(logger, chroot)
-
-        def got_cache_file(ignored):
-            # Generate a string which can be used to cross-check when
-            # obtaining results so we know we are referring to the right
-            # database object in subsequent runs.
-            buildid = "%s-%s" % (self.build.id, build_queue_id)
-            cookie = self.getBuildCookie()
-            chroot_sha1 = chroot.content.sha1
-            logger.info(
-                "Initiating build %s on %s" % (buildid, self._builder.url))
-
-            return self._slave.build(
-                cookie, "sourcepackagerecipe", chroot_sha1, {}, args)
-
-        def log_build_result((status, info)):
-            message = """%s (%s):
-            ***** RESULT *****
-            %s
-            %s: %s
-            ******************
-            """ % (
-                self._builder.name,
-                self._builder.url,
-                args,
-                status,
-                info,
-                )
-            logger.info(message)
-
-        return d.addCallback(got_cache_file).addCallback(log_build_result)
+                 self.build.distroseries.displayname))
+        return (
+            "sourcepackagerecipe", das, {}, self._extraBuildArgs(das, logger))
 
     def verifyBuildRequest(self, logger):
         """Assert some pre-build checks.

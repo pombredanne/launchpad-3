@@ -11,7 +11,6 @@ __all__ = [
     'LiveFSBuildBehaviour',
     ]
 
-from twisted.internet import defer
 from zope.component import adapts
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
@@ -37,20 +36,6 @@ class LiveFSBuildBehaviour(BuildFarmJobBehaviourBase):
 
     adapts(ILiveFSBuild)
     implements(IBuildFarmJobBehaviour)
-
-    # Identify the type of job to the slave.
-    build_type = 'livefs'
-
-    @property
-    def displayname(self):
-        ret = self.build.title
-        if self._builder is not None:
-            ret += " (on %s)" % self._builder.url
-        return ret
-
-    def logStartBuild(self, logger):
-        """See `IBuildFarmJobBehaviour`."""
-        logger.info("startBuild(%s)", self.displayname)
 
     def getLogFileName(self):
         das = self.build.distro_arch_series
@@ -109,46 +94,10 @@ class LiveFSBuildBehaviour(BuildFarmJobBehaviourBase):
         args["archive_private"] = build.archive.private
         return args
 
-    @defer.inlineCallbacks
-    def dispatchBuildToSlave(self, build_queue_id, logger):
-        """See `IBuildFarmJobBehaviour`."""
-
-        # Start the build on the slave builder.  First we send the chroot.
-        distro_arch_series = self.build.distro_arch_series
-        chroot = distro_arch_series.getChroot()
-        if chroot is None:
-            raise CannotBuild(
-                "Unable to find a chroot for %s" %
-                distro_arch_series.displayname)
-        logger.info(
-            "Sending chroot file for live filesystem build to %s" %
-            self._builder.name)
-        yield self._slave.cacheFile(logger, chroot)
-
-        # Generate a string which can be used to cross-check when obtaining
-        # results so we know we are referring to the right database object
-        # in subsequent runs.
-        buildid = "%s-%s" % (self.build.id, build_queue_id)
-        logger.info("Initiating build %s on %s" % (buildid, self._builder.url))
-
-        cookie = self.getBuildCookie()
-        args = self._extraBuildArgs()
-        status, info = yield self._slave.build(
-            cookie, "livefs", chroot.content.sha1, {}, args)
-
-        message = """%s (%s):
-        ***** RESULT *****
-        %s
-        %s: %s
-        ******************
-        """ % (
-            self._builder.name,
-            self._builder.url,
-            args,
-            status,
-            info,
-            )
-        logger.info(message)
+    def composeBuildRequest(self, logger):
+        return (
+            "livefs", self.build.distro_arch_series, {},
+            self._extraBuildArgs())
 
     def verifySuccessfulBuild(self):
         """See `IBuildFarmJobBehaviour`."""

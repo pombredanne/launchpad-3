@@ -23,7 +23,6 @@ from zope.interface import implements
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import BuildStatus
-from lp.buildmaster.interfaces.builder import CannotBuild
 from lp.buildmaster.interfaces.buildfarmjobbehaviour import (
     IBuildFarmJobBehaviour,
     )
@@ -41,9 +40,6 @@ class TranslationTemplatesBuildBehaviour(BuildFarmJobBehaviourBase):
     """Dispatches `TranslationTemplateBuildJob`s to slaves."""
     implements(IBuildFarmJobBehaviour)
 
-    # Identify the type of job to the slave.
-    build_type = 'translation-templates'
-
     # Filename for the tarball of templates that the slave builds.
     templates_tarball_path = 'translation-templates.tar.gz'
 
@@ -55,42 +51,16 @@ class TranslationTemplatesBuildBehaviour(BuildFarmJobBehaviourBase):
             self.unsafe_chars, '_', self.build.branch.unique_name)
         return "translationtemplates_%s_%d.txt" % (safe_name, self.build.id)
 
-    def dispatchBuildToSlave(self, build_queue_item, logger):
-        """See `IBuildFarmJobBehaviour`."""
-        chroot = self._getChroot()
-        if chroot is None:
-            distroarchseries = self._getDistroArchSeries()
-            raise CannotBuild("Unable to find a chroot for %s" %
-                              distroarchseries.displayname)
-        chroot_sha1 = chroot.content.sha1
-        d = self._slave.cacheFile(logger, chroot)
-
-        def got_cache_file(ignored):
-            args = {
-                'arch_tag': self._getDistroArchSeries().architecturetag,
-                'branch_url': self.build.branch.composePublicURL(),
-                }
-
-            filemap = {}
-
-            return self._slave.build(
-                self.getBuildCookie(), self.build_type, chroot_sha1, filemap,
-                args)
-        return d.addCallback(got_cache_file)
-
-    def _getChroot(self):
-        return self._getDistroArchSeries().getChroot()
+    def composeBuildRequest(self, logger):
+        args = {
+            'arch_tag': self._getDistroArchSeries().architecturetag,
+            'branch_url': self.build.branch.composePublicURL(),
+            }
+        return ("translation-templates", self._getDistroArchSeries(), {}, args)
 
     def _getDistroArchSeries(self):
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         return ubuntu.currentseries.nominatedarchindep
-
-    def logStartBuild(self, logger):
-        """See `IBuildFarmJobBehaviour`."""
-        logger.info(
-            "Starting templates build %s for %s." % (
-            self.getBuildCookie(),
-            self.build.branch.bzr_identity))
 
     def _readTarball(self, buildqueue, filemap, logger):
         """Read tarball with generated translation templates from slave."""
