@@ -11,6 +11,7 @@ import os
 import shutil
 import tempfile
 
+from testtools import ExpectedException
 from testtools.deferredruntest import AsynchronousDeferredRunTest
 from twisted.internet import defer
 from zope.component import getUtility
@@ -19,6 +20,7 @@ from zope.security.proxy import removeSecurityProxy
 from lp.archiveuploader.uploadprocessor import parse_build_upload_leaf_name
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interactor import BuilderInteractor
+from lp.buildmaster.interfaces.builder import BuildDaemonError
 from lp.buildmaster.interfaces.buildfarmjobbehaviour import (
     IBuildFarmJobBehaviour,
     )
@@ -361,22 +363,18 @@ class TestHandleStatusMixin:
             self.build.buildqueue_record, "ABORTED", {})
         return d.addCallback(got_status)
 
-    def test_handleStatus_ABORTED_recovers_building(self):
+    @defer.inlineCallbacks
+    def test_handleStatus_ABORTED_illegal_when_building(self):
         self.builder.vm_host = "fake_vm_host"
         self.behaviour = self.interactor.getBuildBehaviour(
             self.build.buildqueue_record, self.builder, self.slave)
         self.build.updateStatus(BuildStatus.BUILDING)
 
-        def got_status(ignored):
-            self.assertEqual(
-                0, len(pop_notifications()), "Notifications received")
-            self.assertEqual(BuildStatus.NEEDSBUILD, self.build.status)
-            self.assertEqual(1, self.builder.failure_count)
-            self.assertEqual(1, self.build.failure_count)
-
-        d = self.behaviour.handleStatus(
-            self.build.buildqueue_record, "ABORTED", {})
-        return d.addCallback(got_status)
+        with ExpectedException(
+                BuildDaemonError,
+                "Build returned ABORTED without being cancelled."):
+            yield self.behaviour.handleStatus(
+                self.build.buildqueue_record, "ABORTED", {})
 
     @defer.inlineCallbacks
     def test_handleStatus_ABORTED_cancelling_sets_build_log(self):
@@ -398,3 +396,16 @@ class TestHandleStatusMixin:
             self.assertNotEqual(None, self.build.date_finished)
 
         return d.addCallback(got_status)
+
+    @defer.inlineCallbacks
+    def test_givenback_collection(self):
+        with ExpectedException(BuildDaemonError, "Build returned GIVENBACK."):
+            yield self.behaviour.handleStatus(
+                self.build.buildqueue_record, "GIVENBACK", {})
+
+    @defer.inlineCallbacks
+    def test_builderfail_collection(self):
+        with ExpectedException(
+                BuildDaemonError, "Build returned BUILDERFAIL."):
+            yield self.behaviour.handleStatus(
+                self.build.buildqueue_record, "BUILDERFAIL", {})

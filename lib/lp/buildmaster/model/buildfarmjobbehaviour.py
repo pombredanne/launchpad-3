@@ -24,7 +24,10 @@ from lp.buildmaster.enums import (
     BuildFarmJobType,
     BuildStatus,
     )
-from lp.buildmaster.interfaces.builder import CannotBuild
+from lp.buildmaster.interfaces.builder import (
+    BuildDaemonError,
+    CannotBuild,
+    )
 from lp.services.config import config
 from lp.services.helpers import filenameToContentType
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
@@ -351,33 +354,28 @@ class BuildFarmJobBehaviourBase:
 
         Fail the builder, and reset the job.
         """
-        self.build.buildqueue_record.builder.failBuilder(
-            "Builder returned BUILDERFAIL when asked for its status")
-        self.build.buildqueue_record.reset()
-        transaction.commit()
+        raise BuildDaemonError("Build returned BUILDERFAIL.")
 
     @defer.inlineCallbacks
     def _handleStatus_ABORTED(self, slave_status, logger, notify):
         """Handle aborted builds.
 
         If the build was explicitly cancelled, then mark it as such.
-        Otherwise, the build has failed in some unexpected way; we'll
-        reset it it and clean up the slave.
+        Otherwise something has gone awry; kill them all and let
+        recover_failure sort them out.
         """
-        if self.build.status == BuildStatus.CANCELLING:
-            yield self.storeLogFromSlave()
-            self.build.buildqueue_record.markAsCancelled()
-        else:
-            self._builder.handleFailure(logger)
-            self.build.buildqueue_record.reset()
+        if self.build.status != BuildStatus.CANCELLING:
+            raise BuildDaemonError(
+                "Build returned ABORTED without being cancelled.")
+        yield self.storeLogFromSlave()
+        self.build.buildqueue_record.markAsCancelled()
         transaction.commit()
 
     def _handleStatus_GIVENBACK(self, slave_status, logger, notify):
         """Handle automatic retry requested by builder.
 
         GIVENBACK pseudo-state represents a request for automatic retry
-        later, the build records is delayed by reducing the lastscore to
-        ZERO.
+        later. We use normal buildd-manager failure counting to avoid
+        retrying infinitely.
         """
-        self.build.buildqueue_record.reset()
-        transaction.commit()
+        raise BuildDaemonError("Build returned GIVENBACK.")

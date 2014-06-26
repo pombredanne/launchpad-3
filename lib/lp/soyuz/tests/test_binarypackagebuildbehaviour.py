@@ -405,20 +405,6 @@ class TestBinaryBuildPackageBehaviourBuildCollection(TestCaseWithFactory):
             self.candidate, WaitingSlave('BuildStatus.CHROOTFAIL'))
         return d.addCallback(got_update)
 
-    def test_builderfail_collection(self):
-        # The builder failed after we dispatched the build.
-        def got_update(ignored):
-            self.assertEqual(
-                "Builder returned BUILDERFAIL when asked for its status",
-                self.builder.failnotes)
-            self.assertIs(None, self.candidate.builder)
-            self.assertEqual(BuildStatus.NEEDSBUILD, self.build.status)
-            self.assertEqual(BuildQueueStatus.WAITING, self.candidate.status)
-
-        d = self.updateBuild(
-            self.candidate, WaitingSlave('BuildStatus.BUILDERFAIL'))
-        return d.addCallback(got_update)
-
     def test_building_collection(self):
         # The builder is still building the package.
         def got_update(ignored):
@@ -462,20 +448,6 @@ class TestBinaryBuildPackageBehaviourBuildCollection(TestCaseWithFactory):
             self.assertIs(None, self.build.upload_log)
 
         d = self.updateBuild(self.candidate, WaitingSlave('BuildStatus.OK'))
-        return d.addCallback(got_update)
-
-    def test_givenback_collection(self):
-        score = self.candidate.lastscore
-
-        def got_update(ignored):
-            self.assertIs(None, self.candidate.builder)
-            self.assertIs(None, self.candidate.date_started)
-            self.assertEqual(score, self.candidate.lastscore)
-            self.assertEqual(BuildStatus.NEEDSBUILD, self.build.status)
-            self.assertEqual(BuildQueueStatus.WAITING, self.candidate.status)
-
-        d = self.updateBuild(
-            self.candidate, WaitingSlave('BuildStatus.GIVENBACK'))
         return d.addCallback(got_update)
 
     def test_log_file_collection(self):
