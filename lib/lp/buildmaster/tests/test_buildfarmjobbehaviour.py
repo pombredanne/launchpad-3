@@ -409,3 +409,10 @@ class TestHandleStatusMixin:
                 BuildDaemonError, "Build returned BUILDERFAIL."):
             yield self.behaviour.handleStatus(
                 self.build.buildqueue_record, "BUILDERFAIL", {})
+
+    @defer.inlineCallbacks
+    def test_invalid_status_collection(self):
+        with ExpectedException(
+                BuildDaemonError, "Build returned unknown status: 'BORKED'"):
+            yield self.behaviour.handleStatus(
+                self.build.buildqueue_record, "BORKED", {})

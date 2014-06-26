@@ -209,10 +209,8 @@ class BuildFarmJobBehaviourBase:
         notify = status in self.ALLOWED_STATUS_NOTIFICATIONS
         method = getattr(self, '_handleStatus_' + status, None)
         if method is None:
-            logger.critical(
-                "Unknown BuildStatus '%s' for builder '%s'"
-                % (status, self.build.buildqueue_record.builder.url))
-            return
+            raise BuildDaemonError(
+                "Build returned unknown status: %r" % status)
         logger.info(
             'Processing finished %s build %s (%s) from builder %s'
             % (status, self.build.build_cookie,
