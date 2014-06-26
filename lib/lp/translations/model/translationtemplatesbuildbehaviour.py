@@ -104,7 +104,7 @@ class TranslationTemplatesBuildBehaviour(BuildFarmJobBehaviourBase):
         logger = logging.getLogger(BUILDD_MANAGER_LOG_NAME)
         logger.info(
             "Processing finished %s build %s (%s) from builder %s" % (
-            status, self.getBuildCookie(),
+            status, self.build.build_cookie,
             queue_item.specific_build.branch.bzr_identity,
             queue_item.builder.name))
 

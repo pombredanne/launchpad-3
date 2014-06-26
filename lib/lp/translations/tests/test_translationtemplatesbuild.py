@@ -131,6 +131,11 @@ class TestTranslationTemplatesBuild(TestCaseWithFactory):
         build = self.factory.makeTranslationTemplatesBuild()
         self.assertEqual(2510, build.calculateScore())
 
+    def test_build_cookie(self):
+        build = self.factory.makeTranslationTemplatesBuild()
+        self.assertEqual(
+            'TRANSLATIONTEMPLATESBUILD-%d' % build.id, build.build_cookie)
+
     def test_generatesTemplates(self):
         # A branch "generates templates" if it is a translation branch
         # for a productseries that imports templates from it; is not

@@ -168,6 +168,9 @@ class IBuildFarmJob(Interface):
         vocabulary=BuildFarmJobType,
         description=_("The specific type of job."))
 
+    build_cookie = Attribute(
+        "A string which uniquely identifies the job in the build farm.")
+
     failure_count = Int(
         title=_("Failure Count"), required=False, readonly=True,
         default=0,

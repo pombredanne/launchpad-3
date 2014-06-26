@@ -40,9 +40,6 @@ from lp.buildmaster.interfaces.builder import (
     BuildSlaveFailure,
     IBuilderSet,
     )
-from lp.buildmaster.interfaces.buildfarmjobbehaviour import (
-    IBuildFarmJobBehaviour,
-    )
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.manager import (
     BuilddManager,
@@ -530,8 +527,7 @@ class TestSlaveScannerScan(TestCaseWithFactory):
         transaction.commit()
         login(ANONYMOUS)
         buildqueue = builder.currentjob
-        behaviour = IBuildFarmJobBehaviour(buildqueue.specific_build)
-        slave.build_id = behaviour.getBuildCookie()
+        slave.build_id = buildqueue.build_cookie
         self.assertBuildingJob(buildqueue, builder)
 
         # Now set the build to CANCELLING.
@@ -621,8 +617,7 @@ class TestSlaveScannerScan(TestCaseWithFactory):
         # build() has been called, so switch in a BUILDING slave.
         # Scans will now just do a status() each, as the logtail is
         # updated.
-        get_slave.result = BuildingSlave(
-            IBuildFarmJobBehaviour(build).getBuildCookie())
+        get_slave.result = BuildingSlave(build.build_cookie)
         yield scanner.scan()
         self.assertEqual("This is a build log: 0", bq.logtail)
         yield scanner.scan()
@@ -637,8 +632,7 @@ class TestSlaveScannerScan(TestCaseWithFactory):
         # _handleStatus_OK doesn't do anything special, but there'd
         # usually be file retrievals in the middle. The builder remains
         # dirty afterward.
-        get_slave.result = WaitingSlave(
-            build_id=IBuildFarmJobBehaviour(build).getBuildCookie())
+        get_slave.result = WaitingSlave(build_id=build.build_cookie)
         yield scanner.scan()
         self.assertEqual(['status', 'clean'], get_slave.result.method_log)
         self.assertIs(None, builder.currentjob)
@@ -769,7 +763,7 @@ class TestSlaveScannerWithoutDB(TestCase):
     def test_scan_with_job(self):
         # SlaveScanner.scan calls updateBuild() when a job is building.
         slave = BuildingSlave('trivial')
-        bq = FakeBuildQueue()
+        bq = FakeBuildQueue('trivial')
         scanner = self.getScanner(
             builder_factory=MockBuilderFactory(MockBuilder(), bq),
             slave=slave)
@@ -785,7 +779,7 @@ class TestSlaveScannerWithoutDB(TestCase):
         # SlaveScanner.scan identifies slaves that aren't building what
         # they should be, resets the jobs, and then aborts the slaves.
         slave = BuildingSlave('nontrivial')
-        bq = FakeBuildQueue()
+        bq = FakeBuildQueue('trivial')
         builder = MockBuilder(virtualized=False)
         scanner = self.getScanner(
             builder_factory=MockBuilderFactory(builder, bq),
@@ -848,41 +842,31 @@ class TestSlaveScannerWithoutDB(TestCase):
         self.assertEqual(['status'], slave.call_log)
 
     def test_getExpectedCookie_caches(self):
-        bf = MockBuilderFactory(MockBuilder(), FakeBuildQueue())
+        bq = FakeBuildQueue('trivial')
+        bf = MockBuilderFactory(MockBuilder(), bq)
         scanner = SlaveScanner(
             'mock', bf, BufferLogger(), interactor_factory=FakeMethod(None),
             slave_factory=FakeMethod(None),
             behaviour_factory=FakeMethod(TrivialBehaviour()))
 
-        def assertCounts(expected):
-            self.assertEqual(
-                expected,
-                (scanner.interactor_factory.call_count,
-                 scanner.behaviour_factory.call_count,
-                 scanner.builder_factory.get_call_count))
-
-        # The first call will get a Builder and a BuildFarmJobBehaviour.
-        assertCounts((0, 0, 0))
+        # The first call retrieves the cookie from the BuildQueue.
         cookie1 = scanner.getExpectedCookie(bf.getVitals('foo'))
         self.assertEqual('trivial', cookie1)
-        assertCounts((0, 1, 1))
 
-        # A second call with the same BuildQueue will not reretrieve them.
+        # A second call with the same BuildQueue will not reretrieve it.
+        bq.build_cookie = 'nontrivial'
         cookie2 = scanner.getExpectedCookie(bf.getVitals('foo'))
-        self.assertEqual(cookie1, cookie2)
-        assertCounts((0, 1, 1))
+        self.assertEqual('trivial', cookie2)
 
         # But a call with a new BuildQueue will regrab.
-        bf.updateTestData(bf._builder, FakeBuildQueue())
+        bf.updateTestData(bf._builder, FakeBuildQueue('complicated'))
         cookie3 = scanner.getExpectedCookie(bf.getVitals('foo'))
-        self.assertEqual(cookie1, cookie3)
-        assertCounts((0, 2, 2))
+        self.assertEqual('complicated', cookie3)
 
         # And unsetting the BuildQueue returns None again.
         bf.updateTestData(bf._builder, None)
         cookie4 = scanner.getExpectedCookie(bf.getVitals('foo'))
         self.assertIs(None, cookie4)
-        assertCounts((0, 2, 2))
 
 
 class TestJudgeFailure(TestCase):

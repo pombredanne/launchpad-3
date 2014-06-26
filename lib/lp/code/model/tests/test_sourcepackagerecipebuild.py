@@ -177,6 +177,11 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
                 date_finished=cur_date + timedelta(minutes=minutes))
         self.assertEqual(timedelta(minutes=5), spb.estimateDuration())
 
+    def test_build_cookie(self):
+        build = self.factory.makeSourcePackageRecipeBuild()
+        self.assertEqual(
+            'RECIPEBRANCHBUILD-%d' % build.id, build.build_cookie)
+
     def test_getFileByName(self):
         """getFileByName returns the logs when requested by name."""
         spb = self.factory.makeSourcePackageRecipeBuild()
