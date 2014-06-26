@@ -284,30 +284,27 @@ class TestHandleStatusMixin:
             {'filemap': {'myfile.py': 'test_file_hash'}})
         return d.addCallback(got_status)
 
+    @defer.inlineCallbacks
     def test_handleStatus_OK_absolute_filepath(self):
-        # A filemap that tries to write to files outside of
-        # the upload directory will result in a failed upload.
-        def got_status(ignored):
-            self.assertEqual(BuildStatus.FAILEDTOUPLOAD, self.build.status)
-            self.assertResultCount(0, "failed")
-            self.assertIdentical(None, self.build.buildqueue_record)
+        # A filemap that tries to write to files outside of the upload
+        # directory will not be collected.
+        with ExpectedException(
+                BuildDaemonError,
+                "Build returned a file named '/tmp/myfile.py'."):
+            yield self.behaviour.handleStatus(
+                self.build.buildqueue_record, 'OK',
+                {'filemap': {'/tmp/myfile.py': 'test_file_hash'}})
 
-        d = self.behaviour.handleStatus(
-            self.build.buildqueue_record, 'OK',
-            {'filemap': {'/tmp/myfile.py': 'test_file_hash'}})
-        return d.addCallback(got_status)
-
+    @defer.inlineCallbacks
     def test_handleStatus_OK_relative_filepath(self):
         # A filemap that tries to write to files outside of
-        # the upload directory will result in a failed upload.
-        def got_status(ignored):
-            self.assertEqual(BuildStatus.FAILEDTOUPLOAD, self.build.status)
-            self.assertResultCount(0, "failed")
-
-        d = self.behaviour.handleStatus(
-            self.build.buildqueue_record, 'OK',
-            {'filemap': {'../myfile.py': 'test_file_hash'}})
-        return d.addCallback(got_status)
+        # the upload directory will not be collected.
+        with ExpectedException(
+                BuildDaemonError,
+                "Build returned a file named '../myfile.py'."):
+            yield self.behaviour.handleStatus(
+                self.build.buildqueue_record, 'OK',
+                {'filemap': {'../myfile.py': 'test_file_hash'}})
 
     def test_handleStatus_OK_sets_build_log(self):
         # The build log is set during handleStatus.

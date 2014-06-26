@@ -197,7 +197,7 @@ class BuildFarmJobBehaviourBase:
     # allowed to be sent. It is up to each callback as to whether it will
     # consider sending a notification but it won't do so if the status is not
     # in this list.
-    ALLOWED_STATUS_NOTIFICATIONS = ['OK', 'PACKAGEFAIL', 'CHROOTFAIL']
+    ALLOWED_STATUS_NOTIFICATIONS = ['PACKAGEFAIL', 'CHROOTFAIL']
 
     @defer.inlineCallbacks
     def handleStatus(self, bq, status, slave_status):
@@ -259,7 +259,6 @@ class BuildFarmJobBehaviourBase:
             grab_dir, str(build.archive.id), build.distribution.name)
         os.makedirs(upload_path)
 
-        successful_copy_from_slave = True
         filenames_to_download = []
         for filename in filemap:
             logger.info("Grabbing file: %s" % filename)
@@ -268,43 +267,27 @@ class BuildFarmJobBehaviourBase:
             # upload path, then we don't try to copy this or any
             # subsequent files.
             if not os.path.realpath(out_file_name).startswith(upload_path):
-                successful_copy_from_slave = False
-                logger.warning(
-                    "A slave tried to upload the file '%s' "
-                    "for the build %d." % (filename, build.id))
-                break
+                raise BuildDaemonError(
+                    "Build returned a file named %r." % filename)
             filenames_to_download.append((filemap[filename], out_file_name))
         yield self._slave.getFiles(filenames_to_download)
 
-        status = (
-            BuildStatus.UPLOADING if successful_copy_from_slave
-            else BuildStatus.FAILEDTOUPLOAD)
         # XXX wgrant: The builder should be set long before here, but
         # currently isn't.
         build.updateStatus(
-            status, builder=build.buildqueue_record.builder,
+            BuildStatus.UPLOADING, builder=build.buildqueue_record.builder,
             slave_status=slave_status)
         transaction.commit()
 
         yield self.storeLogFromSlave()
 
-        # Move the directory used to grab the binaries into incoming or
-        # failed atomically, so other bits don't have to deal with
-        # half-finished uploads. We only attempt the upload if we
-        # successfully copied all the files from the slave.
-        if successful_copy_from_slave:
-            logger.info(
-                "Gathered %s %d completely. Moving %s to uploader queue."
-                % (build.__class__.__name__, build.id, upload_leaf))
-            target_dir = os.path.join(root, "incoming")
-        else:
-            logger.warning(
-                "Copy from slave for build %s was unsuccessful.", build.id)
-            if notify:
-                build.notify(
-                    extra_info='Copy from slave was unsuccessful.')
-            target_dir = os.path.join(root, "failed")
-
+        # Move the directory used to grab the binaries into incoming
+        # atomically, so other bits don't have to deal with incomplete
+        # uploads.
+        logger.info(
+            "Gathered %s completely. Moving %s to uploader queue."
+            % (build.build_cookie, upload_leaf))
+        target_dir = os.path.join(root, "incoming")
         if not os.path.exists(target_dir):
             os.mkdir(target_dir)
         os.rename(grab_dir, os.path.join(target_dir, upload_leaf))
