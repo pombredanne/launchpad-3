@@ -102,13 +102,6 @@ class TestBuildFarmJobBehaviourBase(TestCaseWithFactory):
         return spr.createBuild(
             distroarchseries=distroarchseries, pocket=pocket, archive=archive)
 
-    def test_getBuildCookie(self):
-        build = self.factory.makeTranslationTemplatesBuild()
-        behaviour = self._makeBehaviour(build)
-        self.assertEqual(
-            '%s-%s' % (build.job_type.name, build.id),
-            behaviour.getBuildCookie())
-
     def test_getUploadDirLeaf(self):
         # getUploadDirLeaf returns the current time, followed by the build
         # cookie.

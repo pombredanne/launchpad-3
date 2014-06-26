@@ -104,7 +104,6 @@ class TestBinaryBuildPackageBehaviour(TestCaseWithFactory):
             in order to trick the slave into building correctly.
         :return: A list of the calls we expect to be made.
         """
-        cookie = IBuildFarmJobBehaviour(build).getBuildCookie()
         ds_name = build.distro_arch_series.distroseries.name
         suite = ds_name + pocketsuffix[build.pocket]
         archives = get_sources_list_for_building(
@@ -133,8 +132,8 @@ class TestBinaryBuildPackageBehaviour(TestCaseWithFactory):
             'suite': suite,
             }
         build_log = [
-            ('build', cookie, 'binarypackage', chroot.content.sha1,
-             filemap_names, extra_args)]
+            ('build', build.build_cookie, 'binarypackage',
+             chroot.content.sha1, filemap_names, extra_args)]
         result = upload_logs + build_log
         return result
 
@@ -316,15 +315,6 @@ class TestBinaryBuildPackageBehaviour(TestCaseWithFactory):
         e = self.assertRaises(
             CannotBuild, behaviour.verifyBuildRequest, BufferLogger())
         self.assertIn("Missing CHROOT", str(e))
-
-    def test_getBuildCookie(self):
-        # A build cookie is made up of the job type and record id.
-        # The uploadprocessor relies on this format.
-        build = self.factory.makeBinaryPackageBuild()
-        behaviour = IBuildFarmJobBehaviour(build)
-        cookie = removeSecurityProxy(behaviour).getBuildCookie()
-        expected_cookie = "PACKAGEBUILD-%d" % build.id
-        self.assertEqual(expected_cookie, cookie)
 
 
 class TestBinaryBuildPackageBehaviourBuildCollection(TestCaseWithFactory):

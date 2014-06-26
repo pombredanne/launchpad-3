@@ -38,9 +38,6 @@ class IBuildFarmJobBehaviour(Interface):
         :param logger: A logger to be used to log diagnostic information.
         """
 
-    def getBuildCookie():
-        """Return a string which uniquely identifies the job."""
-
     def verifySuccessfulBuild():
         """Check that we are allowed to collect this successful build."""
 

@@ -66,10 +66,6 @@ class BuildFarmJobBehaviourBase:
         """The default behaviour is a no-op."""
         pass
 
-    def getBuildCookie(self):
-        """See `IPackageBuild`."""
-        return self.build.build_cookie
-
     @defer.inlineCallbacks
     def dispatchBuildToSlave(self, logger):
         """See `IBuildFarmJobBehaviour`."""
