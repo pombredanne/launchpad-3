@@ -199,6 +199,7 @@ class BuildFarmJobBehaviourBase:
     # in this list.
     ALLOWED_STATUS_NOTIFICATIONS = ['OK', 'PACKAGEFAIL', 'CHROOTFAIL']
 
+    @defer.inlineCallbacks
     def handleStatus(self, bq, status, slave_status):
         """See `IBuildFarmJobBehaviour`."""
         if bq != self.build.buildqueue_record:
@@ -216,8 +217,9 @@ class BuildFarmJobBehaviourBase:
             % (status, self.build.build_cookie,
                self.build.buildqueue_record.specific_build.title,
                self.build.buildqueue_record.builder.name))
-        d = method(slave_status, logger, notify)
-        return d
+        yield method(slave_status, logger, notify)
+        self.build.buildqueue_record.destroySelf()
+        transaction.commit()
 
     @defer.inlineCallbacks
     def _handleStatus_OK(self, slave_status, logger, notify):
@@ -236,7 +238,6 @@ class BuildFarmJobBehaviourBase:
             build = build.buildqueue_record.specific_build
             if not build.current_source_publication:
                 build.updateStatus(BuildStatus.SUPERSEDED)
-                self.build.buildqueue_record.destroySelf()
                 return
 
         self.verifySuccessfulBuild()
@@ -308,9 +309,6 @@ class BuildFarmJobBehaviourBase:
             os.mkdir(target_dir)
         os.rename(grab_dir, os.path.join(target_dir, upload_leaf))
 
-        self.build.buildqueue_record.destroySelf()
-        transaction.commit()
-
     @defer.inlineCallbacks
     def _handleStatus_generic_fail(self, status, slave_status, logger, notify):
         """Handle a generic build failure.
@@ -327,8 +325,6 @@ class BuildFarmJobBehaviourBase:
         yield self.storeLogFromSlave()
         if notify:
             self.build.notify()
-        self.build.buildqueue_record.destroySelf()
-        transaction.commit()
 
     def _handleStatus_PACKAGEFAIL(self, slave_status, logger, notify):
         """Handle a package that had failed to build."""
