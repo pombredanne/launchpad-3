@@ -559,6 +559,12 @@ class TestSlaveScannerScan(TestCaseWithFactory):
         self.assertEqual(BuilderCleanStatus.DIRTY, builder.clean_status)
         self.assertEqual(BuildStatus.CANCELLED, build.status)
 
+
+class TestSlaveScannerWithLibrarian(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+    run_tests_with = AsynchronousDeferredRunTest.make_factory(timeout=20)
+
     @defer.inlineCallbacks
     def test_end_to_end(self):
         # Test that SlaveScanner.scan() successfully finds, dispatches,
@@ -573,18 +579,14 @@ class TestSlaveScannerScan(TestCaseWithFactory):
             processors=[bq.processor], manual=False, vm_host='VMHOST')
         transaction.commit()
 
-        # Mock out the build behaviour's _handleStatus_OK so it doesn't
+        # Mock out the build behaviour's handleSuccess so it doesn't
         # try to upload things to the librarian or queue.
-        @defer.inlineCallbacks
-        def handleStatus_OK(self, slave_status, logger, notify):
+        def handleSuccess(self, slave_status, logger):
             build.updateStatus(
                 BuildStatus.UPLOADING, builder, slave_status=slave_status)
             transaction.commit()
-            yield self._slave.clean()
-            bq.destroySelf()
-            transaction.commit()
         self.patch(
-            BinaryPackageBuildBehaviour, '_handleStatus_OK', handleStatus_OK)
+            BinaryPackageBuildBehaviour, 'handleSuccess', handleSuccess)
 
         # And create a SlaveScanner with a slave and a clock that we
         # control.
@@ -627,14 +629,14 @@ class TestSlaveScannerScan(TestCaseWithFactory):
         self.assertEqual(
             ['status', 'status', 'status'], get_slave.result.method_log)
 
-        # When the build finishes, the scanner will notice, call
-        # handleStatus(), and then clean the builder.  Our fake
-        # _handleStatus_OK doesn't do anything special, but there'd
-        # usually be file retrievals in the middle. The builder remains
-        # dirty afterward.
+        # When the build finishes, the scanner will notice and call
+        # handleStatus(). Our fake handleSuccess() doesn't do anything
+        # special, but there'd usually be file retrievals in the middle,
+        # and the log is retrieved by handleStatus() afterwards.
+        # The builder remains dirty afterward.
         get_slave.result = WaitingSlave(build_id=build.build_cookie)
         yield scanner.scan()
-        self.assertEqual(['status', 'clean'], get_slave.result.method_log)
+        self.assertEqual(['status', 'getFile'], get_slave.result.method_log)
         self.assertIs(None, builder.currentjob)
         self.assertEqual(BuildStatus.UPLOADING, build.status)
         self.assertEqual(builder, build.builder)
