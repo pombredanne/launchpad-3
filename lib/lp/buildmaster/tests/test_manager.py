@@ -1046,23 +1046,27 @@ class TestFailureAssessments(TestCaseWithFactory):
 
     def _recover_failure(self, fail_notes, retry=True):
         # Helper for recover_failure boilerplate.
+        logger = BufferLogger()
         recover_failure(
-            BufferLogger(), extract_vitals_from_db(self.builder), self.builder,
+            logger, extract_vitals_from_db(self.builder), self.builder,
             retry, Exception(fail_notes))
+        return logger.getLogBuffer()
 
     def test_job_reset_threshold_with_retry(self):
         naked_build = removeSecurityProxy(self.build)
         self.builder.failure_count = JOB_RESET_THRESHOLD - 1
         naked_build.failure_count = JOB_RESET_THRESHOLD - 1
 
-        self._recover_failure("failnotes")
+        log = self._recover_failure("failnotes")
+        self.assertNotIn("Requeueing job", log)
         self.assertIsNot(None, self.builder.currentjob)
         self.assertEqual(self.build.status, BuildStatus.BUILDING)
 
         self.builder.failure_count += 1
         naked_build.failure_count += 1
 
-        self._recover_failure("failnotes")
+        log = self._recover_failure("failnotes")
+        self.assertIn("Requeueing job", log)
         self.assertIs(None, self.builder.currentjob)
         self.assertEqual(self.build.status, BuildStatus.NEEDSBUILD)
 
@@ -1071,7 +1075,8 @@ class TestFailureAssessments(TestCaseWithFactory):
         self.builder.failure_count = 1
         naked_build.failure_count = 1
 
-        self._recover_failure("failnotes", retry=False)
+        log = self._recover_failure("failnotes", retry=False)
+        self.assertIn("Requeueing job", log)
         self.assertIs(None, self.builder.currentjob)
         self.assertEqual(self.build.status, BuildStatus.NEEDSBUILD)
 
@@ -1083,7 +1088,8 @@ class TestFailureAssessments(TestCaseWithFactory):
         self.builder.failure_count = 1
         naked_build.failure_count = 1
 
-        self._recover_failure("failnotes")
+        log = self._recover_failure("failnotes")
+        self.assertIn("Cancelling job", log)
         self.assertIs(None, self.builder.currentjob)
         self.assertEqual(BuildStatus.CANCELLED, self.build.status)
 
@@ -1092,7 +1098,9 @@ class TestFailureAssessments(TestCaseWithFactory):
         self.build.gotFailure()
         self.builder.gotFailure()
 
-        self._recover_failure("failnotes")
+        log = self._recover_failure("failnotes")
+        self.assertIn("Failing job", log)
+        self.assertIn("Resetting failure count of builder", log)
         self.assertIs(None, self.builder.currentjob)
         self.assertEqual(self.build.status, BuildStatus.FAILEDTOBUILD)
         self.assertEqual(0, self.builder.failure_count)
@@ -1104,7 +1112,9 @@ class TestFailureAssessments(TestCaseWithFactory):
         self.build.gotFailure()
         self.build.gotFailure()
         self.builder.gotFailure()
-        self._recover_failure("failnotes")
+        log = self._recover_failure("failnotes")
+        self.assertIn("Cancelling job", log)
+        self.assertIn("Resetting failure count of builder", log)
         self.assertIs(None, self.builder.currentjob)
         self.assertEqual(BuildStatus.CANCELLED, self.build.status)
 
@@ -1116,7 +1126,9 @@ class TestFailureAssessments(TestCaseWithFactory):
         # builder or attempt to clean up a non-virtual builder.
         self.builder.failure_count = BUILDER_FAILURE_THRESHOLD - 1
         self.assertIsNot(None, self.builder.currentjob)
-        self._recover_failure("failnotes")
+        log = self._recover_failure("failnotes")
+        self.assertIn("Requeueing job RECIPEBRANCHBUILD-1", log)
+        self.assertIn("Dirtying builder %s" % self.builder.name, log)
         self.assertIs(None, self.builder.currentjob)
         self.assertEqual(BuilderCleanStatus.DIRTY, self.builder.clean_status)
         self.assertTrue(self.builder.builderok)
@@ -1125,7 +1137,9 @@ class TestFailureAssessments(TestCaseWithFactory):
         # disabled.
         self.builder.failure_count = BUILDER_FAILURE_THRESHOLD
         self.buildqueue.markAsBuilding(self.builder)
-        self._recover_failure("failnotes")
+        log = self._recover_failure("failnotes")
+        self.assertIn("Requeueing job", log)
+        self.assertIn("Failing builder", log)
         self.assertIs(None, self.builder.currentjob)
         self.assertEqual(BuilderCleanStatus.DIRTY, self.builder.clean_status)
         self.assertFalse(self.builder.builderok)
@@ -1135,7 +1149,9 @@ class TestFailureAssessments(TestCaseWithFactory):
         self.buildqueue.reset()
         self.builder.failure_count = BUILDER_FAILURE_THRESHOLD
 
-        self._recover_failure("failnotes")
+        log = self._recover_failure("failnotes")
+        self.assertIn("with no job", log)
+        self.assertIn("Failing builder", log)
         self.assertFalse(self.builder.builderok)
         self.assertEqual("failnotes", self.builder.failnotes)
 
