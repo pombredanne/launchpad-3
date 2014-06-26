@@ -352,7 +352,6 @@ class BuilderInteractor(object):
             value is None, or a Failure that contains an exception
             explaining what went wrong.
         """
-        behaviour.logStartBuild(logger)
         behaviour.verifyBuildRequest(logger)
 
         # Set the build behaviour depending on the provided build queue item.
@@ -367,7 +366,7 @@ class BuilderInteractor(object):
         builder.setCleanStatus(BuilderCleanStatus.DIRTY)
         transaction.commit()
 
-        yield behaviour.dispatchBuildToSlave(build_queue_item.id, logger)
+        yield behaviour.dispatchBuildToSlave(logger)
 
     @classmethod
     @defer.inlineCallbacks

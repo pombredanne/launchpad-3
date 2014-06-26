@@ -9,14 +9,12 @@ import os
 
 import pytz
 from testtools.deferredruntest import AsynchronousDeferredRunTest
-from testtools.testcase import ExpectedException
 from twisted.internet import defer
 from zope.component import getUtility
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interactor import BuilderInteractor
-from lp.buildmaster.interfaces.builder import CannotBuild
 from lp.buildmaster.interfaces.buildfarmjobbehaviour import (
     IBuildFarmJobBehaviour,
     )
@@ -25,7 +23,6 @@ from lp.buildmaster.tests.mock_slaves import (
     WaitingSlave,
     )
 from lp.services.config import config
-from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.librarian.utils import copy_and_close
 from lp.testing import TestCaseWithFactory
 from lp.testing.dbuser import switch_dbuser
@@ -100,36 +97,14 @@ class TestTranslationTemplatesBuildBehaviour(
         b2 = self.makeBehaviour()
         self.assertNotEqual(b1.getLogFileName(), b2.getLogFileName())
 
-    @defer.inlineCallbacks
-    def test_dispatchBuildToSlave_no_chroot_fails(self):
-        # dispatchBuildToSlave will fail if the chroot does not exist.
-        behaviour = self.makeBehaviour(use_fake_chroot=False)
-        switch_dbuser(config.builddmaster.dbuser)
-        with ExpectedException(CannotBuild):
-            yield behaviour.dispatchBuildToSlave(None, logging)
-
-    def test_dispatchBuildToSlave(self):
-        # dispatchBuildToSlave ultimately causes the slave's build
-        # method to be invoked.  The slave receives the URL of the
-        # branch it should build from.
+    def test_composeBuildRequest(self):
         behaviour = self.makeBehaviour()
         switch_dbuser(config.builddmaster.dbuser)
-        d = behaviour.dispatchBuildToSlave(FakeBuildQueue(behaviour), logging)
-
-        def got_dispatch(ignored):
-            # call_log lives on the mock WaitingSlave and tells us what
-            # calls to the slave that the behaviour class made.
-            call_log = behaviour._slave.call_log
-            build_params = call_log[-1]
-            self.assertEqual('build', build_params[0])
-            build_type = build_params[2]
-            self.assertEqual('translation-templates', build_type)
-            branch_url = build_params[-1]['branch_url']
-            # The slave receives the public http URL for the branch.
-            self.assertEqual(
-                branch_url,
-                behaviour.build.branch.composePublicURL())
-        return d.addCallback(got_dispatch)
+        self.assertEqual(
+            ('translation-templates', behaviour._getDistroArchSeries(), {},
+             {'arch_tag': behaviour._getDistroArchSeries().architecturetag,
+              'branch_url': behaviour.build.branch.composePublicURL()}),
+             behaviour.composeBuildRequest(None))
 
     def test_getDistroArchSeries(self):
         # _getDistroArchSeries produces the nominated arch-indep
@@ -167,13 +142,7 @@ class TestTranslationTemplatesBuildBehaviour(
         queue_item = FakeBuildQueue(behaviour)
         slave = behaviour._slave
 
-        d = behaviour.dispatchBuildToSlave(queue_item, logging)
-
-        def got_dispatch(ignored):
-            self.assertEqual(0, queue_item.destroySelf.call_count)
-            self.assertEqual(0, behaviour._uploadTarball.call_count)
-
-            return slave.status()
+        d = slave.status()
 
         def got_status(status):
             return (
@@ -189,7 +158,6 @@ class TestTranslationTemplatesBuildBehaviour(
             self.assertEqual(1, queue_item.destroySelf.call_count)
             self.assertEqual(1, behaviour._uploadTarball.call_count)
 
-        d.addCallback(got_dispatch)
         d.addCallback(got_status)
         d.addCallback(build_updated)
         return d
@@ -200,11 +168,8 @@ class TestTranslationTemplatesBuildBehaviour(
         behaviour._uploadTarball = FakeMethod()
         queue_item = FakeBuildQueue(behaviour)
         slave = behaviour._slave
-        d = behaviour.dispatchBuildToSlave(queue_item, logging)
 
-        def got_dispatch(ignored):
-            # Now that we've dispatched, get the status.
-            return slave.status()
+        d = slave.status()
 
         def got_status(status):
             del status['filemap']
@@ -220,7 +185,6 @@ class TestTranslationTemplatesBuildBehaviour(
             self.assertEqual(1, queue_item.destroySelf.call_count)
             self.assertEqual(0, behaviour._uploadTarball.call_count)
 
-        d.addCallback(got_dispatch)
         d.addCallback(got_status)
         d.addCallback(build_updated)
         return d
@@ -232,10 +196,8 @@ class TestTranslationTemplatesBuildBehaviour(
         behaviour._uploadTarball = FakeMethod()
         queue_item = FakeBuildQueue(behaviour)
         slave = behaviour._slave
-        d = behaviour.dispatchBuildToSlave(queue_item, logging)
 
-        def got_dispatch(ignored):
-            return slave.status()
+        d = slave.status()
 
         def got_status(status):
             del status['filemap']
@@ -249,7 +211,6 @@ class TestTranslationTemplatesBuildBehaviour(
             self.assertEqual(1, queue_item.destroySelf.call_count)
             self.assertEqual(0, behaviour._uploadTarball.call_count)
 
-        d.addCallback(got_dispatch)
         d.addCallback(got_status)
         d.addCallback(build_updated)
         return d
@@ -262,8 +223,6 @@ class TestTranslationTemplatesBuildBehaviour(
         queue_item = FakeBuildQueue(behaviour)
         slave = behaviour._slave
 
-        d = behaviour.dispatchBuildToSlave(queue_item, logging)
-
         def fake_getFile(sum, file):
             dummy_tar = os.path.join(
                 os.path.dirname(__file__), 'dummy_templates.tar.gz')
@@ -271,9 +230,8 @@ class TestTranslationTemplatesBuildBehaviour(
             copy_and_close(tar_file, file)
             return defer.succeed(None)
 
-        def got_dispatch(ignored):
-            slave.getFile = fake_getFile
-            return slave.status()
+        slave.getFile = fake_getFile
+        d = slave.status()
 
         def got_status(status):
             return behaviour.handleStatus(
@@ -294,7 +252,6 @@ class TestTranslationTemplatesBuildBehaviour(
             list2 = sorted([entry.path for entry in entries])
             self.assertEqual(list1, list2)
 
-        d.addCallback(got_dispatch)
         d.addCallback(got_status)
         d.addCallback(build_updated)
         return d

@@ -33,12 +33,6 @@ class BinaryPackageBuildBehaviour(BuildFarmJobBehaviourBase):
 
     implements(IBuildFarmJobBehaviour)
 
-    def logStartBuild(self, logger):
-        """See `IBuildFarmJobBehaviour`."""
-        spr = self.build.source_package_release
-        logger.info("startBuild(%s, %s, %s, %s)", self._builder.url,
-                    spr.name, spr.version, self.build.pocket.title)
-
     def getLogFileName(self):
         """See `IBuildPackageJob`."""
         sourcename = self.build.source_package_release.name

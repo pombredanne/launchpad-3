@@ -7,23 +7,14 @@ __metaclass__ = type
 
 import shutil
 import tempfile
-from textwrap import dedent
 
-from testtools import run_test_with
-from testtools.deferredruntest import (
-    assert_fails_with,
-    AsynchronousDeferredRunTest,
-    )
-from testtools.matchers import StartsWith
 import transaction
-from twisted.internet import defer
 from twisted.trial.unittest import TestCase as TrialTestCase
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interactor import BuilderInteractor
-from lp.buildmaster.interfaces.builder import CannotBuild
 from lp.buildmaster.interfaces.buildfarmjobbehaviour import (
     IBuildFarmJobBehaviour,
     )
@@ -101,20 +92,6 @@ class TestRecipeBuilder(TestCaseWithFactory):
         build = self.factory.makeSourcePackageRecipeBuild()
         job = IBuildFarmJobBehaviour(build)
         self.assertProvides(job, IBuildFarmJobBehaviour)
-
-    def test_display_name(self):
-        # display_name contains a sane description of the job
-        job = self.makeJob()
-        self.assertEquals(job.display_name,
-            "Mydistro, recept, joe")
-
-    def test_logStartBuild(self):
-        # logStartBuild will properly report the package that's being built
-        job = self.makeJob()
-        logger = BufferLogger()
-        job.logStartBuild(logger)
-        self.assertEquals(logger.getLogBuffer(),
-            "INFO startBuild(Mydistro, recept, joe)\n")
 
     def test_verifyBuildRequest_valid(self):
         # VerifyBuildRequest won't raise any exceptions when called with a
@@ -289,48 +266,18 @@ class TestRecipeBuilder(TestCaseWithFactory):
         self.assertEquals(
             job.build, SourcePackageRecipeBuild.getByID(job.build.id))
 
-    @run_test_with(AsynchronousDeferredRunTest)
-    def test_dispatchBuildToSlave(self):
-        # Ensure dispatchBuildToSlave will make the right calls to the slave
+    def test_composeBuildRequest(self):
+        # Ensure composeBuildRequest is correct.
         job = self.makeJob()
         test_publisher = SoyuzTestPublisher()
         test_publisher.addFakeChroots(job.build.distroseries)
-        slave = OkSlave()
+        das = job.build.distroseries.nominatedarchindep
         builder = MockBuilder("bob-de-bouwer")
-        builder.processor = getUtility(IProcessorSet).getByName('386')
-        job.setBuilder(builder, slave)
-        logger = BufferLogger()
-        d = defer.maybeDeferred(job.dispatchBuildToSlave, "someid", logger)
-
-        def check_dispatch(ignored):
-            self.assertThat(
-                logger.getLogBuffer(),
-                StartsWith(dedent("""\
-                  DEBUG Initiating build 1-someid on http://fake:0000
-                  """)))
-            self.assertEquals(["ensurepresent", "build"],
-                              [call[0] for call in slave.call_log])
-            build_args = slave.call_log[1][1:]
-            self.assertEquals(build_args[0], job.getBuildCookie())
-            self.assertEquals(build_args[1], "sourcepackagerecipe")
-            self.assertEquals(build_args[3], [])
-            distroarchseries = job.build.distroseries.architectures[0]
-            self.assertEqual(
-                build_args[4], job._extraBuildArgs(distroarchseries))
-        return d.addCallback(check_dispatch)
-
-    @run_test_with(AsynchronousDeferredRunTest)
-    def test_dispatchBuildToSlave_nochroot(self):
-        # dispatchBuildToSlave will fail when there is not chroot tarball
-        # available for the distroseries to build for.
-        job = self.makeJob()
-        #test_publisher = SoyuzTestPublisher()
-        builder = MockBuilder("bob-de-bouwer")
-        builder.processor = getUtility(IProcessorSet).getByName('386')
-        job.setBuilder(builder, OkSlave())
-        logger = BufferLogger()
-        d = defer.maybeDeferred(job.dispatchBuildToSlave, "someid", logger)
-        return assert_fails_with(d, CannotBuild)
+        builder.processor = das.processor
+        job.setBuilder(builder, None)
+        self.assertEqual(
+            ('sourcepackagerecipe', das, {}, job._extraBuildArgs(das)),
+            job.composeBuildRequest(None))
 
 
 class TestBuildNotifications(TrialTestCase):
