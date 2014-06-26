@@ -387,10 +387,7 @@ class SlaveScanner:
         """
         if vitals.build_queue != self._cached_build_queue:
             if vitals.build_queue is not None:
-                behaviour = self.behaviour_factory(
-                    vitals.build_queue, self.builder_factory[vitals.name],
-                    None)
-                self._cached_build_cookie = behaviour.getBuildCookie()
+                self._cached_build_cookie = vitals.build_queue.build_cookie
             else:
                 self._cached_build_cookie = None
             self._cached_build_queue = vitals.build_queue
@@ -440,8 +437,8 @@ class SlaveScanner:
                 # requeue the job. The next scan cycle will clean up the
                 # slave if appropriate.
                 self.logger.warn(
-                    "%s. Resetting BuildQueue %d.", lost_reason,
-                    vitals.build_queue.id)
+                    "%s. Resetting job %s.", lost_reason,
+                    vitals.build_queue.build_cookie)
                 vitals.build_queue.reset()
                 transaction.commit()
                 return

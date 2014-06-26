@@ -72,8 +72,8 @@ from lp.testing.layers import (
 
 class FakeBuildQueue:
 
-    def __init__(self):
-        self.id = 1
+    def __init__(self, cookie='PACKAGEBUILD-1'):
+        self.build_cookie = cookie
         self.reset = FakeMethod()
         self.status = BuildQueueStatus.RUNNING
 

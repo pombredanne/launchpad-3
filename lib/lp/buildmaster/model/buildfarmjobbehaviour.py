@@ -73,7 +73,7 @@ class BuildFarmJobBehaviourBase:
     @defer.inlineCallbacks
     def dispatchBuildToSlave(self, logger):
         """See `IBuildFarmJobBehaviour`."""
-        cookie = self.getBuildCookie()
+        cookie = self.build.build_cookie
         logger.info(
             "Preparing job %s (%s) on %s."
             % (cookie, self.build.title, self._builder.url))
@@ -216,7 +216,7 @@ class BuildFarmJobBehaviourBase:
             return
         logger.info(
             'Processing finished %s build %s (%s) from builder %s'
-            % (status, self.getBuildCookie(),
+            % (status, self.build.build_cookie,
                self.build.buildqueue_record.specific_build.title,
                self.build.buildqueue_record.builder.name))
         d = method(slave_status, logger, notify)
@@ -249,7 +249,7 @@ class BuildFarmJobBehaviourBase:
         root = os.path.abspath(config.builddmaster.root)
 
         # Create a single directory to store build result files.
-        upload_leaf = self.getUploadDirLeaf(self.getBuildCookie())
+        upload_leaf = self.getUploadDirLeaf(self.build.build_cookie)
         grab_dir = os.path.join(root, "grabbing", upload_leaf)
         logger.debug("Storing build result at '%s'" % grab_dir)
 

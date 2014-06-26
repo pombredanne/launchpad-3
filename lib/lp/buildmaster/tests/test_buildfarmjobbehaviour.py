@@ -17,10 +17,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.archiveuploader.uploadprocessor import parse_build_upload_leaf_name
-from lp.buildmaster.enums import (
-    BuildFarmJobType,
-    BuildStatus,
-    )
+from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interactor import BuilderInteractor
 from lp.buildmaster.interfaces.buildfarmjobbehaviour import (
     IBuildFarmJobBehaviour,
@@ -53,8 +50,7 @@ from lp.testing.mail_helpers import pop_notifications
 class FakeBuildFarmJob:
     """Dummy BuildFarmJob."""
 
-    id = 1
-    job_type = BuildFarmJobType.PACKAGEBUILD
+    build_cookie = 'PACKAGEBUILD-1'
     title = 'some job for something'
 
 
@@ -194,8 +190,7 @@ class TestGetUploadMethodsMixin:
     def test_getUploadDirLeafCookie_parseable(self):
         # getUploadDirLeaf should return a directory name
         # that is parseable by the upload processor.
-        upload_leaf = self.behaviour.getUploadDirLeaf(
-            self.behaviour.getBuildCookie())
+        upload_leaf = self.behaviour.getUploadDirLeaf(self.build.build_cookie)
         (job_type, job_id) = parse_build_upload_leaf_name(upload_leaf)
         self.assertEqual(
             (self.build.job_type.name, self.build.id), (job_type, job_id))
