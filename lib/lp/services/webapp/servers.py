@@ -1217,10 +1217,8 @@ class WebServicePublication(WebServicePublicationMixin,
         Web service requests are authenticated using OAuth, except for the
         one made using (presumably) JavaScript on the /api override path.
 
-        Raises a variety of token errors (ClockSkew, NonceAlreadyUsed,
-        TimestampOrderingError, TokenException) which have a webservice error
-        status of Unauthorized - 401.  All of these exceptions represent
-        errors on the part of the client.
+        Raises TokenException which has a webservice error status of
+        Unauthorized - 401.
 
         Raises Unauthorized directly in the case where the consumer is None
         for a non-anonymous request as it may represent a server error.
@@ -1287,9 +1285,6 @@ class WebServicePublication(WebServicePublicationMixin,
         token = consumer.getAccessToken(token_key)
         if token is None:
             raise TokenException('Unknown access token (%s).' % token_key)
-        nonce = form.get('oauth_nonce')
-        timestamp = form.get('oauth_timestamp')
-        token.checkNonceAndTimestamp(nonce, timestamp)
         if token.permission == OAuthPermission.UNAUTHORIZED:
             raise TokenException('Unauthorized token (%s).' % token.key)
         elif token.is_expired:

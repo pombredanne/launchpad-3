@@ -900,62 +900,6 @@ But not if the request uses POST, the changes will be preserved.
     Darwin
 
 
-GET requests on api.launchpad.net
-.................................
-
-In the case of WebServicePublication, though, we have to commit the
-transaction after GET requests in order to persist new entries added to
-the OAuthNonce table.
-
-    >>> import time
-    >>> from lp.services.oauth.interfaces import IOAuthConsumerSet
-    >>> from lp.services.webapp.interfaces import OAuthPermission
-    >>> from lp.registry.interfaces.person import IPersonSet
-
-    >>> from zope.component import getUtility
-    >>> from lp.services.database.policy import MasterDatabasePolicy
-    >>> from lp.services.database.interfaces import IStoreSelector
-    >>> getUtility(IStoreSelector).push(MasterDatabasePolicy())
-
-    >>> salgado = getUtility(IPersonSet).getByName('salgado')
-    >>> consumer = getUtility(IOAuthConsumerSet).getByKey('foobar123451432')
-    >>> token = consumer.newRequestToken()
-    >>> token.review(salgado, OAuthPermission.WRITE_PUBLIC)
-    >>> access_token = token.createAccessToken()
-    >>> policy = getUtility(IStoreSelector).pop()
-    >>> transaction.commit()
-    >>> form = dict(
-    ...     oauth_consumer_key='foobar123451432',
-    ...     oauth_token=access_token.key,
-    ...     oauth_version='1.0',
-    ...     oauth_signature_method='PLAINTEXT',
-    ...     oauth_signature="&".join([consumer.secret, access_token.secret]),
-    ...     oauth_timestamp=time.time(),
-    ...     oauth_nonce='1234572616e48616d6d65724c61686176')
-    >>> test_request, publication = get_request_and_publication(
-    ...     'api.launchpad.dev', 'GET',
-    ...     extra_environment=dict(QUERY_STRING=urlencode(form)))
-    >>> test_request.processInputs()
-    >>> print publication.getPrincipal(test_request).title
-    Guilherme Salgado
-
-    # Our afterCall() implementation expects to find a
-    # _publicationticks_start in its request, which is set by
-    # callObject(). Since we don't want to callObject() here, we'll
-    # have to change the request manually.
-    >>> test_request._publicationticks_start = 1345
-    >>> publication.afterCall(test_request, None)
-
-    >>> test_request, publication = get_request_and_publication(
-    ...     'api.launchpad.dev', 'GET',
-    ...     extra_environment=dict(QUERY_STRING=urlencode(form)))
-    >>> test_request.processInputs()
-    >>> publication.getPrincipal(test_request)
-    Traceback (most recent call last):
-    ...
-    NonceAlreadyUsed: This nonce has been used already.
-
-
 Doomed transactions are aborted
 -------------------------------
 
@@ -1103,7 +1047,12 @@ associated with the access token specified in the request.  The
 principal's access_level and scope will match what was specified in the
 token.
 
+    >>> import time
     >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.services.database.policy import MasterDatabasePolicy
+    >>> from lp.services.database.interfaces import IStoreSelector
+    >>> from lp.services.oauth.interfaces import IOAuthConsumerSet
+    >>> from lp.services.webapp.interfaces import OAuthPermission
     >>> getUtility(IStoreSelector).push(MasterDatabasePolicy())
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
     >>> consumer = getUtility(IOAuthConsumerSet).getByKey('foobar123451432')
@@ -1179,52 +1128,6 @@ correct.
     Traceback (most recent call last):
     ...
     TokenException: Invalid signature.
-
-The nonce specified in the request must not have been used before in a request
-with this same token and timestamp.
-
-    >>> form2 = form.copy()
-    >>> form2['oauth_nonce'] = '6e48616d6d65724c61686176457261'
-    >>> test_request = LaunchpadTestRequest(form=form2)
-    >>> print publication.getPrincipal(test_request).title
-    Guilherme Salgado
-
-    >>> test_request = LaunchpadTestRequest(form=form2)
-    >>> publication.getPrincipal(test_request)
-    Traceback (most recent call last):
-    ...
-    NonceAlreadyUsed: This nonce has been used already.
-
-The timestamp must not be older than TIMESTAMP_ACCEPTANCE_WINDOW from the most
-recent request for this token.
-
-    >>> from lp.services.oauth.model import (
-    ...     TIMESTAMP_ACCEPTANCE_WINDOW)
-    >>> form2 = form.copy()
-    >>> form2['oauth_timestamp'] -= (TIMESTAMP_ACCEPTANCE_WINDOW-5)
-    >>> test_request = LaunchpadTestRequest(form=form2)
-    >>> print publication.getPrincipal(test_request).title
-    Guilherme Salgado
-
-    >>> form2['oauth_timestamp'] -= 10
-    >>> test_request = LaunchpadTestRequest(form=form2)
-    >>> publication.getPrincipal(test_request)
-    Traceback (most recent call last):
-    ...
-    TimestampOrderingError: Timestamp too old compared ...
-
-Last but not least, the timestamp must not be too far in the future, as
-defined by TIMESTAMP_SKEW_WINDOW.
-
-    >>> from lp.services.oauth.model import (
-    ...     TIMESTAMP_SKEW_WINDOW)
-    >>> form2 = form.copy()
-    >>> form2['oauth_timestamp'] += (TIMESTAMP_SKEW_WINDOW+10)
-    >>> test_request = LaunchpadTestRequest(form=form2)
-    >>> publication.getPrincipal(test_request)
-    Traceback (most recent call last):
-    ...
-    ClockSkew: Timestamp ... from bad system clock
 
 Close the bogus request that was started by the call to
 beforeTraversal, in order to ensure we leave our state sane.
