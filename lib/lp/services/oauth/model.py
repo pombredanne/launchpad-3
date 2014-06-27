@@ -112,7 +112,7 @@ class OAuthConsumer(OAuthBase, SQLBase):
     date_created = UtcDateTimeCol(default=UTC_NOW, notNull=True)
     disabled = BoolCol(notNull=True, default=False)
     key = StringCol(notNull=True)
-    secret = StringCol(notNull=False, default='')
+    _secret = StringCol(dbName="secret", notNull=False, default='')
 
     # This regular expression singles out a consumer key that
     # represents any and all apps running on a specific computer. The
@@ -173,13 +173,13 @@ class OAuthConsumer(OAuthBase, SQLBase):
 
     def isSecretValid(self, secret):
         """See `IOAuthConsumer`."""
-        return secret == self.secret
+        return secret == self._secret
 
     def newRequestToken(self):
         """See `IOAuthConsumer`."""
         key, secret = create_token_key_and_secret(table=OAuthRequestToken)
         return (
-            OAuthRequestToken(consumer=self, key=key, secret=secret), secret)
+            OAuthRequestToken(consumer=self, key=key, _secret=secret), secret)
 
     def getAccessToken(self, key):
         """See `IOAuthConsumer`."""
@@ -198,7 +198,7 @@ class OAuthConsumerSet:
         """See `IOAuthConsumerSet`."""
         assert self.getByKey(key) is None, (
             "The key '%s' is already in use by another consumer." % key)
-        return OAuthConsumer(key=key, secret=secret)
+        return OAuthConsumer(key=key, _secret=secret)
 
     def getByKey(self, key):
         """See `IOAuthConsumerSet`."""
@@ -216,7 +216,7 @@ class OAuthAccessToken(OAuthBase, SQLBase):
     date_created = UtcDateTimeCol(default=UTC_NOW, notNull=True)
     date_expires = UtcDateTimeCol(notNull=False, default=None)
     key = StringCol(notNull=True)
-    secret = StringCol(notNull=False, default='')
+    _secret = StringCol(dbName="secret", notNull=False, default='')
 
     permission = EnumCol(enum=AccessLevel, notNull=True)
 
@@ -255,7 +255,7 @@ class OAuthAccessToken(OAuthBase, SQLBase):
 
     def isSecretValid(self, secret):
         """See `IOAuthConsumer`."""
-        return secret == self.secret
+        return secret == self._secret
 
     def checkNonceAndTimestamp(self, nonce, timestamp):
         """See `IOAuthAccessToken`."""
@@ -303,7 +303,7 @@ class OAuthRequestToken(OAuthBase, SQLBase):
     date_created = UtcDateTimeCol(default=UTC_NOW, notNull=True)
     date_expires = UtcDateTimeCol(notNull=False, default=None)
     key = StringCol(notNull=True)
-    secret = StringCol(notNull=False, default='')
+    _secret = StringCol(dbName="secret", notNull=False, default='')
 
     permission = EnumCol(enum=OAuthPermission, notNull=False, default=None)
     date_reviewed = UtcDateTimeCol(default=None, notNull=False)
@@ -344,7 +344,7 @@ class OAuthRequestToken(OAuthBase, SQLBase):
 
     def isSecretValid(self, secret):
         """See `IOAuthConsumer`."""
-        return secret == self.secret
+        return secret == self._secret
 
     def review(self, user, permission, context=None, date_expires=None):
         """See `IOAuthRequestToken`."""
@@ -389,7 +389,7 @@ class OAuthRequestToken(OAuthBase, SQLBase):
         access_level = AccessLevel.items[self.permission.name]
         access_token = OAuthAccessToken(
             consumer=self.consumer, person=self.person, key=key,
-            secret=secret, permission=access_level,
+            _secret=secret, permission=access_level,
             date_expires=self.date_expires, product=self.product,
             project=self.project, distribution=self.distribution,
             sourcepackagename=self.sourcepackagename)
