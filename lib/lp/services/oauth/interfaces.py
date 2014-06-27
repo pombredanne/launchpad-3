@@ -15,9 +15,6 @@ __all__ = [
     'IOAuthRequestToken',
     'IOAuthRequestTokenSet',
     'IOAuthSignedRequest',
-    'NonceAlreadyUsed',
-    'TimestampOrderingError',
-    'ClockSkew',
     'TokenException',
     ]
 
@@ -194,27 +191,6 @@ class IOAuthAccessToken(IOAuthToken):
         description=_('From this date onwards this token can not be used '
                       'by the consumer to access protected resources.'))
 
-    def checkNonceAndTimestamp(nonce, timestamp):
-        """Verify the nonce and timestamp.
-
-        - Ensure the nonce hasn't been used with the same timestamp.
-        - Ensure this is a first access, or this timestamp is no older than
-          last timestamp minus `TIMESTAMP_ACCEPTANCE_WINDOW`.
-        - Ensure this timestamp is within +/- `TIMESTAMP_SKEW_WINDOW` of the
-          server's concept of now.
-
-        :raises NonceAlreadyUsed: If the nonce has been used before with the
-            same timestamp.
-        :raises TimestampOrderingError: If the timestamp is older than the
-            last timestamp minus `TIMESTAMP_ACCEPTANCE_WINDOW`.
-        :raises ClockSkew: If the timestamp is not within
-            +/- `TIMESTAMP_SKEW_WINDOW` of now.
-
-        If the nonce has never been used together with this token and
-        timestamp before, we store it in the database with the given timestamp
-        and associated with this token.
-        """
-
 
 class IOAuthRequestToken(IOAuthToken):
     """A token used by a consumer to ask the user to authenticate on LP.
@@ -308,19 +284,7 @@ class IOAuthSignedRequest(Interface):
 
 @error_status(httplib.UNAUTHORIZED)
 class _TokenException(Exception):
-    """Base class for token, nonce, and timestamp exceptions."""
-
-
-class NonceAlreadyUsed(_TokenException):
-    """Nonce has been used together with same token but another timestamp."""
-
-
-class TimestampOrderingError(_TokenException):
-    """Timestamp is too old, compared to the last request."""
-
-
-class ClockSkew(_TokenException):
-    """Timestamp is too far off from server's clock."""
+    """Base class for token exceptions."""
 
 
 class TokenException(_TokenException):
