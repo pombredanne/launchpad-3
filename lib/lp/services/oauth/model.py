@@ -44,7 +44,6 @@ from lp.services.database.enumcol import EnumCol
 from lp.services.database.interfaces import IMasterStore
 from lp.services.database.sqlbase import SQLBase
 from lp.services.database.stormbase import StormBase
-from lp.services.features import getFeatureFlag
 from lp.services.librarian.model import LibraryFileAlias
 from lp.services.oauth.interfaces import (
     ClockSkew,
@@ -117,8 +116,7 @@ class OAuthConsumer(OAuthBase, SQLBase):
     _secret = StringCol(dbName="secret", notNull=False, default='')
 
     def __init__(self, key, secret):
-        if getFeatureFlag('auth.hash_oauth_secrets'):
-            secret = hashlib.sha256(secret).hexdigest()
+        secret = hashlib.sha256(secret).hexdigest()
         super(OAuthConsumer, self).__init__(key=key, _secret=secret)
 
     # This regular expression singles out a consumer key that
@@ -180,7 +178,7 @@ class OAuthConsumer(OAuthBase, SQLBase):
 
     def isSecretValid(self, secret):
         """See `IOAuthConsumer`."""
-        return self._secret in (secret, hashlib.sha256(secret).hexdigest())
+        return hashlib.sha256(secret).hexdigest() == self._secret
 
     def newRequestToken(self):
         """See `IOAuthConsumer`."""
@@ -242,8 +240,7 @@ class OAuthAccessToken(OAuthBase, SQLBase):
     def __init__(self, consumer, permission, key, secret='', person=None,
                  date_expires=None, product=None, project=None,
                  distribution=None, sourcepackagename=None):
-        if getFeatureFlag('auth.hash_oauth_secrets'):
-            secret = hashlib.sha256(secret).hexdigest()
+        secret = hashlib.sha256(secret).hexdigest()
         super(OAuthAccessToken, self).__init__(
             consumer=consumer, permission=permission, key=key,
             _secret=secret, person=person, date_expires=date_expires,
@@ -273,7 +270,7 @@ class OAuthAccessToken(OAuthBase, SQLBase):
 
     def isSecretValid(self, secret):
         """See `IOAuthConsumer`."""
-        return self._secret in (secret, hashlib.sha256(secret).hexdigest())
+        return hashlib.sha256(secret).hexdigest() == self._secret
 
     def checkNonceAndTimestamp(self, nonce, timestamp):
         """See `IOAuthAccessToken`."""
@@ -341,8 +338,7 @@ class OAuthRequestToken(OAuthBase, SQLBase):
     def __init__(self, consumer, key, secret='', permission=None, person=None,
                  date_expires=None, product=None, project=None,
                  distribution=None, sourcepackagename=None):
-        if getFeatureFlag('auth.hash_oauth_secrets'):
-            secret = hashlib.sha256(secret).hexdigest()
+        secret = hashlib.sha256(secret).hexdigest()
         super(OAuthRequestToken, self).__init__(
             consumer=consumer, permission=permission, key=key,
             _secret=secret, person=person, date_expires=date_expires,
@@ -373,7 +369,7 @@ class OAuthRequestToken(OAuthBase, SQLBase):
 
     def isSecretValid(self, secret):
         """See `IOAuthConsumer`."""
-        return self._secret in (secret, hashlib.sha256(secret).hexdigest())
+        return hashlib.sha256(secret).hexdigest() == self._secret
 
     def review(self, user, permission, context=None, date_expires=None):
         """See `IOAuthRequestToken`."""
