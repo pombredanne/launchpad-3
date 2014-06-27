@@ -1,6 +1,6 @@
--- Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
+-- Copyright 2010-2014 Canonical Ltd.  This software is licensed under the
 -- GNU Affero General Public License version 3 (see the file LICENSE).
--- Created using pg_dump (PostgreSQL) 9.1.4
+-- Created using pg_dump (PostgreSQL) 9.1.13
 
 SET check_function_bodies = false;
 SET client_encoding = 'UTF8';
@@ -10,741 +10,6 @@ SET standard_conforming_strings = off;
 SET statement_timeout = 0;
 
 SET search_path = public, pg_catalog;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 SET SESSION AUTHORIZATION DEFAULT;
@@ -2104,6 +1369,9 @@ INSERT INTO accessartifact (id, bug, branch, specification) VALUES (3, NULL, 30,
 ALTER TABLE accessartifact ENABLE TRIGGER ALL;
 
 
+
+
+
 ALTER TABLE accessartifactgrant DISABLE TRIGGER ALL;
 
 INSERT INTO accessartifactgrant (artifact, grantee, grantor, date_created) VALUES (1, 14, 65, '2007-08-09 11:39:16.836856');
@@ -2188,6 +1456,9 @@ INSERT INTO accesspolicy (id, product, distribution, type, person) VALUES (68, 1
 ALTER TABLE accesspolicy ENABLE TRIGGER ALL;
 
 
+
+
+
 ALTER TABLE accesspolicyartifact DISABLE TRIGGER ALL;
 
 INSERT INTO accesspolicyartifact (artifact, policy) VALUES (1, 2);
@@ -2218,6 +1489,12 @@ INSERT INTO accesspolicygrantflat (id, policy, artifact, grantee) VALUES (6, 68,
 
 
 ALTER TABLE accesspolicygrantflat ENABLE TRIGGER ALL;
+
+
+
+
+
+
 
 
 ALTER TABLE announcement DISABLE TRIGGER ALL;
@@ -2277,6 +1554,9 @@ url="http://www.ubuntu.com" (The text-to-html formatter should make this an <a> 
 ALTER TABLE announcement ENABLE TRIGGER ALL;
 
 
+
+
+
 ALTER TABLE answercontact DISABLE TRIGGER ALL;
 
 INSERT INTO answercontact (id, product, distribution, sourcepackagename, person, date_created) VALUES (1, NULL, 1, 1, 16, '2007-03-14 20:07:25.233772');
@@ -2286,6 +1566,9 @@ INSERT INTO answercontact (id, product, distribution, sourcepackagename, person,
 
 
 ALTER TABLE answercontact ENABLE TRIGGER ALL;
+
+
+
 
 
 ALTER TABLE job DISABLE TRIGGER ALL;
@@ -2307,6 +1590,9 @@ ALTER TABLE apportjob DISABLE TRIGGER ALL;
 
 
 ALTER TABLE apportjob ENABLE TRIGGER ALL;
+
+
+
 
 
 ALTER TABLE gpgkey DISABLE TRIGGER ALL;
@@ -2337,6 +1623,9 @@ INSERT INTO archive (id, owner, description, enabled, authorized_size, distribut
 ALTER TABLE archive ENABLE TRIGGER ALL;
 
 
+
+
+
 ALTER TABLE archivearch DISABLE TRIGGER ALL;
 
 
@@ -2344,11 +1633,17 @@ ALTER TABLE archivearch DISABLE TRIGGER ALL;
 ALTER TABLE archivearch ENABLE TRIGGER ALL;
 
 
+
+
+
 ALTER TABLE archiveauthtoken DISABLE TRIGGER ALL;
 
 
 
 ALTER TABLE archiveauthtoken ENABLE TRIGGER ALL;
+
+
+
 
 
 ALTER TABLE component DISABLE TRIGGER ALL;
@@ -2370,11 +1665,17 @@ ALTER TABLE archivedependency DISABLE TRIGGER ALL;
 ALTER TABLE archivedependency ENABLE TRIGGER ALL;
 
 
+
+
+
 ALTER TABLE archivejob DISABLE TRIGGER ALL;
 
 
 
 ALTER TABLE archivejob ENABLE TRIGGER ALL;
+
+
+
 
 
 ALTER TABLE packagesetgroup DISABLE TRIGGER ALL;
@@ -2415,6 +1716,9 @@ INSERT INTO archivepermission (id, date_created, person, permission, archive, co
 ALTER TABLE archivepermission ENABLE TRIGGER ALL;
 
 
+
+
+
 ALTER TABLE archivesubscriber DISABLE TRIGGER ALL;
 
 
@@ -2422,10 +1726,13 @@ ALTER TABLE archivesubscriber DISABLE TRIGGER ALL;
 ALTER TABLE archivesubscriber ENABLE TRIGGER ALL;
 
 
+
+
+
 ALTER TABLE builder DISABLE TRIGGER ALL;
 
-INSERT INTO builder (id, processor, name, title, owner, speedindex, builderok, failnotes, virtualized, url, manual, date_created, vm_host, active, failure_count, version) VALUES (1, 1, 'bob', 'Bob The Builder', 61, NULL, true, NULL, false, 'http://localhost:8221/', false, '2006-10-16 18:31:43.226724', NULL, true, 0, NULL);
-INSERT INTO builder (id, processor, name, title, owner, speedindex, builderok, failnotes, virtualized, url, manual, date_created, vm_host, active, failure_count, version) VALUES (2, 1, 'frog', 'The frog builder', 61, NULL, false, NULL, true, 'http://localhost:9221/', false, '2006-10-31 18:31:43.226724', 'localhost-host.ppa', true, 0, NULL);
+INSERT INTO builder (id, processor, name, title, owner, speedindex, builderok, failnotes, virtualized, url, manual, date_created, vm_host, active, failure_count, version, clean_status, vm_reset_protocol, date_clean_status_changed) VALUES (1, 1, 'bob', 'Bob The Builder', 61, NULL, true, NULL, false, 'http://localhost:8221/', false, '2006-10-16 18:31:43.226724', NULL, true, 0, NULL, 1, NULL, '2014-06-27 09:46:37.900529');
+INSERT INTO builder (id, processor, name, title, owner, speedindex, builderok, failnotes, virtualized, url, manual, date_created, vm_host, active, failure_count, version, clean_status, vm_reset_protocol, date_clean_status_changed) VALUES (2, 1, 'frog', 'The frog builder', 61, NULL, false, NULL, true, 'http://localhost:9221/', false, '2006-10-31 18:31:43.226724', 'localhost-host.ppa', true, 0, NULL, 1, NULL, '2014-06-27 09:46:37.900901');
 
 
 ALTER TABLE builder ENABLE TRIGGER ALL;
@@ -2628,6 +1935,9 @@ INSERT INTO binarypackagebuild (id, distro_arch_series, source_package_release, 
 ALTER TABLE binarypackagebuild ENABLE TRIGGER ALL;
 
 
+
+
+
 ALTER TABLE binarypackagename DISABLE TRIGGER ALL;
 
 INSERT INTO binarypackagename (id, name) VALUES (6, 'foobar');
@@ -2681,11 +1991,20 @@ INSERT INTO binarypackagefile (binarypackagerelease, libraryfile, filetype, id) 
 ALTER TABLE binarypackagefile ENABLE TRIGGER ALL;
 
 
+
+
+
+
+
+
 ALTER TABLE binarypackagepath DISABLE TRIGGER ALL;
 
 
 
 ALTER TABLE binarypackagepath ENABLE TRIGGER ALL;
+
+
+
 
 
 ALTER TABLE binarypackagepublishinghistory DISABLE TRIGGER ALL;
@@ -2719,6 +2038,12 @@ INSERT INTO binarypackagepublishinghistory (id, binarypackagerelease, distroarch
 
 
 ALTER TABLE binarypackagepublishinghistory ENABLE TRIGGER ALL;
+
+
+
+
+
+
 
 
 ALTER TABLE binarypackagereleasecontents DISABLE TRIGGER ALL;
@@ -2996,11 +2321,20 @@ ALTER TABLE binarypackagereleasedownloadcount DISABLE TRIGGER ALL;
 ALTER TABLE binarypackagereleasedownloadcount ENABLE TRIGGER ALL;
 
 
+
+
+
+
+
+
 ALTER TABLE branchjob DISABLE TRIGGER ALL;
 
 
 
 ALTER TABLE branchjob ENABLE TRIGGER ALL;
+
+
+
 
 
 ALTER TABLE branchmergeproposal DISABLE TRIGGER ALL;
@@ -3010,11 +2344,20 @@ ALTER TABLE branchmergeproposal DISABLE TRIGGER ALL;
 ALTER TABLE branchmergeproposal ENABLE TRIGGER ALL;
 
 
+
+
+
 ALTER TABLE branchmergeproposaljob DISABLE TRIGGER ALL;
 
 
 
 ALTER TABLE branchmergeproposaljob ENABLE TRIGGER ALL;
+
+
+
+
+
+
 
 
 ALTER TABLE revisionauthor DISABLE TRIGGER ALL;
@@ -3093,6 +2436,12 @@ INSERT INTO branchsubscription (id, person, branch, date_created, notification_l
 ALTER TABLE branchsubscription ENABLE TRIGGER ALL;
 
 
+
+
+
+
+
+
 ALTER TABLE bugactivity DISABLE TRIGGER ALL;
 
 INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (1, 1, '2004-09-24 00:00:00', 1, 'title', 'A silly problem', 'An odd problem', 'Decided problem wasn''t silly after all');
@@ -3136,11 +2485,17 @@ INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, ne
 ALTER TABLE bugactivity ENABLE TRIGGER ALL;
 
 
+
+
+
 ALTER TABLE bugaffectsperson DISABLE TRIGGER ALL;
 
 
 
 ALTER TABLE bugaffectsperson ENABLE TRIGGER ALL;
+
+
+
 
 
 ALTER TABLE message DISABLE TRIGGER ALL;
@@ -3205,6 +2560,9 @@ ALTER TABLE bugattachment DISABLE TRIGGER ALL;
 ALTER TABLE bugattachment ENABLE TRIGGER ALL;
 
 
+
+
+
 ALTER TABLE bugbranch DISABLE TRIGGER ALL;
 
 INSERT INTO bugbranch (id, datecreated, bug, branch, revision_hint, whiteboard, registrant) VALUES (1, '2006-03-22 18:44:27.438982', 5, 1, NULL, NULL, 12);
@@ -3213,6 +2571,9 @@ INSERT INTO bugbranch (id, datecreated, bug, branch, revision_hint, whiteboard, 
 
 
 ALTER TABLE bugbranch ENABLE TRIGGER ALL;
+
+
+
 
 
 ALTER TABLE cve DISABLE TRIGGER ALL;
@@ -3239,6 +2600,9 @@ INSERT INTO bugcve (id, bug, cve, date_created) VALUES (2, 2, 2, '2006-10-16 18:
 
 
 ALTER TABLE bugcve ENABLE TRIGGER ALL;
+
+
+
 
 
 ALTER TABLE bugwatch DISABLE TRIGGER ALL;
@@ -3303,6 +2667,9 @@ INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index, ow
 ALTER TABLE bugmessage ENABLE TRIGGER ALL;
 
 
+
+
+
 ALTER TABLE bugmute DISABLE TRIGGER ALL;
 
 
@@ -3321,11 +2688,17 @@ INSERT INTO bugnomination (id, bug, distroseries, productseries, status, date_cr
 ALTER TABLE bugnomination ENABLE TRIGGER ALL;
 
 
+
+
+
 ALTER TABLE bugnotification DISABLE TRIGGER ALL;
 
 
 
 ALTER TABLE bugnotification ENABLE TRIGGER ALL;
+
+
+
 
 
 ALTER TABLE bugnotificationarchive DISABLE TRIGGER ALL;
@@ -3340,6 +2713,9 @@ ALTER TABLE bugnotificationattachment DISABLE TRIGGER ALL;
 
 
 ALTER TABLE bugnotificationattachment ENABLE TRIGGER ALL;
+
+
+
 
 
 ALTER TABLE structuralsubscription DISABLE TRIGGER ALL;
@@ -3378,6 +2754,9 @@ ALTER TABLE bugnotificationrecipient DISABLE TRIGGER ALL;
 ALTER TABLE bugnotificationrecipient ENABLE TRIGGER ALL;
 
 
+
+
+
 ALTER TABLE bugnotificationrecipientarchive DISABLE TRIGGER ALL;
 
 
@@ -3405,6 +2784,12 @@ INSERT INTO bugsubscription (id, person, bug, date_created, subscribed_by, bug_n
 
 
 ALTER TABLE bugsubscription ENABLE TRIGGER ALL;
+
+
+
+
+
+
 
 
 ALTER TABLE bugsubscriptionfilterimportance DISABLE TRIGGER ALL;
@@ -3440,6 +2825,9 @@ ALTER TABLE bugsubscriptionfiltertag DISABLE TRIGGER ALL;
 
 
 ALTER TABLE bugsubscriptionfiltertag ENABLE TRIGGER ALL;
+
+
+
 
 
 ALTER TABLE bugsummary DISABLE TRIGGER ALL;
@@ -3515,11 +2903,17 @@ INSERT INTO bugsummary (id, count, product, productseries, distribution, distros
 ALTER TABLE bugsummary ENABLE TRIGGER ALL;
 
 
+
+
+
 ALTER TABLE bugsummaryjournal DISABLE TRIGGER ALL;
 
 
 
 ALTER TABLE bugsummaryjournal ENABLE TRIGGER ALL;
+
+
+
 
 
 ALTER TABLE bugtag DISABLE TRIGGER ALL;
@@ -3535,6 +2929,9 @@ INSERT INTO bugtag (id, bug, tag) VALUES (9, 14, 'lunch-money');
 
 
 ALTER TABLE bugtag ENABLE TRIGGER ALL;
+
+
+
 
 
 ALTER TABLE bugtask DISABLE TRIGGER ALL;
@@ -3572,6 +2969,9 @@ INSERT INTO bugtask (id, bug, product, distribution, distroseries, sourcepackage
 ALTER TABLE bugtask ENABLE TRIGGER ALL;
 
 
+
+
+
 ALTER TABLE bugtaskflat DISABLE TRIGGER ALL;
 
 INSERT INTO bugtaskflat (bugtask, bug, datecreated, duplicateof, bug_owner, fti, information_type, date_last_updated, heat, product, productseries, distribution, distroseries, sourcepackagename, status, importance, assignee, milestone, owner, active, access_policies, access_grants, latest_patch_uploaded, date_closed) VALUES (2, 1, '2004-01-02 03:49:22.910878', NULL, 12, NULL, 1, '2006-05-19 06:37:40.344941', 0, 4, NULL, NULL, NULL, NULL, 10, 20, 1, NULL, 12, true, NULL, NULL, NULL, NULL);
@@ -3607,6 +3007,9 @@ INSERT INTO bugtaskflat (bugtask, bug, datecreated, duplicateof, bug_owner, fti,
 ALTER TABLE bugtaskflat ENABLE TRIGGER ALL;
 
 
+
+
+
 ALTER TABLE bugtrackeralias DISABLE TRIGGER ALL;
 
 INSERT INTO bugtrackeralias (id, bugtracker, base_url) VALUES (1, 7, 'http://savannah.nognu.org/');
@@ -3616,6 +3019,9 @@ INSERT INTO bugtrackeralias (id, bugtracker, base_url) VALUES (4, 5, 'http://www
 
 
 ALTER TABLE bugtrackeralias ENABLE TRIGGER ALL;
+
+
+
 
 
 ALTER TABLE bugtrackercomponentgroup DISABLE TRIGGER ALL;
@@ -3632,6 +3038,12 @@ ALTER TABLE bugtrackercomponent DISABLE TRIGGER ALL;
 ALTER TABLE bugtrackercomponent ENABLE TRIGGER ALL;
 
 
+
+
+
+
+
+
 ALTER TABLE bugtrackerperson DISABLE TRIGGER ALL;
 
 
@@ -3639,11 +3051,23 @@ ALTER TABLE bugtrackerperson DISABLE TRIGGER ALL;
 ALTER TABLE bugtrackerperson ENABLE TRIGGER ALL;
 
 
+
+
+
+
+
+
 ALTER TABLE bugwatchactivity DISABLE TRIGGER ALL;
 
 
 
 ALTER TABLE bugwatchactivity ENABLE TRIGGER ALL;
+
+
+
+
+
+
 
 
 ALTER TABLE builderprocessor DISABLE TRIGGER ALL;
@@ -3655,6 +3079,9 @@ INSERT INTO builderprocessor (builder, processor) VALUES (2, 1);
 ALTER TABLE builderprocessor ENABLE TRIGGER ALL;
 
 
+
+
+
 ALTER TABLE buildqueue DISABLE TRIGGER ALL;
 
 INSERT INTO buildqueue (id, builder, logtail, lastscore, manual, estimated_duration, processor, virtualized, build_farm_job, status, date_started) VALUES (1, 1, 'Dummy sampledata entry, not processing', 1, false, '00:00:00', 1, false, 8, 1, '2005-06-15 09:20:12.820778');
@@ -3664,6 +3091,9 @@ INSERT INTO buildqueue (id, builder, logtail, lastscore, manual, estimated_durat
 ALTER TABLE buildqueue ENABLE TRIGGER ALL;
 
 
+
+
+
 ALTER TABLE codeimport DISABLE TRIGGER ALL;
 
 INSERT INTO codeimport (id, branch, date_created, registrant, rcs_type, cvs_root, cvs_module, review_status, date_last_successful, owner, assignee, update_interval, url) VALUES (1, 75, '2007-06-25 20:04:04.226605', 52, 2, NULL, NULL, 20, NULL, 52, NULL, NULL, 'http://svn.example.org/svnroot/gnome-terminal/trunk');
@@ -3671,6 +3101,9 @@ INSERT INTO codeimport (id, branch, date_created, registrant, rcs_type, cvs_root
 
 
 ALTER TABLE codeimport ENABLE TRIGGER ALL;
+
+
+
 
 
 ALTER TABLE codeimportmachine DISABLE TRIGGER ALL;
@@ -3688,11 +3121,17 @@ ALTER TABLE codeimportevent DISABLE TRIGGER ALL;
 ALTER TABLE codeimportevent ENABLE TRIGGER ALL;
 
 
+
+
+
 ALTER TABLE codeimporteventdata DISABLE TRIGGER ALL;
 
 
 
 ALTER TABLE codeimporteventdata ENABLE TRIGGER ALL;
+
+
+
 
 
 ALTER TABLE codeimportjob DISABLE TRIGGER ALL;
@@ -3703,11 +3142,20 @@ INSERT INTO codeimportjob (id, date_created, code_import, machine, date_due, sta
 ALTER TABLE codeimportjob ENABLE TRIGGER ALL;
 
 
+
+
+
+
+
+
 ALTER TABLE codeimportresult DISABLE TRIGGER ALL;
 
 
 
 ALTER TABLE codeimportresult ENABLE TRIGGER ALL;
+
+
+
 
 
 ALTER TABLE codereviewmessage DISABLE TRIGGER ALL;
@@ -3717,11 +3165,45 @@ ALTER TABLE codereviewmessage DISABLE TRIGGER ALL;
 ALTER TABLE codereviewmessage ENABLE TRIGGER ALL;
 
 
+ALTER TABLE diff DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE diff ENABLE TRIGGER ALL;
+
+
+ALTER TABLE previewdiff DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE previewdiff ENABLE TRIGGER ALL;
+
+
+ALTER TABLE codereviewinlinecomment DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE codereviewinlinecomment ENABLE TRIGGER ALL;
+
+
+ALTER TABLE codereviewinlinecommentdraft DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE codereviewinlinecommentdraft ENABLE TRIGGER ALL;
+
+
+
+
+
 ALTER TABLE codereviewvote DISABLE TRIGGER ALL;
 
 
 
 ALTER TABLE codereviewvote ENABLE TRIGGER ALL;
+
+
+
 
 
 ALTER TABLE commercialsubscription DISABLE TRIGGER ALL;
@@ -3731,6 +3213,12 @@ INSERT INTO commercialsubscription (id, date_created, date_last_modified, date_s
 
 
 ALTER TABLE commercialsubscription ENABLE TRIGGER ALL;
+
+
+
+
+
+
 
 
 ALTER TABLE componentselection DISABLE TRIGGER ALL;
@@ -3759,11 +3247,26 @@ INSERT INTO componentselection (id, distroseries, component, date_created) VALUE
 ALTER TABLE componentselection ENABLE TRIGGER ALL;
 
 
+
+
+
+
+
+
+
+
+
 ALTER TABLE customlanguagecode DISABLE TRIGGER ALL;
 
 
 
 ALTER TABLE customlanguagecode ENABLE TRIGGER ALL;
+
+
+
+
+
+
 
 
 ALTER TABLE cvereference DISABLE TRIGGER ALL;
@@ -3811,6 +3314,9 @@ INSERT INTO cvereference (id, cve, source, content, url, date_created) VALUES (3
 ALTER TABLE cvereference ENABLE TRIGGER ALL;
 
 
+
+
+
 ALTER TABLE databasecpustats DISABLE TRIGGER ALL;
 
 
@@ -3839,11 +3345,10 @@ ALTER TABLE databasetablestats DISABLE TRIGGER ALL;
 ALTER TABLE databasetablestats ENABLE TRIGGER ALL;
 
 
-ALTER TABLE diff DISABLE TRIGGER ALL;
 
 
 
-ALTER TABLE diff ENABLE TRIGGER ALL;
+
 
 
 ALTER TABLE distributionjob DISABLE TRIGGER ALL;
@@ -3851,6 +3356,9 @@ ALTER TABLE distributionjob DISABLE TRIGGER ALL;
 
 
 ALTER TABLE distributionjob ENABLE TRIGGER ALL;
+
+
+
 
 
 ALTER TABLE distributionmirror DISABLE TRIGGER ALL;
@@ -3870,11 +3378,17 @@ INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_
 ALTER TABLE distributionmirror ENABLE TRIGGER ALL;
 
 
+
+
+
 ALTER TABLE distributionsourcepackage DISABLE TRIGGER ALL;
 
 
 
 ALTER TABLE distributionsourcepackage ENABLE TRIGGER ALL;
+
+
+
 
 
 ALTER TABLE distributionsourcepackagecache DISABLE TRIGGER ALL;
@@ -3905,6 +3419,15 @@ INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename,
 ALTER TABLE distributionsourcepackagecache ENABLE TRIGGER ALL;
 
 
+
+
+
+
+
+
+
+
+
 ALTER TABLE packagediff DISABLE TRIGGER ALL;
 
 
@@ -3919,11 +3442,17 @@ ALTER TABLE distroseriesdifference DISABLE TRIGGER ALL;
 ALTER TABLE distroseriesdifference ENABLE TRIGGER ALL;
 
 
+
+
+
 ALTER TABLE distroseriesdifferencemessage DISABLE TRIGGER ALL;
 
 
 
 ALTER TABLE distroseriesdifferencemessage ENABLE TRIGGER ALL;
+
+
+
 
 
 ALTER TABLE distroserieslanguage DISABLE TRIGGER ALL;
@@ -3952,6 +3481,9 @@ INSERT INTO distroserieslanguage (id, distroseries, language, currentcount, upda
 ALTER TABLE distroserieslanguage ENABLE TRIGGER ALL;
 
 
+
+
+
 ALTER TABLE distroseriespackagecache DISABLE TRIGGER ALL;
 
 INSERT INTO distroseriespackagecache (id, distroseries, binarypackagename, name, summary, description, summaries, descriptions, fti, archive) VALUES (1, 3, 13, 'pmount', 'pmount shortdesc', 'pmount description', 'pmount shortdesc', 'pmount description', NULL, 1);
@@ -3965,11 +3497,17 @@ INSERT INTO distroseriespackagecache (id, distroseries, binarypackagename, name,
 ALTER TABLE distroseriespackagecache ENABLE TRIGGER ALL;
 
 
+
+
+
 ALTER TABLE distroseriesparent DISABLE TRIGGER ALL;
 
 
 
 ALTER TABLE distroseriesparent ENABLE TRIGGER ALL;
+
+
+
 
 
 ALTER TABLE emailaddress DISABLE TRIGGER ALL;
@@ -4059,6 +3597,9 @@ INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (93, '
 ALTER TABLE emailaddress ENABLE TRIGGER ALL;
 
 
+
+
+
 ALTER TABLE faq DISABLE TRIGGER ALL;
 
 INSERT INTO faq (id, title, tags, content, product, distribution, owner, date_created, last_updated_by, date_last_updated, fti) VALUES (1, 'Wireless Networking Documentation', 'wifi', 'Installation instructions for many wireless cards can be found at:
@@ -4125,6 +3666,9 @@ INSERT INTO faq (id, title, tags, content, product, distribution, owner, date_cr
 ALTER TABLE faq ENABLE TRIGGER ALL;
 
 
+
+
+
 ALTER TABLE pillarname DISABLE TRIGGER ALL;
 
 INSERT INTO pillarname (id, name, product, project, distribution, active, alias_for) VALUES (1, 'ubuntu', NULL, NULL, 1, true, NULL);
@@ -4188,6 +3732,9 @@ INSERT INTO featuredproject (id, pillar_name) VALUES (9, 21);
 ALTER TABLE featuredproject ENABLE TRIGGER ALL;
 
 
+
+
+
 ALTER TABLE featureflag DISABLE TRIGGER ALL;
 
 
@@ -4202,6 +3749,9 @@ ALTER TABLE featureflagchangelogentry DISABLE TRIGGER ALL;
 ALTER TABLE featureflagchangelogentry ENABLE TRIGGER ALL;
 
 
+
+
+
 ALTER TABLE flatpackagesetinclusion DISABLE TRIGGER ALL;
 
 
@@ -4214,11 +3764,20 @@ ALTER TABLE flatpackagesetinclusion ENABLE TRIGGER ALL;
 
 
 
+
+
+
+
+
+
 ALTER TABLE garbojobstate DISABLE TRIGGER ALL;
 
 
 
 ALTER TABLE garbojobstate ENABLE TRIGGER ALL;
+
+
+
 
 
 ALTER TABLE hwvendorname DISABLE TRIGGER ALL;
@@ -4261,11 +3820,17 @@ INSERT INTO hwdevice (id, bus_vendor_id, bus_product_id, variant, name, submissi
 ALTER TABLE hwdevice ENABLE TRIGGER ALL;
 
 
+
+
+
 ALTER TABLE hwdeviceclass DISABLE TRIGGER ALL;
 
 
 
 ALTER TABLE hwdeviceclass ENABLE TRIGGER ALL;
+
+
+
 
 
 ALTER TABLE hwdriver DISABLE TRIGGER ALL;
@@ -4307,11 +3872,17 @@ INSERT INTO hwdevicedriverlink (id, device, driver) VALUES (18, 7, 4);
 ALTER TABLE hwdevicedriverlink ENABLE TRIGGER ALL;
 
 
+
+
+
 ALTER TABLE hwdevicenamevariant DISABLE TRIGGER ALL;
 
 
 
 ALTER TABLE hwdevicenamevariant ENABLE TRIGGER ALL;
+
+
+
 
 
 ALTER TABLE hwsystemfingerprint DISABLE TRIGGER ALL;
@@ -4339,6 +3910,9 @@ ALTER TABLE hwdmihandle DISABLE TRIGGER ALL;
 ALTER TABLE hwdmihandle ENABLE TRIGGER ALL;
 
 
+
+
+
 ALTER TABLE hwdmivalue DISABLE TRIGGER ALL;
 
 
@@ -4346,11 +3920,23 @@ ALTER TABLE hwdmivalue DISABLE TRIGGER ALL;
 ALTER TABLE hwdmivalue ENABLE TRIGGER ALL;
 
 
+
+
+
+
+
+
+
+
+
 ALTER TABLE hwsubmissionbug DISABLE TRIGGER ALL;
 
 
 
 ALTER TABLE hwsubmissionbug ENABLE TRIGGER ALL;
+
+
+
 
 
 ALTER TABLE hwsubmissiondevice DISABLE TRIGGER ALL;
@@ -4381,11 +3967,20 @@ INSERT INTO hwsubmissiondevice (id, device_driver_link, submission, parent, hal_
 ALTER TABLE hwsubmissiondevice ENABLE TRIGGER ALL;
 
 
+
+
+
+
+
+
 ALTER TABLE hwtest DISABLE TRIGGER ALL;
 
 
 
 ALTER TABLE hwtest ENABLE TRIGGER ALL;
+
+
+
 
 
 ALTER TABLE hwtestanswerchoice DISABLE TRIGGER ALL;
@@ -4402,11 +3997,20 @@ ALTER TABLE hwtestanswer DISABLE TRIGGER ALL;
 ALTER TABLE hwtestanswer ENABLE TRIGGER ALL;
 
 
+
+
+
+
+
+
 ALTER TABLE hwtestanswercount DISABLE TRIGGER ALL;
 
 
 
 ALTER TABLE hwtestanswercount ENABLE TRIGGER ALL;
+
+
+
 
 
 ALTER TABLE hwtestanswercountdevice DISABLE TRIGGER ALL;
@@ -4416,6 +4020,9 @@ ALTER TABLE hwtestanswercountdevice DISABLE TRIGGER ALL;
 ALTER TABLE hwtestanswercountdevice ENABLE TRIGGER ALL;
 
 
+
+
+
 ALTER TABLE hwtestanswerdevice DISABLE TRIGGER ALL;
 
 
@@ -4423,11 +4030,23 @@ ALTER TABLE hwtestanswerdevice DISABLE TRIGGER ALL;
 ALTER TABLE hwtestanswerdevice ENABLE TRIGGER ALL;
 
 
+
+
+
+
+
+
+
+
+
 ALTER TABLE incrementaldiff DISABLE TRIGGER ALL;
 
 
 
 ALTER TABLE incrementaldiff ENABLE TRIGGER ALL;
+
+
+
 
 
 ALTER TABLE ircid DISABLE TRIGGER ALL;
@@ -4446,6 +4065,9 @@ INSERT INTO ircid (id, person, network, nickname) VALUES (9, 6, 'chat.freenode.n
 ALTER TABLE ircid ENABLE TRIGGER ALL;
 
 
+
+
+
 ALTER TABLE jabberid DISABLE TRIGGER ALL;
 
 INSERT INTO jabberid (id, person, jabberid) VALUES (1, 1, 'markshuttleworth@jabber.org');
@@ -4461,6 +4083,12 @@ INSERT INTO jabberid (id, person, jabberid) VALUES (10, 6, 'jeff@jabber.org');
 
 
 ALTER TABLE jabberid ENABLE TRIGGER ALL;
+
+
+
+
+
+
 
 
 ALTER TABLE karmacategory DISABLE TRIGGER ALL;
@@ -4615,6 +4243,12 @@ INSERT INTO karma (id, datecreated, person, action, product, distribution, sourc
 ALTER TABLE karma ENABLE TRIGGER ALL;
 
 
+
+
+
+
+
+
 ALTER TABLE karmacache DISABLE TRIGGER ALL;
 
 INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename, project) VALUES (1423, 12, 6, 22, 6, NULL, NULL, NULL);
@@ -4680,6 +4314,12 @@ INSERT INTO karmacache (id, person, category, karmavalue, product, distribution,
 ALTER TABLE karmacache ENABLE TRIGGER ALL;
 
 
+
+
+
+
+
+
 ALTER TABLE karmatotalcache DISABLE TRIGGER ALL;
 
 INSERT INTO karmatotalcache (id, person, karma_total) VALUES (78, 12, 138);
@@ -4691,6 +4331,12 @@ INSERT INTO karmatotalcache (id, person, karma_total) VALUES (81, 1, 130);
 ALTER TABLE karmatotalcache ENABLE TRIGGER ALL;
 
 
+
+
+
+
+
+
 ALTER TABLE languagepack DISABLE TRIGGER ALL;
 
 INSERT INTO languagepack (id, file, date_exported, date_last_used, distroseries, type, updates) VALUES (1, 71, '2007-09-10 19:14:26.037382', '2007-09-10 19:14:26.037382', 3, 1, NULL);
@@ -4700,6 +4346,9 @@ INSERT INTO languagepack (id, file, date_exported, date_last_used, distroseries,
 
 
 ALTER TABLE languagepack ENABLE TRIGGER ALL;
+
+
+
 
 
 ALTER TABLE packagecopyjob DISABLE TRIGGER ALL;
@@ -4802,6 +4451,9 @@ INSERT INTO latestpersonsourcepackagereleasecache (id, publication, date_uploade
 ALTER TABLE latestpersonsourcepackagereleasecache ENABLE TRIGGER ALL;
 
 
+
+
+
 ALTER TABLE launchpaddatabaserevision DISABLE TRIGGER ALL;
 
 
@@ -4814,6 +4466,9 @@ ALTER TABLE launchpaddatabaseupdatelog DISABLE TRIGGER ALL;
 
 
 ALTER TABLE launchpaddatabaseupdatelog ENABLE TRIGGER ALL;
+
+
+
 
 
 ALTER TABLE launchpadstatistic DISABLE TRIGGER ALL;
@@ -4849,11 +4504,53 @@ INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (26, 'revie
 ALTER TABLE launchpadstatistic ENABLE TRIGGER ALL;
 
 
+
+
+
+
+
+
+
+
+
 ALTER TABLE libraryfiledownloadcount DISABLE TRIGGER ALL;
 
 
 
 ALTER TABLE libraryfiledownloadcount ENABLE TRIGGER ALL;
+
+
+
+
+
+ALTER TABLE livefs DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE livefs ENABLE TRIGGER ALL;
+
+
+
+
+
+ALTER TABLE livefsbuild DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE livefsbuild ENABLE TRIGGER ALL;
+
+
+
+
+
+ALTER TABLE livefsfile DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE livefsfile ENABLE TRIGGER ALL;
+
+
+
 
 
 ALTER TABLE logintoken DISABLE TRIGGER ALL;
@@ -4863,6 +4560,9 @@ INSERT INTO logintoken (id, requester, requesteremail, email, created, tokentype
 
 
 ALTER TABLE logintoken ENABLE TRIGGER ALL;
+
+
+
 
 
 ALTER TABLE lp_account DISABLE TRIGGER ALL;
@@ -5344,11 +5044,17 @@ ALTER TABLE mailinglist DISABLE TRIGGER ALL;
 ALTER TABLE mailinglist ENABLE TRIGGER ALL;
 
 
+
+
+
 ALTER TABLE mailinglistsubscription DISABLE TRIGGER ALL;
 
 
 
 ALTER TABLE mailinglistsubscription ENABLE TRIGGER ALL;
+
+
+
 
 
 ALTER TABLE mergedirectivejob DISABLE TRIGGER ALL;
@@ -5358,11 +5064,20 @@ ALTER TABLE mergedirectivejob DISABLE TRIGGER ALL;
 ALTER TABLE mergedirectivejob ENABLE TRIGGER ALL;
 
 
+
+
+
+
+
+
 ALTER TABLE messageapproval DISABLE TRIGGER ALL;
 
 
 
 ALTER TABLE messageapproval ENABLE TRIGGER ALL;
+
+
+
 
 
 ALTER TABLE messagechunk DISABLE TRIGGER ALL;
@@ -5818,6 +5533,12 @@ Martin Pitt wrote:
 ALTER TABLE messagechunk ENABLE TRIGGER ALL;
 
 
+
+
+
+
+
+
 ALTER TABLE milestonetag DISABLE TRIGGER ALL;
 
 
@@ -5825,11 +5546,17 @@ ALTER TABLE milestonetag DISABLE TRIGGER ALL;
 ALTER TABLE milestonetag ENABLE TRIGGER ALL;
 
 
+
+
+
 ALTER TABLE mirror DISABLE TRIGGER ALL;
 
 
 
 ALTER TABLE mirror ENABLE TRIGGER ALL;
+
+
+
 
 
 ALTER TABLE mirrorcdimagedistroseries DISABLE TRIGGER ALL;
@@ -5843,11 +5570,17 @@ INSERT INTO mirrorcdimagedistroseries (id, distribution_mirror, distroseries, fl
 ALTER TABLE mirrorcdimagedistroseries ENABLE TRIGGER ALL;
 
 
+
+
+
 ALTER TABLE mirrorcontent DISABLE TRIGGER ALL;
 
 
 
 ALTER TABLE mirrorcontent ENABLE TRIGGER ALL;
+
+
+
 
 
 ALTER TABLE mirrordistroarchseries DISABLE TRIGGER ALL;
@@ -5859,6 +5592,9 @@ INSERT INTO mirrordistroarchseries (id, distribution_mirror, distroarchseries, f
 
 
 ALTER TABLE mirrordistroarchseries ENABLE TRIGGER ALL;
+
+
+
 
 
 ALTER TABLE mirrordistroseriessource DISABLE TRIGGER ALL;
@@ -5873,6 +5609,9 @@ INSERT INTO mirrordistroseriessource (id, distribution_mirror, distroseries, fre
 ALTER TABLE mirrordistroseriessource ENABLE TRIGGER ALL;
 
 
+
+
+
 ALTER TABLE mirrorproberecord DISABLE TRIGGER ALL;
 
 INSERT INTO mirrorproberecord (id, distribution_mirror, log_file, date_created) VALUES (1, 6, 46, '2006-05-24 17:11:59.37369');
@@ -5882,11 +5621,17 @@ INSERT INTO mirrorproberecord (id, distribution_mirror, log_file, date_created) 
 ALTER TABLE mirrorproberecord ENABLE TRIGGER ALL;
 
 
+
+
+
 ALTER TABLE mirrorsourcecontent DISABLE TRIGGER ALL;
 
 
 
 ALTER TABLE mirrorsourcecontent ENABLE TRIGGER ALL;
+
+
+
 
 
 ALTER TABLE nameblacklist DISABLE TRIGGER ALL;
@@ -5898,10 +5643,13 @@ INSERT INTO nameblacklist (id, regexp, comment, admin) VALUES (2, '^admin', NULL
 ALTER TABLE nameblacklist ENABLE TRIGGER ALL;
 
 
+
+
+
 ALTER TABLE oauthconsumer DISABLE TRIGGER ALL;
 
-INSERT INTO oauthconsumer (id, date_created, disabled, key, secret) VALUES (1, '2008-03-18 20:57:19.108004', false, 'foobar123451432', '');
-INSERT INTO oauthconsumer (id, date_created, disabled, key, secret) VALUES (2, '2008-03-18 20:57:44.710251', false, 'launchpad-library', '');
+INSERT INTO oauthconsumer (id, date_created, disabled, key, secret) VALUES (1, '2008-03-18 20:57:19.108004', false, 'foobar123451432', 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855');
+INSERT INTO oauthconsumer (id, date_created, disabled, key, secret) VALUES (2, '2008-03-18 20:57:44.710251', false, 'launchpad-library', 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855');
 
 
 ALTER TABLE oauthconsumer ENABLE TRIGGER ALL;
@@ -5909,12 +5657,18 @@ ALTER TABLE oauthconsumer ENABLE TRIGGER ALL;
 
 ALTER TABLE oauthaccesstoken DISABLE TRIGGER ALL;
 
-INSERT INTO oauthaccesstoken (id, consumer, person, permission, date_created, date_expires, key, secret, product, project, distribution, sourcepackagename) VALUES (1, 1, 29, 20, '2008-03-18 20:57:44.710251', NULL, 'salgado-read-nonprivate', 'secret', NULL, NULL, NULL, NULL);
-INSERT INTO oauthaccesstoken (id, consumer, person, permission, date_created, date_expires, key, secret, product, project, distribution, sourcepackagename) VALUES (2, 2, 29, 50, '2008-03-18 20:57:44.710251', NULL, 'salgado-change-anything', 'test', NULL, NULL, NULL, NULL);
-INSERT INTO oauthaccesstoken (id, consumer, person, permission, date_created, date_expires, key, secret, product, project, distribution, sourcepackagename) VALUES (3, 2, 52, 20, '2008-05-19 21:36:47.994029', NULL, 'nopriv-read-nonprivate', 'mystery', NULL, NULL, NULL, NULL);
+INSERT INTO oauthaccesstoken (id, consumer, person, permission, date_created, date_expires, key, secret, product, project, distribution, sourcepackagename) VALUES (1, 1, 29, 20, '2008-03-18 20:57:44.710251', NULL, 'salgado-read-nonprivate', '2bb80d537b1da3e38bd30361aa855686bde0eacd7162fef6a25fe97bf527a25b', NULL, NULL, NULL, NULL);
+INSERT INTO oauthaccesstoken (id, consumer, person, permission, date_created, date_expires, key, secret, product, project, distribution, sourcepackagename) VALUES (2, 2, 29, 50, '2008-03-18 20:57:44.710251', NULL, 'salgado-change-anything', '9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08', NULL, NULL, NULL, NULL);
+INSERT INTO oauthaccesstoken (id, consumer, person, permission, date_created, date_expires, key, secret, product, project, distribution, sourcepackagename) VALUES (3, 2, 52, 20, '2008-05-19 21:36:47.994029', NULL, 'nopriv-read-nonprivate', '4f0d9e5f2d159c8bd63247f9470d09f15e1ff431cb88d5a101df49c4c01882e6', NULL, NULL, NULL, NULL);
 
 
 ALTER TABLE oauthaccesstoken ENABLE TRIGGER ALL;
+
+
+
+
+
+
 
 
 ALTER TABLE oauthnonce DISABLE TRIGGER ALL;
@@ -5931,11 +5685,17 @@ ALTER TABLE oauthrequesttoken DISABLE TRIGGER ALL;
 ALTER TABLE oauthrequesttoken ENABLE TRIGGER ALL;
 
 
+
+
+
 ALTER TABLE officialbugtag DISABLE TRIGGER ALL;
 
 
 
 ALTER TABLE officialbugtag ENABLE TRIGGER ALL;
+
+
+
 
 
 ALTER TABLE openidconsumerassociation DISABLE TRIGGER ALL;
@@ -6027,11 +5787,26 @@ INSERT INTO openididentifier (identifier, account, date_created) VALUES ('zRtPxw
 ALTER TABLE openididentifier ENABLE TRIGGER ALL;
 
 
+
+
+
 ALTER TABLE packagecopyrequest DISABLE TRIGGER ALL;
 
 
 
 ALTER TABLE packagecopyrequest ENABLE TRIGGER ALL;
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 ALTER TABLE packagesetinclusion DISABLE TRIGGER ALL;
@@ -6041,11 +5816,20 @@ ALTER TABLE packagesetinclusion DISABLE TRIGGER ALL;
 ALTER TABLE packagesetinclusion ENABLE TRIGGER ALL;
 
 
+
+
+
 ALTER TABLE packagesetsources DISABLE TRIGGER ALL;
 
 
 
 ALTER TABLE packagesetsources ENABLE TRIGGER ALL;
+
+
+
+
+
+
 
 
 ALTER TABLE packageuploadbuild DISABLE TRIGGER ALL;
@@ -6058,6 +5842,9 @@ INSERT INTO packageuploadbuild (id, packageupload, build, date_created) VALUES (
 ALTER TABLE packageuploadbuild ENABLE TRIGGER ALL;
 
 
+
+
+
 ALTER TABLE packageuploadcustom DISABLE TRIGGER ALL;
 
 INSERT INTO packageuploadcustom (id, packageupload, customformat, libraryfilealias, date_created) VALUES (1, 5, 1, 1, '2006-10-16 18:31:43.532702');
@@ -6067,6 +5854,9 @@ INSERT INTO packageuploadcustom (id, packageupload, customformat, libraryfileali
 
 
 ALTER TABLE packageuploadcustom ENABLE TRIGGER ALL;
+
+
+
 
 
 ALTER TABLE packageuploadsource DISABLE TRIGGER ALL;
@@ -6084,6 +5874,9 @@ INSERT INTO packageuploadsource (id, packageupload, sourcepackagerelease, date_c
 ALTER TABLE packageuploadsource ENABLE TRIGGER ALL;
 
 
+
+
+
 ALTER TABLE packaging DISABLE TRIGGER ALL;
 
 INSERT INTO packaging (packaging, id, sourcepackagename, distroseries, productseries, datecreated, owner, date_created) VALUES (1, 1, 1, 3, 2, '2005-07-05 14:20:26.577312', NULL, '2006-10-16 18:31:44.336247');
@@ -6098,6 +5891,9 @@ INSERT INTO packaging (packaging, id, sourcepackagename, distroseries, productse
 
 
 ALTER TABLE packaging ENABLE TRIGGER ALL;
+
+
+
 
 
 ALTER TABLE potemplate DISABLE TRIGGER ALL;
@@ -6213,11 +6009,20 @@ ALTER TABLE packagingjob DISABLE TRIGGER ALL;
 ALTER TABLE packagingjob ENABLE TRIGGER ALL;
 
 
+
+
+
 ALTER TABLE parsedapachelog DISABLE TRIGGER ALL;
 
 
 
 ALTER TABLE parsedapachelog ENABLE TRIGGER ALL;
+
+
+
+
+
+
 
 
 ALTER TABLE personlanguage DISABLE TRIGGER ALL;
@@ -6237,6 +6042,9 @@ INSERT INTO personlanguage (id, person, language, date_created) VALUES (11, 29, 
 ALTER TABLE personlanguage ENABLE TRIGGER ALL;
 
 
+
+
+
 ALTER TABLE personlocation DISABLE TRIGGER ALL;
 
 INSERT INTO personlocation (id, date_created, person, latitude, longitude, time_zone, last_modified_by, date_last_modified, visible, locked) VALUES (1, '2007-06-05 18:34:52.127945', 12, NULL, NULL, 'Australia/Perth', 12, '2007-06-05 18:34:52.127945', true, false);
@@ -6250,11 +6058,17 @@ INSERT INTO personlocation (id, date_created, person, latitude, longitude, time_
 ALTER TABLE personlocation ENABLE TRIGGER ALL;
 
 
+
+
+
 ALTER TABLE personnotification DISABLE TRIGGER ALL;
 
 
 
 ALTER TABLE personnotification ENABLE TRIGGER ALL;
+
+
+
 
 
 ALTER TABLE personsettings DISABLE TRIGGER ALL;
@@ -6366,11 +6180,20 @@ ALTER TABLE persontransferjob DISABLE TRIGGER ALL;
 ALTER TABLE persontransferjob ENABLE TRIGGER ALL;
 
 
+
+
+
+
+
+
 ALTER TABLE pocketchroot DISABLE TRIGGER ALL;
 
 
 
 ALTER TABLE pocketchroot ENABLE TRIGGER ALL;
+
+
+
 
 
 ALTER TABLE pofile DISABLE TRIGGER ALL;
@@ -6985,6 +6808,12 @@ ALTER TABLE poexportrequest DISABLE TRIGGER ALL;
 ALTER TABLE poexportrequest ENABLE TRIGGER ALL;
 
 
+
+
+
+
+
+
 ALTER TABLE pofilestatsjob DISABLE TRIGGER ALL;
 
 
@@ -7034,6 +6863,9 @@ INSERT INTO pofiletranslator (id, person, pofile, date_last_touched) VALUES (38,
 ALTER TABLE pofiletranslator ENABLE TRIGGER ALL;
 
 
+
+
+
 ALTER TABLE poll DISABLE TRIGGER ALL;
 
 INSERT INTO poll (id, team, name, title, dateopens, datecloses, proposition, type, allowspoilt, secrecy, date_created) VALUES (1, 17, 'director-2004', '2004 Director''s Elections', '2004-01-01 00:00:00', '2004-01-15 00:00:00', 'Who''s going to be the next director?', 2, true, 3, '2006-10-16 18:31:44.605729');
@@ -7046,6 +6878,9 @@ INSERT INTO poll (id, team, name, title, dateopens, datecloses, proposition, typ
 
 
 ALTER TABLE poll ENABLE TRIGGER ALL;
+
+
+
 
 
 ALTER TABLE polloption DISABLE TRIGGER ALL;
@@ -7077,6 +6912,9 @@ INSERT INTO polloption (id, poll, name, title, active, date_created) VALUES (24,
 
 
 ALTER TABLE polloption ENABLE TRIGGER ALL;
+
+
+
 
 
 ALTER TABLE pomsgid DISABLE TRIGGER ALL;
@@ -7393,6 +7231,12 @@ Your names');
 ALTER TABLE pomsgid ENABLE TRIGGER ALL;
 
 
+
+
+
+
+
+
 ALTER TABLE potmsgset DISABLE TRIGGER ALL;
 
 INSERT INTO potmsgset (id, msgid_singular, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (1, 1, '', 'a11y/addressbook/ea-addressbook-view.c:94
@@ -7617,6 +7461,9 @@ INSERT INTO potmsgset (id, msgid_singular, commenttext, filereferences, sourceco
 
 
 ALTER TABLE potmsgset ENABLE TRIGGER ALL;
+
+
+
 
 
 ALTER TABLE potranslation DISABLE TRIGGER ALL;
@@ -8979,11 +8826,10 @@ INSERT INTO potranslation (id, translation) VALUES (668, 'auto, esddsp, artsdsp,
 ALTER TABLE potranslation ENABLE TRIGGER ALL;
 
 
-ALTER TABLE previewdiff DISABLE TRIGGER ALL;
 
 
 
-ALTER TABLE previewdiff ENABLE TRIGGER ALL;
+
 
 
 ALTER TABLE processacceptedbugsjob DISABLE TRIGGER ALL;
@@ -8993,11 +8839,20 @@ ALTER TABLE processacceptedbugsjob DISABLE TRIGGER ALL;
 ALTER TABLE processacceptedbugsjob ENABLE TRIGGER ALL;
 
 
+
+
+
+
+
+
 ALTER TABLE productjob DISABLE TRIGGER ALL;
 
 
 
 ALTER TABLE productjob ENABLE TRIGGER ALL;
+
+
+
 
 
 ALTER TABLE productlicense DISABLE TRIGGER ALL;
@@ -9033,6 +8888,9 @@ INSERT INTO productlicense (id, product, license) VALUES (28, 17, 1000);
 
 
 ALTER TABLE productlicense ENABLE TRIGGER ALL;
+
+
+
 
 
 ALTER TABLE productrelease DISABLE TRIGGER ALL;
@@ -9207,6 +9065,9 @@ INSERT INTO productrelease (id, datereleased, release_notes, changelog, owner, d
 ALTER TABLE productrelease ENABLE TRIGGER ALL;
 
 
+
+
+
 ALTER TABLE productreleasefile DISABLE TRIGGER ALL;
 
 INSERT INTO productreleasefile (productrelease, libraryfile, filetype, id, description, uploader, date_uploaded, fti, signature) VALUES (5, 3, 1, 2, NULL, 16, '2005-06-06 08:59:51.926792', NULL, NULL);
@@ -9224,6 +9085,15 @@ INSERT INTO productreleasefile (productrelease, libraryfile, filetype, id, descr
 ALTER TABLE productreleasefile ENABLE TRIGGER ALL;
 
 
+
+
+
+
+
+
+
+
+
 ALTER TABLE publisherconfig DISABLE TRIGGER ALL;
 
 INSERT INTO publisherconfig (id, distribution, root_dir, base_url, copy_base_url) VALUES (1, 1, '/var/tmp/archive', 'http://archive.launchpad.dev/', 'http://rebuild-test.internal/');
@@ -9231,6 +9101,9 @@ INSERT INTO publisherconfig (id, distribution, root_dir, base_url, copy_base_url
 
 
 ALTER TABLE publisherconfig ENABLE TRIGGER ALL;
+
+
+
 
 
 ALTER TABLE question DISABLE TRIGGER ALL;
@@ -9273,6 +9146,9 @@ INSERT INTO question (id, owner, title, description, assignee, answerer, product
 ALTER TABLE question ENABLE TRIGGER ALL;
 
 
+
+
+
 ALTER TABLE questionbug DISABLE TRIGGER ALL;
 
 
@@ -9280,11 +9156,17 @@ ALTER TABLE questionbug DISABLE TRIGGER ALL;
 ALTER TABLE questionbug ENABLE TRIGGER ALL;
 
 
+
+
+
 ALTER TABLE questionjob DISABLE TRIGGER ALL;
 
 
 
 ALTER TABLE questionjob ENABLE TRIGGER ALL;
+
+
+
 
 
 ALTER TABLE questionmessage DISABLE TRIGGER ALL;
@@ -9302,11 +9184,17 @@ INSERT INTO questionmessage (id, question, message, action, new_status, owner) V
 ALTER TABLE questionmessage ENABLE TRIGGER ALL;
 
 
+
+
+
 ALTER TABLE questionreopening DISABLE TRIGGER ALL;
 
 
 
 ALTER TABLE questionreopening ENABLE TRIGGER ALL;
+
+
+
 
 
 ALTER TABLE questionsubscription DISABLE TRIGGER ALL;
@@ -9325,11 +9213,23 @@ INSERT INTO questionsubscription (id, question, person, date_created) VALUES (9,
 ALTER TABLE questionsubscription ENABLE TRIGGER ALL;
 
 
+
+
+
+
+
+
+
+
+
 ALTER TABLE revisioncache DISABLE TRIGGER ALL;
 
 
 
 ALTER TABLE revisioncache ENABLE TRIGGER ALL;
+
+
+
 
 
 ALTER TABLE revisionparent DISABLE TRIGGER ALL;
@@ -9349,6 +9249,9 @@ INSERT INTO revisionparent (id, sequence, revision, parent_id) VALUES (10, 1, 11
 ALTER TABLE revisionparent ENABLE TRIGGER ALL;
 
 
+
+
+
 ALTER TABLE revisionproperty DISABLE TRIGGER ALL;
 
 INSERT INTO revisionproperty (id, revision, name, value) VALUES (1, 11, 'lp:foo', 'extended value');
@@ -9358,6 +9261,9 @@ INSERT INTO revisionproperty (id, revision, name, value) VALUES (2, 11, 'lp:bar'
 ALTER TABLE revisionproperty ENABLE TRIGGER ALL;
 
 
+
+
+
 ALTER TABLE scriptactivity DISABLE TRIGGER ALL;
 
 INSERT INTO scriptactivity (id, name, hostname, date_started, date_completed) VALUES (1, 'launchpad-targetnamecacheupdater', 'whatever', '2007-08-08 17:02:22.963565', '2007-08-08 17:02:23.869575');
@@ -9365,6 +9271,12 @@ INSERT INTO scriptactivity (id, name, hostname, date_started, date_completed) VA
 
 
 ALTER TABLE scriptactivity ENABLE TRIGGER ALL;
+
+
+
+
+
+
 
 
 ALTER TABLE sectionselection DISABLE TRIGGER ALL;
@@ -9457,11 +9369,17 @@ INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (8
 ALTER TABLE sectionselection ENABLE TRIGGER ALL;
 
 
+
+
+
 ALTER TABLE seriessourcepackagebranch DISABLE TRIGGER ALL;
 
 
 
 ALTER TABLE seriessourcepackagebranch ENABLE TRIGGER ALL;
+
+
+
 
 
 ALTER TABLE sharingjob DISABLE TRIGGER ALL;
@@ -9471,12 +9389,18 @@ ALTER TABLE sharingjob DISABLE TRIGGER ALL;
 ALTER TABLE sharingjob ENABLE TRIGGER ALL;
 
 
+
+
+
 ALTER TABLE signedcodeofconduct DISABLE TRIGGER ALL;
 
 INSERT INTO signedcodeofconduct (id, owner, signingkey, datecreated, signedcode, recipient, active, admincomment) VALUES (1, 16, 1, '2005-09-27 10:01:13', 'Sampledata signedcode', NULL, true, NULL);
 
 
 ALTER TABLE signedcodeofconduct ENABLE TRIGGER ALL;
+
+
+
 
 
 ALTER TABLE sourcepackageformatselection DISABLE TRIGGER ALL;
@@ -9499,11 +9423,29 @@ INSERT INTO sourcepackageformatselection (id, distroseries, format) VALUES (13, 
 ALTER TABLE sourcepackageformatselection ENABLE TRIGGER ALL;
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ALTER TABLE sourcepackagerecipedata DISABLE TRIGGER ALL;
 
 
 
 ALTER TABLE sourcepackagerecipedata ENABLE TRIGGER ALL;
+
+
+
 
 
 ALTER TABLE sourcepackagerecipedatainstruction DISABLE TRIGGER ALL;
@@ -9513,11 +9455,20 @@ ALTER TABLE sourcepackagerecipedatainstruction DISABLE TRIGGER ALL;
 ALTER TABLE sourcepackagerecipedatainstruction ENABLE TRIGGER ALL;
 
 
+
+
+
 ALTER TABLE sourcepackagerecipedistroseries DISABLE TRIGGER ALL;
 
 
 
 ALTER TABLE sourcepackagerecipedistroseries ENABLE TRIGGER ALL;
+
+
+
+
+
+
 
 
 ALTER TABLE sourcepackagereleasefile DISABLE TRIGGER ALL;
@@ -9541,6 +9492,12 @@ INSERT INTO sourcepackagereleasefile (sourcepackagerelease, libraryfile, filetyp
 ALTER TABLE sourcepackagereleasefile ENABLE TRIGGER ALL;
 
 
+
+
+
+
+
+
 ALTER TABLE specificationbranch DISABLE TRIGGER ALL;
 
 INSERT INTO specificationbranch (id, datecreated, specification, branch, summary, registrant) VALUES (1, '2006-11-02 09:07:48.389829', 6, 20, 'This branch should fix the issue', 12);
@@ -9549,12 +9506,18 @@ INSERT INTO specificationbranch (id, datecreated, specification, branch, summary
 ALTER TABLE specificationbranch ENABLE TRIGGER ALL;
 
 
+
+
+
 ALTER TABLE specificationbug DISABLE TRIGGER ALL;
 
 INSERT INTO specificationbug (id, specification, bug) VALUES (1, 3, 1);
 
 
 ALTER TABLE specificationbug ENABLE TRIGGER ALL;
+
+
+
 
 
 ALTER TABLE specificationdependency DISABLE TRIGGER ALL;
@@ -9566,11 +9529,17 @@ INSERT INTO specificationdependency (id, specification, dependency, date_created
 ALTER TABLE specificationdependency ENABLE TRIGGER ALL;
 
 
+
+
+
 ALTER TABLE specificationmessage DISABLE TRIGGER ALL;
 
 
 
 ALTER TABLE specificationmessage ENABLE TRIGGER ALL;
+
+
+
 
 
 ALTER TABLE specificationsubscription DISABLE TRIGGER ALL;
@@ -9585,11 +9554,17 @@ INSERT INTO specificationsubscription (id, specification, person, essential, dat
 ALTER TABLE specificationsubscription ENABLE TRIGGER ALL;
 
 
+
+
+
 ALTER TABLE specificationworkitem DISABLE TRIGGER ALL;
 
 
 
 ALTER TABLE specificationworkitem ENABLE TRIGGER ALL;
+
+
+
 
 
 ALTER TABLE specificationworkitemchange DISABLE TRIGGER ALL;
@@ -9599,11 +9574,17 @@ ALTER TABLE specificationworkitemchange DISABLE TRIGGER ALL;
 ALTER TABLE specificationworkitemchange ENABLE TRIGGER ALL;
 
 
+
+
+
 ALTER TABLE specificationworkitemstats DISABLE TRIGGER ALL;
 
 
 
 ALTER TABLE specificationworkitemstats ENABLE TRIGGER ALL;
+
+
+
 
 
 ALTER TABLE spokenin DISABLE TRIGGER ALL;
@@ -9890,6 +9871,9 @@ INSERT INTO spokenin (language, country, id) VALUES (559, 171, 342);
 ALTER TABLE spokenin ENABLE TRIGGER ALL;
 
 
+
+
+
 ALTER TABLE sprint DISABLE TRIGGER ALL;
 
 INSERT INTO sprint (id, owner, name, title, summary, home_page, address, time_zone, time_starts, time_ends, datecreated, driver, homepage_content, icon, mugshot, logo) VALUES (1, 12, 'ubz', 'Ubuntu Below Zero', 'This is the next Ubuntu developer Summit. Join us in Montreal for discussions around Ubuntu and Launchpad. The focus will be the road to Dapper, our April 2006 release, focused on the enterprise.', 'http://wiki.ubuntu.com/UbuntuBelowZero', 'Montreal, Canada', 'US/Eastern', '2005-10-07 23:30:00', '2005-11-17 00:11:00', '2005-09-15 09:04:01.762108', NULL, NULL, NULL, NULL, NULL);
@@ -9901,11 +9885,17 @@ INSERT INTO sprint (id, owner, name, title, summary, home_page, address, time_zo
 ALTER TABLE sprint ENABLE TRIGGER ALL;
 
 
+
+
+
 ALTER TABLE sprintattendance DISABLE TRIGGER ALL;
 
 
 
 ALTER TABLE sprintattendance ENABLE TRIGGER ALL;
+
+
+
 
 
 ALTER TABLE sprintspecification DISABLE TRIGGER ALL;
@@ -9920,6 +9910,9 @@ INSERT INTO sprintspecification (id, sprint, specification, status, whiteboard, 
 ALTER TABLE sprintspecification ENABLE TRIGGER ALL;
 
 
+
+
+
 ALTER TABLE sshkey DISABLE TRIGGER ALL;
 
 INSERT INTO sshkey (id, person, keytype, keytext, comment, date_created) VALUES (1, 12, 2, 'AAAAB3NzaC1kc3MAAAEBAPfhCA15ZaT08brwVXwpJjcZT6QFIipzF1sGy57HY7QPi/W+uljr1VcCHzWdlSmda7YpTCTx0NFYYQIccQRGX6zYL8v1w9FSRCAnxxUJmqEhsUDFYFdVTa9uLCrs3MSbmh7wwFPdRrGrO6X5x7T4dMZQwykSZrOVdpLcCHRgrMZslLomIAjERn6OAQNiGFz7B2tEi/3Soqd52bGJwOtGymRiAXkPSLbH7KfzSCe34ytdh6BD+4SrgSoa+TL3VDV70QAdlOFXD42ZHl3Sc0Tde4LbZeYq2Uf84DOATLZBbOYpRSqTLkM9XngpnvCRVb6dxEQfgODDw783tEuPpySLj2EAAAAVANpUVgivDjt9gFibN/AXfYy1meeBAAABAB6FtnMywmWZg2lr2I3nDfE5U5QbGUQB/ZEP98ZkSkhOcF29VlnGOxyb2/VZbVTLa/btlPF82L4An/c8VKtKZnel7LnAlMoArdgzQNXGVQQVtnaWwM26ydgDzkSSIes3elNZgsfnPRBvaF0ol9Tqju0rNGKjnr3ZOX/NX+42bxpjRnxYj1h56yP2jKKeGfjorI6JK1YfqBAiTxzaDMzSpknnrbztaKJoh7IFqMMOp9ANSFh7H106pEaCv3ebCTJZprtWqNKjb2zum7OQPRz3upA0qx22ocTokjv4itXJ6yj/BvGu9qdOIQFXuB2rsFtLZtS8ATueOly0GzyeiZBx/AEAAAEBAO8jRYjL7tAYnVlO1p6UzPOicAuGCFWfNbBEDRAXoSgLNdj451jStw+eUc9ZVz7tG/XRVZsiavtFHb2cbrcfX1YOd69xi0m+IY6mo3yKt3irQRokDtt376sHoUdHgj2ozySZJgG8IJndtoS+VQQy6NdClA3fNFb96bF865eNaRYoHJO9ZI84lkWQL++MLzIuyFfCs1hSlapyyuHC8kFmF7AQdrVZvbohSbnWs+w53nIW8nAA7z21wAukvE1Pl6AQyG0e7U1sYS8Pc8dtmzJvdtVZWBl02/gqQJ7f06mFvnsN45rR1Uyxnrwl6rbFwqabZDlyD5Ac6Icbvz9SG1gBOiI=', 'andrew@trogdor', '2006-10-16 18:31:53.030784');
@@ -9929,11 +9922,20 @@ INSERT INTO sshkey (id, person, keytype, keytext, comment, date_created) VALUES 
 ALTER TABLE sshkey ENABLE TRIGGER ALL;
 
 
+
+
+
+
+
+
 ALTER TABLE subunitstream DISABLE TRIGGER ALL;
 
 
 
 ALTER TABLE subunitstream ENABLE TRIGGER ALL;
+
+
+
 
 
 ALTER TABLE suggestivepotemplate DISABLE TRIGGER ALL;
@@ -10049,6 +10051,9 @@ INSERT INTO teammembership (id, person, team, status, date_joined, date_expires,
 
 
 ALTER TABLE teammembership ENABLE TRIGGER ALL;
+
+
+
 
 
 ALTER TABLE teamparticipation DISABLE TRIGGER ALL;
@@ -10258,6 +10263,15 @@ INSERT INTO teamparticipation (id, team, person) VALUES (257, 243652, 243622);
 ALTER TABLE teamparticipation ENABLE TRIGGER ALL;
 
 
+
+
+
+
+
+
+
+
+
 ALTER TABLE translationimportqueueentry DISABLE TRIGGER ALL;
 
 INSERT INTO translationimportqueueentry (id, path, content, importer, dateimported, distroseries, sourcepackagename, productseries, by_maintainer, pofile, potemplate, status, date_status_changed, format, error_output) VALUES (1, 'po/evolution-2.2-test.pot', 57, 16, '2006-12-13 21:17:56.241901', NULL, NULL, 3, true, NULL, 6, 2, '2006-12-13 21:18:40.885499', 1, NULL);
@@ -10265,6 +10279,9 @@ INSERT INTO translationimportqueueentry (id, path, content, importer, dateimport
 
 
 ALTER TABLE translationimportqueueentry ENABLE TRIGGER ALL;
+
+
+
 
 
 ALTER TABLE translationmessage DISABLE TRIGGER ALL;
@@ -10929,6 +10946,9 @@ INSERT INTO translationmessage (id, potmsgset, date_created, submitter, date_rev
 ALTER TABLE translationmessage ENABLE TRIGGER ALL;
 
 
+
+
+
 ALTER TABLE translationrelicensingagreement DISABLE TRIGGER ALL;
 
 INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (201, 58, true, '2008-05-23 16:29:22.319166');
@@ -10995,6 +11015,9 @@ INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date
 
 
 ALTER TABLE translationrelicensingagreement ENABLE TRIGGER ALL;
+
+
+
 
 
 ALTER TABLE translationtemplateitem DISABLE TRIGGER ALL;
@@ -11200,11 +11223,17 @@ INSERT INTO translationtemplateitem (id, potemplate, sequence, potmsgset) VALUES
 ALTER TABLE translationtemplateitem ENABLE TRIGGER ALL;
 
 
+
+
+
 ALTER TABLE translationtemplatesbuild DISABLE TRIGGER ALL;
 
 
 
 ALTER TABLE translationtemplatesbuild ENABLE TRIGGER ALL;
+
+
+
 
 
 ALTER TABLE translator DISABLE TRIGGER ALL;
@@ -11215,11 +11244,17 @@ INSERT INTO translator (id, translationgroup, language, translator, datecreated,
 ALTER TABLE translator ENABLE TRIGGER ALL;
 
 
+
+
+
 ALTER TABLE usertouseremail DISABLE TRIGGER ALL;
 
 
 
 ALTER TABLE usertouseremail ENABLE TRIGGER ALL;
+
+
+
 
 
 ALTER TABLE vote DISABLE TRIGGER ALL;
@@ -11257,6 +11292,9 @@ INSERT INTO vote (id, person, poll, preference, option, token) VALUES (28, 16, 5
 ALTER TABLE vote ENABLE TRIGGER ALL;
 
 
+
+
+
 ALTER TABLE votecast DISABLE TRIGGER ALL;
 
 INSERT INTO votecast (id, person, poll) VALUES (1, 6, 1);
@@ -11274,6 +11312,9 @@ INSERT INTO votecast (id, person, poll) VALUES (10, 16, 5);
 ALTER TABLE votecast ENABLE TRIGGER ALL;
 
 
+
+
+
 ALTER TABLE wikiname DISABLE TRIGGER ALL;
 
 INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (1, 1, 'https://wiki.ubuntu.com/', 'MarkShuttleworth');
@@ -11281,5 +11322,8 @@ INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (2, 29, 'https://wiki.u
 
 
 ALTER TABLE wikiname ENABLE TRIGGER ALL;
+
+
+
 
 
