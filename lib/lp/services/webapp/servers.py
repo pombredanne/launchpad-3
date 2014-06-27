@@ -1203,7 +1203,12 @@ class WebServicePublication(WebServicePublicationMixin,
             return super(WebServicePublication, self).getResource(request, ob)
 
     def finishReadOnlyRequest(self, request, ob, txn):
-        """Commit the transaction so that created OAuthNonces are stored."""
+        """Commit the transaction even though there should be no writes."""
+        # WebServicePublication used to commit on every request to store
+        # OAuthNonces to prevent replay attacks. But TLS prevents replay
+        # attacks too, so we don't bother with nonces any more. However,
+        # this commit will stay here until we can switch it off in a
+        # controlled test to ensure that nothing depends on it on prod.
         notify(FinishReadOnlyRequestEvent(ob, request))
         # Transaction commits usually need to be aware of the possibility of
         # a doomed transaction.  We do not expect that this code will
