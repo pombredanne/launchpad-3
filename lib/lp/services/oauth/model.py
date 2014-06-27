@@ -16,7 +16,6 @@ from datetime import (
     datetime,
     timedelta,
     )
-import hashlib
 import re
 
 import pytz
