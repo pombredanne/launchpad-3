@@ -6,7 +6,6 @@ __all__ = [
     'OAuthAccessToken',
     'OAuthConsumer',
     'OAuthConsumerSet',
-    'OAuthNonce',
     'OAuthRequestToken',
     'OAuthRequestTokenSet',
     'OAuthValidationError',
@@ -24,10 +23,6 @@ from sqlobject import (
     ForeignKey,
     StringCol,
     )
-from storm.locals import (
-    Int,
-    Reference,
-    )
 from zope.interface import implements
 
 from lp.registry.interfaces.distribution import IDistribution
@@ -41,13 +36,11 @@ from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.interfaces import IMasterStore
 from lp.services.database.sqlbase import SQLBase
-from lp.services.database.stormbase import StormBase
 from lp.services.librarian.model import LibraryFileAlias
 from lp.services.oauth.interfaces import (
     IOAuthAccessToken,
     IOAuthConsumer,
     IOAuthConsumerSet,
-    IOAuthNonce,
     IOAuthRequestToken,
     IOAuthRequestTokenSet,
     )
@@ -350,25 +343,6 @@ class OAuthRequestTokenSet:
     def getByKey(self, key):
         """See `IOAuthRequestTokenSet`."""
         return OAuthRequestToken.selectOneBy(key=key)
-
-
-class OAuthNonce(OAuthBase, StormBase):
-    """See `IOAuthNonce`."""
-    implements(IOAuthNonce)
-
-    __storm_table__ = 'OAuthNonce'
-    __storm_primary__ = 'access_token_id', 'request_timestamp', 'nonce'
-
-    access_token_id = Int(name='access_token')
-    access_token = Reference(access_token_id, OAuthAccessToken.id)
-    request_timestamp = UtcDateTimeCol(default=UTC_NOW, notNull=True)
-    nonce = StringCol(notNull=True)
-
-    def __init__(self, access_token, request_timestamp, nonce):
-        super(OAuthNonce, self).__init__()
-        self.access_token = access_token
-        self.request_timestamp = request_timestamp
-        self.nonce = nonce
 
 
 def create_token_key_and_secret(table):
