@@ -96,7 +96,10 @@ from lp.bugs.interfaces.cve import (
     ICveSet,
     )
 from lp.bugs.model.bug import FileBugData
-from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.enums import (
+    BuildStatus,
+    BuilderResetProtocol,
+    )
 from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.code.enums import (
     BranchMergeProposalStatus,
@@ -283,6 +286,8 @@ from lp.soyuz.interfaces.component import (
     IComponent,
     IComponentSet,
     )
+from lp.soyuz.interfaces.livefs import ILiveFSSet
+from lp.soyuz.interfaces.livefsbuild import ILiveFSBuildSet
 from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.interfaces.processor import IProcessorSet
@@ -294,6 +299,7 @@ from lp.soyuz.model.distributionsourcepackagecache import (
     DistributionSourcePackageCache,
     )
 from lp.soyuz.model.files import BinaryPackageFile
+from lp.soyuz.model.livefsbuild import LiveFSFile
 from lp.soyuz.model.packagediff import PackageDiff
 from lp.testing import (
     admin_logged_in,
@@ -2047,13 +2053,17 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                           status=NewSpecificationDefinitionStatus.NEW,
                           implementation_status=None, goal=None, specurl=None,
                           assignee=None, drafter=None, approver=None,
-                          priority=None, whiteboard=None, milestone=None,
-                          information_type=None):
+                          whiteboard=None, milestone=None,
+                          information_type=None, priority=None):
         """Create and return a new, arbitrary Blueprint.
 
         :param product: The product to make the blueprint on.  If one is
             not specified, an arbitrary product is created.
         """
+        if distribution and product:
+            raise AssertionError(
+                'Cannot target a Specification to a distribution and '
+                'a product simultaneously.')
         proprietary = (information_type not in PUBLIC_INFORMATION_TYPES and
             information_type is not None)
         if (product is None and milestone is not None and
@@ -2061,8 +2071,12 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             product = milestone.productseries.product
         if distribution is None and product is None:
             if proprietary:
-                specification_sharing_policy = (
-                    SpecificationSharingPolicy.EMBARGOED_OR_PROPRIETARY)
+                if information_type == InformationType.EMBARGOED:
+                    specification_sharing_policy = (
+                        SpecificationSharingPolicy.EMBARGOED_OR_PROPRIETARY)
+                else:
+                    specification_sharing_policy = (
+                        SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY)
             else:
                 specification_sharing_policy = None
             product = self.makeProduct(
@@ -2075,8 +2089,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             title = self.getUniqueString('title')
         if owner is None:
             owner = self.makePerson()
-        if priority is None:
-            priority = SpecificationPriority.UNDEFINED
         status_names = NewSpecificationDefinitionStatus.items.mapping.keys()
         if status.name in status_names:
             definition_status = status
@@ -2094,10 +2106,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             assignee=assignee,
             drafter=drafter,
             approver=approver,
-            product=product,
-            distribution=distribution,
-            priority=priority)
+            target=product or distribution)
         naked_spec = removeSecurityProxy(spec)
+        if priority is not None:
+            naked_spec.priority = priority
         if status.name not in status_names:
             # Set the closed status after the status has a sane initial state.
             naked_spec.definition_status = status
@@ -2117,7 +2129,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             if proprietary:
                 naked_spec.target._ensurePolicies([information_type])
             naked_spec.transitionToInformationType(
-                information_type, removeSecurityProxy(spec.target).owner)
+                information_type, naked_spec.target.owner)
         return spec
 
     makeBlueprint = makeSpecification
@@ -2739,7 +2751,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeBuilder(self, processors=None, url=None, name=None, title=None,
                     owner=None, active=True, virtualized=True, vm_host=None,
-                    manual=False):
+                    vm_reset_protocol=None, manual=False):
         """Make a new builder for i386 virtualized builds by default.
 
         Note: the builder returned will not be able to actually build -
@@ -2756,11 +2768,14 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             title = self.getUniqueString('builder-title')
         if owner is None:
             owner = self.makePerson()
+        if virtualized and vm_reset_protocol is None:
+            vm_reset_protocol = BuilderResetProtocol.PROTO_1_1
 
         with admin_logged_in():
             return getUtility(IBuilderSet).new(
                 processors, url, name, title, owner, active,
-                virtualized, vm_host, manual=manual)
+                virtualized, vm_host, manual=manual,
+                vm_reset_protocol=vm_reset_protocol)
 
     def makeRecipeText(self, *branches):
         if len(branches) == 0:
@@ -4310,6 +4325,81 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         product = self.makeProduct(owner=person)
         product.redeemSubscriptionVoucher(
             self.getUniqueString(), person, person, months)
+
+    def makeLiveFS(self, registrant=None, owner=None, distroseries=None,
+                   name=None, metadata=None, require_virtualized=True,
+                   date_created=DEFAULT):
+        """Make a new LiveFS."""
+        if registrant is None:
+            registrant = self.makePerson()
+        if owner is None:
+            owner = self.makeTeam(registrant)
+        if distroseries is None:
+            distroseries = self.makeDistroSeries()
+        if name is None:
+            name = self.getUniqueString(u"livefs-name")
+        if metadata is None:
+            metadata = {}
+        livefs = getUtility(ILiveFSSet).new(
+            registrant, owner, distroseries, name, metadata,
+            require_virtualized=require_virtualized, date_created=date_created)
+        IStore(livefs).flush()
+        return livefs
+
+    def makeLiveFSBuild(self, requester=None, registrant=None, livefs=None,
+                        archive=None, distroarchseries=None, pocket=None,
+                        unique_key=None, metadata_override=None,
+                        date_created=DEFAULT, status=BuildStatus.NEEDSBUILD,
+                        builder=None, duration=None, **kwargs):
+        """Make a new LiveFSBuild."""
+        if requester is None:
+            requester = self.makePerson()
+        if livefs is None:
+            if "distroseries" in kwargs:
+                distroseries = kwargs["distroseries"]
+                del kwargs["distroseries"]
+            elif distroarchseries is not None:
+                distroseries = distroarchseries.distroseries
+            elif archive is not None:
+                distroseries = self.makeDistroSeries(
+                    distribution=archive.distribution)
+            else:
+                distroseries = None
+            if registrant is None:
+                registrant = requester
+            livefs = self.makeLiveFS(
+                registrant=registrant, distroseries=distroseries, **kwargs)
+        if archive is None:
+            archive = livefs.distro_series.main_archive
+        if distroarchseries is None:
+            distroarchseries = self.makeDistroArchSeries(
+                distroseries=livefs.distro_series)
+        if pocket is None:
+            pocket = PackagePublishingPocket.RELEASE
+        livefsbuild = getUtility(ILiveFSBuildSet).new(
+            requester, livefs, archive, distroarchseries, pocket,
+            unique_key=unique_key, metadata_override=metadata_override,
+            date_created=date_created)
+        if duration is not None:
+            removeSecurityProxy(livefsbuild).updateStatus(
+                BuildStatus.BUILDING, builder=builder,
+                date_started=livefsbuild.date_created)
+            removeSecurityProxy(livefsbuild).updateStatus(
+                status, builder=builder,
+                date_finished=livefsbuild.date_started + duration)
+        else:
+            removeSecurityProxy(livefsbuild).updateStatus(
+                status, builder=builder)
+        IStore(livefsbuild).flush()
+        return livefsbuild
+
+    def makeLiveFSFile(self, livefsbuild=None, libraryfile=None):
+        if livefsbuild is None:
+            livefsbuild = self.makeLiveFSBuild()
+        if libraryfile is None:
+            libraryfile = self.makeLibraryFileAlias()
+        return ProxyFactory(
+            LiveFSFile(livefsbuild=livefsbuild, libraryfile=libraryfile))
 
 
 # Some factory methods return simple Python types. We don't add

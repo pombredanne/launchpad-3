@@ -1966,7 +1966,8 @@ class TestSpecifications(TestCaseWithFactory):
         # Proprietary blueprints are not listed for random users
         blueprint1 = self.makeSpec(
             information_type=InformationType.PROPRIETARY)
-        self.assertEqual([], list_result(blueprint1.owner))
+        owner = removeSecurityProxy(blueprint1).owner
+        self.assertEqual([], list_result(owner))
 
     def test_proprietary_listed_for_artifact_grant(self):
         # Proprietary blueprints are listed for users with an artifact grant.
@@ -1974,21 +1975,24 @@ class TestSpecifications(TestCaseWithFactory):
             information_type=InformationType.PROPRIETARY)
         grant = self.factory.makeAccessArtifactGrant(
             concrete_artifact=blueprint1)
+        owner = removeSecurityProxy(blueprint1).owner
         self.assertEqual(
             [blueprint1],
-            list_result(blueprint1.owner, user=grant.grantee))
+            list_result(owner, user=grant.grantee))
 
     def test_proprietary_listed_for_policy_grant(self):
         # Proprietary blueprints are listed for users with a policy grant.
         blueprint1 = self.makeSpec(
             information_type=InformationType.PROPRIETARY)
+        product = removeSecurityProxy(blueprint1).product
         policy_source = getUtility(IAccessPolicySource)
         (policy,) = policy_source.find(
-            [(blueprint1.product, InformationType.PROPRIETARY)])
+            [(product, InformationType.PROPRIETARY)])
         grant = self.factory.makeAccessPolicyGrant(policy)
+        owner = removeSecurityProxy(blueprint1).owner
         self.assertEqual(
             [blueprint1],
-            list_result(blueprint1.owner, user=grant.grantee))
+            list_result(owner, user=grant.grantee))
 
     def test_storm_sort(self):
         # A Storm expression can be used to sort specs.

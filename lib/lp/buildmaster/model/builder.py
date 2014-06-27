@@ -32,7 +32,11 @@ from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.errors import NotFoundError
-from lp.buildmaster.enums import BuildQueueStatus
+from lp.buildmaster.enums import (
+    BuilderCleanStatus,
+    BuilderResetProtocol,
+    BuildQueueStatus,
+    )
 from lp.buildmaster.interfaces.builder import (
     IBuilder,
     IBuilderSet,
@@ -44,8 +48,14 @@ from lp.buildmaster.model.buildqueue import (
     specific_build_farm_job_sources,
     )
 from lp.registry.interfaces.person import validate_public_person
-from lp.services.database.bulk import load
+from lp.services.database.bulk import (
+    load,
+    load_related,
+    )
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.enumcol import EnumCol
 from lp.services.database.interfaces import (
     ISlaveStore,
     IStore,
@@ -92,19 +102,10 @@ class Builder(SQLBase):
     active = BoolCol(dbName='active', notNull=True, default=True)
     failure_count = IntCol(dbName='failure_count', default=0, notNull=True)
     version = StringCol(dbName='version')
-
-    # The number of times a builder can consecutively fail before we
-    # reset its current job.
-    JOB_RESET_THRESHOLD = 3
-
-    # The number of times a builder can consecutively fail before we try
-    # resetting it (if virtual) or marking it builderok=False (if not).
-    RESET_THRESHOLD = 5
-
-    # The number of times a virtual builder can reach its reset threshold
-    # due to consecutive failures before we give up and mark it
-    # builderok=False.
-    RESET_FAILURE_THRESHOLD = 3
+    clean_status = EnumCol(
+        enum=BuilderCleanStatus, default=BuilderCleanStatus.DIRTY)
+    vm_reset_protocol = EnumCol(enum=BuilderResetProtocol)
+    date_clean_status_changed = UtcDateTimeCol()
 
     def _getBuilderok(self):
         return self._builderok
@@ -113,6 +114,7 @@ class Builder(SQLBase):
         self._builderok = value
         if value is True:
             self.resetFailureCount()
+            self.setCleanStatus(BuilderCleanStatus.DIRTY)
 
     builderok = property(_getBuilderok, _setBuilderok)
 
@@ -172,6 +174,18 @@ class Builder(SQLBase):
     def currentjob(self):
         """See IBuilder"""
         return getUtility(IBuildQueueSet).getByBuilder(self)
+
+    @property
+    def current_build(self):
+        if self.currentjob is None:
+            return None
+        return self.currentjob.specific_build
+
+    def setCleanStatus(self, status):
+        """See `IBuilder`."""
+        if status != self.clean_status:
+            self.clean_status = status
+            self.date_clean_status_changed = UTC_NOW
 
     def failBuilder(self, reason):
         """See IBuilder"""
@@ -279,21 +293,6 @@ class Builder(SQLBase):
 
         return None
 
-    def handleFailure(self, logger):
-        """See IBuilder."""
-        self.gotFailure()
-        if self.currentjob is not None:
-            build_farm_job = self.currentjob.specific_build
-            build_farm_job.gotFailure()
-            logger.info(
-                "Builder %s failure count: %s, job '%s' failure count: %s" % (
-                    self.name, self.failure_count,
-                    build_farm_job.title, build_farm_job.failure_count))
-        else:
-            logger.info(
-                "Builder %s failure count: %s" % (
-                    self.name, self.failure_count))
-
 
 class BuilderProcessor(StormBase):
     __storm_table__ = 'BuilderProcessor'
@@ -326,11 +325,13 @@ class BuilderSet(object):
         return self.getByName(name)
 
     def new(self, processors, url, name, title, owner, active=True,
-            virtualized=False, vm_host=None, manual=True):
+            virtualized=False, vm_host=None, vm_reset_protocol=None,
+            manual=True):
         """See IBuilderSet."""
         return Builder(processors=processors, url=url, name=name, title=title,
                        owner=owner, active=active, virtualized=virtualized,
-                       vm_host=vm_host, _builderok=True, manual=manual)
+                       vm_host=vm_host, vm_reset_protocol=vm_reset_protocol,
+                       _builderok=True, manual=manual)
 
     def get(self, builder_id):
         """See IBuilderSet."""
@@ -344,10 +345,10 @@ class BuilderSet(object):
         # Grab (Builder.id, Processor.id) pairs and stuff them into the
         # Builders' processor caches.
         store = IStore(Builder)
-        pairs = store.find(
+        pairs = list(store.find(
             (BuilderProcessor.builder_id, BuilderProcessor.processor_id),
             BuilderProcessor.builder_id.is_in([b.id for b in rows])).order_by(
-                BuilderProcessor.builder_id, BuilderProcessor.processor_id)
+                BuilderProcessor.builder_id, BuilderProcessor.processor_id))
         load(Processor, [pid for bid, pid in pairs])
         for row in rows:
             get_property_cache(row)._processors_cache = []
@@ -357,10 +358,17 @@ class BuilderSet(object):
 
     def getBuilders(self):
         """See IBuilderSet."""
+        from lp.registry.model.person import Person
         rs = IStore(Builder).find(
             Builder, Builder.active == True).order_by(
                 Builder.virtualized, Builder.name)
-        return DecoratedResultSet(rs, pre_iter_hook=self._preloadProcessors)
+
+        def preload(rows):
+            self._preloadProcessors(rows)
+            load_related(Person, rows, ['ownerID'])
+            bqs = getUtility(IBuildQueueSet).preloadForBuilders(rows)
+            BuildQueue.preloadSpecificBuild(bqs)
+        return DecoratedResultSet(rs, pre_iter_hook=preload)
 
     def getBuildQueueSizes(self):
         """See `IBuilderSet`."""

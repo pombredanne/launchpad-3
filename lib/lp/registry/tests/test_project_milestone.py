@@ -203,9 +203,9 @@ class ProjectMilestoneTest(unittest.TestCase):
             specurl='http://www.example.com/spec/%s' % product_name,
             summary='summary',
             definition_status=SpecificationDefinitionStatus.APPROVED,
-            priority=SpecificationPriority.HIGH,
             owner=sample_person,
-            product=product)
+            target=product)
+        spec.priority = SpecificationPriority.HIGH
         spec.milestone = product.getMilestone(milestone_name)
         return spec
 

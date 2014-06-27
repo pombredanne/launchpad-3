@@ -31,7 +31,7 @@ methods as well.
     ...     """A custom build behaviour for building blah."""
     ...     implements(IBuildFarmJobBehaviour)
     ...
-    ...     def dispatchBuildToSlave(self, build_queue_item_id, logger):
+    ...     def dispatchBuildToSlave(self, logger):
     ...         print "Did something special to dispatch MySpecialBuild."
 
 For this documentation, we'll also need a dummy new build farm job.

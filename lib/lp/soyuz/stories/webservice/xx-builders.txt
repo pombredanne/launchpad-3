@@ -29,6 +29,8 @@ Each builder has a number of properties exposed:
     ...
     active
     builderok
+    clean_status
+    date_clean_status_changed
     failnotes
     failure_count
     manual
@@ -39,6 +41,7 @@ Each builder has a number of properties exposed:
     version
     virtualized
     vm_host
+    vm_reset_protocol
 
 
 Changing builder properties

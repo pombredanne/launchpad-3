@@ -30,6 +30,10 @@ from testtools.content_type import UTF8_TEXT
 from twisted.internet import defer
 from twisted.web import xmlrpc
 
+from lp.buildmaster.enums import (
+    BuilderCleanStatus,
+    BuilderResetProtocol,
+    )
 from lp.buildmaster.interactor import BuilderSlave
 from lp.buildmaster.interfaces.builder import CannotFetchFile
 from lp.services.config import config
@@ -48,7 +52,8 @@ class MockBuilder:
 
     def __init__(self, name='mock-builder', builderok=True, manual=False,
                  virtualized=True, vm_host=None, url='http://fake:0000',
-                 version=None):
+                 version=None, clean_status=BuilderCleanStatus.DIRTY,
+                 vm_reset_protocol=BuilderResetProtocol.PROTO_1_1):
         self.currentjob = None
         self.builderok = builderok
         self.manual = manual
@@ -56,8 +61,13 @@ class MockBuilder:
         self.name = name
         self.virtualized = virtualized
         self.vm_host = vm_host
+        self.vm_reset_protocol = vm_reset_protocol
         self.failnotes = None
         self.version = version
+        self.clean_status = clean_status
+
+    def setCleanStatus(self, clean_status):
+        self.clean_status = clean_status
 
     def failBuilder(self, reason):
         self.builderok = False
@@ -94,8 +104,7 @@ class OkSlave:
     def build(self, buildid, buildtype, chroot, filemap, args):
         self.call_log.append(
             ('build', buildid, buildtype, chroot, filemap.keys(), args))
-        info = 'OkSlave BUILDING'
-        return defer.succeed(('BuildStatus.Building', info))
+        return defer.succeed(('BuildStatus.BUILDING', buildid))
 
     def echo(self, *args):
         self.call_log.append(('echo',) + args)
@@ -117,7 +126,8 @@ class OkSlave:
         self.call_log.append('resume')
         return defer.succeed(("", "", 0))
 
-    def sendFileToSlave(self, sha1, url, username="", password=""):
+    def sendFileToSlave(self, sha1, url, username="", password="",
+                        logger=None):
         d = self.ensurepresent(sha1, url, username, password)
 
         def check_present((present, info)):
@@ -125,10 +135,6 @@ class OkSlave:
                 raise CannotFetchFile(url, info)
 
         return d.addCallback(check_present)
-
-    def cacheFile(self, logger, libraryfilealias):
-        return self.sendFileToSlave(
-            libraryfilealias.content.sha1, libraryfilealias.http_url)
 
     def getFiles(self, files):
         dl = defer.gatherResults([
@@ -253,9 +259,7 @@ class BrokenSlave:
 
 
 class TrivialBehaviour:
-
-    def getBuildCookie(self):
-        return 'trivial'
+    pass
 
 
 class DeadProxy(xmlrpc.Proxy):

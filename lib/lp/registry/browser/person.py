@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Person-related view classes."""
@@ -264,6 +264,7 @@ from lp.soyuz.browser.archivesubscription import (
     )
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
+from lp.soyuz.interfaces.livefs import ILiveFSSet
 from lp.soyuz.interfaces.publishing import ISourcePackagePublishingHistory
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 
@@ -493,6 +494,29 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
     def traverse_merge_queue(self, name):
         """Traverse to this person's merge queues."""
         return self.context.getMergeQueue(name)
+
+    @stepthrough('+livefs')
+    def traverse_livefs(self, distribution_name):
+        """Traverse to this person's live filesystem images."""
+        if len(self.request.stepstogo) < 2:
+            return None
+
+        distroseries_name = self.request.stepstogo.consume()
+        livefs_name = self.request.stepstogo.consume()
+        livefs = getUtility(ILiveFSSet).interpret(
+            self.context.name, distribution_name, distroseries_name,
+            livefs_name)
+
+        if livefs is None:
+            raise NotFoundError
+
+        if livefs.distro_series.distribution.name != distribution_name:
+            # This live filesystem was accessed through one of its
+            # distribution's aliases, so we must redirect to its canonical
+            # URL.
+            return self.redirectSubTree(canonical_url(livefs))
+
+        return livefs
 
 
 class PersonSetNavigation(Navigation):

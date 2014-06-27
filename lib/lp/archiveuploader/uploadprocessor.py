@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Code for 'processing' 'uploads'. Also see nascentupload.py.
@@ -57,6 +57,7 @@ from sqlobject import SQLObjectNotFound
 from zope.component import getUtility
 
 from lp.app.errors import NotFoundError
+from lp.archiveuploader.livefsupload import LiveFSUpload
 from lp.archiveuploader.nascentupload import (
     EarlyReturnUploadError,
     NascentUpload,
@@ -82,6 +83,7 @@ from lp.soyuz.interfaces.archive import (
     IArchiveSet,
     NoSuchPPA,
     )
+from lp.soyuz.interfaces.livefsbuild import ILiveFSBuild
 
 
 __all__ = [
@@ -641,6 +643,28 @@ class BuildUploadHandler(UploadHandler):
                 "Unable to find %s with id %d. Skipping." %
                 (job_type, job_id))
 
+    def processLiveFS(self, logger=None):
+        """Process a live filesystem upload."""
+        assert ILiveFSBuild.providedBy(self.build)
+        if logger is None:
+            logger = self.processor.log
+        try:
+            logger.info("Processing LiveFS upload %s" % self.upload_path)
+            LiveFSUpload(self.upload_path, logger).process(self.build)
+
+            if self.processor.dry_run:
+                logger.info("Dry run, aborting transaction.")
+                self.processor.ztm.abort()
+            else:
+                logger.info(
+                    "Committing the transaction and any mails associated "
+                    "with this upload.")
+                self.processor.ztm.commit()
+            return UploadStatusEnum.ACCEPTED
+        except:
+            self.processor.ztm.abort()
+            raise
+
     def process(self):
         """Process an upload that is the result of a build.
 
@@ -660,8 +684,11 @@ class BuildUploadHandler(UploadHandler):
             # because we want the standard cleanup to occur.
             recipe_deleted = (ISourcePackageRecipeBuild.providedBy(self.build)
                 and self.build.recipe is None)
+            is_livefs = ILiveFSBuild.providedBy(self.build)
             if recipe_deleted:
                 result = UploadStatusEnum.FAILED
+            elif is_livefs:
+                result = self.processLiveFS(logger)
             else:
                 self.processor.log.debug("Build %s found" % self.build.id)
                 [changes_file] = self.locateChangesFiles()

@@ -18,8 +18,11 @@ import httplib
 
 from lazr.restful.declarations import (
     call_with,
+    collection_default_content,
     error_status,
+    export_as_webservice_collection,
     export_as_webservice_entry,
+    export_factory_operation,
     export_operation_as,
     export_write_operation,
     exported,
@@ -712,6 +715,11 @@ class ISpecification(ISpecificationPublic, ISpecificationView,
 
 class ISpecificationSet(IHasSpecifications):
     """A container for specifications."""
+    export_as_webservice_collection(ISpecification)
+
+    @collection_default_content()
+    def empty_list():
+        """Return an empty set - only exists to keep lazr.restful happy."""
 
     displayname = Attribute('Displayname')
 
@@ -739,10 +747,21 @@ class ISpecificationSet(IHasSpecifications):
         """Return the specification with the given name for the given pillar.
         """
 
-    def new(name, title, specurl, summary, definition_status,
-        owner, approver=None, product=None, distribution=None, assignee=None,
-        drafter=None, whiteboard=None,
-        priority=SpecificationPriority.UNDEFINED):
+    @call_with(owner=REQUEST_USER)
+    @export_operation_as('createSpecification')
+    @operation_parameters(
+        target=Reference(
+            schema=ISpecificationTarget, required=True,
+            title=(u"The product or distribution context of this "
+                   u"specification.")))
+    @export_factory_operation(
+        ISpecification, ['name', 'title', 'specurl', 'summary',
+                         'definition_status', 'assignee', 'drafter',
+                         'whiteboard'])
+    @operation_for_version('devel')
+    def new(name, title, specurl, summary, definition_status, owner,
+            target, approver=None, assignee=None, drafter=None,
+            whiteboard=None, information_type=None):
         """Create a new specification."""
 
     def getDependencyDict(specifications):

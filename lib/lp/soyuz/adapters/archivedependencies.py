@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Archive dependencies helper function.
@@ -119,13 +119,16 @@ def get_primary_current_component(archive, distroseries, sourcepackagename):
     If no ancestry could be found, default to 'universe'.
     """
     primary_archive = archive.distribution.main_archive
-    ancestries = primary_archive.getPublishedSources(
-        name=sourcepackagename,
-        distroseries=distroseries, exact_match=True)
+    if sourcepackagename is None:
+        ancestry = None
+    else:
+        ancestry = primary_archive.getPublishedSources(
+            name=sourcepackagename,
+            distroseries=distroseries, exact_match=True).first()
 
-    try:
-        return ancestries[0].component.name
-    except IndexError:
+    if ancestry is not None:
+        return ancestry.component.name
+    else:
         return 'universe'
 
 

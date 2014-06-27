@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementation of the lp: htmlform: fmt: namespaces in TALES."""
@@ -1827,6 +1827,18 @@ class SourcePackageRecipeFormatterAPI(CustomizableFormatter):
 
     def _link_summary_values(self):
         return {'name': self._context.name,
+                'owner': self._context.owner.displayname}
+
+
+class LiveFSFormatterAPI(CustomizableFormatter):
+    """Adapter providing fmt support for ILiveFS objects."""
+
+    _link_summary_template = _(
+        'Live filesystem %(distroseries)s %(name)s for %(owner)s')
+
+    def _link_summary_values(self):
+        return {'distroseries': self._context.distro_series.name,
+                'name': self._context.name,
                 'owner': self._context.owner.displayname}
 
 

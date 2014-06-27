@@ -18,7 +18,9 @@ from twisted.trial.unittest import TestCase as TrialTestCase
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.archivepublisher.diskpool import poolify
 from lp.buildmaster.enums import (
+    BuilderCleanStatus,
     BuildQueueStatus,
     BuildStatus,
     )
@@ -39,6 +41,7 @@ from lp.buildmaster.tests.mock_slaves import (
 from lp.buildmaster.tests.test_buildfarmjobbehaviour import (
     TestGetUploadMethodsMixin,
     TestHandleStatusMixin,
+    TestVerifySuccessfulBuildMixin,
     )
 from lp.buildmaster.tests.test_manager import MockBuilderFactory
 from lp.registry.interfaces.pocket import (
@@ -46,6 +49,7 @@ from lp.registry.interfaces.pocket import (
     pocketsuffix,
     )
 from lp.registry.interfaces.series import SeriesStatus
+from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.services.config import config
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.log.logger import BufferLogger
@@ -77,16 +81,16 @@ class TestBinaryBuildPackageBehaviour(TestCaseWithFactory):
 
     def assertExpectedInteraction(self, ignored, call_log, builder, build,
                                   chroot, archive, archive_purpose,
-                                  component=None, extra_urls=None,
+                                  component=None, extra_uploads=None,
                                   filemap_names=None):
         expected = self.makeExpectedInteraction(
             builder, build, chroot, archive, archive_purpose, component,
-            extra_urls, filemap_names)
+            extra_uploads, filemap_names)
         self.assertEqual(call_log, expected)
 
     def makeExpectedInteraction(self, builder, build, chroot, archive,
                                 archive_purpose, component=None,
-                                extra_urls=None, filemap_names=None):
+                                extra_uploads=None, filemap_names=None):
         """Build the log of calls that we expect to be made to the slave.
 
         :param builder: The builder we are using to build the binary package.
@@ -100,7 +104,6 @@ class TestBinaryBuildPackageBehaviour(TestCaseWithFactory):
             in order to trick the slave into building correctly.
         :return: A list of the calls we expect to be made.
         """
-        cookie = IBuildFarmJobBehaviour(build).getBuildCookie()
         ds_name = build.distro_arch_series.distroseries.name
         suite = ds_name + pocketsuffix[build.pocket]
         archives = get_sources_list_for_building(
@@ -111,12 +114,12 @@ class TestBinaryBuildPackageBehaviour(TestCaseWithFactory):
             component = build.current_component.name
         if filemap_names is None:
             filemap_names = []
-        if extra_urls is None:
-            extra_urls = []
+        if extra_uploads is None:
+            extra_uploads = []
 
         upload_logs = [
-            ('ensurepresent', url, '', '')
-            for url in [chroot.http_url] + extra_urls]
+            ('ensurepresent',) + upload
+            for upload in [(chroot.http_url, '', '')] + extra_uploads]
 
         extra_args = {
             'arch_indep': arch_indep,
@@ -129,12 +132,9 @@ class TestBinaryBuildPackageBehaviour(TestCaseWithFactory):
             'suite': suite,
             }
         build_log = [
-            ('build', cookie, 'binarypackage', chroot.content.sha1,
-             filemap_names, extra_args)]
-        if builder.virtualized:
-            result = [('echo', 'ping')] + upload_logs + build_log
-        else:
-            result = upload_logs + build_log
+            ('build', build.build_cookie, 'binarypackage',
+             chroot.content.sha1, filemap_names, extra_args)]
+        result = upload_logs + build_log
         return result
 
     def test_non_virtual_ppa_dispatch(self):
@@ -146,6 +146,7 @@ class TestBinaryBuildPackageBehaviour(TestCaseWithFactory):
         archive = self.factory.makeArchive(virtualized=False)
         slave = OkSlave()
         builder = self.factory.makeBuilder(virtualized=False)
+        builder.setCleanStatus(BuilderCleanStatus.CLEAN)
         vitals = extract_vitals_from_db(builder)
         build = self.factory.makeBinaryPackageBuild(
             builder=builder, archive=archive)
@@ -164,12 +165,11 @@ class TestBinaryBuildPackageBehaviour(TestCaseWithFactory):
         return d
 
     def test_virtual_ppa_dispatch(self):
-        # Make sure the builder slave gets reset before a build is
-        # dispatched to it.
         archive = self.factory.makeArchive(virtualized=True)
         slave = OkSlave()
         builder = self.factory.makeBuilder(
             virtualized=True, vm_host="foohost")
+        builder.setCleanStatus(BuilderCleanStatus.CLEAN)
         vitals = extract_vitals_from_db(builder)
         build = self.factory.makeBinaryPackageBuild(
             builder=builder, archive=archive)
@@ -182,22 +182,51 @@ class TestBinaryBuildPackageBehaviour(TestCaseWithFactory):
         d = interactor._startBuild(
             bq, vitals, builder, slave,
             interactor.getBuildBehaviour(bq, builder, slave), BufferLogger())
+        d.addCallback(
+            self.assertExpectedInteraction, slave.call_log, builder, build,
+            lf, archive, ArchivePurpose.PPA)
+        return d
 
-        def check_build(ignored):
-            # We expect the first call to the slave to be a resume call,
-            # followed by the rest of the usual calls we expect.
-            expected_resume_call = slave.call_log.pop(0)
-            self.assertEqual('resume', expected_resume_call)
-            self.assertExpectedInteraction(
-                ignored, slave.call_log, builder, build, lf, archive,
-                ArchivePurpose.PPA)
-        return d.addCallback(check_build)
+    def test_private_source_dispatch(self):
+        archive = self.factory.makeArchive(private=True)
+        slave = OkSlave()
+        builder = self.factory.makeBuilder()
+        builder.setCleanStatus(BuilderCleanStatus.CLEAN)
+        vitals = extract_vitals_from_db(builder)
+        build = self.factory.makeBinaryPackageBuild(
+            builder=builder, archive=archive)
+        sprf = build.source_package_release.addFile(
+            self.factory.makeLibraryFileAlias(db_only=True),
+            filetype=SourcePackageFileType.ORIG_TARBALL)
+        sprf_url = (
+            'http://private-ppa.launchpad.dev/%s/%s/ubuntu/pool/%s/%s'
+            % (archive.owner.name, archive.name,
+               poolify(
+                   build.source_package_release.sourcepackagename.name,
+                   'main'),
+               sprf.libraryfile.filename))
+        lf = self.factory.makeLibraryFileAlias()
+        transaction.commit()
+        build.distro_arch_series.addOrUpdateChroot(lf)
+        bq = build.queueBuild()
+        bq.markAsBuilding(builder)
+        interactor = BuilderInteractor()
+        d = interactor._startBuild(
+            bq, vitals, builder, slave,
+            interactor.getBuildBehaviour(bq, builder, slave), BufferLogger())
+        d.addCallback(
+            self.assertExpectedInteraction, slave.call_log, builder, build,
+            lf, archive, ArchivePurpose.PPA,
+            extra_uploads=[(sprf_url, 'buildd', u'sekrit')],
+            filemap_names=[sprf.libraryfile.filename])
+        return d
 
     def test_partner_dispatch_no_publishing_history(self):
         archive = self.factory.makeArchive(
             virtualized=False, purpose=ArchivePurpose.PARTNER)
         slave = OkSlave()
         builder = self.factory.makeBuilder(virtualized=False)
+        builder.setCleanStatus(BuilderCleanStatus.CLEAN)
         vitals = extract_vitals_from_db(builder)
         build = self.factory.makeBinaryPackageBuild(
             builder=builder, archive=archive)
@@ -286,15 +315,6 @@ class TestBinaryBuildPackageBehaviour(TestCaseWithFactory):
         e = self.assertRaises(
             CannotBuild, behaviour.verifyBuildRequest, BufferLogger())
         self.assertIn("Missing CHROOT", str(e))
-
-    def test_getBuildCookie(self):
-        # A build cookie is made up of the job type and record id.
-        # The uploadprocessor relies on this format.
-        build = self.factory.makeBinaryPackageBuild()
-        behaviour = IBuildFarmJobBehaviour(build)
-        cookie = removeSecurityProxy(behaviour).getBuildCookie()
-        expected_cookie = "PACKAGEBUILD-%d" % build.id
-        self.assertEqual(expected_cookie, cookie)
 
 
 class TestBinaryBuildPackageBehaviourBuildCollection(TestCaseWithFactory):
@@ -385,20 +405,6 @@ class TestBinaryBuildPackageBehaviourBuildCollection(TestCaseWithFactory):
             self.candidate, WaitingSlave('BuildStatus.CHROOTFAIL'))
         return d.addCallback(got_update)
 
-    def test_builderfail_collection(self):
-        # The builder failed after we dispatched the build.
-        def got_update(ignored):
-            self.assertEqual(
-                "Builder returned BUILDERFAIL when asked for its status",
-                self.builder.failnotes)
-            self.assertIs(None, self.candidate.builder)
-            self.assertEqual(BuildStatus.NEEDSBUILD, self.build.status)
-            self.assertEqual(BuildQueueStatus.WAITING, self.candidate.status)
-
-        d = self.updateBuild(
-            self.candidate, WaitingSlave('BuildStatus.BUILDERFAIL'))
-        return d.addCallback(got_update)
-
     def test_building_collection(self):
         # The builder is still building the package.
         def got_update(ignored):
@@ -442,20 +448,6 @@ class TestBinaryBuildPackageBehaviourBuildCollection(TestCaseWithFactory):
             self.assertIs(None, self.build.upload_log)
 
         d = self.updateBuild(self.candidate, WaitingSlave('BuildStatus.OK'))
-        return d.addCallback(got_update)
-
-    def test_givenback_collection(self):
-        score = self.candidate.lastscore
-
-        def got_update(ignored):
-            self.assertIs(None, self.candidate.builder)
-            self.assertIs(None, self.candidate.date_started)
-            self.assertEqual(score, self.candidate.lastscore)
-            self.assertEqual(BuildStatus.NEEDSBUILD, self.build.status)
-            self.assertEqual(BuildQueueStatus.WAITING, self.candidate.status)
-
-        d = self.updateBuild(
-            self.candidate, WaitingSlave('BuildStatus.GIVENBACK'))
         return d.addCallback(got_update)
 
     def test_log_file_collection(self):
@@ -537,11 +529,24 @@ class MakeBinaryPackageBuildMixin:
         build.queueBuild()
         return build
 
+    def makeUnmodifiableBuild(self):
+        build = self.factory.makeBinaryPackageBuild()
+        build.distro_series.status = SeriesStatus.CURRENT
+        build.updateStatus(BuildStatus.BUILDING)
+        build.queueBuild()
+        return build
+
 
 class TestGetUploadMethodsForBinaryPackageBuild(
     MakeBinaryPackageBuildMixin, TestGetUploadMethodsMixin,
     TestCaseWithFactory):
     """IPackageBuild.getUpload-related methods work with binary builds."""
+
+
+class TestVerifySuccessfulBuildForBinaryPackageBuild(
+    MakeBinaryPackageBuildMixin, TestVerifySuccessfulBuildMixin,
+    TestCaseWithFactory):
+    """IBuildFarmJobBehaviour.verifySuccessfulBuild works."""
 
 
 class TestHandleStatusForBinaryPackageBuild(

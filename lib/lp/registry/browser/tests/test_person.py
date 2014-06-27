@@ -211,18 +211,19 @@ class TestPersonIndexView(BrowserTestCase):
 
     def test_assigned_blueprints(self):
         person = self.factory.makePerson()
-
-        def make_started_spec(information_type):
-            enum = SpecificationImplementationStatus
-            return self.factory.makeSpecification(
-                implementation_status=enum.STARTED, assignee=person,
-                information_type=information_type)
-        public_spec = make_started_spec(InformationType.PUBLIC)
-        private_spec = make_started_spec(InformationType.PROPRIETARY)
+        public_spec = self.factory.makeSpecification(
+            assignee=person,
+            implementation_status=SpecificationImplementationStatus.STARTED,
+            information_type=InformationType.PUBLIC)
+        private_name = 'super-private'
+        private_spec = self.factory.makeSpecification(
+            name=private_name, assignee=person,
+            implementation_status=SpecificationImplementationStatus.STARTED,
+            information_type=InformationType.PROPRIETARY)
         with person_logged_in(None):
             browser = self.getViewBrowser(person)
         self.assertIn(public_spec.name, browser.contents)
-        self.assertNotIn(private_spec.name, browser.contents)
+        self.assertNotIn(private_name, browser.contents)
 
     def test_only_assigned_blueprints(self):
         # Only assigned blueprints are listed, not arbitrary related
