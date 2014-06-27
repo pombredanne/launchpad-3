@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -171,6 +171,10 @@ class OAuthConsumer(OAuthBase, SQLBase):
         """See `IOAuthConsumer`."""
         return self._integrated_desktop_match_group(1)
 
+    def isSecretValid(self, secret):
+        """See `IOAuthConsumer`."""
+        return secret == self.secret
+
     def newRequestToken(self):
         """See `IOAuthConsumer`."""
         key, secret = create_token_key_and_secret(table=OAuthRequestToken)
@@ -248,6 +252,10 @@ class OAuthAccessToken(OAuthBase, SQLBase):
     def is_expired(self):
         now = datetime.now(pytz.timezone('UTC'))
         return self.date_expires is not None and self.date_expires <= now
+
+    def isSecretValid(self, secret):
+        """See `IOAuthConsumer`."""
+        return secret == self.secret
 
     def checkNonceAndTimestamp(self, nonce, timestamp):
         """See `IOAuthAccessToken`."""
@@ -333,6 +341,10 @@ class OAuthRequestToken(OAuthBase, SQLBase):
         now = datetime.now(pytz.timezone('UTC'))
         expires = self.date_created + timedelta(hours=REQUEST_TOKEN_VALIDITY)
         return expires <= now
+
+    def isSecretValid(self, secret):
+        """See `IOAuthConsumer`."""
+        return secret == self.secret
 
     def review(self, user, permission, context=None, date_expires=None):
         """See `IOAuthRequestToken`."""

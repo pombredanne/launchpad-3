@@ -146,6 +146,11 @@ class TestRequestTokens(TestOAuth):
         self.assertEquals(
             None, self.consumer.getRequestToken("no-such-token"))
 
+    def test_isSecretValid(self):
+        token = self.consumer.newRequestToken()
+        self.assertTrue(token.isSecretValid(token.secret))
+        self.assertFalse(token.isSecretValid(token.secret + 'a'))
+
     def test_token_review(self):
         request_token = self.consumer.newRequestToken()
 
@@ -351,6 +356,13 @@ class TestAccessTokens(TestOAuth):
 
         login_person(access_token.person)
         try_to_set()
+
+    def test_isSecretValid(self):
+        request_token = self.consumer.newRequestToken()
+        request_token.review(self.person, OAuthPermission.WRITE_PRIVATE)
+        token = request_token.createAccessToken()
+        self.assertTrue(token.isSecretValid(token.secret))
+        self.assertFalse(token.isSecretValid(token.secret + 'a'))
 
     def test_get_access_tokens_for_person(self):
         """It's possible to get a person's access tokens."""
