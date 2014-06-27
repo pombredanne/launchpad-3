@@ -1208,4 +1208,4 @@ class TestWebservice(TestCaseWithFactory):
         store.invalidate()
         with StormStatementRecorder() as recorder:
             webservice.get(url)
-        self.assertThat(recorder, HasQueryCount(Equals(28)))
+        self.assertThat(recorder, HasQueryCount(Equals(26)))
