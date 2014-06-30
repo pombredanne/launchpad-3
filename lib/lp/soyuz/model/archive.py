@@ -2301,12 +2301,14 @@ class ArchiveSet:
 
     def getPPAsForUser(self, user):
         """See `IArchiveSet`."""
+        from lp.registry.model.person import Person
         # If there's no user logged in, then there's no archives.
         if user is None:
             return []
         store = Store.of(user)
         direct_membership = store.find(
             Archive,
+            Archive._enabled == True,
             Archive.purpose == ArchivePurpose.PPA,
             TeamParticipation.team == Archive.ownerID,
             TeamParticipation.person == user,
@@ -2322,7 +2324,10 @@ class ArchiveSet:
         result = direct_membership.union(third_party_upload_acl)
         result.order_by(Archive.displayname)
 
-        return result
+        def preload_owners(rows):
+            load_related(Person, rows, ['ownerID'])
+
+        return DecoratedResultSet(result, pre_iter_hook=preload_owners)
 
     def getPPAsPendingSigningKey(self):
         """See `IArchiveSet`."""
