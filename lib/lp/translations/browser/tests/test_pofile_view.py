@@ -3,6 +3,7 @@
 
 __metaclass__ = type
 
+from storm.store import Store
 from testtools.matchers import Equals
 from zope.component import getUtility
 
@@ -28,6 +29,7 @@ from lp.translations.browser.pofile import POFileTranslateView
 from lp.translations.enums import TranslationPermission
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.translationsperson import ITranslationsPerson
+from lp.translations.model.pofiletranslator import POFileTranslator
 
 
 class TestQueryCount(TestCaseWithFactory):
@@ -63,9 +65,18 @@ class TestQueryCount(TestCaseWithFactory):
                         potemplate=pot),
                     language=pofile.language,
                     translations=[self.factory.getUniqueUnicode()])
+                self.factory.makeSuggestion(
+                    pofile=pofile, potmsgset=potmsgset)
+
+            # Ensure that these are valid suggestions.
             templateset = getUtility(IPOTemplateSet)
             templateset.wipeSuggestivePOTemplatesCache()
             templateset.populateSuggestivePOTemplatesCache()
+
+            # And ensure that the credits string is empty, as that's
+            # not currently constant.
+            Store.of(pofile).find(POFileTranslator, pofile=pofile).set(
+                pofileID=self.factory.makePOFile().id)
 
         nb_objects = 2
         recorder1, recorder2 = record_two_runs(
