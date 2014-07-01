@@ -659,4 +659,4 @@ class TestLiveFSWebservice(TestCaseWithFactory):
         store.invalidate()
         with StormStatementRecorder() as recorder:
             self.webservice.get(url)
-        self.assertThat(recorder, HasQueryCount(Equals(21)))
+        self.assertThat(recorder, HasQueryCount(Equals(18)))

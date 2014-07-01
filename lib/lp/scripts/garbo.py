@@ -103,7 +103,6 @@ from lp.services.job.model.job import Job
 from lp.services.librarian.model import TimeLimitedToken
 from lp.services.log.logger import PrefixFilter
 from lp.services.looptuner import TunableLoop
-from lp.services.oauth.model import OAuthNonce
 from lp.services.openid.model.openidconsumer import OpenIDConsumerNonce
 from lp.services.propertycache import cachedproperty
 from lp.services.salesforce.interfaces import (
@@ -356,23 +355,6 @@ class DuplicateSessionPruner(SessionPruner):
             rank > 6
             AND last_accessed < CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
                 - CAST('1 hour' AS interval)
-        """
-
-
-class OAuthNoncePruner(BulkPruner):
-    """An ITunableLoop to prune old OAuthNonce records.
-
-    We remove all OAuthNonce records older than 1 day.
-    """
-    target_table_key = 'access_token, request_timestamp, nonce'
-    target_table_key_type = (
-        'access_token integer, request_timestamp timestamp without time zone,'
-        ' nonce text')
-    target_table_class = OAuthNonce
-    ids_to_prune_query = """
-        SELECT access_token, request_timestamp, nonce FROM OAuthNonce
-        WHERE request_timestamp
-            < CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - CAST('1 day' AS interval)
         """
 
 
@@ -1613,7 +1595,6 @@ class FrequentDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
     script_name = 'garbo-frequently'
     tunable_loops = [
         BugSummaryJournalRollup,
-        OAuthNoncePruner,
         OpenIDConsumerNoncePruner,
         OpenIDConsumerAssociationPruner,
         AntiqueSessionPruner,
