@@ -56,6 +56,7 @@ from lp.translations.browser.browser_helpers import (
     text_to_html,
     )
 from lp.translations.interfaces.pofile import IPOFileAlternativeLanguage
+from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.side import ITranslationSideTraitsSet
 from lp.translations.interfaces.translationmessage import (
     ITranslationMessage,
@@ -1228,6 +1229,8 @@ class CurrentTranslationMessageView(LaunchpadView):
                 else:
                     message.setPOFile(pofile)
             result.append(message)
+        getUtility(IPOTemplateSet).preloadPOTemplateContexts(
+            message.browser_pofile.potemplate for message in result)
         return result
 
     def _buildAllSuggestions(self):
