@@ -396,7 +396,7 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
               """(SELECT potemplate
                     FROM TranslationTemplateItem
                     WHERE potmsgset = %s AND sequence > 0
-                    LIMIT 1)""" % sqlvalues(self.potmsgset)),
+                    LIMIT 1)""" % sqlvalues(self.potmsgsetID)),
             POFile.language == self.language).one()
         return pofile
 
