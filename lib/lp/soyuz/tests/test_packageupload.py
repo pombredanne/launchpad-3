@@ -1357,4 +1357,4 @@ class TestPackageUploadWebservice(TestCaseWithFactory):
         IStore(uploads[0].__class__).invalidate()
         with StormStatementRecorder() as recorder:
             ws_distroseries.getPackageUploads()
-        self.assertThat(recorder, HasQueryCount(Equals(32)))
+        self.assertThat(recorder, HasQueryCount(Equals(29)))
