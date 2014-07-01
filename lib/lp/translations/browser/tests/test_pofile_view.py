@@ -65,6 +65,10 @@ class TestQueryCount(TestCaseWithFactory):
                         potemplate=pot),
                     language=pofile.language,
                     translations=[self.factory.getUniqueUnicode()])
+                # A suggestion only shows up if it's actually in a
+                # POFile.
+                self.factory.makePOFile(
+                    potemplate=pot, language=pofile.language)
                 self.factory.makeSuggestion(
                     pofile=pofile, potmsgset=potmsgset)
 
