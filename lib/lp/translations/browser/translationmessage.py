@@ -1213,25 +1213,17 @@ class CurrentTranslationMessageView(LaunchpadView):
             else:
                 self.can_confirm_and_dismiss = True
 
-    def _setOnePOFile(self, messages):
+    def _setOnePOFile(self, tms):
         """Return a list of messages that all have a browser_pofile set.
 
         If a pofile cannot be found for a message, it is not included in
         the resulting list.
         """
-        result = []
-        for message in messages:
-            if message.browser_pofile is None:
-                pofile = message.getOnePOFile()
-                if pofile is None:
-                    # Do not include in result.
-                    continue
-                else:
-                    message.setPOFile(pofile)
-            result.append(message)
+        getUtility(ITranslationMessageSet).preloadPOFilesAndSequences(tms)
+        valid = [tm for tm in tms if tm.browser_pofile is not None]
         getUtility(IPOTemplateSet).preloadPOTemplateContexts(
-            message.browser_pofile.potemplate for message in result)
-        return result
+            tm.browser_pofile.potemplate for tm in valid)
+        return valid
 
     def _buildAllSuggestions(self):
         """Builds all suggestions and puts them into suggestions_block.

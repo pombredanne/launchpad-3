@@ -25,6 +25,7 @@ from storm.store import Store
 from zope.interface import implements
 
 from lp.registry.interfaces.person import validate_public_person
+from lp.services.database.bulk import load
 from lp.services.database.constants import (
     DEFAULT,
     UTC_NOW,
@@ -113,10 +114,13 @@ class TranslationMessageMixIn:
             elements.append(suffix)
         return self.potmsgset.makeHTMLID('_'.join(elements))
 
-    def setPOFile(self, pofile):
+    def setPOFile(self, pofile, sequence=None):
         """See `ITranslationMessage`."""
         self.browser_pofile = pofile
-        del get_property_cache(self).sequence
+        if sequence is not None:
+            get_property_cache(self).sequence = sequence
+        else:
+            del get_property_cache(self).sequence
 
     @cachedproperty
     def sequence(self):
@@ -530,3 +534,35 @@ class TranslationMessageSet:
     def selectDirect(self, where=None, order_by=None):
         """See `ITranslationMessageSet`."""
         return TranslationMessage.select(where, orderBy=order_by)
+
+    def preloadPOFilesAndSequences(self, messages, pofile=None):
+        """See `ITranslationMessageSet`."""
+        from lp.translations.model.pofile import POFile
+        from lp.translations.model.translationtemplateitem import (
+            TranslationTemplateItem,
+            )
+
+        if len(messages) == 0:
+            return
+        language = messages[0].language
+        if pofile is not None:
+            pofile_constraints = [POFile.id == pofile.id]
+        else:
+            pofile_constraints = [POFile.language == language]
+        results = IStore(POFile).find(
+            (TranslationTemplateItem.potmsgsetID, POFile.id,
+             TranslationTemplateItem.sequence),
+            TranslationTemplateItem.potmsgsetID.is_in(
+                message.potmsgsetID for message in messages),
+            POFile.potemplateID == TranslationTemplateItem.potemplateID,
+            *pofile_constraints
+            ).config(distinct=(TranslationTemplateItem.potmsgsetID,))
+        potmsgset_map = dict(
+            (potmsgset_id, (pofile_id, sequence))
+            for potmsgset_id, pofile_id, sequence in results)
+        load(POFile, (pofile_id for pofile_id, _ in potmsgset_map.values()))
+        for message in messages:
+            assert message.language == language
+            pofile_id, sequence = potmsgset_map.get(
+                message.potmsgsetID, (None, None))
+            message.setPOFile(IStore(POFile).get(POFile, pofile_id), sequence)

@@ -343,3 +343,13 @@ class ITranslationMessageSet(Interface):
             return.
         :param order_by: An SQL ORDER BY clause.
         """
+
+    def preloadPOFilesAndSequences(messages, pofile=None):
+        """Preload browser_pofile and sequence for `TranslationMessage`s.
+
+        All messages must be for the same language.
+
+        If pofile is None, an arbitrary POFile containing each message
+        will be used. Otherwise, each message must exist in the given
+        POFile.
+        """
