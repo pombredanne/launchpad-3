@@ -95,10 +95,6 @@ from lp.services.job.model.job import Job
 from lp.services.librarian.model import TimeLimitedToken
 from lp.services.log.logger import NullHandler
 from lp.services.messages.model.message import Message
-from lp.services.oauth.model import (
-    OAuthAccessToken,
-    OAuthNonce,
-    )
 from lp.services.openid.model.openidconsumer import OpenIDConsumerNonce
 from lp.services.salesforce.interfaces import ISalesforceVoucherProxy
 from lp.services.salesforce.tests.proxy import TestSalesforceVoucherProxy
@@ -439,47 +435,6 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         save_garbo_job_state('job', {'data': 2})
         data = load_garbo_job_state('job')
         self.assertEqual({'data': 2}, data)
-
-    def test_OAuthNoncePruner(self):
-        now = datetime.now(UTC)
-        timestamps = [
-            now - timedelta(days=2),  # Garbage
-            now - timedelta(days=1) - timedelta(seconds=60),  # Garbage
-            now - timedelta(days=1) + timedelta(seconds=60),  # Not garbage
-            now,  # Not garbage
-            ]
-        switch_dbuser('testadmin')
-        store = IMasterStore(OAuthNonce)
-
-        # Make sure we start with 0 nonces.
-        self.failUnlessEqual(store.find(OAuthNonce).count(), 0)
-
-        for timestamp in timestamps:
-            store.add(OAuthNonce(
-                access_token=OAuthAccessToken.get(1),
-                request_timestamp=timestamp,
-                nonce=str(timestamp)))
-        transaction.commit()
-
-        # Make sure we have 4 nonces now.
-        self.failUnlessEqual(store.find(OAuthNonce).count(), 4)
-
-        self.runFrequently(
-            maximum_chunk_size=60)  # 1 minute maximum chunk size
-
-        store = IMasterStore(OAuthNonce)
-
-        # Now back to two, having removed the two garbage entries.
-        self.failUnlessEqual(store.find(OAuthNonce).count(), 2)
-
-        # And none of them are older than a day.
-        # Hmm... why is it I'm putting tz aware datetimes in and getting
-        # naive datetimes back? Bug in the SQLObject compatibility layer?
-        # Test is still fine as we know the timezone.
-        self.failUnless(
-            store.find(
-                Min(OAuthNonce.request_timestamp)).one().replace(tzinfo=UTC)
-            >= now - timedelta(days=1))
 
     def test_OpenIDConsumerNoncePruner(self):
         now = int(time.mktime(time.gmtime()))
