@@ -39,7 +39,7 @@ class TestSprintIndex(BrowserTestCase):
             link.acceptBy(sprint.owner)
         with QueryCollector() as recorder:
             self.getViewBrowser(sprint)
-        self.assertThat(recorder, HasQueryCount(Equals(30)))
+        self.assertThat(recorder, HasQueryCount(Equals(28)))
 
     def test_proprietary_blueprint_listing_query_count(self):
         """Set a maximum number of queries for sprint blueprint lists."""
@@ -52,4 +52,4 @@ class TestSprintIndex(BrowserTestCase):
             link.acceptBy(sprint.owner)
         with QueryCollector() as recorder:
             self.getViewBrowser(sprint)
-        self.assertThat(recorder, HasQueryCount(Equals(22)))
+        self.assertThat(recorder, HasQueryCount(Equals(20)))
