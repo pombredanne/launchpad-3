@@ -56,7 +56,6 @@ from lp.translations.browser.browser_helpers import (
     text_to_html,
     )
 from lp.translations.interfaces.pofile import IPOFileAlternativeLanguage
-from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.side import ITranslationSideTraitsSet
 from lp.translations.interfaces.translationmessage import (
     ITranslationMessage,
@@ -1219,12 +1218,11 @@ class CurrentTranslationMessageView(LaunchpadView):
         If a pofile cannot be found for a message, it is not included in
         the resulting list.
         """
-        getUtility(ITranslationMessageSet).preloadPOFilesAndSequences(
-            tms, pofile)
-        valid = [tm for tm in tms if tm.browser_pofile is not None]
-        getUtility(IPOTemplateSet).preloadPOTemplateContexts(
-            tm.browser_pofile.potemplate for tm in valid)
-        return valid
+        getUtility(ITranslationMessageSet).preloadDetails(
+            tms, need_pofile=True, need_potemplate=True,
+            need_potemplate_context=True, need_potranslation=True,
+            need_potmsgset=True, need_people=True)
+        return [tm for tm in tms if tm.browser_pofile is not None]
 
     def _buildAllSuggestions(self):
         """Builds all suggestions and puts them into suggestions_block.
