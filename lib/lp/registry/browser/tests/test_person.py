@@ -104,6 +104,8 @@ class TestPersonNavigation(TestCaseWithFactory):
         in_suf = '/~%s/+archive/%s/%s' % (
             archive.owner.name, archive.distribution.name, archive.name)
         self.assertEqual(archive, test_traverse(in_suf)[0])
+        self.assertEqual(archive, test_traverse('/api/devel' + in_suf)[0])
+        self.assertEqual(archive, test_traverse('/api/1.0' + in_suf)[0])
 
     def test_traverse_archive_redirects_distroless(self):
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
@@ -111,6 +113,11 @@ class TestPersonNavigation(TestCaseWithFactory):
         out_suf = '/~%s/+archive/%s/%s' % (
             archive.owner.name, archive.distribution.name, archive.name)
         self.assertRedirect(in_suf, out_suf)
+        self.assertRedirect('/api/devel' + in_suf, '/api/devel' + out_suf)
+        # 1.0 API requests don't redirect, since some manually construct
+        # URLs and don't cope with redirects (most notably the Python 2
+        # implementation of apt-add-repository).
+        self.assertEqual(archive, test_traverse('/api/1.0' + out_suf)[0])
 
     def test_traverse_archive_redirects_nameless(self):
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
@@ -118,6 +125,8 @@ class TestPersonNavigation(TestCaseWithFactory):
         out_suf = '/~%s/+archive/%s/%s' % (
             archive.owner.name, archive.distribution.name, archive.name)
         self.assertRedirect(in_suf, out_suf)
+        self.assertRedirect('/api/devel' + in_suf, '/api/devel' + out_suf)
+        self.assertRedirect('/api/1.0' + in_suf, '/api/1.0' + out_suf)
 
 
 class PersonViewOpenidIdentityUrlTestCase(TestCaseWithFactory):

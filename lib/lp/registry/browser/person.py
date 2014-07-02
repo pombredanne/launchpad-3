@@ -439,6 +439,14 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
             try:
                 from lp.soyuz.browser.archive import traverse_named_ppa
                 ppa = traverse_named_ppa(self.context.name, distro_name)
+                if (IWebServiceClientRequest.providedBy(self.request)
+                        and self.request.annotations[
+                            self.request.VERSION_ANNOTATION] == '1.0'):
+                    # 1.0 API requests are exempt from the redirect,
+                    # since some manually construct URLs and don't cope
+                    # with redirects (most notably the Python 2
+                    # implementation of apt-add-repository).
+                    return ppa
                 return self.redirectSubTree(
                     canonical_url(ppa, request=self.request), status=301)
             except NotFoundError:
