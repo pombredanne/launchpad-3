@@ -3748,6 +3748,10 @@ class PersonSet:
         need_location=False, need_archive=False,
         need_preferred_email=False, need_validity=False, need_icon=False):
         """See `IPersonSet`."""
+        person_ids = set(person_ids)
+        person_ids.discard(None)
+        if not person_ids:
+            return EmptyResultSet()
         origin = [Person]
         conditions = [
             Person.id.is_in(person_ids)]
