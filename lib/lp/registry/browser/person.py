@@ -439,6 +439,8 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
             try:
                 from lp.soyuz.browser.archive import traverse_named_ppa
                 ppa = traverse_named_ppa(self.context.name, distro_name)
+                if ppa.distribution.name != u'ubuntu':
+                    return None
                 if (IWebServiceClientRequest.providedBy(self.request)
                         and self.request.annotations[
                             self.request.VERSION_ANNOTATION] == '1.0'):

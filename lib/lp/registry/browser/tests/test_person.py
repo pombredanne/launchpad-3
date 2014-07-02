@@ -15,6 +15,7 @@ from testtools.matchers import (
     LessThan,
     Not,
     )
+from testtools.testcase import ExpectedException
 import transaction
 from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
@@ -107,7 +108,8 @@ class TestPersonNavigation(TestCaseWithFactory):
         self.assertEqual(archive, test_traverse('/api/devel' + in_suf)[0])
         self.assertEqual(archive, test_traverse('/api/1.0' + in_suf)[0])
 
-    def test_traverse_archive_redirects_distroless(self):
+    def test_traverse_archive_distroless(self):
+        # Pre-mid-2014 distroless PPA URLs redirect to the new ones.
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
         in_suf = '/~%s/+archive/%s' % (archive.owner.name, archive.name)
         out_suf = '/~%s/+archive/%s/%s' % (
@@ -119,7 +121,20 @@ class TestPersonNavigation(TestCaseWithFactory):
         # implementation of apt-add-repository).
         self.assertEqual(archive, test_traverse('/api/1.0' + out_suf)[0])
 
+    def test_traverse_archive_distroless_implies_ubuntu(self):
+        # The distroless PPA redirect only finds Ubuntu PPAs, since
+        # distroful URLs were implemented as a requirement for
+        # non-Ubuntu PPAs.
+        other_archive = self.factory.makeArchive(
+            purpose=ArchivePurpose.PPA,
+            distribution=self.factory.makeDistribution())
+        with ExpectedException(NotFound):
+            test_traverse(
+                '/~%s/+archive/%s' % (
+                    other_archive.owner.name, other_archive.name))
+
     def test_traverse_archive_redirects_nameless(self):
+        # Pre-2009 nameless PPA URLs redirect to the new ones.
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
         in_suf = '/~%s/+archive' % archive.owner.name
         out_suf = '/~%s/+archive/%s/%s' % (
