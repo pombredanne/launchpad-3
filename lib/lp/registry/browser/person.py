@@ -69,7 +69,10 @@ import urllib
 from lazr.config import as_timedelta
 from lazr.delegates import delegates
 from lazr.restful.interface import copy_field
-from lazr.restful.interfaces import IWebServiceClientRequest
+from lazr.restful.interfaces import (
+    IWebServiceClientRequest,
+    IWebServiceVersion,
+    )
 from lazr.restful.utils import smartquote
 from lazr.uri import URI
 import pytz
@@ -408,30 +411,49 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
 
     @stepto('+archive')
     def traverse_archive(self):
+        # We support three URL styles: /~wgrant/+archive/ubuntu/ppa,
+        # /~wgrant/+archive/ppa and /~wgrant/+archive. The first one is
+        # canonical, and the latter two redirect to the named PPA in
+        # Ubuntu and the first Ubuntu PPA respectively.
 
-        if self.request.stepstogo:
-            # If the URL has something that could be a PPA name in it,
-            # use that, but just in case it fails, keep a copy
-            # of the traversal stack so we can try using the default
-            # archive afterwards:
-            traversal_stack = self.request.getTraversalStack()
-            ppa_name = self.request.stepstogo.consume()
+        # XXX: What about API resources? They don't start with +
 
+        maybe_distro = self.request.stepstogo.peek()
+        if maybe_distro is None or maybe_distro.startswith(u'+'):
+            # The distro name segment either doesn't exist or looks like
+            # a traversal within a PPA. Assume it's a pre-2009
+            # one-PPA-per-user URL and redirect to the default PPA.
+            default_ppa = self.context.archive
+            if default_ppa is None:
+                return None
+            return self.redirectSubTree(
+                canonical_url(default_ppa, request=self.request), status=301)
+
+        distro_name = self.request.stepstogo.consume()
+        maybe_ppa = self.request.stepstogo.peek()
+        if maybe_ppa is None or maybe_ppa.startswith(u'+'):
+            # The PPA name segment either doesn't exist or looks like a
+            # traversal within a PPA, so assume that this is a
+            # pre-mid-2014 all-PPAs-are-for-Ubuntu URL, where the distro
+            # name is actually a PPA name.
             try:
                 from lp.soyuz.browser.archive import traverse_named_ppa
-                return traverse_named_ppa(self.context.name, ppa_name)
+                ppa = traverse_named_ppa(self.context.name, distro_name)
+                return self.redirectSubTree(
+                    canonical_url(ppa, request=self.request), status=301)
             except NotFoundError:
-                self.request.setTraversalStack(traversal_stack)
-                # and simply continue below...
+                return None
 
-        # Otherwise try to get the default PPA and if it exists redirect
-        # to the new-style URL, if it doesn't, return None (to trigger a
-        # NotFound error).
-        default_ppa = self.context.archive
-        if default_ppa is None:
+        # Doesn't look like a legacy URL that we need to redirect. Just
+        # traverse the distro and PPA names normally.
+        ppa_name = self.request.stepstogo.consume()
+        if distro_name != u'ubuntu':
             return None
-
-        return self.redirectSubTree(canonical_url(default_ppa))
+        try:
+            from lp.soyuz.browser.archive import traverse_named_ppa
+            return traverse_named_ppa(self.context.name, ppa_name)
+        except NotFoundError:
+            return None
 
     @stepthrough('+email')
     def traverse_email(self, email):

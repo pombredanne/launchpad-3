@@ -18,6 +18,7 @@ from testtools.matchers import (
 import transaction
 from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
+from zope.security.proxy import removeSecurityProxy
 
 from lp.app.browser.lazrjs import TextAreaEditorWidget
 from lp.app.enums import InformationType
@@ -49,6 +50,7 @@ from lp.services.verification.tests.logintoken import get_token_url_from_email
 from lp.services.webapp import canonical_url
 from lp.services.webapp.escaping import html_escape
 from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.publisher import RedirectionView
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -81,10 +83,41 @@ from lp.testing.pages import (
     find_tag_by_id,
     setupBrowserForUser,
     )
+from lp.testing.publication import test_traverse
 from lp.testing.views import (
     create_initialized_view,
     create_view,
     )
+
+
+class TestPersonNavigation(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def assertRedirect(self, path, redirect):
+        view = test_traverse(path)[1]
+        self.assertIsInstance(view, RedirectionView)
+        self.assertEqual(':/' + redirect, removeSecurityProxy(view).target)
+
+    def test_traverse_archive(self):
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        in_suf = '/~%s/+archive/%s/%s' % (
+            archive.owner.name, archive.distribution.name, archive.name)
+        self.assertEqual(archive, test_traverse(in_suf)[0])
+
+    def test_traverse_archive_redirects_distroless(self):
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        in_suf = '/~%s/+archive/%s' % (archive.owner.name, archive.name)
+        out_suf = '/~%s/+archive/%s/%s' % (
+            archive.owner.name, archive.distribution.name, archive.name)
+        self.assertRedirect(in_suf, out_suf)
+
+    def test_traverse_archive_redirects_nameless(self):
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        in_suf = '/~%s/+archive' % archive.owner.name
+        out_suf = '/~%s/+archive/%s/%s' % (
+            archive.owner.name, archive.distribution.name, archive.name)
+        self.assertRedirect(in_suf, out_suf)
 
 
 class PersonViewOpenidIdentityUrlTestCase(TestCaseWithFactory):

@@ -227,7 +227,8 @@ class PPAURL:
 
     @property
     def path(self):
-        return u"+archive/%s" % self.context.name
+        return u"+archive/%s/%s" % (
+            self.context.distribution.name, self.context.name)
 
 
 class ArchiveNavigation(Navigation, FileNavigationMixin):
