@@ -9,8 +9,8 @@ __all__ = [
     'BaseTranslationView',
     'contains_translations',
     'convert_translationmessage_to_submission',
-    'CurrentTranslationMessageAppMenus',
     'CurrentTranslationMessageIndexView',
+    'CurrentTranslationMessageMenu',
     'CurrentTranslationMessagePageView',
     'CurrentTranslationMessageView',
     'CurrentTranslationMessageZoomedView',
@@ -38,11 +38,11 @@ from zope.schema.vocabulary import getVocabularyRegistry
 from lp.app.errors import UnexpectedFormData
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (
-    ApplicationMenu,
     canonical_url,
     enabled_with_permission,
     LaunchpadView,
     Link,
+    NavigationMenu,
     urlparse,
     )
 from lp.services.webapp.batching import BatchNavigator
@@ -190,26 +190,26 @@ class CustomDropdownWidget(DropdownWidget):
         return contents
 
 
-class CurrentTranslationMessageAppMenus(ApplicationMenu):
+class CurrentTranslationMessageMenu(NavigationMenu):
     usedfor = ITranslationMessage
     facet = 'translations'
-    links = ['overview', 'translate', 'upload', 'download']
+    links = ['details', 'translate', 'upload', 'download']
 
-    def overview(self):
-        text = 'Overview'
-        return Link('../', text)
+    def details(self):
+        text = 'Translation details'
+        return Link('../', text, icon='info')
 
     def translate(self):
         text = 'Translate many'
-        return Link('../+translate', text, icon='languages')
+        return Link('../+translate', text, icon='language')
 
     @enabled_with_permission('launchpad.Edit')
     def upload(self):
-        text = 'Upload a file'
-        return Link('../+upload', text, icon='edit')
+        text = 'Upload translation'
+        return Link('../+upload', text, icon='add')
 
     def download(self):
-        text = 'Download'
+        text = 'Download translation'
         return Link('../+export', text, icon='download')
 
 
