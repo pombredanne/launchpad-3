@@ -1272,11 +1272,20 @@ class CurrentTranslationMessageView(LaunchpadView):
                     suggested_languages=[language],
                     used_languages=used_languages))
 
-            getUtility(ITranslationMessageSet).preloadDetails(
+            # Suggestions from other templates need full preloading,
+            # including picking a POFile. preloadDetails requires that
+            # all messages have the same language, so we invoke it
+            # separately for the alternate suggestion language.
+            preload_groups = [
                 translations[language].used + translations[language].suggested,
-                need_pofile=True, need_potemplate=True,
-                need_potemplate_context=True, need_potranslation=True,
-                need_potmsgset=True, need_people=True)
+                translations[self.sec_lang].used,
+                ]
+            for group in preload_groups:
+                getUtility(ITranslationMessageSet).preloadDetails(
+                    group, need_pofile=True, need_potemplate=True,
+                    need_potemplate_context=True,
+                    need_potranslation=True, need_potmsgset=True,
+                    need_people=True)
 
             alt_external = translations[self.sec_lang].used
             externally_used = sorted(
