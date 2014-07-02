@@ -1213,13 +1213,14 @@ class CurrentTranslationMessageView(LaunchpadView):
             else:
                 self.can_confirm_and_dismiss = True
 
-    def _setOnePOFile(self, tms):
+    def _setOnePOFile(self, tms, pofile=None):
         """Return a list of messages that all have a browser_pofile set.
 
         If a pofile cannot be found for a message, it is not included in
         the resulting list.
         """
-        getUtility(ITranslationMessageSet).preloadPOFilesAndSequences(tms)
+        getUtility(ITranslationMessageSet).preloadPOFilesAndSequences(
+            tms, pofile)
         valid = [tm for tm in tms if tm.browser_pofile is not None]
         getUtility(IPOTemplateSet).preloadPOTemplateContexts(
             tm.browser_pofile.potemplate for tm in valid)
@@ -1272,8 +1273,7 @@ class CurrentTranslationMessageView(LaunchpadView):
 
             self._set_dismiss_flags(local, other)
 
-            for suggestion in local:
-                suggestion.setPOFile(self.pofile)
+            self._setOnePOFile(local, pofile=self.pofile)
 
             # Get a list of translations which are _used_ as translations
             # for this same message in a different translation template.
