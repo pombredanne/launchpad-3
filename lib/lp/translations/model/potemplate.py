@@ -1347,6 +1347,14 @@ class POTemplateSet:
                     len(preferred_matches))
                 return None
 
+    def preloadPOTemplateContexts(self, templates):
+        """See `IPOTemplateSet`."""
+        from lp.registry.model.product import Product
+        from lp.registry.model.productseries import ProductSeries
+        pses = load_related(ProductSeries, templates, ['productseriesID'])
+        load_related(Product, pses, ['productID'])
+        load_related(SourcePackageName, templates, ['sourcepackagenameID'])
+
     def wipeSuggestivePOTemplatesCache(self):
         """See `IPOTemplateSet`."""
         return IMasterStore(POTemplate).execute(
