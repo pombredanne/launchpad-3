@@ -343,7 +343,7 @@ class TestDistroSeries(TestCaseWithFactory):
         with StormStatementRecorder() as recorder:
             for spec in distroseries.api_valid_specifications:
                 spec.workitems_text
-        self.assertThat(recorder, HasQueryCount(Equals(4)))
+        self.assertThat(recorder, HasQueryCount(Equals(3)))
 
     def test_valid_specifications_preloading_excludes_deleted_workitems(self):
         distroseries = self.factory.makeDistroSeries()

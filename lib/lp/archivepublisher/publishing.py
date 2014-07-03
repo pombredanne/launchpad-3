@@ -884,6 +884,7 @@ class Publisher(object):
         for pub in self.archive.getAllPublishedBinaries(include_removed=False):
             pub.dateremoved = UTC_NOW
 
+        # XXX wgrant 2014-07-03: Needs checking for multi-distro sanity.
         for directory in (root_dir, self._config.metaroot):
             if not os.path.exists(directory):
                 continue
@@ -905,7 +906,8 @@ class Publisher(object):
         count = 1
         while True:
             try:
-                self.archive.owner.getPPAByName(new_name)
+                self.archive.owner.getPPAByName(
+                    self.archive.distribution, new_name)
             except NoSuchPPA:
                 break
             new_name = '%s%d' % (base_name, count)

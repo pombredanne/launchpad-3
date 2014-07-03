@@ -254,9 +254,11 @@ Create a publication in the team's PPA.
 
     >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> login('admin@canonical.com')
     >>> devs = getUtility(IPersonSet).getByName('landscape-developers')
-    >>> archive = devs.getPPAByName('develppa')
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> archive = devs.getPPAByName(ubuntu, 'develppa')
     >>> ignore = factory.makeSourcePackagePublishingHistory(archive=archive)
     >>> logout()
 
@@ -673,7 +675,7 @@ Deleted PPAs don't even show up for the owner.
     >>> from lp.soyuz.enums import ArchiveStatus
     >>> login('admin@canonical.com')
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
-    >>> cprov.getPPAByName('edge').status = ArchiveStatus.DELETED
+    >>> cprov.getPPAByName(ubuntu, 'edge').status = ArchiveStatus.DELETED
     >>> logout()
 
     >>> cprov_browser.open("http://launchpad.dev/~cprov")

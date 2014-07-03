@@ -57,6 +57,7 @@ from sqlobject import SQLObjectNotFound
 from zope.component import getUtility
 
 from lp.app.errors import NotFoundError
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archiveuploader.livefsupload import LiveFSUpload
 from lp.archiveuploader.nascentupload import (
     EarlyReturnUploadError,
@@ -830,7 +831,8 @@ def parse_upload_path(relative_path):
             distribution_and_suite = parts[2:]
 
         try:
-            archive = person.getPPAByName(ppa_name)
+            archive = person.getPPAByName(
+                getUtility(ILaunchpadCelebrities).ubuntu, ppa_name)
         except NoSuchPPA:
             raise PPAUploadPathError(
                 "Could not find a PPA named '%s' for '%s'."

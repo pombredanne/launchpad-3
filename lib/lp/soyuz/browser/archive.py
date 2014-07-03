@@ -184,7 +184,8 @@ def traverse_named_ppa(person_name, ppa_name):
     """
     person = getUtility(IPersonSet).getByName(person_name)
     try:
-        archive = person.getPPAByName(ppa_name)
+        archive = person.getPPAByName(
+            getUtility(ILaunchpadCelebrities).ubuntu, ppa_name)
     except NoSuchPPA:
         raise NotFoundError("%s/%s", (person_name, ppa_name))
 

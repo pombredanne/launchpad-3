@@ -664,11 +664,12 @@ class IPersonLimitedView(IHasIcon, IHasLogo):
         Bool(title=_("Is this a probationary user?"), readonly=True))
 
     @operation_parameters(
+        distribution=Reference(schema=Interface, required=False),
         name=TextLine(required=True, constraint=name_validator))
     @operation_returns_entry(Interface)  # Really IArchive.
     @export_read_operation()
     @operation_for_version("beta")
-    def getPPAByName(name):
+    def getPPAByName(distribution, name):
         """Return a PPA with the given name if it exists.
 
         :param name: A string with the exact name of the ppa being looked up.
