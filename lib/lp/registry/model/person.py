@@ -3060,7 +3060,9 @@ class Person(
 
     def getPPAByName(self, name):
         """See `IPerson`."""
-        return getUtility(IArchiveSet).getPPAOwnedByPerson(self, name)
+        return getUtility(IArchiveSet).getPPAOwnedByPerson(
+            self, distribution=getUtility(ILaunchpadCelebrities).ubuntu,
+            name=name)
 
     def createPPA(self, name=None, displayname=None, description=None,
                   private=False, suppress_subscription_notifications=False):

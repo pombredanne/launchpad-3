@@ -2915,16 +2915,23 @@ class TestGetPPAOwnedByPerson(TestCaseWithFactory):
             None,
             getUtility(IArchiveSet).getPPAOwnedByPerson(random))
 
-    def test_name(self):
+    def test_distribution_and_name(self):
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
         self.assertEqual(
             archive,
             getUtility(IArchiveSet).getPPAOwnedByPerson(
-                archive.owner, name=archive.name))
+                archive.owner,
+                distribution=archive.distribution, name=archive.name))
         self.assertRaises(
             NoSuchPPA,
             getUtility(IArchiveSet).getPPAOwnedByPerson,
-            archive.owner, name=archive.name + u'lol')
+            archive.owner,
+            distribution=archive.distribution, name=archive.name + u'lol')
+        self.assertRaises(
+            NoSuchPPA,
+            getUtility(IArchiveSet).getPPAOwnedByPerson,
+            archive.owner,
+            distribution=self.factory.makeDistribution(), name=archive.name)
 
     def test_statuses(self):
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
@@ -2945,15 +2952,15 @@ class TestGetPPAOwnedByPerson(TestCaseWithFactory):
 
     def test_has_packages(self):
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
-        self.assertRaises(
-            NoSuchPPA,
-            getUtility(IArchiveSet).getPPAOwnedByPerson,
-            archive.owner, name=archive.name, has_packages=True)
+        self.assertIs(
+            None,
+            getUtility(IArchiveSet).getPPAOwnedByPerson(
+                archive.owner, has_packages=True))
         self.factory.makeSourcePackagePublishingHistory(archive=archive)
         self.assertEqual(
             archive,
             getUtility(IArchiveSet).getPPAOwnedByPerson(
-                archive.owner, name=archive.name, has_packages=True))
+                archive.owner, has_packages=True))
 
 
 class TestPPALookup(TestCaseWithFactory):
