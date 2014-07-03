@@ -2297,10 +2297,7 @@ class ArchiveSet:
         if has_packages:
             clause.append(
                     SourcePackagePublishingHistory.archive == Archive.id)
-        result = store.find(Archive, *clause).order_by(Archive.id).first()
-        if name is not None and result is None:
-            raise NoSuchPPA(name)
-        return result
+        return store.find(Archive, *clause).order_by(Archive.id).first()
 
     def getPPAsForUser(self, user):
         """See `IArchiveSet`."""

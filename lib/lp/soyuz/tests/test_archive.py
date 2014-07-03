@@ -2922,16 +2922,16 @@ class TestGetPPAOwnedByPerson(TestCaseWithFactory):
             getUtility(IArchiveSet).getPPAOwnedByPerson(
                 archive.owner,
                 distribution=archive.distribution, name=archive.name))
-        self.assertRaises(
-            NoSuchPPA,
-            getUtility(IArchiveSet).getPPAOwnedByPerson,
-            archive.owner,
-            distribution=archive.distribution, name=archive.name + u'lol')
-        self.assertRaises(
-            NoSuchPPA,
-            getUtility(IArchiveSet).getPPAOwnedByPerson,
-            archive.owner,
-            distribution=self.factory.makeDistribution(), name=archive.name)
+        self.assertIs(
+            None,
+            getUtility(IArchiveSet).getPPAOwnedByPerson(
+                archive.owner, distribution=archive.distribution,
+                name=archive.name + u'lol'))
+        self.assertIs(
+            None,
+            getUtility(IArchiveSet).getPPAOwnedByPerson(
+                archive.owner, distribution=self.factory.makeDistribution(),
+                name=archive.name))
 
     def test_statuses(self):
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
