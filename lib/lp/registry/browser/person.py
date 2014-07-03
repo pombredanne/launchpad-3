@@ -408,56 +408,49 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
 
     @stepto('+archive')
     def traverse_archive(self):
-        # We support three URL styles: /~wgrant/+archive/ubuntu/ppa,
-        # /~wgrant/+archive/ppa and /~wgrant/+archive. The first one is
-        # canonical, and the latter two redirect to the named PPA in
-        # Ubuntu and the first Ubuntu PPA respectively.
-
-        # XXX: What about API resources? They don't start with +
         from lp.soyuz.browser.archive import traverse_named_ppa
 
-        maybe_distro = self.request.stepstogo.peek()
-        if maybe_distro is None or maybe_distro.startswith(u'+'):
-            # The distro name segment either doesn't exist or looks like
-            # a traversal within a PPA. Assume it's a pre-2009
-            # one-PPA-per-user URL and redirect to the default PPA.
-            default_ppa = self.context.archive
-            if default_ppa is None:
-                return None
-            return self.redirectSubTree(
-                canonical_url(default_ppa, request=self.request), status=301)
+        # 1.0 API requests are exempt from non-canonical redirects,
+        # since some manually construct URLs and don't cope with
+        # redirects (most notably the Python 2 implementation of
+        # apt-add-repository).
+        redirect_allowed = not (
+            IWebServiceClientRequest.providedBy(self.request)
+            and self.request.annotations.get(
+                self.request.VERSION_ANNOTATION) == '1.0')
 
-        distro_name = self.request.stepstogo.consume()
-        maybe_ppa = self.request.stepstogo.peek()
-        if maybe_ppa is None or maybe_ppa.startswith(u'+'):
-            # The PPA name segment either doesn't exist or looks like a
-            # traversal within a PPA, so assume that this is a
-            # pre-mid-2014 all-PPAs-are-for-Ubuntu URL, where the distro
-            # name is actually a PPA name.
-            try:
-                ppa = traverse_named_ppa(self.context, 'ubuntu', distro_name)
-                if ppa is None:
-                    return None
-                if (IWebServiceClientRequest.providedBy(self.request)
-                        and self.request.annotations[
-                            self.request.VERSION_ANNOTATION] == '1.0'):
-                    # 1.0 API requests are exempt from the redirect,
-                    # since some manually construct URLs and don't cope
-                    # with redirects (most notably the Python 2
-                    # implementation of apt-add-repository).
+        # There are three cases, in order of preference:
+        #  - 2014 onwards: /~wgrant/+archive/ubuntu/ppa:
+        #    The next two URL segments are names of a distribution and a PPA.
+        #
+        #  - 2009-2014: /~wgrant/+archive/ppa:
+        #    The distribution is assumed to be "ubuntu".
+        #
+        #  - 2007-2009: /~wgrant/+archive:
+        #    The distribution is assumed to be "ubuntu" and the PPA "ppa".
+        #
+        # Only the first is canonical, with the others redirecting to it.
+        bits = list(reversed(self.request.getTraversalStack()[-2:]))
+        attempts = []
+        if len(bits) == 2:
+            attempts.append((bits[0], bits[1], 2, False))
+        if len(bits) >= 1:
+            attempts.append(("ubuntu", bits[0], 1, redirect_allowed))
+        attempts.append(("ubuntu", "ppa", 0, True))
+
+        # Go through the attempts in order.
+        for distro, ppa, segments, redirect in attempts:
+            ppa = traverse_named_ppa(self.context, distro, ppa)
+            if ppa is not None:
+                for i in range(segments):
+                    self.request.stepstogo.consume()
+                if redirect:
+                    return self.redirectSubTree(
+                        canonical_url(ppa, request=self.request),
+                        status=301)
+                else:
                     return ppa
-                return self.redirectSubTree(
-                    canonical_url(ppa, request=self.request), status=301)
-            except NotFoundError:
-                return None
-
-        # Doesn't look like a legacy URL that we need to redirect. Just
-        # traverse the distro and PPA names normally.
-        ppa_name = self.request.stepstogo.consume()
-        try:
-            return traverse_named_ppa(self.context, distro_name, ppa_name)
-        except NotFoundError:
-            return None
+        return None
 
     @stepthrough('+email')
     def traverse_email(self, email):

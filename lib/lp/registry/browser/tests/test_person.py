@@ -137,7 +137,8 @@ class TestPersonNavigation(TestCaseWithFactory):
 
     def test_traverse_archive_redirects_nameless(self):
         # Pre-2009 nameless PPA URLs redirect to the new ones.
-        archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        archive = self.factory.makeArchive(
+            purpose=ArchivePurpose.PPA, name="ppa")
         in_suf = '/~%s/+archive' % archive.owner.name
         out_suf = '/~%s/+archive/%s/%s' % (
             archive.owner.name, archive.distribution.name, archive.name)
