@@ -99,6 +99,7 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing._webservice import QueryCollector
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
@@ -106,7 +107,6 @@ from lp.testing.layers import (
     )
 from lp.testing.matchers import HasQueryCount
 from lp.testing.pages import webservice_for_person
-from lp.testing._webservice import QueryCollector
 
 
 class TestGetPublicationsInArchive(TestCaseWithFactory):
@@ -2964,24 +2964,44 @@ class TestPPALookup(TestCaseWithFactory):
 
     def setUp(self):
         super(TestPPALookup, self).setUp()
+        self.ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        self.notbuntu = self.factory.makeDistribution()
         self.person = self.factory.makePerson()
         self.factory.makeArchive(owner=self.person, name="ppa")
         self.nightly = self.factory.makeArchive(
             owner=self.person, name="nightly")
+        self.other_ppa = self.factory.makeArchive(
+            owner=self.person, distribution=self.notbuntu, name="ppa")
+        self.third_ppa = self.factory.makeArchive(
+            owner=self.person, distribution=self.notbuntu, name="aap")
 
     def test_ppas(self):
         # IPerson.ppas returns all owned PPAs ordered by name.
         self.assertEqual(
-            ["nightly", "ppa"], [ppa.name for ppa in self.person.ppas])
+            ["aap", "nightly", "ppa", "ppa"],
+            [ppa.name for ppa in self.person.ppas])
 
     def test_getPPAByName(self):
-        default_ppa = self.person.getPPAByName("ppa")
+        default_ppa = self.person.getPPAByName(self.ubuntu, "ppa")
         self.assertEqual(self.person.archive, default_ppa)
-        nightly_ppa = self.person.getPPAByName("nightly")
+        nightly_ppa = self.person.getPPAByName(self.ubuntu, "nightly")
         self.assertEqual(self.nightly, nightly_ppa)
+        other_ppa = self.person.getPPAByName(self.notbuntu, "ppa")
+        self.assertEqual(self.other_ppa, other_ppa)
+        third_ppa = self.person.getPPAByName(self.notbuntu, "aap")
+        self.assertEqual(self.third_ppa, third_ppa)
+
+    def test_getPPAByName_defaults_to_ubuntu(self):
+        default_ppa = self.person.getPPAByName(None, "ppa")
+        self.assertEqual(self.person.archive, default_ppa)
 
     def test_NoSuchPPA(self):
-        self.assertRaises(NoSuchPPA, self.person.getPPAByName, "not-found")
+        self.assertRaises(
+            NoSuchPPA, self.person.getPPAByName, self.ubuntu, "not-found")
+
+    def test_NoSuchPPA_default_distro(self):
+        self.assertRaises(
+            NoSuchPPA, self.person.getPPAByName, None, "aap")
 
 
 class TestDisplayName(TestCaseWithFactory):

@@ -3061,11 +3061,13 @@ class Person(
                 (ArchiveStatus.ACTIVE, ArchiveStatus.DELETING)),
             filter).order_by(Archive.name)
 
-    def getPPAByName(self, name):
+    def getPPAByName(self, distribution=None, name=None):
         """See `IPerson`."""
+        assert name is not None
+        if distribution is None:
+            distribution = getUtility(ILaunchpadCelebrities).ubuntu
         ppa = getUtility(IArchiveSet).getPPAOwnedByPerson(
-            self, distribution=getUtility(ILaunchpadCelebrities).ubuntu,
-            name=name)
+            self, distribution=distribution, name=name)
         if ppa is None:
             raise NoSuchPPA(name)
         return ppa
