@@ -2905,62 +2905,57 @@ class TestGetPPAOwnedByPerson(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def setUp(self):
+        super(TestGetPPAOwnedByPerson, self).setUp()
+        self.set = getUtility(IArchiveSet)
+
     def test_person(self):
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
         random = self.factory.makePerson()
-        self.assertEqual(
-            archive,
-            getUtility(IArchiveSet).getPPAOwnedByPerson(archive.owner))
-        self.assertIs(
-            None,
-            getUtility(IArchiveSet).getPPAOwnedByPerson(random))
+        self.assertEqual(archive, self.set.getPPAOwnedByPerson(archive.owner))
+        self.assertIs(None, self.set.getPPAOwnedByPerson(random))
 
     def test_distribution_and_name(self):
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
         self.assertEqual(
             archive,
-            getUtility(IArchiveSet).getPPAOwnedByPerson(
-                archive.owner,
-                distribution=archive.distribution, name=archive.name))
+            self.set.getPPAOwnedByPerson(
+                archive.owner, archive.distribution, archive.name))
         self.assertIs(
             None,
-            getUtility(IArchiveSet).getPPAOwnedByPerson(
-                archive.owner, distribution=archive.distribution,
-                name=archive.name + u'lol'))
+            self.set.getPPAOwnedByPerson(
+                archive.owner, archive.distribution, archive.name + u'lol'))
         self.assertIs(
             None,
-            getUtility(IArchiveSet).getPPAOwnedByPerson(
-                archive.owner, distribution=self.factory.makeDistribution(),
-                name=archive.name))
+            self.set.getPPAOwnedByPerson(
+                archive.owner, self.factory.makeDistribution(), archive.name))
 
     def test_statuses(self):
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
         self.assertEqual(
             archive,
-            getUtility(IArchiveSet).getPPAOwnedByPerson(
+            self.set.getPPAOwnedByPerson(
                 archive.owner, statuses=(ArchiveStatus.ACTIVE,)))
         self.assertIs(
             None,
-            getUtility(IArchiveSet).getPPAOwnedByPerson(
+            self.set.getPPAOwnedByPerson(
                 archive.owner, statuses=(ArchiveStatus.DELETING,)))
         with person_logged_in(archive.owner):
             archive.delete(archive.owner)
         self.assertEqual(
             archive,
-            getUtility(IArchiveSet).getPPAOwnedByPerson(
+            self.set.getPPAOwnedByPerson(
                 archive.owner, statuses=(ArchiveStatus.DELETING,)))
 
     def test_has_packages(self):
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
         self.assertIs(
             None,
-            getUtility(IArchiveSet).getPPAOwnedByPerson(
-                archive.owner, has_packages=True))
+            self.set.getPPAOwnedByPerson(archive.owner, has_packages=True))
         self.factory.makeSourcePackagePublishingHistory(archive=archive)
         self.assertEqual(
             archive,
-            getUtility(IArchiveSet).getPPAOwnedByPerson(
-                archive.owner, has_packages=True))
+            self.set.getPPAOwnedByPerson(archive.owner, has_packages=True))
 
 
 class TestPPALookup(TestCaseWithFactory):
