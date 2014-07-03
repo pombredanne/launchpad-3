@@ -101,7 +101,9 @@ class TestPersonNavigation(TestCaseWithFactory):
         self.assertEqual(':/' + redirect, removeSecurityProxy(view).target)
 
     def test_traverse_archive(self):
-        archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        archive = self.factory.makeArchive(
+            purpose=ArchivePurpose.PPA,
+            distribution=self.factory.makeDistribution())
         in_suf = '/~%s/+archive/%s/%s' % (
             archive.owner.name, archive.distribution.name, archive.name)
         self.assertEqual(archive, test_traverse(in_suf)[0])

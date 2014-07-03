@@ -69,10 +69,7 @@ import urllib
 from lazr.config import as_timedelta
 from lazr.delegates import delegates
 from lazr.restful.interface import copy_field
-from lazr.restful.interfaces import (
-    IWebServiceClientRequest,
-    IWebServiceVersion,
-    )
+from lazr.restful.interfaces import IWebServiceClientRequest
 from lazr.restful.utils import smartquote
 from lazr.uri import URI
 import pytz
@@ -417,6 +414,7 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
         # Ubuntu and the first Ubuntu PPA respectively.
 
         # XXX: What about API resources? They don't start with +
+        from lp.soyuz.browser.archive import traverse_named_ppa
 
         maybe_distro = self.request.stepstogo.peek()
         if maybe_distro is None or maybe_distro.startswith(u'+'):
@@ -437,9 +435,8 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
             # pre-mid-2014 all-PPAs-are-for-Ubuntu URL, where the distro
             # name is actually a PPA name.
             try:
-                from lp.soyuz.browser.archive import traverse_named_ppa
-                ppa = traverse_named_ppa(self.context.name, distro_name)
-                if ppa.distribution.name != u'ubuntu':
+                ppa = traverse_named_ppa(self.context, 'ubuntu', distro_name)
+                if ppa is None:
                     return None
                 if (IWebServiceClientRequest.providedBy(self.request)
                         and self.request.annotations[
@@ -457,11 +454,8 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
         # Doesn't look like a legacy URL that we need to redirect. Just
         # traverse the distro and PPA names normally.
         ppa_name = self.request.stepstogo.consume()
-        if distro_name != u'ubuntu':
-            return None
         try:
-            from lp.soyuz.browser.archive import traverse_named_ppa
-            return traverse_named_ppa(self.context.name, ppa_name)
+            return traverse_named_ppa(self.context, distro_name, ppa_name)
         except NotFoundError:
             return None
 
