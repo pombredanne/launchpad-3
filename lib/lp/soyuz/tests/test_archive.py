@@ -2901,6 +2901,61 @@ class TestPPANaming(TestCaseWithFactory):
             distribution=boingolinux, name=boingolinux.name)
 
 
+class TestGetPPAOwnedByPerson(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_person(self):
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        random = self.factory.makePerson()
+        self.assertEqual(
+            archive,
+            getUtility(IArchiveSet).getPPAOwnedByPerson(archive.owner))
+        self.assertIs(
+            None,
+            getUtility(IArchiveSet).getPPAOwnedByPerson(random))
+
+    def test_name(self):
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        self.assertEqual(
+            archive,
+            getUtility(IArchiveSet).getPPAOwnedByPerson(
+                archive.owner, name=archive.name))
+        self.assertRaises(
+            NoSuchPPA,
+            getUtility(IArchiveSet).getPPAOwnedByPerson,
+            archive.owner, name=archive.name + u'lol')
+
+    def test_statuses(self):
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        self.assertEqual(
+            archive,
+            getUtility(IArchiveSet).getPPAOwnedByPerson(
+                archive.owner, statuses=(ArchiveStatus.ACTIVE,)))
+        self.assertIs(
+            None,
+            getUtility(IArchiveSet).getPPAOwnedByPerson(
+                archive.owner, statuses=(ArchiveStatus.DELETING,)))
+        with person_logged_in(archive.owner):
+            archive.delete(archive.owner)
+        self.assertEqual(
+            archive,
+            getUtility(IArchiveSet).getPPAOwnedByPerson(
+                archive.owner, statuses=(ArchiveStatus.DELETING,)))
+
+    def test_has_packages(self):
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        self.assertRaises(
+            NoSuchPPA,
+            getUtility(IArchiveSet).getPPAOwnedByPerson,
+            archive.owner, name=archive.name, has_packages=True)
+        self.factory.makeSourcePackagePublishingHistory(archive=archive)
+        self.assertEqual(
+            archive,
+            getUtility(IArchiveSet).getPPAOwnedByPerson(
+                archive.owner, name=archive.name, has_packages=True))
+
+
 class TestPPALookup(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
