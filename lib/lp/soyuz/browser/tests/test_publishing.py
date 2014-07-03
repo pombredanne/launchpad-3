@@ -15,6 +15,7 @@ from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
 from zope.security.interfaces import Unauthorized
 
+from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.webapp.publisher import (
     canonical_url,
@@ -46,7 +47,8 @@ class TestSourcePublicationListingExtra(BrowserTestCase):
         # Create everything we need to create builds, such as a
         # DistroArchSeries and a builder.
         self.processor = self.factory.makeProcessor()
-        self.distroseries = self.factory.makeDistroSeries()
+        self.distroseries = self.factory.makeDistroSeries(
+            distribution=getUtility(IDistributionSet)['ubuntu'])
         self.das = self.factory.makeDistroArchSeries(
             distroseries=self.distroseries, processor=self.processor,
             supports_virtualized=True)
