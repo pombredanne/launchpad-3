@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Initialize a distroseries from its parent distroseries."""
@@ -670,7 +670,7 @@ class InitializeDistroSeries:
             # First, try to fetch an existing packageset with this name.
             try:
                 child_ps = packageset_set.getByName(
-                    parent_ps.name, self.distroseries)
+                    self.distroseries, parent_ps.name)
             except NoSuchPackageSet:
                 if self.distroseries.distribution.id in parent_distro_ids:
                     new_owner = parent_ps.owner
