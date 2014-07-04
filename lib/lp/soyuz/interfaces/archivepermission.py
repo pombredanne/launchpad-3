@@ -284,7 +284,8 @@ class IArchivePermissionSet(Interface):
             archive in question.
         """
 
-    def isSourceUploadAllowed(archive, sourcepackagename, person):
+    def isSourceUploadAllowed(archive, sourcepackagename, person,
+                              distroseries):
         """True if the person is allowed to upload the given source package.
 
         Return True if there exists a permission that combines
