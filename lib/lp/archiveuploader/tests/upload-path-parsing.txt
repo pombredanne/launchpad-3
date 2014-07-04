@@ -78,44 +78,45 @@ An upload will be considered targeted to a PPA if the first path term
 starts with '~', then the subsequent text in this term will be looked
 up as a Person in Launchpad.
 
-    >>> check_upload('~cprov/ppa/ubuntu')
+    >>> check_upload('~cprov/ubuntu/ppa')
     Archive: ppa
     Distribution: ubuntu
     Suite: None
 
-    >>> check_upload('~does-not-exist/ppa/ubuntu')
+    >>> check_upload('~does-not-exist/ubuntu/ppa')
     Traceback (most recent call last):
     ...
     PPAUploadPathError: Could not find person or team named
     'does-not-exist'.
 
-The second path term is assumed to be a PPA name. Since for a long
-time named-PPA was not supported and uploads didn't need to consider
-it, we still pointing uploads where the PPA name was omitted to the
-default PPA (the one named 'ppa').
+Two deprecated PPA paths are still supported for compatibility. Before
+mid-2014 all PPAs were for Ubuntu, and the distribution came after the
+PPA name and could be omitted. Before 2009 each user had at most one
+PPA, so the name was omitted -- we assume "ppa".
+
+    >>> check_upload('~cprov/ppa/ubuntu')
+    Archive: ppa
+    Distribution: ubuntu
+    Suite: None
+    >>> check_upload('~cprov/ppa')
+    Archive: ppa
+    Distribution: ubuntu
+    Suite: None
 
     >>> check_upload('~cprov/ubuntu')
     Archive: ppa
     Distribution: ubuntu
     Suite: None
 
-PPA upload paths missing the 'distribution' part default to 'ubuntu'
-distribution.
-
-    >>> check_upload('~cprov/ppa')
-    Archive: ppa
-    Distribution: ubuntu
-    Suite: None
-
 PPA uploads also support overrides to the changesfile suite when it's
-valid. It's also supported for uploads omitting the PPA name.
+valid. It's also supported for uploads to the deprecated paths.
 
-    >>> check_upload('~cprov/ppa/ubuntu/warty-backports')
+    >>> check_upload('~cprov/ubuntu/ppa/warty-backports')
     Archive: ppa
     Distribution: ubuntu
     Suite: warty-backports
 
-    >>> check_upload('~cprov/ubuntu/warty-backports')
+    >>> check_upload('~cprov/ppa/ubuntu/warty-backports')
     Archive: ppa
     Distribution: ubuntu
     Suite: warty-backports
@@ -124,15 +125,6 @@ valid. It's also supported for uploads omitting the PPA name.
     Traceback (most recent call last):
     ...
     PPAUploadPathError: Could not find suite 'boing'.
-
-A PPA upload for an conflicting distribution results in an
-error. Currently all PPAs in Launchpad are targeted to 'ubuntu'.
-
-    >>> check_upload('~cprov/ppa/debian')
-    Traceback (most recent call last):
-    ...
-    PPAUploadPathError: PPA for Celso Providelo only supports uploads
-    to 'ubuntu' distribution.
 
 We will disable Celso's default PPA and uploads to it will result in
 an error.
@@ -149,17 +141,22 @@ an error.
     >>> import transaction
     >>> transaction.commit()
 
+    >>> check_upload('~cprov/ubuntu/ppa')
+    Traceback (most recent call last):
+    ...
+    PPAUploadPathError: PPA for Celso Providelo is disabled.
+
     >>> check_upload('~cprov/ppa/ubuntu')
     Traceback (most recent call last):
     ...
     PPAUploadPathError: PPA for Celso Providelo is disabled.
 
-    >>> check_upload('~cprov/ubuntu')
+Uploading to named PPA that does not exist fails.
+
+    >>> check_upload('~cprov/ubuntu/beta')
     Traceback (most recent call last):
     ...
-    PPAUploadPathError: PPA for Celso Providelo is disabled.
-
-Uploading to named PPA that does not exist fails.
+    PPAUploadPathError: Could not find a PPA named 'beta' for 'cprov'.
 
     >>> check_upload('~cprov/beta/ubuntu')
     Traceback (most recent call last):
@@ -174,6 +171,11 @@ We will create a 'beta' PPA for Celso.
     ...     ArchivePurpose.PPA, cprov, 'beta')
 
 And the upload now found its way to the new named PPA.
+
+    >>> check_upload('~cprov/ubuntu/beta')
+    Archive: beta
+    Distribution: ubuntu
+    Suite: None
 
     >>> check_upload('~cprov/beta/ubuntu')
     Archive: beta
@@ -203,7 +205,14 @@ person name. Note that users can't be named like distribution anyways.
 
 An extra path part that cannot be processed for PPA uploads.
 
-    >>> check_upload('~cprov/ppa/ubuntu/warty/ding-dong')
+    >>> check_upload('~cprov/ubuntu/ppa/warty/ding-dong')
+    Traceback (most recent call last):
+    ...
+    UploadPathError: Path format mismatch.
+
+A PPA upload missing '~':
+
+    >>> check_upload('cprov/ubuntu/ppa')
     Traceback (most recent call last):
     ...
     UploadPathError: Path format mismatch.
@@ -215,7 +224,7 @@ A old-style PPA upload missing '~':
     ...
     UploadPathError: Could not find distribution 'cprov'.
 
-A named PPA upload missing '~'.
+An old-style named PPA upload missing '~'.
 
     >>> check_upload('cprov/ppa/ubuntu')
     Traceback (most recent call last):
