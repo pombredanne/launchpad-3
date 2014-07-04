@@ -377,7 +377,7 @@ class IPackagesetSetEdit(Interface):
             IPerson, title=_("Person"), required=True, readonly=True,
             description=_("The person who owns this package set.")),
         distroseries=Reference(
-            IDistroSeries, title=_("Distroseries"), required=False,
+            IDistroSeries, title=_("Distroseries"), required=True,
             readonly=True, description=_(
                 "The distribution series to which the packageset "
                 "is related.")),
@@ -387,14 +387,14 @@ class IPackagesetSetEdit(Interface):
                 "The new package set will share the package set group "
                 "with this one.")))
     @export_factory_operation(IPackageset, [])
-    def new(name, description, owner, distroseries=None, related_set=None):
+    def new(name, description, owner, distroseries, related_set=None):
         """Create a new package set.
 
         :param name: the name of the package set to be created.
         :param description: the description for the package set to be created.
         :param owner: the owner of the package set to be created.
         :param distroseries: the distroseries to which the new packageset
-            is related. Defaults to the current Ubuntu series.
+            is related.
         :param related_set: the newly created package set is to be related to
             `related_set` (by being placed in the same package group).
 

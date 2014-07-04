@@ -17,7 +17,6 @@ from storm.locals import (
 from zope.component import getUtility
 from zope.interface import implements
 
-from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageName,
     ISourcePackageNameSet,
@@ -343,8 +342,7 @@ class PackagesetSet:
     """See `IPackagesetSet`."""
     implements(IPackagesetSet)
 
-    def new(
-        self, name, description, owner, distroseries=None, related_set=None):
+    def new(self, name, description, owner, distroseries, related_set=None):
         """See `IPackagesetSet`."""
         store = IMasterStore(Packageset)
 
@@ -359,10 +357,6 @@ class PackagesetSet:
             packagesetgroup = PackagesetGroup()
             packagesetgroup.owner = owner
             store.add(packagesetgroup)
-
-        if distroseries is None:
-            ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-            distroseries = ubuntu.currentseries
 
         packageset = Packageset()
         packageset.packagesetgroup = packagesetgroup

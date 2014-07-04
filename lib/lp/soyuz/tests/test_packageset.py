@@ -49,17 +49,7 @@ class TestPackagesetSet(TestCaseWithFactory):
             distribution=self.getUbuntu(), name="experimental",
             status=SeriesStatus.EXPERIMENTAL)
 
-    def test_new_defaults_to_current_distroseries(self):
-        # If the distroseries is not provided, the current development
-        # distroseries will be assumed.
-        packageset = self.ps_set.new(
-            self.factory.getUniqueUnicode(), self.factory.getUniqueUnicode(),
-            self.factory.makePerson())
-        self.failUnlessEqual(
-            self.getUbuntu().currentseries, packageset.distroseries)
-
-    def test_new_with_specified_distroseries(self):
-        # A distroseries can be provided when creating a package set.
+    def test_new(self):
         experimental_series = self.makeExperimentalSeries()
         packageset = self.ps_set.new(
             self.factory.getUniqueUnicode(), self.factory.getUniqueUnicode(),
@@ -242,21 +232,23 @@ class TestPackagesetSetPermissions(TestCaseWithFactory):
         with person_logged_in(self.factory.makePerson()):
             self.assertRaises(Unauthorized, getattr, self.ps_set, 'new')
 
-    def test_create_packagset_as_techboard(self):
+    def test_create_packageset_as_techboard(self):
         # Ubuntu techboard members can create packagesets
         with celebrity_logged_in('ubuntu_techboard'):
             self.ps_set.new(
                 self.factory.getUniqueUnicode(),
                 self.factory.getUniqueUnicode(),
-                self.factory.makePerson())
+                self.factory.makePerson(),
+                self.factory.makeDistroSeries())
 
-    def test_create_packagset_as_admin(self):
+    def test_create_packageset_as_admin(self):
         # Admins can create packagesets
         with admin_logged_in():
             self.ps_set.new(
                 self.factory.getUniqueUnicode(),
                 self.factory.getUniqueUnicode(),
-                self.factory.makePerson())
+                self.factory.makePerson(),
+                self.factory.makeDistroSeries())
 
 
 class TestPackageset(TestCaseWithFactory):
@@ -285,7 +277,8 @@ class TestPackageset(TestCaseWithFactory):
         # If the package set is the only one in the group the result set
         # returned by relatedSets() is empty.
         packageset = self.packageset_set.new(
-            u'kernel', u'Contains all OS kernel packages', self.person1)
+            u'kernel', u'Contains all OS kernel packages', self.person1,
+            self.distroseries_current)
 
         self.failUnlessEqual(packageset.relatedSets().count(), 0)
 
@@ -296,7 +289,8 @@ class TestPackageset(TestCaseWithFactory):
 
         # The original package set.
         pset1 = self.packageset_set.new(
-            u'kernel', u'Contains all OS kernel packages', self.person1)
+            u'kernel', u'Contains all OS kernel packages', self.person1,
+            distroseries=self.distroseries_current)
 
         # A related package set.
         pset2 = self.packageset_set.new(
@@ -341,7 +335,8 @@ class TestPackageset(TestCaseWithFactory):
 
     def test_destroy_with_ancestor(self):
         ancestor = self.packageset_set.new(
-            u'kernel', u'Contains all OS kernel packages', self.person1)
+            u'kernel', u'Contains all OS kernel packages', self.person1,
+            distroseries=self.distroseries_current)
         pset = self.packageset_set.new(
             u'kernel', u'Contains all OS kernel packages', self.person1,
             distroseries=self.distroseries_experimental, related_set=ancestor)

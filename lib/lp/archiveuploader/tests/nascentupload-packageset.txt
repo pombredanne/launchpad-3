@@ -92,7 +92,8 @@ Here goes the empty package set.
 
     >>> ps_set = getUtility(IPackagesetSet)
     >>> empty_ps = ps_set.new(
-    ...     u'empty-pkg-set', u'Empty package set.', name16)
+    ...     u'empty-pkg-set', u'Empty package set.', name16,
+    ...     ubuntu.currentseries)
     >>> transaction.commit()
 
 And here's name16's upload permission for it.
@@ -127,7 +128,8 @@ Next put in place a package set, add 'bar' to it and define a permission
 for the former.
 
     >>> foo_ps = ps_set.new(
-    ...     u'foo-pkg-set', u'Packages that require special care.', name16)
+    ...     u'foo-pkg-set', u'Packages that require special care.', name16,
+    ...     ubuntu.currentseries)
     >>> transaction.commit()
 
 Add 'bar' to the 'foo' package set.
