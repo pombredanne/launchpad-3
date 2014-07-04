@@ -642,13 +642,9 @@ class ArchivePermissionSet:
         return rset
 
     def isSourceUploadAllowed(
-        self, archive, sourcepackagename, person, distroseries=None):
+        self, archive, sourcepackagename, person, distroseries):
         """See `IArchivePermissionSet`."""
         sourcepackagename = self._nameToSourcePackageName(sourcepackagename)
-        store = IStore(ArchivePermission)
-        if distroseries is None:
-            ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-            distroseries = ubuntu.currentseries
 
         # Put together the parameters for the query that follows.
         archive_params = (ArchivePermissionType.UPLOAD, archive.id)
@@ -696,4 +692,4 @@ class ArchivePermissionSet:
         END AS number_of_permitted_package_sets;
 
         ''' % sqlvalues(*query_params)
-        return store.execute(query).get_one()[0] > 0
+        return IStore(ArchivePermission).execute(query).get_one()[0] > 0

@@ -1535,6 +1535,8 @@ class Archive(SQLBase):
     def isSourceUploadAllowed(
         self, sourcepackagename, person, distroseries=None):
         """See `IArchive`."""
+        if distroseries is None:
+            distroseries = self.distribution.currentseries
         permission_set = getUtility(IArchivePermissionSet)
         return permission_set.isSourceUploadAllowed(
             self, sourcepackagename, person, distroseries)
