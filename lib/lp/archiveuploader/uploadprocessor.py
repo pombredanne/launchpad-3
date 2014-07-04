@@ -784,12 +784,22 @@ def parse_upload_path(relative_path):
     We do this by analysing the path to which the user has uploaded,
     ie. the relative path within the upload folder to the changes file.
 
-    The valid paths are:
-    '' - default distro, ubuntu
-    '<distroname>' - given distribution
-    '~<personname>[/ppa_name]/<distroname>[/distroseriesname]' - given ppa,
-    distribution and optionally a distroseries.  If ppa_name is not
-    specified it will default to the one referenced by IPerson.archive.
+    Current paths are:
+      /<distro>[/suite] - any primary archive
+      /~<person>/<distro>/<ppa>[/suite] - any PPA
+
+    One deprecated form is still supported for the Ubuntu primary archive:
+      / - Ubuntu primary archive
+
+    Three deprecated forms are still supported for Ubuntu PPAs:
+      /~<person>/<ppa>/ubuntu[/suite] - any Ubuntu PPA
+      /~<person>/<ppa> - any Ubuntu PPA
+      /~<person>/ubuntu - default Ubuntu PPA (usually named "ppa")
+
+    The original /~<person>/ubuntu/<suite> form is no longer supported
+    as it clashes with /~<person>/<distro>/<ppa>
+
+    suite is an optional distroseries with an optional pocket suffix.
 
     I raises UploadPathError if something was wrong when parsing it.
 
