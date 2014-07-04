@@ -846,10 +846,8 @@ def parse_upload_path(relative_path):
                 ppa_name = parts[2]
             suite = parts[3:]
 
-        distro = getUtility(IDistributionSet).getByName(distro_name)
-        if distro is None:
-            raise PPAUploadPathError(
-                "No distribution named '%s'." % distro_name)
+        distribution, suite_name = _getDistributionAndSuite(
+            [distro_name] + suite, PPAUploadPathError)
 
         try:
             archive = person.getPPAByName(
@@ -858,9 +856,6 @@ def parse_upload_path(relative_path):
             raise PPAUploadPathError(
                 "Could not find a PPA named '%s' for '%s'."
                 % (ppa_name, person_name))
-
-        distribution, suite_name = _getDistributionAndSuite(
-            [distro_name] + suite, PPAUploadPathError)
 
     elif first_path.isdigit():
         # This must be a binary upload from a build slave.
