@@ -850,8 +850,7 @@ def parse_upload_path(relative_path):
             [distro_name] + suite, PPAUploadPathError)
 
         try:
-            archive = person.getPPAByName(
-                getUtility(ILaunchpadCelebrities).ubuntu, ppa_name)
+            archive = person.getPPAByName(distribution, ppa_name)
         except NoSuchPPA:
             raise PPAUploadPathError(
                 "Could not find a PPA named '%s' for '%s'."

@@ -78,9 +78,24 @@ An upload will be considered targeted to a PPA if the first path term
 starts with '~', then the subsequent text in this term will be looked
 up as a Person in Launchpad.
 
+    >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.soyuz.enums import ArchivePurpose
+    >>> from lp.soyuz.interfaces.archive import IArchiveSet
+    >>> debian = getUtility(IDistributionSet).getByName('debian')
+    >>> cprov = getUtility(IPersonSet).getByName('cprov')
+    >>> copy_archive = getUtility(IArchiveSet).new(
+    ...     ArchivePurpose.PPA, cprov, 'ppa', distribution=debian)
+
     >>> check_upload('~cprov/ubuntu/ppa')
     Archive: ppa
     Distribution: ubuntu
+    Suite: None
+
+    >>> check_upload('~cprov/debian/ppa')
+    Archive: ppa
+    Distribution: debian
     Suite: None
 
     >>> check_upload('~does-not-exist/ubuntu/ppa')
@@ -88,6 +103,11 @@ up as a Person in Launchpad.
     ...
     PPAUploadPathError: Could not find person or team named
     'does-not-exist'.
+
+    >>> check_upload('~cprov/notbuntu/ppa')
+    Traceback (most recent call last):
+    ...
+    PPAUploadPathError: Could not find distribution 'notbuntu'.
 
 Two deprecated PPA paths are still supported for compatibility. Before
 mid-2014 all PPAs were for Ubuntu, and the distribution came after the
@@ -129,11 +149,6 @@ valid. It's also supported for uploads to the deprecated paths.
 We will disable Celso's default PPA and uploads to it will result in
 an error.
 
-    >>> from zope.component import getUtility
-    >>> from lp.registry.interfaces.distribution import IDistributionSet
-    >>> from lp.registry.interfaces.person import IPersonSet
-
-    >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> cprov_ppa = cprov.getPPAByName(ubuntu, 'ppa')
     >>> cprov_ppa.disable()
@@ -165,8 +180,6 @@ Uploading to named PPA that does not exist fails.
 
 We will create a 'beta' PPA for Celso.
 
-    >>> from lp.soyuz.enums import ArchivePurpose
-    >>> from lp.soyuz.interfaces.archive import IArchiveSet
     >>> beta_ppa = getUtility(IArchiveSet).new(
     ...     ArchivePurpose.PPA, cprov, 'beta')
 
