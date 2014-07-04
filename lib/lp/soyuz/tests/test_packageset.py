@@ -909,22 +909,6 @@ class TestArchivePermissionSet(TestCaseWithFactory):
             self.ap_set.uploadersForPackageset(
                 self.archive, child, direct_permissions=False).is_empty())
 
-    def test_uploaders_for_packageset_by_name(self):
-        # a packageset name that doesn't exist will throw an error
-        self.ap_set.newPackagesetUploader(
-            self.archive, self.person, self.packageset)
-        # A correct name will give us a result:
-        self.assertFalse(self.ap_set.uploadersForPackageset(
-            self.archive, self.packageset.name).is_empty())
-        # An incorrect one will raise an exception
-        self.assertRaises(
-            NotFoundError, self.ap_set.uploadersForPackageset,
-            self.archive, self.factory.getUniqueUnicode())
-        # An incorrect type will raise a ValueError
-        self.assertRaises(
-            ValueError, self.ap_set.uploadersForPackageset,
-            self.archive, 42)
-
     def test_archive_permission_per_archive(self):
         # archive permissions are limited to an archive
         archive2 = self.factory.makeArchive()

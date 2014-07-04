@@ -44,11 +44,6 @@ def _order_result_set(result_set):
     return result_set.order_by('name')
 
 
-def _extract_type_name(value):
-    """Extract the type name of the given value."""
-    return str(type(value)).split("'")[-2]
-
-
 class Packageset(Storm):
     """See `IPackageset`."""
     implements(IPackageset)
