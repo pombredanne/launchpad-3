@@ -171,12 +171,14 @@ Uploading to named PPA that does not exist fails.
     >>> check_upload('~cprov/ubuntu/beta')
     Traceback (most recent call last):
     ...
-    PPAUploadPathError: Could not find a PPA named 'beta' for 'cprov'.
+    PPAUploadPathError: Could not find a PPA owned by 'cprov' for
+    'ubuntu' named 'beta'.
 
     >>> check_upload('~cprov/beta/ubuntu')
     Traceback (most recent call last):
     ...
-    PPAUploadPathError: Could not find a PPA named 'beta' for 'cprov'.
+    PPAUploadPathError: Could not find a PPA owned by 'cprov' for
+    'ubuntu' named 'beta'.
 
 We will create a 'beta' PPA for Celso.
 

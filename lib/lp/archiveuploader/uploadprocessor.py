@@ -853,8 +853,8 @@ def parse_upload_path(relative_path):
             archive = person.getPPAByName(distribution, ppa_name)
         except NoSuchPPA:
             raise PPAUploadPathError(
-                "Could not find a PPA named '%s' for '%s'."
-                % (ppa_name, person_name))
+                "Could not find a PPA owned by '%s' for '%s' named '%s'."
+                % (person.name, distribution.name, ppa_name))
 
     elif first_path.isdigit():
         # This must be a binary upload from a build slave.
