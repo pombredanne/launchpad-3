@@ -1212,24 +1212,6 @@ class CurrentTranslationMessageView(LaunchpadView):
             else:
                 self.can_confirm_and_dismiss = True
 
-    def _setOnePOFile(self, messages):
-        """Return a list of messages that all have a browser_pofile set.
-
-        If a pofile cannot be found for a message, it is not included in
-        the resulting list.
-        """
-        result = []
-        for message in messages:
-            if message.browser_pofile is None:
-                pofile = message.getOnePOFile()
-                if pofile is None:
-                    # Do not include in result.
-                    continue
-                else:
-                    message.setPOFile(pofile)
-            result.append(message)
-        return result
-
     def _buildAllSuggestions(self):
         """Builds all suggestions and puts them into suggestions_block.
 
@@ -1277,8 +1259,8 @@ class CurrentTranslationMessageView(LaunchpadView):
 
             self._set_dismiss_flags(local, other)
 
-            for suggestion in local:
-                suggestion.setPOFile(self.pofile)
+            getUtility(ITranslationMessageSet).preloadDetails(
+                local, need_potranslation=True, need_people=True)
 
             # Get a list of translations which are _used_ as translations
             # for this same message in a different translation template.
@@ -1289,19 +1271,36 @@ class CurrentTranslationMessageView(LaunchpadView):
                 potmsgset.getExternallySuggestedOrUsedTranslationMessages(
                     suggested_languages=[language],
                     used_languages=used_languages))
+
+            # Suggestions from other templates need full preloading,
+            # including picking a POFile. preloadDetails requires that
+            # all messages have the same language, so we invoke it
+            # separately for the alternate suggestion language.
+            preload_groups = [
+                translations[language].used + translations[language].suggested,
+                translations[self.sec_lang].used,
+                ]
+            for group in preload_groups:
+                getUtility(ITranslationMessageSet).preloadDetails(
+                    group, need_pofile=True, need_potemplate=True,
+                    need_potemplate_context=True,
+                    need_potranslation=True, need_potmsgset=True,
+                    need_people=True)
+
             alt_external = translations[self.sec_lang].used
-            externally_used = self._setOnePOFile(sorted(
-                translations[language].used,
+            externally_used = sorted(
+                [m for m in translations[language].used if m.browser_pofile],
                 key=operator.attrgetter("date_created"),
-                reverse=True))
+                reverse=True)
 
             # Get a list of translations which are suggested as
             # translations for this same message in a different translation
             # template, but are not used.
-            externally_suggested = self._setOnePOFile(sorted(
-                translations[language].suggested,
+            externally_suggested = sorted(
+                [m for m in translations[language].suggested
+                 if m.browser_pofile],
                 key=operator.attrgetter("date_created"),
-                reverse=True))
+                reverse=True)
         else:
             # Don't show suggestions for anonymous users.
             local = externally_used = externally_suggested = []

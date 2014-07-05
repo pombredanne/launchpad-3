@@ -3934,6 +3934,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if owner is None:
             person = self.getUniqueString(u'package-set-owner')
             owner = self.makePerson(name=person)
+        if distroseries is None:
+            distroseries = getUtility(IDistributionSet)[
+                'ubuntu'].currentseries
         techboard = getUtility(ILaunchpadCelebrities).ubuntu_techboard
         ps_set = getUtility(IPackagesetSet)
         package_set = run_with_login(
