@@ -144,7 +144,8 @@ Now 'bar' is included by the 'foo' package set.
 
 name16 has no package set based upload privileges for 'bar' yet.
 
-    >>> ap_set.isSourceUploadAllowed(ubuntu_archive, 'bar', name16)
+    >>> ap_set.isSourceUploadAllowed(
+    ...     ubuntu_archive, 'bar', name16, ubuntu.currentseries)
     False
 
 Now we define a permission for name16 to upload to the 'foo' package set.
@@ -158,7 +159,8 @@ Now we define a permission for name16 to upload to the 'foo' package set.
 
 And, voila, name16 has a package set based upload authorization for 'bar'.
 
-    >>> ap_set.isSourceUploadAllowed(ubuntu_archive, 'bar', name16)
+    >>> ap_set.isSourceUploadAllowed(
+    ...     ubuntu_archive, 'bar', name16, ubuntu.currentseries)
     True
 
 With the authorization above the upload should work again.

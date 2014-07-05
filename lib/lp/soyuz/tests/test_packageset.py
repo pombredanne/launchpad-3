@@ -720,6 +720,7 @@ class TestArchivePermissionSet(TestCaseWithFactory):
         self.ap_set = getUtility(IArchivePermissionSet)
         self.archive = self.factory.makeArchive()
         self.packageset = self.factory.makePackageset()
+        self.distroseries = self.packageset.distroseries
         self.person = self.factory.makePerson()
 
     def test_packagesets_for_uploader_empty(self):
@@ -901,22 +902,6 @@ class TestArchivePermissionSet(TestCaseWithFactory):
             self.ap_set.uploadersForPackageset(
                 self.archive, child, direct_permissions=False).is_empty())
 
-    def test_uploaders_for_packageset_by_name(self):
-        # a packageset name that doesn't exist will throw an error
-        self.ap_set.newPackagesetUploader(
-            self.archive, self.person, self.packageset)
-        # A correct name will give us a result:
-        self.assertFalse(self.ap_set.uploadersForPackageset(
-            self.archive, self.packageset.name).is_empty())
-        # An incorrect one will raise an exception
-        self.assertRaises(
-            NotFoundError, self.ap_set.uploadersForPackageset,
-            self.archive, self.factory.getUniqueUnicode())
-        # An incorrect type will raise a ValueError
-        self.assertRaises(
-            ValueError, self.ap_set.uploadersForPackageset,
-            self.archive, 42)
-
     def test_archive_permission_per_archive(self):
         # archive permissions are limited to an archive
         archive2 = self.factory.makeArchive()
@@ -954,7 +939,7 @@ class TestArchivePermissionSet(TestCaseWithFactory):
         self.packageset.add((package,))
 
         self.assertTrue(self.ap_set.isSourceUploadAllowed(
-            self.archive, package, self.person))
+            self.archive, package, self.person, self.distroseries))
 
     def test_is_source_upload_allowed_denied(self):
         # isSourceUploadAllowed should return false when a user has no
@@ -964,7 +949,7 @@ class TestArchivePermissionSet(TestCaseWithFactory):
         package = self.factory.makeSourcePackageName()
 
         self.assertFalse(self.ap_set.isSourceUploadAllowed(
-            self.archive, package, self.person))
+            self.archive, package, self.person, self.distroseries))
 
     def test_explicit_packageset_upload_rights(self):
         # If a package is covered by a packageset with explicit upload rights,
@@ -977,9 +962,9 @@ class TestArchivePermissionSet(TestCaseWithFactory):
         self.packageset.add((package, package2))
 
         self.assertTrue(self.ap_set.isSourceUploadAllowed(
-            self.archive, package, self.person))
+            self.archive, package, self.person, self.distroseries))
         self.assertTrue(self.ap_set.isSourceUploadAllowed(
-            self.archive, package2, self.person))
+            self.archive, package2, self.person, self.distroseries))
 
         # Create a packageset with explicit rights to package
         special_person = self.factory.makePerson()
@@ -989,13 +974,13 @@ class TestArchivePermissionSet(TestCaseWithFactory):
             self.archive, special_person, special_packageset, True)
 
         self.assertFalse(self.ap_set.isSourceUploadAllowed(
-            self.archive, package, self.person))
+            self.archive, package, self.person, self.distroseries))
         self.assertTrue(self.ap_set.isSourceUploadAllowed(
-            self.archive, package2, self.person))
+            self.archive, package2, self.person, self.distroseries))
         self.assertTrue(self.ap_set.isSourceUploadAllowed(
-            self.archive, package, special_person))
+            self.archive, package, special_person, self.distroseries))
         self.assertFalse(self.ap_set.isSourceUploadAllowed(
-            self.archive, package2, special_person))
+            self.archive, package2, special_person, self.distroseries))
 
     def test_delete_packageset_uploader(self):
         # deletePackagesetUploader removes upload rights
