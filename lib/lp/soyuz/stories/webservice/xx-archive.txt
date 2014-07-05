@@ -342,7 +342,8 @@ And here's a packageset to play with later:
     HTTP/1.1 201 Created
     ...
 
-    >>> packageset = webservice.get("/package-sets/hoary/umbrella").jsonBody()
+    >>> packageset = webservice.get(
+    ...     "/package-sets/ubuntu/hoary/umbrella").jsonBody()
 
 
 To be able to amend any permissions on a distribution archive,

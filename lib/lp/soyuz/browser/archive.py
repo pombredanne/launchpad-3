@@ -399,8 +399,7 @@ class ArchiveNavigation(Navigation, FileNavigationMixin):
                 except NotFoundError:
                     series = None
             if series is not None:
-                the_item = getUtility(IPackagesetSet).getByName(
-                    item, distroseries=series)
+                the_item = getUtility(IPackagesetSet).getByName(series, item)
         elif item_type == 'pocket':
             # See if "item" is a pocket name.
             try:
