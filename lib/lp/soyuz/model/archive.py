@@ -2279,25 +2279,25 @@ class ArchiveSet:
         """See `IArchiveSet`."""
         return iter(Archive.select())
 
-    def getPPAOwnedByPerson(self, person, name=None, statuses=None,
-                            has_packages=False):
+    def getPPAOwnedByPerson(self, person, distribution=None, name=None,
+                            statuses=None, has_packages=False):
         """See `IArchiveSet`."""
         # See Person._members which also directly queries this.
         store = Store.of(person)
         clause = [
             Archive.purpose == ArchivePurpose.PPA,
             Archive.owner == person]
+        if distribution is not None:
+            clause.append(Archive.distribution == distribution)
         if name is not None:
+            assert distribution is not None
             clause.append(Archive.name == name)
         if statuses is not None:
             clause.append(Archive.status.is_in(statuses))
         if has_packages:
             clause.append(
                     SourcePackagePublishingHistory.archive == Archive.id)
-        result = store.find(Archive, *clause).order_by(Archive.id).first()
-        if name is not None and result is None:
-            raise NoSuchPPA(name)
-        return result
+        return store.find(Archive, *clause).order_by(Archive.id).first()
 
     def getPPAsForUser(self, user):
         """See `IArchiveSet`."""

@@ -309,7 +309,10 @@ from lp.soyuz.enums import (
     ArchivePurpose,
     ArchiveStatus,
     )
-from lp.soyuz.interfaces.archive import IArchiveSet
+from lp.soyuz.interfaces.archive import (
+    IArchiveSet,
+    NoSuchPPA,
+    )
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
 from lp.soyuz.model.archive import (
     Archive,
@@ -3060,7 +3063,12 @@ class Person(
 
     def getPPAByName(self, name):
         """See `IPerson`."""
-        return getUtility(IArchiveSet).getPPAOwnedByPerson(self, name)
+        ppa = getUtility(IArchiveSet).getPPAOwnedByPerson(
+            self, distribution=getUtility(ILaunchpadCelebrities).ubuntu,
+            name=name)
+        if ppa is None:
+            raise NoSuchPPA(name)
+        return ppa
 
     def createPPA(self, name=None, displayname=None, description=None,
                   private=False, suppress_subscription_notifications=False):
