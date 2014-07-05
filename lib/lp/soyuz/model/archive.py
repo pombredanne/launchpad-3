@@ -2102,7 +2102,7 @@ def validate_ppa(owner, proposed_name, private=False):
     if proposed_name is None:
         proposed_name = 'ppa'
     try:
-        owner.getPPAByName(proposed_name)
+        owner.getPPAByName(ubuntu, proposed_name)
     except NoSuchPPA:
         return None
     else:
@@ -2237,11 +2237,12 @@ class ArchiveSet:
                     (name, distribution.name))
         else:
             archive = Archive.selectOneBy(
-                owner=owner, name=name, purpose=ArchivePurpose.PPA)
+                owner=owner, distribution=distribution, name=name,
+                purpose=ArchivePurpose.PPA)
             if archive is not None:
                 raise AssertionError(
-                    "Person '%s' already has a PPA named '%s'." %
-                    (owner.name, name))
+                    "Person '%s' already has a PPA for %s named '%s'." %
+                    (owner.name, distribution.name, name))
 
         # Signing-key for the default PPA is reused when it's already present.
         signing_key = None
@@ -2279,25 +2280,25 @@ class ArchiveSet:
         """See `IArchiveSet`."""
         return iter(Archive.select())
 
-    def getPPAOwnedByPerson(self, person, name=None, statuses=None,
-                            has_packages=False):
+    def getPPAOwnedByPerson(self, person, distribution=None, name=None,
+                            statuses=None, has_packages=False):
         """See `IArchiveSet`."""
         # See Person._members which also directly queries this.
         store = Store.of(person)
         clause = [
             Archive.purpose == ArchivePurpose.PPA,
             Archive.owner == person]
+        if distribution is not None:
+            clause.append(Archive.distribution == distribution)
         if name is not None:
+            assert distribution is not None
             clause.append(Archive.name == name)
         if statuses is not None:
             clause.append(Archive.status.is_in(statuses))
         if has_packages:
             clause.append(
                     SourcePackagePublishingHistory.archive == Archive.id)
-        result = store.find(Archive, *clause).order_by(Archive.id).first()
-        if name is not None and result is None:
-            raise NoSuchPPA(name)
-        return result
+        return store.find(Archive, *clause).order_by(Archive.id).first()
 
     def getPPAsForUser(self, user):
         """See `IArchiveSet`."""

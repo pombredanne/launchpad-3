@@ -322,6 +322,8 @@ IPreviewDiff['branch_merge_proposal'].schema = IBranchMergeProposal
 
 patch_reference_property(IPersonViewRestricted, 'archive', IArchive)
 patch_collection_property(IPersonViewRestricted, 'ppas', IArchive)
+patch_plain_parameter_type(
+    IPersonLimitedView, 'getPPAByName', 'distribution', IDistribution)
 patch_entry_return_type(IPersonLimitedView, 'getPPAByName', IArchive)
 patch_entry_return_type(IPersonEditRestricted, 'createPPA', IArchive)
 

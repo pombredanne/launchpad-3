@@ -138,10 +138,12 @@ We will disable Celso's default PPA and uploads to it will result in
 an error.
 
     >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.person import IPersonSet
 
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
-    >>> cprov_ppa = cprov.getPPAByName('ppa')
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> cprov_ppa = cprov.getPPAByName(ubuntu, 'ppa')
     >>> cprov_ppa.disable()
 
     >>> import transaction
@@ -229,7 +231,6 @@ is the database key of the archive in question.
 
 So, here is a binary upload path to the primary archive:
 
-    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> primary = getUtility(IArchiveSet).getByDistroPurpose(
     ...     ubuntu, ArchivePurpose.PRIMARY, 'primary')
