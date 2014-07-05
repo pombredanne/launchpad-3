@@ -2102,7 +2102,7 @@ def validate_ppa(owner, proposed_name, private=False):
     if proposed_name is None:
         proposed_name = 'ppa'
     try:
-        owner.getPPAByName(proposed_name)
+        owner.getPPAByName(ubuntu, proposed_name)
     except NoSuchPPA:
         return None
     else:
@@ -2237,11 +2237,12 @@ class ArchiveSet:
                     (name, distribution.name))
         else:
             archive = Archive.selectOneBy(
-                owner=owner, name=name, purpose=ArchivePurpose.PPA)
+                owner=owner, distribution=distribution, name=name,
+                purpose=ArchivePurpose.PPA)
             if archive is not None:
                 raise AssertionError(
-                    "Person '%s' already has a PPA named '%s'." %
-                    (owner.name, name))
+                    "Person '%s' already has a PPA for %s named '%s'." %
+                    (owner.name, distribution.name, name))
 
         # Signing-key for the default PPA is reused when it's already present.
         signing_key = None

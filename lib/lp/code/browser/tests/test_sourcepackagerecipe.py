@@ -664,7 +664,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         self.assertTrue(browser.url.endswith('/~eric/+recipe/name'))
         # Since no PPA name was entered, the default name (ppa) was used.
         login(ANONYMOUS)
-        new_ppa = self.user.getPPAByName('ppa')
+        new_ppa = self.user.getPPAByName(self.ppa.distribution, 'ppa')
         self.assertIsNot(None, new_ppa)
 
     def test_create_new_ppa_duplicate(self):
@@ -732,7 +732,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         self.assertTrue(browser.url.endswith('/~vikings/+recipe/name'))
         # Since no PPA name was entered, the default name (ppa) was used.
         login(ANONYMOUS)
-        new_ppa = team.getPPAByName('ppa')
+        new_ppa = team.getPPAByName(self.ppa.distribution, 'ppa')
         self.assertIsNot(None, new_ppa)
 
 

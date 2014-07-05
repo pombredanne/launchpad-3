@@ -13,6 +13,7 @@ import functools
 
 from zope.component import getUtility
 
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.apachelogparser.script import ParseApacheLogs
 from lp.services.config import config
@@ -49,7 +50,8 @@ class ParsePPAApacheLogs(ParseApacheLogs):
         if person is None:
             return
         try:
-            archive = person.getPPAByName(file_id[1])
+            archive = person.getPPAByName(
+                getUtility(ILaunchpadCelebrities).ubuntu, file_id[1])
         except NoSuchPPA:
             return None
         # file_id[2] (distro) isn't used yet, since getPPAByName
