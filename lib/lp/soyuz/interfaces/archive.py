@@ -1024,7 +1024,7 @@ class IArchiveView(IHasBuildRecords):
             package sets he has access to.
         :param distroseries: The `IDistroSeries` for which to check
             permissions. If none is supplied then `currentseries` in
-            Ubuntu is assumed.
+            the archive's distribution is assumed.
 
         :raises NoSuchSourcePackageName: if a source package with the
             given name could not be found.

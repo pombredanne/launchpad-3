@@ -1,4 +1,4 @@
-# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the initialize_distroseries script machinery."""
@@ -150,7 +150,7 @@ class InitializationHelperTestCase(TestCaseWithFactory):
             pocket=PackagePublishingPocket.RELEASE)
         try:
             packageset = getUtility(IPackagesetSet).getByName(
-                packageset_name, distroseries=distroseries)
+                distroseries, packageset_name)
         except NoSuchPackageSet:
             packageset = getUtility(IPackagesetSet).new(
                 packageset_name, packageset_name, distroseries.owner,
@@ -628,12 +628,9 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
             self.parent.main_archive, uploader, test1)
         child = self._fullInitialize([self.parent])
         # We can fetch the copied sets from the child.
-        child_test1 = getUtility(IPackagesetSet).getByName(
-            u'test1', distroseries=child)
-        child_test2 = getUtility(IPackagesetSet).getByName(
-            u'test2', distroseries=child)
-        child_test3 = getUtility(IPackagesetSet).getByName(
-            u'test3', distroseries=child)
+        child_test1 = getUtility(IPackagesetSet).getByName(child, u'test1')
+        child_test2 = getUtility(IPackagesetSet).getByName(child, u'test2')
+        child_test3 = getUtility(IPackagesetSet).getByName(child, u'test3')
         # And we can see they are exact copies, with the related_set for the
         # copies pointing to the packageset in the parent.
         self.assertEqual(test1.description, child_test1.description)
@@ -710,7 +707,7 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
             [previous_parent], previous_series=child,
             distribution=parent.distribution)
         grandchild_packageset = getUtility(IPackagesetSet).getByName(
-            parent_packageset.name, distroseries=grandchild)
+            grandchild, parent_packageset.name)
         # The copied grandchild set has sources matching the child.
         self.assertContentEqual(
             child_packageset.getSourcesIncluded(),
@@ -808,8 +805,7 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
             u'ps', u'packageset', ps_owner, distroseries=self.parent)
         child = self._fullInitialize(
             [self.parent], distribution=self.parent.distribution)
-        child_ps = getUtility(IPackagesetSet).getByName(
-            u'ps', distroseries=child)
+        child_ps = getUtility(IPackagesetSet).getByName(child, u'ps')
         self.assertEqual(ps_owner, child_ps.owner)
 
     def test_packageset_owner_not_preserved_cross_distro(self):
@@ -820,8 +816,7 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
             u'ps', u'packageset', self.factory.makePerson(),
             distroseries=self.parent)
         child = self._fullInitialize([self.parent])
-        child_ps = getUtility(IPackagesetSet).getByName(
-            u'ps', distroseries=child)
+        child_ps = getUtility(IPackagesetSet).getByName(child, u'ps')
         self.assertEqual(child.owner, child_ps.owner)
 
     def test_copy_limit_packagesets(self):
@@ -838,15 +833,14 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         for pkg in packages:
             test1.addSources(pkg)
         packageset1 = getUtility(IPackagesetSet).getByName(
-            u'test1', distroseries=self.parent)
+            self.parent, u'test1')
         child = self._fullInitialize(
             [self.parent], packagesets=(str(packageset1.id),))
-        child_test1 = getUtility(IPackagesetSet).getByName(
-            u'test1', distroseries=child)
+        child_test1 = getUtility(IPackagesetSet).getByName(child, u'test1')
         self.assertEqual(test1.description, child_test1.description)
         self.assertRaises(
             NoSuchPackageSet, getUtility(IPackagesetSet).getByName,
-                u'test2', distroseries=child)
+            child, u'test2')
         parent_srcs = test1.getSourcesIncluded(direct_inclusion=True)
         child_srcs = child_test1.getSourcesIncluded(
             direct_inclusion=True)
@@ -1027,8 +1021,7 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         child = self._fullInitialize([self.parent1, self.parent2])
 
         # In the child, the identical packagesets are merged into one.
-        child_test1 = getUtility(IPackagesetSet).getByName(
-            u'test1', distroseries=child)
+        child_test1 = getUtility(IPackagesetSet).getByName(child, u'test1')
         child_srcs = child_test1.getSourcesIncluded(
             direct_inclusion=True)
         parent1_srcs = test1_parent1.getSourcesIncluded(direct_inclusion=True)

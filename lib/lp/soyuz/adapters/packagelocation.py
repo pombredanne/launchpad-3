@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Logic for bulk copying of source/binary publishing history data."""
@@ -160,7 +160,7 @@ def build_package_location(distribution_name, suite=None, purpose=None,
         for packageset_name in packageset_names:
             try:
                 packageset = packageset_set.getByName(
-                    packageset_name, distroseries=distroseries)
+                    distroseries, packageset_name)
             except NotFoundError as err:
                 raise PackageLocationError(
                     "Could not find packageset %s" % err)
