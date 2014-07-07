@@ -21,8 +21,7 @@ Other distributions cannot use the form.
     >>> print extract_text(content)
     This functionality is not yet available...
 
-Ubuntu is an IBaseDistributions and is full functionality. It can have
-mirrors.
+Ubuntu has mirror support enabled, so it can have mirrors.
 
     >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 
