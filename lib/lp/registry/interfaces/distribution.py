@@ -316,6 +316,10 @@ class IDistributionPublic(
         "this distribution. Currently only Ubuntu and some derivatives "
         "get the full functionality of LP")
 
+    supports_mirrors = Attribute(
+        "Whether we enable mirror management functionality for this "
+        "distribution")
+
     translation_focus = Choice(
         title=_("Translation focus"),
         description=_(

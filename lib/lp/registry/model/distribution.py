@@ -546,6 +546,10 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         return False
 
     @property
+    def supports_mirrors(self):
+        return self.full_functionality
+
+    @property
     def drivers(self):
         """See `IDistribution`."""
         if self.driver is not None:
@@ -699,7 +703,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         # the full functionality of Launchpad enabled. This is Ubuntu and
         # commercial derivatives that have been specifically given this
         # ability
-        if not self.full_functionality:
+        if not self.supports_mirrors:
             return None
 
         urls = {'http_base_url': http_base_url,

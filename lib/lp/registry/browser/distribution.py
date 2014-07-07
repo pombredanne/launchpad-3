@@ -252,7 +252,7 @@ class DistributionMirrorsNavigationMenu(NavigationMenu):
     def _userCanSeeNonPublicMirrorListings(self):
         """Does the user have rights to see non-public mirrors listings?"""
         user = getUtility(ILaunchBag).user
-        return (self.distribution.full_functionality
+        return (self.distribution.supports_mirrors
                 and user is not None
                 and user.inTeam(self.distribution.mirror_admin))
 
@@ -352,7 +352,7 @@ class DistributionOverviewMenu(ApplicationMenu, DistributionLinksMixin):
 
     def newmirror(self):
         text = 'Register a new mirror'
-        enabled = self.context.full_functionality
+        enabled = self.context.supports_mirrors
         return Link('+newmirror', text, enabled=enabled, icon='add')
 
     def top_contributors(self):
@@ -370,7 +370,7 @@ class DistributionOverviewMenu(ApplicationMenu, DistributionLinksMixin):
     def _userCanSeeNonPublicMirrorListings(self):
         """Does the user have rights to see non-public mirrors listings?"""
         user = getUtility(ILaunchBag).user
-        return (self.context.full_functionality
+        return (self.context.supports_mirrors
                 and user is not None
                 and user.inTeam(self.context.mirror_admin))
 
@@ -398,7 +398,7 @@ class DistributionOverviewMenu(ApplicationMenu, DistributionLinksMixin):
     @enabled_with_permission('launchpad.Edit')
     def mirror_admin(self):
         text = 'Change mirror admins'
-        enabled = self.context.full_functionality
+        enabled = self.context.supports_mirrors
         return Link('+selectmirroradmins', text, enabled=enabled, icon='edit')
 
     def search(self):
@@ -1050,7 +1050,7 @@ class DistributionCountryArchiveMirrorsView(LaunchpadView):
 
     def render(self):
         request = self.request
-        if not self.context.full_functionality:
+        if not self.context.supports_mirrors:
             request.response.setStatus(404)
             return u''
         ip_address = ipaddress_from_request(request)
