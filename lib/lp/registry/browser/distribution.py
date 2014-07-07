@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'DerivativeDistributionOverviewMenu',
     'DistributionAddView',
     'DistributionArchiveMirrorsRSSView',
     'DistributionArchiveMirrorsView',
@@ -92,7 +91,6 @@ from lp.registry.browser.pillar import (
     PillarViewMixin,
     )
 from lp.registry.interfaces.distribution import (
-    IDerivativeDistribution,
     IDistribution,
     IDistributionMirrorMenuMarker,
     IDistributionSet,
@@ -405,7 +403,7 @@ class DistributionOverviewMenu(ApplicationMenu, DistributionLinksMixin):
         text = 'Search packages'
         return Link('+search', text, icon='search')
 
-    @enabled_with_permission('launchpad.Admin')
+    @enabled_with_permission('launchpad.Moderate')
     def addseries(self):
         text = 'Add series'
         return Link('+addseries', text, icon='add')
@@ -458,16 +456,6 @@ class DistributionOverviewMenu(ApplicationMenu, DistributionLinksMixin):
         text = 'Configure translations'
         summary = 'Allow users to provide translations for this project.'
         return Link('+configure-translations', text, summary, icon='edit')
-
-
-class DerivativeDistributionOverviewMenu(DistributionOverviewMenu):
-
-    usedfor = IDerivativeDistribution
-
-    @enabled_with_permission('launchpad.Moderate')
-    def addseries(self):
-        text = 'Add series'
-        return Link('+addseries', text, icon='add')
 
 
 class DistributionBugsMenu(PillarBugsMenu):

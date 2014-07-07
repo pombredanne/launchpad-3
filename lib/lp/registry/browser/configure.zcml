@@ -1866,13 +1866,6 @@
         name="+addseries"
         for="lp.registry.interfaces.distribution.IDistribution"
         class="lp.registry.browser.distroseries.DistroSeriesAddView"
-        permission="launchpad.Admin"
-        template="../templates/distroseries-add.pt">
-    </browser:page>
-    <browser:page
-        name="+addseries"
-        for="lp.registry.interfaces.distribution.IDerivativeDistribution"
-        class="lp.registry.browser.distroseries.DistroSeriesAddView"
         permission="launchpad.Moderate"
         template="../templates/distroseries-add.pt">
     </browser:page>
@@ -1940,7 +1933,6 @@
         template="../../app/templates/generic-edit.pt"/>
     <browser:menus
         classes="
-            DerivativeDistributionOverviewMenu
             DistributionBugsMenu
             DistributionFacets
             DistributionMirrorsNavigationMenu
