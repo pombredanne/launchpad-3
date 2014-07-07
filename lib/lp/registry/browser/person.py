@@ -192,6 +192,7 @@ from lp.registry.mail.notification import send_direct_contact_email
 from lp.registry.model.person import get_recipients
 from lp.services.config import config
 from lp.services.database.sqlbase import flush_database_updates
+from lp.services.features import getFeatureFlag
 from lp.services.feeds.browser import FeedsMixin
 from lp.services.geoip.interfaces import IRequestPreferredLanguages
 from lp.services.gpg.interfaces import (
@@ -408,30 +409,51 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
 
     @stepto('+archive')
     def traverse_archive(self):
+        from lp.soyuz.browser.archive import traverse_named_ppa
 
-        if self.request.stepstogo:
-            # If the URL has something that could be a PPA name in it,
-            # use that, but just in case it fails, keep a copy
-            # of the traversal stack so we can try using the default
-            # archive afterwards:
-            traversal_stack = self.request.getTraversalStack()
-            ppa_name = self.request.stepstogo.consume()
+        # 1.0 API requests are exempt from non-canonical redirects,
+        # since some manually construct URLs and don't cope with
+        # redirects (most notably the Python 2 implementation of
+        # apt-add-repository).
+        redirect_allowed = not (
+            IWebServiceClientRequest.providedBy(self.request)
+            and self.request.annotations.get(
+                self.request.VERSION_ANNOTATION) == '1.0')
 
-            try:
-                from lp.soyuz.browser.archive import traverse_named_ppa
-                return traverse_named_ppa(self.context.name, ppa_name)
-            except NotFoundError:
-                self.request.setTraversalStack(traversal_stack)
-                # and simply continue below...
+        # There are three cases, in order of preference:
+        #  - 2014 onwards: /~wgrant/+archive/ubuntu/ppa:
+        #    The next two URL segments are names of a distribution and a PPA.
+        #
+        #  - 2009-2014: /~wgrant/+archive/ppa:
+        #    The distribution is assumed to be "ubuntu".
+        #
+        #  - 2007-2009: /~wgrant/+archive:
+        #    The distribution is assumed to be "ubuntu" and the PPA "ppa".
+        #
+        # Only the first is canonical, with the others redirecting to it.
+        distroful_urls = bool(getFeatureFlag('soyuz.ppa.distroful_urls'))
+        bits = list(reversed(self.request.getTraversalStack()[-2:]))
+        attempts = []
+        if len(bits) == 2:
+            attempts.append(
+                (bits[0], bits[1], 2, redirect_allowed and not distroful_urls))
+        if len(bits) >= 1:
+            attempts.append(
+                ("ubuntu", bits[0], 1, redirect_allowed and distroful_urls))
+        attempts.append(("ubuntu", "ppa", 0, True))
 
-        # Otherwise try to get the default PPA and if it exists redirect
-        # to the new-style URL, if it doesn't, return None (to trigger a
-        # NotFound error).
-        default_ppa = self.context.archive
-        if default_ppa is None:
-            return None
-
-        return self.redirectSubTree(canonical_url(default_ppa))
+        # Go through the attempts in order.
+        for distro, ppa, segments, redirect in attempts:
+            ppa = traverse_named_ppa(self.context, distro, ppa)
+            if ppa is not None:
+                for i in range(segments):
+                    self.request.stepstogo.consume()
+                if redirect:
+                    return self.redirectSubTree(
+                        canonical_url(ppa, request=self.request))
+                else:
+                    return ppa
+        return None
 
     @stepthrough('+email')
     def traverse_email(self, email):
