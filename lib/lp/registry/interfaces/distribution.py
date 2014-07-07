@@ -6,8 +6,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'IBaseDistribution',
-    'IDerivativeDistribution',
     'IDistribution',
     'IDistributionDriverRestricted',
     'IDistributionEditRestricted',
@@ -654,14 +652,6 @@ class IDistribution(
             distro_series=series)[0].source_package_version
     """
     export_as_webservice_entry(as_of="beta")
-
-
-class IBaseDistribution(IDistribution):
-    """A Distribution that is the base for other Distributions."""
-
-
-class IDerivativeDistribution(IDistribution):
-    """A Distribution that derives from another Distribution."""
 
 
 class IDistributionSet(Interface):
