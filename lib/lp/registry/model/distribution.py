@@ -546,6 +546,10 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         return False
 
     @property
+    def supports_mirrors(self):
+        return self.full_functionality
+
+    @property
     def drivers(self):
         """See `IDistribution`."""
         if self.driver is not None:
