@@ -11,6 +11,7 @@ import os
 from zope.component import getUtility
 
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
+from lp.registry.interfaces.distribution import IDistributionSet
 from lp.services.config import config
 from lp.soyuz.enums import (
     archive_suffixes,
@@ -91,10 +92,21 @@ def getPubConfig(archive):
     pubconf.poolroot = os.path.join(pubconf.archiveroot, 'pool')
     pubconf.distsroot = os.path.join(pubconf.archiveroot, 'dists')
 
-    meta_root = os.path.join(
-        pubconf.distroroot, archive.owner.name)
-    pubconf.metaroot = os.path.join(
-        meta_root, "meta", archive.name)
+    # META_DATA custom uploads are stored in a separate directory
+    # outside the archive root so Ubuntu Software Center can get some
+    # data from P3As without accessing the P3A itself. But the metadata
+    # hierarchy doesn't include the distribution name, so it conflicts
+    # for PPAs with the same owner and name. META_DATA uploads are only used
+    # by a few PPAs, and only by USC, so we leave metaroot unset and
+    # ignore the uploads for anything except Ubuntu PPAs.
+    ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    if archive.is_ppa and archive.distribution == ubuntu:
+        meta_root = os.path.join(
+            pubconf.distroroot, archive.owner.name)
+        pubconf.metaroot = os.path.join(
+            meta_root, "meta", archive.name)
+    else:
+        pubconf.metaroot = None
 
     return pubconf
 
