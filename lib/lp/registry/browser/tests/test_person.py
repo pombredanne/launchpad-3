@@ -41,6 +41,7 @@ from lp.registry.model.karma import KarmaCategory
 from lp.registry.model.milestone import milestone_sort_key
 from lp.scripts.garbo import PopulateLatestPersonSourcePackageReleaseCache
 from lp.services.config import config
+from lp.services.features.testing import FeatureFixture
 from lp.services.identity.interfaces.account import AccountStatus
 from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
 from lp.services.log.logger import FakeLogger
@@ -100,14 +101,20 @@ class TestPersonNavigation(TestCaseWithFactory):
         self.assertIsInstance(view, RedirectionView)
         self.assertEqual(':/' + redirect, removeSecurityProxy(view).target)
 
-    def test_traverse_archive(self):
-        archive = self.factory.makeArchive(
-            purpose=ArchivePurpose.PPA,
-            distribution=self.factory.makeDistribution())
+    def test_traverse_archive_distroful(self):
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
         in_suf = '/~%s/+archive/%s/%s' % (
             archive.owner.name, archive.distribution.name, archive.name)
-        self.assertEqual(archive, test_traverse(in_suf)[0])
-        self.assertEqual(archive, test_traverse('/api/devel' + in_suf)[0])
+        old_suf = '/~%s/+archive/%s' % (archive.owner.name, archive.name)
+        # A feature flag makes the distroful URLs canonical.
+        with FeatureFixture({'soyuz.ppa.distroful_urls': 'on'}):
+            self.assertEqual(archive, test_traverse(in_suf)[0])
+            self.assertEqual(archive, test_traverse('/api/devel' + in_suf)[0])
+            self.assertEqual(archive, test_traverse('/api/1.0' + in_suf)[0])
+        # Without the flag set requests will redirect to the old URL,
+        # unless a request is on the 1.0 API.
+        self.assertRedirect(in_suf, old_suf)
+        self.assertRedirect('/api/devel' + in_suf, '/api/devel' + old_suf)
         self.assertEqual(archive, test_traverse('/api/1.0' + in_suf)[0])
 
     def test_traverse_archive_distroless(self):
@@ -116,12 +123,16 @@ class TestPersonNavigation(TestCaseWithFactory):
         in_suf = '/~%s/+archive/%s' % (archive.owner.name, archive.name)
         out_suf = '/~%s/+archive/%s/%s' % (
             archive.owner.name, archive.distribution.name, archive.name)
-        self.assertRedirect(in_suf, out_suf)
-        self.assertRedirect('/api/devel' + in_suf, '/api/devel' + out_suf)
-        # 1.0 API requests don't redirect, since some manually construct
-        # URLs and don't cope with redirects (most notably the Python 2
-        # implementation of apt-add-repository).
-        self.assertEqual(archive, test_traverse('/api/1.0' + out_suf)[0])
+        with FeatureFixture({'soyuz.ppa.distroful_urls': 'on'}):
+            self.assertRedirect(in_suf, out_suf)
+            self.assertRedirect('/api/devel' + in_suf, '/api/devel' + out_suf)
+            # 1.0 API requests don't redirect, since some manually construct
+            # URLs and don't cope with redirects (most notably the Python 2
+            # implementation of apt-add-repository).
+            self.assertEqual(archive, test_traverse('/api/1.0' + out_suf)[0])
+        self.assertEqual(archive, test_traverse(in_suf)[0])
+        self.assertEqual(archive, test_traverse('/api/devel' + in_suf)[0])
+        self.assertEqual(archive, test_traverse('/api/1.0' + in_suf)[0])
 
     def test_traverse_archive_distroless_implies_ubuntu(self):
         # The distroless PPA redirect only finds Ubuntu PPAs, since
@@ -142,9 +153,10 @@ class TestPersonNavigation(TestCaseWithFactory):
         in_suf = '/~%s/+archive' % archive.owner.name
         out_suf = '/~%s/+archive/%s/%s' % (
             archive.owner.name, archive.distribution.name, archive.name)
-        self.assertRedirect(in_suf, out_suf)
-        self.assertRedirect('/api/devel' + in_suf, '/api/devel' + out_suf)
-        self.assertRedirect('/api/1.0' + in_suf, '/api/1.0' + out_suf)
+        with FeatureFixture({'soyuz.ppa.distroful_urls': 'on'}):
+            self.assertRedirect(in_suf, out_suf)
+            self.assertRedirect('/api/devel' + in_suf, '/api/devel' + out_suf)
+            self.assertRedirect('/api/1.0' + in_suf, '/api/1.0' + out_suf)
 
 
 class PersonViewOpenidIdentityUrlTestCase(TestCaseWithFactory):
