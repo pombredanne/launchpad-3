@@ -320,6 +320,9 @@ class IDistributionPublic(
         "Whether we enable mirror management functionality for this "
         "distribution")
 
+    official_packages = Attribute(
+        "Whether Launchpad manages this distribution's packages itself.")
+
     translation_focus = Choice(
         title=_("Translation focus"),
         description=_(

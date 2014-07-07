@@ -550,6 +550,10 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         return self.full_functionality
 
     @property
+    def official_packages(self):
+        return self.full_functionality
+
+    @property
     def drivers(self):
         """See `IDistribution`."""
         if self.driver is not None:
