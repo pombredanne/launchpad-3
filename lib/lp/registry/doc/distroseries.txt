@@ -769,15 +769,15 @@ Creating DistroSeries
 ---------------------
 
 Users with launchpad.Driver permission may create DistroSeries. In the
-case of an `IDerivativeDistribution` A user who is a driver can create
-the series and he is automatically assigned to the series' driver role
-so that he can edit it.
+case of a distribution that doesn't use Soyuz officially, a user who is
+a driver can create the series and he is automatically assigned to the
+series' driver role so that he can edit it.
 
     >>> youbuntu = factory.makeDistribution(name='youbuntu')
     >>> yo_driver = factory.makePerson(name='yo-driver')
     >>> youbuntu.driver = yo_driver
     >>> ignored = login_person(yo_driver)
-    >>> youbuntu.full_functionality
+    >>> youbuntu.official_packages
     False
 
     >>> yo_series = youbuntu.newSeries(
@@ -805,9 +805,9 @@ have permission to edit the series.
     >>> print yo_series.driver
     None
 
-Ubuntu is an `IBaseDistribution` which requires special preparation for
-Soyuz and Translations before a series can be created. Ubuntu driver can
-not create series.
+Ubuntu uses Launchpad for package managemtn, so it requires special
+preparation for Soyuz and Translations before a series can be created.
+Ubuntu driver can not create series.
 
     >>> ignored = login_person(ubuntu.owner.activemembers[0])
     >>> ubuntu.driver = yo_driver

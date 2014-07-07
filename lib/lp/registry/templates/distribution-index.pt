@@ -41,7 +41,7 @@
           class="description"
           tal:content="structure context/description/fmt:text-to-html"/>
 
-        <tal:search-packages condition="context/full_functionality">
+        <tal:search-packages condition="context/official_packages">
           <h2>Packages</h2>
 
           <form name="search" action="+search" method="get">
