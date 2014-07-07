@@ -4,14 +4,14 @@ DistributionMirror Pages
 Registering a mirror
 --------------------
 
-Only full functionality distributions may have mirrors.
-IDerivativeDistributions cannot use the form.
+Distributions must have mirror support enabled in order to have mirrors.
+Other distributions cannot use the form.
 
     >>> from lp.testing.pages import (
     ...     extract_text, find_tag_by_id)
 
     >>> distribution = factory.makeDistribution(name='youbuntu')
-    >>> distribution.full_functionality
+    >>> distribution.supports_mirrors
     False
 
     >>> ignored = login_person(distribution.owner)
