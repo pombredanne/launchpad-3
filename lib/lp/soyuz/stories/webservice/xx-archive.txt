@@ -336,13 +336,14 @@ Let's also make a new Person to own the Ubuntu distro.
 And here's a packageset to play with later:
 
     >>> print webservice.named_post(
-    ...     '/package-sets', 'new', {},
+    ...     '/package-sets', 'new', {}, distroseries='/ubuntu/hoary',
     ...     name=u'umbrella', description=u'Contains all source packages',
     ...     owner=name12['self_link'])
     HTTP/1.1 201 Created
     ...
 
-    >>> packageset = webservice.get("/package-sets/hoary/umbrella").jsonBody()
+    >>> packageset = webservice.get(
+    ...     "/package-sets/ubuntu/hoary/umbrella").jsonBody()
 
 
 To be able to amend any permissions on a distribution archive,
