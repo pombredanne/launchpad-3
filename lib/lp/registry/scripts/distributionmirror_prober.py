@@ -851,7 +851,7 @@ class DistroMirrorProber:
             if not mirror.distribution.supports_mirrors:
                 self.logger.debug(
                     "Mirror '%s' of distribution '%s' can't be probed --we "
-                    "only probe distros that support mirrors.."
+                    "only probe distros that support mirrors."
                     % (mirror.name, mirror.distribution.name))
                 continue
 
