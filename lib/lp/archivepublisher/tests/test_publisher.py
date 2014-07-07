@@ -83,6 +83,7 @@ class TestPublisherBase(TestNativePublishingBase):
         cprov = getUtility(IPersonSet).getByName('cprov')
         naked_archive = removeSecurityProxy(cprov.archive)
         naked_archive.distribution = self.ubuntutest
+        self.ubuntu = getUtility(IDistributionSet)['ubuntu']
 
 
 class TestPublisher(TestPublisherBase):
@@ -147,7 +148,7 @@ class TestPublisher(TestPublisherBase):
         """Test deleting a PPA"""
         ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
         test_archive = getUtility(IArchiveSet).new(
-            distribution=self.ubuntutest, owner=ubuntu_team,
+            distribution=self.ubuntu, owner=ubuntu_team,
             purpose=ArchivePurpose.PPA, name='testing')
 
         # Create some source and binary publications, including an
@@ -210,7 +211,7 @@ class TestPublisher(TestPublisherBase):
     def testDeletingPPAWithoutMetaData(self):
         ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
         test_archive = getUtility(IArchiveSet).new(
-            distribution=self.ubuntutest, owner=ubuntu_team,
+            distribution=self.ubuntu, owner=ubuntu_team,
             purpose=ArchivePurpose.PPA)
         logger = BufferLogger()
         publisher = getPublisher(test_archive, None, logger)
@@ -227,6 +228,52 @@ class TestPublisher(TestPublisherBase):
             publisher._config.distroroot, test_archive.owner.name,
             test_archive.name)
         self.assertFalse(os.path.exists(root_dir))
+        self.assertNotIn('WARNING', logger.getLogBuffer())
+        self.assertNotIn('ERROR', logger.getLogBuffer())
+
+    def testDeletingPPAThatCannotHaveMetaData(self):
+        # Due to conflicts in the directory structure only Ubuntu PPAs
+        # have a metadata directory. PPAs with the same name for
+        # different distros can coexist, and only deleting the Ubuntu
+        # one will remove the metadata.
+        ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
+        ubuntu_ppa = getUtility(IArchiveSet).new(
+            distribution=self.ubuntu, owner=ubuntu_team,
+            purpose=ArchivePurpose.PPA, name='ppa')
+        test_ppa = getUtility(IArchiveSet).new(
+            distribution=self.ubuntutest, owner=ubuntu_team,
+            purpose=ArchivePurpose.PPA, name='ppa')
+        logger = BufferLogger()
+        ubuntu_publisher = getPublisher(ubuntu_ppa, None, logger)
+        ubuntu_publisher.setupArchiveDirs()
+        test_publisher = getPublisher(test_ppa, None, logger)
+        test_publisher.setupArchiveDirs()
+
+        self.assertTrue(os.path.exists(ubuntu_publisher._config.archiveroot))
+        self.assertTrue(os.path.exists(test_publisher._config.archiveroot))
+
+        open(os.path.join(
+            ubuntu_publisher._config.archiveroot, 'test_file'), 'w').close()
+        open(os.path.join(
+            test_publisher._config.archiveroot, 'test_file'), 'w').close()
+
+        # Add a meta file for the Ubuntu PPA
+        os.makedirs(ubuntu_publisher._config.metaroot)
+        open(os.path.join(
+            ubuntu_publisher._config.metaroot, 'test'), 'w').close()
+        self.assertIs(None, test_publisher._config.metaroot)
+
+        test_publisher.deleteArchive()
+        self.assertFalse(os.path.exists(test_publisher._config.archiveroot))
+        self.assertTrue(os.path.exists(ubuntu_publisher._config.metaroot))
+        # XXX wgrant 2014-07-07 bug=1338439: deleteArchive() currently
+        # kills all PPAs with the same name and owner.
+        #self.assertTrue(os.path.exists(ubuntu_publisher._config.archiveroot))
+
+        ubuntu_publisher.deleteArchive()
+        self.assertFalse(os.path.exists(ubuntu_publisher._config.metaroot))
+        self.assertFalse(os.path.exists(ubuntu_publisher._config.archiveroot))
+
         self.assertNotIn('WARNING', logger.getLogBuffer())
         self.assertNotIn('ERROR', logger.getLogBuffer())
 

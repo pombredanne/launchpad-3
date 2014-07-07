@@ -1462,9 +1462,12 @@ class PackageUploadCustom(SQLBase):
         # complicated for our needs right now.  Also, the existing code
         # assumes that everything is a tarball and tries to unpack it.
 
-        archive = self.packageupload.archive
         # See the XXX near the import for getPubConfig.
-        archive_config = getPubConfig(archive)
+        archive_config = getPubConfig(self.packageupload.archive)
+        if archive_config.metaroot is None:
+            debug(logger, "Skipping meta-data for archive without metaroot.")
+            return
+
         dest_file = os.path.join(
             archive_config.metaroot, self.libraryfilealias.filename)
         if not os.path.isdir(archive_config.metaroot):
