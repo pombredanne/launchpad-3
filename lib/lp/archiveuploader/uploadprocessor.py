@@ -57,7 +57,6 @@ from sqlobject import SQLObjectNotFound
 from zope.component import getUtility
 
 from lp.app.errors import NotFoundError
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archiveuploader.livefsupload import LiveFSUpload
 from lp.archiveuploader.nascentupload import (
     EarlyReturnUploadError,
@@ -784,12 +783,22 @@ def parse_upload_path(relative_path):
     We do this by analysing the path to which the user has uploaded,
     ie. the relative path within the upload folder to the changes file.
 
-    The valid paths are:
-    '' - default distro, ubuntu
-    '<distroname>' - given distribution
-    '~<personname>[/ppa_name]/<distroname>[/distroseriesname]' - given ppa,
-    distribution and optionally a distroseries.  If ppa_name is not
-    specified it will default to the one referenced by IPerson.archive.
+    Current paths are:
+      /<distro>[/suite] - any primary archive
+      /~<person>/<distro>/<ppa>[/suite] - any PPA
+
+    One deprecated form is still supported for the Ubuntu primary archive:
+      / - Ubuntu primary archive
+
+    Three deprecated forms are still supported for Ubuntu PPAs:
+      /~<person>/<ppa>/ubuntu[/suite] - any Ubuntu PPA
+      /~<person>/<ppa> - any Ubuntu PPA
+      /~<person>/ubuntu - Ubuntu PPA named "ppa"
+
+    The original /~<person>/ubuntu/<suite> form is no longer supported
+    as it clashes with /~<person>/<distro>/<ppa>
+
+    suite is an optional distroseries with an optional pocket suffix.
 
     I raises UploadPathError if something was wrong when parsing it.
 
@@ -802,7 +811,7 @@ def parse_upload_path(relative_path):
 
     if (not first_path.startswith('~') and not first_path.isdigit()
         and len(parts) <= 2):
-        # Distribution upload (<distro>[/distroseries]). Always targeted to
+        # Distribution upload (<distro>[/suite]). Always targeted to
         # the corresponding primary archive.
         distribution, suite_name = _getDistributionAndSuite(
             parts, UploadPathError)
@@ -811,7 +820,13 @@ def parse_upload_path(relative_path):
     elif (first_path.startswith('~') and
           len(parts) >= 2 and
           len(parts) <= 4):
-        # PPA upload (~<person>[/ppa_name]/<distro>[/distroseries]).
+        # PPA uploads look like (~<person>/<distro>/<ppa_name>[/suite]).
+        #
+        # Additionally, three deprecated formats are still supported for
+        # Ubuntu PPAs:
+        #  (~<person>/<ppa_name>/ubuntu[/suite])
+        #  (~<person>/<ppa_name>)
+        #  (~<person>/ubuntu)
 
         # Skip over '~' from the person name.
         person_name = first_path[1:]
@@ -820,26 +835,35 @@ def parse_upload_path(relative_path):
             raise PPAUploadPathError(
                 "Could not find person or team named '%s'." % person_name)
 
-        ppa_name = parts[1]
-
-        # Compatibilty feature for allowing unamed-PPA upload paths
-        # for a certain period of time.
-        if ppa_name == 'ubuntu':
-            ppa_name = 'ppa'
-            distribution_and_suite = parts[1:]
+        if len(parts) == 2:
+            distro_name = 'ubuntu'
+            suite = []
+            if parts[1] == 'ubuntu':
+                # Old nameless path.
+                ppa_name = 'ppa'
+            else:
+                # Old named but distroless path.
+                ppa_name = parts[1]
         else:
-            distribution_and_suite = parts[2:]
-
-        try:
-            archive = person.getPPAByName(
-                getUtility(ILaunchpadCelebrities).ubuntu, ppa_name)
-        except NoSuchPPA:
-            raise PPAUploadPathError(
-                "Could not find a PPA named '%s' for '%s'."
-                % (ppa_name, person_name))
+            if parts[2] == 'ubuntu':
+                # Old named path with PPA name before distro.
+                distro_name = 'ubuntu'
+                ppa_name = parts[1]
+            else:
+                # Modern path with distro, name, suite.
+                distro_name = parts[1]
+                ppa_name = parts[2]
+            suite = parts[3:]
 
         distribution, suite_name = _getDistributionAndSuite(
-            distribution_and_suite, PPAUploadPathError)
+            [distro_name] + suite, PPAUploadPathError)
+
+        try:
+            archive = person.getPPAByName(distribution, ppa_name)
+        except NoSuchPPA:
+            raise PPAUploadPathError(
+                "Could not find a PPA owned by '%s' for '%s' named '%s'."
+                % (person.name, distribution.name, ppa_name))
 
     elif first_path.isdigit():
         # This must be a binary upload from a build slave.
