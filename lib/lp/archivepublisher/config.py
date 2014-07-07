@@ -41,11 +41,8 @@ def getPubConfig(archive):
     if archive.is_ppa:
         if archive.private:
             pubconf.distroroot = ppa_config.private_root
-            pubconf.htaccessroot = os.path.join(
-                pubconf.distroroot, archive.owner.name, archive.name)
         else:
             pubconf.distroroot = ppa_config.root
-            pubconf.htaccessroot = None
         pubconf.archiveroot = os.path.join(
             pubconf.distroroot, archive.owner.name, archive.name,
             archive.distribution.name)
