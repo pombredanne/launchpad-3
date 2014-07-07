@@ -311,11 +311,6 @@ class IDistributionPublic(
                 "in the context of the currentseries.")),
         exported_as="current_series")
 
-    full_functionality = Attribute(
-        "Whether or not we enable the full functionality of Launchpad for "
-        "this distribution. Currently only Ubuntu and some derivatives "
-        "get the full functionality of LP")
-
     supports_mirrors = Attribute(
         "Whether we enable mirror management functionality for this "
         "distribution")
