@@ -6,8 +6,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'IBaseDistribution',
-    'IDerivativeDistribution',
     'IDistribution',
     'IDistributionDriverRestricted',
     'IDistributionEditRestricted',
@@ -311,10 +309,12 @@ class IDistributionPublic(
                 "in the context of the currentseries.")),
         exported_as="current_series")
 
-    full_functionality = Attribute(
-        "Whether or not we enable the full functionality of Launchpad for "
-        "this distribution. Currently only Ubuntu and some derivatives "
-        "get the full functionality of LP")
+    supports_mirrors = Attribute(
+        "Whether we enable mirror management functionality for this "
+        "distribution")
+
+    official_packages = Attribute(
+        "Whether Launchpad manages this distribution's packages itself.")
 
     translation_focus = Choice(
         title=_("Translation focus"),
@@ -652,14 +652,6 @@ class IDistribution(
             distro_series=series)[0].source_package_version
     """
     export_as_webservice_entry(as_of="beta")
-
-
-class IBaseDistribution(IDistribution):
-    """A Distribution that is the base for other Distributions."""
-
-
-class IDerivativeDistribution(IDistribution):
-    """A Distribution that derives from another Distribution."""
 
 
 class IDistributionSet(Interface):

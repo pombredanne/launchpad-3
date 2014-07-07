@@ -578,7 +578,7 @@ An empty code_name or summary (submitted via AJAX) is converted to None.
 Distroseries driver and milestones
 ----------------------------------
 
-The driver of a series that belongs to an `IDerivativeDistribution` is a
+The driver of a series that doesn't manage its packages in Ubuntu is a
 release manager and can create milestones.
 
     >>> distroseries = factory.makeDistroSeries(name='pumpkin')
@@ -603,7 +603,7 @@ The driver has access to the milestone.
     >>> check_permission('launchpad.Edit', view)
     True
 
-The driver of an `IBaseDistribution` such as Ubuntu cannot create a
+The driver of a series that does have packages cannot create a
 milestone.
 
     >>> ignored = login_person(ubuntu_distro.owner.teamowner)

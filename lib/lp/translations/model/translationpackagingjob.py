@@ -94,7 +94,7 @@ class TranslationMergeJob(TranslationPackagingJob):
     def run(self):
         """See `IRunnableJob`."""
         logger = logging.getLogger()
-        if not self.distroseries.distribution.full_functionality:
+        if not self.distroseries.distribution.official_packages:
             logger.info(
                 'Skipping merge for unsupported distroseries "%s".' %
                 self.distroseries.displayname)

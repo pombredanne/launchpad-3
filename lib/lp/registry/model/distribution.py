@@ -94,8 +94,6 @@ from lp.registry.enums import (
 from lp.registry.errors import NoSuchDistroSeries
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.distribution import (
-    IBaseDistribution,
-    IDerivativeDistribution,
     IDistribution,
     IDistributionSet,
     )
@@ -252,16 +250,6 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         displayname = self.displayname.encode('ASCII', 'backslashreplace')
         return "<%s '%s' (%s)>" % (
             self.__class__.__name__, displayname, self.name)
-
-    def _init(self, *args, **kw):
-        """Initialize an `IBaseDistribution` or `IDerivativeDistribution`."""
-        SQLBase._init(self, *args, **kw)
-        # Add a marker interface to set permissions for this kind
-        # of distribution.
-        if self.name == 'ubuntu':
-            alsoProvides(self, IBaseDistribution)
-        else:
-            alsoProvides(self, IDerivativeDistribution)
 
     @property
     def pillar(self):
@@ -541,9 +529,15 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     @property
     def full_functionality(self):
         """See `IDistribution`."""
-        if IBaseDistribution.providedBy(self):
-            return True
-        return False
+        return self.name == u'ubuntu'
+
+    @property
+    def supports_mirrors(self):
+        return self.full_functionality
+
+    @property
+    def official_packages(self):
+        return self.full_functionality
 
     @property
     def drivers(self):
@@ -699,7 +693,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         # the full functionality of Launchpad enabled. This is Ubuntu and
         # commercial derivatives that have been specifically given this
         # ability
-        if not self.full_functionality:
+        if not self.supports_mirrors:
             return None
 
         urls = {'http_base_url': http_base_url,

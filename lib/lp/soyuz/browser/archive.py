@@ -84,6 +84,7 @@ from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildSource,
     )
 from lp.registry.enums import PersonVisibility
+from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
@@ -94,6 +95,7 @@ from lp.services.browser_helpers import (
     get_user_agent_distroseries,
     )
 from lp.services.database.bulk import load_related
+from lp.services.features import getFeatureFlag
 from lp.services.helpers import english_list
 from lp.services.job.model.job import Job
 from lp.services.librarian.browser import FileNavigationMixin
@@ -176,20 +178,20 @@ class ArchiveBadges(HasBadgeBase):
         return "This archive is private."
 
 
-def traverse_named_ppa(person_name, ppa_name):
+def traverse_named_ppa(person, distro_name, ppa_name):
     """For PPAs, traverse the right place.
 
-    :param person_name: The person part of the URL
-    :param ppa_name: The PPA name part of the URL
+    :param person: The PPA owner.
+    :param distro_name: The Distribution name part of the URL.
+    :param ppa_name: The PPA name part of the URL.
     """
-    person = getUtility(IPersonSet).getByName(person_name)
+    distro = getUtility(IDistributionSet).getByName(distro_name)
+    if distro is None:
+        return None
     try:
-        archive = person.getPPAByName(
-            getUtility(ILaunchpadCelebrities).ubuntu, ppa_name)
+        return person.getPPAByName(distro, ppa_name)
     except NoSuchPPA:
-        raise NotFoundError("%s/%s", (person_name, ppa_name))
-
-    return archive
+        return None
 
 
 class DistributionArchiveURL:
@@ -228,7 +230,11 @@ class PPAURL:
 
     @property
     def path(self):
-        return u"+archive/%s" % self.context.name
+        if getFeatureFlag('soyuz.ppa.distroful_urls'):
+            return u"+archive/%s/%s" % (
+                self.context.distribution.name, self.context.name)
+        else:
+            return u"+archive/%s" % self.context.name
 
 
 class ArchiveNavigation(Navigation, FileNavigationMixin):

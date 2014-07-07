@@ -886,7 +886,7 @@ class Publisher(object):
 
         # XXX wgrant 2014-07-03: Needs checking for multi-distro sanity.
         for directory in (root_dir, self._config.metaroot):
-            if not os.path.exists(directory):
+            if directory is None or not os.path.exists(directory):
                 continue
             try:
                 shutil.rmtree(directory)

@@ -47,6 +47,7 @@ class TestGetPubConfig(TestCaseWithFactory):
         self.assertEqual(
             self.root + "/ubuntutest-temp", primary_config.temproot)
         self.assertEqual(archiveroot + "-uefi", primary_config.uefiroot)
+        self.assertIs(None, primary_config.metaroot)
 
     def test_partner_config(self):
         # Partner archive configuration is correct.
@@ -68,6 +69,7 @@ class TestGetPubConfig(TestCaseWithFactory):
         self.assertEqual(
             self.root + "/ubuntutest-temp", partner_config.temproot)
         self.assertEqual(archiveroot + "-uefi", partner_config.uefiroot)
+        self.assertIs(None, partner_config.metaroot)
 
     def test_copy_config(self):
         # In the case of copy archives (used for rebuild testing) the
@@ -88,6 +90,7 @@ class TestGetPubConfig(TestCaseWithFactory):
         self.assertEqual(archiveroot + "-misc", copy_config.miscroot)
         self.assertEqual(archiveroot + "-temp", copy_config.temproot)
         self.assertIsNone(copy_config.uefiroot)
+        self.assertIs(None, copy_config.metaroot)
 
 
 class TestGetPubConfigPPA(TestCaseWithFactory):
@@ -125,6 +128,7 @@ class TestGetPubConfigPPA(TestCaseWithFactory):
         uefiroot = "/var/tmp/ppa-signing-keys.test/uefi/%s/%s" % (
             self.ppa.owner.name, self.ppa.name)
         self.assertEqual(uefiroot, self.ppa_config.uefiroot)
+        self.assertIs(None, self.ppa_config.metaroot)
 
     def test_private_ppa_separate_root(self):
         # Private PPAs are published to a different location.
@@ -157,3 +161,18 @@ class TestGetPubConfigPPA(TestCaseWithFactory):
         uefiroot = "/var/tmp/ppa-signing-keys.test/uefi/%s/%s" % (
             p3a.owner.name, p3a.name)
         self.assertEqual(uefiroot, p3a_config.uefiroot)
+        self.assertIs(None, p3a_config.metaroot)
+
+    def test_metaroot(self):
+        # The metadata directory structure doesn't include a distro
+        # name, and it's only use by Ubuntu Software Center, so only
+        # Ubuntu PPAs have a metaroot.
+        ubuntu_ppa = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        test_ppa = self.factory.makeArchive(
+            distribution=self.ubuntutest, purpose=ArchivePurpose.PPA)
+
+        self.assertEqual(
+            "/var/tmp/ppa.test/%s/meta/%s" % (
+                ubuntu_ppa.owner.name, ubuntu_ppa.name),
+            getPubConfig(ubuntu_ppa).metaroot)
+        self.assertIs(None, getPubConfig(test_ppa).metaroot)
