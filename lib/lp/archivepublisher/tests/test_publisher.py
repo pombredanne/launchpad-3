@@ -1225,7 +1225,7 @@ class TestPublisher(TestPublisherBase):
         # setupArchiveDirs is what actually configures the htaccess file.
         getPublisher(ppa, [], self.logger).setupArchiveDirs()
         pubconf = getPubConfig(ppa)
-        htaccess_path = os.path.join(pubconf.htaccessroot, ".htaccess")
+        htaccess_path = os.path.join(pubconf.archiveroot, ".htaccess")
         self.assertTrue(os.path.exists(htaccess_path))
         with open(htaccess_path, 'r') as htaccess_f:
             self.assertEqual(dedent("""
@@ -1233,10 +1233,10 @@ class TestPublisher(TestPublisherBase):
                 AuthName           "Token Required"
                 AuthUserFile       %s/.htpasswd
                 Require            valid-user
-                """) % pubconf.htaccessroot,
+                """) % pubconf.archiveroot,
                 htaccess_f.read())
 
-        htpasswd_path = os.path.join(pubconf.htaccessroot, ".htpasswd")
+        htpasswd_path = os.path.join(pubconf.archiveroot, ".htpasswd")
 
         # Read it back in.
         with open(htpasswd_path, "r") as htpasswd_f:
