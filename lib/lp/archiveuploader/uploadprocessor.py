@@ -57,7 +57,6 @@ from sqlobject import SQLObjectNotFound
 from zope.component import getUtility
 
 from lp.app.errors import NotFoundError
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archiveuploader.livefsupload import LiveFSUpload
 from lp.archiveuploader.nascentupload import (
     EarlyReturnUploadError,
@@ -794,7 +793,7 @@ def parse_upload_path(relative_path):
     Three deprecated forms are still supported for Ubuntu PPAs:
       /~<person>/<ppa>/ubuntu[/suite] - any Ubuntu PPA
       /~<person>/<ppa> - any Ubuntu PPA
-      /~<person>/ubuntu - default Ubuntu PPA (usually named "ppa")
+      /~<person>/ubuntu - Ubuntu PPA named "ppa"
 
     The original /~<person>/ubuntu/<suite> form is no longer supported
     as it clashes with /~<person>/<distro>/<ppa>
