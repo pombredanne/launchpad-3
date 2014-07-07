@@ -504,7 +504,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         self.switchToUploader()
 
         upload_dir = self.queueUpload(
-            "bar_1.0-1", "~name16/ubuntu/hoary")
+            "bar_1.0-1", "~name16/ubuntu/ppa/hoary")
         self.processUpload(self.uploadprocessor, upload_dir)
 
         self.assertEqual(
@@ -640,7 +640,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
             config.root, "lib/lp/archiveuploader/tests/data/")
         self.options.context = "buildd"
         upload_dir = self.queueUpload(
-            "debian-installer", "~name16/ubuntu/breezy",
+            "debian-installer", "~name16/ubuntu/ppa/breezy",
             test_files_dir=test_files_dir)
         self.processUpload(self.build_uploadprocessor, upload_dir, build=build)
 
