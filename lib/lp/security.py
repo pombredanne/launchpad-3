@@ -1119,8 +1119,9 @@ class EditDistributionByDistroOwnersOrAdmins(AuthorizationBase):
 class ModerateDistributionByDriversOrOwnersOrAdmins(AuthorizationBase):
     """Distribution drivers, owners, and admins may plan releases.
 
-    Drivers of `IDerivativeDistribution`s can create series. Owners and
-    admins can create series for all `IDistribution`s.
+    Drivers of distributions that don't manage their packages in
+    Launchpad can create series. Owners and admins can create series for
+    all `IDistribution`s.
     """
     permission = 'launchpad.Moderate'
     usedfor = IDistribution

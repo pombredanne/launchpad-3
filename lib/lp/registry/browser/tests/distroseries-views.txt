@@ -294,8 +294,8 @@ primary archive.
 Drivers editing distro series
 .............................
 
-The series driver (release manager) can edit a series if the series belongs
-to a `IDerivativeDistribution`.
+The series driver (release manager) can edit a series if the series
+doesn't manage its packages in Launchpad.
 
     >>> print yo_series.driver.name
     yo-driver
@@ -318,7 +318,7 @@ to a `IDerivativeDistribution`.
     >>> print yo_series.displayname
     Mountain
 
-Drivers of an `IBaseDistribution` such as Ubuntu cannot edit a series.
+Drivers of packages with packages such as Ubuntu cannot edit a series.
 
     >>> ignored = login_person(ubuntu.owner.teamowner)
     >>> hoary.driver = yo_driver
