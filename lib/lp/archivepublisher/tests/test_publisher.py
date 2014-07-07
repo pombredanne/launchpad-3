@@ -179,10 +179,9 @@ class TestPublisher(TestPublisherBase):
         os.makedirs(publisher._config.metaroot)
         open(os.path.join(publisher._config.metaroot, 'test'), 'w').close()
 
+        root_dir = publisher._config.archiveroot
+        self.assertTrue(os.path.exists(root_dir))
         publisher.deleteArchive()
-        root_dir = os.path.join(
-            publisher._config.distroroot, test_archive.owner.name,
-            test_archive.name)
         self.assertFalse(os.path.exists(root_dir))
         self.assertFalse(os.path.exists(publisher._config.metaroot))
         self.assertEqual(ArchiveStatus.DELETED, test_archive.status)
@@ -222,10 +221,9 @@ class TestPublisher(TestPublisherBase):
         open(os.path.join(
             publisher._config.archiveroot, 'test_file'), 'w').close()
 
+        root_dir = publisher._config.archiveroot
+        self.assertTrue(os.path.exists(root_dir))
         publisher.deleteArchive()
-        root_dir = os.path.join(
-            publisher._config.distroroot, test_archive.owner.name,
-            test_archive.name)
         self.assertFalse(os.path.exists(root_dir))
         self.assertNotIn('WARNING', logger.getLogBuffer())
         self.assertNotIn('ERROR', logger.getLogBuffer())
