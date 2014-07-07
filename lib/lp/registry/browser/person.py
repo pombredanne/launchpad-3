@@ -450,8 +450,7 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
                     self.request.stepstogo.consume()
                 if redirect:
                     return self.redirectSubTree(
-                        canonical_url(ppa, request=self.request),
-                        status=301)
+                        canonical_url(ppa, request=self.request))
                 else:
                     return ppa
         return None
