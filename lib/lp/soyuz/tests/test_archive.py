@@ -219,7 +219,8 @@ class TestArchiveRepositorySize(TestCaseWithFactory):
         """
         sourcepackagerelease = self.factory.makeSourcePackageRelease()
         self.factory.makeSourcePackagePublishingHistory(
-            archive=archive, sourcepackagerelease=sourcepackagerelease,
+            archive=archive, distroseries=archive.distribution.currentseries,
+            sourcepackagerelease=sourcepackagerelease,
             status=PackagePublishingStatus.PUBLISHED)
         self.factory.makeSourcePackageReleaseFile(
             sourcepackagerelease=sourcepackagerelease,
@@ -2146,7 +2147,8 @@ class GetPublishedSourcesWebServiceTests(TestCaseWithFactory):
         """
         ppa = self.factory.makeArchive(
             name='ppa', purpose=ArchivePurpose.PPA)
-        distroseries = self.factory.makeDistroSeries()
+        distroseries = self.factory.makeDistroSeries(
+            distribution=ppa.distribution)
         # XXX cprov 2014-04-22: currently the target archive owner cannot
         # 'addSource' to a `PackageUpload` ('launchpad.Edit'). It seems
         # too restrive to me.
@@ -2189,12 +2191,16 @@ class TestCopyPackage(TestCaseWithFactory):
 
     def _setup_copy_data(self, source_distribution=None, source_private=False,
                          target_purpose=None,
-                         target_status=SeriesStatus.DEVELOPMENT):
+                         target_status=SeriesStatus.DEVELOPMENT,
+                         same_distribution=False):
         if target_purpose is None:
             target_purpose = ArchivePurpose.PPA
         source_archive = self.factory.makeArchive(
             distribution=source_distribution, private=source_private)
-        target_archive = self.factory.makeArchive(purpose=target_purpose)
+        target_distribution = (
+            source_archive.distribution if same_distribution else None)
+        target_archive = self.factory.makeArchive(
+            distribution=target_distribution, purpose=target_purpose)
         source = self.factory.makeSourcePackagePublishingHistory(
             archive=source_archive, status=PackagePublishingStatus.PUBLISHED)
         with person_logged_in(source_archive.owner):
@@ -2625,7 +2631,7 @@ class TestCopyPackage(TestCaseWithFactory):
         # archive.
         (source, source_archive, source_name, target_archive, to_pocket,
          to_series, version) = self._setup_copy_data(
-            target_purpose=ArchivePurpose.PRIMARY)
+            target_purpose=ArchivePurpose.PRIMARY, same_distribution=True)
         sources = [source]
         uploader = self.factory.makePerson()
         main = self.factory.makeComponent(name="main")

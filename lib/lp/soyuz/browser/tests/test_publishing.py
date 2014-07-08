@@ -136,8 +136,12 @@ class TestSourcePackagePublishingHistoryNavigation(TestCaseWithFactory):
             filename='changelog',
             restricted=(archive is not None and archive.private))
         spr = self.factory.makeSourcePackageRelease(changelog=lfa)
+        if archive is not None:
+            distroseries = archive.distribution.currentseries
+        else:
+            distroseries = None
         return self.factory.makeSourcePackagePublishingHistory(
-            archive=archive,
+            archive=archive, distroseries=distroseries,
             sourcepackagerelease=spr)
 
     def test_changelog(self):
