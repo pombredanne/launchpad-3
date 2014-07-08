@@ -3583,6 +3583,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if distroarchseries is None:
             if source_package_release is not None:
                 distroseries = source_package_release.upload_distroseries
+            elif archive is not None:
+                distroseries = self.makeDistroSeries(
+                    distribution=archive.distribution)
             else:
                 distroseries = self.makeDistroSeries()
             distroarchseries = self.makeDistroArchSeries(
@@ -3604,7 +3607,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 distroseries=distroarchseries.distroseries,
                 sourcepackagename=sourcepackagename)
             self.makeSourcePackagePublishingHistory(
-                distroseries=source_package_release.upload_distroseries,
+                distroseries=distroarchseries.distroseries,
                 archive=archive, sourcepackagerelease=source_package_release,
                 pocket=pocket)
         if status is None:
