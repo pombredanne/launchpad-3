@@ -403,7 +403,7 @@ class Publisher(object):
         :param is_careful: If True, republish all published records (system
             will DTRT checking the hash of all published files).
 
-        Consider records returned by getPendingSourcePublications.
+        Consider records returned by getPendingBinaryPublications.
         """
         self.log.debug("Attempting to publish pending binaries for %s"
               % distroarchseries.architecturetag)
