@@ -2069,6 +2069,9 @@ class IArchiveSet(Interface):
     def get(archive_id):
         """Return the IArchive with the given archive_id."""
 
+    def getByReference(reference):
+        """Return the IArchive with the given archive reference."""
+
     def getPPAByDistributionAndOwnerName(distribution, person_name, ppa_name):
         """Return a single PPA.
 

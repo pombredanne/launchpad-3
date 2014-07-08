@@ -3004,32 +3004,121 @@ class TestPPALookup(TestCaseWithFactory):
             NoSuchPPA, self.person.getPPAByName, None, "aap")
 
 
-class TestReference(TestCaseWithFactory):
+class TestArchiveReference(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def assertReferenceIntegrity(self, reference, archive):
+        """Assert that the archive's reference matches in both directions."""
+        self.assertEqual(reference, archive.reference)
+        self.assertEqual(
+            archive, getUtility(IArchiveSet).getByReference(reference))
+
     def test_primary(self):
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
-        self.assertEqual(archive.distribution.name, archive.reference)
+        self.assertReferenceIntegrity(archive.distribution.name, archive)
 
     def test_partner(self):
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PARTNER)
-        self.assertEqual(
+        self.assertReferenceIntegrity(
             '%s/%s' % (archive.distribution.name, archive.name),
-            archive.reference)
+            archive)
 
     def test_copy(self):
         archive = self.factory.makeArchive(purpose=ArchivePurpose.COPY)
-        self.assertEqual(
+        self.assertReferenceIntegrity(
             '%s/%s' % (archive.distribution.name, archive.name),
-            archive.reference)
+            archive)
 
     def test_ppa(self):
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
-        self.assertEqual(
+        self.assertReferenceIntegrity(
             '~%s/%s/%s' % (
                 archive.owner.name, archive.distribution.name, archive.name),
-            archive.reference)
+            archive)
+
+
+class TestArchiveSetGetByReference(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestArchiveSetGetByReference, self).setUp()
+        self.set = getUtility(IArchiveSet)
+
+    def test_ppa(self):
+        owner = self.factory.makePerson(name='pwner')
+        twoner = self.factory.makePerson(name='twoner')
+        twobuntu = self.factory.makeDistribution(name='two')
+        threebuntu = self.factory.makeDistribution(name='three')
+        ppa1 = self.factory.makeArchive(
+            owner=owner, distribution=twobuntu, name='ppa',
+            purpose=ArchivePurpose.PPA)
+        ppa2 = self.factory.makeArchive(
+            owner=owner, distribution=twobuntu, name='qpa',
+            purpose=ArchivePurpose.PPA)
+        ppa3 = self.factory.makeArchive(
+            owner=owner, distribution=threebuntu, name='ppa',
+            purpose=ArchivePurpose.PPA)
+        ppa4 = self.factory.makeArchive(
+            owner=twoner, distribution=twobuntu, name='ppa',
+            purpose=ArchivePurpose.PPA)
+
+        self.assertEqual(ppa1, self.set.getByReference('~pwner/two/ppa'))
+        self.assertEqual(ppa2, self.set.getByReference('~pwner/two/qpa'))
+        self.assertEqual(ppa3, self.set.getByReference('~pwner/three/ppa'))
+        self.assertEqual(ppa4, self.set.getByReference('~twoner/two/ppa'))
+
+        # Bad combinations give None.
+        self.assertIs(None, self.set.getByReference('~pwner/three/qpa'))
+        self.assertIs(None, self.set.getByReference('~twoner/two/qpa'))
+        self.assertIs(None, self.set.getByReference('~pwner/two/rpa'))
+
+        # Nonexistent names give None.
+        self.assertIs(None, self.set.getByReference('~pwner/enoent/ppa'))
+        self.assertIs(None, self.set.getByReference('~whoisthis/two/ppa'))
+
+        # Invalid formats give None.
+        self.assertIs(None, self.set.getByReference('~whoisthis/two/w/t'))
+        self.assertIs(None, self.set.getByReference('~whoisthis/two'))
+        self.assertIs(None, self.set.getByReference('~whoisthis'))
+
+    def test_distro(self):
+        twobuntu = self.factory.makeDistribution(name='two')
+        threebuntu = self.factory.makeDistribution(name='three')
+        two_primary = self.factory.makeArchive(
+            distribution=twobuntu, purpose=ArchivePurpose.PRIMARY)
+        two_partner = self.factory.makeArchive(
+            distribution=twobuntu, purpose=ArchivePurpose.PARTNER)
+        three_primary = self.factory.makeArchive(
+            distribution=threebuntu, purpose=ArchivePurpose.PRIMARY)
+        three_copy = self.factory.makeArchive(
+            distribution=threebuntu, purpose=ArchivePurpose.COPY,
+            name='rebuild')
+
+        self.assertEqual(two_primary, self.set.getByReference('two'))
+        self.assertEqual(two_partner, self.set.getByReference('two/partner'))
+        self.assertEqual(three_primary, self.set.getByReference('three'))
+        self.assertEqual(three_copy, self.set.getByReference('three/rebuild'))
+
+        # Bad combinations give None.
+        self.assertIs(None, self.set.getByReference('three/partner'))
+        self.assertIs(None, self.set.getByReference('two/rebuild'))
+
+        # Nonexistent names give None.
+        self.assertIs(None, self.set.getByReference('three/enoent'))
+        self.assertIs(None, self.set.getByReference('enodist'))
+        self.assertIs(None, self.set.getByReference('enodist/partner'))
+
+        # Invalid formats give None.
+        self.assertIs(None, self.set.getByReference('two/partner/idonteven'))
+
+    def test_nonsense(self):
+        self.assertIs(None, getUtility(IArchiveSet).getByReference(''))
+        self.assertIs(
+            None,
+            getUtility(IArchiveSet).getByReference(
+                'that/does/not/make/sense'))
 
 
 class TestDisplayName(TestCaseWithFactory):

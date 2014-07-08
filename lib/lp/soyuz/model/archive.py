@@ -2141,6 +2141,37 @@ class ArchiveSet:
         """See `IArchiveSet`."""
         return Archive.get(archive_id)
 
+    def getByReference(self, reference):
+        """See `IArchiveSet`."""
+        from lp.registry.interfaces.distribution import IDistributionSet
+
+        bits = reference.split(u'/')
+        if len(bits) < 1:
+            return None
+        if bits[0].startswith(u'~'):
+            # PPA reference (~OWNER/DISTRO/ARCHIVE)
+            if len(bits) != 3:
+                return None
+            person = getUtility(IPersonSet).getByName(bits[0][1:])
+            if person is None:
+                return None
+            distro = getUtility(IDistributionSet).getByName(bits[1])
+            if distro is None:
+                return None
+            return self.getPPAOwnedByPerson(
+                person, distribution=distro, name=bits[2])
+        else:
+            # Official archive reference (DISTRO or DISTRO/ARCHIVE)
+            distro = getUtility(IDistributionSet).getByName(bits[0])
+            if distro is None:
+                return None
+            if len(bits) == 1:
+                return distro.main_archive
+            elif len(bits) == 2:
+                return self.getByDistroAndName(distro, bits[1])
+            else:
+                return None
+
     def getPPAByDistributionAndOwnerName(self, distribution, person_name,
                                          ppa_name):
         """See `IArchiveSet`"""
