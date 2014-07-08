@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Publishing interfaces."""
@@ -12,7 +12,6 @@ __all__ = [
     'IBinaryPackagePublishingHistory',
     'IBinaryPackagePublishingHistoryEdit',
     'IBinaryPackagePublishingHistoryPublic',
-    'ICanPublishPackages',
     'IFilePublishing',
     'IPublishingEdit',
     'IPublishingSet',
@@ -125,36 +124,6 @@ name_priority_map = {
 #
 # Base Interfaces
 #
-
-
-class ICanPublishPackages(Interface):
-    """Denotes the ability to publish associated publishing records."""
-
-    def getPendingPublications(archive, pocket, is_careful):
-        """Return the specific group of records to be published.
-
-        IDistroSeries -> ISourcePackagePublishing
-        IDistroArchSeries -> IBinaryPackagePublishing
-
-        'pocket' & 'archive' are mandatory arguments, they  restrict the
-        results to the given value.
-
-        If the distroseries is already released, it automatically refuses
-        to publish records to RELEASE pocket.
-        """
-
-    def publish(diskpool, log, archive, pocket, careful=False):
-        """Publish associated publishing records targeted for a given pocket.
-
-        Require an initialized diskpool instance and a logger instance.
-        Require an 'archive' which will restrict the publications.
-        'careful' argument would cause the 'republication' of all published
-        records if True (system will DTRT checking hash of all
-        published files.)
-
-        Consider records returned by the local implementation of
-        getPendingPublications.
-        """
 
 
 class IArchiveSafePublisher(Interface):
