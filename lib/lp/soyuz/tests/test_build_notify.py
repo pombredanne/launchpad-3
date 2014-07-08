@@ -45,7 +45,9 @@ class TestBuildNotify(TestCaseWithFactory):
         self.archive = self.factory.makeArchive(
             distribution=self.distroseries.distribution,
             purpose=ArchivePurpose.PRIMARY)
-        self.ppa = self.factory.makeArchive()
+        self.ppa = self.factory.makeArchive(
+            distribution=self.distroseries.distribution,
+            purpose=ArchivePurpose.PPA)
         buildd_admins = getUtility(IPersonSet).getByName(
             'launchpad-buildd-admins')
         self.buildd_admins_email = []

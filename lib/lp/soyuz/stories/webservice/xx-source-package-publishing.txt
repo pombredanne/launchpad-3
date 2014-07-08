@@ -460,7 +460,8 @@ Overrides
 
     >>> login("foo.bar@canonical.com")
     >>> override_source = stp.getPubSource(
-    ...     archive=cprov_ppa, sourcename="testoverrides")
+    ...     archive=cprov_ppa, sourcename="testoverrides",
+    ...     distroseries=cprov_ppa.distribution.currentseries)
     >>> logout()
 
     >>> cprov_archive_devel = webservice.get(

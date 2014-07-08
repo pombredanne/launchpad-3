@@ -1211,7 +1211,8 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         # Firstly, lots of boring set up.
         target_archive = self.factory.makeArchive(
             self.distroseries.distribution, purpose=ArchivePurpose.PRIMARY)
-        source_archive = self.factory.makeArchive()
+        source_archive = self.factory.makeArchive(
+            self.distroseries.distribution)
         bug280 = self.factory.makeBug()
         bug281 = self.factory.makeBug()
         bug282 = self.factory.makeBug()
