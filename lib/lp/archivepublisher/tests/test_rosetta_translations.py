@@ -87,12 +87,14 @@ class TestRosettaTranslations(TestCaseWithFactory):
         das = self.factory.makeDistroArchSeries()
         distroseries = das.distroseries
         distroseries.nominatedarchindep = das
+        archive = self.factory.makeArchive(
+            distribution=distroseries.distribution,
+            purpose=ArchivePurpose.PPA)
         getUtility(ISourcePackageFormatSelectionSet).add(
             distroseries, SourcePackageFormat.FORMAT_1_0)
 
         bpb = self.factory.makeBinaryPackageBuild(
-            distroarchseries=distroseries.nominatedarchindep,
-            archive=self.factory.makeArchive(purpose=ArchivePurpose.PPA),
+            distroarchseries=distroseries.nominatedarchindep, archive=archive,
             pocket=PackagePublishingPocket.RELEASE)
         bpr = self.factory.makeBinaryPackageRelease(build=bpb)
         self.factory.makeBinaryPackagePublishingHistory(
