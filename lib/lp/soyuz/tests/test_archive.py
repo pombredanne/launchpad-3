@@ -3004,6 +3004,34 @@ class TestPPALookup(TestCaseWithFactory):
             NoSuchPPA, self.person.getPPAByName, None, "aap")
 
 
+class TestReference(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_primary(self):
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        self.assertEqual(archive.distribution.name, archive.reference)
+
+    def test_partner(self):
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PARTNER)
+        self.assertEqual(
+            '%s/%s' % (archive.distribution.name, archive.name),
+            archive.reference)
+
+    def test_copy(self):
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.COPY)
+        self.assertEqual(
+            '%s/%s' % (archive.distribution.name, archive.name),
+            archive.reference)
+
+    def test_ppa(self):
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        self.assertEqual(
+            '~%s/%s/%s' % (
+                archive.owner.name, archive.distribution.name, archive.name),
+            archive.reference)
+
+
 class TestDisplayName(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer

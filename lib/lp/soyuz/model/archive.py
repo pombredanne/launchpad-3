@@ -205,6 +205,14 @@ from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.soyuz.scripts.packagecopier import check_copy_permissions
 
 
+ARCHIVE_REFERENCE_TEMPLATES = {
+    ArchivePurpose.PRIMARY: u'%(distribution)s',
+    ArchivePurpose.PPA: u'~%(owner)s/%(distribution)s/%(archive)s',
+    ArchivePurpose.PARTNER: u'%(distribution)s/%(archive)s',
+    ArchivePurpose.COPY: u'%(distribution)s/%(archive)s',
+    }
+
+
 def storm_validate_external_dependencies(archive, attr, value):
     assert attr == 'external_dependencies'
     errors = validate_external_dependencies(value)
@@ -394,6 +402,16 @@ class Archive(SQLBase):
     def is_active(self):
         """See `IArchive`."""
         return self.status == ArchiveStatus.ACTIVE
+
+    @property
+    def reference(self):
+        template = ARCHIVE_REFERENCE_TEMPLATES.get(self.purpose)
+        if template is None:
+            raise AssertionError(
+                "No archive reference template for %s." % self.purpose.name)
+        return template % {
+            'archive': self.name, 'owner': self.owner.name,
+            'distribution': self.distribution.name}
 
     @property
     def series_with_sources(self):
