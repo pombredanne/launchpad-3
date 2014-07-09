@@ -21,6 +21,8 @@ from debian.deb822 import (
     _multivalued,
     Release,
     )
+from storm.expr import Desc
+from storm.store import EmptyResultSet
 from zope.component import getUtility
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
@@ -47,7 +49,7 @@ from lp.registry.interfaces.pocket import (
     )
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.database.constants import UTC_NOW
-from lp.services.database.sqlbase import sqlvalues
+from lp.services.database.interfaces import IStore
 from lp.services.librarian.client import LibrarianClient
 from lp.services.utils import file_exists
 from lp.soyuz.enums import (
@@ -61,6 +63,7 @@ from lp.soyuz.interfaces.publishing import (
     active_publishing_status,
     IPublishingSet,
     )
+from lp.soyuz.model.distroarchseries import DistroArchSeries
 from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory,
     SourcePackagePublishingHistory,
@@ -316,34 +319,32 @@ class Publisher(object):
         If the distroseries is already released, it automatically refuses
         to publish records to the RELEASE pocket.
         """
-        queries = ['distroseries = %s' % sqlvalues(distroseries)]
+        # Exclude RELEASE pocket if the distroseries was already released,
+        # since it should not change for main archive.
+        # We allow RELEASE publishing for PPAs.
+        # We also allow RELEASE publishing for partner.
+        if (pocket == PackagePublishingPocket.RELEASE and
+            not distroseries.isUnstable() and
+            not self.archive.allowUpdatesToReleasePocket()):
+            return EmptyResultSet()
 
-        # Query main archive for this distroseries
-        queries.append('archive=%s' % sqlvalues(self.archive))
+        conditions = [
+            SourcePackagePublishingHistory.distroseries == distroseries,
+            SourcePackagePublishingHistory.pocket == pocket,
+            SourcePackagePublishingHistory.archive == self.archive,
+            ]
 
         # Careful publishing should include all PUBLISHED rows, normal run
         # only includes PENDING ones.
         statuses = [PackagePublishingStatus.PENDING]
         if is_careful:
             statuses.append(PackagePublishingStatus.PUBLISHED)
-        queries.append('status IN %s' % sqlvalues(statuses))
+        conditions.append(
+            SourcePackagePublishingHistory.status.is_in(statuses))
 
-        # Restrict to a specific pocket.
-        queries.append('pocket = %s' % sqlvalues(pocket))
-
-        # Exclude RELEASE pocket if the distroseries was already released,
-        # since it should not change for main archive.
-        # We allow RELEASE publishing for PPAs.
-        # We also allow RELEASE publishing for partner.
-        if (not distroseries.isUnstable() and
-            not self.archive.allowUpdatesToReleasePocket()):
-            queries.append(
-            'pocket != %s' % sqlvalues(PackagePublishingPocket.RELEASE))
-
-        publications = SourcePackagePublishingHistory.select(
-            " AND ".join(queries), orderBy="-id")
-
-        return publications
+        publications = IStore(SourcePackagePublishingHistory).find(
+            SourcePackagePublishingHistory, *conditions)
+        return publications.order_by(Desc(SourcePackagePublishingHistory.id))
 
     def publishSources(self, distroseries, pocket, is_careful=False):
         """Publish sources for a given distroseries and pocket.
@@ -372,30 +373,29 @@ class Publisher(object):
         If the distroseries is already released, it automatically refuses
         to publish records to the RELEASE pocket.
         """
-        queries = [
-            "distroarchseries = %s AND archive = %s"
-            % sqlvalues(distroarchseries, self.archive)
-            ]
-
-        target_status = [PackagePublishingStatus.PENDING]
-        if is_careful:
-            target_status.append(PackagePublishingStatus.PUBLISHED)
-        queries.append("status IN %s" % sqlvalues(target_status))
-
-        # restrict to a specific pocket.
-        queries.append('pocket = %s' % sqlvalues(pocket))
-
         # Exclude RELEASE pocket if the distroseries was already released,
         # since it should not change, unless the archive allows it.
-        if (not distroarchseries.distroseries.isUnstable() and
+        if (pocket == PackagePublishingPocket.RELEASE and
+            not distroarchseries.distroseries.isUnstable() and
             not self.archive.allowUpdatesToReleasePocket()):
-            queries.append(
-            'pocket != %s' % sqlvalues(PackagePublishingPocket.RELEASE))
+            return EmptyResultSet()
 
-        publications = BinaryPackagePublishingHistory.select(
-                    " AND ".join(queries), orderBy=["-id"])
+        conditions = [
+            BinaryPackagePublishingHistory.distroarchseries ==
+                distroarchseries,
+            BinaryPackagePublishingHistory.pocket == pocket,
+            BinaryPackagePublishingHistory.archive == self.archive,
+            ]
 
-        return publications
+        statuses = [PackagePublishingStatus.PENDING]
+        if is_careful:
+            statuses.append(PackagePublishingStatus.PUBLISHED)
+        conditions.append(
+            BinaryPackagePublishingHistory.status.is_in(statuses))
+
+        publications = IStore(BinaryPackagePublishingHistory).find(
+            BinaryPackagePublishingHistory, *conditions)
+        return publications.order_by(Desc(BinaryPackagePublishingHistory.id))
 
     def publishBinaries(self, distroarchseries, pocket, is_careful=False):
         """Publish binaries for a given distroseries and pocket.
@@ -451,13 +451,13 @@ class Publisher(object):
         self.log.debug("* Step A2: Mark pockets with deletions as dirty")
 
         # Query part that is common to both queries below.
-        base_query = """
-            archive = %s AND
-            status = %s AND
-            scheduleddeletiondate IS NULL AND
-            dateremoved is NULL
-            """ % sqlvalues(self.archive,
-                            PackagePublishingStatus.DELETED)
+        def base_conditions(table):
+            return [
+                table.archive == self.archive,
+                table.status == PackagePublishingStatus.DELETED,
+                table.scheduleddeletiondate == None,
+                table.dateremoved == None,
+                ]
 
         # We need to get a set of (distroseries, pocket) tuples that have
         # publications that are waiting to be deleted.  Each tuple is
@@ -472,13 +472,16 @@ class Publisher(object):
                     # stable distroseries, no matter what other bugs
                     # that precede here have dirtied it.
                     continue
-                clauses = [base_query]
-                clauses.append("pocket = %s" % sqlvalues(pocket))
-                clauses.append("distroseries = %s" % sqlvalues(distroseries))
+                conditions = base_conditions(SourcePackagePublishingHistory)
+                conditions.extend([
+                    SourcePackagePublishingHistory.pocket == pocket,
+                    SourcePackagePublishingHistory.distroseries ==
+                        distroseries,
+                    ])
 
                 # Make the source publications query.
-                source_query = " AND ".join(clauses)
-                sources = SourcePackagePublishingHistory.select(source_query)
+                sources = IStore(SourcePackagePublishingHistory).find(
+                    SourcePackagePublishingHistory, *conditions)
                 if not sources.is_empty():
                     self.markPocketDirty(distroseries, pocket)
                     # No need to check binaries if the pocket is already
@@ -486,14 +489,15 @@ class Publisher(object):
                     continue
 
                 # Make the binary publications query.
-                clauses = [base_query]
-                clauses.append("pocket = %s" % sqlvalues(pocket))
-                clauses.append("DistroArchSeries = DistroArchSeries.id")
-                clauses.append("DistroArchSeries.distroseries = %s" %
-                    sqlvalues(distroseries))
-                binary_query = " AND ".join(clauses)
-                binaries = BinaryPackagePublishingHistory.select(binary_query,
-                    clauseTables=['DistroArchSeries'])
+                conditions = base_conditions(BinaryPackagePublishingHistory)
+                conditions.extend([
+                    BinaryPackagePublishingHistory.pocket == pocket,
+                    BinaryPackagePublishingHistory.distroarchseriesID ==
+                        DistroArchSeries.id,
+                    DistroArchSeries.distroseries == distroseries,
+                    ])
+                binaries = IStore(BinaryPackagePublishingHistory).find(
+                    BinaryPackagePublishingHistory, *conditions)
                 if not binaries.is_empty():
                     self.markPocketDirty(distroseries, pocket)
 
