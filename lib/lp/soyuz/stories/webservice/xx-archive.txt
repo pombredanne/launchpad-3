@@ -26,6 +26,7 @@ We publish a subset of their attributes.
     name: u'ppa'
     owner_link: u'http://.../~cprov'
     private: False
+    reference: u'~cprov/ubuntu/ppa'
     relative_build_score: 0
     require_virtualized: True
     resource_type_link: u'http://.../#archive'
@@ -49,6 +50,7 @@ For "devel" additional attributes are available.
     name: u'ppa'
     owner_link: u'http://.../~cprov'
     private: False
+    reference: u'~cprov/ubuntu/ppa'
     relative_build_score: 0
     require_virtualized: True
     resource_type_link: u'http://.../#archive'
@@ -121,6 +123,7 @@ The archive has the following attributes:
     name: u'primary'
     owner_link: u'http://.../~ubuntu-team'
     private: False
+    reference: u'ubuntutest'
     relative_build_score: 0
     require_virtualized: False
     resource_type_link: u'http://.../#archive'
@@ -1191,6 +1194,7 @@ the IArchive context, in this case only Celso has it.
     name: u'p3a'
     owner_link: u'http://.../~cprov'
     private: True
+    reference: u'~cprov/ubuntu/p3a'
     relative_build_score: 0
     require_virtualized: u'tag:launchpad.net:2008:redacted'
     resource_type_link: u'http://.../#archive'
@@ -1210,6 +1214,7 @@ the IArchive context, in this case only Celso has it.
     name: u'p3a'
     owner_link: u'http://.../~cprov'
     private: True
+    reference: u'~cprov/ubuntu/p3a'
     relative_build_score: 0
     require_virtualized: True
     resource_type_link: u'http://.../#archive'

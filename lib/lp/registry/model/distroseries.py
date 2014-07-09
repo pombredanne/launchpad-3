@@ -132,10 +132,7 @@ from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.distributionjob import (
     IInitializeDistroSeriesJobSource,
     )
-from lp.soyuz.interfaces.publishing import (
-    active_publishing_status,
-    ICanPublishPackages,
-    )
+from lp.soyuz.interfaces.publishing import active_publishing_status
 from lp.soyuz.interfaces.queue import (
     IHasQueueItems,
     IPackageUploadSet,
@@ -200,9 +197,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                    StructuralSubscriptionTargetMixin):
     """A particular series of a distribution."""
     implements(
-        ICanPublishPackages, IBugSummaryDimension, IDistroSeries,
-        IHasBuildRecords, IHasQueueItems, IServiceUsage,
-        ISeriesBugTarget)
+        IBugSummaryDimension, IDistroSeries, IHasBuildRecords, IHasQueueItems,
+        IServiceUsage, ISeriesBugTarget)
 
     delegates(ISpecificationTarget, 'distribution')
 
@@ -1334,73 +1330,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         contributors = contributors.order_by(*Person._storm_sortingColumns)
         contributors = contributors.config(distinct=True)
         return contributors
-
-    def getPendingPublications(self, archive, pocket, is_careful):
-        """See ICanPublishPackages."""
-        queries = ['distroseries = %s' % sqlvalues(self)]
-
-        # Query main archive for this distroseries
-        queries.append('archive=%s' % sqlvalues(archive))
-
-        # Careful publishing should include all PUBLISHED rows, normal run
-        # only includes PENDING ones.
-        statuses = [PackagePublishingStatus.PENDING]
-        if is_careful:
-            statuses.append(PackagePublishingStatus.PUBLISHED)
-        queries.append('status IN %s' % sqlvalues(statuses))
-
-        # Restrict to a specific pocket.
-        queries.append('pocket = %s' % sqlvalues(pocket))
-
-        # Exclude RELEASE pocket if the distroseries was already released,
-        # since it should not change for main archive.
-        # We allow RELEASE publishing for PPAs.
-        # We also allow RELEASE publishing for partner.
-        if (not self.isUnstable() and
-            not archive.allowUpdatesToReleasePocket()):
-            queries.append(
-            'pocket != %s' % sqlvalues(PackagePublishingPocket.RELEASE))
-
-        publications = SourcePackagePublishingHistory.select(
-            " AND ".join(queries), orderBy="-id")
-
-        return publications
-
-    def publish(self, diskpool, log, archive, pocket, is_careful=False):
-        """See ICanPublishPackages."""
-        log.debug("Publishing %s-%s" % (self.title, pocket.name))
-        log.debug("Attempting to publish pending sources.")
-
-        dirty_pockets = set()
-        for spph in self.getPendingPublications(archive, pocket, is_careful):
-            if not self.checkLegalPocket(spph, is_careful, log):
-                continue
-            spph.publish(diskpool, log)
-            dirty_pockets.add((self.name, spph.pocket))
-
-        # propagate publication request to each distroarchseries.
-        for dar in self.architectures:
-            more_dirt = dar.publish(
-                diskpool, log, archive, pocket, is_careful)
-            dirty_pockets.update(more_dirt)
-
-        return dirty_pockets
-
-    def checkLegalPocket(self, publication, is_careful, log):
-        """Check if the publication can happen in the archive."""
-        # 'careful' mode re-publishes everything:
-        if is_careful:
-            return True
-
-        if not publication.archive.canModifySuite(self, publication.pocket):
-            log.error(
-                "Tried to publish %s (%s) into the %s pocket on series %s "
-                "(%s), skipping" % (
-                    publication.displayname, publication.id,
-                    publication.pocket, self.displayname, self.status.name))
-            return False
-
-        return True
 
     @property
     def main_archive(self):
