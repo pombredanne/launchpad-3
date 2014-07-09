@@ -320,7 +320,6 @@ class Publisher(object):
         """
         conditions = [
             SourcePackagePublishingHistory.distroseries == distroseries,
-            # Query main archive for this distroseries
             SourcePackagePublishingHistory.archive == self.archive,
             ]
 
