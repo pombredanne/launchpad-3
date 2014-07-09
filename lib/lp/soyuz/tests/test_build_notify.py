@@ -95,17 +95,16 @@ class TestBuildNotify(TestCaseWithFactory):
             'main', notification['X-Launchpad-Build-Component'])
         self.assertEquals(
             build.status.name, notification['X-Launchpad-Build-State'])
-        if ppa is True:
+        self.assertEquals(
+            build.archive.reference, notification['X-Launchpad-Archive'])
+        if ppa:
             self.assertEquals(
                 get_ppa_reference(self.ppa), notification['X-Launchpad-PPA'])
         body = notification.get_payload(decode=True)
         build_log = 'None'
-        if ppa is True:
-            archive = '%s PPA' % get_ppa_reference(build.archive)
+        if ppa:
             source = 'not available'
         else:
-            archive = '%s primary archive' % (
-                self.distroseries.distribution.name)
             source = canonical_url(build.distributionsourcepackagerelease)
         builder = canonical_url(build.builder)
         if build.status == BuildStatus.BUILDING:
@@ -147,8 +146,8 @@ class TestBuildNotify(TestCaseWithFactory):
         """ % (
             build.source_package_release.sourcepackagename.name,
             build.source_package_release.version, self.das.architecturetag,
-            archive, build.status.title, duration, build_log, builder,
-            source, build.title, canonical_url(build)))
+            archive.reference, build.status.title, duration, build_log,
+            builder, source, build.title, canonical_url(build)))
         self.assertEquals(expected_body, body)
 
     def test_notify_buildd_admins(self):
