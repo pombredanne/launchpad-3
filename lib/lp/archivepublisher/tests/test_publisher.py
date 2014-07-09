@@ -168,6 +168,46 @@ class TestPublisherSeries(TestNativePublishingBase):
         return (pub_pending_release, pub_published_release,
                 pub_pending_updates)
 
+    def checkLegalPocket(self, status, pocket):
+        distroseries = self.factory.makeDistroSeries(
+            distribution=self.ubuntutest, status=status)
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            distroseries=distroseries, pocket=pocket)
+        publisher = Publisher(
+            self.logger, self.config, self.disk_pool,
+            distroseries.main_archive)
+        return publisher.checkLegalPocket(distroseries, spph, False)
+
+    def test_checkLegalPocket_allows_unstable_release(self):
+        """Publishing to RELEASE in a DEVELOPMENT series is allowed."""
+        self.assertTrue(self.checkLegalPocket(
+            SeriesStatus.DEVELOPMENT, PackagePublishingPocket.RELEASE))
+
+    def test_checkLegalPocket_allows_unstable_proposed(self):
+        """Publishing to PROPOSED in a DEVELOPMENT series is allowed."""
+        self.assertTrue(self.checkLegalPocket(
+            SeriesStatus.DEVELOPMENT, PackagePublishingPocket.PROPOSED))
+
+    def test_checkLegalPocket_forbids_unstable_updates(self):
+        """Publishing to UPDATES in a DEVELOPMENT series is forbidden."""
+        self.assertFalse(self.checkLegalPocket(
+            SeriesStatus.DEVELOPMENT, PackagePublishingPocket.UPDATES))
+
+    def test_checkLegalPocket_forbids_stable_release(self):
+        """Publishing to RELEASE in a DEVELOPMENT series is forbidden."""
+        self.assertFalse(self.checkLegalPocket(
+            SeriesStatus.CURRENT, PackagePublishingPocket.RELEASE))
+
+    def test_checkLegalPocket_allows_stable_proposed(self):
+        """Publishing to PROPOSED in a DEVELOPMENT series is allowed."""
+        self.assertTrue(self.checkLegalPocket(
+            SeriesStatus.CURRENT, PackagePublishingPocket.PROPOSED))
+
+    def test_checkLegalPocket_allows_stable_updates(self):
+        """Publishing to UPDATES in a DEVELOPMENT series is allowed."""
+        self.assertTrue(self.checkLegalPocket(
+            SeriesStatus.CURRENT, PackagePublishingPocket.UPDATES))
+
     def _ensurePublisher(self):
         """Create self.publisher if needed."""
         if self.publisher is None:
