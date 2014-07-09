@@ -320,6 +320,7 @@ class Publisher(object):
         """
         conditions = [
             SourcePackagePublishingHistory.distroseries == distroseries,
+            SourcePackagePublishingHistory.pocket == pocket,
             SourcePackagePublishingHistory.archive == self.archive,
             ]
 
@@ -330,9 +331,6 @@ class Publisher(object):
             statuses.append(PackagePublishingStatus.PUBLISHED)
         conditions.append(
             SourcePackagePublishingHistory.status.is_in(statuses))
-
-        # Restrict to a specific pocket.
-        conditions.append(SourcePackagePublishingHistory.pocket == pocket)
 
         # Exclude RELEASE pocket if the distroseries was already released,
         # since it should not change for main archive.
@@ -378,6 +376,7 @@ class Publisher(object):
         conditions = [
             BinaryPackagePublishingHistory.distroarchseries ==
                 distroarchseries,
+            BinaryPackagePublishingHistory.pocket == pocket,
             BinaryPackagePublishingHistory.archive == self.archive,
             ]
 
@@ -386,9 +385,6 @@ class Publisher(object):
             statuses.append(PackagePublishingStatus.PUBLISHED)
         conditions.append(
             BinaryPackagePublishingHistory.status.is_in(statuses))
-
-        # Restrict to a specific pocket.
-        conditions.append(BinaryPackagePublishingHistory.pocket == pocket)
 
         # Exclude RELEASE pocket if the distroseries was already released,
         # since it should not change, unless the archive allows it.
