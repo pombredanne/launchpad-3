@@ -205,6 +205,14 @@ from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.soyuz.scripts.packagecopier import check_copy_permissions
 
 
+ARCHIVE_REFERENCE_TEMPLATES = {
+    ArchivePurpose.PRIMARY: u'%(distribution)s',
+    ArchivePurpose.PPA: u'~%(owner)s/%(distribution)s/%(archive)s',
+    ArchivePurpose.PARTNER: u'%(distribution)s/%(archive)s',
+    ArchivePurpose.COPY: u'%(distribution)s/%(archive)s',
+    }
+
+
 def storm_validate_external_dependencies(archive, attr, value):
     assert attr == 'external_dependencies'
     errors = validate_external_dependencies(value)
@@ -394,6 +402,16 @@ class Archive(SQLBase):
     def is_active(self):
         """See `IArchive`."""
         return self.status == ArchiveStatus.ACTIVE
+
+    @property
+    def reference(self):
+        template = ARCHIVE_REFERENCE_TEMPLATES.get(self.purpose)
+        if template is None:
+            raise AssertionError(
+                "No archive reference template for %s." % self.purpose.name)
+        return template % {
+            'archive': self.name, 'owner': self.owner.name,
+            'distribution': self.distribution.name}
 
     @property
     def series_with_sources(self):
@@ -2122,6 +2140,37 @@ class ArchiveSet:
     def get(self, archive_id):
         """See `IArchiveSet`."""
         return Archive.get(archive_id)
+
+    def getByReference(self, reference):
+        """See `IArchiveSet`."""
+        from lp.registry.interfaces.distribution import IDistributionSet
+
+        bits = reference.split(u'/')
+        if len(bits) < 1:
+            return None
+        if bits[0].startswith(u'~'):
+            # PPA reference (~OWNER/DISTRO/ARCHIVE)
+            if len(bits) != 3:
+                return None
+            person = getUtility(IPersonSet).getByName(bits[0][1:])
+            if person is None:
+                return None
+            distro = getUtility(IDistributionSet).getByName(bits[1])
+            if distro is None:
+                return None
+            return self.getPPAOwnedByPerson(
+                person, distribution=distro, name=bits[2])
+        else:
+            # Official archive reference (DISTRO or DISTRO/ARCHIVE)
+            distro = getUtility(IDistributionSet).getByName(bits[0])
+            if distro is None:
+                return None
+            if len(bits) == 1:
+                return distro.main_archive
+            elif len(bits) == 2:
+                return self.getByDistroAndName(distro, bits[1])
+            else:
+                return None
 
     def getPPAByDistributionAndOwnerName(self, distribution, person_name,
                                          ppa_name):

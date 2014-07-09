@@ -317,6 +317,11 @@ class IArchivePublic(IPrivacy, IHasOwner):
             title=_("Display name"), required=True,
             description=_("A short title for the archive.")))
 
+    reference = exported(
+        TextLine(
+            title=_("Reference"), required=True, readonly=True,
+            description=_("A string to uniquely identify the archive.")))
+
     distribution = exported(
         Reference(
             Interface,  # Redefined to IDistribution later.
@@ -2063,6 +2068,9 @@ class IArchiveSet(Interface):
 
     def get(archive_id):
         """Return the IArchive with the given archive_id."""
+
+    def getByReference(reference):
+        """Return the IArchive with the given archive reference."""
 
     def getPPAByDistributionAndOwnerName(distribution, person_name, ppa_name):
         """Return a single PPA.
