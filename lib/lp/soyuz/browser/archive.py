@@ -1393,9 +1393,8 @@ class PackageCopyingMixin:
 def make_archive_vocabulary(archives):
     terms = []
     for archive in archives:
-        token = '%s/%s' % (archive.owner.name, archive.name)
-        label = '%s [~%s]' % (archive.displayname, token)
-        terms.append(SimpleTerm(archive, token, label))
+        label = '%s [%s]' % (archive.displayname, archive.reference)
+        terms.append(SimpleTerm(archive, archive.reference, label))
     return SimpleVocabulary(terms)
 
 

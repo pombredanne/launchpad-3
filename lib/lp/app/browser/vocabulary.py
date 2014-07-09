@@ -390,8 +390,7 @@ class ArchivePickerEntrySourceAdapter(DefaultPickerEntrySourceAdapter):
             super(ArchivePickerEntrySourceAdapter, self)
                     .getPickerEntries(term_values, context_object, **kwarg))
         for archive, picker_entry in izip(term_values, entries):
-            picker_entry.description = '%s/%s' % (
-                                       archive.owner.name, archive.name)
+            picker_entry.description = archive.reference
         return entries
 
 
