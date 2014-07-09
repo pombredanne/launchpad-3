@@ -291,43 +291,6 @@ class TestDistroSeries(TestCaseWithFactory):
         self.assertContentEqual(
             [comment], distroseries.getDifferenceComments())
 
-    def checkLegalPocket(self, status, pocket):
-        distroseries = self.factory.makeDistroSeries(status=status)
-        spph = self.factory.makeSourcePackagePublishingHistory(
-            distroseries=distroseries, pocket=pocket)
-        return removeSecurityProxy(distroseries).checkLegalPocket(
-            spph, False, getLogger())
-
-    def test_checkLegalPocket_allows_unstable_release(self):
-        """Publishing to RELEASE in a DEVELOPMENT series is allowed."""
-        self.assertTrue(self.checkLegalPocket(
-            SeriesStatus.DEVELOPMENT, PackagePublishingPocket.RELEASE))
-
-    def test_checkLegalPocket_allows_unstable_proposed(self):
-        """Publishing to PROPOSED in a DEVELOPMENT series is allowed."""
-        self.assertTrue(self.checkLegalPocket(
-            SeriesStatus.DEVELOPMENT, PackagePublishingPocket.PROPOSED))
-
-    def test_checkLegalPocket_forbids_unstable_updates(self):
-        """Publishing to UPDATES in a DEVELOPMENT series is forbidden."""
-        self.assertFalse(self.checkLegalPocket(
-            SeriesStatus.DEVELOPMENT, PackagePublishingPocket.UPDATES))
-
-    def test_checkLegalPocket_forbids_stable_release(self):
-        """Publishing to RELEASE in a DEVELOPMENT series is forbidden."""
-        self.assertFalse(self.checkLegalPocket(
-            SeriesStatus.CURRENT, PackagePublishingPocket.RELEASE))
-
-    def test_checkLegalPocket_allows_stable_proposed(self):
-        """Publishing to PROPOSED in a DEVELOPMENT series is allowed."""
-        self.assertTrue(self.checkLegalPocket(
-            SeriesStatus.CURRENT, PackagePublishingPocket.PROPOSED))
-
-    def test_checkLegalPocket_allows_stable_updates(self):
-        """Publishing to UPDATES in a DEVELOPMENT series is allowed."""
-        self.assertTrue(self.checkLegalPocket(
-            SeriesStatus.CURRENT, PackagePublishingPocket.UPDATES))
-
     def test_valid_specifications_query_count(self):
         distroseries = self.factory.makeDistroSeries()
         distribution = distroseries.distribution
