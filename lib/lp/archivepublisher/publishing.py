@@ -22,6 +22,7 @@ from debian.deb822 import (
     Release,
     )
 from storm.expr import Desc
+from storm.store import EmptyResultSet
 from zope.component import getUtility
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
@@ -318,6 +319,15 @@ class Publisher(object):
         If the distroseries is already released, it automatically refuses
         to publish records to the RELEASE pocket.
         """
+        # Exclude RELEASE pocket if the distroseries was already released,
+        # since it should not change for main archive.
+        # We allow RELEASE publishing for PPAs.
+        # We also allow RELEASE publishing for partner.
+        if (pocket == PackagePublishingPocket.RELEASE and
+            not distroseries.isUnstable() and
+            not self.archive.allowUpdatesToReleasePocket()):
+            return EmptyResultSet()
+
         conditions = [
             SourcePackagePublishingHistory.distroseries == distroseries,
             SourcePackagePublishingHistory.pocket == pocket,
@@ -331,16 +341,6 @@ class Publisher(object):
             statuses.append(PackagePublishingStatus.PUBLISHED)
         conditions.append(
             SourcePackagePublishingHistory.status.is_in(statuses))
-
-        # Exclude RELEASE pocket if the distroseries was already released,
-        # since it should not change for main archive.
-        # We allow RELEASE publishing for PPAs.
-        # We also allow RELEASE publishing for partner.
-        if (not distroseries.isUnstable() and
-            not self.archive.allowUpdatesToReleasePocket()):
-            conditions.append(
-                SourcePackagePublishingHistory.pocket !=
-                    PackagePublishingPocket.RELEASE)
 
         publications = IStore(SourcePackagePublishingHistory).find(
             SourcePackagePublishingHistory, *conditions)
@@ -373,6 +373,13 @@ class Publisher(object):
         If the distroseries is already released, it automatically refuses
         to publish records to the RELEASE pocket.
         """
+        # Exclude RELEASE pocket if the distroseries was already released,
+        # since it should not change, unless the archive allows it.
+        if (pocket == PackagePublishingPocket.RELEASE and
+            not distroarchseries.distroseries.isUnstable() and
+            not self.archive.allowUpdatesToReleasePocket()):
+            return EmptyResultSet()
+
         conditions = [
             BinaryPackagePublishingHistory.distroarchseries ==
                 distroarchseries,
@@ -385,14 +392,6 @@ class Publisher(object):
             statuses.append(PackagePublishingStatus.PUBLISHED)
         conditions.append(
             BinaryPackagePublishingHistory.status.is_in(statuses))
-
-        # Exclude RELEASE pocket if the distroseries was already released,
-        # since it should not change, unless the archive allows it.
-        if (not distroarchseries.distroseries.isUnstable() and
-            not self.archive.allowUpdatesToReleasePocket()):
-            conditions.append(
-                BinaryPackagePublishingHistory.pocket !=
-                    PackagePublishingPocket.RELEASE)
 
         publications = IStore(BinaryPackagePublishingHistory).find(
             BinaryPackagePublishingHistory, *conditions)
