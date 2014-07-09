@@ -28,8 +28,9 @@ contains the special header 'X-Katie', its presence is checked by
 third part application and also in our changeslist (gutsy-changes@).
 See further information in bug #121752.
 
-PPA upload notifications also include a 'X-Launchpad-PPA' email header
-containing the target PPA owner name, see bug #172377.
+Notifications also include an 'X-Launchpad-Archive' header containing
+the target archive reference, and Ubuntu PPA notifications have an
+'X-Launchpad-PPA' email header containing the old-style PPA reference.
 
 We need to be logged into the security model in order to get any further
 
@@ -162,6 +163,8 @@ Uploading the same package again will result in a rejection email:
 Upload notifications from primary archive do not contain the
 'X-Launchpad-PPA' header, since it doesn't apply to this context.
 
+    >>> notification['X-Launchpad-Archive']
+    'ubuntu'
     >>> 'X-Launchpad-PPA' in notification.keys()
     False
 
@@ -285,6 +288,8 @@ A PPA upload will contain the X-Launchpad-PPA header.
 On PPA upload notifications the 'X-Launchpad-PPA' is present and
 contains the target PPA owner account name.
 
+    >>> notification['X-Launchpad-Archive']
+    '~name16/ubuntu/ppa'
     >>> notification['X-Launchpad-PPA']
     'name16'
 

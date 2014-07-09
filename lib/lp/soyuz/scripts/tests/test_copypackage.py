@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -20,7 +20,6 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.archivepublisher.utils import get_ppa_reference
 from lp.bugs.interfaces.bug import (
     CreateBugParams,
     IBugSet,
@@ -1417,7 +1416,7 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
             send_email=True)
         [notification] = pop_notifications()
         self.assertEqual(
-            get_ppa_reference(target_archive), notification['X-Launchpad-PPA'])
+            target_archive.reference, notification['X-Launchpad-Archive'])
         body = notification.get_payload()[0].get_payload()
         expected = (dedent("""\
             Accepted:
@@ -1452,6 +1451,10 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
             person=source.sourcepackagerelease.creator,
             check_permissions=False, send_email=True)
         [notification, announcement] = pop_notifications()
+        self.assertEqual(
+            archive.reference, notification['X-Launchpad-Archive'])
+        self.assertEqual(
+            archive.reference, announcement['X-Launchpad-Archive'])
         self.assertEqual('Foo Bar <foo.bar@canonical.com>', notification['To'])
         self.assertEqual('nobby-changes@example.com', announcement['To'])
         for mail in (notification, announcement):

@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -719,6 +719,7 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
             config.builddmaster.default_sender_address)
 
         extra_headers = {
+            'X-Launchpad-Archive': self.archive.reference,
             'X-Launchpad-Build-State': self.status.name,
             'X-Launchpad-Build-Component': self.current_component.name,
             'X-Launchpad-Build-Arch':
@@ -766,12 +767,11 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
         # main archive candidates.
         # For PPA build notifications we include the archive.owner
         # contact_address.
+        subject = "[Build #%d] %s" % (self.id, self.title)
         if not self.archive.is_ppa:
             buildd_admins = getUtility(ILaunchpadCelebrities).buildd_admin
             recipients = recipients.union(
                 get_contact_email_addresses(buildd_admins))
-            archive_tag = '%s primary archive' % self.distribution.name
-            subject = "[Build #%d] %s" % (self.id, self.title)
             source_url = canonical_url(self.distributionsourcepackagerelease)
         else:
             recipients = recipients.union(
@@ -781,11 +781,13 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
             # not enabled it.
             if len(recipients) == 0:
                 return
-            archive_tag = '%s PPA' % get_ppa_reference(self.archive)
-            subject = "[Build #%d] %s (%s)" % (
-                self.id, self.title, archive_tag)
+            subject += ' [%s]' % self.archive.reference
             source_url = 'not available'
-            extra_headers['X-Launchpad-PPA'] = get_ppa_reference(self.archive)
+            # The deprecated PPA reference header is included for Ubuntu
+            # PPAs to avoid breaking existing consumers.
+            if self.archive.distribution.name == u'ubuntu':
+                extra_headers['X-Launchpad-PPA'] = get_ppa_reference(
+                    self.archive)
 
         # XXX cprov 2006-08-02: pending security recipients for SECURITY
         # pocket build. We don't build SECURITY yet :(
@@ -837,7 +839,7 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
             'build_url': canonical_url(self),
             'source_url': source_url,
             'extra_info': extra_info,
-            'archive_tag': archive_tag,
+            'archive_tag': self.archive.reference,
             'component_tag': self.current_component.name,
             }
         message = template % replacements
