@@ -536,7 +536,7 @@ If the source package was created from a recipe build, link to it.
     Build details
     ...
     Source package recipe build:
-    ~cprov/product/mybranch recipe build [cprov/ppa]
+    ~cprov/product/mybranch recipe build [~cprov/ubuntu/ppa]
     ...
 
     >>> print anon_browser.getLink('~cprov/product/mybranch recipe build').url

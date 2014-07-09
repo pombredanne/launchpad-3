@@ -191,7 +191,7 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         self.assertThat(
             adapter.link(None),
             Equals(
-                '<a href="%s">%s recipe build</a> [eric/ppa]'
+                '<a href="%s">%s recipe build</a> [~eric/ubuntu/ppa]'
                 % (canonical_url(build, path_only_if_possible=True),
                    build.recipe.base_branch.unique_name)))
 
@@ -206,7 +206,7 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         self.assertThat(
             adapter.link(None),
             Equals(
-                '<a href="%s">build for deleted recipe</a> [eric/ppa]'
+                '<a href="%s">build for deleted recipe</a> [~eric/ubuntu/ppa]'
                 % (canonical_url(build, path_only_if_possible=True), )))
 
     def test_link_no_permission(self):

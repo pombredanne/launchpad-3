@@ -175,8 +175,7 @@ class ISourcePackageRecipeView(Interface):
         Return a list of dict(
         distroseries:distroseries.displayname
         archive:archive.token)
-        The archive token is the same as that defined by the archive vocab:
-        archive.owner.name/archive.name
+        The archive reference is as defined by the archive vocab.
         This information is used to construct the request builds popup form.
         """
 
