@@ -97,7 +97,7 @@ class TestBuildNotify(TestCaseWithFactory):
             build.status.name, notification['X-Launchpad-Build-State'])
         self.assertEquals(
             build.archive.reference, notification['X-Launchpad-Archive'])
-        if ppa:
+        if ppa and build.archive.distribution.name == u'ubuntu':
             self.assertEquals(
                 get_ppa_reference(self.ppa), notification['X-Launchpad-PPA'])
         body = notification.get_payload(decode=True)
@@ -146,7 +146,7 @@ class TestBuildNotify(TestCaseWithFactory):
         """ % (
             build.source_package_release.sourcepackagename.name,
             build.source_package_release.version, self.das.architecturetag,
-            archive.reference, build.status.title, duration, build_log,
+            build.archive.reference, build.status.title, duration, build_log,
             builder, source, build.title, canonical_url(build)))
         self.assertEquals(expected_body, body)
 
