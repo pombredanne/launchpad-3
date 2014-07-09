@@ -1743,7 +1743,7 @@ class PackageBuildFormatterAPI(ObjectFormatterAPI):
 
     def _composeArchiveReference(self, archive):
         if archive.is_ppa:
-            return " [%s/%s]" % (archive.owner.name, archive.name)
+            return " [%s]" % archive.reference
         else:
             return ""
 

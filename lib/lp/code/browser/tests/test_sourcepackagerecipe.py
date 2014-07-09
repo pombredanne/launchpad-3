@@ -1446,7 +1446,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
             Request builds for cake_recipe
             Archive:
             (nothing selected)
-            Secret PPA [~chef/ppa]
+            Secret PPA [~chef/ubuntu/ppa]
             Distribution series:
             Secret Squirrel
             Hoary

@@ -52,17 +52,8 @@ class PackageLocation:
         return False
 
     def __str__(self):
-        # Use ASCII-only for copy archive and PPA titles, owner names can
-        # contain unicode.
-        if self.archive.is_ppa:
-            title = self.archive.owner.name
-        elif self.archive.is_copy:
-            title = "%s/%s" % (self.archive.owner.name, self.archive.name)
-        else:
-            title = self.archive.displayname
-
         result = '%s: %s-%s' % (
-            title, self.distroseries.name, self.pocket.name)
+            self.archive.reference, self.distroseries.name, self.pocket.name)
 
         if self.component is not None:
             result += ' (%s)' % self.component.name

@@ -605,8 +605,10 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             requester=requester)
         self.assertEqual(
             ("<PlainPackageCopyJob to copy package foo from "
-             "{distroseries.distribution.name}/{archive1.name} to "
-             "{distroseries.distribution.name}/{archive2.name}, "
+             "~{archive1.owner.name}/{distroseries.distribution.name}/"
+             "{archive1.name} to "
+             "~{archive2.owner.name}/{distroseries.distribution.name}/"
+             "{archive2.name}, "
              "RELEASE pocket, in {distroseries.distribution.name} "
              "{distroseries.name}, including binaries>").format(
                 distroseries=distroseries, archive1=archive1,

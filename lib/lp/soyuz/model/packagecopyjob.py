@@ -740,18 +740,12 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             parts.append(" no package (!)")
         else:
             parts.append(" package %s" % self.package_name)
-        parts.append(
-            " from %s/%s" % (
-                self.source_archive.distribution.name,
-                self.source_archive.name))
+        parts.append(" from %s" % self.source_archive.reference)
         if self.source_pocket is not None:
             parts.append(", %s pocket," % self.source_pocket.name)
         if self.source_distroseries is not None:
             parts.append(" in %s" % self.source_distroseries)
-        parts.append(
-            " to %s/%s" % (
-                self.target_archive.distribution.name,
-                self.target_archive.name))
+        parts.append(" to %s" % self.target_archive.reference)
         parts.append(", %s pocket," % self.target_pocket.name)
         if self.target_distroseries is not None:
             parts.append(" in %s" % self.target_distroseries)

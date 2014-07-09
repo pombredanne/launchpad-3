@@ -1042,6 +1042,4 @@ class Publisher(object):
             new_name = '%s%d' % (base_name, count)
             count += 1
         self.archive.name = new_name
-        self.log.info(
-            "Renamed deleted archive '%s/%s'.", self.archive.owner.name,
-            self.archive.name)
+        self.log.info("Renamed deleted archive '%s'.", self.archive.reference)
