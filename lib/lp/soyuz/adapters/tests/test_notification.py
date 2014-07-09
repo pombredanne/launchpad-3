@@ -12,7 +12,6 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.archivepublisher.utils import get_ppa_reference
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.log.logger import BufferLogger
 from lp.services.mail.sendmail import format_address_for_person
