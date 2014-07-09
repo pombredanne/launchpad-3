@@ -719,6 +719,7 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
             config.builddmaster.default_sender_address)
 
         extra_headers = {
+            'X-Launchpad-Archive': self.archive.reference,
             'X-Launchpad-Build-State': self.status.name,
             'X-Launchpad-Build-Component': self.current_component.name,
             'X-Launchpad-Build-Arch':

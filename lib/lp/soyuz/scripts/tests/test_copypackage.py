@@ -1417,7 +1417,7 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
             send_email=True)
         [notification] = pop_notifications()
         self.assertEqual(
-            get_ppa_reference(target_archive), notification['X-Launchpad-PPA'])
+            target_archive.reference, notification['X-Launchpad-Archive'])
         body = notification.get_payload()[0].get_payload()
         expected = (dedent("""\
             Accepted:
@@ -1452,6 +1452,10 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
             person=source.sourcepackagerelease.creator,
             check_permissions=False, send_email=True)
         [notification, announcement] = pop_notifications()
+        self.assertEqual(
+            archive.reference, notification['X-Launchpad-Archive'])
+        self.assertEqual(
+            archive.reference, announcement['X-Launchpad-Archive'])
         self.assertEqual('Foo Bar <foo.bar@canonical.com>', notification['To'])
         self.assertEqual('nobby-changes@example.com', announcement['To'])
         for mail in (notification, announcement):

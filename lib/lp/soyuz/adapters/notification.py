@@ -341,11 +341,14 @@ def send_mail(
     :param attach_changes: A flag governing whether the original changesfile
         content shall be attached to the email.
     """
-    extra_headers = {'X-Katie': 'Launchpad actually'}
+    extra_headers = {
+        'X-Katie': 'Launchpad actually',
+        'X-Launchpad-Archive': archive.reference,
+        }
 
-    # Include the 'X-Launchpad-PPA' header for PPA upload notfications
-    # containing the PPA owner name.
-    if archive.is_ppa:
+    # The deprecated PPA reference header is included for Ubuntu PPAs to
+    # avoid breaking existing consumers.
+    if archive.is_ppa and archive.distribution.name == u'ubuntu':
         extra_headers['X-Launchpad-PPA'] = get_ppa_reference(archive)
 
     # Include a 'X-Launchpad-Component' header with the component and
