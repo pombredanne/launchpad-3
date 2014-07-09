@@ -65,8 +65,8 @@ def reject_changes_file(blamer, changes_file_path, changes, archive,
         'USERS_ADDRESS': config.launchpad.users_address,
     }
     subject = '%s rejected' % filename
-    if archive and archive.is_ppa:
-        subject = '[PPA %s] %s' % (get_ppa_reference(archive), subject)
+    if archive:
+        subject = '[%s] %s' % (archive.reference, subject)
         information['ARCHIVE_URL'] = '\n%s' % canonical_url(archive)
     template = get_template(archive, 'rejected')
     body = template % information
@@ -119,10 +119,8 @@ def calculate_subject(spr, bprs, customfiles, archive, distroseries,
         names.add(custom.libraryfilealias.filename)
     name_str = ', '.join(names)
     subject = '[%s/%s] %s %s (%s)' % (
-        distroseries.distribution.name, suite, name_str, version,
+        archive.reference, suite, name_str, version,
         ACTION_DESCRIPTIONS[action])
-    if archive.is_ppa:
-        subject = '[PPA %s] %s' % (get_ppa_reference(archive), subject)
     return subject
 
 

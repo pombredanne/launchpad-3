@@ -254,7 +254,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         # Subject and PPA emails header contain the owner name since
         # it's the default PPA.
         contents = [
-            "Subject: [PPA name16] [ubuntu/breezy] bar 1.0-1 (Accepted)"]
+            "Subject: [~name16/ubuntu/ppa/breezy] bar 1.0-1 (Accepted)"]
         self.assertEmail(contents, ppa_header='name16')
 
     def testNamedPPAUploadNonDefault(self):
@@ -272,8 +272,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
 
         # Subject and PPA email-header are specific for this named-ppa.
         contents = [
-            "Subject: [PPA name16-testing] [ubuntu/breezy] bar 1.0-1 "
-                "(Accepted)"]
+            "Subject: [~name16/ubuntu/testing/breezy] bar 1.0-1 (Accepted)"]
         self.assertEmail(contents, ppa_header='name16-testing')
 
     def testNamedPPAUploadWithSeries(self):
@@ -807,7 +806,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
                  'previous error.'], rejection_message.splitlines())
 
         contents = [
-            "Subject: [PPA cprov] bar_1.0-1_source.changes rejected",
+            "Subject: [~cprov/ubuntu/ppa] bar_1.0-1_source.changes rejected",
             "Could not find person or team named 'boing'",
             "https://help.launchpad.net/Packaging/PPA#Uploading",
             "If you don't understand why your files were rejected please "
@@ -1199,7 +1198,7 @@ class TestPPAUploadProcessorQuotaChecks(TestPPAUploadProcessorBase):
         # An email communicating the rejection and the reason why it was
         # rejected is sent to the uploaders.
         contents = [
-            "Subject: [PPA name16] bar_1.0-1_source.changes rejected",
+            "Subject: [~name16/ubuntu/ppa] bar_1.0-1_source.changes rejected",
             "Rejected:",
             "PPA exceeded its size limit (2048.00 of 2048.00 MiB). "
             "Ask a question in https://answers.launchpad.net/soyuz/ "
@@ -1211,7 +1210,7 @@ class TestPPAUploadProcessorQuotaChecks(TestPPAUploadProcessorBase):
         upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
         contents = [
-            "Subject: [PPA name16] [ubuntu/breezy] bar 1.0-1 (Accepted)"]
+            "Subject: [~name16/ubuntu/ppa/breezy] bar 1.0-1 (Accepted)"]
         self.assertEmail(contents)
         self.assertEqual(
             self.uploadprocessor.last_processed_upload.queue_root.status,
@@ -1231,7 +1230,7 @@ class TestPPAUploadProcessorQuotaChecks(TestPPAUploadProcessorBase):
         upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
         contents = [
-            "Subject: [PPA name16] [ubuntu/breezy] bar 1.0-1 (Accepted)",
+            "Subject: [~name16/ubuntu/ppa/breezy] bar 1.0-1 (Accepted)",
             "Upload Warnings:",
             "PPA exceeded 95 % of its size limit (2000.00 of 2048.00 MiB). "
             "Ask a question in https://answers.launchpad.net/soyuz/ "

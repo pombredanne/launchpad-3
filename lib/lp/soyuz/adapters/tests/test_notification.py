@@ -81,9 +81,8 @@ class TestNotificationRequiringLibrarian(TestCaseWithFactory):
         archive = self.factory.makeArchive()
         pocket = self.factory.getAnyPocket()
         distroseries = self.factory.makeDistroSeries()
-        expected_subject = '[PPA %s] [%s/%s] %s - (Accepted)' % (
-            get_ppa_reference(archive), distroseries.distribution.name,
-            distroseries.getSuite(pocket), lfa.filename)
+        expected_subject = '[%s/%s] %s - (Accepted)' % (
+            archive.reference, distroseries.getSuite(pocket), lfa.filename)
         subject = calculate_subject(
             None, [], [customfile], archive, distroseries, pocket,
             'accepted')
@@ -293,9 +292,9 @@ class TestNotification(TestCaseWithFactory):
         archive = self.factory.makeArchive()
         pocket = self.factory.getAnyPocket()
         distroseries = self.factory.makeDistroSeries()
-        expected_subject = '[PPA %s] [%s/%s] %s %s (Accepted)' % (
-            get_ppa_reference(archive), distroseries.distribution.name,
-            distroseries.getSuite(pocket), spr.name, spr.version)
+        expected_subject = '[%s/%s] %s %s (Accepted)' % (
+            archive.reference, distroseries.getSuite(pocket), spr.name,
+            spr.version)
         subject = calculate_subject(
             spr, [], [], archive, distroseries, pocket, 'accepted')
         self.assertEqual(expected_subject, subject)
@@ -305,9 +304,8 @@ class TestNotification(TestCaseWithFactory):
         archive = self.factory.makeArchive()
         pocket = self.factory.getAnyPocket()
         distroseries = self.factory.makeDistroSeries()
-        expected_subject = '[PPA %s] [%s/%s] %s %s (Accepted)' % (
-            get_ppa_reference(archive), distroseries.distribution.name,
-            distroseries.getSuite(pocket),
+        expected_subject = '[%s/%s] %s %s (Accepted)' % (
+            archive.reference, distroseries.getSuite(pocket),
             bpr.build.source_package_release.name, bpr.version)
         subject = calculate_subject(
             None, [bpr], [], archive, distroseries, pocket, 'accepted')
