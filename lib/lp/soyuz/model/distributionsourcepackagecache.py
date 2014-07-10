@@ -22,6 +22,8 @@ from lp.services.database.sqlbase import (
 from lp.soyuz.interfaces.distributionsourcepackagecache import (
     IDistributionSourcePackageCache,
     )
+from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
+from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
@@ -172,16 +174,17 @@ class DistributionSourcePackageCache(SQLBase):
             # to the set as the join would fail below.
             if spr.changelog_entry is not None:
                 sprchangelog.add(spr.changelog_entry)
-            binpkgs = BinaryPackageRelease.select("""
-                BinaryPackageRelease.build = BinaryPackageBuild.id AND
-                BinaryPackageBuild.source_package_release = %s
-                """ % sqlvalues(spr.id),
-                clauseTables=['BinaryPackageBuild'])
-            for binpkg in binpkgs:
-                log.debug("Considering binary '%s'" % binpkg.name)
-                binpkgnames.add(binpkg.name)
-                binpkgsummaries.add(binpkg.summary)
-                binpkgdescriptions.add(binpkg.description)
+        binpkgs = IStore(BinaryPackageRelease).find(
+            (BinaryPackageName.name, BinaryPackageRelease.summary,
+             BinaryPackageRelease.description),
+            BinaryPackageRelease.buildID == BinaryPackageBuild.id,
+            BinaryPackageBuild.source_package_release_id.is_in(
+                [spr.id for spr in sprs]),
+            BinaryPackageName.id == BinaryPackageRelease.binarypackagenameID)
+        for name, summary, description in binpkgs:
+            binpkgnames.add(name)
+            binpkgsummaries.add(summary)
+            binpkgdescriptions.add(description)
 
         # Update the caches.
         cache.binpkgnames = ' '.join(sorted(binpkgnames))
