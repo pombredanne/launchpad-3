@@ -295,23 +295,10 @@ class Publisher(object):
             # provide custom builds for users who haven't upgraded yet.
             return self.distro.series
 
-    def checkLegalPocket(self, distroseries, publication, is_careful):
+    def checkLegalPocket(self, distroseries, pocket, is_careful):
         """Check if the publication can happen in the archive."""
         # 'careful' mode re-publishes everything:
-        if is_careful:
-            return True
-
-        if not publication.archive.canModifySuite(
-                distroseries, publication.pocket):
-            self.log.error(
-                "Tried to publish %s (%s) into the %s pocket on series %s "
-                "(%s), skipping" % (
-                    publication.displayname, publication.id,
-                    publication.pocket, distroseries.displayname,
-                    distroseries.status.name))
-            return False
-
-        return True
+        return is_careful or self.archive.canModifySuite(distroseries, pocket)
 
     def getPendingSourcePublications(self, distroseries, pocket, is_careful):
         """Return the specific group of source records to be published.
@@ -358,12 +345,19 @@ class Publisher(object):
         self.log.debug("Attempting to publish pending sources.")
 
         dirty_pockets = set()
-        for spph in self.getPendingSourcePublications(
-                distroseries, pocket, is_careful):
-            if not self.checkLegalPocket(distroseries, spph, is_careful):
-                continue
-            spph.publish(self._diskpool, self.log)
-            dirty_pockets.add((distroseries.name, spph.pocket))
+        spphs = self.getPendingSourcePublications(
+            distroseries, pocket, is_careful)
+        if self.checkLegalPocket(distroseries, pocket, is_careful):
+            for spph in spphs:
+                spph.publish(self._diskpool, self.log)
+                dirty_pockets.add((distroseries.name, spph.pocket))
+        else:
+            for spph in spphs:
+                self.log.error(
+                    "Tried to publish %s (%s) into the %s pocket on series %s "
+                    "(%s), skipping" % (
+                        spph.displayname, spph.id, pocket,
+                        distroseries.displayname, distroseries.status.name))
         return dirty_pockets
 
     def getPendingBinaryPublications(self, distroarchseries, pocket,
@@ -408,14 +402,22 @@ class Publisher(object):
         self.log.debug("Attempting to publish pending binaries for %s"
               % distroarchseries.architecturetag)
 
-        distroseries = distroarchseries.distroseries
         dirty_pockets = set()
-        for bpph in self.getPendingBinaryPublications(
-                distroarchseries, pocket, is_careful):
-            if not self.checkLegalPocket(distroseries, bpph, is_careful):
-                continue
-            bpph.publish(self._diskpool, self.log)
-            dirty_pockets.add((distroseries.name, bpph.pocket))
+        distroseries = distroarchseries.distroseries
+        bpphs = self.getPendingBinaryPublications(
+            distroarchseries, pocket, is_careful)
+        if self.checkLegalPocket(distroseries, pocket, is_careful):
+            for bpph in self.getPendingBinaryPublications(
+                    distroarchseries, pocket, is_careful):
+                bpph.publish(self._diskpool, self.log)
+                dirty_pockets.add((distroseries.name, bpph.pocket))
+        else:
+            for bpph in bpphs:
+                self.log.error(
+                    "Tried to publish %s (%s) into the %s pocket on series %s "
+                    "(%s), skipping" % (
+                        bpph.displayname, bpph.id, pocket,
+                        distroseries.displayname, distroseries.status.name))
         return dirty_pockets
 
     def A_publish(self, force_publishing):

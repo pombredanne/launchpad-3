@@ -171,12 +171,10 @@ class TestPublisherSeries(TestNativePublishingBase):
     def checkLegalPocket(self, status, pocket):
         distroseries = self.factory.makeDistroSeries(
             distribution=self.ubuntutest, status=status)
-        spph = self.factory.makeSourcePackagePublishingHistory(
-            distroseries=distroseries, pocket=pocket)
         publisher = Publisher(
             self.logger, self.config, self.disk_pool,
             distroseries.main_archive)
-        return publisher.checkLegalPocket(distroseries, spph, False)
+        return publisher.checkLegalPocket(distroseries, pocket, False)
 
     def test_checkLegalPocket_allows_unstable_release(self):
         """Publishing to RELEASE in a DEVELOPMENT series is allowed."""
