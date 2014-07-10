@@ -216,11 +216,8 @@ class TestPublisherSeries(TestNativePublishingBase):
     def _publish(self, pocket, is_careful=False):
         """Publish the test IDistroSeries and its IDistroArchSeries."""
         self._ensurePublisher()
-        self.publisher.publishSources(
-            self.breezy_autotest, pocket, is_careful=is_careful)
-        for distroarchseries in self.breezy_autotest.architectures:
-            self.publisher.publishBinaries(
-                distroarchseries, pocket, is_careful=is_careful)
+        self.publisher.findAndPublishSources(is_careful=is_careful)
+        self.publisher.findAndPublishBinaries(is_careful=is_careful)
         self.layer.txn.commit()
 
     def checkPublicationsAreConsidered(self, pocket):
@@ -264,9 +261,13 @@ class TestPublisherSeries(TestNativePublishingBase):
         """Check the results of an IDistroSeries publishing lookup."""
         self._ensurePublisher()
         pub_records = self.publisher.getPendingSourcePublications(
-            self.breezy_autotest, pocket, is_careful=is_careful)
+            is_careful=is_careful)
+        pub_records = [
+            pub for pub in pub_records
+                if pub.distroseries == self.breezy_autotest and
+                   pub.pocket == pocket]
 
-        self.assertEqual(pub_records.count(), len(expected_result))
+        self.assertEqual(len(expected_result), len(pub_records))
         self.assertEqual(
             [item.id for item in expected_result],
             [pub.id for pub in pub_records])
@@ -276,9 +277,13 @@ class TestPublisherSeries(TestNativePublishingBase):
         """Check the results of an IDistroArchSeries publishing lookup."""
         self._ensurePublisher()
         pub_records = self.publisher.getPendingBinaryPublications(
-            self.breezy_autotest_i386, pocket, is_careful=is_careful)
+            is_careful=is_careful)
+        pub_records = [
+            pub for pub in pub_records
+                if pub.distroarchseries == self.breezy_autotest_i386 and
+                   pub.pocket == pocket]
 
-        self.assertEqual(pub_records.count(), len(expected_result))
+        self.assertEqual(len(expected_result), len(pub_records))
         self.assertEqual(
             [item.id for item in expected_result],
             [pub.id for pub in pub_records])
@@ -1029,7 +1034,9 @@ class TestPublisher(TestPublisherBase):
         # Remove security proxy so that the publisher can call our fake
         # method.
         publisher.distro = removeSecurityProxy(publisher.distro)
-        publisher.distro['hoary-test'].status = SeriesStatus.OBSOLETE
+        pub_source = self.getPubSource(distroseries=self.breezy_autotest)
+        self.getPubBinaries(
+            distroseries=self.breezy_autotest, pub_source=pub_source)
 
         for status in (SeriesStatus.OBSOLETE, SeriesStatus.FUTURE):
             naked_breezy_autotest = publisher.distro['breezy-autotest']
@@ -1053,6 +1060,11 @@ class TestPublisher(TestPublisherBase):
         # Remove security proxy so that the publisher can call our fake
         # method.
         publisher.distro = removeSecurityProxy(publisher.distro)
+        pub_source = self.getPubSource(
+            distroseries=self.breezy_autotest, archive=test_archive)
+        self.getPubBinaries(
+            distroseries=self.breezy_autotest, archive=test_archive,
+            pub_source=pub_source)
 
         for status in (SeriesStatus.OBSOLETE, SeriesStatus.FUTURE):
             naked_breezy_autotest = publisher.distro['breezy-autotest']
@@ -1062,12 +1074,13 @@ class TestPublisher(TestPublisherBase):
 
             publisher.A_publish(False)
 
+            source_args = [
+                args[:2] for args in publisher.publishSources.extract_args()]
+            self.assertIn((naked_breezy_autotest, RELEASE), source_args)
+            binary_args = [
+                args[:2] for args in publisher.publishBinaries.extract_args()]
             self.assertIn(
-                (naked_breezy_autotest, RELEASE),
-                publisher.publishSources.extract_args())
-            self.assertIn(
-                (naked_breezy_autotest.architectures[0], RELEASE),
-                publisher.publishBinaries.extract_args())
+                (naked_breezy_autotest.architectures[0], RELEASE), binary_args)
 
     def testPublisherBuilderFunctions(self):
         """Publisher can be initialized via provided helper function.

@@ -13,7 +13,9 @@ __metaclass__ = type
 from datetime import datetime
 import errno
 import hashlib
+from itertools import groupby
 import logging
+from operator import attrgetter
 import os
 import shutil
 
@@ -21,8 +23,11 @@ from debian.deb822 import (
     _multivalued,
     Release,
     )
-from storm.expr import Desc
-from storm.store import EmptyResultSet
+from storm.expr import (
+    Desc,
+    Join,
+    Or,
+    )
 from zope.component import getUtility
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
@@ -48,6 +53,10 @@ from lp.registry.interfaces.pocket import (
     pocketsuffix,
     )
 from lp.registry.interfaces.series import SeriesStatus
+from lp.registry.model.distroseries import (
+    ACTIVE_UNRELEASED_STATUSES,
+    DistroSeries,
+    )
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.interfaces import IStore
 from lp.services.librarian.client import LibrarianClient
@@ -300,26 +309,14 @@ class Publisher(object):
         # 'careful' mode re-publishes everything:
         return is_careful or self.archive.canModifySuite(distroseries, pocket)
 
-    def getPendingSourcePublications(self, distroseries, pocket, is_careful):
+    def getPendingSourcePublications(self, is_careful):
         """Return the specific group of source records to be published.
 
-        If the distroseries is already released, it automatically refuses
-        to publish records to the RELEASE pocket.
+        Exclude publications in the RELEASE pocket unless the distroseries
+        is unreleased or the archive allows updates to the RELEASE pocket
+        for stable distroseries (e.g. PPAs or partner).
         """
-        # Exclude RELEASE pocket if the distroseries was already released,
-        # since it should not change for main archive.
-        # We allow RELEASE publishing for PPAs.
-        # We also allow RELEASE publishing for partner.
-        if (pocket == PackagePublishingPocket.RELEASE and
-            not distroseries.isUnstable() and
-            not self.archive.allowUpdatesToReleasePocket()):
-            return EmptyResultSet()
-
-        conditions = [
-            SourcePackagePublishingHistory.distroseries == distroseries,
-            SourcePackagePublishingHistory.pocket == pocket,
-            SourcePackagePublishingHistory.archive == self.archive,
-            ]
+        conditions = [SourcePackagePublishingHistory.archive == self.archive]
 
         # Careful publishing should include all PUBLISHED rows, normal run
         # only includes PENDING ones.
@@ -329,56 +326,70 @@ class Publisher(object):
         conditions.append(
             SourcePackagePublishingHistory.status.is_in(statuses))
 
+        if not self.archive.allowUpdatesToReleasePocket():
+            conditions.extend([
+                SourcePackagePublishingHistory.distroseriesID ==
+                    DistroSeries.id,
+                Or(
+                    SourcePackagePublishingHistory.pocket !=
+                        PackagePublishingPocket.RELEASE,
+                    DistroSeries.status.is_in(ACTIVE_UNRELEASED_STATUSES)),
+                ])
+
         publications = IStore(SourcePackagePublishingHistory).find(
             SourcePackagePublishingHistory, *conditions)
-        return publications.order_by(Desc(SourcePackagePublishingHistory.id))
+        return publications.order_by(
+            SourcePackagePublishingHistory.distroseriesID,
+            SourcePackagePublishingHistory.pocket,
+            Desc(SourcePackagePublishingHistory.id))
 
-    def publishSources(self, distroseries, pocket, is_careful=False):
-        """Publish sources for a given distroseries and pocket.
+    def publishSources(self, distroseries, pocket, spphs):
+        """Publish sources for a given distroseries and pocket."""
+        self.log.debug(
+            "Publishing pending sources for %s" %
+            distroseries.getSuite(pocket))
+        for spph in spphs:
+            spph.publish(self._diskpool, self.log)
+
+    def findAndPublishSources(self, is_careful=False):
+        """Search for and publish all pending sources.
 
         :param is_careful: If True, republish all published records (system
             will DTRT checking the hash of all published files).
 
         Consider records returned by getPendingSourcePublications.
         """
-        self.log.debug("Publishing %s-%s" % (distroseries.title, pocket.name))
-        self.log.debug("Attempting to publish pending sources.")
-
         dirty_pockets = set()
-        spphs = self.getPendingSourcePublications(
-            distroseries, pocket, is_careful)
-        if self.checkLegalPocket(distroseries, pocket, is_careful):
-            for spph in spphs:
-                spph.publish(self._diskpool, self.log)
-                dirty_pockets.add((distroseries.name, spph.pocket))
-        else:
-            for spph in spphs:
-                self.log.error(
-                    "Tried to publish %s (%s) into the %s pocket on series %s "
-                    "(%s), skipping" % (
-                        spph.displayname, spph.id, pocket,
-                        distroseries.displayname, distroseries.status.name))
+        all_spphs = self.getPendingSourcePublications(is_careful)
+        for (distroseries, pocket), spphs in groupby(
+                all_spphs, attrgetter("distroseries", "pocket")):
+            if not self.isAllowed(distroseries, pocket):
+                self.log.debug("* Skipping %s", distroseries.getSuite(pocket))
+            elif not self.checkLegalPocket(distroseries, pocket, is_careful):
+                for spph in spphs:
+                    self.log.error(
+                        "Tried to publish %s (%s) into the %s pocket on "
+                        "series %s (%s), skipping" % (
+                            spph.displayname, spph.id, pocket,
+                            distroseries.displayname,
+                            distroseries.status.name))
+            else:
+                self.publishSources(distroseries, pocket, spphs)
+                dirty_pockets.add((distroseries.name, pocket))
         return dirty_pockets
 
-    def getPendingBinaryPublications(self, distroarchseries, pocket,
-                                     is_careful):
+    def getPendingBinaryPublications(self, is_careful):
         """Return the specific group of binary records to be published.
 
-        If the distroseries is already released, it automatically refuses
-        to publish records to the RELEASE pocket.
+        Exclude publications in the RELEASE pocket unless the distroseries
+        is unreleased or the archive allows updates to the RELEASE pocket
+        for stable distroseries (e.g. PPAs or partner).
         """
-        # Exclude RELEASE pocket if the distroseries was already released,
-        # since it should not change, unless the archive allows it.
-        if (pocket == PackagePublishingPocket.RELEASE and
-            not distroarchseries.distroseries.isUnstable() and
-            not self.archive.allowUpdatesToReleasePocket()):
-            return EmptyResultSet()
-
         conditions = [
-            BinaryPackagePublishingHistory.distroarchseries ==
-                distroarchseries,
-            BinaryPackagePublishingHistory.pocket == pocket,
             BinaryPackagePublishingHistory.archive == self.archive,
+            BinaryPackagePublishingHistory.distroarchseriesID ==
+                DistroArchSeries.id,
+            DistroArchSeries.distroseriesID == DistroSeries.id,
             ]
 
         statuses = [PackagePublishingStatus.PENDING]
@@ -387,37 +398,55 @@ class Publisher(object):
         conditions.append(
             BinaryPackagePublishingHistory.status.is_in(statuses))
 
+        if not self.archive.allowUpdatesToReleasePocket():
+            conditions.append(Or(
+                BinaryPackagePublishingHistory.pocket !=
+                    PackagePublishingPocket.RELEASE,
+                DistroSeries.status.is_in(ACTIVE_UNRELEASED_STATUSES)))
+
         publications = IStore(BinaryPackagePublishingHistory).find(
             BinaryPackagePublishingHistory, *conditions)
-        return publications.order_by(Desc(BinaryPackagePublishingHistory.id))
+        return publications.order_by(
+            DistroSeries.id,
+            BinaryPackagePublishingHistory.pocket,
+            DistroArchSeries.architecturetag,
+            Desc(BinaryPackagePublishingHistory.id))
 
-    def publishBinaries(self, distroarchseries, pocket, is_careful=False):
-        """Publish binaries for a given distroseries and pocket.
+    def publishBinaries(self, distroarchseries, pocket, bpphs):
+        """Publish binaries for a given distroarchseries and pocket."""
+        self.log.debug(
+            "Publishing pending binaries for %s/%s" % (
+                distroarchseries.distroseries.getSuite(pocket),
+                distroarchseries.architecturetag))
+        for bpph in bpphs:
+            bpph.publish(self._diskpool, self.log)
+
+    def findAndPublishBinaries(self, is_careful=False):
+        """Search for and publish all pending binaries.
 
         :param is_careful: If True, republish all published records (system
             will DTRT checking the hash of all published files).
 
         Consider records returned by getPendingBinaryPublications.
         """
-        self.log.debug("Attempting to publish pending binaries for %s"
-              % distroarchseries.architecturetag)
-
         dirty_pockets = set()
-        distroseries = distroarchseries.distroseries
-        bpphs = self.getPendingBinaryPublications(
-            distroarchseries, pocket, is_careful)
-        if self.checkLegalPocket(distroseries, pocket, is_careful):
-            for bpph in self.getPendingBinaryPublications(
-                    distroarchseries, pocket, is_careful):
-                bpph.publish(self._diskpool, self.log)
-                dirty_pockets.add((distroseries.name, bpph.pocket))
-        else:
-            for bpph in bpphs:
-                self.log.error(
-                    "Tried to publish %s (%s) into the %s pocket on series %s "
-                    "(%s), skipping" % (
-                        bpph.displayname, bpph.id, pocket,
-                        distroseries.displayname, distroseries.status.name))
+        all_bpphs = self.getPendingBinaryPublications(is_careful)
+        for (distroarchseries, pocket), bpphs in groupby(
+                all_bpphs, attrgetter("distroarchseries", "pocket")):
+            distroseries = distroarchseries.distroseries
+            if not self.isAllowed(distroseries, pocket):
+                pass  # Already logged by publishSources.
+            elif not self.checkLegalPocket(distroseries, pocket, is_careful):
+                for bpph in bpphs:
+                    self.log.error(
+                        "Tried to publish %s (%s) into the %s pocket on "
+                        "series %s (%s), skipping" % (
+                            bpph.displayname, bpph.id, pocket,
+                            distroseries.displayname,
+                            distroseries.status.name))
+            else:
+                self.publishBinaries(distroarchseries, pocket, bpphs)
+                dirty_pockets.add((distroseries.name, pocket))
         return dirty_pockets
 
     def A_publish(self, force_publishing):
@@ -430,18 +459,10 @@ class Publisher(object):
         """
         self.log.debug("* Step A: Publishing packages")
 
-        for distroseries in self.consider_series:
-            for pocket in self.archive.getPockets():
-                if self.isAllowed(distroseries, pocket):
-                    self.dirty_pockets.update(self.publishSources(
-                        distroseries, pocket, is_careful=force_publishing))
-                    for distroarchseries in distroseries.architectures:
-                        self.dirty_pockets.update(self.publishBinaries(
-                            distroarchseries, pocket,
-                            is_careful=force_publishing))
-                else:
-                    self.log.debug(
-                        "* Skipping %s/%s", distroseries.name, pocket.name)
+        self.dirty_pockets.update(
+            self.findAndPublishSources(is_careful=force_publishing))
+        self.dirty_pockets.update(
+            self.findAndPublishBinaries(is_careful=force_publishing))
 
     def A2_markPocketsWithDeletionsDirty(self):
         """An intermediate step in publishing to detect deleted packages.
