@@ -558,7 +558,9 @@ class TranslationMessageSet:
         if need_pofile:
             self.preloadPOFilesAndSequences(tms, pofile)
         if need_potemplate:
-            pofiles = [tm.browser_pofile for tm in tms]
+            pofiles = [
+                tm.browser_pofile for tm in tms
+                if tm.browser_pofile is not None]
             pots = load_related(
                 POTemplate,
                 (removeSecurityProxy(pofile) for pofile in pofiles),
