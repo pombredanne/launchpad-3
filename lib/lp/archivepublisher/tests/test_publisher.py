@@ -192,17 +192,17 @@ class TestPublisherSeries(TestNativePublishingBase):
             SeriesStatus.DEVELOPMENT, PackagePublishingPocket.UPDATES))
 
     def test_checkLegalPocket_forbids_stable_release(self):
-        """Publishing to RELEASE in a DEVELOPMENT series is forbidden."""
+        """Publishing to RELEASE in a CURRENT series is forbidden."""
         self.assertFalse(self.checkLegalPocket(
             SeriesStatus.CURRENT, PackagePublishingPocket.RELEASE))
 
     def test_checkLegalPocket_allows_stable_proposed(self):
-        """Publishing to PROPOSED in a DEVELOPMENT series is allowed."""
+        """Publishing to PROPOSED in a CURRENT series is allowed."""
         self.assertTrue(self.checkLegalPocket(
             SeriesStatus.CURRENT, PackagePublishingPocket.PROPOSED))
 
     def test_checkLegalPocket_allows_stable_updates(self):
-        """Publishing to UPDATES in a DEVELOPMENT series is allowed."""
+        """Publishing to UPDATES in a CURRENT series is allowed."""
         self.assertTrue(self.checkLegalPocket(
             SeriesStatus.CURRENT, PackagePublishingPocket.UPDATES))
 
