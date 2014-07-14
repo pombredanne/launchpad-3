@@ -769,6 +769,9 @@ class NascentUpload:
             uploaded_file.new = False
             return
 
+        self.logger.debug(
+            "%s: (%s) NEW"
+            % (uploaded_file.package, "binary" if binary else "source"))
         uploaded_file.new = True
 
         if self.is_partner:
@@ -803,9 +806,6 @@ class NascentUpload:
                 ancestry = self.getSourceAncestry(uploaded_file)
                 if ancestry is not None:
                     self.checkSourceVersion(uploaded_file, ancestry)
-                else:
-                    self.logger.debug(
-                        "%s: (source) NEW" % (uploaded_file.package))
                 self.processUnknownFile(uploaded_file, ancestry, None)
 
             elif isinstance(uploaded_file, BaseBinaryUploadFile):
@@ -841,8 +841,6 @@ class NascentUpload:
                     arch_ancestry or self.getBinaryAncestry(uploaded_file))
                 component_only_override = None
                 if override_ancestry is None:
-                    self.logger.debug(
-                        "%s: (binary) NEW" % (uploaded_file.package))
                     # Check the current source publication's component.
                     # If there is a corresponding source publication, we will
                     # use the component from that, otherwise default mappings
