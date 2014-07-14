@@ -725,7 +725,8 @@ class NascentUpload:
         # That's why we need this conversion here.
         uploaded_file.priority_name = override.priority.name.lower()
 
-    def processUnknownFile(self, uploaded_file, override=None):
+    def processUnknownFile(self, uploaded_file, ancestry, override,
+                           binary=False):
         """Apply a set of actions for newly-uploaded (unknown) files.
 
         Here we use the override, if specified, or simply default to the policy
@@ -740,16 +741,33 @@ class NascentUpload:
         COPY archive build uploads are also auto-accepted, otherwise they
         would sit in the NEW queue since it's likely there's no ancestry.
         """
-        if self.is_ppa or self.policy.archive.is_copy:
+        # PPAs don't have overrides at all and are always autoaccepted.
+        if self.is_ppa:
+            uploaded_file.new = False
             return
 
-        # All newly-uploaded, non-PPA files must be marked as new so that
-        # the upload goes to the correct queue.  PPA uploads are always
-        # auto-accepted so they are never new.
+        # Non-PPA uploads get overrided from the ancestry if present.
+        if ancestry:
+            uploaded_file.new = False
+            if binary:
+                self.overrideBinary(uploaded_file, ancestry)
+            elif ancestry and not binary:
+                self.overrideSource(uploaded_file, ancestry)
+            return
+
+        # Copy archive uploads are always autoaccepted and don't get
+        # default overrides.
+        # XXX wgrant 2014-07-14 bug=1103491: This causes new binaries in
+        # copy archives to stay in contrib/non-free, so the upload gets
+        # rejected. But I'm just preserving existing behaviour for now.
+        if self.policy.archive.is_copy:
+            uploaded_file.new = False
+            return
+
         uploaded_file.new = True
 
         if self.is_partner:
-            # Don't override partner uploads.
+            # Don't apply default overrides to partner uploads.
             return
 
         # Use the specified override, or delegate to UnknownOverridePolicy.
@@ -784,13 +802,12 @@ class NascentUpload:
                     # We could do better by having a specific override table
                     # that relates a SPN/BPN to a specific DR/DAR and carries
                     # the respective information to be overridden.
-                    self.overrideSource(uploaded_file, ancestry)
-                    uploaded_file.new = False
+                    self.processUnknownFile(uploaded_file, ancestry, ancestry)
                 else:
                     # If the source is new, then apply default overrides.
                     self.logger.debug(
                         "%s: (source) NEW" % (uploaded_file.package))
-                    self.processUnknownFile(uploaded_file)
+                    self.processUnknownFile(uploaded_file, None, None)
 
             elif isinstance(uploaded_file, BaseBinaryUploadFile):
                 self.logger.debug(
@@ -825,8 +842,9 @@ class NascentUpload:
                     arch_ancestry or self.getBinaryAncestry(uploaded_file))
                 if override_ancestry is not None:
                     # XXX cprov 2007-02-12: see above.
-                    self.overrideBinary(uploaded_file, override_ancestry)
-                    uploaded_file.new = False
+                    self.processUnknownFile(
+                        uploaded_file, arch_ancestry, override_ancestry,
+                        binary=True)
                 else:
                     self.logger.debug(
                         "%s: (binary) NEW" % (uploaded_file.package))
@@ -839,7 +857,8 @@ class NascentUpload:
                         spph = uploaded_file.findCurrentSourcePublication()
                     except UploadError:
                         pass
-                    self.processUnknownFile(uploaded_file, spph)
+                    self.processUnknownFile(
+                        uploaded_file, None, spph, binary=True)
 
     #
     # Actually processing accepted or rejected uploads -- and mailing people
