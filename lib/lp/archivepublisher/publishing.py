@@ -299,11 +299,11 @@ class Publisher(object):
 
     def checkLegalPocket(self, distroseries, pocket, is_careful):
         """Check if the publication can happen in the archive."""
+        if distroseries not in self.consider_series:
+            return False
         # 'careful' mode re-publishes everything:
         if is_careful:
             return True
-        if distroseries not in self.consider_series:
-            return False
         return self.archive.canModifySuite(distroseries, pocket)
 
     def getPendingSourcePublications(self, is_careful):
