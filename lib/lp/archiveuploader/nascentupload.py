@@ -800,31 +800,33 @@ class NascentUpload:
                         uploaded_file.version,
                         uploaded_file.architecture,
                         ))
+
+                # First check that the version isn't old than the
+                # ancestry in this architecture.
                 try:
-                    ancestry = self.getBinaryAncestry(uploaded_file)
+                    arch_ancestry = self.getBinaryAncestry(
+                        uploaded_file, try_other_archs=False)
                 except NotFoundError:
                     self.reject("%s: Unable to find arch: %s"
                                 % (uploaded_file.package,
                                    uploaded_file.architecture))
-                    ancestry = None
-                if ancestry is not None:
+                    arch_ancestry = None
+                if (arch_ancestry is not None and
+                    not self.policy.archive.is_copy):
+                    # Ignore version checks for copy archives
+                    # because the ancestry comes from the primary
+                    # which may have changed since the copy.
+                    self.checkBinaryVersion(uploaded_file, arch_ancestry)
+
+                # If there's no ancestry in this architecture, fall back
+                # to overriding from any other architecture. We only
+                # care about NEW on the first arch.
+                override_ancestry = (
+                    arch_ancestry or self.getBinaryAncestry(uploaded_file))
+                if override_ancestry is not None:
                     # XXX cprov 2007-02-12: see above.
-                    self.overrideBinary(uploaded_file, ancestry)
+                    self.overrideBinary(uploaded_file, override_ancestry)
                     uploaded_file.new = False
-                    # XXX cprov 2007-03-05 bug=89846:
-                    # For binary versions verification we should only
-                    # use ancestries in the same architecture. If none
-                    # was found we can go w/o any checks, since it's
-                    # a NEW binary in this architecture, any version is
-                    # fine.
-                    ancestry = self.getBinaryAncestry(
-                        uploaded_file, try_other_archs=False)
-                    if (ancestry is not None and
-                        not self.policy.archive.is_copy):
-                        # Ignore version checks for copy archives
-                        # because the ancestry comes from the primary
-                        # which may have changed since the copy.
-                        self.checkBinaryVersion(uploaded_file, ancestry)
                 else:
                     self.logger.debug(
                         "%s: (binary) NEW" % (uploaded_file.package))
