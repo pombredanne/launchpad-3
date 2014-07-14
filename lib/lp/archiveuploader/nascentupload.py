@@ -819,14 +819,8 @@ class NascentUpload:
 
                 # First check that the version isn't old than the
                 # ancestry in this architecture.
-                try:
-                    arch_ancestry = self.getBinaryAncestry(
-                        uploaded_file, try_other_archs=False)
-                except NotFoundError:
-                    self.reject("%s: Unable to find arch: %s"
-                                % (uploaded_file.package,
-                                   uploaded_file.architecture))
-                    arch_ancestry = None
+                arch_ancestry = self.getBinaryAncestry(
+                    uploaded_file, try_other_archs=False)
                 if (arch_ancestry is not None and
                     not self.policy.archive.is_copy):
                     # Ignore version checks for copy archives
