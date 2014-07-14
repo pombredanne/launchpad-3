@@ -726,7 +726,7 @@ class NascentUpload:
         uploaded_file.priority_name = override.priority.name.lower()
 
     def processUnknownFile(self, uploaded_file, override,
-                           component_only_override, binary=False):
+                           component_only=False, binary=False):
         """Apply a set of actions for newly-uploaded (unknown) files.
 
         Here we use the override, if specified, or simply default to the policy
@@ -752,7 +752,7 @@ class NascentUpload:
         # We could do better by having a specific override table
         # that relates a SPN/BPN to a specific DR/DAR and carries
         # the respective information to be overridden.
-        if override:
+        if override and not component_only:
             uploaded_file.new = False
             if binary:
                 self.overrideBinary(uploaded_file, override)
@@ -779,9 +779,8 @@ class NascentUpload:
             return
 
         # Use the specified override, or delegate to UnknownOverridePolicy.
-        if component_only_override:
-            uploaded_file.component_name = (
-                component_only_override.component.name)
+        if override:
+            uploaded_file.component_name = override.component.name
             return
         component_name_override = UnknownOverridePolicy.getComponentOverride(
             uploaded_file.component_name)
@@ -806,8 +805,7 @@ class NascentUpload:
                 ancestry = self.getSourceAncestry(uploaded_file)
                 if ancestry is not None:
                     self.checkSourceVersion(uploaded_file, ancestry)
-                self.processUnknownFile(uploaded_file, ancestry, None)
-
+                self.processUnknownFile(uploaded_file, ancestry)
             elif isinstance(uploaded_file, BaseBinaryUploadFile):
                 self.logger.debug(
                     "Checking for %s/%s/%s binary ancestry"
@@ -831,21 +829,21 @@ class NascentUpload:
                 # If there's no ancestry in this architecture, fall back
                 # to overriding from any other architecture. We only
                 # care about NEW on the first arch.
-                override_ancestry = (
+                override = (
                     arch_ancestry or self.getBinaryAncestry(uploaded_file))
-                component_only_override = None
-                if override_ancestry is None:
+                component_only = False
+                if override is None:
                     # Check the current source publication's component.
                     # If there is a corresponding source publication, we will
                     # use the component from that, otherwise default mappings
                     # are used.
                     try:
-                        component_only_override = (
-                            uploaded_file.findCurrentSourcePublication())
+                        override = uploaded_file.findCurrentSourcePublication()
+                        component_only = True
                     except UploadError:
                         pass
                 self.processUnknownFile(
-                    uploaded_file, override_ancestry, component_only_override,
+                    uploaded_file, override, component_only=component_only,
                     binary=True)
 
     #
