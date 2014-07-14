@@ -771,8 +771,9 @@ class NascentUpload:
             return
 
         # Use the specified override, or delegate to UnknownOverridePolicy.
-        if override:
-            uploaded_file.component_name = override.component.name
+        if component_only_override:
+            uploaded_file.component_name = (
+                component_only_override.component.name)
             return
         component_name_override = UnknownOverridePolicy.getComponentOverride(
             uploaded_file.component_name)
