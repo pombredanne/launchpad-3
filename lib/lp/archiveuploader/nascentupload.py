@@ -725,8 +725,8 @@ class NascentUpload:
         # That's why we need this conversion here.
         uploaded_file.priority_name = override.priority.name.lower()
 
-    def processUnknownFile(self, uploaded_file, ancestry, override,
-                           binary=False):
+    def processUnknownFile(self, uploaded_file, override,
+                           component_only_override, binary=False):
         """Apply a set of actions for newly-uploaded (unknown) files.
 
         Here we use the override, if specified, or simply default to the policy
@@ -747,12 +747,12 @@ class NascentUpload:
             return
 
         # Non-PPA uploads get overrided from the ancestry if present.
-        if ancestry:
+        if override:
             uploaded_file.new = False
             if binary:
-                self.overrideBinary(uploaded_file, ancestry)
-            elif ancestry and not binary:
-                self.overrideSource(uploaded_file, ancestry)
+                self.overrideBinary(uploaded_file, override)
+            else:
+                self.overrideSource(uploaded_file, override)
             return
 
         # Copy archive uploads are always autoaccepted and don't get
@@ -802,7 +802,7 @@ class NascentUpload:
                     # We could do better by having a specific override table
                     # that relates a SPN/BPN to a specific DR/DAR and carries
                     # the respective information to be overridden.
-                    self.processUnknownFile(uploaded_file, ancestry, ancestry)
+                    self.processUnknownFile(uploaded_file, ancestry, None)
                 else:
                     # If the source is new, then apply default overrides.
                     self.logger.debug(
@@ -843,8 +843,7 @@ class NascentUpload:
                 if override_ancestry is not None:
                     # XXX cprov 2007-02-12: see above.
                     self.processUnknownFile(
-                        uploaded_file, arch_ancestry, override_ancestry,
-                        binary=True)
+                        uploaded_file, override_ancestry, None, binary=True)
                 else:
                     self.logger.debug(
                         "%s: (binary) NEW" % (uploaded_file.package))
