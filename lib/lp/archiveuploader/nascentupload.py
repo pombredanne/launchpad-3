@@ -579,7 +579,7 @@ class NascentUpload:
 
         return None
 
-    def getBinaryAncestry(self, uploaded_file, try_other_archs=True):
+    def getBinaryAncestry(self, uploaded_file):
         """Return the last published binary (ancestry) for given file.
 
         Return the most recent IBPPH instance matching the uploaded file
@@ -605,7 +605,7 @@ class NascentUpload:
             IBinaryPackageNameSet).queryByName(ancestry_name)
 
         if binary_name is None:
-            return None
+            return None, None
 
         if uploaded_file.architecture == "all":
             arch_indep = self.policy.distroseries.nominatedarchindep
@@ -626,8 +626,10 @@ class NascentUpload:
         if (self.policy.archive.purpose not in MAIN_ARCHIVE_PURPOSES and
             not self.policy.archive.is_copy):
             archive = self.policy.archive
+            foreign_archive = False
         else:
             archive = None
+            foreign_archive = True
 
         for pocket in lookup_pockets:
             candidates = dar.getReleasedPackages(
@@ -635,11 +637,9 @@ class NascentUpload:
                 archive=archive)
 
             if candidates:
-                return candidates[0]
+                return (candidates[0], not foreign_archive)
 
-            if not try_other_archs:
-                continue
-
+        for pocket in lookup_pockets:
             # Try the other architectures...
             dars = self.policy.distroseries.architectures
             other_dars = [other_dar for other_dar in dars
@@ -650,8 +650,8 @@ class NascentUpload:
                     archive=archive)
 
                 if candidates:
-                    return candidates[0]
-        return None
+                    return (candidates[0], False)
+        return None, None
 
     def _checkVersion(self, proposed_version, archive_version, filename):
         """Check if the proposed version is higher than the one in archive."""
@@ -815,35 +815,26 @@ class NascentUpload:
                         uploaded_file.architecture,
                         ))
 
-                # First check that the version isn't old than the
-                # ancestry in this architecture.
-                arch_ancestry = self.getBinaryAncestry(
-                    uploaded_file, try_other_archs=False)
-                if (arch_ancestry is not None and
-                    not self.policy.archive.is_copy):
-                    # Ignore version checks for copy archives
-                    # because the ancestry comes from the primary
-                    # which may have changed since the copy.
-                    self.checkBinaryVersion(uploaded_file, arch_ancestry)
-
-                # If there's no ancestry in this architecture, fall back
-                # to overriding from any other architecture. We only
-                # care about NEW on the first arch.
-                override = (
-                    arch_ancestry or self.getBinaryAncestry(uploaded_file))
+                # Find the best ancestor publication for this binary. If
+                # it's from this archive and architecture we also want
+                # to make sure the version isn't going backwards.
+                ancestry, check_version = self.getBinaryAncestry(uploaded_file)
                 component_only = False
-                if override is None:
+                if check_version:
+                    self.checkBinaryVersion(uploaded_file, ancestry)
+
+                if ancestry is None:
                     # Check the current source publication's component.
                     # If there is a corresponding source publication, we will
                     # use the component from that, otherwise default mappings
                     # are used.
                     try:
-                        override = uploaded_file.findCurrentSourcePublication()
+                        ancestry = uploaded_file.findCurrentSourcePublication()
                         component_only = True
                     except UploadError:
                         pass
                 self.processUnknownFile(
-                    uploaded_file, override, component_only=component_only,
+                    uploaded_file, ancestry, component_only=component_only,
                     binary=True)
 
     #
