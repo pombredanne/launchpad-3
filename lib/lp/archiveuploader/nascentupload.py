@@ -747,6 +747,11 @@ class NascentUpload:
             return
 
         # Non-PPA uploads get overrided from the ancestry if present.
+        # XXX cprov 2007-02-12: The current override mechanism is
+        # broken, since it modifies original contents of SPR/BPR.
+        # We could do better by having a specific override table
+        # that relates a SPN/BPN to a specific DR/DAR and carries
+        # the respective information to be overridden.
         if override:
             uploaded_file.new = False
             if binary:
@@ -798,17 +803,10 @@ class NascentUpload:
                 ancestry = self.getSourceAncestry(uploaded_file)
                 if ancestry is not None:
                     self.checkSourceVersion(uploaded_file, ancestry)
-                    # XXX cprov 2007-02-12: The current override mechanism is
-                    # broken, since it modifies original contents of SPR/BPR.
-                    # We could do better by having a specific override table
-                    # that relates a SPN/BPN to a specific DR/DAR and carries
-                    # the respective information to be overridden.
-                    self.processUnknownFile(uploaded_file, ancestry, None)
                 else:
-                    # If the source is new, then apply default overrides.
                     self.logger.debug(
                         "%s: (source) NEW" % (uploaded_file.package))
-                    self.processUnknownFile(uploaded_file, None, None)
+                self.processUnknownFile(uploaded_file, ancestry, None)
 
             elif isinstance(uploaded_file, BaseBinaryUploadFile):
                 self.logger.debug(
@@ -841,24 +839,22 @@ class NascentUpload:
                 # care about NEW on the first arch.
                 override_ancestry = (
                     arch_ancestry or self.getBinaryAncestry(uploaded_file))
-                if override_ancestry is not None:
-                    # XXX cprov 2007-02-12: see above.
-                    self.processUnknownFile(
-                        uploaded_file, override_ancestry, None, binary=True)
-                else:
+                component_only_override = None
+                if override_ancestry is None:
                     self.logger.debug(
                         "%s: (binary) NEW" % (uploaded_file.package))
                     # Check the current source publication's component.
                     # If there is a corresponding source publication, we will
                     # use the component from that, otherwise default mappings
                     # are used.
-                    spph = None
                     try:
-                        spph = uploaded_file.findCurrentSourcePublication()
+                        component_only_override = (
+                            uploaded_file.findCurrentSourcePublication())
                     except UploadError:
                         pass
-                    self.processUnknownFile(
-                        uploaded_file, None, spph, binary=True)
+                self.processUnknownFile(
+                    uploaded_file, override_ancestry, component_only_override,
+                    binary=True)
 
     #
     # Actually processing accepted or rejected uploads -- and mailing people
