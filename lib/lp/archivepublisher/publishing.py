@@ -23,11 +23,7 @@ from debian.deb822 import (
     _multivalued,
     Release,
     )
-from storm.expr import (
-    Desc,
-    Join,
-    Or,
-    )
+from storm.expr import Desc
 from zope.component import getUtility
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
@@ -53,10 +49,7 @@ from lp.registry.interfaces.pocket import (
     pocketsuffix,
     )
 from lp.registry.interfaces.series import SeriesStatus
-from lp.registry.model.distroseries import (
-    ACTIVE_UNRELEASED_STATUSES,
-    DistroSeries,
-    )
+from lp.registry.model.distroseries import DistroSeries
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.interfaces import IStore
 from lp.services.librarian.client import LibrarianClient
@@ -307,15 +300,14 @@ class Publisher(object):
     def checkLegalPocket(self, distroseries, pocket, is_careful):
         """Check if the publication can happen in the archive."""
         # 'careful' mode re-publishes everything:
-        return is_careful or self.archive.canModifySuite(distroseries, pocket)
+        if is_careful:
+            return True
+        if distroseries not in self.consider_series:
+            return False
+        return self.archive.canModifySuite(distroseries, pocket)
 
     def getPendingSourcePublications(self, is_careful):
-        """Return the specific group of source records to be published.
-
-        Exclude publications in the RELEASE pocket unless the distroseries
-        is unreleased or the archive allows updates to the RELEASE pocket
-        for stable distroseries (e.g. PPAs or partner).
-        """
+        """Return the specific group of source records to be published."""
         conditions = [SourcePackagePublishingHistory.archive == self.archive]
 
         # Careful publishing should include all PUBLISHED rows, normal run
@@ -325,16 +317,6 @@ class Publisher(object):
             statuses.append(PackagePublishingStatus.PUBLISHED)
         conditions.append(
             SourcePackagePublishingHistory.status.is_in(statuses))
-
-        if not self.archive.allowUpdatesToReleasePocket():
-            conditions.extend([
-                SourcePackagePublishingHistory.distroseriesID ==
-                    DistroSeries.id,
-                Or(
-                    SourcePackagePublishingHistory.pocket !=
-                        PackagePublishingPocket.RELEASE,
-                    DistroSeries.status.is_in(ACTIVE_UNRELEASED_STATUSES)),
-                ])
 
         publications = IStore(SourcePackagePublishingHistory).find(
             SourcePackagePublishingHistory, *conditions)
@@ -379,12 +361,7 @@ class Publisher(object):
         return dirty_pockets
 
     def getPendingBinaryPublications(self, is_careful):
-        """Return the specific group of binary records to be published.
-
-        Exclude publications in the RELEASE pocket unless the distroseries
-        is unreleased or the archive allows updates to the RELEASE pocket
-        for stable distroseries (e.g. PPAs or partner).
-        """
+        """Return the specific group of binary records to be published."""
         conditions = [
             BinaryPackagePublishingHistory.archive == self.archive,
             BinaryPackagePublishingHistory.distroarchseriesID ==
@@ -397,12 +374,6 @@ class Publisher(object):
             statuses.append(PackagePublishingStatus.PUBLISHED)
         conditions.append(
             BinaryPackagePublishingHistory.status.is_in(statuses))
-
-        if not self.archive.allowUpdatesToReleasePocket():
-            conditions.append(Or(
-                BinaryPackagePublishingHistory.pocket !=
-                    PackagePublishingPocket.RELEASE,
-                DistroSeries.status.is_in(ACTIVE_UNRELEASED_STATUSES)))
 
         publications = IStore(BinaryPackagePublishingHistory).find(
             BinaryPackagePublishingHistory, *conditions)
