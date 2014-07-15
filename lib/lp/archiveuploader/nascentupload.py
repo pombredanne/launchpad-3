@@ -384,10 +384,9 @@ class NascentUpload:
         lockstep.
         """
         for uploaded_file in self.changes.files:
-            if isinstance(uploaded_file, DdebBinaryUploadFile):
-                if uploaded_file.deb_file is not None:
-                    self._overrideBinaryFile(uploaded_file,
-                                             uploaded_file.deb_file)
+            if (isinstance(uploaded_file, DdebBinaryUploadFile)
+                    and uploaded_file.deb_file is not None):
+                self.overrideBinaryFile(uploaded_file, uploaded_file.deb_file)
     #
     # Helpers for warnings and rejections
     #
@@ -629,32 +628,21 @@ class NascentUpload:
         filename = uploaded_file.filename
         self._checkVersion(proposed_version, archive_version, filename)
 
-    def overrideSource(self, uploaded_file, override):
+    def overrideSourceFile(self, uploaded_file, override):
         """Overrides the uploaded source based on its override information.
 
         Override target component and section.
         """
-        if self.is_ppa:
-            # There are no overrides for PPAs.
-            return
-
-        # XXX
         if override.component is not None:
             uploaded_file.component_name = override.component.name
         if override.section is not None:
             uploaded_file.section_name = override.section.name
 
-    def overrideBinary(self, uploaded_file, override):
+    def overrideBinaryFile(self, uploaded_file, override):
         """Overrides the uploaded binary based on its override information.
 
         Override target component, section and priority.
         """
-        if self.is_ppa:
-            # There are no overrides for PPAs.
-            return
-        self._overrideBinaryFile(uploaded_file, override)
-
-    def _overrideBinaryFile(self, uploaded_file, override):
         if override.component is not None:
             uploaded_file.component_name = override.component.name
         if override.section is not None:
@@ -743,7 +731,7 @@ class NascentUpload:
                                 return_component=True),
                             None)
                 if override_at_all and ancestry is not None:
-                    self.overrideSource(uploaded_file, ancestry)
+                    self.overrideSourceFile(uploaded_file, ancestry)
             elif isinstance(uploaded_file, BaseBinaryUploadFile):
                 self.logger.debug(
                     "Checking for %s/%s/%s binary ancestry"
@@ -787,7 +775,7 @@ class NascentUpload:
                             return_component=True),
                         None, None, None)
                 if override_at_all and ancestry is not None:
-                    self.overrideBinary(uploaded_file, ancestry)
+                    self.overrideBinaryFile(uploaded_file, ancestry)
 
     #
     # Actually processing accepted or rejected uploads -- and mailing people
