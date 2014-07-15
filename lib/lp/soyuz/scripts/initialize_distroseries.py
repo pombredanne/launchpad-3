@@ -116,7 +116,7 @@ class InitializeDistroSeries:
         self.archindep_archtag = archindep_archtag
         self.packagesets_ids = [
             ensure_unicode(packageset) for packageset in packagesets]
-        if packagesets is None:
+        if packagesets == [u'None']:
             self.packagesets = None
         else:
             self.packagesets = bulk.load(
@@ -219,7 +219,8 @@ class InitializeDistroSeries:
         Restrict the check to the selected packages if a limited set of
         packagesets is used by the initialization.
         """
-        spns = self.source_names_by_parent.get(parent.id, None)
+        if self.source_names_by_parent is not None:
+            spns = self.source_names_by_parent.get(parent.id, None)
         if spns is not None and len(spns) == 0:
             # If no sources are selected in this parent, skip the check.
             return
@@ -249,7 +250,8 @@ class InitializeDistroSeries:
             PackageUploadStatus.ACCEPTED,
             PackageUploadStatus.UNAPPROVED,
             ]
-        spns = self.source_names_by_parent.get(parent.id, None)
+        if self.source_names_by_parent is not None:
+            spns = self.source_names_by_parent.get(parent.id, None)
         if spns is not None and len(spns) == 0:
             # If no sources are selected in this parent, skip the check.
             return
