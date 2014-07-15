@@ -45,7 +45,7 @@ from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.soyuz.adapters.overrides import UnknownOverridePolicy
-from lp.soyuz.interfaces.archive import MAIN_ARCHIVE_PURPOSES
+from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.queue import QueueInconsistentStateError
 
 
@@ -181,7 +181,9 @@ class NascentUpload:
         self.find_and_apply_overrides()
         self._overrideDDEBSs()
 
-        # Override archive location if necessary.
+        # Override archive location if necessary to cope with partner
+        # uploads to a primary path. Yes, we actually potentially change
+        # the target archive based on the override component.
         self.overrideArchive()
 
         # Check upload rights for the signer of the upload.
@@ -621,36 +623,39 @@ class NascentUpload:
         # See the comment below, in getSourceAncestry
         lookup_pockets = [self.policy.pocket, PackagePublishingPocket.RELEASE]
 
-        # If the archive is a main archive or a copy archive, we want to
-        # look up the ancestry in all the main archives.
-        if (self.policy.archive.purpose not in MAIN_ARCHIVE_PURPOSES and
-            not self.policy.archive.is_copy):
-            archive = self.policy.archive
-            foreign_archive = False
-        else:
-            archive = None
+        foreign_archive = False
+        if self.policy.archive.is_primary:
+            # overrideArchive can switch to the partner archive if there
+            # is ancestry there, so try partner after primary.
+            archives = [self.policy.archive]
+            partner = self.policy.archive.distribution.getArchiveByComponent(
+                PARTNER_COMPONENT_NAME)
+            if partner is not None:
+                archives.append(partner)
+        elif self.policy.archive.is_copy:
+            # Copy archives always inherit their overrides from the
+            # primary archive. We don't want to perform the version
+            # check in this case, as the rebuild may finish after a new
+            # version exists in the primary archive.
+            archives = [self.policy.archive.distribution.main_archive]
             foreign_archive = True
+        else:
+            # Other archives just look up ancestry within themselves.
+            archives = [self.policy.archive]
 
-        for pocket in lookup_pockets:
-            candidates = dar.getReleasedPackages(
-                binary_name, include_pending=True, pocket=pocket,
-                archive=archive)
-
-            if candidates:
-                return (candidates[0], not foreign_archive)
-
-        for pocket in lookup_pockets:
-            # Try the other architectures...
-            dars = self.policy.distroseries.architectures
-            other_dars = [other_dar for other_dar in dars
-                          if other_dar.id != dar.id]
-            for other_dar in other_dars:
-                candidates = other_dar.getReleasedPackages(
-                    binary_name, include_pending=True, pocket=pocket,
-                    archive=archive)
-
-                if candidates:
-                    return (candidates[0], False)
+        for (arch, check_version) in (
+                (dar, not foreign_archive),
+                (self.policy.distroseries.architectures, False)):
+            for archive in archives:
+                for pocket in lookup_pockets:
+                    candidates = archive.getAllPublishedBinaries(
+                        name=binary_name.name, exact_match=True,
+                        distroarchseries=arch, pocket=pocket,
+                        status=(
+                            PackagePublishingStatus.PUBLISHED,
+                            PackagePublishingStatus.PENDING))
+                    if candidates:
+                        return (candidates[0], check_version)
         return None, None
 
     def _checkVersion(self, proposed_version, archive_version, filename):
