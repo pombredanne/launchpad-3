@@ -44,7 +44,11 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
-from lp.soyuz.adapters.overrides import UnknownOverridePolicy
+from lp.soyuz.adapters.overrides import (
+    BinaryOverride,
+    SourceOverride,
+    UnknownOverridePolicy,
+    )
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.queue import QueueInconsistentStateError
 
@@ -634,12 +638,16 @@ class NascentUpload:
             # There are no overrides for PPAs.
             return
 
-        self.logger.debug("%s (source) exists in %s" % (
-            override.sourcepackagerelease.title,
-            override.pocket.name))
+        # XXX
+        if override.section is not None:
+            self.logger.debug("%s (source) exists in %s" % (
+                override.sourcepackagerelease.title,
+                override.pocket.name))
 
-        uploaded_file.component_name = override.component.name
-        uploaded_file.section_name = override.section.name
+        if override.component is not None:
+            uploaded_file.component_name = override.component.name
+        if override.section is not None:
+            uploaded_file.section_name = override.section.name
 
     def overrideBinary(self, uploaded_file, override):
         """Overrides the uploaded binary based on its override information.
@@ -650,80 +658,24 @@ class NascentUpload:
             # There are no overrides for PPAs.
             return
 
-        self.logger.debug("%s (binary) exists in %s/%s" % (
-            override.binarypackagerelease.title,
-            override.distroarchseries.architecturetag,
-            override.pocket.name))
+        # XXX
+        if override.section is not None:
+            self.logger.debug("%s (binary) exists in %s/%s" % (
+                override.binarypackagerelease.title,
+                override.distroarchseries.architecturetag,
+                override.pocket.name))
         self._overrideBinaryFile(uploaded_file, override)
 
     def _overrideBinaryFile(self, uploaded_file, override):
-        uploaded_file.component_name = override.component.name
-        uploaded_file.section_name = override.section.name
+        if override.component is not None:
+            uploaded_file.component_name = override.component.name
+        if override.section is not None:
+            uploaded_file.section_name = override.section.name
         # Both, changesfiles and nascentuploadfile local maps, reffer to
         # priority in lower-case names, but the DBSCHEMA name is upper-case.
         # That's why we need this conversion here.
-        uploaded_file.priority_name = override.priority.name.lower()
-
-    def processUnknownFile(self, uploaded_file, override,
-                           component_only=False, binary=False):
-        """Apply a set of actions for newly-uploaded (unknown) files.
-
-        Here we use the override, if specified, or simply default to the policy
-        defined in UnknownOverridePolicy.
-
-        In the case of a PPA, files are not touched.  They are always
-        overridden to 'main' at publishing time, though.
-
-        All files are also marked as new unless it's a PPA file, which are
-        never considered new as they are auto-accepted.
-
-        COPY archive build uploads are also auto-accepted, otherwise they
-        would sit in the NEW queue since it's likely there's no ancestry.
-        """
-        # PPAs don't have overrides at all and are always autoaccepted.
-        if self.is_ppa:
-            uploaded_file.new = False
-            return
-
-        # Non-PPA uploads get overrided from the ancestry if present.
-        # XXX cprov 2007-02-12: The current override mechanism is
-        # broken, since it modifies original contents of SPR/BPR.
-        # We could do better by having a specific override table
-        # that relates a SPN/BPN to a specific DR/DAR and carries
-        # the respective information to be overridden.
-        if override and not component_only:
-            uploaded_file.new = False
-            if binary:
-                self.overrideBinary(uploaded_file, override)
-            else:
-                self.overrideSource(uploaded_file, override)
-            return
-
-        # Copy archive uploads are always autoaccepted and don't get
-        # default overrides.
-        # XXX wgrant 2014-07-14 bug=1103491: This causes new binaries in
-        # copy archives to stay in contrib/non-free, so the upload gets
-        # rejected. But I'm just preserving existing behaviour for now.
-        if self.policy.archive.is_copy:
-            uploaded_file.new = False
-            return
-
-        self.logger.debug(
-            "%s: (%s) NEW"
-            % (uploaded_file.package, "binary" if binary else "source"))
-        uploaded_file.new = True
-
-        if self.is_partner:
-            # Don't apply default overrides to partner uploads.
-            return
-
-        # Use the specified override, or delegate to UnknownOverridePolicy.
-        if override:
-            uploaded_file.component_name = override.component.name
-            return
-        component_name_override = UnknownOverridePolicy.getComponentOverride(
-            uploaded_file.component_name)
-        uploaded_file.component_name = component_name_override
+        if override.priority is not None:
+            uploaded_file.priority_name = override.priority.name.lower()
 
     def find_and_apply_overrides(self):
         """Look for ancestry and overrides information.
@@ -744,11 +696,14 @@ class NascentUpload:
         if PackagePublishingPocket.RELEASE not in lookup_pockets:
             lookup_pockets.append(PackagePublishingPocket.RELEASE)
 
+        archives = [self.policy.archive]
         foreign_archive = False
+        use_default_component = True
+        autoaccept_new = False
+        override_at_all = True
         if self.policy.archive.is_primary:
             # overrideArchive can switch to the partner archive if there
             # is ancestry there, so try partner after primary.
-            archives = [self.policy.archive]
             partner = self.policy.archive.distribution.getArchiveByComponent(
                 PARTNER_COMPONENT_NAME)
             if partner is not None:
@@ -760,9 +715,20 @@ class NascentUpload:
             # version exists in the primary archive.
             archives = [self.policy.archive.distribution.main_archive]
             foreign_archive = True
-        else:
-            # Other archives just look up ancestry within themselves.
-            archives = [self.policy.archive]
+            # XXX wgrant 2014-07-14 bug=1103491: This causes new binaries in
+            # copy archives to stay in contrib/non-free, so the upload gets
+            # rejected. But I'm just preserving existing behaviour for now.
+            use_default_component = False
+            autoaccept_new = True
+        elif self.policy.archive.is_ppa:
+            autoaccept_new = True
+            override_at_all = False
+
+        # NascentUpload.is_partner additionally checks if any of the
+        # components are partner.
+        if (self.policy.archive.is_partner or
+                (self.policy.archive.is_primary and self.is_partner)):
+            use_default_component = False
 
         for uploaded_file in self.changes.files:
             if isinstance(uploaded_file, DSCFile):
@@ -773,7 +739,20 @@ class NascentUpload:
                     uploaded_file, archives, lookup_pockets)
                 if ancestry is not None:
                     self.checkSourceVersion(uploaded_file, ancestry)
-                self.processUnknownFile(uploaded_file, ancestry)
+                else:
+                    if not autoaccept_new:
+                        self.logger.debug(
+                            "%s: (source) NEW", uploaded_file.package)
+                        uploaded_file.new = True
+                    if use_default_component:
+                        ancestry = SourceOverride(
+                            None,
+                            UnknownOverridePolicy.getComponentOverride(
+                                uploaded_file.component_name,
+                                return_component=True),
+                            None)
+                if override_at_all and ancestry is not None:
+                    self.overrideSource(uploaded_file, ancestry)
             elif isinstance(uploaded_file, BaseBinaryUploadFile):
                 self.logger.debug(
                     "Checking for %s/%s/%s binary ancestry"
@@ -788,23 +767,33 @@ class NascentUpload:
                 # to make sure the version isn't going backwards.
                 ancestry, check_version = self.getBinaryAncestry(
                     uploaded_file, archives, lookup_pockets)
-                component_only = False
                 if check_version and not foreign_archive:
                     self.checkBinaryVersion(uploaded_file, ancestry)
 
                 if ancestry is None:
+                    if not autoaccept_new:
+                        self.logger.debug(
+                            "%s: (binary) NEW", uploaded_file.package)
+                        uploaded_file.new = True
                     # Check the current source publication's component.
                     # If there is a corresponding source publication, we will
                     # use the component from that, otherwise default mappings
                     # are used.
                     try:
-                        ancestry = uploaded_file.findCurrentSourcePublication()
-                        component_only = True
+                        spph = uploaded_file.findCurrentSourcePublication()
+                        ancestry = BinaryOverride(
+                            None, None, spph.component, None, None, None)
                     except UploadError:
                         pass
-                self.processUnknownFile(
-                    uploaded_file, ancestry, component_only=component_only,
-                    binary=True)
+                if ancestry is None and use_default_component:
+                    ancestry = BinaryOverride(
+                        None, None,
+                        UnknownOverridePolicy.getComponentOverride(
+                            uploaded_file.component_name,
+                            return_component=True),
+                        None, None, None)
+                if override_at_all and ancestry is not None:
+                    self.overrideBinary(uploaded_file, ancestry)
 
     #
     # Actually processing accepted or rejected uploads -- and mailing people
