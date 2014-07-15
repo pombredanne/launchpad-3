@@ -326,7 +326,7 @@ class Publisher(object):
     def publishSources(self, distroseries, pocket, spphs):
         """Publish sources for a given distroseries and pocket."""
         self.log.debug(
-            "Publishing pending sources for %s" %
+            "* Publishing pending sources for %s" %
             distroseries.getSuite(pocket))
         for spph in spphs:
             spph.publish(self._diskpool, self.log)
@@ -379,7 +379,7 @@ class Publisher(object):
     def publishBinaries(self, distroarchseries, pocket, bpphs):
         """Publish binaries for a given distroarchseries and pocket."""
         self.log.debug(
-            "Publishing pending binaries for %s/%s" % (
+            "* Publishing pending binaries for %s/%s" % (
                 distroarchseries.distroseries.getSuite(pocket),
                 distroarchseries.architecturetag))
         for bpph in bpphs:
