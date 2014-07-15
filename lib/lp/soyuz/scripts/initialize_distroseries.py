@@ -116,8 +116,11 @@ class InitializeDistroSeries:
         self.archindep_archtag = archindep_archtag
         self.packagesets_ids = [
             ensure_unicode(packageset) for packageset in packagesets]
-        self.packagesets = bulk.load(
-            Packageset, [int(packageset) for packageset in packagesets])
+        if packagesets is None:
+            self.packagesets = None
+        else:
+            self.packagesets = bulk.load(
+                Packageset, [int(packageset) for packageset in packagesets])
         self.rebuild = rebuild
         self.overlays = overlays
         self.overlay_pockets = overlay_pockets
@@ -483,13 +486,18 @@ class InitializeDistroSeries:
         parent so the list of packages to consider in not empty.
         """
         source_names_by_parent = {}
-        if self.packagesets_ids:
-            for parent in self.derivation_parents:
-                spns = []
-                for pkgset in self.packagesets:
-                    if pkgset.distroseries == parent:
-                        spns += list(pkgset.getSourcesIncluded())
-                source_names_by_parent[parent.id] = spns
+        if self.packagesets is None:
+            source_names_by_parent = None
+        elif self.packagesets is []:
+            self.source_names_by_parent = []
+        else:
+            if self.packagesets_ids:
+                for parent in self.derivation_parents:
+                    spns = []
+                    for pkgset in self.packagesets:
+                        if pkgset.distroseries == parent:
+                            spns += list(pkgset.getSourcesIncluded())
+                    source_names_by_parent[parent.id] = spns
         self.source_names_by_parent = source_names_by_parent
 
     def _copy_publishing_records(self, distroarchseries_lists):
