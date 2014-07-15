@@ -348,10 +348,9 @@ class Publisher(object):
             elif not self.checkLegalPocket(distroseries, pocket, is_careful):
                 for spph in spphs:
                     self.log.error(
-                        "Tried to publish %s (%s) into the %s pocket on "
-                        "series %s (%s), skipping" % (
-                            spph.displayname, spph.id, pocket,
-                            distroseries.displayname,
+                        "Tried to publish %s (%s) into %s (%s), skipping" % (
+                            spph.displayname, spph.id,
+                            distroseries.getSuite(pocket),
                             distroseries.status.name))
             else:
                 self.publishSources(distroseries, pocket, spphs)
@@ -404,10 +403,9 @@ class Publisher(object):
             elif not self.checkLegalPocket(distroseries, pocket, is_careful):
                 for bpph in bpphs:
                     self.log.error(
-                        "Tried to publish %s (%s) into the %s pocket on "
-                        "series %s (%s), skipping" % (
-                            bpph.displayname, bpph.id, pocket,
-                            distroseries.displayname,
+                        "Tried to publish %s (%s) into %s (%s), skipping" % (
+                            bpph.displayname, bpph.id,
+                            distroseries.getSuite(pocket),
                             distroseries.status.name))
             else:
                 self.publishBinaries(distroarchseries, pocket, bpphs)
