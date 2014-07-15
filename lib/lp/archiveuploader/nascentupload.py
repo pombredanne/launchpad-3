@@ -639,11 +639,6 @@ class NascentUpload:
             return
 
         # XXX
-        if override.section is not None:
-            self.logger.debug("%s (source) exists in %s" % (
-                override.sourcepackagerelease.title,
-                override.pocket.name))
-
         if override.component is not None:
             uploaded_file.component_name = override.component.name
         if override.section is not None:
@@ -657,13 +652,6 @@ class NascentUpload:
         if self.is_ppa:
             # There are no overrides for PPAs.
             return
-
-        # XXX
-        if override.section is not None:
-            self.logger.debug("%s (binary) exists in %s/%s" % (
-                override.binarypackagerelease.title,
-                override.distroarchseries.architecturetag,
-                override.pocket.name))
         self._overrideBinaryFile(uploaded_file, override)
 
     def _overrideBinaryFile(self, uploaded_file, override):
@@ -738,6 +726,9 @@ class NascentUpload:
                 ancestry = self.getSourceAncestry(
                     uploaded_file, archives, lookup_pockets)
                 if ancestry is not None:
+                    self.logger.debug("%s (source) exists in %s" % (
+                        ancestry.sourcepackagerelease.title,
+                        ancestry.pocket.name))
                     self.checkSourceVersion(uploaded_file, ancestry)
                 else:
                     if not autoaccept_new:
@@ -761,16 +752,19 @@ class NascentUpload:
                         uploaded_file.version,
                         uploaded_file.architecture,
                         ))
-
                 # Find the best ancestor publication for this binary. If
                 # it's from this archive and architecture we also want
                 # to make sure the version isn't going backwards.
                 ancestry, check_version = self.getBinaryAncestry(
                     uploaded_file, archives, lookup_pockets)
-                if check_version and not foreign_archive:
-                    self.checkBinaryVersion(uploaded_file, ancestry)
-
-                if ancestry is None:
+                if ancestry is not None:
+                    self.logger.debug("%s (binary) exists in %s/%s" % (
+                        ancestry.binarypackagerelease.title,
+                        ancestry.distroarchseries.architecturetag,
+                        ancestry.pocket.name))
+                    if check_version and not foreign_archive:
+                        self.checkBinaryVersion(uploaded_file, ancestry)
+                else:
                     if not autoaccept_new:
                         self.logger.debug(
                             "%s: (binary) NEW", uploaded_file.package)
