@@ -6,6 +6,8 @@
 __metaclass__ = type
 
 __all__ = [
+    'ACTIVE_RELEASED_STATUSES',
+    'ACTIVE_UNRELEASED_STATUSES',
     'DistroSeries',
     'DistroSeriesSet',
     ]
@@ -189,6 +191,19 @@ from lp.translations.model.potemplate import (
     POTemplate,
     TranslationTemplatesCollection,
     )
+
+
+ACTIVE_RELEASED_STATUSES = [
+    SeriesStatus.CURRENT,
+    SeriesStatus.SUPPORTED,
+    ]
+
+
+ACTIVE_UNRELEASED_STATUSES = [
+    SeriesStatus.EXPERIMENTAL,
+    SeriesStatus.DEVELOPMENT,
+    SeriesStatus.FROZEN,
+    ]
 
 
 class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
@@ -945,11 +960,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def isUnstable(self):
         """See `IDistroSeries`."""
-        return self.status in [
-            SeriesStatus.FROZEN,
-            SeriesStatus.DEVELOPMENT,
-            SeriesStatus.EXPERIMENTAL,
-        ]
+        return self.status in ACTIVE_UNRELEASED_STATUSES
 
     def _getAllSources(self):
         """Get all sources ever published in this series' main archives."""
@@ -1535,14 +1546,11 @@ class DistroSeriesSet:
             if isreleased:
                 # The query is filtered on released releases.
                 where_clause += "releasestatus in (%s, %s)" % sqlvalues(
-                    SeriesStatus.CURRENT,
-                    SeriesStatus.SUPPORTED)
+                    *ACTIVE_RELEASED_STATUSES)
             else:
                 # The query is filtered on unreleased releases.
                 where_clause += "releasestatus in (%s, %s, %s)" % sqlvalues(
-                    SeriesStatus.EXPERIMENTAL,
-                    SeriesStatus.DEVELOPMENT,
-                    SeriesStatus.FROZEN)
+                    *ACTIVE_UNRELEASED_STATUSES)
         if orderBy is not None:
             return DistroSeries.select(where_clause, orderBy=orderBy)
         else:
