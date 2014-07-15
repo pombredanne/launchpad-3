@@ -3,12 +3,12 @@
 
 SET client_min_messages=ERROR;
 
-CREATE INDEX sourcepackagepublishinghistory__archive__status__deleted__idx
+CREATE INDEX sourcepackagepublishinghistory__archive__status__scheduleddeletiondate__idx
     ON sourcepackagepublishinghistory (archive, status)
-    WHERE scheduleddeletiondate IS NULL AND dateremoved IS NULL;
+    WHERE scheduleddeletiondate IS NULL;
 
-CREATE INDEX binarypackagepublishinghistory__archive__status__deleted__idx
+CREATE INDEX binarypackagepublishinghistory__archive__status__scheduleddeletiondate__idx
     ON binarypackagepublishinghistory (archive, status)
-    WHERE scheduleddeletiondate IS NULL AND dateremoved IS NULL;
+    WHERE scheduleddeletiondate IS NULL;
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 53, 8);
