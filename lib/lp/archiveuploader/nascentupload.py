@@ -527,61 +527,28 @@ class NascentUpload:
     #
     # Handling checking of versions and overrides
     #
-    def getSourceAncestry(self, uploaded_file):
+    def getSourceAncestry(self, uploaded_file, archives, lookup_pockets):
         """Return the last published source (ancestry) for a given file.
 
         Return the most recent ISPPH instance matching the uploaded file
         package name or None.
         """
-        # Only lookup uploads ancestries in target pocket and fallback
-        # to RELEASE pocket
-        # Upload ancestries found here will guide the auto-override
-        # procedure and the version consistency check:
-        #
-        #  * uploaded_version > ancestry_version
-        #
-        # which is the *only right* check we can do automatically.
-        # Post-release history and proposed content may diverge and can't
-        # be properly automatically overridden.
-        #
-        # We are relaxing version constraints when processing uploads since
-        # there are many corner cases when checking version consistency
-        # against post-release pockets, like:
-        #
-        #  * SECURITY/UPDATES can be lower than PROPOSED/BACKPORTS
-        #  * UPDATES can be lower than SECURITY
-        #  * ...
-        #
-        # And they really depends more on the package contents than the
-        # version number itself.
-        # Version inconsistencies will (should) be identified during the
-        # mandatory review in queue, anyway.
-        # See bug #83976
-        source_name = getUtility(
-            ISourcePackageNameSet).queryByName(uploaded_file.package)
-
-        if source_name is None:
-            return None
-
-        lookup_pockets = [self.policy.pocket, PackagePublishingPocket.RELEASE]
-
         for pocket in lookup_pockets:
-
-            if self.is_ppa:
-                archive = self.policy.archive
-            else:
-                archive = None
-            candidates = self.policy.distroseries.getPublishedSources(
-                source_name, include_pending=True, pocket=pocket,
-                archive=archive)
-            try:
-                return candidates[0]
-            except IndexError:
-                pass
-
+            for archive in archives:
+                candidates = archive.getPublishedSources(
+                    name=uploaded_file.package, exact_match=True,
+                    distroseries=self.policy.distroseries,
+                    pocket=lookup_pockets,
+                    status=(
+                        PackagePublishingStatus.PUBLISHED,
+                        PackagePublishingStatus.PENDING))
+                try:
+                    return candidates[0]
+                except IndexError:
+                    pass
         return None
 
-    def getBinaryAncestry(self, uploaded_file):
+    def getBinaryAncestry(self, uploaded_file, archives, lookup_pockets):
         """Return the last published binary (ancestry) for given file.
 
         Return the most recent IBPPH instance matching the uploaded file
@@ -600,15 +567,6 @@ class NascentUpload:
         else:
             ancestry_name = uploaded_file.package
 
-        # Avoid cyclic import.
-        from lp.soyuz.interfaces.binarypackagename import (
-            IBinaryPackageNameSet)
-        binary_name = getUtility(
-            IBinaryPackageNameSet).queryByName(ancestry_name)
-
-        if binary_name is None:
-            return None, None
-
         if uploaded_file.architecture == "all":
             arch_indep = self.policy.distroseries.nominatedarchindep
             archtag = arch_indep.architecturetag
@@ -620,36 +578,12 @@ class NascentUpload:
         # But it should be refactored ASAP.
         dar = self.policy.distroseries[archtag]
 
-        # See the comment below, in getSourceAncestry
-        lookup_pockets = [self.policy.pocket, PackagePublishingPocket.RELEASE]
-
-        foreign_archive = False
-        if self.policy.archive.is_primary:
-            # overrideArchive can switch to the partner archive if there
-            # is ancestry there, so try partner after primary.
-            archives = [self.policy.archive]
-            partner = self.policy.archive.distribution.getArchiveByComponent(
-                PARTNER_COMPONENT_NAME)
-            if partner is not None:
-                archives.append(partner)
-        elif self.policy.archive.is_copy:
-            # Copy archives always inherit their overrides from the
-            # primary archive. We don't want to perform the version
-            # check in this case, as the rebuild may finish after a new
-            # version exists in the primary archive.
-            archives = [self.policy.archive.distribution.main_archive]
-            foreign_archive = True
-        else:
-            # Other archives just look up ancestry within themselves.
-            archives = [self.policy.archive]
-
         for (arch, check_version) in (
-                (dar, not foreign_archive),
-                (self.policy.distroseries.architectures, False)):
+                (dar, True), (self.policy.distroseries.architectures, False)):
             for archive in archives:
                 for pocket in lookup_pockets:
                     candidates = archive.getAllPublishedBinaries(
-                        name=binary_name.name, exact_match=True,
+                        name=ancestry_name, exact_match=True,
                         distroarchseries=arch, pocket=pocket,
                         status=(
                             PackagePublishingStatus.PUBLISHED,
@@ -802,12 +736,59 @@ class NascentUpload:
         """
         self.logger.debug("Finding and applying overrides.")
 
+        # Only lookup uploads ancestries in target pocket and fallback
+        # to RELEASE pocket
+        # Upload ancestries found here will guide the auto-override
+        # procedure and the version consistency check:
+        #
+        #  * uploaded_version > ancestry_version
+        #
+        # which is the *only right* check we can do automatically.
+        # Post-release history and proposed content may diverge and can't
+        # be properly automatically overridden.
+        #
+        # We are relaxing version constraints when processing uploads since
+        # there are many corner cases when checking version consistency
+        # against post-release pockets, like:
+        #
+        #  * SECURITY/UPDATES can be lower than PROPOSED/BACKPORTS
+        #  * UPDATES can be lower than SECURITY
+        #  * ...
+        #
+        # And they really depends more on the package contents than the
+        # version number itself.
+        # Version inconsistencies will (should) be identified during the
+        # mandatory review in queue, anyway.
+        # See bug #83976
+        lookup_pockets = [self.policy.pocket, PackagePublishingPocket.RELEASE]
+
+        foreign_archive = False
+        if self.policy.archive.is_primary:
+            # overrideArchive can switch to the partner archive if there
+            # is ancestry there, so try partner after primary.
+            archives = [self.policy.archive]
+            partner = self.policy.archive.distribution.getArchiveByComponent(
+                PARTNER_COMPONENT_NAME)
+            if partner is not None:
+                archives.append(partner)
+        elif self.policy.archive.is_copy:
+            # Copy archives always inherit their overrides from the
+            # primary archive. We don't want to perform the version
+            # check in this case, as the rebuild may finish after a new
+            # version exists in the primary archive.
+            archives = [self.policy.archive.distribution.main_archive]
+            foreign_archive = True
+        else:
+            # Other archives just look up ancestry within themselves.
+            archives = [self.policy.archive]
+
         for uploaded_file in self.changes.files:
             if isinstance(uploaded_file, DSCFile):
                 self.logger.debug(
                     "Checking for %s/%s source ancestry"
                     % (uploaded_file.package, uploaded_file.version))
-                ancestry = self.getSourceAncestry(uploaded_file)
+                ancestry = self.getSourceAncestry(
+                    uploaded_file, archives, lookup_pockets)
                 if ancestry is not None:
                     self.checkSourceVersion(uploaded_file, ancestry)
                 self.processUnknownFile(uploaded_file, ancestry)
@@ -823,9 +804,10 @@ class NascentUpload:
                 # Find the best ancestor publication for this binary. If
                 # it's from this archive and architecture we also want
                 # to make sure the version isn't going backwards.
-                ancestry, check_version = self.getBinaryAncestry(uploaded_file)
+                ancestry, check_version = self.getBinaryAncestry(
+                    uploaded_file, archives, lookup_pockets)
                 component_only = False
-                if check_version:
+                if check_version and not foreign_archive:
                     self.checkBinaryVersion(uploaded_file, ancestry)
 
                 if ancestry is None:
