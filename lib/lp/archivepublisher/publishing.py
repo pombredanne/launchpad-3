@@ -449,43 +449,51 @@ class Publisher(object):
         # publications that are waiting to be deleted.  Each tuple is
         # added to the dirty_pockets set.
 
-        # Loop for each pocket in each distroseries:
-        for distroseries in self.distro.series:
-            for pocket in self.archive.getPockets():
-                if (self.cannotModifySuite(distroseries, pocket)
-                    or not self.isAllowed(distroseries, pocket)):
-                    # We don't want to mark release pockets dirty in a
-                    # stable distroseries, no matter what other bugs
-                    # that precede here have dirtied it.
-                    continue
-                conditions = base_conditions(SourcePackagePublishingHistory)
-                conditions.extend([
-                    SourcePackagePublishingHistory.pocket == pocket,
-                    SourcePackagePublishingHistory.distroseries ==
-                        distroseries,
-                    ])
+        # Make the source publications query.
+        all_sources = IStore(SourcePackagePublishingHistory).find(
+            SourcePackagePublishingHistory,
+            *base_conditions(SourcePackagePublishingHistory))
+        all_sources.order_by(
+            SourcePackagePublishingHistory.distroseriesID,
+            SourcePackagePublishingHistory.pocket)
 
-                # Make the source publications query.
-                sources = IStore(SourcePackagePublishingHistory).find(
-                    SourcePackagePublishingHistory, *conditions)
-                if not sources.is_empty():
-                    self.markPocketDirty(distroseries, pocket)
-                    # No need to check binaries if the pocket is already
-                    # dirtied from a source.
-                    continue
+        # Make the binary publications query.
+        conditions = base_conditions(BinaryPackagePublishingHistory)
+        conditions.extend([
+            BinaryPackagePublishingHistory.distroarchseriesID ==
+                DistroArchSeries.id,
+            DistroArchSeries.distroseriesID == DistroSeries.id,
+            ])
+        all_binaries = IStore(BinaryPackagePublishingHistory).find(
+            BinaryPackagePublishingHistory, *conditions)
+        all_binaries.order_by(
+            DistroSeries.id,
+            BinaryPackagePublishingHistory.pocket,
+            DistroArchSeries.architecturetag)
 
-                # Make the binary publications query.
-                conditions = base_conditions(BinaryPackagePublishingHistory)
-                conditions.extend([
-                    BinaryPackagePublishingHistory.pocket == pocket,
-                    BinaryPackagePublishingHistory.distroarchseriesID ==
-                        DistroArchSeries.id,
-                    DistroArchSeries.distroseries == distroseries,
-                    ])
-                binaries = IStore(BinaryPackagePublishingHistory).find(
-                    BinaryPackagePublishingHistory, *conditions)
-                if not binaries.is_empty():
-                    self.markPocketDirty(distroseries, pocket)
+        for (distroseries, pocket), sources in groupby(
+                all_sources, attrgetter("distroseries", "pocket")):
+            if (self.cannotModifySuite(distroseries, pocket)
+                or not self.isAllowed(distroseries, pocket)):
+                # We don't want to mark release pockets dirty in a
+                # stable distroseries, no matter what other bugs
+                # that precede here have dirtied it.
+                continue
+            self.markPocketDirty(distroseries, pocket)
+
+        for (distroarchseries, pocket), binaries in groupby(
+                all_binaries, attrgetter("distroarchseries", "pocket")):
+            distroseries = distroarchseries.distroseries
+            if self.isDirty(distroseries, pocket):
+                # Already dirtied by sources.
+                continue
+            if (self.cannotModifySuite(distroseries, pocket)
+                or not self.isAllowed(distroseries, pocket)):
+                # We don't want to mark release pockets dirty in a
+                # stable distroseries, no matter what other bugs
+                # that precede here have dirtied it.
+                continue
+            self.markPocketDirty(distroseries, pocket)
 
     def B_dominate(self, force_domination):
         """Second step in publishing: domination."""
