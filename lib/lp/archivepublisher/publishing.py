@@ -308,18 +308,16 @@ class Publisher(object):
 
     def getPendingSourcePublications(self, is_careful):
         """Return the specific group of source records to be published."""
-        conditions = [SourcePackagePublishingHistory.archive == self.archive]
-
         # Careful publishing should include all PUBLISHED rows, normal run
         # only includes PENDING ones.
         statuses = [PackagePublishingStatus.PENDING]
         if is_careful:
             statuses.append(PackagePublishingStatus.PUBLISHED)
-        conditions.append(
-            SourcePackagePublishingHistory.status.is_in(statuses))
 
         publications = IStore(SourcePackagePublishingHistory).find(
-            SourcePackagePublishingHistory, *conditions)
+            SourcePackagePublishingHistory,
+            SourcePackagePublishingHistory.archive == self.archive,
+            SourcePackagePublishingHistory.status.is_in(statuses))
         return publications.order_by(
             SourcePackagePublishingHistory.distroseriesID,
             SourcePackagePublishingHistory.pocket,
@@ -362,21 +360,17 @@ class Publisher(object):
 
     def getPendingBinaryPublications(self, is_careful):
         """Return the specific group of binary records to be published."""
-        conditions = [
+        statuses = [PackagePublishingStatus.PENDING]
+        if is_careful:
+            statuses.append(PackagePublishingStatus.PUBLISHED)
+
+        publications = IStore(BinaryPackagePublishingHistory).find(
+            BinaryPackagePublishingHistory,
             BinaryPackagePublishingHistory.archive == self.archive,
             BinaryPackagePublishingHistory.distroarchseriesID ==
                 DistroArchSeries.id,
             DistroArchSeries.distroseriesID == DistroSeries.id,
-            ]
-
-        statuses = [PackagePublishingStatus.PENDING]
-        if is_careful:
-            statuses.append(PackagePublishingStatus.PUBLISHED)
-        conditions.append(
             BinaryPackagePublishingHistory.status.is_in(statuses))
-
-        publications = IStore(BinaryPackagePublishingHistory).find(
-            BinaryPackagePublishingHistory, *conditions)
         return publications.order_by(
             DistroSeries.id,
             BinaryPackagePublishingHistory.pocket,
