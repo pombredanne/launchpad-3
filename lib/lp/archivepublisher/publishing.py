@@ -13,7 +13,10 @@ __metaclass__ = type
 from datetime import datetime
 import errno
 import hashlib
-from itertools import groupby
+from itertools import (
+    chain,
+    groupby,
+    )
 import logging
 from operator import attrgetter
 import os
@@ -450,12 +453,13 @@ class Publisher(object):
         # added to the dirty_pockets set.
 
         # Make the source publications query.
-        all_sources = IStore(SourcePackagePublishingHistory).find(
-            SourcePackagePublishingHistory,
-            *base_conditions(SourcePackagePublishingHistory))
-        all_sources.order_by(
-            SourcePackagePublishingHistory.distroseriesID,
-            SourcePackagePublishingHistory.pocket)
+        conditions = base_conditions(SourcePackagePublishingHistory)
+        conditions.append(
+            SourcePackagePublishingHistory.distroseriesID == DistroSeries.id)
+        source_suites = IStore(SourcePackagePublishingHistory).find(
+            (DistroSeries, SourcePackagePublishingHistory.pocket),
+            *conditions).config(distinct=True).order_by(
+                DistroSeries.id, SourcePackagePublishingHistory.pocket)
 
         # Make the binary publications query.
         conditions = base_conditions(BinaryPackagePublishingHistory)
@@ -464,28 +468,13 @@ class Publisher(object):
                 DistroArchSeries.id,
             DistroArchSeries.distroseriesID == DistroSeries.id,
             ])
-        all_binaries = IStore(BinaryPackagePublishingHistory).find(
-            BinaryPackagePublishingHistory, *conditions)
-        all_binaries.order_by(
-            DistroSeries.id,
-            BinaryPackagePublishingHistory.pocket,
-            DistroArchSeries.architecturetag)
+        binary_suites = IStore(BinaryPackagePublishingHistory).find(
+            (DistroSeries, BinaryPackagePublishingHistory.pocket),
+            *conditions).config(distinct=True).order_by(
+                DistroSeries.id, BinaryPackagePublishingHistory.pocket)
 
-        for (distroseries, pocket), sources in groupby(
-                all_sources, attrgetter("distroseries", "pocket")):
-            if (self.cannotModifySuite(distroseries, pocket)
-                or not self.isAllowed(distroseries, pocket)):
-                # We don't want to mark release pockets dirty in a
-                # stable distroseries, no matter what other bugs
-                # that precede here have dirtied it.
-                continue
-            self.markPocketDirty(distroseries, pocket)
-
-        for (distroarchseries, pocket), binaries in groupby(
-                all_binaries, attrgetter("distroarchseries", "pocket")):
-            distroseries = distroarchseries.distroseries
+        for distroseries, pocket in chain(source_suites, binary_suites):
             if self.isDirty(distroseries, pocket):
-                # Already dirtied by sources.
                 continue
             if (self.cannotModifySuite(distroseries, pocket)
                 or not self.isAllowed(distroseries, pocket)):
