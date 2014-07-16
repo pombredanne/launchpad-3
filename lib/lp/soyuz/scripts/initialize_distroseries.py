@@ -114,11 +114,12 @@ class InitializeDistroSeries:
             key=lambda parent: self.parent_ids.index(parent.id))
         self.arches = arches
         self.archindep_archtag = archindep_archtag
-        self.packagesets_ids = [
-            ensure_unicode(packageset) for packageset in packagesets]
-        if packagesets == [u'None']:
+        if packagesets is None:
+            self.packageset_ids = None
             self.packagesets = None
         else:
+            self.packagesets_ids = [
+                ensure_unicode(packageset) for packageset in packagesets]
             self.packagesets = bulk.load(
                 Packageset, [int(packageset) for packageset in packagesets])
         self.rebuild = rebuild
@@ -221,6 +222,8 @@ class InitializeDistroSeries:
         """
         if self.source_names_by_parent is not None:
             spns = self.source_names_by_parent.get(parent.id, None)
+        else:
+            spns = None
         if spns is not None and len(spns) == 0:
             # If no sources are selected in this parent, skip the check.
             return
@@ -252,6 +255,8 @@ class InitializeDistroSeries:
             ]
         if self.source_names_by_parent is not None:
             spns = self.source_names_by_parent.get(parent.id, None)
+        else:
+            spns = None
         if spns is not None and len(spns) == 0:
             # If no sources are selected in this parent, skip the check.
             return
