@@ -13,7 +13,10 @@ __metaclass__ = type
 from datetime import datetime
 import errno
 import hashlib
-from itertools import groupby
+from itertools import (
+    chain,
+    groupby,
+    )
 import logging
 from operator import attrgetter
 import os
@@ -449,43 +452,37 @@ class Publisher(object):
         # publications that are waiting to be deleted.  Each tuple is
         # added to the dirty_pockets set.
 
-        # Loop for each pocket in each distroseries:
-        for distroseries in self.distro.series:
-            for pocket in self.archive.getPockets():
-                if (self.cannotModifySuite(distroseries, pocket)
-                    or not self.isAllowed(distroseries, pocket)):
-                    # We don't want to mark release pockets dirty in a
-                    # stable distroseries, no matter what other bugs
-                    # that precede here have dirtied it.
-                    continue
-                conditions = base_conditions(SourcePackagePublishingHistory)
-                conditions.extend([
-                    SourcePackagePublishingHistory.pocket == pocket,
-                    SourcePackagePublishingHistory.distroseries ==
-                        distroseries,
-                    ])
+        # Make the source publications query.
+        conditions = base_conditions(SourcePackagePublishingHistory)
+        conditions.append(
+            SourcePackagePublishingHistory.distroseriesID == DistroSeries.id)
+        source_suites = IStore(SourcePackagePublishingHistory).find(
+            (DistroSeries, SourcePackagePublishingHistory.pocket),
+            *conditions).config(distinct=True).order_by(
+                DistroSeries.id, SourcePackagePublishingHistory.pocket)
 
-                # Make the source publications query.
-                sources = IStore(SourcePackagePublishingHistory).find(
-                    SourcePackagePublishingHistory, *conditions)
-                if not sources.is_empty():
-                    self.markPocketDirty(distroseries, pocket)
-                    # No need to check binaries if the pocket is already
-                    # dirtied from a source.
-                    continue
+        # Make the binary publications query.
+        conditions = base_conditions(BinaryPackagePublishingHistory)
+        conditions.extend([
+            BinaryPackagePublishingHistory.distroarchseriesID ==
+                DistroArchSeries.id,
+            DistroArchSeries.distroseriesID == DistroSeries.id,
+            ])
+        binary_suites = IStore(BinaryPackagePublishingHistory).find(
+            (DistroSeries, BinaryPackagePublishingHistory.pocket),
+            *conditions).config(distinct=True).order_by(
+                DistroSeries.id, BinaryPackagePublishingHistory.pocket)
 
-                # Make the binary publications query.
-                conditions = base_conditions(BinaryPackagePublishingHistory)
-                conditions.extend([
-                    BinaryPackagePublishingHistory.pocket == pocket,
-                    BinaryPackagePublishingHistory.distroarchseriesID ==
-                        DistroArchSeries.id,
-                    DistroArchSeries.distroseries == distroseries,
-                    ])
-                binaries = IStore(BinaryPackagePublishingHistory).find(
-                    BinaryPackagePublishingHistory, *conditions)
-                if not binaries.is_empty():
-                    self.markPocketDirty(distroseries, pocket)
+        for distroseries, pocket in chain(source_suites, binary_suites):
+            if self.isDirty(distroseries, pocket):
+                continue
+            if (self.cannotModifySuite(distroseries, pocket)
+                or not self.isAllowed(distroseries, pocket)):
+                # We don't want to mark release pockets dirty in a
+                # stable distroseries, no matter what other bugs
+                # that precede here have dirtied it.
+                continue
+            self.markPocketDirty(distroseries, pocket)
 
     def B_dominate(self, force_domination):
         """Second step in publishing: domination."""
