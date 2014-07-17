@@ -171,12 +171,10 @@ class TestPublisherSeries(TestNativePublishingBase):
     def checkLegalPocket(self, status, pocket):
         distroseries = self.factory.makeDistroSeries(
             distribution=self.ubuntutest, status=status)
-        spph = self.factory.makeSourcePackagePublishingHistory(
-            distroseries=distroseries, pocket=pocket)
         publisher = Publisher(
             self.logger, self.config, self.disk_pool,
             distroseries.main_archive)
-        return publisher.checkLegalPocket(distroseries, spph, False)
+        return publisher.checkLegalPocket(distroseries, pocket, False)
 
     def test_checkLegalPocket_allows_unstable_release(self):
         """Publishing to RELEASE in a DEVELOPMENT series is allowed."""
@@ -194,17 +192,17 @@ class TestPublisherSeries(TestNativePublishingBase):
             SeriesStatus.DEVELOPMENT, PackagePublishingPocket.UPDATES))
 
     def test_checkLegalPocket_forbids_stable_release(self):
-        """Publishing to RELEASE in a DEVELOPMENT series is forbidden."""
+        """Publishing to RELEASE in a CURRENT series is forbidden."""
         self.assertFalse(self.checkLegalPocket(
             SeriesStatus.CURRENT, PackagePublishingPocket.RELEASE))
 
     def test_checkLegalPocket_allows_stable_proposed(self):
-        """Publishing to PROPOSED in a DEVELOPMENT series is allowed."""
+        """Publishing to PROPOSED in a CURRENT series is allowed."""
         self.assertTrue(self.checkLegalPocket(
             SeriesStatus.CURRENT, PackagePublishingPocket.PROPOSED))
 
     def test_checkLegalPocket_allows_stable_updates(self):
-        """Publishing to UPDATES in a DEVELOPMENT series is allowed."""
+        """Publishing to UPDATES in a CURRENT series is allowed."""
         self.assertTrue(self.checkLegalPocket(
             SeriesStatus.CURRENT, PackagePublishingPocket.UPDATES))
 
@@ -218,11 +216,8 @@ class TestPublisherSeries(TestNativePublishingBase):
     def _publish(self, pocket, is_careful=False):
         """Publish the test IDistroSeries and its IDistroArchSeries."""
         self._ensurePublisher()
-        self.publisher.publishSources(
-            self.breezy_autotest, pocket, is_careful=is_careful)
-        for distroarchseries in self.breezy_autotest.architectures:
-            self.publisher.publishBinaries(
-                distroarchseries, pocket, is_careful=is_careful)
+        self.publisher.findAndPublishSources(is_careful=is_careful)
+        self.publisher.findAndPublishBinaries(is_careful=is_careful)
         self.layer.txn.commit()
 
     def checkPublicationsAreConsidered(self, pocket):
@@ -261,26 +256,30 @@ class TestPublisherSeries(TestNativePublishingBase):
         self.assertEqual(pub_source.status, PackagePublishingStatus.PENDING)
         self.assertEqual(pub_bin.status, PackagePublishingStatus.PENDING)
 
-    def checkSourceLookupForPocket(self, pocket, expected_result,
-                                   is_careful=False):
+    def checkSourceLookup(self, expected_result, is_careful=False):
         """Check the results of an IDistroSeries publishing lookup."""
         self._ensurePublisher()
         pub_records = self.publisher.getPendingSourcePublications(
-            self.breezy_autotest, pocket, is_careful=is_careful)
+            is_careful=is_careful)
+        pub_records = [
+            pub for pub in pub_records
+                if pub.distroseries == self.breezy_autotest]
 
-        self.assertEqual(pub_records.count(), len(expected_result))
+        self.assertEqual(len(expected_result), len(pub_records))
         self.assertEqual(
             [item.id for item in expected_result],
             [pub.id for pub in pub_records])
 
-    def checkBinaryLookupForPocket(self, pocket, expected_result,
-                                   is_careful=False):
+    def checkBinaryLookup(self, expected_result, is_careful=False):
         """Check the results of an IDistroArchSeries publishing lookup."""
         self._ensurePublisher()
         pub_records = self.publisher.getPendingBinaryPublications(
-            self.breezy_autotest_i386, pocket, is_careful=is_careful)
+            is_careful=is_careful)
+        pub_records = [
+            pub for pub in pub_records
+                if pub.distroarchseries == self.breezy_autotest_i386]
 
-        self.assertEqual(pub_records.count(), len(expected_result))
+        self.assertEqual(len(expected_result), len(pub_records))
         self.assertEqual(
             [item.id for item in expected_result],
             [pub.id for pub in pub_records])
@@ -329,223 +328,52 @@ class TestPublisherSeries(TestNativePublishingBase):
         self.checkPublicationsAreConsidered(PackagePublishingPocket.UPDATES)
         self.checkPublicationsAreConsidered(PackagePublishingPocket.RELEASE)
 
-    def testPublicationLookUpForUnstableDistroSeries(self):
-        """Source publishing record lookup for a unstable DistroSeries.
+    def testSourcePublicationLookUp(self):
+        """Source publishing record lookup.
 
-        Check if Publisher.getPendingSourcePublications() works properly for
-        a DistroSeries when it is still in development, 'unreleased'.
+        Check if Publisher.getPendingSourcePublications() returns only
+        pending publications.
         """
         pub_pending_release, pub_published_release, pub_pending_updates = (
             self._createDefaultSourcePublications())
 
-        # Usual publication procedure for a distroseries in development
-        # state only 'pending' publishing records for pocket RELEASE
-        # are published.
-        self.checkSourceLookupForPocket(
-            PackagePublishingPocket.RELEASE,
-            expected_result=[pub_pending_release])
+        # Normally, only pending records are considered.
+        self.checkSourceLookup(
+            expected_result=[pub_pending_release, pub_pending_updates])
 
-        # This step is unusual but checks if the pocket restriction also
-        # work for other pockets than the RELEASE.
-        self.checkSourceLookupForPocket(
-            PackagePublishingPocket.UPDATES,
-            expected_result=[pub_pending_updates])
+        # In careful mode, both pending and published records are
+        # considered, ordered by distroseries, pocket, ID.
+        self.checkSourceLookup(
+            expected_result=[
+                pub_published_release,
+                pub_pending_release,
+                pub_pending_updates,
+                ],
+            is_careful=True)
 
-        # Restricting to a pocket with no publication returns an
-        # empty SQLResult.
-        self.checkSourceLookupForPocket(
-            PackagePublishingPocket.BACKPORTS, expected_result=[])
+    def testBinaryPublicationLookUp(self):
+        """Binary publishing record lookup.
 
-        # Using the 'careful' mode results in the consideration
-        # of every 'pending' and 'published' records present in
-        # the given pocket. The order is also important, NEWER first.
-        self.checkSourceLookupForPocket(
-            PackagePublishingPocket.RELEASE, is_careful=True,
-            expected_result=[pub_published_release, pub_pending_release])
-
-    def testPublicationLookUpForStableDistroSeries(self):
-        """Source publishing record lookup for a stable/released DistroSeries.
-
-        Check if Publisher.getPendingSourcePublications() works properly for
-        a DistroSeries when it is not in development anymore, i.e.,
-        'released'.
-        """
-        pub_pending_release, pub_published_release, pub_pending_updates = (
-            self._createDefaultSourcePublications())
-
-        # Release 'breezy-autotest'.
-        self.breezy_autotest.status = SeriesStatus.CURRENT
-        self.layer.commit()
-
-        # Since the distroseries is stable, nothing is returned because
-        # RELEASE pocket is ignored, in both modes, careful or not.
-        self.checkSourceLookupForPocket(
-            PackagePublishingPocket.RELEASE, expected_result=[])
-
-        # XXX cprov 2007-01-05: it means that "careful" mode is useless for
-        # rebuilding released archives.
-        # This is quite right, IMHO, since republication of a released
-        # archive will, obviously contain new timestamps, which would freak
-        # mirrors/clients out.
-        # At the end, "careful" mode is such a gross hack.
-        self.checkSourceLookupForPocket(
-            PackagePublishingPocket.RELEASE, is_careful=True,
-            expected_result=[])
-
-        # Publications targeted to other pockets than RELEASE are
-        # still reachable.
-        self.checkSourceLookupForPocket(
-            PackagePublishingPocket.UPDATES,
-            expected_result=[pub_pending_updates])
-
-    def testPublicationLookUpForFrozenDistroSeries(self):
-        """Source publishing record lookup for a frozen DistroSeries.
-
-        Check if Publisher.getPendingSourcePublications() works properly for
-        a DistroSeries when it is in FROZEN state.
-        """
-        pub_pending_release, pub_published_release, pub_pending_updates = (
-            self._createDefaultSourcePublications())
-        # Freeze 'breezy-autotest'.
-        self.breezy_autotest.status = SeriesStatus.FROZEN
-        self.layer.commit()
-
-        # Usual publication procedure for a distroseries in development
-        # state only 'pending' publishing records for pocket RELEASE
-        # are published.
-        self.checkSourceLookupForPocket(
-            PackagePublishingPocket.RELEASE,
-            expected_result=[pub_pending_release])
-
-        # This step is unusual but checks if the pocket restriction also
-        # work for other pockets than the RELEASE.
-        self.checkSourceLookupForPocket(
-            PackagePublishingPocket.UPDATES,
-            expected_result=[pub_pending_updates])
-
-        # Restricting to a pocket with no publication returns an
-        # empty SQLResult.
-        self.checkSourceLookupForPocket(
-            PackagePublishingPocket.BACKPORTS, expected_result=[])
-
-        # Using the 'careful' mode results in the consideration
-        # of every 'pending' and 'published' records present in
-        # the given pocket.
-        self.checkSourceLookupForPocket(
-            PackagePublishingPocket.RELEASE, is_careful=True,
-            expected_result=[pub_published_release, pub_pending_release])
-
-    def testPublicationLookUpForUnstableDistroArchSeries(self):
-        """Binary publishing record lookup for a unstable DistroArchSeries.
-
-        Check if Publisher.getPendingBinaryPublications() works properly for
-        a DistroArchSeries when it is still in DEVELOPMENT, i.e.,
-        'unstable'.
+        Check if Publisher.getPendingBinaryPublications() returns only
+        pending publications.
         """
         pub_pending_release, pub_published_release, pub_pending_updates = (
             self._createDefaultBinaryPublications())
         self.layer.commit()
 
-        # Usual publication procedure for a distroseries in development
-        # state only 'pending' publishing records for pocket RELEASE
-        # are published.
-        self.checkBinaryLookupForPocket(
-            PackagePublishingPocket.RELEASE,
-            expected_result=[pub_pending_release])
+        # Normally, only pending records are considered.
+        self.checkBinaryLookup(
+            expected_result=[pub_pending_release, pub_pending_updates])
 
-        # This step is unusual but checks if the pocket restriction also
-        # work for other pockets than the RELEASE.
-        self.checkBinaryLookupForPocket(
-            PackagePublishingPocket.UPDATES,
-            expected_result=[pub_pending_updates])
-
-        # Restricting to a pocket with no publication returns an
-        # empty SQLResult.
-        self.checkBinaryLookupForPocket(
-            PackagePublishingPocket.BACKPORTS, expected_result=[])
-
-        # Using the 'careful' mode results in the consideration
-        # of every 'pending' and 'published' records present in
-        # the given pocket.
-        self.checkBinaryLookupForPocket(
-            PackagePublishingPocket.RELEASE, is_careful=True,
-            expected_result=[pub_published_release, pub_pending_release])
-
-    def testPublicationLookUpForStableDistroArchSeries(self):
-        """Binary publishing record lookup for released DistroArchSeries.
-
-        Check if Publisher.getPendingBinaryPublications() works properly for
-        a DistroArchSeries when it is not in development anymore, i.e.,
-        'released'.
-
-        Released DistroArchSeries can't be modified, so we expect empty
-        results in the lookups, even if there are pending publishing
-        records available.
-        """
-        pub_pending_release, pub_published_release, pub_pending_updates = (
-            self._createDefaultBinaryPublications())
-
-        # Release 'breezy-autotest'
-        self.breezy_autotest.status = SeriesStatus.CURRENT
-        self.layer.commit()
-
-        # Since the distroseries is stable, nothing is returned because
-        # RELEASE pocket is ignored, in both modes, careful or not.
-        self.checkBinaryLookupForPocket(
-            PackagePublishingPocket.RELEASE, expected_result=[])
-
-        # XXX cprov 2007-01-05: it means that "careful" mode is useless for
-        # rebuilding released archives.
-        # This is quite right, IMHO, since republication of a released
-        # archive will, obviously contain new timestamps, which would freak
-        # mirrors/clients out.
-        # At the end, "careful" mode is such a gross hack.
-        self.checkBinaryLookupForPocket(
-            PackagePublishingPocket.RELEASE, is_careful=True,
-            expected_result=[])
-
-        # Publications targeted to other pockets than RELEASE are
-        # still reachable.
-        self.checkBinaryLookupForPocket(
-            PackagePublishingPocket.UPDATES,
-            expected_result=[pub_pending_updates])
-
-    def testPublicationLookUpForFrozenDistroArchSeries(self):
-        """Binary publishing record lookup for a frozen DistroArchSeries.
-
-        Check if Publisher.getPendingBinaryPublications() works properly for
-        a DistroArchSeries when it is frozen state.
-        """
-        pub_pending_release, pub_published_release, pub_pending_updates = (
-            self._createDefaultBinaryPublications())
-        # Freeze 'breezy-autotest'
-        self.breezy_autotest.status = SeriesStatus.FROZEN
-        self.layer.commit()
-
-        # Usual publication procedure for a distroseries in development
-        # state only 'pending' publishing records for pocket RELEASE
-        # are published.
-        self.checkBinaryLookupForPocket(
-            PackagePublishingPocket.RELEASE,
-            expected_result=[pub_pending_release])
-
-        # This step is unusual but checks if the pocket restriction also
-        # work for other pockets than the RELEASE.
-        self.checkBinaryLookupForPocket(
-            PackagePublishingPocket.UPDATES,
-            expected_result=[pub_pending_updates])
-
-        # Restricting to a pocket with no publication returns an
-        # empty SQLResult.
-        self.checkBinaryLookupForPocket(
-            PackagePublishingPocket.BACKPORTS, expected_result=[])
-
-        # Using the 'careful' mode results in the consideration
-        # of every 'pending' and 'published' records present in
-        # the given pocket.
-        self.checkBinaryLookupForPocket(
-            PackagePublishingPocket.RELEASE, is_careful=True,
-            expected_result=[pub_published_release, pub_pending_release])
+        # In careful mode, both pending and published records are
+        # considered, ordered by distroseries, pocket, architecture tag, ID.
+        self.checkBinaryLookup(
+            expected_result=[
+                pub_published_release,
+                pub_pending_release,
+                pub_pending_updates,
+                ],
+            is_careful=True)
 
     def test_publishing_disabled_distroarchseries(self):
         # Disabled DASes will not receive new publications at all.
@@ -946,6 +774,12 @@ class TestPublisher(TestPublisherBase):
             filecontent='Hello world',
             status=PackagePublishingStatus.PUBLISHED)
 
+        # Make everything other than breezy-autotest OBSOLETE so that they
+        # aren't republished.
+        for series in self.ubuntutest.series:
+            if series.name != "breezy-autotest":
+                series.status = SeriesStatus.OBSOLETE
+
         # A careful publisher run will re-publish the PUBLISHED records,
         # then we will have a corresponding dirty_pocket entry.
         publisher.A_publish(True)
@@ -1031,7 +865,9 @@ class TestPublisher(TestPublisherBase):
         # Remove security proxy so that the publisher can call our fake
         # method.
         publisher.distro = removeSecurityProxy(publisher.distro)
-        publisher.distro['hoary-test'].status = SeriesStatus.OBSOLETE
+        pub_source = self.getPubSource(distroseries=self.breezy_autotest)
+        self.getPubBinaries(
+            distroseries=self.breezy_autotest, pub_source=pub_source)
 
         for status in (SeriesStatus.OBSOLETE, SeriesStatus.FUTURE):
             naked_breezy_autotest = publisher.distro['breezy-autotest']
@@ -1055,6 +891,11 @@ class TestPublisher(TestPublisherBase):
         # Remove security proxy so that the publisher can call our fake
         # method.
         publisher.distro = removeSecurityProxy(publisher.distro)
+        pub_source = self.getPubSource(
+            distroseries=self.breezy_autotest, archive=test_archive)
+        self.getPubBinaries(
+            distroseries=self.breezy_autotest, archive=test_archive,
+            pub_source=pub_source)
 
         for status in (SeriesStatus.OBSOLETE, SeriesStatus.FUTURE):
             naked_breezy_autotest = publisher.distro['breezy-autotest']
@@ -1064,12 +905,13 @@ class TestPublisher(TestPublisherBase):
 
             publisher.A_publish(False)
 
+            source_args = [
+                args[:2] for args in publisher.publishSources.extract_args()]
+            self.assertIn((naked_breezy_autotest, RELEASE), source_args)
+            binary_args = [
+                args[:2] for args in publisher.publishBinaries.extract_args()]
             self.assertIn(
-                (naked_breezy_autotest, RELEASE),
-                publisher.publishSources.extract_args())
-            self.assertIn(
-                (naked_breezy_autotest.architectures[0], RELEASE),
-                publisher.publishBinaries.extract_args())
+                (naked_breezy_autotest.architectures[0], RELEASE), binary_args)
 
     def testPublisherBuilderFunctions(self):
         """Publisher can be initialized via provided helper function.
@@ -1673,6 +1515,12 @@ class TestPublisher(TestPublisherBase):
             self.ubuntutest.main_archive)
         self.getPubSource(filecontent='Hello world', pocket=RELEASE)
         self.getPubSource(filecontent='Hello world', pocket=BACKPORTS)
+
+        # Make everything other than breezy-autotest OBSOLETE so that they
+        # aren't republished.
+        for series in self.ubuntutest.series:
+            if series.name != "breezy-autotest":
+                series.status = SeriesStatus.OBSOLETE
 
         publisher.A_publish(True)
         publisher.C_writeIndexes(False)
