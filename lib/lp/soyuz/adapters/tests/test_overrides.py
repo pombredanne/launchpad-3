@@ -119,21 +119,37 @@ class TestFromExistingOverridePolicy(TestCaseWithFactory):
     def test_binary_overrides(self):
         # When a binary is published in the given distroarchseries, the
         # overrides are returned.
-        bpph = self.factory.makeBinaryPackagePublishingHistory()
-        distroseries = bpph.distroarchseries.distroseries
-        distroseries.nominatedarchindep = bpph.distroarchseries
+        distroseries = self.factory.makeDistroSeries()
+        bpph1 = self.factory.makeBinaryPackagePublishingHistory(
+            archive=distroseries.main_archive,
+            distroarchseries=self.factory.makeDistroArchSeries(distroseries))
+        bpph2 = self.factory.makeBinaryPackagePublishingHistory(
+            archive=distroseries.main_archive, pocket=bpph1.pocket,
+            distroarchseries=self.factory.makeDistroArchSeries(distroseries))
+        distroseries.nominatedarchindep = bpph1.distroarchseries
         policy = FromExistingOverridePolicy()
         overrides = policy.calculateBinaryOverrides(
-            distroseries.main_archive, distroseries, bpph.pocket,
+            distroseries.main_archive, distroseries, bpph1.pocket,
             [BinaryOverride(
-                bpph.binarypackagerelease.binarypackagename, None)])
+                bpph1.binarypackagerelease.binarypackagename,
+                bpph1.distroarchseries.architecturetag),
+             BinaryOverride(
+                bpph2.binarypackagerelease.binarypackagename,
+                bpph2.distroarchseries.architecturetag),
+            ])
         expected = [
             BinaryOverride(
-                bpph.binarypackagerelease.binarypackagename,
-                bpph.distroarchseries.architecturetag,
-                component=bpph.component, section=bpph.section,
-                priority=bpph.priority)]
-        self.assertEqual(expected, overrides)
+                bpph1.binarypackagerelease.binarypackagename,
+                bpph1.distroarchseries.architecturetag,
+                component=bpph1.component, section=bpph1.section,
+                priority=bpph1.priority),
+            BinaryOverride(
+                bpph2.binarypackagerelease.binarypackagename,
+                bpph2.distroarchseries.architecturetag,
+                component=bpph2.component, section=bpph2.section,
+                priority=bpph2.priority),
+            ]
+        self.assertContentEqual(expected, overrides)
 
     def test_binary_overrides_constant_query_count(self):
         # The query count is constant, no matter how many bpn-das pairs are
