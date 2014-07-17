@@ -89,7 +89,7 @@ class InitializationHelperTestCase(TestCaseWithFactory):
                          pocket=PackagePublishingPocket.RELEASE):
         if packages is None:
             packages = {'udev': '0.1-1', 'libc6': '2.8-1',
-                'postgresql': '9.0-1', 'chromium': '3.6'}
+                'postgresql': '9.0-1', 'chromium': '3.6', 'vim': '7.4'}
         for package in packages.keys():
             spn = self.factory.getOrMakeSourcePackageName(package)
             spph = self.factory.makeSourcePackagePublishingHistory(
@@ -871,6 +871,8 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         self.assertRaises(
             NoSuchPackageSet, getUtility(IPackagesetSet).getByName,
             child, u'test2')
+        self.assertEqual(child.sourcecount, 0)
+        self.assertEqual(child.binarycount, 0)  # Chromium is FTBFS
 
     def test_copy_limit_packagesets_none(self):
         # If a parent series has packagesets, we want to copy all of them
@@ -882,7 +884,7 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
             u'test2', u'test 2 packageset', self.parent.owner,
             distroseries=self.parent)
         packages_test1 = ('udev', 'chromium', 'libc6')
-        packages_test2 = ('mozilla-firefox', 'vim')
+        packages_test2 = ('postgresql', 'vim')
         for pkg in packages_test1:
             test1.addSources(pkg)
         for pkg in packages_test2:
@@ -908,7 +910,7 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         child.updatePackageCount()
         self.assertEqual(child.sourcecount,
             len(packages_test1) + len(packages_test2))
-        self.assertEqual(child.binarycount, 2)  # Chromium is FTBFS
+        self.assertEqual(child.binarycount, 4)  # Chromium is FTBFS
 
     def test_rebuild_flag(self):
         # No binaries will get copied if we specify rebuild=True.
