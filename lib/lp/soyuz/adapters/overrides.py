@@ -67,8 +67,8 @@ class IBinaryOverride(IOverride):
 
     binary_package_name = Attribute(
         "The IBinaryPackageName that's being overridden")
-    distro_arch_series = Attribute(
-        "The IDistroArchSeries for the publication")
+    architecture_tag = Attribute(
+        "The architecture tag for the publication")
     priority = Attribute(
         "The PackagePublishingPriority that's being overridden")
     phased_update_percentage = Attribute(
@@ -117,18 +117,18 @@ class BinaryOverride(Override):
     """See `IBinaryOverride`."""
     implements(IBinaryOverride)
 
-    def __init__(self, binary_package_name, distro_arch_series, component,
+    def __init__(self, binary_package_name, architecture_tag, component,
                  section, priority, phased_update_percentage):
         super(BinaryOverride, self).__init__(component, section)
         self.binary_package_name = binary_package_name
-        self.distro_arch_series = distro_arch_series
+        self.architecture_tag = architecture_tag
         self.priority = priority
         self.phased_update_percentage = phased_update_percentage
 
     def __eq__(self, other):
         return (
             self.binary_package_name == other.binary_package_name and
-            self.distro_arch_series == other.distro_arch_series and
+            self.architecture_tag == other.architecture_tag and
             self.component == other.component and
             self.section == other.section and
             self.priority == other.priority and
@@ -136,11 +136,11 @@ class BinaryOverride(Override):
 
     def __repr__(self):
         return (
-            "<%s at %x binary_package_name=%r distro_arch_series=%r "
+            "<%s at %x binary_package_name=%r architecture_tag=%r "
             "component=%r section=%r priority=%r "
             "phased_update_percentage=%r>" %
             (self.__class__.__name__, id(self), self.binary_package_name,
-             self.distro_arch_series, self.component, self.section,
+             self.architecture_tag, self.component, self.section,
              self.priority, self.phased_update_percentage))
 
 
@@ -205,7 +205,7 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
 
     Override policy that returns the SourcePackageName, component and
     section for the latest published source publication, or the
-    BinaryPackageName, DistroArchSeries, component, section and priority
+    BinaryPackageName, architecture_tag, component, section and priority
     for the latest published binary publication.
     """
 
@@ -289,9 +289,11 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
                 (BinaryPackageName, DistroArchSeries, Component, Section,
                 None)),
             pre_iter_hook=eager_load)
+        # XXX: This should return None for arch-indep, not the
+        # nominatedarchindep archtag.
         return [
             BinaryOverride(
-                name, das, component, section, priority,
+                name, das.architecturetag, component, section, priority,
                 self.phased_update_percentage)
             for name, das, component, section, priority in already_published]
 
@@ -348,9 +350,9 @@ class UnknownOverridePolicy(BaseOverridePolicy):
             IComponentSet)['universe']
         return [
             BinaryOverride(
-                binary, das, default_component, None, None,
+                binary, architecture_tag, default_component, None, None,
                 self.phased_update_percentage)
-            for binary, das in calculate_target_das(distroseries, binaries)]
+            for binary, architecture_tag in binaries]
 
 
 class UbuntuOverridePolicy(FromExistingOverridePolicy,
@@ -385,7 +387,7 @@ class UbuntuOverridePolicy(FromExistingOverridePolicy,
         existing = set(
             (
                 override.binary_package_name,
-                override.distro_arch_series.architecturetag,
+                override.architecture_tag,
             )
             for override in overrides)
         missing = total.difference(existing)

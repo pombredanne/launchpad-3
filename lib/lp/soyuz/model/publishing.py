@@ -1479,11 +1479,8 @@ class PublishingSet:
             overrides = policy.calculateBinaryOverrides(
                 archive, distroseries, pocket, bpn_archtag.keys())
             for override in overrides:
-                if override.distro_arch_series is None:
-                    continue
                 bpph = bpn_archtag[
-                    (override.binary_package_name,
-                     override.distro_arch_series.architecturetag)]
+                    (override.binary_package_name, override.architecture_tag)]
                 new_component = override.component or bpph.component
                 new_section = override.section or bpph.section
                 new_priority = override.priority or bpph.priority

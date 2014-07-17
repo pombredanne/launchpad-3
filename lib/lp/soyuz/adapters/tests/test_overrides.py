@@ -128,8 +128,8 @@ class TestOverrides(TestCaseWithFactory):
         expected = [
             BinaryOverride(
                 bpph.binarypackagerelease.binarypackagename,
-                bpph.distroarchseries, bpph.component, bpph.section,
-                bpph.priority, None)]
+                bpph.distroarchseries.architecturetag, bpph.component,
+                bpph.section, bpph.priority, None)]
         self.assertEqual(expected, overrides)
 
     def test_binary_overrides_constant_query_count(self):
@@ -227,8 +227,8 @@ class TestOverrides(TestCaseWithFactory):
         universe = getUtility(IComponentSet)['universe']
         expected = [
             BinaryOverride(
-                bpph.binarypackagerelease.binarypackagename,
-                bpph.distroarchseries, universe, None, None, None)]
+                bpph.binarypackagerelease.binarypackagename, None, universe,
+                None, None, None)]
         self.assertEqual(expected, overrides)
 
     def test_ubuntu_override_policy_sources(self):
@@ -284,23 +284,23 @@ class TestOverrides(TestCaseWithFactory):
             bpns.append((bpn, distroarchseries.architecturetag))
             expected.append(
                 BinaryOverride(
-                    bpn, distroarchseries, bpph.component, bpph.section,
-                    bpph.priority, None))
+                    bpn, distroarchseries.architecturetag, bpph.component,
+                    bpph.section, bpph.priority, None))
         for i in xrange(2):
             distroarchseries = self.factory.makeDistroArchSeries(
                 distroseries=distroseries)
             bpns.append((bpn, distroarchseries.architecturetag))
             expected.append(
                 BinaryOverride(
-                    bpn, distroarchseries, universe, None, None, None))
+                    bpn, distroarchseries.architecturetag, universe, None,
+                    None, None))
         distroseries.nominatedarchindep = distroarchseries
         policy = UbuntuOverridePolicy()
         overrides = policy.calculateBinaryOverrides(
             distroseries.main_archive, distroseries, pocket, bpns)
         self.assertEqual(5, len(overrides))
-        key = attrgetter("binary_package_name.name",
-            "distro_arch_series.architecturetag",
-            "component.name")
+        key = attrgetter(
+            "binary_package_name.name", "architecture_tag", "component.name")
         sorted_expected = sorted(expected, key=key)
         sorted_overrides = sorted(overrides, key=key)
         self.assertEqual(sorted_expected, sorted_overrides)
@@ -343,21 +343,22 @@ class TestOverrides(TestCaseWithFactory):
         bpns.append((bpn, distroarchseries.architecturetag))
         expected.append(
             BinaryOverride(
-                bpn, distroarchseries, bpph.component, bpph.section,
-                bpph.priority, 50))
+                bpn, distroarchseries.architecturetag, bpph.component,
+                bpph.section, bpph.priority, 50))
         distroarchseries = self.factory.makeDistroArchSeries(
             distroseries=distroseries)
         bpns.append((bpn, distroarchseries.architecturetag))
         expected.append(
-            BinaryOverride(bpn, distroarchseries, universe, None, None, 50))
+            BinaryOverride(
+                bpn, distroarchseries.architecturetag, universe, None, None,
+                50))
         distroseries.nominatedarchindep = distroarchseries
         policy = UbuntuOverridePolicy(phased_update_percentage=50)
         overrides = policy.calculateBinaryOverrides(
             distroseries.main_archive, distroseries, pocket, bpns)
         self.assertEqual(2, len(overrides))
-        key = attrgetter("binary_package_name.name",
-            "distro_arch_series.architecturetag",
-            "component.name")
+        key = attrgetter(
+            "binary_package_name.name", "architecture_tag", "component.name")
         sorted_expected = sorted(expected, key=key)
         sorted_overrides = sorted(overrides, key=key)
         self.assertEqual(sorted_expected, sorted_overrides)
