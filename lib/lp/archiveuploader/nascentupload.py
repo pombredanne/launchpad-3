@@ -50,6 +50,7 @@ from lp.soyuz.adapters.overrides import (
     UnknownOverridePolicy,
     )
 from lp.soyuz.enums import PackagePublishingStatus
+from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.queue import QueueInconsistentStateError
 
 
@@ -706,7 +707,11 @@ class NascentUpload:
                 (self.policy.archive.is_primary and self.is_partner)):
             use_default_component = False
 
+        unknown_policy = UnknownOverridePolicy()
+
         for uploaded_file in self.changes.files:
+            upload_component = getUtility(IComponentSet)[
+                uploaded_file.component_name]
             if isinstance(uploaded_file, DSCFile):
                 self.logger.debug(
                     "Checking for %s/%s source ancestry"
@@ -724,12 +729,12 @@ class NascentUpload:
                             "%s: (source) NEW", uploaded_file.package)
                         uploaded_file.new = True
                     if use_default_component:
-                        ancestry = SourceOverride(
-                            None,
-                            UnknownOverridePolicy.getComponentOverride(
-                                uploaded_file.component_name,
-                                return_component=True),
-                            None)
+                        [ancestry] = unknown_policy.calculateSourceOverrides(
+                            self.policy.archive, self.policy.distroseries,
+                            self.policy.pocket,
+                            [SourceOverride(
+                                uploaded_file.package, upload_component,
+                                None)])
                 if override_at_all and ancestry is not None:
                     self.overrideSourceFile(uploaded_file, ancestry)
             elif isinstance(uploaded_file, BaseBinaryUploadFile):
@@ -774,6 +779,12 @@ class NascentUpload:
                             uploaded_file.component_name,
                             return_component=True),
                         None, None, None)
+                    [ancestry] = unknown_policy.calculateBinaryOverrides(
+                        self.policy.archive, self.policy.distroseries,
+                        self.policy.pocket,
+                        [BinaryOverride(
+                            uploaded_file.package, upload_component, None,
+                            None, None, None)])
                 if override_at_all and ancestry is not None:
                     self.overrideBinaryFile(uploaded_file, ancestry)
 
