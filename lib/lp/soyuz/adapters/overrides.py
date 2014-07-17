@@ -27,6 +27,7 @@ from zope.interface import (
     implements,
     Interface,
     )
+from zope.security.proxy import isinstance as zope_isinstance
 
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.database import bulk
@@ -104,6 +105,12 @@ class SourceOverride(Override):
             self.source_package_name == other.source_package_name and
             self.component == other.component and
             self.section == other.section)
+
+    def __repr__(self):
+        return '<%s for %s (%s, %s)>' % (
+            self.__class__.__name__, self.source_package_name.name,
+            self.component.name if self.component else 'None',
+            self.section.name if self.section else 'None')
 
 
 class BinaryOverride(Override):
@@ -315,7 +322,7 @@ class UnknownOverridePolicy(BaseOverridePolicy):
     @classmethod
     def getComponentOverride(cls, component=None, return_component=False):
         # component can be a Component object or a component name.
-        if isinstance(component, Component):
+        if zope_isinstance(component, Component):
             component = component.name
         override_component_name = cls.DEBIAN_COMPONENT_OVERRIDE_MAP.get(
             component, cls.DEFAULT_OVERRIDE_COMPONENT)

@@ -8,6 +8,7 @@ from operator import attrgetter
 from testtools.matchers import Equals
 from zope.component import getUtility
 
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.database import bulk
 from lp.services.database.sqlbase import flush_database_caches
 from lp.soyuz.adapters.overrides import (
@@ -179,19 +180,38 @@ class TestOverrides(TestCaseWithFactory):
         self.assertEqual(universe_component, component)
 
     def test_unknown_sources(self):
-        # If the unknown policy is used, it does no checks, just returns the
-        # defaults.
-        spph = self.factory.makeSourcePackagePublishingHistory()
-        policy = UnknownOverridePolicy()
-        overrides = policy.calculateSourceOverrides(
-            spph.distroseries.main_archive, spph.distroseries, spph.pocket,
-            [SourceOverride(
-                spph.sourcepackagerelease.sourcepackagename, None, None)])
-        universe = getUtility(IComponentSet)['universe']
+        # The unknown policy uses a default component based on the
+        # pre-override component.
+        for component in ('contrib', 'non-free'):
+            self.factory.makeComponent(component)
+        distroseries = self.factory.makeDistroSeries()
+        spns = [self.factory.makeSourcePackageName() for i in range(3)]
+        overrides = UnknownOverridePolicy().calculateSourceOverrides(
+            distroseries.main_archive, distroseries,
+            PackagePublishingPocket.RELEASE,
+            [SourceOverride(spn, getUtility(IComponentSet)[component], None)
+             for spn, component in zip(spns, ('main', 'contrib', 'non-free'))])
         expected = [
-            SourceOverride(
-                spph.sourcepackagerelease.sourcepackagename, universe,
-                None)]
+            SourceOverride(spn, getUtility(IComponentSet)[component], None)
+            for spn, component in
+            zip(spns, ('universe', 'multiverse', 'multiverse'))]
+        self.assertEqual(expected, overrides)
+
+    def test_unknown_sources_ppa(self):
+        # The unknown policy overrides everything to the archive's
+        # default component, if it has one.
+        for component in ('contrib', 'non-free'):
+            self.factory.makeComponent(component)
+        distroseries = self.factory.makeDistroSeries()
+        spns = [self.factory.makeSourcePackageName() for i in range(3)]
+        overrides = UnknownOverridePolicy().calculateSourceOverrides(
+            self.factory.makeArchive(distribution=distroseries.distribution),
+            distroseries, PackagePublishingPocket.RELEASE,
+            [SourceOverride(spn, getUtility(IComponentSet)[component], None)
+             for spn, component in zip(spns, ('main', 'contrib', 'non-free'))])
+        expected = [
+            SourceOverride(spn, getUtility(IComponentSet)[component], None)
+            for spn, component in zip(spns, ('main', 'main', 'main'))]
         self.assertEqual(expected, overrides)
 
     def test_unknown_binaries(self):
