@@ -149,15 +149,13 @@ class IOverridePolicy(Interface):
     phased_update_percentage = Attribute(
         "The phased update percentage to apply to binary publications.")
 
-    def calculateSourceOverrides(archive, distroseries, pocket, sources,
-                                 source_component=None):
+    def calculateSourceOverrides(archive, distroseries, pocket, sources):
         """Calculate source overrides.
 
         :param archive: The target `IArchive`.
         :param distroseries: The target `IDistroSeries`.
         :param pocket: The target `PackagePublishingPocket`.
         :param sources: A tuple of `ISourceOverride`s.
-        :param source_component: The sources' `IComponent` (optional).
 
         :return: A list of `ISourceOverride`
         """
@@ -186,8 +184,7 @@ class BaseOverridePolicy:
         super(BaseOverridePolicy, self).__init__()
         self.phased_update_percentage = phased_update_percentage
 
-    def calculateSourceOverrides(self, archive, distroseries, pocket,
-                                 sources, source_component=None):
+    def calculateSourceOverrides(self, archive, distroseries, pocket, sources):
         raise NotImplementedError()
 
     def calculateBinaryOverrides(self, archive, distroseries, pocket,
@@ -214,7 +211,7 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
         return status
 
     def calculateSourceOverrides(self, archive, distroseries, pockets, sources,
-                                 source_component=None, include_deleted=False):
+                                 include_deleted=False):
         def eager_load(rows):
             bulk.load(Component, (row[1] for row in rows))
             bulk.load(Section, (row[2] for row in rows))
@@ -327,15 +324,15 @@ class UnknownOverridePolicy(BaseOverridePolicy):
         else:
             return override_component_name
 
-    def calculateSourceOverrides(self, archive, distroseries, pocket,
-                                 sources, source_component=None):
-        default_component = (
-            archive.default_component or
-            UnknownOverridePolicy.getComponentOverride(
-                source_component, return_component=True))
-        spns = [override.source_package_name for override in sources]
+    def calculateSourceOverrides(self, archive, distroseries, pocket, sources):
         return [
-            SourceOverride(spn, default_component, None) for spn in spns]
+            SourceOverride(
+                override.source_package_name,
+                (archive.default_component or
+                 UnknownOverridePolicy.getComponentOverride(
+                     override.component, return_component=True)),
+                 None)
+            for override in sources]
 
     def calculateBinaryOverrides(self, archive, distroseries, pocket,
                                  binaries):
@@ -356,20 +353,18 @@ class UbuntuOverridePolicy(FromExistingOverridePolicy,
     unknown policy.
     """
 
-    def calculateSourceOverrides(self, archive, distroseries, pocket,
-                                 sources, source_component=None):
+    def calculateSourceOverrides(self, archive, distroseries, pocket, sources):
         spns = [override.source_package_name for override in sources]
         total = set(spns)
         overrides = FromExistingOverridePolicy.calculateSourceOverrides(
-            self, archive, distroseries, pocket, sources, source_component,
-            include_deleted=True)
+            self, archive, distroseries, pocket, sources, include_deleted=True)
         existing = set(override.source_package_name for override in overrides)
         missing = total.difference(existing)
         if missing:
             unknown = UnknownOverridePolicy.calculateSourceOverrides(
                 self, archive, distroseries, pocket,
-                [SourceOverride(spn, None, None) for spn in missing],
-                source_component)
+                [override for override in sources
+                 if override.source_package_name in missing])
             overrides.extend(unknown)
         return overrides
 

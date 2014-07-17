@@ -532,8 +532,8 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             # metadata.
             defaults = UnknownOverridePolicy().calculateSourceOverrides(
                 self.target_archive, self.target_distroseries,
-                self.target_pocket, [SourceOverride(source_name, None, None)],
-                source_component)
+                self.target_pocket,
+                [SourceOverride(source_name, source_component, None)])
             self.addSourceOverride(defaults[0])
             if auto_approve:
                 auto_approve = self.target_archive.canAdministerQueue(
