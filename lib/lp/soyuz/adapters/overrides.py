@@ -107,10 +107,10 @@ class SourceOverride(Override):
             self.section == other.section)
 
     def __repr__(self):
-        return '<%s for %s (%s, %s)>' % (
-            self.__class__.__name__, self.source_package_name.name,
-            self.component.name if self.component else 'None',
-            self.section.name if self.section else 'None')
+        return (
+            "<%s at %x source_package_name=%r component=%r section=%r>" %
+            (self.__class__.__name__, id(self), self.source_package_name,
+             self.component, self.section))
 
 
 class BinaryOverride(Override):
@@ -135,12 +135,13 @@ class BinaryOverride(Override):
             self.phased_update_percentage == other.phased_update_percentage)
 
     def __repr__(self):
-        return ("<BinaryOverride at %x component=%r section=%r "
-            "binary_package_name=%r distro_arch_series=%r priority=%r "
+        return (
+            "<%s at %x binary_package_name=%r distro_arch_series=%r "
+            "component=%r section=%r priority=%r "
             "phased_update_percentage=%r>" %
-            (id(self), self.component, self.section, self.binary_package_name,
-             self.distro_arch_series, self.priority,
-             self.phased_update_percentage))
+            (self.__class__.__name__, id(self), self.binary_package_name,
+             self.distro_arch_series, self.component, self.section,
+             self.priority, self.phased_update_percentage))
 
 
 class IOverridePolicy(Interface):
