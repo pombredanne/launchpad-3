@@ -24,13 +24,13 @@ from lp.testing import (
     StormStatementRecorder,
     TestCaseWithFactory,
     )
-from lp.testing.layers import LaunchpadZopelessLayer
+from lp.testing.layers import ZopelessDatabaseLayer
 from lp.testing.matchers import HasQueryCount
 
 
-class TestOverrides(TestCaseWithFactory):
+class TestFromExistingOverridePolicy(TestCaseWithFactory):
 
-    layer = LaunchpadZopelessLayer
+    layer = ZopelessDatabaseLayer
 
     def test_no_source_overrides(self):
         # If the spn is not published in the given archive/distroseries,
@@ -159,6 +159,11 @@ class TestOverrides(TestCaseWithFactory):
                  for bpn, das in bpns])
         self.assertThat(recorder, HasQueryCount(Equals(4)))
 
+
+class TestUnknownOverridePolicy(TestCaseWithFactory):
+
+    layer = ZopelessDatabaseLayer
+
     def test_getComponentOverride_default_name(self):
         # getComponentOverride returns the default component name when an
         # unknown component name is passed.
@@ -237,6 +242,11 @@ class TestOverrides(TestCaseWithFactory):
                 bpph.binarypackagerelease.binarypackagename, None, universe,
                 None, None, None)]
         self.assertEqual(expected, overrides)
+
+
+class TestUbuntuOverridePolicy(TestCaseWithFactory):
+
+    layer = ZopelessDatabaseLayer
 
     def test_ubuntu_override_policy_sources(self):
         # The Ubuntu policy incorporates both the existing and the unknown
