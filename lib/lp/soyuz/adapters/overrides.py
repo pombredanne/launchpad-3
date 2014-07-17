@@ -257,7 +257,10 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
             bulk.load(Section, (row[3] for row in rows))
 
         store = IStore(BinaryPackagePublishingHistory)
-        expanded = calculate_target_das(distroseries, binaries)
+        expanded = calculate_target_das(
+            distroseries,
+            [(override.binary_package_name, override.architecture_tag)
+             for override in binaries])
 
         candidates = [
             make_package_condition(archive, das, bpn)
@@ -350,9 +353,9 @@ class UnknownOverridePolicy(BaseOverridePolicy):
             IComponentSet)['universe']
         return [
             BinaryOverride(
-                binary, architecture_tag, default_component, None, None,
-                self.phased_update_percentage)
-            for binary, architecture_tag in binaries]
+                override.binary_package_name, override.architecture_tag,
+                default_component, None, None, self.phased_update_percentage)
+            for override in binaries]
 
 
 class UbuntuOverridePolicy(FromExistingOverridePolicy,
@@ -380,20 +383,22 @@ class UbuntuOverridePolicy(FromExistingOverridePolicy,
 
     def calculateBinaryOverrides(self, archive, distroseries, pocket,
                                  binaries):
-        total = set(binaries)
+        total = set(
+            (override.binary_package_name, override.architecture_tag)
+            for override in binaries)
         overrides = FromExistingOverridePolicy.calculateBinaryOverrides(
             self, archive, distroseries, pocket, binaries,
             include_deleted=True)
         existing = set(
-            (
-                override.binary_package_name,
-                override.architecture_tag,
-            )
+            (override.binary_package_name, override.architecture_tag)
             for override in overrides)
         missing = total.difference(existing)
         if missing:
             unknown = UnknownOverridePolicy.calculateBinaryOverrides(
-                self, archive, distroseries, pocket, missing)
+                self, archive, distroseries, pocket,
+                [override for override in binaries
+                 if (override.binary_package_name, override.architecture_tag)
+                 in missing])
             overrides.extend(unknown)
         return overrides
 
