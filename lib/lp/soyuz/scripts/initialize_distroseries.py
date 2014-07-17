@@ -115,7 +115,7 @@ class InitializeDistroSeries:
         self.arches = arches
         self.archindep_archtag = archindep_archtag
         if packagesets is None:
-            self.packageset_ids = None
+            self.packagesets_ids = None
             self.packagesets = None
         else:
             self.packagesets_ids = [
@@ -220,10 +220,7 @@ class InitializeDistroSeries:
         Restrict the check to the selected packages if a limited set of
         packagesets is used by the initialization.
         """
-        if self.source_names_by_parent is not None:
-            spns = self.source_names_by_parent.get(parent.id, None)
-        else:
-            spns = None
+        spns = self.source_names_by_parent.get(parent.id, None)
         if spns is not None and len(spns) == 0:
             # If no sources are selected in this parent, skip the check.
             return
@@ -253,10 +250,7 @@ class InitializeDistroSeries:
             PackageUploadStatus.ACCEPTED,
             PackageUploadStatus.UNAPPROVED,
             ]
-        if self.source_names_by_parent is not None:
-            spns = self.source_names_by_parent.get(parent.id, None)
-        else:
-            spns = None
+        spns = self.source_names_by_parent.get(parent.id, None)
         if spns is not None and len(spns) == 0:
             # If no sources are selected in this parent, skip the check.
             return
@@ -493,18 +487,20 @@ class InitializeDistroSeries:
         parent so the list of packages to consider in not empty.
         """
         source_names_by_parent = {}
-        if self.packagesets is None:
-            source_names_by_parent = None
-        elif self.packagesets is []:
-            self.source_names_by_parent = []
+        if self.packagesets_ids:
+            for parent in self.derivation_parents:
+                spns = []
+                for pkgset in self.packagesets:
+                    if pkgset.distroseries == parent:
+                        spns += list(pkgset.getSourcesIncluded())
+                source_names_by_parent[parent.id] = spns
+        elif  self.packagesets == None:
+            for parent in self.derivation_parents:
+                source_names_by_parent[parent.id] = None
         else:
-            if self.packagesets_ids:
-                for parent in self.derivation_parents:
-                    spns = []
-                    for pkgset in self.packagesets:
-                        if pkgset.distroseries == parent:
-                            spns += list(pkgset.getSourcesIncluded())
-                    source_names_by_parent[parent.id] = spns
+            for parent in self.derivation_parents:
+                spns = []
+                source_names_by_parent[parent.id] = spns
         self.source_names_by_parent = source_names_by_parent
 
     def _copy_publishing_records(self, distroarchseries_lists):
@@ -667,55 +663,56 @@ class InitializeDistroSeries:
 
     def _copy_packagesets(self):
         """Copy packagesets from the parent distroseries."""
-        packagesets = self._store.find(
-            Packageset,
-            Packageset.distroseries_id.is_in(self.derivation_parent_ids))
-        parent_to_child = {}
-        # Create the packagesets and any archivepermissions if we're not
-        # copying cross-distribution.
-        parent_distro_ids = [
-            parent.distribution.id for parent in self.derivation_parents]
-        for parent_ps in packagesets:
-            # Cross-distro initializations get packagesets owned by the
-            # distro owner, otherwise the old owner is preserved.
-            if (self.packagesets_ids and
-                str(parent_ps.id) not in self.packagesets_ids):
-                continue
-            packageset_set = getUtility(IPackagesetSet)
-            # First, try to fetch an existing packageset with this name.
-            try:
-                child_ps = packageset_set.getByName(
-                    self.distroseries, parent_ps.name)
-            except NoSuchPackageSet:
-                if self.distroseries.distribution.id in parent_distro_ids:
-                    new_owner = parent_ps.owner
-                else:
-                    new_owner = self.distroseries.owner
-                child_ps = getUtility(IPackagesetSet).new(
-                    parent_ps.name, parent_ps.description,
-                    new_owner, distroseries=self.distroseries,
-                    related_set=parent_ps)
-            parent_to_child[parent_ps] = child_ps
-            # Copy archivepermissions if we're not copying
-            # cross-distribution.
-            if (self.distroseries.distribution ==
-                    parent_ps.distroseries.distribution):
-                self._store.execute("""
-                    INSERT INTO Archivepermission
-                    (person, permission, archive, packageset, explicit)
-                    SELECT person, permission, %s, %s, explicit
-                    FROM Archivepermission WHERE packageset = %s
-                    """ % sqlvalues(
-                        self.distroseries.main_archive, child_ps.id,
-                        parent_ps.id))
-        # Copy the relations between sets, and the contents.
-        for old_series_ps, new_series_ps in parent_to_child.items():
-            old_series_sets = old_series_ps.setsIncluded(
-                direct_inclusion=True)
-            for old_series_child in old_series_sets:
-                new_series_ps.add(parent_to_child[old_series_child])
-            new_series_ps.add(old_series_ps.sourcesIncluded(
-                direct_inclusion=True))
+        if self.packagesets != []:
+            packagesets = self._store.find(
+                Packageset,
+                Packageset.distroseries_id.is_in(self.derivation_parent_ids))
+            parent_to_child = {}
+            # Create the packagesets and any archivepermissions if we're not
+            # copying cross-distribution.
+            parent_distro_ids = [
+                parent.distribution.id for parent in self.derivation_parents]
+            for parent_ps in packagesets:
+                # Cross-distro initializations get packagesets owned by the
+                # distro owner, otherwise the old owner is preserved.
+                if (self.packagesets_ids and
+                    str(parent_ps.id) not in self.packagesets_ids):
+                    continue
+                packageset_set = getUtility(IPackagesetSet)
+                # First, try to fetch an existing packageset with this name.
+                try:
+                    child_ps = packageset_set.getByName(
+                        self.distroseries, parent_ps.name)
+                except NoSuchPackageSet:
+                    if self.distroseries.distribution.id in parent_distro_ids:
+                        new_owner = parent_ps.owner
+                    else:
+                        new_owner = self.distroseries.owner
+                    child_ps = getUtility(IPackagesetSet).new(
+                        parent_ps.name, parent_ps.description,
+                        new_owner, distroseries=self.distroseries,
+                        related_set=parent_ps)
+                parent_to_child[parent_ps] = child_ps
+                # Copy archivepermissions if we're not copying
+                # cross-distribution.
+                if (self.distroseries.distribution ==
+                        parent_ps.distroseries.distribution):
+                    self._store.execute("""
+                        INSERT INTO Archivepermission
+                        (person, permission, archive, packageset, explicit)
+                        SELECT person, permission, %s, %s, explicit
+                        FROM Archivepermission WHERE packageset = %s
+                        """ % sqlvalues(
+                            self.distroseries.main_archive, child_ps.id,
+                            parent_ps.id))
+            # Copy the relations between sets, and the contents.
+            for old_series_ps, new_series_ps in parent_to_child.items():
+                old_series_sets = old_series_ps.setsIncluded(
+                    direct_inclusion=True)
+                for old_series_child in old_series_sets:
+                    new_series_ps.add(parent_to_child[old_series_child])
+                new_series_ps.add(old_series_ps.sourcesIncluded(
+                    direct_inclusion=True))
 
     def _copy_pocket_permissions(self):
         """Copy per-distroseries/pocket permissions from the parent series."""
