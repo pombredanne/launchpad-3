@@ -41,7 +41,7 @@ class TestFromExistingOverridePolicy(TestCaseWithFactory):
         policy = FromExistingOverridePolicy()
         overrides = policy.calculateSourceOverrides(
             distroseries.main_archive, distroseries, pocket,
-            [SourceOverride(spn, None, None)])
+            [SourceOverride(spn)])
         self.assertEqual([], overrides)
 
     def test_source_overrides(self):
@@ -51,11 +51,10 @@ class TestFromExistingOverridePolicy(TestCaseWithFactory):
         policy = FromExistingOverridePolicy()
         overrides = policy.calculateSourceOverrides(
             spph.distroseries.main_archive, spph.distroseries, spph.pocket,
-            [SourceOverride(
-                spph.sourcepackagerelease.sourcepackagename, None, None)])
+            [SourceOverride(spph.sourcepackagerelease.sourcepackagename)])
         expected = [SourceOverride(
             spph.sourcepackagerelease.sourcepackagename,
-            spph.component, spph.section)]
+            component=spph.component, section=spph.section)]
         self.assertEqual(expected, overrides)
 
     def test_source_overrides_latest_only_is_returned(self):
@@ -76,9 +75,11 @@ class TestFromExistingOverridePolicy(TestCaseWithFactory):
         policy = FromExistingOverridePolicy()
         overrides = policy.calculateSourceOverrides(
             spph.distroseries.main_archive, spph.distroseries, spph.pocket,
-            [SourceOverride(spn, None, None)])
+            [SourceOverride(spn)])
         self.assertEqual(
-            [SourceOverride(spn, spph.component, spph.section)], overrides)
+            [SourceOverride(
+                spn, component=spph.component, section=spph.section)],
+            overrides)
 
     def test_source_overrides_constant_query_count(self):
         # The query count is constant, no matter how many sources are
@@ -98,8 +99,7 @@ class TestFromExistingOverridePolicy(TestCaseWithFactory):
         with StormStatementRecorder() as recorder:
             policy.calculateSourceOverrides(
                 spph.distroseries.main_archive, spph.distroseries,
-                spph.pocket,
-                [SourceOverride(spn, None, None) for spn in spns])
+                spph.pocket, [SourceOverride(spn) for spn in spns])
         self.assertThat(recorder, HasQueryCount(Equals(4)))
 
     def test_no_binary_overrides(self):
@@ -113,7 +113,7 @@ class TestFromExistingOverridePolicy(TestCaseWithFactory):
         policy = FromExistingOverridePolicy()
         overrides = policy.calculateBinaryOverrides(
             distroseries.main_archive, distroseries, pocket,
-            [BinaryOverride(bpn, None, None, None, None, None)])
+            [BinaryOverride(bpn, None)])
         self.assertEqual([], overrides)
 
     def test_binary_overrides(self):
@@ -126,13 +126,13 @@ class TestFromExistingOverridePolicy(TestCaseWithFactory):
         overrides = policy.calculateBinaryOverrides(
             distroseries.main_archive, distroseries, bpph.pocket,
             [BinaryOverride(
-                bpph.binarypackagerelease.binarypackagename, None, None, None,
-                None, None)])
+                bpph.binarypackagerelease.binarypackagename, None)])
         expected = [
             BinaryOverride(
                 bpph.binarypackagerelease.binarypackagename,
-                bpph.distroarchseries.architecturetag, bpph.component,
-                bpph.section, bpph.priority, None)]
+                bpph.distroarchseries.architecturetag,
+                component=bpph.component, section=bpph.section,
+                priority=bpph.priority)]
         self.assertEqual(expected, overrides)
 
     def test_binary_overrides_constant_query_count(self):
@@ -155,8 +155,7 @@ class TestFromExistingOverridePolicy(TestCaseWithFactory):
         with StormStatementRecorder() as recorder:
             policy.calculateBinaryOverrides(
                 distroseries.main_archive, distroseries, pocket,
-                [BinaryOverride(bpn, das, None, None, None, None)
-                 for bpn, das in bpns])
+                [BinaryOverride(bpn, das) for bpn, das in bpns])
         self.assertThat(recorder, HasQueryCount(Equals(4)))
 
 
@@ -199,10 +198,11 @@ class TestUnknownOverridePolicy(TestCaseWithFactory):
         overrides = UnknownOverridePolicy().calculateSourceOverrides(
             distroseries.main_archive, distroseries,
             PackagePublishingPocket.RELEASE,
-            [SourceOverride(spn, getUtility(IComponentSet)[component], None)
+            [SourceOverride(
+                spn, component=getUtility(IComponentSet)[component])
              for spn, component in zip(spns, ('main', 'contrib', 'non-free'))])
         expected = [
-            SourceOverride(spn, getUtility(IComponentSet)[component], None)
+            SourceOverride(spn, component=getUtility(IComponentSet)[component])
             for spn, component in
             zip(spns, ('universe', 'multiverse', 'multiverse'))]
         self.assertEqual(expected, overrides)
@@ -217,10 +217,11 @@ class TestUnknownOverridePolicy(TestCaseWithFactory):
         overrides = UnknownOverridePolicy().calculateSourceOverrides(
             self.factory.makeArchive(distribution=distroseries.distribution),
             distroseries, PackagePublishingPocket.RELEASE,
-            [SourceOverride(spn, getUtility(IComponentSet)[component], None)
+            [SourceOverride(
+                spn, component=getUtility(IComponentSet)[component])
              for spn, component in zip(spns, ('main', 'contrib', 'non-free'))])
         expected = [
-            SourceOverride(spn, getUtility(IComponentSet)[component], None)
+            SourceOverride(spn, component=getUtility(IComponentSet)[component])
             for spn, component in zip(spns, ('main', 'main', 'main'))]
         self.assertEqual(expected, overrides)
 
@@ -234,13 +235,12 @@ class TestUnknownOverridePolicy(TestCaseWithFactory):
         overrides = policy.calculateBinaryOverrides(
             distroseries.main_archive, distroseries, bpph.pocket,
             [BinaryOverride(
-                bpph.binarypackagerelease.binarypackagename, None, None, None,
-                None, None)])
+                bpph.binarypackagerelease.binarypackagename, None)])
         universe = getUtility(IComponentSet)['universe']
         expected = [
             BinaryOverride(
-                bpph.binarypackagerelease.binarypackagename, None, universe,
-                None, None, None)]
+                bpph.binarypackagerelease.binarypackagename, None,
+                component=universe)]
         self.assertEqual(expected, overrides)
 
 
@@ -253,7 +253,7 @@ class TestUbuntuOverridePolicy(TestCaseWithFactory):
         # policy.
         universe = getUtility(IComponentSet)['universe']
         spns = [self.factory.makeSourcePackageName()]
-        expected = [SourceOverride(spns[0], universe, None)]
+        expected = [SourceOverride(spns[0], component=universe)]
         distroseries = self.factory.makeDistroSeries()
         pocket = self.factory.getAnyPocket()
         for i in xrange(8):
@@ -264,13 +264,14 @@ class TestUbuntuOverridePolicy(TestCaseWithFactory):
             expected.append(
                 SourceOverride(
                     spph.sourcepackagerelease.sourcepackagename,
-                    spph.component, spph.section))
+                    component=spph.component, section=spph.section))
         spns.append(self.factory.makeSourcePackageName())
-        expected.append(SourceOverride(spns[-1], universe, None))
+        expected.append(
+            SourceOverride(spns[-1], component=universe, section=None))
         policy = UbuntuOverridePolicy()
         overrides = policy.calculateSourceOverrides(
             distroseries.main_archive, distroseries, pocket,
-            [SourceOverride(spn, None, None) for spn in spns])
+            [SourceOverride(spn) for spn in spns])
         self.assertEqual(10, len(overrides))
         sorted_expected = sorted(
             expected, key=attrgetter("source_package_name.name"))
@@ -301,22 +302,21 @@ class TestUbuntuOverridePolicy(TestCaseWithFactory):
             bpns.append((bpn, distroarchseries.architecturetag))
             expected.append(
                 BinaryOverride(
-                    bpn, distroarchseries.architecturetag, bpph.component,
-                    bpph.section, bpph.priority, None))
+                    bpn, distroarchseries.architecturetag,
+                    component=bpph.component, section=bpph.section,
+                    priority=bpph.priority))
         for i in xrange(2):
             distroarchseries = self.factory.makeDistroArchSeries(
                 distroseries=distroseries)
             bpns.append((bpn, distroarchseries.architecturetag))
             expected.append(
                 BinaryOverride(
-                    bpn, distroarchseries.architecturetag, universe, None,
-                    None, None))
+                    bpn, distroarchseries.architecturetag, component=universe))
         distroseries.nominatedarchindep = distroarchseries
         policy = UbuntuOverridePolicy()
         overrides = policy.calculateBinaryOverrides(
             distroseries.main_archive, distroseries, pocket,
-            [BinaryOverride(bpn, das, None, None, None, None)
-             for bpn, das in bpns])
+            [BinaryOverride(bpn, das) for bpn, das in bpns])
         self.assertEqual(5, len(overrides))
         key = attrgetter(
             "binary_package_name.name", "architecture_tag", "component.name")
@@ -338,7 +338,7 @@ class TestUbuntuOverridePolicy(TestCaseWithFactory):
         policy = FromExistingOverridePolicy()
         overrides = policy.calculateBinaryOverrides(
             distroseries.main_archive, distroseries, pocket,
-            [BinaryOverride(bpn, 'i386', None, None, None, None)])
+            [BinaryOverride(bpn, 'i386')])
 
         self.assertEqual([], overrides)
 
@@ -363,21 +363,21 @@ class TestUbuntuOverridePolicy(TestCaseWithFactory):
         bpns.append((bpn, distroarchseries.architecturetag))
         expected.append(
             BinaryOverride(
-                bpn, distroarchseries.architecturetag, bpph.component,
-                bpph.section, bpph.priority, 50))
+                bpn, distroarchseries.architecturetag,
+                component=bpph.component, section=bpph.section,
+                priority=bpph.priority, phased_update_percentage=50))
         distroarchseries = self.factory.makeDistroArchSeries(
             distroseries=distroseries)
         bpns.append((bpn, distroarchseries.architecturetag))
         expected.append(
             BinaryOverride(
-                bpn, distroarchseries.architecturetag, universe, None, None,
-                50))
+                bpn, distroarchseries.architecturetag, component=universe,
+                phased_update_percentage=50))
         distroseries.nominatedarchindep = distroarchseries
         policy = UbuntuOverridePolicy(phased_update_percentage=50)
         overrides = policy.calculateBinaryOverrides(
             distroseries.main_archive, distroseries, pocket,
-            [BinaryOverride(bpn, das, None, None, None, None)
-             for bpn, das in bpns])
+            [BinaryOverride(bpn, das) for bpn, das in bpns])
         self.assertEqual(2, len(overrides))
         key = attrgetter(
             "binary_package_name.name", "architecture_tag", "component.name")

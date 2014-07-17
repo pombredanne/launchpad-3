@@ -501,7 +501,8 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         except NotFoundError:
             section = None
 
-        return SourceOverride(source_package_name, component, section)
+        return SourceOverride(
+            source_package_name, component=component, section=section)
 
     def findSourcePublication(self):
         """Find the appropriate origin `ISourcePackagePublishingHistory`."""
@@ -523,7 +524,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         override_policy = FromExistingOverridePolicy()
         ancestry = override_policy.calculateSourceOverrides(
             self.target_archive, self.target_distroseries,
-            self.target_pocket, [SourceOverride(source_name, None, None)])
+            self.target_pocket, [SourceOverride(source_name)])
 
         copy_policy = self.getPolicyImplementation()
 
@@ -533,7 +534,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             defaults = UnknownOverridePolicy().calculateSourceOverrides(
                 self.target_archive, self.target_distroseries,
                 self.target_pocket,
-                [SourceOverride(source_name, source_component, None)])
+                [SourceOverride(source_name, component=source_component)])
             self.addSourceOverride(defaults[0])
             if auto_approve:
                 auto_approve = self.target_archive.canAdministerQueue(

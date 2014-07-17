@@ -1479,7 +1479,7 @@ class PublishingSet:
             with_overrides = {}
             overrides = policy.calculateBinaryOverrides(
                 archive, distroseries, pocket,
-                [BinaryOverride(bpn, archtag, None, None, None, None)
+                [BinaryOverride(bpn, archtag)
                  for bpn, archtag in bpn_archtag.keys()])
             for override in overrides:
                 bpph = bpn_archtag[

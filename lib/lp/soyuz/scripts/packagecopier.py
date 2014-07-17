@@ -723,7 +723,7 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries,
             # element of the returned list.
             overrides = policy.calculateSourceOverrides(
                 archive, series, pocket,
-                [SourceOverride(spn, None, None) for spn in package_names])
+                [SourceOverride(spn) for spn in package_names])
             # Only one override can be returned so take the first
             # element of the returned list.
             assert len(overrides) == 1, (
