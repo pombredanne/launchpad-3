@@ -156,7 +156,7 @@ class IOverridePolicy(Interface):
         :param archive: The target `IArchive`.
         :param distroseries: The target `IDistroSeries`.
         :param pocket: The target `PackagePublishingPocket`.
-        :param sources: A tuple of `ISourcePackageName`s.
+        :param sources: A tuple of `ISourceOverride`s.
         :param source_component: The sources' `IComponent` (optional).
 
         :return: A list of `ISourceOverride`
@@ -213,12 +213,13 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
             status.append(PackagePublishingStatus.DELETED)
         return status
 
-    def calculateSourceOverrides(self, archive, distroseries, pocket, spns,
+    def calculateSourceOverrides(self, archive, distroseries, pockets, sources,
                                  source_component=None, include_deleted=False):
         def eager_load(rows):
             bulk.load(Component, (row[1] for row in rows))
             bulk.load(Section, (row[2] for row in rows))
 
+        spns = [override.source_package_name for override in sources]
         store = IStore(SourcePackagePublishingHistory)
         already_published = DecoratedResultSet(
             store.find(
@@ -332,9 +333,9 @@ class UnknownOverridePolicy(BaseOverridePolicy):
             archive.default_component or
             UnknownOverridePolicy.getComponentOverride(
                 source_component, return_component=True))
+        spns = [override.source_package_name for override in sources]
         return [
-            SourceOverride(source, default_component, None)
-            for source in sources]
+            SourceOverride(spn, default_component, None) for spn in spns]
 
     def calculateBinaryOverrides(self, archive, distroseries, pocket,
                                  binaries):
@@ -357,7 +358,8 @@ class UbuntuOverridePolicy(FromExistingOverridePolicy,
 
     def calculateSourceOverrides(self, archive, distroseries, pocket,
                                  sources, source_component=None):
-        total = set(sources)
+        spns = [override.source_package_name for override in sources]
+        total = set(spns)
         overrides = FromExistingOverridePolicy.calculateSourceOverrides(
             self, archive, distroseries, pocket, sources, source_component,
             include_deleted=True)
@@ -365,7 +367,9 @@ class UbuntuOverridePolicy(FromExistingOverridePolicy,
         missing = total.difference(existing)
         if missing:
             unknown = UnknownOverridePolicy.calculateSourceOverrides(
-                self, archive, distroseries, pocket, missing, source_component)
+                self, archive, distroseries, pocket,
+                [SourceOverride(spn, None, None) for spn in missing],
+                source_component)
             overrides.extend(unknown)
         return overrides
 

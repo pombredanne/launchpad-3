@@ -32,14 +32,15 @@ class TestOverrides(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
 
     def test_no_source_overrides(self):
-        # If the spn is not published in the given archive/distroseries, an
-        # empty list is returned.
+        # If the spn is not published in the given archive/distroseries,
+        # no changes are made.
         spn = self.factory.makeSourcePackageName()
         distroseries = self.factory.makeDistroSeries()
         pocket = self.factory.getAnyPocket()
         policy = FromExistingOverridePolicy()
         overrides = policy.calculateSourceOverrides(
-            distroseries.main_archive, distroseries, pocket, (spn,))
+            distroseries.main_archive, distroseries, pocket,
+            [SourceOverride(spn, None, None)])
         self.assertEqual([], overrides)
 
     def test_source_overrides(self):
@@ -49,7 +50,8 @@ class TestOverrides(TestCaseWithFactory):
         policy = FromExistingOverridePolicy()
         overrides = policy.calculateSourceOverrides(
             spph.distroseries.main_archive, spph.distroseries, spph.pocket,
-            (spph.sourcepackagerelease.sourcepackagename,))
+            [SourceOverride(
+                spph.sourcepackagerelease.sourcepackagename, None, None)])
         expected = [SourceOverride(
             spph.sourcepackagerelease.sourcepackagename,
             spph.component, spph.section)]
@@ -72,7 +74,8 @@ class TestOverrides(TestCaseWithFactory):
             sourcepackagerelease=spr, distroseries=distroseries)
         policy = FromExistingOverridePolicy()
         overrides = policy.calculateSourceOverrides(
-            distroseries.main_archive, distroseries, spph.pocket, (spn,))
+            spph.distroseries.main_archive, spph.distroseries, spph.pocket,
+            [SourceOverride(spn, None, None)])
         self.assertEqual(
             [SourceOverride(spn, spph.component, spph.section)], overrides)
 
@@ -94,7 +97,8 @@ class TestOverrides(TestCaseWithFactory):
         with StormStatementRecorder() as recorder:
             policy.calculateSourceOverrides(
                 spph.distroseries.main_archive, spph.distroseries,
-                spph.pocket, spns)
+                spph.pocket,
+                [SourceOverride(spn, None, None) for spn in spns])
         self.assertThat(recorder, HasQueryCount(Equals(4)))
 
     def test_no_binary_overrides(self):
@@ -181,7 +185,8 @@ class TestOverrides(TestCaseWithFactory):
         policy = UnknownOverridePolicy()
         overrides = policy.calculateSourceOverrides(
             spph.distroseries.main_archive, spph.distroseries, spph.pocket,
-            (spph.sourcepackagerelease.sourcepackagename,))
+            [SourceOverride(
+                spph.sourcepackagerelease.sourcepackagename, None, None)])
         universe = getUtility(IComponentSet)['universe']
         expected = [
             SourceOverride(
@@ -227,7 +232,8 @@ class TestOverrides(TestCaseWithFactory):
         expected.append(SourceOverride(spns[-1], universe, None))
         policy = UbuntuOverridePolicy()
         overrides = policy.calculateSourceOverrides(
-            distroseries.main_archive, distroseries, pocket, spns)
+            distroseries.main_archive, distroseries, pocket,
+            [SourceOverride(spn, None, None) for spn in spns])
         self.assertEqual(10, len(overrides))
         sorted_expected = sorted(
             expected, key=attrgetter("source_package_name.name"))
