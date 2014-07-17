@@ -850,7 +850,7 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         self.assertEqual(child.binarycount, 2)  # Chromium is FTBFS
 
     def test_copy_limit_packagesets_empty(self):
-        # If a parent series has packagesets, we want to copy none of them
+        # If a parent series has packagesets, we don't want to copy any of them
         self.parent, self.parent_das = self.setupParent()
         test1 = getUtility(IPackagesetSet).new(
             u'test1', u'test 1 packageset', self.parent.owner,
@@ -878,27 +878,36 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         test1 = getUtility(IPackagesetSet).new(
             u'test1', u'test 1 packageset', self.parent.owner,
             distroseries=self.parent)
-        getUtility(IPackagesetSet).new(
+        test2 = getUtility(IPackagesetSet).new(
             u'test2', u'test 2 packageset', self.parent.owner,
             distroseries=self.parent)
-        packages = ('udev', 'chromium', 'libc6')
-        for pkg in packages:
+        packages_test1 = ('udev', 'chromium', 'libc6')
+        packages_test2 = ('mozilla-firefox', 'vim')
+        for pkg in packages_test1:
             test1.addSources(pkg)
+        for pkg in packages_test2:
+            test2.addSources(pkg)
         packageset1 = getUtility(IPackagesetSet).getByName(
             self.parent, u'test1')
+        packageset2 = getUtility(IPackagesetSet).getByName(
+            self.parent, u'test2')
         child = self._fullInitialize(
             [self.parent], packagesets=None)
         child_test1 = getUtility(IPackagesetSet).getByName(child, u'test1')
+        child_test2 = getUtility(IPackagesetSet).getByName(child, u'test2')
         self.assertEqual(test1.description, child_test1.description)
-        self.assertRaises(
-            NoSuchPackageSet, getUtility(IPackagesetSet).getByName,
-            child, u'test2')
-        parent_srcs = test1.getSourcesIncluded(direct_inclusion=True)
-        child_srcs = child_test1.getSourcesIncluded(
+        self.assertEqual(test2.description, child_test2.description)
+        parent_srcs_test1 = test1.getSourcesIncluded(direct_inclusion=True)
+        child_srcs_test1 = child_test1.getSourcesIncluded(
             direct_inclusion=True)
-        self.assertEqual(parent_srcs, child_srcs)
+        self.assertEqual(parent_srcs_test1, child_srcs_test1)
+        parent_srcs_test2 = test2.getSourcesIncluded(direct_inclusion=True)
+        child_srcs_test2 = child_test2.getSourcesIncluded(
+            direct_inclusion=True)
+        self.assertEqual(parent_srcs_test2, child_srcs_test2)
         child.updatePackageCount()
-        self.assertEqual(child.sourcecount, len(packages))
+        self.assertEqual(child.sourcecount,
+            len(packages_test1) + len(packages_test2))
         self.assertEqual(child.binarycount, 2)  # Chromium is FTBFS
 
     def test_rebuild_flag(self):
