@@ -1364,9 +1364,8 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
         dsp = self.factory.makeDistroSeriesParent()
         target_archive = dsp.derived_series.main_archive
         override = SourceOverride(
-            source.sourcepackagerelease.sourcepackagename,
-            self.factory.makeComponent(),
-            self.factory.makeSection())
+            component=self.factory.makeComponent(),
+            section=self.factory.makeSection())
         getUtility(ISourcePackageFormatSelectionSet).add(
             dsp.derived_series, SourcePackageFormat.FORMAT_1_0)
         switch_dbuser('archivepublisher')

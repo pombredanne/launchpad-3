@@ -523,7 +523,7 @@ class TestPackageUploadWithPackageCopyJob(TestCaseWithFactory):
         upload, pcj = self.makeUploadWithPackageCopyJob(sourcepackagename=spn)
         component = self.factory.makeComponent()
         section = self.factory.makeSection()
-        pcj.addSourceOverride(SourceOverride(spn, component, section))
+        pcj.addSourceOverride(SourceOverride(component, section))
         self.assertEqual(component.name, upload.component_name)
 
     def test_displayname_is_package_name(self):

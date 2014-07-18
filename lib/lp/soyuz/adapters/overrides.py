@@ -58,8 +58,7 @@ class IOverride(Interface):
 class ISourceOverride(IOverride):
     """Source-specific overrides on a publication."""
 
-    source_package_name = Attribute(
-        "The ISourcePackageName that's being overridden")
+    pass
 
 
 class IBinaryOverride(IOverride):
@@ -78,7 +77,7 @@ class IBinaryOverride(IOverride):
 class Override:
     """See `IOverride`."""
 
-    def __init__(self, component, section):
+    def __init__(self, component=None, section=None):
         self.component = component
         self.section = section
 
@@ -96,21 +95,15 @@ class SourceOverride(Override):
     """See `ISourceOverride`."""
     implements(ISourceOverride)
 
-    def __init__(self, source_package_name, component=None, section=None):
-        super(SourceOverride, self).__init__(component, section)
-        self.source_package_name = source_package_name
-
     def __eq__(self, other):
         return (
-            self.source_package_name == other.source_package_name and
             self.component == other.component and
             self.section == other.section)
 
     def __repr__(self):
         return (
-            "<%s at %x source_package_name=%r component=%r section=%r>" %
-            (self.__class__.__name__, id(self), self.source_package_name,
-             self.component, self.section))
+            "<%s at %x component=%r section=%r>" %
+            (self.__class__.__name__, id(self), self.component, self.section))
 
 
 class BinaryOverride(Override):
@@ -163,9 +156,10 @@ class IOverridePolicy(Interface):
         :param archive: The target `IArchive`.
         :param distroseries: The target `IDistroSeries`.
         :param pocket: The target `PackagePublishingPocket`.
-        :param sources: A tuple of `ISourceOverride`s.
+        :param sources: A dict mapping `ISourcePackageName`s to
+            `ISourceOverride`s.
 
-        :return: A list of `ISourceOverride`
+        :return: A dict mapping `ISourcePackageName`s to `ISourceOverride`s.
         """
         pass
 
@@ -224,7 +218,7 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
             bulk.load(Component, (row[1] for row in rows))
             bulk.load(Section, (row[2] for row in rows))
 
-        spns = [override.source_package_name for override in sources]
+        spns = sources.keys()
         store = IStore(SourcePackagePublishingHistory)
         already_published = DecoratedResultSet(
             store.find(
@@ -246,9 +240,9 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
                         SourcePackagePublishingHistory.sourcepackagenameID,)),
             id_resolver((SourcePackageName, Component, Section)),
             pre_iter_hook=eager_load)
-        return [
-            SourceOverride(name, component=component, section=section)
-            for (name, component, section) in already_published]
+        return dict(
+            (name, SourceOverride(component=component, section=section))
+            for (name, component, section) in already_published)
 
     def calculateBinaryOverrides(self, archive, distroseries, pocket,
                                  binaries, include_deleted=False):
@@ -339,14 +333,13 @@ class UnknownOverridePolicy(BaseOverridePolicy):
             return override_component_name
 
     def calculateSourceOverrides(self, archive, distroseries, pocket, sources):
-        return [
-            SourceOverride(
-                override.source_package_name,
+        return dict(
+            (spn, SourceOverride(
                 component=(
                     archive.default_component or
                     UnknownOverridePolicy.getComponentOverride(
-                        override.component, return_component=True)))
-            for override in sources]
+                        override.component, return_component=True))))
+            for spn, override in sources.items())
 
     def calculateBinaryOverrides(self, archive, distroseries, pocket,
                                  binaries):
@@ -369,18 +362,16 @@ class UbuntuOverridePolicy(FromExistingOverridePolicy,
     """
 
     def calculateSourceOverrides(self, archive, distroseries, pocket, sources):
-        spns = [override.source_package_name for override in sources]
-        total = set(spns)
+        total = set(sources.keys())
         overrides = FromExistingOverridePolicy.calculateSourceOverrides(
             self, archive, distroseries, pocket, sources, include_deleted=True)
-        existing = set(override.source_package_name for override in overrides)
+        existing = set(overrides.keys())
         missing = total.difference(existing)
         if missing:
             unknown = UnknownOverridePolicy.calculateSourceOverrides(
                 self, archive, distroseries, pocket,
-                [override for override in sources
-                 if override.source_package_name in missing])
-            overrides.extend(unknown)
+                dict((spn, sources[spn]) for spn in missing))
+            overrides.update(unknown)
         return overrides
 
     def calculateBinaryOverrides(self, archive, distroseries, pocket,
