@@ -149,6 +149,23 @@ class TestFromExistingOverridePolicy(TestCaseWithFactory):
             }
         self.assertContentEqual(expected, overrides)
 
+    def test_binary_overrides_skips_unknown_arch(self):
+        # If calculateBinaryOverrides is passed with an archtag that
+        # does not correspond to an ArchSeries of the distroseries,
+        # an empty list is returned.
+        distroseries = self.factory.makeDistroSeries()
+        das = self.factory.makeDistroArchSeries(
+            architecturetag='amd64',
+            distroseries=distroseries)
+        distroseries.nominatedarchindep = das
+        bpn = self.factory.makeBinaryPackageName()
+        pocket = self.factory.getAnyPocket()
+        policy = FromExistingOverridePolicy()
+        overrides = policy.calculateBinaryOverrides(
+            distroseries.main_archive, distroseries, pocket,
+            {(bpn, 'i386'): BinaryOverride()})
+        self.assertEqual({}, overrides)
+
     def test_binary_overrides_constant_query_count(self):
         # The query count is constant, no matter how many bpn-das pairs are
         # checked.
@@ -329,24 +346,6 @@ class TestUbuntuOverridePolicy(TestCaseWithFactory):
             dict(((bpn, das), BinaryOverride()) for bpn, das in bpns))
         self.assertEqual(5, len(overrides))
         self.assertEqual(expected, overrides)
-
-    def test_calculateBinaryOverrides_skips_unknown_arch(self):
-        # If calculateBinaryOverrides is passed with an archtag that
-        # does not correspond to an ArchSeries of the distroseries,
-        # an empty list is returned.
-        distroseries = self.factory.makeDistroSeries()
-        das = self.factory.makeDistroArchSeries(
-            architecturetag='amd64',
-            distroseries=distroseries)
-        distroseries.nominatedarchindep = das
-        bpn = self.factory.makeBinaryPackageName()
-        pocket = self.factory.getAnyPocket()
-        policy = FromExistingOverridePolicy()
-        overrides = policy.calculateBinaryOverrides(
-            distroseries.main_archive, distroseries, pocket,
-            {(bpn, 'i386'): BinaryOverride()})
-
-        self.assertEqual([], overrides)
 
     def test_phased_update_percentage(self):
         # A policy with a phased_update_percentage applies it to new binary
