@@ -115,7 +115,7 @@ class InitializationHelperTestCase(TestCaseWithFactory):
                 self.factory.makeBinaryPackageFile(binarypackagerelease=bpr)
 
     def _fullInitialize(self, parents, child=None, previous_series=None,
-                        arches=(), archindep_archtag=None, packagesets=(),
+                        arches=(), archindep_archtag=None, packagesets=None,
                         rebuild=False, distribution=None, overlays=(),
                         overlay_pockets=(), overlay_components=()):
         if child is None:
@@ -201,7 +201,7 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         self.factory.makeSourcePackagePublishingHistory(
              distroseries=another_distroseries)
         self.factory.makeDistroArchSeries(distroseries=child)
-        ids = InitializeDistroSeries(child, [self.parent.id])
+        ids = InitializeDistroSeries(child, [self.parent.id], packagesets=None)
         self.assertRaisesWithContent(
             InitializationError,
             ("Series series has no previous series and the "
@@ -225,7 +225,8 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
                 pocket=pocket)
             source.createMissingBuilds()
             child = self.factory.makeDistroSeries()
-            ids = InitializeDistroSeries(child, [self.parent.id])
+            ids = InitializeDistroSeries(
+                child, [self.parent.id], packagesets=None)
             self.assertRaisesWithContent(
                 InitializationError,
                 ("The parent series has pending builds for "
@@ -261,7 +262,8 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         # Initialize only with parent_das's architecture.
         child = self.factory.makeDistroSeries()
         ids = InitializeDistroSeries(
-            child, [parent.id], arches=[parent_das2.architecturetag])
+            child, [parent.id], arches=[parent_das2.architecturetag],
+            packagesets=None)
 
         self.assertRaisesWithContent(
             InitializationError,
@@ -423,7 +425,7 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
             # Create a binary package upload for this upload.
             upload.addBuild(self.factory.makeBinaryPackageBuild())
             child = self.factory.makeDistroSeries()
-            ids = InitializeDistroSeries(child, [parent.id])
+            ids = InitializeDistroSeries(child, [parent.id], packagesets=None)
 
             self.assertRaisesWithContent(
                 InitializationError,
@@ -448,7 +450,7 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
             # Create a binary package upload for this upload.
             upload.addBuild(self.factory.makeBinaryPackageBuild())
             child = self.factory.makeDistroSeries()
-            ids = InitializeDistroSeries(child, [parent.id])
+            ids = InitializeDistroSeries(child, [parent.id], packagesets=None)
 
             self.assertRaisesWithContent(
                 InitializationError,
@@ -1275,7 +1277,8 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         parent = self.factory.makeDistroSeries()
         target_archive = distroseries.main_archive
 
-        ids = InitializeDistroSeries(distroseries, [parent.id])
+        ids = InitializeDistroSeries(
+            distroseries, [parent.id], packagesets=None)
         self.assertTrue(
             ids._use_cloner(
                 target_archive, parent.main_archive))
@@ -1301,7 +1304,8 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         self.factory.makeSourcePackagePublishingHistory(
             distroseries=other_distroseries)
         target_archive = distroseries.main_archive
-        ids = InitializeDistroSeries(distroseries, [parent.id])
+        ids = InitializeDistroSeries(
+            distroseries, [parent.id], packagesets=None)
 
         self.assertTrue(
             ids._use_cloner(target_archive, target_archive))
@@ -1316,7 +1320,8 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
             distribution=distroseries.distribution)
         self.factory.makeSourcePackagePublishingHistory(
             distroseries=other_distroseries)
-        ids = InitializeDistroSeries(distroseries, [parent.id])
+        ids = InitializeDistroSeries(
+            distroseries, [parent.id], packagesets=None)
 
         self.assertFalse(
             ids._use_cloner(target_archive, parent.main_archive))
@@ -1330,7 +1335,8 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
             distroseries=distroseries)
         target_archive = distroseries.main_archive
 
-        ids = InitializeDistroSeries(distroseries, [parent.id])
+        ids = InitializeDistroSeries(
+            distroseries, [parent.id], packagesets=None)
         self.assertFalse(
             ids._use_cloner(target_archive, target_archive))
 
