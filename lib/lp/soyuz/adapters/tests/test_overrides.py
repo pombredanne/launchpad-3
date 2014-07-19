@@ -152,7 +152,7 @@ class TestFromExistingOverridePolicy(TestCaseWithFactory):
                     component=bpph2.component, section=bpph2.section,
                     priority=bpph2.priority),
             }
-        self.assertContentEqual(expected, overrides)
+        self.assertEqual(expected, overrides)
 
     def test_binary_overrides_skips_unknown_arch(self):
         # If calculateBinaryOverrides is passed with an archtag that
