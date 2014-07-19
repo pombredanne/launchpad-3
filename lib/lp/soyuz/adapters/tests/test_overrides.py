@@ -52,7 +52,8 @@ class TestFromExistingOverridePolicy(TestCaseWithFactory):
             {spph.sourcepackagerelease.sourcepackagename: SourceOverride()})
         expected = {
             spph.sourcepackagerelease.sourcepackagename: SourceOverride(
-                component=spph.component, section=spph.section)}
+                component=spph.component, section=spph.section,
+                version=spph.sourcepackagerelease.version)}
         self.assertEqual(expected, overrides)
 
     def test_source_overrides_latest_only_is_returned(self):
@@ -76,7 +77,8 @@ class TestFromExistingOverridePolicy(TestCaseWithFactory):
             {spn: SourceOverride(spn)})
         self.assertEqual(
             {spn: SourceOverride(
-                component=spph.component, section=spph.section)},
+                component=spph.component, section=spph.section,
+                version=spph.sourcepackagerelease.version)},
             overrides)
 
     def test_source_overrides_constant_query_count(self):
@@ -141,16 +143,19 @@ class TestFromExistingOverridePolicy(TestCaseWithFactory):
              bpph1.distroarchseries.architecturetag):
                 BinaryOverride(
                     component=bpph1.component, section=bpph1.section,
-                    priority=bpph1.priority),
+                    priority=bpph1.priority,
+                    version=bpph1.binarypackagerelease.version),
             (bpph2.binarypackagerelease.binarypackagename,
              bpph2.distroarchseries.architecturetag):
                 BinaryOverride(
                     component=bpph2.component, section=bpph2.section,
-                    priority=bpph2.priority),
+                    priority=bpph2.priority,
+                    version=bpph2.binarypackagerelease.version),
             (bpph2.binarypackagerelease.binarypackagename, None):
                 BinaryOverride(
                     component=bpph2.component, section=bpph2.section,
-                    priority=bpph2.priority),
+                    priority=bpph2.priority,
+                    version=bpph2.binarypackagerelease.version),
             }
         self.assertEqual(expected, overrides)
 
@@ -303,7 +308,9 @@ class TestUbuntuOverridePolicy(TestCaseWithFactory):
                 pocket=pocket)
             spns.append(spph.sourcepackagerelease.sourcepackagename)
             expected[spph.sourcepackagerelease.sourcepackagename] = (
-                SourceOverride(component=spph.component, section=spph.section))
+                SourceOverride(
+                    component=spph.component, section=spph.section,
+                    version=spph.sourcepackagerelease.version))
         spns.append(self.factory.makeSourcePackageName())
         expected[spns[-1]] = SourceOverride(component=universe)
         policy = UbuntuOverridePolicy()
@@ -337,7 +344,8 @@ class TestUbuntuOverridePolicy(TestCaseWithFactory):
             expected[(bpn, distroarchseries.architecturetag)] = (
                 BinaryOverride(
                     component=bpph.component, section=bpph.section,
-                    priority=bpph.priority))
+                    priority=bpph.priority,
+                    version=bpph.binarypackagerelease.version))
         for i in xrange(2):
             distroarchseries = self.factory.makeDistroArchSeries(
                 distroseries=distroseries)
@@ -373,7 +381,8 @@ class TestUbuntuOverridePolicy(TestCaseWithFactory):
         bpns.append((bpn, distroarchseries.architecturetag))
         expected[(bpn, distroarchseries.architecturetag)] = BinaryOverride(
             component=bpph.component, section=bpph.section,
-            priority=bpph.priority, phased_update_percentage=50)
+            priority=bpph.priority, phased_update_percentage=50,
+            version=bpph.binarypackagerelease.version)
         distroarchseries = self.factory.makeDistroArchSeries(
             distroseries=distroseries)
         bpns.append((bpn, distroarchseries.architecturetag))

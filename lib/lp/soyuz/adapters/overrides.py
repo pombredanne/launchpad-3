@@ -36,6 +36,7 @@ from lp.services.database.interfaces import IStore
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.model.binarypackagename import BinaryPackageName
+from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.model.component import Component
 from lp.soyuz.model.distroarchseries import DistroArchSeries
 from lp.soyuz.model.publishing import (
@@ -43,6 +44,7 @@ from lp.soyuz.model.publishing import (
     SourcePackagePublishingHistory,
     )
 from lp.soyuz.model.section import Section
+from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
 class IOverride(Interface):
@@ -225,7 +227,10 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
             store.find(
                 (SourcePackagePublishingHistory.sourcepackagenameID,
                  SourcePackagePublishingHistory.componentID,
-                 SourcePackagePublishingHistory.sectionID),
+                 SourcePackagePublishingHistory.sectionID,
+                 SourcePackageRelease.version),
+                SourcePackageRelease.id ==
+                    SourcePackagePublishingHistory.sourcepackagereleaseID,
                 SourcePackagePublishingHistory.archiveID == archive.id,
                 SourcePackagePublishingHistory.distroseriesID ==
                     distroseries.id,
@@ -239,11 +244,12 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
                 ).config(
                     distinct=(
                         SourcePackagePublishingHistory.sourcepackagenameID,)),
-            id_resolver((SourcePackageName, Component, Section)),
+            id_resolver((SourcePackageName, Component, Section, None)),
             pre_iter_hook=eager_load)
         return dict(
-            (name, SourceOverride(component=component, section=section))
-            for (name, component, section) in already_published)
+            (name, SourceOverride(
+                component=component, section=section, version=version))
+            for (name, component, section, version) in already_published)
 
     def calculateBinaryOverrides(self, archive, distroseries, pocket,
                                  binaries, include_deleted=False):
@@ -267,7 +273,10 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
                  BinaryPackagePublishingHistory.distroarchseriesID,
                  BinaryPackagePublishingHistory.componentID,
                  BinaryPackagePublishingHistory.sectionID,
-                 BinaryPackagePublishingHistory.priority),
+                 BinaryPackagePublishingHistory.priority,
+                 BinaryPackageRelease.version),
+                BinaryPackageRelease.id ==
+                    BinaryPackagePublishingHistory.binarypackagereleaseID,
                 BinaryPackagePublishingHistory.status.is_in(
                     self.getExistingPublishingStatuses(include_deleted)),
                 Or(*candidates)).order_by(
@@ -282,10 +291,10 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
                 ),
             id_resolver(
                 (BinaryPackageName, DistroArchSeries, Component, Section,
-                None)),
+                None, None)),
             pre_iter_hook=eager_load)
         overrides = {}
-        for name, das, component, section, priority in already_published:
+        for name, das, component, section, priority, ver in already_published:
             # These details can always fulfill their own archtag, and may
             # satisfy a None archtag if the DAS is nominatedarchindep.
             matching_keys = [(name, das.architecturetag)]
@@ -296,7 +305,8 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
                     continue
                 overrides[key] = BinaryOverride(
                     component=component, section=section, priority=priority,
-                    phased_update_percentage=self.phased_update_percentage)
+                    phased_update_percentage=self.phased_update_percentage,
+                    version=ver)
         return overrides
 
 
