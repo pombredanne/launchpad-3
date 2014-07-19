@@ -729,12 +729,12 @@ class NascentUpload:
                             "%s: (source) NEW", uploaded_file.package)
                         uploaded_file.new = True
                     if use_default_component:
-                        [ancestry] = unknown_policy.calculateSourceOverrides(
+                        overrides = unknown_policy.calculateSourceOverrides(
                             self.policy.archive, self.policy.distroseries,
                             self.policy.pocket,
-                            [SourceOverride(
-                                uploaded_file.package, upload_component,
-                                None)])
+                            {uploaded_file.package: SourceOverride(
+                                component=upload_component)})
+                        ancestry = overrides.get(uploaded_file.package)
                 if override_at_all and ancestry is not None:
                     self.overrideSourceFile(uploaded_file, ancestry)
             elif isinstance(uploaded_file, BaseBinaryUploadFile):
@@ -768,23 +768,15 @@ class NascentUpload:
                     # are used.
                     try:
                         spph = uploaded_file.findCurrentSourcePublication()
-                        ancestry = BinaryOverride(
-                            None, None, spph.component, None, None, None)
+                        ancestry = BinaryOverride(component=spph.component)
                     except UploadError:
                         pass
                 if ancestry is None and use_default_component:
-                    ancestry = BinaryOverride(
-                        None, None,
-                        UnknownOverridePolicy.getComponentOverride(
-                            uploaded_file.component_name,
-                            return_component=True),
-                        None, None, None)
-                    [ancestry] = unknown_policy.calculateBinaryOverrides(
+                    overrides = unknown_policy.calculateBinaryOverrides(
                         self.policy.archive, self.policy.distroseries,
                         self.policy.pocket,
-                        [BinaryOverride(
-                            uploaded_file.package, upload_component, None,
-                            None, None, None)])
+                        {(uploaded_file.package, None): BinaryOverride()})
+                    ancestry = overrides.get((uploaded_file.package, None))
                 if override_at_all and ancestry is not None:
                     self.overrideBinaryFile(uploaded_file, ancestry)
 
