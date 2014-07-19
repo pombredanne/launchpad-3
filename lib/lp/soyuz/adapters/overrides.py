@@ -53,6 +53,7 @@ class IOverride(Interface):
 
     component = Attribute("The IComponent override")
     section = Attribute("The ISection override")
+    version = Attribute("The exclusive lower version limit")
 
 
 class ISourceOverride(IOverride):
@@ -77,9 +78,10 @@ class IBinaryOverride(IOverride):
 class Override:
     """See `IOverride`."""
 
-    def __init__(self, component=None, section=None):
+    def __init__(self, component=None, section=None, version=None):
         self.component = component
         self.section = section
+        self.version = version
 
     def __ne__(self, other):
         return not self == other
@@ -98,12 +100,14 @@ class SourceOverride(Override):
     def __eq__(self, other):
         return (
             self.component == other.component and
-            self.section == other.section)
+            self.section == other.section and
+            self.version == other.version)
 
     def __repr__(self):
         return (
-            "<%s at %x component=%r section=%r>" %
-            (self.__class__.__name__, id(self), self.component, self.section))
+            "<%s at %x component=%r section=%r version=%r>" %
+            (self.__class__.__name__, id(self), self.component, self.section,
+             self.version))
 
 
 class BinaryOverride(Override):
@@ -111,8 +115,9 @@ class BinaryOverride(Override):
     implements(IBinaryOverride)
 
     def __init__(self, component=None, section=None, priority=None,
-                 phased_update_percentage=None):
-        super(BinaryOverride, self).__init__(component, section)
+                 phased_update_percentage=None, version=None):
+        super(BinaryOverride, self).__init__(
+            component=component, section=section, version=version)
         self.priority = priority
         self.phased_update_percentage = phased_update_percentage
 
@@ -121,14 +126,15 @@ class BinaryOverride(Override):
             self.component == other.component and
             self.section == other.section and
             self.priority == other.priority and
-            self.phased_update_percentage == other.phased_update_percentage)
+            self.phased_update_percentage == other.phased_update_percentage and
+            self.version == other.version)
 
     def __repr__(self):
         return (
             "<%s at %x component=%r section=%r priority=%r "
-            "phased_update_percentage=%r>" %
+            "phased_update_percentage=%r version=%r>" %
             (self.__class__.__name__, id(self), self.component, self.section,
-             self.priority, self.phased_update_percentage))
+             self.priority, self.phased_update_percentage, self.version))
 
 
 class IOverridePolicy(Interface):
