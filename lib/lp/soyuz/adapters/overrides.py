@@ -278,13 +278,20 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
                 (BinaryPackageName, DistroArchSeries, Component, Section,
                 None)),
             pre_iter_hook=eager_load)
-        # XXX: This should return None for arch-indep, not the
-        # nominatedarchindep archtag.
-        return dict(
-            ((name, das.architecturetag), BinaryOverride(
-                component=component, section=section, priority=priority,
-                phased_update_percentage=self.phased_update_percentage))
-            for name, das, component, section, priority in already_published)
+        overrides = {}
+        for name, das, component, section, priority in already_published:
+            # These details can always fulfill their own archtag, and may
+            # satisfy a None archtag if the DAS is nominatedarchindep.
+            matching_keys = [(name, das.architecturetag)]
+            if das == das.distroseries.nominatedarchindep:
+                matching_keys.append((name, None))
+            for key in matching_keys:
+                if key not in binaries:
+                    continue
+                overrides[key] = BinaryOverride(
+                    component=component, section=section, priority=priority,
+                    phased_update_percentage=self.phased_update_percentage)
+        return overrides
 
 
 class UnknownOverridePolicy(BaseOverridePolicy):
