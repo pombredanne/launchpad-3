@@ -1364,9 +1364,8 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
         dsp = self.factory.makeDistroSeriesParent()
         target_archive = dsp.derived_series.main_archive
         override = SourceOverride(
-            source.sourcepackagerelease.sourcepackagename,
-            self.factory.makeComponent(),
-            self.factory.makeSection())
+            component=self.factory.makeComponent(),
+            section=self.factory.makeSection())
         getUtility(ISourcePackageFormatSelectionSet).add(
             dsp.derived_series, SourcePackageFormat.FORMAT_1_0)
         switch_dbuser('archivepublisher')
@@ -1591,12 +1590,23 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
 
     def test_copying_unsupported_arch_with_override(self):
         # When the copier is passed an unsupported arch with an override
-        # on the destination series, no binary is copied.
+        # on the destination series, no binary is copied. But an
+        # architecture-independent binary is copied even if the target
+        # has a totally disjoint set of archs.
         archive = self.factory.makeArchive(
             distribution=self.test_publisher.ubuntutest, virtualized=False)
-        source = self.test_publisher.getPubSource(
-            archive=archive, architecturehintlist='all')
-        self.test_publisher.getPubBinaries(pub_source=source)
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            archive=archive)
+        das = self.factory.makeDistroArchSeries(spph.distroseries)
+        spph.distroseries.nominatedarchindep = das
+        self.factory.makeBinaryPackagePublishingHistory(
+            archive=archive, distroarchseries=das,
+            source_package_release=spph.sourcepackagerelease,
+            architecturespecific=True)
+        bpph_indep = self.factory.makeBinaryPackagePublishingHistory(
+            archive=archive, distroarchseries=das,
+            source_package_release=spph.sourcepackagerelease,
+            architecturespecific=False)
 
         # Now make a new distroseries with only one architecture:
         # 'hppa'.
@@ -1606,11 +1616,16 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
         target_archive = self.factory.makeArchive(
             purpose=ArchivePurpose.PRIMARY,
             distribution=self.test_publisher.ubuntutest, virtualized=False)
-        copies = _do_direct_copy(source, target_archive, nobby, source.pocket,
+        copies = _do_direct_copy(spph, target_archive, nobby, spph.pocket,
             include_binaries=True, close_bugs=False, create_dsd_job=False)
 
-        # Only the source package has been copied.
-        self.assertEqual(1, len(copies))
+        # Only the source package and the architecture-independent
+        # binary have been copied.
+        self.assertEqual(2, len(copies))
+        self.assertEqual(
+            spph.sourcepackagerelease, copies[0].sourcepackagerelease)
+        self.assertEqual(
+            bpph_indep.binarypackagerelease, copies[1].binarypackagerelease)
 
     def test_copy_sets_creator(self):
         # The creator for the copied SPPH is the person passed

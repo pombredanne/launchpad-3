@@ -718,17 +718,17 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries,
         # If no manual overrides were specified and the archive has an
         # override policy then use that policy to get overrides.
         if override is None and policy is not None:
-            package_names = (source.sourcepackagerelease.sourcepackagename,)
             # Only one override can be returned so take the first
             # element of the returned list.
             overrides = policy.calculateSourceOverrides(
                 archive, series, pocket,
-                [SourceOverride(spn, None, None) for spn in package_names])
+                {source.sourcepackagerelease.sourcepackagename:
+                    SourceOverride()})
             # Only one override can be returned so take the first
             # element of the returned list.
             assert len(overrides) == 1, (
                 "More than one override encountered, something is wrong.")
-            override = overrides[0]
+            override = overrides[source.sourcepackagerelease.sourcepackagename]
         source_copy = source.copyTo(
             series, pocket, archive, override, create_dsd_job=create_dsd_job,
             creator=creator, sponsor=sponsor, packageupload=packageupload)
