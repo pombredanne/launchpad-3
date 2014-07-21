@@ -23,6 +23,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.services.database.bulk import load_related
 from lp.soyuz.adapters.notification import notify
+from lp.soyuz.adapters.overrides import SourceOverride
 from lp.soyuz.enums import (
     BinaryPackageFileType,
     SourcePackageFormat,
@@ -37,6 +38,7 @@ from lp.soyuz.interfaces.publishing import (
     )
 from lp.soyuz.interfaces.queue import IPackageUploadCustom
 from lp.soyuz.scripts.custom_uploads_copier import CustomUploadsCopier
+
 
 # XXX cprov 2009-06-12: this function should be incorporated in
 # IPublishing.
@@ -720,7 +722,8 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries,
             # Only one override can be returned so take the first
             # element of the returned list.
             overrides = policy.calculateSourceOverrides(
-                archive, series, pocket, package_names)
+                archive, series, pocket,
+                [SourceOverride(spn) for spn in package_names])
             # Only one override can be returned so take the first
             # element of the returned list.
             assert len(overrides) == 1, (

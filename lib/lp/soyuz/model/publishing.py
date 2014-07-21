@@ -1445,6 +1445,7 @@ class PublishingSet:
 
     def copyBinaries(self, archive, distroseries, pocket, bpphs, policy=None):
         """See `IPublishingSet`."""
+        from lp.soyuz.adapters.overrides import BinaryOverride
         if distroseries.distribution != archive.distribution:
             raise AssertionError(
                 "Series distribution %s doesn't match archive distribution %s."
@@ -1477,13 +1478,12 @@ class PublishingSet:
                     bpph.distroarchseries.architecturetag)] = bpph
             with_overrides = {}
             overrides = policy.calculateBinaryOverrides(
-                archive, distroseries, pocket, bpn_archtag.keys())
+                archive, distroseries, pocket,
+                [BinaryOverride(bpn, archtag)
+                 for bpn, archtag in bpn_archtag.keys()])
             for override in overrides:
-                if override.distro_arch_series is None:
-                    continue
                 bpph = bpn_archtag[
-                    (override.binary_package_name,
-                     override.distro_arch_series.architecturetag)]
+                    (override.binary_package_name, override.architecture_tag)]
                 new_component = override.component or bpph.component
                 new_section = override.section or bpph.section
                 new_priority = override.priority or bpph.priority
