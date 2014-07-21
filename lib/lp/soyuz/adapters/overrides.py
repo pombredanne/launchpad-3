@@ -101,6 +101,7 @@ class SourceOverride(Override):
 
     def __eq__(self, other):
         return (
+            self.__class__ == other.__class__ and
             self.component == other.component and
             self.section == other.section and
             self.version == other.version)
@@ -125,6 +126,7 @@ class BinaryOverride(Override):
 
     def __eq__(self, other):
         return (
+            self.__class__ == other.__class__ and
             self.component == other.component and
             self.section == other.section and
             self.priority == other.priority and
