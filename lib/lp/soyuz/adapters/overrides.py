@@ -217,7 +217,7 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
             status.append(PackagePublishingStatus.DELETED)
         return status
 
-    def calculateSourceOverrides(self, archive, distroseries, pockets, sources,
+    def calculateSourceOverrides(self, archive, distroseries, pocket, sources,
                                  include_deleted=False):
         def eager_load(rows):
             bulk.load(Component, (row[1] for row in rows))
@@ -225,6 +225,10 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
 
         spns = sources.keys()
         store = IStore(SourcePackagePublishingHistory)
+        other_conditions = []
+        if pocket is not None:
+            other_conditions.append(
+                SourcePackagePublishingHistory.pocket == pocket)
         already_published = DecoratedResultSet(
             store.find(
                 (SourcePackagePublishingHistory.sourcepackagenameID,
@@ -239,7 +243,8 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
                 SourcePackagePublishingHistory.status.is_in(
                     self.getExistingPublishingStatuses(include_deleted)),
                 SourcePackagePublishingHistory.sourcepackagenameID.is_in(
-                    spn.id for spn in spns)).order_by(
+                    spn.id for spn in spns),
+                *other_conditions).order_by(
                         SourcePackagePublishingHistory.sourcepackagenameID,
                         Desc(SourcePackagePublishingHistory.datecreated),
                         Desc(SourcePackagePublishingHistory.id),
@@ -261,12 +266,12 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
             bulk.load(Section, (row[3] for row in rows))
 
         store = IStore(BinaryPackagePublishingHistory)
+        other_conditions = []
         if not any_arch:
             expanded = calculate_target_das(distroseries, binaries.keys())
             candidates = [
                 make_package_condition(archive, das, bpn)
                 for bpn, das in expanded if das is not None]
-            das_conditions = []
         else:
             candidates = []
             archtags = set()
@@ -275,13 +280,16 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
                     BinaryPackagePublishingHistory.binarypackagenameID ==
                         bpn.id)
                 archtags.add(archtag)
-            das_conditions = [
+            other_conditions.extend([
                 DistroArchSeries.distroseriesID == distroseries.id,
                 BinaryPackagePublishingHistory.distroarchseriesID ==
                     DistroArchSeries.id,
-                ]
+                ])
         if len(candidates) == 0:
             return {}
+        if pocket is not None:
+            other_conditions.append(
+                BinaryPackagePublishingHistory.pocket == pocket)
         # Do not copy phased_update_percentage from existing publications;
         # it is too context-dependent to copy.
         already_published = DecoratedResultSet(
@@ -297,7 +305,7 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
                 BinaryPackagePublishingHistory.status.is_in(
                     self.getExistingPublishingStatuses(include_deleted)),
                 Or(*candidates),
-                *das_conditions).order_by(
+                *other_conditions).order_by(
                     BinaryPackagePublishingHistory.distroarchseriesID,
                     BinaryPackagePublishingHistory.binarypackagenameID,
                     Desc(BinaryPackagePublishingHistory.datecreated),

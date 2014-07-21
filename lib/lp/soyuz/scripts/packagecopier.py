@@ -721,7 +721,7 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries,
             # Only one override can be returned so take the first
             # element of the returned list.
             overrides = policy.calculateSourceOverrides(
-                archive, series, pocket,
+                archive, series, None,
                 {source.sourcepackagerelease.sourcepackagename:
                     SourceOverride()})
             # Only one override can be returned so take the first

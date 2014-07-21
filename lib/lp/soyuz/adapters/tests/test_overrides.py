@@ -30,18 +30,6 @@ class TestFromExistingOverridePolicy(TestCaseWithFactory):
 
     layer = ZopelessDatabaseLayer
 
-    def test_no_source_overrides(self):
-        # If the spn is not published in the given archive/distroseries,
-        # no changes are made.
-        spn = self.factory.makeSourcePackageName()
-        distroseries = self.factory.makeDistroSeries()
-        pocket = self.factory.getAnyPocket()
-        policy = FromExistingOverridePolicy()
-        overrides = policy.calculateSourceOverrides(
-            distroseries.main_archive, distroseries, pocket,
-            {spn: SourceOverride()})
-        self.assertEqual({}, overrides)
-
     def test_source_overrides(self):
         # When the spn is published in the given archive/distroseries, the
         # overrides for that archive/distroseries are returned.
@@ -55,6 +43,30 @@ class TestFromExistingOverridePolicy(TestCaseWithFactory):
                 component=spph.component, section=spph.section,
                 version=spph.sourcepackagerelease.version)}
         self.assertEqual(expected, overrides)
+
+    def test_source_overrides_pocket(self):
+        # If the spn is not published in the given pocket, no changes
+        # are made.
+        spn = self.factory.makeSourcePackageName()
+        distroseries = self.factory.makeDistroSeries()
+        policy = FromExistingOverridePolicy()
+        self.factory.makeSourcePackagePublishingHistory(
+            archive=distroseries.main_archive, distroseries=distroseries,
+            pocket=PackagePublishingPocket.RELEASE, sourcepackagename=spn)
+        overrides = policy.calculateSourceOverrides(
+            distroseries.main_archive, distroseries,
+            PackagePublishingPocket.PROPOSED,
+            {spn: SourceOverride()})
+        self.assertEqual(0, len(overrides))
+        overrides = policy.calculateSourceOverrides(
+            distroseries.main_archive, distroseries,
+            PackagePublishingPocket.RELEASE,
+            {spn: SourceOverride()})
+        self.assertEqual(1, len(overrides))
+        overrides = policy.calculateSourceOverrides(
+            distroseries.main_archive, distroseries, None,
+            {spn: SourceOverride()})
+        self.assertEqual(1, len(overrides))
 
     def test_source_overrides_latest_only_is_returned(self):
         # When the spn is published multiple times in the given
@@ -158,6 +170,32 @@ class TestFromExistingOverridePolicy(TestCaseWithFactory):
                     version=bpph2.binarypackagerelease.version),
             }
         self.assertEqual(expected, overrides)
+
+    def test_binary_overrides_pocket(self):
+        # If the binary is not published in the given pocket, no changes
+        # are made.
+        distroseries = self.factory.makeDistroSeries()
+        das = self.factory.makeDistroArchSeries(distroseries=distroseries)
+        bpn = self.factory.makeBinaryPackageName()
+        self.factory.makeBinaryPackagePublishingHistory(
+            archive=distroseries.main_archive, distroarchseries=das,
+            pocket=PackagePublishingPocket.RELEASE, binarypackagename=bpn)
+        policy = FromExistingOverridePolicy()
+
+        overrides = policy.calculateBinaryOverrides(
+            distroseries.main_archive, distroseries,
+            PackagePublishingPocket.PROPOSED,
+            {(bpn, das.architecturetag): BinaryOverride()})
+        self.assertEqual(0, len(overrides))
+        overrides = policy.calculateBinaryOverrides(
+            distroseries.main_archive, distroseries,
+            PackagePublishingPocket.RELEASE,
+            {(bpn, das.architecturetag): BinaryOverride()})
+        self.assertEqual(1, len(overrides))
+        overrides = policy.calculateBinaryOverrides(
+            distroseries.main_archive, distroseries, None,
+            {(bpn, das.architecturetag): BinaryOverride()})
+        self.assertEqual(1, len(overrides))
 
     def test_binary_overrides_skips_unknown_arch(self):
         # If calculateBinaryOverrides is passed with an archtag that
