@@ -187,15 +187,18 @@ class BaseOverridePolicy:
 
     implements(IOverridePolicy)
 
-    def __init__(self, phased_update_percentage=None):
+    def __init__(self, archive, distroseries, pocket,
+                 phased_update_percentage=None):
         super(BaseOverridePolicy, self).__init__()
+        self.archive = archive
+        self.distroseries = distroseries
+        self.pocket = pocket
         self.phased_update_percentage = phased_update_percentage
 
-    def calculateSourceOverrides(self, archive, distroseries, pocket, sources):
+    def calculateSourceOverrides(self, sources):
         raise NotImplementedError()
 
-    def calculateBinaryOverrides(self, archive, distroseries, pocket,
-                                 binaries):
+    def calculateBinaryOverrides(self, binaries):
         raise NotImplementedError()
 
 
@@ -217,8 +220,7 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
             status.append(PackagePublishingStatus.DELETED)
         return status
 
-    def calculateSourceOverrides(self, archive, distroseries, pocket, sources,
-                                 include_deleted=False):
+    def calculateSourceOverrides(self, sources, include_deleted=False):
         def eager_load(rows):
             bulk.load(Component, (row[1] for row in rows))
             bulk.load(Section, (row[2] for row in rows))
@@ -226,9 +228,9 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
         spns = sources.keys()
         store = IStore(SourcePackagePublishingHistory)
         other_conditions = []
-        if pocket is not None:
+        if self.pocket is not None:
             other_conditions.append(
-                SourcePackagePublishingHistory.pocket == pocket)
+                SourcePackagePublishingHistory.pocket == self.pocket)
         already_published = DecoratedResultSet(
             store.find(
                 (SourcePackagePublishingHistory.sourcepackagenameID,
@@ -237,9 +239,9 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
                  SourcePackageRelease.version),
                 SourcePackageRelease.id ==
                     SourcePackagePublishingHistory.sourcepackagereleaseID,
-                SourcePackagePublishingHistory.archiveID == archive.id,
+                SourcePackagePublishingHistory.archiveID == self.archive.id,
                 SourcePackagePublishingHistory.distroseriesID ==
-                    distroseries.id,
+                    self.distroseries.id,
                 SourcePackagePublishingHistory.status.is_in(
                     self.getExistingPublishingStatuses(include_deleted)),
                 SourcePackagePublishingHistory.sourcepackagenameID.is_in(
@@ -258,8 +260,7 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
                 component=component, section=section, version=version))
             for (name, component, section, version) in already_published)
 
-    def calculateBinaryOverrides(self, archive, distroseries, pocket,
-                                 binaries, include_deleted=False,
+    def calculateBinaryOverrides(self, binaries, include_deleted=False,
                                  any_arch=False):
         def eager_load(rows):
             bulk.load(Component, (row[2] for row in rows))
@@ -268,9 +269,9 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
         store = IStore(BinaryPackagePublishingHistory)
         other_conditions = []
         if not any_arch:
-            expanded = calculate_target_das(distroseries, binaries.keys())
+            expanded = calculate_target_das(self.distroseries, binaries.keys())
             candidates = [
-                make_package_condition(archive, das, bpn)
+                make_package_condition(self.archive, das, bpn)
                 for bpn, das in expanded if das is not None]
         else:
             candidates = []
@@ -281,15 +282,15 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
                         bpn.id)
                 archtags.add(archtag)
             other_conditions.extend([
-                DistroArchSeries.distroseriesID == distroseries.id,
+                DistroArchSeries.distroseriesID == self.distroseries.id,
                 BinaryPackagePublishingHistory.distroarchseriesID ==
                     DistroArchSeries.id,
                 ])
         if len(candidates) == 0:
             return {}
-        if pocket is not None:
+        if self.pocket is not None:
             other_conditions.append(
-                BinaryPackagePublishingHistory.pocket == pocket)
+                BinaryPackagePublishingHistory.pocket == self.pocket)
         # Do not copy phased_update_percentage from existing publications;
         # it is too context-dependent to copy.
         already_published = DecoratedResultSet(
@@ -376,18 +377,17 @@ class UnknownOverridePolicy(BaseOverridePolicy):
         else:
             return override_component_name
 
-    def calculateSourceOverrides(self, archive, distroseries, pocket, sources):
+    def calculateSourceOverrides(self, sources):
         return dict(
             (spn, SourceOverride(
                 component=(
-                    archive.default_component or
+                    self.archive.default_component or
                     UnknownOverridePolicy.getComponentOverride(
                         override.component, return_component=True))))
             for spn, override in sources.items())
 
-    def calculateBinaryOverrides(self, archive, distroseries, pocket,
-                                 binaries):
-        default_component = archive.default_component or getUtility(
+    def calculateBinaryOverrides(self, binaries):
+        default_component = self.archive.default_component or getUtility(
             IComponentSet)['universe']
         return dict(
             ((binary_package_name, architecture_tag), BinaryOverride(
@@ -404,30 +404,38 @@ class UbuntuOverridePolicy(FromExistingOverridePolicy,
     unknown policy.
     """
 
-    def calculateSourceOverrides(self, archive, distroseries, pocket, sources):
+    def calculateSourceOverrides(self, sources):
         total = set(sources.keys())
-        overrides = FromExistingOverridePolicy.calculateSourceOverrides(
-            self, archive, distroseries, pocket, sources, include_deleted=True)
+        existing_policy = FromExistingOverridePolicy(
+            self.archive, self.distroseries, self.pocket,
+            phased_update_percentage=self.phased_update_percentage)
+        overrides = existing_policy.calculateSourceOverrides(
+                sources, include_deleted=True)
         existing = set(overrides.keys())
         missing = total.difference(existing)
         if missing:
-            unknown = UnknownOverridePolicy.calculateSourceOverrides(
-                self, archive, distroseries, pocket,
+            unknown_policy = UnknownOverridePolicy(
+                self.archive, self.distroseries, self.pocket,
+                phased_update_percentage=self.phased_update_percentage)
+            unknown = unknown_policy.calculateSourceOverrides(
                 dict((spn, sources[spn]) for spn in missing))
             overrides.update(unknown)
         return overrides
 
-    def calculateBinaryOverrides(self, archive, distroseries, pocket,
-                                 binaries):
+    def calculateBinaryOverrides(self, binaries):
         total = set(binaries.keys())
-        overrides = FromExistingOverridePolicy.calculateBinaryOverrides(
-            self, archive, distroseries, pocket, binaries,
-            include_deleted=True)
+        existing_policy = FromExistingOverridePolicy(
+            self.archive, self.distroseries, self.pocket,
+            phased_update_percentage=self.phased_update_percentage)
+        overrides = existing_policy.calculateBinaryOverrides(
+            binaries, include_deleted=True)
         existing = set(overrides.keys())
         missing = total.difference(existing)
         if missing:
-            unknown = UnknownOverridePolicy.calculateBinaryOverrides(
-                self, archive, distroseries, pocket,
+            unknown_policy = UnknownOverridePolicy(
+                self.archive, self.distroseries, self.pocket,
+                phased_update_percentage=self.phased_update_percentage)
+            unknown = unknown_policy.calculateBinaryOverrides(
                 dict((key, binaries[key]) for key in missing))
             overrides.update(unknown)
         return overrides
