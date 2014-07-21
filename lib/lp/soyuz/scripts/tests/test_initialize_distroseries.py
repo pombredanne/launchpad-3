@@ -872,7 +872,7 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
             NoSuchPackageSet, getUtility(IPackagesetSet).getByName,
             child, u'test2')
         self.assertEqual(child.sourcecount, 0)
-        self.assertEqual(child.binarycount, 0)  # Chromium is FTBFS
+        self.assertEqual(child.binarycount, 0)
 
     def test_copy_limit_packagesets_none(self):
         # If a parent series has packagesets, we want to copy all of them
