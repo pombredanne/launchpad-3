@@ -587,14 +587,13 @@ class NascentUpload:
         # But it should be refactored ASAP.
         dar = self.policy.distroseries[archtag]
 
-        for (arch, check_version) in (
-                (dar, True), (self.policy.distroseries.architectures, False)):
+        for (any_arch, check_version) in ((False, True), (True, False)):
             for archive in archives:
                 for pocket in lookup_pockets:
                     overrides = FromExistingOverridePolicy().calculateBinaryOverrides(
                         archive, dar.distroseries, pocket,
                         {(ancestry_name, dar.architecturetag):
-                            BinaryOverride()})
+                            BinaryOverride()}, any_arch=any_arch)
                     if overrides:
                         return (
                             overrides[(ancestry_name, dar.architecturetag)],
