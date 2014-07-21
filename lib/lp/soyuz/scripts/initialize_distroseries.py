@@ -330,7 +330,7 @@ class InitializeDistroSeries:
     def _create_dsds(self):
         if not self.first_derivation:
             if (self._has_same_parents_as_previous_series() and
-                not self.packagesets_ids):
+                self.packagesets_ids is None):
                 # If the parents are the same as previous_series's
                 # parents and all the packagesets are being copied,
                 # then we simply copy the DSDs from previous_series
