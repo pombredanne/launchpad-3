@@ -1478,7 +1478,6 @@ class PublishingSet:
                     bpph.distroarchseries.architecturetag)] = bpph
             with_overrides = {}
             overrides = policy.calculateBinaryOverrides(
-                archive, distroseries, None,
                 dict(
                     ((bpn, archtag), BinaryOverride())
                     for bpn, archtag in bpn_archtag.keys()))

@@ -713,7 +713,7 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries,
         status=active_publishing_status,
         distroseries=series, pocket=pocket)
     policy = archive.getOverridePolicy(
-        phased_update_percentage=phased_update_percentage)
+        series, None, phased_update_percentage=phased_update_percentage)
     if source_in_destination.is_empty():
         # If no manual overrides were specified and the archive has an
         # override policy then use that policy to get overrides.
@@ -721,7 +721,6 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries,
             # Only one override can be returned so take the first
             # element of the returned list.
             overrides = policy.calculateSourceOverrides(
-                archive, series, None,
                 {source.sourcepackagerelease.sourcepackagename:
                     SourceOverride()})
             # Only one override can be returned so take the first

@@ -2070,7 +2070,8 @@ class Archive(SQLBase):
         # understandiung EnumItems.
         return list(PackagePublishingPocket.items)
 
-    def getOverridePolicy(self, phased_update_percentage=None):
+    def getOverridePolicy(self, distroseries, pocket,
+                          phased_update_percentage=None):
         """See `IArchive`."""
         # Circular imports.
         from lp.soyuz.adapters.overrides import UbuntuOverridePolicy
@@ -2078,6 +2079,7 @@ class Archive(SQLBase):
         # a PPA that overrides the component/pocket to main/RELEASE.
         if self.purpose in MAIN_ARCHIVE_PURPOSES:
             return UbuntuOverridePolicy(
+                self, distroseries, pocket,
                 phased_update_percentage=phased_update_percentage)
         return None
 

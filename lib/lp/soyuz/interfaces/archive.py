@@ -1055,7 +1055,7 @@ class IArchiveView(IHasBuildRecords):
     def getPockets():
         """Return iterable containing valid pocket names for this archive."""
 
-    def getOverridePolicy(phased_update_percentage=None):
+    def getOverridePolicy(distroseries, pocket, phased_update_percentage=None):
         """Returns an instantiated `IOverridePolicy` for the archive."""
 
     buildd_secret = TextLine(
