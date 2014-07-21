@@ -56,6 +56,7 @@ class IOverride(Interface):
     component = Attribute("The IComponent override")
     section = Attribute("The ISection override")
     version = Attribute("The exclusive lower version limit")
+    new = Attribute("Whether the package is considered new")
 
 
 class ISourceOverride(IOverride):
@@ -80,10 +81,11 @@ class IBinaryOverride(IOverride):
 class Override:
     """See `IOverride`."""
 
-    def __init__(self, component=None, section=None, version=None):
+    def __init__(self, component=None, section=None, version=None, new=None):
         self.component = component
         self.section = section
         self.version = version
+        self.new = new
 
     def __ne__(self, other):
         return not self == other
@@ -104,13 +106,14 @@ class SourceOverride(Override):
             self.__class__ == other.__class__ and
             self.component == other.component and
             self.section == other.section and
-            self.version == other.version)
+            self.version == other.version and
+            self.new == other.new)
 
     def __repr__(self):
         return (
-            "<%s at %x component=%r section=%r version=%r>" %
+            "<%s at %x component=%r section=%r version=%r new=%r>" %
             (self.__class__.__name__, id(self), self.component, self.section,
-             self.version))
+             self.version, self.new))
 
 
 class BinaryOverride(Override):
@@ -118,9 +121,9 @@ class BinaryOverride(Override):
     implements(IBinaryOverride)
 
     def __init__(self, component=None, section=None, priority=None,
-                 phased_update_percentage=None, version=None):
+                 phased_update_percentage=None, version=None, new=None):
         super(BinaryOverride, self).__init__(
-            component=component, section=section, version=version)
+            component=component, section=section, version=version, new=new)
         self.priority = priority
         self.phased_update_percentage = phased_update_percentage
 
@@ -131,14 +134,16 @@ class BinaryOverride(Override):
             self.section == other.section and
             self.priority == other.priority and
             self.phased_update_percentage == other.phased_update_percentage and
-            self.version == other.version)
+            self.version == other.version and
+            self.new == other.new)
 
     def __repr__(self):
         return (
             "<%s at %x component=%r section=%r priority=%r "
-            "phased_update_percentage=%r version=%r>" %
+            "phased_update_percentage=%r version=%r new=%r>" %
             (self.__class__.__name__, id(self), self.component, self.section,
-             self.priority, self.phased_update_percentage, self.version))
+             self.priority, self.phased_update_percentage, self.version,
+             self.new))
 
 
 class IOverridePolicy(Interface):
@@ -257,7 +262,8 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
             pre_iter_hook=eager_load)
         return dict(
             (name, SourceOverride(
-                component=component, section=section, version=version))
+                component=component, section=section, version=version,
+                new=False))
             for (name, component, section, version) in already_published)
 
     def calculateBinaryOverrides(self, binaries, include_deleted=False,
@@ -337,7 +343,7 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
                 overrides[key] = BinaryOverride(
                     component=component, section=section, priority=priority,
                     phased_update_percentage=self.phased_update_percentage,
-                    version=ver)
+                    version=ver, new=False)
         return overrides
 
 
@@ -383,7 +389,8 @@ class UnknownOverridePolicy(BaseOverridePolicy):
                 component=(
                     self.archive.default_component or
                     UnknownOverridePolicy.getComponentOverride(
-                        override.component, return_component=True))))
+                        override.component, return_component=True)),
+                new=True))
             for spn, override in sources.items())
 
     def calculateBinaryOverrides(self, binaries):
@@ -391,7 +398,7 @@ class UnknownOverridePolicy(BaseOverridePolicy):
             IComponentSet)['universe']
         return dict(
             ((binary_package_name, architecture_tag), BinaryOverride(
-                component=default_component,
+                component=default_component, new=True,
                 phased_update_percentage=self.phased_update_percentage))
             for binary_package_name, architecture_tag in binaries.keys())
 
