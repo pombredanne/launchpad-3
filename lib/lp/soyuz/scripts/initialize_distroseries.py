@@ -102,7 +102,7 @@ class InitializeDistroSeries:
 
     def __init__(
         self, distroseries, parents=(), arches=(), archindep_archtag=None,
-        packagesets=(), rebuild=False, overlays=(), overlay_pockets=(),
+        packagesets=None, rebuild=False, overlays=(), overlay_pockets=(),
         overlay_components=()):
         self.distroseries = distroseries
         self.parent_ids = [int(id) for id in parents]
