@@ -254,17 +254,32 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
             for (name, component, section, version) in already_published)
 
     def calculateBinaryOverrides(self, archive, distroseries, pocket,
-                                 binaries, include_deleted=False):
+                                 binaries, include_deleted=False,
+                                 any_arch=False):
         def eager_load(rows):
             bulk.load(Component, (row[2] for row in rows))
             bulk.load(Section, (row[3] for row in rows))
 
         store = IStore(BinaryPackagePublishingHistory)
-        expanded = calculate_target_das(distroseries, binaries.keys())
-
-        candidates = [
-            make_package_condition(archive, das, bpn)
-            for bpn, das in expanded if das is not None]
+        if not any_arch:
+            expanded = calculate_target_das(distroseries, binaries.keys())
+            candidates = [
+                make_package_condition(archive, das, bpn)
+                for bpn, das in expanded if das is not None]
+            das_conditions = []
+        else:
+            candidates = []
+            archtags = set()
+            for bpn, archtag in binaries.keys():
+                candidates.append(
+                    BinaryPackagePublishingHistory.binarypackagenameID ==
+                        bpn.id)
+                archtags.add(archtag)
+            das_conditions = [
+                DistroArchSeries.distroseriesID == distroseries.id,
+                BinaryPackagePublishingHistory.distroarchseriesID ==
+                    DistroArchSeries.id,
+                ]
         if len(candidates) == 0:
             return {}
         # Do not copy phased_update_percentage from existing publications;
@@ -281,7 +296,8 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
                     BinaryPackagePublishingHistory.binarypackagereleaseID,
                 BinaryPackagePublishingHistory.status.is_in(
                     self.getExistingPublishingStatuses(include_deleted)),
-                Or(*candidates)).order_by(
+                Or(*candidates),
+                *das_conditions).order_by(
                     BinaryPackagePublishingHistory.distroarchseriesID,
                     BinaryPackagePublishingHistory.binarypackagenameID,
                     Desc(BinaryPackagePublishingHistory.datecreated),
@@ -299,9 +315,13 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
         for name, das, component, section, priority, ver in already_published:
             # These details can always fulfill their own archtag, and may
             # satisfy a None archtag if the DAS is nominatedarchindep.
-            matching_keys = [(name, das.architecturetag)]
-            if das == das.distroseries.nominatedarchindep:
-                matching_keys.append((name, None))
+            if not any_arch:
+                matching_keys = [(name, das.architecturetag)]
+                if das == das.distroseries.nominatedarchindep:
+                    matching_keys.append((name, None))
+            else:
+                matching_keys = [
+                    (name, archtag) for archtag in archtags | set((None,))]
             for key in matching_keys:
                 if key not in binaries:
                     continue
