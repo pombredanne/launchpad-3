@@ -21,6 +21,7 @@ __metaclass__ = type
 import os
 
 import apt_pkg
+from sqlobject import SQLObjectNotFound
 from zope.component import getUtility
 
 from lp.app.errors import NotFoundError
@@ -46,10 +47,11 @@ from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.soyuz.adapters.overrides import (
     BinaryOverride,
+    FromExistingOverridePolicy,
     SourceOverride,
     UnknownOverridePolicy,
     )
-from lp.soyuz.enums import PackagePublishingStatus
+from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.queue import QueueInconsistentStateError
 
@@ -537,19 +539,18 @@ class NascentUpload:
         Return the most recent ISPPH instance matching the uploaded file
         package name or None.
         """
+        try:
+            ancestry_name = getUtility(ISourcePackageNameSet)[
+                uploaded_file.package]
+        except NotFoundError:
+            return None
         for pocket in lookup_pockets:
             for archive in archives:
-                candidates = archive.getPublishedSources(
-                    name=uploaded_file.package, exact_match=True,
-                    distroseries=self.policy.distroseries,
-                    pocket=lookup_pockets,
-                    status=(
-                        PackagePublishingStatus.PUBLISHED,
-                        PackagePublishingStatus.PENDING))
-                try:
-                    return candidates[0]
-                except IndexError:
-                    pass
+                overrides = FromExistingOverridePolicy().calculateSourceOverrides(
+                    archive, self.policy.distroseries, pocket,
+                    {ancestry_name: SourceOverride()})
+                if overrides:
+                    return overrides[ancestry_name]
         return None
 
     def getBinaryAncestry(self, uploaded_file, archives, lookup_pockets):
@@ -570,6 +571,10 @@ class NascentUpload:
             ancestry_name = uploaded_file.deb_file.package
         else:
             ancestry_name = uploaded_file.package
+        try:
+            ancestry_name = getUtility(IBinaryPackageNameSet)[ancestry_name]
+        except NotFoundError:
+            return None, None
 
         if uploaded_file.architecture == "all":
             arch_indep = self.policy.distroseries.nominatedarchindep
@@ -586,14 +591,14 @@ class NascentUpload:
                 (dar, True), (self.policy.distroseries.architectures, False)):
             for archive in archives:
                 for pocket in lookup_pockets:
-                    candidates = archive.getAllPublishedBinaries(
-                        name=ancestry_name, exact_match=True,
-                        distroarchseries=arch, pocket=pocket,
-                        status=(
-                            PackagePublishingStatus.PUBLISHED,
-                            PackagePublishingStatus.PENDING))
-                    if candidates:
-                        return (candidates[0], check_version)
+                    overrides = FromExistingOverridePolicy().calculateBinaryOverrides(
+                        archive, dar.distroseries, pocket,
+                        {(ancestry_name, dar.architecturetag):
+                            BinaryOverride()})
+                    if overrides:
+                        return (
+                            overrides[(ancestry_name, dar.architecturetag)],
+                            check_version)
         return None, None
 
     def _checkVersion(self, proposed_version, archive_version, filename):
@@ -610,7 +615,7 @@ class NascentUpload:
         # At this point DSC.version should be equal Changes.version.
         # Anyway, we trust more in DSC.
         proposed_version = self.changes.dsc.dsc_version
-        archive_version = ancestry.sourcepackagerelease.version
+        archive_version = ancestry.version
         filename = uploaded_file.filename
         self._checkVersion(proposed_version, archive_version, filename)
 
@@ -625,7 +630,7 @@ class NascentUpload:
         # because debuild does build the binary changesfile with a version
         # that includes epoch.
         proposed_version = uploaded_file.control_version
-        archive_version = ancestry.binarypackagerelease.version
+        archive_version = ancestry.version
         filename = uploaded_file.filename
         self._checkVersion(proposed_version, archive_version, filename)
 
@@ -719,9 +724,6 @@ class NascentUpload:
                 ancestry = self.getSourceAncestry(
                     uploaded_file, archives, lookup_pockets)
                 if ancestry is not None:
-                    self.logger.debug("%s (source) exists in %s" % (
-                        ancestry.sourcepackagerelease.title,
-                        ancestry.pocket.name))
                     self.checkSourceVersion(uploaded_file, ancestry)
                 else:
                     if not autoaccept_new:
@@ -751,10 +753,6 @@ class NascentUpload:
                 ancestry, check_version = self.getBinaryAncestry(
                     uploaded_file, archives, lookup_pockets)
                 if ancestry is not None:
-                    self.logger.debug("%s (binary) exists in %s/%s" % (
-                        ancestry.binarypackagerelease.title,
-                        ancestry.distroarchseries.architecturetag,
-                        ancestry.pocket.name))
                     if check_version and not foreign_archive:
                         self.checkBinaryVersion(uploaded_file, ancestry)
                 else:
@@ -772,6 +770,7 @@ class NascentUpload:
                     except UploadError:
                         pass
                 if ancestry is None and use_default_component:
+                    # XXX: Need archtag.
                     overrides = unknown_policy.calculateBinaryOverrides(
                         self.policy.archive, self.policy.distroseries,
                         self.policy.pocket,
