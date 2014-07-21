@@ -27,6 +27,7 @@ from zope.interface import (
     implements,
     Interface,
     )
+from zope.security.proxy import isinstance as zope_isinstance
 
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.database import bulk
@@ -66,8 +67,8 @@ class IBinaryOverride(IOverride):
 
     binary_package_name = Attribute(
         "The IBinaryPackageName that's being overridden")
-    distro_arch_series = Attribute(
-        "The IDistroArchSeries for the publication")
+    architecture_tag = Attribute(
+        "The architecture tag for the publication")
     priority = Attribute(
         "The PackagePublishingPriority that's being overridden")
     phased_update_percentage = Attribute(
@@ -95,7 +96,7 @@ class SourceOverride(Override):
     """See `ISourceOverride`."""
     implements(ISourceOverride)
 
-    def __init__(self, source_package_name, component, section):
+    def __init__(self, source_package_name, component=None, section=None):
         super(SourceOverride, self).__init__(component, section)
         self.source_package_name = source_package_name
 
@@ -105,35 +106,42 @@ class SourceOverride(Override):
             self.component == other.component and
             self.section == other.section)
 
+    def __repr__(self):
+        return (
+            "<%s at %x source_package_name=%r component=%r section=%r>" %
+            (self.__class__.__name__, id(self), self.source_package_name,
+             self.component, self.section))
+
 
 class BinaryOverride(Override):
     """See `IBinaryOverride`."""
     implements(IBinaryOverride)
 
-    def __init__(self, binary_package_name, distro_arch_series, component,
-                 section, priority, phased_update_percentage):
+    def __init__(self, binary_package_name, architecture_tag, component=None,
+                 section=None, priority=None, phased_update_percentage=None):
         super(BinaryOverride, self).__init__(component, section)
         self.binary_package_name = binary_package_name
-        self.distro_arch_series = distro_arch_series
+        self.architecture_tag = architecture_tag
         self.priority = priority
         self.phased_update_percentage = phased_update_percentage
 
     def __eq__(self, other):
         return (
             self.binary_package_name == other.binary_package_name and
-            self.distro_arch_series == other.distro_arch_series and
+            self.architecture_tag == other.architecture_tag and
             self.component == other.component and
             self.section == other.section and
             self.priority == other.priority and
             self.phased_update_percentage == other.phased_update_percentage)
 
     def __repr__(self):
-        return ("<BinaryOverride at %x component=%r section=%r "
-            "binary_package_name=%r distro_arch_series=%r priority=%r "
+        return (
+            "<%s at %x binary_package_name=%r architecture_tag=%r "
+            "component=%r section=%r priority=%r "
             "phased_update_percentage=%r>" %
-            (id(self), self.component, self.section, self.binary_package_name,
-             self.distro_arch_series, self.priority,
-             self.phased_update_percentage))
+            (self.__class__.__name__, id(self), self.binary_package_name,
+             self.architecture_tag, self.component, self.section,
+             self.priority, self.phased_update_percentage))
 
 
 class IOverridePolicy(Interface):
@@ -149,15 +157,13 @@ class IOverridePolicy(Interface):
     phased_update_percentage = Attribute(
         "The phased update percentage to apply to binary publications.")
 
-    def calculateSourceOverrides(archive, distroseries, pocket, sources,
-                                 source_component=None):
+    def calculateSourceOverrides(archive, distroseries, pocket, sources):
         """Calculate source overrides.
 
         :param archive: The target `IArchive`.
         :param distroseries: The target `IDistroSeries`.
         :param pocket: The target `PackagePublishingPocket`.
-        :param sources: A tuple of `ISourcePackageName`s.
-        :param source_component: The sources' `IComponent` (optional).
+        :param sources: A tuple of `ISourceOverride`s.
 
         :return: A list of `ISourceOverride`
         """
@@ -186,8 +192,7 @@ class BaseOverridePolicy:
         super(BaseOverridePolicy, self).__init__()
         self.phased_update_percentage = phased_update_percentage
 
-    def calculateSourceOverrides(self, archive, distroseries, pocket,
-                                 sources, source_component=None):
+    def calculateSourceOverrides(self, archive, distroseries, pocket, sources):
         raise NotImplementedError()
 
     def calculateBinaryOverrides(self, archive, distroseries, pocket,
@@ -200,7 +205,7 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
 
     Override policy that returns the SourcePackageName, component and
     section for the latest published source publication, or the
-    BinaryPackageName, DistroArchSeries, component, section and priority
+    BinaryPackageName, architecture_tag, component, section and priority
     for the latest published binary publication.
     """
 
@@ -213,12 +218,13 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
             status.append(PackagePublishingStatus.DELETED)
         return status
 
-    def calculateSourceOverrides(self, archive, distroseries, pocket, spns,
-                                 source_component=None, include_deleted=False):
+    def calculateSourceOverrides(self, archive, distroseries, pockets, sources,
+                                 include_deleted=False):
         def eager_load(rows):
             bulk.load(Component, (row[1] for row in rows))
             bulk.load(Section, (row[2] for row in rows))
 
+        spns = [override.source_package_name for override in sources]
         store = IStore(SourcePackagePublishingHistory)
         already_published = DecoratedResultSet(
             store.find(
@@ -241,7 +247,7 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
             id_resolver((SourcePackageName, Component, Section)),
             pre_iter_hook=eager_load)
         return [
-            SourceOverride(name, component, section)
+            SourceOverride(name, component=component, section=section)
             for (name, component, section) in already_published]
 
     def calculateBinaryOverrides(self, archive, distroseries, pocket,
@@ -251,7 +257,10 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
             bulk.load(Section, (row[3] for row in rows))
 
         store = IStore(BinaryPackagePublishingHistory)
-        expanded = calculate_target_das(distroseries, binaries)
+        expanded = calculate_target_das(
+            distroseries,
+            [(override.binary_package_name, override.architecture_tag)
+             for override in binaries])
 
         candidates = [
             make_package_condition(archive, das, bpn)
@@ -283,10 +292,13 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
                 (BinaryPackageName, DistroArchSeries, Component, Section,
                 None)),
             pre_iter_hook=eager_load)
+        # XXX: This should return None for arch-indep, not the
+        # nominatedarchindep archtag.
         return [
             BinaryOverride(
-                name, das, component, section, priority,
-                self.phased_update_percentage)
+                name, das.architecturetag, component=component,
+                section=section, priority=priority,
+                phased_update_percentage=self.phased_update_percentage)
             for name, das, component, section, priority in already_published]
 
 
@@ -317,7 +329,7 @@ class UnknownOverridePolicy(BaseOverridePolicy):
     @classmethod
     def getComponentOverride(cls, component=None, return_component=False):
         # component can be a Component object or a component name.
-        if isinstance(component, Component):
+        if zope_isinstance(component, Component):
             component = component.name
         override_component_name = cls.DEBIAN_COMPONENT_OVERRIDE_MAP.get(
             component, cls.DEFAULT_OVERRIDE_COMPONENT)
@@ -326,15 +338,15 @@ class UnknownOverridePolicy(BaseOverridePolicy):
         else:
             return override_component_name
 
-    def calculateSourceOverrides(self, archive, distroseries, pocket,
-                                 sources, source_component=None):
-        default_component = (
-            archive.default_component or
-            UnknownOverridePolicy.getComponentOverride(
-                source_component, return_component=True))
+    def calculateSourceOverrides(self, archive, distroseries, pocket, sources):
         return [
-            SourceOverride(source, default_component, None)
-            for source in sources]
+            SourceOverride(
+                override.source_package_name,
+                component=(
+                    archive.default_component or
+                    UnknownOverridePolicy.getComponentOverride(
+                        override.component, return_component=True)))
+            for override in sources]
 
     def calculateBinaryOverrides(self, archive, distroseries, pocket,
                                  binaries):
@@ -342,9 +354,10 @@ class UnknownOverridePolicy(BaseOverridePolicy):
             IComponentSet)['universe']
         return [
             BinaryOverride(
-                binary, das, default_component, None, None,
-                self.phased_update_percentage)
-            for binary, das in calculate_target_das(distroseries, binaries)]
+                override.binary_package_name, override.architecture_tag,
+                component=default_component,
+                phased_update_percentage=self.phased_update_percentage)
+            for override in binaries]
 
 
 class UbuntuOverridePolicy(FromExistingOverridePolicy,
@@ -355,36 +368,39 @@ class UbuntuOverridePolicy(FromExistingOverridePolicy,
     unknown policy.
     """
 
-    def calculateSourceOverrides(self, archive, distroseries, pocket,
-                                 sources, source_component=None):
-        total = set(sources)
+    def calculateSourceOverrides(self, archive, distroseries, pocket, sources):
+        spns = [override.source_package_name for override in sources]
+        total = set(spns)
         overrides = FromExistingOverridePolicy.calculateSourceOverrides(
-            self, archive, distroseries, pocket, sources, source_component,
-            include_deleted=True)
+            self, archive, distroseries, pocket, sources, include_deleted=True)
         existing = set(override.source_package_name for override in overrides)
         missing = total.difference(existing)
         if missing:
             unknown = UnknownOverridePolicy.calculateSourceOverrides(
-                self, archive, distroseries, pocket, missing, source_component)
+                self, archive, distroseries, pocket,
+                [override for override in sources
+                 if override.source_package_name in missing])
             overrides.extend(unknown)
         return overrides
 
     def calculateBinaryOverrides(self, archive, distroseries, pocket,
                                  binaries):
-        total = set(binaries)
+        total = set(
+            (override.binary_package_name, override.architecture_tag)
+            for override in binaries)
         overrides = FromExistingOverridePolicy.calculateBinaryOverrides(
             self, archive, distroseries, pocket, binaries,
             include_deleted=True)
         existing = set(
-            (
-                override.binary_package_name,
-                override.distro_arch_series.architecturetag,
-            )
+            (override.binary_package_name, override.architecture_tag)
             for override in overrides)
         missing = total.difference(existing)
         if missing:
             unknown = UnknownOverridePolicy.calculateBinaryOverrides(
-                self, archive, distroseries, pocket, missing)
+                self, archive, distroseries, pocket,
+                [override for override in binaries
+                 if (override.binary_package_name, override.architecture_tag)
+                 in missing])
             overrides.extend(unknown)
         return overrides
 

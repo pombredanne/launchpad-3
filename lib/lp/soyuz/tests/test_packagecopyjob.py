@@ -832,7 +832,8 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         package = source_package.sourcepackagerelease.sourcepackagename
         restricted = getUtility(IComponentSet)['restricted']
         editors = getUtility(ISectionSet)['editors']
-        override = SourceOverride(package, restricted, editors)
+        override = SourceOverride(
+            package, component=restricted, section=editors)
         job.addSourceOverride(override)
 
         # Accept the upload to release the job then run it.
@@ -1525,12 +1526,10 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         old_component = self.factory.makeComponent()
         old_section = self.factory.makeSection()
         pcj.addSourceOverride(SourceOverride(
-            source_package_name=pcj.package_name,
-            component=old_component, section=old_section))
+            pcj.package_name, component=old_component, section=old_section))
         new_section = self.factory.makeSection()
         pcj.addSourceOverride(SourceOverride(
-            source_package_name=pcj.package_name,
-            component=None, section=new_section))
+            pcj.package_name, section=new_section))
         self.assertEqual(old_component.name, pcj.component_name)
         self.assertEqual(new_section.name, pcj.section_name)
 
@@ -1542,12 +1541,10 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         old_component = self.factory.makeComponent()
         old_section = self.factory.makeSection()
         pcj.addSourceOverride(SourceOverride(
-            source_package_name=pcj.package_name,
-            component=old_component, section=old_section))
+            pcj.package_name, component=old_component, section=old_section))
         new_component = self.factory.makeComponent()
         pcj.addSourceOverride(SourceOverride(
-            source_package_name=pcj.package_name,
-            component=new_component, section=None))
+            pcj.package_name, component=new_component))
         self.assertEqual(new_component.name, pcj.component_name)
         self.assertEqual(old_section.name, pcj.section_name)
 
@@ -1561,8 +1558,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             package_name=name.name, package_version="1.0")
         switch_dbuser('copy_packages')
 
-        override = SourceOverride(
-            source_package_name=name, component=component, section=section)
+        override = SourceOverride(name, component=component, section=section)
         pcj.addSourceOverride(override)
 
         self.assertEqual(override, pcj.getSourceOverride())
