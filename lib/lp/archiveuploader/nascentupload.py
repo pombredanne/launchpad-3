@@ -21,7 +21,6 @@ __metaclass__ = type
 import os
 
 import apt_pkg
-from sqlobject import SQLObjectNotFound
 from zope.component import getUtility
 
 from lp.app.errors import NotFoundError
@@ -533,73 +532,6 @@ class NascentUpload:
     #
     # Handling checking of versions and overrides
     #
-    def getSourceAncestry(self, uploaded_file, archives, lookup_pockets):
-        """Return the last published source (ancestry) for a given file.
-
-        Return the most recent ISPPH instance matching the uploaded file
-        package name or None.
-        """
-        try:
-            ancestry_name = getUtility(ISourcePackageNameSet)[
-                uploaded_file.package]
-        except NotFoundError:
-            return None
-        for pocket in lookup_pockets:
-            for archive in archives:
-                overrides = FromExistingOverridePolicy().calculateSourceOverrides(
-                    archive, self.policy.distroseries, pocket,
-                    {ancestry_name: SourceOverride()})
-                if overrides:
-                    return overrides[ancestry_name]
-        return None
-
-    def getBinaryAncestry(self, uploaded_file, archives, lookup_pockets):
-        """Return the last published binary (ancestry) for given file.
-
-        Return the most recent IBPPH instance matching the uploaded file
-        package name or None.
-
-        This method may raise NotFoundError if it is dealing with an
-        uploaded file targeted to an architecture not present in the
-        distroseries in context. So callsites needs to be aware.
-        """
-        # If we are dealing with a DDEB, use the DEB's overrides.
-        # If there's no deb_file set, don't worry about it. Rejection is
-        # already guaranteed.
-        if (isinstance(uploaded_file, DdebBinaryUploadFile)
-            and uploaded_file.deb_file):
-            ancestry_name = uploaded_file.deb_file.package
-        else:
-            ancestry_name = uploaded_file.package
-        try:
-            ancestry_name = getUtility(IBinaryPackageNameSet)[ancestry_name]
-        except NotFoundError:
-            return None, None
-
-        if uploaded_file.architecture == "all":
-            arch_indep = self.policy.distroseries.nominatedarchindep
-            archtag = arch_indep.architecturetag
-        else:
-            archtag = uploaded_file.architecture
-
-        # XXX cprov 2007-02-13: it raises NotFoundError for unknown
-        # architectures. For now, it is treated in find_and_apply_overrides().
-        # But it should be refactored ASAP.
-        dar = self.policy.distroseries[archtag]
-
-        for (any_arch, check_version) in ((False, True), (True, False)):
-            for archive in archives:
-                for pocket in lookup_pockets:
-                    overrides = FromExistingOverridePolicy().calculateBinaryOverrides(
-                        archive, dar.distroseries, pocket,
-                        {(ancestry_name, dar.architecturetag):
-                            BinaryOverride()}, any_arch=any_arch)
-                    if overrides:
-                        return (
-                            overrides[(ancestry_name, dar.architecturetag)],
-                            check_version)
-        return None, None
-
     def _checkVersion(self, proposed_version, archive_version, filename):
         """Check if the proposed version is higher than the one in archive."""
         if apt_pkg.version_compare(proposed_version, archive_version) < 0:
@@ -711,7 +643,19 @@ class NascentUpload:
                 (self.policy.archive.is_primary and self.is_partner)):
             use_default_component = False
 
-        unknown_policy = UnknownOverridePolicy()
+        policies = []
+        for (any_arch, check_version) in ((False, True), (True, False)):
+            for archive in archives:
+                for pocket in lookup_pockets:
+                    policies.append((
+                        FromExistingOverridePolicy(), archive,
+                        self.policy.distroseries, pocket,
+                        {'any_arch': any_arch}, check_version, True))
+        if use_default_component:
+            policies.append((
+                UnknownOverridePolicy(), self.policy.archive,
+                self.policy.distroseries, self.policy.pocket, {}, False,
+                False))
 
         for uploaded_file in self.changes.files:
             upload_component = getUtility(IComponentSet)[
@@ -720,24 +664,32 @@ class NascentUpload:
                 self.logger.debug(
                     "Checking for %s/%s source ancestry"
                     % (uploaded_file.package, uploaded_file.version))
-                ancestry = self.getSourceAncestry(
-                    uploaded_file, archives, lookup_pockets)
-                if ancestry is not None:
-                    self.checkSourceVersion(uploaded_file, ancestry)
-                else:
-                    if not autoaccept_new:
-                        self.logger.debug(
-                            "%s: (source) NEW", uploaded_file.package)
-                        uploaded_file.new = True
-                    if use_default_component:
-                        overrides = unknown_policy.calculateSourceOverrides(
-                            self.policy.archive, self.policy.distroseries,
-                            self.policy.pocket,
-                            {uploaded_file.package: SourceOverride(
-                                component=upload_component)})
-                        ancestry = overrides.get(uploaded_file.package)
-                if override_at_all and ancestry is not None:
-                    self.overrideSourceFile(uploaded_file, ancestry)
+                ancestry_name = getUtility(
+                    ISourcePackageNameSet).getOrCreateByName(
+                        uploaded_file.package)
+
+                override = None
+                is_new = True
+                for (policy, archive, series, pocket, args, check_version,
+                     exists) in policies:
+                    overrides = policy.calculateSourceOverrides(
+                        archive, series, pocket,
+                        {ancestry_name:
+                            SourceOverride(component=upload_component)})
+                    override = overrides.get(ancestry_name)
+                    if override is not None:
+                        if check_version:
+                            self.checkSourceVersion(uploaded_file, override)
+                        if exists:
+                            is_new = False
+                        break
+
+                if is_new and not autoaccept_new:
+                    self.logger.debug(
+                        "%s: (source) NEW", uploaded_file.package)
+                    uploaded_file.new = True
+                if override_at_all and override is not None:
+                    self.overrideSourceFile(uploaded_file, override)
             elif isinstance(uploaded_file, BaseBinaryUploadFile):
                 self.logger.debug(
                     "Checking for %s/%s/%s binary ancestry"
@@ -746,37 +698,49 @@ class NascentUpload:
                         uploaded_file.version,
                         uploaded_file.architecture,
                         ))
-                # Find the best ancestor publication for this binary. If
-                # it's from this archive and architecture we also want
-                # to make sure the version isn't going backwards.
-                ancestry, check_version = self.getBinaryAncestry(
-                    uploaded_file, archives, lookup_pockets)
-                if ancestry is not None:
-                    if check_version and not foreign_archive:
-                        self.checkBinaryVersion(uploaded_file, ancestry)
+
+                # If we are dealing with a DDEB, use the DEB's
+                # overrides. If there's no deb_file set, don't worry
+                # about it. Rejection is already guaranteed.
+                if (isinstance(uploaded_file, DdebBinaryUploadFile)
+                    and uploaded_file.deb_file):
+                    ancestry_name = uploaded_file.deb_file.package
                 else:
-                    if not autoaccept_new:
-                        self.logger.debug(
-                            "%s: (binary) NEW", uploaded_file.package)
-                        uploaded_file.new = True
-                    # Check the current source publication's component.
-                    # If there is a corresponding source publication, we will
-                    # use the component from that, otherwise default mappings
-                    # are used.
-                    try:
-                        spph = uploaded_file.findCurrentSourcePublication()
-                        ancestry = BinaryOverride(component=spph.component)
-                    except UploadError:
-                        pass
-                if ancestry is None and use_default_component:
-                    # XXX: Need archtag.
-                    overrides = unknown_policy.calculateBinaryOverrides(
-                        self.policy.archive, self.policy.distroseries,
-                        self.policy.pocket,
-                        {(uploaded_file.package, None): BinaryOverride()})
-                    ancestry = overrides.get((uploaded_file.package, None))
-                if override_at_all and ancestry is not None:
-                    self.overrideBinaryFile(uploaded_file, ancestry)
+                    ancestry_name = uploaded_file.package
+                ancestry_name = getUtility(
+                    IBinaryPackageNameSet).getOrCreateByName(ancestry_name)
+
+                if uploaded_file.architecture == "all":
+                    arch_indep = self.policy.distroseries.nominatedarchindep
+                    archtag = arch_indep.architecturetag
+                else:
+                    archtag = uploaded_file.architecture
+
+                override = None
+                is_new = True
+                for (policy, archive, series, pocket, args, check_version,
+                     exists) in policies:
+                    overrides = policy.calculateBinaryOverrides(
+                        archive, series, pocket,
+                        {(ancestry_name, archtag):
+                            BinaryOverride(component=upload_component)},
+                        **args)
+                    override = overrides.get((ancestry_name, archtag))
+                    if override is not None:
+                        if check_version and not foreign_archive:
+                            self.checkBinaryVersion(uploaded_file, override)
+                        if exists:
+                            is_new = False
+                        break
+
+                # XXX: Default to source component.
+
+                if is_new and not autoaccept_new:
+                    self.logger.debug(
+                        "%s: (binary) NEW", uploaded_file.package)
+                    uploaded_file.new = True
+                if override_at_all and override is not None:
+                    self.overrideBinaryFile(uploaded_file, override)
 
     #
     # Actually processing accepted or rejected uploads -- and mailing people
