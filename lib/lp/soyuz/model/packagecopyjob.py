@@ -58,7 +58,6 @@ from lp.services.job.model.job import (
 from lp.services.job.runner import BaseRunnableJob
 from lp.services.mail.sendmail import format_address_for_person
 from lp.soyuz.adapters.overrides import (
-    FromExistingOverridePolicy,
     SourceOverride,
     UnknownOverridePolicy,
     )
@@ -518,50 +517,42 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         # This helper will only return if it's safe to carry on with the
         # copy, otherwise it raises SuspendJobException to tell the job
         # runner to suspend the job.
-        override_policy = FromExistingOverridePolicy(
-            self.target_archive, self.target_distroseries, None)
-        ancestry = override_policy.calculateSourceOverrides(
-            {source_name: SourceOverride()})
+        override_policy = self.target_archive.getOverridePolicy(
+            self.target_distroseries, None)
+        if override_policy is None:
+            override_policy = UnknownOverridePolicy(
+                self.target_archive, self.target_distroseries, None)
+        overrides = override_policy.calculateSourceOverrides(
+            {source_name: SourceOverride(component=source_component)})
+        override = overrides[source_name]
 
         copy_policy = self.getPolicyImplementation()
 
-        if len(ancestry) == 0:
-            # We need to get the default overrides and put them in the
-            # metadata.
-            default_policy = UnknownOverridePolicy(
-                self.target_archive, self.target_distroseries, None)
-            defaults = default_policy.calculateSourceOverrides(
-                {source_name: SourceOverride(component=source_component)})
-            self.addSourceOverride(defaults[source_name])
-            if auto_approve:
-                auto_approve = self.target_archive.canAdministerQueue(
-                    self.requester, self.getSourceOverride().component,
-                    self.target_pocket, self.target_distroseries)
+        # Put the (existing or default) override in the metadata.
+        self.addSourceOverride(override)
+        if auto_approve:
+            auto_approve = self.target_archive.canAdministerQueue(
+                self.requester, self.getSourceOverride().component,
+                self.target_pocket, self.target_distroseries)
 
+        if override.new:
             approve_new = auto_approve or copy_policy.autoApproveNew(
                 self.target_archive, self.target_distroseries,
                 self.target_pocket)
-
             if not approve_new:
                 # There's no existing package with the same name and the
                 # policy says unapproved, so we poke it in the NEW queue.
                 self._createPackageUpload()
                 raise SuspendJobException
         else:
-            # Put the existing override in the metadata.
-            self.addSourceOverride(ancestry[source_name])
-            if auto_approve:
-                auto_approve = self.target_archive.canAdministerQueue(
-                    self.requester, self.getSourceOverride().component,
-                    self.target_pocket, self.target_distroseries)
-
-        # The package is not new (it has ancestry) so check the copy
-        # policy for existing packages.
-        approve_existing = auto_approve or copy_policy.autoApprove(
-            self.target_archive, self.target_distroseries, self.target_pocket)
-        if not approve_existing:
-            self._createPackageUpload(unapproved=True)
-            raise SuspendJobException
+            # The package is not new (it has ancestry) so check the copy
+            # policy for existing packages.
+            approve_existing = auto_approve or copy_policy.autoApprove(
+                self.target_archive, self.target_distroseries,
+                self.target_pocket)
+            if not approve_existing:
+                self._createPackageUpload(unapproved=True)
+                raise SuspendJobException
 
     def _rejectPackageUpload(self):
         # Helper to find and reject any associated PackageUpload.
