@@ -2076,7 +2076,8 @@ class Archive(SQLBase):
         return list(PackagePublishingPocket.items)
 
     def getOverridePolicy(self, distroseries, pocket,
-                          phased_update_percentage=None):
+                          phased_update_percentage=None,
+                          can_partner=False, is_partner=False):
         """See `IArchive`."""
         # Circular imports.
         from lp.soyuz.adapters.overrides import (
@@ -2084,18 +2085,57 @@ class Archive(SQLBase):
             FromExistingOverridePolicy,
             UnknownOverridePolicy,
             )
-        # XXX StevenK: bug=785004 2011-05-19 Return PPAOverridePolicy() for
-        # a PPA that overrides the component/pocket to main/RELEASE.
-        if self.purpose in MAIN_ARCHIVE_PURPOSES:
-            return FallbackOverridePolicy([
-                FromExistingOverridePolicy(
-                    self, distroseries, pocket,
-                    phased_update_percentage=phased_update_percentage,
-                    include_deleted=True),
-                UnknownOverridePolicy(
-                    self, distroseries, pocket,
-                    phased_update_percentage=phased_update_percentage)])
-        return None
+        # Fall back to just the RELEASE pocket if there is no ancestry
+        # in the given pocket. The relationships are more complicated in
+        # reality, but versions can diverge between post-release pockets
+        # so we can't automatically check beyond this (eg. bug #83976).
+        lookup_pockets = [pocket]
+        if PackagePublishingPocket.RELEASE not in lookup_pockets:
+            lookup_pockets.append(PackagePublishingPocket.RELEASE)
+
+        archives = [self]
+        use_default_component = True
+        override_at_all = True
+        if self.is_primary and can_partner:
+            # overrideArchive can switch to the partner archive if there
+            # is ancestry there, so try partner after primary.
+            partner = self.distribution.getArchiveByComponent('partner')
+            if partner is not None:
+                archives.append(partner)
+        elif self.is_copy:
+            # Copy archives always inherit their overrides from the
+            # primary archive. We don't want to perform the version
+            # check in this case, as the rebuild may finish after a new
+            # version exists in the primary archive.
+            archives = [self.distribution.main_archive]
+            # XXX wgrant 2014-07-14 bug=1103491: This causes new binaries in
+            # copy archives to stay in contrib/non-free, so the upload gets
+            # rejected. But I'm just preserving existing behaviour for now.
+            use_default_component = False
+        elif self.is_ppa:
+            override_at_all = False
+
+        # NascentUpload.is_partner additionally checks if any of the
+        # components are partner.
+        if self.is_partner or (self.is_primary and is_partner):
+            use_default_component = False
+
+        if not override_at_all:
+            return None
+
+        policies = []
+        for any_arch in (False, True):
+            for archive in archives:
+                for pocket in lookup_pockets:
+                    policies.append(FromExistingOverridePolicy(
+                        archive, distroseries, pocket,
+                        phased_update_percentage=phased_update_percentage,
+                        any_arch=any_arch, include_deleted=True))
+        if use_default_component:
+            policies.append(UnknownOverridePolicy(
+                self, distroseries, pocket,
+                phased_update_percentage=phased_update_percentage))
+        return FallbackOverridePolicy(policies)
 
     def removeCopyNotification(self, job_id):
         """See `IArchive`."""

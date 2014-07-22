@@ -48,7 +48,6 @@ from lp.soyuz.adapters.overrides import (
     BinaryOverride,
     FromExistingOverridePolicy,
     SourceOverride,
-    UnknownOverridePolicy,
     )
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.component import IComponentSet
@@ -610,10 +609,7 @@ class NascentUpload:
             lookup_pockets.append(PackagePublishingPocket.RELEASE)
 
         archives = [self.policy.archive]
-        foreign_archive = False
-        use_default_component = True
         autoaccept_new = False
-        override_at_all = True
         if self.policy.archive.is_primary:
             # overrideArchive can switch to the partner archive if there
             # is ancestry there, so try partner after primary.
@@ -626,43 +622,22 @@ class NascentUpload:
             # primary archive. We don't want to perform the version
             # check in this case, as the rebuild may finish after a new
             # version exists in the primary archive.
-            archives = [self.policy.archive.distribution.main_archive]
-            foreign_archive = True
-            # XXX wgrant 2014-07-14 bug=1103491: This causes new binaries in
-            # copy archives to stay in contrib/non-free, so the upload gets
-            # rejected. But I'm just preserving existing behaviour for now.
-            use_default_component = False
+            archives = []
             autoaccept_new = True
         elif self.policy.archive.is_ppa:
             autoaccept_new = True
-            override_at_all = False
 
-        # NascentUpload.is_partner additionally checks if any of the
-        # components are partner.
-        if (self.policy.archive.is_partner or
-                (self.policy.archive.is_primary and self.is_partner)):
-            use_default_component = False
-
-        override_policies = []
-        if override_at_all:
-            for any_arch in (False, True):
-                for archive in archives:
-                    for pocket in lookup_pockets:
-                        override_policies.append(FromExistingOverridePolicy(
-                            archive, self.policy.distroseries, pocket,
-                            any_arch=any_arch))
-            if use_default_component:
-                override_policies.append(UnknownOverridePolicy(
-                    self.policy.archive, self.policy.distroseries,
-                    self.policy.pocket))
+        policy = self.policy.archive.getOverridePolicy(
+            self.policy.distroseries, self.policy.pocket,
+            can_partner=self.policy.archive.is_primary,
+            is_partner=self.is_partner)
 
         version_policies = []
-        if not foreign_archive:
-            for archive in archives:
-                for pocket in lookup_pockets:
-                    version_policies.append(
-                        FromExistingOverridePolicy(
-                            archive, self.policy.distroseries, pocket))
+        for archive in archives:
+            for pocket in lookup_pockets:
+                version_policies.append(
+                    FromExistingOverridePolicy(
+                        archive, self.policy.distroseries, pocket))
 
         for uploaded_file in self.changes.files:
             upload_component = getUtility(IComponentSet)[
@@ -675,14 +650,13 @@ class NascentUpload:
                     ISourcePackageNameSet).getOrCreateByName(
                         uploaded_file.package)
 
-                override = None
-                for policy in override_policies:
+                if policy is not None:
                     overrides = policy.calculateSourceOverrides(
                         {ancestry_name:
                             SourceOverride(component=upload_component)})
                     override = overrides.get(ancestry_name)
-                    if override is not None:
-                        break
+                else:
+                    override = None
 
                 for policy in version_policies:
                     overrides = policy.calculateSourceOverrides(
@@ -728,14 +702,13 @@ class NascentUpload:
                 else:
                     archtag = uploaded_file.architecture
 
-                override = None
-                for policy in override_policies:
+                if policy is not None:
                     overrides = policy.calculateBinaryOverrides(
                         {(ancestry_name, archtag):
                             BinaryOverride(component=upload_component)})
                     override = overrides.get((ancestry_name, archtag))
-                    if override is not None:
-                        break
+                else:
+                    override = None
 
                 for policy in version_policies:
                     overrides = policy.calculateBinaryOverrides(
