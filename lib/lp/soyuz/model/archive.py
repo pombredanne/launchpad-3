@@ -2079,13 +2079,22 @@ class Archive(SQLBase):
                           phased_update_percentage=None):
         """See `IArchive`."""
         # Circular imports.
-        from lp.soyuz.adapters.overrides import UbuntuOverridePolicy
+        from lp.soyuz.adapters.overrides import (
+            FallbackOverridePolicy,
+            FromExistingOverridePolicy,
+            UnknownOverridePolicy,
+            )
         # XXX StevenK: bug=785004 2011-05-19 Return PPAOverridePolicy() for
         # a PPA that overrides the component/pocket to main/RELEASE.
         if self.purpose in MAIN_ARCHIVE_PURPOSES:
-            return UbuntuOverridePolicy(
-                self, distroseries, pocket,
-                phased_update_percentage=phased_update_percentage)
+            return FallbackOverridePolicy([
+                FromExistingOverridePolicy(
+                    self, distroseries, pocket,
+                    phased_update_percentage=phased_update_percentage,
+                    include_deleted=True),
+                UnknownOverridePolicy(
+                    self, distroseries, pocket,
+                    phased_update_percentage=phased_update_percentage)])
         return None
 
     def removeCopyNotification(self, job_id):
