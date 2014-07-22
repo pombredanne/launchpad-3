@@ -554,14 +554,12 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
             u'udev', distroseries=child)
         self.assertEqual(
             parent_udev_pubs.count(), child_udev_pubs.count())
-        parent_arch_udev_pubs = parent[
-            parent_das.architecturetag].getReleasedPackages(
-                'udev', include_pending=True)
-        child_arch_udev_pubs = child[
-            parent_das.architecturetag].getReleasedPackages(
-                'udev', include_pending=True)
+        parent_arch_udev_pubs = parent.main_archive.getAllPublishedBinaries(
+            distroarchseries=parent[parent_das.architecturetag], name='udev')
+        child_arch_udev_pubs = child.main_archive.getAllPublishedBinaries(
+            distroarchseries=child[parent_das.architecturetag], name='udev')
         self.assertEqual(
-            len(parent_arch_udev_pubs), len(child_arch_udev_pubs))
+            parent_arch_udev_pubs.count(), child_arch_udev_pubs.count())
         # And the binary package, and linked source package look fine too.
         udev_bin = child_arch_udev_pubs[0].binarypackagerelease
         self.assertEqual(udev_bin.title, u'udev-0.1-1')
