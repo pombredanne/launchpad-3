@@ -216,6 +216,11 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
     for the latest published binary publication.
     """
 
+    def __init__(self, *args, **kwargs):
+        self.any_arch = kwargs.pop('any_arch', False)
+        self.include_deleted = kwargs.pop('include_deleted', False)
+        super(FromExistingOverridePolicy, self).__init__(*args, **kwargs)
+
     def getExistingPublishingStatuses(self, include_deleted):
         status = [
             PackagePublishingStatus.PENDING,
@@ -225,7 +230,7 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
             status.append(PackagePublishingStatus.DELETED)
         return status
 
-    def calculateSourceOverrides(self, sources, include_deleted=False):
+    def calculateSourceOverrides(self, sources):
         def eager_load(rows):
             bulk.load(Component, (row[1] for row in rows))
             bulk.load(Section, (row[2] for row in rows))
@@ -248,7 +253,7 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
                 SourcePackagePublishingHistory.distroseriesID ==
                     self.distroseries.id,
                 SourcePackagePublishingHistory.status.is_in(
-                    self.getExistingPublishingStatuses(include_deleted)),
+                    self.getExistingPublishingStatuses(self.include_deleted)),
                 SourcePackagePublishingHistory.sourcepackagenameID.is_in(
                     spn.id for spn in spns),
                 *other_conditions).order_by(
@@ -266,15 +271,14 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
                 new=False))
             for (name, component, section, version) in already_published)
 
-    def calculateBinaryOverrides(self, binaries, include_deleted=False,
-                                 any_arch=False):
+    def calculateBinaryOverrides(self, binaries):
         def eager_load(rows):
             bulk.load(Component, (row[2] for row in rows))
             bulk.load(Section, (row[3] for row in rows))
 
         store = IStore(BinaryPackagePublishingHistory)
         other_conditions = []
-        if not any_arch:
+        if not self.any_arch:
             expanded = calculate_target_das(self.distroseries, binaries.keys())
             candidates = [
                 make_package_condition(self.archive, das, bpn)
@@ -310,7 +314,7 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
                 BinaryPackageRelease.id ==
                     BinaryPackagePublishingHistory.binarypackagereleaseID,
                 BinaryPackagePublishingHistory.status.is_in(
-                    self.getExistingPublishingStatuses(include_deleted)),
+                    self.getExistingPublishingStatuses(self.include_deleted)),
                 Or(*candidates),
                 *other_conditions).order_by(
                     BinaryPackagePublishingHistory.distroarchseriesID,
@@ -330,7 +334,7 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
         for name, das, component, section, priority, ver in already_published:
             # These details can always fulfill their own archtag, and may
             # satisfy a None archtag if the DAS is nominatedarchindep.
-            if not any_arch:
+            if not self.any_arch:
                 matching_keys = [(name, das.architecturetag)]
                 if das == das.distroseries.nominatedarchindep:
                     matching_keys.append((name, None))
@@ -415,9 +419,9 @@ class UbuntuOverridePolicy(FromExistingOverridePolicy,
         total = set(sources.keys())
         existing_policy = FromExistingOverridePolicy(
             self.archive, self.distroseries, self.pocket,
-            phased_update_percentage=self.phased_update_percentage)
-        overrides = existing_policy.calculateSourceOverrides(
-                sources, include_deleted=True)
+            phased_update_percentage=self.phased_update_percentage,
+            include_deleted=True)
+        overrides = existing_policy.calculateSourceOverrides(sources)
         existing = set(overrides.keys())
         missing = total.difference(existing)
         if missing:
@@ -433,9 +437,9 @@ class UbuntuOverridePolicy(FromExistingOverridePolicy,
         total = set(binaries.keys())
         existing_policy = FromExistingOverridePolicy(
             self.archive, self.distroseries, self.pocket,
-            phased_update_percentage=self.phased_update_percentage)
-        overrides = existing_policy.calculateBinaryOverrides(
-            binaries, include_deleted=True)
+            phased_update_percentage=self.phased_update_percentage,
+            include_deleted=True)
+        overrides = existing_policy.calculateBinaryOverrides(binaries)
         existing = set(overrides.keys())
         missing = total.difference(existing)
         if missing:

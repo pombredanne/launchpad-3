@@ -93,6 +93,46 @@ class TestFromExistingOverridePolicy(TestCaseWithFactory):
                 version=spph.sourcepackagerelease.version, new=False)},
             overrides)
 
+    def test_source_overrides_can_include_deleted(self):
+        # include_deleted=True causes Deleted publications to be
+        # considered too.
+        spn = self.factory.makeSourcePackageName()
+        distroseries = self.factory.makeDistroSeries()
+        spr = self.factory.makeSourcePackageRelease(sourcepackagename=spn)
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            archive=distroseries.main_archive, distroseries=distroseries,
+            sourcepackagerelease=spr, status=PackagePublishingStatus.PUBLISHED)
+        deleted_spr = self.factory.makeSourcePackageRelease(
+            sourcepackagename=spn)
+        deleted_spph = self.factory.makeSourcePackagePublishingHistory(
+            archive=distroseries.main_archive, distroseries=distroseries,
+            sourcepackagerelease=deleted_spr,
+            status=PackagePublishingStatus.DELETED, pocket=spph.pocket)
+
+        # With include_deleted=False only the Published ancestry is
+        # found.
+        overrides = FromExistingOverridePolicy(
+            distroseries.main_archive, distroseries,
+            spph.pocket).calculateSourceOverrides(
+            {spn: SourceOverride(spn)})
+        self.assertEqual(
+            {spn: SourceOverride(
+                component=spph.component, section=spph.section,
+                version=spph.sourcepackagerelease.version)},
+            overrides)
+
+        # But with include_deleted=True the newer Deleted publication is
+        # used.
+        overrides = FromExistingOverridePolicy(
+            distroseries.main_archive, distroseries,
+            spph.pocket, include_deleted=True).calculateSourceOverrides(
+            {spn: SourceOverride(spn)})
+        self.assertEqual(
+            {spn: SourceOverride(
+                component=deleted_spph.component, section=deleted_spph.section,
+                version=deleted_spph.sourcepackagerelease.version)},
+            overrides)
+
     def test_source_overrides_constant_query_count(self):
         # The query count is constant, no matter how many sources are
         # checked.
@@ -247,16 +287,58 @@ class TestFromExistingOverridePolicy(TestCaseWithFactory):
 
         # But with any_arch=True we get the amd64 overrides everywhere.
         policy = FromExistingOverridePolicy(
-            distroseries.main_archive, distroseries, pocket)
+            distroseries.main_archive, distroseries, pocket, any_arch=True)
         overrides = policy.calculateBinaryOverrides(
             {(bpn, 'i386'): BinaryOverride(),
              (bpn, 'amd64'): BinaryOverride(),
-             (bpn, None): BinaryOverride()},
-            any_arch=True)
+             (bpn, None): BinaryOverride()})
         self.assertEqual(
             {(bpn, 'i386'): bpph_override,
              (bpn, 'amd64'): bpph_override,
              (bpn, None): bpph_override},
+            overrides)
+
+    def test_binary_overrides_can_include_deleted(self):
+        # calculateBinaryOverrides can be asked to include Deleted
+        # publications.
+        distroseries = self.factory.makeDistroSeries()
+        das = self.factory.makeDistroArchSeries(
+            architecturetag='amd64',
+            distroseries=distroseries)
+        bpn = self.factory.makeBinaryPackageName()
+        pocket = self.factory.getAnyPocket()
+        bpph = self.factory.makeBinaryPackagePublishingHistory(
+            archive=distroseries.main_archive, distroarchseries=das,
+            pocket=pocket, binarypackagename=bpn, architecturespecific=True,
+            status=PackagePublishingStatus.PUBLISHED)
+        deleted_bpph = self.factory.makeBinaryPackagePublishingHistory(
+            archive=distroseries.main_archive, distroarchseries=das,
+            pocket=pocket, binarypackagename=bpn, architecturespecific=True,
+            status=PackagePublishingStatus.DELETED)
+
+        # With include_deleted=False the Published pub is found.
+        policy = FromExistingOverridePolicy(
+            distroseries.main_archive, distroseries, pocket)
+        overrides = policy.calculateBinaryOverrides(
+            {(bpn, 'amd64'): BinaryOverride()})
+        self.assertEqual(
+            {(bpn, 'amd64'): BinaryOverride(
+                component=bpph.component, section=bpph.section,
+                priority=bpph.priority,
+                version=bpph.binarypackagerelease.version)},
+            overrides)
+
+        # But with include_deleted=True we get the newer Deleted pub instead.
+        policy = FromExistingOverridePolicy(
+            distroseries.main_archive, distroseries, pocket,
+            include_deleted=True)
+        overrides = policy.calculateBinaryOverrides(
+            {(bpn, 'amd64'): BinaryOverride()})
+        self.assertEqual(
+            {(bpn, 'amd64'): BinaryOverride(
+                component=deleted_bpph.component, section=deleted_bpph.section,
+                priority=deleted_bpph.priority,
+                version=deleted_bpph.binarypackagerelease.version)},
             overrides)
 
     def test_binary_overrides_constant_query_count(self):
