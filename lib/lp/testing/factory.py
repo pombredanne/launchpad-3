@@ -3446,8 +3446,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             target_archive=distroseries.main_archive,
             target_distroseries=distroseries, requester=requester,
             include_binaries=include_binaries)
-        job.addSourceOverride(SourceOverride(
-            spr.sourcepackagename, spr.component, spr.section))
+        job.addSourceOverride(SourceOverride(spr.component, spr.section))
         try:
             job.run()
         except SuspendJobException:
