@@ -651,13 +651,13 @@ class NascentUpload:
                         FromExistingOverridePolicy(
                             archive, self.policy.distroseries, pocket,
                             any_arch=any_arch),
-                        check_version, True))
+                        check_version))
         if use_default_component:
             policies.append((
                 UnknownOverridePolicy(
                     self.policy.archive, self.policy.distroseries,
                     self.policy.pocket),
-                False, False))
+                False))
 
         for uploaded_file in self.changes.files:
             upload_component = getUtility(IComponentSet)[
@@ -672,7 +672,7 @@ class NascentUpload:
 
                 override = None
                 is_new = True
-                for (policy, check_version, exists) in policies:
+                for policy, check_version in policies:
                     overrides = policy.calculateSourceOverrides(
                         {ancestry_name:
                             SourceOverride(component=upload_component)})
@@ -680,7 +680,7 @@ class NascentUpload:
                     if override is not None:
                         if check_version:
                             self.checkSourceVersion(uploaded_file, override)
-                        if exists:
+                        if override.new == False:
                             is_new = False
                         break
 
@@ -718,7 +718,7 @@ class NascentUpload:
 
                 override = None
                 is_new = True
-                for (policy, check_version, exists) in policies:
+                for policy, check_version in policies:
                     overrides = policy.calculateBinaryOverrides(
                         {(ancestry_name, archtag):
                             BinaryOverride(component=upload_component)})
@@ -726,7 +726,7 @@ class NascentUpload:
                     if override is not None:
                         if check_version and not foreign_archive:
                             self.checkBinaryVersion(uploaded_file, override)
-                        if exists:
+                        if override.new == False:
                             is_new = False
                         break
 
