@@ -47,11 +47,15 @@ records to disk, including configuration and indexes.
     True
     >>> cprov_archive.is_main
     False
+    >>> cprov_archive.is_primary
+    False
     >>> cprov_archive.is_partner
     False
     >>> cprov_archive.is_active
     True
     >>> cprov_archive.distribution.main_archive.is_main
+    True
+    >>> cprov_archive.distribution.main_archive.is_primary
     True
     >>> cprov_archive.total_count
     4
@@ -1011,6 +1015,10 @@ and an ArchivePurpose:
     >>> print partner_archive.name
     partner
     >>> print partner_archive.is_partner
+    True
+    >>> print partner_archive.is_primary
+    False
+    >>> print partner_archive.is_main
     True
 
 It explicitly fails when purpose is PPA, since such lookup should be
