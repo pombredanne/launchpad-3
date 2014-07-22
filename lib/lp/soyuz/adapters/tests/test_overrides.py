@@ -118,7 +118,7 @@ class TestFromExistingOverridePolicy(TestCaseWithFactory):
         self.assertEqual(
             {spn: SourceOverride(
                 component=spph.component, section=spph.section,
-                version=spph.sourcepackagerelease.version)},
+                version=spph.sourcepackagerelease.version, new=False)},
             overrides)
 
         # But with include_deleted=True the newer Deleted publication is
@@ -130,7 +130,7 @@ class TestFromExistingOverridePolicy(TestCaseWithFactory):
         self.assertEqual(
             {spn: SourceOverride(
                 component=deleted_spph.component, section=deleted_spph.section,
-                version=deleted_spph.sourcepackagerelease.version)},
+                version=deleted_spph.sourcepackagerelease.version, new=True)},
             overrides)
 
     def test_source_overrides_constant_query_count(self):
@@ -325,7 +325,7 @@ class TestFromExistingOverridePolicy(TestCaseWithFactory):
             {(bpn, 'amd64'): BinaryOverride(
                 component=bpph.component, section=bpph.section,
                 priority=bpph.priority,
-                version=bpph.binarypackagerelease.version)},
+                version=bpph.binarypackagerelease.version, new=False)},
             overrides)
 
         # But with include_deleted=True we get the newer Deleted pub instead.
@@ -338,7 +338,7 @@ class TestFromExistingOverridePolicy(TestCaseWithFactory):
             {(bpn, 'amd64'): BinaryOverride(
                 component=deleted_bpph.component, section=deleted_bpph.section,
                 priority=deleted_bpph.priority,
-                version=deleted_bpph.binarypackagerelease.version)},
+                version=deleted_bpph.binarypackagerelease.version, new=True)},
             overrides)
 
     def test_binary_overrides_constant_query_count(self):

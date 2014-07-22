@@ -246,6 +246,7 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
                 (SourcePackagePublishingHistory.sourcepackagenameID,
                  SourcePackagePublishingHistory.componentID,
                  SourcePackagePublishingHistory.sectionID,
+                 SourcePackagePublishingHistory.status,
                  SourcePackageRelease.version),
                 SourcePackageRelease.id ==
                     SourcePackagePublishingHistory.sourcepackagereleaseID,
@@ -263,13 +264,14 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
                 ).config(
                     distinct=(
                         SourcePackagePublishingHistory.sourcepackagenameID,)),
-            id_resolver((SourcePackageName, Component, Section, None)),
+            id_resolver((SourcePackageName, Component, Section, None, None)),
             pre_iter_hook=eager_load)
         return dict(
             (name, SourceOverride(
                 component=component, section=section, version=version,
-                new=False))
-            for (name, component, section, version) in already_published)
+                new=(status == PackagePublishingStatus.DELETED)))
+            for (name, component, section, status, version)
+            in already_published)
 
     def calculateBinaryOverrides(self, binaries):
         def eager_load(rows):
@@ -310,6 +312,7 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
                  BinaryPackagePublishingHistory.componentID,
                  BinaryPackagePublishingHistory.sectionID,
                  BinaryPackagePublishingHistory.priority,
+                 BinaryPackagePublishingHistory.status,
                  BinaryPackageRelease.version),
                 BinaryPackageRelease.id ==
                     BinaryPackagePublishingHistory.binarypackagereleaseID,
@@ -328,10 +331,10 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
                 ),
             id_resolver(
                 (BinaryPackageName, DistroArchSeries, Component, Section,
-                None, None)),
+                None, None, None)),
             pre_iter_hook=eager_load)
         overrides = {}
-        for name, das, component, section, priority, ver in already_published:
+        for (name, das, comp, sect, prio, status, ver) in already_published:
             # These details can always fulfill their own archtag, and may
             # satisfy a None archtag if the DAS is nominatedarchindep.
             if not self.any_arch:
@@ -345,9 +348,10 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
                 if key not in binaries:
                     continue
                 overrides[key] = BinaryOverride(
-                    component=component, section=section, priority=priority,
+                    component=comp, section=sect, priority=prio,
                     phased_update_percentage=self.phased_update_percentage,
-                    version=ver, new=False)
+                    version=ver,
+                    new=(status == PackagePublishingStatus.DELETED))
         return overrides
 
 
