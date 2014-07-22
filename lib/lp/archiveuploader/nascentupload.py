@@ -725,11 +725,10 @@ class NascentUpload:
                         uploaded_file.new = True
                     if use_default_component:
                         ancestry = SourceOverride(
-                            None,
-                            UnknownOverridePolicy.getComponentOverride(
-                                uploaded_file.component_name,
-                                return_component=True),
-                            None)
+                            component=(
+                                UnknownOverridePolicy.getComponentOverride(
+                                    uploaded_file.component_name,
+                                    return_component=True)))
                 if override_at_all and ancestry is not None:
                     self.overrideSourceFile(uploaded_file, ancestry)
             elif isinstance(uploaded_file, BaseBinaryUploadFile):
@@ -763,17 +762,14 @@ class NascentUpload:
                     # are used.
                     try:
                         spph = uploaded_file.findCurrentSourcePublication()
-                        ancestry = BinaryOverride(
-                            None, None, spph.component, None, None, None)
+                        ancestry = BinaryOverride(component=spph.component)
                     except UploadError:
                         pass
                 if ancestry is None and use_default_component:
                     ancestry = BinaryOverride(
-                        None, None,
-                        UnknownOverridePolicy.getComponentOverride(
+                        component=UnknownOverridePolicy.getComponentOverride(
                             uploaded_file.component_name,
-                            return_component=True),
-                        None, None, None)
+                            return_component=True))
                 if override_at_all and ancestry is not None:
                     self.overrideBinaryFile(uploaded_file, ancestry)
 
