@@ -648,14 +648,16 @@ class NascentUpload:
             for archive in archives:
                 for pocket in lookup_pockets:
                     policies.append((
-                        FromExistingOverridePolicy(), archive,
-                        self.policy.distroseries, pocket,
-                        {'any_arch': any_arch}, check_version, True))
+                        FromExistingOverridePolicy(
+                            archive, self.policy.distroseries, pocket,
+                            any_arch=any_arch),
+                        check_version, True))
         if use_default_component:
             policies.append((
-                UnknownOverridePolicy(), self.policy.archive,
-                self.policy.distroseries, self.policy.pocket, {}, False,
-                False))
+                UnknownOverridePolicy(
+                    self.policy.archive, self.policy.distroseries,
+                    self.policy.pocket),
+                False, False))
 
         for uploaded_file in self.changes.files:
             upload_component = getUtility(IComponentSet)[
@@ -670,10 +672,8 @@ class NascentUpload:
 
                 override = None
                 is_new = True
-                for (policy, archive, series, pocket, args, check_version,
-                     exists) in policies:
+                for (policy, check_version, exists) in policies:
                     overrides = policy.calculateSourceOverrides(
-                        archive, series, pocket,
                         {ancestry_name:
                             SourceOverride(component=upload_component)})
                     override = overrides.get(ancestry_name)
@@ -718,13 +718,10 @@ class NascentUpload:
 
                 override = None
                 is_new = True
-                for (policy, archive, series, pocket, args, check_version,
-                     exists) in policies:
+                for (policy, check_version, exists) in policies:
                     overrides = policy.calculateBinaryOverrides(
-                        archive, series, pocket,
                         {(ancestry_name, archtag):
-                            BinaryOverride(component=upload_component)},
-                        **args)
+                            BinaryOverride(component=upload_component)})
                     override = overrides.get((ancestry_name, archtag))
                     if override is not None:
                         if check_version and not foreign_archive:
