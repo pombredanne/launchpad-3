@@ -643,21 +643,24 @@ class NascentUpload:
                 (self.policy.archive.is_primary and self.is_partner)):
             use_default_component = False
 
-        policies = []
-        for (any_arch, check_version) in ((False, True), (True, False)):
+        override_policies = []
+        for any_arch in (False, True):
             for archive in archives:
                 for pocket in lookup_pockets:
-                    policies.append((
-                        FromExistingOverridePolicy(
-                            archive, self.policy.distroseries, pocket,
-                            any_arch=any_arch),
-                        check_version))
+                    override_policies.append(FromExistingOverridePolicy(
+                        archive, self.policy.distroseries, pocket,
+                        any_arch=any_arch))
         if use_default_component:
-            policies.append((
-                UnknownOverridePolicy(
-                    self.policy.archive, self.policy.distroseries,
-                    self.policy.pocket),
-                False))
+            override_policies.append(UnknownOverridePolicy(
+                self.policy.archive, self.policy.distroseries,
+                self.policy.pocket))
+
+        version_policies = []
+        for archive in archives:
+            for pocket in lookup_pockets:
+                version_policies.append(
+                    FromExistingOverridePolicy(
+                        archive, self.policy.distroseries, pocket))
 
         for uploaded_file in self.changes.files:
             upload_component = getUtility(IComponentSet)[
@@ -671,8 +674,7 @@ class NascentUpload:
                         uploaded_file.package)
 
                 override = None
-                check_version = False
-                for policy, check_version in policies:
+                for policy in override_policies:
                     overrides = policy.calculateSourceOverrides(
                         {ancestry_name:
                             SourceOverride(component=upload_component)})
@@ -680,8 +682,16 @@ class NascentUpload:
                     if override is not None:
                         break
 
-                if check_version:
-                    self.checkSourceVersion(uploaded_file, override)
+                for policy in version_policies:
+                    overrides = policy.calculateSourceOverrides(
+                        {ancestry_name:
+                            SourceOverride(component=upload_component)})
+                    ancestor = overrides.get(ancestry_name)
+                    if ancestor is not None:
+                        if ancestor.version is not None:
+                            self.checkSourceVersion(uploaded_file, ancestor)
+                        break
+
                 is_new = override is None or override.new != False
                 if is_new and not autoaccept_new:
                     self.logger.debug(
@@ -716,8 +726,7 @@ class NascentUpload:
                     archtag = uploaded_file.architecture
 
                 override = None
-                check_version = False
-                for policy, check_version in policies:
+                for policy in override_policies:
                     overrides = policy.calculateBinaryOverrides(
                         {(ancestry_name, archtag):
                             BinaryOverride(component=upload_component)})
@@ -725,10 +734,20 @@ class NascentUpload:
                     if override is not None:
                         break
 
+                if not foreign_archive:
+                    for policy in version_policies:
+                        overrides = policy.calculateBinaryOverrides(
+                            {(ancestry_name, archtag):
+                                BinaryOverride(component=upload_component)})
+                        ancestor = overrides.get((ancestry_name, archtag))
+                        if ancestor is not None:
+                            if ancestor.version is not None:
+                                self.checkBinaryVersion(
+                                    uploaded_file, ancestor)
+                            break
+
                 # XXX: Default to source component.
 
-                if check_version and not foreign_archive:
-                    self.checkBinaryVersion(uploaded_file, override)
                 is_new = override is None or override.new != False
                 if is_new and not autoaccept_new:
                     self.logger.debug(
