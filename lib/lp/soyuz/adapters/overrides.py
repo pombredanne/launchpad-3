@@ -7,11 +7,11 @@ __metaclass__ = type
 
 __all__ = [
     'BinaryOverride',
+    'FallbackOverridePolicy',
     'FromExistingOverridePolicy',
     'IBinaryOverride',
     'ISourceOverride',
     'SourceOverride',
-    'UbuntuOverridePolicy',
     'UnknownOverridePolicy',
     ]
 
@@ -411,48 +411,34 @@ class UnknownOverridePolicy(BaseOverridePolicy):
             for binary_package_name, architecture_tag in binaries.keys())
 
 
-class UbuntuOverridePolicy(FromExistingOverridePolicy,
-                           UnknownOverridePolicy):
-    """Override policy for Ubuntu.
+class FallbackOverridePolicy(BaseOverridePolicy):
+    """Override policy that fills things through a sequence of policies."""
 
-    An override policy that incorporates both the existing policy and the
-    unknown policy.
-    """
+    def __init__(self, policies):
+        self.policies = policies
 
     def calculateSourceOverrides(self, sources):
-        total = set(sources.keys())
-        existing_policy = FromExistingOverridePolicy(
-            self.archive, self.distroseries, self.pocket,
-            phased_update_percentage=self.phased_update_percentage,
-            include_deleted=True)
-        overrides = existing_policy.calculateSourceOverrides(sources)
-        existing = set(overrides.keys())
-        missing = total.difference(existing)
-        if missing:
-            unknown_policy = UnknownOverridePolicy(
-                self.archive, self.distroseries, self.pocket,
-                phased_update_percentage=self.phased_update_percentage)
-            unknown = unknown_policy.calculateSourceOverrides(
+        overrides = {}
+        missing = set(sources.keys())
+        for policy in self.policies:
+            if not missing:
+                break
+            these_overrides = policy.calculateSourceOverrides(
                 dict((spn, sources[spn]) for spn in missing))
-            overrides.update(unknown)
+            overrides.update(these_overrides)
+            missing -= set(these_overrides.keys())
         return overrides
 
     def calculateBinaryOverrides(self, binaries):
-        total = set(binaries.keys())
-        existing_policy = FromExistingOverridePolicy(
-            self.archive, self.distroseries, self.pocket,
-            phased_update_percentage=self.phased_update_percentage,
-            include_deleted=True)
-        overrides = existing_policy.calculateBinaryOverrides(binaries)
-        existing = set(overrides.keys())
-        missing = total.difference(existing)
-        if missing:
-            unknown_policy = UnknownOverridePolicy(
-                self.archive, self.distroseries, self.pocket,
-                phased_update_percentage=self.phased_update_percentage)
-            unknown = unknown_policy.calculateBinaryOverrides(
+        overrides = {}
+        missing = set(binaries.keys())
+        for policy in self.policies:
+            if not missing:
+                break
+            these_overrides = policy.calculateBinaryOverrides(
                 dict((key, binaries[key]) for key in missing))
-            overrides.update(unknown)
+            overrides.update(these_overrides)
+            missing -= set(these_overrides.keys())
         return overrides
 
 
