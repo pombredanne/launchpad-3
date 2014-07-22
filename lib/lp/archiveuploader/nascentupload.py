@@ -671,19 +671,18 @@ class NascentUpload:
                         uploaded_file.package)
 
                 override = None
-                is_new = True
+                check_version = False
                 for policy, check_version in policies:
                     overrides = policy.calculateSourceOverrides(
                         {ancestry_name:
                             SourceOverride(component=upload_component)})
                     override = overrides.get(ancestry_name)
                     if override is not None:
-                        if check_version:
-                            self.checkSourceVersion(uploaded_file, override)
-                        if override.new == False:
-                            is_new = False
                         break
 
+                if check_version:
+                    self.checkSourceVersion(uploaded_file, override)
+                is_new = override is None or override.new != False
                 if is_new and not autoaccept_new:
                     self.logger.debug(
                         "%s: (source) NEW", uploaded_file.package)
@@ -717,21 +716,20 @@ class NascentUpload:
                     archtag = uploaded_file.architecture
 
                 override = None
-                is_new = True
+                check_version = False
                 for policy, check_version in policies:
                     overrides = policy.calculateBinaryOverrides(
                         {(ancestry_name, archtag):
                             BinaryOverride(component=upload_component)})
                     override = overrides.get((ancestry_name, archtag))
                     if override is not None:
-                        if check_version and not foreign_archive:
-                            self.checkBinaryVersion(uploaded_file, override)
-                        if override.new == False:
-                            is_new = False
                         break
 
                 # XXX: Default to source component.
 
+                if check_version and not foreign_archive:
+                    self.checkBinaryVersion(uploaded_file, override)
+                is_new = override is None or override.new != False
                 if is_new and not autoaccept_new:
                     self.logger.debug(
                         "%s: (binary) NEW", uploaded_file.package)
