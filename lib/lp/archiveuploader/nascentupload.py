@@ -644,23 +644,25 @@ class NascentUpload:
             use_default_component = False
 
         override_policies = []
-        for any_arch in (False, True):
-            for archive in archives:
-                for pocket in lookup_pockets:
-                    override_policies.append(FromExistingOverridePolicy(
-                        archive, self.policy.distroseries, pocket,
-                        any_arch=any_arch))
-        if use_default_component:
-            override_policies.append(UnknownOverridePolicy(
-                self.policy.archive, self.policy.distroseries,
-                self.policy.pocket))
+        if override_at_all:
+            for any_arch in (False, True):
+                for archive in archives:
+                    for pocket in lookup_pockets:
+                        override_policies.append(FromExistingOverridePolicy(
+                            archive, self.policy.distroseries, pocket,
+                            any_arch=any_arch))
+            if use_default_component:
+                override_policies.append(UnknownOverridePolicy(
+                    self.policy.archive, self.policy.distroseries,
+                    self.policy.pocket))
 
         version_policies = []
-        for archive in archives:
-            for pocket in lookup_pockets:
-                version_policies.append(
-                    FromExistingOverridePolicy(
-                        archive, self.policy.distroseries, pocket))
+        if not foreign_archive:
+            for archive in archives:
+                for pocket in lookup_pockets:
+                    version_policies.append(
+                        FromExistingOverridePolicy(
+                            archive, self.policy.distroseries, pocket))
 
         for uploaded_file in self.changes.files:
             upload_component = getUtility(IComponentSet)[
@@ -689,7 +691,8 @@ class NascentUpload:
                     ancestor = overrides.get(ancestry_name)
                     if ancestor is not None:
                         if ancestor.version is not None:
-                            self.checkSourceVersion(uploaded_file, ancestor)
+                            self.checkSourceVersion(
+                                uploaded_file, ancestor)
                         break
 
                 is_new = override is None or override.new != False
@@ -697,7 +700,7 @@ class NascentUpload:
                     self.logger.debug(
                         "%s: (source) NEW", uploaded_file.package)
                     uploaded_file.new = True
-                if override_at_all and override is not None:
+                if override is not None:
                     self.overrideSourceFile(uploaded_file, override)
             elif isinstance(uploaded_file, BaseBinaryUploadFile):
                 self.logger.debug(
@@ -734,17 +737,16 @@ class NascentUpload:
                     if override is not None:
                         break
 
-                if not foreign_archive:
-                    for policy in version_policies:
-                        overrides = policy.calculateBinaryOverrides(
-                            {(ancestry_name, archtag):
-                                BinaryOverride(component=upload_component)})
-                        ancestor = overrides.get((ancestry_name, archtag))
-                        if ancestor is not None:
-                            if ancestor.version is not None:
-                                self.checkBinaryVersion(
-                                    uploaded_file, ancestor)
-                            break
+                for policy in version_policies:
+                    overrides = policy.calculateBinaryOverrides(
+                        {(ancestry_name, archtag):
+                            BinaryOverride(component=upload_component)})
+                    ancestor = overrides.get((ancestry_name, archtag))
+                    if ancestor is not None:
+                        if ancestor.version is not None:
+                            self.checkBinaryVersion(
+                                uploaded_file, ancestor)
+                        break
 
                 # XXX: Default to source component.
 
@@ -753,7 +755,7 @@ class NascentUpload:
                     self.logger.debug(
                         "%s: (binary) NEW", uploaded_file.package)
                     uploaded_file.new = True
-                if override_at_all and override is not None:
+                if override is not None:
                     self.overrideBinaryFile(uploaded_file, override)
 
     #
