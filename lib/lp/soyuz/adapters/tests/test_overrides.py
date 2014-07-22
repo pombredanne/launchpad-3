@@ -246,12 +246,11 @@ class TestFromExistingOverridePolicy(TestCaseWithFactory):
 
         # But with any_arch=True we get the amd64 overrides everywhere.
         policy = FromExistingOverridePolicy(
-            distroseries.main_archive, distroseries, pocket)
+            distroseries.main_archive, distroseries, pocket, any_arch=True)
         overrides = policy.calculateBinaryOverrides(
             {(bpn, 'i386'): BinaryOverride(),
              (bpn, 'amd64'): BinaryOverride(),
-             (bpn, None): BinaryOverride()},
-            any_arch=True)
+             (bpn, None): BinaryOverride()})
         self.assertEqual(
             {(bpn, 'i386'): bpph_override,
              (bpn, 'amd64'): bpph_override,

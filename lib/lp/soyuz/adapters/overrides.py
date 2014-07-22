@@ -211,6 +211,10 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
     for the latest published binary publication.
     """
 
+    def __init__(self, *args, **kwargs):
+        self.any_arch = kwargs.pop('any_arch', False)
+        super(FromExistingOverridePolicy, self).__init__(*args, **kwargs)
+
     def getExistingPublishingStatuses(self, include_deleted):
         status = [
             PackagePublishingStatus.PENDING,
@@ -260,15 +264,14 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
                 component=component, section=section, version=version))
             for (name, component, section, version) in already_published)
 
-    def calculateBinaryOverrides(self, binaries, include_deleted=False,
-                                 any_arch=False):
+    def calculateBinaryOverrides(self, binaries, include_deleted=False):
         def eager_load(rows):
             bulk.load(Component, (row[2] for row in rows))
             bulk.load(Section, (row[3] for row in rows))
 
         store = IStore(BinaryPackagePublishingHistory)
         other_conditions = []
-        if not any_arch:
+        if not self.any_arch:
             expanded = calculate_target_das(self.distroseries, binaries.keys())
             candidates = [
                 make_package_condition(self.archive, das, bpn)
@@ -324,7 +327,7 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
         for name, das, component, section, priority, ver in already_published:
             # These details can always fulfill their own archtag, and may
             # satisfy a None archtag if the DAS is nominatedarchindep.
-            if not any_arch:
+            if not self.any_arch:
                 matching_keys = [(name, das.architecturetag)]
                 if das == das.distroseries.nominatedarchindep:
                     matching_keys.append((name, None))
