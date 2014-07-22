@@ -3,8 +3,6 @@
 
 """Test generic override policy classes."""
 
-from operator import attrgetter
-
 from testtools.matchers import Equals
 from zope.component import getUtility
 
@@ -118,7 +116,8 @@ class TestFromExistingOverridePolicy(TestCaseWithFactory):
 
     def test_binary_overrides(self):
         # When a binary is published in the given distroarchseries, the
-        # overrides are returned.
+        # overrides are returned. None means nominatedarchindep,
+        # whatever that is in the target series.
         distroseries = self.factory.makeDistroSeries()
         bpph1 = self.factory.makeBinaryPackagePublishingHistory(
             archive=distroseries.main_archive,
@@ -134,6 +133,8 @@ class TestFromExistingOverridePolicy(TestCaseWithFactory):
               bpph1.distroarchseries.architecturetag): BinaryOverride(),
              (bpph2.binarypackagerelease.binarypackagename,
               bpph2.distroarchseries.architecturetag): BinaryOverride(),
+             (bpph2.binarypackagerelease.binarypackagename, None):
+                BinaryOverride(),
              })
         expected = {
             (bpph1.binarypackagerelease.binarypackagename,
@@ -143,6 +144,10 @@ class TestFromExistingOverridePolicy(TestCaseWithFactory):
                     priority=bpph1.priority),
             (bpph2.binarypackagerelease.binarypackagename,
              bpph2.distroarchseries.architecturetag):
+                BinaryOverride(
+                    component=bpph2.component, section=bpph2.section,
+                    priority=bpph2.priority),
+            (bpph2.binarypackagerelease.binarypackagename, None):
                 BinaryOverride(
                     component=bpph2.component, section=bpph2.section,
                     priority=bpph2.priority),
