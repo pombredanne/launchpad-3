@@ -488,10 +488,8 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
 
     def getSourceOverride(self):
         """Fetch an `ISourceOverride` from the metadata."""
-        name = self.package_name
         component_name = self.component_name
         section_name = self.section_name
-        source_package_name = getUtility(ISourcePackageNameSet)[name]
         try:
             component = getUtility(IComponentSet)[component_name]
         except NotFoundError:
@@ -501,8 +499,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         except NotFoundError:
             section = None
 
-        return SourceOverride(
-            source_package_name, component=component, section=section)
+        return SourceOverride(component=component, section=section)
 
     def findSourcePublication(self):
         """Find the appropriate origin `ISourcePackagePublishingHistory`."""
@@ -524,7 +521,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         override_policy = FromExistingOverridePolicy()
         ancestry = override_policy.calculateSourceOverrides(
             self.target_archive, self.target_distroseries,
-            self.target_pocket, [SourceOverride(source_name)])
+            self.target_pocket, {source_name: SourceOverride()})
 
         copy_policy = self.getPolicyImplementation()
 
@@ -534,8 +531,8 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             defaults = UnknownOverridePolicy().calculateSourceOverrides(
                 self.target_archive, self.target_distroseries,
                 self.target_pocket,
-                [SourceOverride(source_name, component=source_component)])
-            self.addSourceOverride(defaults[0])
+                {source_name: SourceOverride(component=source_component)})
+            self.addSourceOverride(defaults[source_name])
             if auto_approve:
                 auto_approve = self.target_archive.canAdministerQueue(
                     self.requester, self.getSourceOverride().component,
@@ -552,7 +549,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
                 raise SuspendJobException
         else:
             # Put the existing override in the metadata.
-            self.addSourceOverride(ancestry[0])
+            self.addSourceOverride(ancestry[source_name])
             if auto_approve:
                 auto_approve = self.target_archive.canAdministerQueue(
                     self.requester, self.getSourceOverride().component,

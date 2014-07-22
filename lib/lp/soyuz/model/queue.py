@@ -997,8 +997,7 @@ class PackageUpload(SQLBase):
         if copy_job.component_name not in allowed_component_names:
             raise QueueAdminUnauthorizedError(
                 "No rights to override from %s" % copy_job.component_name)
-        copy_job.addSourceOverride(SourceOverride(
-            copy_job.package_name, new_component, new_section))
+        copy_job.addSourceOverride(SourceOverride(new_component, new_section))
 
         return True
 
