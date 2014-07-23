@@ -3480,3 +3480,69 @@ class TestArchiveGetOverridePolicy(TestCaseWithFactory):
                  (existing_bpn, 'i386'): BinaryOverride(component=self.main),
                  (other_bpn, 'amd64'): BinaryOverride(component=self.non_free),
                 }))
+
+    def test_copy_sources(self):
+        copy = self.factory.makeArchive(
+            distribution=self.series.distribution, purpose=ArchivePurpose.COPY)
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            archive=self.series.main_archive, distroseries=self.series,
+            pocket=PackagePublishingPocket.UPDATES)
+        policy = copy.getOverridePolicy(
+            self.series, PackagePublishingPocket.RELEASE)
+
+        existing_spn = spph.sourcepackagerelease.sourcepackagename
+        main_spn = self.factory.makeSourcePackageName()
+        non_free_spn = self.factory.makeSourcePackageName()
+
+        # Packages with an existing publication in any pocket in the
+        # copy archive's distribution's primary archive return that
+        # publication's overrides. Otherwise they're new, with a default
+        # component mapped from their original component.
+        self.assertEqual(
+            {existing_spn: SourceOverride(
+                component=spph.component, section=spph.section,
+                version=spph.sourcepackagerelease.version, new=False),
+             main_spn: SourceOverride(component=self.universe, new=True),
+             non_free_spn: SourceOverride(component=self.multiverse, new=True),
+            },
+            policy.calculateSourceOverrides(
+                {existing_spn: SourceOverride(component=self.non_free),
+                 main_spn: SourceOverride(component=self.main),
+                 non_free_spn: SourceOverride(component=self.non_free),
+                 }))
+
+    def test_copy_binaries(self):
+        copy = self.factory.makeArchive(
+            distribution=self.series.distribution, purpose=ArchivePurpose.COPY)
+        bpph = self.factory.makeBinaryPackagePublishingHistory(
+            archive=self.series.main_archive, distroarchseries=self.amd64,
+            pocket=PackagePublishingPocket.UPDATES)
+        policy = copy.getOverridePolicy(
+            self.series, PackagePublishingPocket.RELEASE)
+
+        existing_bpn = bpph.binarypackagerelease.binarypackagename
+        other_bpn = self.factory.makeBinaryPackageName()
+
+        # Packages with an existing publication in any pocket of any DAS
+        # with a matching archtag, or nominatedarchindep if the archtag
+        # is None, in the copy archive's distribution's main archive
+        # return that publication's overrides. Otherwise they're new,
+        # with a default component mapped from their original component.
+        existing_override = BinaryOverride(
+            component=bpph.component, section=bpph.section,
+            priority=bpph.priority,
+            version=bpph.binarypackagerelease.version, new=False)
+        self.assertEqual(
+            {(existing_bpn, 'amd64'): existing_override,
+             (existing_bpn, None): existing_override,
+             (existing_bpn, 'i386'): BinaryOverride(
+                 component=self.universe, new=True),
+             (other_bpn, 'amd64'): BinaryOverride(
+                 component=self.universe, new=True),
+            },
+            policy.calculateBinaryOverrides(
+                {(existing_bpn, 'amd64'): BinaryOverride(component=self.main),
+                 (existing_bpn, None): BinaryOverride(component=self.main),
+                 (existing_bpn, 'i386'): BinaryOverride(component=self.main),
+                 (other_bpn, 'amd64'): BinaryOverride(component=self.main),
+                }))

@@ -2107,7 +2107,17 @@ class Archive(SQLBase):
         elif self.is_ppa:
             return ConstantOverridePolicy(
                 component=getUtility(IComponentSet)['main'])
-        return None
+        elif self.is_copy:
+            return FallbackOverridePolicy([
+                FromExistingOverridePolicy(
+                    self.distribution.main_archive, distroseries, None,
+                    phased_update_percentage=phased_update_percentage,
+                    include_deleted=True),
+                UnknownOverridePolicy(
+                    self, distroseries, pocket,
+                    phased_update_percentage=phased_update_percentage)])
+        raise AssertionError(
+            "No IOverridePolicy for purpose %r" % self.purpose)
 
     def removeCopyNotification(self, job_id):
         """See `IArchive`."""
