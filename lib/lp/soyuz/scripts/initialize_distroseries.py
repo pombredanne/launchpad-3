@@ -510,10 +510,9 @@ class InitializeDistroSeries:
         for parent in self.derivation_parents:
             spns = self.source_names_by_parent.get(parent.id, None)
             if spns is not None and len(spns) == 0:
-                # Some packagesets where selected but not a single
-                # source from this parent: we skip the copy since
-                # calling copy with spns=[] would copy all the packagesets
-                # from this parent.
+                # Some packagesets may have been selected but not a single
+                # source from this parent. We will not copy any records from
+                # this parent.
                 continue
             # spns=None means no packagesets selected so we need to consider
             # all sources.
@@ -612,47 +611,108 @@ class InitializeDistroSeries:
         # We iterate over the parents and copy into the child in
         # sequence to avoid creating duplicates.
         for parent_id in self.derivation_parent_ids:
-            self._store.execute("""
-                INSERT INTO
-                    Packaging(
-                        distroseries, sourcepackagename, productseries,
-                        packaging, owner)
-                SELECT
-                    ChildSeries.id,
-                    Packaging.sourcepackagename,
-                    Packaging.productseries,
-                    Packaging.packaging,
-                    Packaging.owner
-                FROM
-                    Packaging
-                    -- Joining the parent distroseries permits the query to
-                    -- build the data set for the series being updated, yet
-                    -- results are in fact the data from the original series.
-                    JOIN Distroseries ChildSeries
-                        ON Packaging.distroseries = %s
-                WHERE
-                    -- Select only the packaging links that are in the parent
-                    -- that are not in the child.
-                    ChildSeries.id = %s
-                    AND Packaging.sourcepackagename in (
-                        SELECT sourcepackagename
-                        FROM Packaging
-                        WHERE distroseries in (
-                            SELECT id
-                            FROM Distroseries
-                            WHERE id = %s
+            spns = self.source_names_by_parent.get(parent_id, None)
+            if spns is not None and len(spns) == 0:
+                # Some packagesets may have been selected but not a single
+                # source from this parent. We will not copy any links for this
+                # parent
+                continue
+            elif spns is None:
+                # spns=None means no packagesets selected so we need to
+                # consider all sources.
+                self._store.execute("""
+                    INSERT INTO
+                        Packaging(
+                            distroseries, sourcepackagename, productseries,
+                            packaging, owner)
+                    SELECT
+                        ChildSeries.id,
+                        Packaging.sourcepackagename,
+                        Packaging.productseries,
+                        Packaging.packaging,
+                        Packaging.owner
+                    FROM
+                        Packaging
+                        -- Joining the parent distroseries permits the query to
+                        -- build the data set for the series being updated, yet
+                        -- results are in fact the data from the original
+                        -- series.
+                        JOIN Distroseries ChildSeries
+                            ON Packaging.distroseries = %s
+                    WHERE
+                        -- Select only the packaging links that are in the
+                        -- parent that are not in the child.
+                        ChildSeries.id = %s
+                        AND Packaging.sourcepackagename in (
+                            SELECT sourcepackagename
+                            FROM Packaging
+                            WHERE distroseries in (
+                                SELECT id
+                                FROM Distroseries
+                                WHERE id = %s
+                                )
+                            EXCEPT
+                            SELECT sourcepackagename
+                            FROM Packaging
+                            WHERE distroseries in (
+                                SELECT id
+                                FROM Distroseries
+                                WHERE id = ChildSeries.id
+                                )
                             )
-                        EXCEPT
-                        SELECT sourcepackagename
-                        FROM Packaging
-                        WHERE distroseries in (
-                            SELECT id
-                            FROM Distroseries
-                            WHERE id = ChildSeries.id
+                    """ % sqlvalues(
+                        parent_id, self.distroseries.id, parent_id))
+            else:
+                self._store.execute("""
+                    INSERT INTO
+                        Packaging(
+                            distroseries, sourcepackagename, productseries,
+                            packaging, owner)
+                    SELECT
+                        ChildSeries.id,
+                        Packaging.sourcepackagename,
+                        Packaging.productseries,
+                        Packaging.packaging,
+                        Packaging.owner
+                    FROM
+                        Packaging
+                        -- Joining the parent distroseries permits the query to
+                        -- build the data set for the series being updated, yet
+                        -- results are in fact the data from the original
+                        -- series.
+                        JOIN Distroseries ChildSeries
+                            ON Packaging.distroseries = %s
+                    WHERE
+                        -- Select only the packaging links that are in the
+                        -- parent that are not in the child.
+                        ChildSeries.id = %s
+                        AND Packaging.sourcepackagename in (
+                            SELECT
+                                Sourcepackagename.id
+                            FROM
+                                Sourcepackagename
+                            WHERE
+                                Sourcepackagename.name IN %s
                             )
-                        )
-                """ % sqlvalues(
-                    parent_id, self.distroseries.id, parent_id))
+                        AND Packaging.sourcepackagename in (
+                            SELECT Packaging.sourcepackagename
+                            FROM Packaging
+                            WHERE distroseries in (
+                                SELECT id
+                                FROM Distroseries
+                                WHERE id = %s
+                                )
+                            EXCEPT
+                            SELECT Packaging.sourcepackagename
+                            FROM Packaging
+                            WHERE distroseries in (
+                                SELECT id
+                                FROM Distroseries
+                                WHERE id = ChildSeries.id
+                                )
+                            )
+                    """ % sqlvalues(
+                        parent_id, self.distroseries.id, spns, parent_id))
 
     def _copy_packagesets(self):
         """Copy packagesets from the parent distroseries."""
