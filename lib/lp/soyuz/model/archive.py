@@ -2080,51 +2080,44 @@ class Archive(SQLBase):
         """See `IArchive`."""
         # Circular imports.
         from lp.soyuz.adapters.overrides import (
+            ConstantOverridePolicy,
             FallbackOverridePolicy,
             FromExistingOverridePolicy,
             UnknownOverridePolicy,
             )
-        # Fall back to just the RELEASE pocket if there is no ancestry
-        # in the given pocket. The relationships are more complicated in
-        # reality, but versions can diverge between post-release pockets
-        # so we can't automatically check beyond this (eg. bug #83976).
-        lookup_pockets = [pocket]
-        if PackagePublishingPocket.RELEASE not in lookup_pockets:
-            lookup_pockets.append(PackagePublishingPocket.RELEASE)
-
-        override_archive = self
-        use_default_component = True
-        override_at_all = True
-        if self.is_partner:
-            use_default_component = False
-        elif self.is_copy:
-            # Copy archives always inherit their overrides from the
-            # primary archive. We don't want to perform the version
-            # check in this case, as the rebuild may finish after a new
-            # version exists in the primary archive.
-            override_archive = self.distribution.main_archive
-            # XXX wgrant 2014-07-14 bug=1103491: This causes new binaries in
-            # copy archives to stay in contrib/non-free, so the upload gets
-            # rejected. But I'm just preserving existing behaviour for now.
-            use_default_component = False
-        elif self.is_ppa:
-            override_at_all = False
-
-        if not override_at_all:
-            return None
-
-        policies = []
-        for any_arch in (False, True):
-            for pocket in lookup_pockets:
-                policies.append(FromExistingOverridePolicy(
-                    override_archive, distroseries, pocket,
+        if self.is_primary:
+            return FallbackOverridePolicy([
+                FromExistingOverridePolicy(
+                    self, distroseries, None,
                     phased_update_percentage=phased_update_percentage,
-                    any_arch=any_arch, include_deleted=True))
-        if use_default_component:
-            policies.append(UnknownOverridePolicy(
-                self, distroseries, pocket,
-                phased_update_percentage=phased_update_percentage))
-        return FallbackOverridePolicy(policies)
+                    include_deleted=True),
+                UnknownOverridePolicy(
+                    self, distroseries, pocket,
+                    phased_update_percentage=phased_update_percentage)])
+        elif self.is_partner:
+            return FallbackOverridePolicy([
+                FromExistingOverridePolicy(
+                    self, distroseries, None,
+                    phased_update_percentage=phased_update_percentage,
+                    include_deleted=True),
+                ConstantOverridePolicy(
+                    component=getUtility(IComponentSet)['partner'],
+                    phased_update_percentage=phased_update_percentage,
+                    new=True)])
+        elif self.is_ppa:
+            return ConstantOverridePolicy(
+                component=getUtility(IComponentSet)['main'])
+        elif self.is_copy:
+            return FallbackOverridePolicy([
+                FromExistingOverridePolicy(
+                    self.distribution.main_archive, distroseries, None,
+                    phased_update_percentage=phased_update_percentage,
+                    include_deleted=True),
+                UnknownOverridePolicy(
+                    self, distroseries, pocket,
+                    phased_update_percentage=phased_update_percentage)])
+        raise AssertionError(
+            "No IOverridePolicy for purpose %r" % self.purpose)
 
     def removeCopyNotification(self, job_id):
         """See `IArchive`."""
