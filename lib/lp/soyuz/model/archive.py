@@ -384,6 +384,11 @@ class Archive(SQLBase):
         return self.purpose == ArchivePurpose.PPA
 
     @property
+    def is_primary(self):
+        """See `IArchive`."""
+        return self.purpose == ArchivePurpose.PRIMARY
+
+    @property
     def is_partner(self):
         """See `IArchive`."""
         return self.purpose == ArchivePurpose.PARTNER

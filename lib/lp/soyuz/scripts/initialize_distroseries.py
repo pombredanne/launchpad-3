@@ -102,7 +102,7 @@ class InitializeDistroSeries:
 
     def __init__(
         self, distroseries, parents=(), arches=(), archindep_archtag=None,
-        packagesets=(), rebuild=False, overlays=(), overlay_pockets=(),
+        packagesets=None, rebuild=False, overlays=(), overlay_pockets=(),
         overlay_components=()):
         self.distroseries = distroseries
         self.parent_ids = [int(id) for id in parents]
@@ -114,10 +114,14 @@ class InitializeDistroSeries:
             key=lambda parent: self.parent_ids.index(parent.id))
         self.arches = arches
         self.archindep_archtag = archindep_archtag
-        self.packagesets_ids = [
-            ensure_unicode(packageset) for packageset in packagesets]
-        self.packagesets = bulk.load(
-            Packageset, [int(packageset) for packageset in packagesets])
+        if packagesets is None:
+            self.packagesets_ids = None
+            self.packagesets = None
+        else:
+            self.packagesets_ids = [
+                ensure_unicode(packageset) for packageset in packagesets]
+            self.packagesets = bulk.load(
+                Packageset, [int(packageset) for packageset in packagesets])
         self.rebuild = rebuild
         self.overlays = overlays
         self.overlay_pockets = overlay_pockets
@@ -326,7 +330,7 @@ class InitializeDistroSeries:
     def _create_dsds(self):
         if not self.first_derivation:
             if (self._has_same_parents_as_previous_series() and
-                not self.packagesets_ids):
+                self.packagesets_ids is None):
                 # If the parents are the same as previous_series's
                 # parents and all the packagesets are being copied,
                 # then we simply copy the DSDs from previous_series
@@ -483,7 +487,7 @@ class InitializeDistroSeries:
         parent so the list of packages to consider in not empty.
         """
         source_names_by_parent = {}
-        if self.packagesets_ids:
+        if self.packagesets_ids is not None:
             for parent in self.derivation_parents:
                 spns = []
                 for pkgset in self.packagesets:
@@ -663,7 +667,7 @@ class InitializeDistroSeries:
         for parent_ps in packagesets:
             # Cross-distro initializations get packagesets owned by the
             # distro owner, otherwise the old owner is preserved.
-            if (self.packagesets_ids and
+            if (self.packagesets_ids is not None and
                 str(parent_ps.id) not in self.packagesets_ids):
                 continue
             packageset_set = getUtility(IPackagesetSet)

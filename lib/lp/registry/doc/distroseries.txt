@@ -327,6 +327,7 @@ initialization. In particular the initializer won't overwrite
 publishing records etc. Essentially this is a "Do not push this button
 again" type set of assertions.
 
+    >>> from lp.soyuz.enums import PackagePublishingStatus
     >>> from lp.soyuz.scripts.initialize_distroseries import (
     ...     InitializeDistroSeries)
     >>> login("foo.bar@canonical.com")
@@ -340,9 +341,12 @@ again" type set of assertions.
     1
     >>> humpy.getPublishedSources('pmount').count()
     1
-    >>> len(hoary['i386'].getReleasedPackages('pmount'))
+    >>> hoary.main_archive.getAllPublishedBinaries(
+    ...     distroarchseries=hoary['i386'], name='pmount',
+    ...     status=PackagePublishingStatus.PUBLISHED).count()
     1
-    >>> len(humpy['i386'].getReleasedPackages('pmount'))
+    >>> humpy.main_archive.getAllPublishedBinaries(
+    ...     distroarchseries=humpy['i386'], name='pmount').count()
     1
 
 Check if the attributes of an DRSPR instance for the just initialized
@@ -631,7 +635,6 @@ generate a list of currently published sources for override-check, for
 instance. it can also be used to generate the archive packages list in
 the future.
 
-    >>> from lp.soyuz.enums import PackagePublishingStatus
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> hoary = ubuntu['hoary']
     >>> component_main = getUtility(IComponentSet)['main']
