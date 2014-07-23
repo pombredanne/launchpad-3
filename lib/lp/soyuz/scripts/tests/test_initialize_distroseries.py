@@ -89,7 +89,7 @@ class InitializationHelperTestCase(TestCaseWithFactory):
                          pocket=PackagePublishingPocket.RELEASE):
         if packages is None:
             packages = {'udev': '0.1-1', 'libc6': '2.8-1',
-                'postgresql': '9.0-1', 'chromium': '3.6'}
+                'postgresql': '9.0-1', 'chromium': '3.6', 'vim': '7.4'}
         for package in packages.keys():
             spn = self.factory.getOrMakeSourcePackageName(package)
             spph = self.factory.makeSourcePackagePublishingHistory(
@@ -115,7 +115,7 @@ class InitializationHelperTestCase(TestCaseWithFactory):
                 self.factory.makeBinaryPackageFile(binarypackagerelease=bpr)
 
     def _fullInitialize(self, parents, child=None, previous_series=None,
-                        arches=(), archindep_archtag=None, packagesets=(),
+                        arches=(), archindep_archtag=None, packagesets=None,
                         rebuild=False, distribution=None, overlays=(),
                         overlay_pockets=(), overlay_components=()):
         if child is None:
@@ -846,6 +846,69 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         child.updatePackageCount()
         self.assertEqual(child.sourcecount, len(packages))
         self.assertEqual(child.binarycount, 2)  # Chromium is FTBFS
+
+    def test_copy_limit_packagesets_empty(self):
+        # If a parent series has packagesets, we don't want to copy any of them
+        self.parent, self.parent_das = self.setupParent()
+        test1 = getUtility(IPackagesetSet).new(
+            u'test1', u'test 1 packageset', self.parent.owner,
+            distroseries=self.parent)
+        getUtility(IPackagesetSet).new(
+            u'test2', u'test 2 packageset', self.parent.owner,
+            distroseries=self.parent)
+        packages = ('udev', 'chromium', 'libc6')
+        for pkg in packages:
+            test1.addSources(pkg)
+        packageset1 = getUtility(IPackagesetSet).getByName(
+            self.parent, u'test1')
+        child = self._fullInitialize(
+            [self.parent], packagesets=[])
+        self.assertRaises(
+            NoSuchPackageSet, getUtility(IPackagesetSet).getByName,
+            child, u'test1')
+        self.assertRaises(
+            NoSuchPackageSet, getUtility(IPackagesetSet).getByName,
+            child, u'test2')
+        self.assertEqual(child.sourcecount, 0)
+        self.assertEqual(child.binarycount, 0)
+
+    def test_copy_limit_packagesets_none(self):
+        # If a parent series has packagesets, we want to copy all of them
+        self.parent, self.parent_das = self.setupParent()
+        test1 = getUtility(IPackagesetSet).new(
+            u'test1', u'test 1 packageset', self.parent.owner,
+            distroseries=self.parent)
+        test2 = getUtility(IPackagesetSet).new(
+            u'test2', u'test 2 packageset', self.parent.owner,
+            distroseries=self.parent)
+        packages_test1 = ('udev', 'chromium', 'libc6')
+        packages_test2 = ('postgresql', 'vim')
+        for pkg in packages_test1:
+            test1.addSources(pkg)
+        for pkg in packages_test2:
+            test2.addSources(pkg)
+        packageset1 = getUtility(IPackagesetSet).getByName(
+            self.parent, u'test1')
+        packageset2 = getUtility(IPackagesetSet).getByName(
+            self.parent, u'test2')
+        child = self._fullInitialize(
+            [self.parent], packagesets=None)
+        child_test1 = getUtility(IPackagesetSet).getByName(child, u'test1')
+        child_test2 = getUtility(IPackagesetSet).getByName(child, u'test2')
+        self.assertEqual(test1.description, child_test1.description)
+        self.assertEqual(test2.description, child_test2.description)
+        parent_srcs_test1 = test1.getSourcesIncluded(direct_inclusion=True)
+        child_srcs_test1 = child_test1.getSourcesIncluded(
+            direct_inclusion=True)
+        self.assertEqual(parent_srcs_test1, child_srcs_test1)
+        parent_srcs_test2 = test2.getSourcesIncluded(direct_inclusion=True)
+        child_srcs_test2 = child_test2.getSourcesIncluded(
+            direct_inclusion=True)
+        self.assertEqual(parent_srcs_test2, child_srcs_test2)
+        child.updatePackageCount()
+        self.assertEqual(child.sourcecount,
+            len(packages_test1) + len(packages_test2))
+        self.assertEqual(child.binarycount, 4)  # Chromium is FTBFS
 
     def test_rebuild_flag(self):
         # No binaries will get copied if we specify rebuild=True.
