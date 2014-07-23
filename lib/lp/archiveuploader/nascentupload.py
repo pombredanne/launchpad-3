@@ -660,7 +660,12 @@ class NascentUpload:
                     self.logger.debug(
                         "%s: (source) NEW", uploaded_file.package)
                     uploaded_file.new = True
-                if override is not None:
+                # XXX wgrant 2014-07-23: We want to preserve the upload
+                # component for PPA uploads, so we force the component
+                # to main when we create publications later. Eventually
+                # we should never mutate the SPR/BPR here, and just
+                # store a dict of overrides.
+                if not self.policy.archive.is_ppa and override is not None:
                     self.overrideSourceFile(uploaded_file, override)
             elif isinstance(uploaded_file, BaseBinaryUploadFile):
                 self.logger.debug(
@@ -711,7 +716,12 @@ class NascentUpload:
                     self.logger.debug(
                         "%s: (binary) NEW", uploaded_file.package)
                     uploaded_file.new = True
-                if override is not None:
+                # XXX wgrant 2014-07-23: We want to preserve the upload
+                # component for PPA uploads, so we force the component
+                # to main when we create publications later. Eventually
+                # we should never mutate the SPR/BPR here, and just
+                # store a dict of overrides.
+                if not self.policy.archive.is_ppa and override is not None:
                     self.overrideBinaryFile(uploaded_file, override)
 
     #
