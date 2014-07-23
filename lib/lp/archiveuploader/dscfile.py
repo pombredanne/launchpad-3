@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """ DSCFile and related.
@@ -71,7 +71,6 @@ from lp.soyuz.enums import (
     ArchivePurpose,
     SourcePackageFormat,
     )
-from lp.soyuz.interfaces.archive import IArchiveSet
 
 
 def unpack_source(dsc_filepath):
