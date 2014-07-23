@@ -7,6 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'BinaryOverride',
+    'ConstantOverridePolicy',
     'FallbackOverridePolicy',
     'FromExistingOverridePolicy',
     'IBinaryOverride',
@@ -409,6 +410,32 @@ class UnknownOverridePolicy(BaseOverridePolicy):
                 component=default_component, new=True,
                 phased_update_percentage=self.phased_update_percentage))
             for binary_package_name, architecture_tag in binaries.keys())
+
+
+class ConstantOverridePolicy(BaseOverridePolicy):
+    """Override policy that returns constant values."""
+
+    def __init__(self, component=None, section=None, priority=None,
+                 phased_update_percentage=None, new=None):
+        self.component = component
+        self.section = section
+        self.priority = priority
+        self.phased_update_percentage = phased_update_percentage
+        self.new = new
+
+    def calculateSourceOverrides(self, sources):
+        return dict(
+            (key, SourceOverride(
+                component=self.component, section=self.section,
+                new=self.new)) for key in sources.keys())
+
+    def calculateBinaryOverrides(self, binaries):
+        return dict(
+            (key, BinaryOverride(
+                component=self.component, section=self.section,
+                priority=self.priority,
+                phased_update_percentage=self.phased_update_percentage,
+                new=self.new)) for key in binaries.keys())
 
 
 class FallbackOverridePolicy(BaseOverridePolicy):

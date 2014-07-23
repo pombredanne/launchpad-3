@@ -11,12 +11,16 @@ from lp.services.database import bulk
 from lp.services.database.sqlbase import flush_database_caches
 from lp.soyuz.adapters.overrides import (
     BinaryOverride,
+    ConstantOverridePolicy,
     FallbackOverridePolicy,
     FromExistingOverridePolicy,
     SourceOverride,
     UnknownOverridePolicy,
     )
-from lp.soyuz.enums import PackagePublishingStatus
+from lp.soyuz.enums import (
+    PackagePublishingPriority,
+    PackagePublishingStatus,
+    )
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.testing import (
     StormStatementRecorder,
@@ -455,6 +459,45 @@ class TestUnknownOverridePolicy(TestCaseWithFactory):
             (bpph.binarypackagerelease.binarypackagename, None):
                 BinaryOverride(component=universe, new=True)}
         self.assertEqual(expected, overrides)
+
+
+class TestConstantOverridePolicy(TestCaseWithFactory):
+
+    layer = ZopelessDatabaseLayer
+
+    def test_sources(self):
+        policy = ConstantOverridePolicy(
+            component=self.factory.makeComponent(),
+            section=self.factory.makeSection(),
+            phased_update_percentage=50, new=True)
+        spn = self.factory.makeSourcePackageName()
+        self.assertEqual(
+            {spn: SourceOverride(
+                component=policy.component, section=policy.section,
+                new=True)},
+            policy.calculateSourceOverrides(
+                {spn: SourceOverride(
+                    component=self.factory.makeComponent(),
+                    section=self.factory.makeSection(), new=False)}))
+
+    def test_binary(self):
+        policy = ConstantOverridePolicy(
+            component=self.factory.makeComponent(),
+            section=self.factory.makeSection(),
+            priority=PackagePublishingPriority.EXTRA,
+            phased_update_percentage=50, new=True)
+        bpn = self.factory.makeBinaryPackageName()
+        self.assertEqual(
+            {(bpn, None): BinaryOverride(
+                component=policy.component, section=policy.section,
+                priority=policy.priority, phased_update_percentage=50,
+                new=True)},
+            policy.calculateBinaryOverrides(
+                {(bpn, None): BinaryOverride(
+                    component=self.factory.makeComponent(),
+                    section=self.factory.makeSection(),
+                    priority=PackagePublishingPriority.REQUIRED,
+                    phased_update_percentage=90, new=False)}))
 
 
 class TestFallbackOverridePolicy(TestCaseWithFactory):
