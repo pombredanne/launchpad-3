@@ -46,6 +46,7 @@ from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.soyuz.adapters.overrides import (
     BinaryOverride,
+    FallbackOverridePolicy,
     FromExistingOverridePolicy,
     SourceOverride,
     )
@@ -604,14 +605,14 @@ class NascentUpload:
         if PackagePublishingPocket.RELEASE not in lookup_pockets:
             lookup_pockets.append(PackagePublishingPocket.RELEASE)
 
-        archives = [self.policy.archive]
+        check_version = True
         autoaccept_new = False
         if self.policy.archive.is_copy:
             # Copy archives always inherit their overrides from the
             # primary archive. We don't want to perform the version
             # check in this case, as the rebuild may finish after a new
             # version exists in the primary archive.
-            archives = []
+            check_version = False
             autoaccept_new = True
         elif self.policy.archive.is_ppa:
             autoaccept_new = True
@@ -619,12 +620,13 @@ class NascentUpload:
         policy = self.policy.archive.getOverridePolicy(
             self.policy.distroseries, self.policy.pocket)
 
-        version_policies = []
-        for archive in archives:
-            for pocket in lookup_pockets:
-                version_policies.append(
-                    FromExistingOverridePolicy(
-                        archive, self.policy.distroseries, pocket))
+        if check_version:
+            version_policy = FallbackOverridePolicy([
+                FromExistingOverridePolicy(
+                    self.policy.archive, self.policy.distroseries, pocket)
+                for pocket in lookup_pockets])
+        else:
+            version_policy = None
 
         for uploaded_file in self.changes.files:
             upload_component = getUtility(IComponentSet)[
@@ -645,16 +647,13 @@ class NascentUpload:
                 else:
                     override = None
 
-                for policy in version_policies:
-                    overrides = policy.calculateSourceOverrides(
+                if version_policy is not None:
+                    ancestry = version_policy.calculateSourceOverrides(
                         {ancestry_name:
                             SourceOverride(component=upload_component)})
-                    ancestor = overrides.get(ancestry_name)
-                    if ancestor is not None:
-                        if ancestor.version is not None:
-                            self.checkSourceVersion(
-                                uploaded_file, ancestor)
-                        break
+                    ancestor = ancestry.get(ancestry_name)
+                    if ancestor is not None and ancestor.version is not None:
+                        self.checkSourceVersion(uploaded_file, ancestor)
 
                 is_new = override is None or override.new != False
                 if is_new and not autoaccept_new:
@@ -697,16 +696,13 @@ class NascentUpload:
                 else:
                     override = None
 
-                for policy in version_policies:
-                    overrides = policy.calculateBinaryOverrides(
+                if version_policy is not None:
+                    ancestry = version_policy.calculateBinaryOverrides(
                         {(ancestry_name, archtag):
                             BinaryOverride(component=upload_component)})
-                    ancestor = overrides.get((ancestry_name, archtag))
-                    if ancestor is not None:
-                        if ancestor.version is not None:
-                            self.checkBinaryVersion(
-                                uploaded_file, ancestor)
-                        break
+                    ancestor = ancestry.get((ancestry_name, archtag))
+                    if ancestor is not None and ancestor.version is not None:
+                        self.checkBinaryVersion(uploaded_file, ancestor)
 
                 # XXX: Default to source component.
 
