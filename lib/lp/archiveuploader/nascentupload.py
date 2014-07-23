@@ -179,16 +179,17 @@ class NascentUpload:
         if self.sourceful and not self.changes.dsc:
             self.reject("Unable to find the DSC file in the source upload.")
 
+        # Override archive location if necessary to cope with partner
+        # uploads to a primary path. We consider an upload to be
+        # targeted to partner if the .changes lists any files in the
+        # partner component.
+        self.overrideArchive()
+
         # Apply the overrides from the database. This needs to be done
         # before doing component verifications because the component
         # actually comes from overrides for packages that are not NEW.
         self.find_and_apply_overrides()
         self._overrideDDEBSs()
-
-        # Override archive location if necessary to cope with partner
-        # uploads to a primary path. Yes, we actually potentially change
-        # the target archive based on the override component.
-        self.overrideArchive()
 
         # Check upload rights for the signer of the upload.
         self.verify_acl(build)
