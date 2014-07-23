@@ -2089,7 +2089,7 @@ class Archive(SQLBase):
         if self.purpose in MAIN_ARCHIVE_PURPOSES:
             return FallbackOverridePolicy([
                 FromExistingOverridePolicy(
-                    self, distroseries, pocket,
+                    self, distroseries, None,
                     phased_update_percentage=phased_update_percentage,
                     include_deleted=True),
                 UnknownOverridePolicy(
