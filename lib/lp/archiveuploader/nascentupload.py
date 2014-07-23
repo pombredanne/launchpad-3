@@ -161,6 +161,12 @@ class NascentUpload:
             self.run_and_check_error(uploaded_file.checkNameIsTaintFree)
             self.run_and_check_error(uploaded_file.checkSizeAndCheckSum)
 
+        # Override archive location if necessary to cope with partner
+        # uploads to a primary path. We consider an upload to be
+        # targeted to partner if the .changes lists any files in the
+        # partner component.
+        self.overrideArchive()
+
         self._check_overall_consistency()
         if self.sourceful:
             self._check_sourceful_consistency()
@@ -178,12 +184,6 @@ class NascentUpload:
 
         if self.sourceful and not self.changes.dsc:
             self.reject("Unable to find the DSC file in the source upload.")
-
-        # Override archive location if necessary to cope with partner
-        # uploads to a primary path. We consider an upload to be
-        # targeted to partner if the .changes lists any files in the
-        # partner component.
-        self.overrideArchive()
 
         # Apply the overrides from the database. This needs to be done
         # before doing component verifications because the component

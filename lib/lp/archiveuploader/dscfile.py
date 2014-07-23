@@ -443,17 +443,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
 
         :raise: `NotFoundError` when the wanted file could not be found.
         """
-        # We cannot check the archive purpose for partner archives here,
-        # because the archive override rules have not been applied yet.
-        # Uploads destined for the Ubuntu main archive and the 'partner'
-        # component will eventually end up in the partner archive though.
-        if (self.policy.archive.purpose == ArchivePurpose.PRIMARY and
-            self.component_name == 'partner'):
-            archives = [
-                getUtility(IArchiveSet).getByDistroPurpose(
-                distribution=self.policy.distro,
-                purpose=ArchivePurpose.PARTNER)]
-        elif (self.policy.archive.purpose == ArchivePurpose.PPA and
+        if (self.policy.archive.purpose == ArchivePurpose.PPA and
             determine_source_file_type(filename) in (
                 SourcePackageFileType.ORIG_TARBALL,
                 SourcePackageFileType.COMPONENT_ORIG_TARBALL)):
