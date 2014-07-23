@@ -3295,7 +3295,7 @@ class TestArchiveGetOverridePolicy(TestCaseWithFactory):
             self.series.nominatedarchindep = self.amd64 = (
                 self.factory.makeDistroArchSeries(
                     distroseries=self.series, architecturetag='amd64'))
-        self.main = getUtility(IComponentSet)['universe']
+        self.main = getUtility(IComponentSet)['main']
         self.universe = getUtility(IComponentSet)['universe']
         self.multiverse = getUtility(IComponentSet)['multiverse']
         self.non_free = getUtility(IComponentSet).ensure('non-free')
@@ -3359,4 +3359,60 @@ class TestArchiveGetOverridePolicy(TestCaseWithFactory):
                  (existing_bpn, None): BinaryOverride(component=self.main),
                  (existing_bpn, 'i386'): BinaryOverride(component=self.main),
                  (other_bpn, 'amd64'): BinaryOverride(component=self.main),
+                }))
+
+    def test_ppa_sources(self):
+        ppa = self.factory.makeArchive(
+            distribution=self.series.distribution,
+            purpose=ArchivePurpose.PPA)
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            archive=ppa, distroseries=self.series)
+        policy = ppa.getOverridePolicy(
+            self.series, PackagePublishingPocket.RELEASE)
+
+        existing_spn = spph.sourcepackagerelease.sourcepackagename
+        main_spn = self.factory.makeSourcePackageName()
+        non_free_spn = self.factory.makeSourcePackageName()
+
+        # PPA packages are always overridden to main, with no
+        # examination of existing publications or assertions about
+        # newness.
+        self.assertEqual(
+            {existing_spn: SourceOverride(component=self.main),
+             main_spn: SourceOverride(component=self.main),
+             non_free_spn: SourceOverride(component=self.main),
+            },
+            policy.calculateSourceOverrides(
+                {existing_spn: SourceOverride(component=self.non_free),
+                 main_spn: SourceOverride(component=self.main),
+                 non_free_spn: SourceOverride(component=self.non_free),
+                 }))
+
+    def test_ppa_binaries(self):
+        ppa = self.factory.makeArchive(
+            distribution=self.series.distribution,
+            purpose=ArchivePurpose.PPA)
+        bpph = self.factory.makeBinaryPackagePublishingHistory(
+            archive=ppa, distroarchseries=self.amd64,
+            pocket=PackagePublishingPocket.UPDATES)
+        policy = ppa.getOverridePolicy(
+            self.series, PackagePublishingPocket.RELEASE)
+
+        existing_bpn = bpph.binarypackagerelease.binarypackagename
+        other_bpn = self.factory.makeBinaryPackageName()
+
+        # PPA packages are always overridden to main, with no
+        # examination of existing publications or assertions about
+        # newness.
+        self.assertEqual(
+            {(existing_bpn, 'amd64'): BinaryOverride(component=self.main),
+             (existing_bpn, None): BinaryOverride(component=self.main),
+             (existing_bpn, 'i386'): BinaryOverride(component=self.main),
+             (other_bpn, 'amd64'): BinaryOverride(component=self.main),
+            },
+            policy.calculateBinaryOverrides(
+                {(existing_bpn, 'amd64'): BinaryOverride(component=self.main),
+                 (existing_bpn, None): BinaryOverride(component=self.main),
+                 (existing_bpn, 'i386'): BinaryOverride(component=self.main),
+                 (other_bpn, 'amd64'): BinaryOverride(component=self.non_free),
                 }))

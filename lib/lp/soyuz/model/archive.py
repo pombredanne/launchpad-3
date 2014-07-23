@@ -2080,6 +2080,7 @@ class Archive(SQLBase):
         """See `IArchive`."""
         # Circular imports.
         from lp.soyuz.adapters.overrides import (
+            ConstantOverridePolicy,
             FallbackOverridePolicy,
             FromExistingOverridePolicy,
             UnknownOverridePolicy,
@@ -2095,6 +2096,9 @@ class Archive(SQLBase):
                 UnknownOverridePolicy(
                     self, distroseries, pocket,
                     phased_update_percentage=phased_update_percentage)])
+        elif self.is_ppa:
+            return ConstantOverridePolicy(
+                component=getUtility(IComponentSet)['main'])
         return None
 
     def removeCopyNotification(self, job_id):
