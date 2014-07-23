@@ -2108,14 +2108,9 @@ class Archive(SQLBase):
             return ConstantOverridePolicy(
                 component=getUtility(IComponentSet)['main'])
         elif self.is_copy:
-            return FallbackOverridePolicy([
-                FromExistingOverridePolicy(
-                    self.distribution.main_archive, distroseries, None,
-                    phased_update_percentage=phased_update_percentage,
-                    include_deleted=True),
-                UnknownOverridePolicy(
-                    self, distroseries, pocket,
-                    phased_update_percentage=phased_update_percentage)])
+            return self.distribution.main_archive.getOverridePolicy(
+                distroseries, pocket,
+                phased_update_percentage=phased_update_percentage)
         raise AssertionError(
             "No IOverridePolicy for purpose %r" % self.purpose)
 
