@@ -47,6 +47,10 @@ from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.soyuz.adapters.archivedependencies import (
     get_sources_list_for_building,
     )
+from lp.soyuz.adapters.overrides import (
+    BinaryOverride,
+    SourceOverride,
+    )
 from lp.soyuz.enums import (
     ArchivePermissionType,
     ArchivePurpose,
@@ -92,6 +96,7 @@ from lp.soyuz.model.binarypackagerelease import (
 from lp.soyuz.model.component import ComponentSelection
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
+    admin_logged_in,
     ANONYMOUS,
     celebrity_logged_in,
     login,
@@ -3272,3 +3277,86 @@ class TestCountersAndSummaries(TestCaseWithFactory):
         e = self.assertRaises(
             Unauthorized, getattr, archive, "getBuildSummariesForSourceIds")
         self.assertEqual("launchpad.View", e.args[2])
+
+
+class TestArchiveGetOverridePolicy(TestCaseWithFactory):
+    """Tests for Archive.getOverridePolicy.
+
+    These are just integration tests. The underlying policies are tested
+    in lp.soyuz.adapters.tests.test_overrides.
+    """
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestArchiveGetOverridePolicy, self).setUp()
+        self.series = self.factory.makeDistroSeries()
+        with admin_logged_in():
+            self.series.nominatedarchindep = self.amd64 = (
+                self.factory.makeDistroArchSeries(
+                    distroseries=self.series, architecturetag='amd64'))
+        self.main = getUtility(IComponentSet)['universe']
+        self.universe = getUtility(IComponentSet)['universe']
+        self.multiverse = getUtility(IComponentSet)['multiverse']
+        self.non_free = getUtility(IComponentSet).ensure('non-free')
+
+    def test_primary_sources(self):
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            archive=self.series.main_archive, distroseries=self.series,
+            pocket=PackagePublishingPocket.UPDATES)
+        policy = self.series.main_archive.getOverridePolicy(
+            self.series, PackagePublishingPocket.RELEASE)
+
+        existing_spn = spph.sourcepackagerelease.sourcepackagename
+        main_spn = self.factory.makeSourcePackageName()
+        non_free_spn = self.factory.makeSourcePackageName()
+
+        # Packages with an existing publication in any pocket return
+        # that publication's overrides. Otherwise they're new, with a
+        # default component mapped from their original component.
+        self.assertEqual(
+            {existing_spn: SourceOverride(
+                component=spph.component, section=spph.section,
+                version=spph.sourcepackagerelease.version, new=False),
+             main_spn: SourceOverride(component=self.universe, new=True),
+             non_free_spn: SourceOverride(component=self.multiverse, new=True),
+            },
+            policy.calculateSourceOverrides(
+                {existing_spn: SourceOverride(component=self.non_free),
+                 main_spn: SourceOverride(component=self.main),
+                 non_free_spn: SourceOverride(component=self.non_free),
+                 }))
+
+    def test_primary_binaries(self):
+        bpph = self.factory.makeBinaryPackagePublishingHistory(
+            archive=self.series.main_archive, distroarchseries=self.amd64,
+            pocket=PackagePublishingPocket.UPDATES)
+        policy = self.series.main_archive.getOverridePolicy(
+            self.series, PackagePublishingPocket.RELEASE)
+
+        existing_bpn = bpph.binarypackagerelease.binarypackagename
+        other_bpn = self.factory.makeBinaryPackageName()
+
+        # Packages with an existing publication in any pocket of any DAS
+        # with a matching archtag, or nominatedarchindep if the archtag
+        # is None, return that publication's overrides. Otherwise
+        # they're new, with a default component mapped from their
+        # original component.
+        existing_override = BinaryOverride(
+            component=bpph.component, section=bpph.section,
+            priority=bpph.priority,
+            version=bpph.binarypackagerelease.version, new=False)
+        self.assertEqual(
+            {(existing_bpn, 'amd64'): existing_override,
+             (existing_bpn, None): existing_override,
+             (existing_bpn, 'i386'): BinaryOverride(
+                 component=self.universe, new=True),
+             (other_bpn, 'amd64'): BinaryOverride(
+                 component=self.universe, new=True),
+            },
+            policy.calculateBinaryOverrides(
+                {(existing_bpn, 'amd64'): BinaryOverride(component=self.main),
+                 (existing_bpn, None): BinaryOverride(component=self.main),
+                 (existing_bpn, 'i386'): BinaryOverride(component=self.main),
+                 (other_bpn, 'amd64'): BinaryOverride(component=self.main),
+                }))
