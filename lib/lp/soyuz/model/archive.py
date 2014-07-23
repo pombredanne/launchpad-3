@@ -2085,9 +2085,7 @@ class Archive(SQLBase):
             FromExistingOverridePolicy,
             UnknownOverridePolicy,
             )
-        # XXX StevenK: bug=785004 2011-05-19 Return PPAOverridePolicy() for
-        # a PPA that overrides the component/pocket to main/RELEASE.
-        if self.purpose in MAIN_ARCHIVE_PURPOSES:
+        if self.is_primary:
             return FallbackOverridePolicy([
                 FromExistingOverridePolicy(
                     self, distroseries, None,
@@ -2096,6 +2094,16 @@ class Archive(SQLBase):
                 UnknownOverridePolicy(
                     self, distroseries, pocket,
                     phased_update_percentage=phased_update_percentage)])
+        elif self.is_partner:
+            return FallbackOverridePolicy([
+                FromExistingOverridePolicy(
+                    self, distroseries, None,
+                    phased_update_percentage=phased_update_percentage,
+                    include_deleted=True),
+                ConstantOverridePolicy(
+                    component=getUtility(IComponentSet)['partner'],
+                    phased_update_percentage=phased_update_percentage,
+                    new=True)])
         elif self.is_ppa:
             return ConstantOverridePolicy(
                 component=getUtility(IComponentSet)['main'])

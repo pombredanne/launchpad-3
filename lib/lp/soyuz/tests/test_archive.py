@@ -3299,6 +3299,7 @@ class TestArchiveGetOverridePolicy(TestCaseWithFactory):
         self.universe = getUtility(IComponentSet)['universe']
         self.multiverse = getUtility(IComponentSet)['multiverse']
         self.non_free = getUtility(IComponentSet).ensure('non-free')
+        self.partner = getUtility(IComponentSet)['partner']
 
     def test_primary_sources(self):
         spph = self.factory.makeSourcePackagePublishingHistory(
@@ -3409,6 +3410,69 @@ class TestArchiveGetOverridePolicy(TestCaseWithFactory):
              (existing_bpn, None): BinaryOverride(component=self.main),
              (existing_bpn, 'i386'): BinaryOverride(component=self.main),
              (other_bpn, 'amd64'): BinaryOverride(component=self.main),
+            },
+            policy.calculateBinaryOverrides(
+                {(existing_bpn, 'amd64'): BinaryOverride(component=self.main),
+                 (existing_bpn, None): BinaryOverride(component=self.main),
+                 (existing_bpn, 'i386'): BinaryOverride(component=self.main),
+                 (other_bpn, 'amd64'): BinaryOverride(component=self.non_free),
+                }))
+
+    def test_partner_sources(self):
+        partner = self.factory.makeArchive(
+            distribution=self.series.distribution,
+            purpose=ArchivePurpose.PARTNER)
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            archive=partner, distroseries=self.series,
+            pocket=PackagePublishingPocket.RELEASE)
+        policy = partner.getOverridePolicy(
+            self.series, PackagePublishingPocket.RELEASE)
+
+        existing_spn = spph.sourcepackagerelease.sourcepackagename
+        universe_spn = self.factory.makeSourcePackageName()
+
+        # Packages with an existing publication in any pocket return
+        # that publication's overrides. Otherwise they're new, with a
+        # default component of partner.
+        self.assertEqual(
+            {existing_spn: SourceOverride(
+                component=spph.component, section=spph.section,
+                version=spph.sourcepackagerelease.version, new=False),
+             universe_spn: SourceOverride(component=self.partner, new=True),
+            },
+            policy.calculateSourceOverrides(
+                {existing_spn: SourceOverride(component=self.non_free),
+                 universe_spn: SourceOverride(component=self.universe),
+                 }))
+
+    def test_partner_binaries(self):
+        partner = self.factory.makeArchive(
+            distribution=self.series.distribution,
+            purpose=ArchivePurpose.PARTNER)
+        bpph = self.factory.makeBinaryPackagePublishingHistory(
+            archive=partner, distroarchseries=self.amd64,
+            pocket=PackagePublishingPocket.RELEASE)
+        policy = partner.getOverridePolicy(
+            self.series, PackagePublishingPocket.RELEASE)
+
+        existing_bpn = bpph.binarypackagerelease.binarypackagename
+        other_bpn = self.factory.makeBinaryPackageName()
+
+        # Packages with an existing publication in any pocket of any DAS
+        # with a matching archtag, or nominatedarchindep if the archtag
+        # is None, return that publication's overrides. Otherwise
+        # they're new, with a default component of partner.
+        existing_override = BinaryOverride(
+            component=bpph.component, section=bpph.section,
+            priority=bpph.priority,
+            version=bpph.binarypackagerelease.version, new=False)
+        self.assertEqual(
+            {(existing_bpn, 'amd64'): existing_override,
+             (existing_bpn, None): existing_override,
+             (existing_bpn, 'i386'): BinaryOverride(
+                 component=self.partner, new=True),
+             (other_bpn, 'amd64'): BinaryOverride(
+                 component=self.partner, new=True),
             },
             policy.calculateBinaryOverrides(
                 {(existing_bpn, 'amd64'): BinaryOverride(component=self.main),
