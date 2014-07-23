@@ -421,28 +421,6 @@ class TestUnknownOverridePolicy(TestCaseWithFactory):
             zip(spns, ('universe', 'multiverse', 'multiverse')))
         self.assertEqual(expected, overrides)
 
-    def test_unknown_sources_ppa(self):
-        # The unknown policy overrides everything to the archive's
-        # default component, if it has one.
-        for component in ('contrib', 'non-free'):
-            self.factory.makeComponent(component)
-        distroseries = self.factory.makeDistroSeries()
-        spns = [self.factory.makeSourcePackageName() for i in range(3)]
-        policy = UnknownOverridePolicy(
-            self.factory.makeArchive(distribution=distroseries.distribution),
-            distroseries, PackagePublishingPocket.RELEASE)
-        overrides = policy.calculateSourceOverrides(
-            dict(
-                (spn, SourceOverride(
-                    component=getUtility(IComponentSet)[component]))
-                for spn, component in
-                zip(spns, ('main', 'contrib', 'non-free'))))
-        expected = dict(
-            (spn, SourceOverride(
-                component=getUtility(IComponentSet)[component], new=True))
-            for spn, component in zip(spns, ('main', 'main', 'main')))
-        self.assertEqual(expected, overrides)
-
     def test_unknown_binaries(self):
         # If the unknown policy is used, it does no checks, just returns the
         # defaults.

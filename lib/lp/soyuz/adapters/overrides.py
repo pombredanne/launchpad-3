@@ -395,16 +395,13 @@ class UnknownOverridePolicy(BaseOverridePolicy):
     def calculateSourceOverrides(self, sources):
         return dict(
             (spn, SourceOverride(
-                component=(
-                    self.archive.default_component or
-                    UnknownOverridePolicy.getComponentOverride(
-                        override.component, return_component=True)),
+                component=UnknownOverridePolicy.getComponentOverride(
+                    override.component, return_component=True),
                 new=True))
             for spn, override in sources.items())
 
     def calculateBinaryOverrides(self, binaries):
-        default_component = self.archive.default_component or getUtility(
-            IComponentSet)['universe']
+        default_component = getUtility(IComponentSet)['universe']
         return dict(
             ((binary_package_name, architecture_tag), BinaryOverride(
                 component=default_component, new=True,
