@@ -2076,8 +2076,7 @@ class Archive(SQLBase):
         return list(PackagePublishingPocket.items)
 
     def getOverridePolicy(self, distroseries, pocket,
-                          phased_update_percentage=None,
-                          can_partner=False, is_partner=False):
+                          phased_update_percentage=None):
         """See `IArchive`."""
         # Circular imports.
         from lp.soyuz.adapters.overrides import (
@@ -2096,12 +2095,8 @@ class Archive(SQLBase):
         archives = [self]
         use_default_component = True
         override_at_all = True
-        if self.is_primary and can_partner:
-            # overrideArchive can switch to the partner archive if there
-            # is ancestry there, so try partner after primary.
-            partner = self.distribution.getArchiveByComponent('partner')
-            if partner is not None:
-                archives.append(partner)
+        if self.is_partner:
+            use_default_component = False
         elif self.is_copy:
             # Copy archives always inherit their overrides from the
             # primary archive. We don't want to perform the version
@@ -2114,11 +2109,6 @@ class Archive(SQLBase):
             use_default_component = False
         elif self.is_ppa:
             override_at_all = False
-
-        # NascentUpload.is_partner additionally checks if any of the
-        # components are partner.
-        if self.is_partner or (self.is_primary and is_partner):
-            use_default_component = False
 
         if not override_at_all:
             return None
