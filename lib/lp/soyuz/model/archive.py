@@ -2091,6 +2091,10 @@ class Archive(SQLBase):
                     self, distroseries, None,
                     phased_update_percentage=phased_update_percentage,
                     include_deleted=True),
+                FromExistingOverridePolicy(
+                    self, distroseries, None,
+                    phased_update_percentage=phased_update_percentage,
+                    include_deleted=True, any_arch=True),
                 UnknownOverridePolicy(
                     self, distroseries, pocket,
                     phased_update_percentage=phased_update_percentage)])
@@ -2100,6 +2104,10 @@ class Archive(SQLBase):
                     self, distroseries, None,
                     phased_update_percentage=phased_update_percentage,
                     include_deleted=True),
+                FromExistingOverridePolicy(
+                    self, distroseries, None,
+                    phased_update_percentage=phased_update_percentage,
+                    include_deleted=True, any_arch=True),
                 ConstantOverridePolicy(
                     component=getUtility(IComponentSet)['partner'],
                     phased_update_percentage=phased_update_percentage,
