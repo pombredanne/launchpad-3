@@ -1,8 +1,8 @@
 DistroSeries source publishing lookups
 ======================================
 
-IDistroSeries allows source publishing lookup via
-getReleasedPackages method which returns a shortlist of
+IDistroSeries allows source publishing lookup via the
+getPublishedSources method which returns a shortlist of
 ISourcePackagePublishingHistory ordered by descending ID.
 
 In order to test its behaviour we will create a bunch of sample

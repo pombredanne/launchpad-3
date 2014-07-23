@@ -42,7 +42,6 @@ from lp.services.database.stormexpr import (
     fti_search,
     rank_by_fti,
     )
-from lp.services.helpers import shortlist
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.webapp.publisher import (
     get_raw_form_value_from_current_request,
@@ -275,43 +274,6 @@ class DistroArchSeries(SQLBase):
         # retrieve the records.
         return getUtility(IBinaryPackageBuildSet).getBuildsForDistro(
             self, build_state, name, pocket)
-
-    def getReleasedPackages(self, binary_name, pocket=None,
-                            include_pending=False, archive=None):
-        """See IDistroArchSeries."""
-        from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
-
-        queries = []
-
-        if not IBinaryPackageName.providedBy(binary_name):
-            binary_name = BinaryPackageName.byName(binary_name)
-
-        queries.append("""
-        binarypackagerelease=binarypackagerelease.id AND
-        binarypackagerelease.binarypackagename=%s AND
-        distroarchseries = %s
-        """ % sqlvalues(binary_name, self))
-
-        if pocket is not None:
-            queries.append("pocket=%s" % sqlvalues(pocket.value))
-
-        if include_pending:
-            queries.append("status in (%s, %s)" % sqlvalues(
-                PackagePublishingStatus.PUBLISHED,
-                PackagePublishingStatus.PENDING))
-        else:
-            queries.append("status=%s" % sqlvalues(
-                PackagePublishingStatus.PUBLISHED))
-
-        archives = self.distroseries.distribution.getArchiveIDList(archive)
-        queries.append("archive IN %s" % sqlvalues(archives))
-
-        published = BinaryPackagePublishingHistory.select(
-            " AND ".join(queries),
-            clauseTables=['BinaryPackageRelease'],
-            orderBy=['-id'])
-
-        return shortlist(published)
 
     @property
     def main_archive(self):
