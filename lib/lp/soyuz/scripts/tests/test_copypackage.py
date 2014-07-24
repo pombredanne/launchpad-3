@@ -1427,7 +1427,7 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
               * 1.0-2.
 
             --
-            http://launchpad.dev/~archiver/+archive/ppa
+            http://launchpad.dev/~archiver/+archive/ubuntutest/ppa
             """) +
             # Slight contortion to avoid a long line.
             fill(dedent("""\

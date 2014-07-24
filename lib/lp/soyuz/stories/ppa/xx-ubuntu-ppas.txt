@@ -407,7 +407,7 @@ Current build activity is linked to the builds page with the relevant
 filter.
 
     >>> print anon_browser.getLink('1 package building').url
-    http://launchpad.dev/~cprov/+archive/ppa/+builds?build_state=building
+    http://launchpad.dev/~cprov/+archive/ubuntu/ppa/+builds?build_state=building
 
 
 == Filtering an archive ==
@@ -444,7 +444,7 @@ An empty PPA doesn't list any packages and it also doesn't present the
 'apt sources lines ' widget and the repository 'URL' since they would
 link to a repository that doesn't exist yet.
 
-    >>> anon_browser.open("http://launchpad.dev/~no-priv/+archive/ppa")
+    >>> anon_browser.open("http://launchpad.dev/~no-priv/+archive/ubuntu/ppa")
     >>> print extract_text(find_main_content(anon_browser.contents))
     PPA for No Privileges Person
     ...
@@ -498,7 +498,8 @@ section in the PPA details table.
 
     >>> no_priv_browser = setupBrowser(
     ...     auth='Basic no-priv@canonical.com:test')
-    >>> no_priv_browser.open("http://launchpad.dev/~no-priv/+archive/ppa")
+    >>> no_priv_browser.open(
+    ...     "http://launchpad.dev/~no-priv/+archive/ubuntu/ppa")
 
     >>> print_tag_with_id(no_priv_browser.contents, 'upload-hint')
     Uploading packages to this PPA
@@ -514,12 +515,12 @@ It also has a link pointing to its corresponding help page.
 Anonymous access or users with no upload permission cannot see the
 upload hint section.
 
-    >>> anon_browser.open("http://launchpad.dev/~no-priv/+archive/ppa")
+    >>> anon_browser.open("http://launchpad.dev/~no-priv/+archive/ubuntu/ppa")
     >>> print find_tag_by_id(
     ...     anon_browser.contents, 'upload-hint')
     None
 
-    >>> admin_browser.open("http://launchpad.dev/~no-priv/+archive/ppa")
+    >>> admin_browser.open("http://launchpad.dev/~no-priv/+archive/ubuntu/ppa")
     >>> print find_tag_by_id(
     ...     anon_browser.contents, 'upload-hint')
     None
@@ -586,7 +587,7 @@ And further down, next to the key id, we link to that same pop-up help:
 Just quickly check if the singular form of this section is handled
 properly.
 
-    >>> anon_browser.open("http://launchpad.dev/~mark/+archive/ppa")
+    >>> anon_browser.open("http://launchpad.dev/~mark/+archive/ubuntu/ppa")
     >>> print anon_browser.title
     PPA for Mark Shuttleworth : Mark Shuttleworth
 
@@ -667,7 +668,7 @@ will redirect to the correct URL with the default PPA name, "ppa".
 
     >>> admin_browser.open("http://launchpad.dev/~cprov/+archive")
     >>> admin_browser.url
-    'http://launchpad.dev/~cprov/+archive/ppa'
+    'http://launchpad.dev/~cprov/+archive/ubuntu/ppa'
 
 If the user in question doesn't have a PPA, any attempt to access it,
 either via the new-style URL or the compatibility redirection, will

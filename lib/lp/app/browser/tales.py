@@ -1742,7 +1742,7 @@ class PackageBuildFormatterAPI(ObjectFormatterAPI):
     """Adapter providing fmt support for `IPackageBuild` objects."""
 
     def _composeArchiveReference(self, archive):
-        if archive.is_ppa:
+        if archive.reference != archive.distribution.name:
             return " [%s]" % archive.reference
         else:
             return ""
