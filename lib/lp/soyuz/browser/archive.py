@@ -95,7 +95,6 @@ from lp.services.browser_helpers import (
     get_user_agent_distroseries,
     )
 from lp.services.database.bulk import load_related
-from lp.services.features import getFeatureFlag
 from lp.services.helpers import english_list
 from lp.services.job.model.job import Job
 from lp.services.librarian.browser import FileNavigationMixin
@@ -230,11 +229,8 @@ class PPAURL:
 
     @property
     def path(self):
-        if getFeatureFlag('soyuz.ppa.distroful_urls'):
-            return u"+archive/%s/%s" % (
-                self.context.distribution.name, self.context.name)
-        else:
-            return u"+archive/%s" % self.context.name
+        return u"+archive/%s/%s" % (
+            self.context.distribution.name, self.context.name)
 
 
 class ArchiveNavigation(Navigation, FileNavigationMixin):
