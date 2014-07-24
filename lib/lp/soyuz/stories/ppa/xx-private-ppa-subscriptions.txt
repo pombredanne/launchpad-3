@@ -22,7 +22,7 @@ redirect back to the PPA page with a feedback message:
     ...     "http://launchpad.dev/~cprov/+archive/ppa/+subscriptions")
 
     >>> print cprov_browser.url
-    http://launchpad.dev/~cprov/+archive/ppa
+    http://launchpad.dev/~cprov/+archive/ubuntu/ppa
 
     >>> print_feedback_messages(cprov_browser.contents)
     Only private archives can have subscribers.
