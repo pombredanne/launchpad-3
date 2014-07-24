@@ -518,19 +518,19 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         # This helper will only return if it's safe to carry on with the
         # copy, otherwise it raises SuspendJobException to tell the job
         # runner to suspend the job.
-        override_policy = FromExistingOverridePolicy()
+        override_policy = FromExistingOverridePolicy(
+            self.target_archive, self.target_distroseries, None)
         ancestry = override_policy.calculateSourceOverrides(
-            self.target_archive, self.target_distroseries,
-            self.target_pocket, {source_name: SourceOverride()})
+            {source_name: SourceOverride()})
 
         copy_policy = self.getPolicyImplementation()
 
         if len(ancestry) == 0:
             # We need to get the default overrides and put them in the
             # metadata.
-            defaults = UnknownOverridePolicy().calculateSourceOverrides(
-                self.target_archive, self.target_distroseries,
-                self.target_pocket,
+            default_policy = UnknownOverridePolicy(
+                self.target_archive, self.target_distroseries, None)
+            defaults = default_policy.calculateSourceOverrides(
                 {source_name: SourceOverride(component=source_component)})
             self.addSourceOverride(defaults[source_name])
             if auto_approve:
