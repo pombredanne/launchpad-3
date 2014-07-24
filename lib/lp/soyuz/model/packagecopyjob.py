@@ -520,8 +520,8 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         # runner to suspend the job.
         override_policy = FromExistingOverridePolicy()
         ancestry = override_policy.calculateSourceOverrides(
-            self.target_archive, self.target_distroseries,
-            self.target_pocket, {source_name: SourceOverride()})
+            self.target_archive, self.target_distroseries, None,
+            {source_name: SourceOverride()})
 
         copy_policy = self.getPolicyImplementation()
 
@@ -529,8 +529,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             # We need to get the default overrides and put them in the
             # metadata.
             defaults = UnknownOverridePolicy().calculateSourceOverrides(
-                self.target_archive, self.target_distroseries,
-                self.target_pocket,
+                self.target_archive, self.target_distroseries, None,
                 {source_name: SourceOverride(component=source_component)})
             self.addSourceOverride(defaults[source_name])
             if auto_approve:

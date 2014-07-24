@@ -30,18 +30,6 @@ class TestFromExistingOverridePolicy(TestCaseWithFactory):
 
     layer = ZopelessDatabaseLayer
 
-    def test_no_source_overrides(self):
-        # If the spn is not published in the given archive/distroseries,
-        # no changes are made.
-        spn = self.factory.makeSourcePackageName()
-        distroseries = self.factory.makeDistroSeries()
-        pocket = self.factory.getAnyPocket()
-        policy = FromExistingOverridePolicy()
-        overrides = policy.calculateSourceOverrides(
-            distroseries.main_archive, distroseries, pocket,
-            {spn: SourceOverride()})
-        self.assertEqual({}, overrides)
-
     def test_source_overrides(self):
         # When the spn is published in the given archive/distroseries, the
         # overrides for that archive/distroseries are returned.
@@ -55,6 +43,30 @@ class TestFromExistingOverridePolicy(TestCaseWithFactory):
                 component=spph.component, section=spph.section,
                 version=spph.sourcepackagerelease.version)}
         self.assertEqual(expected, overrides)
+
+    def test_source_overrides_pocket(self):
+        # If the spn is not published in the given pocket, no changes
+        # are made.
+        spn = self.factory.makeSourcePackageName()
+        distroseries = self.factory.makeDistroSeries()
+        policy = FromExistingOverridePolicy()
+        self.factory.makeSourcePackagePublishingHistory(
+            archive=distroseries.main_archive, distroseries=distroseries,
+            pocket=PackagePublishingPocket.RELEASE, sourcepackagename=spn)
+        overrides = policy.calculateSourceOverrides(
+            distroseries.main_archive, distroseries,
+            PackagePublishingPocket.PROPOSED,
+            {spn: SourceOverride()})
+        self.assertEqual(0, len(overrides))
+        overrides = policy.calculateSourceOverrides(
+            distroseries.main_archive, distroseries,
+            PackagePublishingPocket.RELEASE,
+            {spn: SourceOverride()})
+        self.assertEqual(1, len(overrides))
+        overrides = policy.calculateSourceOverrides(
+            distroseries.main_archive, distroseries, None,
+            {spn: SourceOverride()})
+        self.assertEqual(1, len(overrides))
 
     def test_source_overrides_latest_only_is_returned(self):
         # When the spn is published multiple times in the given
@@ -159,6 +171,32 @@ class TestFromExistingOverridePolicy(TestCaseWithFactory):
             }
         self.assertEqual(expected, overrides)
 
+    def test_binary_overrides_pocket(self):
+        # If the binary is not published in the given pocket, no changes
+        # are made.
+        distroseries = self.factory.makeDistroSeries()
+        das = self.factory.makeDistroArchSeries(distroseries=distroseries)
+        bpn = self.factory.makeBinaryPackageName()
+        self.factory.makeBinaryPackagePublishingHistory(
+            archive=distroseries.main_archive, distroarchseries=das,
+            pocket=PackagePublishingPocket.RELEASE, binarypackagename=bpn)
+        policy = FromExistingOverridePolicy()
+
+        overrides = policy.calculateBinaryOverrides(
+            distroseries.main_archive, distroseries,
+            PackagePublishingPocket.PROPOSED,
+            {(bpn, das.architecturetag): BinaryOverride()})
+        self.assertEqual(0, len(overrides))
+        overrides = policy.calculateBinaryOverrides(
+            distroseries.main_archive, distroseries,
+            PackagePublishingPocket.RELEASE,
+            {(bpn, das.architecturetag): BinaryOverride()})
+        self.assertEqual(1, len(overrides))
+        overrides = policy.calculateBinaryOverrides(
+            distroseries.main_archive, distroseries, None,
+            {(bpn, das.architecturetag): BinaryOverride()})
+        self.assertEqual(1, len(overrides))
+
     def test_binary_overrides_skips_unknown_arch(self):
         # If calculateBinaryOverrides is passed with an archtag that
         # does not correspond to an ArchSeries of the distroseries,
@@ -175,6 +213,48 @@ class TestFromExistingOverridePolicy(TestCaseWithFactory):
             distroseries.main_archive, distroseries, pocket,
             {(bpn, 'i386'): BinaryOverride()})
         self.assertEqual({}, overrides)
+
+    def test_binary_overrides_can_cross_archs(self):
+        # calculateBinaryOverrides can be asked to ignore the archtag
+        # and look for ancestry in any architecture.
+        distroseries = self.factory.makeDistroSeries()
+        amd64 = self.factory.makeDistroArchSeries(
+            architecturetag='amd64',
+            distroseries=distroseries)
+        i386 = self.factory.makeDistroArchSeries(
+            architecturetag='i386',
+            distroseries=distroseries)
+        distroseries.nominatedarchindep = i386
+        bpn = self.factory.makeBinaryPackageName()
+        pocket = self.factory.getAnyPocket()
+        bpph = self.factory.makeBinaryPackagePublishingHistory(
+            archive=distroseries.main_archive, distroarchseries=amd64,
+            pocket=pocket, binarypackagename=bpn, architecturespecific=True)
+        bpph_override = BinaryOverride(
+            component=bpph.component, section=bpph.section,
+            priority=bpph.priority, version=bpph.binarypackagerelease.version)
+        policy = FromExistingOverridePolicy()
+
+        # With any_arch=False only amd64 is found.
+        overrides = policy.calculateBinaryOverrides(
+            distroseries.main_archive, distroseries, pocket,
+            {(bpn, 'i386'): BinaryOverride(),
+             (bpn, 'amd64'): BinaryOverride(),
+             (bpn, None): BinaryOverride()})
+        self.assertEqual({(bpn, 'amd64'): bpph_override}, overrides)
+
+        # But with any_arch=True we get the amd64 overrides everywhere.
+        overrides = policy.calculateBinaryOverrides(
+            distroseries.main_archive, distroseries, pocket,
+            {(bpn, 'i386'): BinaryOverride(),
+             (bpn, 'amd64'): BinaryOverride(),
+             (bpn, None): BinaryOverride()},
+            any_arch=True)
+        self.assertEqual(
+            {(bpn, 'i386'): bpph_override,
+             (bpn, 'amd64'): bpph_override,
+             (bpn, None): bpph_override},
+            overrides)
 
     def test_binary_overrides_constant_query_count(self):
         # The query count is constant, no matter how many bpn-das pairs are
