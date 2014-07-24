@@ -433,11 +433,9 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
         bits = list(reversed(self.request.getTraversalStack()[-2:]))
         attempts = []
         if len(bits) == 2:
-            attempts.append(
-                (bits[0], bits[1], 2, False))
+            attempts.append((bits[0], bits[1], 2, False))
         if len(bits) >= 1:
-            attempts.append(
-                ("ubuntu", bits[0], 1, redirect_allowed))
+            attempts.append(("ubuntu", bits[0], 1, redirect_allowed))
         attempts.append(("ubuntu", "ppa", 0, True))
 
         # Go through the attempts in order.
