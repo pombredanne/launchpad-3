@@ -218,7 +218,7 @@ class TestNotificationRequiringLibrarian(TestCaseWithFactory):
             to launchpad-users@lists.launchpad.net for help (requires membership).
 
             --
-            http://launchpad.dev/~archiver/+archive/ppa
+            http://launchpad.dev/~archiver/+archive/ubuntu/ppa
             You are receiving this email because you are the uploader of the above
             PPA package.
             """)

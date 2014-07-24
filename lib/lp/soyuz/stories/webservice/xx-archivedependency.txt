@@ -37,12 +37,12 @@ dependency.
 Any user can retrieve a public PPA's dependencies.
 
     >>> print user_webservice.get(
-    ...     '/~cprov/+archive/ppa/dependencies')
+    ...     '/~cprov/+archive/ubuntu/ppa/dependencies')
     HTTP/1.1 200 Ok
     ...
 
     >>> print user_webservice.get(
-    ...     '/~cprov/+archive/ppa/+dependency/1')
+    ...     '/~cprov/+archive/ubuntu/ppa/+dependency/1')
     HTTP/1.1 200 Ok
     ...
 
@@ -50,7 +50,7 @@ The dependencies of a private archive are private.  Unprivileged users
 can't get a list of the dependencies.
 
     >>> print user_webservice.get(
-    ...     '/~cprov/+archive/p3a/dependencies')
+    ...     '/~cprov/+archive/ubuntu/p3a/dependencies')
     HTTP/1.1 401 Unauthorized
     ...
     (<Archive at ...>, 'dependencies', 'launchpad.SubscriberView')
@@ -58,7 +58,7 @@ can't get a list of the dependencies.
 Nor can said user craft a URL to a dependency.
 
     >>> print user_webservice.get(
-    ...     '/~cprov/+archive/p3a/+dependency/1')
+    ...     '/~cprov/+archive/ubuntu/p3a/+dependency/1')
     HTTP/1.1 401 Unauthorized
     ...
     (<Archive at ...>, 'getArchiveDependency', 'launchpad.View')
@@ -70,20 +70,20 @@ Celso can see them if we grant private permissions, of course.
     >>> cprov_webservice = webservice_for_person(
     ...     cprov_db, permission=OAuthPermission.WRITE_PRIVATE)
     >>> print cprov_webservice.get(
-    ...     '/~cprov/+archive/p3a/dependencies')
+    ...     '/~cprov/+archive/ubuntu/p3a/dependencies')
     HTTP/1.1 200 Ok
     ...
     >>> print cprov_webservice.get(
-    ...     '/~cprov/+archive/p3a/+dependency/1')
+    ...     '/~cprov/+archive/ubuntu/p3a/+dependency/1')
     HTTP/1.1 200 Ok
     ...
 
 But even he can't write to a dependency.
 
     >>> mark_ppa = cprov_webservice.get(
-    ...     '/~mark/+archive/ppa').jsonBody()
+    ...     '/~mark/+archive/ubuntu/ppa').jsonBody()
     >>> print cprov_webservice.patch(
-    ...     '/~cprov/+archive/ppa/+dependency/1', 'application/json',
+    ...     '/~cprov/+archive/ubuntu/ppa/+dependency/1', 'application/json',
     ...     simplejson.dumps({'archive_link': mark_ppa['self_link']}))
     HTTP/1.1 400 Bad Request
     ...
@@ -91,7 +91,7 @@ But even he can't write to a dependency.
     <BLANKLINE>
 
     >>> print cprov_webservice.patch(
-    ...     '/~cprov/+archive/ppa/+dependency/1', 'application/json',
+    ...     '/~cprov/+archive/ubuntu/ppa/+dependency/1', 'application/json',
     ...     simplejson.dumps({'dependency_link': mark_ppa['self_link']}))
     HTTP/1.1 400 Bad Request
     ...
@@ -99,7 +99,7 @@ But even he can't write to a dependency.
     <BLANKLINE>
 
     >>> print cprov_webservice.patch(
-    ...     '/~cprov/+archive/ppa/+dependency/1', 'application/json',
+    ...     '/~cprov/+archive/ubuntu/ppa/+dependency/1', 'application/json',
     ...     simplejson.dumps({'pocket': 'Security'}))
     HTTP/1.1 400 Bad Request
     ...

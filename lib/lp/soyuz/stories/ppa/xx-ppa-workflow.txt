@@ -767,7 +767,7 @@ If the user changes his mind, he can click on the cancel link to go back
 a page:
 
     >>> print no_priv_browser.getLink("Cancel").url
-    http://launchpad.dev/~no-priv/+archive/ppa
+    http://launchpad.dev/~no-priv/+archive/ubuntu/ppa
 
 Otherwise, he has a button to press to confirm the deletion.
 

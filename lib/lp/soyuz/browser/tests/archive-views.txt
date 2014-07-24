@@ -765,7 +765,7 @@ dependency. Each element has:
     mark/ppa
 
     >>> print dependency.title.escapedtext
-    <a href="http://launchpad.dev/~mark/+archive/ppa">PPA for Mark
+    <a href="http://launchpad.dev/~mark/+archive/ubuntu/ppa">PPA for Mark
     Shuttleworth</a>
 
 The form focus, now that we have a recorded dependencies, is set to the

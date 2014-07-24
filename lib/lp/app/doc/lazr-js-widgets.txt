@@ -174,7 +174,7 @@ editor.
         <div class="clearfix">
           <div class="edit-controls">
             <a class="yui3-editable_text-trigger sprite edit action-icon"
-               href="http://launchpad.dev/~eric/+archive/ppa/+edit"
+               href="http://launchpad.dev/~eric/+archive/ubuntu/ppa/+edit"
                title="">Edit</a>
           </div>
           <h3>A title</h3>
