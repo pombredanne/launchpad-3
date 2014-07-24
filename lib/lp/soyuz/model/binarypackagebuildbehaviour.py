@@ -135,16 +135,18 @@ class BinaryPackageBuildBehaviour(BuildFarmJobBehaviourBase):
         """
         Return the extra arguments required by the slave for the given build.
         """
+        das = build.distro_arch_series
+
         # Build extra arguments.
         args = {}
         # turn 'arch_indep' ON only if build is archindep or if
         # the specific architecture is the nominatedarchindep for
         # this distroseries (in case it requires any archindep source)
-        args['arch_indep'] = build.distro_arch_series.isNominatedArchIndep
+        args['arch_indep'] = das.isNominatedArchIndep
 
-        args['suite'] = build.distro_arch_series.distroseries.getSuite(
-            build.pocket)
-        args['arch_tag'] = build.distro_arch_series.architecturetag
+        args['distribution'] = das.distroseries.distribution.name
+        args['suite'] = das.distroseries.getSuite(build.pocket)
+        args['arch_tag'] = das.architecturetag
 
         archive_purpose = build.archive.purpose
         if (archive_purpose == ArchivePurpose.PPA and
@@ -162,8 +164,8 @@ class BinaryPackageBuildBehaviour(BuildFarmJobBehaviourBase):
             args["ogrecomponent"] = (
                 build.current_component.name)
 
-        args['archives'] = get_sources_list_for_building(build,
-            build.distro_arch_series, build.source_package_release.name)
+        args['archives'] = get_sources_list_for_building(
+            build, das, build.source_package_release.name)
         args['archive_private'] = build.archive.private
         args['build_debug_symbols'] = build.archive.build_debug_symbols
 
