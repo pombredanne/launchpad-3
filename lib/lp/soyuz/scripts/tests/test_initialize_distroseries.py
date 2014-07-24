@@ -910,6 +910,107 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
             len(packages_test1) + len(packages_test2))
         self.assertEqual(child.binarycount, 4)  # Chromium is FTBFS
 
+    def test_copy_packaging_links_some(self):
+        # Test that when copying some packagesets from the parent, only
+        # the packaging links for the copied packages are copied.
+        self.parent, self.parent_das = self.setupParent()
+        test1 = getUtility(IPackagesetSet).new(
+            u'test1', u'test 1 packageset', self.parent.owner,
+            distroseries=self.parent)
+        test2 = getUtility(IPackagesetSet).new(
+            u'test2', u'test 2 packageset', self.parent.owner,
+            distroseries=self.parent)
+        packages_test1 = ['udev', 'chromium', 'libc6']
+        packages_test2 = ['postgresql', 'vim']
+        for pkg in packages_test1:
+            test1.addSources(pkg)
+            sp = self.parent.getSourcePackage(pkg)
+            product_series = self.factory.makeProductSeries()
+            product_series.setPackaging(
+                self.parent, sp.sourcepackagename, self.parent.owner)
+        for pkg in packages_test2:
+            test2.addSources(pkg)
+            sp = self.parent.getSourcePackage(pkg)
+            product_series = self.factory.makeProductSeries()
+            product_series.setPackaging(
+                self.parent, sp.sourcepackagename, self.parent.owner)
+        packageset1 = getUtility(IPackagesetSet).getByName(
+            self.parent, u'test1')
+        child = self._fullInitialize(
+            [self.parent], packagesets=(str(packageset1.id),))
+        packagings = child.getMostRecentlyLinkedPackagings()
+        names = [
+            packaging.sourcepackagename.name for packaging in packagings]
+        self.assertEqual(
+            0, child.getPrioritizedUnlinkedSourcePackages().count())
+        self.assertEqual(set(packages_test1), set(names))
+
+    def test_copy_packaging_links_empty(self):
+        # Test that when copying no packagesets from the parent, none of
+        # the packaging links for the packages are copied.
+        self.parent, self.parent_das = self.setupParent()
+        test1 = getUtility(IPackagesetSet).new(
+            u'test1', u'test 1 packageset', self.parent.owner,
+            distroseries=self.parent)
+        test2 = getUtility(IPackagesetSet).new(
+            u'test2', u'test 2 packageset', self.parent.owner,
+            distroseries=self.parent)
+        packages_test1 = ['udev', 'chromium', 'libc6']
+        packages_test2 = ['postgresql', 'vim']
+        for pkg in packages_test1:
+            test1.addSources(pkg)
+            sp = self.parent.getSourcePackage(pkg)
+            product_series = self.factory.makeProductSeries()
+            product_series.setPackaging(
+                self.parent, sp.sourcepackagename, self.parent.owner)
+        for pkg in packages_test2:
+            test2.addSources(pkg)
+            sp = self.parent.getSourcePackage(pkg)
+            product_series = self.factory.makeProductSeries()
+            product_series.setPackaging(
+                self.parent, sp.sourcepackagename, self.parent.owner)
+        child = self._fullInitialize(
+            [self.parent], packagesets=[])
+        packagings = child.getMostRecentlyLinkedPackagings()
+        names = [
+            packaging.sourcepackagename.name for packaging in packagings]
+        self.assertEqual(
+            0, child.getPrioritizedUnlinkedSourcePackages().count())
+        self.assertEqual([], names)
+
+    def test_copy_packaging_links_none(self):
+        # Test that when copying all packagesets from the parent, all of
+        # the packaging links are copied.
+        self.parent, self.parent_das = self.setupParent()
+        test1 = getUtility(IPackagesetSet).new(
+            u'test1', u'test 1 packageset', self.parent.owner,
+            distroseries=self.parent)
+        test2 = getUtility(IPackagesetSet).new(
+            u'test2', u'test 2 packageset', self.parent.owner,
+            distroseries=self.parent)
+        packages_test1 = ['udev', 'chromium', 'libc6']
+        packages_test2 = ['postgresql', 'vim']
+        for pkg in packages_test1:
+            test1.addSources(pkg)
+            sp = self.parent.getSourcePackage(pkg)
+            product_series = self.factory.makeProductSeries()
+            product_series.setPackaging(
+                self.parent, sp.sourcepackagename, self.parent.owner)
+        for pkg in packages_test2:
+            test2.addSources(pkg)
+            sp = self.parent.getSourcePackage(pkg)
+            product_series = self.factory.makeProductSeries()
+            product_series.setPackaging(
+                self.parent, sp.sourcepackagename, self.parent.owner)
+        child = self._fullInitialize(
+            [self.parent], packagesets=None)
+        packagings = child.getMostRecentlyLinkedPackagings()
+        names = [
+            packaging.sourcepackagename.name for packaging in packagings]
+        self.assertEqual(
+            0, child.getPrioritizedUnlinkedSourcePackages().count())
+        self.assertEqual(set(packages_test1 + packages_test2), set(names))
+
     def test_rebuild_flag(self):
         # No binaries will get copied if we specify rebuild=True.
         self.parent, self.parent_das = self.setupParent()
