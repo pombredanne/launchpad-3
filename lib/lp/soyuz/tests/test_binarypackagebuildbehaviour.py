@@ -21,7 +21,6 @@ from zope.security.proxy import removeSecurityProxy
 from lp.archivepublisher.diskpool import poolify
 from lp.buildmaster.enums import (
     BuilderCleanStatus,
-    BuildQueueStatus,
     BuildStatus,
     )
 from lp.buildmaster.interactor import (
