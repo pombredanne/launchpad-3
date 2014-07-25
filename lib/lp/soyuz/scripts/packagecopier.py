@@ -169,30 +169,12 @@ def check_copy_permissions(person, archive, series, pocket, sources):
     # the destination (archive, component, pocket). This check is done
     # here rather than in the security adapter because it requires more
     # info than is available in the security adapter.
-    sourcepackagenames = [
-        source.sourcepackagerelease.sourcepackagename for source in sources]
-    if series is None:
-        # Use each source's series as the destination for that source.
-        series_iter = map(attrgetter("distroseries"), sources)
-    else:
-        series_iter = repeat(series)
-    for spn, dest_series in set(zip(sourcepackagenames, series_iter)):
-        # XXX cjwatson 20120630: We should do a proper ancestry check
-        # instead of simply querying for publications in any pocket.
-        # Unfortunately there are currently at least three different
-        # implementations of ancestry lookup:
-        # NascentUpload.getSourceAncestry,
-        # PackageUploadSource.getSourceAncestryForDiffs, and
-        # Archive.getPublishedSources, none of which is obviously
-        # correct here.  Instead of adding a fourth, we should consolidate
-        # these.
-        ancestries = archive.getPublishedSources(
-            name=spn.name, exact_match=True, status=active_publishing_status,
-            distroseries=dest_series)
-        try:
-            destination_component = ancestries[0].component
-        except IndexError:
-            destination_component = None
+    for source in sources:
+        dest_series = series or source.distroseries
+        spn = source.sourcepackagerelease.sourcepackagename
+        policy = archive.getOverridePolicy(dest_series, pocket)
+        override = policy.calculateSourceOverrides(
+            {spn: SourceOverride(component=source.component)}).get(spn)
 
         # Is the destination pocket open at all?
         reason = archive.checkUploadToPocket(
@@ -200,17 +182,16 @@ def check_copy_permissions(person, archive, series, pocket, sources):
         if reason is not None:
             raise CannotCopy(reason)
 
-        # If destination_component is not None, make sure the person
-        # has upload permission for this component.  Otherwise, any
-        # upload permission on this archive will do.
-        strict_component = destination_component is not None
+        # If the package exists in the target, make sure the person has
+        # upload permission for its component. Otherwise, any upload
+        # permission on this archive will do.
         reason = archive.verifyUpload(
-            person, spn, destination_component, dest_series,
-            strict_component=strict_component, pocket=pocket)
+            person, spn, override.component, dest_series,
+            strict_component=(override.new == False), pocket=pocket)
         if reason is not None:
             # Queue admins are allowed to copy even if they can't upload.
             if not archive.canAdministerQueue(
-                person, destination_component, pocket, dest_series):
+                person, override.component, pocket, dest_series):
                 raise CannotCopy(reason)
 
 
@@ -713,7 +694,7 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries,
         status=active_publishing_status,
         distroseries=series, pocket=pocket)
     policy = archive.getOverridePolicy(
-        series, None, phased_update_percentage=phased_update_percentage)
+        series, pocket, phased_update_percentage=phased_update_percentage)
     if source_in_destination.is_empty():
         # If no manual overrides were specified and the archive has an
         # override policy then use that policy to get overrides.

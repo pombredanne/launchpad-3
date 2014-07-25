@@ -11,12 +11,16 @@ from lp.services.database import bulk
 from lp.services.database.sqlbase import flush_database_caches
 from lp.soyuz.adapters.overrides import (
     BinaryOverride,
+    ConstantOverridePolicy,
+    FallbackOverridePolicy,
     FromExistingOverridePolicy,
     SourceOverride,
-    UbuntuOverridePolicy,
     UnknownOverridePolicy,
     )
-from lp.soyuz.enums import PackagePublishingStatus
+from lp.soyuz.enums import (
+    PackagePublishingPriority,
+    PackagePublishingStatus,
+    )
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.testing import (
     StormStatementRecorder,
@@ -417,28 +421,6 @@ class TestUnknownOverridePolicy(TestCaseWithFactory):
             zip(spns, ('universe', 'multiverse', 'multiverse')))
         self.assertEqual(expected, overrides)
 
-    def test_unknown_sources_ppa(self):
-        # The unknown policy overrides everything to the archive's
-        # default component, if it has one.
-        for component in ('contrib', 'non-free'):
-            self.factory.makeComponent(component)
-        distroseries = self.factory.makeDistroSeries()
-        spns = [self.factory.makeSourcePackageName() for i in range(3)]
-        policy = UnknownOverridePolicy(
-            self.factory.makeArchive(distribution=distroseries.distribution),
-            distroseries, PackagePublishingPocket.RELEASE)
-        overrides = policy.calculateSourceOverrides(
-            dict(
-                (spn, SourceOverride(
-                    component=getUtility(IComponentSet)[component]))
-                for spn, component in
-                zip(spns, ('main', 'contrib', 'non-free'))))
-        expected = dict(
-            (spn, SourceOverride(
-                component=getUtility(IComponentSet)[component], new=True))
-            for spn, component in zip(spns, ('main', 'main', 'main')))
-        self.assertEqual(expected, overrides)
-
     def test_unknown_binaries(self):
         # If the unknown policy is used, it does no checks, just returns the
         # defaults.
@@ -457,13 +439,52 @@ class TestUnknownOverridePolicy(TestCaseWithFactory):
         self.assertEqual(expected, overrides)
 
 
-class TestUbuntuOverridePolicy(TestCaseWithFactory):
+class TestConstantOverridePolicy(TestCaseWithFactory):
 
     layer = ZopelessDatabaseLayer
 
-    def test_ubuntu_override_policy_sources(self):
-        # The Ubuntu policy incorporates both the existing and the unknown
-        # policy.
+    def test_sources(self):
+        policy = ConstantOverridePolicy(
+            component=self.factory.makeComponent(),
+            section=self.factory.makeSection(),
+            phased_update_percentage=50, new=True)
+        spn = self.factory.makeSourcePackageName()
+        self.assertEqual(
+            {spn: SourceOverride(
+                component=policy.component, section=policy.section,
+                new=True)},
+            policy.calculateSourceOverrides(
+                {spn: SourceOverride(
+                    component=self.factory.makeComponent(),
+                    section=self.factory.makeSection(), new=False)}))
+
+    def test_binary(self):
+        policy = ConstantOverridePolicy(
+            component=self.factory.makeComponent(),
+            section=self.factory.makeSection(),
+            priority=PackagePublishingPriority.EXTRA,
+            phased_update_percentage=50, new=True)
+        bpn = self.factory.makeBinaryPackageName()
+        self.assertEqual(
+            {(bpn, None): BinaryOverride(
+                component=policy.component, section=policy.section,
+                priority=policy.priority, phased_update_percentage=50,
+                new=True)},
+            policy.calculateBinaryOverrides(
+                {(bpn, None): BinaryOverride(
+                    component=self.factory.makeComponent(),
+                    section=self.factory.makeSection(),
+                    priority=PackagePublishingPriority.REQUIRED,
+                    phased_update_percentage=90, new=False)}))
+
+
+class TestFallbackOverridePolicy(TestCaseWithFactory):
+
+    layer = ZopelessDatabaseLayer
+
+    def test_fallback_sources(self):
+        # The fallback policy runs through a sequence of policies until
+        # all overrides are fulfilled.
         universe = getUtility(IComponentSet)['universe']
         spns = [self.factory.makeSourcePackageName()]
         expected = {spns[0]: SourceOverride(component=universe, new=True)}
@@ -480,8 +501,11 @@ class TestUbuntuOverridePolicy(TestCaseWithFactory):
                     version=spph.sourcepackagerelease.version, new=False))
         spns.append(self.factory.makeSourcePackageName())
         expected[spns[-1]] = SourceOverride(component=universe, new=True)
-        policy = UbuntuOverridePolicy(
-            distroseries.main_archive, distroseries, pocket)
+        policy = FallbackOverridePolicy([
+            FromExistingOverridePolicy(
+                distroseries.main_archive, distroseries, pocket),
+            UnknownOverridePolicy(
+                distroseries.main_archive, distroseries, pocket)])
         overrides = policy.calculateSourceOverrides(
             dict((spn, SourceOverride()) for spn in spns))
         self.assertEqual(10, len(overrides))
@@ -520,8 +544,11 @@ class TestUbuntuOverridePolicy(TestCaseWithFactory):
             expected[bpn, distroarchseries.architecturetag] = BinaryOverride(
                 component=universe, new=True)
         distroseries.nominatedarchindep = distroarchseries
-        policy = UbuntuOverridePolicy(
-            distroseries.main_archive, distroseries, pocket)
+        policy = FallbackOverridePolicy([
+            FromExistingOverridePolicy(
+                distroseries.main_archive, distroseries, pocket),
+            UnknownOverridePolicy(
+                distroseries.main_archive, distroseries, pocket)])
         overrides = policy.calculateBinaryOverrides(
             dict(((bpn, das), BinaryOverride()) for bpn, das in bpns))
         self.assertEqual(5, len(overrides))
@@ -556,9 +583,13 @@ class TestUbuntuOverridePolicy(TestCaseWithFactory):
         expected[(bpn, distroarchseries.architecturetag)] = BinaryOverride(
             component=universe, phased_update_percentage=50, new=True)
         distroseries.nominatedarchindep = distroarchseries
-        policy = UbuntuOverridePolicy(
-            distroseries.main_archive, distroseries, pocket,
-            phased_update_percentage=50)
+        policy = FallbackOverridePolicy([
+            FromExistingOverridePolicy(
+                distroseries.main_archive, distroseries, pocket,
+                phased_update_percentage=50),
+            UnknownOverridePolicy(
+                distroseries.main_archive, distroseries, pocket,
+                phased_update_percentage=50)])
         overrides = policy.calculateBinaryOverrides(
             dict(((bpn, das), BinaryOverride()) for bpn, das in bpns))
         self.assertEqual(2, len(overrides))

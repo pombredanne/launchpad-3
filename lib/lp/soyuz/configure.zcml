@@ -927,7 +927,10 @@
     </class>
 
     <!-- OverridePolicy -->
-    <class class="lp.soyuz.adapters.overrides.UbuntuOverridePolicy">
+    <class class="lp.soyuz.adapters.overrides.FallbackOverridePolicy">
+      <allow interface="lp.soyuz.adapters.overrides.IOverridePolicy" />
+    </class>
+    <class class="lp.soyuz.adapters.overrides.ConstantOverridePolicy">
       <allow interface="lp.soyuz.adapters.overrides.IOverridePolicy" />
     </class>
 
