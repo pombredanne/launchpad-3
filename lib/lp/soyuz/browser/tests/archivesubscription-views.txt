@@ -196,7 +196,7 @@ for editing, together with Update and Cancel actions:
 The ArchiveSubscriptionEditView has a next_url helper property.
 
     >>> print view.next_url
-    http://launchpad.dev/~cprov/+archive/pppa/+subscriptions
+    http://launchpad.dev/~cprov/+archive/ubuntu/pppa/+subscriptions
 
 The ArchiveSubscriptionEditView can be used to update the description field:
 

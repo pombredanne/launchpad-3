@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """The processing of nascent uploads.
@@ -161,6 +161,12 @@ class NascentUpload:
             self.run_and_check_error(uploaded_file.checkNameIsTaintFree)
             self.run_and_check_error(uploaded_file.checkSizeAndCheckSum)
 
+        # Override archive location if necessary to cope with partner
+        # uploads to a primary path. We consider an upload to be
+        # targeted to partner if the .changes lists any files in the
+        # partner component.
+        self.overrideArchive()
+
         self._check_overall_consistency()
         if self.sourceful:
             self._check_sourceful_consistency()
@@ -184,11 +190,6 @@ class NascentUpload:
         # actually comes from overrides for packages that are not NEW.
         self.find_and_apply_overrides()
         self._overrideDDEBSs()
-
-        # Override archive location if necessary to cope with partner
-        # uploads to a primary path. Yes, we actually potentially change
-        # the target archive based on the override component.
-        self.overrideArchive()
 
         # Check upload rights for the signer of the upload.
         self.verify_acl(build)
@@ -450,11 +451,6 @@ class NascentUpload:
         """Return a set of components present in the uploaded files."""
         return set(file.component_name for file in self.changes.files)
 
-    @property
-    def is_partner(self):
-        """Return true if this is an upload to the partner archive."""
-        return PARTNER_COMPONENT_NAME in self.getComponents()
-
     def reject(self, msg):
         """Add the provided message to the rejection message."""
         self.rejections.append(msg)
@@ -677,13 +673,8 @@ class NascentUpload:
         use_default_component = True
         autoaccept_new = False
         override_at_all = True
-        if self.policy.archive.is_primary:
-            # overrideArchive can switch to the partner archive if there
-            # is ancestry there, so try partner after primary.
-            partner = self.policy.archive.distribution.getArchiveByComponent(
-                PARTNER_COMPONENT_NAME)
-            if partner is not None:
-                archives.append(partner)
+        if self.policy.archive.is_partner:
+            use_default_component = False
         elif self.policy.archive.is_copy:
             # Copy archives always inherit their overrides from the
             # primary archive. We don't want to perform the version
@@ -699,12 +690,6 @@ class NascentUpload:
         elif self.policy.archive.is_ppa:
             autoaccept_new = True
             override_at_all = False
-
-        # NascentUpload.is_partner additionally checks if any of the
-        # components are partner.
-        if (self.policy.archive.is_partner or
-                (self.policy.archive.is_primary and self.is_partner)):
-            use_default_component = False
 
         for uploaded_file in self.changes.files:
             if isinstance(uploaded_file, DSCFile):

@@ -601,7 +601,7 @@ We can get to the person's default PPA via the 'archive' property:
 
     >>> mark_archive_link = mark['archive_link']
     >>> print mark_archive_link
-    http://.../~mark/+archive/ppa
+    http://.../~mark/+archive/ubuntu/ppa
 
     >>> mark_archive = webservice.get(mark_archive_link).jsonBody()
     >>> print mark_archive['description']
@@ -612,7 +612,7 @@ person.
 
     >>> print_self_link_of_entries(webservice.get(
     ...     mark['ppas_collection_link']).jsonBody())
-    http://.../~mark/+archive/ppa
+    http://.../~mark/+archive/ubuntu/ppa
 
 A specific PPA can be looked up by name via 'getPPAByName'
 named-operation on IPerson.
@@ -620,14 +620,14 @@ named-operation on IPerson.
     >>> print webservice.named_get(
     ...     mark['self_link'], 'getPPAByName',
     ...     distribution='/ubuntu', name='ppa').jsonBody()['self_link']
-    http://.../~mark/+archive/ppa
+    http://.../~mark/+archive/ubuntu/ppa
 
 If no distribution is specified, it defaults to Ubuntu.
 
     >>> print webservice.named_get(
     ...     mark['self_link'], 'getPPAByName',
     ...     name='ppa').jsonBody()['self_link']
-    http://.../~mark/+archive/ppa
+    http://.../~mark/+archive/ubuntu/ppa
 
 In cases where a PPA with a given name cannot be found, a Not Found error is
 returned.
