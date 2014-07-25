@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """ DSCFile and related.
@@ -71,7 +71,6 @@ from lp.soyuz.enums import (
     ArchivePurpose,
     SourcePackageFormat,
     )
-from lp.soyuz.interfaces.archive import IArchiveSet
 
 
 def unpack_source(dsc_filepath):
@@ -443,17 +442,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
 
         :raise: `NotFoundError` when the wanted file could not be found.
         """
-        # We cannot check the archive purpose for partner archives here,
-        # because the archive override rules have not been applied yet.
-        # Uploads destined for the Ubuntu main archive and the 'partner'
-        # component will eventually end up in the partner archive though.
-        if (self.policy.archive.purpose == ArchivePurpose.PRIMARY and
-            self.component_name == 'partner'):
-            archives = [
-                getUtility(IArchiveSet).getByDistroPurpose(
-                distribution=self.policy.distro,
-                purpose=ArchivePurpose.PARTNER)]
-        elif (self.policy.archive.purpose == ArchivePurpose.PPA and
+        if (self.policy.archive.purpose == ArchivePurpose.PPA and
             determine_source_file_type(filename) in (
                 SourcePackageFileType.ORIG_TARBALL,
                 SourcePackageFileType.COMPONENT_ORIG_TARBALL)):

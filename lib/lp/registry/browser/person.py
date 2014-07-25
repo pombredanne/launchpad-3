@@ -192,7 +192,6 @@ from lp.registry.mail.notification import send_direct_contact_email
 from lp.registry.model.person import get_recipients
 from lp.services.config import config
 from lp.services.database.sqlbase import flush_database_updates
-from lp.services.features import getFeatureFlag
 from lp.services.feeds.browser import FeedsMixin
 from lp.services.geoip.interfaces import IRequestPreferredLanguages
 from lp.services.gpg.interfaces import (
@@ -431,15 +430,12 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
         #    The distribution is assumed to be "ubuntu" and the PPA "ppa".
         #
         # Only the first is canonical, with the others redirecting to it.
-        distroful_urls = bool(getFeatureFlag('soyuz.ppa.distroful_urls'))
         bits = list(reversed(self.request.getTraversalStack()[-2:]))
         attempts = []
         if len(bits) == 2:
-            attempts.append(
-                (bits[0], bits[1], 2, redirect_allowed and not distroful_urls))
+            attempts.append((bits[0], bits[1], 2, False))
         if len(bits) >= 1:
-            attempts.append(
-                ("ubuntu", bits[0], 1, redirect_allowed and distroful_urls))
+            attempts.append(("ubuntu", bits[0], 1, redirect_allowed))
         attempts.append(("ubuntu", "ppa", 0, True))
 
         # Go through the attempts in order.

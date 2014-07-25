@@ -22,7 +22,7 @@
   HTTP/1.1 201 Created
   Status: 201
   ...
-  Location: http://api.launchpad.dev/.../+archive/ppa
+  Location: http://api.launchpad.dev/.../+archive/ubuntu/ppa
   ...
 
   >>> print ppa_owner_webservice.named_post(
@@ -40,7 +40,7 @@ Our PPA owner now has a single PPA.
 
   >>> print_self_link_of_entries(webservice.get(
   ...     ppa_owner['ppas_collection_link']).jsonBody())
-  http://api.launchpad.dev/beta/~.../+archive/ppa
+  http://api.launchpad.dev/beta/~.../+archive/ubuntu/ppa
 
 They aren't a commercial admin, so they cannot create private PPAs.
 
@@ -59,7 +59,7 @@ single PPA they had at the beginning:
 
   >>> print_self_link_of_entries(webservice.get(
   ...     ppa_owner['ppas_collection_link']).jsonBody())
-  http://api.launchpad.dev/beta/~.../+archive/ppa
+  http://api.launchpad.dev/beta/~.../+archive/ubuntu/ppa
 
 However, we can grant them commercial admin access:
 
@@ -78,15 +78,15 @@ Once they have commercial access, they can create private PPAs:
   HTTP/1.1 201 Created
   Status: 201
   ...
-  Location: http://api.launchpad.dev/.../+archive/secret
+  Location: http://api.launchpad.dev/.../+archive/ubuntu/secret
   ...
 
 And the PPA appears in their list of PPAs:
 
   >>> print_self_link_of_entries(webservice.get(
   ...     ppa_owner['ppas_collection_link']).jsonBody())
-  http://api.launchpad.dev/.../+archive/ppa
-  http://api.launchpad.dev/.../+archive/secret
+  http://api.launchpad.dev/.../+archive/ubuntu/ppa
+  http://api.launchpad.dev/.../+archive/ubuntu/secret
 
 And the PPA is, of course, private:
 
