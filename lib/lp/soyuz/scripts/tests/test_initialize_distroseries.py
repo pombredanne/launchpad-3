@@ -172,6 +172,31 @@ class InitializationHelperTestCase(TestCaseWithFactory):
             pocket=PackagePublishingPocket.RELEASE)
         return parent, parent_das, parent_das2, source
 
+    def setupPackagingTesting(self):
+        # Setup the environment for testing the packaging links
+        self.parent, self.parent_das = self.setupParent()
+        test1 = getUtility(IPackagesetSet).new(
+            u'test1', u'test 1 packageset', self.parent.owner,
+            distroseries=self.parent)
+        test2 = getUtility(IPackagesetSet).new(
+            u'test2', u'test 2 packageset', self.parent.owner,
+            distroseries=self.parent)
+        packages_test1 = ['udev', 'chromium', 'libc6']
+        packages_test2 = ['postgresql', 'vim']
+        for pkg in packages_test1:
+            test1.addSources(pkg)
+            sp = self.parent.getSourcePackage(pkg)
+            product_series = self.factory.makeProductSeries()
+            product_series.setPackaging(
+                self.parent, sp.sourcepackagename, self.parent.owner)
+        for pkg in packages_test2:
+            test2.addSources(pkg)
+            sp = self.parent.getSourcePackage(pkg)
+            product_series = self.factory.makeProductSeries()
+            product_series.setPackaging(
+                self.parent, sp.sourcepackagename, self.parent.owner)
+        return packages_test1, packages_test2
+
 
 class TestInitializeDistroSeries(InitializationHelperTestCase):
 
@@ -913,27 +938,7 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
     def test_copy_packaging_links_some(self):
         # Test that when copying some packagesets from the parent, only
         # the packaging links for the copied packages are copied.
-        self.parent, self.parent_das = self.setupParent()
-        test1 = getUtility(IPackagesetSet).new(
-            u'test1', u'test 1 packageset', self.parent.owner,
-            distroseries=self.parent)
-        test2 = getUtility(IPackagesetSet).new(
-            u'test2', u'test 2 packageset', self.parent.owner,
-            distroseries=self.parent)
-        packages_test1 = ['udev', 'chromium', 'libc6']
-        packages_test2 = ['postgresql', 'vim']
-        for pkg in packages_test1:
-            test1.addSources(pkg)
-            sp = self.parent.getSourcePackage(pkg)
-            product_series = self.factory.makeProductSeries()
-            product_series.setPackaging(
-                self.parent, sp.sourcepackagename, self.parent.owner)
-        for pkg in packages_test2:
-            test2.addSources(pkg)
-            sp = self.parent.getSourcePackage(pkg)
-            product_series = self.factory.makeProductSeries()
-            product_series.setPackaging(
-                self.parent, sp.sourcepackagename, self.parent.owner)
+        packages_test1, packages_test2 = self.setupPackagingTesting()
         packageset1 = getUtility(IPackagesetSet).getByName(
             self.parent, u'test1')
         child = self._fullInitialize(
@@ -948,27 +953,7 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
     def test_copy_packaging_links_empty(self):
         # Test that when copying no packagesets from the parent, none of
         # the packaging links for the packages are copied.
-        self.parent, self.parent_das = self.setupParent()
-        test1 = getUtility(IPackagesetSet).new(
-            u'test1', u'test 1 packageset', self.parent.owner,
-            distroseries=self.parent)
-        test2 = getUtility(IPackagesetSet).new(
-            u'test2', u'test 2 packageset', self.parent.owner,
-            distroseries=self.parent)
-        packages_test1 = ['udev', 'chromium', 'libc6']
-        packages_test2 = ['postgresql', 'vim']
-        for pkg in packages_test1:
-            test1.addSources(pkg)
-            sp = self.parent.getSourcePackage(pkg)
-            product_series = self.factory.makeProductSeries()
-            product_series.setPackaging(
-                self.parent, sp.sourcepackagename, self.parent.owner)
-        for pkg in packages_test2:
-            test2.addSources(pkg)
-            sp = self.parent.getSourcePackage(pkg)
-            product_series = self.factory.makeProductSeries()
-            product_series.setPackaging(
-                self.parent, sp.sourcepackagename, self.parent.owner)
+        self.setupPackagingTesting()
         child = self._fullInitialize(
             [self.parent], packagesets=[])
         packagings = child.getMostRecentlyLinkedPackagings()
@@ -981,27 +966,7 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
     def test_copy_packaging_links_none(self):
         # Test that when copying all packagesets from the parent, all of
         # the packaging links are copied.
-        self.parent, self.parent_das = self.setupParent()
-        test1 = getUtility(IPackagesetSet).new(
-            u'test1', u'test 1 packageset', self.parent.owner,
-            distroseries=self.parent)
-        test2 = getUtility(IPackagesetSet).new(
-            u'test2', u'test 2 packageset', self.parent.owner,
-            distroseries=self.parent)
-        packages_test1 = ['udev', 'chromium', 'libc6']
-        packages_test2 = ['postgresql', 'vim']
-        for pkg in packages_test1:
-            test1.addSources(pkg)
-            sp = self.parent.getSourcePackage(pkg)
-            product_series = self.factory.makeProductSeries()
-            product_series.setPackaging(
-                self.parent, sp.sourcepackagename, self.parent.owner)
-        for pkg in packages_test2:
-            test2.addSources(pkg)
-            sp = self.parent.getSourcePackage(pkg)
-            product_series = self.factory.makeProductSeries()
-            product_series.setPackaging(
-                self.parent, sp.sourcepackagename, self.parent.owner)
+        packages_test1, packages_test2 = self.setupPackagingTesting()
         child = self._fullInitialize(
             [self.parent], packagesets=None)
         packagings = child.getMostRecentlyLinkedPackagings()
