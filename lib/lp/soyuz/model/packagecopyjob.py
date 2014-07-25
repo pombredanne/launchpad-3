@@ -57,10 +57,7 @@ from lp.services.job.model.job import (
     )
 from lp.services.job.runner import BaseRunnableJob
 from lp.services.mail.sendmail import format_address_for_person
-from lp.soyuz.adapters.overrides import (
-    SourceOverride,
-    UnknownOverridePolicy,
-    )
+from lp.soyuz.adapters.overrides import SourceOverride
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackageCopyPolicy,
@@ -518,10 +515,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         # copy, otherwise it raises SuspendJobException to tell the job
         # runner to suspend the job.
         override_policy = self.target_archive.getOverridePolicy(
-            self.target_distroseries, None)
-        if override_policy is None:
-            override_policy = UnknownOverridePolicy(
-                self.target_archive, self.target_distroseries, None)
+            self.target_distroseries, self.target_pocket)
         overrides = override_policy.calculateSourceOverrides(
             {source_name: SourceOverride(component=source_component)})
         override = overrides[source_name]

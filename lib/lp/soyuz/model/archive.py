@@ -2080,22 +2080,47 @@ class Archive(SQLBase):
         """See `IArchive`."""
         # Circular imports.
         from lp.soyuz.adapters.overrides import (
+            ConstantOverridePolicy,
             FallbackOverridePolicy,
             FromExistingOverridePolicy,
             UnknownOverridePolicy,
             )
-        # XXX StevenK: bug=785004 2011-05-19 Return PPAOverridePolicy() for
-        # a PPA that overrides the component/pocket to main/RELEASE.
-        if self.purpose in MAIN_ARCHIVE_PURPOSES:
+        if self.is_primary:
             return FallbackOverridePolicy([
                 FromExistingOverridePolicy(
-                    self, distroseries, pocket,
+                    self, distroseries, None,
                     phased_update_percentage=phased_update_percentage,
                     include_deleted=True),
+                FromExistingOverridePolicy(
+                    self, distroseries, None,
+                    phased_update_percentage=phased_update_percentage,
+                    include_deleted=True, any_arch=True),
                 UnknownOverridePolicy(
                     self, distroseries, pocket,
                     phased_update_percentage=phased_update_percentage)])
-        return None
+        elif self.is_partner:
+            return FallbackOverridePolicy([
+                FromExistingOverridePolicy(
+                    self, distroseries, None,
+                    phased_update_percentage=phased_update_percentage,
+                    include_deleted=True),
+                FromExistingOverridePolicy(
+                    self, distroseries, None,
+                    phased_update_percentage=phased_update_percentage,
+                    include_deleted=True, any_arch=True),
+                ConstantOverridePolicy(
+                    component=getUtility(IComponentSet)['partner'],
+                    phased_update_percentage=phased_update_percentage,
+                    new=True)])
+        elif self.is_ppa:
+            return ConstantOverridePolicy(
+                component=getUtility(IComponentSet)['main'])
+        elif self.is_copy:
+            return self.distribution.main_archive.getOverridePolicy(
+                distroseries, pocket,
+                phased_update_percentage=phased_update_percentage)
+        raise AssertionError(
+            "No IOverridePolicy for purpose %r" % self.purpose)
 
     def removeCopyNotification(self, job_id):
         """See `IArchive`."""
