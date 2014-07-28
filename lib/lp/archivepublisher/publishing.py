@@ -132,14 +132,14 @@ def _setupHtaccess(archive, pubconf, log):
         # is added; bug=376072
         return
 
-    htaccess_path = os.path.join(pubconf.htaccessroot, ".htaccess")
-    htpasswd_path = os.path.join(pubconf.htaccessroot, ".htpasswd")
+    htaccess_path = os.path.join(pubconf.archiveroot, ".htaccess")
+    htpasswd_path = os.path.join(pubconf.archiveroot, ".htpasswd")
     # After the initial htaccess/htpasswd files
     # are created generate_ppa_htaccess is responsible for
     # updating the tokens.
     if not os.path.exists(htaccess_path):
         log.debug("Writing htaccess file.")
-        write_htaccess(htaccess_path, pubconf.htaccessroot)
+        write_htaccess(htaccess_path, pubconf.archiveroot)
         passwords = htpasswd_credentials_for_archive(archive)
         write_htpasswd(htpasswd_path, passwords)
 
