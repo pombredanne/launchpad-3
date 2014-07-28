@@ -966,13 +966,10 @@ class Publisher(object):
         be caught and an OOPS report generated.
         """
         assert self.archive.is_ppa
-        root_dir = os.path.join(
-            self._config.distroroot, self.archive.owner.name,
-            self.archive.name)
-
         self.log.info(
             "Attempting to delete archive '%s/%s' at '%s'." % (
-                self.archive.owner.name, self.archive.name, root_dir))
+                self.archive.owner.name, self.archive.name,
+                self._config.archiveroot))
 
         # Set all the publications to DELETED.
         sources = self.archive.getPublishedSources(
@@ -996,8 +993,7 @@ class Publisher(object):
         for pub in self.archive.getAllPublishedBinaries(include_removed=False):
             pub.dateremoved = UTC_NOW
 
-        # XXX wgrant 2014-07-03: Needs checking for multi-distro sanity.
-        for directory in (root_dir, self._config.metaroot):
+        for directory in (self._config.archiveroot, self._config.metaroot):
             if directory is None or not os.path.exists(directory):
                 continue
             try:
