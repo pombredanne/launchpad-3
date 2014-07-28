@@ -760,7 +760,13 @@ suite. To simulate this we will create a publication in Celso's PPA.
 Now we will copy only the source from Celso's PPA breezy-autotest to
 hoary-test.
 
+We hack cprov's PPA to be for ubuntutest instead of ubuntu, as we use
+ubuntutest series in this test.
+
+    >>> from zope.security.proxy import removeSecurityProxy
     >>> breezy_autotest = ppa_source.distroseries
+    >>> removeSecurityProxy(cprov.archive).distribution = (
+    ...     breezy_autotest.distribution)
     >>> hoary_test = breezy_autotest.distribution.getSeries(
     ...     'hoary-test')
     >>> hoary_test.nominatedarchindep = hoary_test["i386"]
@@ -1066,7 +1072,7 @@ the PPA publication will always be main:
     >>> ppa_pub = publishing_set.newSourcePublication(
     ...     archive=mark.archive,
     ...     sourcepackagerelease=test_source_pub.sourcepackagerelease,
-    ...     distroseries=test_source_pub.distroseries,
+    ...     distroseries=mark.archive.distribution.currentseries,
     ...     component=test_source_pub.component,
     ...     section=test_source_pub.section,
     ...     pocket=test_source_pub.pocket)

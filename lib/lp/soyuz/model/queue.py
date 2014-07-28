@@ -997,8 +997,7 @@ class PackageUpload(SQLBase):
         if copy_job.component_name not in allowed_component_names:
             raise QueueAdminUnauthorizedError(
                 "No rights to override from %s" % copy_job.component_name)
-        copy_job.addSourceOverride(SourceOverride(
-            copy_job.package_name, new_component, new_section))
+        copy_job.addSourceOverride(SourceOverride(new_component, new_section))
 
         return True
 
@@ -1340,12 +1339,12 @@ class PackageUploadSource(SQLBase):
     def publish(self, logger=None):
         """See `IPackageUploadSource`."""
         # Publish myself in the distroseries pointed at by my queue item.
-        debug(logger, "Publishing source %s/%s to %s/%s in the %s archive" % (
+        debug(logger, "Publishing source %s/%s to %s/%s in %s" % (
             self.sourcepackagerelease.name,
             self.sourcepackagerelease.version,
             self.packageupload.distroseries.distribution.name,
             self.packageupload.distroseries.name,
-            self.packageupload.archive.name))
+            self.packageupload.archive.reference))
 
         return getUtility(IPublishingSet).newSourcePublication(
             archive=self.packageupload.archive,
@@ -1462,9 +1461,12 @@ class PackageUploadCustom(SQLBase):
         # complicated for our needs right now.  Also, the existing code
         # assumes that everything is a tarball and tries to unpack it.
 
-        archive = self.packageupload.archive
         # See the XXX near the import for getPubConfig.
-        archive_config = getPubConfig(archive)
+        archive_config = getPubConfig(self.packageupload.archive)
+        if archive_config.metaroot is None:
+            debug(logger, "Skipping meta-data for archive without metaroot.")
+            return
+
         dest_file = os.path.join(
             archive_config.metaroot, self.libraryfilealias.filename)
         if not os.path.isdir(archive_config.metaroot):

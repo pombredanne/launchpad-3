@@ -317,6 +317,11 @@ class IArchivePublic(IPrivacy, IHasOwner):
             title=_("Display name"), required=True,
             description=_("A short title for the archive.")))
 
+    reference = exported(
+        TextLine(
+            title=_("Reference"), required=True, readonly=True,
+            description=_("A string to uniquely identify the archive.")))
+
     distribution = exported(
         Reference(
             Interface,  # Redefined to IDistribution later.
@@ -338,7 +343,13 @@ class IArchivePublic(IPrivacy, IHasOwner):
                 "subscribers. This can only be changed if the archive has "
                 "never had any sources published.")))
 
+    is_primary = Attribute("True if this archive is a primary archive.")
+
     is_ppa = Attribute("True if this archive is a PPA.")
+
+    is_partner = Attribute("True if this archive is a partner archive.")
+
+    is_copy = Attribute("True if this archive is a copy archive.")
 
     is_main = Bool(
         title=_("True if archive is a main archive type"), required=False)
@@ -385,7 +396,6 @@ class IArchiveSubscriberView(Interface):
     is_active = Bool(
         title=_("True if the archive is in the active state"),
         required=False, readonly=True)
-    is_copy = Attribute("True if this archive is a copy archive.")
     num_pkgs_building = Attribute(
         "Tuple of packages building and waiting to build")
     publish = Bool(
@@ -542,8 +552,6 @@ class IArchiveView(IHasBuildRecords):
         title=_(
             "The default component for this archive. Publications without a "
             "valid component will be assigned this one."))
-
-    is_partner = Attribute("True if this archive is a partner archive.")
 
     number_of_sources = Attribute(
         'The number of sources published in the context archive.')
@@ -1050,7 +1058,7 @@ class IArchiveView(IHasBuildRecords):
     def getPockets():
         """Return iterable containing valid pocket names for this archive."""
 
-    def getOverridePolicy(phased_update_percentage=None):
+    def getOverridePolicy(distroseries, pocket, phased_update_percentage=None):
         """Returns an instantiated `IOverridePolicy` for the archive."""
 
     buildd_secret = TextLine(
@@ -2063,6 +2071,9 @@ class IArchiveSet(Interface):
 
     def get(archive_id):
         """Return the IArchive with the given archive_id."""
+
+    def getByReference(reference):
+        """Return the IArchive with the given archive reference."""
 
     def getPPAByDistributionAndOwnerName(distribution, person_name, ppa_name):
         """Return a single PPA.

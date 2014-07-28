@@ -3446,8 +3446,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             target_archive=distroseries.main_archive,
             target_distroseries=distroseries, requester=requester,
             include_binaries=include_binaries)
-        job.addSourceOverride(SourceOverride(
-            spr.sourcepackagename, spr.component, spr.section))
+        job.addSourceOverride(SourceOverride(spr.component, spr.section))
         try:
             job.run()
         except SuspendJobException:
@@ -3583,6 +3582,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if distroarchseries is None:
             if source_package_release is not None:
                 distroseries = source_package_release.upload_distroseries
+            elif archive is not None:
+                distroseries = self.makeDistroSeries(
+                    distribution=archive.distribution)
             else:
                 distroseries = self.makeDistroSeries()
             distroarchseries = self.makeDistroArchSeries(
@@ -3604,7 +3606,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 distroseries=distroarchseries.distroseries,
                 sourcepackagename=sourcepackagename)
             self.makeSourcePackagePublishingHistory(
-                distroseries=source_package_release.upload_distroseries,
+                distroseries=distroarchseries.distroseries,
                 archive=archive, sourcepackagerelease=source_package_release,
                 pocket=pocket)
         if status is None:

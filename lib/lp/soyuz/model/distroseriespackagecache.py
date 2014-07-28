@@ -12,6 +12,7 @@ from sqlobject import (
     )
 from storm.locals import (
     Desc,
+    Max,
     RawStr,
     )
 from zope.interface import implements
@@ -116,8 +117,9 @@ class DistroSeriesPackageCache(SQLBase):
         (in full batches of 100 elements)
         """
         # get the set of published binarypackagereleases
-        bprs = IStore(BinaryPackageRelease).find(
-            BinaryPackageRelease,
+        details = list(IStore(BinaryPackageRelease).find(
+            (BinaryPackageRelease.summary, BinaryPackageRelease.description,
+             Max(BinaryPackageRelease.datecreated)),
             BinaryPackageRelease.id ==
                 BinaryPackagePublishingHistory.binarypackagereleaseID,
             BinaryPackagePublishingHistory.binarypackagename ==
@@ -126,11 +128,14 @@ class DistroSeriesPackageCache(SQLBase):
                 DistroArchSeries.id,
             DistroArchSeries.distroseries == distroseries,
             BinaryPackagePublishingHistory.archive == archive,
-            BinaryPackagePublishingHistory.dateremoved == None)
-        bprs = bprs.order_by(Desc(BinaryPackageRelease.datecreated))
-        bprs = bprs.config(distinct=True)
+            BinaryPackagePublishingHistory.dateremoved == None
+            ).group_by(
+                BinaryPackageRelease.summary,
+                BinaryPackageRelease.description
+            ).order_by(
+                Desc(Max(BinaryPackageRelease.datecreated))))
 
-        if bprs.count() == 0:
+        if not details:
             log.debug("No binary releases found.")
             return
 
@@ -149,18 +154,17 @@ class DistroSeriesPackageCache(SQLBase):
 
         # make sure the cached name, summary and description are correct
         cache.name = binarypackagename.name
-        cache.summary = bprs[0].summary
-        cache.description = bprs[0].description
+        cache.summary = details[0][0]
+        cache.description = details[0][1]
 
         # get the sets of binary package summaries, descriptions. there is
         # likely only one, but just in case...
 
         summaries = set()
         descriptions = set()
-        for bpr in bprs:
-            log.debug("Considering binary version %s" % bpr.version)
-            summaries.add(bpr.summary)
-            descriptions.add(bpr.description)
+        for summary, description, datecreated in details:
+            summaries.add(summary)
+            descriptions.add(description)
 
         # and update the caches
         cache.summaries = ' '.join(sorted(summaries))

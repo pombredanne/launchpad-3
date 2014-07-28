@@ -1373,6 +1373,11 @@ class PublishingSet:
         """See `IPublishingSet`."""
         # Expand the dict of binaries into a list of tuples including the
         # architecture.
+        if distroseries.distribution != archive.distribution:
+            raise AssertionError(
+                "Series distribution %s doesn't match archive distribution %s."
+                % (distroseries.distribution.name, archive.distribution.name))
+
         expanded = expand_binary_requests(distroseries, binaries)
         if len(expanded) == 0:
             # The binaries are for a disabled DistroArchSeries or for
@@ -1440,6 +1445,12 @@ class PublishingSet:
 
     def copyBinaries(self, archive, distroseries, pocket, bpphs, policy=None):
         """See `IPublishingSet`."""
+        from lp.soyuz.adapters.overrides import BinaryOverride
+        if distroseries.distribution != archive.distribution:
+            raise AssertionError(
+                "Series distribution %s doesn't match archive distribution %s."
+                % (distroseries.distribution.name, archive.distribution.name))
+
         if bpphs is None:
             return
 
@@ -1467,13 +1478,11 @@ class PublishingSet:
                     bpph.distroarchseries.architecturetag)] = bpph
             with_overrides = {}
             overrides = policy.calculateBinaryOverrides(
-                archive, distroseries, pocket, bpn_archtag.keys())
-            for override in overrides:
-                if override.distro_arch_series is None:
-                    continue
-                bpph = bpn_archtag[
-                    (override.binary_package_name,
-                     override.distro_arch_series.architecturetag)]
+                dict(
+                    ((bpn, archtag), BinaryOverride())
+                    for bpn, archtag in bpn_archtag.keys()))
+            for (bpn, archtag), override in overrides.items():
+                bpph = bpn_archtag[(bpn, archtag)]
                 new_component = override.component or bpph.component
                 new_section = override.section or bpph.section
                 new_priority = override.priority or bpph.priority
@@ -1512,6 +1521,10 @@ class PublishingSet:
         # Avoid circular import.
         from lp.registry.model.distributionsourcepackage import (
             DistributionSourcePackage)
+        if distroseries.distribution != archive.distribution:
+            raise AssertionError(
+                "Series distribution %s doesn't match archive distribution %s."
+                % (distroseries.distribution.name, archive.distribution.name))
 
         pub = SourcePackagePublishingHistory(
             distroseries=distroseries,

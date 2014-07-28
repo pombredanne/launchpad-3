@@ -1,4 +1,4 @@
-# Copyright 2011-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Notification for uploads and copies."""
@@ -65,8 +65,8 @@ def reject_changes_file(blamer, changes_file_path, changes, archive,
         'USERS_ADDRESS': config.launchpad.users_address,
     }
     subject = '%s rejected' % filename
-    if archive and archive.is_ppa:
-        subject = '[PPA %s] %s' % (get_ppa_reference(archive), subject)
+    if archive:
+        subject = '[%s] %s' % (archive.reference, subject)
         information['ARCHIVE_URL'] = '\n%s' % canonical_url(archive)
     template = get_template(archive, 'rejected')
     body = template % information
@@ -119,10 +119,8 @@ def calculate_subject(spr, bprs, customfiles, archive, distroseries,
         names.add(custom.libraryfilealias.filename)
     name_str = ', '.join(names)
     subject = '[%s/%s] %s %s (%s)' % (
-        distroseries.distribution.name, suite, name_str, version,
+        archive.reference, suite, name_str, version,
         ACTION_DESCRIPTIONS[action])
-    if archive.is_ppa:
-        subject = '[PPA %s] %s' % (get_ppa_reference(archive), subject)
     return subject
 
 
@@ -343,11 +341,14 @@ def send_mail(
     :param attach_changes: A flag governing whether the original changesfile
         content shall be attached to the email.
     """
-    extra_headers = {'X-Katie': 'Launchpad actually'}
+    extra_headers = {
+        'X-Katie': 'Launchpad actually',
+        'X-Launchpad-Archive': archive.reference,
+        }
 
-    # Include the 'X-Launchpad-PPA' header for PPA upload notfications
-    # containing the PPA owner name.
-    if archive.is_ppa:
+    # The deprecated PPA reference header is included for Ubuntu PPAs to
+    # avoid breaking existing consumers.
+    if archive.is_ppa and archive.distribution.name == u'ubuntu':
         extra_headers['X-Launchpad-PPA'] = get_ppa_reference(archive)
 
     # Include a 'X-Launchpad-Component' header with the component and

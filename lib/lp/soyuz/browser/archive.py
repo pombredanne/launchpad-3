@@ -84,6 +84,7 @@ from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildSource,
     )
 from lp.registry.enums import PersonVisibility
+from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
@@ -176,20 +177,20 @@ class ArchiveBadges(HasBadgeBase):
         return "This archive is private."
 
 
-def traverse_named_ppa(person_name, ppa_name):
+def traverse_named_ppa(person, distro_name, ppa_name):
     """For PPAs, traverse the right place.
 
-    :param person_name: The person part of the URL
-    :param ppa_name: The PPA name part of the URL
+    :param person: The PPA owner.
+    :param distro_name: The Distribution name part of the URL.
+    :param ppa_name: The PPA name part of the URL.
     """
-    person = getUtility(IPersonSet).getByName(person_name)
+    distro = getUtility(IDistributionSet).getByName(distro_name)
+    if distro is None:
+        return None
     try:
-        archive = person.getPPAByName(
-            getUtility(ILaunchpadCelebrities).ubuntu, ppa_name)
+        return person.getPPAByName(distro, ppa_name)
     except NoSuchPPA:
-        raise NotFoundError("%s/%s", (person_name, ppa_name))
-
-    return archive
+        return None
 
 
 class DistributionArchiveURL:
@@ -228,7 +229,8 @@ class PPAURL:
 
     @property
     def path(self):
-        return u"+archive/%s" % self.context.name
+        return u"+archive/%s/%s" % (
+            self.context.distribution.name, self.context.name)
 
 
 class ArchiveNavigation(Navigation, FileNavigationMixin):
@@ -1387,9 +1389,8 @@ class PackageCopyingMixin:
 def make_archive_vocabulary(archives):
     terms = []
     for archive in archives:
-        token = '%s/%s' % (archive.owner.name, archive.name)
-        label = '%s [~%s]' % (archive.displayname, token)
-        terms.append(SimpleTerm(archive, token, label))
+        label = '%s [%s]' % (archive.displayname, archive.reference)
+        terms.append(SimpleTerm(archive, archive.reference, label))
     return SimpleVocabulary(terms)
 
 

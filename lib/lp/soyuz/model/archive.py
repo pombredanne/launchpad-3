@@ -205,6 +205,14 @@ from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.soyuz.scripts.packagecopier import check_copy_permissions
 
 
+ARCHIVE_REFERENCE_TEMPLATES = {
+    ArchivePurpose.PRIMARY: u'%(distribution)s',
+    ArchivePurpose.PPA: u'~%(owner)s/%(distribution)s/%(archive)s',
+    ArchivePurpose.PARTNER: u'%(distribution)s/%(archive)s',
+    ArchivePurpose.COPY: u'%(distribution)s/%(archive)s',
+    }
+
+
 def storm_validate_external_dependencies(archive, attr, value):
     assert attr == 'external_dependencies'
     errors = validate_external_dependencies(value)
@@ -376,6 +384,11 @@ class Archive(SQLBase):
         return self.purpose == ArchivePurpose.PPA
 
     @property
+    def is_primary(self):
+        """See `IArchive`."""
+        return self.purpose == ArchivePurpose.PRIMARY
+
+    @property
     def is_partner(self):
         """See `IArchive`."""
         return self.purpose == ArchivePurpose.PARTNER
@@ -394,6 +407,16 @@ class Archive(SQLBase):
     def is_active(self):
         """See `IArchive`."""
         return self.status == ArchiveStatus.ACTIVE
+
+    @property
+    def reference(self):
+        template = ARCHIVE_REFERENCE_TEMPLATES.get(self.purpose)
+        if template is None:
+            raise AssertionError(
+                "No archive reference template for %s." % self.purpose.name)
+        return template % {
+            'archive': self.name, 'owner': self.owner.name,
+            'distribution': self.distribution.name}
 
     @property
     def series_with_sources(self):
@@ -2052,16 +2075,52 @@ class Archive(SQLBase):
         # understandiung EnumItems.
         return list(PackagePublishingPocket.items)
 
-    def getOverridePolicy(self, phased_update_percentage=None):
+    def getOverridePolicy(self, distroseries, pocket,
+                          phased_update_percentage=None):
         """See `IArchive`."""
         # Circular imports.
-        from lp.soyuz.adapters.overrides import UbuntuOverridePolicy
-        # XXX StevenK: bug=785004 2011-05-19 Return PPAOverridePolicy() for
-        # a PPA that overrides the component/pocket to main/RELEASE.
-        if self.purpose in MAIN_ARCHIVE_PURPOSES:
-            return UbuntuOverridePolicy(
+        from lp.soyuz.adapters.overrides import (
+            ConstantOverridePolicy,
+            FallbackOverridePolicy,
+            FromExistingOverridePolicy,
+            UnknownOverridePolicy,
+            )
+        if self.is_primary:
+            return FallbackOverridePolicy([
+                FromExistingOverridePolicy(
+                    self, distroseries, None,
+                    phased_update_percentage=phased_update_percentage,
+                    include_deleted=True),
+                FromExistingOverridePolicy(
+                    self, distroseries, None,
+                    phased_update_percentage=phased_update_percentage,
+                    include_deleted=True, any_arch=True),
+                UnknownOverridePolicy(
+                    self, distroseries, pocket,
+                    phased_update_percentage=phased_update_percentage)])
+        elif self.is_partner:
+            return FallbackOverridePolicy([
+                FromExistingOverridePolicy(
+                    self, distroseries, None,
+                    phased_update_percentage=phased_update_percentage,
+                    include_deleted=True),
+                FromExistingOverridePolicy(
+                    self, distroseries, None,
+                    phased_update_percentage=phased_update_percentage,
+                    include_deleted=True, any_arch=True),
+                ConstantOverridePolicy(
+                    component=getUtility(IComponentSet)['partner'],
+                    phased_update_percentage=phased_update_percentage,
+                    new=True)])
+        elif self.is_ppa:
+            return ConstantOverridePolicy(
+                component=getUtility(IComponentSet)['main'])
+        elif self.is_copy:
+            return self.distribution.main_archive.getOverridePolicy(
+                distroseries, pocket,
                 phased_update_percentage=phased_update_percentage)
-        return None
+        raise AssertionError(
+            "No IOverridePolicy for purpose %r" % self.purpose)
 
     def removeCopyNotification(self, job_id):
         """See `IArchive`."""
@@ -2122,6 +2181,37 @@ class ArchiveSet:
     def get(self, archive_id):
         """See `IArchiveSet`."""
         return Archive.get(archive_id)
+
+    def getByReference(self, reference):
+        """See `IArchiveSet`."""
+        from lp.registry.interfaces.distribution import IDistributionSet
+
+        bits = reference.split(u'/')
+        if len(bits) < 1:
+            return None
+        if bits[0].startswith(u'~'):
+            # PPA reference (~OWNER/DISTRO/ARCHIVE)
+            if len(bits) != 3:
+                return None
+            person = getUtility(IPersonSet).getByName(bits[0][1:])
+            if person is None:
+                return None
+            distro = getUtility(IDistributionSet).getByName(bits[1])
+            if distro is None:
+                return None
+            return self.getPPAOwnedByPerson(
+                person, distribution=distro, name=bits[2])
+        else:
+            # Official archive reference (DISTRO or DISTRO/ARCHIVE)
+            distro = getUtility(IDistributionSet).getByName(bits[0])
+            if distro is None:
+                return None
+            if len(bits) == 1:
+                return distro.main_archive
+            elif len(bits) == 2:
+                return self.getByDistroAndName(distro, bits[1])
+            else:
+                return None
 
     def getPPAByDistributionAndOwnerName(self, distribution, person_name,
                                          ppa_name):

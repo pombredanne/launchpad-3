@@ -605,8 +605,10 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             requester=requester)
         self.assertEqual(
             ("<PlainPackageCopyJob to copy package foo from "
-             "{distroseries.distribution.name}/{archive1.name} to "
-             "{distroseries.distribution.name}/{archive2.name}, "
+             "~{archive1.owner.name}/{distroseries.distribution.name}/"
+             "{archive1.name} to "
+             "~{archive2.owner.name}/{distroseries.distribution.name}/"
+             "{archive2.name}, "
              "RELEASE pocket, in {distroseries.distribution.name} "
              "{distroseries.name}, including binaries>").format(
                 distroseries=distroseries, archive1=archive1,
@@ -803,7 +805,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
 
         # Publish a package in the source archive with some overridable
         # properties set to known values.
-        source_package = self.publisher.getPubSource(
+        self.publisher.getPubSource(
             distroseries=self.distroseries, sourcename="copyme",
             component='universe', section='web',
             version="2.8-1", status=PackagePublishingStatus.PUBLISHED,
@@ -827,10 +829,9 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         switch_dbuser("launchpad_main")
 
         # Add some overrides to the job.
-        package = source_package.sourcepackagerelease.sourcepackagename
         restricted = getUtility(IComponentSet)['restricted']
         editors = getUtility(ISectionSet)['editors']
-        override = SourceOverride(package, restricted, editors)
+        override = SourceOverride(component=restricted, section=editors)
         job.addSourceOverride(override)
 
         # Accept the upload to release the job then run it.
@@ -1211,7 +1212,8 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         # Firstly, lots of boring set up.
         target_archive = self.factory.makeArchive(
             self.distroseries.distribution, purpose=ArchivePurpose.PRIMARY)
-        source_archive = self.factory.makeArchive()
+        source_archive = self.factory.makeArchive(
+            self.distroseries.distribution)
         bug280 = self.factory.makeBug()
         bug281 = self.factory.makeBug()
         bug282 = self.factory.makeBug()
@@ -1495,14 +1497,12 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
     def test_addSourceOverride(self):
         # Test the addOverride method which adds an ISourceOverride to the
         # metadata.
-        name = self.factory.makeSourcePackageName()
         component = self.factory.makeComponent()
         section = self.factory.makeSection()
         pcj = self.factory.makePlainPackageCopyJob()
         switch_dbuser('copy_packages')
 
-        override = SourceOverride(
-            source_package_name=name, component=component, section=section)
+        override = SourceOverride(component=component, section=section)
         pcj.addSourceOverride(override)
 
         metadata_component = getUtility(
@@ -1522,12 +1522,9 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         old_component = self.factory.makeComponent()
         old_section = self.factory.makeSection()
         pcj.addSourceOverride(SourceOverride(
-            source_package_name=pcj.package_name,
             component=old_component, section=old_section))
         new_section = self.factory.makeSection()
-        pcj.addSourceOverride(SourceOverride(
-            source_package_name=pcj.package_name,
-            component=None, section=new_section))
+        pcj.addSourceOverride(SourceOverride(section=new_section))
         self.assertEqual(old_component.name, pcj.component_name)
         self.assertEqual(new_section.name, pcj.section_name)
 
@@ -1539,12 +1536,9 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         old_component = self.factory.makeComponent()
         old_section = self.factory.makeSection()
         pcj.addSourceOverride(SourceOverride(
-            source_package_name=pcj.package_name,
             component=old_component, section=old_section))
         new_component = self.factory.makeComponent()
-        pcj.addSourceOverride(SourceOverride(
-            source_package_name=pcj.package_name,
-            component=new_component, section=None))
+        pcj.addSourceOverride(SourceOverride(component=new_component))
         self.assertEqual(new_component.name, pcj.component_name)
         self.assertEqual(old_section.name, pcj.section_name)
 
@@ -1558,8 +1552,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             package_name=name.name, package_version="1.0")
         switch_dbuser('copy_packages')
 
-        override = SourceOverride(
-            source_package_name=name, component=component, section=section)
+        override = SourceOverride(component=component, section=section)
         pcj.addSourceOverride(override)
 
         self.assertEqual(override, pcj.getSourceOverride())

@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -42,7 +42,6 @@ from lp.services.database.stormexpr import (
     fti_search,
     rank_by_fti,
     )
-from lp.services.helpers import shortlist
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.webapp.publisher import (
     get_raw_form_value_from_current_request,
@@ -56,14 +55,13 @@ from lp.soyuz.interfaces.distroarchseries import (
     InvalidChrootUploaded,
     IPocketChroot,
     )
-from lp.soyuz.interfaces.publishing import ICanPublishPackages
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.model.processor import Processor
 
 
 class DistroArchSeries(SQLBase):
-    implements(IDistroArchSeries, IHasBuildRecords, ICanPublishPackages)
+    implements(IDistroArchSeries, IHasBuildRecords)
     _table = 'DistroArchSeries'
     _defaultOrder = 'id'
 
@@ -276,88 +274,6 @@ class DistroArchSeries(SQLBase):
         # retrieve the records.
         return getUtility(IBinaryPackageBuildSet).getBuildsForDistro(
             self, build_state, name, pocket)
-
-    def getReleasedPackages(self, binary_name, pocket=None,
-                            include_pending=False, archive=None):
-        """See IDistroArchSeries."""
-        from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
-
-        queries = []
-
-        if not IBinaryPackageName.providedBy(binary_name):
-            binary_name = BinaryPackageName.byName(binary_name)
-
-        queries.append("""
-        binarypackagerelease=binarypackagerelease.id AND
-        binarypackagerelease.binarypackagename=%s AND
-        distroarchseries = %s
-        """ % sqlvalues(binary_name, self))
-
-        if pocket is not None:
-            queries.append("pocket=%s" % sqlvalues(pocket.value))
-
-        if include_pending:
-            queries.append("status in (%s, %s)" % sqlvalues(
-                PackagePublishingStatus.PUBLISHED,
-                PackagePublishingStatus.PENDING))
-        else:
-            queries.append("status=%s" % sqlvalues(
-                PackagePublishingStatus.PUBLISHED))
-
-        archives = self.distroseries.distribution.getArchiveIDList(archive)
-        queries.append("archive IN %s" % sqlvalues(archives))
-
-        published = BinaryPackagePublishingHistory.select(
-            " AND ".join(queries),
-            clauseTables=['BinaryPackageRelease'],
-            orderBy=['-id'])
-
-        return shortlist(published)
-
-    def getPendingPublications(self, archive, pocket, is_careful):
-        """See `ICanPublishPackages`."""
-        from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
-
-        queries = [
-            "distroarchseries = %s AND archive = %s"
-            % sqlvalues(self, archive)
-            ]
-
-        target_status = [PackagePublishingStatus.PENDING]
-        if is_careful:
-            target_status.append(PackagePublishingStatus.PUBLISHED)
-        queries.append("status IN %s" % sqlvalues(target_status))
-
-        # restrict to a specific pocket.
-        queries.append('pocket = %s' % sqlvalues(pocket))
-
-        # Exclude RELEASE pocket if the distroseries was already released,
-        # since it should not change, unless the archive allows it.
-        if (not self.distroseries.isUnstable() and
-            not archive.allowUpdatesToReleasePocket()):
-            queries.append(
-            'pocket != %s' % sqlvalues(PackagePublishingPocket.RELEASE))
-
-        publications = BinaryPackagePublishingHistory.select(
-                    " AND ".join(queries), orderBy=["-id"])
-
-        return publications
-
-    def publish(self, diskpool, log, archive, pocket, is_careful=False):
-        """See `ICanPublishPackages`."""
-        log.debug("Attempting to publish pending binaries for %s"
-              % self.architecturetag)
-
-        dirty_pockets = set()
-
-        for bpph in self.getPendingPublications(archive, pocket, is_careful):
-            if not self.distroseries.checkLegalPocket(
-                bpph, is_careful, log):
-                continue
-            bpph.publish(diskpool, log)
-            dirty_pockets.add((self.distroseries.name, bpph.pocket))
-
-        return dirty_pockets
 
     @property
     def main_archive(self):

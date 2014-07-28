@@ -290,7 +290,7 @@ name of other users or teams:
     Create a new PPA
 
     >>> admin_browser.getLink("Create a new PPA").click()
-    >>> admin_browser.getControl(name="field.name").value = 'hackppa'
+    >>> admin_browser.getControl(name="field.name").value = 'ppa'
     >>> admin_browser.getControl(
     ...    name="field.displayname").value = 'Hack PPA'
     >>> admin_browser.getControl(name="field.accepted").value = True
@@ -336,7 +336,7 @@ they need to be able to make PPAs private.
 Trying to shortcut the URL as a non-privileged user does not work:
 
     >>> sample_browser.open(
-    ...     "http://launchpad.dev/~jblack/+archive/hackppa/+admin")
+    ...     "http://launchpad.dev/~jblack/+archive/ppa/+admin")
     Traceback (most recent call last):
     ...
     Unauthorized...
@@ -422,7 +422,7 @@ the size limit is 2 PiB.
     >>> limit = 2 ** 31 - 1
 
     >>> admin_browser.open(
-    ...     "http://launchpad.dev/~jblack/+archive/hackppa/+admin")
+    ...     "http://launchpad.dev/~jblack/+archive/ppa/+admin")
     >>> admin_browser.getControl(
     ...     name="field.authorized_size").value = str(limit)
     >>> admin_browser.getControl("Save").click()
@@ -767,7 +767,7 @@ If the user changes his mind, he can click on the cancel link to go back
 a page:
 
     >>> print no_priv_browser.getLink("Cancel").url
-    http://launchpad.dev/~no-priv/+archive/ppa
+    http://launchpad.dev/~no-priv/+archive/ubuntu/ppa
 
 Otherwise, he has a button to press to confirm the deletion.
 

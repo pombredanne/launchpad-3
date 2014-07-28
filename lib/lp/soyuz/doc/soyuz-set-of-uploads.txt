@@ -308,7 +308,7 @@ to a different 'bar_1.0.orig.tar.gz'.
     To:
 	Daniel Silverstone <daniel.silverstone@canonical.com>,
 	Foo Bar <foo.bar@canonical.com>
-    Subject: bar_1.0-3_source.changes rejected
+    Subject: [ubuntutest] bar_1.0-3_source.changes rejected
     ...
 
 Force weird behaviour with rfc2047 sentences containing '.' on
