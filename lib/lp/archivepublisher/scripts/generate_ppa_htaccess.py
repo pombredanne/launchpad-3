@@ -69,12 +69,12 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
         # The publisher Config object does not have an
         # interface, so we need to remove the security wrapper.
         pub_config = getPubConfig(ppa)
-        htaccess_filename = os.path.join(pub_config.htaccessroot, ".htaccess")
+        htaccess_filename = os.path.join(pub_config.archiveroot, ".htaccess")
         if not os.path.exists(htaccess_filename):
             # It's not there, so create it.
-            if not os.path.exists(pub_config.htaccessroot):
-                os.makedirs(pub_config.htaccessroot)
-            write_htaccess(htaccess_filename, pub_config.htaccessroot)
+            if not os.path.exists(pub_config.archiveroot):
+                os.makedirs(pub_config.archiveroot)
+            write_htaccess(htaccess_filename, pub_config.archiveroot)
             self.logger.debug("Created .htaccess for %s" % ppa.displayname)
 
     def generateHtpasswd(self, ppa):
@@ -85,9 +85,9 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
         """
         # Create a temporary file that will be a new .htpasswd.
         pub_config = getPubConfig(ppa)
-        if not os.path.exists(pub_config.htaccessroot):
-            os.makedirs(pub_config.htaccessroot)
-        fd, temp_filename = tempfile.mkstemp(dir=pub_config.htaccessroot)
+        if not os.path.exists(pub_config.archiveroot):
+            os.makedirs(pub_config.archiveroot)
+        fd, temp_filename = tempfile.mkstemp(dir=pub_config.archiveroot)
         os.close(fd)
 
         write_htpasswd(
@@ -106,7 +106,7 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
         # The publisher Config object does not have an
         # interface, so we need to remove the security wrapper.
         pub_config = getPubConfig(ppa)
-        htpasswd_filename = os.path.join(pub_config.htaccessroot, ".htpasswd")
+        htpasswd_filename = os.path.join(pub_config.archiveroot, ".htpasswd")
 
         if (not os.path.isfile(htpasswd_filename) or
             not filecmp.cmp(htpasswd_filename, temp_htpasswd_file)):

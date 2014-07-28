@@ -102,7 +102,7 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         # need to remove the security wrapper.
         pub_config = getPubConfig(self.ppa)
 
-        filename = os.path.join(pub_config.htaccessroot, ".htaccess")
+        filename = os.path.join(pub_config.archiveroot, ".htaccess")
         remove_if_exists(filename)
         script = self.getScript()
         script.ensureHtaccess(self.ppa)
@@ -112,7 +112,7 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
             "",
             "AuthType           Basic",
             "AuthName           \"Token Required\"",
-            "AuthUserFile       %s/.htpasswd" % pub_config.htaccessroot,
+            "AuthUserFile       %s/.htpasswd" % pub_config.archiveroot,
             "Require            valid-user",
             "",
             ]
@@ -137,8 +137,7 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         # target file when it's renamed, so that os.rename() won't
         # complain about renaming across file systems.
         pub_config = getPubConfig(self.ppa)
-        self.assertEqual(
-            pub_config.htaccessroot, os.path.dirname(filename))
+        self.assertEqual(pub_config.archiveroot, os.path.dirname(filename))
 
         # Read it back in.
         file_contents = [
@@ -160,14 +159,14 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         # The publisher Config object does not have an interface, so we
         # need to remove the security wrapper.
         pub_config = getPubConfig(self.ppa)
-        filename = os.path.join(pub_config.htaccessroot, ".htpasswd")
+        filename = os.path.join(pub_config.archiveroot, ".htpasswd")
 
         # Write out a dummy .htpasswd
-        ensure_directory_exists(pub_config.htaccessroot)
+        ensure_directory_exists(pub_config.archiveroot)
         write_file(filename, FILE_CONTENT)
 
         # Write the same contents in a temp file.
-        fd, temp_filename = tempfile.mkstemp(dir=pub_config.htaccessroot)
+        fd, temp_filename = tempfile.mkstemp(dir=pub_config.archiveroot)
         file = os.fdopen(fd, "w")
         file.write(FILE_CONTENT)
         file.close()
@@ -333,8 +332,8 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
     def ensureNoFiles(self):
         """Ensure the .ht* files don't already exist."""
         pub_config = getPubConfig(self.ppa)
-        htaccess = os.path.join(pub_config.htaccessroot, ".htaccess")
-        htpasswd = os.path.join(pub_config.htaccessroot, ".htpasswd")
+        htaccess = os.path.join(pub_config.archiveroot, ".htaccess")
+        htpasswd = os.path.join(pub_config.archiveroot, ".htpasswd")
         remove_if_exists(htaccess)
         remove_if_exists(htpasswd)
         return htaccess, htpasswd
