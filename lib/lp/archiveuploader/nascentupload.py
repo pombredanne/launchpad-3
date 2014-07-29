@@ -632,20 +632,13 @@ class NascentUpload:
                 self.logger.debug(
                     "Checking for %s/%s source ancestry"
                     % (uploaded_file.package, uploaded_file.version))
-                ancestry_name = getUtility(
-                    ISourcePackageNameSet).getOrCreateByName(
+                spn = getUtility(ISourcePackageNameSet).getOrCreateByName(
                         uploaded_file.package)
-
-                overrides = override_policy.calculateSourceOverrides(
-                    {ancestry_name:
-                        SourceOverride(component=upload_component)})
-                override = overrides.get(ancestry_name)
-
+                override = override_policy.calculateSourceOverrides(
+                    {spn: SourceOverride(component=upload_component)}).get(spn)
                 if version_policy is not None:
-                    ancestry = version_policy.calculateSourceOverrides(
-                        {ancestry_name:
-                            SourceOverride(component=upload_component)})
-                    ancestor = ancestry.get(ancestry_name)
+                    ancestor = version_policy.calculateSourceOverrides(
+                        {spn: SourceOverride()}).get(spn)
                     if ancestor is not None and ancestor.version is not None:
                         self.checkSourceVersion(uploaded_file, ancestor)
 
@@ -675,11 +668,11 @@ class NascentUpload:
                 # about it. Rejection is already guaranteed.
                 if (isinstance(uploaded_file, DdebBinaryUploadFile)
                     and uploaded_file.deb_file):
-                    ancestry_name = uploaded_file.deb_file.package
+                    override_name = uploaded_file.deb_file.package
                 else:
-                    ancestry_name = uploaded_file.package
-                ancestry_name = getUtility(
-                    IBinaryPackageNameSet).getOrCreateByName(ancestry_name)
+                    override_name = uploaded_file.package
+                bpn = getUtility(IBinaryPackageNameSet).getOrCreateByName(
+                    override_name)
 
                 if uploaded_file.architecture == "all":
                     arch_indep = self.policy.distroseries.nominatedarchindep
@@ -693,18 +686,14 @@ class NascentUpload:
                 except UploadError:
                     source_override = None
 
-                overrides = override_policy.calculateBinaryOverrides(
-                    {(ancestry_name, archtag):
-                        BinaryOverride(
-                            component=upload_component,
-                            source_override=source_override)})
-                override = overrides.get((ancestry_name, archtag))
-
+                override = override_policy.calculateBinaryOverrides(
+                    {(bpn, archtag): BinaryOverride(
+                        component=upload_component,
+                        source_override=source_override)}).get((bpn, archtag))
                 if version_policy is not None:
-                    ancestry = version_policy.calculateBinaryOverrides(
-                        {(ancestry_name, archtag):
-                            BinaryOverride(component=upload_component)})
-                    ancestor = ancestry.get((ancestry_name, archtag))
+                    ancestor = version_policy.calculateBinaryOverrides(
+                        {(bpn, archtag): BinaryOverride(
+                            component=upload_component)}).get((bpn, archtag))
                     if ancestor is not None and ancestor.version is not None:
                         self.checkBinaryVersion(uploaded_file, ancestor)
 
