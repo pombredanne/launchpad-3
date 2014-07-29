@@ -528,38 +528,11 @@ class NascentUpload:
     #
     # Handling checking of versions and overrides
     #
-    def _checkVersion(self, proposed_version, archive_version, filename):
+    def checkVersion(self, proposed_version, archive_version, filename):
         """Check if the proposed version is higher than the one in archive."""
         if apt_pkg.version_compare(proposed_version, archive_version) < 0:
             self.reject("%s: Version older than that in the archive. %s <= %s"
                         % (filename, proposed_version, archive_version))
-
-    def checkSourceVersion(self, uploaded_file, ancestry):
-        """Check if the uploaded source version is higher than the ancestry.
-
-        Automatically mark the package as 'rejected' using _checkVersion().
-        """
-        # At this point DSC.version should be equal Changes.version.
-        # Anyway, we trust more in DSC.
-        proposed_version = self.changes.dsc.dsc_version
-        archive_version = ancestry.version
-        filename = uploaded_file.filename
-        self._checkVersion(proposed_version, archive_version, filename)
-
-    def checkBinaryVersion(self, uploaded_file, ancestry):
-        """Check if the uploaded binary version is higher than the ancestry.
-
-        Automatically mark the package as 'rejected' using _checkVersion().
-        """
-        # We only trust in the control version, specially because the
-        # 'version' from changesfile may not include epoch for binaries.
-        # This is actually something that needs attention in our buildfarm,
-        # because debuild does build the binary changesfile with a version
-        # that includes epoch.
-        proposed_version = uploaded_file.control_version
-        archive_version = ancestry.version
-        filename = uploaded_file.filename
-        self._checkVersion(proposed_version, archive_version, filename)
 
     def overrideSourceFile(self, uploaded_file, override):
         """Overrides the uploaded source based on its override information.
@@ -640,7 +613,9 @@ class NascentUpload:
                     ancestor = version_policy.calculateSourceOverrides(
                         {spn: SourceOverride()}).get(spn)
                     if ancestor is not None and ancestor.version is not None:
-                        self.checkSourceVersion(uploaded_file, ancestor)
+                        self.checkVersion(
+                            self.changes.dsc.dsc_version, ancestor.version,
+                            uploaded_file.filename)
 
                 is_new = override is None or override.new != False
                 if is_new and not autoaccept_new:
@@ -694,7 +669,9 @@ class NascentUpload:
                         {(bpn, archtag): BinaryOverride(
                             component=upload_component)}).get((bpn, archtag))
                     if ancestor is not None and ancestor.version is not None:
-                        self.checkBinaryVersion(uploaded_file, ancestor)
+                        self.checkVersion(
+                            uploaded_file.control_version, ancestor.version,
+                            uploaded_file.filename)
 
                 is_new = override is None or override.new != False
                 if is_new and not autoaccept_new:
