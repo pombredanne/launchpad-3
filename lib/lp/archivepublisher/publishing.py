@@ -132,14 +132,14 @@ def _setupHtaccess(archive, pubconf, log):
         # is added; bug=376072
         return
 
-    htaccess_path = os.path.join(pubconf.htaccessroot, ".htaccess")
-    htpasswd_path = os.path.join(pubconf.htaccessroot, ".htpasswd")
+    htaccess_path = os.path.join(pubconf.archiveroot, ".htaccess")
+    htpasswd_path = os.path.join(pubconf.archiveroot, ".htpasswd")
     # After the initial htaccess/htpasswd files
     # are created generate_ppa_htaccess is responsible for
     # updating the tokens.
     if not os.path.exists(htaccess_path):
         log.debug("Writing htaccess file.")
-        write_htaccess(htaccess_path, pubconf.htaccessroot)
+        write_htaccess(htaccess_path, pubconf.archiveroot)
         passwords = htpasswd_credentials_for_archive(archive)
         write_htpasswd(htpasswd_path, passwords)
 
@@ -966,13 +966,10 @@ class Publisher(object):
         be caught and an OOPS report generated.
         """
         assert self.archive.is_ppa
-        root_dir = os.path.join(
-            self._config.distroroot, self.archive.owner.name,
-            self.archive.name)
-
         self.log.info(
             "Attempting to delete archive '%s/%s' at '%s'." % (
-                self.archive.owner.name, self.archive.name, root_dir))
+                self.archive.owner.name, self.archive.name,
+                self._config.archiveroot))
 
         # Set all the publications to DELETED.
         sources = self.archive.getPublishedSources(
@@ -996,8 +993,7 @@ class Publisher(object):
         for pub in self.archive.getAllPublishedBinaries(include_removed=False):
             pub.dateremoved = UTC_NOW
 
-        # XXX wgrant 2014-07-03: Needs checking for multi-distro sanity.
-        for directory in (root_dir, self._config.metaroot):
+        for directory in (self._config.archiveroot, self._config.metaroot):
             if directory is None or not os.path.exists(directory):
                 continue
             try:

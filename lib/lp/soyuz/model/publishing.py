@@ -1443,7 +1443,8 @@ class PublishingSet:
                     phased_update_percentage)) in needed],
             get_objects=True)
 
-    def copyBinaries(self, archive, distroseries, pocket, bpphs, policy=None):
+    def copyBinaries(self, archive, distroseries, pocket, bpphs, policy=None,
+                     source_override=None):
         """See `IPublishingSet`."""
         from lp.soyuz.adapters.overrides import BinaryOverride
         if distroseries.distribution != archive.distribution:
@@ -1479,7 +1480,8 @@ class PublishingSet:
             with_overrides = {}
             overrides = policy.calculateBinaryOverrides(
                 dict(
-                    ((bpn, archtag), BinaryOverride())
+                    ((bpn, archtag), BinaryOverride(
+                        source_override=source_override))
                     for bpn, archtag in bpn_archtag.keys()))
             for (bpn, archtag), override in overrides.items():
                 bpph = bpn_archtag[(bpn, archtag)]

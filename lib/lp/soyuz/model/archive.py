@@ -2083,6 +2083,7 @@ class Archive(SQLBase):
             ConstantOverridePolicy,
             FallbackOverridePolicy,
             FromExistingOverridePolicy,
+            FromSourceOverridePolicy,
             UnknownOverridePolicy,
             )
         if self.is_primary:
@@ -2095,6 +2096,8 @@ class Archive(SQLBase):
                     self, distroseries, None,
                     phased_update_percentage=phased_update_percentage,
                     include_deleted=True, any_arch=True),
+                FromSourceOverridePolicy(
+                    phased_update_percentage=phased_update_percentage),
                 UnknownOverridePolicy(
                     self, distroseries, pocket,
                     phased_update_percentage=phased_update_percentage)])
