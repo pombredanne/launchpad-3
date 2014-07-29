@@ -10,6 +10,7 @@ __all__ = [
     'ConstantOverridePolicy',
     'FallbackOverridePolicy',
     'FromExistingOverridePolicy',
+    'FromSourceOverridePolicy',
     'IBinaryOverride',
     'ISourceOverride',
     'SourceOverride',
@@ -78,6 +79,9 @@ class IBinaryOverride(IOverride):
     phased_update_percentage = Attribute(
         "The phased update percentage that's being overridden")
 
+    source_override = Attribute(
+        "A source override from which to determine defaults.")
+
 
 class Override:
     """See `IOverride`."""
@@ -122,11 +126,13 @@ class BinaryOverride(Override):
     implements(IBinaryOverride)
 
     def __init__(self, component=None, section=None, priority=None,
-                 phased_update_percentage=None, version=None, new=None):
+                 phased_update_percentage=None, version=None, new=None,
+                 source_override=None):
         super(BinaryOverride, self).__init__(
             component=component, section=section, version=version, new=new)
         self.priority = priority
         self.phased_update_percentage = phased_update_percentage
+        self.source_override = source_override
 
     def __eq__(self, other):
         return (
@@ -136,15 +142,17 @@ class BinaryOverride(Override):
             self.priority == other.priority and
             self.phased_update_percentage == other.phased_update_percentage and
             self.version == other.version and
-            self.new == other.new)
+            self.new == other.new and
+            self.source_override == other.source_override)
 
     def __repr__(self):
         return (
             "<%s at %x component=%r section=%r priority=%r "
-            "phased_update_percentage=%r version=%r new=%r>" %
+            "phased_update_percentage=%r version=%r new=%r "
+            "source_override=%r>" %
             (self.__class__.__name__, id(self), self.component, self.section,
              self.priority, self.phased_update_percentage, self.version,
-             self.new))
+             self.new, self.source_override))
 
 
 class IOverridePolicy(Interface):
@@ -295,6 +303,7 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
                         bpn.id)
                 archtags.add(archtag)
             other_conditions.extend([
+                BinaryPackagePublishingHistory.archiveID == self.archive.id,
                 DistroArchSeries.distroseriesID == self.distroseries.id,
                 BinaryPackagePublishingHistory.distroarchseriesID ==
                     DistroArchSeries.id,
@@ -353,6 +362,25 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
                     phased_update_percentage=self.phased_update_percentage,
                     version=ver,
                     new=(status == PackagePublishingStatus.DELETED))
+        return overrides
+
+
+class FromSourceOverridePolicy(BaseOverridePolicy):
+    """Override policy that returns binary defaults based on their source."""
+
+    def __init__(self, phased_update_percentage=None):
+        self.phased_update_percentage = phased_update_percentage
+
+    def calculateSourceOverrides(self, sources):
+        return {}
+
+    def calculateBinaryOverrides(self, binaries):
+        overrides = {}
+        for key, override_in in binaries.items():
+            if (override_in.source_override is not None
+                    and override_in.source_override.component is not None):
+                overrides[key] = BinaryOverride(
+                    component=override_in.source_override.component, new=True)
         return overrides
 
 

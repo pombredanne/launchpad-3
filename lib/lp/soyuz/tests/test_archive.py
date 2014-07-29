@@ -3298,6 +3298,7 @@ class TestArchiveGetOverridePolicy(TestCaseWithFactory):
             self.armhf = self.factory.makeDistroArchSeries(
                 distroseries=self.series, architecturetag='armhf')
         self.main = getUtility(IComponentSet)['main']
+        self.restricted = getUtility(IComponentSet)['restricted']
         self.universe = getUtility(IComponentSet)['universe']
         self.multiverse = getUtility(IComponentSet)['multiverse']
         self.non_free = getUtility(IComponentSet).ensure('non-free')
@@ -3368,12 +3369,18 @@ class TestArchiveGetOverridePolicy(TestCaseWithFactory):
              (existing_bpn, 'i386'): armhf_override,
              (other_bpn, 'amd64'): BinaryOverride(
                  component=self.universe, new=True),
+             (other_bpn, 'i386'): BinaryOverride(
+                 component=self.restricted, new=True),
             },
             policy.calculateBinaryOverrides(
                 {(existing_bpn, 'amd64'): BinaryOverride(component=self.main),
                  (existing_bpn, None): BinaryOverride(component=self.main),
                  (existing_bpn, 'i386'): BinaryOverride(component=self.main),
                  (other_bpn, 'amd64'): BinaryOverride(component=self.main),
+                 (other_bpn, 'i386'): BinaryOverride(
+                     component=self.non_free,
+                     source_override=SourceOverride(
+                         component=self.restricted)),
                 }))
 
     def test_ppa_sources(self):

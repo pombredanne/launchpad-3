@@ -14,6 +14,7 @@ from lp.soyuz.adapters.overrides import (
     ConstantOverridePolicy,
     FallbackOverridePolicy,
     FromExistingOverridePolicy,
+    FromSourceOverridePolicy,
     SourceOverride,
     UnknownOverridePolicy,
     )
@@ -367,6 +368,34 @@ class TestFromExistingOverridePolicy(TestCaseWithFactory):
             policy.calculateBinaryOverrides(
                 dict(((bpn, das), BinaryOverride()) for bpn, das in bpns))
         self.assertThat(recorder, HasQueryCount(Equals(4)))
+
+
+class TestFromSourceOverridePolicy(TestCaseWithFactory):
+
+    layer = ZopelessDatabaseLayer
+
+    def test_no_sources(self):
+        # Source overrides are never returned.
+        self.assertEqual(
+            {},
+            FromSourceOverridePolicy().calculateSourceOverrides(
+                {self.factory.makeSourcePackageName(): SourceOverride()}))
+
+    def test_binaries(self):
+        # Binaries are overridden with the component from their
+        # corresponding source override, if one was provided.
+        bpn = self.factory.makeBinaryPackageName()
+        other_bpn = self.factory.makeBinaryPackageName()
+        component = self.factory.makeComponent()
+        random_component = self.factory.makeComponent()
+        self.assertEqual(
+            {(bpn, None): BinaryOverride(component=component, new=True)},
+            FromSourceOverridePolicy().calculateBinaryOverrides(
+                {(bpn, None): BinaryOverride(
+                    component=random_component,
+                    source_override=SourceOverride(component=component)),
+                 (other_bpn, None): BinaryOverride(
+                     component=random_component)}))
 
 
 class TestUnknownOverridePolicy(TestCaseWithFactory):
