@@ -46,10 +46,12 @@ from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.soyuz.adapters.overrides import (
     BinaryOverride,
+    FallbackOverridePolicy,
+    FromExistingOverridePolicy,
     SourceOverride,
-    UnknownOverridePolicy,
     )
-from lp.soyuz.enums import PackagePublishingStatus
+from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
+from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.queue import QueueInconsistentStateError
 
 
@@ -526,103 +528,11 @@ class NascentUpload:
     #
     # Handling checking of versions and overrides
     #
-    def getSourceAncestry(self, uploaded_file, archives, lookup_pockets):
-        """Return the last published source (ancestry) for a given file.
-
-        Return the most recent ISPPH instance matching the uploaded file
-        package name or None.
-        """
-        for pocket in lookup_pockets:
-            for archive in archives:
-                candidates = archive.getPublishedSources(
-                    name=uploaded_file.package, exact_match=True,
-                    distroseries=self.policy.distroseries,
-                    pocket=lookup_pockets,
-                    status=(
-                        PackagePublishingStatus.PUBLISHED,
-                        PackagePublishingStatus.PENDING))
-                try:
-                    return candidates[0]
-                except IndexError:
-                    pass
-        return None
-
-    def getBinaryAncestry(self, uploaded_file, archives, lookup_pockets):
-        """Return the last published binary (ancestry) for given file.
-
-        Return the most recent IBPPH instance matching the uploaded file
-        package name or None.
-
-        This method may raise NotFoundError if it is dealing with an
-        uploaded file targeted to an architecture not present in the
-        distroseries in context. So callsites needs to be aware.
-        """
-        # If we are dealing with a DDEB, use the DEB's overrides.
-        # If there's no deb_file set, don't worry about it. Rejection is
-        # already guaranteed.
-        if (isinstance(uploaded_file, DdebBinaryUploadFile)
-            and uploaded_file.deb_file):
-            ancestry_name = uploaded_file.deb_file.package
-        else:
-            ancestry_name = uploaded_file.package
-
-        if uploaded_file.architecture == "all":
-            arch_indep = self.policy.distroseries.nominatedarchindep
-            archtag = arch_indep.architecturetag
-        else:
-            archtag = uploaded_file.architecture
-
-        # XXX cprov 2007-02-13: it raises NotFoundError for unknown
-        # architectures. For now, it is treated in find_and_apply_overrides().
-        # But it should be refactored ASAP.
-        dar = self.policy.distroseries[archtag]
-
-        for (arch, check_version) in (
-                (dar, True), (self.policy.distroseries.architectures, False)):
-            for archive in archives:
-                for pocket in lookup_pockets:
-                    candidates = archive.getAllPublishedBinaries(
-                        name=ancestry_name, exact_match=True,
-                        distroarchseries=arch, pocket=pocket,
-                        status=(
-                            PackagePublishingStatus.PUBLISHED,
-                            PackagePublishingStatus.PENDING))
-                    if candidates:
-                        return (candidates[0], check_version)
-        return None, None
-
-    def _checkVersion(self, proposed_version, archive_version, filename):
+    def checkVersion(self, proposed_version, archive_version, filename):
         """Check if the proposed version is higher than the one in archive."""
         if apt_pkg.version_compare(proposed_version, archive_version) < 0:
             self.reject("%s: Version older than that in the archive. %s <= %s"
                         % (filename, proposed_version, archive_version))
-
-    def checkSourceVersion(self, uploaded_file, ancestry):
-        """Check if the uploaded source version is higher than the ancestry.
-
-        Automatically mark the package as 'rejected' using _checkVersion().
-        """
-        # At this point DSC.version should be equal Changes.version.
-        # Anyway, we trust more in DSC.
-        proposed_version = self.changes.dsc.dsc_version
-        archive_version = ancestry.sourcepackagerelease.version
-        filename = uploaded_file.filename
-        self._checkVersion(proposed_version, archive_version, filename)
-
-    def checkBinaryVersion(self, uploaded_file, ancestry):
-        """Check if the uploaded binary version is higher than the ancestry.
-
-        Automatically mark the package as 'rejected' using _checkVersion().
-        """
-        # We only trust in the control version, specially because the
-        # 'version' from changesfile may not include epoch for binaries.
-        # This is actually something that needs attention in our buildfarm,
-        # because debuild does build the binary changesfile with a version
-        # that includes epoch.
-        proposed_version = uploaded_file.control_version
-        archive_version = ancestry.binarypackagerelease.version
-        filename = uploaded_file.filename
-        self._checkVersion(proposed_version, archive_version, filename)
 
     def overrideSourceFile(self, uploaded_file, override):
         """Overrides the uploaded source based on its override information.
@@ -654,9 +564,6 @@ class NascentUpload:
 
         Anything not yet in the DB gets tagged as 'new' and won't count
         towards the permission check.
-
-        XXX: wallyworld 2012-11-01 bug=1073755: This work should be done using
-        override polices defined in lp.soyuz.adapters.overrides.py
         """
         self.logger.debug("Finding and applying overrides.")
 
@@ -668,54 +575,58 @@ class NascentUpload:
         if PackagePublishingPocket.RELEASE not in lookup_pockets:
             lookup_pockets.append(PackagePublishingPocket.RELEASE)
 
-        archives = [self.policy.archive]
-        foreign_archive = False
-        use_default_component = True
+        check_version = True
         autoaccept_new = False
-        override_at_all = True
-        if self.policy.archive.is_partner:
-            use_default_component = False
-        elif self.policy.archive.is_copy:
+        if self.policy.archive.is_copy:
             # Copy archives always inherit their overrides from the
             # primary archive. We don't want to perform the version
             # check in this case, as the rebuild may finish after a new
             # version exists in the primary archive.
-            archives = [self.policy.archive.distribution.main_archive]
-            foreign_archive = True
-            # XXX wgrant 2014-07-14 bug=1103491: This causes new binaries in
-            # copy archives to stay in contrib/non-free, so the upload gets
-            # rejected. But I'm just preserving existing behaviour for now.
-            use_default_component = False
+            check_version = False
             autoaccept_new = True
         elif self.policy.archive.is_ppa:
             autoaccept_new = True
-            override_at_all = False
+
+        override_policy = self.policy.archive.getOverridePolicy(
+            self.policy.distroseries, self.policy.pocket)
+
+        if check_version:
+            version_policy = FallbackOverridePolicy([
+                FromExistingOverridePolicy(
+                    self.policy.archive, self.policy.distroseries, pocket)
+                for pocket in lookup_pockets])
+        else:
+            version_policy = None
 
         for uploaded_file in self.changes.files:
+            upload_component = getUtility(IComponentSet)[
+                uploaded_file.component_name]
             if isinstance(uploaded_file, DSCFile):
                 self.logger.debug(
                     "Checking for %s/%s source ancestry"
                     % (uploaded_file.package, uploaded_file.version))
-                ancestry = self.getSourceAncestry(
-                    uploaded_file, archives, lookup_pockets)
-                if ancestry is not None:
-                    self.logger.debug("%s (source) exists in %s" % (
-                        ancestry.sourcepackagerelease.title,
-                        ancestry.pocket.name))
-                    self.checkSourceVersion(uploaded_file, ancestry)
-                else:
-                    if not autoaccept_new:
-                        self.logger.debug(
-                            "%s: (source) NEW", uploaded_file.package)
-                        uploaded_file.new = True
-                    if use_default_component:
-                        ancestry = SourceOverride(
-                            component=(
-                                UnknownOverridePolicy.getComponentOverride(
-                                    uploaded_file.component_name,
-                                    return_component=True)))
-                if override_at_all and ancestry is not None:
-                    self.overrideSourceFile(uploaded_file, ancestry)
+                spn = getUtility(ISourcePackageNameSet).getOrCreateByName(
+                        uploaded_file.package)
+                override = override_policy.calculateSourceOverrides(
+                    {spn: SourceOverride(component=upload_component)})[spn]
+                if version_policy is not None:
+                    ancestor = version_policy.calculateSourceOverrides(
+                        {spn: SourceOverride()}).get(spn)
+                    if ancestor is not None and ancestor.version is not None:
+                        self.checkVersion(
+                            self.changes.dsc.dsc_version, ancestor.version,
+                            uploaded_file.filename)
+                if override.new != False and not autoaccept_new:
+                    self.logger.debug(
+                        "%s: (source) NEW", uploaded_file.package)
+                    uploaded_file.new = True
+                # XXX wgrant 2014-07-23: We want to preserve the upload
+                # component for PPA uploads, so we force the component
+                # to main when we create publications later. Eventually
+                # we should never mutate the SPR/BPR here, and just
+                # store a dict of overrides.
+                if not self.policy.archive.is_ppa:
+                    self.overrideSourceFile(uploaded_file, override)
             elif isinstance(uploaded_file, BaseBinaryUploadFile):
                 self.logger.debug(
                     "Checking for %s/%s/%s binary ancestry"
@@ -724,39 +635,52 @@ class NascentUpload:
                         uploaded_file.version,
                         uploaded_file.architecture,
                         ))
-                # Find the best ancestor publication for this binary. If
-                # it's from this archive and architecture we also want
-                # to make sure the version isn't going backwards.
-                ancestry, check_version = self.getBinaryAncestry(
-                    uploaded_file, archives, lookup_pockets)
-                if ancestry is not None:
-                    self.logger.debug("%s (binary) exists in %s/%s" % (
-                        ancestry.binarypackagerelease.title,
-                        ancestry.distroarchseries.architecturetag,
-                        ancestry.pocket.name))
-                    if check_version and not foreign_archive:
-                        self.checkBinaryVersion(uploaded_file, ancestry)
+
+                # If we are dealing with a DDEB, use the DEB's
+                # overrides. If there's no deb_file set, don't worry
+                # about it. Rejection is already guaranteed.
+                if (isinstance(uploaded_file, DdebBinaryUploadFile)
+                    and uploaded_file.deb_file):
+                    override_name = uploaded_file.deb_file.package
                 else:
-                    if not autoaccept_new:
-                        self.logger.debug(
-                            "%s: (binary) NEW", uploaded_file.package)
-                        uploaded_file.new = True
-                    # Check the current source publication's component.
-                    # If there is a corresponding source publication, we will
-                    # use the component from that, otherwise default mappings
-                    # are used.
-                    try:
-                        spph = uploaded_file.findCurrentSourcePublication()
-                        ancestry = BinaryOverride(component=spph.component)
-                    except UploadError:
-                        pass
-                if ancestry is None and use_default_component:
-                    ancestry = BinaryOverride(
-                        component=UnknownOverridePolicy.getComponentOverride(
-                            uploaded_file.component_name,
-                            return_component=True))
-                if override_at_all and ancestry is not None:
-                    self.overrideBinaryFile(uploaded_file, ancestry)
+                    override_name = uploaded_file.package
+                bpn = getUtility(IBinaryPackageNameSet).getOrCreateByName(
+                    override_name)
+
+                if uploaded_file.architecture == "all":
+                    archtag = None
+                else:
+                    archtag = uploaded_file.architecture
+
+                try:
+                    spph = uploaded_file.findCurrentSourcePublication()
+                    source_override = SourceOverride(component=spph.component)
+                except UploadError:
+                    source_override = None
+
+                override = override_policy.calculateBinaryOverrides(
+                    {(bpn, archtag): BinaryOverride(
+                        component=upload_component,
+                        source_override=source_override)})[(bpn, archtag)]
+                if version_policy is not None:
+                    ancestor = version_policy.calculateBinaryOverrides(
+                        {(bpn, archtag): BinaryOverride(
+                            component=upload_component)}).get((bpn, archtag))
+                    if ancestor is not None and ancestor.version is not None:
+                        self.checkVersion(
+                            uploaded_file.control_version, ancestor.version,
+                            uploaded_file.filename)
+                if override.new != False and not autoaccept_new:
+                    self.logger.debug(
+                        "%s: (binary) NEW", uploaded_file.package)
+                    uploaded_file.new = True
+                # XXX wgrant 2014-07-23: We want to preserve the upload
+                # component for PPA uploads, so we force the component
+                # to main when we create publications later. Eventually
+                # we should never mutate the SPR/BPR here, and just
+                # store a dict of overrides.
+                if not self.policy.archive.is_ppa:
+                    self.overrideBinaryFile(uploaded_file, override)
 
     #
     # Actually processing accepted or rejected uploads -- and mailing people
