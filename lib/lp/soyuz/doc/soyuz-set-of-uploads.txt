@@ -529,7 +529,8 @@ found in i386/RELEASE, because it's the only one available.
     ...     loglevel=logging.DEBUG)
     DEBUG ...
     DEBUG Checking for foo/2.9-1/powerpc binary ancestry
-    DEBUG foo-1.0-1 (binary) exists in i386/RELEASE
+    ...
+    DEBUG Setting it to ACCEPTED
     ...
     Upload complete.
 

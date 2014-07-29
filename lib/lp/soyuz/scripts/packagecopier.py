@@ -174,7 +174,7 @@ def check_copy_permissions(person, archive, series, pocket, sources):
         spn = source.sourcepackagerelease.sourcepackagename
         policy = archive.getOverridePolicy(dest_series, pocket)
         override = policy.calculateSourceOverrides(
-            {spn: SourceOverride(component=source.component)}).get(spn)
+            {spn: SourceOverride(component=source.component)})[spn]
 
         # Is the destination pocket open at all?
         reason = archive.checkUploadToPocket(
@@ -698,14 +698,9 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries,
     if override is None and policy is not None:
         # Only one override can be returned so take the first
         # element of the returned list.
-        overrides = policy.calculateSourceOverrides(
-            {source.sourcepackagerelease.sourcepackagename:
-                SourceOverride()})
-        # Only one override can be returned so take the first
-        # element of the returned list.
-        assert len(overrides) == 1, (
-            "More than one override encountered, something is wrong.")
-        override = overrides[source.sourcepackagerelease.sourcepackagename]
+        override = policy.calculateSourceOverrides(
+            {source.sourcepackagerelease.sourcepackagename: SourceOverride()}
+            )[source.sourcepackagerelease.sourcepackagename]
     if source_in_destination.is_empty():
         # If no manual overrides were specified and the archive has an
         # override policy then use that policy to get overrides.
