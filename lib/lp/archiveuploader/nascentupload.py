@@ -591,9 +591,6 @@ class NascentUpload:
 
         Anything not yet in the DB gets tagged as 'new' and won't count
         towards the permission check.
-
-        XXX: wallyworld 2012-11-01 bug=1073755: This work should be done using
-        override polices defined in lp.soyuz.adapters.overrides.py
         """
         self.logger.debug("Finding and applying overrides.")
 
@@ -710,8 +707,6 @@ class NascentUpload:
                     ancestor = ancestry.get((ancestry_name, archtag))
                     if ancestor is not None and ancestor.version is not None:
                         self.checkBinaryVersion(uploaded_file, ancestor)
-
-                # XXX: Default to source component.
 
                 is_new = override is None or override.new != False
                 if is_new and not autoaccept_new:
