@@ -693,10 +693,17 @@ class NascentUpload:
                 else:
                     archtag = uploaded_file.architecture
 
+                try:
+                    spph = uploaded_file.findCurrentSourcePublication()
+                    source_override = SourceOverride(component=spph.component)
+                except UploadError:
+                    source_override = None
                 if policy is not None:
                     overrides = policy.calculateBinaryOverrides(
                         {(ancestry_name, archtag):
-                            BinaryOverride(component=upload_component)})
+                            BinaryOverride(
+                                component=upload_component,
+                                source_override=source_override)})
                     override = overrides.get((ancestry_name, archtag))
                 else:
                     override = None
