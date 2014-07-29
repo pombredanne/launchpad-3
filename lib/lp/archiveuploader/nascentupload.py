@@ -608,7 +608,7 @@ class NascentUpload:
                 spn = getUtility(ISourcePackageNameSet).getOrCreateByName(
                         uploaded_file.package)
                 override = override_policy.calculateSourceOverrides(
-                    {spn: SourceOverride(component=upload_component)}).get(spn)
+                    {spn: SourceOverride(component=upload_component)})[spn]
                 if version_policy is not None:
                     ancestor = version_policy.calculateSourceOverrides(
                         {spn: SourceOverride()}).get(spn)
@@ -616,9 +616,7 @@ class NascentUpload:
                         self.checkVersion(
                             self.changes.dsc.dsc_version, ancestor.version,
                             uploaded_file.filename)
-
-                is_new = override is None or override.new != False
-                if is_new and not autoaccept_new:
+                if override.new != False and not autoaccept_new:
                     self.logger.debug(
                         "%s: (source) NEW", uploaded_file.package)
                     uploaded_file.new = True
@@ -627,7 +625,7 @@ class NascentUpload:
                 # to main when we create publications later. Eventually
                 # we should never mutate the SPR/BPR here, and just
                 # store a dict of overrides.
-                if not self.policy.archive.is_ppa and override is not None:
+                if not self.policy.archive.is_ppa:
                     self.overrideSourceFile(uploaded_file, override)
             elif isinstance(uploaded_file, BaseBinaryUploadFile):
                 self.logger.debug(
@@ -663,7 +661,7 @@ class NascentUpload:
                 override = override_policy.calculateBinaryOverrides(
                     {(bpn, archtag): BinaryOverride(
                         component=upload_component,
-                        source_override=source_override)}).get((bpn, archtag))
+                        source_override=source_override)})[(bpn, archtag)]
                 if version_policy is not None:
                     ancestor = version_policy.calculateBinaryOverrides(
                         {(bpn, archtag): BinaryOverride(
@@ -672,9 +670,7 @@ class NascentUpload:
                         self.checkVersion(
                             uploaded_file.control_version, ancestor.version,
                             uploaded_file.filename)
-
-                is_new = override is None or override.new != False
-                if is_new and not autoaccept_new:
+                if override.new != False and not autoaccept_new:
                     self.logger.debug(
                         "%s: (binary) NEW", uploaded_file.package)
                     uploaded_file.new = True
@@ -683,7 +679,7 @@ class NascentUpload:
                 # to main when we create publications later. Eventually
                 # we should never mutate the SPR/BPR here, and just
                 # store a dict of overrides.
-                if not self.policy.archive.is_ppa and override is not None:
+                if not self.policy.archive.is_ppa:
                     self.overrideBinaryFile(uploaded_file, override)
 
     #
