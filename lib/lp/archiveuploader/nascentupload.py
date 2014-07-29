@@ -617,7 +617,7 @@ class NascentUpload:
         elif self.policy.archive.is_ppa:
             autoaccept_new = True
 
-        policy = self.policy.archive.getOverridePolicy(
+        override_policy = self.policy.archive.getOverridePolicy(
             self.policy.distroseries, self.policy.pocket)
 
         if check_version:
@@ -639,13 +639,10 @@ class NascentUpload:
                     ISourcePackageNameSet).getOrCreateByName(
                         uploaded_file.package)
 
-                if policy is not None:
-                    overrides = policy.calculateSourceOverrides(
-                        {ancestry_name:
-                            SourceOverride(component=upload_component)})
-                    override = overrides.get(ancestry_name)
-                else:
-                    override = None
+                overrides = override_policy.calculateSourceOverrides(
+                    {ancestry_name:
+                        SourceOverride(component=upload_component)})
+                override = overrides.get(ancestry_name)
 
                 if version_policy is not None:
                     ancestry = version_policy.calculateSourceOverrides(
@@ -698,15 +695,13 @@ class NascentUpload:
                     source_override = SourceOverride(component=spph.component)
                 except UploadError:
                     source_override = None
-                if policy is not None:
-                    overrides = policy.calculateBinaryOverrides(
-                        {(ancestry_name, archtag):
-                            BinaryOverride(
-                                component=upload_component,
-                                source_override=source_override)})
-                    override = overrides.get((ancestry_name, archtag))
-                else:
-                    override = None
+
+                overrides = override_policy.calculateBinaryOverrides(
+                    {(ancestry_name, archtag):
+                        BinaryOverride(
+                            component=upload_component,
+                            source_override=source_override)})
+                override = overrides.get((ancestry_name, archtag))
 
                 if version_policy is not None:
                     ancestry = version_policy.calculateBinaryOverrides(
