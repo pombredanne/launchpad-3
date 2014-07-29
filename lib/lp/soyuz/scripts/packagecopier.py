@@ -695,20 +695,20 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries,
         distroseries=series, pocket=pocket)
     policy = archive.getOverridePolicy(
         series, pocket, phased_update_percentage=phased_update_percentage)
+    if override is None and policy is not None:
+        # Only one override can be returned so take the first
+        # element of the returned list.
+        overrides = policy.calculateSourceOverrides(
+            {source.sourcepackagerelease.sourcepackagename:
+                SourceOverride()})
+        # Only one override can be returned so take the first
+        # element of the returned list.
+        assert len(overrides) == 1, (
+            "More than one override encountered, something is wrong.")
+        override = overrides[source.sourcepackagerelease.sourcepackagename]
     if source_in_destination.is_empty():
         # If no manual overrides were specified and the archive has an
         # override policy then use that policy to get overrides.
-        if override is None and policy is not None:
-            # Only one override can be returned so take the first
-            # element of the returned list.
-            overrides = policy.calculateSourceOverrides(
-                {source.sourcepackagerelease.sourcepackagename:
-                    SourceOverride()})
-            # Only one override can be returned so take the first
-            # element of the returned list.
-            assert len(overrides) == 1, (
-                "More than one override encountered, something is wrong.")
-            override = overrides[source.sourcepackagerelease.sourcepackagename]
         source_copy = source.copyTo(
             series, pocket, archive, override, create_dsd_job=create_dsd_job,
             creator=creator, sponsor=sponsor, packageupload=packageupload)
@@ -728,7 +728,8 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries,
         # arch-indep publications) and IBPPH.copy is prepared to expand
         # arch-indep publications.
         binary_copies = getUtility(IPublishingSet).copyBinaries(
-            archive, series, pocket, source.getBuiltBinaries(), policy=policy)
+            archive, series, pocket, source.getBuiltBinaries(), policy=policy,
+            source_override=override)
 
         if binary_copies is not None:
             copies.extend(binary_copies)

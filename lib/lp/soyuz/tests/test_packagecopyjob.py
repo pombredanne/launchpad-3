@@ -722,19 +722,31 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
 
         # Publish a package in the source archive with some overridable
         # properties set to known values.
-        self.publisher.getPubSource(
+        spph = self.publisher.getPubSource(
             distroseries=self.distroseries, sourcename="libc",
             component='universe', section='web',
             version="2.8-1", status=PackagePublishingStatus.PUBLISHED,
             archive=source_archive)
+        self.publisher.getPubBinaries(
+            binaryname="copyme", pub_source=spph,
+            distroseries=self.distroseries,
+            status=PackagePublishingStatus.PUBLISHED,
+            archive=source_archive)
 
         # Now put the same named package in the target archive with
         # different override values.
-        self.publisher.getPubSource(
+        target_spph = self.publisher.getPubSource(
             distroseries=self.distroseries, sourcename="libc",
             component='restricted', section='games',
             version="2.8-0", status=PackagePublishingStatus.PUBLISHED,
             archive=target_archive)
+        target_bpph, target_bpph2 = self.publisher.getPubBinaries(
+            binaryname="copyme", pub_source=target_spph,
+            distroseries=self.distroseries,
+            status=PackagePublishingStatus.PUBLISHED,
+            archive=target_archive)
+        removeSecurityProxy(target_bpph).component = (
+            getUtility(IComponentSet)['multiverse'])
 
         # Now, run the copy job, which should auto-approve the copy and
         # override the package with the existing values in the
@@ -749,19 +761,24 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             source_archive=source_archive, target_archive=target_archive,
             target_distroseries=self.distroseries,
             target_pocket=PackagePublishingPocket.RELEASE,
-            include_binaries=False, requester=requester)
+            include_binaries=True, requester=requester)
 
         self.runJob(job)
 
-        new_publication = target_archive.getPublishedSources(
+        new_spph = target_archive.getPublishedSources(
             name=u'libc', version='2.8-1').one()
-        self.assertEqual('restricted', new_publication.component.name)
-        self.assertEqual('games', new_publication.section.name)
+        self.assertEqual('restricted', new_spph.component.name)
+        self.assertEqual('games', new_spph.section.name)
 
         # There should also be a PackageDiff generated between the new
         # publication and the ancestry.
-        [diff] = new_publication.sourcepackagerelease.package_diffs
+        [diff] = new_spph.sourcepackagerelease.package_diffs
         self.assertIsNot(None, diff)
+
+        # The binary has inherited its old primary component.
+        new_bpph = target_archive.getAllPublishedBinaries(
+            name=u'copyme', version='2.8-1')[0]
+        self.assertEqual('multiverse', new_bpph.component.name)
 
     def test_copying_to_ppa_archive(self):
         # Packages can be copied into PPA archives.
@@ -1163,13 +1180,18 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             distroseries=self.distroseries, sourcename="copyme",
             version="2.8-1", status=PackagePublishingStatus.PUBLISHED,
             archive=source_archive)
+        self.publisher.getPubBinaries(
+            binaryname="copyme", pub_source=spph,
+            archive=source_archive, distroseries=self.distroseries,
+            status=PackagePublishingStatus.PUBLISHED)
 
         requester = self.factory.makePerson(
             displayname="Nancy Requester", email="requester@example.com")
         with person_logged_in(target_archive.owner):
             target_archive.newComponentUploader(requester, "main")
         job = self.createCopyJobForSPPH(
-            spph, source_archive, target_archive, requester=requester)
+            spph, source_archive, target_archive, requester=requester,
+            include_binaries=True)
 
         # Run the job so it gains a PackageUpload.
         self.runJob(job)
@@ -1179,6 +1201,8 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         # Accept the upload to release the job then run it.
         pu = getUtility(IPackageUploadSet).getByPackageCopyJobIDs(
             [removeSecurityProxy(job).context.id]).one()
+        pu.concrete_package_copy_job.addSourceOverride(
+            SourceOverride(component=getUtility(IComponentSet)['restricted']))
         pu.acceptFromQueue()
         # Clear existing emails so we can see only the ones the job
         # generates later.
@@ -1188,9 +1212,14 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         # The job should have set the PU status to DONE:
         self.assertEqual(PackageUploadStatus.DONE, pu.status)
 
-        # Make sure packages were actually copied.
+        # Make sure packages were actually copied. The source has the
+        # override that we gave to the PackageUpload, and its new
+        # binaries inherit its component.
         existing_sources = target_archive.getPublishedSources(name=u'copyme')
-        self.assertIsNot(None, existing_sources.any())
+        self.assertEqual('restricted', existing_sources.one().component.name)
+        existing_binaries = target_archive.getAllPublishedBinaries(
+            name=u'copyme')
+        self.assertEqual('restricted', existing_binaries[0].component.name)
 
         # It would be nice to test emails in a separate test but it would
         # require all of the same setup as above again so we might as well
