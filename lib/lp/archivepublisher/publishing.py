@@ -755,6 +755,29 @@ class Publisher(object):
         for path in paths:
             os.utime(path, (latest_timestamp, latest_timestamp))
 
+    def _getI18nFiles(self, distroseries, pocket, component):
+        # Get and return a list of all i18n files and filepaths.
+        suite = distroseries.getSuite(pocket)
+
+        i18n_path = os.path.join(component, "i18n")
+        i18n_dir = os.path.join(self._config.distsroot, suite, i18n_path)
+        i18n_files = []
+        i18n_filepaths = []
+        try:
+            for i18n_file in os.listdir(i18n_dir):
+                if not i18n_file.startswith('Translation-'):
+                    continue
+                if not i18n_file.endswith('.bz2'):
+                    # Save bandwidth: mirrors should only need the .bz2
+                    # versions.
+                    continue
+                i18n_filepaths.append(os.path.join(i18n_path, i18n_file))
+                i18n_files.append(i18n_file)
+        except OSError as e:
+            if e.errno != errno.ENOENT:
+                raise
+        return i18n_files, i18n_filepaths
+
     def _writeSuite(self, distroseries, pocket):
         """Write out the Release files for the provided suite."""
         # XXX: kiko 2006-08-24: Untested method.
@@ -774,6 +797,7 @@ class Publisher(object):
         all_architectures = [
             a.architecturetag for a in distroseries.enabled_architectures]
         all_files = set()
+        files = set()
         for component in all_components:
             self._writeSuiteSource(
                 distroseries, pocket, component, all_files)
@@ -782,6 +806,9 @@ class Publisher(object):
                     distroseries, pocket, component, architecture, all_files)
             self._writeSuiteI18n(
                 distroseries, pocket, component, all_files)
+            i18n_files, i18n_filepaths = self._getI18nFiles(
+                distroseries, pocket, component)
+            files.update(i18n_filepaths)
 
         drsummary = "%s %s " % (self.distro.displayname,
                                 distroseries.displayname)
@@ -808,7 +835,10 @@ class Publisher(object):
             release_file["NotAutomatic"] = "yes"
             release_file["ButAutomaticUpgrades"] = "yes"
 
-        for filename in sorted(all_files, key=os.path.dirname):
+        sorted(all_files, key=os.path.dirname)
+        all_files.update(files)
+
+        for filename in sorted(all_files):
             entry = self._readIndexFileContents(suite, filename)
             if entry is None:
                 continue
@@ -902,19 +932,8 @@ class Publisher(object):
 
         i18n_dir = os.path.join(self._config.distsroot, suite, component,
                                 "i18n")
-        i18n_files = []
-        try:
-            for i18n_file in os.listdir(i18n_dir):
-                if not i18n_file.startswith('Translation-'):
-                    continue
-                if not i18n_file.endswith('.bz2'):
-                    # Save bandwidth: mirrors should only need the .bz2
-                    # versions.
-                    continue
-                i18n_files.append(i18n_file)
-        except OSError as e:
-            if e.errno != errno.ENOENT:
-                raise
+        i18n_files, i18n_filepaths = self._getI18nFiles(
+            distroseries, pocket, component)
         if not i18n_files:
             # If the i18n directory doesn't exist or is empty, we don't need
             # to index it.

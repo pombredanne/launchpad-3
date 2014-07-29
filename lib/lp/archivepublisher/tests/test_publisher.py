@@ -1344,6 +1344,10 @@ class TestPublisher(TestPublisherBase):
 
         self.getPubSource(filecontent='Hello world')
 
+        # Make sure that apt-ftparchive generates i18n/Translation-en* files.
+        ds = self.ubuntutest.getSeries('breezy-autotest')
+        ds.include_long_descriptions = False
+
         publisher.A_publish(False)
         publisher.C_doFTPArchive(False)
 
