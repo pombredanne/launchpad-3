@@ -303,6 +303,7 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
                         bpn.id)
                 archtags.add(archtag)
             other_conditions.extend([
+                BinaryPackagePublishingHistory.archiveID == self.archive.id,
                 DistroArchSeries.distroseriesID == self.distroseries.id,
                 BinaryPackagePublishingHistory.distroarchseriesID ==
                     DistroArchSeries.id,
