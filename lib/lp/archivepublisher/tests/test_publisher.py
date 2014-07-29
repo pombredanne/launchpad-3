@@ -1357,8 +1357,8 @@ class TestPublisher(TestPublisherBase):
 
         publisher.D_writeReleaseFiles(False)
 
-        release = self.parseRelease(os.path.join(
-            self.config.distsroot, 'breezy-autotest', 'Release'))
+        series = os.path.join(self.config.distsroot, 'breezy-autotest')
+        release = self.parseRelease(os.path.join(series, 'Release'))
 
         # Primary archive distroseries Release 'Origin' contains
         # the distribution displayname.
@@ -1368,8 +1368,7 @@ class TestPublisher(TestPublisherBase):
         self.assertEqual('ubuntutest', release['label'])
 
         arch_release_path = os.path.join(
-            self.config.distsroot, 'breezy-autotest',
-            'main', 'source', 'Release')
+            series, 'main', 'source', 'Release')
         with open(arch_release_path) as arch_release_file:
             self.assertReleaseContentsMatch(
                 release, 'main/source/Release', arch_release_file.read())
@@ -1378,6 +1377,18 @@ class TestPublisher(TestPublisherBase):
         # distribution displayname.
         arch_release = self.parseRelease(arch_release_path)
         self.assertEqual('ubuntutest', arch_release['origin'])
+
+        main_i18n = 'main/i18n/Translation-en.bz2'
+        universe_i18n = 'universe/i18n/Translation-en.bz2'
+        multiverse_i18n = 'multiverse/i18n/Translation-en.bz2'
+        restricted_i18n = 'multiverse/i18n/Translation-en.bz2'
+        release_path = os.path.join(series, 'Release')
+        with open(release_path) as release_file:
+            content = release_file.read()
+            self.assertIn(main_i18n, content)
+            self.assertIn(universe_i18n, content)
+            self.assertIn(multiverse_i18n, content)
+            self.assertIn(restricted_i18n, content)
 
     def testReleaseFileForPPA(self):
         """Test release file writing for PPA
@@ -1690,7 +1701,7 @@ class TestPublisher(TestPublisherBase):
                          i18n_index['sha1'][0]['size'])
 
         # i18n/Index is scheduled for inclusion in Release.
-        self.assertEqual(1, len(all_files))
+        self.assertEqual(2, len(all_files))
         self.assertEqual(
             os.path.join('main', 'i18n', 'Index'), all_files.pop())
 
