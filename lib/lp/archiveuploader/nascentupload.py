@@ -675,8 +675,7 @@ class NascentUpload:
                     override_name)
 
                 if uploaded_file.architecture == "all":
-                    arch_indep = self.policy.distroseries.nominatedarchindep
-                    archtag = arch_indep.architecturetag
+                    archtag = None
                 else:
                     archtag = uploaded_file.architecture
 
