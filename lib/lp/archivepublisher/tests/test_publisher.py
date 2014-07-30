@@ -1574,15 +1574,12 @@ class TestPublisher(TestPublisherBase):
             self.assertReleaseContentsMatch(
                 release, 'main/i18n/Index', i18n_index_file.read())
 
-        files = ['main/i18n/Translation-en.bz2',
-                 'universe/i18n/Translation-en.bz2',
-                 'multiverse/i18n/Translation-en.bz2',
-                 'multiverse/i18n/Translation-en.bz2']
+        components = ['main', 'universe', 'multiverse', 'restricted']
         release_path = os.path.join(series, 'Release')
         with open(release_path) as release_file:
             content = release_file.read()
-            for file in files:
-                self.assertIn(file, content)
+            for component in components:
+                self.assertIn(component + '/i18n/Translation-en.bz2', content)
 
     def testCreateSeriesAliasesNoAlias(self):
         """createSeriesAliases has nothing to do by default."""
