@@ -7,6 +7,8 @@ ALTER TABLE distribution
     ADD COLUMN official_packages boolean DEFAULT false NOT NULL,
     ADD COLUMN supports_ppas boolean DEFAULT false NOT NULL,
     ADD COLUMN supports_mirrors boolean DEFAULT false NOT NULL;
+ALTER TABLE distroseriesparent
+    ADD COLUMN inherit_overrides boolean DEFAULT false NOT NULL;
 UPDATE distribution
     SET official_packages=true, supports_ppas=true, supports_mirrors=true
     WHERE name = 'ubuntu';
