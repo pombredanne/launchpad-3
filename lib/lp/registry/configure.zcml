@@ -1731,6 +1731,12 @@
                 summary
                 title"/>
         <require
+            permission="launchpad.Admin"
+            set_attributes="
+                official_packages
+                supports_mirrors
+                supports_ppas"/>
+        <require
             permission="launchpad.BugSupervisor"
             set_attributes="
                 official_bug_tags"/>

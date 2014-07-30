@@ -33,10 +33,7 @@ from storm.expr import (
 from storm.info import ClassAlias
 from storm.store import Store
 from zope.component import getUtility
-from zope.interface import (
-    alsoProvides,
-    implements,
-    )
+from zope.interface import implements
 
 from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
 from lp.answers.interfaces.faqtarget import IFAQTarget
@@ -242,6 +239,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         dbName='translationpermission', notNull=True,
         schema=TranslationPermission, default=TranslationPermission.OPEN)
     active = True
+    official_packages = BoolCol(notNull=True, default=False)
+    supports_ppas = BoolCol(notNull=True, default=False)
+    supports_mirrors = BoolCol(notNull=True, default=False)
     package_derivatives_email = StringCol(notNull=False, default=None)
     redirect_release_uploads = BoolCol(notNull=True, default=False)
     development_series_alias = StringCol(notNull=False, default=None)
@@ -525,19 +525,6 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             distribution=self,
             status=MirrorStatus.PENDING_REVIEW,
             official_candidate=True)
-
-    @property
-    def full_functionality(self):
-        """See `IDistribution`."""
-        return self.name == u'ubuntu'
-
-    @property
-    def supports_mirrors(self):
-        return self.full_functionality
-
-    @property
-    def official_packages(self):
-        return self.full_functionality
 
     @property
     def drivers(self):
