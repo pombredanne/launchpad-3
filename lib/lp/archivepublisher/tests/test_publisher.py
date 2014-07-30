@@ -1344,10 +1344,6 @@ class TestPublisher(TestPublisherBase):
 
         self.getPubSource(filecontent='Hello world')
 
-        # Make sure that apt-ftparchive generates i18n/Translation-en* files.
-        ds = self.ubuntutest.getSeries('breezy-autotest')
-        ds.include_long_descriptions = False
-
         publisher.A_publish(False)
         publisher.C_doFTPArchive(False)
 
@@ -1357,8 +1353,8 @@ class TestPublisher(TestPublisherBase):
 
         publisher.D_writeReleaseFiles(False)
 
-        series = os.path.join(self.config.distsroot, 'breezy-autotest')
-        release = self.parseRelease(os.path.join(series, 'Release'))
+        release = self.parseRelease(os.path.join(
+            self.config.distsroot, 'breezy-autotest', 'Release'))
 
         # Primary archive distroseries Release 'Origin' contains
         # the distribution displayname.
@@ -1368,7 +1364,8 @@ class TestPublisher(TestPublisherBase):
         self.assertEqual('ubuntutest', release['label'])
 
         arch_release_path = os.path.join(
-            series, 'main', 'source', 'Release')
+            self.config.distsroot, 'breezy-autotest',
+            'main', 'source', 'Release')
         with open(arch_release_path) as arch_release_file:
             self.assertReleaseContentsMatch(
                 release, 'main/source/Release', arch_release_file.read())
@@ -1377,18 +1374,6 @@ class TestPublisher(TestPublisherBase):
         # distribution displayname.
         arch_release = self.parseRelease(arch_release_path)
         self.assertEqual('ubuntutest', arch_release['origin'])
-
-        main_i18n = 'main/i18n/Translation-en.bz2'
-        universe_i18n = 'universe/i18n/Translation-en.bz2'
-        multiverse_i18n = 'multiverse/i18n/Translation-en.bz2'
-        restricted_i18n = 'multiverse/i18n/Translation-en.bz2'
-        release_path = os.path.join(series, 'Release')
-        with open(release_path) as release_file:
-            content = release_file.read()
-            self.assertIn(main_i18n, content)
-            self.assertIn(universe_i18n, content)
-            self.assertIn(multiverse_i18n, content)
-            self.assertIn(restricted_i18n, content)
 
     def testReleaseFileForPPA(self):
         """Test release file writing for PPA
@@ -1577,18 +1562,27 @@ class TestPublisher(TestPublisherBase):
         publisher.C_doFTPArchive(False)
         publisher.D_writeReleaseFiles(False)
 
-        i18n_index = os.path.join(
-            self.config.distsroot, 'breezy-autotest', 'main', 'i18n', 'Index')
+        series = os.path.join(self.config.distsroot, 'breezy-autotest')
+        i18n_index = os.path.join(series, 'main', 'i18n', 'Index')
 
         # The i18n/Index file has been generated.
         self.assertTrue(os.path.exists(i18n_index))
 
         # It is listed correctly in Release.
-        release = self.parseRelease(os.path.join(
-            self.config.distsroot, 'breezy-autotest', 'Release'))
+        release = self.parseRelease(os.path.join(series, 'Release'))
         with open(i18n_index) as i18n_index_file:
             self.assertReleaseContentsMatch(
                 release, 'main/i18n/Index', i18n_index_file.read())
+
+        files = ['main/i18n/Translation-en.bz2',
+                 'universe/i18n/Translation-en.bz2',
+                 'multiverse/i18n/Translation-en.bz2',
+                 'multiverse/i18n/Translation-en.bz2']
+        release_path = os.path.join(series, 'Release')
+        with open(release_path) as release_file:
+            content = release_file.read()
+            for file in files:
+                self.assertIn(file, content)
 
     def testCreateSeriesAliasesNoAlias(self):
         """createSeriesAliases has nothing to do by default."""
@@ -1700,10 +1694,14 @@ class TestPublisher(TestPublisherBase):
         self.assertEqual(str(len(translation_en_contents)),
                          i18n_index['sha1'][0]['size'])
 
-        # i18n/Index is scheduled for inclusion in Release.
+        # i18n/Index and i18n/Translation-en.bz2 are scheduled for inclusion
+        # in Release.
         self.assertEqual(2, len(all_files))
         self.assertEqual(
             os.path.join('main', 'i18n', 'Index'), all_files.pop())
+        self.assertEqual(
+            os.path.join('main', 'i18n', 'Translation-en.bz2'),
+                         all_files.pop())
 
     def testWriteSuiteI18nMissingDirectory(self):
         """i18n/Index is not generated when the i18n directory is missing."""
