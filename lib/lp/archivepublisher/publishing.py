@@ -900,8 +900,8 @@ class Publisher(object):
         self.log.debug("Writing Index file for %s/%s/i18n" % (
             suite, component))
 
-        i18n_dir = os.path.join(self._config.distsroot, suite, component,
-                                "i18n")
+        i18n_subpath = os.path.join(component, "i18n")
+        i18n_dir = os.path.join(self._config.distsroot, suite, i18n_subpath)
         i18n_files = []
         try:
             for i18n_file in os.listdir(i18n_dir):
@@ -923,13 +923,15 @@ class Publisher(object):
         i18n_index = I18nIndex()
         for i18n_file in sorted(i18n_files):
             entry = self._readIndexFileContents(
-                suite, os.path.join(component, "i18n", i18n_file))
+                suite, os.path.join(i18n_subpath, i18n_file))
             if entry is None:
                 continue
             i18n_index.setdefault("SHA1", []).append({
                 "sha1": hashlib.sha1(entry).hexdigest(),
                 "name": i18n_file,
                 "size": len(entry)})
+            # Schedule i18n files for inclusion in the Release file.
+            all_series_files.add(os.path.join(i18n_subpath, i18n_file))
 
         with open(os.path.join(i18n_dir, "Index"), "w") as f:
             i18n_index.dump(f, "utf-8")

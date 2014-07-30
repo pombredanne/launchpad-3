@@ -1560,18 +1560,24 @@ class TestPublisher(TestPublisherBase):
         publisher.C_doFTPArchive(False)
         publisher.D_writeReleaseFiles(False)
 
-        i18n_index = os.path.join(
-            self.config.distsroot, 'breezy-autotest', 'main', 'i18n', 'Index')
+        series = os.path.join(self.config.distsroot, 'breezy-autotest')
+        i18n_index = os.path.join(series, 'main', 'i18n', 'Index')
 
         # The i18n/Index file has been generated.
         self.assertTrue(os.path.exists(i18n_index))
 
         # It is listed correctly in Release.
-        release = self.parseRelease(os.path.join(
-            self.config.distsroot, 'breezy-autotest', 'Release'))
+        release = self.parseRelease(os.path.join(series, 'Release'))
         with open(i18n_index) as i18n_index_file:
             self.assertReleaseContentsMatch(
                 release, 'main/i18n/Index', i18n_index_file.read())
+
+        components = ['main', 'universe', 'multiverse', 'restricted']
+        release_path = os.path.join(series, 'Release')
+        with open(release_path) as release_file:
+            content = release_file.read()
+            for component in components:
+                self.assertIn(component + '/i18n/Translation-en.bz2', content)
 
     def testCreateSeriesAliasesNoAlias(self):
         """createSeriesAliases has nothing to do by default."""
@@ -1683,10 +1689,14 @@ class TestPublisher(TestPublisherBase):
         self.assertEqual(str(len(translation_en_contents)),
                          i18n_index['sha1'][0]['size'])
 
-        # i18n/Index is scheduled for inclusion in Release.
-        self.assertEqual(1, len(all_files))
+        # i18n/Index and i18n/Translation-en.bz2 are scheduled for inclusion
+        # in Release.
+        self.assertEqual(2, len(all_files))
         self.assertEqual(
             os.path.join('main', 'i18n', 'Index'), all_files.pop())
+        self.assertEqual(
+            os.path.join('main', 'i18n', 'Translation-en.bz2'),
+                         all_files.pop())
 
     def testWriteSuiteI18nMissingDirectory(self):
         """i18n/Index is not generated when the i18n directory is missing."""
