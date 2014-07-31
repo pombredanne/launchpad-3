@@ -182,6 +182,20 @@ class IPublishingView(Interface):
         the field name and value is the value string.
         """
 
+    def getTranslationsStanza():
+        """Return archive Translation-en stanza contents
+
+        It's based on the locally provided buildTranslationsStanzaTemplate
+        method, which differs for binary and source instances.
+        """
+
+    def buildTranslationsStanzaFields():
+        """Build a map of fields and values to be in the Translation-en file.
+
+        The fields and values ae mapped into a dictionary, where the key is
+        the field name and value is the value string.
+        """
+
     def requestObsolescence():
         """Make this publication obsolete.
 

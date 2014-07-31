@@ -10,10 +10,8 @@ __all__ = [
 
 __metaclass__ = type
 
-import bz2
 from datetime import datetime
 import errno
-import gzip
 import hashlib
 from itertools import (
     chain,
@@ -44,10 +42,7 @@ from lp.archivepublisher.htaccess import (
 from lp.archivepublisher.interfaces.archivesigningkey import (
     IArchiveSigningKey,
     )
-from lp.archivepublisher.model.ftparchive import (
-    FTPArchiveHandler,
-    safe_mkdir,
-    )
+from lp.archivepublisher.model.ftparchive import FTPArchiveHandler
 from lp.archivepublisher.utils import (
     get_ppa_reference,
     RepositoryIndexFile,
@@ -189,6 +184,12 @@ def get_packages_path(config, suite_name, component, arch, subcomp=None):
         return os.path.join(component_root, arch_path, "Packages")
     else:
         return os.path.join(component_root, subcomp, arch_path, "Packages")
+
+
+def get_translations_path(config, suite_name, component):
+    """Return path to Translations file for the given arguments."""
+    return os.path.join(
+        config.distsroot, suite_name, component.name, "i18n", "Translation-en")
 
 
 class I18nIndex(_multivalued):
@@ -646,16 +647,16 @@ class Publisher(object):
 
         self.log.debug("Generating Sources")
 
-        flag_enabled = getFeatureFlag("soyuz.ppa.separate_long_descriptions")
-        long_descriptions = distroseries.include_long_descriptions
-        if not long_descriptions and flag_enabled:
-            i18n_path = os.path.join(
-                self._config.distsroot, suite_name, component.name, "i18n")
-            safe_mkdir(i18n_path)
-            translations_file = os.path.join(i18n_path, "Translation-en")
-            # create empty Translations-en file
-            open(translations_file, "w")
-            packages = []
+        long_descriptions = False
+        if (not distroseries.include_long_descriptions and
+                getFeatureFlag("soyuz.ppa.separate_long_descriptions")):
+            # If include_long_descriptions is False and the feature flag is
+            # enabled, create Translation-en file for PPAs.
+            long_descriptions = True
+            packages = {}
+            translation_en = RepositoryIndexFile(
+                get_translations_path(self._config, suite_name, component),
+                self._config.temproot)
 
         source_index = RepositoryIndexFile(
             get_sources_path(self._config, suite_name, component),
@@ -696,41 +697,23 @@ class Publisher(object):
                     # for, eg. ddebs where publish_debug_symbols is
                     # disabled.
                     continue
-                stanza = bpp.getIndexStanza().encode('utf-8') + '\n\n'
+                stanza = bpp.getIndexStanza(long_descriptions).encode(
+                    'utf-8') + '\n\n'
                 indices[subcomp].write(stanza)
-                if not long_descriptions and flag_enabled:
+                if long_descriptions:
                     # Write Package, Description-md5, and Description-en to
                     # Translation-en file.
-                    bpr = bpp.binarypackagerelease
-                    if bpr.name not in packages:
-                        md5 = hashlib.md5(bpr.description).hexdigest()
-                        descr_lines = [line.lstrip() for line in
-                                       bpr.description.splitlines()]
-                        description = '%s\n %s' % (
-                            bpr.summary, '\n '.join(descr_lines))
-                        package = (
-                            "Package: %s\n"
-                            "Description-md5: %s\n"
-                            "Description-en: %s\n\n" % (
-                                bpr.name, md5, description))
-                        with open(translations_file, "a") as translation_file:
-                            translation_file.write(package)
-                        packages.append(bpr.name)
-
-            if not long_descriptions and flag_enabled:
-                # Create .gz and .bz3 Translation-en files
-                with open(translations_file, "rb") as translation_file:
-                    tf = translation_file.read()
-                    gz_out = gzip.open(translations_file + '.gz', "wb")
-                    gz_out.writelines(tf)
-                    gz_out.close()
-                    bz2_out = bz2.BZ2File(translations_file + '.bz2', "wb")
-                    for line in tf.splitlines(True):
-                        bz2_out.write(line)
-                    bz2_out.close()
+                    translation_stanza = bpp.getTranslationsStanza(packages)
+                    if translation_stanza:
+                        translation_stanza = translation_stanza.encode(
+                            'utf-8') + '\n\n'
+                        translation_en.write(translation_stanza)
 
             for index in indices.itervalues():
                 index.close()
+
+        if long_descriptions:
+            translation_en.close()
 
     def cannotModifySuite(self, distroseries, pocket):
         """Return True if the distroseries is stable and pocket is release."""

@@ -1328,7 +1328,7 @@ class TestPublisher(TestPublisherBase):
              'SHA256: 006ca0f356f54b1916c24c282e6fd19961f4356441401f4b0966f2a'
              '00bb3e945',
              'Description: Foo app is great',
-             'Description-md5: 17ba15f011398a911aa9017c653a0760',
+             'Description-md5: 6f43b8a2c247729beb1a59e5c336ffe2',
              ''],
             index_contents)
 
@@ -1361,7 +1361,7 @@ class TestPublisher(TestPublisherBase):
              'SHA256: 006ca0f356f54b1916c24c282e6fd19961f4356441401f4b0966f2a'
              '00bb3e945',
              'Description: Foo app is great',
-             'Description-md5: 51c65d3d44bbd01933c82126af441c77',
+             'Description-md5: f98d4e4b123ac43e12f6848e15b67246',
              ''],
             index_contents)
 
@@ -1392,7 +1392,7 @@ class TestPublisher(TestPublisherBase):
              'SHA256: 006ca0f356f54b1916c24c282e6fd19961f4356441401f4b0966f2a'
              '00bb3e945',
              'Description: Foo app is great',
-             'Description-md5: 17ba15f011398a911aa9017c653a0760',
+             'Description-md5: 6f43b8a2c247729beb1a59e5c336ffe2',
              ''],
             index_contents)
 
@@ -1413,19 +1413,19 @@ class TestPublisher(TestPublisherBase):
 
         self.assertEqual(
             ['Package: bingo',
-             'Description-md5: 51c65d3d44bbd01933c82126af441c77',
+             'Description-md5: f98d4e4b123ac43e12f6848e15b67246',
              'Description-en: Foo app is great',
              ' nice udeb',
              '',
              'Package: foo-bin',
-             'Description-md5: 17ba15f011398a911aa9017c653a0760',
+             'Description-md5: 6f43b8a2c247729beb1a59e5c336ffe2',
              'Description-en: Foo app is great',
              ' My leading spaces are normalised to a single space but not '
              'trailing.  ',
              ' It does nothing, though',
              '',
              'Package: foo-bin-dbgsym',
-             'Description-md5: 17ba15f011398a911aa9017c653a0760',
+             'Description-md5: 6f43b8a2c247729beb1a59e5c336ffe2',
              'Description-en: Foo app is great',
              ' My leading spaces are normalised to a single space but not '
              'trailing.  ',
@@ -1937,7 +1937,7 @@ class TestPublisher(TestPublisherBase):
             os.path.join('main', 'i18n', 'Index'), all_files.pop())
         self.assertEqual(
             os.path.join('main', 'i18n', 'Translation-en.bz2'),
-                         all_files.pop())
+            all_files.pop())
 
     def testWriteSuiteI18nMissingDirectory(self):
         """i18n/Index is not generated when the i18n directory is missing."""
