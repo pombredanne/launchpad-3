@@ -376,6 +376,10 @@ class IDistroSeriesPublic(
                 on clients, which requires downloading Packages files for
                 multiple architectures.""")))
 
+    inherit_overrides_from_parents = Bool(
+        title=_("Inherit overrides from parents"),
+        readonly=False, required=True)
+
     main_archive = exported(
         Reference(
             Interface,  # Really IArchive, see below for circular import fix.
