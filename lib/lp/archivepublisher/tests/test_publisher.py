@@ -43,6 +43,8 @@ from lp.registry.interfaces.pocket import (
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
+from lp.services.features import getFeatureFlag
+from lp.services.features.testing import FeatureFixture
 from lp.services.gpg.interfaces import IGPGHandler
 from lp.services.log.logger import (
     BufferLogger,
@@ -1043,8 +1045,9 @@ class TestPublisher(TestPublisherBase):
 
         return index_contents
 
-    def testPPAArchiveIndex(self):
-        """Building Archive Indexes from PPA publications."""
+    def setupPPAArchiveIndexTest(self, long_descriptions=True,
+                                 feature_flag=False):
+        # Setup for testPPAArchiveIndex tests
         allowed_suites = []
 
         cprov = getUtility(IPersonSet).getByName('cprov')
@@ -1074,9 +1077,27 @@ class TestPublisher(TestPublisherBase):
             pub_source=ignored_source, binaryname='bingo',
             description='nice udeb', format=BinaryPackageFormat.UDEB)[0]
 
+        if feature_flag:
+            # Enabled corresponding feature flag.
+            self.useFixture(FeatureFixture({
+                'soyuz.ppa.separate_long_descriptions': 'enabled'}))
+            self.assertEqual('enabled', getFeatureFlag(
+                'soyuz.ppa.separate_long_descriptions'))
+
+        if not long_descriptions:
+            # Make sure that NMAF generates i18n/Translation-en* files.
+            ds = self.ubuntutest.getSeries('breezy-autotest')
+            ds.include_long_descriptions = False
+
         archive_publisher.A_publish(False)
         self.layer.txn.commit()
         archive_publisher.C_writeIndexes(False)
+        archive_publisher.D_writeReleaseFiles(False)
+        return archive_publisher
+
+    def testPPAArchiveIndex(self):
+        """Building Archive Indexes from PPA publications."""
+        archive_publisher = self.setupPPAArchiveIndexTest()
 
         # A compressed and uncompressed Sources file are written;
         # ensure that they are the same after uncompressing the former.
@@ -1211,6 +1232,226 @@ class TestPublisher(TestPublisherBase):
         self.assertTrue(
             ('breezy-autotest', PackagePublishingPocket.RELEASE) in
             archive_publisher.release_files_needed)
+
+        # Confirm that i18n files are not created
+        i18n_path = os.path.join(archive_publisher._config.distsroot,
+                                 'breezy-autotest', 'main', 'i18n')
+        self.assertFalse(os.path.exists(
+            os.path.join(i18n_path, 'Translation-en')))
+        self.assertFalse(os.path.exists(
+            os.path.join(i18n_path, 'Translation-en.gz')))
+        self.assertFalse(os.path.exists(
+            os.path.join(i18n_path, 'Translation-en.bz2')))
+
+        # remove PPA root
+        shutil.rmtree(config.personalpackagearchive.root)
+
+    def testPPAArchiveIndexLongDescriptionsFalseFeatureFlagDisabled(self):
+        # Building Archive Indexes from PPA publications with
+        # include_long_descriptions = False but the feature flag being disabled
+        archive_publisher = self.setupPPAArchiveIndexTest(
+            long_descriptions=False)
+
+        # Confirm that i18n files are not created
+        i18n_path = os.path.join(archive_publisher._config.distsroot,
+                                 'breezy-autotest', 'main', 'i18n')
+        self.assertFalse(os.path.exists(
+            os.path.join(i18n_path, 'Translation-en')))
+        self.assertFalse(os.path.exists(
+            os.path.join(i18n_path, 'Translation-en.gz')))
+        self.assertFalse(os.path.exists(
+            os.path.join(i18n_path, 'Translation-en.bz2')))
+
+        # remove PPA root
+        shutil.rmtree(config.personalpackagearchive.root)
+
+    def testPPAArchiveIndexLongDescriptionsFalse(self):
+        # Building Archive Indexes from PPA publications with
+        # include_long_descriptions = False.
+        archive_publisher = self.setupPPAArchiveIndexTest(
+            long_descriptions=False, feature_flag=True)
+
+        # A compressed and uncompressed Sources file are written;
+        # ensure that they are the same after uncompressing the former.
+        index_contents = self._checkCompressedFile(
+            archive_publisher, os.path.join('source', 'Sources.bz2'),
+            os.path.join('source', 'Sources'))
+
+        index_contents = self._checkCompressedFile(
+            archive_publisher, os.path.join('source', 'Sources.gz'),
+            os.path.join('source', 'Sources'))
+
+        self.assertEqual(
+            ['Package: foo',
+             'Binary: foo-bin',
+             'Version: 666',
+             'Section: base',
+             'Maintainer: Foo Bar <foo@bar.com>',
+             'Architecture: all',
+             'Standards-Version: 3.6.2',
+             'Format: 1.0',
+             'Directory: pool/main/f/foo',
+             'Files:',
+             ' 3e25960a79dbc69b674cd4ec67a72c62 11 foo_1.dsc',
+             'Checksums-Sha1:',
+             ' 7b502c3a1f48c8609ae212cdfb639dee39673f5e 11 foo_1.dsc',
+             'Checksums-Sha256:',
+             ' 64ec88ca00b268e5ba1a35678a1b5316d212f4f366b2477232534a8aeca37f'
+             '3c 11 foo_1.dsc',
+
+             ''],
+            index_contents)
+
+        # A compressed and an uncompressed Packages file are written;
+        # ensure that they are the same after uncompressing the former.
+        index_contents = self._checkCompressedFile(
+            archive_publisher, os.path.join('binary-i386', 'Packages.bz2'),
+            os.path.join('binary-i386', 'Packages'))
+
+        index_contents = self._checkCompressedFile(
+            archive_publisher, os.path.join('binary-i386', 'Packages.gz'),
+            os.path.join('binary-i386', 'Packages'))
+
+        self.assertEqual(
+            ['Package: foo-bin',
+             'Source: foo',
+             'Priority: standard',
+             'Section: base',
+             'Installed-Size: 100',
+             'Maintainer: Foo Bar <foo@bar.com>',
+             'Architecture: all',
+             'Version: 666',
+             'Filename: pool/main/f/foo/foo-bin_666_all.deb',
+             'Size: 18',
+             'MD5sum: 008409e7feb1c24a6ccab9f6a62d24c5',
+             'SHA1: 30b7b4e583fa380772c5a40e428434628faef8cf',
+             'SHA256: 006ca0f356f54b1916c24c282e6fd19961f4356441401f4b0966f2a'
+             '00bb3e945',
+             'Description: Foo app is great',
+             'Description-md5: 17ba15f011398a911aa9017c653a0760',
+             ''],
+            index_contents)
+
+        # A compressed and an uncompressed Packages file are written for
+        # 'debian-installer' section for each architecture. It will list
+        # the 'udeb' files.
+        index_contents = self._checkCompressedFile(
+            archive_publisher,
+            os.path.join('debian-installer', 'binary-i386', 'Packages.bz2'),
+            os.path.join('debian-installer', 'binary-i386', 'Packages'))
+
+        index_contents = self._checkCompressedFile(
+            archive_publisher,
+            os.path.join('debian-installer', 'binary-i386', 'Packages.gz'),
+            os.path.join('debian-installer', 'binary-i386', 'Packages'))
+
+        self.assertEqual(
+            ['Package: bingo',
+             'Source: foo',
+             'Priority: standard',
+             'Section: base',
+             'Installed-Size: 100',
+             'Maintainer: Foo Bar <foo@bar.com>',
+             'Architecture: all',
+             'Version: 666',
+             'Filename: pool/main/f/foo/bingo_666_all.udeb',
+             'Size: 18',
+             'MD5sum: 008409e7feb1c24a6ccab9f6a62d24c5',
+             'SHA1: 30b7b4e583fa380772c5a40e428434628faef8cf',
+             'SHA256: 006ca0f356f54b1916c24c282e6fd19961f4356441401f4b0966f2a'
+             '00bb3e945',
+             'Description: Foo app is great',
+             'Description-md5: 51c65d3d44bbd01933c82126af441c77',
+             ''],
+            index_contents)
+
+        # 'debug' too, when publish_debug_symbols is enabled.
+        index_contents = self._checkCompressedFile(
+            archive_publisher,
+            os.path.join('debug', 'binary-i386', 'Packages.bz2'),
+            os.path.join('debug', 'binary-i386', 'Packages'))
+
+        index_contents = self._checkCompressedFile(
+            archive_publisher,
+            os.path.join('debug', 'binary-i386', 'Packages.gz'),
+            os.path.join('debug', 'binary-i386', 'Packages'))
+
+        self.assertEqual(
+            ['Package: foo-bin-dbgsym',
+             'Source: foo',
+             'Priority: standard',
+             'Section: base',
+             'Installed-Size: 100',
+             'Maintainer: Foo Bar <foo@bar.com>',
+             'Architecture: all',
+             'Version: 666',
+             'Filename: pool/main/f/foo/foo-bin-dbgsym_666_all.ddeb',
+             'Size: 18',
+             'MD5sum: 008409e7feb1c24a6ccab9f6a62d24c5',
+             'SHA1: 30b7b4e583fa380772c5a40e428434628faef8cf',
+             'SHA256: 006ca0f356f54b1916c24c282e6fd19961f4356441401f4b0966f2a'
+             '00bb3e945',
+             'Description: Foo app is great',
+             'Description-md5: 17ba15f011398a911aa9017c653a0760',
+             ''],
+            index_contents)
+
+        # We always regenerate all Releases file for a given suite.
+        self.assertTrue(
+            ('breezy-autotest', PackagePublishingPocket.RELEASE) in
+            archive_publisher.release_files_needed)
+
+        # A compressed and an uncompressed Translation-en file is written.
+        # ensure that they are the same after uncompressing the former.
+        index_contents = self._checkCompressedFile(
+            archive_publisher, os.path.join('i18n', 'Translation-en.gz'),
+            os.path.join('i18n', 'Translation-en'))
+
+        index_contents = self._checkCompressedFile(
+            archive_publisher, os.path.join('i18n', 'Translation-en.bz2'),
+            os.path.join('i18n', 'Translation-en'))
+
+        self.assertEqual(
+            ['Package: bingo',
+             'Description-md5: 51c65d3d44bbd01933c82126af441c77',
+             'Description-en: Foo app is great',
+             ' nice udeb',
+             '',
+             'Package: foo-bin',
+             'Description-md5: 17ba15f011398a911aa9017c653a0760',
+             'Description-en: Foo app is great',
+             ' My leading spaces are normalised to a single space but not '
+             'trailing.  ',
+             ' It does nothing, though',
+             '',
+             'Package: foo-bin-dbgsym',
+             'Description-md5: 17ba15f011398a911aa9017c653a0760',
+             'Description-en: Foo app is great',
+             ' My leading spaces are normalised to a single space but not '
+             'trailing.  ',
+             ' It does nothing, though',
+             '',
+             ],
+            index_contents)
+
+        series = os.path.join(archive_publisher._config.distsroot,
+                              'breezy-autotest')
+        i18n_index = os.path.join(series, 'main', 'i18n', 'Index')
+
+        # The i18n/Index file has been generated.
+        self.assertTrue(os.path.exists(i18n_index))
+
+        # It is listed correctly in Release.
+        release_path = os.path.join(series, 'Release')
+        release = self.parseRelease(release_path)
+        with open(i18n_index) as i18n_index_file:
+            self.assertReleaseContentsMatch(
+                release, 'main/i18n/Index', i18n_index_file.read())
+
+        release_path = os.path.join(series, 'Release')
+        with open(release_path) as release_file:
+            content = release_file.read()
+            self.assertIn('main/i18n/Translation-en.bz2', content)
 
         # remove PPA root
         shutil.rmtree(config.personalpackagearchive.root)
