@@ -1717,22 +1717,49 @@ class TestValidatePPA(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def setUp(self):
+        super(TestValidatePPA, self).setUp()
+        self.ubuntu = getUtility(IDistributionSet)['ubuntu']
+        self.ubuntutest = getUtility(IDistributionSet)['ubuntutest']
+        with admin_logged_in():
+            self.ubuntutest.supports_ppas = True
+
     def test_open_teams(self):
         team = self.factory.makeTeam()
         self.assertEqual(
-            'Open teams cannot have PPAs.', validate_ppa(team, None))
+            'Open teams cannot have PPAs.',
+            validate_ppa(team, self.ubuntu, "ppa"))
 
     def test_distribution_name(self):
         ppa_owner = self.factory.makePerson()
         self.assertEqual(
             'A PPA cannot have the same name as its distribution.',
-            validate_ppa(ppa_owner, 'ubuntu'))
+            validate_ppa(ppa_owner, self.ubuntu, 'ubuntu'))
+
+    def test_ubuntu_name(self):
+        # Disambiguating old-style URLs relies on there never being a
+        # PPA named "ubuntu".
+        ppa_owner = self.factory.makePerson()
+        self.assertEqual(
+            'A PPA cannot be named "ubuntu".',
+            validate_ppa(ppa_owner, self.ubuntutest, 'ubuntu'))
+
+    def test_distro_unsupported(self):
+        ppa_owner = self.factory.makePerson()
+        distro = self.factory.makeDistribution(displayname="Unbuntu")
+        self.assertEqual(
+            "Unbuntu does not support PPAs.",
+            validate_ppa(ppa_owner, distro, "ppa"))
+        with admin_logged_in():
+            distro.supports_ppas = True
+        self.assertIs(None, validate_ppa(ppa_owner, distro, "ppa"))
 
     def test_private_ppa_standard_user(self):
         ppa_owner = self.factory.makePerson()
         with person_logged_in(ppa_owner):
             errors = validate_ppa(
-                ppa_owner, self.factory.getUniqueString(), private=True)
+                ppa_owner, self.ubuntu, self.factory.getUniqueString(),
+                private=True)
         self.assertEqual(
             '%s is not allowed to make private PPAs' % (ppa_owner.name,),
             errors)
@@ -1741,7 +1768,7 @@ class TestValidatePPA(TestCaseWithFactory):
         owner = self.factory.makePerson()
         self.factory.grantCommercialSubscription(owner)
         with person_logged_in(owner):
-            errors = validate_ppa(owner, 'ppa', private=True)
+            errors = validate_ppa(owner, self.ubuntu, 'ppa', private=True)
         self.assertIsNone(errors)
 
     def test_private_ppa_commercial_admin(self):
@@ -1752,32 +1779,34 @@ class TestValidatePPA(TestCaseWithFactory):
         with person_logged_in(ppa_owner):
             self.assertIsNone(
                 validate_ppa(
-                    ppa_owner, self.factory.getUniqueString(), private=True))
+                    ppa_owner, self.ubuntu, self.factory.getUniqueString(),
+                    private=True))
 
     def test_private_ppa_admin(self):
         ppa_owner = self.factory.makeAdministrator()
         with person_logged_in(ppa_owner):
             self.assertIsNone(
                 validate_ppa(
-                    ppa_owner, self.factory.getUniqueString(), private=True))
+                    ppa_owner, self.ubuntu, self.factory.getUniqueString(),
+                    private=True))
 
     def test_two_ppas(self):
         ppa = self.factory.makeArchive(name='ppa')
         self.assertEqual(
-            "You already have a PPA named 'ppa'.",
-            validate_ppa(ppa.owner, 'ppa'))
+            "You already have a PPA for Ubuntu named 'ppa'.",
+            validate_ppa(ppa.owner, self.ubuntu, 'ppa'))
 
     def test_two_ppas_with_team(self):
         team = self.factory.makeTeam(
             membership_policy=TeamMembershipPolicy.MODERATED)
         self.factory.makeArchive(owner=team, name='ppa')
         self.assertEqual(
-            "%s already has a PPA named 'ppa'." % team.displayname,
-            validate_ppa(team, 'ppa'))
+            "%s already has a PPA for Ubuntu named 'ppa'." % team.displayname,
+            validate_ppa(team, self.ubuntu, 'ppa'))
 
     def test_valid_ppa(self):
         ppa_owner = self.factory.makePerson()
-        self.assertIsNone(validate_ppa(ppa_owner, None))
+        self.assertIsNone(validate_ppa(ppa_owner, self.ubuntu, "ppa"))
 
     def test_private_team_private_ppa(self):
         # Folk with launchpad.Edit on a private team can make private PPAs for
@@ -1791,7 +1820,8 @@ class TestValidatePPA(TestCaseWithFactory):
             private_team.addMember(
                 team_admin, team_owner, status=TeamMembershipStatus.ADMIN)
         with person_logged_in(team_admin):
-            result = validate_ppa(private_team, 'ppa', private=True)
+            result = validate_ppa(
+                private_team, self.ubuntu, 'ppa', private=True)
         self.assertIsNone(result)
 
     def test_private_team_public_ppa(self):
@@ -1805,7 +1835,8 @@ class TestValidatePPA(TestCaseWithFactory):
             private_team.addMember(
                 team_admin, team_owner, status=TeamMembershipStatus.ADMIN)
         with person_logged_in(team_admin):
-            result = validate_ppa(private_team, 'ppa', private=False)
+            result = validate_ppa(
+                private_team, self.ubuntu, 'ppa', private=False)
         self.assertEqual(
             'Private teams may not have public archives.', result)
 

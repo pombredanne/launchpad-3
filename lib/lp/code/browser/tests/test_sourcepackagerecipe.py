@@ -687,7 +687,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         browser.getControl('Create Recipe').click()
         self.assertEqual(
             get_feedback_messages(browser.contents)[1],
-            html_escape("You already have a PPA named 'foo'."))
+            html_escape("You already have a PPA for Ubuntu named 'foo'."))
 
     def test_create_new_ppa_missing_name(self):
         # If a new PPA is being created, and the user has not specified a

@@ -79,6 +79,7 @@ from lp.app.browser.lazrjs import (
     TextLineEditorWidget,
     )
 from lp.app.browser.tales import format_link
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.validators.name import name_validator
 from lp.app.widgets.itemswidgets import (
     LabeledMultiCheckBoxWidget,
@@ -817,7 +818,8 @@ class SourcePackageRecipeAddView(RecipeRelatedBranchesMixin,
         owner = data['owner']
         if data['use_ppa'] == CREATE_NEW:
             ppa_name = data.get('ppa_name', None)
-            ppa = owner.createPPA(ppa_name)
+            ppa = owner.createPPA(
+                getUtility(ILaunchpadCelebrities).ubuntu, ppa_name)
         else:
             ppa = data['daily_build_archive']
         try:
@@ -849,7 +851,8 @@ class SourcePackageRecipeAddView(RecipeRelatedBranchesMixin,
                 self.setFieldError(
                     'ppa_name', 'You need to specify a name for the PPA.')
             else:
-                error = validate_ppa(owner, ppa_name)
+                error = validate_ppa(
+                    owner, getUtility(ILaunchpadCelebrities).ubuntu, ppa_name)
                 if error is not None:
                     self.setFieldError('ppa_name', error)
 

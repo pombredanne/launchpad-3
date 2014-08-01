@@ -1928,7 +1928,8 @@ class ArchiveActivateView(LaunchpadFormView):
                 'name for the new PPA and resubmit the form.')
 
         errors = validate_ppa(
-            self.context, proposed_name, private=self.is_private_team)
+            self.context, self.ubuntu, proposed_name,
+            private=self.is_private_team)
         if errors is not None:
             self.addError(errors)
 
@@ -1947,7 +1948,8 @@ class ArchiveActivateView(LaunchpadFormView):
         displayname = data['displayname']
         description = data['description']
         ppa = self.context.createPPA(
-            name, displayname, description, private=self.is_private_team)
+            self.ubuntu, name, displayname, description,
+            private=self.is_private_team)
         self.next_url = canonical_url(ppa)
 
     @property
