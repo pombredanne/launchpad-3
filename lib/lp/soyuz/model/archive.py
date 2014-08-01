@@ -2144,6 +2144,7 @@ def validate_ppa(owner, distribution, proposed_name, private=False):
     :param proposed_name: The proposed name.
     :param private: Whether or not to make it private.
     """
+    assert proposed_name is not None
     creator = getUtility(ILaunchBag).user
     if private:
         # NOTE: This duplicates the policy in lp/soyuz/configure.zcml
@@ -2165,8 +2166,6 @@ def validate_ppa(owner, distribution, proposed_name, private=False):
     if proposed_name == "ubuntu":
         return (
             'A PPA cannot be named "ubuntu".')
-    if proposed_name is None:
-        proposed_name = 'ppa'
     try:
         owner.getPPAByName(distribution, proposed_name)
     except NoSuchPPA:

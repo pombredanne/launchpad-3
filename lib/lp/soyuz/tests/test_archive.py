@@ -1726,7 +1726,7 @@ class TestValidatePPA(TestCaseWithFactory):
         team = self.factory.makeTeam()
         self.assertEqual(
             'Open teams cannot have PPAs.',
-            validate_ppa(team, self.ubuntu, None))
+            validate_ppa(team, self.ubuntu, "ppa"))
 
     def test_distribution_name(self):
         ppa_owner = self.factory.makePerson()
@@ -1794,7 +1794,7 @@ class TestValidatePPA(TestCaseWithFactory):
 
     def test_valid_ppa(self):
         ppa_owner = self.factory.makePerson()
-        self.assertIsNone(validate_ppa(ppa_owner, self.ubuntu, None))
+        self.assertIsNone(validate_ppa(ppa_owner, self.ubuntu, "ppa"))
 
     def test_private_team_private_ppa(self):
         # Folk with launchpad.Edit on a private team can make private PPAs for
