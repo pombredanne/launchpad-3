@@ -2163,11 +2163,9 @@ def validate_ppa(owner, distribution, proposed_name, private=False):
     if not distribution.supports_ppas:
         return "%s does not support PPAs." % distribution.displayname
     if proposed_name == distribution.name:
-        return (
-            "A PPA cannot have the same name as its distribution.")
+        return "A PPA cannot have the same name as its distribution."
     if proposed_name == "ubuntu":
-        return (
-            'A PPA cannot be named "ubuntu".')
+        return 'A PPA cannot be named "ubuntu".'
     try:
         owner.getPPAByName(distribution, proposed_name)
     except NoSuchPPA:
