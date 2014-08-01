@@ -268,9 +268,15 @@
 
         <require
             permission="launchpad.Edit"
-            set_attributes="displayname title summary description driver
-                            backports_not_automatic
-                            include_long_descriptions"/>
+            set_attributes="
+                displayname
+                title
+                summary
+                description
+                driver
+                backports_not_automatic
+                include_long_descriptions
+                inherit_overrides_from_parents"/>
 
         <!-- NB: check with SABDFL before modifying these, there is potential to
                                  make a huge mess if these get changed and Soyuz has to republish
@@ -1730,6 +1736,12 @@
                 redirect_release_uploads
                 summary
                 title"/>
+        <require
+            permission="launchpad.Admin"
+            set_attributes="
+                official_packages
+                supports_mirrors
+                supports_ppas"/>
         <require
             permission="launchpad.BugSupervisor"
             set_attributes="

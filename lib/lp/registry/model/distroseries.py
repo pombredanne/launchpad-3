@@ -380,6 +380,24 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             DistroArchSeries.processor_id == processor.id).one()
 
     @property
+    def inherit_overrides_from_parents(self):
+        from lp.registry.interfaces.distroseriesparent import (
+            IDistroSeriesParentSet,
+            )
+        return any(
+            dsp.inherit_overrides for dsp in
+            getUtility(IDistroSeriesParentSet).getByDerivedSeries(self))
+
+    @inherit_overrides_from_parents.setter
+    def inherit_overrides_from_parents(self, value):
+        from lp.registry.interfaces.distroseriesparent import (
+            IDistroSeriesParentSet,
+            )
+        dsps = getUtility(IDistroSeriesParentSet).getByDerivedSeries(self)
+        for dsp in dsps:
+            dsp.inherit_overrides = value
+
+    @property
     def enabled_architectures(self):
         return Store.of(self).find(
             DistroArchSeries,
