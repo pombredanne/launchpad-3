@@ -1026,8 +1026,10 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
             makePoolPath(spr.name, self.component.name), bin_filename)
         description = self._getFormattedDescription(
             bpr.summary, bpr.description)
+        # Our formatted description isn't \n-terminated, but apt
+        # considers the trailing \n to be part of the data to hash.
         bin_description_md5 = hashlib.md5(
-            description.encode('utf-8')).hexdigest()
+            description.encode('utf-8') + '\n').hexdigest()
         if separate_long_descriptions:
             # If distroseries.include_long_descriptions is False, the
             # description should be the summary
@@ -1102,8 +1104,10 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
         bin_description = self._getFormattedDescription(
             bpr.summary, bpr.description)
+        # Our formatted description isn't \n-terminated, but apt
+        # considers the trailing \n to be part of the data to hash.
         bin_description_md5 = hashlib.md5(
-            bin_description.encode('utf-8')).hexdigest()
+            bin_description.encode('utf-8') + '\n').hexdigest()
         if (bpr.name, bin_description_md5) not in packages:
             fields = IndexStanzaFields()
             fields.append('Package', bpr.name)
