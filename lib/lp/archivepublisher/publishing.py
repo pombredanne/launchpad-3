@@ -697,10 +697,10 @@ class Publisher(object):
                     'utf-8') + '\n\n'
                 indices[subcomp].write(stanza)
                 if separate_long_descriptions:
-                    # If the translation_stanza has already been written, 
-                    # getTranslationsStanza will return None, otherwise it
-                    # will add Package and Description-md5 to packages and 
-                    # the stanza will be written to Translation-en.
+                    # If the (Package, Description-md5) pair already exists in
+                    # the set, getTranslationsStanza will return None.
+                    # Otherwise it will add the pair to the set and return a
+                    # stanza to be written to Translation-en.
                     translation_stanza = bpp.getTranslationsStanza(packages)
                     if translation_stanza:
                         translation_stanza = translation_stanza.encode(
