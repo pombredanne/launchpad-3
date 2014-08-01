@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for distributions."""
@@ -7,6 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'DistributionAddView',
+    'DistributionAdminView',
     'DistributionArchiveMirrorsRSSView',
     'DistributionArchiveMirrorsView',
     'DistributionArchivesView',
@@ -55,6 +56,7 @@ from lp.answers.browser.questiontarget import QuestionTargetTraversalMixin
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
+    LaunchpadEditFormView,
     LaunchpadFormView,
     )
 from lp.app.browser.lazrjs import InlinePersonEditPickerWidget
@@ -286,6 +288,11 @@ class DistributionNavigationMenu(NavigationMenu, DistributionLinksMixin):
     facet = 'overview'
 
     @enabled_with_permission("launchpad.Admin")
+    def admin(self):
+        text = "Administer"
+        return Link("+admin", text, icon="edit")
+
+    @enabled_with_permission("launchpad.Admin")
     def pubconf(self):
         text = "Configure publisher"
         return Link("+pubconf", text, icon="edit")
@@ -296,8 +303,9 @@ class DistributionNavigationMenu(NavigationMenu, DistributionLinksMixin):
 
     @cachedproperty
     def links(self):
-        return ['edit', 'pubconf', 'subscribe_to_bug_mail',
-                 'edit_bug_mail', 'sharing']
+        return [
+            'edit', 'admin', 'pubconf', 'subscribe_to_bug_mail',
+            'edit_bug_mail', 'sharing']
 
 
 class DistributionOverviewMenu(ApplicationMenu, DistributionLinksMixin):
@@ -958,6 +966,30 @@ class DistributionEditView(RegistryEditFormView,
     def change_action(self, action, data):
         self.change_archive_fields(data)
         self.updateContextFromData(data)
+
+
+class DistributionAdminView(LaunchpadEditFormView):
+
+    schema = IDistribution
+    field_names = [
+        'official_packages',
+        'supports_ppas',
+        'supports_mirrors',
+        ]
+
+    @property
+    def label(self):
+        """See `LaunchpadFormView`."""
+        return 'Administer %s' % self.context.displayname
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
+    @action("Change", name='change')
+    def change_action(self, action, data):
+        self.updateContextFromData(data)
+        self.next_url = canonical_url(self.context)
 
 
 class DistributionSeriesBaseView(LaunchpadView):

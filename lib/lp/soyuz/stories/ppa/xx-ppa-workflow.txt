@@ -507,7 +507,7 @@ and the rendered form contains the 'name' field.
 
     >>> print_feedback_messages(browser2.contents)
     There is 1 error.
-    You already have a PPA named &#x27;boomppa&#x27;.
+    You already have a PPA for Ubuntu named &#x27;boomppa&#x27;.
 
     >>> print browser2.getControl(name="field.name").value
     boomppa
@@ -591,7 +591,7 @@ If Celso, by mistake, uses the same name of one of his existing PPAs
 
     >>> print_feedback_messages(cprov_browser.contents)
     There is 1 error.
-    You already have a PPA named &#x27;ppa&#x27;.
+    You already have a PPA for Ubuntu named &#x27;ppa&#x27;.
 
 If the PPA is named as the distribution it is targeted for it cannot
 be created, mainly because of the way we publish repositories

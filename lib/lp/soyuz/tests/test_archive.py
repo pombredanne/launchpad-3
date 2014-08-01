@@ -1717,22 +1717,49 @@ class TestValidatePPA(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def setUp(self):
+        super(TestValidatePPA, self).setUp()
+        self.ubuntu = getUtility(IDistributionSet)['ubuntu']
+        self.ubuntutest = getUtility(IDistributionSet)['ubuntutest']
+        with admin_logged_in():
+            self.ubuntutest.supports_ppas = True
+
     def test_open_teams(self):
         team = self.factory.makeTeam()
         self.assertEqual(
-            'Open teams cannot have PPAs.', validate_ppa(team, None))
+            'Open teams cannot have PPAs.',
+            validate_ppa(team, self.ubuntu, "ppa"))
 
     def test_distribution_name(self):
         ppa_owner = self.factory.makePerson()
         self.assertEqual(
             'A PPA cannot have the same name as its distribution.',
-            validate_ppa(ppa_owner, 'ubuntu'))
+            validate_ppa(ppa_owner, self.ubuntu, 'ubuntu'))
+
+    def test_ubuntu_name(self):
+        # Disambiguating old-style URLs relies on there never being a
+        # PPA named "ubuntu".
+        ppa_owner = self.factory.makePerson()
+        self.assertEqual(
+            'A PPA cannot be named "ubuntu".',
+            validate_ppa(ppa_owner, self.ubuntutest, 'ubuntu'))
+
+    def test_distro_unsupported(self):
+        ppa_owner = self.factory.makePerson()
+        distro = self.factory.makeDistribution(displayname="Unbuntu")
+        self.assertEqual(
+            "Unbuntu does not support PPAs.",
+            validate_ppa(ppa_owner, distro, "ppa"))
+        with admin_logged_in():
+            distro.supports_ppas = True
+        self.assertIs(None, validate_ppa(ppa_owner, distro, "ppa"))
 
     def test_private_ppa_standard_user(self):
         ppa_owner = self.factory.makePerson()
         with person_logged_in(ppa_owner):
             errors = validate_ppa(
-                ppa_owner, self.factory.getUniqueString(), private=True)
+                ppa_owner, self.ubuntu, self.factory.getUniqueString(),
+                private=True)
         self.assertEqual(
             '%s is not allowed to make private PPAs' % (ppa_owner.name,),
             errors)
@@ -1741,7 +1768,7 @@ class TestValidatePPA(TestCaseWithFactory):
         owner = self.factory.makePerson()
         self.factory.grantCommercialSubscription(owner)
         with person_logged_in(owner):
-            errors = validate_ppa(owner, 'ppa', private=True)
+            errors = validate_ppa(owner, self.ubuntu, 'ppa', private=True)
         self.assertIsNone(errors)
 
     def test_private_ppa_commercial_admin(self):
@@ -1752,32 +1779,34 @@ class TestValidatePPA(TestCaseWithFactory):
         with person_logged_in(ppa_owner):
             self.assertIsNone(
                 validate_ppa(
-                    ppa_owner, self.factory.getUniqueString(), private=True))
+                    ppa_owner, self.ubuntu, self.factory.getUniqueString(),
+                    private=True))
 
     def test_private_ppa_admin(self):
         ppa_owner = self.factory.makeAdministrator()
         with person_logged_in(ppa_owner):
             self.assertIsNone(
                 validate_ppa(
-                    ppa_owner, self.factory.getUniqueString(), private=True))
+                    ppa_owner, self.ubuntu, self.factory.getUniqueString(),
+                    private=True))
 
     def test_two_ppas(self):
         ppa = self.factory.makeArchive(name='ppa')
         self.assertEqual(
-            "You already have a PPA named 'ppa'.",
-            validate_ppa(ppa.owner, 'ppa'))
+            "You already have a PPA for Ubuntu named 'ppa'.",
+            validate_ppa(ppa.owner, self.ubuntu, 'ppa'))
 
     def test_two_ppas_with_team(self):
         team = self.factory.makeTeam(
             membership_policy=TeamMembershipPolicy.MODERATED)
         self.factory.makeArchive(owner=team, name='ppa')
         self.assertEqual(
-            "%s already has a PPA named 'ppa'." % team.displayname,
-            validate_ppa(team, 'ppa'))
+            "%s already has a PPA for Ubuntu named 'ppa'." % team.displayname,
+            validate_ppa(team, self.ubuntu, 'ppa'))
 
     def test_valid_ppa(self):
         ppa_owner = self.factory.makePerson()
-        self.assertIsNone(validate_ppa(ppa_owner, None))
+        self.assertIsNone(validate_ppa(ppa_owner, self.ubuntu, "ppa"))
 
     def test_private_team_private_ppa(self):
         # Folk with launchpad.Edit on a private team can make private PPAs for
@@ -1791,7 +1820,8 @@ class TestValidatePPA(TestCaseWithFactory):
             private_team.addMember(
                 team_admin, team_owner, status=TeamMembershipStatus.ADMIN)
         with person_logged_in(team_admin):
-            result = validate_ppa(private_team, 'ppa', private=True)
+            result = validate_ppa(
+                private_team, self.ubuntu, 'ppa', private=True)
         self.assertIsNone(result)
 
     def test_private_team_public_ppa(self):
@@ -1805,7 +1835,8 @@ class TestValidatePPA(TestCaseWithFactory):
             private_team.addMember(
                 team_admin, team_owner, status=TeamMembershipStatus.ADMIN)
         with person_logged_in(team_admin):
-            result = validate_ppa(private_team, 'ppa', private=False)
+            result = validate_ppa(
+                private_team, self.ubuntu, 'ppa', private=False)
         self.assertEqual(
             'Private teams may not have public archives.', result)
 
@@ -3308,11 +3339,11 @@ class TestArchiveGetOverridePolicy(TestCaseWithFactory):
         amd64_bpph = self.factory.makeBinaryPackagePublishingHistory(
             binarypackagename=bpn,
             archive=archive, distroarchseries=self.amd64,
-            pocket=PackagePublishingPocket.UPDATES, architecturespecific=True)
+            pocket=PackagePublishingPocket.PROPOSED, architecturespecific=True)
         armhf_bpph = self.factory.makeBinaryPackagePublishingHistory(
             binarypackagename=bpn,
             archive=archive, distroarchseries=self.armhf,
-            pocket=PackagePublishingPocket.UPDATES, architecturespecific=True)
+            pocket=PackagePublishingPocket.PROPOSED, architecturespecific=True)
         amd64_override = BinaryOverride(
             component=amd64_bpph.component, section=amd64_bpph.section,
             priority=amd64_bpph.priority,
@@ -3321,7 +3352,7 @@ class TestArchiveGetOverridePolicy(TestCaseWithFactory):
             component=armhf_bpph.component, section=armhf_bpph.section,
             priority=armhf_bpph.priority,
             version=armhf_bpph.binarypackagerelease.version, new=False)
-        return (amd64_override, armhf_override)
+        return (amd64_override, armhf_override, amd64_bpph, armhf_bpph)
 
     def test_primary_sources(self):
         spph = self.factory.makeSourcePackagePublishingHistory(
@@ -3350,10 +3381,50 @@ class TestArchiveGetOverridePolicy(TestCaseWithFactory):
                  non_free_spn: SourceOverride(component=self.non_free),
                  }))
 
+    def test_primary_sources_deleted(self):
+        person = self.series.main_archive.owner
+        spn = self.factory.makeSourcePackageName()
+        spph1 = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=spn, archive=self.series.main_archive,
+            distroseries=self.series, pocket=PackagePublishingPocket.PROPOSED)
+        spph2 = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=spn, archive=self.series.main_archive,
+            distroseries=self.series, pocket=PackagePublishingPocket.PROPOSED)
+        policy = self.series.main_archive.getOverridePolicy(
+            self.series, PackagePublishingPocket.RELEASE)
+
+        # The latest of the active publications is taken.
+        self.assertEqual(
+            {spn: SourceOverride(
+                component=spph2.component, section=spph2.section,
+                version=spph2.sourcepackagerelease.version, new=False)},
+            policy.calculateSourceOverrides({spn: SourceOverride()}))
+
+        # If we set the latest to Deleted, the next most recent active
+        # one is used.
+        with person_logged_in(person):
+            spph2.requestDeletion(person)
+        self.assertEqual(
+            {spn: SourceOverride(
+                component=spph1.component, section=spph1.section,
+                version=spph1.sourcepackagerelease.version, new=False)},
+            policy.calculateSourceOverrides({spn: SourceOverride()}))
+
+        # But if they're all Deleted, we use the most recent Deleted one
+        # and throw the package into NEW. Resurrections should default
+        # to the old overrides but still require manual approval.
+        with person_logged_in(person):
+            spph1.requestDeletion(person)
+        self.assertEqual(
+            {spn: SourceOverride(
+                component=spph2.component, section=spph2.section,
+                version=spph2.sourcepackagerelease.version, new=True)},
+            policy.calculateSourceOverrides({spn: SourceOverride()}))
+
     def test_primary_binaries(self):
         existing_bpn = self.factory.makeBinaryPackageName()
         other_bpn = self.factory.makeBinaryPackageName()
-        amd64_override, armhf_override = self.prepareBinaries(
+        amd64_override, armhf_override, _, _ = self.prepareBinaries(
             self.series.main_archive, existing_bpn)
         policy = self.series.main_archive.getOverridePolicy(
             self.series, PackagePublishingPocket.RELEASE)
@@ -3382,6 +3453,49 @@ class TestArchiveGetOverridePolicy(TestCaseWithFactory):
                      source_override=SourceOverride(
                          component=self.restricted)),
                 }))
+
+    def test_primary_binaries_deleted(self):
+        person = self.series.main_archive.owner
+        bpn = self.factory.makeBinaryPackageName()
+        amd64_over, armhf_over, amd64_pub, armhf_pub = self.prepareBinaries(
+            self.series.main_archive, bpn)
+        policy = self.series.main_archive.getOverridePolicy(
+            self.series, PackagePublishingPocket.RELEASE)
+
+        # The latest of the active publications for the architecture is
+        # taken.
+        self.assertEqual(
+            {(bpn, 'armhf'): BinaryOverride(
+                component=armhf_pub.component, section=armhf_pub.section,
+                priority=armhf_pub.priority,
+                version=armhf_pub.binarypackagerelease.version, new=False)},
+            policy.calculateBinaryOverrides(
+                {(bpn, 'armhf'): BinaryOverride()}))
+
+        # If there are no active publications for the architecture,
+        # another architecture's most recent active is used.
+        with person_logged_in(person):
+            armhf_pub.requestDeletion(person)
+        self.assertEqual(
+            {(bpn, 'armhf'): BinaryOverride(
+                component=amd64_pub.component, section=amd64_pub.section,
+                priority=amd64_pub.priority,
+                version=amd64_pub.binarypackagerelease.version, new=False)},
+            policy.calculateBinaryOverrides(
+                {(bpn, 'armhf'): BinaryOverride()}))
+
+        # But once there are no active publications for any
+        # architecture, a Deleted one in a matching arch is used and the
+        # package is thrown into NEW.
+        with person_logged_in(person):
+            amd64_pub.requestDeletion(person)
+        self.assertEqual(
+            {(bpn, 'armhf'): BinaryOverride(
+                component=armhf_pub.component, section=armhf_pub.section,
+                priority=armhf_pub.priority,
+                version=armhf_pub.binarypackagerelease.version, new=True)},
+            policy.calculateBinaryOverrides(
+                {(bpn, 'armhf'): BinaryOverride()}))
 
     def test_ppa_sources(self):
         ppa = self.factory.makeArchive(
@@ -3416,7 +3530,7 @@ class TestArchiveGetOverridePolicy(TestCaseWithFactory):
             purpose=ArchivePurpose.PPA)
         existing_bpn = self.factory.makeBinaryPackageName()
         other_bpn = self.factory.makeBinaryPackageName()
-        amd64_override, armhf_override = self.prepareBinaries(
+        amd64_override, armhf_override, _, _ = self.prepareBinaries(
             ppa, existing_bpn)
         policy = ppa.getOverridePolicy(
             self.series, PackagePublishingPocket.RELEASE)
@@ -3470,7 +3584,7 @@ class TestArchiveGetOverridePolicy(TestCaseWithFactory):
             purpose=ArchivePurpose.PARTNER)
         existing_bpn = self.factory.makeBinaryPackageName()
         other_bpn = self.factory.makeBinaryPackageName()
-        amd64_override, armhf_override = self.prepareBinaries(
+        amd64_override, armhf_override, _, _ = self.prepareBinaries(
             partner, existing_bpn)
         policy = partner.getOverridePolicy(
             self.series, PackagePublishingPocket.RELEASE)
@@ -3526,7 +3640,7 @@ class TestArchiveGetOverridePolicy(TestCaseWithFactory):
     def test_copy_binaries(self):
         existing_bpn = self.factory.makeBinaryPackageName()
         other_bpn = self.factory.makeBinaryPackageName()
-        amd64_override, armhf_override = self.prepareBinaries(
+        amd64_override, armhf_override, _, _ = self.prepareBinaries(
             self.series.main_archive, existing_bpn)
         copy = self.factory.makeArchive(
             distribution=self.series.distribution, purpose=ArchivePurpose.COPY)

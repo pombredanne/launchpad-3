@@ -2086,23 +2086,18 @@ class Archive(SQLBase):
             FromSourceOverridePolicy,
             UnknownOverridePolicy,
             )
-        if self.is_primary:
-            return FallbackOverridePolicy([
+        if self.is_main:
+            # If there's no matching live publication, fall back to
+            # other archs, then to matching but deleted, then to deleted
+            # on other archs, then to archive-specific defaults.
+            policies = [
                 FromExistingOverridePolicy(
                     self, distroseries, None,
-                    phased_update_percentage=phased_update_percentage,
-                    include_deleted=True),
-                FromExistingOverridePolicy(
-                    self, distroseries, None,
-                    phased_update_percentage=phased_update_percentage,
-                    include_deleted=True, any_arch=True),
-                FromSourceOverridePolicy(
                     phased_update_percentage=phased_update_percentage),
-                UnknownOverridePolicy(
-                    self, distroseries, pocket,
-                    phased_update_percentage=phased_update_percentage)])
-        elif self.is_partner:
-            return FallbackOverridePolicy([
+                FromExistingOverridePolicy(
+                    self, distroseries, None,
+                    phased_update_percentage=phased_update_percentage,
+                    any_arch=True),
                 FromExistingOverridePolicy(
                     self, distroseries, None,
                     phased_update_percentage=phased_update_percentage,
@@ -2110,11 +2105,21 @@ class Archive(SQLBase):
                 FromExistingOverridePolicy(
                     self, distroseries, None,
                     phased_update_percentage=phased_update_percentage,
-                    include_deleted=True, any_arch=True),
-                ConstantOverridePolicy(
-                    component=getUtility(IComponentSet)['partner'],
-                    phased_update_percentage=phased_update_percentage,
-                    new=True)])
+                    include_deleted=True, any_arch=True)]
+            if self.is_primary:
+                policies.extend([
+                    FromSourceOverridePolicy(
+                        phased_update_percentage=phased_update_percentage),
+                    UnknownOverridePolicy(
+                        self, distroseries, pocket,
+                        phased_update_percentage=phased_update_percentage)])
+            elif self.is_partner:
+                policies.append(
+                    ConstantOverridePolicy(
+                        component=getUtility(IComponentSet)['partner'],
+                        phased_update_percentage=phased_update_percentage,
+                        new=True))
+            return FallbackOverridePolicy(policies)
         elif self.is_ppa:
             return ConstantOverridePolicy(
                 component=getUtility(IComponentSet)['main'])
@@ -2137,15 +2142,15 @@ class Archive(SQLBase):
         job.destroySelf()
 
 
-def validate_ppa(owner, proposed_name, private=False):
+def validate_ppa(owner, distribution, proposed_name, private=False):
     """Can 'person' create a PPA called 'proposed_name'?
 
     :param owner: The proposed owner of the PPA.
     :param proposed_name: The proposed name.
     :param private: Whether or not to make it private.
     """
+    assert proposed_name is not None
     creator = getUtility(ILaunchBag).user
-    ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
     if private:
         # NOTE: This duplicates the policy in lp/soyuz/configure.zcml
         # which says that one needs 'launchpad.Admin' permission to set
@@ -2160,20 +2165,22 @@ def validate_ppa(owner, proposed_name, private=False):
     if owner.is_team and (
         owner.membership_policy in INCLUSIVE_TEAM_POLICY):
         return "Open teams cannot have PPAs."
-    if proposed_name is not None and proposed_name == ubuntu.name:
-        return (
-            "A PPA cannot have the same name as its distribution.")
-    if proposed_name is None:
-        proposed_name = 'ppa'
+    if not distribution.supports_ppas:
+        return "%s does not support PPAs." % distribution.displayname
+    if proposed_name == distribution.name:
+        return "A PPA cannot have the same name as its distribution."
+    if proposed_name == "ubuntu":
+        return 'A PPA cannot be named "ubuntu".'
     try:
-        owner.getPPAByName(ubuntu, proposed_name)
+        owner.getPPAByName(distribution, proposed_name)
     except NoSuchPPA:
         return None
     else:
-        text = "You already have a PPA named '%s'." % proposed_name
+        text = "You already have a PPA for %s named '%s'." % (
+            distribution.displayname, proposed_name)
         if owner.is_team:
-            text = "%s already has a PPA named '%s'." % (
-                owner.displayname, proposed_name)
+            text = "%s already has a PPA for %s named '%s'." % (
+                owner.displayname, distribution.displayname, proposed_name)
         return text
 
 
