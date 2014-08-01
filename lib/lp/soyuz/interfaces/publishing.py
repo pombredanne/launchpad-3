@@ -168,7 +168,7 @@ class IPublishingView(Interface):
         If all the files get published correctly update its status properly.
         """
 
-    def getIndexStanza(separate_long_descriptions=False):
+    def getIndexStanza():
         """Return archive index stanza contents
 
         It's based on the locally provided buildIndexStanzaTemplate method,
@@ -178,7 +178,7 @@ class IPublishingView(Interface):
             be omitted from the stanza and Description-md5 will be included.
         """
 
-    def buildIndexStanzaFields(separate_long_descriptions=False):
+    def buildIndexStanzaFields():
         """Build a map of fields and values to be in the Index file.
 
         The fields and values ae mapped into a dictionary, where the key is
@@ -186,30 +186,6 @@ class IPublishingView(Interface):
 
         :param separate_long_descriptions: if True, the long description will
             be omitted from the stanza and Description-md5 will be included.
-        """
-
-    def getTranslationsStanza(packages):
-        """Return archive Translation-en stanza contents
-
-        It's based on the locally provided buildTranslationsStanzaTemplate
-        method, which differs for binary and source instances.
-
-        :param packages: a set of (Package, Description-md5) tuples used to
-            determine if a package has already been added to the translation
-            file. The (Package, Description-md5) tuple will be added if it
-            doesn't already exist.
-        """
-
-    def buildTranslationsStanzaFields(packages):
-        """Build a map of fields and values to be in the Translation-en file.
-
-        The fields and values ae mapped into a dictionary, where the key is
-        the field name and value is the value string.
-
-        :param packages: a set of (Package, Description-md5) tuples used to
-            determine if a package has already been added to the translation
-            file. The (Package, Description-md5) tuple will be added if it
-            doesn't already exist.
         """
 
     def requestObsolescence():
@@ -870,6 +846,50 @@ class IBinaryPackagePublishingHistoryPublic(IPublishingView):
 
         :return: a list of `IBinaryPackagePublishingHistory` records
             representing the binaries copied to the destination location.
+        """
+
+    def getIndexStanza(separate_long_descriptions=False):
+        """Return archive index stanza contents
+
+        It's based on the locally provided buildIndexStanzaTemplate method,
+        which differs for binary and source instances.
+
+        :param separate_long_descriptions: if True, the long description will
+            be omitted from the stanza and Description-md5 will be included.
+        """
+
+    def buildIndexStanzaFields(separate_long_descriptions=False):
+        """Build a map of fields and values to be in the Index file.
+
+        The fields and values ae mapped into a dictionary, where the key is
+        the field name and value is the value string.
+
+        :param separate_long_descriptions: if True, the long description will
+            be omitted from the stanza and Description-md5 will be included.
+        """
+
+    def getTranslationsStanza(packages):
+        """Return archive Translation-en stanza contents
+
+        It's based on the locally provided buildTranslationsStanzaTemplate
+        method, which differs for binary and source instances.
+
+        :param packages: a set of (Package, Description-md5) tuples used to
+            determine if a package has already been added to the translation
+            file. The (Package, Description-md5) tuple will be added if it
+            doesn't already exist.
+        """
+
+    def buildTranslationsStanzaFields(packages):
+        """Build a map of fields and values to be in the Translation-en file.
+
+        The fields and values ae mapped into a dictionary, where the key is
+        the field name and value is the value string.
+
+        :param packages: a set of (Package, Description-md5) tuples used to
+            determine if a package has already been added to the translation
+            file. The (Package, Description-md5) tuple will be added if it
+            doesn't already exist.
         """
 
     @export_read_operation()
