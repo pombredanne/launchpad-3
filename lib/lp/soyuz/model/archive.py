@@ -2137,7 +2137,7 @@ class Archive(SQLBase):
         job.destroySelf()
 
 
-def validate_ppa(owner, proposed_name, private=False):
+def validate_ppa(owner, distribution, proposed_name, private=False):
     """Can 'person' create a PPA called 'proposed_name'?
 
     :param owner: The proposed owner of the PPA.
@@ -2145,7 +2145,6 @@ def validate_ppa(owner, proposed_name, private=False):
     :param private: Whether or not to make it private.
     """
     creator = getUtility(ILaunchBag).user
-    ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
     if private:
         # NOTE: This duplicates the policy in lp/soyuz/configure.zcml
         # which says that one needs 'launchpad.Admin' permission to set
@@ -2160,20 +2159,24 @@ def validate_ppa(owner, proposed_name, private=False):
     if owner.is_team and (
         owner.membership_policy in INCLUSIVE_TEAM_POLICY):
         return "Open teams cannot have PPAs."
-    if proposed_name is not None and proposed_name == ubuntu.name:
+    if proposed_name == distribution.name:
         return (
             "A PPA cannot have the same name as its distribution.")
+    if proposed_name == "ubuntu":
+        return (
+            'A PPA cannot be named "ubuntu".')
     if proposed_name is None:
         proposed_name = 'ppa'
     try:
-        owner.getPPAByName(ubuntu, proposed_name)
+        owner.getPPAByName(distribution, proposed_name)
     except NoSuchPPA:
         return None
     else:
-        text = "You already have a PPA named '%s'." % proposed_name
+        text = "You already have a PPA for %s named '%s'." % (
+            distribution.displayname, proposed_name)
         if owner.is_team:
-            text = "%s already has a PPA named '%s'." % (
-                owner.displayname, proposed_name)
+            text = "%s already has a PPA for %s named '%s'." % (
+                owner.displayname, distribution.displayname, proposed_name)
         return text
 
 
