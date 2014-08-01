@@ -1948,7 +1948,8 @@ class ArchiveActivateView(LaunchpadFormView):
         displayname = data['displayname']
         description = data['description']
         ppa = self.context.createPPA(
-            name, displayname, description, private=self.is_private_team)
+            self.ubuntu, name, displayname, description,
+            private=self.is_private_team)
         self.next_url = canonical_url(ppa)
 
     @property

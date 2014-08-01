@@ -1748,12 +1748,13 @@ class IPersonEditRestricted(Interface):
         )
     @export_factory_operation(Interface, [])  # Really IArchive.
     @operation_for_version("beta")
-    def createPPA(name=None, displayname=None, description=None,
-                  private=False, suppress_subscription_notifications=False):
+    def createPPA(distribution=None, name=None, displayname=None,
+                  description=None, private=False,
+                  suppress_subscription_notifications=False):
         """Create a PPA.
 
-        :param name: A string with the name of the new PPA to create. If
-            not specified, defaults to 'ppa'.
+        :param distribution: The distribution that this archive is for.
+        :param name: The name of the new PPA to create.
         :param displayname: The displayname for the new PPA.
         :param description: The description for the new PPA.
         :param private: Whether or not to create a private PPA. Defaults to

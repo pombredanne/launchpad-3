@@ -818,7 +818,8 @@ class SourcePackageRecipeAddView(RecipeRelatedBranchesMixin,
         owner = data['owner']
         if data['use_ppa'] == CREATE_NEW:
             ppa_name = data.get('ppa_name', None)
-            ppa = owner.createPPA(ppa_name)
+            ppa = owner.createPPA(
+                getUtility(ILaunchpadCelebrities).ubuntu, ppa_name)
         else:
             ppa = data['daily_build_archive']
         try:

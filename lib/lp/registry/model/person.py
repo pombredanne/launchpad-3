@@ -3072,21 +3072,20 @@ class Person(
             raise NoSuchPPA(name)
         return ppa
 
-    def createPPA(self, name=None, displayname=None, description=None,
-                  private=False, suppress_subscription_notifications=False):
+    def createPPA(self, distribution=None, name=None, displayname=None,
+                  description=None, private=False,
+                  suppress_subscription_notifications=False):
         """See `IPerson`."""
-        # XXX cprov 2009-03-27 bug=188564: We currently only create PPAs
-        # for Ubuntu distribution. PPA creation should be revisited when we
-        # start supporting other distribution (debian, mainly).
-        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        if distribution is None:
+            distribution = getUtility(ILaunchpadCelebrities).ubuntu
         if name is None:
             name = "ppa"
-        errors = validate_ppa(self, ubuntu, name, private)
+        errors = validate_ppa(self, distribution, name, private)
         if errors:
             raise PPACreationError(errors)
         return getUtility(IArchiveSet).new(
             owner=self, purpose=ArchivePurpose.PPA,
-            distribution=ubuntu, name=name, displayname=displayname,
+            distribution=distribution, name=name, displayname=displayname,
             description=description, private=private,
             suppress_subscription_notifications=(
                 suppress_subscription_notifications))
