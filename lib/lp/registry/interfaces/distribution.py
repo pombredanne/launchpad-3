@@ -309,12 +309,17 @@ class IDistributionPublic(
                 "in the context of the currentseries.")),
         exported_as="current_series")
 
-    supports_mirrors = Attribute(
-        "Whether we enable mirror management functionality for this "
-        "distribution")
+    official_packages = exported(Bool(
+        title=_("Packages are tracked in Launchpad"),
+        readonly=False, required=True))
 
-    official_packages = Attribute(
-        "Whether Launchpad manages this distribution's packages itself.")
+    supports_ppas = exported(Bool(
+        title=_("Enable PPA creation and publication"),
+        readonly=False, required=True))
+
+    supports_mirrors = exported(Bool(
+        title=_("Enable mirror listings and probes"),
+        readonly=False, required=True))
 
     translation_focus = Choice(
         title=_("Translation focus"),

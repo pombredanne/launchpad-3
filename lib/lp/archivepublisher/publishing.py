@@ -55,6 +55,7 @@ from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.model.distroseries import DistroSeries
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.interfaces import IStore
+from lp.services.features import getFeatureFlag
 from lp.services.librarian.client import LibrarianClient
 from lp.services.utils import file_exists
 from lp.soyuz.enums import (
@@ -640,6 +641,19 @@ class Publisher(object):
 
         self.log.debug("Generating Sources")
 
+        separate_long_descriptions = False
+        if (not distroseries.include_long_descriptions and
+                getFeatureFlag("soyuz.ppa.separate_long_descriptions")):
+            # If include_long_descriptions is False and the feature flag is
+            # enabled, create a Translation-en file. getIndexStanza() will
+            # also omit long descriptions from the Packages.
+            separate_long_descriptions = True
+            packages = set()
+            translation_en = RepositoryIndexFile(
+                os.path.join(self._config.distsroot, suite_name,
+                             component.name, "i18n", "Translation-en"),
+                self._config.temproot)
+
         source_index = RepositoryIndexFile(
             get_sources_path(self._config, suite_name, component),
             self._config.temproot)
@@ -679,11 +693,25 @@ class Publisher(object):
                     # for, eg. ddebs where publish_debug_symbols is
                     # disabled.
                     continue
-                stanza = bpp.getIndexStanza().encode('utf-8') + '\n\n'
+                stanza = bpp.getIndexStanza(separate_long_descriptions).encode(
+                    'utf-8') + '\n\n'
                 indices[subcomp].write(stanza)
+                if separate_long_descriptions:
+                    # If the (Package, Description-md5) pair already exists in
+                    # the set, getTranslationsStanza will return None.
+                    # Otherwise it will add the pair to the set and return a
+                    # stanza to be written to Translation-en.
+                    translation_stanza = bpp.getTranslationsStanza(packages)
+                    if translation_stanza:
+                        translation_stanza = translation_stanza.encode(
+                            'utf-8') + '\n\n'
+                        translation_en.write(translation_stanza)
 
             for index in indices.itervalues():
                 index.close()
+
+        if separate_long_descriptions:
+            translation_en.close()
 
     def cannotModifySuite(self, distroseries, pocket):
         """Return True if the distroseries is stable and pocket is release."""

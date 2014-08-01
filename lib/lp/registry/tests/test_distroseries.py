@@ -247,6 +247,27 @@ class TestDistroSeries(TestCaseWithFactory):
         self.factory.makeDistroSeriesParent(derived_series=distroseries)
         self.assertTrue(distroseries.isDerivedSeries())
 
+    def test_inherit_overrides_from_parents(self):
+        # inherit_overrides_from_parents is an accessor which maps to
+        # all of the series' DistroSeriesParent.inherit_overrides, for
+        # UI simplicity for now.
+        distroseries = self.factory.makeDistroSeries()
+        dsp1 = self.factory.makeDistroSeriesParent(
+            derived_series=distroseries, inherit_overrides=True)
+        dsp2 = self.factory.makeDistroSeriesParent(
+            derived_series=distroseries, inherit_overrides=False)
+        self.assertEqual(True, distroseries.inherit_overrides_from_parents)
+        with person_logged_in(distroseries.distribution.owner):
+            distroseries.inherit_overrides_from_parents = False
+        self.assertEqual(False, dsp1.inherit_overrides)
+        self.assertEqual(False, dsp2.inherit_overrides)
+        self.assertEqual(False, distroseries.inherit_overrides_from_parents)
+        with person_logged_in(distroseries.distribution.owner):
+            distroseries.inherit_overrides_from_parents = True
+        self.assertEqual(True, dsp1.inherit_overrides)
+        self.assertEqual(True, dsp2.inherit_overrides)
+        self.assertEqual(True, distroseries.inherit_overrides_from_parents)
+
     def test_isInitializing(self):
         # The series method isInitializing() returns True only if there is an
         # initialization job with a pending status attached to this series.
