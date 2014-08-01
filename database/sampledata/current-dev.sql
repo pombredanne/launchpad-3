@@ -1,11 +1,12 @@
 -- Copyright 2010-2014 Canonical Ltd.  This software is licensed under the
 -- GNU Affero General Public License version 3 (see the file LICENSE).
--- Created using pg_dump (PostgreSQL) 9.1.13
+-- Created using pg_dump (PostgreSQL) 9.3.4
 
 SET check_function_bodies = false;
 SET client_encoding = 'UTF8';
 SET client_min_messages = warning;
 SET escape_string_warning = off;
+SET lock_timeout = 0;
 SET standard_conforming_strings = off;
 SET statement_timeout = 0;
 
