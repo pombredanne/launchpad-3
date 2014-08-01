@@ -186,12 +186,6 @@ def get_packages_path(config, suite_name, component, arch, subcomp=None):
         return os.path.join(component_root, subcomp, arch_path, "Packages")
 
 
-def get_translations_path(config, suite_name, component):
-    """Return path to Translations file for the given arguments."""
-    return os.path.join(
-        config.distsroot, suite_name, component.name, "i18n", "Translation-en")
-
-
 class I18nIndex(_multivalued):
     """Represents an i18n/Index file."""
     _multivalued_fields = {
@@ -647,15 +641,17 @@ class Publisher(object):
 
         self.log.debug("Generating Sources")
 
-        long_descriptions = False
+        separate_long_descriptions = False
         if (not distroseries.include_long_descriptions and
                 getFeatureFlag("soyuz.ppa.separate_long_descriptions")):
             # If include_long_descriptions is False and the feature flag is
-            # enabled, create Translation-en file for PPAs.
-            long_descriptions = True
-            packages = {}
+            # enabled, create a Translation-en file. getIndexStanza() will
+            # also omit long descriptions from the Packages.
+            separate_long_descriptions = True
+            packages = set()
             translation_en = RepositoryIndexFile(
-                get_translations_path(self._config, suite_name, component),
+                os.path.join(self._config.distsroot, suite_name,
+                             component.name, "i18n", "Translation-en"),
                 self._config.temproot)
 
         source_index = RepositoryIndexFile(
@@ -697,12 +693,14 @@ class Publisher(object):
                     # for, eg. ddebs where publish_debug_symbols is
                     # disabled.
                     continue
-                stanza = bpp.getIndexStanza(long_descriptions).encode(
+                stanza = bpp.getIndexStanza(separate_long_descriptions).encode(
                     'utf-8') + '\n\n'
                 indices[subcomp].write(stanza)
-                if long_descriptions:
-                    # Write Package, Description-md5, and Description-en to
-                    # Translation-en file.
+                if separate_long_descriptions:
+                    # If the translation_stanza has already been written, 
+                    # getTranslationsStanza will return None, otherwise it
+                    # will add Package and Description-md5 to packages and 
+                    # the stanza will be written to Translation-en.
                     translation_stanza = bpp.getTranslationsStanza(packages)
                     if translation_stanza:
                         translation_stanza = translation_stanza.encode(
@@ -712,7 +710,7 @@ class Publisher(object):
             for index in indices.itervalues():
                 index.close()
 
-        if long_descriptions:
+        if separate_long_descriptions:
             translation_en.close()
 
     def cannotModifySuite(self, distroseries, pocket):

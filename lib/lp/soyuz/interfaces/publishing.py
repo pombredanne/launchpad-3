@@ -173,6 +173,9 @@ class IPublishingView(Interface):
 
         It's based on the locally provided buildIndexStanzaTemplate method,
         which differs for binary and source instances.
+
+        :param separate_long_descriptions: if True, the long description will
+            be omitted from the stanza and Description-md5 will be included.
         """
 
     def buildIndexStanzaFields():
@@ -180,6 +183,9 @@ class IPublishingView(Interface):
 
         The fields and values ae mapped into a dictionary, where the key is
         the field name and value is the value string.
+
+        :param separate_long_descriptions: if True, the long description will
+            be omitted from the stanza and Description-md5 will be included.
         """
 
     def getTranslationsStanza():
@@ -187,6 +193,10 @@ class IPublishingView(Interface):
 
         It's based on the locally provided buildTranslationsStanzaTemplate
         method, which differs for binary and source instances.
+
+        :param packages: a set containing Package/Description-md5 used to
+            determine if a package has already been added to the translation
+            file.
         """
 
     def buildTranslationsStanzaFields():
@@ -194,6 +204,10 @@ class IPublishingView(Interface):
 
         The fields and values ae mapped into a dictionary, where the key is
         the field name and value is the value string.
+
+        :param packages: a set containing Package/Description-md5 used to
+            determine if a package has already been added to the translation
+            file.
         """
 
     def requestObsolescence():

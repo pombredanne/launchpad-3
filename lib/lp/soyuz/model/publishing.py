@@ -311,15 +311,18 @@ class ArchivePublisherBase:
         else:
             self.setPublished()
 
-    def getIndexStanza(self, long_descriptions=False):
+    def getIndexStanza(self, separate_long_descriptions=False):
         """See `IPublishing`."""
-        fields = self.buildIndexStanzaFields(long_descriptions)
+        fields = self.buildIndexStanzaFields(separate_long_descriptions)
         return fields.makeOutput()
 
     def getTranslationsStanza(self, packages):
         """See `IPublishing`."""
         fields = self.buildTranslationsStanzaFields(packages)
-        return fields
+        if fields is None:
+            return None
+        else:
+            return fields.makeOutput()
 
     def setSuperseded(self):
         """Set to SUPERSEDED status."""
@@ -705,7 +708,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     def _formatFileList(self, l):
         return ''.join('\n %s %s %s' % ((h,) + f) for (h, f) in l)
 
-    def buildIndexStanzaFields(self, long_descriptions):
+    def buildIndexStanzaFields(self, separate_long_descriptions):
         """See `IPublishing`."""
         # Special fields preparation.
         spr = self.sourcepackagerelease
@@ -997,7 +1000,20 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         else:
             super(BinaryPackagePublishingHistory, self).publish(diskpool, log)
 
-    def buildIndexStanzaFields(self, long_descriptions=False):
+    def _getFormattedDescription(self, summary, description):
+        # description field in index is an association of summary and
+        # description or the summary only if include_long_descriptions
+        # is false, as:
+        #
+        # Descrition: <SUMMARY>\n
+        #  <DESCRIPTION L1>
+        #  ...
+        #  <DESCRIPTION LN>
+        descr_lines = [line.lstrip() for line in description.splitlines()]
+        bin_description = '%s\n %s' % (summary, '\n '.join(descr_lines))
+        return bin_description
+
+    def buildIndexStanzaFields(self, separate_long_descriptions=False):
         """See `IPublishing`."""
         bpr = self.binarypackagerelease
         spr = bpr.build.source_package_release
@@ -1011,20 +1027,12 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         bin_sha256 = bin_file.libraryfile.content.sha256
         bin_filepath = os.path.join(
             makePoolPath(spr.name, self.component.name), bin_filename)
-        # description field in index is an association of summary and
-        # description or the summary only if include_long_descriptions
-        # is false, as:
-        #
-        # Descrition: <SUMMARY>\n
-        #  <DESCRIPTION L1>
-        #  ...
-        #  <DESCRIPTION LN>
-        descr_lines = [line.lstrip() for line in bpr.description.splitlines()]
-        description = '%s\n %s' % (bpr.summary, '\n '.join(descr_lines))
+        description = self._getFormattedDescription(
+            bpr.summary, bpr.description)
         bin_description_md5 = hashlib.md5(description).hexdigest()
-        if long_descriptions:
-            # If include_long_descriptions is False, the description should be
-            # the summary
+        if separate_long_descriptions:
+            # If distroseries.include_long_descriptions is False, the
+            # description should be the summary
             bin_description = bpr.summary
         else:
             bin_description = description
@@ -1074,7 +1082,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         fields.append(
             'Phased-Update-Percentage', self.phased_update_percentage)
         fields.append('Description', bin_description)
-        if long_descriptions:
+        if separate_long_descriptions:
             fields.append('Description-md5', bin_description_md5)
         if bpr.user_defined_fields:
             fields.extend(bpr.user_defined_fields)
@@ -1089,24 +1097,17 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         """See `IPublishing`."""
         bpr = self.binarypackagerelease
 
-        # description field in index is an association of summary and
-        # description or the summary only if include_long_descriptions
-        # is false, as:
-        #
-        # Descrition: <SUMMARY>\n
-        #  <DESCRIPTION L1>
-        #  ...
-        #  <DESCRIPTION LN>
-        descr_lines = [line.lstrip() for line in bpr.description.splitlines()]
-        bin_description = '%s\n %s' % (bpr.summary, '\n '.join(descr_lines))
+        bin_description = self._getFormattedDescription(
+            bpr.summary, bpr.description)
         bin_description_md5 = hashlib.md5(bin_description).hexdigest()
-        if not packages.get((bpr.name, bin_description_md5)):
+        if (bpr.name, bin_description_md5) not in packages:
             fields = IndexStanzaFields()
             fields.append('Package', bpr.name)
             fields.append('Description-md5', bin_description_md5)
             fields.append('Description-en', bin_description)
-            packages[(bpr.name, bin_description_md5)] = True
-            return fields.makeOutput()
+            packages.add((bpr.name, bin_description_md5))
+
+            return fields
         else:
             return None
 
