@@ -1721,6 +1721,8 @@ class TestValidatePPA(TestCaseWithFactory):
         super(TestValidatePPA, self).setUp()
         self.ubuntu = getUtility(IDistributionSet)['ubuntu']
         self.ubuntutest = getUtility(IDistributionSet)['ubuntutest']
+        with admin_logged_in():
+            self.ubuntutest.supports_ppas = True
 
     def test_open_teams(self):
         team = self.factory.makeTeam()
@@ -1741,6 +1743,16 @@ class TestValidatePPA(TestCaseWithFactory):
         self.assertEqual(
             'A PPA cannot be named "ubuntu".',
             validate_ppa(ppa_owner, self.ubuntutest, 'ubuntu'))
+
+    def test_distro_unsupported(self):
+        ppa_owner = self.factory.makePerson()
+        distro = self.factory.makeDistribution(displayname="Unbuntu")
+        self.assertEqual(
+            "Unbuntu does not support PPAs.",
+            validate_ppa(ppa_owner, distro, "ppa"))
+        with admin_logged_in():
+            distro.supports_ppas = True
+        self.assertIs(None, validate_ppa(ppa_owner, distro, "ppa"))
 
     def test_private_ppa_standard_user(self):
         ppa_owner = self.factory.makePerson()
