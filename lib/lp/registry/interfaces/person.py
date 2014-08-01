@@ -1740,6 +1740,7 @@ class IPersonEditRestricted(Interface):
         """
 
     @operation_parameters(
+        distribution=Reference(schema=Interface, required=False),
         name=TextLine(required=True, constraint=name_validator),
         displayname=TextLine(required=False),
         description=TextLine(required=False),
