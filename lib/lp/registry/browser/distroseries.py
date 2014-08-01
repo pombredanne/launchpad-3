@@ -619,7 +619,8 @@ class DistroSeriesAdminView(LaunchpadEditFormView, SeriesStatusMixin):
     It redirects to the main distroseries page after a successful edit.
     """
     schema = IDistroSeries
-    field_names = ['name', 'version', 'changeslist']
+    field_names = [
+        'name', 'version', 'changeslist', 'inherit_overrides_from_parents']
     custom_widget('status', LaunchpadDropdownWidget)
 
     @property
