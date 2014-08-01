@@ -3308,11 +3308,11 @@ class TestArchiveGetOverridePolicy(TestCaseWithFactory):
         amd64_bpph = self.factory.makeBinaryPackagePublishingHistory(
             binarypackagename=bpn,
             archive=archive, distroarchseries=self.amd64,
-            pocket=PackagePublishingPocket.UPDATES, architecturespecific=True)
+            pocket=PackagePublishingPocket.PROPOSED, architecturespecific=True)
         armhf_bpph = self.factory.makeBinaryPackagePublishingHistory(
             binarypackagename=bpn,
             archive=archive, distroarchseries=self.armhf,
-            pocket=PackagePublishingPocket.UPDATES, architecturespecific=True)
+            pocket=PackagePublishingPocket.PROPOSED, architecturespecific=True)
         amd64_override = BinaryOverride(
             component=amd64_bpph.component, section=amd64_bpph.section,
             priority=amd64_bpph.priority,
@@ -3321,7 +3321,7 @@ class TestArchiveGetOverridePolicy(TestCaseWithFactory):
             component=armhf_bpph.component, section=armhf_bpph.section,
             priority=armhf_bpph.priority,
             version=armhf_bpph.binarypackagerelease.version, new=False)
-        return (amd64_override, armhf_override)
+        return (amd64_override, armhf_override, amd64_bpph, armhf_bpph)
 
     def test_primary_sources(self):
         spph = self.factory.makeSourcePackagePublishingHistory(
@@ -3350,10 +3350,50 @@ class TestArchiveGetOverridePolicy(TestCaseWithFactory):
                  non_free_spn: SourceOverride(component=self.non_free),
                  }))
 
+    def test_primary_sources_deleted(self):
+        person = self.series.main_archive.owner
+        spn = self.factory.makeSourcePackageName()
+        spph1 = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=spn, archive=self.series.main_archive,
+            distroseries=self.series, pocket=PackagePublishingPocket.PROPOSED)
+        spph2 = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=spn, archive=self.series.main_archive,
+            distroseries=self.series, pocket=PackagePublishingPocket.PROPOSED)
+        policy = self.series.main_archive.getOverridePolicy(
+            self.series, PackagePublishingPocket.RELEASE)
+
+        # The latest of the active publications is taken.
+        self.assertEqual(
+            {spn: SourceOverride(
+                component=spph2.component, section=spph2.section,
+                version=spph2.sourcepackagerelease.version, new=False)},
+            policy.calculateSourceOverrides({spn: SourceOverride()}))
+
+        # If we set the latest to Deleted, the next most recent active
+        # one is used.
+        with person_logged_in(person):
+            spph2.requestDeletion(person)
+        self.assertEqual(
+            {spn: SourceOverride(
+                component=spph1.component, section=spph1.section,
+                version=spph1.sourcepackagerelease.version, new=False)},
+            policy.calculateSourceOverrides({spn: SourceOverride()}))
+
+        # But if they're all Deleted, we use the most recent Deleted one
+        # and throw the package into NEW. Resurrections should default
+        # to the old overrides but still require manual approval.
+        with person_logged_in(person):
+            spph1.requestDeletion(person)
+        self.assertEqual(
+            {spn: SourceOverride(
+                component=spph2.component, section=spph2.section,
+                version=spph2.sourcepackagerelease.version, new=True)},
+            policy.calculateSourceOverrides({spn: SourceOverride()}))
+
     def test_primary_binaries(self):
         existing_bpn = self.factory.makeBinaryPackageName()
         other_bpn = self.factory.makeBinaryPackageName()
-        amd64_override, armhf_override = self.prepareBinaries(
+        amd64_override, armhf_override, _, _ = self.prepareBinaries(
             self.series.main_archive, existing_bpn)
         policy = self.series.main_archive.getOverridePolicy(
             self.series, PackagePublishingPocket.RELEASE)
@@ -3382,6 +3422,49 @@ class TestArchiveGetOverridePolicy(TestCaseWithFactory):
                      source_override=SourceOverride(
                          component=self.restricted)),
                 }))
+
+    def test_primary_binaries_deleted(self):
+        person = self.series.main_archive.owner
+        bpn = self.factory.makeBinaryPackageName()
+        amd64_over, armhf_over, amd64_pub, armhf_pub = self.prepareBinaries(
+            self.series.main_archive, bpn)
+        policy = self.series.main_archive.getOverridePolicy(
+            self.series, PackagePublishingPocket.RELEASE)
+
+        # The latest of the active publications for the architecture is
+        # taken.
+        self.assertEqual(
+            {(bpn, 'armhf'): BinaryOverride(
+                component=armhf_pub.component, section=armhf_pub.section,
+                priority=armhf_pub.priority,
+                version=armhf_pub.binarypackagerelease.version, new=False)},
+            policy.calculateBinaryOverrides(
+                {(bpn, 'armhf'): BinaryOverride()}))
+
+        # If there are no active publications for the architecture,
+        # another architecture's most recent active is used.
+        with person_logged_in(person):
+            armhf_pub.requestDeletion(person)
+        self.assertEqual(
+            {(bpn, 'armhf'): BinaryOverride(
+                component=amd64_pub.component, section=amd64_pub.section,
+                priority=amd64_pub.priority,
+                version=amd64_pub.binarypackagerelease.version, new=False)},
+            policy.calculateBinaryOverrides(
+                {(bpn, 'armhf'): BinaryOverride()}))
+
+        # But once there are no active publications for any
+        # architecture, a Deleted one in a matching arch is used and the
+        # package is thrown into NEW.
+        with person_logged_in(person):
+            amd64_pub.requestDeletion(person)
+        self.assertEqual(
+            {(bpn, 'armhf'): BinaryOverride(
+                component=armhf_pub.component, section=armhf_pub.section,
+                priority=armhf_pub.priority,
+                version=armhf_pub.binarypackagerelease.version, new=True)},
+            policy.calculateBinaryOverrides(
+                {(bpn, 'armhf'): BinaryOverride()}))
 
     def test_ppa_sources(self):
         ppa = self.factory.makeArchive(
@@ -3416,7 +3499,7 @@ class TestArchiveGetOverridePolicy(TestCaseWithFactory):
             purpose=ArchivePurpose.PPA)
         existing_bpn = self.factory.makeBinaryPackageName()
         other_bpn = self.factory.makeBinaryPackageName()
-        amd64_override, armhf_override = self.prepareBinaries(
+        amd64_override, armhf_override, _, _ = self.prepareBinaries(
             ppa, existing_bpn)
         policy = ppa.getOverridePolicy(
             self.series, PackagePublishingPocket.RELEASE)
@@ -3470,7 +3553,7 @@ class TestArchiveGetOverridePolicy(TestCaseWithFactory):
             purpose=ArchivePurpose.PARTNER)
         existing_bpn = self.factory.makeBinaryPackageName()
         other_bpn = self.factory.makeBinaryPackageName()
-        amd64_override, armhf_override = self.prepareBinaries(
+        amd64_override, armhf_override, _, _ = self.prepareBinaries(
             partner, existing_bpn)
         policy = partner.getOverridePolicy(
             self.series, PackagePublishingPocket.RELEASE)
@@ -3526,7 +3609,7 @@ class TestArchiveGetOverridePolicy(TestCaseWithFactory):
     def test_copy_binaries(self):
         existing_bpn = self.factory.makeBinaryPackageName()
         other_bpn = self.factory.makeBinaryPackageName()
-        amd64_override, armhf_override = self.prepareBinaries(
+        amd64_override, armhf_override, _, _ = self.prepareBinaries(
             self.series.main_archive, existing_bpn)
         copy = self.factory.makeArchive(
             distribution=self.series.distribution, purpose=ArchivePurpose.COPY)

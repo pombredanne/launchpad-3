@@ -2086,23 +2086,18 @@ class Archive(SQLBase):
             FromSourceOverridePolicy,
             UnknownOverridePolicy,
             )
-        if self.is_primary:
-            return FallbackOverridePolicy([
+        if self.is_main:
+            # If there's no matching live publication, fall back to
+            # other archs, then to matching but deleted, then to deleted
+            # on other archs, then to archive-specific defaults.
+            policies = [
                 FromExistingOverridePolicy(
                     self, distroseries, None,
-                    phased_update_percentage=phased_update_percentage,
-                    include_deleted=True),
-                FromExistingOverridePolicy(
-                    self, distroseries, None,
-                    phased_update_percentage=phased_update_percentage,
-                    include_deleted=True, any_arch=True),
-                FromSourceOverridePolicy(
                     phased_update_percentage=phased_update_percentage),
-                UnknownOverridePolicy(
-                    self, distroseries, pocket,
-                    phased_update_percentage=phased_update_percentage)])
-        elif self.is_partner:
-            return FallbackOverridePolicy([
+                FromExistingOverridePolicy(
+                    self, distroseries, None,
+                    phased_update_percentage=phased_update_percentage,
+                    any_arch=True),
                 FromExistingOverridePolicy(
                     self, distroseries, None,
                     phased_update_percentage=phased_update_percentage,
@@ -2110,11 +2105,21 @@ class Archive(SQLBase):
                 FromExistingOverridePolicy(
                     self, distroseries, None,
                     phased_update_percentage=phased_update_percentage,
-                    include_deleted=True, any_arch=True),
-                ConstantOverridePolicy(
-                    component=getUtility(IComponentSet)['partner'],
-                    phased_update_percentage=phased_update_percentage,
-                    new=True)])
+                    include_deleted=True, any_arch=True)]
+            if self.is_primary:
+                policies.extend([
+                    FromSourceOverridePolicy(
+                        phased_update_percentage=phased_update_percentage),
+                    UnknownOverridePolicy(
+                        self, distroseries, pocket,
+                        phased_update_percentage=phased_update_percentage)])
+            elif self.is_partner:
+                policies.append(
+                    ConstantOverridePolicy(
+                        component=getUtility(IComponentSet)['partner'],
+                        phased_update_percentage=phased_update_percentage,
+                        new=True))
+            return FallbackOverridePolicy(policies)
         elif self.is_ppa:
             return ConstantOverridePolicy(
                 component=getUtility(IComponentSet)['main'])
