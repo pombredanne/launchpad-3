@@ -17,6 +17,7 @@ __all__ = [
 
 from collections import defaultdict
 from datetime import datetime
+import hashlib
 from operator import attrgetter
 import os
 import re
@@ -310,10 +311,18 @@ class ArchivePublisherBase:
         else:
             self.setPublished()
 
-    def getIndexStanza(self):
+    def getIndexStanza(self, separate_long_descriptions=False):
         """See `IPublishing`."""
-        fields = self.buildIndexStanzaFields()
+        fields = self.buildIndexStanzaFields(separate_long_descriptions)
         return fields.makeOutput()
+
+    def getTranslationsStanza(self, packages):
+        """See `IPublishing`."""
+        fields = self.buildTranslationsStanzaFields(packages)
+        if fields is None:
+            return None
+        else:
+            return fields.makeOutput()
 
     def setSuperseded(self):
         """Set to SUPERSEDED status."""
@@ -699,7 +708,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     def _formatFileList(self, l):
         return ''.join('\n %s %s %s' % ((h,) + f) for (h, f) in l)
 
-    def buildIndexStanzaFields(self):
+    def buildIndexStanzaFields(self, separate_long_descriptions):
         """See `IPublishing`."""
         # Special fields preparation.
         spr = self.sourcepackagerelease
@@ -991,7 +1000,20 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         else:
             super(BinaryPackagePublishingHistory, self).publish(diskpool, log)
 
-    def buildIndexStanzaFields(self):
+    def _getFormattedDescription(self, summary, description):
+        # description field in index is an association of summary and
+        # description or the summary only if include_long_descriptions
+        # is false, as:
+        #
+        # Descrition: <SUMMARY>\n
+        #  <DESCRIPTION L1>
+        #  ...
+        #  <DESCRIPTION LN>
+        descr_lines = [line.lstrip() for line in description.splitlines()]
+        bin_description = '%s\n %s' % (summary, '\n '.join(descr_lines))
+        return bin_description
+
+    def buildIndexStanzaFields(self, separate_long_descriptions=False):
         """See `IPublishing`."""
         bpr = self.binarypackagerelease
         spr = bpr.build.source_package_release
@@ -1005,15 +1027,15 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         bin_sha256 = bin_file.libraryfile.content.sha256
         bin_filepath = os.path.join(
             makePoolPath(spr.name, self.component.name), bin_filename)
-        # description field in index is an association of summary and
-        # description, as:
-        #
-        # Descrition: <SUMMARY>\n
-        #  <DESCRIPTION L1>
-        #  ...
-        #  <DESCRIPTION LN>
-        descr_lines = [line.lstrip() for line in bpr.description.splitlines()]
-        bin_description = '%s\n %s' % (bpr.summary, '\n '.join(descr_lines))
+        description = self._getFormattedDescription(
+            bpr.summary, bpr.description)
+        bin_description_md5 = hashlib.md5(description).hexdigest()
+        if separate_long_descriptions:
+            # If distroseries.include_long_descriptions is False, the
+            # description should be the summary
+            bin_description = bpr.summary
+        else:
+            bin_description = description
 
         # Dealing with architecturespecific field.
         # Present 'all' in every archive index for architecture
@@ -1060,6 +1082,8 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         fields.append(
             'Phased-Update-Percentage', self.phased_update_percentage)
         fields.append('Description', bin_description)
+        if separate_long_descriptions:
+            fields.append('Description-md5', bin_description_md5)
         if bpr.user_defined_fields:
             fields.extend(bpr.user_defined_fields)
 
@@ -1068,6 +1092,24 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         # When we have the information this will be the place to fill them.
 
         return fields
+
+    def buildTranslationsStanzaFields(self, packages):
+        """See `IPublishing`."""
+        bpr = self.binarypackagerelease
+
+        bin_description = self._getFormattedDescription(
+            bpr.summary, bpr.description)
+        bin_description_md5 = hashlib.md5(bin_description).hexdigest()
+        if (bpr.name, bin_description_md5) not in packages:
+            fields = IndexStanzaFields()
+            fields.append('Package', bpr.name)
+            fields.append('Description-md5', bin_description_md5)
+            fields.append('Description-en', bin_description)
+            packages.add((bpr.name, bin_description_md5))
+
+            return fields
+        else:
+            return None
 
     def _getOtherPublications(self):
         """Return remaining publications with the same overrides.
