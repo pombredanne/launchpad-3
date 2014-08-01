@@ -1328,7 +1328,7 @@ class TestPublisher(TestPublisherBase):
              'SHA256: 006ca0f356f54b1916c24c282e6fd19961f4356441401f4b0966f2a'
              '00bb3e945',
              'Description: Foo app is great',
-             'Description-md5: 6f43b8a2c247729beb1a59e5c336ffe2',
+             'Description-md5: 42d89d502e81dad6d3d4a2f85fdc6c6e',
              ''],
             index_contents)
 
@@ -1361,7 +1361,7 @@ class TestPublisher(TestPublisherBase):
              'SHA256: 006ca0f356f54b1916c24c282e6fd19961f4356441401f4b0966f2a'
              '00bb3e945',
              'Description: Foo app is great',
-             'Description-md5: f98d4e4b123ac43e12f6848e15b67246',
+             'Description-md5: 6fecedf187298acb6bc5f15cc5807fb7',
              ''],
             index_contents)
 
@@ -1392,7 +1392,7 @@ class TestPublisher(TestPublisherBase):
              'SHA256: 006ca0f356f54b1916c24c282e6fd19961f4356441401f4b0966f2a'
              '00bb3e945',
              'Description: Foo app is great',
-             'Description-md5: 6f43b8a2c247729beb1a59e5c336ffe2',
+             'Description-md5: 42d89d502e81dad6d3d4a2f85fdc6c6e',
              ''],
             index_contents)
 
@@ -1413,19 +1413,19 @@ class TestPublisher(TestPublisherBase):
 
         self.assertEqual(
             ['Package: bingo',
-             'Description-md5: f98d4e4b123ac43e12f6848e15b67246',
+             'Description-md5: 6fecedf187298acb6bc5f15cc5807fb7',
              'Description-en: Foo app is great',
              ' nice udeb',
              '',
              'Package: foo-bin',
-             'Description-md5: 6f43b8a2c247729beb1a59e5c336ffe2',
+             'Description-md5: 42d89d502e81dad6d3d4a2f85fdc6c6e',
              'Description-en: Foo app is great',
              ' My leading spaces are normalised to a single space but not '
              'trailing.  ',
              ' It does nothing, though',
              '',
              'Package: foo-bin-dbgsym',
-             'Description-md5: 6f43b8a2c247729beb1a59e5c336ffe2',
+             'Description-md5: 42d89d502e81dad6d3d4a2f85fdc6c6e',
              'Description-en: Foo app is great',
              ' My leading spaces are normalised to a single space but not '
              'trailing.  ',
