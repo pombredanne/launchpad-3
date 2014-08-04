@@ -63,6 +63,7 @@ from lp.registry.enums import (
     )
 from lp.registry.errors import NoSuchDistroSeries
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
+from lp.registry.interfaces.distroseriesparent import IDistroSeriesParentSet
 from lp.registry.interfaces.person import (
     IPersonSet,
     validate_person,
@@ -2115,6 +2116,19 @@ class Archive(SQLBase):
                 self, distroseries, None,
                 phased_update_percentage=phased_update_percentage)
             if self.is_primary:
+                # If there are any parent relationships with
+                # inherit_overrides set, run through those before using
+                # defaults.
+                parents = [
+                    dsp.parent_series for dsp in
+                    getUtility(IDistroSeriesParentSet).getByDerivedSeries(
+                        distroseries)
+                    if dsp.inherit_overrides]
+                for parent in parents:
+                    policies.extend(self._getExistingOverrideSequence(
+                        parent.main_archive, parent, None,
+                        phased_update_percentage=phased_update_percentage))
+
                 policies.extend([
                     FromSourceOverridePolicy(
                         phased_update_percentage=phased_update_percentage),
