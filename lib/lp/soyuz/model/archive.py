@@ -2075,6 +2075,28 @@ class Archive(SQLBase):
         # understandiung EnumItems.
         return list(PackagePublishingPocket.items)
 
+    def _getExistingOverrideSequence(self, archive, distroseries, pocket,
+                                     phased_update_percentage):
+        from lp.soyuz.adapters.overrides import (
+            FromExistingOverridePolicy,
+            )
+        return [
+            FromExistingOverridePolicy(
+                archive, distroseries, None,
+                phased_update_percentage=phased_update_percentage),
+            FromExistingOverridePolicy(
+                archive, distroseries, None,
+                phased_update_percentage=phased_update_percentage,
+                any_arch=True),
+            FromExistingOverridePolicy(
+                archive, distroseries, None,
+                phased_update_percentage=phased_update_percentage,
+                include_deleted=True),
+            FromExistingOverridePolicy(
+                archive, distroseries, None,
+                phased_update_percentage=phased_update_percentage,
+                include_deleted=True, any_arch=True)]
+
     def getOverridePolicy(self, distroseries, pocket,
                           phased_update_percentage=None):
         """See `IArchive`."""
@@ -2082,7 +2104,6 @@ class Archive(SQLBase):
         from lp.soyuz.adapters.overrides import (
             ConstantOverridePolicy,
             FallbackOverridePolicy,
-            FromExistingOverridePolicy,
             FromSourceOverridePolicy,
             UnknownOverridePolicy,
             )
@@ -2090,22 +2111,9 @@ class Archive(SQLBase):
             # If there's no matching live publication, fall back to
             # other archs, then to matching but deleted, then to deleted
             # on other archs, then to archive-specific defaults.
-            policies = [
-                FromExistingOverridePolicy(
-                    self, distroseries, None,
-                    phased_update_percentage=phased_update_percentage),
-                FromExistingOverridePolicy(
-                    self, distroseries, None,
-                    phased_update_percentage=phased_update_percentage,
-                    any_arch=True),
-                FromExistingOverridePolicy(
-                    self, distroseries, None,
-                    phased_update_percentage=phased_update_percentage,
-                    include_deleted=True),
-                FromExistingOverridePolicy(
-                    self, distroseries, None,
-                    phased_update_percentage=phased_update_percentage,
-                    include_deleted=True, any_arch=True)]
+            policies = self._getExistingOverrideSequence(
+                self, distroseries, None,
+                phased_update_percentage=phased_update_percentage)
             if self.is_primary:
                 policies.extend([
                     FromSourceOverridePolicy(
