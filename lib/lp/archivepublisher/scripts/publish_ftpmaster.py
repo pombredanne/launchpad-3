@@ -315,7 +315,7 @@ class PublishFTPMaster(LaunchpadCronScript):
         self.logger.debug(
             "Processing the accepted queue into the publishing records...")
         script = ProcessAccepted(
-            test_args=[distribution.name], logger=self.logger)
+            test_args=["-d", distribution.name], logger=self.logger)
         script.txn = self.txn
         script.main()
 
