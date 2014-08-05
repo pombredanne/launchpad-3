@@ -20,13 +20,9 @@ from zope.component import getUtility
 from zope.security.management import getSecurityPolicy
 
 from lp.archivepublisher.publishing import GLOBAL_PUBLISHER_LOCK
+from lp.archivepublisher.scripts.base import PublisherScript
 from lp.archiveuploader.tagfiles import parse_tagfile_content
-from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.services.scripts.base import (
-    LaunchpadCronScript,
-    LaunchpadScriptFailure,
-    )
 from lp.services.webapp.authorization import LaunchpadPermissiveSecurityPolicy
 from lp.services.webapp.errorlog import (
     ErrorReportingUtility,
@@ -251,7 +247,7 @@ class DistroTargetPolicy(TargetPolicy):
             close_bugs_for_queue_item(queue_item)
 
 
-class ProcessAccepted(LaunchpadCronScript):
+class ProcessAccepted(PublisherScript):
     """Queue/Accepted processor.
 
     Given a distribution to run on, obtains all the queue items for the
@@ -266,9 +262,7 @@ class ProcessAccepted(LaunchpadCronScript):
 
     def add_my_options(self):
         """Command line options for this script."""
-        self.parser.add_option(
-            '-D', '--derived', action="store_true", dest="derived",
-            default=False, help="Process all Ubuntu-derived distributions.")
+        self.addDistroOptions()
 
         self.parser.add_option(
             "--ppa", action="store_true", dest="ppa", default=False,
@@ -278,36 +272,14 @@ class ProcessAccepted(LaunchpadCronScript):
             "--copy-archives", action="store_true", dest="copy_archives",
             default=False, help="Run only over COPY archives.")
 
-    def findNamedDistro(self, distro_name):
-        """Find the `Distribution` called `distro_name`."""
-        self.logger.debug("Finding distribution %s.", distro_name)
-        distro = getUtility(IDistributionSet).getByName(distro_name)
-        if distro is None:
-            raise LaunchpadScriptFailure(
-                "Distribution '%s' not found." % distro_name)
-        return distro
-
-    def findTargetDistros(self):
-        """Find the distribution(s) to process, based on arguments."""
-        if self.options.derived:
-            return getUtility(IDistributionSet).getDerivedDistributions()
-        else:
-            return [self.findNamedDistro(self.args[0])]
-
     def validateArguments(self):
         """Validate command-line arguments."""
         if self.options.ppa and self.options.copy_archives:
             raise OptionValueError(
                 "Specify only one of copy archives or ppa archives.")
-        if self.options.derived:
-            if len(self.args) != 0:
-                raise OptionValueError(
-                    "Can't combine --derived with a distribution name.")
-        else:
-            if len(self.args) != 1:
-                raise OptionValueError(
-                    "Need to be given exactly one non-option argument. "
-                    "Namely the distribution to process.")
+        if self.options.all_derived and self.options.distribution:
+            raise OptionValueError(
+                "Can't combine --derived with a distribution name.")
 
     def makeTargetPolicy(self):
         """Pick and instantiate a `TargetPolicy` based on given options."""
@@ -376,7 +348,7 @@ class ProcessAccepted(LaunchpadCronScript):
         self.validateArguments()
         target_policy = self.makeTargetPolicy()
         try:
-            for distro in self.findTargetDistros():
+            for distro in self.findDistros():
                 queue_ids = self.processForDistro(distro, target_policy)
                 self.txn.commit()
                 target_policy.postprocessSuccesses(queue_ids)
