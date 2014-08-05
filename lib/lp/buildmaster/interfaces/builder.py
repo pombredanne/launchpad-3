@@ -139,7 +139,7 @@ class IBuilderView(IHasBuildRecords, IHasOwner):
 
     name = exported(TextLine(
         title=_('Name'), required=True, constraint=name_validator,
-        description=_('Builder Slave Name used for reference proposes')))
+        description=_('Builder Slave Name used for reference purposes')))
 
     title = exported(Title(
         title=_('Title'), required=True,
