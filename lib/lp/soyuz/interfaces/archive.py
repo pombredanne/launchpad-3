@@ -55,7 +55,9 @@ from urlparse import urlparse
 from lazr.enum import DBEnumeratedType
 from lazr.restful.declarations import (
     call_with,
+    collection_default_content,
     error_status,
+    export_as_webservice_collection,
     export_as_webservice_entry,
     export_factory_operation,
     export_operation_as,
@@ -2035,7 +2037,13 @@ class IArchiveEditDependenciesForm(Interface):
 class IArchiveSet(Interface):
     """Interface for ArchiveSet"""
 
+    export_as_webservice_collection(IArchive)
+
     title = Attribute('Title')
+
+    @collection_default_content()
+    def empty_list():
+        """There is no default content, but lazr.restful needs some anyway."""
 
     def new(purpose, owner, name=None, displayname=None, distribution=None,
             description=None, enabled=True, require_virtualized=True,
@@ -2072,6 +2080,13 @@ class IArchiveSet(Interface):
     def get(archive_id):
         """Return the IArchive with the given archive_id."""
 
+    @call_with(check_permissions=True, user=REQUEST_USER)
+    @operation_parameters(
+        reference=TextLine(
+            title=_("Archive reference string"), required=True))
+    @operation_returns_entry(schema=IArchive)
+    @export_read_operation()
+    @operation_for_version('devel')
     def getByReference(reference, check_permissions=False, user=None):
         """Return the IArchive with the given archive reference."""
 

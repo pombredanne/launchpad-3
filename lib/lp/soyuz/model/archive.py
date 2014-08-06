@@ -2615,6 +2615,10 @@ class ArchiveSet:
 
         return results.order_by(SourcePackagePublishingHistory.id)
 
+    def empty_list(self):
+        """See `IArchiveSet."""
+        return []
+
 
 def get_archive_privacy_filter(user):
     if user is None:
