@@ -1011,6 +1011,38 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
             "File bar_1.0.orig.tar.gz already exists in unicode PPA name: "
             "áří" in body)
 
+    def testErrorMessagesWithArchiveDisplayNameUnicodeArchiveDisabled(self):
+        """Check that unicode errors messages are handled correctly.
+
+        Some error messages can contain the PPA display name, which may
+        sometimes contain unicode characters. We need to show proper errors
+        when a disabled PPA with a unicode display name gets an upload.
+        """
+        # Ensure the displayname of the PPA has got unicode in it.
+        self.name16.archive.displayname = u"unicode PPA name: áří"
+        self.name16.archive.disable()
+        # Upload to disabled archive.
+        upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
+        self.processUpload(self.uploadprocessor, upload_dir)
+
+        # The email generated should be sane.
+        from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+        msg = message_from_string(raw_msg)
+        body = msg.get_payload(0)
+        body = body.get_payload(decode=True)
+
+        self.assertTrue(
+            "Rejected:\n"
+            "Launchpad failed to process the upload path '~name16/ubuntu':\n\n"
+            "unicode PPA name: áří is disabled.\n\n"
+            "It is likely that you have a configuration problem with "
+            "dput/dupload.\n"
+            "Please check the documentation at "
+            "https://help.launchpad.net/Packaging/PPA#Uploading and update "
+            "your configuration.\n\n"
+            "Further error processing not possible because of a critical "
+            "previous error." in body)
+
     def testPPAConflictingOrigFiles(self):
         """When available, the official 'orig.tar.gz' restricts PPA uploads.
 
