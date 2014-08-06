@@ -14,7 +14,6 @@ from lp.registry.interfaces.series import SeriesStatus
 from lp.services.config import config
 from lp.services.database.interfaces import IStore
 from lp.services.log.logger import BufferLogger
-from lp.services.scripts.base import LaunchpadScriptFailure
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
@@ -48,7 +47,7 @@ class TestProcessAccepted(TestCaseWithFactory):
         """Return a ProcessAccepted instance."""
         if test_args is None:
             test_args = []
-        test_args.append(self.distro.name)
+        test_args.extend(['-d', self.distro.name])
         script = ProcessAccepted("process accepted", test_args=test_args)
         script.logger = BufferLogger()
         script.txn = self.layer.txn
@@ -179,37 +178,16 @@ class TestProcessAccepted(TestCaseWithFactory):
         self.assertEqual(
             upload, IStore(PackageUpload).get(PackageUpload, upload_id))
 
-    def test_validateArguments_requires_distro_by_default(self):
-        self.assertRaises(
-            OptionValueError, ProcessAccepted(test_args=[]).validateArguments)
-
     def test_validateArguments_requires_no_distro_for_derived_run(self):
-        ProcessAccepted(test_args=['--derived']).validateArguments()
+        ProcessAccepted(test_args=['--all-derived']).validateArguments()
         # The test is that this does not raise an exception.
         pass
 
     def test_validateArguments_does_not_accept_distro_for_derived_run(self):
         distro = self.factory.makeDistribution()
-        script = ProcessAccepted(test_args=['--derived', distro.name])
+        script = ProcessAccepted(
+            test_args=['--all-derived', '-d', distro.name])
         self.assertRaises(OptionValueError, script.validateArguments)
-
-    def test_findTargetDistros_finds_named_distro(self):
-        distro = self.factory.makeDistribution()
-        script = ProcessAccepted(test_args=[distro.name])
-        self.assertContentEqual([distro], script.findTargetDistros())
-
-    def test_findNamedDistro_raises_error_if_not_found(self):
-        nonexistent_distro = self.factory.getUniqueString()
-        script = ProcessAccepted(test_args=[nonexistent_distro])
-        self.assertRaises(
-            LaunchpadScriptFailure,
-            script.findNamedDistro, nonexistent_distro)
-
-    def test_findTargetDistros_for_derived_finds_derived_distro(self):
-        dsp = self.factory.makeDistroSeriesParent()
-        script = ProcessAccepted(test_args=['--derived'])
-        self.assertIn(
-            dsp.derived_series.distribution, script.findTargetDistros())
 
 
 class TestBugIDsFromChangesFile(TestCaseWithFactory):

@@ -3497,6 +3497,27 @@ class TestArchiveGetOverridePolicy(TestCaseWithFactory):
             policy.calculateBinaryOverrides(
                 {(bpn, 'armhf'): BinaryOverride()}))
 
+    def test_primary_inherit_from_parent(self):
+        dsp = self.factory.makeDistroSeriesParent(inherit_overrides=False)
+        child = dsp.derived_series
+        parent = dsp.parent_series
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            archive=parent.main_archive, distroseries=parent)
+
+        overrides = child.main_archive.getOverridePolicy(
+            child, None).calculateSourceOverrides(
+                {spph.sourcepackagename: SourceOverride()})
+        self.assertNotEqual(
+            spph.component, overrides[spph.sourcepackagename].component)
+
+        with admin_logged_in():
+            child.inherit_overrides_from_parents = True
+        overrides = child.main_archive.getOverridePolicy(
+            child, None).calculateSourceOverrides(
+                {spph.sourcepackagename: SourceOverride()})
+        self.assertEqual(
+            spph.component, overrides[spph.sourcepackagename].component)
+
     def test_ppa_sources(self):
         ppa = self.factory.makeArchive(
             distribution=self.series.distribution,

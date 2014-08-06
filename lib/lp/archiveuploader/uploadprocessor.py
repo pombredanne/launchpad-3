@@ -351,7 +351,7 @@ class UploadHandler:
             # will break nascentupload ACL calculations.
             archive = distribution.getAllPPAs()[0]
             upload_path_error = UPLOAD_PATH_ERROR_TEMPLATE % (
-                dict(upload_path=relative_path, path_error=str(e),
+                dict(upload_path=relative_path, path_error=e.args[0],
                      extra_info=(
                          "Please check the documentation at "
                          "https://help.launchpad.net/Packaging/PPA#Uploading "
