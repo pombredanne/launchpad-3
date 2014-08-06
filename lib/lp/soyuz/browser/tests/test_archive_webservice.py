@@ -27,7 +27,7 @@ from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
 from lp.soyuz.model.archivepermission import ArchivePermission
 from lp.testing import (
-    celebrity_logged_in,
+    admin_logged_in,
     launchpadlib_for,
     person_logged_in,
     record_two_runs,
@@ -36,6 +36,10 @@ from lp.testing import (
     )
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import HasQueryCount
+from lp.testing.pages import (
+    LaunchpadWebServiceCaller,
+    webservice_for_person,
+    )
 
 
 class TestArchiveWebservice(TestCaseWithFactory):
@@ -43,7 +47,7 @@ class TestArchiveWebservice(TestCaseWithFactory):
 
     def setUp(self):
         super(TestArchiveWebservice, self).setUp()
-        with celebrity_logged_in('admin'):
+        with admin_logged_in():
             self.archive = self.factory.makeArchive(
                 purpose=ArchivePurpose.PRIMARY)
             distroseries = self.factory.makeDistroSeries(
@@ -88,7 +92,7 @@ class TestArchiveWebservice(TestCaseWithFactory):
         # getAllPermissions has a query count constant in the number of
         # permissions and people.
         def create_permission():
-            with celebrity_logged_in('admin'):
+            with admin_logged_in():
                 ArchivePermission(
                     archive=self.archive, person=self.factory.makePerson(),
                     component=getUtility(IComponentSet)["main"],
@@ -440,3 +444,46 @@ class TestremoveCopyNotification(WebServiceTestCase):
         source = getUtility(IPlainPackageCopyJobSource)
         self.assertEqual(
             None, source.getIncompleteJobsForArchive(self.archive).any())
+
+
+class TestArchiveSet(TestCaseWithFactory):
+    """Test ArchiveSet.getByReference."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_getByReference(self):
+        body = LaunchpadWebServiceCaller('consumer', '').named_get(
+            '/archives', 'getByReference', reference='ubuntu',
+            api_version='devel').jsonBody()
+        self.assertEqual(body['reference'], 'ubuntu')
+
+    def test_getByReference_ppa(self):
+        body = LaunchpadWebServiceCaller('consumer', '').named_get(
+            '/archives', 'getByReference', reference='~cprov/ubuntu/ppa',
+            api_version='devel').jsonBody()
+        self.assertEqual(body['reference'], '~cprov/ubuntu/ppa')
+
+    def test_getByReference_invalid(self):
+        body = LaunchpadWebServiceCaller('consumer', '').named_get(
+            '/archives', 'getByReference', reference='~cprov/ubuntu',
+            api_version='devel').jsonBody()
+        self.assertIs(None, body)
+
+    def test_getByReference_private(self):
+        with admin_logged_in():
+            archive = self.factory.makeArchive(private=True)
+            owner = archive.owner
+            reference = archive.reference
+            random = self.factory.makePerson()
+        body = LaunchpadWebServiceCaller('consumer', '').named_get(
+            '/archives', 'getByReference', reference=reference,
+            api_version='devel').jsonBody()
+        self.assertIs(None, body)
+        body = webservice_for_person(random).named_get(
+            '/archives', 'getByReference', reference=reference,
+            api_version='devel').jsonBody()
+        self.assertIs(None, body)
+        body = webservice_for_person(owner).named_get(
+            '/archives', 'getByReference', reference=reference,
+            api_version='devel').jsonBody()
+        self.assertEqual(body['reference'], reference)

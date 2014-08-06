@@ -36,7 +36,10 @@ from storm.locals import (
     Join,
     )
 from storm.store import Store
-from zope.component import getUtility
+from zope.component import (
+    getAdapter,
+    getUtility,
+    )
 from zope.event import notify
 from zope.interface import (
     alsoProvides,
@@ -45,6 +48,7 @@ from zope.interface import (
 
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.security import IAuthorization
 from lp.app.validators.name import valid_name
 from lp.archivepublisher.debversion import Version
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
@@ -2214,7 +2218,7 @@ class ArchiveSet:
         """See `IArchiveSet`."""
         return Archive.get(archive_id)
 
-    def getByReference(self, reference):
+    def getByReference(self, reference, check_permissions=False, user=None):
         """See `IArchiveSet`."""
         from lp.registry.interfaces.distribution import IDistributionSet
 
@@ -2231,7 +2235,7 @@ class ArchiveSet:
             distro = getUtility(IDistributionSet).getByName(bits[1])
             if distro is None:
                 return None
-            return self.getPPAOwnedByPerson(
+            archive = self.getPPAOwnedByPerson(
                 person, distribution=distro, name=bits[2])
         else:
             # Official archive reference (DISTRO or DISTRO/ARCHIVE)
@@ -2239,11 +2243,19 @@ class ArchiveSet:
             if distro is None:
                 return None
             if len(bits) == 1:
-                return distro.main_archive
+                archive = distro.main_archive
             elif len(bits) == 2:
-                return self.getByDistroAndName(distro, bits[1])
+                archive = self.getByDistroAndName(distro, bits[1])
             else:
                 return None
+        if not check_permissions:
+            return archive
+        authz = getAdapter(archive, IAuthorization, 'launchpad.SubscriberView')
+        if ((user is None and authz.checkUnauthenticated()) or
+            (user is not None and authz.checkAuthenticated(
+                IPersonRoles(user)))):
+            return archive
+        return None
 
     def getPPAByDistributionAndOwnerName(self, distribution, person_name,
                                          ppa_name):
@@ -2602,6 +2614,10 @@ class ArchiveSet:
             )
 
         return results.order_by(SourcePackagePublishingHistory.id)
+
+    def empty_list(self):
+        """See `IArchiveSet."""
+        return []
 
 
 def get_archive_privacy_filter(user):
