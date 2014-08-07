@@ -452,7 +452,12 @@ class TestArchiveSet(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_getByReference(self):
+        random = self.factory.makePerson()
         body = LaunchpadWebServiceCaller('consumer', '').named_get(
+            '/archives', 'getByReference', reference='ubuntu',
+            api_version='devel').jsonBody()
+        self.assertEqual(body['reference'], 'ubuntu')
+        body = webservice_for_person(random).named_get(
             '/archives', 'getByReference', reference='ubuntu',
             api_version='devel').jsonBody()
         self.assertEqual(body['reference'], 'ubuntu')
