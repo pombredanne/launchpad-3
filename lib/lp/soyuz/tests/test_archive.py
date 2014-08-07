@@ -3203,6 +3203,24 @@ class TestArchiveSetGetByReference(TestCaseWithFactory):
                 public.reference, check_permissions=True,
                 user=self.factory.makePerson()))
 
+    def assertLookupFails(self, reference):
+        self.assertIs(
+            None,
+            getUtility(IArchiveSet).getByReference(
+                reference, check_permissions=True))
+
+    def test_check_permissions_nonexistent(self):
+        self.assertLookupFails('')
+        self.assertLookupFails('enoent')
+        self.assertLookupFails('ubuntu/enoent')
+        self.assertLookupFails('ubuntu/partner/enoent')
+        self.assertLookupFails('~enoent/ubuntu/ppa')
+        self.assertLookupFails('~cprov/enoent/ppa')
+        self.assertLookupFails('~cprov/ubuntu/enoent')
+        self.assertLookupFails('~enoent/twonoent')
+        self.assertLookupFails('~enoent/twonoent/threenoent')
+        self.assertLookupFails('~enoent/twonoent/threenoent/fournoent')
+
 
 class TestDisplayName(TestCaseWithFactory):
 
