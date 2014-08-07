@@ -3162,6 +3162,47 @@ class TestArchiveSetGetByReference(TestCaseWithFactory):
             getUtility(IArchiveSet).getByReference(
                 'that/does/not/make/sense'))
 
+    def test_check_permissions_private(self):
+        private_owner = self.factory.makeTeam(
+            visibility=PersonVisibility.PRIVATE)
+        private = self.factory.makeArchive(owner=private_owner, private=True)
+        with admin_logged_in():
+            private_reference = private.reference
+        self.assertEqual(
+            private,
+            getUtility(IArchiveSet).getByReference(
+                private_reference, check_permissions=False))
+        self.assertIs(
+            None,
+            getUtility(IArchiveSet).getByReference(
+                private_reference, check_permissions=True))
+        self.assertEqual(
+            private,
+            getUtility(IArchiveSet).getByReference(
+                private_reference, check_permissions=True,
+                user=private_owner))
+        self.assertIs(
+            None,
+            getUtility(IArchiveSet).getByReference(
+                private_reference, check_permissions=True,
+                user=self.factory.makePerson()))
+
+    def test_check_permissions_public(self):
+        public = self.factory.makeArchive(private=False)
+        self.assertEqual(
+            public,
+            getUtility(IArchiveSet).getByReference(
+                public.reference, check_permissions=False))
+        self.assertEqual(
+            public,
+            getUtility(IArchiveSet).getByReference(
+                public.reference, check_permissions=True))
+        self.assertEqual(
+            public,
+            getUtility(IArchiveSet).getByReference(
+                public.reference, check_permissions=True,
+                user=self.factory.makePerson()))
+
 
 class TestDisplayName(TestCaseWithFactory):
 

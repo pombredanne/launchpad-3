@@ -208,6 +208,11 @@
             name="+portlet-details"
             template="../templates/distroarchseriesbinarypackagerelease-portlet-details.pt"/>
     </browser:pages>
+    <browser:url
+        for="lp.soyuz.interfaces.archive.IArchiveSet"
+        path_expression="string:archives"
+        parent_utility="lp.services.webapp.interfaces.ILaunchpadRoot"
+        />
     <browser:defaultView
         for="lp.soyuz.interfaces.archive.IArchive"
         name="+index"/>
