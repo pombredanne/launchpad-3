@@ -45,6 +45,7 @@ from zope.interface import (
     alsoProvides,
     implements,
     )
+from zope.security.proxy import removeSecurityProxy
 
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
@@ -2250,7 +2251,9 @@ class ArchiveSet:
                 return None
         if not check_permissions:
             return archive
-        authz = getAdapter(archive, IAuthorization, 'launchpad.SubscriberView')
+        authz = getAdapter(
+            removeSecurityProxy(archive), IAuthorization,
+            'launchpad.SubscriberView')
         if ((user is None and authz.checkUnauthenticated()) or
             (user is not None and authz.checkAuthenticated(
                 IPersonRoles(user)))):
