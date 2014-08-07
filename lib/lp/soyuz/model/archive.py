@@ -2249,7 +2249,7 @@ class ArchiveSet:
                 archive = self.getByDistroAndName(distro, bits[1])
             else:
                 return None
-        if not check_permissions:
+        if archive is None or not check_permissions:
             return archive
         authz = getAdapter(
             removeSecurityProxy(archive), IAuthorization,
