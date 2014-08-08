@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database class for table Archive."""
@@ -1071,7 +1071,13 @@ class Archive(SQLBase):
                 raise ArchiveDependencyError(
                     "Non-primary archives only support the '%s' component." %
                     dependency.default_component.name)
+        if dependency.distribution != self.distribution:
+            raise ArchiveDependencyError(
+                "This dependency uses a different archive.")
 
+        if not dependency.enabled:
+            raise ArchiveDependencyError(
+                "This dependency is not active.")
         return ArchiveDependency(
             archive=self, dependency=dependency, pocket=pocket,
             component=component)

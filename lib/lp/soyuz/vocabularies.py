@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the GNU
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the GNU
 # Affero General Public License version 3 (see the file LICENSE).
 
 """Soyuz vocabularies."""
@@ -20,6 +20,7 @@ from storm.locals import (
 from zope.component import getUtility
 from zope.interface import implements
 from zope.schema.vocabulary import SimpleTerm
+from zope.security.interfaces import Unauthorized
 
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.person import Person
@@ -32,6 +33,7 @@ from lp.services.webapp.vocabulary import (
     SQLObjectVocabularyBase,
     )
 from lp.soyuz.enums import ArchivePurpose
+from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.component import Component
 from lp.soyuz.model.distroarchseries import DistroArchSeries
@@ -88,6 +90,7 @@ class PPAVocabulary(SQLObjectVocabularyBase):
     _orderBy = ['Person.name, Archive.name']
     _clauseTables = ['Person']
     _filter = And(
+        Archive._enabled == True,
         Person.q.id == Archive.q.ownerID,
         Archive.q.purpose == ArchivePurpose.PPA)
     displayname = 'Select a PPA'
@@ -95,35 +98,33 @@ class PPAVocabulary(SQLObjectVocabularyBase):
 
     def toTerm(self, archive):
         """See `IVocabulary`."""
-        description = archive.description
-        if description:
-            summary = description.splitlines()[0]
-        else:
-            summary = "No description available"
+        try:
+            description = archive.description
+            if description:
+                summary = description.splitlines()[0]
+            else:
+                summary = "No description available"
+        except Unauthorized:
+            summary = None
 
-        token = '%s/%s' % (archive.owner.name, archive.name)
+        token = archive.reference
 
         return SimpleTerm(archive, token, summary)
 
     def getTermByToken(self, token):
         """See `IVocabularyTokenized`."""
         try:
-            owner_name, archive_name = token.split('/')
+            owner_name, distro_name, archive_name = token.split('/')
         except ValueError:
             raise LookupError(token)
 
-        clause = And(
-            self._filter,
-            Person.name == owner_name,
-            Archive.name == archive_name)
-
-        obj = self._table.selectOne(
-            clause, clauseTables=self._clauseTables)
-
+        obj = getUtility(IArchiveSet).getByReference(token)
         if obj is None:
-            raise LookupError(token)
-        else:
+            return LookupError(token)
+        elif obj.enabled:
             return self.toTerm(obj)
+        else:
+            raise LookupError(token)
 
     def search(self, query, vocab_filter=None):
         """Return a resultset of archives.
@@ -135,8 +136,14 @@ class PPAVocabulary(SQLObjectVocabularyBase):
 
         query = query.lower()
 
+        if query.startswith('~'):
+            query = query.strip('~')
         try:
-            owner_name, archive_name = query.split('/')
+            query_split = query.split('/')
+            if len(query_split) == 3:
+                owner_name, distro_name, archive_name = query_split
+            else:
+                owner_name, archive_name = query_split
         except ValueError:
             clause = And(
                 self._filter,
