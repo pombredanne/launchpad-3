@@ -39,7 +39,6 @@ from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.processacceptedbugsjob import (
     IProcessAcceptedBugsJobSource,
     )
-from lp.soyuz.interfaces.queue import IPackageUploadSet
 from lp.soyuz.model.processacceptedbugsjob import (
     close_bug_ids_for_sourcepackagerelease,
     )
@@ -181,42 +180,6 @@ def close_bugs_for_sourcepackagerelease(distroseries, source_release,
         job_source.create(distroseries, source_release, bug_ids_to_close)
 
 
-class TargetPolicy:
-    """Policy describing what kinds of archives to operate on."""
-
-    def __init__(self, logger):
-        self.logger = logger
-
-    def getTargetArchives(self, distribution):
-        """Get target archives of the right sort for `distribution`."""
-        raise NotImplemented("getTargetArchives")
-
-
-class PPATargetPolicy(TargetPolicy):
-    """Target policy for PPA archives."""
-
-    def getTargetArchives(self, distribution):
-        """See `TargetPolicy`."""
-        return distribution.getPendingAcceptancePPAs()
-
-
-class CopyArchiveTargetPolicy(TargetPolicy):
-    """Target policy for copy archives."""
-
-    def getTargetArchives(self, distribution):
-        """See `TargetPolicy`."""
-        return getUtility(IArchiveSet).getArchivesForDistribution(
-            distribution, purposes=[ArchivePurpose.COPY])
-
-
-class DistroTargetPolicy(TargetPolicy):
-    """Target policy for distro archives."""
-
-    def getTargetArchives(self, distribution):
-        """See `TargetPolicy`."""
-        return distribution.all_distro_archives
-
-
 class ProcessAccepted(PublisherScript):
     """Queue/Accepted processor.
 
@@ -251,15 +214,15 @@ class ProcessAccepted(PublisherScript):
             raise OptionValueError(
                 "Can't combine --derived with a distribution name.")
 
-    def makeTargetPolicy(self):
-        """Pick and instantiate a `TargetPolicy` based on given options."""
+    def getTargetArchives(self, distribution):
+        """Find archives to target based on given options."""
         if self.options.ppa:
-            policy_class = PPATargetPolicy
+            return distribution.getPendingAcceptancePPAs()
         elif self.options.copy_archives:
-            policy_class = CopyArchiveTargetPolicy
+            return getUtility(IArchiveSet).getArchivesForDistribution(
+                distribution, purposes=[ArchivePurpose.COPY])
         else:
-            policy_class = DistroTargetPolicy
-        return policy_class(self.logger)
+            return distribution.all_distro_archives
 
     def processQueueItem(self, queue_item):
         """Attempt to process `queue_item`.
@@ -285,17 +248,16 @@ class ProcessAccepted(PublisherScript):
                 "Successfully processed queue item %d", queue_item.id)
             return True
 
-    def processForDistro(self, distribution, target_policy):
+    def processForDistro(self, distribution):
         """Process all queue items for a distribution.
 
         Commits between items.
 
         :param distribution: The `Distribution` to process queue items for.
-        :param target_policy: The applicable `TargetPolicy`.
         :return: A list of all successfully processed items' ids.
         """
         processed_queue_ids = []
-        for archive in target_policy.getTargetArchives(distribution):
+        for archive in self.getTargetArchives(distribution):
             for distroseries in distribution.series:
 
                 self.logger.debug("Processing queue for %s %s" % (
@@ -317,10 +279,9 @@ class ProcessAccepted(PublisherScript):
     def main(self):
         """Entry point for a LaunchpadScript."""
         self.validateArguments()
-        target_policy = self.makeTargetPolicy()
         try:
             for distro in self.findDistros():
-                self.processForDistro(distro, target_policy)
+                self.processForDistro(distro)
                 self.txn.commit()
         finally:
             self.logger.debug("Rolling back any remaining transactions.")
