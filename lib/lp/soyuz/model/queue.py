@@ -439,26 +439,6 @@ class PackageUpload(SQLBase):
                 'Unable to reject queue item due to status.')
         self.status = PassthroughStatusValue(PackageUploadStatus.REJECTED)
 
-    def _closeBugs(self, changesfile_path, logger=None):
-        """Close bugs for a just-accepted source.
-
-        :param changesfile_path: path to the context changesfile.
-        :param logger: optional context Logger object (used on DEBUG level);
-
-        It does not close bugs for PPA sources.
-        """
-        from lp.soyuz.scripts.processaccepted import close_bugs_for_queue_item
-
-        if self.isPPA():
-            debug(logger, "Not closing bugs for PPA source.")
-            return
-
-        debug(logger, "Closing bugs.")
-        changesfile_object = open(changesfile_path, 'r')
-        close_bugs_for_queue_item(
-            self, changesfile_object=changesfile_object)
-        changesfile_object.close()
-
     def _validateBuildsForSource(self, sourcepackagerelease, builds):
         """Check if the sourcepackagerelease generates at least one build.
 
@@ -507,6 +487,8 @@ class PackageUpload(SQLBase):
 
     def acceptFromUploader(self, changesfile_path, logger=None):
         """See `IPackageUpload`."""
+        from lp.soyuz.scripts.processaccepted import close_bugs_for_queue_item
+
         debug(logger, "Setting it to ACCEPTED")
         self.setAccepted()
 
@@ -521,7 +503,9 @@ class PackageUpload(SQLBase):
         [pub_source] = self.realiseUpload()
         builds = pub_source.createMissingBuilds(logger=logger)
         self._validateBuildsForSource(pub_source.sourcepackagerelease, builds)
-        self._closeBugs(changesfile_path, logger)
+        with open(changesfile_path, 'r') as changesfile_object:
+            close_bugs_for_queue_item(
+                self, changesfile_object=changesfile_object)
         self._giveKarma()
 
     def _acceptSyncFromQueue(self):
