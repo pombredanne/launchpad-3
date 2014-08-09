@@ -195,13 +195,6 @@ class TargetPolicy:
         """Return textual description for `archive` in this script run."""
         raise NotImplemented("describeArchive")
 
-    def postprocessSuccesses(self, queue_ids):
-        """Optionally, post-process successfully processed queue items.
-
-        :param queue_ids: An iterable of `PackageUpload` ids that were
-            successfully processed.
-        """
-
 
 class PPATargetPolicy(TargetPolicy):
     """Target policy for PPA archives."""
@@ -238,13 +231,6 @@ class DistroTargetPolicy(TargetPolicy):
     def describeArchive(self, archive):
         """See `TargetPolicy`."""
         return archive.purpose.title
-
-    def postprocessSuccesses(self, queue_ids):
-        """See `TargetPolicy`."""
-        self.logger.debug("Closing bugs.")
-        for queue_id in queue_ids:
-            queue_item = getUtility(IPackageUploadSet).get(queue_id)
-            close_bugs_for_queue_item(queue_item)
 
 
 class ProcessAccepted(PublisherScript):
@@ -341,6 +327,8 @@ class ProcessAccepted(PublisherScript):
                     # on-disk archive, so the partial state must
                     # make it to the DB.
                     self.txn.commit()
+                    close_bugs_for_queue_item(queue_item)
+                    self.txn.commit()
         return processed_queue_ids
 
     def main(self):
@@ -349,13 +337,9 @@ class ProcessAccepted(PublisherScript):
         target_policy = self.makeTargetPolicy()
         try:
             for distro in self.findDistros():
-                queue_ids = self.processForDistro(distro, target_policy)
+                self.processForDistro(distro, target_policy)
                 self.txn.commit()
-                target_policy.postprocessSuccesses(queue_ids)
-                self.txn.commit()
-
         finally:
             self.logger.debug("Rolling back any remaining transactions.")
             self.txn.abort()
-
         return 0

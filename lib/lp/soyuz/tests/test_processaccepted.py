@@ -157,9 +157,11 @@ class TestProcessAccepted(TestCaseWithFactory):
                     upload for upload in uploads
                     if upload.package_upload.status ==
                         PackageUploadStatus.DONE])
-                self.assertEqual(
-                    min(len(uploads), inner_self.commit_count),
-                    done_count)
+                # We actually commit twice for each upload: once for the
+                # queue item itself, and agian to close its bugs.
+                self.assertIn(
+                    min(len(uploads) * 2, inner_self.commit_count),
+                    (done_count * 2, (done_count * 2) - 1))
 
         script = self.getScript([])
         switch_dbuser(self.dbuser)
