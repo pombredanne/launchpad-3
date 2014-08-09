@@ -191,10 +191,6 @@ class TargetPolicy:
         """Get target archives of the right sort for `distribution`."""
         raise NotImplemented("getTargetArchives")
 
-    def describeArchive(self, archive):
-        """Return textual description for `archive` in this script run."""
-        raise NotImplemented("describeArchive")
-
 
 class PPATargetPolicy(TargetPolicy):
     """Target policy for PPA archives."""
@@ -202,10 +198,6 @@ class PPATargetPolicy(TargetPolicy):
     def getTargetArchives(self, distribution):
         """See `TargetPolicy`."""
         return distribution.getPendingAcceptancePPAs()
-
-    def describeArchive(self, archive):
-        """See `TargetPolicy`."""
-        return archive.archive_url
 
 
 class CopyArchiveTargetPolicy(TargetPolicy):
@@ -216,10 +208,6 @@ class CopyArchiveTargetPolicy(TargetPolicy):
         return getUtility(IArchiveSet).getArchivesForDistribution(
             distribution, purposes=[ArchivePurpose.COPY])
 
-    def describeArchive(self, archive):
-        """See `TargetPolicy`."""
-        return archive.displayname
-
 
 class DistroTargetPolicy(TargetPolicy):
     """Target policy for distro archives."""
@@ -227,10 +215,6 @@ class DistroTargetPolicy(TargetPolicy):
     def getTargetArchives(self, distribution):
         """See `TargetPolicy`."""
         return distribution.all_distro_archives
-
-    def describeArchive(self, archive):
-        """See `TargetPolicy`."""
-        return archive.purpose.title
 
 
 class ProcessAccepted(PublisherScript):
@@ -312,11 +296,10 @@ class ProcessAccepted(PublisherScript):
         """
         processed_queue_ids = []
         for archive in target_policy.getTargetArchives(distribution):
-            description = target_policy.describeArchive(archive)
             for distroseries in distribution.series:
 
                 self.logger.debug("Processing queue for %s %s" % (
-                    distroseries.name, description))
+                    archive.reference, distroseries.name))
 
                 queue_items = distroseries.getPackageUploads(
                     status=PackageUploadStatus.ACCEPTED, archive=archive)
