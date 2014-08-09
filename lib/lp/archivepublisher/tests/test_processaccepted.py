@@ -8,6 +8,7 @@ from optparse import OptionValueError
 from testtools.matchers import LessThan
 import transaction
 
+from lp.archivepublisher.scripts.processaccepted import ProcessAccepted
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.config import config
 from lp.services.database.interfaces import IStore
@@ -18,7 +19,6 @@ from lp.soyuz.enums import (
     PackageUploadStatus,
     )
 from lp.soyuz.model.queue import PackageUpload
-from lp.soyuz.scripts.processaccepted import ProcessAccepted
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
 from lp.testing.dbuser import switch_dbuser
