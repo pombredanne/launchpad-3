@@ -1,4 +1,4 @@
-# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test process-accepted.py"""
@@ -158,7 +158,7 @@ class TestProcessAccepted(TestCaseWithFactory):
                     if upload.package_upload.status ==
                         PackageUploadStatus.DONE])
                 # We actually commit twice for each upload: once for the
-                # queue item itself, and agian to close its bugs.
+                # queue item itself, and again to close its bugs.
                 self.assertIn(
                     min(len(uploads) * 2, inner_self.commit_count),
                     (done_count * 2, (done_count * 2) - 1))
