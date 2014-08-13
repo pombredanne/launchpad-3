@@ -144,7 +144,6 @@ class AbstractUploadPolicy:
             # We never override the policy
             return
 
-        self.distroseriesname = dr_name
         self.distroseries, self.pocket = self.distro.getDistroSeriesAndPocket(
             dr_name, follow_aliases=True)
 
