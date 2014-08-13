@@ -194,7 +194,7 @@ class AbstractUploadPolicy:
 
     def autoApproveNew(self, upload):
         """Return whether the NEW upload should be automatically approved."""
-        return False
+        return not self.archive.is_main
 
 
 class InsecureUploadPolicy(AbstractUploadPolicy):
