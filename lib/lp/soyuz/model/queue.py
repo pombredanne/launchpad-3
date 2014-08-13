@@ -487,8 +487,9 @@ class PackageUpload(SQLBase):
 
     def acceptFromUploader(self, changesfile_path, logger=None):
         """See `IPackageUpload`."""
-        from lp.soyuz.scripts.processaccepted import close_bugs_for_queue_item
-
+        from lp.soyuz.model.processacceptedbugsjob import (
+            close_bugs_for_queue_item,
+            )
         debug(logger, "Setting it to ACCEPTED")
         self.setAccepted()
 
@@ -536,8 +537,9 @@ class PackageUpload(SQLBase):
         This is the normal case, for uploads that are not delayed and are not
         attached to package copy jobs.
         """
-        from lp.soyuz.scripts.processaccepted import close_bugs_for_queue_item
-
+        from lp.soyuz.model.processacceptedbugsjob import (
+            close_bugs_for_queue_item,
+            )
         assert self.package_copy_job is None, (
             "This method is not for copy-job uploads.")
         assert self.changesfile is not None, (

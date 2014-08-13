@@ -208,7 +208,6 @@ from lp.soyuz.model.queue import (
     )
 from lp.soyuz.model.section import Section
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
-from lp.soyuz.scripts.packagecopier import check_copy_permissions
 
 
 ARCHIVE_REFERENCE_TEMPLATES = {
@@ -1723,6 +1722,7 @@ class Archive(SQLBase):
                     phased_update_percentage=None):
         """See `IArchive`."""
         # Asynchronously copy a package using the job system.
+        from lp.soyuz.scripts.packagecopier import check_copy_permissions
         if phased_update_percentage is not None:
             if phased_update_percentage < 0 or phased_update_percentage > 100:
                 raise ValueError(
@@ -1763,6 +1763,7 @@ class Archive(SQLBase):
                      include_binaries=None, sponsored=None, unembargo=False,
                      auto_approve=False):
         """See `IArchive`."""
+        from lp.soyuz.scripts.packagecopier import check_copy_permissions
         sources = self._collectLatestPublishedSources(
             from_archive, from_series, source_names)
 
