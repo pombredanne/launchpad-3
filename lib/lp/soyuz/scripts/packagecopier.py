@@ -13,9 +13,6 @@ __all__ = [
     'update_files_privacy',
     ]
 
-from itertools import repeat
-from operator import attrgetter
-
 import apt_pkg
 from lazr.delegates import delegates
 from zope.component import getUtility
@@ -37,6 +34,9 @@ from lp.soyuz.interfaces.publishing import (
     ISourcePackagePublishingHistory,
     )
 from lp.soyuz.interfaces.queue import IPackageUploadCustom
+from lp.soyuz.model.processacceptedbugsjob import (
+    close_bugs_for_sourcepublication,
+    )
 from lp.soyuz.scripts.custom_uploads_copier import CustomUploadsCopier
 
 
@@ -681,9 +681,6 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries,
         `BinaryPackagePublishingHistory` corresponding to the copied
         publications.
     """
-    from lp.soyuz.scripts.processaccepted import (
-        close_bugs_for_sourcepublication)
-
     copies = []
     custom_files = []
 

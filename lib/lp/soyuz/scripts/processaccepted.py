@@ -1,29 +1,20 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Helper functions for the process-accepted.py script."""
 
 __metaclass__ = type
 __all__ = [
-    'close_bugs_for_queue_item',
-    'close_bugs_for_sourcepackagerelease',
-    'close_bugs_for_sourcepublication',
-    'get_bug_ids_from_changes_file',
     'ProcessAccepted',
     ]
 
 from optparse import OptionValueError
 import sys
 
-from debian.deb822 import Deb822Dict
 from zope.component import getUtility
-from zope.security.management import getSecurityPolicy
 
 from lp.archivepublisher.publishing import GLOBAL_PUBLISHER_LOCK
 from lp.archivepublisher.scripts.base import PublisherScript
-from lp.archiveuploader.tagfiles import parse_tagfile_content
-from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.services.webapp.authorization import LaunchpadPermissiveSecurityPolicy
 from lp.services.webapp.errorlog import (
     ErrorReportingUtility,
     ScriptRequest,
@@ -31,220 +22,9 @@ from lp.services.webapp.errorlog import (
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackageUploadStatus,
-    re_bug_numbers,
-    re_closes,
-    re_lp_closes,
     )
 from lp.soyuz.interfaces.archive import IArchiveSet
-from lp.soyuz.interfaces.processacceptedbugsjob import (
-    IProcessAcceptedBugsJobSource,
-    )
-from lp.soyuz.interfaces.queue import IPackageUploadSet
-from lp.soyuz.model.processacceptedbugsjob import (
-    close_bug_ids_for_sourcepackagerelease,
-    )
-
-
-def get_bug_ids_from_changes_file(changes_file):
-    """Parse the changes file and return a list of bug IDs referenced by it.
-
-    The bugs is specified in the Launchpad-bugs-fixed header, and are
-    separated by a space character. Nonexistent bug ids are ignored.
-    """
-    tags = Deb822Dict(parse_tagfile_content(changes_file.read()))
-    bugs_fixed = tags.get('Launchpad-bugs-fixed', '').split()
-    return [int(bug_id) for bug_id in bugs_fixed if bug_id.isdigit()]
-
-
-def get_bug_ids_from_changelog_entry(sourcepackagerelease, since_version):
-    """Parse the changelog_entry in the sourcepackagerelease and return a
-    list of bug IDs referenced by it.
-    """
-    changelog = sourcepackagerelease.aggregate_changelog(since_version)
-    closes = []
-    # There are 2 main regexes to match.  Each match from those can then
-    # have further multiple matches from the 3rd regex:
-    # closes: NNN, NNN
-    # lp: #NNN, #NNN
-    regexes = (
-        re_closes.finditer(changelog), re_lp_closes.finditer(changelog))
-    for regex in regexes:
-        for match in regex:
-            bug_match = re_bug_numbers.findall(match.group(0))
-            closes += map(int, bug_match)
-    return closes
-
-
-def can_close_bugs(target):
-    """Whether or not bugs should be closed in the given target.
-
-    ISourcePackagePublishingHistory and IPackageUpload are the
-    currently supported targets.
-
-    Source publications or package uploads targeted to pockets
-    PROPOSED/BACKPORTS or any other archive purpose than PRIMARY will
-    not automatically close bugs.
-    """
-    banned_pockets = (
-        PackagePublishingPocket.PROPOSED,
-        PackagePublishingPocket.BACKPORTS)
-
-    if (target.pocket in banned_pockets or
-       target.archive.purpose != ArchivePurpose.PRIMARY):
-        return False
-
-    return True
-
-
-def close_bugs_for_queue_item(queue_item, changesfile_object=None):
-    """Close bugs for a given queue item.
-
-    'queue_item' is an IPackageUpload instance and is given by the user.
-
-    'changesfile_object' is optional if not given this function will try
-    to use the IPackageUpload.changesfile, which is only available after
-    the upload is processed and committed.
-
-    In practice, 'changesfile_object' is only set when we are closing bugs
-    in upload-time (see nascentupload-closing-bugs.txt).
-
-    Skip bug-closing if the upload is target to pocket PROPOSED or if
-    the upload is for a PPA.
-
-    Set the package bugtask status to Fix Released and the changelog is added
-    as a comment.
-    """
-    if not can_close_bugs(queue_item):
-        return
-
-    if changesfile_object is None:
-        changesfile_object = queue_item.changesfile
-
-    for source_queue_item in queue_item.sources:
-        close_bugs_for_sourcepackagerelease(
-            queue_item.distroseries, source_queue_item.sourcepackagerelease,
-            changesfile_object)
-
-
-def close_bugs_for_sourcepublication(source_publication, since_version=None):
-    """Close bugs for a given sourcepublication.
-
-    Given a `ISourcePackagePublishingHistory` close bugs mentioned in
-    upload changesfile.
-    """
-    if not can_close_bugs(source_publication):
-        return
-
-    sourcepackagerelease = source_publication.sourcepackagerelease
-    changesfile_object = sourcepackagerelease.upload_changesfile
-
-    close_bugs_for_sourcepackagerelease(
-        source_publication.distroseries, sourcepackagerelease,
-        changesfile_object, since_version)
-
-
-def close_bugs_for_sourcepackagerelease(distroseries, source_release,
-                                        changesfile_object,
-                                        since_version=None):
-    """Close bugs for a given source.
-
-    Given an `IDistroSeries`, an `ISourcePackageRelease`, and a
-    corresponding changesfile object, close bugs mentioned in the
-    changesfile in the context of the source.
-
-    If changesfile_object is None and since_version is supplied,
-    close all the bugs in changelog entries made after that version and up
-    to and including the source_release's version.  It does this by parsing
-    the changelog on the sourcepackagerelease.  This could be extended in
-    the future to deal with the changes file as well but there is no
-    requirement to do so right now.
-    """
-    if since_version and source_release.changelog:
-        bug_ids_to_close = get_bug_ids_from_changelog_entry(
-            source_release, since_version=since_version)
-    elif changesfile_object:
-        bug_ids_to_close = get_bug_ids_from_changes_file(changesfile_object)
-    else:
-        return
-
-    # No bugs to be closed by this upload, move on.
-    if not bug_ids_to_close:
-        return
-
-    if getSecurityPolicy() == LaunchpadPermissiveSecurityPolicy:
-        # We're already running in a script, so we can just close the bugs
-        # directly.
-        close_bug_ids_for_sourcepackagerelease(
-            distroseries, source_release, bug_ids_to_close)
-    else:
-        job_source = getUtility(IProcessAcceptedBugsJobSource)
-        job_source.create(distroseries, source_release, bug_ids_to_close)
-
-
-class TargetPolicy:
-    """Policy describing what kinds of archives to operate on."""
-
-    def __init__(self, logger):
-        self.logger = logger
-
-    def getTargetArchives(self, distribution):
-        """Get target archives of the right sort for `distribution`."""
-        raise NotImplemented("getTargetArchives")
-
-    def describeArchive(self, archive):
-        """Return textual description for `archive` in this script run."""
-        raise NotImplemented("describeArchive")
-
-    def postprocessSuccesses(self, queue_ids):
-        """Optionally, post-process successfully processed queue items.
-
-        :param queue_ids: An iterable of `PackageUpload` ids that were
-            successfully processed.
-        """
-
-
-class PPATargetPolicy(TargetPolicy):
-    """Target policy for PPA archives."""
-
-    def getTargetArchives(self, distribution):
-        """See `TargetPolicy`."""
-        return distribution.getPendingAcceptancePPAs()
-
-    def describeArchive(self, archive):
-        """See `TargetPolicy`."""
-        return archive.archive_url
-
-
-class CopyArchiveTargetPolicy(TargetPolicy):
-    """Target policy for copy archives."""
-
-    def getTargetArchives(self, distribution):
-        """See `TargetPolicy`."""
-        return getUtility(IArchiveSet).getArchivesForDistribution(
-            distribution, purposes=[ArchivePurpose.COPY])
-
-    def describeArchive(self, archive):
-        """See `TargetPolicy`."""
-        return archive.displayname
-
-
-class DistroTargetPolicy(TargetPolicy):
-    """Target policy for distro archives."""
-
-    def getTargetArchives(self, distribution):
-        """See `TargetPolicy`."""
-        return distribution.all_distro_archives
-
-    def describeArchive(self, archive):
-        """See `TargetPolicy`."""
-        return archive.purpose.title
-
-    def postprocessSuccesses(self, queue_ids):
-        """See `TargetPolicy`."""
-        self.logger.debug("Closing bugs.")
-        for queue_id in queue_ids:
-            queue_item = getUtility(IPackageUploadSet).get(queue_id)
-            close_bugs_for_queue_item(queue_item)
+from lp.soyuz.model.processacceptedbugsjob import close_bugs_for_queue_item
 
 
 class ProcessAccepted(PublisherScript):
@@ -281,15 +61,15 @@ class ProcessAccepted(PublisherScript):
             raise OptionValueError(
                 "Can't combine --derived with a distribution name.")
 
-    def makeTargetPolicy(self):
-        """Pick and instantiate a `TargetPolicy` based on given options."""
+    def getTargetArchives(self, distribution):
+        """Find archives to target based on given options."""
         if self.options.ppa:
-            policy_class = PPATargetPolicy
+            return distribution.getPendingAcceptancePPAs()
         elif self.options.copy_archives:
-            policy_class = CopyArchiveTargetPolicy
+            return getUtility(IArchiveSet).getArchivesForDistribution(
+                distribution, purposes=[ArchivePurpose.COPY])
         else:
-            policy_class = DistroTargetPolicy
-        return policy_class(self.logger)
+            return distribution.all_distro_archives
 
     def processQueueItem(self, queue_item):
         """Attempt to process `queue_item`.
@@ -315,22 +95,20 @@ class ProcessAccepted(PublisherScript):
                 "Successfully processed queue item %d", queue_item.id)
             return True
 
-    def processForDistro(self, distribution, target_policy):
+    def processForDistro(self, distribution):
         """Process all queue items for a distribution.
 
         Commits between items.
 
         :param distribution: The `Distribution` to process queue items for.
-        :param target_policy: The applicable `TargetPolicy`.
         :return: A list of all successfully processed items' ids.
         """
         processed_queue_ids = []
-        for archive in target_policy.getTargetArchives(distribution):
-            description = target_policy.describeArchive(archive)
+        for archive in self.getTargetArchives(distribution):
             for distroseries in distribution.series:
 
                 self.logger.debug("Processing queue for %s %s" % (
-                    distroseries.name, description))
+                    archive.reference, distroseries.name))
 
                 queue_items = distroseries.getPackageUploads(
                     status=PackageUploadStatus.ACCEPTED, archive=archive)
@@ -341,21 +119,18 @@ class ProcessAccepted(PublisherScript):
                     # on-disk archive, so the partial state must
                     # make it to the DB.
                     self.txn.commit()
+                    close_bugs_for_queue_item(queue_item)
+                    self.txn.commit()
         return processed_queue_ids
 
     def main(self):
         """Entry point for a LaunchpadScript."""
         self.validateArguments()
-        target_policy = self.makeTargetPolicy()
         try:
             for distro in self.findDistros():
-                queue_ids = self.processForDistro(distro, target_policy)
+                self.processForDistro(distro)
                 self.txn.commit()
-                target_policy.postprocessSuccesses(queue_ids)
-                self.txn.commit()
-
         finally:
             self.logger.debug("Rolling back any remaining transactions.")
             self.txn.abort()
-
         return 0

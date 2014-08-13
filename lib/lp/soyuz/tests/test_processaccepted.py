@@ -1,12 +1,10 @@
-# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test process-accepted.py"""
 
-from cStringIO import StringIO
 from optparse import OptionValueError
 
-from debian.deb822 import Changes
 from testtools.matchers import LessThan
 import transaction
 
@@ -20,10 +18,7 @@ from lp.soyuz.enums import (
     PackageUploadStatus,
     )
 from lp.soyuz.model.queue import PackageUpload
-from lp.soyuz.scripts.processaccepted import (
-    get_bug_ids_from_changes_file,
-    ProcessAccepted,
-    )
+from lp.soyuz.scripts.processaccepted import ProcessAccepted
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
 from lp.testing.dbuser import switch_dbuser
@@ -157,9 +152,11 @@ class TestProcessAccepted(TestCaseWithFactory):
                     upload for upload in uploads
                     if upload.package_upload.status ==
                         PackageUploadStatus.DONE])
-                self.assertEqual(
-                    min(len(uploads), inner_self.commit_count),
-                    done_count)
+                # We actually commit twice for each upload: once for the
+                # queue item itself, and again to close its bugs.
+                self.assertIn(
+                    min(len(uploads) * 2, inner_self.commit_count),
+                    (done_count * 2, (done_count * 2) - 1))
 
         script = self.getScript([])
         switch_dbuser(self.dbuser)
@@ -188,62 +185,3 @@ class TestProcessAccepted(TestCaseWithFactory):
         script = ProcessAccepted(
             test_args=['--all-derived', '-d', distro.name])
         self.assertRaises(OptionValueError, script.validateArguments)
-
-
-class TestBugIDsFromChangesFile(TestCaseWithFactory):
-    """Test get_bug_ids_from_changes_file."""
-
-    layer = LaunchpadZopelessLayer
-    dbuser = config.uploadqueue.dbuser
-
-    def setUp(self):
-        super(TestBugIDsFromChangesFile, self).setUp()
-        self.changes = Changes({
-            'Format': '1.8',
-            'Source': 'swat',
-            })
-
-    def getBugIDs(self):
-        """Serialize self.changes and use get_bug_ids_from_changes_file to
-        extract bug IDs from it.
-        """
-        stream = StringIO()
-        self.changes.dump(stream)
-        stream.seek(0)
-        return get_bug_ids_from_changes_file(stream)
-
-    def test_no_bugs(self):
-        # An empty list is returned if there are no bugs
-        # mentioned.
-        self.assertEqual([], self.getBugIDs())
-
-    def test_invalid_bug_id(self):
-        # Invalid bug ids (i.e. containing non-digit characters) are ignored.
-        self.changes["Launchpad-Bugs-Fixed"] = "bla"
-        self.assertEqual([], self.getBugIDs())
-
-    def test_unknown_bug_id(self):
-        # Unknown bug ids are passed through; they will be ignored later, by
-        # close_bug_ids_for_sourcepackagerelease.
-        self.changes["Launchpad-Bugs-Fixed"] = "45120"
-        self.assertEqual([45120], self.getBugIDs())
-
-    def test_valid_bug(self):
-        # For valid bug ids the bug object is returned.
-        bug = self.factory.makeBug()
-        self.changes["Launchpad-Bugs-Fixed"] = "%d" % bug.id
-        self.assertEqual([bug.id], self.getBugIDs())
-
-    def test_case_sensitivity(self):
-        # The spelling of Launchpad-Bugs-Fixed is case-insensitive.
-        bug = self.factory.makeBug()
-        self.changes["LaUnchpad-Bugs-fixed"] = "%d" % bug.id
-        self.assertEqual([bug.id], self.getBugIDs())
-
-    def test_multiple_bugs(self):
-        # Multiple bug ids can be specified, separated by spaces.
-        bug1 = self.factory.makeBug()
-        bug2 = self.factory.makeBug()
-        self.changes["Launchpad-Bugs-Fixed"] = "%d invalid %d" % (
-            bug1.id, bug2.id)
-        self.assertEqual([bug1.id, bug2.id], self.getBugIDs())
