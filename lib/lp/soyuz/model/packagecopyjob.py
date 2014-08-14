@@ -275,8 +275,9 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
     @classmethod
     def _makeMetadata(cls, target_pocket, package_version,
                       include_binaries, sponsored=None, unembargo=False,
-                      auto_approve=False, source_distroseries=None,
-                      source_pocket=None, phased_update_percentage=None):
+                      auto_approve=False, silent=False,
+                      source_distroseries=None, source_pocket=None,
+                      phased_update_percentage=None):
         """Produce a metadata dict for this job."""
         return {
             'target_pocket': target_pocket.value,
@@ -285,6 +286,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             'sponsored': sponsored.name if sponsored else None,
             'unembargo': unembargo,
             'auto_approve': auto_approve,
+            'silent': silent,
             'source_distroseries':
                 source_distroseries.name if source_distroseries else None,
             'source_pocket': source_pocket.value if source_pocket else None,
@@ -297,15 +299,15 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
                include_binaries=False, package_version=None,
                copy_policy=PackageCopyPolicy.INSECURE, requester=None,
                sponsored=None, unembargo=False, auto_approve=False,
-               source_distroseries=None, source_pocket=None,
+               silent=False, source_distroseries=None, source_pocket=None,
                phased_update_percentage=None):
         """See `IPlainPackageCopyJobSource`."""
         assert package_version is not None, "No package version specified."
         assert requester is not None, "No requester specified."
         metadata = cls._makeMetadata(
             target_pocket, package_version, include_binaries, sponsored,
-            unembargo, auto_approve, source_distroseries, source_pocket,
-            phased_update_percentage)
+            unembargo, auto_approve, silent, source_distroseries,
+            source_pocket, phased_update_percentage)
         job = PackageCopyJob(
             job_type=cls.class_job_type,
             source_archive=source_archive,
@@ -323,7 +325,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
     @classmethod
     def _composeJobInsertionTuple(cls, copy_policy, include_binaries, job_id,
                                   copy_task, sponsored, unembargo,
-                                  auto_approve):
+                                  auto_approve, silent):
         """Create an SQL fragment for inserting a job into the database.
 
         :return: A string representing an SQL tuple containing initializers
@@ -340,7 +342,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         ) = copy_task
         metadata = cls._makeMetadata(
             target_pocket, package_version, include_binaries, sponsored,
-            unembargo, auto_approve)
+            unembargo, auto_approve, silent)
         data = (
             cls.class_job_type, target_distroseries, copy_policy,
             source_archive, target_archive, package_name, job_id,
@@ -351,14 +353,14 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
     def createMultiple(cls, copy_tasks, requester,
                        copy_policy=PackageCopyPolicy.INSECURE,
                        include_binaries=False, sponsored=None,
-                       unembargo=False, auto_approve=False):
+                       unembargo=False, auto_approve=False, silent=False):
         """See `IPlainPackageCopyJobSource`."""
         store = IMasterStore(Job)
         job_ids = Job.createMultiple(store, len(copy_tasks), requester)
         job_contents = [
             cls._composeJobInsertionTuple(
                 copy_policy, include_binaries, job_id, task, sponsored,
-                unembargo, auto_approve)
+                unembargo, auto_approve, silent)
             for job_id, task in zip(job_ids, copy_tasks)]
         return bulk.create(
                 (PackageCopyJob.job_type, PackageCopyJob.target_distroseries,
@@ -443,6 +445,10 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
     @property
     def auto_approve(self):
         return self.metadata.get('auto_approve', False)
+
+    @property
+    def silent(self):
+        return self.metadata.get('silent', False)
 
     @property
     def source_distroseries(self):
@@ -620,6 +626,10 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             # Wrap any forbidden-pocket error in CannotCopy.
             raise CannotCopy(unicode(reason))
 
+        if self.silent and not self.requester_can_admin_target:
+            raise CannotCopy(
+                "Silent copies need queue admin privileges on the target.")
+
         source_package = self.findSourcePublication()
 
         # If there's a PackageUpload associated with this job then this
@@ -640,7 +650,8 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             pocket=self.target_pocket, exact_match=True)
         override = self.getSourceOverride()
         copy_policy = self.getPolicyImplementation()
-        send_email = copy_policy.send_email(self.target_archive)
+        send_email = (
+            copy_policy.send_email(self.target_archive) and not self.silent)
         copied_publications = do_copy(
             sources=[source_package], archive=self.target_archive,
             series=self.target_distroseries, pocket=self.target_pocket,
