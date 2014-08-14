@@ -462,6 +462,12 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
     def phased_update_percentage(self):
         return self.metadata.get('phased_update_percentage')
 
+    @property
+    def requester_can_admin_target(self):
+        return self.target_archive.canAdministerQueue(
+            self.requester, self.getSourceOverride().component,
+            self.target_pocket, self.target_distroseries)
+
     def _createPackageUpload(self, unapproved=False):
         pu = self.target_distroseries.createQueueEntry(
             pocket=self.target_pocket, archive=self.target_archive,
@@ -524,10 +530,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
 
         # Put the (existing or default) override in the metadata.
         self.addSourceOverride(override)
-        if auto_approve:
-            auto_approve = self.target_archive.canAdministerQueue(
-                self.requester, self.getSourceOverride().component,
-                self.target_pocket, self.target_distroseries)
+        auto_approve = auto_approve and self.requester_can_admin_target
 
         if override.new:
             approve_new = auto_approve or copy_policy.autoApproveNew(
