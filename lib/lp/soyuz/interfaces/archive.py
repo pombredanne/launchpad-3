@@ -1371,6 +1371,12 @@ class IArchiveView(IHasBuildRecords):
             description=_("Automatically approve this copy (queue admins "
                           "only)."),
             required=False),
+        silent=Bool(
+            title=_("Silent"),
+            description=_(
+                "Don't notify anyone about this copy. For use by queue "
+                "admins only."),
+            required=False),
         from_pocket=TextLine(title=_("Source pocket name"), required=False),
         from_series=TextLine(
             title=_("Source distroseries name"), required=False),
@@ -1386,7 +1392,7 @@ class IArchiveView(IHasBuildRecords):
     def copyPackage(source_name, version, from_archive, to_pocket,
                     person, to_series=None, include_binaries=False,
                     sponsored=None, unembargo=False, auto_approve=False,
-                    from_pocket=None, from_series=None,
+                    silent=False, from_pocket=None, from_series=None,
                     phased_update_percentage=None):
         """Copy a single named source into this archive.
 
@@ -1420,6 +1426,8 @@ class IArchiveView(IHasBuildRecords):
         :param auto_approve: if True and the `IPerson` requesting the sync
             has queue admin permissions on the target, accept the copy
             immediately rather than setting it to unapproved.
+        :param silent: Suppress any emails that the copy would generate.
+            Only usable with queue admin permissions on the target.
         :param from_pocket: the source pocket (as a string). If omitted,
             copy from any pocket with a matching version.
         :param from_series: the source distroseries (as a string). If
@@ -1464,12 +1472,19 @@ class IArchiveView(IHasBuildRecords):
             description=_("Automatically approve this copy (queue admins "
                           "only)."),
             required=False),
+        silent=Bool(
+            title=_("Silent"),
+            description=_(
+                "Don't notify anyone about this copy. For use by queue "
+                "admins only."),
+            required=False),
         )
     @export_write_operation()
     @operation_for_version('devel')
     def copyPackages(source_names, from_archive, to_pocket, person,
                      to_series=None, from_series=None, include_binaries=False,
-                     sponsored=None, unembargo=False, auto_approve=False):
+                     sponsored=None, unembargo=False, auto_approve=False,
+                     silent=False):
         """Copy multiple named sources into this archive from another.
 
         Asynchronously copy the most recent PUBLISHED versions of the named
@@ -1505,6 +1520,8 @@ class IArchiveView(IHasBuildRecords):
         :param auto_approve: if True and the `IPerson` requesting the sync
             has queue admin permissions on the target, accept the copies
             immediately rather than setting it to unapproved.
+        :param silent: Suppress any emails that the copy would generate.
+            Only usable with queue admin permissions on the target.
 
         :raises NoSuchSourcePackageName: if the source name is invalid
         :raises PocketNotFound: if the pocket name is invalid
