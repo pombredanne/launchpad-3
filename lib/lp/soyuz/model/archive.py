@@ -1718,7 +1718,7 @@ class Archive(SQLBase):
     def copyPackage(self, source_name, version, from_archive, to_pocket,
                     person, to_series=None, include_binaries=False,
                     sponsored=None, unembargo=False, auto_approve=False,
-                    from_pocket=None, from_series=None,
+                    silent=False, from_pocket=None, from_series=None,
                     phased_update_percentage=None):
         """See `IArchive`."""
         # Asynchronously copy a package using the job system.
@@ -1754,14 +1754,14 @@ class Archive(SQLBase):
             package_version=version, include_binaries=include_binaries,
             copy_policy=PackageCopyPolicy.INSECURE, requester=person,
             sponsored=sponsored, unembargo=unembargo,
-            auto_approve=auto_approve, source_distroseries=from_series,
-            source_pocket=from_pocket,
+            auto_approve=auto_approve, silent=silent,
+            source_distroseries=from_series, source_pocket=from_pocket,
             phased_update_percentage=phased_update_percentage)
 
     def copyPackages(self, source_names, from_archive, to_pocket,
                      person, to_series=None, from_series=None,
                      include_binaries=None, sponsored=None, unembargo=False,
-                     auto_approve=False):
+                     auto_approve=False, silent=False):
         """See `IArchive`."""
         from lp.soyuz.scripts.packagecopier import check_copy_permissions
         sources = self._collectLatestPublishedSources(
@@ -1789,7 +1789,7 @@ class Archive(SQLBase):
         job_source.createMultiple(
             copy_tasks, person, copy_policy=PackageCopyPolicy.MASS_SYNC,
             include_binaries=include_binaries, sponsored=sponsored,
-            unembargo=unembargo, auto_approve=auto_approve)
+            unembargo=unembargo, auto_approve=auto_approve, silent=silent)
 
     def _collectLatestPublishedSources(self, from_archive, from_series,
                                        source_names):

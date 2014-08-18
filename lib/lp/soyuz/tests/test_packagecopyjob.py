@@ -12,6 +12,7 @@ from testtools.matchers import (
     MatchesRegex,
     MatchesStructure,
     )
+from testtools.testcase import ExpectedException
 import transaction
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
@@ -65,7 +66,10 @@ from lp.testing import (
     TestCaseWithFactory,
     verifyObject,
     )
-from lp.testing.dbuser import switch_dbuser
+from lp.testing.dbuser import (
+    dbuser,
+    switch_dbuser,
+    )
 from lp.testing.fakemethod import FakeMethod
 from lp.testing.layers import (
     CeleryJobLayer,
@@ -84,7 +88,7 @@ def get_dsd_comments(dsd):
         DistroSeriesDifferenceComment.distro_series_difference == dsd)
 
 
-def create_proper_job(factory):
+def create_proper_job(factory, silent=False):
     """Create a job that will complete successfully."""
     publisher = SoyuzTestPublisher()
     with admin_logged_in():
@@ -123,7 +127,7 @@ def create_proper_job(factory):
         target_distroseries=target_series,
         target_pocket=PackagePublishingPocket.RELEASE,
         package_version="2.8-1", include_binaries=False,
-        requester=requester)
+        requester=requester, silent=silent)
 
 
 class LocalTestHelper:
@@ -1232,6 +1236,25 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         self.assertIn("changes@example.com", emails[1]['To'])
         self.assertEqual(
             "Nancy Requester <requester@example.com>", emails[1]['From'])
+
+    def test_silent(self):
+        # Copies into a non-PPA archive normally send emails. They can
+        # be suppressed by queue admin with the 'silent' flag.
+        job = create_proper_job(self.factory, silent=True)
+        self.assertEqual("libc", job.package_name)
+        self.assertEqual("2.8-1", job.package_version)
+
+        # An unprivileged requester can't copy silently.
+        with dbuser(self.dbuser):
+            with ExpectedException(
+                    CannotCopy, "Silent copies need queue admin.*"):
+                removeSecurityProxy(job).attemptCopy()
+
+        # But if we give them queue admin privileges it works fine.
+        job.target_archive.newQueueAdmin(job.requester, "main")
+        with dbuser(self.dbuser):
+            removeSecurityProxy(job).attemptCopy()
+        self.assertEqual(0, len(pop_notifications()))
 
     def test_copying_closes_bugs(self):
         # Copying a package into a primary archive should close any bugs
