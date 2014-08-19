@@ -775,20 +775,6 @@ class IDistroSeriesPublic(
                 supports_virtualized=False, enabled=True):
         """Create a new port or DistroArchSeries for this DistroSeries."""
 
-    def copyTranslationsFromParent(ztm):
-        """Copy any translation done in parent that we lack.
-
-        If there is another translation already added to this one, we ignore
-        the one from parent.
-
-        The supplied transaction manager will be used for intermediate
-        commits to break up large copying jobs into palatable smaller
-        chunks.
-
-        This method starts and commits transactions, so don't rely on `self`
-        or any other database object remaining valid across this call!
-        """
-
     def getPOFileContributorsByLanguage(language):
         """People who translated strings to the given language.
 

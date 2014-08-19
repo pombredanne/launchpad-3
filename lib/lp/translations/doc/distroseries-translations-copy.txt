@@ -1,10 +1,11 @@
 Migrating translations between distro series
 ============================================
 
-When a new release series is created for a distribution it usually inherits
-all settings and data from its parent (preceding) series. To facilitate this
-for the translations the method copyTranslationsFromParent is called from a
-script once after the release series is created.
+When a new release series is created for a distribution it usually
+inherits all settings and data from its parent (preceding) series. To
+facilitate this for the translations the function
+copy_translations_from_parent is called from a script once after the
+release series is created.
 
     >>> login("foo.bar@canonical.com")
     >>> foobuntu = factory.makeDistribution('foobuntu', 'Foobuntu')
@@ -78,8 +79,10 @@ First one is that we should keep the new distroseries's translations hidden
 from the public, so the copying procedure is not confused by concurrent
 updates:
 
+    >>> from lp.translations.scripts.copy_distroseries_translations import (
+    ...     copy_translations_from_parent)
     >>> carty.hide_all_translations = False
-    >>> carty.copyTranslationsFromParent(transaction_stub)
+    >>> copy_translations_from_parent(carty, transaction_stub)
     Traceback (most recent call last):
     ...
     AssertionError: hide_all_translations not set!...
@@ -92,7 +95,7 @@ The other one is that, for the same reason, the import queue should not be
 accepting uploads for this distroseries.
 
     >>> carty.defer_translation_imports = False
-    >>> carty.copyTranslationsFromParent(transaction_stub)
+    >>> copy_translations_from_parent(carty, transaction_stub)
     Traceback (most recent call last):
     ...
     AssertionError: defer_translation_imports not set!...
@@ -109,7 +112,7 @@ A pristine distroseries can be filled with copies of translation templates
 and translation files from the parent. The actual translations, stored in
 POTMsgSet and TranslationMessage object, are shared between the two series.
 
-    >>> carty.copyTranslationsFromParent(transaction_stub)
+    >>> copy_translations_from_parent(carty, transaction_stub)
 
 All current templates were copied from the parent series but the deactivated
 template template3 was not copied.
@@ -155,11 +158,11 @@ in the new series.
     True
 
 
-Once the migration is done, copyTranslationsFromParent must not be called
+Once the migration is done, copy_translations_from_parent must not be called
 again as it only operates on distroseries without any translation templates.
 Because of message sharing incremental copies are no longer needed.
 
-    >>> carty.copyTranslationsFromParent(transaction_stub)
+    >>> copy_translations_from_parent(carty, transaction_stub)
     Traceback (most recent call last):
     ...
     AssertionError:
@@ -170,7 +173,7 @@ Running the script
 ==================
 
 Now, we execute the script that will do the migration using
-copyTranslationsFromParent. For that we create a new child series to receive
+copy_translations_from_parent. For that we create a new child series to receive
 those translations. For testing purposes this series has translation imports
 enabled.
 
