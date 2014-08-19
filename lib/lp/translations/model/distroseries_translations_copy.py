@@ -47,8 +47,8 @@ def omit_redundant_pofiles(from_table, to_table, batch_size, begin_id,
         """ % params)
 
 
-def copy_active_translations(child, transaction, logger):
-    """Furnish untranslated child `DistroSeries` with previous series's
+def copy_active_translations(parent, child, transaction, logger):
+    """Furnish untranslated child `DistroSeries` with another series'
     translations.
 
     This method uses `MultiTableCopy` to copy data.
@@ -68,12 +68,6 @@ def copy_active_translations(child, transaction, logger):
     process of being poured back into its source table.  In that case the
     sensible thing to do is probably to continue pouring it.
     """
-    previous_series = child.previous_series
-    if previous_series is None:
-        # We don't have a previous series from where we could copy
-        # translations.
-        return
-
     translation_tables = ['potemplate', 'translationtemplateitem', 'pofile']
 
     full_name = "%s_%s" % (child.distribution.name, child.name)
@@ -84,8 +78,9 @@ def copy_active_translations(child, transaction, logger):
            "The child series must not yet have any translation templates.")
 
     logger.info(
-        "Populating blank distroseries %s with translations from %s." %
-        (child.name, previous_series.name))
+        "Populating blank distroseries %s %s with translations from %s %s." %
+        (child.distribution.name, child.name, parent.distribution.name,
+         parent.name))
 
     # 1. Extraction phase--for every table involved (called a "source table"
     # in MultiTableCopy parlance), we create a "holding table."  We fill that
@@ -110,7 +105,7 @@ def copy_active_translations(child, transaction, logger):
 
     # Copy relevant POTemplates from existing series into a holding table,
     # complete with their original id fields.
-    where = 'distroseries = %s AND iscurrent' % quote(previous_series)
+    where = 'distroseries = %s AND iscurrent' % quote(parent)
     copier.extract('potemplate', [], where)
 
     # Now that we have the data "in private," where nobody else can see it,

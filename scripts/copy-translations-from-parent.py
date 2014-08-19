@@ -47,6 +47,9 @@ class TranslationsCopier(LaunchpadCronScript):
 
     def main(self):
         series = self._getTargetSeries()
+        if series.previous_series is None:
+            self.parser.error(
+                "No previous series from which to copy translations.")
 
         # Both translation UI and imports for this series should be blocked
         # while the copy is in progress, to reduce the chances of deadlocks or
@@ -66,7 +69,8 @@ class TranslationsCopier(LaunchpadCronScript):
         self.logger.info('Starting...')
 
         # Actual work is done here.
-        copy_distroseries_translations(series, self.txn, self.logger)
+        copy_distroseries_translations(
+            series.previous_series, series, self.txn, self.logger)
 
         # We would like to update the DistroRelase statistics, but it takes
         # too long so this should be done after.
