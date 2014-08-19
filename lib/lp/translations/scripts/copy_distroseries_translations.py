@@ -73,16 +73,16 @@ class SeriesStateKeeper:
         series.defer_translation_imports = self.defer_translation_imports
 
 
-def copy_distroseries_translations(distroseries, txn, logger):
-    """Copy `distroseries` translations from its parents.
+def copy_distroseries_translations(source, target, txn, logger):
+    """Copy translations into a new `DistroSeries`.
 
-    Wraps around `DistroSeries.copyMissingTranslationsFromParent`, but also
-    ensures that the `hide_all_translations` and `defer_translation_imports`
-    flags are set.  After copying they are restored to their previous state.
+    Wraps around `copy_active_translations`, but also ensures that the
+    `hide_all_translations` and `defer_translation_imports` flags are
+    set.  After copying they are restored to their previous state.
     """
     statekeeper = SeriesStateKeeper()
-    statekeeper.prepare(distroseries)
-    name = distroseries.name
+    statekeeper.prepare(target)
+    name = target.name
     txn.commit()
     txn.begin()
 
@@ -90,15 +90,15 @@ def copy_distroseries_translations(distroseries, txn, logger):
 
     try:
         # Do the actual work.
-        assert distroseries.defer_translation_imports, (
+        assert target.defer_translation_imports, (
             "defer_translation_imports not set!"
             " That would corrupt translation data mixing new imports"
             " with the information being copied.")
-        assert distroseries.hide_all_translations, (
+        assert target.hide_all_translations, (
             "hide_all_translations not set!"
             " That would allow users to see and modify incomplete"
             " translation state.")
-        copy_active_translations(distroseries, txn, logger)
+        copy_active_translations(source, target, txn, logger)
     except:
         copy_failed = True
         # Give us a fresh transaction for proper cleanup.
