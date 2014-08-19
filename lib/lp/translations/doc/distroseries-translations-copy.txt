@@ -160,7 +160,7 @@ set.
 
     >>> from lp.testing.script import run_script
     >>> returnvalue, output, error_output = run_script(
-    ...     'scripts/copy-translations-from-parent.py',
+    ...     'scripts/copy-distroseries-translations.py',
     ...     ['--distribution=foobuntu', '--series=darty'])
     >>> returnvalue
     1
@@ -188,7 +188,7 @@ sets the defer_translation_imports flag itself before copying.
     >>> transaction.abort()
     >>> darty = DistroSeries.get(darty_id)
     >>> returnvalue, output, error_output = run_script(
-    ...     'scripts/copy-translations-from-parent.py',
+    ...     'scripts/copy-distroseries-translations.py',
     ...     ['--distribution=foobuntu', '--series=darty', '--force'])
     >>> returnvalue
     0
@@ -242,20 +242,20 @@ but that can be overridden.
     >>> transaction.commit()
 
     >>> returnvalue, output, error_output = run_script(
-    ...     'scripts/copy-translations-from-parent.py',
+    ...     'scripts/copy-distroseries-translations.py',
     ...     ['--distribution=notbuntu', '--series=grumpy'])
     >>> returnvalue
     2
     >>> print error_output
     INFO    Creating lockfile:
       /var/lock/launchpad-copy-missing-translations-notbuntu-grumpy.lock
-    Usage: copy-translations-from-parent.py [options]
-    copy-translations-from-parent.py: error: No source series specified
+    Usage: copy-distroseries-translations.py [options]
+    copy-distroseries-translations.py: error: No source series specified
     and target has no previous series.
     <BLANKLINE>
 
     >>> returnvalue, output, error_output = run_script(
-    ...     'scripts/copy-translations-from-parent.py',
+    ...     'scripts/copy-distroseries-translations.py',
     ...     ['--distribution=notbuntu', '--series=grumpy',
     ...      '--from-distribution=foobuntu' , '--from-series=darty'])
     >>> returnvalue
