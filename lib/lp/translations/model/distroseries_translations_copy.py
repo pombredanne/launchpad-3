@@ -1,7 +1,7 @@
 # Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Functions to copy translations from previous to child distroseries."""
+"""Functions to copy translations from one distroseries to another."""
 
 __metaclass__ = type
 
@@ -47,16 +47,18 @@ def omit_redundant_pofiles(from_table, to_table, batch_size, begin_id,
         """ % params)
 
 
-def copy_active_translations(parent, child, transaction, logger):
-    """Furnish untranslated child `DistroSeries` with another series'
-    translations.
+def copy_active_translations(source, target, transaction, logger):
+    """Populate target `DistroSeries` with source series' translations.
+
+    The target must not already have any translations.
 
     This method uses `MultiTableCopy` to copy data.
 
-    Translation data for the new series ("child") is first copied into holding
-    tables called e.g. "temp_POTemplate_holding_ubuntu_feisty" and processed
-    there.  Then, near the end of the procedure, the contents of these holding
-    tables are all poured back into the original tables.
+    Translation data for the new series ("target") is first copied into
+    holding tables called e.g. "temp_POTemplate_holding_ubuntu_feisty"
+    and processed there.  Then, near the end of the procedure, the
+    contents of these holding tables are all poured back into the
+    original tables.
 
     If this procedure fails, it may leave holding tables behind.  This was
     done deliberately to leave some forensics information for failures, and
@@ -70,17 +72,17 @@ def copy_active_translations(parent, child, transaction, logger):
     """
     translation_tables = ['potemplate', 'translationtemplateitem', 'pofile']
 
-    full_name = "%s_%s" % (child.distribution.name, child.name)
+    full_name = "%s_%s" % (target.distribution.name, target.name)
     copier = MultiTableCopy(full_name, translation_tables, logger=logger)
 
     # Incremental copy of updates is no longer supported
-    assert not child.has_translation_templates, (
-           "The child series must not yet have any translation templates.")
+    assert not target.has_translation_templates, (
+        "The target series must not yet have any translation templates.")
 
     logger.info(
         "Populating blank distroseries %s %s with translations from %s %s." %
-        (child.distribution.name, child.name, parent.distribution.name,
-         parent.name))
+        (target.distribution.name, target.name, source.distribution.name,
+         source.name))
 
     # 1. Extraction phase--for every table involved (called a "source table"
     # in MultiTableCopy parlance), we create a "holding table."  We fill that
@@ -105,7 +107,7 @@ def copy_active_translations(parent, child, transaction, logger):
 
     # Copy relevant POTemplates from existing series into a holding table,
     # complete with their original id fields.
-    where = 'distroseries = %s AND iscurrent' % quote(parent)
+    where = 'distroseries = %s AND iscurrent' % quote(source)
     copier.extract('potemplate', [], where)
 
     # Now that we have the data "in private," where nobody else can see it,
@@ -121,14 +123,14 @@ def copy_active_translations(parent, child, transaction, logger):
             datecreated =
                 timezone('UTC'::text,
                     ('now'::text)::timestamp(6) with time zone)
-    ''' % (copier.getHoldingTableName('potemplate'), quote(child)))
+    ''' % (copier.getHoldingTableName('potemplate'), quote(target)))
 
     # Copy each TranslationTemplateItem whose template we copied, and let
     # MultiTableCopy replace each potemplate reference with a reference to
     # our copy of the original POTMsgSet's potemplate.
     copier.extract('translationtemplateitem', ['potemplate'], 'sequence > 0')
 
-    # Copy POFiles, making them refer to the child's copied POTemplates.
+    # Copy POFiles, making them refer to the target's copied POTemplates.
     copier.extract(
         'pofile', ['potemplate'],
         batch_pouring_callback=omit_redundant_pofiles)

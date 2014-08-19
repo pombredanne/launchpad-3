@@ -133,7 +133,7 @@ Because of message sharing incremental copies are no longer needed.
     Traceback (most recent call last):
     ...
     AssertionError:
-    The child series must not yet have any translation templates.
+    The target series must not yet have any translation templates.
 
 
 Running the script
