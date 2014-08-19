@@ -232,3 +232,40 @@ templates of the parent series.
     >>> print sorted([template.name for template in dartempls])
     [u'template1', u'template2']
 
+The script defaults to copying from the given series' previous_series,
+but that can be overridden.
+
+    >>> grumpy = factory.makeDistroSeries(
+    ...     distribution=factory.makeDistribution(name="notbuntu"),
+    ...     name='grumpy')
+    >>> grumpy_id = grumpy.id
+    >>> transaction.commit()
+
+    >>> returnvalue, output, error_output = run_script(
+    ...     'scripts/copy-translations-from-parent.py',
+    ...     ['--distribution=notbuntu', '--series=grumpy'])
+    >>> returnvalue
+    2
+    >>> print error_output
+    INFO    Creating lockfile:
+      /var/lock/launchpad-copy-missing-translations-notbuntu-grumpy.lock
+    Usage: copy-translations-from-parent.py [options]
+    copy-translations-from-parent.py: error: No source series specified
+    and target has no previous series.
+    <BLANKLINE>
+
+    >>> returnvalue, output, error_output = run_script(
+    ...     'scripts/copy-translations-from-parent.py',
+    ...     ['--distribution=notbuntu', '--series=grumpy',
+    ...      '--from-distribution=foobuntu' , '--from-series=darty'])
+    >>> returnvalue
+    0
+    >>> print error_output
+    INFO    Creating lockfile:
+      /var/lock/launchpad-copy-missing-translations-notbuntu-grumpy.lock
+    INFO    Starting...
+    INFO    Populating blank distroseries notbuntu grumpy with
+            translations from foobuntu darty.
+    ...
+    INFO    Done.
+    <BLANKLINE>
