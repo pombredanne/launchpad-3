@@ -79,26 +79,6 @@ class SeriesStateKeeper:
         series.defer_translation_imports = self.defer_translation_imports
 
 
-def copy_translations_from_parent(distroseries, transaction, logger=None):
-    """See `IDistroSeries`."""
-    if logger is None:
-        logger = logging
-
-    assert distroseries.defer_translation_imports, (
-        "defer_translation_imports not set!"
-        " That would corrupt translation data mixing new imports"
-        " with the information being copied.")
-
-    assert distroseries.hide_all_translations, (
-        "hide_all_translations not set!"
-        " That would allow users to see and modify incomplete"
-        " translation state.")
-
-    flush_database_updates()
-    flush_database_caches()
-    copy_active_translations(distroseries, transaction, logger)
-
-
 def copy_distroseries_translations(distroseries, txn, logger):
     """Copy `distroseries` translations from its parents.
 
@@ -116,7 +96,15 @@ def copy_distroseries_translations(distroseries, txn, logger):
 
     try:
         # Do the actual work.
-        copy_translations_from_parent(distroseries, txn, logger)
+        assert distroseries.defer_translation_imports, (
+            "defer_translation_imports not set!"
+            " That would corrupt translation data mixing new imports"
+            " with the information being copied.")
+        assert distroseries.hide_all_translations, (
+            "hide_all_translations not set!"
+            " That would allow users to see and modify incomplete"
+            " translation state.")
+        copy_active_translations(distroseries, txn, logger)
     except:
         copy_failed = True
         # Give us a fresh transaction for proper cleanup.
