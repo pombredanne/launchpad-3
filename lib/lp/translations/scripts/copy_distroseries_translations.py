@@ -6,15 +6,9 @@
 __metaclass__ = type
 __all__ = ['copy_distroseries_translations']
 
-import logging
-
 from zope.component import getUtility
 
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
-from lp.services.database.sqlbase import (
-    flush_database_caches,
-    flush_database_updates,
-    )
 from lp.translations.model.distroseries_translations_copy import (
     copy_active_translations,
     )
