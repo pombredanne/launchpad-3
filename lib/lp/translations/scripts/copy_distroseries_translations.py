@@ -6,10 +6,12 @@
 __metaclass__ = type
 __all__ = ['copy_distroseries_translations']
 
-
 from zope.component import getUtility
 
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
+from lp.translations.model.distroseries_translations_copy import (
+    copy_active_translations,
+    )
 
 
 class SeriesTranslationFlagsModified(Warning):
@@ -88,7 +90,15 @@ def copy_distroseries_translations(distroseries, txn, logger):
 
     try:
         # Do the actual work.
-        distroseries.copyTranslationsFromParent(txn, logger)
+        assert distroseries.defer_translation_imports, (
+            "defer_translation_imports not set!"
+            " That would corrupt translation data mixing new imports"
+            " with the information being copied.")
+        assert distroseries.hide_all_translations, (
+            "hide_all_translations not set!"
+            " That would allow users to see and modify incomplete"
+            " translation state.")
+        copy_active_translations(distroseries, txn, logger)
     except:
         copy_failed = True
         # Give us a fresh transaction for proper cleanup.
