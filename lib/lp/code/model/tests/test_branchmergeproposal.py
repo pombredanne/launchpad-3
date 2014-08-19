@@ -68,12 +68,10 @@ from lp.services.database.constants import UTC_NOW
 from lp.services.webapp import canonical_url
 from lp.testing import (
     ExpectedException,
-    feature_flags,
     launchpadlib_for,
     login,
     login_person,
     person_logged_in,
-    set_feature_flag,
     TestCaseWithFactory,
     verifyObject,
     WebServiceTestCase,
@@ -2072,12 +2070,12 @@ class TestGetUnlandedSourceBranchRevisions(TestCaseWithFactory):
         self.assertNotIn(r1, partial_revisions)
 
 
-class TestBranchMergeProposalInlineCommentsBase(TestCaseWithFactory):
+class TestBranchMergeProposalInlineComments(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
-        super(TestBranchMergeProposalInlineCommentsBase, self).setUp()
+        super(TestBranchMergeProposalInlineComments, self).setUp()
         # Create a testing IPerson, IPreviewDiff and IBranchMergeProposal
         # for tests. Log in as the testing IPerson.
         self.person = self.factory.makePerson()
@@ -2104,46 +2102,6 @@ class TestBranchMergeProposalInlineCommentsBase(TestCaseWithFactory):
         return self.bmp.getDraftInlineComments(
             previewdiff_id, person)
 
-
-class TestBranchMergeProposalInlineCommentsDisabled(
-        TestBranchMergeProposalInlineCommentsBase):
-
-    layer = LaunchpadFunctionalLayer
-
-    def test_save_drafts(self):
-        # 'saveDraftInlineComment' does not record draft inline comments
-        # if the corresponding feature-flag is not set.
-        self.bmp.saveDraftInlineComment(
-            previewdiff_id=self.previewdiff.id,
-            person=self.person,
-            comments={'10': 'No game'})
-        self.assertIsNone(self.getDraft())
-
-    def test_publish(self):
-        # `createComment` does not publish given inline comments
-        # if the corresponding feature-flag is not set. The MP comment
-        # is created. The MP comment itself is recorded.
-        self.bmp.createComment(
-            owner=self.bmp.registrant,
-            subject='Testing!',
-            previewdiff_id=self.previewdiff.id,
-            inline_comments={'11': 'foo'},
-        )
-        self.assertEqual(0, len(self.getInlineComments()))
-        self.assertEqual(1, self.bmp.all_comments.count())
-
-
-class TestBranchMergeProposalInlineCommentsEnabled(
-        TestBranchMergeProposalInlineCommentsBase):
-
-    layer = LaunchpadFunctionalLayer
-
-    def setUp(self):
-        super(TestBranchMergeProposalInlineCommentsEnabled, self).setUp()
-        # Enabled corresponding feature flag.
-        self.useContext(feature_flags())
-        set_feature_flag(u'code.inline_diff_comments.enabled', u'enabled')
-
     def test_save_drafts(self):
         # Draft inline comments, passed as a dictionary keyed by diff line
         # number, can be stored for the current user using
@@ -2167,9 +2125,8 @@ class TestBranchMergeProposalInlineCommentsEnabled(
             DiffNotFound, self.bmp.saveDraftInlineComment, **kwargs)
 
     def test_publish(self):
-        # Existing (draft) inline comments can only be published associated
-        # with an `ICodeReviewComment` if the feature flag
-        # 'code.inline_diff_comments.enabled' is set.
+        # Existing (draft) inline comments can be published associated
+        # with an `ICodeReviewComment`.
         self.bmp.createComment(
             owner=self.bmp.registrant,
             subject='Testing!',
@@ -2346,11 +2303,6 @@ class TestWebservice(WebServiceTestCase):
 
     def test_saveDraftInlineComment_with_no_previewdiff(self):
         # Failure on context diff mismatch.
-
-        # Enabled inline_diff feature.
-        self.useContext(feature_flags())
-        set_feature_flag(u'code.inline_diff_comments.enabled', u'enabled')
-
         bmp = self.factory.makeBranchMergeProposal()
         ws_bmp = self.wsObject(bmp, user=bmp.target_branch.owner)
 
@@ -2362,11 +2314,6 @@ class TestWebservice(WebServiceTestCase):
         # Creating and retrieving draft inline comments.
         # These operations require an logged in user with permission
         # to view the BMP.
-
-        # Enabled inline_diff feature.
-        self.useContext(feature_flags())
-        set_feature_flag(u'code.inline_diff_comments.enabled', u'enabled')
-
         previewdiff = self.factory.makePreviewDiff()
         proposal = previewdiff.branch_merge_proposal
 
@@ -2382,11 +2329,6 @@ class TestWebservice(WebServiceTestCase):
 
     def test_getInlineComment(self):
         # Publishing and retrieving inline comments.
-
-        # Enabled inline_diff feature.
-        self.useContext(feature_flags())
-        set_feature_flag(u'code.inline_diff_comments.enabled', u'enabled')
-
         previewdiff = self.factory.makePreviewDiff()
         proposal = previewdiff.branch_merge_proposal
         user = proposal.target_branch.owner
