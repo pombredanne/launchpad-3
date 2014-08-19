@@ -624,10 +624,6 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
 
     implements(IBranchMergeProposalActionMenu)
 
-    related_features = {
-        'code.inline_diff_comments.enabled': True,
-        }
-
     schema = ClaimButton
 
     def initialize(self):
@@ -642,8 +638,6 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
         if getFeatureFlag("longpoll.merge_proposals.enabled"):
             cache.objects['merge_proposal_event_key'] = subscribe(
                 self.context).event_key
-        if getFeatureFlag("code.inline_diff_comments.enabled"):
-            cache.objects['inline_diff_comments'] = True
 
     @action('Claim', name='claim')
     def claim_action(self, action, data):

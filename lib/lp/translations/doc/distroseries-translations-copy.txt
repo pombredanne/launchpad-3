@@ -1,10 +1,11 @@
 Migrating translations between distro series
 ============================================
 
-When a new release series is created for a distribution it usually inherits
-all settings and data from its parent (preceding) series. To facilitate this
-for the translations the method copyTranslationsFromParent is called from a
-script once after the release series is created.
+When a new release series is created for a distribution it usually
+inherits all settings and data from its parent (preceding) series. To
+facilitate this for the translations the function
+copy_active_translations is called from a script once after the release
+series is created.
 
     >>> login("foo.bar@canonical.com")
     >>> foobuntu = factory.makeDistribution('foobuntu', 'Foobuntu')
@@ -68,40 +69,6 @@ We need a transaction manager (in this case a fake one) to make the copy work.
     >>> transaction_stub = FakeTransaction()
 
 
-Preconditions for migrating translations between distro series
-==============================================================
-
-Before we are able to migrate translations, there are a set of preconditions
-that should be met:
-
-First one is that we should keep the new distroseries's translations hidden
-from the public, so the copying procedure is not confused by concurrent
-updates:
-
-    >>> carty.hide_all_translations = False
-    >>> carty.copyTranslationsFromParent(transaction_stub)
-    Traceback (most recent call last):
-    ...
-    AssertionError: hide_all_translations not set!...
-
-    # Set the field to TRUE so we meet this precondition for following
-    # tests.
-    >>> carty.hide_all_translations = True
-
-The other one is that, for the same reason, the import queue should not be
-accepting uploads for this distroseries.
-
-    >>> carty.defer_translation_imports = False
-    >>> carty.copyTranslationsFromParent(transaction_stub)
-    Traceback (most recent call last):
-    ...
-    AssertionError: defer_translation_imports not set!...
-
-    # Set the field to TRUE so we meet this precondition for following
-    # tests.
-    >>> carty.defer_translation_imports = True
-
-
 Performing the migration
 ========================
 
@@ -109,7 +76,10 @@ A pristine distroseries can be filled with copies of translation templates
 and translation files from the parent. The actual translations, stored in
 POTMsgSet and TranslationMessage object, are shared between the two series.
 
-    >>> carty.copyTranslationsFromParent(transaction_stub)
+    >>> from lp.services.log.logger import DevNullLogger
+    >>> from lp.translations.model.distroseries_translations_copy import (
+    ...     copy_active_translations)
+    >>> copy_active_translations(carty, transaction_stub, DevNullLogger())
 
 All current templates were copied from the parent series but the deactivated
 template template3 was not copied.
@@ -155,11 +125,11 @@ in the new series.
     True
 
 
-Once the migration is done, copyTranslationsFromParent must not be called
+Once the migration is done, copy_active_translations must not be called
 again as it only operates on distroseries without any translation templates.
 Because of message sharing incremental copies are no longer needed.
 
-    >>> carty.copyTranslationsFromParent(transaction_stub)
+    >>> copy_active_translations(carty, transaction_stub, DevNullLogger())
     Traceback (most recent call last):
     ...
     AssertionError:
@@ -170,9 +140,9 @@ Running the script
 ==================
 
 Now, we execute the script that will do the migration using
-copyTranslationsFromParent. For that we create a new child series to receive
-those translations. For testing purposes this series has translation imports
-enabled.
+copy_active_translations. For that we create a new child series to
+receive those translations. For testing purposes this series has
+translation imports enabled.
 
     >>> darty = factory.makeDistroSeries(
     ...     foobuntu, '99.2', name='darty', previous_series=barty)

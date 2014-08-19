@@ -14,7 +14,6 @@ __all__ = [
 
 import collections
 from cStringIO import StringIO
-import logging
 from operator import attrgetter
 
 import apt_pkg
@@ -106,8 +105,6 @@ from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import (
-    flush_database_caches,
-    flush_database_updates,
     SQLBase,
     sqlvalues,
     )
@@ -171,9 +168,6 @@ from lp.soyuz.model.queue import (
 from lp.soyuz.model.section import Section
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.translations.enums import LanguagePackType
-from lp.translations.model.distroseries_translations_copy import (
-    copy_active_translations,
-    )
 from lp.translations.model.distroserieslanguage import (
     DistroSeriesLanguage,
     DummyDistroSeriesLanguage,
@@ -1326,25 +1320,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 BugSummary.distroseries_id == self.id,
                 BugSummary.sourcepackagename_id == None
                 )
-
-    def copyTranslationsFromParent(self, transaction, logger=None):
-        """See `IDistroSeries`."""
-        if logger is None:
-            logger = logging
-
-        assert self.defer_translation_imports, (
-            "defer_translation_imports not set!"
-            " That would corrupt translation data mixing new imports"
-            " with the information being copied.")
-
-        assert self.hide_all_translations, (
-            "hide_all_translations not set!"
-            " That would allow users to see and modify incomplete"
-            " translation state.")
-
-        flush_database_updates()
-        flush_database_caches()
-        copy_active_translations(self, transaction, logger)
 
     def getPOFileContributorsByLanguage(self, language):
         """See `IDistroSeries`."""

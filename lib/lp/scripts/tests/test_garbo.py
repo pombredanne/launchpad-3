@@ -111,10 +111,8 @@ from lp.soyuz.interfaces.livefs import LIVEFS_FEATURE_FLAG
 from lp.soyuz.model.livefsbuild import LiveFSFile
 from lp.soyuz.model.reporting import LatestPersonSourcePackageReleaseCache
 from lp.testing import (
-    feature_flags,
-    person_logged_in,
-    set_feature_flag,
     FakeAdapterMixin,
+    person_logged_in,
     TestCase,
     TestCaseWithFactory,
     )
@@ -632,10 +630,7 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         mp1_diff_draft = self.factory.makePreviewDiff(
             merge_proposal=mp1, date_created=now - timedelta(hours=1))
         mp1_diff = self.factory.makePreviewDiff(merge_proposal=mp1)
-        # Enabled 'inline_diff_comments' feature flag and attach comments
-        # on the old diffs, so they are kept in DB.
-        self.useContext(feature_flags())
-        set_feature_flag(u'code.inline_diff_comments.enabled', u'enabled')
+        # Attach comments on the old diffs, so they are kept in DB.
         mp1.createComment(
             owner=mp1.registrant, previewdiff_id=mp1_diff_comment.id,
             subject='Hold this diff!', inline_comments={'1': '!!!'})
