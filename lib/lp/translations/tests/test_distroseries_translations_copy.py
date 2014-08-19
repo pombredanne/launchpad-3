@@ -38,8 +38,7 @@ class TestDistroSeriesTranslationsCopying(TestCaseWithFactory):
         # place and does not copy it.  (Nor does it raise an error.)
         existing_series = self.factory.makeDistroSeries(name='existing')
         new_series = self.factory.makeDistroSeries(
-            name='new', distribution=existing_series.distribution,
-            previous_series=existing_series)
+            name='new', distribution=existing_series.distribution)
         template = self.factory.makePOTemplate(distroseries=existing_series)
         pofile = self.factory.makePOFile(potemplate=template)
         self.factory.makeCurrentTranslationMessage(
@@ -62,7 +61,8 @@ class TestDistroSeriesTranslationsCopying(TestCaseWithFactory):
         MultiTableCopy._pourTable = pour_or_stop_at_pofile
         try:
             copy_active_translations(
-                new_series, FakeTransaction(), DevNullLogger())
+                existing_series, new_series, FakeTransaction(),
+                DevNullLogger())
         except EarlyExit as e:
             pour_args = e.args
             pour_kwargs = e.kwargs

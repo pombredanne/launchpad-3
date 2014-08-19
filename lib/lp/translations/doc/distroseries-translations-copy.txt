@@ -10,8 +10,7 @@ series is created.
     >>> login("foo.bar@canonical.com")
     >>> foobuntu = factory.makeDistribution('foobuntu', 'Foobuntu')
     >>> barty = factory.makeDistroSeries(foobuntu, '99.0', name='barty')
-    >>> carty = factory.makeDistroSeries(
-    ...     foobuntu, '99.1', name='carty', previous_series=barty)
+    >>> carty = factory.makeDistroSeries(foobuntu, '99.1', name='carty')
 
 Functions to create source packages, templates and and translations.
 
@@ -66,7 +65,7 @@ Also, template3 happens to be deactivated.
 We need a transaction manager (in this case a fake one) to make the copy work.
 
     >>> from lp.testing.faketransaction import FakeTransaction
-    >>> transaction_stub = FakeTransaction()
+    >>> txn = FakeTransaction()
 
 
 Performing the migration
@@ -79,7 +78,8 @@ POTMsgSet and TranslationMessage object, are shared between the two series.
     >>> from lp.services.log.logger import DevNullLogger
     >>> from lp.translations.model.distroseries_translations_copy import (
     ...     copy_active_translations)
-    >>> copy_active_translations(carty, transaction_stub, DevNullLogger())
+    >>> logger = DevNullLogger()
+    >>> copy_active_translations(barty, carty, txn, logger)
 
 All current templates were copied from the parent series but the deactivated
 template template3 was not copied.
@@ -129,11 +129,11 @@ Once the migration is done, copy_active_translations must not be called
 again as it only operates on distroseries without any translation templates.
 Because of message sharing incremental copies are no longer needed.
 
-    >>> copy_active_translations(carty, transaction_stub, DevNullLogger())
+    >>> copy_active_translations(barty, carty, txn, logger)
     Traceback (most recent call last):
     ...
     AssertionError:
-    The child series must not yet have any translation templates.
+    The target series must not yet have any translation templates.
 
 
 Running the script
@@ -160,7 +160,7 @@ set.
 
     >>> from lp.testing.script import run_script
     >>> returnvalue, output, error_output = run_script(
-    ...     'scripts/copy-translations-from-parent.py',
+    ...     'scripts/copy-distroseries-translations.py',
     ...     ['--distribution=foobuntu', '--series=darty'])
     >>> returnvalue
     1
@@ -188,7 +188,7 @@ sets the defer_translation_imports flag itself before copying.
     >>> transaction.abort()
     >>> darty = DistroSeries.get(darty_id)
     >>> returnvalue, output, error_output = run_script(
-    ...     'scripts/copy-translations-from-parent.py',
+    ...     'scripts/copy-distroseries-translations.py',
     ...     ['--distribution=foobuntu', '--series=darty', '--force'])
     >>> returnvalue
     0
@@ -196,7 +196,8 @@ sets the defer_translation_imports flag itself before copying.
     INFO    Creating lockfile:
       /var/lock/launchpad-copy-missing-translations-foobuntu-darty.lock
     INFO    Starting...
-    INFO    Populating blank distroseries darty with translations from barty.
+    INFO    Populating blank distroseries foobuntu darty with
+            translations from foobuntu barty.
     INFO    Extracting from potemplate into
             "temp_potemplate_holding_foobuntu_darty"...
     INFO    Extracting from translationtemplateitem into
@@ -231,3 +232,40 @@ templates of the parent series.
     >>> print sorted([template.name for template in dartempls])
     [u'template1', u'template2']
 
+The script defaults to copying from the given series' previous_series,
+but that can be overridden.
+
+    >>> grumpy = factory.makeDistroSeries(
+    ...     distribution=factory.makeDistribution(name="notbuntu"),
+    ...     name='grumpy')
+    >>> grumpy_id = grumpy.id
+    >>> transaction.commit()
+
+    >>> returnvalue, output, error_output = run_script(
+    ...     'scripts/copy-distroseries-translations.py',
+    ...     ['--distribution=notbuntu', '--series=grumpy'])
+    >>> returnvalue
+    2
+    >>> print error_output
+    INFO    Creating lockfile:
+      /var/lock/launchpad-copy-missing-translations-notbuntu-grumpy.lock
+    Usage: copy-distroseries-translations.py [options]
+    copy-distroseries-translations.py: error: No source series specified
+    and target has no previous series.
+    <BLANKLINE>
+
+    >>> returnvalue, output, error_output = run_script(
+    ...     'scripts/copy-distroseries-translations.py',
+    ...     ['--distribution=notbuntu', '--series=grumpy',
+    ...      '--from-distribution=foobuntu' , '--from-series=darty'])
+    >>> returnvalue
+    0
+    >>> print error_output
+    INFO    Creating lockfile:
+      /var/lock/launchpad-copy-missing-translations-notbuntu-grumpy.lock
+    INFO    Starting...
+    INFO    Populating blank distroseries notbuntu grumpy with
+            translations from foobuntu darty.
+    ...
+    INFO    Done.
+    <BLANKLINE>
