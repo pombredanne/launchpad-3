@@ -74,11 +74,11 @@ class SeriesStateKeeper:
 
 
 def copy_distroseries_translations(source, target, txn, logger):
-    """Copy `distroseries` translations from its parents.
+    """Copy translations into a new `DistroSeries`.
 
-    Wraps around `DistroSeries.copyMissingTranslationsFromParent`, but also
-    ensures that the `hide_all_translations` and `defer_translation_imports`
-    flags are set.  After copying they are restored to their previous state.
+    Wraps around `copy_active_translations`, but also ensures that the
+    `hide_all_translations` and `defer_translation_imports` flags are
+    set.  After copying they are restored to their previous state.
     """
     statekeeper = SeriesStateKeeper()
     statekeeper.prepare(target)
