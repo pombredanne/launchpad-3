@@ -26,27 +26,28 @@ class TestCopying(TestCase):
     def test_flagsHandling(self):
         """Flags are correctly restored, no matter what their values."""
         sid = getUtility(IDistributionSet)['debian']['sid']
+        source = sid.previous_series
 
         sid.hide_all_translations = True
         sid.defer_translation_imports = True
-        copy_distroseries_translations(sid, self.txn, logging)
+        copy_distroseries_translations(source, sid, self.txn, logging)
         self.assertTrue(sid.hide_all_translations)
         self.assertTrue(sid.defer_translation_imports)
 
         sid.hide_all_translations = True
         sid.defer_translation_imports = False
-        copy_distroseries_translations(sid, self.txn, logging)
+        copy_distroseries_translations(source, sid, self.txn, logging)
         self.assertTrue(sid.hide_all_translations)
         self.assertFalse(sid.defer_translation_imports)
 
         sid.hide_all_translations = False
         sid.defer_translation_imports = True
-        copy_distroseries_translations(sid, self.txn, logging)
+        copy_distroseries_translations(source, sid, self.txn, logging)
         self.assertFalse(sid.hide_all_translations)
         self.assertTrue(sid.defer_translation_imports)
 
         sid.hide_all_translations = False
         sid.defer_translation_imports = False
-        copy_distroseries_translations(sid, self.txn, logging)
+        copy_distroseries_translations(source, sid, self.txn, logging)
         self.assertFalse(sid.hide_all_translations)
         self.assertFalse(sid.defer_translation_imports)
