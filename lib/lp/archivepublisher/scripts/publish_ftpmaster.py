@@ -17,6 +17,8 @@ from zope.component import getUtility
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.archivepublisher.publishing import GLOBAL_PUBLISHER_LOCK
+from lp.archivepublisher.scripts.processaccepted import ProcessAccepted
+from lp.archivepublisher.scripts.publishdistro import PublishDistro
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import (
     PackagePublishingPocket,
@@ -36,8 +38,6 @@ from lp.soyuz.enums import (
     )
 from lp.soyuz.model.distroarchseries import DistroArchSeries
 from lp.soyuz.scripts.custom_uploads_copier import CustomUploadsCopier
-from lp.soyuz.scripts.processaccepted import ProcessAccepted
-from lp.soyuz.scripts.publishdistro import PublishDistro
 
 
 def get_publishable_archives(distribution):

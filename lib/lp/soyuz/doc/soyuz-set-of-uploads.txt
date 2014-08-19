@@ -123,10 +123,9 @@ We need a way to count the items in a queue directory
 And then we need a way to process the uploads from the queue
 
     >>> import logging
+    >>> from lp.archiveuploader.scripts.processupload import ProcessUpload
     >>> from lp.services.config import config
     >>> from lp.services.log.logger import FakeLogger
-    >>> from lp.soyuz.scripts.soyuz_process_upload import (
-    ...     ProcessUpload)
     >>> from lp.testing.dbuser import switch_dbuser
     >>> from lp.testing.layers import LaunchpadZopelessLayer
     >>> def process_uploads(upload_policy, series, loglevel):
