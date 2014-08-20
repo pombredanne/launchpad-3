@@ -115,10 +115,9 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
 
         if self.context.sourcepackagename is not None:
             field_values['sourcepackagename'] = self.context.sourcepackagename
-        if self.context.is_targeted_to_ubuntu:
             if self.context.potemplate is None:
-                # Default for Ubuntu templates is to
-                # include them in languagepacks.
+                # Default for distro templates is to include them in
+                # languagepacks.
                 field_values['languagepack'] = True
             else:
                 field_values['languagepack'] = (
@@ -273,14 +272,11 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
                             'name', 'translation_domain', 'languagepack',
                             'language']
 
-        if self.context.productseries is not None:
-            # We are handling an entry for a productseries, this field is not
-            # useful here.
-            self.field_names.remove('sourcepackagename')
-
-        if not self.context.is_targeted_to_ubuntu:
-            # Only show languagepack for Ubuntu packages.
+        if self.context.sourcepackagename is None:
+            # We are handling an entry for a productseries, so these
+            # fields are not useful here.
             self.field_names.remove('languagepack')
+            self.field_names.remove('sourcepackagename')
 
         # Execute default initialization.
         LaunchpadFormView.initialize(self)
@@ -461,17 +457,17 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
                 self.context.path,
                 self.context.importer)
 
-        if (self.context.sourcepackagename is not None and
-            potemplate.sourcepackagename is not None and
-            self.context.sourcepackagename != potemplate.sourcepackagename):
-            # We got the template from a different package than the one
-            # selected by the user where the import should done, so we
-            # note it here.
-            potemplate.from_sourcepackagename = (
-                self.context.sourcepackagename)
-
-        if self.context.is_targeted_to_ubuntu:
+        if self.context.sourcepackagename is not None:
             potemplate.languagepack = languagepack
+
+            if (potemplate.sourcepackagename is not None and
+                self.context.sourcepackagename !=
+                    potemplate.sourcepackagename):
+                # We got the template from a different package than the one
+                # selected by the user where the import should done, so we
+                # note it here.
+                potemplate.from_sourcepackagename = (
+                    self.context.sourcepackagename)
 
         return potemplate
 
