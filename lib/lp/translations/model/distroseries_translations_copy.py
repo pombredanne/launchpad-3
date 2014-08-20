@@ -111,10 +111,11 @@ def copy_active_translations(source, target, transaction, logger,
     where = 'distroseries = %s AND iscurrent' % quote(source)
     if sourcepackagenames is not None:
         if not sourcepackagenames:
-            return
-        where += (
-            ' AND sourcepackagename IN %s'
-            % quote([spn.id for spn in sourcepackagenames]))
+            where += " AND false"
+        else:
+            where += (
+                ' AND sourcepackagename IN %s'
+                % quote([spn.id for spn in sourcepackagenames]))
     copier.extract('potemplate', [], where)
 
     # Now that we have the data "in private," where nobody else can see it,
