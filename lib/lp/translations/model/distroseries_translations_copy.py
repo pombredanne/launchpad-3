@@ -47,7 +47,8 @@ def omit_redundant_pofiles(from_table, to_table, batch_size, begin_id,
         """ % params)
 
 
-def copy_active_translations(source, target, transaction, logger):
+def copy_active_translations(source, target, transaction, logger,
+                             sourcepackagenames=None):
     """Populate target `DistroSeries` with source series' translations.
 
     The target must not already have any translations.
@@ -108,6 +109,12 @@ def copy_active_translations(source, target, transaction, logger):
     # Copy relevant POTemplates from existing series into a holding table,
     # complete with their original id fields.
     where = 'distroseries = %s AND iscurrent' % quote(source)
+    if sourcepackagenames is not None:
+        if not sourcepackagenames:
+            return
+        where += (
+            ' AND sourcepackagename IN %s'
+            % quote([spn.id for spn in sourcepackagenames]))
     copier.extract('potemplate', [], where)
 
     # Now that we have the data "in private," where nobody else can see it,
