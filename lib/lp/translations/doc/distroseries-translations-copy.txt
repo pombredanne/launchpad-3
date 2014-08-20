@@ -41,7 +41,7 @@ Functions to create source packages, templates and and translations.
 
     >>> template1 = makePOTemplateAndPOFiles(barty, package1,
     ...                                          'template1', ['eo'])
-    >>> template2 = makePOTemplateAndPOFiles(barty, package1,
+    >>> template2 = makePOTemplateAndPOFiles(barty, package2,
     ...                                          'template2', ['eo', 'de'])
     >>> template3 = makePOTemplateAndPOFiles(barty, package1,
     ...                                          'template3', ['eo'])
@@ -269,3 +269,44 @@ but that can be overridden.
     ...
     INFO    Done.
     <BLANKLINE>
+
+It's also possible to copy only the subset of templates that have a
+corresponding source package published in the target. If we create a new
+series containing only package1 and then copy with
+--published-sources-only, only template1 makes it across. template2 is
+for package2, and template3 is inactive, so they're both skipped.
+
+    >>> lumpy = factory.makeDistroSeries(
+    ...     distribution=factory.makeDistribution(name="wartbuntu"),
+    ...     name='lumpy', previous_series=carty)
+    >>> lumpy_id = lumpy.id
+    >>> transaction.commit()
+
+    >>> returnvalue, output, error_output = run_script(
+    ...     'scripts/copy-distroseries-translations.py',
+    ...     ['--distribution=wartbuntu', '--series=lumpy',
+    ...      '--published-sources-only'])
+    >>> returnvalue
+    0
+    >>> transaction.abort()
+    >>> lumpy = DistroSeries.get(lumpy_id)
+    >>> len(getUtility(IPOTemplateSet).getSubset(distroseries=lumpy))
+    0
+
+    >>> factory.makeSourcePackagePublishingHistory(
+    ...     archive=lumpy.main_archive, distroseries=lumpy,
+    ...     sourcepackagename='package1')
+    <SourcePackagePublishingHistory ...>
+    >>> transaction.commit()
+
+    >>> returnvalue, output, error_output = run_script(
+    ...     'scripts/copy-distroseries-translations.py',
+    ...     ['--distribution=wartbuntu', '--series=lumpy',
+    ...      '--published-sources-only'])
+    >>> returnvalue
+    0
+    >>> transaction.abort()
+    >>> lumpy = DistroSeries.get(lumpy_id)
+    >>> [pot.name for pot in
+    ...  getUtility(IPOTemplateSet).getSubset(distroseries=lumpy)]
+    [u'template1']

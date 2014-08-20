@@ -43,6 +43,12 @@ class TranslationsCopier(LaunchpadCronScript):
             help=(
                 "The source distroseries (if omitted, target's previous "
                 "series will be used)."))
+        self.parser.add_option(
+            '--published-sources-only', dest='published_sources_only',
+            action="store_true", default=False,
+            help=(
+                "Copy only templates for sources that are published in the "
+                "target series."))
         self.parser.add_option('-f', '--force', dest='force',
             action="store_true", default=False,
             help="Don't check if target's UI and imports are blocked; "
@@ -84,7 +90,9 @@ class TranslationsCopier(LaunchpadCronScript):
         self.logger.info('Starting...')
 
         # Actual work is done here.
-        copy_distroseries_translations(source, target, self.txn, self.logger)
+        copy_distroseries_translations(
+            source, target, self.txn, self.logger,
+            published_sources_only=self.options.published_sources_only)
 
         # We would like to update the DistroRelase statistics, but it takes
         # too long so this should be done after.
