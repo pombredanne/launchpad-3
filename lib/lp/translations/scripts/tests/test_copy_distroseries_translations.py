@@ -7,19 +7,21 @@ __metaclass__ = type
 
 
 import logging
-from unittest import TestCase
 
 from zope.component import getUtility
 
 from lp.registry.interfaces.distribution import IDistributionSet
+from lp.soyuz.enums import PackagePublishingStatus
+from lp.testing import TestCaseWithFactory
 from lp.testing.faketransaction import FakeTransaction
 from lp.testing.layers import LaunchpadZopelessLayer
+from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.scripts.copy_distroseries_translations import (
     copy_distroseries_translations,
     )
 
 
-class TestCopying(TestCase):
+class TestCopying(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
     txn = FakeTransaction()
 
@@ -51,3 +53,37 @@ class TestCopying(TestCase):
         copy_distroseries_translations(source, sid, self.txn, logging)
         self.assertFalse(sid.hide_all_translations)
         self.assertFalse(sid.defer_translation_imports)
+
+    def test_published_packages_only(self):
+        # copy_distroseries_translations's published_sources_only flag
+        # restricts the copied templates to those with a corresponding
+        # published source package in the target.
+        distro = self.factory.makeDistribution(name='notbuntu')
+        dapper = self.factory.makeDistroSeries(
+            distribution=distro, name='dapper')
+        spns = [self.factory.makeSourcePackageName() for i in range(3)]
+        for spn in spns:
+            self.factory.makePOTemplate(
+                distroseries=dapper, sourcepackagename=spn)
+
+        def get_template_spns(series):
+            return [
+                pot.sourcepackagename for pot in
+                getUtility(IPOTemplateSet).getSubset(distroseries=series)]
+
+        # Create a fresh series with two sources published.
+        edgy = self.factory.makeDistroSeries(
+            distribution=distro, name='edgy')
+        self.factory.makeSourcePackagePublishingHistory(
+            archive=edgy.main_archive, distroseries=edgy,
+            sourcepackagename=spns[0],
+            status=PackagePublishingStatus.PUBLISHED)
+        self.factory.makeSourcePackagePublishingHistory(
+            archive=edgy.main_archive, distroseries=edgy,
+            sourcepackagename=spns[2], status=PackagePublishingStatus.PENDING)
+
+        self.assertContentEqual(spns, get_template_spns(dapper))
+        self.assertContentEqual([], get_template_spns(edgy))
+        copy_distroseries_translations(
+            dapper, edgy, self.txn, logging, published_sources_only=True)
+        self.assertContentEqual([spns[0], spns[2]], get_template_spns(edgy))
