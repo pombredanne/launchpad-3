@@ -354,7 +354,7 @@ class UploadHandler:
                 dict(upload_path=relative_path, path_error=e.args[0],
                      extra_info=(
                          "Please check the documentation at "
-                         "https://help.launchpad.net/Packaging/PPA#Uploading "
+                         "https://help.launchpad.net/Packaging/PPA/Uploading "
                          "and update your configuration.")))
         logger.debug("Finding fresh policy")
         policy = self._getPolicyForDistro(distribution)

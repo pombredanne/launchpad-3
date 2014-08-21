@@ -799,7 +799,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
              'It is likely that you have a configuration problem with '
                  'dput/dupload.',
              'Please check the documentation at '
-                 'https://help.launchpad.net/Packaging/PPA#Uploading '
+                 'https://help.launchpad.net/Packaging/PPA/Uploading '
                  'and update your configuration.',
              '',
              'Further error processing not possible because of a critical '
@@ -808,7 +808,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         contents = [
             "Subject: [~cprov/ubuntu/ppa] bar_1.0-1_source.changes rejected",
             "Could not find person or team named 'boing'",
-            "https://help.launchpad.net/Packaging/PPA#Uploading",
+            "https://help.launchpad.net/Packaging/PPA/Uploading",
             "If you don't understand why your files were rejected please "
                 "send an email",
             ("to %s for help (requires membership)."
@@ -1038,7 +1038,7 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
             "It is likely that you have a configuration problem with "
             "dput/dupload.\n"
             "Please check the documentation at "
-            "https://help.launchpad.net/Packaging/PPA#Uploading and update "
+            "https://help.launchpad.net/Packaging/PPA/Uploading and update "
             "your configuration.\n\n"
             "Further error processing not possible because of a critical "
             "previous error." in body)
