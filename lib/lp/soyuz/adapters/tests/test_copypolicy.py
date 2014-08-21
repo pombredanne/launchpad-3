@@ -103,13 +103,6 @@ class TestCopyPolicy(TestCaseWithFactory):
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
         self.assertFalse(cp.send_email(archive))
 
-    def test_sync_does_not_send_emails(self):
-        cp = MassSyncCopyPolicy()
-        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
-        self.assertFalse(cp.send_email(archive))
-        archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
-        self.assertFalse(cp.send_email(archive))
-
     def test_policies_implement_ICopyPolicy(self):
         for policy in PackageCopyPolicy.items:
             self.assertTrue(verifyObject(ICopyPolicy, ICopyPolicy(policy)))

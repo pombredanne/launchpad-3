@@ -57,13 +57,6 @@ class BasicCopyPolicy:
 
         return False
 
-
-class InsecureCopyPolicy(BasicCopyPolicy):
-    """A policy for copying from insecure sources."""
-    implements(ICopyPolicy)
-
-    enum_value = PackageCopyPolicy.INSECURE
-
     def send_email(self, archive):
         if archive.is_ppa:
             return False
@@ -71,14 +64,21 @@ class InsecureCopyPolicy(BasicCopyPolicy):
         return True
 
 
+class InsecureCopyPolicy(BasicCopyPolicy):
+    """A policy for copying from insecure sources."""
+    implements(ICopyPolicy)
+
+    enum_value = PackageCopyPolicy.INSECURE
+
+
 class MassSyncCopyPolicy(BasicCopyPolicy):
-    """A policy for mass 'sync' copies."""
+    """A policy for mass 'sync' copies.
+
+    Exists soley so the classic job runner processes autosyncs last.
+    """
     implements(ICopyPolicy)
 
     enum_value = PackageCopyPolicy.MASS_SYNC
-
-    def send_email(self, archive=None):
-        return False
 
 
 policies = [
