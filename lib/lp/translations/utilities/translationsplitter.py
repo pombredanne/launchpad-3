@@ -6,11 +6,7 @@ __metaclass__ = type
 
 import logging
 
-from storm.expr import (
-    And,
-    Join,
-    Not,
-    )
+from storm.expr import Not
 from storm.locals import (
     ClassAlias,
     Store,
@@ -135,25 +131,18 @@ class TranslationTemplateSplitter(TranslationSplitterBase):
         Only return those that are shared but shouldn't be because they
         are now in non-sharing templates.
         """
-        store = Store.of(self.potemplate)
-        ThisItem = ClassAlias(TranslationTemplateItem, 'ThisItem')
-        OtherItem = ClassAlias(TranslationTemplateItem, 'OtherItem')
-        OtherTemplate = ClassAlias(POTemplate, 'OtherTemplate')
-
-        tables = [
-            OtherTemplate,
-            Join(OtherItem, OtherItem.potemplateID == OtherTemplate.id),
-            Join(ThisItem,
-                 And(ThisItem.potmsgsetID == OtherItem.potmsgsetID,
-                     ThisItem.potemplateID == self.potemplate.id)),
-            ]
         sharing_subset = getUtility(IPOTemplateSet).getSharingSubset(
             product=self.potemplate.product,
             distribution=self.potemplate.distribution,
             sourcepackagename=self.potemplate.sourcepackagename)
         sharing_ids = list(
             sharing_subset.getSharingPOTemplateIDs(self.potemplate.name))
-        return store.using(*tables).find(
+
+        ThisItem = ClassAlias(TranslationTemplateItem, 'ThisItem')
+        OtherItem = ClassAlias(TranslationTemplateItem, 'OtherItem')
+        return Store.of(self.potemplate).find(
             (OtherItem, ThisItem),
-            Not(OtherTemplate.id.is_in(sharing_ids)),
+            ThisItem.potemplateID == self.potemplate.id,
+            OtherItem.potmsgsetID == ThisItem.potmsgsetID,
+            Not(OtherItem.potemplateID.is_in(sharing_ids)),
             )
