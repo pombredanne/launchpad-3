@@ -30,17 +30,14 @@ class TestMergeExistingPackagings(TestCaseWithFactory):
             with person_logged_in(packaging.owner):
                 packaging.destroySelf()
         job = make_translation_merge_job(self.factory)
-        packaging = self.factory.makePackagingLink(job.productseries,
-                job.sourcepackagename, job.distroseries)
         self.assertEqual(2, count_translations(job))
         transaction.commit()
         retcode, stdout, stderr = run_script(
             'scripts/rosetta/merge-existing-packagings.py', [],
             expect_returncode=0)
         merge_message = 'INFO    Merging %s/%s and %s/%s.\n' % (
-            packaging.productseries.product.name,
-            packaging.productseries.name,
-            packaging.sourcepackagename.name, packaging.distroseries.name)
+            job.productseries.product.name, job.productseries.name,
+            job.sourcepackagename.name, job.distroseries.name)
         self.assertEqual(
             merge_message +
             'INFO    Deleted POTMsgSets: 1.  TranslationMessages: 1.\n'
