@@ -376,16 +376,10 @@ class TranslationMerger:
     @classmethod
     def mergePackagingTemplates(cls, productseries, sourcepackagename,
                                 distroseries, tm):
-        template_map = dict()
-        all_templates = list(POTemplateSubset(
-            sourcepackagename=sourcepackagename,
-            distroseries=distroseries))
-        all_templates.extend(POTemplateSubset(
-            productseries=productseries))
-        for template in all_templates:
-            template_map.setdefault(template.name, []).append(template)
-        for name, templates in template_map.iteritems():
-            cls._mergeTemplates(templates, tm)
+        subset = getUtility(IPOTemplateSet).getSharingSubset(
+            product=productseries.product)
+        for pot in POTemplateSubset(productseries=productseries):
+            cls._mergeTemplates(subset.getSharingPOTemplates(pot.name), tm)
 
     @classmethod
     def mergeModifiedTemplates(cls, potemplate, tm):
