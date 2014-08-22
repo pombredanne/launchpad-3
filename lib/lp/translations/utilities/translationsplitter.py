@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -6,22 +6,15 @@ __metaclass__ = type
 
 import logging
 
-from storm.expr import (
-    And,
-    Join,
-    LeftJoin,
-    Not,
-    Or,
-    )
+from storm.expr import Not
 from storm.locals import (
     ClassAlias,
     Store,
     )
 import transaction
+from zope.component import getUtility
 
-from lp.registry.model.distroseries import DistroSeries
-from lp.registry.model.packaging import Packaging
-from lp.registry.model.productseries import ProductSeries
+from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.model.potemplate import POTemplate
 from lp.translations.model.translationtemplateitem import (
     TranslationTemplateItem,
@@ -138,79 +131,18 @@ class TranslationTemplateSplitter(TranslationSplitterBase):
         Only return those that are shared but shouldn't be because they
         are now in non-sharing templates.
         """
-        store = Store.of(self.potemplate)
+        sharing_subset = getUtility(IPOTemplateSet).getSharingSubset(
+            product=self.potemplate.product,
+            distribution=self.potemplate.distribution,
+            sourcepackagename=self.potemplate.sourcepackagename)
+        sharing_ids = list(
+            sharing_subset.getSharingPOTemplateIDs(self.potemplate.name))
+
         ThisItem = ClassAlias(TranslationTemplateItem, 'ThisItem')
         OtherItem = ClassAlias(TranslationTemplateItem, 'OtherItem')
-        OtherTemplate = ClassAlias(POTemplate, 'OtherTemplate')
-
-        tables = [
-            OtherTemplate,
-            Join(OtherItem, OtherItem.potemplateID == OtherTemplate.id),
-            Join(ThisItem,
-                 And(ThisItem.potmsgsetID == OtherItem.potmsgsetID,
-                     ThisItem.potemplateID == self.potemplate.id)),
-            ]
-
-        if self.potemplate.productseries is not None:
-            # If the template is now in a product, we look for all
-            # effectively sharing templates that are in *different*
-            # products, or that are in a sourcepackage which is not
-            # linked (through Packaging table) with this product.
-            ps = self.potemplate.productseries
-            productseries_join = LeftJoin(
-                ProductSeries,
-                ProductSeries.id == OtherTemplate.productseriesID)
-            packaging_join = LeftJoin(
-                Packaging,
-                And(Packaging.productseriesID == ps.id,
-                    (Packaging.sourcepackagenameID ==
-                     OtherTemplate.sourcepackagenameID),
-                    Packaging.distroseriesID == OtherTemplate.distroseriesID
-                    ))
-            tables.extend([productseries_join, packaging_join])
-            # Template should not be sharing if...
-            other_clauses = Or(
-                # The name is different, or...
-                OtherTemplate.name != self.potemplate.name,
-                # It's in a different product, or...
-                And(Not(ProductSeries.id == None),
-                    ProductSeries.productID != ps.productID),
-                # There is no link between this product series and
-                # a source package the template is in.
-                And(Not(OtherTemplate.distroseriesID == None),
-                    Packaging.id == None))
-        else:
-            # If the template is now in a source package, we look for all
-            # effectively sharing templates that are in *different*
-            # distributions or source packages, or that are in a product
-            # which is not linked with this source package.
-            ds = self.potemplate.distroseries
-            spn = self.potemplate.sourcepackagename
-            distroseries_join = LeftJoin(
-                DistroSeries,
-                DistroSeries.id == OtherTemplate.distroseriesID)
-            packaging_join = LeftJoin(
-                Packaging,
-                And(Packaging.distroseriesID == ds.id,
-                    Packaging.sourcepackagenameID == spn.id,
-                    Packaging.productseriesID == OtherTemplate.productseriesID
-                    ))
-            tables.extend([distroseries_join, packaging_join])
-            # Template should not be sharing if...
-            other_clauses = Or(
-                # The name is different, or...
-                OtherTemplate.name != self.potemplate.name,
-                # It's in a different distribution or source package, or...
-                And(Not(DistroSeries.id == None),
-                    Or(DistroSeries.distributionID != ds.distributionID,
-                       OtherTemplate.sourcepackagenameID != spn.id)),
-                # There is no link between this source package and
-                # a product the template is in.
-                And(Not(OtherTemplate.productseriesID == None),
-                    Packaging.id == None))
-
-        return store.using(*tables).find(
+        return Store.of(self.potemplate).find(
             (OtherItem, ThisItem),
-            OtherTemplate.id != self.potemplate.id,
-            other_clauses,
+            ThisItem.potemplateID == self.potemplate.id,
+            OtherItem.potmsgsetID == ThisItem.potmsgsetID,
+            Not(OtherItem.potemplateID.is_in(sharing_ids)),
             )
