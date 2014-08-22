@@ -37,6 +37,8 @@ class TestMergeTranslations(TestCaseWithFactory):
             INFO    Running <.*?TranslationMergeJob.*?> \(ID .*\) in status Waiting
             INFO    Merging .* and .* in Ubuntu Distroseries.*
             INFO    Deleted POTMsgSets: 1.  TranslationMessages: 1.
+            INFO    Merging template 1/2.
+            INFO    Merging template 2/2.
             INFO    Running <.*?TranslationSplitJob.*?> \(ID .*\) in status Waiting
             INFO    Splitting .* and .* in Ubuntu Distroseries.*
             INFO    1 entries split.

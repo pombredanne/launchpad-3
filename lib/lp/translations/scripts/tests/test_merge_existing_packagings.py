@@ -43,7 +43,9 @@ class TestMergeExistingPackagings(TestCaseWithFactory):
             packaging.sourcepackagename.name, packaging.distroseries.name)
         self.assertEqual(
             merge_message +
-            'INFO    Deleted POTMsgSets: 1.  TranslationMessages: 1.\n',
+            'INFO    Deleted POTMsgSets: 1.  TranslationMessages: 1.\n'
+            'INFO    Merging template 1/2.\n'
+            'INFO    Merging template 2/2.\n',
             stderr)
         self.assertEqual('', stdout)
         self.assertEqual(1, count_translations(job))
