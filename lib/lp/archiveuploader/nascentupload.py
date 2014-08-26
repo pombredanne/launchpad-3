@@ -576,16 +576,12 @@ class NascentUpload:
             lookup_pockets.append(PackagePublishingPocket.RELEASE)
 
         check_version = True
-        autoaccept_new = False
         if self.policy.archive.is_copy:
             # Copy archives always inherit their overrides from the
             # primary archive. We don't want to perform the version
             # check in this case, as the rebuild may finish after a new
             # version exists in the primary archive.
             check_version = False
-            autoaccept_new = True
-        elif self.policy.archive.is_ppa:
-            autoaccept_new = True
 
         override_policy = self.policy.archive.getOverridePolicy(
             self.policy.distroseries, self.policy.pocket)
@@ -616,7 +612,7 @@ class NascentUpload:
                         self.checkVersion(
                             self.changes.dsc.dsc_version, ancestor.version,
                             uploaded_file.filename)
-                if override.new != False and not autoaccept_new:
+                if override.new != False:
                     self.logger.debug(
                         "%s: (source) NEW", uploaded_file.package)
                     uploaded_file.new = True
@@ -670,7 +666,7 @@ class NascentUpload:
                         self.checkVersion(
                             uploaded_file.control_version, ancestor.version,
                             uploaded_file.filename)
-                if override.new != False and not autoaccept_new:
+                if override.new != False:
                     self.logger.debug(
                         "%s: (binary) NEW", uploaded_file.package)
                     uploaded_file.new = True
@@ -882,15 +878,14 @@ class NascentUpload:
                     "Upload contains binaries of different sources.")
                 self.queue_root.addBuild(considered_build)
 
-        if self.is_new:
-            return
-
-        # If it is known (already overridden properly), move it to
-        # ACCEPTED state automatically
-        if self.policy.autoApprove(self):
+        # Uploads always start in NEW. Try to autoapprove into ACCEPTED
+        # if possible, otherwise just move to UNAPPROVED unless it's
+        # new.
+        if ((self.is_new and self.policy.autoApproveNew(self)) or
+            (not self.is_new and self.policy.autoApprove(self))):
             self.queue_root.acceptFromUploader(
                 self.changes.filepath, logger=self.logger)
-        else:
+        elif not self.is_new:
             self.logger.debug("Setting it to UNAPPROVED")
             self.queue_root.setUnapproved()
 
