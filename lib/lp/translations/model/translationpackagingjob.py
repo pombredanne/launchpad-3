@@ -37,7 +37,7 @@ from lp.translations.model.translationsharingjob import (
     TranslationSharingJobDerived,
     TranslationSharingJobType,
     )
-from lp.translations.translationmerger import (
+from lp.translations.utilities.translationmerger import (
     TransactionManager,
     TranslationMerger,
     )
