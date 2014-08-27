@@ -21,6 +21,12 @@ from lp.translations.model.translationtemplateitem import (
     )
 
 
+# XXX wgrant 2014-08-27: This whole module is terribly misguided and
+# horrifyingly broken. It's probably unsalvageable and should be
+# rewritten and integrated with TranslationMerger into a
+# TranslationSharingReconciler. See XXXs below for some examples.
+
+
 class TranslationSplitterBase:
     """Base class for translation splitting jobs."""
 
@@ -92,6 +98,11 @@ class TranslationSplitter(TranslationSplitterBase):
 
     def findShared(self):
         """Provide tuples of upstream, ubuntu for each shared POTMsgSet."""
+        # XXX wgrant 2014-08-27: This has always been fundamentally
+        # broken. It only splits between exactly that ProductSeries
+        # and that SourcePackage, leaving other templates in the same
+        # Product or DistributionSourcePackage sharing with the other
+        # side but not some of the templates on their own side!
         store = Store.of(self.productseries)
         UpstreamItem = ClassAlias(TranslationTemplateItem, 'UpstreamItem')
         UpstreamTemplate = ClassAlias(POTemplate, 'UpstreamTemplate')
@@ -131,6 +142,9 @@ class TranslationTemplateSplitter(TranslationSplitterBase):
         Only return those that are shared but shouldn't be because they
         are now in non-sharing templates.
         """
+        # XXX wgrant 2014-08-27: This has always been pretty broken.
+        # If a sharing subset has been split, templates in the other
+        # subset will end up being split from each other as well!
         sharing_subset = getUtility(IPOTemplateSet).getSharingSubset(
             product=self.potemplate.product,
             distribution=self.potemplate.distribution,
