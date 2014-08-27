@@ -16,7 +16,7 @@ from lp.translations.tests.test_translationpackagingjob import (
     count_translations,
     make_translation_merge_job,
     )
-from lp.translations.translationmerger import TranslationMerger
+from lp.translations.utilities.translationmerger import TranslationMerger
 
 
 class TestMergeExistingPackagings(TestCaseWithFactory):
