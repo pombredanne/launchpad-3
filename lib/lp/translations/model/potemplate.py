@@ -30,19 +30,14 @@ from sqlobject import (
 from storm.expr import (
     And,
     Desc,
-    Func,
-    In,
     Join,
     LeftJoin,
     Or,
-    Select,
     SQL,
     )
 from storm.info import ClassAlias
-from storm.store import (
-    EmptyResultSet,
-    Store,
-    )
+from storm.properties import Int
+from storm.store import Store
 from zope.component import (
     getAdapter,
     getUtility,
@@ -54,7 +49,6 @@ from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.person import validate_public_person
-from lp.registry.model.packaging import Packaging
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.database.bulk import load_related
 from lp.services.database.collection import Collection
@@ -111,6 +105,42 @@ from lp.translations.utilities.sanitize import MixedNewlineMarkersError
 from lp.translations.utilities.translation_common_format import (
     TranslationMessageData,
     )
+
+
+sharing_subset_cte = """
+RECURSIVE location(product, distribution, sourcepackagename) AS (
+    VALUES (?::integer, ?::integer, ?::integer)
+  UNION
+    SELECT
+        ps_from_packaging.product, ds_from_packaging.distribution,
+        packaging_from_ps.sourcepackagename
+    FROM
+        location
+        -- Find a (Distribution, SPN) via a Packaging from a Product.
+        LEFT JOIN (
+            productseries AS ps_from_location
+            JOIN packaging AS packaging_from_ps
+                ON packaging_from_ps.productseries = ps_from_location.id
+            JOIN distroseries AS ds_from_packaging
+                ON ds_from_packaging.id = packaging_from_ps.distroseries
+
+            ) ON ps_from_location.product = location.product
+        -- Find a Product via a Packaging from a (Distribution, SPN).
+        LEFT JOIN (
+            distroseries AS ds_from_location
+            JOIN packaging AS packaging_from_ds
+                ON packaging_from_ds.distroseries = ds_from_location.id
+            JOIN productseries AS ps_from_packaging
+                ON ps_from_packaging.id = packaging_from_ds.productseries
+            ) ON (
+                ds_from_location.distribution = location.distribution
+                AND packaging_from_ds.sourcepackagename =
+                    location.sourcepackagename)
+    WHERE
+        -- All rows must have a target.
+        (ps_from_packaging.product IS NOT NULL
+         OR packaging_from_ps.distroseries IS NOT NULL))
+"""
 
 
 log = logging.getLogger(__name__)
@@ -1423,102 +1453,82 @@ class POTemplateSharingSubset(object):
             package = template.sourcepackagename.name
         return (template.name, package)
 
-    def _queryByProduct(self, templatename_clause):
-        """Build the query that finds POTemplates by their linked product.
-
-        Queries the Packaging table to find templates in linked source
-        packages, too.
-
-        :param templatename_clause: A string or a storm expression to
-        add to the where clause of the query that will select the template
-        name.
-        :return: A ResultSet for the query.
-        """
-        # Avoid circular imports.
-        from lp.registry.model.distroseries import DistroSeries
-        from lp.registry.model.productseries import ProductSeries
-
-        subquery = Select(
-            (DistroSeries.distributionID, Packaging.sourcepackagenameID),
-            tables=(Packaging, ProductSeries, DistroSeries),
-            where=And(
-                Packaging.productseriesID == ProductSeries.id,
-                Packaging.distroseriesID == DistroSeries.id,
-                ProductSeries.product == self.product),
-            distinct=True)
-        origin = LeftJoin(
-            LeftJoin(
-                POTemplate, ProductSeries,
-                POTemplate.productseriesID == ProductSeries.id),
-            DistroSeries,
-            POTemplate.distroseriesID == DistroSeries.id)
-
-        return Store.of(self.product).using(origin).find(
-            POTemplate,
-            And(
-                templatename_clause,
-                Or(
-                  ProductSeries.product == self.product,
-                  In(
-                     Func(
-                         'ROW',
-                         DistroSeries.distributionID,
-                         POTemplate.sourcepackagenameID),
-                     subquery))))
-
-    def _queryBySourcepackagename(self, templatename_clause):
-        """Build the query that finds POTemplates by their names.
-
-        :param templatename_clause: A string or a storm expression to
-        add to the where clause of the query that will select the template
-        name.
-        :return: A ResultSet for the query.
-        """
-        # Avoid circular imports.
-        from lp.registry.model.distroseries import DistroSeries
-        from lp.registry.model.productseries import ProductSeries
-
-        subquery = Select(
-            ProductSeries.productID,
-            tables=(Packaging, ProductSeries, DistroSeries),
-            where=And(
-                Packaging.productseriesID == ProductSeries.id,
-                Packaging.distroseriesID == DistroSeries.id,
-                DistroSeries.distribution == self.distribution,
-                Packaging.sourcepackagename == self.sourcepackagename),
-            distinct=True)
-        origin = LeftJoin(
-            LeftJoin(
-                POTemplate, ProductSeries,
-                POTemplate.productseriesID == ProductSeries.id),
-            DistroSeries,
-            POTemplate.distroseriesID == DistroSeries.id)
-
-        return Store.of(self.distribution).using(origin).find(
-            POTemplate,
-            And(
-                templatename_clause,
-                Or(
-                  And(
-                    DistroSeries.distribution == self.distribution,
-                    POTemplate.sourcepackagename == self.sourcepackagename),
-                  In(ProductSeries.productID, subquery))))
-
-    def _queryByDistribution(self, templatename_clause):
-        """Special case when templates are searched across a distribution."""
-        return Store.of(self.distribution).find(
-            POTemplate, templatename_clause)
-
     def _queryPOTemplates(self, templatename_clause):
-        """Select the right query to be used."""
+        """Find all POTemplates in this sharing subset."""
+        from lp.registry.model.distroseries import DistroSeries
+        from lp.registry.model.productseries import ProductSeries
+        product_id = distro_id = spn_id = None
         if self.product is not None:
-            return self._queryByProduct(templatename_clause)
-        elif self.sourcepackagename is not None:
-            return self._queryBySourcepackagename(templatename_clause)
-        elif self.distribution is not None and self.sourcepackagename is None:
-            return self._queryByDistribution(templatename_clause)
+            product_id = self.product.id
         else:
-            return EmptyResultSet()
+            distro_id = self.distribution.id
+            spn_id = self.sourcepackagename.id
+
+        # Fake Storm table class for the CTE. The PK is a lie.
+        class Location:
+            __storm_table__ = 'location'
+            __storm_primary__ = (
+                'product_id', 'distribution_id', 'sourcepackagename_id')
+            product_id = Int(name='product')
+            distribution_id = Int(name='distribution')
+            sourcepackagename_id = Int(name='sourcepackagename')
+
+        # Message sharing is by necessity symmetric and transitive,
+        # since the POTMsgSets records themselves are shared. Two
+        # relationships are defined to cause templates to share:
+        #
+        #  - A template shares with identically named templates in other
+        #    series in its own location (other ProductSeries in the same
+        #    Product, or other SourcePackages in the same
+        #    DistributionSourcePackage).
+        #
+        #  - A template shares with identically named templates on the
+        #    other side of a Packaging record (in a ProductSeries for a
+        #    SourcePackage template, or a SourcePackage for a
+        #    ProductSeries template).
+        #
+        # To avoid surprising changes when a new template is created
+        # somewhere, and to simplify implementation, we make the second
+        # relationship slightly more liberal: Packagings directly link
+        # entire Products and DistributionSourcePackages, not just the
+        # specified series.
+        #
+        # The only practical change is that templates can be shared
+        # between locations even if a similarly named template doesn't
+        # exist in the exact series specified by the Packaging. With
+        # transitivity but without this extension, two big existing
+        # sharing subsets might end up being joined later on just
+        # because a template was copied from an unlinked series to a
+        # linked one.
+        #
+        # XXX wgrant 2014-08-28: An outdated version of these rules is
+        # reimplemented in TranslationSplitter, but TranslationSplitter
+        # is terribly broken (see XXXs in its module).
+
+        # The recursive CTE finds all Products and
+        # DistributionSourcePackages that are transitively linked by
+        # Packagings, starting with the location that we have. We then
+        # join out to their series and find any templates with the right
+        # name.
+        context = IStore(POTemplate).with_(
+            SQL(sharing_subset_cte, params=(product_id, distro_id, spn_id)))
+        return context.using(
+            Location,
+            LeftJoin(
+                DistroSeries,
+                DistroSeries.distributionID == Location.distribution_id),
+            LeftJoin(
+                ProductSeries,
+                ProductSeries.productID == Location.product_id),
+            Join(
+                POTemplate,
+                And(
+                    Or(
+                        POTemplate.productseriesID == ProductSeries.id,
+                        And(POTemplate.distroseriesID == DistroSeries.id,
+                            POTemplate.sourcepackagenameID ==
+                                Location.sourcepackagename_id)),
+                    templatename_clause))).find(POTemplate)
 
     def getSharingPOTemplates(self, potemplate_name):
         """See `IPOTemplateSharingSubset`."""
