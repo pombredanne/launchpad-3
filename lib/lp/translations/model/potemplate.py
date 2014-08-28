@@ -123,7 +123,6 @@ RECURSIVE location(product, distribution, sourcepackagename) AS (
                 ON packaging_from_ps.productseries = ps_from_location.id
             JOIN distroseries AS ds_from_packaging
                 ON ds_from_packaging.id = packaging_from_ps.distroseries
-
             ) ON ps_from_location.product = location.product
         -- Find a Product via a Packaging from a (Distribution, SPN).
         LEFT JOIN (
