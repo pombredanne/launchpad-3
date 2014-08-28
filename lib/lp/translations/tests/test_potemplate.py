@@ -336,14 +336,16 @@ class TestDistroTemplateEquivalenceClasses(TestCaseWithFactory,
             name='foo')
 
         subset = getUtility(IPOTemplateSet).getSharingSubset(
-            distribution=self.ubuntu)
+            distribution=self.ubuntu, sourcepackagename=self.package)
+        other_subset = getUtility(IPOTemplateSet).getSharingSubset(
+            distribution=self.ubuntu, sourcepackagename=other_package)
         classes = subset.groupEquivalentPOTemplates()
+        other_classes = other_subset.groupEquivalentPOTemplates()
 
-        self.assertTrue(('foo', self.package.name) in classes)
-        self.assertEqual(classes[('foo', self.package.name)], [our_template])
-        self.assertTrue(('foo', other_package.name) in classes)
         self.assertEqual(
-            classes[('foo', other_package.name)], [other_template])
+            {('foo', self.package.name): [our_template]}, classes)
+        self.assertEqual(
+            {('foo', other_package.name): [other_template]}, other_classes)
 
     def test_EquivalenceByNamePattern(self):
         # We can obtain equivalence classes for a distribution by
@@ -355,7 +357,7 @@ class TestDistroTemplateEquivalenceClasses(TestCaseWithFactory,
             name=unique_name)
 
         subset = getUtility(IPOTemplateSet).getSharingSubset(
-            distribution=self.ubuntu)
+            distribution=self.ubuntu, sourcepackagename=self.package)
         classes = subset.groupEquivalentPOTemplates(
             name_pattern=u'krungthepmahanakorn.*-etc')
 
