@@ -705,6 +705,216 @@ class TestPOTemplateUpstreamSharing(TestCaseWithFactory,
             sourcepackage=self.sourcepackage, name=self.shared_template_name)
 
 
+class TestPOTemplateSharingSubset(TestCaseWithFactory):
+    """Test that POTemplateSharingSubset consistently calculates sharing sets.
+
+    Message sharing must be a symmetric and transitive relation. This
+    set of tests verifies that an identical set is calculated for any
+    member of the set.
+    """
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestPOTemplateSharingSubset, self).setUp()
+        self.p1 = self.factory.makeProduct()
+        self.p1s1 = self.factory.makeProductSeries(product=self.p1)
+        self.p1s2 = self.factory.makeProductSeries(product=self.p1)
+        self.p2 = self.factory.makeProduct()
+        self.p2s1 = self.factory.makeProductSeries(product=self.p2)
+        self.p2s2 = self.factory.makeProductSeries(product=self.p2)
+
+        self.d1 = self.factory.makeDistribution()
+        self.d1s1 = self.factory.makeDistroSeries(distribution=self.d1)
+        self.d1s2 = self.factory.makeDistroSeries(distribution=self.d1)
+        self.d2 = self.factory.makeDistribution()
+        self.d2s1 = self.factory.makeDistroSeries(distribution=self.d2)
+        self.d2s2 = self.factory.makeDistroSeries(distribution=self.d2)
+
+        self.spn1 = self.factory.makeSourcePackageName('package1')
+        self.spn2 = self.factory.makeSourcePackageName('package2')
+
+        self.pots = {}
+        for ps in (self.p1s1, self.p1s2, self.p2s1, self.p2s2):
+            for name in ('template1', 'template2'):
+                self.pots[(ps, name)] = self.factory.makePOTemplate(
+                    productseries=ps, name=name)
+        for ds in (self.d1s1, self.d1s2, self.d2s1, self.d2s2):
+            for spn in (self.spn1, self.spn2):
+                for name in ('template1', 'template2'):
+                    self.pots[(ds, spn, name)] = self.factory.makePOTemplate(
+                        distroseries=ds, sourcepackagename=spn, name=name)
+
+    def assertSelfContained(self, specs):
+        """Check that a set of templates is mutually sharing.
+
+        Each template in the given set must share with all the other
+        templates in the set, and none outside it.
+        """
+        pots = [self.pots[spec] for spec in specs]
+        for pot in pots:
+            subset = getUtility(IPOTemplateSet).getSharingSubset(
+                product=pot.product, distribution=pot.distribution,
+                sourcepackagename=pot.sourcepackagename)
+            self.assertContentEqual(
+                pots, subset.getSharingPOTemplates(pot.name))
+
+    def test_unlinked(self):
+        self.assertSelfContained([
+            (self.p1s1, 'template1'), (self.p1s2, 'template1')])
+        self.assertSelfContained([
+            (self.p1s1, 'template2'), (self.p1s2, 'template2')])
+        self.assertSelfContained([
+            (self.d1s1, self.spn1, 'template1'),
+            (self.d1s2, self.spn1, 'template1')])
+        self.assertSelfContained([
+            (self.d1s1, self.spn1, 'template2'),
+            (self.d1s2, self.spn1, 'template2')])
+        self.assertSelfContained([
+            (self.d1s1, self.spn2, 'template1'),
+            (self.d1s2, self.spn2, 'template1')])
+
+    def test_product_linked_to_distro(self):
+        # Linking a ProductSeries and a SourcePackage with a Packaging
+        # causes the templates on each side to share.
+        # Merge p1 and (d1, spn1).
+        self.factory.makePackagingLink(
+            productseries=self.p1s1, distroseries=self.d1s1,
+            sourcepackagename=self.spn1)
+
+        # template1 and template2 in all series of p1 and d1's spn1
+        # package are shared.
+        self.assertSelfContained([
+            (self.p1s1, 'template1'), (self.p1s2, 'template1'),
+            (self.d1s1, self.spn1, 'template1'),
+            (self.d1s2, self.spn1, 'template1')])
+        self.assertSelfContained([
+            (self.p1s1, 'template2'), (self.p1s2, 'template2'),
+            (self.d1s1, self.spn1, 'template2'),
+            (self.d1s2, self.spn1, 'template2')])
+
+        # But p2, d1's spn2, and d2's spn1 are all still separate.
+        self.assertSelfContained([
+            (self.p2s1, 'template1'), (self.p2s2, 'template1')])
+        self.assertSelfContained([
+            (self.d1s1, self.spn2, 'template1'),
+            (self.d1s2, self.spn2, 'template1')])
+        self.assertSelfContained([
+            (self.d2s1, self.spn1, 'template1'),
+            (self.d2s2, self.spn1, 'template1')])
+
+    def test_product_linked_to_two_distros(self):
+        # Multiple Packaging links extend the sharing domain further.
+        # Merge p1, (d1, spn1) and (d2, spn1).
+        self.factory.makePackagingLink(
+            productseries=self.p1s1, distroseries=self.d1s1,
+            sourcepackagename=self.spn1)
+        self.factory.makePackagingLink(
+            productseries=self.p1s1, distroseries=self.d2s2,
+            sourcepackagename=self.spn1)
+
+        # template1 and template2 in all series of p1, (d1, spn1) and
+        # (d2, spn1) are all shared.
+        self.assertSelfContained([
+            (self.p1s1, 'template1'), (self.p1s2, 'template1'),
+            (self.d1s1, self.spn1, 'template1'),
+            (self.d1s2, self.spn1, 'template1'),
+            (self.d2s1, self.spn1, 'template1'),
+            (self.d2s2, self.spn1, 'template1')])
+        self.assertSelfContained([
+            (self.p1s1, 'template2'), (self.p1s2, 'template2'),
+            (self.d1s1, self.spn1, 'template2'),
+            (self.d1s2, self.spn1, 'template2'),
+            (self.d2s1, self.spn1, 'template2'),
+            (self.d2s2, self.spn1, 'template2')])
+
+        # But p2, (d1, spn2), and (d2, spn2) are all still separate.
+        self.assertSelfContained([
+            (self.p2s1, 'template1'), (self.p2s2, 'template1')])
+        self.assertSelfContained([
+            (self.d1s1, self.spn2, 'template1'),
+            (self.d1s2, self.spn2, 'template1')])
+        self.assertSelfContained([
+            (self.d2s1, self.spn2, 'template1'),
+            (self.d2s2, self.spn2, 'template1')])
+
+    def test_product_linked_to_different_packages_in_two_distros(self):
+        # Packaging records' SourcePackageNames are respected.
+        # Merge p1, (d1, spn1) and (d2, spn2).
+        self.factory.makePackagingLink(
+            productseries=self.p1s1, distroseries=self.d1s1,
+            sourcepackagename=self.spn1)
+        self.factory.makePackagingLink(
+            productseries=self.p1s1, distroseries=self.d2s2,
+            sourcepackagename=self.spn2)
+
+        # template1 and template2 in all series of p1, (d1, spn1) and
+        # (d2, spn2) are all shared.
+        self.assertSelfContained([
+            (self.p1s1, 'template1'), (self.p1s2, 'template1'),
+            (self.d1s1, self.spn1, 'template1'),
+            (self.d1s2, self.spn1, 'template1'),
+            (self.d2s1, self.spn2, 'template1'),
+            (self.d2s2, self.spn2, 'template1')])
+        self.assertSelfContained([
+            (self.p1s1, 'template2'), (self.p1s2, 'template2'),
+            (self.d1s1, self.spn1, 'template2'),
+            (self.d1s2, self.spn1, 'template2'),
+            (self.d2s1, self.spn2, 'template2'),
+            (self.d2s2, self.spn2, 'template2')])
+
+        # But p2, (d1, spn2), and (d2, spn1) are all still separate.
+        self.assertSelfContained([
+            (self.p2s1, 'template1'), (self.p2s2, 'template1')])
+        self.assertSelfContained([
+            (self.d1s1, self.spn2, 'template1'),
+            (self.d1s2, self.spn2, 'template1')])
+        self.assertSelfContained([
+            (self.d2s1, self.spn1, 'template1'),
+            (self.d2s2, self.spn1, 'template1')])
+
+    def test_multiple_products_interlinked(self):
+        # In a contrived scenario there can be multiple Products
+        # involved, by linking different SourcePackages for the same
+        # Distribution and SourcePackageName to ProductSeries in
+        # different Products. This combines those sharing subsets as
+        # expected.
+        self.factory.makePackagingLink(
+            productseries=self.p1s1, distroseries=self.d1s1,
+            sourcepackagename=self.spn1)
+        self.factory.makePackagingLink(
+            productseries=self.p1s1, distroseries=self.d2s1,
+            sourcepackagename=self.spn2)
+        self.factory.makePackagingLink(
+            productseries=self.p2s1, distroseries=self.d2s2,
+            sourcepackagename=self.spn2)
+
+        # template1 and template2 in all series of p1, p2, (d1, spn1)
+        # and (d2, spn2) are all shared.
+        self.assertSelfContained([
+            (self.p1s1, 'template1'), (self.p1s2, 'template1'),
+            (self.p2s1, 'template1'), (self.p2s2, 'template1'),
+            (self.d1s1, self.spn1, 'template1'),
+            (self.d1s2, self.spn1, 'template1'),
+            (self.d2s1, self.spn2, 'template1'),
+            (self.d2s2, self.spn2, 'template1')])
+        self.assertSelfContained([
+            (self.p1s1, 'template2'), (self.p1s2, 'template2'),
+            (self.p2s1, 'template2'), (self.p2s2, 'template2'),
+            (self.d1s1, self.spn1, 'template2'),
+            (self.d1s2, self.spn1, 'template2'),
+            (self.d2s1, self.spn2, 'template2'),
+            (self.d2s2, self.spn2, 'template2')])
+
+        # But (d1, spn2) and (d2, spn1) remain isolated.
+        self.assertSelfContained([
+            (self.d1s1, self.spn2, 'template1'),
+            (self.d1s2, self.spn2, 'template1')])
+        self.assertSelfContained([
+            (self.d2s1, self.spn1, 'template1'),
+            (self.d2s2, self.spn1, 'template1')])
+
+
 class TestPOTemplateSubset(TestCaseWithFactory):
     """Test POTemplate functions not covered by doctests."""
 
