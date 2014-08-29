@@ -418,10 +418,11 @@ class CopyChecker:
             check_copy_permissions(
                 person, self.archive, series, pocket, [source])
 
-        if series not in self.archive.distribution.series:
+        if series.distribution != self.archive.distribution:
             raise CannotCopy(
-                "No such distro series %s in distribution %s." %
-                (series.name, source.distroseries.distribution.name))
+                "Series %s %s not supported in archive for %s." %
+                (series.distribution.name, series.name,
+                 self.archive.distribution.name))
 
         format = SourcePackageFormat.getTermByToken(
             source.sourcepackagerelease.dsc_format).value
