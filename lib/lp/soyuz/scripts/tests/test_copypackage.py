@@ -947,7 +947,7 @@ class CopyCheckerTestCase(TestCaseWithFactory):
         copy_checker = CopyChecker(archive, include_binaries=False)
         self.assertRaisesWithContent(
             CannotCopy,
-            'No such distro series sid in distribution debian.',
+            'Series debian sid not supported in archive for ubuntutest.',
             copy_checker.checkCopy, source, sid, pocket, None, False)
 
     def test_checkCopy_respects_sourceformatselection(self):
