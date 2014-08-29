@@ -29,7 +29,6 @@ from lp.services.scripts import (
     logger,
     logger_options,
     )
-from lp.services.utils import total_seconds
 
 
 SCHEMA_DIR = os.path.dirname(__file__)
@@ -120,7 +119,7 @@ def report_patch_times(con, todays_patches):
     for major, minor, patch, start_time, db_time in cur.fetchall():
         if (major, minor, patch) in todays_patches:
             continue
-        db_time = total_seconds(db_time)
+        db_time = db_time.total_seconds()
         start_time = start_time.strftime('%Y-%m-%d')
         log.info(
             "%d-%02d-%d applied %s in %0.1f seconds"
@@ -142,7 +141,7 @@ def report_patch_times(con, todays_patches):
             continue
         log.info(
             "%d-%02d-%d applied just now in %0.1f seconds",
-            major, minor, patch, total_seconds(db_time))
+            major, minor, patch, db_time.total_seconds())
 
 
 def apply_patches_normal(con):
