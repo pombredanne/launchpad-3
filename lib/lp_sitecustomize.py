@@ -105,6 +105,16 @@ def silence_zcml_logger():
     logging.getLogger('config').addFilter(config_filter)
 
 
+class FilterOnlyHandler(logging.Handler):
+    """Logging handler that doesn't emit any messages.
+
+    Like NullHandler, except handle() still runs to perform filtering.
+    """
+
+    def emit(self, record):
+        pass
+
+
 def silence_transaction_logger():
     """Lower level of DEBUG messages from the transaction module."""
     # Transaction logging is too noisy. Lower its DEBUG messages
@@ -112,7 +122,7 @@ def silence_transaction_logger():
     # so we need to register a null handler with a filter to ensure
     # the logging records get mutated before being propagated up
     # to higher level loggers.
-    txn_handler = logging.NullHandler()
+    txn_handler = FilterOnlyHandler()
     txn_filter = MappingFilter(
         {logging.DEBUG: (8, 'DEBUG3')}, 'txn')
     txn_handler.addFilter(txn_filter)
