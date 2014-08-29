@@ -59,9 +59,9 @@ class TestMailController(TestCase):
         after = 'after' + '0123456789'
         hdr = email.header.Header(before + ' ' + after, header_name='Subject')
         encoded = hdr.encode()
-        self.assertTrue(('before\n after' in encoded)
-                        or ('before\n\t after' in encoded),
-                        'Header.encode() changed continuation lines again')
+        self.assertTrue(
+            'before\n after' in encoded,
+            'Header.encode() changed continuation lines again')
 
     def test_addAttachment(self):
         """addAttachment should add a part to the list of attachments."""

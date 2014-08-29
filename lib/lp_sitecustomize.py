@@ -22,7 +22,6 @@ from zope.security import checker
 from lp.services.log import loglevels
 from lp.services.log.logger import LaunchpadLogger
 from lp.services.log.mappingfilter import MappingFilter
-from lp.services.log.nullhandler import NullHandler
 from lp.services.mime import customizeMimetypes
 from lp.services.webapp.interfaces import IUnloggedException
 
@@ -77,14 +76,14 @@ def add_custom_loglevels():
 def silence_amqplib_logger():
     """Install the NullHandler on the amqplib logger to silence logs."""
     amqplib_logger = logging.getLogger('amqplib')
-    amqplib_logger.addHandler(NullHandler())
+    amqplib_logger.addHandler(logging.NullHandler())
     amqplib_logger.propagate = False
 
 
 def silence_bzr_logger():
     """Install the NullHandler on the bzr logger to silence logs."""
     bzr_logger = logging.getLogger('bzr')
-    bzr_logger.addHandler(NullHandler())
+    bzr_logger.addHandler(logging.NullHandler())
     bzr_logger.propagate = False
 
 
@@ -113,7 +112,7 @@ def silence_transaction_logger():
     # so we need to register a null handler with a filter to ensure
     # the logging records get mutated before being propagated up
     # to higher level loggers.
-    txn_handler = NullHandler()
+    txn_handler = logging.NullHandler()
     txn_filter = MappingFilter(
         {logging.DEBUG: (8, 'DEBUG3')}, 'txn')
     txn_handler.addFilter(txn_filter)

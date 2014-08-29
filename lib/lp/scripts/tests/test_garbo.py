@@ -93,7 +93,6 @@ from lp.services.identity.interfaces.account import AccountStatus
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.services.job.model.job import Job
 from lp.services.librarian.model import TimeLimitedToken
-from lp.services.log.logger import NullHandler
 from lp.services.messages.model.message import Message
 from lp.services.openid.model.openidconsumer import OpenIDConsumerNonce
 from lp.services.salesforce.interfaces import ISalesforceVoucherProxy
@@ -386,7 +385,7 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         # Silence the root Logger by instructing the garbo logger to not
         # propagate messages.
         self.log = logging.getLogger('garbo')
-        self.log.addHandler(NullHandler())
+        self.log.addHandler(logging.NullHandler())
         self.log.propagate = 0
 
         # Run the garbage collectors to remove any existing garbage,
