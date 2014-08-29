@@ -2236,10 +2236,8 @@ class TestUploadHandler(TestUploadProcessorBase):
         # Failures should generate a message that includes the upload log URL.
         self.doFailureRecipeBuild()
         (mail,) = pop_notifications()
-        # Python2.6 prefixes continuation lines with a \t, 2.7 uses a single
-        # space instead, try both to stay compatible (see email/generator.py
-        # Generator._write_headers for details).
-        subject = mail['Subject'].replace('\n\t', ' ').replace('\n ', ' ')
+        # Unfold continuation lines.
+        subject = mail['Subject'].replace('\n ', ' ')
         self.assertIn('Failed to upload', subject)
         body = mail.get_payload(decode=True)
         self.assertIn('Upload Log: http', body)
