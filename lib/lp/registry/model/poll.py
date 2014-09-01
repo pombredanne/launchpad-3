@@ -14,7 +14,6 @@ __all__ = [
     ]
 
 from datetime import datetime
-import random
 
 import pytz
 from sqlobject import (
@@ -51,6 +50,7 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from lp.services.tokens import create_token
 
 
 class Poll(SQLBase):
@@ -170,7 +170,7 @@ class Poll(SQLBase):
         assert self.type == PollAlgorithm.CONDORCET
         voteset = getUtility(IVoteSet)
 
-        token = voteset.newToken()
+        token = create_token(20)
         votes = []
         activeoptions = self.getActiveOptions()
         for option, preference in options.items():
@@ -200,7 +200,7 @@ class Poll(SQLBase):
             assert option.poll == self, (
                 "The option %r doesn't belong to this poll" % option)
             assert option.active, "Option %r is not active" % option
-        token = voteset.newToken()
+        token = create_token(20)
         # This is a simple-style poll, so you can vote only on a single option
         # and this option's preference must be 1
         preference = 1
@@ -410,15 +410,6 @@ class VoteSet:
     """See IVoteSet."""
 
     implements(IVoteSet)
-
-    def newToken(self):
-        """See IVoteSet."""
-        chars = '23456789bcdfghjkmnpqrstvwxzBCDFGHJKLMNPQRSTVWXZ'
-        length = 10
-        token = ''.join([random.choice(chars) for c in range(length)])
-        while self.getByToken(token):
-            token = ''.join([random.choice(chars) for c in range(length)])
-        return token
 
     def new(self, poll, option, preference, token, person):
         """See IVoteSet."""
