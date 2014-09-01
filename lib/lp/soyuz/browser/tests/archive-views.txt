@@ -765,7 +765,7 @@ dependency. Each element has:
     mark/ppa
 
     >>> print dependency.title.escapedtext
-    <a href="http://launchpad.dev/~mark/+archive/ppa">PPA for Mark
+    <a href="http://launchpad.dev/~mark/+archive/ubuntu/ppa">PPA for Mark
     Shuttleworth</a>
 
 The form focus, now that we have a recorded dependencies, is set to the
@@ -1266,7 +1266,7 @@ options making it the default option, 'This PPA' rendered option.
 
     >>> for item in archive_widget.vocabulary:
     ...     print item.title
-    PPA for Ubuntu Team [~ubuntu-team/ppa]
+    PPA for Ubuntu Team [~ubuntu-team/ubuntu/ppa]
 
     >>> print archive_widget.getInputValue() == cprov.archive
     True
@@ -1316,8 +1316,8 @@ value is submitted.
 
     >>> for item in archive_widget.vocabulary:
     ...     print item.title
-    PPA for Celso Providelo [~cprov/ppa]
-    PPA for No Privileges Person [~no-priv/ppa]
+    PPA for Celso Providelo [~cprov/ubuntu/ppa]
+    PPA for No Privileges Person [~no-priv/ubuntu/ppa]
 
     >>> print archive_widget.getInputValue()
     Traceback (most recent call last):
@@ -1364,7 +1364,7 @@ the public Ubuntu-team PPA, which is empty.
     ...     cprov_private_ppa, name="+copy-packages",
     ...     form={
     ...         'field.selected_sources': [str(private_source.id)],
-    ...         'field.destination_archive': 'ubuntu-team/ppa',
+    ...         'field.destination_archive': '~ubuntu-team/ubuntu/ppa',
     ...         'field.destination_series': '',
     ...         'field.include_binaries': 'REBUILD_SOURCES',
     ...         'field.actions.copy': 'Copy',
@@ -1410,7 +1410,7 @@ If we run the same copy again, it will fail.
     ...     cprov_private_ppa, name="+copy-packages",
     ...     form={
     ...         'field.selected_sources': [str(private_source.id)],
-    ...         'field.destination_archive': 'ubuntu-team/ppa',
+    ...         'field.destination_archive': '~ubuntu-team/ubuntu/ppa',
     ...         'field.destination_series': '',
     ...         'field.include_binaries': 'REBUILD_SOURCES',
     ...         'field.actions.copy': 'Copy',

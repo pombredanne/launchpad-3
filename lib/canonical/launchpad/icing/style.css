@@ -876,6 +876,11 @@ div.popupTitle {
   display: none;
 }
 
+/* Hide the packageset picker widget on the Initialize series page */
+.yui3-packagesetpickerwidget-hidden {
+    display: none;
+}
+
 /* Search results*/
 
 #search-results {

@@ -142,6 +142,7 @@ from lp.services.webapp.publisher import RedirectionView
 from lp.services.webapp.url import urlappend
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.livefs import ILiveFSSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
@@ -675,6 +676,7 @@ class LaunchpadRootNavigation(Navigation):
     # hierarchical navigation model.
     stepto_utilities = {
         '+announcements': IAnnouncementSet,
+        'archives': IArchiveSet,
         '+services': IServiceFactory,
         'binarypackagenames': IBinaryPackageNameSet,
         'branches': IBranchSet,

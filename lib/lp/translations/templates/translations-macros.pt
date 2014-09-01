@@ -112,7 +112,7 @@
           class="horizontal"
           id="nav-pofile-subpages"
           style="margin-top: 1em; margin-bottom: 1em;"
-          tal:define="navigation_menu context/menu:navigation">
+          tal:define="navigation_menu context/menu:translations">
         <li
             tal:define="link navigation_menu/download"
             tal:condition="link/enabled"

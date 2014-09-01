@@ -698,6 +698,9 @@ class IPOTemplateSet(Interface):
         Return None if there is no such `IPOTemplate`.
         """
 
+    def preloadPOTemplateContexts(templates):
+        """Preload context objects for a sequence of POTemplates."""
+
     def wipeSuggestivePOTemplatesCache():
         """Erase suggestive-templates cache.
 

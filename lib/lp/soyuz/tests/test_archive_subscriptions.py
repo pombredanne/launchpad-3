@@ -3,8 +3,6 @@
 
 """Test Archive features."""
 
-from urlparse import urljoin
-
 from storm.store import Store
 from testtools.matchers import Equals
 from zope.security.interfaces import Unauthorized
@@ -167,7 +165,7 @@ class PrivateArtifactsViewTestCase(BrowserTestCase):
             self.archive.newSubscription(
                 self.subscriber, registrant=self.archive.owner)
         with person_logged_in(self.subscriber):
-            url = urljoin(canonical_url(self.archive), '+packages')
+            url = canonical_url(self.archive) + '/+packages'
         browser = setupBrowserForUser(self.subscriber)
         self.assertRaises(Unauthorized, browser.open, url)
 

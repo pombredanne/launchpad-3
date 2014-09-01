@@ -74,7 +74,7 @@ class TestLiveFSBuildFeatureFlag(TestCaseWithFactory):
 expected_body = """\
  * Live Filesystem: livefs-1
  * Version: 20140425-103800
- * Archive: distro primary archive
+ * Archive: distro
  * Distroseries: distro unstable
  * Architecture: i386
  * Pocket: RELEASE

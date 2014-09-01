@@ -92,10 +92,6 @@ class AnythingGoesUploadPolicy(AbstractUploadPolicy):
         """Nothing, let it go."""
         pass
 
-    def rejectPPAUploads(self, upload):
-        """We allow PPA uploads."""
-        return False
-
 
 class AbsolutelyAnythingGoesUploadPolicy(AnythingGoesUploadPolicy):
     """This policy is invoked when processing uploads from the test process.

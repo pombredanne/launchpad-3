@@ -486,8 +486,8 @@ class UnreferencedContentPruner:
         drop_tables(cur, "UnreferencedLibraryFileContent")
         cur.execute("""
             CREATE TEMPORARY TABLE UnreferencedLibraryFileContent (
-                id serial PRIMARY KEY,
-                content integer UNIQUE)
+                id bigserial PRIMARY KEY,
+                content bigint UNIQUE)
             """)
         cur.execute("""
             INSERT INTO UnreferencedLibraryFileContent (content)

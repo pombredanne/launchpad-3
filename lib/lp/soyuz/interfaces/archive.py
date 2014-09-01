@@ -55,7 +55,9 @@ from urlparse import urlparse
 from lazr.enum import DBEnumeratedType
 from lazr.restful.declarations import (
     call_with,
+    collection_default_content,
     error_status,
+    export_as_webservice_collection,
     export_as_webservice_entry,
     export_factory_operation,
     export_operation_as,
@@ -317,6 +319,11 @@ class IArchivePublic(IPrivacy, IHasOwner):
             title=_("Display name"), required=True,
             description=_("A short title for the archive.")))
 
+    reference = exported(
+        TextLine(
+            title=_("Reference"), required=True, readonly=True,
+            description=_("A string to uniquely identify the archive.")))
+
     distribution = exported(
         Reference(
             Interface,  # Redefined to IDistribution later.
@@ -338,7 +345,13 @@ class IArchivePublic(IPrivacy, IHasOwner):
                 "subscribers. This can only be changed if the archive has "
                 "never had any sources published.")))
 
+    is_primary = Attribute("True if this archive is a primary archive.")
+
     is_ppa = Attribute("True if this archive is a PPA.")
+
+    is_partner = Attribute("True if this archive is a partner archive.")
+
+    is_copy = Attribute("True if this archive is a copy archive.")
 
     is_main = Bool(
         title=_("True if archive is a main archive type"), required=False)
@@ -385,7 +398,6 @@ class IArchiveSubscriberView(Interface):
     is_active = Bool(
         title=_("True if the archive is in the active state"),
         required=False, readonly=True)
-    is_copy = Attribute("True if this archive is a copy archive.")
     num_pkgs_building = Attribute(
         "Tuple of packages building and waiting to build")
     publish = Bool(
@@ -542,8 +554,6 @@ class IArchiveView(IHasBuildRecords):
         title=_(
             "The default component for this archive. Publications without a "
             "valid component will be assigned this one."))
-
-    is_partner = Attribute("True if this archive is a partner archive.")
 
     number_of_sources = Attribute(
         'The number of sources published in the context archive.')
@@ -1024,7 +1034,7 @@ class IArchiveView(IHasBuildRecords):
             package sets he has access to.
         :param distroseries: The `IDistroSeries` for which to check
             permissions. If none is supplied then `currentseries` in
-            Ubuntu is assumed.
+            the archive's distribution is assumed.
 
         :raises NoSuchSourcePackageName: if a source package with the
             given name could not be found.
@@ -1050,7 +1060,7 @@ class IArchiveView(IHasBuildRecords):
     def getPockets():
         """Return iterable containing valid pocket names for this archive."""
 
-    def getOverridePolicy(phased_update_percentage=None):
+    def getOverridePolicy(distroseries, pocket, phased_update_percentage=None):
         """Returns an instantiated `IOverridePolicy` for the archive."""
 
     buildd_secret = TextLine(
@@ -1361,6 +1371,12 @@ class IArchiveView(IHasBuildRecords):
             description=_("Automatically approve this copy (queue admins "
                           "only)."),
             required=False),
+        silent=Bool(
+            title=_("Silent"),
+            description=_(
+                "Don't notify anyone about this copy. For use by queue "
+                "admins only."),
+            required=False),
         from_pocket=TextLine(title=_("Source pocket name"), required=False),
         from_series=TextLine(
             title=_("Source distroseries name"), required=False),
@@ -1376,7 +1392,7 @@ class IArchiveView(IHasBuildRecords):
     def copyPackage(source_name, version, from_archive, to_pocket,
                     person, to_series=None, include_binaries=False,
                     sponsored=None, unembargo=False, auto_approve=False,
-                    from_pocket=None, from_series=None,
+                    silent=False, from_pocket=None, from_series=None,
                     phased_update_percentage=None):
         """Copy a single named source into this archive.
 
@@ -1410,6 +1426,8 @@ class IArchiveView(IHasBuildRecords):
         :param auto_approve: if True and the `IPerson` requesting the sync
             has queue admin permissions on the target, accept the copy
             immediately rather than setting it to unapproved.
+        :param silent: Suppress any emails that the copy would generate.
+            Only usable with queue admin permissions on the target.
         :param from_pocket: the source pocket (as a string). If omitted,
             copy from any pocket with a matching version.
         :param from_series: the source distroseries (as a string). If
@@ -1454,12 +1472,19 @@ class IArchiveView(IHasBuildRecords):
             description=_("Automatically approve this copy (queue admins "
                           "only)."),
             required=False),
+        silent=Bool(
+            title=_("Silent"),
+            description=_(
+                "Don't notify anyone about this copy. For use by queue "
+                "admins only."),
+            required=False),
         )
     @export_write_operation()
     @operation_for_version('devel')
     def copyPackages(source_names, from_archive, to_pocket, person,
                      to_series=None, from_series=None, include_binaries=False,
-                     sponsored=None, unembargo=False, auto_approve=False):
+                     sponsored=None, unembargo=False, auto_approve=False,
+                     silent=False):
         """Copy multiple named sources into this archive from another.
 
         Asynchronously copy the most recent PUBLISHED versions of the named
@@ -1495,6 +1520,8 @@ class IArchiveView(IHasBuildRecords):
         :param auto_approve: if True and the `IPerson` requesting the sync
             has queue admin permissions on the target, accept the copies
             immediately rather than setting it to unapproved.
+        :param silent: Suppress any emails that the copy would generate.
+            Only usable with queue admin permissions on the target.
 
         :raises NoSuchSourcePackageName: if the source name is invalid
         :raises PocketNotFound: if the pocket name is invalid
@@ -2027,7 +2054,13 @@ class IArchiveEditDependenciesForm(Interface):
 class IArchiveSet(Interface):
     """Interface for ArchiveSet"""
 
+    export_as_webservice_collection(IArchive)
+
     title = Attribute('Title')
+
+    @collection_default_content()
+    def empty_list():
+        """There is no default content, but lazr.restful needs some anyway."""
 
     def new(purpose, owner, name=None, displayname=None, distribution=None,
             description=None, enabled=True, require_virtualized=True,
@@ -2063,6 +2096,16 @@ class IArchiveSet(Interface):
 
     def get(archive_id):
         """Return the IArchive with the given archive_id."""
+
+    @call_with(check_permissions=True, user=REQUEST_USER)
+    @operation_parameters(
+        reference=TextLine(
+            title=_("Archive reference string"), required=True))
+    @operation_returns_entry(schema=IArchive)
+    @export_read_operation()
+    @operation_for_version('devel')
+    def getByReference(reference, check_permissions=False, user=None):
+        """Return the IArchive with the given archive reference."""
 
     def getPPAByDistributionAndOwnerName(distribution, person_name, ppa_name):
         """Return a single PPA.

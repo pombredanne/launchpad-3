@@ -11,7 +11,7 @@ an upload to a distro/whatever within the launchpad.
 
 import _pythonpath
 
-from lp.soyuz.scripts.soyuz_process_upload import ProcessUpload
+from lp.archiveuploader.scripts.processupload import ProcessUpload
 
 
 if __name__ == '__main__':

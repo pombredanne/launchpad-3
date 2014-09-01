@@ -33,10 +33,7 @@ from storm.expr import (
 from storm.info import ClassAlias
 from storm.store import Store
 from zope.component import getUtility
-from zope.interface import (
-    alsoProvides,
-    implements,
-    )
+from zope.interface import implements
 
 from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
 from lp.answers.interfaces.faqtarget import IFAQTarget
@@ -94,8 +91,6 @@ from lp.registry.enums import (
 from lp.registry.errors import NoSuchDistroSeries
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.distribution import (
-    IBaseDistribution,
-    IDerivativeDistribution,
     IDistribution,
     IDistributionSet,
     )
@@ -244,6 +239,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         dbName='translationpermission', notNull=True,
         schema=TranslationPermission, default=TranslationPermission.OPEN)
     active = True
+    official_packages = BoolCol(notNull=True, default=False)
+    supports_ppas = BoolCol(notNull=True, default=False)
+    supports_mirrors = BoolCol(notNull=True, default=False)
     package_derivatives_email = StringCol(notNull=False, default=None)
     redirect_release_uploads = BoolCol(notNull=True, default=False)
     development_series_alias = StringCol(notNull=False, default=None)
@@ -252,16 +250,6 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         displayname = self.displayname.encode('ASCII', 'backslashreplace')
         return "<%s '%s' (%s)>" % (
             self.__class__.__name__, displayname, self.name)
-
-    def _init(self, *args, **kw):
-        """Initialize an `IBaseDistribution` or `IDerivativeDistribution`."""
-        SQLBase._init(self, *args, **kw)
-        # Add a marker interface to set permissions for this kind
-        # of distribution.
-        if self.name == 'ubuntu':
-            alsoProvides(self, IBaseDistribution)
-        else:
-            alsoProvides(self, IDerivativeDistribution)
 
     @property
     def pillar(self):
@@ -539,13 +527,6 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             official_candidate=True)
 
     @property
-    def full_functionality(self):
-        """See `IDistribution`."""
-        if IBaseDistribution.providedBy(self):
-            return True
-        return False
-
-    @property
     def drivers(self):
         """See `IDistribution`."""
         if self.driver is not None:
@@ -699,7 +680,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         # the full functionality of Launchpad enabled. This is Ubuntu and
         # commercial derivatives that have been specifically given this
         # ability
-        if not self.full_functionality:
+        if not self.supports_mirrors:
             return None
 
         urls = {'http_base_url': http_base_url,

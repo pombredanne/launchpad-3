@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -439,26 +439,6 @@ class PackageUpload(SQLBase):
                 'Unable to reject queue item due to status.')
         self.status = PassthroughStatusValue(PackageUploadStatus.REJECTED)
 
-    def _closeBugs(self, changesfile_path, logger=None):
-        """Close bugs for a just-accepted source.
-
-        :param changesfile_path: path to the context changesfile.
-        :param logger: optional context Logger object (used on DEBUG level);
-
-        It does not close bugs for PPA sources.
-        """
-        from lp.soyuz.scripts.processaccepted import close_bugs_for_queue_item
-
-        if self.isPPA():
-            debug(logger, "Not closing bugs for PPA source.")
-            return
-
-        debug(logger, "Closing bugs.")
-        changesfile_object = open(changesfile_path, 'r')
-        close_bugs_for_queue_item(
-            self, changesfile_object=changesfile_object)
-        changesfile_object.close()
-
     def _validateBuildsForSource(self, sourcepackagerelease, builds):
         """Check if the sourcepackagerelease generates at least one build.
 
@@ -507,6 +487,9 @@ class PackageUpload(SQLBase):
 
     def acceptFromUploader(self, changesfile_path, logger=None):
         """See `IPackageUpload`."""
+        from lp.soyuz.model.processacceptedbugsjob import (
+            close_bugs_for_queue_item,
+            )
         debug(logger, "Setting it to ACCEPTED")
         self.setAccepted()
 
@@ -521,7 +504,9 @@ class PackageUpload(SQLBase):
         [pub_source] = self.realiseUpload()
         builds = pub_source.createMissingBuilds(logger=logger)
         self._validateBuildsForSource(pub_source.sourcepackagerelease, builds)
-        self._closeBugs(changesfile_path, logger)
+        with open(changesfile_path, 'r') as changesfile_object:
+            close_bugs_for_queue_item(
+                self, changesfile_object=changesfile_object)
         self._giveKarma()
 
     def _acceptSyncFromQueue(self):
@@ -552,8 +537,9 @@ class PackageUpload(SQLBase):
         This is the normal case, for uploads that are not delayed and are not
         attached to package copy jobs.
         """
-        from lp.soyuz.scripts.processaccepted import close_bugs_for_queue_item
-
+        from lp.soyuz.model.processacceptedbugsjob import (
+            close_bugs_for_queue_item,
+            )
         assert self.package_copy_job is None, (
             "This method is not for copy-job uploads.")
         assert self.changesfile is not None, (
@@ -997,8 +983,7 @@ class PackageUpload(SQLBase):
         if copy_job.component_name not in allowed_component_names:
             raise QueueAdminUnauthorizedError(
                 "No rights to override from %s" % copy_job.component_name)
-        copy_job.addSourceOverride(SourceOverride(
-            copy_job.package_name, new_component, new_section))
+        copy_job.addSourceOverride(SourceOverride(new_component, new_section))
 
         return True
 
@@ -1340,12 +1325,12 @@ class PackageUploadSource(SQLBase):
     def publish(self, logger=None):
         """See `IPackageUploadSource`."""
         # Publish myself in the distroseries pointed at by my queue item.
-        debug(logger, "Publishing source %s/%s to %s/%s in the %s archive" % (
+        debug(logger, "Publishing source %s/%s to %s/%s in %s" % (
             self.sourcepackagerelease.name,
             self.sourcepackagerelease.version,
             self.packageupload.distroseries.distribution.name,
             self.packageupload.distroseries.name,
-            self.packageupload.archive.name))
+            self.packageupload.archive.reference))
 
         return getUtility(IPublishingSet).newSourcePublication(
             archive=self.packageupload.archive,
@@ -1462,9 +1447,12 @@ class PackageUploadCustom(SQLBase):
         # complicated for our needs right now.  Also, the existing code
         # assumes that everything is a tarball and tries to unpack it.
 
-        archive = self.packageupload.archive
         # See the XXX near the import for getPubConfig.
-        archive_config = getPubConfig(archive)
+        archive_config = getPubConfig(self.packageupload.archive)
+        if archive_config.metaroot is None:
+            debug(logger, "Skipping meta-data for archive without metaroot.")
+            return
+
         dest_file = os.path.join(
             archive_config.metaroot, self.libraryfilealias.filename)
         if not os.path.isdir(archive_config.metaroot):

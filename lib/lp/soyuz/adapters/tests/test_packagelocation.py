@@ -217,44 +217,39 @@ class TestPackageLocation(TestCaseWithFactory):
     def testRepresentation(self):
         """Check if PackageLocation is represented correctly."""
         location_ubuntu_hoary = self.getPackageLocation()
-        self.assertEqual(str(location_ubuntu_hoary),
-                         'Primary Archive for Ubuntu Linux: hoary-RELEASE')
+        self.assertEqual(
+            str(location_ubuntu_hoary), 'ubuntu: hoary-RELEASE')
 
         universe = getUtility(IComponentSet)['universe']
         location_ubuntu_hoary.component = universe
 
         self.assertEqual(
-            str(location_ubuntu_hoary),
-            'Primary Archive for Ubuntu Linux: hoary-RELEASE (universe)')
+            str(location_ubuntu_hoary), 'ubuntu: hoary-RELEASE (universe)')
 
         location_ubuntu_warty_security = self.getPackageLocation(
             suite='warty-security')
-        self.assertEqual(str(location_ubuntu_warty_security),
-                         'Primary Archive for Ubuntu Linux: warty-SECURITY')
+        self.assertEqual(
+            str(location_ubuntu_warty_security), 'ubuntu: warty-SECURITY')
 
         location_ubuntutest = self.getPackageLocation(
             distribution_name='ubuntutest')
         self.assertEqual(
-            str(location_ubuntutest),
-            'Primary Archive for Ubuntu Test: hoary-test-RELEASE')
+            str(location_ubuntutest), 'ubuntutest: hoary-test-RELEASE')
 
         location_cprov_ppa = self.getPackageLocation(
             distribution_name='ubuntu', purpose=ArchivePurpose.PPA,
             person_name='cprov', archive_name="ppa")
         self.assertEqual(
-            str(location_cprov_ppa),
-            'cprov: hoary-RELEASE')
+            str(location_cprov_ppa), '~cprov/ubuntu/ppa: hoary-RELEASE')
 
         location_ubuntu_partner = self.getPackageLocation(
             distribution_name='ubuntu', purpose=ArchivePurpose.PARTNER)
         self.assertEqual(
-            str(location_ubuntu_partner),
-            'Partner Archive for Ubuntu Linux: hoary-RELEASE')
+            str(location_ubuntu_partner), 'ubuntu/partner: hoary-RELEASE')
 
         self.factory.makePackageset(name=u"foo-packageset")
         location_ubuntu_packageset = self.getPackageLocation(
             packageset_names=[u"foo-packageset"])
         self.assertEqual(
             str(location_ubuntu_packageset),
-            'Primary Archive for Ubuntu Linux: '
-            'hoary-RELEASE [foo-packageset]')
+            'ubuntu: hoary-RELEASE [foo-packageset]')

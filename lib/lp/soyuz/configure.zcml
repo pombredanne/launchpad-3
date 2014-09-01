@@ -605,8 +605,6 @@
             class="lp.soyuz.model.distroarchseries.DistroArchSeries">
             <allow
                 interface="lp.soyuz.interfaces.distroarchseries.IDistroArchSeriesPublic"/>
-            <allow
-                interface="lp.soyuz.interfaces.publishing.ICanPublishPackages"/>
             <require
                 permission="launchpad.Admin"
                 set_schema="lp.soyuz.interfaces.distroarchseries.IDistroArchSeriesPublic"/>
@@ -929,7 +927,10 @@
     </class>
 
     <!-- OverridePolicy -->
-    <class class="lp.soyuz.adapters.overrides.UbuntuOverridePolicy">
+    <class class="lp.soyuz.adapters.overrides.FallbackOverridePolicy">
+      <allow interface="lp.soyuz.adapters.overrides.IOverridePolicy" />
+    </class>
+    <class class="lp.soyuz.adapters.overrides.ConstantOverridePolicy">
       <allow interface="lp.soyuz.adapters.overrides.IOverridePolicy" />
     </class>
 

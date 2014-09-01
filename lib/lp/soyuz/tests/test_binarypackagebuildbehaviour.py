@@ -21,7 +21,6 @@ from zope.security.proxy import removeSecurityProxy
 from lp.archivepublisher.diskpool import poolify
 from lp.buildmaster.enums import (
     BuilderCleanStatus,
-    BuildQueueStatus,
     BuildStatus,
     )
 from lp.buildmaster.interactor import (
@@ -104,12 +103,12 @@ class TestBinaryBuildPackageBehaviour(TestCaseWithFactory):
             in order to trick the slave into building correctly.
         :return: A list of the calls we expect to be made.
         """
-        ds_name = build.distro_arch_series.distroseries.name
+        das = build.distro_arch_series
+        ds_name = das.distroseries.name
         suite = ds_name + pocketsuffix[build.pocket]
         archives = get_sources_list_for_building(
-            build, build.distro_arch_series,
-            build.source_package_release.name)
-        arch_indep = build.distro_arch_series.isNominatedArchIndep
+            build, das, build.source_package_release.name)
+        arch_indep = das.isNominatedArchIndep
         if component is None:
             component = build.current_component.name
         if filemap_names is None:
@@ -123,12 +122,13 @@ class TestBinaryBuildPackageBehaviour(TestCaseWithFactory):
 
         extra_args = {
             'arch_indep': arch_indep,
-            'arch_tag': build.distro_arch_series.architecturetag,
+            'arch_tag': das.architecturetag,
             'archive_private': archive.private,
             'archive_purpose': archive_purpose.name,
             'archives': archives,
             'build_debug_symbols': archive.build_debug_symbols,
             'ogrecomponent': component,
+            'distribution': das.distroseries.distribution.name,
             'suite': suite,
             }
         build_log = [

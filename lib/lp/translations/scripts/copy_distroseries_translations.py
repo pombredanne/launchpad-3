@@ -6,10 +6,16 @@
 __metaclass__ = type
 __all__ = ['copy_distroseries_translations']
 
-
 from zope.component import getUtility
 
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
+from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.services.database import bulk
+from lp.soyuz.interfaces.publishing import active_publishing_status
+from lp.soyuz.model.publishing import SourcePackagePublishingHistory
+from lp.translations.model.distroseries_translations_copy import (
+    copy_active_translations,
+    )
 
 
 class SeriesTranslationFlagsModified(Warning):
@@ -71,16 +77,21 @@ class SeriesStateKeeper:
         series.defer_translation_imports = self.defer_translation_imports
 
 
-def copy_distroseries_translations(distroseries, txn, logger):
-    """Copy `distroseries` translations from its parents.
+def copy_distroseries_translations(source, target, txn, logger,
+                                   published_sources_only=False):
+    """Copy translations into a new `DistroSeries`.
 
-    Wraps around `DistroSeries.copyMissingTranslationsFromParent`, but also
-    ensures that the `hide_all_translations` and `defer_translation_imports`
-    flags are set.  After copying they are restored to their previous state.
+    Wraps around `copy_active_translations`, but also ensures that the
+    `hide_all_translations` and `defer_translation_imports` flags are
+    set.  After copying they are restored to their previous state.
+
+    If published_sources_only is set, the set of sources in the target
+    will be calculated and only templates for those sources will be
+    copied.
     """
     statekeeper = SeriesStateKeeper()
-    statekeeper.prepare(distroseries)
-    name = distroseries.name
+    statekeeper.prepare(target)
+    name = target.name
     txn.commit()
     txn.begin()
 
@@ -88,7 +99,29 @@ def copy_distroseries_translations(distroseries, txn, logger):
 
     try:
         # Do the actual work.
-        distroseries.copyTranslationsFromParent(txn, logger)
+        assert target.defer_translation_imports, (
+            "defer_translation_imports not set!"
+            " That would corrupt translation data mixing new imports"
+            " with the information being copied.")
+        assert target.hide_all_translations, (
+            "hide_all_translations not set!"
+            " That would allow users to see and modify incomplete"
+            " translation state.")
+
+        if published_sources_only:
+            spns = bulk.load(
+                SourcePackageName,
+                target.main_archive.getPublishedSources(
+                        distroseries=target, status=active_publishing_status)
+                    .config(distinct=True)
+                    .order_by(
+                        SourcePackagePublishingHistory.sourcepackagenameID)
+                    .values(
+                        SourcePackagePublishingHistory.sourcepackagenameID))
+        else:
+            spns = None
+        copy_active_translations(
+            source, target, txn, logger, sourcepackagenames=spns)
     except:
         copy_failed = True
         # Give us a fresh transaction for proper cleanup.

@@ -1,4 +1,4 @@
-# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __all__ = [
@@ -221,11 +221,11 @@ flag_info = sorted([
      'disabled',
      '',
      ''),
-    ('code.inline_diff_comments.enabled',
+    ('soyuz.ppa.separate_long_descriptions',
      'boolean',
-     'If true, reviewers can comment on parts of merge proposal diffs.',
+     'If true, PPAs will create an i18n/Translations-en file',
      'disabled',
-     'Inline diff comments',
+     'PPA Separate Long Descriptions',
      ''),
     ])
 

@@ -23,7 +23,7 @@ from lp.testing.layers import LaunchpadFunctionalLayer
 expected_body = u"""\
  * State: Successfully built
  * Recipe: person/recipe
- * Archive: archiveowner/ppa
+ * Archive: ~archiveowner/ubuntu/ppa
  * Distroseries: distroseries
  * Duration: 5 minutes
  * Build Log: %s
@@ -34,7 +34,7 @@ expected_body = u"""\
 superseded_body = u"""\
  * State: Build for superseded Source
  * Recipe: person/recipe
- * Archive: archiveowner/ppa
+ * Archive: ~archiveowner/ubuntu/ppa
  * Distroseries: distroseries
  * Duration: 
  * Build Log: 

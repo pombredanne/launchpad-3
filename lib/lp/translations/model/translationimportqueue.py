@@ -202,12 +202,6 @@ class TranslationImportQueueEntry(SQLBase):
     error_output = StringCol(notNull=False, default=None)
 
     @property
-    def is_targeted_to_ubuntu(self):
-        return (self.distroseries is not None and
-            self.distroseries.distribution ==
-            getUtility(ILaunchpadCelebrities).ubuntu)
-
-    @property
     def sourcepackage(self):
         """See ITranslationImportQueueEntry."""
         from lp.registry.model.sourcepackage import SourcePackage

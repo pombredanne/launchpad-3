@@ -1,6 +1,6 @@
  * State: %(status)s
  * Recipe: %(recipe_owner)s/%(recipe)s
- * Archive: %(archive_owner)s/%(archive)s
+ * Archive: %(archive)s
  * Distroseries: %(distroseries)s
  * Duration: %(duration)s
  * Build Log: %(log_url)s

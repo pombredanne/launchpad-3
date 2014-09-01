@@ -13,9 +13,6 @@ __all__ = [
     'update_files_privacy',
     ]
 
-from itertools import repeat
-from operator import attrgetter
-
 import apt_pkg
 from lazr.delegates import delegates
 from zope.component import getUtility
@@ -23,6 +20,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.services.database.bulk import load_related
 from lp.soyuz.adapters.notification import notify
+from lp.soyuz.adapters.overrides import SourceOverride
 from lp.soyuz.enums import (
     BinaryPackageFileType,
     SourcePackageFormat,
@@ -36,7 +34,11 @@ from lp.soyuz.interfaces.publishing import (
     ISourcePackagePublishingHistory,
     )
 from lp.soyuz.interfaces.queue import IPackageUploadCustom
+from lp.soyuz.model.processacceptedbugsjob import (
+    close_bugs_for_sourcepublication,
+    )
 from lp.soyuz.scripts.custom_uploads_copier import CustomUploadsCopier
+
 
 # XXX cprov 2009-06-12: this function should be incorporated in
 # IPublishing.
@@ -167,30 +169,12 @@ def check_copy_permissions(person, archive, series, pocket, sources):
     # the destination (archive, component, pocket). This check is done
     # here rather than in the security adapter because it requires more
     # info than is available in the security adapter.
-    sourcepackagenames = [
-        source.sourcepackagerelease.sourcepackagename for source in sources]
-    if series is None:
-        # Use each source's series as the destination for that source.
-        series_iter = map(attrgetter("distroseries"), sources)
-    else:
-        series_iter = repeat(series)
-    for spn, dest_series in set(zip(sourcepackagenames, series_iter)):
-        # XXX cjwatson 20120630: We should do a proper ancestry check
-        # instead of simply querying for publications in any pocket.
-        # Unfortunately there are currently at least three different
-        # implementations of ancestry lookup:
-        # NascentUpload.getSourceAncestry,
-        # PackageUploadSource.getSourceAncestryForDiffs, and
-        # Archive.getPublishedSources, none of which is obviously
-        # correct here.  Instead of adding a fourth, we should consolidate
-        # these.
-        ancestries = archive.getPublishedSources(
-            name=spn.name, exact_match=True, status=active_publishing_status,
-            distroseries=dest_series)
-        try:
-            destination_component = ancestries[0].component
-        except IndexError:
-            destination_component = None
+    for source in sources:
+        dest_series = series or source.distroseries
+        spn = source.sourcepackagerelease.sourcepackagename
+        policy = archive.getOverridePolicy(dest_series, pocket)
+        override = policy.calculateSourceOverrides(
+            {spn: SourceOverride(component=source.component)})[spn]
 
         # Is the destination pocket open at all?
         reason = archive.checkUploadToPocket(
@@ -198,17 +182,16 @@ def check_copy_permissions(person, archive, series, pocket, sources):
         if reason is not None:
             raise CannotCopy(reason)
 
-        # If destination_component is not None, make sure the person
-        # has upload permission for this component.  Otherwise, any
-        # upload permission on this archive will do.
-        strict_component = destination_component is not None
+        # If the package exists in the target, make sure the person has
+        # upload permission for its component. Otherwise, any upload
+        # permission on this archive will do.
         reason = archive.verifyUpload(
-            person, spn, destination_component, dest_series,
-            strict_component=strict_component, pocket=pocket)
+            person, spn, override.component, dest_series,
+            strict_component=(override.new == False), pocket=pocket)
         if reason is not None:
             # Queue admins are allowed to copy even if they can't upload.
             if not archive.canAdministerQueue(
-                person, destination_component, pocket, dest_series):
+                person, override.component, pocket, dest_series):
                 raise CannotCopy(reason)
 
 
@@ -435,10 +418,11 @@ class CopyChecker:
             check_copy_permissions(
                 person, self.archive, series, pocket, [source])
 
-        if series not in self.archive.distribution.series:
+        if series.distribution != self.archive.distribution:
             raise CannotCopy(
-                "No such distro series %s in distribution %s." %
-                (series.name, source.distroseries.distribution.name))
+                "Series %s %s not supported in archive for %s." %
+                (series.distribution.name, series.name,
+                 self.archive.distribution.name))
 
         format = SourcePackageFormat.getTermByToken(
             source.sourcepackagerelease.dsc_format).value
@@ -698,9 +682,6 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries,
         `BinaryPackagePublishingHistory` corresponding to the copied
         publications.
     """
-    from lp.soyuz.scripts.processaccepted import (
-        close_bugs_for_sourcepublication)
-
     copies = []
     custom_files = []
 
@@ -711,21 +692,16 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries,
         status=active_publishing_status,
         distroseries=series, pocket=pocket)
     policy = archive.getOverridePolicy(
-        phased_update_percentage=phased_update_percentage)
+        series, pocket, phased_update_percentage=phased_update_percentage)
+    if override is None and policy is not None:
+        # Only one override can be returned so take the first
+        # element of the returned list.
+        override = policy.calculateSourceOverrides(
+            {source.sourcepackagerelease.sourcepackagename: SourceOverride()}
+            )[source.sourcepackagerelease.sourcepackagename]
     if source_in_destination.is_empty():
         # If no manual overrides were specified and the archive has an
         # override policy then use that policy to get overrides.
-        if override is None and policy is not None:
-            package_names = (source.sourcepackagerelease.sourcepackagename,)
-            # Only one override can be returned so take the first
-            # element of the returned list.
-            overrides = policy.calculateSourceOverrides(
-                archive, series, pocket, package_names)
-            # Only one override can be returned so take the first
-            # element of the returned list.
-            assert len(overrides) == 1, (
-                "More than one override encountered, something is wrong.")
-            override = overrides[0]
         source_copy = source.copyTo(
             series, pocket, archive, override, create_dsd_job=create_dsd_job,
             creator=creator, sponsor=sponsor, packageupload=packageupload)
@@ -745,7 +721,8 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries,
         # arch-indep publications) and IBPPH.copy is prepared to expand
         # arch-indep publications.
         binary_copies = getUtility(IPublishingSet).copyBinaries(
-            archive, series, pocket, source.getBuiltBinaries(), policy=policy)
+            archive, series, pocket, source.getBuiltBinaries(), policy=policy,
+            source_override=override)
 
         if binary_copies is not None:
             copies.extend(binary_copies)

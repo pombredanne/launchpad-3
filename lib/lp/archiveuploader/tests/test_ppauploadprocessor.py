@@ -2,7 +2,7 @@
 # NOTE: The first line above must stay first; do not move the copyright
 # notice to the top.  See http://www.python.org/dev/peps/pep-0263/.
 #
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Functional tests for uploadprocessor.py."""
@@ -254,7 +254,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         # Subject and PPA emails header contain the owner name since
         # it's the default PPA.
         contents = [
-            "Subject: [PPA name16] [ubuntu/breezy] bar 1.0-1 (Accepted)"]
+            "Subject: [~name16/ubuntu/ppa/breezy] bar 1.0-1 (Accepted)"]
         self.assertEmail(contents, ppa_header='name16')
 
     def testNamedPPAUploadNonDefault(self):
@@ -272,8 +272,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
 
         # Subject and PPA email-header are specific for this named-ppa.
         contents = [
-            "Subject: [PPA name16-testing] [ubuntu/breezy] bar 1.0-1 "
-                "(Accepted)"]
+            "Subject: [~name16/ubuntu/testing/breezy] bar 1.0-1 (Accepted)"]
         self.assertEmail(contents, ppa_header='name16-testing')
 
     def testNamedPPAUploadWithSeries(self):
@@ -504,7 +503,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         self.switchToUploader()
 
         upload_dir = self.queueUpload(
-            "bar_1.0-1", "~name16/ubuntu/hoary")
+            "bar_1.0-1", "~name16/ubuntu/ppa/hoary")
         self.processUpload(self.uploadprocessor, upload_dir)
 
         self.assertEqual(
@@ -640,7 +639,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
             config.root, "lib/lp/archiveuploader/tests/data/")
         self.options.context = "buildd"
         upload_dir = self.queueUpload(
-            "debian-installer", "~name16/ubuntu/breezy",
+            "debian-installer", "~name16/ubuntu/ppa/breezy",
             test_files_dir=test_files_dir)
         self.processUpload(self.build_uploadprocessor, upload_dir, build=build)
 
@@ -800,16 +799,16 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
              'It is likely that you have a configuration problem with '
                  'dput/dupload.',
              'Please check the documentation at '
-                 'https://help.launchpad.net/Packaging/PPA#Uploading '
+                 'https://help.launchpad.net/Packaging/PPA/Uploading '
                  'and update your configuration.',
              '',
              'Further error processing not possible because of a critical '
                  'previous error.'], rejection_message.splitlines())
 
         contents = [
-            "Subject: [PPA cprov] bar_1.0-1_source.changes rejected",
+            "Subject: [~cprov/ubuntu/ppa] bar_1.0-1_source.changes rejected",
             "Could not find person or team named 'boing'",
-            "https://help.launchpad.net/Packaging/PPA#Uploading",
+            "https://help.launchpad.net/Packaging/PPA/Uploading",
             "If you don't understand why your files were rejected please "
                 "send an email",
             ("to %s for help (requires membership)."
@@ -1012,6 +1011,38 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
             "File bar_1.0.orig.tar.gz already exists in unicode PPA name: "
             "áří" in body)
 
+    def testErrorMessagesWithArchiveDisplayNameUnicodeArchiveDisabled(self):
+        """Check that unicode errors messages are handled correctly.
+
+        Some error messages can contain the PPA display name, which may
+        sometimes contain unicode characters. We need to show proper errors
+        when a disabled PPA with a unicode display name gets an upload.
+        """
+        # Ensure the displayname of the PPA has got unicode in it.
+        self.name16.archive.displayname = u"unicode PPA name: áří"
+        self.name16.archive.disable()
+        # Upload to disabled archive.
+        upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
+        self.processUpload(self.uploadprocessor, upload_dir)
+
+        # The email generated should be sane.
+        from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+        msg = message_from_string(raw_msg)
+        body = msg.get_payload(0)
+        body = body.get_payload(decode=True)
+
+        self.assertTrue(
+            "Rejected:\n"
+            "Launchpad failed to process the upload path '~name16/ubuntu':\n\n"
+            "unicode PPA name: áří is disabled.\n\n"
+            "It is likely that you have a configuration problem with "
+            "dput/dupload.\n"
+            "Please check the documentation at "
+            "https://help.launchpad.net/Packaging/PPA/Uploading and update "
+            "your configuration.\n\n"
+            "Further error processing not possible because of a critical "
+            "previous error." in body)
+
     def testPPAConflictingOrigFiles(self):
         """When available, the official 'orig.tar.gz' restricts PPA uploads.
 
@@ -1199,7 +1230,7 @@ class TestPPAUploadProcessorQuotaChecks(TestPPAUploadProcessorBase):
         # An email communicating the rejection and the reason why it was
         # rejected is sent to the uploaders.
         contents = [
-            "Subject: [PPA name16] bar_1.0-1_source.changes rejected",
+            "Subject: [~name16/ubuntu/ppa] bar_1.0-1_source.changes rejected",
             "Rejected:",
             "PPA exceeded its size limit (2048.00 of 2048.00 MiB). "
             "Ask a question in https://answers.launchpad.net/soyuz/ "
@@ -1211,7 +1242,7 @@ class TestPPAUploadProcessorQuotaChecks(TestPPAUploadProcessorBase):
         upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
         contents = [
-            "Subject: [PPA name16] [ubuntu/breezy] bar 1.0-1 (Accepted)"]
+            "Subject: [~name16/ubuntu/ppa/breezy] bar 1.0-1 (Accepted)"]
         self.assertEmail(contents)
         self.assertEqual(
             self.uploadprocessor.last_processed_upload.queue_root.status,
@@ -1231,7 +1262,7 @@ class TestPPAUploadProcessorQuotaChecks(TestPPAUploadProcessorBase):
         upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
         contents = [
-            "Subject: [PPA name16] [ubuntu/breezy] bar 1.0-1 (Accepted)",
+            "Subject: [~name16/ubuntu/ppa/breezy] bar 1.0-1 (Accepted)",
             "Upload Warnings:",
             "PPA exceeded 95 % of its size limit (2000.00 of 2048.00 MiB). "
             "Ask a question in https://answers.launchpad.net/soyuz/ "

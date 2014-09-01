@@ -597,7 +597,7 @@ class ProductSeriesUbuntuPackagingView(LaunchpadFormView):
 
         # Do not allow users to create links to unpublished Ubuntu packages.
         if (sourcepackagename is not None
-            and distroseries.distribution.full_functionality):
+                and distroseries.distribution.official_packages):
             source_package = distroseries.getSourcePackage(sourcepackagename)
             if source_package.currentrelease is None:
                 message = ("The source package is not published in %s." %

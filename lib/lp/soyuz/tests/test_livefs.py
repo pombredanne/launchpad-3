@@ -26,6 +26,7 @@ from lp.buildmaster.enums import (
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.registry.enums import PersonVisibility
+from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.database.constants import UTC_NOW
 from lp.services.features.testing import FeatureFixture
@@ -532,7 +533,9 @@ class TestLiveFSWebservice(TestCaseWithFactory):
 
     def test_requestBuild_archive_disabled(self):
         # Build requests against a disabled archive are rejected.
-        distroseries = self.factory.makeDistroSeries(registrant=self.person)
+        distroseries = self.factory.makeDistroSeries(
+            distribution=getUtility(IDistributionSet)['ubuntu'],
+            registrant=self.person)
         distroarchseries = self.factory.makeDistroArchSeries(
             distroseries=distroseries, owner=self.person)
         distroarchseries_url = api_url(distroarchseries)
@@ -550,7 +553,9 @@ class TestLiveFSWebservice(TestCaseWithFactory):
     def test_requestBuild_archive_private_owners_match(self):
         # Build requests against a private archive are allowed if the LiveFS
         # and Archive owners match exactly.
-        distroseries = self.factory.makeDistroSeries(registrant=self.person)
+        distroseries = self.factory.makeDistroSeries(
+            distribution=getUtility(IDistributionSet)['ubuntu'],
+            registrant=self.person)
         distroarchseries = self.factory.makeDistroArchSeries(
             distroseries=distroseries, owner=self.person)
         distroarchseries_url = api_url(distroarchseries)
@@ -567,7 +572,9 @@ class TestLiveFSWebservice(TestCaseWithFactory):
     def test_requestBuild_archive_private_owners_mismatch(self):
         # Build requests against a private archive are rejected if the
         # LiveFS and Archive owners do not match exactly.
-        distroseries = self.factory.makeDistroSeries(registrant=self.person)
+        distroseries = self.factory.makeDistroSeries(
+            distribution=getUtility(IDistributionSet)['ubuntu'],
+            registrant=self.person)
         distroarchseries = self.factory.makeDistroArchSeries(
             distroseries=distroseries, owner=self.person)
         distroarchseries_url = api_url(distroarchseries)
@@ -587,7 +594,9 @@ class TestLiveFSWebservice(TestCaseWithFactory):
     def test_getBuilds(self):
         # The builds, completed_builds, and pending_builds properties are as
         # expected.
-        distroseries = self.factory.makeDistroSeries(registrant=self.person)
+        distroseries = self.factory.makeDistroSeries(
+            distribution=getUtility(IDistributionSet)['ubuntu'],
+            registrant=self.person)
         distroarchseries = self.factory.makeDistroArchSeries(
             distroseries=distroseries, owner=self.person)
         distroarchseries_url = api_url(distroarchseries)
@@ -659,4 +668,4 @@ class TestLiveFSWebservice(TestCaseWithFactory):
         store.invalidate()
         with StormStatementRecorder() as recorder:
             self.webservice.get(url)
-        self.assertThat(recorder, HasQueryCount(Equals(21)))
+        self.assertThat(recorder, HasQueryCount(Equals(16)))
