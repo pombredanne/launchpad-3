@@ -3,6 +3,7 @@
 
 from cStringIO import StringIO
 from datetime import datetime
+import hashlib
 import httplib
 import unittest
 from urllib2 import (
@@ -339,9 +340,11 @@ class LibrarianWebTestCase(unittest.TestCase):
         token = TimeLimitedToken.allocate(url)
         # But time has passed
         store = session_store()
-        tokens = store.find(TimeLimitedToken, TimeLimitedToken.token==token)
+        tokens = store.find(
+            TimeLimitedToken,
+            TimeLimitedToken.token == hashlib.sha256(token).hexdigest())
         tokens.set(
-            TimeLimitedToken.created==SQL("created - interval '1 week'"))
+            TimeLimitedToken.created == SQL("created - interval '1 week'"))
         url = url + "?token=%s" % token
         # Now, as per test_restricted_no_token we should get a 404.
         self.require404(url)

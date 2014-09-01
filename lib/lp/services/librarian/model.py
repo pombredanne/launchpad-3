@@ -12,6 +12,7 @@ __all__ = [
     ]
 
 from datetime import datetime
+import hashlib
 from urlparse import urlparse
 
 from lazr.delegates import delegates
@@ -298,7 +299,9 @@ class TimeLimitedToken(StormBase):
 
     created = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     path = StringCol(notNull=True)
+    # The hex SHA-256 hash of the token.
     token = StringCol(notNull=True)
+
     __storm_primary__ = ("path", "token")
 
     def __init__(self, path, token, created=None):
@@ -306,7 +309,7 @@ class TimeLimitedToken(StormBase):
         if created is not None:
             self.created = created
         self.path = path
-        self.token = token
+        self.token = hashlib.sha256(token).hexdigest()
 
     @staticmethod
     def allocate(url):
