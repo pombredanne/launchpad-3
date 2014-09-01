@@ -113,18 +113,10 @@ class PPAVocabulary(SQLObjectVocabularyBase):
 
     def getTermByToken(self, token):
         """See `IVocabularyTokenized`."""
-        try:
-            owner_name, distro_name, archive_name = token.split('/')
-        except ValueError:
-            raise LookupError(token)
-
         obj = getUtility(IArchiveSet).getByReference(token)
-        if obj is None:
-            return LookupError(token)
-        elif obj.enabled:
-            return self.toTerm(obj)
-        else:
+        if obj is None or not obj.enabled:
             raise LookupError(token)
+        return self.toTerm(obj)
 
     def search(self, query, vocab_filter=None):
         """Return a resultset of archives.
