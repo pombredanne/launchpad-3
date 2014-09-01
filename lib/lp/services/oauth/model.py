@@ -46,10 +46,7 @@ from lp.services.oauth.interfaces import (
     IOAuthRequestToken,
     IOAuthRequestTokenSet,
     )
-from lp.services.tokens import (
-    create_token,
-    create_unique_token_for_table,
-    )
+from lp.services.tokens import create_token
 from lp.services.webapp.interfaces import (
     AccessLevel,
     OAuthPermission,
@@ -392,11 +389,13 @@ def create_token_key_and_secret(table):
     :table: The table in which the key/secret are going to be used. Must be
         one of OAuthAccessToken or OAuthRequestToken.
 
-    The key will have a length of 20 and we'll make sure it's not yet in the
-    given table.  The secret will have a length of 80.
+    The key will have a length of 20. The secret will have a length of 80.
     """
+    # Even a length of 20 has 112 bits of entropy, so uniqueness is a
+    # good assumption. If we generate a duplicate then the DB insertion
+    # will crash, which is desirable because it indicates an RNG issue.
     key_length = 20
-    key = create_unique_token_for_table(key_length, getattr(table, "key"))
+    key = create_token(key_length)
     secret_length = 80
     secret = create_token(secret_length)
     return key, secret
