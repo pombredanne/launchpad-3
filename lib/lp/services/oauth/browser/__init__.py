@@ -46,7 +46,7 @@ from lp.services.webapp.interfaces import OAuthPermission
 class JSONTokenMixin:
 
     def getJSONRepresentation(self, permissions, token=None,
-                              include_secret=False):
+                              secret=None):
         """Return a JSON representation of the authorization policy.
 
         This includes a description of some subset of OAuthPermission,
@@ -56,8 +56,8 @@ class JSONTokenMixin:
         if token is not None:
             structure['oauth_token'] = token.key
             structure['oauth_token_consumer'] = token.consumer.key
-            if include_secret:
-                structure['oauth_token_secret'] = token.secret
+            if secret is not None:
+                structure['oauth_token_secret'] = secret
         access_levels = [{
                 'value': permission.name,
                 'title': permission.title,
@@ -93,7 +93,7 @@ class OAuthRequestTokenView(LaunchpadFormView, JSONTokenMixin):
         if not check_oauth_signature(self.request, consumer, None):
             return u''
 
-        token = consumer.newRequestToken()
+        token, secret = consumer.newRequestToken()
         if self.request.headers.get('Accept') == HTTPResource.JSON_TYPE:
             # Don't show the client the DESKTOP_INTEGRATION access
             # level. If they have a legitimate need to use it, they'll
@@ -103,7 +103,7 @@ class OAuthRequestTokenView(LaunchpadFormView, JSONTokenMixin):
                 if (permission != OAuthPermission.DESKTOP_INTEGRATION)
                 ]
             return self.getJSONRepresentation(
-                permissions, token, include_secret=True)
+                permissions, token, secret=secret)
         return u'oauth_token=%s&oauth_token_secret=%s' % (
             token.key, token.secret)
 
@@ -442,7 +442,7 @@ class OAuthAccessTokenView(LaunchpadView):
                 'End-user refused to authorize request token.')
 
         try:
-            access_token = token.createAccessToken()
+            access_token, access_secret = token.createAccessToken()
         except OAuthValidationError as e:
             return self._set_status_and_error(e)
 
@@ -450,5 +450,5 @@ class OAuthAccessTokenView(LaunchpadView):
         if access_token.context is not None:
             context_name = access_token.context.name
         body = u'oauth_token=%s&oauth_token_secret=%s&lp.context=%s' % (
-            access_token.key, access_token.secret, context_name)
+            access_token.key, access_secret, context_name)
         return body

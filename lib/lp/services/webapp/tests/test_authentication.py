@@ -60,35 +60,35 @@ class TestCheckOAuthSignature(TestCaseWithFactory):
         return LaunchpadTestRequest(form=form)
 
     def test_valid(self):
-        token = self.factory.makeOAuthAccessToken()
-        request = self.makeRequest('&%s' % token.secret)
+        token, secret = self.factory.makeOAuthAccessToken()
+        request = self.makeRequest('&%s' % secret)
         self.assertTrue(check_oauth_signature(request, token.consumer, token))
 
     def test_bad_secret(self):
-        token = self.factory.makeOAuthAccessToken()
-        request = self.makeRequest('&%slol' % token.secret)
+        token, secret = self.factory.makeOAuthAccessToken()
+        request = self.makeRequest('&%slol' % secret)
         self.assertFalse(check_oauth_signature(request, token.consumer, token))
         self.assertEqual(401, request.response.getStatus())
 
     def test_valid_no_token(self):
-        token = self.factory.makeOAuthAccessToken()
+        token, _ = self.factory.makeOAuthAccessToken()
         request = self.makeRequest('&')
         self.assertTrue(check_oauth_signature(request, token.consumer, None))
 
     def test_bad_secret_no_token(self):
-        token = self.factory.makeOAuthAccessToken()
+        token, _ = self.factory.makeOAuthAccessToken()
         request = self.makeRequest('&lol')
         self.assertFalse(check_oauth_signature(request, token.consumer, None))
         self.assertEqual(401, request.response.getStatus())
 
     def test_not_plaintext(self):
-        token = self.factory.makeOAuthAccessToken()
+        token, _ = self.factory.makeOAuthAccessToken()
         request = self.makeRequest('&lol', method='HMAC-SHA1')
         self.assertFalse(check_oauth_signature(request, token.consumer, token))
         self.assertEqual(400, request.response.getStatus())
 
     def test_bad_signature_format(self):
-        token = self.factory.makeOAuthAccessToken()
+        token, _ = self.factory.makeOAuthAccessToken()
         request = self.makeRequest('lol')
         self.assertFalse(check_oauth_signature(request, token.consumer, token))
         self.assertEqual(401, request.response.getStatus())

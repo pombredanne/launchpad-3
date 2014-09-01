@@ -151,8 +151,8 @@ class OAuthConsumer(OAuthBase, SQLBase):
     def newRequestToken(self):
         """See `IOAuthConsumer`."""
         key, secret = create_token_key_and_secret(table=OAuthRequestToken)
-        return OAuthRequestToken(
-            consumer=self, key=key, secret=secret)
+        return (
+            OAuthRequestToken(consumer=self, key=key, secret=secret), secret)
 
     def getAccessToken(self, key):
         """See `IOAuthConsumer`."""
@@ -340,7 +340,7 @@ class OAuthRequestToken(OAuthBase, SQLBase):
             "A new OAuth token consumer was enabled in Launchpad.")
 
         self.destroySelf()
-        return access_token
+        return access_token, secret
 
     @property
     def is_reviewed(self):
