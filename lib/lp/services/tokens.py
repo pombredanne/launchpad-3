@@ -24,7 +24,8 @@ def create_token(token_length):
     # below to prevent them from having curse/offensive words.
     characters = '0123456789bcdfghjklmnpqrstvwxzBCDFGHJKLMNPQRSTVWXZ'
     token = ''.join(
-        random.choice(characters) for count in range(token_length))
+        random.SystemRandom().choice(characters)
+        for count in range(token_length))
     return unicode(token)
 
 
