@@ -57,10 +57,6 @@ class IOAuthConsumer(Interface):
         title=_('Key'), required=True, readonly=True,
         description=_('The unique key which identifies a consumer. It is '
                       'included by the consumer in each request made.'))
-    secret = TextLine(
-        title=_('Secret'), required=False, readonly=False,
-        description=_('The secret which, if not empty, should be used by the '
-                      'consumer to sign its requests.'))
 
     is_integrated_desktop = Attribute(
         """This attribute is true if the consumer corresponds to a
@@ -79,11 +75,15 @@ class IOAuthConsumer(Interface):
         "desktop"). If the consumer is a specific web or desktop
         application, this is None.""")
 
-    def newRequestToken():
-        """Return a new `IOAuthRequestToken` with a random key and secret.
+    def isSecretValid(secret):
+        """Check if a secret is valid for this consumer."""
 
-        The other attributes of the token are supposed to be set whenever the
-        user logs into Launchpad and grants (or not) access to this consumer.
+    def newRequestToken():
+        """Return a new `IOAuthRequestToken` and its random secret.
+
+        The key and secret are random, while the other attributes of the
+        token are supposed to be set whenever the user logs into
+        Launchpad and grants (or not) access to this consumer.
         """
 
     def getAccessToken(key):
@@ -147,10 +147,6 @@ class IOAuthToken(Interface):
         title=_('Key'), required=True, readonly=True,
         description=_('The key used to identify this token.  It is included '
                       'by the consumer in each request.'))
-    secret = TextLine(
-        title=_('Secret'), required=True, readonly=True,
-        description=_('The secret associated with this token.  It is used '
-                      'by the consumer to sign its requests.'))
     product = Choice(title=_('Project'), required=False, vocabulary='Product')
     project = Choice(
         title=_('Project'), required=False, vocabulary='ProjectGroup')
@@ -165,6 +161,9 @@ class IOAuthToken(Interface):
         required=False, readonly=True,
         description=_("A token may only be usable for a limited time, "
                       "after which it will expire."))
+
+    def isSecretValid(secret):
+        """Check if a secret is valid for this token."""
 
 
 class IOAuthAccessToken(IOAuthToken):
@@ -240,6 +239,8 @@ class IOAuthRequestToken(IOAuthToken):
 
     def createAccessToken():
         """Create an `IOAuthAccessToken` identical to this request token.
+
+        The new token and its secret are returned.
 
         After the access token is created, this one is deleted as it can't be
         used anymore.

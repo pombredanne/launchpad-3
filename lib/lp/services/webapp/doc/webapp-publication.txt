@@ -1056,16 +1056,16 @@ token.
     >>> getUtility(IStoreSelector).push(MasterDatabasePolicy())
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
     >>> consumer = getUtility(IOAuthConsumerSet).getByKey('foobar123451432')
-    >>> token = consumer.newRequestToken()
+    >>> token, _ = consumer.newRequestToken()
     >>> firefox = getUtility(IProductSet)['firefox']
     >>> token.review(salgado, OAuthPermission.WRITE_PUBLIC, context=firefox)
-    >>> access_token = token.createAccessToken()
+    >>> access_token, access_secret = token.createAccessToken()
     >>> form = dict(
     ...     oauth_consumer_key='foobar123451432',
     ...     oauth_token=access_token.key,
     ...     oauth_version='1.0',
     ...     oauth_signature_method='PLAINTEXT',
-    ...     oauth_signature="&".join([consumer.secret, access_token.secret]),
+    ...     oauth_signature="&".join(['', access_secret]),
     ...     oauth_timestamp=time.time(),
     ...     oauth_nonce='4572616e48616d6d65724c61686176')
     >>> policy = getUtility(IStoreSelector).pop()

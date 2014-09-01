@@ -297,13 +297,13 @@ def check_oauth_signature(request, consumer, token):
         request.response.setStatus(400)
         return False
 
-    if token is not None:
-        token_secret = token.secret
-    else:
-        token_secret = ''
-    expected_signature = "&".join([consumer.secret, token_secret])
-    if expected_signature != authorization.get('oauth_signature'):
-        request.unauthorized(OAUTH_CHALLENGE)
-        return False
-
-    return True
+    # The signature is a consumer secret and a token secret joined by &.
+    # If there's no token, the token secret is the empty string.
+    sig_bits = authorization.get('oauth_signature', '').split('&')
+    if (len(sig_bits) == 2
+        and consumer.isSecretValid(sig_bits[0])
+        and ((token is None and sig_bits[1] == '')
+             or (token is not None and token.isSecretValid(sig_bits[1])))):
+        return True
+    request.unauthorized(OAUTH_CHALLENGE)
+    return False

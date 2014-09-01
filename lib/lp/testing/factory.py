@@ -4172,7 +4172,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         """Create a (possibly reviewed) OAuth request token."""
         if consumer is None:
             consumer = self.makeOAuthConsumer()
-        token = consumer.newRequestToken()
+        token, _ = consumer.newRequestToken()
 
         if reviewed_by is not None:
             # Review the token before modifying the date_created,

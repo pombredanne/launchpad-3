@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -15,6 +15,7 @@ from datetime import (
     datetime,
     timedelta,
     )
+import hashlib
 import re
 
 import pytz
@@ -36,6 +37,7 @@ from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.interfaces import IMasterStore
 from lp.services.database.sqlbase import SQLBase
+from lp.services.features import getFeatureFlag
 from lp.services.librarian.model import LibraryFileAlias
 from lp.services.oauth.interfaces import (
     IOAuthAccessToken,
@@ -85,7 +87,12 @@ class OAuthConsumer(OAuthBase, SQLBase):
     date_created = UtcDateTimeCol(default=UTC_NOW, notNull=True)
     disabled = BoolCol(notNull=True, default=False)
     key = StringCol(notNull=True)
-    secret = StringCol(notNull=False, default='')
+    _secret = StringCol(dbName="secret", notNull=False, default='')
+
+    def __init__(self, key, secret):
+        if getFeatureFlag('auth.hash_oauth_secrets'):
+            secret = hashlib.sha256(secret).hexdigest()
+        super(OAuthConsumer, self).__init__(key=key, _secret=secret)
 
     # This regular expression singles out a consumer key that
     # represents any and all apps running on a specific computer. The
@@ -144,11 +151,15 @@ class OAuthConsumer(OAuthBase, SQLBase):
         """See `IOAuthConsumer`."""
         return self._integrated_desktop_match_group(1)
 
+    def isSecretValid(self, secret):
+        """See `IOAuthConsumer`."""
+        return self._secret in (secret, hashlib.sha256(secret).hexdigest())
+
     def newRequestToken(self):
         """See `IOAuthConsumer`."""
         key, secret = create_token_key_and_secret(table=OAuthRequestToken)
-        return OAuthRequestToken(
-            consumer=self, key=key, secret=secret)
+        return (
+            OAuthRequestToken(consumer=self, key=key, secret=secret), secret)
 
     def getAccessToken(self, key):
         """See `IOAuthConsumer`."""
@@ -185,7 +196,7 @@ class OAuthAccessToken(OAuthBase, SQLBase):
     date_created = UtcDateTimeCol(default=UTC_NOW, notNull=True)
     date_expires = UtcDateTimeCol(notNull=False, default=None)
     key = StringCol(notNull=True)
-    secret = StringCol(notNull=False, default='')
+    _secret = StringCol(dbName="secret", notNull=False, default='')
 
     permission = EnumCol(enum=AccessLevel, notNull=True)
 
@@ -200,6 +211,17 @@ class OAuthAccessToken(OAuthBase, SQLBase):
     distribution = ForeignKey(
         dbName='distribution', foreignKey='Distribution',
         notNull=False, default=None)
+
+    def __init__(self, consumer, permission, key, secret='', person=None,
+                 date_expires=None, product=None, project=None,
+                 distribution=None, sourcepackagename=None):
+        if getFeatureFlag('auth.hash_oauth_secrets'):
+            secret = hashlib.sha256(secret).hexdigest()
+        super(OAuthAccessToken, self).__init__(
+            consumer=consumer, permission=permission, key=key,
+            _secret=secret, person=person, date_expires=date_expires,
+            product=product, project=project, distribution=distribution,
+            sourcepackagename=sourcepackagename)
 
     @property
     def context(self):
@@ -222,6 +244,10 @@ class OAuthAccessToken(OAuthBase, SQLBase):
         now = datetime.now(pytz.timezone('UTC'))
         return self.date_expires is not None and self.date_expires <= now
 
+    def isSecretValid(self, secret):
+        """See `IOAuthConsumer`."""
+        return self._secret in (secret, hashlib.sha256(secret).hexdigest())
+
 
 class OAuthRequestToken(OAuthBase, SQLBase):
     """See `IOAuthRequestToken`."""
@@ -234,7 +260,7 @@ class OAuthRequestToken(OAuthBase, SQLBase):
     date_created = UtcDateTimeCol(default=UTC_NOW, notNull=True)
     date_expires = UtcDateTimeCol(notNull=False, default=None)
     key = StringCol(notNull=True)
-    secret = StringCol(notNull=False, default='')
+    _secret = StringCol(dbName="secret", notNull=False, default='')
 
     permission = EnumCol(enum=OAuthPermission, notNull=False, default=None)
     date_reviewed = UtcDateTimeCol(default=None, notNull=False)
@@ -250,6 +276,17 @@ class OAuthRequestToken(OAuthBase, SQLBase):
     distribution = ForeignKey(
         dbName='distribution', foreignKey='Distribution',
         notNull=False, default=None)
+
+    def __init__(self, consumer, key, secret='', permission=None, person=None,
+                 date_expires=None, product=None, project=None,
+                 distribution=None, sourcepackagename=None):
+        if getFeatureFlag('auth.hash_oauth_secrets'):
+            secret = hashlib.sha256(secret).hexdigest()
+        super(OAuthRequestToken, self).__init__(
+            consumer=consumer, permission=permission, key=key,
+            _secret=secret, person=person, date_expires=date_expires,
+            product=product, project=project, distribution=distribution,
+            sourcepackagename=sourcepackagename)
 
     @property
     def context(self):
@@ -272,6 +309,10 @@ class OAuthRequestToken(OAuthBase, SQLBase):
         now = datetime.now(pytz.timezone('UTC'))
         expires = self.date_created + timedelta(hours=REQUEST_TOKEN_VALIDITY)
         return expires <= now
+
+    def isSecretValid(self, secret):
+        """See `IOAuthConsumer`."""
+        return self._secret in (secret, hashlib.sha256(secret).hexdigest())
 
     def review(self, user, permission, context=None, date_expires=None):
         """See `IOAuthRequestToken`."""
@@ -328,7 +369,7 @@ class OAuthRequestToken(OAuthBase, SQLBase):
             "A new OAuth token consumer was enabled in Launchpad.")
 
         self.destroySelf()
-        return access_token
+        return access_token, secret
 
     @property
     def is_reviewed(self):
