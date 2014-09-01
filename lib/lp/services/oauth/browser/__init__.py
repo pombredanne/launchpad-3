@@ -104,8 +104,7 @@ class OAuthRequestTokenView(LaunchpadFormView, JSONTokenMixin):
                 ]
             return self.getJSONRepresentation(
                 permissions, token, secret=secret)
-        return u'oauth_token=%s&oauth_token_secret=%s' % (
-            token.key, token.secret)
+        return u'oauth_token=%s&oauth_token_secret=%s' % (token.key, secret)
 
 
 def token_exists_and_is_not_reviewed(form, action):

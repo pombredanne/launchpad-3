@@ -16,6 +16,7 @@ import pytz
 import transaction
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
+from zope.security.proxy import removeSecurityProxy
 
 from lp.services.mail import stub
 from lp.services.oauth.interfaces import (
@@ -108,12 +109,12 @@ class TestRequestTokens(TestOAuth):
         request_token, secret = self.consumer.newRequestToken()
         verifyObject(IOAuthRequestToken, request_token)
         self.assertIsInstance(secret, unicode)
-        self.assertEqual(request_token.secret, secret)
+        self.assertEqual(removeSecurityProxy(request_token)._secret, secret)
 
     def test_key_and_secret_automatically_generated(self):
         request_token, secret = self.consumer.newRequestToken()
         self.assertEqual(len(request_token.key), 20)
-        self.assertEqual(len(request_token.secret), 80)
+        self.assertEqual(len(removeSecurityProxy(request_token)._secret), 80)
 
     def test_date_created(self):
         request_token, _ = self.consumer.newRequestToken()
@@ -282,7 +283,8 @@ class TestAccessTokens(TestOAuth):
             self._exchange_request_token_for_access_token())
         verifyObject(IOAuthAccessToken, access_token)
         self.assertIsInstance(access_secret, unicode)
-        self.assertEqual(access_token.secret, access_secret)
+        self.assertEqual(
+            removeSecurityProxy(access_token)._secret, access_secret)
 
         # Make sure the security notification email went out that the new
         # token was created.

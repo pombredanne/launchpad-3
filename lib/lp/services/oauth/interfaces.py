@@ -57,10 +57,6 @@ class IOAuthConsumer(Interface):
         title=_('Key'), required=True, readonly=True,
         description=_('The unique key which identifies a consumer. It is '
                       'included by the consumer in each request made.'))
-    secret = TextLine(
-        title=_('Secret'), required=False, readonly=False,
-        description=_('The secret which, if not empty, should be used by the '
-                      'consumer to sign its requests.'))
 
     is_integrated_desktop = Attribute(
         """This attribute is true if the consumer corresponds to a
@@ -151,10 +147,6 @@ class IOAuthToken(Interface):
         title=_('Key'), required=True, readonly=True,
         description=_('The key used to identify this token.  It is included '
                       'by the consumer in each request.'))
-    secret = TextLine(
-        title=_('Secret'), required=True, readonly=True,
-        description=_('The secret associated with this token.  It is used '
-                      'by the consumer to sign its requests.'))
     product = Choice(title=_('Project'), required=False, vocabulary='Product')
     project = Choice(
         title=_('Project'), required=False, vocabulary='ProjectGroup')
