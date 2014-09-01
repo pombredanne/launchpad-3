@@ -12,8 +12,6 @@ __all__ = [
     ]
 
 from datetime import datetime
-from hashlib import md5
-import random
 from urlparse import urlparse
 
 from lazr.delegates import delegates
@@ -68,6 +66,7 @@ from lp.services.librarian.interfaces.client import (
     IRestrictedLibrarianClient,
     LIBRARIAN_SERVER_DEFAULT_TIMEOUT,
     )
+from lp.services.tokens import create_token
 
 
 class LibraryFileContent(SQLBase):
@@ -319,18 +318,9 @@ class TimeLimitedToken(StormBase):
         :return: A url fragment token ready to be attached to the url.
             e.g. 'a%20token'
         """
-        # We use random.random to get a string which varies reasonably, and we
-        # hash it to distribute it widely and get a easily copy and pastable
-        # single string (nice for debugging). The randomness is not a key
-        # factor here: as long as tokens are not guessable, they are hidden by
-        # https, not exposed directly in the API (tokens will be allocated by
-        # the appropriate objects), not by direct access to the
-        # TimeLimitedToken class.
-        baseline = str(random.random())
-        hashed = md5(baseline).hexdigest()
-        token = hashed
         store = session_store()
         path = TimeLimitedToken.url_to_token_path(url)
+        token = create_token(32).encode('ascii')
         store.add(TimeLimitedToken(path, token))
         # The session isn't part of the main transaction model, and in fact it
         # has autocommit on. The commit here is belts and bracers: after
