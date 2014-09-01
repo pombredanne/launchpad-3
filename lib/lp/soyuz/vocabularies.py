@@ -114,7 +114,7 @@ class PPAVocabulary(SQLObjectVocabularyBase):
     def getTermByToken(self, token):
         """See `IVocabularyTokenized`."""
         obj = getUtility(IArchiveSet).getByReference(token)
-        if obj is None or not obj.enabled:
+        if obj is None or not obj.enabled or not obj.is_ppa:
             raise LookupError(token)
         return self.toTerm(obj)
 
