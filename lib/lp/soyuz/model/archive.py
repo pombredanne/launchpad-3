@@ -110,10 +110,7 @@ from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
     )
-from lp.services.tokens import (
-    create_token,
-    create_unique_token_for_table,
-    )
+from lp.services.tokens import create_token
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.url import urlappend
@@ -1905,7 +1902,7 @@ class Archive(SQLBase):
 
         # Now onto the actual token creation:
         if token is None:
-            token = create_unique_token_for_table(20, ArchiveAuthToken.token)
+            token = create_token(20)
         archive_auth_token = ArchiveAuthToken()
         archive_auth_token.archive = self
         archive_auth_token.person = person
@@ -2409,8 +2406,7 @@ class ArchiveSet:
 
         # Private teams cannot have public PPAs.
         if owner.visibility == PersonVisibility.PRIVATE:
-            new_archive.buildd_secret = create_unique_token_for_table(
-                20, Archive.buildd_secret)
+            new_archive.buildd_secret = create_token(20)
             new_archive.private = True
         else:
             new_archive.private = private
