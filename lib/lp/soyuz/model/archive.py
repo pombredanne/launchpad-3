@@ -1058,6 +1058,11 @@ class Archive(SQLBase):
             raise ArchiveDependencyError(
                 "You don't have permission to use this dependency.")
             return
+        if not dependency.enabled:
+            raise ArchiveDependencyError("Dependencies must not be disabled.")
+        if dependency.distribution != self.distribution:
+            raise ArchiveDependencyError(
+                "Dependencies must be for the same distribution.")
         if dependency.private and not self.private:
             raise ArchiveDependencyError(
                 "Public PPAs cannot depend on private ones.")
@@ -1071,13 +1076,6 @@ class Archive(SQLBase):
                 raise ArchiveDependencyError(
                     "Non-primary archives only support the '%s' component." %
                     dependency.default_component.name)
-        if dependency.distribution != self.distribution:
-            raise ArchiveDependencyError(
-                "This dependency uses a different archive.")
-
-        if not dependency.enabled:
-            raise ArchiveDependencyError(
-                "This dependency is not active.")
         return ArchiveDependency(
             archive=self, dependency=dependency, pocket=pocket,
             component=component)

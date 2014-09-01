@@ -1424,7 +1424,7 @@ class TestAddArchiveDependencies(TestCaseWithFactory):
         with person_logged_in(archive.owner):
             with ExpectedException(
                 ArchiveDependencyError,
-                "This dependency uses a different archive."):
+                "Dependencies must be for the same distribution."):
                 archive.addArchiveDependency(
                     dependency, PackagePublishingPocket.RELEASE)
 
@@ -1436,9 +1436,10 @@ class TestAddArchiveDependencies(TestCaseWithFactory):
         with person_logged_in(archive.owner):
             with ExpectedException(
                 ArchiveDependencyError,
-                "This dependency is not active."):
+                "Dependencies must not be disabled."):
                 archive.addArchiveDependency(
                     dependency, PackagePublishingPocket.RELEASE)
+
 
 class TestArchiveDependencies(TestCaseWithFactory):
 
