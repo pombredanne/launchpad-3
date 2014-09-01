@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test Archive features."""
@@ -1414,6 +1414,31 @@ class TestAddArchiveDependencies(TestCaseWithFactory):
             archive_dependency = archive.addArchiveDependency(dependency,
                 PackagePublishingPocket.RELEASE)
             self.assertContentEqual(archive.dependencies, [archive_dependency])
+
+    def test_dependency_has_different_distribution(self):
+        # A public archive may not depend on a private archive.
+        archive = self.factory.makeArchive()
+        distro = self.factory.makeDistribution()
+        dependency = self.factory.makeArchive(
+            distribution=distro, owner=archive.owner)
+        with person_logged_in(archive.owner):
+            with ExpectedException(
+                ArchiveDependencyError,
+                "Dependencies must be for the same distribution."):
+                archive.addArchiveDependency(
+                    dependency, PackagePublishingPocket.RELEASE)
+
+    def test_dependency_is_disabled(self):
+        # A public archive may not depend on a private archive.
+        archive = self.factory.makeArchive()
+        dependency = self.factory.makeArchive(
+            owner=archive.owner, enabled=False)
+        with person_logged_in(archive.owner):
+            with ExpectedException(
+                ArchiveDependencyError,
+                "Dependencies must not be disabled."):
+                archive.addArchiveDependency(
+                    dependency, PackagePublishingPocket.RELEASE)
 
 
 class TestArchiveDependencies(TestCaseWithFactory):

@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 import cPickle as pickle
+import hashlib
 import time
 from UserDict import DictMixin
 
@@ -92,16 +93,19 @@ class PGSessionData(PGSessionBase):
     def __init__(self, session_data_container, client_id):
         self.session_data_container = session_data_container
         self.client_id = ensure_unicode(client_id)
+        self.hashed_client_id = hashlib.sha256(
+            self.client_id.encode('utf-8')).hexdigest().decode('ascii')
         self.lastAccessTime = time.time()
 
         # Update the last access time in the db if it is out of date
         table_name = session_data_container.session_data_table_name
         query = """
             UPDATE %s SET last_accessed = CURRENT_TIMESTAMP
-            WHERE client_id = ?
+            WHERE client_id IN (?, ?)
                 AND last_accessed < CURRENT_TIMESTAMP - '%d seconds'::interval
             """ % (table_name, session_data_container.resolution)
-        self.store.execute(query, (self.client_id,), noresult=True)
+        self.store.execute(
+            query, (self.client_id, self.hashed_client_id), noresult=True)
 
     def _ensureClientId(self):
         if self._have_ensured_client_id:
@@ -176,11 +180,13 @@ class PGSessionPkgData(DictMixin, PGSessionBase):
     def _populate(self):
         self._data_cache = {}
         query = """
-            SELECT key, pickle FROM %s WHERE client_id = ?
+            SELECT key, pickle FROM %s WHERE client_id IN (?, ?)
                 AND product_id = ?
             """ % self.table_name
-        result = self.store.execute(query, (self.session_data.client_id,
-                                   self.product_id))
+        result = self.store.execute(
+            query, (
+                self.session_data.client_id,
+                self.session_data.hashed_client_id, self.product_id))
         for key, pickled_value in result:
             value = pickle.loads(str(pickled_value))
             self._data_cache[key] = value
@@ -216,12 +222,13 @@ class PGSessionPkgData(DictMixin, PGSessionBase):
             # fingers out of it.
             return
         query = """
-            DELETE FROM %s WHERE client_id = ? AND product_id = ? AND key = ?
+            DELETE FROM %s
+            WHERE client_id IN (?, ?) AND product_id = ? AND key = ?
             """ % self.table_name
         self.store.execute(
             query,
-            (self.session_data.client_id,
-                self.product_id, ensure_unicode(key)),
+            (self.session_data.client_id, self.session_data.hashed_client_id,
+             self.product_id, ensure_unicode(key)),
             noresult=True)
 
     def keys(self):

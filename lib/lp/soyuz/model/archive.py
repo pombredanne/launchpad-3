@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database class for table Archive."""
@@ -1063,6 +1063,11 @@ class Archive(SQLBase):
             raise ArchiveDependencyError(
                 "You don't have permission to use this dependency.")
             return
+        if not dependency.enabled:
+            raise ArchiveDependencyError("Dependencies must not be disabled.")
+        if dependency.distribution != self.distribution:
+            raise ArchiveDependencyError(
+                "Dependencies must be for the same distribution.")
         if dependency.private and not self.private:
             raise ArchiveDependencyError(
                 "Public PPAs cannot depend on private ones.")
@@ -1076,7 +1081,6 @@ class Archive(SQLBase):
                 raise ArchiveDependencyError(
                     "Non-primary archives only support the '%s' component." %
                     dependency.default_component.name)
-
         return ArchiveDependency(
             archive=self, dependency=dependency, pocket=pocket,
             component=component)
@@ -2625,6 +2629,10 @@ class ArchiveSet:
 
 
 def get_archive_privacy_filter(user):
+    """Get a simplified Archive privacy Storm filter.
+
+    Incorrect and deprecated. Use get_enabled_archive_filter instead.
+    """
     if user is None:
         privacy_filter = Not(Archive._private)
     elif IPersonRoles(user).in_admin:
