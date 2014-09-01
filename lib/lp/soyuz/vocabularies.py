@@ -34,7 +34,10 @@ from lp.services.webapp.vocabulary import (
     )
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.archive import IArchiveSet
-from lp.soyuz.model.archive import Archive
+from lp.soyuz.model.archive import (
+    Archive,
+    get_enabled_archive_filter,
+    )
 from lp.soyuz.model.component import Component
 from lp.soyuz.model.distroarchseries import DistroArchSeries
 from lp.soyuz.model.processor import Processor
@@ -89,6 +92,9 @@ class PPAVocabulary(SQLObjectVocabularyBase):
     _table = Archive
     _orderBy = ['Person.name, Archive.name']
     _clauseTables = ['Person']
+    # This should probably also filter by privacy, but that becomes
+    # problematic when you need to remove a dependency that you can no
+    # longer see.
     _filter = And(
         Archive._enabled == True,
         Person.q.id == Archive.q.ownerID,
@@ -132,14 +138,18 @@ class PPAVocabulary(SQLObjectVocabularyBase):
             else:
                 owner_name, archive_name = query_split
         except ValueError:
-            clause = And(
-                self._filter,
-                Or(fti_search(Archive, query), fti_search(Person, query)))
+            search_clause = Or(
+                fti_search(Archive, query), fti_search(Person, query))
         else:
-            clause = And(
-                self._filter, Person.name == owner_name,
-                Archive.name == archive_name)
+            search_clause = And(
+                Person.name == owner_name, Archive.name == archive_name)
 
+        clause = And(
+            self._filter,
+            get_enabled_archive_filter(
+                getUtility(ILaunchBag).user, purpose=ArchivePurpose.PPA,
+                include_public=True),
+            search_clause)
         return self._table.select(
             clause, orderBy=self._orderBy, clauseTables=self._clauseTables)
 

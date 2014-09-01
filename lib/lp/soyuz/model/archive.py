@@ -2589,6 +2589,10 @@ class ArchiveSet:
 
 
 def get_archive_privacy_filter(user):
+    """Get a simplified Archive privacy Storm filter.
+
+    Incorrect and deprecated. Use get_enabled_archive_filter instead.
+    """
     if user is None:
         privacy_filter = Not(Archive._private)
     elif IPersonRoles(user).in_admin:
