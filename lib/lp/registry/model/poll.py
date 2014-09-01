@@ -14,7 +14,6 @@ __all__ = [
     ]
 
 from datetime import datetime
-import random
 
 import pytz
 from sqlobject import (
@@ -51,6 +50,7 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from lp.services.tokens import create_token
 
 
 class Poll(SQLBase):
@@ -152,7 +152,7 @@ class Poll(SQLBase):
         secret one.
         """
         assert self.isOpen(when=when), "This poll is not open"
-        assert not self.personVoted(person), "Can't vote twice in the same poll"
+        assert not self.personVoted(person), "Can't vote twice in one poll"
         assert person.inTeam(self.team), (
             "Person %r is not a member of this poll's team." % person)
 
@@ -170,7 +170,7 @@ class Poll(SQLBase):
         assert self.type == PollAlgorithm.CONDORCET
         voteset = getUtility(IVoteSet)
 
-        token = voteset.newToken()
+        token = create_token(20)
         votes = []
         activeoptions = self.getActiveOptions()
         for option, preference in options.items():
@@ -200,7 +200,7 @@ class Poll(SQLBase):
             assert option.poll == self, (
                 "The option %r doesn't belong to this poll" % option)
             assert option.active, "Option %r is not active" % option
-        token = voteset.newToken()
+        token = create_token(20)
         # This is a simple-style poll, so you can vote only on a single option
         # and this option's preference must be 1
         preference = 1
@@ -285,14 +285,14 @@ class PollSet:
                 datecloses=datecloses, secrecy=secrecy,
                 allowspoilt=allowspoilt, type=poll_type)
 
-    def selectByTeam(self, team, status=PollStatus.ALL, orderBy=None, when=None):
+    def selectByTeam(self, team, status=PollStatus.ALL, orderBy=None,
+                     when=None):
         """See IPollSet."""
         if when is None:
             when = datetime.now(pytz.timezone('UTC'))
 
         if orderBy is None:
             orderBy = Poll.sortingColumns
-
 
         status = set(status)
         status_clauses = []
@@ -411,15 +411,6 @@ class VoteSet:
 
     implements(IVoteSet)
 
-    def newToken(self):
-        """See IVoteSet."""
-        chars = '23456789bcdfghjkmnpqrstvwxzBCDFGHJKLMNPQRSTVWXZ'
-        length = 10
-        token = ''.join([random.choice(chars) for c in range(length)])
-        while self.getByToken(token):
-            token = ''.join([random.choice(chars) for c in range(length)])
-        return token
-
     def new(self, poll, option, preference, token, person):
         """See IVoteSet."""
         return Vote(poll=poll, option=option, preference=preference,
@@ -435,4 +426,3 @@ class VoteSet:
             raise OptionIsNotFromSimplePoll(
                 '%r is not an option of a simple-style poll.' % option)
         return Vote.selectBy(option=option).count()
-
