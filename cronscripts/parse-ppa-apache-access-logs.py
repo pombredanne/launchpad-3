@@ -13,10 +13,11 @@ import functools
 
 from zope.component import getUtility
 
+from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.apachelogparser.script import ParseApacheLogs
 from lp.services.config import config
-from lp.soyuz.interfaces.archive import NoSuchPPA
+from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.scripts.ppa_apache_log_parser import (
     DBUSER,
     get_ppa_file_key,
@@ -45,15 +46,16 @@ class ParsePPAApacheLogs(ParseApacheLogs):
 
     def getDownloadCountUpdater(self, file_id):
         """See `ParseApacheLogs`."""
-        person = self.person_set.getByName(file_id[0])
+        person = getUtility(IPersonSet).getByName(file_id[0])
         if person is None:
             return
-        try:
-            archive = person.getPPAByName(file_id[1])
-        except NoSuchPPA:
+        distro = getUtility(IDistributionSet).getByName(file_id[2])
+        if distro is None:
             return None
-        # file_id[2] (distro) isn't used yet, since getPPAByName
-        # hardcodes Ubuntu.
+        archive = getUtility(IArchiveSet).getPPAOwnedByPerson(
+            person, distribution=distro, name=file_id[1])
+        if archive is None:
+            return None
         bpr = archive.getBinaryPackageReleaseByFileName(file_id[3])
         if bpr is None:
             return None

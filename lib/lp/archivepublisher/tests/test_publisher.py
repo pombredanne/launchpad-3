@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for publisher class."""
@@ -43,6 +43,8 @@ from lp.registry.interfaces.pocket import (
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
+from lp.services.features import getFeatureFlag
+from lp.services.features.testing import FeatureFixture
 from lp.services.gpg.interfaces import IGPGHandler
 from lp.services.log.logger import (
     BufferLogger,
@@ -54,6 +56,7 @@ from lp.soyuz.enums import (
     ArchiveStatus,
     BinaryPackageFormat,
     PackagePublishingStatus,
+    PackageUploadStatus,
     )
 from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.tests.test_publishing import TestNativePublishingBase
@@ -83,6 +86,332 @@ class TestPublisherBase(TestNativePublishingBase):
         cprov = getUtility(IPersonSet).getByName('cprov')
         naked_archive = removeSecurityProxy(cprov.archive)
         naked_archive.distribution = self.ubuntutest
+        self.ubuntu = getUtility(IDistributionSet)['ubuntu']
+
+
+class TestPublisherSeries(TestNativePublishingBase):
+    """Test the `Publisher` methods that publish individual series."""
+
+    def setUp(self):
+        super(TestPublisherSeries, self).setUp()
+        self.publisher = None
+
+    def _createLinkedPublication(self, name, pocket):
+        """Return a linked pair of source and binary publications."""
+        pub_source = self.getPubSource(
+            sourcename=name, filecontent="Hello", pocket=pocket)
+
+        binaryname = '%s-bin' % name
+        pub_bin = self.getPubBinaries(
+            binaryname=binaryname, filecontent="World",
+            pub_source=pub_source, pocket=pocket)[0]
+
+        return (pub_source, pub_bin)
+
+    def _createDefaultSourcePublications(self):
+        """Create and return default source publications.
+
+        See `TestNativePublishingBase.getPubSource` for more information.
+
+        It creates the following publications in breezy-autotest context:
+
+         * a PENDING publication for RELEASE pocket;
+         * a PUBLISHED publication for RELEASE pocket;
+         * a PENDING publication for UPDATES pocket;
+
+        Returns the respective ISPPH objects as a tuple.
+        """
+        pub_pending_release = self.getPubSource(
+            sourcename='first',
+            status=PackagePublishingStatus.PENDING,
+            pocket=PackagePublishingPocket.RELEASE)
+
+        pub_published_release = self.getPubSource(
+            sourcename='second',
+            status=PackagePublishingStatus.PUBLISHED,
+            pocket=PackagePublishingPocket.RELEASE)
+
+        pub_pending_updates = self.getPubSource(
+            sourcename='third',
+            status=PackagePublishingStatus.PENDING,
+            pocket=PackagePublishingPocket.UPDATES)
+
+        return (pub_pending_release, pub_published_release,
+                pub_pending_updates)
+
+    def _createDefaultBinaryPublications(self):
+        """Create and return default binary publications.
+
+        See `TestNativePublishingBase.getPubBinaries` for more information.
+
+        It creates the following publications in breezy-autotest context:
+
+         * a PENDING publication for RELEASE pocket;
+         * a PUBLISHED publication for RELEASE pocket;
+         * a PENDING publication for UPDATES pocket;
+
+        Returns the respective IBPPH objects as a tuple.
+        """
+        pub_pending_release = self.getPubBinaries(
+            binaryname='first',
+            status=PackagePublishingStatus.PENDING,
+            pocket=PackagePublishingPocket.RELEASE)[0]
+
+        pub_published_release = self.getPubBinaries(
+            binaryname='second',
+            status=PackagePublishingStatus.PUBLISHED,
+            pocket=PackagePublishingPocket.RELEASE)[0]
+
+        pub_pending_updates = self.getPubBinaries(
+            binaryname='third',
+            status=PackagePublishingStatus.PENDING,
+            pocket=PackagePublishingPocket.UPDATES)[0]
+
+        return (pub_pending_release, pub_published_release,
+                pub_pending_updates)
+
+    def checkLegalPocket(self, status, pocket):
+        distroseries = self.factory.makeDistroSeries(
+            distribution=self.ubuntutest, status=status)
+        publisher = Publisher(
+            self.logger, self.config, self.disk_pool,
+            distroseries.main_archive)
+        return publisher.checkLegalPocket(distroseries, pocket, False)
+
+    def test_checkLegalPocket_allows_unstable_release(self):
+        """Publishing to RELEASE in a DEVELOPMENT series is allowed."""
+        self.assertTrue(self.checkLegalPocket(
+            SeriesStatus.DEVELOPMENT, PackagePublishingPocket.RELEASE))
+
+    def test_checkLegalPocket_allows_unstable_proposed(self):
+        """Publishing to PROPOSED in a DEVELOPMENT series is allowed."""
+        self.assertTrue(self.checkLegalPocket(
+            SeriesStatus.DEVELOPMENT, PackagePublishingPocket.PROPOSED))
+
+    def test_checkLegalPocket_forbids_unstable_updates(self):
+        """Publishing to UPDATES in a DEVELOPMENT series is forbidden."""
+        self.assertFalse(self.checkLegalPocket(
+            SeriesStatus.DEVELOPMENT, PackagePublishingPocket.UPDATES))
+
+    def test_checkLegalPocket_forbids_stable_release(self):
+        """Publishing to RELEASE in a CURRENT series is forbidden."""
+        self.assertFalse(self.checkLegalPocket(
+            SeriesStatus.CURRENT, PackagePublishingPocket.RELEASE))
+
+    def test_checkLegalPocket_allows_stable_proposed(self):
+        """Publishing to PROPOSED in a CURRENT series is allowed."""
+        self.assertTrue(self.checkLegalPocket(
+            SeriesStatus.CURRENT, PackagePublishingPocket.PROPOSED))
+
+    def test_checkLegalPocket_allows_stable_updates(self):
+        """Publishing to UPDATES in a CURRENT series is allowed."""
+        self.assertTrue(self.checkLegalPocket(
+            SeriesStatus.CURRENT, PackagePublishingPocket.UPDATES))
+
+    def _ensurePublisher(self):
+        """Create self.publisher if needed."""
+        if self.publisher is None:
+            self.publisher = Publisher(
+                self.logger, self.config, self.disk_pool,
+                self.breezy_autotest.main_archive)
+
+    def _publish(self, pocket, is_careful=False):
+        """Publish the test IDistroSeries and its IDistroArchSeries."""
+        self._ensurePublisher()
+        self.publisher.findAndPublishSources(is_careful=is_careful)
+        self.publisher.findAndPublishBinaries(is_careful=is_careful)
+        self.layer.txn.commit()
+
+    def checkPublicationsAreConsidered(self, pocket):
+        """Check if publications are considered for a given pocket.
+
+        Source and Binary publications to the given pocket get PUBLISHED in
+        database and on disk.
+        """
+        pub_source, pub_bin = self._createLinkedPublication(
+            name='foo', pocket=pocket)
+        self._publish(pocket=pocket)
+
+        # source and binary PUBLISHED in database.
+        pub_source.sync()
+        pub_bin.sync()
+        self.assertEqual(pub_source.status, PackagePublishingStatus.PUBLISHED)
+        self.assertEqual(pub_bin.status, PackagePublishingStatus.PUBLISHED)
+
+        # source and binary PUBLISHED on disk.
+        foo_dsc = "%s/main/f/foo/foo_666.dsc" % self.pool_dir
+        self.assertEqual(open(foo_dsc).read().strip(), 'Hello')
+        foo_deb = "%s/main/f/foo/foo-bin_666_all.deb" % self.pool_dir
+        self.assertEqual(open(foo_deb).read().strip(), 'World')
+
+    def checkPublicationsAreIgnored(self, pocket):
+        """Check if publications are ignored for a given pocket.
+
+        Source and Binary publications to the given pocket are still PENDING
+        in database.
+        """
+        pub_source, pub_bin = self._createLinkedPublication(
+            name='bar', pocket=pocket)
+        self._publish(pocket=pocket)
+
+        # The publications to pocket were ignored.
+        self.assertEqual(pub_source.status, PackagePublishingStatus.PENDING)
+        self.assertEqual(pub_bin.status, PackagePublishingStatus.PENDING)
+
+    def checkSourceLookup(self, expected_result, is_careful=False):
+        """Check the results of an IDistroSeries publishing lookup."""
+        self._ensurePublisher()
+        pub_records = self.publisher.getPendingSourcePublications(
+            is_careful=is_careful)
+        pub_records = [
+            pub for pub in pub_records
+                if pub.distroseries == self.breezy_autotest]
+
+        self.assertEqual(len(expected_result), len(pub_records))
+        self.assertEqual(
+            [item.id for item in expected_result],
+            [pub.id for pub in pub_records])
+
+    def checkBinaryLookup(self, expected_result, is_careful=False):
+        """Check the results of an IDistroArchSeries publishing lookup."""
+        self._ensurePublisher()
+        pub_records = self.publisher.getPendingBinaryPublications(
+            is_careful=is_careful)
+        pub_records = [
+            pub for pub in pub_records
+                if pub.distroarchseries == self.breezy_autotest_i386]
+
+        self.assertEqual(len(expected_result), len(pub_records))
+        self.assertEqual(
+            [item.id for item in expected_result],
+            [pub.id for pub in pub_records])
+
+    def testPublishUnstableDistroSeries(self):
+        """Top level publication for IDistroSeries in 'unstable' states.
+
+        Publications to RELEASE pocket are considered.
+        Publication to UPDATES pocket (post-release pockets) are ignored
+        """
+        self.assertEqual(
+            self.breezy_autotest.status, SeriesStatus.EXPERIMENTAL)
+        self.assertEqual(self.breezy_autotest.isUnstable(), True)
+        self.checkPublicationsAreConsidered(PackagePublishingPocket.RELEASE)
+        self.checkPublicationsAreIgnored(PackagePublishingPocket.UPDATES)
+
+    def testPublishStableDistroSeries(self):
+        """Top level publication for IDistroSeries in 'stable' states.
+
+        Publications to RELEASE pocket are ignored.
+        Publications to UPDATES pocket are considered.
+        """
+        # Release ubuntu/breezy-autotest.
+        self.breezy_autotest.status = SeriesStatus.CURRENT
+        self.layer.commit()
+
+        self.assertEqual(
+            self.breezy_autotest.status, SeriesStatus.CURRENT)
+        self.assertEqual(self.breezy_autotest.isUnstable(), False)
+        self.checkPublicationsAreConsidered(PackagePublishingPocket.UPDATES)
+        self.checkPublicationsAreIgnored(PackagePublishingPocket.RELEASE)
+
+    def testPublishFrozenDistroSeries(self):
+        """Top level publication for IDistroSeries in FROZEN state.
+
+        Publications to both, RELEASE and UPDATES, pockets are considered.
+        """
+        # Release ubuntu/breezy-autotest.
+        self.breezy_autotest.status = SeriesStatus.FROZEN
+        self.layer.commit()
+
+        self.assertEqual(
+            self.breezy_autotest.status, SeriesStatus.FROZEN)
+        self.assertEqual(
+            self.breezy_autotest.isUnstable(), True)
+        self.checkPublicationsAreConsidered(PackagePublishingPocket.UPDATES)
+        self.checkPublicationsAreConsidered(PackagePublishingPocket.RELEASE)
+
+    def testSourcePublicationLookUp(self):
+        """Source publishing record lookup.
+
+        Check if Publisher.getPendingSourcePublications() returns only
+        pending publications.
+        """
+        pub_pending_release, pub_published_release, pub_pending_updates = (
+            self._createDefaultSourcePublications())
+
+        # Normally, only pending records are considered.
+        self.checkSourceLookup(
+            expected_result=[pub_pending_release, pub_pending_updates])
+
+        # In careful mode, both pending and published records are
+        # considered, ordered by distroseries, pocket, ID.
+        self.checkSourceLookup(
+            expected_result=[
+                pub_published_release,
+                pub_pending_release,
+                pub_pending_updates,
+                ],
+            is_careful=True)
+
+    def testBinaryPublicationLookUp(self):
+        """Binary publishing record lookup.
+
+        Check if Publisher.getPendingBinaryPublications() returns only
+        pending publications.
+        """
+        pub_pending_release, pub_published_release, pub_pending_updates = (
+            self._createDefaultBinaryPublications())
+        self.layer.commit()
+
+        # Normally, only pending records are considered.
+        self.checkBinaryLookup(
+            expected_result=[pub_pending_release, pub_pending_updates])
+
+        # In careful mode, both pending and published records are
+        # considered, ordered by distroseries, pocket, architecture tag, ID.
+        self.checkBinaryLookup(
+            expected_result=[
+                pub_published_release,
+                pub_pending_release,
+                pub_pending_updates,
+                ],
+            is_careful=True)
+
+    def test_publishing_disabled_distroarchseries(self):
+        # Disabled DASes will not receive new publications at all.
+
+        # Make an arch-all source and some builds for it.
+        archive = self.factory.makeArchive(
+            distribution=self.ubuntutest, virtualized=False)
+        source = self.getPubSource(
+            archive=archive, architecturehintlist='all')
+        [build_i386] = source.createMissingBuilds()
+        bin_i386 = self.uploadBinaryForBuild(build_i386, 'bin-i386')
+
+        # Now make sure they have a packageupload (but no publishing
+        # records).
+        changes_file_name = '%s_%s_%s.changes' % (
+            bin_i386.name, bin_i386.version, build_i386.arch_tag)
+        pu_i386 = self.addPackageUpload(
+            build_i386.archive, build_i386.distro_arch_series.distroseries,
+            build_i386.pocket, changes_file_content='anything',
+            changes_file_name=changes_file_name,
+            upload_status=PackageUploadStatus.ACCEPTED)
+        pu_i386.addBuild(build_i386)
+
+        # Now we make hppa a disabled architecture, and then call the
+        # publish method on the packageupload.  The arch-all binary
+        # should be published only in the i386 arch, not the hppa one.
+        hppa = pu_i386.distroseries.getDistroArchSeries('hppa')
+        hppa.enabled = False
+        for pu_build in pu_i386.builds:
+            pu_build.publish()
+
+        publications = archive.getAllPublishedBinaries(name="bin-i386")
+
+        self.assertEqual(1, publications.count())
+        self.assertEqual(
+            'i386', publications[0].distroarchseries.architecturetag)
 
 
 class TestPublisher(TestPublisherBase):
@@ -147,7 +476,7 @@ class TestPublisher(TestPublisherBase):
         """Test deleting a PPA"""
         ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
         test_archive = getUtility(IArchiveSet).new(
-            distribution=self.ubuntutest, owner=ubuntu_team,
+            distribution=self.ubuntu, owner=ubuntu_team,
             purpose=ArchivePurpose.PPA, name='testing')
 
         # Create some source and binary publications, including an
@@ -179,10 +508,9 @@ class TestPublisher(TestPublisherBase):
         os.makedirs(publisher._config.metaroot)
         open(os.path.join(publisher._config.metaroot, 'test'), 'w').close()
 
+        root_dir = publisher._config.archiveroot
+        self.assertTrue(os.path.exists(root_dir))
         publisher.deleteArchive()
-        root_dir = os.path.join(
-            publisher._config.distroroot, test_archive.owner.name,
-            test_archive.name)
         self.assertFalse(os.path.exists(root_dir))
         self.assertFalse(os.path.exists(publisher._config.metaroot))
         self.assertEqual(ArchiveStatus.DELETED, test_archive.status)
@@ -210,7 +538,7 @@ class TestPublisher(TestPublisherBase):
     def testDeletingPPAWithoutMetaData(self):
         ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
         test_archive = getUtility(IArchiveSet).new(
-            distribution=self.ubuntutest, owner=ubuntu_team,
+            distribution=self.ubuntu, owner=ubuntu_team,
             purpose=ArchivePurpose.PPA)
         logger = BufferLogger()
         publisher = getPublisher(test_archive, None, logger)
@@ -222,11 +550,56 @@ class TestPublisher(TestPublisherBase):
         open(os.path.join(
             publisher._config.archiveroot, 'test_file'), 'w').close()
 
+        root_dir = publisher._config.archiveroot
+        self.assertTrue(os.path.exists(root_dir))
         publisher.deleteArchive()
-        root_dir = os.path.join(
-            publisher._config.distroroot, test_archive.owner.name,
-            test_archive.name)
         self.assertFalse(os.path.exists(root_dir))
+        self.assertNotIn('WARNING', logger.getLogBuffer())
+        self.assertNotIn('ERROR', logger.getLogBuffer())
+
+    def testDeletingPPAThatCannotHaveMetaData(self):
+        # Due to conflicts in the directory structure only Ubuntu PPAs
+        # have a metadata directory. PPAs with the same name for
+        # different distros can coexist, and only deleting the Ubuntu
+        # one will remove the metadata.
+        ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
+        ubuntu_ppa = getUtility(IArchiveSet).new(
+            distribution=self.ubuntu, owner=ubuntu_team,
+            purpose=ArchivePurpose.PPA, name='ppa')
+        test_ppa = getUtility(IArchiveSet).new(
+            distribution=self.ubuntutest, owner=ubuntu_team,
+            purpose=ArchivePurpose.PPA, name='ppa')
+        logger = BufferLogger()
+        ubuntu_publisher = getPublisher(ubuntu_ppa, None, logger)
+        ubuntu_publisher.setupArchiveDirs()
+        test_publisher = getPublisher(test_ppa, None, logger)
+        test_publisher.setupArchiveDirs()
+
+        self.assertTrue(os.path.exists(ubuntu_publisher._config.archiveroot))
+        self.assertTrue(os.path.exists(test_publisher._config.archiveroot))
+
+        open(os.path.join(
+            ubuntu_publisher._config.archiveroot, 'test_file'), 'w').close()
+        open(os.path.join(
+            test_publisher._config.archiveroot, 'test_file'), 'w').close()
+
+        # Add a meta file for the Ubuntu PPA
+        os.makedirs(ubuntu_publisher._config.metaroot)
+        open(os.path.join(
+            ubuntu_publisher._config.metaroot, 'test'), 'w').close()
+        self.assertIs(None, test_publisher._config.metaroot)
+
+        test_publisher.deleteArchive()
+        self.assertFalse(os.path.exists(test_publisher._config.archiveroot))
+        self.assertTrue(os.path.exists(ubuntu_publisher._config.metaroot))
+        # XXX wgrant 2014-07-07 bug=1338439: deleteArchive() currently
+        # kills all PPAs with the same name and owner.
+        #self.assertTrue(os.path.exists(ubuntu_publisher._config.archiveroot))
+
+        ubuntu_publisher.deleteArchive()
+        self.assertFalse(os.path.exists(ubuntu_publisher._config.metaroot))
+        self.assertFalse(os.path.exists(ubuntu_publisher._config.archiveroot))
+
         self.assertNotIn('WARNING', logger.getLogBuffer())
         self.assertNotIn('ERROR', logger.getLogBuffer())
 
@@ -401,6 +774,12 @@ class TestPublisher(TestPublisherBase):
             filecontent='Hello world',
             status=PackagePublishingStatus.PUBLISHED)
 
+        # Make everything other than breezy-autotest OBSOLETE so that they
+        # aren't republished.
+        for series in self.ubuntutest.series:
+            if series.name != "breezy-autotest":
+                series.status = SeriesStatus.OBSOLETE
+
         # A careful publisher run will re-publish the PUBLISHED records,
         # then we will have a corresponding dirty_pocket entry.
         publisher.A_publish(True)
@@ -486,15 +865,20 @@ class TestPublisher(TestPublisherBase):
         # Remove security proxy so that the publisher can call our fake
         # method.
         publisher.distro = removeSecurityProxy(publisher.distro)
+        pub_source = self.getPubSource(distroseries=self.breezy_autotest)
+        self.getPubBinaries(
+            distroseries=self.breezy_autotest, pub_source=pub_source)
 
         for status in (SeriesStatus.OBSOLETE, SeriesStatus.FUTURE):
             naked_breezy_autotest = publisher.distro['breezy-autotest']
             naked_breezy_autotest.status = status
-            naked_breezy_autotest.publish = FakeMethod(result=set())
+            publisher.publishSources = FakeMethod(result=set())
+            publisher.publishBinaries = FakeMethod(result=set())
 
             publisher.A_publish(False)
 
-            self.assertEqual(0, naked_breezy_autotest.publish.call_count)
+            self.assertEqual(0, publisher.publishSources.call_count)
+            self.assertEqual(0, publisher.publishBinaries.call_count)
 
     def testPublishingConsidersObsoleteFuturePPASeries(self):
         """Publisher does not skip OBSOLETE/FUTURE series in PPA archives."""
@@ -507,15 +891,27 @@ class TestPublisher(TestPublisherBase):
         # Remove security proxy so that the publisher can call our fake
         # method.
         publisher.distro = removeSecurityProxy(publisher.distro)
+        pub_source = self.getPubSource(
+            distroseries=self.breezy_autotest, archive=test_archive)
+        self.getPubBinaries(
+            distroseries=self.breezy_autotest, archive=test_archive,
+            pub_source=pub_source)
 
         for status in (SeriesStatus.OBSOLETE, SeriesStatus.FUTURE):
             naked_breezy_autotest = publisher.distro['breezy-autotest']
             naked_breezy_autotest.status = status
-            naked_breezy_autotest.publish = FakeMethod(result=set())
+            publisher.publishSources = FakeMethod(result=set())
+            publisher.publishBinaries = FakeMethod(result=set())
 
             publisher.A_publish(False)
 
-            self.assertEqual(1, naked_breezy_autotest.publish.call_count)
+            source_args = [
+                args[:2] for args in publisher.publishSources.extract_args()]
+            self.assertIn((naked_breezy_autotest, RELEASE), source_args)
+            binary_args = [
+                args[:2] for args in publisher.publishBinaries.extract_args()]
+            self.assertIn(
+                (naked_breezy_autotest.architectures[0], RELEASE), binary_args)
 
     def testPublisherBuilderFunctions(self):
         """Publisher can be initialized via provided helper function.
@@ -649,8 +1045,9 @@ class TestPublisher(TestPublisherBase):
 
         return index_contents
 
-    def testPPAArchiveIndex(self):
-        """Building Archive Indexes from PPA publications."""
+    def setupPPAArchiveIndexTest(self, long_descriptions=True,
+                                 feature_flag=False):
+        # Setup for testPPAArchiveIndex tests
         allowed_suites = []
 
         cprov = getUtility(IPersonSet).getByName('cprov')
@@ -680,9 +1077,27 @@ class TestPublisher(TestPublisherBase):
             pub_source=ignored_source, binaryname='bingo',
             description='nice udeb', format=BinaryPackageFormat.UDEB)[0]
 
+        if feature_flag:
+            # Enabled corresponding feature flag.
+            self.useFixture(FeatureFixture({
+                'soyuz.ppa.separate_long_descriptions': 'enabled'}))
+            self.assertEqual('enabled', getFeatureFlag(
+                'soyuz.ppa.separate_long_descriptions'))
+
+        if not long_descriptions:
+            # Make sure that NMAF generates i18n/Translation-en* files.
+            ds = self.ubuntutest.getSeries('breezy-autotest')
+            ds.include_long_descriptions = False
+
         archive_publisher.A_publish(False)
         self.layer.txn.commit()
         archive_publisher.C_writeIndexes(False)
+        archive_publisher.D_writeReleaseFiles(False)
+        return archive_publisher
+
+    def testPPAArchiveIndex(self):
+        """Building Archive Indexes from PPA publications."""
+        archive_publisher = self.setupPPAArchiveIndexTest()
 
         # A compressed and uncompressed Sources file are written;
         # ensure that they are the same after uncompressing the former.
@@ -817,6 +1232,226 @@ class TestPublisher(TestPublisherBase):
         self.assertTrue(
             ('breezy-autotest', PackagePublishingPocket.RELEASE) in
             archive_publisher.release_files_needed)
+
+        # Confirm that i18n files are not created
+        i18n_path = os.path.join(archive_publisher._config.distsroot,
+                                 'breezy-autotest', 'main', 'i18n')
+        self.assertFalse(os.path.exists(
+            os.path.join(i18n_path, 'Translation-en')))
+        self.assertFalse(os.path.exists(
+            os.path.join(i18n_path, 'Translation-en.gz')))
+        self.assertFalse(os.path.exists(
+            os.path.join(i18n_path, 'Translation-en.bz2')))
+
+        # remove PPA root
+        shutil.rmtree(config.personalpackagearchive.root)
+
+    def testPPAArchiveIndexLongDescriptionsFalseFeatureFlagDisabled(self):
+        # Building Archive Indexes from PPA publications with
+        # include_long_descriptions = False but the feature flag being disabled
+        archive_publisher = self.setupPPAArchiveIndexTest(
+            long_descriptions=False)
+
+        # Confirm that i18n files are not created
+        i18n_path = os.path.join(archive_publisher._config.distsroot,
+                                 'breezy-autotest', 'main', 'i18n')
+        self.assertFalse(os.path.exists(
+            os.path.join(i18n_path, 'Translation-en')))
+        self.assertFalse(os.path.exists(
+            os.path.join(i18n_path, 'Translation-en.gz')))
+        self.assertFalse(os.path.exists(
+            os.path.join(i18n_path, 'Translation-en.bz2')))
+
+        # remove PPA root
+        shutil.rmtree(config.personalpackagearchive.root)
+
+    def testPPAArchiveIndexLongDescriptionsFalse(self):
+        # Building Archive Indexes from PPA publications with
+        # include_long_descriptions = False.
+        archive_publisher = self.setupPPAArchiveIndexTest(
+            long_descriptions=False, feature_flag=True)
+
+        # A compressed and uncompressed Sources file are written;
+        # ensure that they are the same after uncompressing the former.
+        index_contents = self._checkCompressedFile(
+            archive_publisher, os.path.join('source', 'Sources.bz2'),
+            os.path.join('source', 'Sources'))
+
+        index_contents = self._checkCompressedFile(
+            archive_publisher, os.path.join('source', 'Sources.gz'),
+            os.path.join('source', 'Sources'))
+
+        self.assertEqual(
+            ['Package: foo',
+             'Binary: foo-bin',
+             'Version: 666',
+             'Section: base',
+             'Maintainer: Foo Bar <foo@bar.com>',
+             'Architecture: all',
+             'Standards-Version: 3.6.2',
+             'Format: 1.0',
+             'Directory: pool/main/f/foo',
+             'Files:',
+             ' 3e25960a79dbc69b674cd4ec67a72c62 11 foo_1.dsc',
+             'Checksums-Sha1:',
+             ' 7b502c3a1f48c8609ae212cdfb639dee39673f5e 11 foo_1.dsc',
+             'Checksums-Sha256:',
+             ' 64ec88ca00b268e5ba1a35678a1b5316d212f4f366b2477232534a8aeca37f'
+             '3c 11 foo_1.dsc',
+
+             ''],
+            index_contents)
+
+        # A compressed and an uncompressed Packages file are written;
+        # ensure that they are the same after uncompressing the former.
+        index_contents = self._checkCompressedFile(
+            archive_publisher, os.path.join('binary-i386', 'Packages.bz2'),
+            os.path.join('binary-i386', 'Packages'))
+
+        index_contents = self._checkCompressedFile(
+            archive_publisher, os.path.join('binary-i386', 'Packages.gz'),
+            os.path.join('binary-i386', 'Packages'))
+
+        self.assertEqual(
+            ['Package: foo-bin',
+             'Source: foo',
+             'Priority: standard',
+             'Section: base',
+             'Installed-Size: 100',
+             'Maintainer: Foo Bar <foo@bar.com>',
+             'Architecture: all',
+             'Version: 666',
+             'Filename: pool/main/f/foo/foo-bin_666_all.deb',
+             'Size: 18',
+             'MD5sum: 008409e7feb1c24a6ccab9f6a62d24c5',
+             'SHA1: 30b7b4e583fa380772c5a40e428434628faef8cf',
+             'SHA256: 006ca0f356f54b1916c24c282e6fd19961f4356441401f4b0966f2a'
+             '00bb3e945',
+             'Description: Foo app is great',
+             'Description-md5: 42d89d502e81dad6d3d4a2f85fdc6c6e',
+             ''],
+            index_contents)
+
+        # A compressed and an uncompressed Packages file are written for
+        # 'debian-installer' section for each architecture. It will list
+        # the 'udeb' files.
+        index_contents = self._checkCompressedFile(
+            archive_publisher,
+            os.path.join('debian-installer', 'binary-i386', 'Packages.bz2'),
+            os.path.join('debian-installer', 'binary-i386', 'Packages'))
+
+        index_contents = self._checkCompressedFile(
+            archive_publisher,
+            os.path.join('debian-installer', 'binary-i386', 'Packages.gz'),
+            os.path.join('debian-installer', 'binary-i386', 'Packages'))
+
+        self.assertEqual(
+            ['Package: bingo',
+             'Source: foo',
+             'Priority: standard',
+             'Section: base',
+             'Installed-Size: 100',
+             'Maintainer: Foo Bar <foo@bar.com>',
+             'Architecture: all',
+             'Version: 666',
+             'Filename: pool/main/f/foo/bingo_666_all.udeb',
+             'Size: 18',
+             'MD5sum: 008409e7feb1c24a6ccab9f6a62d24c5',
+             'SHA1: 30b7b4e583fa380772c5a40e428434628faef8cf',
+             'SHA256: 006ca0f356f54b1916c24c282e6fd19961f4356441401f4b0966f2a'
+             '00bb3e945',
+             'Description: Foo app is great',
+             'Description-md5: 6fecedf187298acb6bc5f15cc5807fb7',
+             ''],
+            index_contents)
+
+        # 'debug' too, when publish_debug_symbols is enabled.
+        index_contents = self._checkCompressedFile(
+            archive_publisher,
+            os.path.join('debug', 'binary-i386', 'Packages.bz2'),
+            os.path.join('debug', 'binary-i386', 'Packages'))
+
+        index_contents = self._checkCompressedFile(
+            archive_publisher,
+            os.path.join('debug', 'binary-i386', 'Packages.gz'),
+            os.path.join('debug', 'binary-i386', 'Packages'))
+
+        self.assertEqual(
+            ['Package: foo-bin-dbgsym',
+             'Source: foo',
+             'Priority: standard',
+             'Section: base',
+             'Installed-Size: 100',
+             'Maintainer: Foo Bar <foo@bar.com>',
+             'Architecture: all',
+             'Version: 666',
+             'Filename: pool/main/f/foo/foo-bin-dbgsym_666_all.ddeb',
+             'Size: 18',
+             'MD5sum: 008409e7feb1c24a6ccab9f6a62d24c5',
+             'SHA1: 30b7b4e583fa380772c5a40e428434628faef8cf',
+             'SHA256: 006ca0f356f54b1916c24c282e6fd19961f4356441401f4b0966f2a'
+             '00bb3e945',
+             'Description: Foo app is great',
+             'Description-md5: 42d89d502e81dad6d3d4a2f85fdc6c6e',
+             ''],
+            index_contents)
+
+        # We always regenerate all Releases file for a given suite.
+        self.assertTrue(
+            ('breezy-autotest', PackagePublishingPocket.RELEASE) in
+            archive_publisher.release_files_needed)
+
+        # A compressed and an uncompressed Translation-en file is written.
+        # ensure that they are the same after uncompressing the former.
+        index_contents = self._checkCompressedFile(
+            archive_publisher, os.path.join('i18n', 'Translation-en.gz'),
+            os.path.join('i18n', 'Translation-en'))
+
+        index_contents = self._checkCompressedFile(
+            archive_publisher, os.path.join('i18n', 'Translation-en.bz2'),
+            os.path.join('i18n', 'Translation-en'))
+
+        self.assertEqual(
+            ['Package: bingo',
+             'Description-md5: 6fecedf187298acb6bc5f15cc5807fb7',
+             'Description-en: Foo app is great',
+             ' nice udeb',
+             '',
+             'Package: foo-bin',
+             'Description-md5: 42d89d502e81dad6d3d4a2f85fdc6c6e',
+             'Description-en: Foo app is great',
+             ' My leading spaces are normalised to a single space but not '
+             'trailing.  ',
+             ' It does nothing, though',
+             '',
+             'Package: foo-bin-dbgsym',
+             'Description-md5: 42d89d502e81dad6d3d4a2f85fdc6c6e',
+             'Description-en: Foo app is great',
+             ' My leading spaces are normalised to a single space but not '
+             'trailing.  ',
+             ' It does nothing, though',
+             '',
+             ],
+            index_contents)
+
+        series = os.path.join(archive_publisher._config.distsroot,
+                              'breezy-autotest')
+        i18n_index = os.path.join(series, 'main', 'i18n', 'Index')
+
+        # The i18n/Index file has been generated.
+        self.assertTrue(os.path.exists(i18n_index))
+
+        # It is listed correctly in Release.
+        release_path = os.path.join(series, 'Release')
+        release = self.parseRelease(release_path)
+        with open(i18n_index) as i18n_index_file:
+            self.assertReleaseContentsMatch(
+                release, 'main/i18n/Index', i18n_index_file.read())
+
+        release_path = os.path.join(series, 'Release')
+        with open(release_path) as release_file:
+            content = release_file.read()
+            self.assertIn('main/i18n/Translation-en.bz2', content)
 
         # remove PPA root
         shutil.rmtree(config.personalpackagearchive.root)
@@ -1120,6 +1755,12 @@ class TestPublisher(TestPublisherBase):
         self.getPubSource(filecontent='Hello world', pocket=RELEASE)
         self.getPubSource(filecontent='Hello world', pocket=BACKPORTS)
 
+        # Make everything other than breezy-autotest OBSOLETE so that they
+        # aren't republished.
+        for series in self.ubuntutest.series:
+            if series.name != "breezy-autotest":
+                series.status = SeriesStatus.OBSOLETE
+
         publisher.A_publish(True)
         publisher.C_writeIndexes(False)
 
@@ -1160,18 +1801,24 @@ class TestPublisher(TestPublisherBase):
         publisher.C_doFTPArchive(False)
         publisher.D_writeReleaseFiles(False)
 
-        i18n_index = os.path.join(
-            self.config.distsroot, 'breezy-autotest', 'main', 'i18n', 'Index')
+        series = os.path.join(self.config.distsroot, 'breezy-autotest')
+        i18n_index = os.path.join(series, 'main', 'i18n', 'Index')
 
         # The i18n/Index file has been generated.
         self.assertTrue(os.path.exists(i18n_index))
 
         # It is listed correctly in Release.
-        release = self.parseRelease(os.path.join(
-            self.config.distsroot, 'breezy-autotest', 'Release'))
+        release = self.parseRelease(os.path.join(series, 'Release'))
         with open(i18n_index) as i18n_index_file:
             self.assertReleaseContentsMatch(
                 release, 'main/i18n/Index', i18n_index_file.read())
+
+        components = ['main', 'universe', 'multiverse', 'restricted']
+        release_path = os.path.join(series, 'Release')
+        with open(release_path) as release_file:
+            content = release_file.read()
+            for component in components:
+                self.assertIn(component + '/i18n/Translation-en.bz2', content)
 
     def testCreateSeriesAliasesNoAlias(self):
         """createSeriesAliases has nothing to do by default."""
@@ -1225,7 +1872,7 @@ class TestPublisher(TestPublisherBase):
         # setupArchiveDirs is what actually configures the htaccess file.
         getPublisher(ppa, [], self.logger).setupArchiveDirs()
         pubconf = getPubConfig(ppa)
-        htaccess_path = os.path.join(pubconf.htaccessroot, ".htaccess")
+        htaccess_path = os.path.join(pubconf.archiveroot, ".htaccess")
         self.assertTrue(os.path.exists(htaccess_path))
         with open(htaccess_path, 'r') as htaccess_f:
             self.assertEqual(dedent("""
@@ -1233,10 +1880,10 @@ class TestPublisher(TestPublisherBase):
                 AuthName           "Token Required"
                 AuthUserFile       %s/.htpasswd
                 Require            valid-user
-                """) % pubconf.htaccessroot,
+                """) % pubconf.archiveroot,
                 htaccess_f.read())
 
-        htpasswd_path = os.path.join(pubconf.htaccessroot, ".htpasswd")
+        htpasswd_path = os.path.join(pubconf.archiveroot, ".htpasswd")
 
         # Read it back in.
         with open(htpasswd_path, "r") as htpasswd_f:
@@ -1283,10 +1930,14 @@ class TestPublisher(TestPublisherBase):
         self.assertEqual(str(len(translation_en_contents)),
                          i18n_index['sha1'][0]['size'])
 
-        # i18n/Index is scheduled for inclusion in Release.
-        self.assertEqual(1, len(all_files))
+        # i18n/Index and i18n/Translation-en.bz2 are scheduled for inclusion
+        # in Release.
+        self.assertEqual(2, len(all_files))
         self.assertEqual(
             os.path.join('main', 'i18n', 'Index'), all_files.pop())
+        self.assertEqual(
+            os.path.join('main', 'i18n', 'Translation-en.bz2'),
+            all_files.pop())
 
     def testWriteSuiteI18nMissingDirectory(self):
         """i18n/Index is not generated when the i18n directory is missing."""

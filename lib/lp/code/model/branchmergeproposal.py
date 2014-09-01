@@ -76,7 +76,6 @@ from lp.code.model.diff import (
     IncrementalDiff,
     PreviewDiff,
     )
-from lp.services.features import getFeatureFlag
 from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
@@ -789,16 +788,15 @@ class BranchMergeProposal(SQLBase):
             message, vote, review_type, original_email=None,
             _notify_listeners=_notify_listeners, _validate=False)
 
-        if getFeatureFlag("code.inline_diff_comments.enabled"):
-            if inline_comments:
-                assert previewdiff_id is not None, (
-                    'Inline comments must be associated with a '
-                    'previewdiff ID.')
-                previewdiff = self.getPreviewDiff(previewdiff_id)
-                getUtility(ICodeReviewInlineCommentSet).ensureDraft(
-                    previewdiff, owner, inline_comments)
-                getUtility(ICodeReviewInlineCommentSet).publishDraft(
-                    previewdiff, owner, comment)
+        if inline_comments:
+            assert previewdiff_id is not None, (
+                'Inline comments must be associated with a '
+                'previewdiff ID.')
+            previewdiff = self.getPreviewDiff(previewdiff_id)
+            getUtility(ICodeReviewInlineCommentSet).ensureDraft(
+                previewdiff, owner, inline_comments)
+            getUtility(ICodeReviewInlineCommentSet).publishDraft(
+                previewdiff, owner, comment)
 
         return comment
 
@@ -914,8 +912,6 @@ class BranchMergeProposal(SQLBase):
 
     def saveDraftInlineComment(self, previewdiff_id, person, comments):
         """See `IBranchMergeProposal`."""
-        if not getFeatureFlag("code.inline_diff_comments.enabled"):
-            return
         previewdiff = self.getPreviewDiff(previewdiff_id)
         getUtility(ICodeReviewInlineCommentSet).ensureDraft(
             previewdiff, person, comments)

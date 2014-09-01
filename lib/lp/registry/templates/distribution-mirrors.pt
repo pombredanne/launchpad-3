@@ -37,7 +37,7 @@
       <p>
         We don't know of any <span tal:replace="view/heading">Archive
         Mirrors</span> for this distribution.
-        <span tal:condition="context/full_functionality">
+        <span tal:condition="context/supports_mirrors">
           If you know of one, please
           <a tal:attributes="href context/fmt:url/+newmirror">register it</a>.
         </span>

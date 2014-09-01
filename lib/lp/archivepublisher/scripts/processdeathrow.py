@@ -15,23 +15,18 @@ __all__ = [
     ]
 
 
-from zope.component import getUtility
-
 from lp.archivepublisher.deathrow import getDeathRow
-from lp.registry.interfaces.distribution import IDistributionSet
-from lp.services.scripts.base import LaunchpadCronScript
+from lp.archivepublisher.scripts.base import PublisherScript
 
 
-class DeathRowProcessor(LaunchpadCronScript):
+class DeathRowProcessor(PublisherScript):
 
     def add_my_options(self):
         self.parser.add_option(
             "-n", "--dry-run", action="store_true", default=False,
             help="Dry run: goes through the motions but commits to nothing.")
 
-        self.parser.add_option(
-            "-d", "--distribution", metavar="DISTRO", default='ubuntu',
-            help="Specified the distribution name.")
+        self.addDistroOptions()
 
         self.parser.add_option(
             "-p", "--pool-root", metavar="PATH",
@@ -42,17 +37,15 @@ class DeathRowProcessor(LaunchpadCronScript):
             help="Run only over PPA archives.")
 
     def main(self):
-        distribution = getUtility(IDistributionSet).getByName(
-            self.options.distribution)
+        for distribution in self.findDistros():
+            if self.options.ppa:
+                archives = distribution.getAllPPAs()
+            else:
+                archives = distribution.all_distro_archives
 
-        if self.options.ppa:
-            archives = distribution.getAllPPAs()
-        else:
-            archives = distribution.all_distro_archives
-
-        for archive in archives:
-            self.logger.info("Processing %s" % archive.archive_url)
-            self.processDeathRow(archive)
+            for archive in archives:
+                self.logger.info("Processing %s" % archive.archive_url)
+                self.processDeathRow(archive)
 
     def processDeathRow(self, archive):
         """Process death-row for the given archive.
@@ -78,4 +71,3 @@ class DeathRowProcessor(LaunchpadCronScript):
             else:
                 self.logger.debug("Committing")
                 self.txn.commit()
-

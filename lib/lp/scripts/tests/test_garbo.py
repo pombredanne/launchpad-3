@@ -93,12 +93,7 @@ from lp.services.identity.interfaces.account import AccountStatus
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.services.job.model.job import Job
 from lp.services.librarian.model import TimeLimitedToken
-from lp.services.log.logger import NullHandler
 from lp.services.messages.model.message import Message
-from lp.services.oauth.model import (
-    OAuthAccessToken,
-    OAuthNonce,
-    )
 from lp.services.openid.model.openidconsumer import OpenIDConsumerNonce
 from lp.services.salesforce.interfaces import ISalesforceVoucherProxy
 from lp.services.salesforce.tests.proxy import TestSalesforceVoucherProxy
@@ -115,10 +110,8 @@ from lp.soyuz.interfaces.livefs import LIVEFS_FEATURE_FLAG
 from lp.soyuz.model.livefsbuild import LiveFSFile
 from lp.soyuz.model.reporting import LatestPersonSourcePackageReleaseCache
 from lp.testing import (
-    feature_flags,
-    person_logged_in,
-    set_feature_flag,
     FakeAdapterMixin,
+    person_logged_in,
     TestCase,
     TestCaseWithFactory,
     )
@@ -392,7 +385,7 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         # Silence the root Logger by instructing the garbo logger to not
         # propagate messages.
         self.log = logging.getLogger('garbo')
-        self.log.addHandler(NullHandler())
+        self.log.addHandler(logging.NullHandler())
         self.log.propagate = 0
 
         # Run the garbage collectors to remove any existing garbage,
@@ -439,47 +432,6 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         save_garbo_job_state('job', {'data': 2})
         data = load_garbo_job_state('job')
         self.assertEqual({'data': 2}, data)
-
-    def test_OAuthNoncePruner(self):
-        now = datetime.now(UTC)
-        timestamps = [
-            now - timedelta(days=2),  # Garbage
-            now - timedelta(days=1) - timedelta(seconds=60),  # Garbage
-            now - timedelta(days=1) + timedelta(seconds=60),  # Not garbage
-            now,  # Not garbage
-            ]
-        switch_dbuser('testadmin')
-        store = IMasterStore(OAuthNonce)
-
-        # Make sure we start with 0 nonces.
-        self.failUnlessEqual(store.find(OAuthNonce).count(), 0)
-
-        for timestamp in timestamps:
-            store.add(OAuthNonce(
-                access_token=OAuthAccessToken.get(1),
-                request_timestamp=timestamp,
-                nonce=str(timestamp)))
-        transaction.commit()
-
-        # Make sure we have 4 nonces now.
-        self.failUnlessEqual(store.find(OAuthNonce).count(), 4)
-
-        self.runFrequently(
-            maximum_chunk_size=60)  # 1 minute maximum chunk size
-
-        store = IMasterStore(OAuthNonce)
-
-        # Now back to two, having removed the two garbage entries.
-        self.failUnlessEqual(store.find(OAuthNonce).count(), 2)
-
-        # And none of them are older than a day.
-        # Hmm... why is it I'm putting tz aware datetimes in and getting
-        # naive datetimes back? Bug in the SQLObject compatibility layer?
-        # Test is still fine as we know the timezone.
-        self.failUnless(
-            store.find(
-                Min(OAuthNonce.request_timestamp)).one().replace(tzinfo=UTC)
-            >= now - timedelta(days=1))
 
     def test_OpenIDConsumerNoncePruner(self):
         now = int(time.mktime(time.gmtime()))
@@ -677,10 +629,7 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         mp1_diff_draft = self.factory.makePreviewDiff(
             merge_proposal=mp1, date_created=now - timedelta(hours=1))
         mp1_diff = self.factory.makePreviewDiff(merge_proposal=mp1)
-        # Enabled 'inline_diff_comments' feature flag and attach comments
-        # on the old diffs, so they are kept in DB.
-        self.useContext(feature_flags())
-        set_feature_flag(u'code.inline_diff_comments.enabled', u'enabled')
+        # Attach comments on the old diffs, so they are kept in DB.
         mp1.createComment(
             owner=mp1.registrant, previewdiff_id=mp1_diff_comment.id,
             subject='Hold this diff!', inline_comments={'1': '!!!'})

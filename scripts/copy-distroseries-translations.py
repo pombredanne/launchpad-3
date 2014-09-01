@@ -32,9 +32,23 @@ class TranslationsCopier(LaunchpadCronScript):
     def add_my_options(self):
         self.parser.add_option('-d', '--distribution', dest='distro',
             default='ubuntu',
-            help='Name of distribution to copy translations in.')
+            help='The target distribution.')
         self.parser.add_option('-s', '--series', dest='series',
-            help='Name of distroseries whose translations should be updated')
+            help='The target distroseries.')
+        self.parser.add_option('--from-distribution', dest='from_distro',
+            help=(
+                "The source distribution (if omitted, target's previous "
+                "series will be used)."))
+        self.parser.add_option('--from-series', dest='from_series',
+            help=(
+                "The source distroseries (if omitted, target's previous "
+                "series will be used)."))
+        self.parser.add_option(
+            '--published-sources-only', dest='published_sources_only',
+            action="store_true", default=False,
+            help=(
+                "Copy only templates for sources that are published in the "
+                "target series."))
         self.parser.add_option('-f', '--force', dest='force',
             action="store_true", default=False,
             help="Don't check if target's UI and imports are blocked; "
@@ -46,13 +60,23 @@ class TranslationsCopier(LaunchpadCronScript):
         return getUtility(IDistributionSet)[self.options.distro][series]
 
     def main(self):
-        series = self._getTargetSeries()
+        target = getUtility(IDistributionSet)[self.options.distro][
+            self.options.series]
+        if self.options.from_distro:
+            source = getUtility(IDistributionSet)[self.options.from_distro][
+                self.options.from_series]
+        else:
+            source = target.previous_series
+        if source is None:
+            self.parser.error(
+                "No source series specified and target has no previous "
+                "series.")
 
         # Both translation UI and imports for this series should be blocked
         # while the copy is in progress, to reduce the chances of deadlocks or
         # other conflicts.
         blocked = (
-            series.hide_all_translations and series.defer_translation_imports)
+            target.hide_all_translations and target.defer_translation_imports)
         if not blocked and not self.options.force:
             self.txn.abort()
             self.logger.error(
@@ -66,7 +90,9 @@ class TranslationsCopier(LaunchpadCronScript):
         self.logger.info('Starting...')
 
         # Actual work is done here.
-        copy_distroseries_translations(series, self.txn, self.logger)
+        copy_distroseries_translations(
+            source, target, self.txn, self.logger,
+            published_sources_only=self.options.published_sources_only)
 
         # We would like to update the DistroRelase statistics, but it takes
         # too long so this should be done after.

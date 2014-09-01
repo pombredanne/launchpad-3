@@ -36,15 +36,20 @@ from storm.locals import (
     Join,
     )
 from storm.store import Store
-from zope.component import getUtility
+from zope.component import (
+    getAdapter,
+    getUtility,
+    )
 from zope.event import notify
 from zope.interface import (
     alsoProvides,
     implements,
     )
+from zope.security.proxy import removeSecurityProxy
 
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.security import IAuthorization
 from lp.app.validators.name import valid_name
 from lp.archivepublisher.debversion import Version
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
@@ -63,6 +68,7 @@ from lp.registry.enums import (
     )
 from lp.registry.errors import NoSuchDistroSeries
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
+from lp.registry.interfaces.distroseriesparent import IDistroSeriesParentSet
 from lp.registry.interfaces.person import (
     IPersonSet,
     validate_person,
@@ -202,7 +208,14 @@ from lp.soyuz.model.queue import (
     )
 from lp.soyuz.model.section import Section
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
-from lp.soyuz.scripts.packagecopier import check_copy_permissions
+
+
+ARCHIVE_REFERENCE_TEMPLATES = {
+    ArchivePurpose.PRIMARY: u'%(distribution)s',
+    ArchivePurpose.PPA: u'~%(owner)s/%(distribution)s/%(archive)s',
+    ArchivePurpose.PARTNER: u'%(distribution)s/%(archive)s',
+    ArchivePurpose.COPY: u'%(distribution)s/%(archive)s',
+    }
 
 
 def storm_validate_external_dependencies(archive, attr, value):
@@ -376,6 +389,11 @@ class Archive(SQLBase):
         return self.purpose == ArchivePurpose.PPA
 
     @property
+    def is_primary(self):
+        """See `IArchive`."""
+        return self.purpose == ArchivePurpose.PRIMARY
+
+    @property
     def is_partner(self):
         """See `IArchive`."""
         return self.purpose == ArchivePurpose.PARTNER
@@ -394,6 +412,16 @@ class Archive(SQLBase):
     def is_active(self):
         """See `IArchive`."""
         return self.status == ArchiveStatus.ACTIVE
+
+    @property
+    def reference(self):
+        template = ARCHIVE_REFERENCE_TEMPLATES.get(self.purpose)
+        if template is None:
+            raise AssertionError(
+                "No archive reference template for %s." % self.purpose.name)
+        return template % {
+            'archive': self.name, 'owner': self.owner.name,
+            'distribution': self.distribution.name}
 
     @property
     def series_with_sources(self):
@@ -1535,6 +1563,8 @@ class Archive(SQLBase):
     def isSourceUploadAllowed(
         self, sourcepackagename, person, distroseries=None):
         """See `IArchive`."""
+        if distroseries is None:
+            distroseries = self.distribution.currentseries
         permission_set = getUtility(IArchivePermissionSet)
         return permission_set.isSourceUploadAllowed(
             self, sourcepackagename, person, distroseries)
@@ -1688,10 +1718,11 @@ class Archive(SQLBase):
     def copyPackage(self, source_name, version, from_archive, to_pocket,
                     person, to_series=None, include_binaries=False,
                     sponsored=None, unembargo=False, auto_approve=False,
-                    from_pocket=None, from_series=None,
+                    silent=False, from_pocket=None, from_series=None,
                     phased_update_percentage=None):
         """See `IArchive`."""
         # Asynchronously copy a package using the job system.
+        from lp.soyuz.scripts.packagecopier import check_copy_permissions
         if phased_update_percentage is not None:
             if phased_update_percentage < 0 or phased_update_percentage > 100:
                 raise ValueError(
@@ -1723,15 +1754,16 @@ class Archive(SQLBase):
             package_version=version, include_binaries=include_binaries,
             copy_policy=PackageCopyPolicy.INSECURE, requester=person,
             sponsored=sponsored, unembargo=unembargo,
-            auto_approve=auto_approve, source_distroseries=from_series,
-            source_pocket=from_pocket,
+            auto_approve=auto_approve, silent=silent,
+            source_distroseries=from_series, source_pocket=from_pocket,
             phased_update_percentage=phased_update_percentage)
 
     def copyPackages(self, source_names, from_archive, to_pocket,
                      person, to_series=None, from_series=None,
                      include_binaries=None, sponsored=None, unembargo=False,
-                     auto_approve=False):
+                     auto_approve=False, silent=False):
         """See `IArchive`."""
+        from lp.soyuz.scripts.packagecopier import check_copy_permissions
         sources = self._collectLatestPublishedSources(
             from_archive, from_series, source_names)
 
@@ -1757,7 +1789,7 @@ class Archive(SQLBase):
         job_source.createMultiple(
             copy_tasks, person, copy_policy=PackageCopyPolicy.MASS_SYNC,
             include_binaries=include_binaries, sponsored=sponsored,
-            unembargo=unembargo, auto_approve=auto_approve)
+            unembargo=unembargo, auto_approve=auto_approve, silent=silent)
 
     def _collectLatestPublishedSources(self, from_archive, from_series,
                                        source_names):
@@ -2050,16 +2082,81 @@ class Archive(SQLBase):
         # understandiung EnumItems.
         return list(PackagePublishingPocket.items)
 
-    def getOverridePolicy(self, phased_update_percentage=None):
+    def _getExistingOverrideSequence(self, archive, distroseries, pocket,
+                                     phased_update_percentage):
+        from lp.soyuz.adapters.overrides import (
+            FromExistingOverridePolicy,
+            )
+        return [
+            FromExistingOverridePolicy(
+                archive, distroseries, None,
+                phased_update_percentage=phased_update_percentage),
+            FromExistingOverridePolicy(
+                archive, distroseries, None,
+                phased_update_percentage=phased_update_percentage,
+                any_arch=True),
+            FromExistingOverridePolicy(
+                archive, distroseries, None,
+                phased_update_percentage=phased_update_percentage,
+                include_deleted=True),
+            FromExistingOverridePolicy(
+                archive, distroseries, None,
+                phased_update_percentage=phased_update_percentage,
+                include_deleted=True, any_arch=True)]
+
+    def getOverridePolicy(self, distroseries, pocket,
+                          phased_update_percentage=None):
         """See `IArchive`."""
         # Circular imports.
-        from lp.soyuz.adapters.overrides import UbuntuOverridePolicy
-        # XXX StevenK: bug=785004 2011-05-19 Return PPAOverridePolicy() for
-        # a PPA that overrides the component/pocket to main/RELEASE.
-        if self.purpose in MAIN_ARCHIVE_PURPOSES:
-            return UbuntuOverridePolicy(
+        from lp.soyuz.adapters.overrides import (
+            ConstantOverridePolicy,
+            FallbackOverridePolicy,
+            FromSourceOverridePolicy,
+            UnknownOverridePolicy,
+            )
+        if self.is_main:
+            # If there's no matching live publication, fall back to
+            # other archs, then to matching but deleted, then to deleted
+            # on other archs, then to archive-specific defaults.
+            policies = self._getExistingOverrideSequence(
+                self, distroseries, None,
                 phased_update_percentage=phased_update_percentage)
-        return None
+            if self.is_primary:
+                # If there are any parent relationships with
+                # inherit_overrides set, run through those before using
+                # defaults.
+                parents = [
+                    dsp.parent_series for dsp in
+                    getUtility(IDistroSeriesParentSet).getByDerivedSeries(
+                        distroseries)
+                    if dsp.inherit_overrides]
+                for parent in parents:
+                    policies.extend(self._getExistingOverrideSequence(
+                        parent.main_archive, parent, None,
+                        phased_update_percentage=phased_update_percentage))
+
+                policies.extend([
+                    FromSourceOverridePolicy(
+                        phased_update_percentage=phased_update_percentage),
+                    UnknownOverridePolicy(
+                        self, distroseries, pocket,
+                        phased_update_percentage=phased_update_percentage)])
+            elif self.is_partner:
+                policies.append(
+                    ConstantOverridePolicy(
+                        component=getUtility(IComponentSet)['partner'],
+                        phased_update_percentage=phased_update_percentage,
+                        new=True))
+            return FallbackOverridePolicy(policies)
+        elif self.is_ppa:
+            return ConstantOverridePolicy(
+                component=getUtility(IComponentSet)['main'])
+        elif self.is_copy:
+            return self.distribution.main_archive.getOverridePolicy(
+                distroseries, pocket,
+                phased_update_percentage=phased_update_percentage)
+        raise AssertionError(
+            "No IOverridePolicy for purpose %r" % self.purpose)
 
     def removeCopyNotification(self, job_id):
         """See `IArchive`."""
@@ -2073,15 +2170,15 @@ class Archive(SQLBase):
         job.destroySelf()
 
 
-def validate_ppa(owner, proposed_name, private=False):
+def validate_ppa(owner, distribution, proposed_name, private=False):
     """Can 'person' create a PPA called 'proposed_name'?
 
     :param owner: The proposed owner of the PPA.
     :param proposed_name: The proposed name.
     :param private: Whether or not to make it private.
     """
+    assert proposed_name is not None
     creator = getUtility(ILaunchBag).user
-    ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
     if private:
         # NOTE: This duplicates the policy in lp/soyuz/configure.zcml
         # which says that one needs 'launchpad.Admin' permission to set
@@ -2096,20 +2193,22 @@ def validate_ppa(owner, proposed_name, private=False):
     if owner.is_team and (
         owner.membership_policy in INCLUSIVE_TEAM_POLICY):
         return "Open teams cannot have PPAs."
-    if proposed_name is not None and proposed_name == ubuntu.name:
-        return (
-            "A PPA cannot have the same name as its distribution.")
-    if proposed_name is None:
-        proposed_name = 'ppa'
+    if not distribution.supports_ppas:
+        return "%s does not support PPAs." % distribution.displayname
+    if proposed_name == distribution.name:
+        return "A PPA cannot have the same name as its distribution."
+    if proposed_name == "ubuntu":
+        return 'A PPA cannot be named "ubuntu".'
     try:
-        owner.getPPAByName(proposed_name)
+        owner.getPPAByName(distribution, proposed_name)
     except NoSuchPPA:
         return None
     else:
-        text = "You already have a PPA named '%s'." % proposed_name
+        text = "You already have a PPA for %s named '%s'." % (
+            distribution.displayname, proposed_name)
         if owner.is_team:
-            text = "%s already has a PPA named '%s'." % (
-                owner.displayname, proposed_name)
+            text = "%s already has a PPA for %s named '%s'." % (
+                owner.displayname, distribution.displayname, proposed_name)
         return text
 
 
@@ -2120,6 +2219,47 @@ class ArchiveSet:
     def get(self, archive_id):
         """See `IArchiveSet`."""
         return Archive.get(archive_id)
+
+    def getByReference(self, reference, check_permissions=False, user=None):
+        """See `IArchiveSet`."""
+        from lp.registry.interfaces.distribution import IDistributionSet
+
+        bits = reference.split(u'/')
+        if len(bits) < 1:
+            return None
+        if bits[0].startswith(u'~'):
+            # PPA reference (~OWNER/DISTRO/ARCHIVE)
+            if len(bits) != 3:
+                return None
+            person = getUtility(IPersonSet).getByName(bits[0][1:])
+            if person is None:
+                return None
+            distro = getUtility(IDistributionSet).getByName(bits[1])
+            if distro is None:
+                return None
+            archive = self.getPPAOwnedByPerson(
+                person, distribution=distro, name=bits[2])
+        else:
+            # Official archive reference (DISTRO or DISTRO/ARCHIVE)
+            distro = getUtility(IDistributionSet).getByName(bits[0])
+            if distro is None:
+                return None
+            if len(bits) == 1:
+                archive = distro.main_archive
+            elif len(bits) == 2:
+                archive = self.getByDistroAndName(distro, bits[1])
+            else:
+                return None
+        if archive is None or not check_permissions:
+            return archive
+        authz = getAdapter(
+            removeSecurityProxy(archive), IAuthorization,
+            'launchpad.SubscriberView')
+        if ((user is None and authz.checkUnauthenticated()) or
+            (user is not None and authz.checkAuthenticated(
+                IPersonRoles(user)))):
+            return archive
+        return None
 
     def getPPAByDistributionAndOwnerName(self, distribution, person_name,
                                          ppa_name):
@@ -2237,11 +2377,12 @@ class ArchiveSet:
                     (name, distribution.name))
         else:
             archive = Archive.selectOneBy(
-                owner=owner, name=name, purpose=ArchivePurpose.PPA)
+                owner=owner, distribution=distribution, name=name,
+                purpose=ArchivePurpose.PPA)
             if archive is not None:
                 raise AssertionError(
-                    "Person '%s' already has a PPA named '%s'." %
-                    (owner.name, name))
+                    "Person '%s' already has a PPA for %s named '%s'." %
+                    (owner.name, distribution.name, name))
 
         # Signing-key for the default PPA is reused when it's already present.
         signing_key = None
@@ -2279,34 +2420,36 @@ class ArchiveSet:
         """See `IArchiveSet`."""
         return iter(Archive.select())
 
-    def getPPAOwnedByPerson(self, person, name=None, statuses=None,
-                            has_packages=False):
+    def getPPAOwnedByPerson(self, person, distribution=None, name=None,
+                            statuses=None, has_packages=False):
         """See `IArchiveSet`."""
         # See Person._members which also directly queries this.
         store = Store.of(person)
         clause = [
             Archive.purpose == ArchivePurpose.PPA,
             Archive.owner == person]
+        if distribution is not None:
+            clause.append(Archive.distribution == distribution)
         if name is not None:
+            assert distribution is not None
             clause.append(Archive.name == name)
         if statuses is not None:
             clause.append(Archive.status.is_in(statuses))
         if has_packages:
             clause.append(
                     SourcePackagePublishingHistory.archive == Archive.id)
-        result = store.find(Archive, *clause).order_by(Archive.id).first()
-        if name is not None and result is None:
-            raise NoSuchPPA(name)
-        return result
+        return store.find(Archive, *clause).order_by(Archive.id).first()
 
     def getPPAsForUser(self, user):
         """See `IArchiveSet`."""
+        from lp.registry.model.person import Person
         # If there's no user logged in, then there's no archives.
         if user is None:
             return []
         store = Store.of(user)
         direct_membership = store.find(
             Archive,
+            Archive._enabled == True,
             Archive.purpose == ArchivePurpose.PPA,
             TeamParticipation.team == Archive.ownerID,
             TeamParticipation.person == user,
@@ -2322,7 +2465,10 @@ class ArchiveSet:
         result = direct_membership.union(third_party_upload_acl)
         result.order_by(Archive.displayname)
 
-        return result
+        def preload_owners(rows):
+            load_related(Person, rows, ['ownerID'])
+
+        return DecoratedResultSet(result, pre_iter_hook=preload_owners)
 
     def getPPAsPendingSigningKey(self):
         """See `IArchiveSet`."""
@@ -2472,6 +2618,10 @@ class ArchiveSet:
             )
 
         return results.order_by(SourcePackagePublishingHistory.id)
+
+    def empty_list(self):
+        """See `IArchiveSet."""
+        return []
 
 
 def get_archive_privacy_filter(user):

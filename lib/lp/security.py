@@ -1119,16 +1119,18 @@ class EditDistributionByDistroOwnersOrAdmins(AuthorizationBase):
 class ModerateDistributionByDriversOrOwnersOrAdmins(AuthorizationBase):
     """Distribution drivers, owners, and admins may plan releases.
 
-    Drivers of `IDerivativeDistribution`s can create series. Owners and
-    admins can create series for all `IDistribution`s.
+    Drivers of distributions that don't manage their packages in
+    Launchpad can create series. Owners and admins can create series for
+    all `IDistribution`s.
     """
     permission = 'launchpad.Moderate'
     usedfor = IDistribution
 
     def checkAuthenticated(self, user):
-        if user.isDriver(self.obj) and not self.obj.full_functionality:
-            # Drivers of derivative distributions can create a series that
-            # they will be the release manager for.
+        if user.isDriver(self.obj) and not self.obj.official_packages:
+            # Damage to series with packages managed in Launchpad can
+            # cause serious strife. Restrict changes to the distro
+            # owner.
             return True
         return user.isOwner(self.obj) or user.in_admin
 
@@ -1219,9 +1221,10 @@ class EditDistroSeriesByReleaseManagerOrDistroOwnersOrAdmins(
 
     def checkAuthenticated(self, user):
         if (user.inTeam(self.obj.driver)
-            and not self.obj.distribution.full_functionality):
-            # The series driver (release manager) may edit a series if the
-            # distribution is an `IDerivativeDistribution`
+            and not self.obj.distribution.official_packages):
+            # Damage to series with packages managed in Launchpad can
+            # cause serious strife. Restrict changes to the distro
+            # owner.
             return True
         return (user.inTeam(self.obj.distribution.owner) or
                 user.in_admin)
