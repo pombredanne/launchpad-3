@@ -8,6 +8,8 @@ __all__ = [
     'Library',
     ]
 
+import hashlib
+
 from storm.expr import (
     And,
     SQL,
@@ -59,8 +61,9 @@ class Library:
             store = session_store()
             token_found = store.find(TimeLimitedToken,
                 SQL("age(created) < interval '1 day'"),
-                TimeLimitedToken.token == token,
-                TimeLimitedToken.path==path).is_empty()
+                TimeLimitedToken.token.is_in(
+                    (token, hashlib.sha256(token).hexdigest())),
+                TimeLimitedToken.path == path).is_empty()
             store.reset()
             if token_found:
                 raise LookupError("Token stale/pruned/path mismatch")

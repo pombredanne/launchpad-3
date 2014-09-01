@@ -7,6 +7,8 @@ __all__ = [
     'LoginTokenSet',
     ]
 
+import hashlib
+
 import pytz
 from sqlobject import (
     ForeignKey,
@@ -25,7 +27,10 @@ from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.enumcol import EnumCol
-from lp.services.database.interfaces import IMasterStore
+from lp.services.database.interfaces import (
+    IMasterStore,
+    IStore,
+    )
 from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
@@ -57,7 +62,7 @@ class LoginToken(SQLBase):
     requesteremail = StringCol(dbName='requesteremail', notNull=False,
                                default=None)
     email = StringCol(dbName='email', notNull=True)
-    token = StringCol(dbName='token', unique=True)
+    _token = StringCol(dbName='token', unique=True)
     tokentype = EnumCol(dbName='tokentype', notNull=True, enum=LoginTokenType)
     date_created = UtcDateTimeCol(dbName='created', notNull=True)
     fingerprint = StringCol(dbName='fingerprint', notNull=False, default=None)
@@ -65,6 +70,23 @@ class LoginToken(SQLBase):
     password = ''  # Quick fix for Bug #2481
 
     title = 'Launchpad Email Verification'
+
+    def __init__(self, *args, **kwargs):
+        token = kwargs.pop('token', None)
+        if token is not None:
+            self._plaintext_token = token
+            kwargs['_token'] = token
+        super(LoginToken, self).__init__(*args, **kwargs)
+
+    _plaintext_token = None
+
+    @property
+    def token(self):
+        if self._plaintext_token is None:
+            raise AssertionError(
+                "Token only available for LoginTokens obtained by token in "
+                "the first place. The DB only stores the hashed version.")
+        return self._plaintext_token
 
     def consume(self):
         """See ILoginToken."""
@@ -347,7 +369,10 @@ class LoginTokenSet:
 
     def __getitem__(self, tokentext):
         """See ILoginTokenSet."""
-        token = LoginToken.selectOneBy(token=tokentext)
+        token = IStore(LoginToken).find(
+            LoginToken, LoginToken._token.is_in((
+                hashlib.sha256(tokentext).hexdigest(), tokentext))).one()
         if token is None:
             raise NotFoundError(tokentext)
+        token._plaintext_token = tokentext
         return token
