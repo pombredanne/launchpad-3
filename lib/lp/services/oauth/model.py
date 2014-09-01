@@ -15,6 +15,7 @@ from datetime import (
     datetime,
     timedelta,
     )
+import hashlib
 import re
 
 import pytz
@@ -36,6 +37,7 @@ from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.interfaces import IMasterStore
 from lp.services.database.sqlbase import SQLBase
+from lp.services.features import getFeatureFlag
 from lp.services.librarian.model import LibraryFileAlias
 from lp.services.oauth.interfaces import (
     IOAuthAccessToken,
@@ -86,6 +88,11 @@ class OAuthConsumer(OAuthBase, SQLBase):
     disabled = BoolCol(notNull=True, default=False)
     key = StringCol(notNull=True)
     _secret = StringCol(dbName="secret", notNull=False, default='')
+
+    def __init__(self, key, secret):
+        if getFeatureFlag('auth.hash_oauth_secrets'):
+            secret = hashlib.sha256(secret).hexdigest()
+        super(OAuthConsumer, self).__init__(key=key, _secret=secret)
 
     # This regular expression singles out a consumer key that
     # represents any and all apps running on a specific computer. The
@@ -146,13 +153,13 @@ class OAuthConsumer(OAuthBase, SQLBase):
 
     def isSecretValid(self, secret):
         """See `IOAuthConsumer`."""
-        return secret == self._secret
+        return self._secret in (secret, hashlib.sha256(secret).hexdigest())
 
     def newRequestToken(self):
         """See `IOAuthConsumer`."""
         key, secret = create_token_key_and_secret(table=OAuthRequestToken)
         return (
-            OAuthRequestToken(consumer=self, key=key, _secret=secret), secret)
+            OAuthRequestToken(consumer=self, key=key, secret=secret), secret)
 
     def getAccessToken(self, key):
         """See `IOAuthConsumer`."""
@@ -171,7 +178,7 @@ class OAuthConsumerSet:
         """See `IOAuthConsumerSet`."""
         assert self.getByKey(key) is None, (
             "The key '%s' is already in use by another consumer." % key)
-        return OAuthConsumer(key=key, _secret=secret)
+        return OAuthConsumer(key=key, secret=secret)
 
     def getByKey(self, key):
         """See `IOAuthConsumerSet`."""
@@ -205,6 +212,17 @@ class OAuthAccessToken(OAuthBase, SQLBase):
         dbName='distribution', foreignKey='Distribution',
         notNull=False, default=None)
 
+    def __init__(self, consumer, permission, key, secret='', person=None,
+                 date_expires=None, product=None, project=None,
+                 distribution=None, sourcepackagename=None):
+        if getFeatureFlag('auth.hash_oauth_secrets'):
+            secret = hashlib.sha256(secret).hexdigest()
+        super(OAuthAccessToken, self).__init__(
+            consumer=consumer, permission=permission, key=key,
+            _secret=secret, person=person, date_expires=date_expires,
+            product=product, project=project, distribution=distribution,
+            sourcepackagename=sourcepackagename)
+
     @property
     def context(self):
         """See `IOAuthToken`."""
@@ -228,7 +246,7 @@ class OAuthAccessToken(OAuthBase, SQLBase):
 
     def isSecretValid(self, secret):
         """See `IOAuthConsumer`."""
-        return secret == self._secret
+        return self._secret in (secret, hashlib.sha256(secret).hexdigest())
 
 
 class OAuthRequestToken(OAuthBase, SQLBase):
@@ -259,6 +277,17 @@ class OAuthRequestToken(OAuthBase, SQLBase):
         dbName='distribution', foreignKey='Distribution',
         notNull=False, default=None)
 
+    def __init__(self, consumer, key, secret='', permission=None, person=None,
+                 date_expires=None, product=None, project=None,
+                 distribution=None, sourcepackagename=None):
+        if getFeatureFlag('auth.hash_oauth_secrets'):
+            secret = hashlib.sha256(secret).hexdigest()
+        super(OAuthRequestToken, self).__init__(
+            consumer=consumer, permission=permission, key=key,
+            _secret=secret, person=person, date_expires=date_expires,
+            product=product, project=project, distribution=distribution,
+            sourcepackagename=sourcepackagename)
+
     @property
     def context(self):
         """See `IOAuthToken`."""
@@ -283,7 +312,7 @@ class OAuthRequestToken(OAuthBase, SQLBase):
 
     def isSecretValid(self, secret):
         """See `IOAuthConsumer`."""
-        return secret == self._secret
+        return self._secret in (secret, hashlib.sha256(secret).hexdigest())
 
     def review(self, user, permission, context=None, date_expires=None):
         """See `IOAuthRequestToken`."""
@@ -328,7 +357,7 @@ class OAuthRequestToken(OAuthBase, SQLBase):
         access_level = AccessLevel.items[self.permission.name]
         access_token = OAuthAccessToken(
             consumer=self.consumer, person=self.person, key=key,
-            _secret=secret, permission=access_level,
+            secret=secret, permission=access_level,
             date_expires=self.date_expires, product=self.product,
             project=self.project, distribution=self.distribution,
             sourcepackagename=self.sourcepackagename)
