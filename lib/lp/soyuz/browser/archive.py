@@ -1391,6 +1391,7 @@ def make_archive_vocabulary(archives):
     for archive in archives:
         label = '%s [%s]' % (archive.displayname, archive.reference)
         terms.append(SimpleTerm(archive, archive.reference, label))
+    terms.sort(key=lambda x: x.value.reference)
     return SimpleVocabulary(terms)
 
 
@@ -1627,10 +1628,8 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
                     canonical_url(dependency), archive_dependency.title)
             else:
                 dependency_label = archive_dependency.title
-            dependency_token = '%s/%s' % (
-                dependency.owner.name, dependency.name)
             term = SimpleTerm(
-                dependency, dependency_token, dependency_label)
+                dependency, dependency.reference, dependency_label)
             terms.append(term)
         return form.Fields(
             List(__name__='selected_dependencies',

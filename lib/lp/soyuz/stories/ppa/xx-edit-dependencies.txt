@@ -112,7 +112,7 @@ When a valid PPA is chosen the dependency is added, a notification
 is rendered on top of the page and the list of dependencies available
 for removal is updated.
 
-    >>> admin_browser.getControl("Add PPA dependency").value = 'mark/ppa'
+    >>> admin_browser.getControl("Add PPA dependency").value = '~mark/ubuntu/ppa'
     >>> admin_browser.getControl("Save").click()
     >>> print_feedback_messages(admin_browser.contents)
     Dependency added: PPA for Mark Shuttleworth
@@ -123,7 +123,7 @@ for removal is updated.
 
 Trying to add a dependency that is already recorded results in a error.
 
-    >>> admin_browser.getControl("Add PPA dependency").value = 'mark/ppa'
+    >>> admin_browser.getControl("Add PPA dependency").value = '~mark/ubuntu/ppa'
     >>> admin_browser.getControl("Save").click()
     >>> print_feedback_messages(admin_browser.contents)
     There is 1 error.
@@ -132,7 +132,7 @@ Trying to add a dependency that is already recorded results in a error.
 Trying to add a dependency for the context PPA itself also results in
 a error.
 
-    >>> admin_browser.getControl("Add PPA dependency").value = 'cprov/ppa'
+    >>> admin_browser.getControl("Add PPA dependency").value = '~cprov/ubuntu/ppa'
     >>> admin_browser.getControl("Save").click()
     >>> print_feedback_messages(admin_browser.contents)
     There is 1 error.
@@ -140,7 +140,7 @@ a error.
 
 If it's a new dependency everything is fine.
 
-    >>> admin_browser.getControl("Add PPA dependency").value = 'no-priv/ppa'
+    >>> admin_browser.getControl("Add PPA dependency").value = '~no-priv/ubuntu/ppa'
     >>> admin_browser.getControl("Save").click()
     >>> print_feedback_messages(admin_browser.contents)
     Dependency added: PPA for No Privileges Person
@@ -152,7 +152,7 @@ Now Celso's PPA will list Mark's and No-Priv's PPA as its dependencies.
     PPA for Mark Shuttleworth
     PPA for No Privileges Person
 
-The dependencies are presented in a separated section (bellow the
+The dependencies are presented in a separated section (below the
 sources.list widget).
 
     >>> user_browser.open('http://launchpad.dev/~cprov/+archive/ubuntu/ppa')
@@ -196,7 +196,7 @@ aware of this condition.
     http://launchpad.dev/~no-priv/+archive/ubuntu/ppa
 
 When accessed by their owners, a PPA depending on disabled archives
-will additionally show an warning for uploaders . This way PPA
+will additionally show an warning for uploaders. This way a PPA
 maintainer can react to this problem.
 
     >>> cprov_browser.open('http://launchpad.dev/~cprov/+archive/ubuntu/ppa')
@@ -234,7 +234,7 @@ dependencies is refreshed.
 
     >>> admin_browser.getControl(
     ...     name="field.selected_dependencies").value = [
-    ...     'mark/ppa', 'no-priv/ppa']
+    ...     '~mark/ubuntu/ppa', '~no-priv/ubuntu/ppa']
     >>> admin_browser.getControl("Save").click()
     >>> print_feedback_messages(admin_browser.contents)
     Dependencies removed:
@@ -257,6 +257,43 @@ add new dependencies.
     >>> print find_tag_by_id(
     ...     user_browser.contents, 'archive-dependencies')
     None
+
+We should also make sure that a user is unable to add a disabled PPA as a
+dependency.
+
+    # Disable Mark's PPA.
+    >>> login('foo.bar@canonical.com')
+    >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> mark = getUtility(IPersonSet).getByName('mark')
+    >>> mark.archive.disable()
+    >>> logout()
+
+    # Attempt to add Mark's PPA
+    >>> admin_browser.getControl("Add PPA dependency").value = '~mark/ubuntu/ppa'
+    >>> admin_browser.getControl("Save").click()
+    >>> print_feedback_messages(admin_browser.contents)
+    There is 1 error.
+    Invalid value
+
+    # When the page is reloaded, there shouldn't be any dependencies.
+    >>> admin_browser.reload()
+    >>> print_ppa_dependencies(admin_browser.contents)
+    No dependencies recorded for this PPA yet.
+
+Re-enable Mark's PPA for subsequent tests.
+
+    >>> login('foo.bar@canonical.com')
+    >>> mark.archive.enable()
+    >>> logout()
+
+Clear the page.
+
+    >>> admin_browser.getControl("Add PPA dependency").value = ''
+    >>> admin_browser.getControl("Save").click()
+    >>> admin_browser.reload()
+    >>> print_ppa_dependencies(admin_browser.contents)
+    No dependencies recorded for this PPA yet.
 
 == Primary dependencies ==
 
@@ -418,9 +455,9 @@ change it.
 
 The form can perform multiple actions in a single submit.
 
-First we will create a PPA dependency for No privileged' PPA.
+First we will create a PPA dependency for 'No privileged' PPA.
 
-    >>> admin_browser.getControl("Add PPA dependency").value = 'no-priv/ppa'
+    >>> admin_browser.getControl("Add PPA dependency").value = '~no-priv/ubuntu/ppa'
     >>> admin_browser.getControl("Save").click()
     >>> print_feedback_messages(admin_browser.contents)
     Dependency added: PPA for No Privileges Person
@@ -450,12 +487,12 @@ from 'Mark Shuttleworth' PPA and modify the primary dependency to
 RELEASE.
 
     >>> admin_browser.getControl(
-    ...     name="field.selected_dependencies").value = ['no-priv/ppa']
+    ...     name="field.selected_dependencies").value = ['~no-priv/ubuntu/ppa']
 
     >>> admin_browser.getControl(
     ...     "Use all Ubuntu components available.").selected = True
 
-    >>> admin_browser.getControl("Add PPA dependency").value = 'mark/ppa'
+    >>> admin_browser.getControl("Add PPA dependency").value = '~mark/ubuntu/ppa'
 
     >>> admin_browser.getControl(
     ...     "Basic (only released packages).").selected = True
@@ -513,9 +550,9 @@ PPA context page and the action won't be executed.
 
     >>> admin_browser.getLink('Edit PPA dependencies').click()
 
-    >>> admin_browser.getControl("Add PPA dependency").value = 'no-priv/ppa'
+    >>> admin_browser.getControl("Add PPA dependency").value = '~no-priv/ubuntu/ppa'
     >>> admin_browser.getControl(
-    ...     name="field.selected_dependencies").value = ['mark/ppa']
+    ...     name="field.selected_dependencies").value = ['~mark/ubuntu/ppa']
     >>> admin_browser.getControl(
     ...     "Default (security dependencies and recommended updates)."
     ...     ).selected = True
