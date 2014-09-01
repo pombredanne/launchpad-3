@@ -152,7 +152,7 @@ class Poll(SQLBase):
         secret one.
         """
         assert self.isOpen(when=when), "This poll is not open"
-        assert not self.personVoted(person), "Can't vote twice in the same poll"
+        assert not self.personVoted(person), "Can't vote twice in one poll"
         assert person.inTeam(self.team), (
             "Person %r is not a member of this poll's team." % person)
 
@@ -285,14 +285,14 @@ class PollSet:
                 datecloses=datecloses, secrecy=secrecy,
                 allowspoilt=allowspoilt, type=poll_type)
 
-    def selectByTeam(self, team, status=PollStatus.ALL, orderBy=None, when=None):
+    def selectByTeam(self, team, status=PollStatus.ALL, orderBy=None,
+                     when=None):
         """See IPollSet."""
         if when is None:
             when = datetime.now(pytz.timezone('UTC'))
 
         if orderBy is None:
             orderBy = Poll.sortingColumns
-
 
         status = set(status)
         status_clauses = []
@@ -426,4 +426,3 @@ class VoteSet:
             raise OptionIsNotFromSimplePoll(
                 '%r is not an option of a simple-style poll.' % option)
         return Vote.selectBy(option=option).count()
-
