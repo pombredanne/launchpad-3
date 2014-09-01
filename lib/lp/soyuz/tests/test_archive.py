@@ -47,6 +47,10 @@ from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.soyuz.adapters.archivedependencies import (
     get_sources_list_for_building,
     )
+from lp.soyuz.adapters.overrides import (
+    BinaryOverride,
+    SourceOverride,
+    )
 from lp.soyuz.enums import (
     ArchivePermissionType,
     ArchivePurpose,
@@ -92,6 +96,7 @@ from lp.soyuz.model.binarypackagerelease import (
 from lp.soyuz.model.component import ComponentSelection
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
+    admin_logged_in,
     ANONYMOUS,
     celebrity_logged_in,
     login,
@@ -99,6 +104,7 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing._webservice import QueryCollector
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
@@ -106,7 +112,6 @@ from lp.testing.layers import (
     )
 from lp.testing.matchers import HasQueryCount
 from lp.testing.pages import webservice_for_person
-from lp.testing._webservice import QueryCollector
 
 
 class TestGetPublicationsInArchive(TestCaseWithFactory):
@@ -219,7 +224,8 @@ class TestArchiveRepositorySize(TestCaseWithFactory):
         """
         sourcepackagerelease = self.factory.makeSourcePackageRelease()
         self.factory.makeSourcePackagePublishingHistory(
-            archive=archive, sourcepackagerelease=sourcepackagerelease,
+            archive=archive, distroseries=archive.distribution.currentseries,
+            sourcepackagerelease=sourcepackagerelease,
             status=PackagePublishingStatus.PUBLISHED)
         self.factory.makeSourcePackageReleaseFile(
             sourcepackagerelease=sourcepackagerelease,
@@ -1711,22 +1717,49 @@ class TestValidatePPA(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def setUp(self):
+        super(TestValidatePPA, self).setUp()
+        self.ubuntu = getUtility(IDistributionSet)['ubuntu']
+        self.ubuntutest = getUtility(IDistributionSet)['ubuntutest']
+        with admin_logged_in():
+            self.ubuntutest.supports_ppas = True
+
     def test_open_teams(self):
         team = self.factory.makeTeam()
         self.assertEqual(
-            'Open teams cannot have PPAs.', validate_ppa(team, None))
+            'Open teams cannot have PPAs.',
+            validate_ppa(team, self.ubuntu, "ppa"))
 
     def test_distribution_name(self):
         ppa_owner = self.factory.makePerson()
         self.assertEqual(
             'A PPA cannot have the same name as its distribution.',
-            validate_ppa(ppa_owner, 'ubuntu'))
+            validate_ppa(ppa_owner, self.ubuntu, 'ubuntu'))
+
+    def test_ubuntu_name(self):
+        # Disambiguating old-style URLs relies on there never being a
+        # PPA named "ubuntu".
+        ppa_owner = self.factory.makePerson()
+        self.assertEqual(
+            'A PPA cannot be named "ubuntu".',
+            validate_ppa(ppa_owner, self.ubuntutest, 'ubuntu'))
+
+    def test_distro_unsupported(self):
+        ppa_owner = self.factory.makePerson()
+        distro = self.factory.makeDistribution(displayname="Unbuntu")
+        self.assertEqual(
+            "Unbuntu does not support PPAs.",
+            validate_ppa(ppa_owner, distro, "ppa"))
+        with admin_logged_in():
+            distro.supports_ppas = True
+        self.assertIs(None, validate_ppa(ppa_owner, distro, "ppa"))
 
     def test_private_ppa_standard_user(self):
         ppa_owner = self.factory.makePerson()
         with person_logged_in(ppa_owner):
             errors = validate_ppa(
-                ppa_owner, self.factory.getUniqueString(), private=True)
+                ppa_owner, self.ubuntu, self.factory.getUniqueString(),
+                private=True)
         self.assertEqual(
             '%s is not allowed to make private PPAs' % (ppa_owner.name,),
             errors)
@@ -1735,7 +1768,7 @@ class TestValidatePPA(TestCaseWithFactory):
         owner = self.factory.makePerson()
         self.factory.grantCommercialSubscription(owner)
         with person_logged_in(owner):
-            errors = validate_ppa(owner, 'ppa', private=True)
+            errors = validate_ppa(owner, self.ubuntu, 'ppa', private=True)
         self.assertIsNone(errors)
 
     def test_private_ppa_commercial_admin(self):
@@ -1746,32 +1779,34 @@ class TestValidatePPA(TestCaseWithFactory):
         with person_logged_in(ppa_owner):
             self.assertIsNone(
                 validate_ppa(
-                    ppa_owner, self.factory.getUniqueString(), private=True))
+                    ppa_owner, self.ubuntu, self.factory.getUniqueString(),
+                    private=True))
 
     def test_private_ppa_admin(self):
         ppa_owner = self.factory.makeAdministrator()
         with person_logged_in(ppa_owner):
             self.assertIsNone(
                 validate_ppa(
-                    ppa_owner, self.factory.getUniqueString(), private=True))
+                    ppa_owner, self.ubuntu, self.factory.getUniqueString(),
+                    private=True))
 
     def test_two_ppas(self):
         ppa = self.factory.makeArchive(name='ppa')
         self.assertEqual(
-            "You already have a PPA named 'ppa'.",
-            validate_ppa(ppa.owner, 'ppa'))
+            "You already have a PPA for Ubuntu named 'ppa'.",
+            validate_ppa(ppa.owner, self.ubuntu, 'ppa'))
 
     def test_two_ppas_with_team(self):
         team = self.factory.makeTeam(
             membership_policy=TeamMembershipPolicy.MODERATED)
         self.factory.makeArchive(owner=team, name='ppa')
         self.assertEqual(
-            "%s already has a PPA named 'ppa'." % team.displayname,
-            validate_ppa(team, 'ppa'))
+            "%s already has a PPA for Ubuntu named 'ppa'." % team.displayname,
+            validate_ppa(team, self.ubuntu, 'ppa'))
 
     def test_valid_ppa(self):
         ppa_owner = self.factory.makePerson()
-        self.assertIsNone(validate_ppa(ppa_owner, None))
+        self.assertIsNone(validate_ppa(ppa_owner, self.ubuntu, "ppa"))
 
     def test_private_team_private_ppa(self):
         # Folk with launchpad.Edit on a private team can make private PPAs for
@@ -1785,7 +1820,8 @@ class TestValidatePPA(TestCaseWithFactory):
             private_team.addMember(
                 team_admin, team_owner, status=TeamMembershipStatus.ADMIN)
         with person_logged_in(team_admin):
-            result = validate_ppa(private_team, 'ppa', private=True)
+            result = validate_ppa(
+                private_team, self.ubuntu, 'ppa', private=True)
         self.assertIsNone(result)
 
     def test_private_team_public_ppa(self):
@@ -1799,7 +1835,8 @@ class TestValidatePPA(TestCaseWithFactory):
             private_team.addMember(
                 team_admin, team_owner, status=TeamMembershipStatus.ADMIN)
         with person_logged_in(team_admin):
-            result = validate_ppa(private_team, 'ppa', private=False)
+            result = validate_ppa(
+                private_team, self.ubuntu, 'ppa', private=False)
         self.assertEqual(
             'Private teams may not have public archives.', result)
 
@@ -2146,7 +2183,8 @@ class GetPublishedSourcesWebServiceTests(TestCaseWithFactory):
         """
         ppa = self.factory.makeArchive(
             name='ppa', purpose=ArchivePurpose.PPA)
-        distroseries = self.factory.makeDistroSeries()
+        distroseries = self.factory.makeDistroSeries(
+            distribution=ppa.distribution)
         # XXX cprov 2014-04-22: currently the target archive owner cannot
         # 'addSource' to a `PackageUpload` ('launchpad.Edit'). It seems
         # too restrive to me.
@@ -2168,7 +2206,7 @@ class GetPublishedSourcesWebServiceTests(TestCaseWithFactory):
         # via a wrapper to improving performance (by reducing the
         # number of queries issued)
         ppa = self.createTestingPPA()
-        ppa_url = '/~{0}/+archive/ppa'.format(ppa.owner.name)
+        ppa_url = '/~{0}/+archive/ubuntu/ppa'.format(ppa.owner.name)
         webservice = webservice_for_person(
             ppa.owner, permission=OAuthPermission.READ_PRIVATE)
 
@@ -2189,12 +2227,16 @@ class TestCopyPackage(TestCaseWithFactory):
 
     def _setup_copy_data(self, source_distribution=None, source_private=False,
                          target_purpose=None,
-                         target_status=SeriesStatus.DEVELOPMENT):
+                         target_status=SeriesStatus.DEVELOPMENT,
+                         same_distribution=False):
         if target_purpose is None:
             target_purpose = ArchivePurpose.PPA
         source_archive = self.factory.makeArchive(
             distribution=source_distribution, private=source_private)
-        target_archive = self.factory.makeArchive(purpose=target_purpose)
+        target_distribution = (
+            source_archive.distribution if same_distribution else None)
+        target_archive = self.factory.makeArchive(
+            distribution=target_distribution, purpose=target_purpose)
         source = self.factory.makeSourcePackagePublishingHistory(
             archive=source_archive, status=PackagePublishingStatus.PUBLISHED)
         with person_logged_in(source_archive.owner):
@@ -2625,7 +2667,7 @@ class TestCopyPackage(TestCaseWithFactory):
         # archive.
         (source, source_archive, source_name, target_archive, to_pocket,
          to_series, version) = self._setup_copy_data(
-            target_purpose=ArchivePurpose.PRIMARY)
+            target_purpose=ArchivePurpose.PRIMARY, same_distribution=True)
         sources = [source]
         uploader = self.factory.makePerson()
         main = self.factory.makeComponent(name="main")
@@ -2901,30 +2943,283 @@ class TestPPANaming(TestCaseWithFactory):
             distribution=boingolinux, name=boingolinux.name)
 
 
+class TestGetPPAOwnedByPerson(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestGetPPAOwnedByPerson, self).setUp()
+        self.set = getUtility(IArchiveSet)
+
+    def test_person(self):
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        random = self.factory.makePerson()
+        self.assertEqual(archive, self.set.getPPAOwnedByPerson(archive.owner))
+        self.assertIs(None, self.set.getPPAOwnedByPerson(random))
+
+    def test_distribution_and_name(self):
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        self.assertEqual(
+            archive,
+            self.set.getPPAOwnedByPerson(
+                archive.owner, archive.distribution, archive.name))
+        self.assertIs(
+            None,
+            self.set.getPPAOwnedByPerson(
+                archive.owner, archive.distribution, archive.name + u'lol'))
+        self.assertIs(
+            None,
+            self.set.getPPAOwnedByPerson(
+                archive.owner, self.factory.makeDistribution(), archive.name))
+
+    def test_statuses(self):
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        self.assertEqual(
+            archive,
+            self.set.getPPAOwnedByPerson(
+                archive.owner, statuses=(ArchiveStatus.ACTIVE,)))
+        self.assertIs(
+            None,
+            self.set.getPPAOwnedByPerson(
+                archive.owner, statuses=(ArchiveStatus.DELETING,)))
+        with person_logged_in(archive.owner):
+            archive.delete(archive.owner)
+        self.assertEqual(
+            archive,
+            self.set.getPPAOwnedByPerson(
+                archive.owner, statuses=(ArchiveStatus.DELETING,)))
+
+    def test_has_packages(self):
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        self.assertIs(
+            None,
+            self.set.getPPAOwnedByPerson(archive.owner, has_packages=True))
+        self.factory.makeSourcePackagePublishingHistory(archive=archive)
+        self.assertEqual(
+            archive,
+            self.set.getPPAOwnedByPerson(archive.owner, has_packages=True))
+
+
 class TestPPALookup(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
         super(TestPPALookup, self).setUp()
+        self.ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        self.notbuntu = self.factory.makeDistribution()
         self.person = self.factory.makePerson()
         self.factory.makeArchive(owner=self.person, name="ppa")
         self.nightly = self.factory.makeArchive(
             owner=self.person, name="nightly")
+        self.other_ppa = self.factory.makeArchive(
+            owner=self.person, distribution=self.notbuntu, name="ppa")
+        self.third_ppa = self.factory.makeArchive(
+            owner=self.person, distribution=self.notbuntu, name="aap")
 
     def test_ppas(self):
         # IPerson.ppas returns all owned PPAs ordered by name.
         self.assertEqual(
-            ["nightly", "ppa"], [ppa.name for ppa in self.person.ppas])
+            ["aap", "nightly", "ppa", "ppa"],
+            [ppa.name for ppa in self.person.ppas])
 
     def test_getPPAByName(self):
-        default_ppa = self.person.getPPAByName("ppa")
+        default_ppa = self.person.getPPAByName(self.ubuntu, "ppa")
         self.assertEqual(self.person.archive, default_ppa)
-        nightly_ppa = self.person.getPPAByName("nightly")
+        nightly_ppa = self.person.getPPAByName(self.ubuntu, "nightly")
         self.assertEqual(self.nightly, nightly_ppa)
+        other_ppa = self.person.getPPAByName(self.notbuntu, "ppa")
+        self.assertEqual(self.other_ppa, other_ppa)
+        third_ppa = self.person.getPPAByName(self.notbuntu, "aap")
+        self.assertEqual(self.third_ppa, third_ppa)
+
+    def test_getPPAByName_defaults_to_ubuntu(self):
+        default_ppa = self.person.getPPAByName(None, "ppa")
+        self.assertEqual(self.person.archive, default_ppa)
 
     def test_NoSuchPPA(self):
-        self.assertRaises(NoSuchPPA, self.person.getPPAByName, "not-found")
+        self.assertRaises(
+            NoSuchPPA, self.person.getPPAByName, self.ubuntu, "not-found")
+
+    def test_NoSuchPPA_default_distro(self):
+        self.assertRaises(
+            NoSuchPPA, self.person.getPPAByName, None, "aap")
+
+
+class TestArchiveReference(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def assertReferenceIntegrity(self, reference, archive):
+        """Assert that the archive's reference matches in both directions."""
+        self.assertEqual(reference, archive.reference)
+        self.assertEqual(
+            archive, getUtility(IArchiveSet).getByReference(reference))
+
+    def test_primary(self):
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        self.assertReferenceIntegrity(archive.distribution.name, archive)
+
+    def test_partner(self):
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PARTNER)
+        self.assertReferenceIntegrity(
+            '%s/%s' % (archive.distribution.name, archive.name),
+            archive)
+
+    def test_copy(self):
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.COPY)
+        self.assertReferenceIntegrity(
+            '%s/%s' % (archive.distribution.name, archive.name),
+            archive)
+
+    def test_ppa(self):
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        self.assertReferenceIntegrity(
+            '~%s/%s/%s' % (
+                archive.owner.name, archive.distribution.name, archive.name),
+            archive)
+
+
+class TestArchiveSetGetByReference(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestArchiveSetGetByReference, self).setUp()
+        self.set = getUtility(IArchiveSet)
+
+    def test_ppa(self):
+        owner = self.factory.makePerson(name='pwner')
+        twoner = self.factory.makePerson(name='twoner')
+        twobuntu = self.factory.makeDistribution(name='two')
+        threebuntu = self.factory.makeDistribution(name='three')
+        ppa1 = self.factory.makeArchive(
+            owner=owner, distribution=twobuntu, name='ppa',
+            purpose=ArchivePurpose.PPA)
+        ppa2 = self.factory.makeArchive(
+            owner=owner, distribution=twobuntu, name='qpa',
+            purpose=ArchivePurpose.PPA)
+        ppa3 = self.factory.makeArchive(
+            owner=owner, distribution=threebuntu, name='ppa',
+            purpose=ArchivePurpose.PPA)
+        ppa4 = self.factory.makeArchive(
+            owner=twoner, distribution=twobuntu, name='ppa',
+            purpose=ArchivePurpose.PPA)
+
+        self.assertEqual(ppa1, self.set.getByReference('~pwner/two/ppa'))
+        self.assertEqual(ppa2, self.set.getByReference('~pwner/two/qpa'))
+        self.assertEqual(ppa3, self.set.getByReference('~pwner/three/ppa'))
+        self.assertEqual(ppa4, self.set.getByReference('~twoner/two/ppa'))
+
+        # Bad combinations give None.
+        self.assertIs(None, self.set.getByReference('~pwner/three/qpa'))
+        self.assertIs(None, self.set.getByReference('~twoner/two/qpa'))
+        self.assertIs(None, self.set.getByReference('~pwner/two/rpa'))
+
+        # Nonexistent names give None.
+        self.assertIs(None, self.set.getByReference('~pwner/enoent/ppa'))
+        self.assertIs(None, self.set.getByReference('~whoisthis/two/ppa'))
+
+        # Invalid formats give None.
+        self.assertIs(None, self.set.getByReference('~whoisthis/two/w/t'))
+        self.assertIs(None, self.set.getByReference('~whoisthis/two'))
+        self.assertIs(None, self.set.getByReference('~whoisthis'))
+
+    def test_distro(self):
+        twobuntu = self.factory.makeDistribution(name='two')
+        threebuntu = self.factory.makeDistribution(name='three')
+        two_primary = self.factory.makeArchive(
+            distribution=twobuntu, purpose=ArchivePurpose.PRIMARY)
+        two_partner = self.factory.makeArchive(
+            distribution=twobuntu, purpose=ArchivePurpose.PARTNER)
+        three_primary = self.factory.makeArchive(
+            distribution=threebuntu, purpose=ArchivePurpose.PRIMARY)
+        three_copy = self.factory.makeArchive(
+            distribution=threebuntu, purpose=ArchivePurpose.COPY,
+            name='rebuild')
+
+        self.assertEqual(two_primary, self.set.getByReference('two'))
+        self.assertEqual(two_partner, self.set.getByReference('two/partner'))
+        self.assertEqual(three_primary, self.set.getByReference('three'))
+        self.assertEqual(three_copy, self.set.getByReference('three/rebuild'))
+
+        # Bad combinations give None.
+        self.assertIs(None, self.set.getByReference('three/partner'))
+        self.assertIs(None, self.set.getByReference('two/rebuild'))
+
+        # Nonexistent names give None.
+        self.assertIs(None, self.set.getByReference('three/enoent'))
+        self.assertIs(None, self.set.getByReference('enodist'))
+        self.assertIs(None, self.set.getByReference('enodist/partner'))
+
+        # Invalid formats give None.
+        self.assertIs(None, self.set.getByReference('two/partner/idonteven'))
+
+    def test_nonsense(self):
+        self.assertIs(None, getUtility(IArchiveSet).getByReference(''))
+        self.assertIs(
+            None,
+            getUtility(IArchiveSet).getByReference(
+                'that/does/not/make/sense'))
+
+    def test_check_permissions_private(self):
+        private_owner = self.factory.makeTeam(
+            visibility=PersonVisibility.PRIVATE)
+        private = self.factory.makeArchive(owner=private_owner, private=True)
+        with admin_logged_in():
+            private_reference = private.reference
+        self.assertEqual(
+            private,
+            getUtility(IArchiveSet).getByReference(
+                private_reference, check_permissions=False))
+        self.assertIs(
+            None,
+            getUtility(IArchiveSet).getByReference(
+                private_reference, check_permissions=True))
+        self.assertEqual(
+            private,
+            getUtility(IArchiveSet).getByReference(
+                private_reference, check_permissions=True,
+                user=private_owner))
+        self.assertIs(
+            None,
+            getUtility(IArchiveSet).getByReference(
+                private_reference, check_permissions=True,
+                user=self.factory.makePerson()))
+
+    def test_check_permissions_public(self):
+        public = self.factory.makeArchive(private=False)
+        self.assertEqual(
+            public,
+            getUtility(IArchiveSet).getByReference(
+                public.reference, check_permissions=False))
+        self.assertEqual(
+            public,
+            getUtility(IArchiveSet).getByReference(
+                public.reference, check_permissions=True))
+        self.assertEqual(
+            public,
+            getUtility(IArchiveSet).getByReference(
+                public.reference, check_permissions=True,
+                user=self.factory.makePerson()))
+
+    def assertLookupFails(self, reference):
+        self.assertIs(
+            None,
+            getUtility(IArchiveSet).getByReference(
+                reference, check_permissions=True))
+
+    def test_check_permissions_nonexistent(self):
+        self.assertLookupFails('')
+        self.assertLookupFails('enoent')
+        self.assertLookupFails('ubuntu/enoent')
+        self.assertLookupFails('ubuntu/partner/enoent')
+        self.assertLookupFails('~enoent/ubuntu/ppa')
+        self.assertLookupFails('~cprov/enoent/ppa')
+        self.assertLookupFails('~cprov/ubuntu/enoent')
+        self.assertLookupFails('~enoent/twonoent')
+        self.assertLookupFails('~enoent/twonoent/threenoent')
+        self.assertLookupFails('~enoent/twonoent/threenoent/fournoent')
 
 
 class TestDisplayName(TestCaseWithFactory):
@@ -3072,3 +3367,381 @@ class TestCountersAndSummaries(TestCaseWithFactory):
         e = self.assertRaises(
             Unauthorized, getattr, archive, "getBuildSummariesForSourceIds")
         self.assertEqual("launchpad.View", e.args[2])
+
+
+class TestArchiveGetOverridePolicy(TestCaseWithFactory):
+    """Tests for Archive.getOverridePolicy.
+
+    These are just integration tests. The underlying policies are tested
+    in lp.soyuz.adapters.tests.test_overrides.
+    """
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestArchiveGetOverridePolicy, self).setUp()
+        self.series = self.factory.makeDistroSeries()
+        with admin_logged_in():
+            self.series.nominatedarchindep = self.amd64 = (
+                self.factory.makeDistroArchSeries(
+                    distroseries=self.series, architecturetag='amd64'))
+            self.armhf = self.factory.makeDistroArchSeries(
+                distroseries=self.series, architecturetag='armhf')
+        self.main = getUtility(IComponentSet)['main']
+        self.restricted = getUtility(IComponentSet)['restricted']
+        self.universe = getUtility(IComponentSet)['universe']
+        self.multiverse = getUtility(IComponentSet)['multiverse']
+        self.non_free = getUtility(IComponentSet).ensure('non-free')
+        self.partner = getUtility(IComponentSet)['partner']
+
+    def prepareBinaries(self, archive, bpn):
+        amd64_bpph = self.factory.makeBinaryPackagePublishingHistory(
+            binarypackagename=bpn,
+            archive=archive, distroarchseries=self.amd64,
+            pocket=PackagePublishingPocket.PROPOSED, architecturespecific=True)
+        armhf_bpph = self.factory.makeBinaryPackagePublishingHistory(
+            binarypackagename=bpn,
+            archive=archive, distroarchseries=self.armhf,
+            pocket=PackagePublishingPocket.PROPOSED, architecturespecific=True)
+        amd64_override = BinaryOverride(
+            component=amd64_bpph.component, section=amd64_bpph.section,
+            priority=amd64_bpph.priority,
+            version=amd64_bpph.binarypackagerelease.version, new=False)
+        armhf_override = BinaryOverride(
+            component=armhf_bpph.component, section=armhf_bpph.section,
+            priority=armhf_bpph.priority,
+            version=armhf_bpph.binarypackagerelease.version, new=False)
+        return (amd64_override, armhf_override, amd64_bpph, armhf_bpph)
+
+    def test_primary_sources(self):
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            archive=self.series.main_archive, distroseries=self.series,
+            pocket=PackagePublishingPocket.UPDATES)
+        policy = self.series.main_archive.getOverridePolicy(
+            self.series, PackagePublishingPocket.RELEASE)
+
+        existing_spn = spph.sourcepackagerelease.sourcepackagename
+        main_spn = self.factory.makeSourcePackageName()
+        non_free_spn = self.factory.makeSourcePackageName()
+
+        # Packages with an existing publication in any pocket return
+        # that publication's overrides. Otherwise they're new, with a
+        # default component mapped from their original component.
+        self.assertEqual(
+            {existing_spn: SourceOverride(
+                component=spph.component, section=spph.section,
+                version=spph.sourcepackagerelease.version, new=False),
+             main_spn: SourceOverride(component=self.universe, new=True),
+             non_free_spn: SourceOverride(component=self.multiverse, new=True),
+            },
+            policy.calculateSourceOverrides(
+                {existing_spn: SourceOverride(component=self.non_free),
+                 main_spn: SourceOverride(component=self.main),
+                 non_free_spn: SourceOverride(component=self.non_free),
+                 }))
+
+    def test_primary_sources_deleted(self):
+        person = self.series.main_archive.owner
+        spn = self.factory.makeSourcePackageName()
+        spph1 = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=spn, archive=self.series.main_archive,
+            distroseries=self.series, pocket=PackagePublishingPocket.PROPOSED)
+        spph2 = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=spn, archive=self.series.main_archive,
+            distroseries=self.series, pocket=PackagePublishingPocket.PROPOSED)
+        policy = self.series.main_archive.getOverridePolicy(
+            self.series, PackagePublishingPocket.RELEASE)
+
+        # The latest of the active publications is taken.
+        self.assertEqual(
+            {spn: SourceOverride(
+                component=spph2.component, section=spph2.section,
+                version=spph2.sourcepackagerelease.version, new=False)},
+            policy.calculateSourceOverrides({spn: SourceOverride()}))
+
+        # If we set the latest to Deleted, the next most recent active
+        # one is used.
+        with person_logged_in(person):
+            spph2.requestDeletion(person)
+        self.assertEqual(
+            {spn: SourceOverride(
+                component=spph1.component, section=spph1.section,
+                version=spph1.sourcepackagerelease.version, new=False)},
+            policy.calculateSourceOverrides({spn: SourceOverride()}))
+
+        # But if they're all Deleted, we use the most recent Deleted one
+        # and throw the package into NEW. Resurrections should default
+        # to the old overrides but still require manual approval.
+        with person_logged_in(person):
+            spph1.requestDeletion(person)
+        self.assertEqual(
+            {spn: SourceOverride(
+                component=spph2.component, section=spph2.section,
+                version=spph2.sourcepackagerelease.version, new=True)},
+            policy.calculateSourceOverrides({spn: SourceOverride()}))
+
+    def test_primary_binaries(self):
+        existing_bpn = self.factory.makeBinaryPackageName()
+        other_bpn = self.factory.makeBinaryPackageName()
+        amd64_override, armhf_override, _, _ = self.prepareBinaries(
+            self.series.main_archive, existing_bpn)
+        policy = self.series.main_archive.getOverridePolicy(
+            self.series, PackagePublishingPocket.RELEASE)
+
+        # Packages with an existing publication in any pocket of any DAS
+        # with a matching archtag, or nominatedarchindep if the archtag
+        # is None, return that publication's overrides. Otherwise
+        # they're new, with a default component mapped from their
+        # original component.
+        self.assertEqual(
+            {(existing_bpn, 'amd64'): amd64_override,
+             (existing_bpn, None): amd64_override,
+             (existing_bpn, 'i386'): armhf_override,
+             (other_bpn, 'amd64'): BinaryOverride(
+                 component=self.universe, new=True),
+             (other_bpn, 'i386'): BinaryOverride(
+                 component=self.restricted, new=True),
+            },
+            policy.calculateBinaryOverrides(
+                {(existing_bpn, 'amd64'): BinaryOverride(component=self.main),
+                 (existing_bpn, None): BinaryOverride(component=self.main),
+                 (existing_bpn, 'i386'): BinaryOverride(component=self.main),
+                 (other_bpn, 'amd64'): BinaryOverride(component=self.main),
+                 (other_bpn, 'i386'): BinaryOverride(
+                     component=self.non_free,
+                     source_override=SourceOverride(
+                         component=self.restricted)),
+                }))
+
+    def test_primary_binaries_deleted(self):
+        person = self.series.main_archive.owner
+        bpn = self.factory.makeBinaryPackageName()
+        amd64_over, armhf_over, amd64_pub, armhf_pub = self.prepareBinaries(
+            self.series.main_archive, bpn)
+        policy = self.series.main_archive.getOverridePolicy(
+            self.series, PackagePublishingPocket.RELEASE)
+
+        # The latest of the active publications for the architecture is
+        # taken.
+        self.assertEqual(
+            {(bpn, 'armhf'): BinaryOverride(
+                component=armhf_pub.component, section=armhf_pub.section,
+                priority=armhf_pub.priority,
+                version=armhf_pub.binarypackagerelease.version, new=False)},
+            policy.calculateBinaryOverrides(
+                {(bpn, 'armhf'): BinaryOverride()}))
+
+        # If there are no active publications for the architecture,
+        # another architecture's most recent active is used.
+        with person_logged_in(person):
+            armhf_pub.requestDeletion(person)
+        self.assertEqual(
+            {(bpn, 'armhf'): BinaryOverride(
+                component=amd64_pub.component, section=amd64_pub.section,
+                priority=amd64_pub.priority,
+                version=amd64_pub.binarypackagerelease.version, new=False)},
+            policy.calculateBinaryOverrides(
+                {(bpn, 'armhf'): BinaryOverride()}))
+
+        # But once there are no active publications for any
+        # architecture, a Deleted one in a matching arch is used and the
+        # package is thrown into NEW.
+        with person_logged_in(person):
+            amd64_pub.requestDeletion(person)
+        self.assertEqual(
+            {(bpn, 'armhf'): BinaryOverride(
+                component=armhf_pub.component, section=armhf_pub.section,
+                priority=armhf_pub.priority,
+                version=armhf_pub.binarypackagerelease.version, new=True)},
+            policy.calculateBinaryOverrides(
+                {(bpn, 'armhf'): BinaryOverride()}))
+
+    def test_primary_inherit_from_parent(self):
+        dsp = self.factory.makeDistroSeriesParent(inherit_overrides=False)
+        child = dsp.derived_series
+        parent = dsp.parent_series
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            archive=parent.main_archive, distroseries=parent)
+
+        overrides = child.main_archive.getOverridePolicy(
+            child, None).calculateSourceOverrides(
+                {spph.sourcepackagename: SourceOverride()})
+        self.assertNotEqual(
+            spph.component, overrides[spph.sourcepackagename].component)
+
+        with admin_logged_in():
+            child.inherit_overrides_from_parents = True
+        overrides = child.main_archive.getOverridePolicy(
+            child, None).calculateSourceOverrides(
+                {spph.sourcepackagename: SourceOverride()})
+        self.assertEqual(
+            spph.component, overrides[spph.sourcepackagename].component)
+
+    def test_ppa_sources(self):
+        ppa = self.factory.makeArchive(
+            distribution=self.series.distribution,
+            purpose=ArchivePurpose.PPA)
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            archive=ppa, distroseries=self.series)
+        policy = ppa.getOverridePolicy(
+            self.series, PackagePublishingPocket.RELEASE)
+
+        existing_spn = spph.sourcepackagerelease.sourcepackagename
+        main_spn = self.factory.makeSourcePackageName()
+        non_free_spn = self.factory.makeSourcePackageName()
+
+        # PPA packages are always overridden to main, with no
+        # examination of existing publications or assertions about
+        # newness.
+        self.assertEqual(
+            {existing_spn: SourceOverride(component=self.main),
+             main_spn: SourceOverride(component=self.main),
+             non_free_spn: SourceOverride(component=self.main),
+            },
+            policy.calculateSourceOverrides(
+                {existing_spn: SourceOverride(component=self.non_free),
+                 main_spn: SourceOverride(component=self.main),
+                 non_free_spn: SourceOverride(component=self.non_free),
+                 }))
+
+    def test_ppa_binaries(self):
+        ppa = self.factory.makeArchive(
+            distribution=self.series.distribution,
+            purpose=ArchivePurpose.PPA)
+        existing_bpn = self.factory.makeBinaryPackageName()
+        other_bpn = self.factory.makeBinaryPackageName()
+        amd64_override, armhf_override, _, _ = self.prepareBinaries(
+            ppa, existing_bpn)
+        policy = ppa.getOverridePolicy(
+            self.series, PackagePublishingPocket.RELEASE)
+
+        # PPA packages are always overridden to main, with no
+        # examination of existing publications or assertions about
+        # newness.
+        self.assertEqual(
+            {(existing_bpn, 'amd64'): BinaryOverride(component=self.main),
+             (existing_bpn, None): BinaryOverride(component=self.main),
+             (existing_bpn, 'i386'): BinaryOverride(component=self.main),
+             (other_bpn, 'amd64'): BinaryOverride(component=self.main),
+            },
+            policy.calculateBinaryOverrides(
+                {(existing_bpn, 'amd64'): BinaryOverride(component=self.main),
+                 (existing_bpn, None): BinaryOverride(component=self.main),
+                 (existing_bpn, 'i386'): BinaryOverride(component=self.main),
+                 (other_bpn, 'amd64'): BinaryOverride(component=self.non_free),
+                }))
+
+    def test_partner_sources(self):
+        partner = self.factory.makeArchive(
+            distribution=self.series.distribution,
+            purpose=ArchivePurpose.PARTNER)
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            archive=partner, distroseries=self.series,
+            pocket=PackagePublishingPocket.RELEASE)
+        policy = partner.getOverridePolicy(
+            self.series, PackagePublishingPocket.RELEASE)
+
+        existing_spn = spph.sourcepackagerelease.sourcepackagename
+        universe_spn = self.factory.makeSourcePackageName()
+
+        # Packages with an existing publication in any pocket return
+        # that publication's overrides. Otherwise they're new, with a
+        # default component of partner.
+        self.assertEqual(
+            {existing_spn: SourceOverride(
+                component=spph.component, section=spph.section,
+                version=spph.sourcepackagerelease.version, new=False),
+             universe_spn: SourceOverride(component=self.partner, new=True),
+            },
+            policy.calculateSourceOverrides(
+                {existing_spn: SourceOverride(component=self.non_free),
+                 universe_spn: SourceOverride(component=self.universe),
+                 }))
+
+    def test_partner_binaries(self):
+        partner = self.factory.makeArchive(
+            distribution=self.series.distribution,
+            purpose=ArchivePurpose.PARTNER)
+        existing_bpn = self.factory.makeBinaryPackageName()
+        other_bpn = self.factory.makeBinaryPackageName()
+        amd64_override, armhf_override, _, _ = self.prepareBinaries(
+            partner, existing_bpn)
+        policy = partner.getOverridePolicy(
+            self.series, PackagePublishingPocket.RELEASE)
+
+        # Packages with an existing publication in any pocket of any DAS
+        # with a matching archtag, or nominatedarchindep if the archtag
+        # is None, return that publication's overrides. Otherwise
+        # they're new, with a default component of partner.
+        self.assertEqual(
+            {(existing_bpn, 'amd64'): amd64_override,
+             (existing_bpn, None): amd64_override,
+             (existing_bpn, 'i386'): armhf_override,
+             (other_bpn, 'amd64'): BinaryOverride(
+                 component=self.partner, new=True),
+            },
+            policy.calculateBinaryOverrides(
+                {(existing_bpn, 'amd64'): BinaryOverride(component=self.main),
+                 (existing_bpn, None): BinaryOverride(component=self.main),
+                 (existing_bpn, 'i386'): BinaryOverride(component=self.main),
+                 (other_bpn, 'amd64'): BinaryOverride(component=self.non_free),
+                }))
+
+    def test_copy_sources(self):
+        copy = self.factory.makeArchive(
+            distribution=self.series.distribution, purpose=ArchivePurpose.COPY)
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            archive=self.series.main_archive, distroseries=self.series,
+            pocket=PackagePublishingPocket.UPDATES)
+        policy = copy.getOverridePolicy(
+            self.series, PackagePublishingPocket.RELEASE)
+
+        existing_spn = spph.sourcepackagerelease.sourcepackagename
+        main_spn = self.factory.makeSourcePackageName()
+        non_free_spn = self.factory.makeSourcePackageName()
+
+        # Packages with an existing publication in any pocket in the
+        # copy archive's distribution's primary archive return that
+        # publication's overrides. Otherwise they're new, with a default
+        # component mapped from their original component.
+        self.assertEqual(
+            {existing_spn: SourceOverride(
+                component=spph.component, section=spph.section,
+                version=spph.sourcepackagerelease.version, new=False),
+             main_spn: SourceOverride(component=self.universe, new=True),
+             non_free_spn: SourceOverride(component=self.multiverse, new=True),
+            },
+            policy.calculateSourceOverrides(
+                {existing_spn: SourceOverride(component=self.non_free),
+                 main_spn: SourceOverride(component=self.main),
+                 non_free_spn: SourceOverride(component=self.non_free),
+                 }))
+
+    def test_copy_binaries(self):
+        existing_bpn = self.factory.makeBinaryPackageName()
+        other_bpn = self.factory.makeBinaryPackageName()
+        amd64_override, armhf_override, _, _ = self.prepareBinaries(
+            self.series.main_archive, existing_bpn)
+        copy = self.factory.makeArchive(
+            distribution=self.series.distribution, purpose=ArchivePurpose.COPY)
+        policy = copy.getOverridePolicy(
+            self.series, PackagePublishingPocket.RELEASE)
+
+        # Packages with an existing publication in any pocket of any DAS
+        # with a matching archtag, or nominatedarchindep if the archtag
+        # is None, in the copy archive's distribution's main archive
+        # return that publication's overrides. Otherwise they're new,
+        # with a default component mapped from their original component.
+        self.assertEqual(
+            {(existing_bpn, 'amd64'): amd64_override,
+             (existing_bpn, None): amd64_override,
+             (existing_bpn, 'i386'): armhf_override,
+             (other_bpn, 'amd64'): BinaryOverride(
+                 component=self.universe, new=True),
+            },
+            policy.calculateBinaryOverrides(
+                {(existing_bpn, 'amd64'): BinaryOverride(component=self.main),
+                 (existing_bpn, None): BinaryOverride(component=self.main),
+                 (existing_bpn, 'i386'): BinaryOverride(component=self.main),
+                 (other_bpn, 'amd64'): BinaryOverride(component=self.main),
+                }))

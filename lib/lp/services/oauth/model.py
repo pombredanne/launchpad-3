@@ -6,7 +6,6 @@ __all__ = [
     'OAuthAccessToken',
     'OAuthConsumer',
     'OAuthConsumerSet',
-    'OAuthNonce',
     'OAuthRequestToken',
     'OAuthRequestTokenSet',
     'OAuthValidationError',
@@ -24,11 +23,6 @@ from sqlobject import (
     ForeignKey,
     StringCol,
     )
-from storm.expr import And
-from storm.locals import (
-    Int,
-    Reference,
-    )
 from zope.interface import implements
 
 from lp.registry.interfaces.distribution import IDistribution
@@ -42,18 +36,13 @@ from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.interfaces import IMasterStore
 from lp.services.database.sqlbase import SQLBase
-from lp.services.database.stormbase import StormBase
 from lp.services.librarian.model import LibraryFileAlias
 from lp.services.oauth.interfaces import (
-    ClockSkew,
     IOAuthAccessToken,
     IOAuthConsumer,
     IOAuthConsumerSet,
-    IOAuthNonce,
     IOAuthRequestToken,
     IOAuthRequestTokenSet,
-    NonceAlreadyUsed,
-    TimestampOrderingError,
     )
 from lp.services.tokens import (
     create_token,
@@ -66,22 +55,6 @@ from lp.services.webapp.interfaces import (
 
 # How many hours should a request token be valid for?
 REQUEST_TOKEN_VALIDITY = 2
-# The OAuth Core 1.0 spec (http://oauth.net/core/1.0/#nonce) says that a
-# timestamp "MUST be equal or greater than the timestamp used in previous
-# requests," but this is likely to cause problems if the client does request
-# pipelining, so we use a time window (relative to the timestamp of the
-# existing OAuthNonce) to check if the timestamp can is acceptable. As
-# suggested by Robert, we use a window which is at least twice the size of our
-# hard time out. This is a safe bet since no requests should take more than
-# one hard time out.
-TIMESTAMP_ACCEPTANCE_WINDOW = 60  # seconds
-# If the timestamp is far in the future because of a client's clock skew,
-# it will effectively invalidate the authentication tokens when the clock is
-# corrected.  To prevent that from becoming too serious a problem, we raise an
-# exception if the timestamp is off by more than this amount from the server's
-# concept of "now".  We also reject timestamps that are too old by the same
-# amount.
-TIMESTAMP_SKEW_WINDOW = 60 * 60  # seconds, +/-
 
 
 class OAuthValidationError(Exception):
@@ -257,40 +230,6 @@ class OAuthAccessToken(OAuthBase, SQLBase):
         """See `IOAuthConsumer`."""
         return secret == self._secret
 
-    def checkNonceAndTimestamp(self, nonce, timestamp):
-        """See `IOAuthAccessToken`."""
-        timestamp = float(timestamp)
-        date = datetime.fromtimestamp(timestamp, pytz.UTC)
-        # Determine if the timestamp is too far off from now.
-        skew = timedelta(seconds=TIMESTAMP_SKEW_WINDOW)
-        now = datetime.now(pytz.UTC)
-        if date < (now - skew) or date > (now + skew):
-            raise ClockSkew('Timestamp appears to come from bad system clock')
-        # Determine if the nonce was already used for this timestamp.
-        store = OAuthNonce.getStore()
-        oauth_nonce = store.find(OAuthNonce,
-                                 And(OAuthNonce.access_token == self,
-                                     OAuthNonce.nonce == nonce,
-                                     OAuthNonce.request_timestamp == date)
-                                 ).one()
-        if oauth_nonce is not None:
-            raise NonceAlreadyUsed('This nonce has been used already.')
-        # Determine if the timestamp is too old compared to most recent
-        # request.
-        limit = date + timedelta(seconds=TIMESTAMP_ACCEPTANCE_WINDOW)
-        match = store.find(OAuthNonce,
-                           And(OAuthNonce.access_token == self,
-                               OAuthNonce.request_timestamp > limit)
-                           ).any()
-        if match is not None:
-            raise TimestampOrderingError(
-                'Timestamp too old compared to most recent request')
-        # Looks OK.  Give a Nonce object back.
-        nonce = OAuthNonce(
-            access_token=self, nonce=nonce, request_timestamp=date)
-        store.add(nonce)
-        return nonce
-
 
 class OAuthRequestToken(OAuthBase, SQLBase):
     """See `IOAuthRequestToken`."""
@@ -416,25 +355,6 @@ class OAuthRequestTokenSet:
     def getByKey(self, key):
         """See `IOAuthRequestTokenSet`."""
         return OAuthRequestToken.selectOneBy(key=key)
-
-
-class OAuthNonce(OAuthBase, StormBase):
-    """See `IOAuthNonce`."""
-    implements(IOAuthNonce)
-
-    __storm_table__ = 'OAuthNonce'
-    __storm_primary__ = 'access_token_id', 'request_timestamp', 'nonce'
-
-    access_token_id = Int(name='access_token')
-    access_token = Reference(access_token_id, OAuthAccessToken.id)
-    request_timestamp = UtcDateTimeCol(default=UTC_NOW, notNull=True)
-    nonce = StringCol(notNull=True)
-
-    def __init__(self, access_token, request_timestamp, nonce):
-        super(OAuthNonce, self).__init__()
-        self.access_token = access_token
-        self.request_timestamp = request_timestamp
-        self.nonce = nonce
 
 
 def create_token_key_and_secret(table):

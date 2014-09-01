@@ -129,7 +129,7 @@ displays the unique ppa reference.
     ...     name='ppa', private=False, owner=owner)
     >>> login(ANONYMOUS)
     >>> print test_tales("ppa/fmt:link", ppa=public_ppa)
-    <a href="/~joe/+archive/ppa"
+    <a href="/~joe/+archive/ubuntu/ppa"
        class="sprite ppa-icon">PPA for Joe Smith</a>
     >>> print test_tales("ppa/fmt:reference", ppa=public_ppa)
     ppa:joe/ppa
@@ -141,7 +141,7 @@ users with launchpad.View on them.
     >>> public_ppa.disable()
 
     >>> print test_tales("ppa/fmt:link", ppa=public_ppa)
-    <a href="/~joe/+archive/ppa" class="sprite ppa-icon-inactive">PPA
+    <a href="/~joe/+archive/ubuntu/ppa" class="sprite ppa-icon-inactive">PPA
     for Joe Smith</a>
 
     >>> login(ANONYMOUS)
@@ -157,7 +157,7 @@ them.
     ...     name='pppa', private=True, owner=owner)
 
     >>> print test_tales("ppa/fmt:link", ppa=private_ppa)
-    <a href="/~joe/+archive/pppa" class="sprite ppa-icon private">PPA named
+    <a href="/~joe/+archive/ubuntu/pppa" class="sprite ppa-icon private">PPA named
     pppa for Joe Smith</a>
 
     >>> login(ANONYMOUS)

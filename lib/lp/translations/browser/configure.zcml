@@ -454,7 +454,7 @@
             rootsite="translations"/>
         <browser:menus
             module="lp.translations.browser.translationmessage"
-            classes="CurrentTranslationMessageAppMenus"/>
+            classes="CurrentTranslationMessageMenu"/>
         <browser:defaultView
             for="lp.translations.interfaces.translationmessage.ITranslationMessage"
             name="+index"/>

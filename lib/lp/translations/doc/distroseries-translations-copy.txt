@@ -1,16 +1,16 @@
 Migrating translations between distro series
 ============================================
 
-When a new release series is created for a distribution it usually inherits
-all settings and data from its parent (preceding) series. To facilitate this
-for the translations the method copyTranslationsFromParent is called from a
-script once after the release series is created.
+When a new release series is created for a distribution it usually
+inherits all settings and data from its parent (preceding) series. To
+facilitate this for the translations the function
+copy_active_translations is called from a script once after the release
+series is created.
 
     >>> login("foo.bar@canonical.com")
     >>> foobuntu = factory.makeDistribution('foobuntu', 'Foobuntu')
     >>> barty = factory.makeDistroSeries(foobuntu, '99.0', name='barty')
-    >>> carty = factory.makeDistroSeries(
-    ...     foobuntu, '99.1', name='carty', previous_series=barty)
+    >>> carty = factory.makeDistroSeries(foobuntu, '99.1', name='carty')
 
 Functions to create source packages, templates and and translations.
 
@@ -41,7 +41,7 @@ Functions to create source packages, templates and and translations.
 
     >>> template1 = makePOTemplateAndPOFiles(barty, package1,
     ...                                          'template1', ['eo'])
-    >>> template2 = makePOTemplateAndPOFiles(barty, package1,
+    >>> template2 = makePOTemplateAndPOFiles(barty, package2,
     ...                                          'template2', ['eo', 'de'])
     >>> template3 = makePOTemplateAndPOFiles(barty, package1,
     ...                                          'template3', ['eo'])
@@ -65,41 +65,7 @@ Also, template3 happens to be deactivated.
 We need a transaction manager (in this case a fake one) to make the copy work.
 
     >>> from lp.testing.faketransaction import FakeTransaction
-    >>> transaction_stub = FakeTransaction()
-
-
-Preconditions for migrating translations between distro series
-==============================================================
-
-Before we are able to migrate translations, there are a set of preconditions
-that should be met:
-
-First one is that we should keep the new distroseries's translations hidden
-from the public, so the copying procedure is not confused by concurrent
-updates:
-
-    >>> carty.hide_all_translations = False
-    >>> carty.copyTranslationsFromParent(transaction_stub)
-    Traceback (most recent call last):
-    ...
-    AssertionError: hide_all_translations not set!...
-
-    # Set the field to TRUE so we meet this precondition for following
-    # tests.
-    >>> carty.hide_all_translations = True
-
-The other one is that, for the same reason, the import queue should not be
-accepting uploads for this distroseries.
-
-    >>> carty.defer_translation_imports = False
-    >>> carty.copyTranslationsFromParent(transaction_stub)
-    Traceback (most recent call last):
-    ...
-    AssertionError: defer_translation_imports not set!...
-
-    # Set the field to TRUE so we meet this precondition for following
-    # tests.
-    >>> carty.defer_translation_imports = True
+    >>> txn = FakeTransaction()
 
 
 Performing the migration
@@ -109,7 +75,11 @@ A pristine distroseries can be filled with copies of translation templates
 and translation files from the parent. The actual translations, stored in
 POTMsgSet and TranslationMessage object, are shared between the two series.
 
-    >>> carty.copyTranslationsFromParent(transaction_stub)
+    >>> from lp.services.log.logger import DevNullLogger
+    >>> from lp.translations.model.distroseries_translations_copy import (
+    ...     copy_active_translations)
+    >>> logger = DevNullLogger()
+    >>> copy_active_translations(barty, carty, txn, logger)
 
 All current templates were copied from the parent series but the deactivated
 template template3 was not copied.
@@ -155,24 +125,24 @@ in the new series.
     True
 
 
-Once the migration is done, copyTranslationsFromParent must not be called
+Once the migration is done, copy_active_translations must not be called
 again as it only operates on distroseries without any translation templates.
 Because of message sharing incremental copies are no longer needed.
 
-    >>> carty.copyTranslationsFromParent(transaction_stub)
+    >>> copy_active_translations(barty, carty, txn, logger)
     Traceback (most recent call last):
     ...
     AssertionError:
-    The child series must not yet have any translation templates.
+    The target series must not yet have any translation templates.
 
 
 Running the script
 ==================
 
 Now, we execute the script that will do the migration using
-copyTranslationsFromParent. For that we create a new child series to receive
-those translations. For testing purposes this series has translation imports
-enabled.
+copy_active_translations. For that we create a new child series to
+receive those translations. For testing purposes this series has
+translation imports enabled.
 
     >>> darty = factory.makeDistroSeries(
     ...     foobuntu, '99.2', name='darty', previous_series=barty)
@@ -190,7 +160,7 @@ set.
 
     >>> from lp.testing.script import run_script
     >>> returnvalue, output, error_output = run_script(
-    ...     'scripts/copy-translations-from-parent.py',
+    ...     'scripts/copy-distroseries-translations.py',
     ...     ['--distribution=foobuntu', '--series=darty'])
     >>> returnvalue
     1
@@ -218,7 +188,7 @@ sets the defer_translation_imports flag itself before copying.
     >>> transaction.abort()
     >>> darty = DistroSeries.get(darty_id)
     >>> returnvalue, output, error_output = run_script(
-    ...     'scripts/copy-translations-from-parent.py',
+    ...     'scripts/copy-distroseries-translations.py',
     ...     ['--distribution=foobuntu', '--series=darty', '--force'])
     >>> returnvalue
     0
@@ -226,7 +196,8 @@ sets the defer_translation_imports flag itself before copying.
     INFO    Creating lockfile:
       /var/lock/launchpad-copy-missing-translations-foobuntu-darty.lock
     INFO    Starting...
-    INFO    Populating blank distroseries darty with translations from barty.
+    INFO    Populating blank distroseries foobuntu darty with
+            translations from foobuntu barty.
     INFO    Extracting from potemplate into
             "temp_potemplate_holding_foobuntu_darty"...
     INFO    Extracting from translationtemplateitem into
@@ -261,3 +232,81 @@ templates of the parent series.
     >>> print sorted([template.name for template in dartempls])
     [u'template1', u'template2']
 
+The script defaults to copying from the given series' previous_series,
+but that can be overridden.
+
+    >>> grumpy = factory.makeDistroSeries(
+    ...     distribution=factory.makeDistribution(name="notbuntu"),
+    ...     name='grumpy')
+    >>> grumpy_id = grumpy.id
+    >>> transaction.commit()
+
+    >>> returnvalue, output, error_output = run_script(
+    ...     'scripts/copy-distroseries-translations.py',
+    ...     ['--distribution=notbuntu', '--series=grumpy'])
+    >>> returnvalue
+    2
+    >>> print error_output
+    INFO    Creating lockfile:
+      /var/lock/launchpad-copy-missing-translations-notbuntu-grumpy.lock
+    Usage: copy-distroseries-translations.py [options]
+    copy-distroseries-translations.py: error: No source series specified
+    and target has no previous series.
+    <BLANKLINE>
+
+    >>> returnvalue, output, error_output = run_script(
+    ...     'scripts/copy-distroseries-translations.py',
+    ...     ['--distribution=notbuntu', '--series=grumpy',
+    ...      '--from-distribution=foobuntu' , '--from-series=darty'])
+    >>> returnvalue
+    0
+    >>> print error_output
+    INFO    Creating lockfile:
+      /var/lock/launchpad-copy-missing-translations-notbuntu-grumpy.lock
+    INFO    Starting...
+    INFO    Populating blank distroseries notbuntu grumpy with
+            translations from foobuntu darty.
+    ...
+    INFO    Done.
+    <BLANKLINE>
+
+It's also possible to copy only the subset of templates that have a
+corresponding source package published in the target. If we create a new
+series containing only package1 and then copy with
+--published-sources-only, only template1 makes it across. template2 is
+for package2, and template3 is inactive, so they're both skipped.
+
+    >>> lumpy = factory.makeDistroSeries(
+    ...     distribution=factory.makeDistribution(name="wartbuntu"),
+    ...     name='lumpy', previous_series=carty)
+    >>> lumpy_id = lumpy.id
+    >>> transaction.commit()
+
+    >>> returnvalue, output, error_output = run_script(
+    ...     'scripts/copy-distroseries-translations.py',
+    ...     ['--distribution=wartbuntu', '--series=lumpy',
+    ...      '--published-sources-only'])
+    >>> returnvalue
+    0
+    >>> transaction.abort()
+    >>> lumpy = DistroSeries.get(lumpy_id)
+    >>> len(getUtility(IPOTemplateSet).getSubset(distroseries=lumpy))
+    0
+
+    >>> factory.makeSourcePackagePublishingHistory(
+    ...     archive=lumpy.main_archive, distroseries=lumpy,
+    ...     sourcepackagename='package1')
+    <SourcePackagePublishingHistory ...>
+    >>> transaction.commit()
+
+    >>> returnvalue, output, error_output = run_script(
+    ...     'scripts/copy-distroseries-translations.py',
+    ...     ['--distribution=wartbuntu', '--series=lumpy',
+    ...      '--published-sources-only'])
+    >>> returnvalue
+    0
+    >>> transaction.abort()
+    >>> lumpy = DistroSeries.get(lumpy_id)
+    >>> [pot.name for pot in
+    ...  getUtility(IPOTemplateSet).getSubset(distroseries=lumpy)]
+    [u'template1']

@@ -69,7 +69,6 @@ from lp.registry.interfaces.distributionsourcepackage import (
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
-from lp.services.utils import total_seconds
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.canonicalurl import nearest_adapter
 from lp.services.webapp.error import SystemErrorView
@@ -1742,8 +1741,8 @@ class PackageBuildFormatterAPI(ObjectFormatterAPI):
     """Adapter providing fmt support for `IPackageBuild` objects."""
 
     def _composeArchiveReference(self, archive):
-        if archive.is_ppa:
-            return " [%s/%s]" % (archive.owner.name, archive.name)
+        if archive.reference != archive.distribution.name:
+            return " [%s]" % archive.reference
         else:
             return ""
 
@@ -2320,7 +2319,7 @@ class DurationFormatterAPI:
         # a useful name. It's also unlikely that these numbers will be
         # changed.
 
-        seconds = total_seconds(self._duration)
+        seconds = self._duration.total_seconds()
 
         # First we'll try to calculate an approximate number of
         # seconds up to a minute. We'll start by defining a sorted
@@ -2419,7 +2418,7 @@ class DurationFormatterAPI:
         return "%d weeks" % weeks
 
     def millisecondduration(self):
-        return '%sms' % (total_seconds(self._duration) * 1000,)
+        return '%sms' % (self._duration.total_seconds() * 1000,)
 
 
 class LinkFormatterAPI(ObjectFormatterAPI):

@@ -247,6 +247,27 @@ class TestDistroSeries(TestCaseWithFactory):
         self.factory.makeDistroSeriesParent(derived_series=distroseries)
         self.assertTrue(distroseries.isDerivedSeries())
 
+    def test_inherit_overrides_from_parents(self):
+        # inherit_overrides_from_parents is an accessor which maps to
+        # all of the series' DistroSeriesParent.inherit_overrides, for
+        # UI simplicity for now.
+        distroseries = self.factory.makeDistroSeries()
+        dsp1 = self.factory.makeDistroSeriesParent(
+            derived_series=distroseries, inherit_overrides=True)
+        dsp2 = self.factory.makeDistroSeriesParent(
+            derived_series=distroseries, inherit_overrides=False)
+        self.assertEqual(True, distroseries.inherit_overrides_from_parents)
+        with person_logged_in(distroseries.distribution.owner):
+            distroseries.inherit_overrides_from_parents = False
+        self.assertEqual(False, dsp1.inherit_overrides)
+        self.assertEqual(False, dsp2.inherit_overrides)
+        self.assertEqual(False, distroseries.inherit_overrides_from_parents)
+        with person_logged_in(distroseries.distribution.owner):
+            distroseries.inherit_overrides_from_parents = True
+        self.assertEqual(True, dsp1.inherit_overrides)
+        self.assertEqual(True, dsp2.inherit_overrides)
+        self.assertEqual(True, distroseries.inherit_overrides_from_parents)
+
     def test_isInitializing(self):
         # The series method isInitializing() returns True only if there is an
         # initialization job with a pending status attached to this series.
@@ -291,43 +312,6 @@ class TestDistroSeries(TestCaseWithFactory):
         self.assertContentEqual(
             [comment], distroseries.getDifferenceComments())
 
-    def checkLegalPocket(self, status, pocket):
-        distroseries = self.factory.makeDistroSeries(status=status)
-        spph = self.factory.makeSourcePackagePublishingHistory(
-            distroseries=distroseries, pocket=pocket)
-        return removeSecurityProxy(distroseries).checkLegalPocket(
-            spph, False, getLogger())
-
-    def test_checkLegalPocket_allows_unstable_release(self):
-        """Publishing to RELEASE in a DEVELOPMENT series is allowed."""
-        self.assertTrue(self.checkLegalPocket(
-            SeriesStatus.DEVELOPMENT, PackagePublishingPocket.RELEASE))
-
-    def test_checkLegalPocket_allows_unstable_proposed(self):
-        """Publishing to PROPOSED in a DEVELOPMENT series is allowed."""
-        self.assertTrue(self.checkLegalPocket(
-            SeriesStatus.DEVELOPMENT, PackagePublishingPocket.PROPOSED))
-
-    def test_checkLegalPocket_forbids_unstable_updates(self):
-        """Publishing to UPDATES in a DEVELOPMENT series is forbidden."""
-        self.assertFalse(self.checkLegalPocket(
-            SeriesStatus.DEVELOPMENT, PackagePublishingPocket.UPDATES))
-
-    def test_checkLegalPocket_forbids_stable_release(self):
-        """Publishing to RELEASE in a DEVELOPMENT series is forbidden."""
-        self.assertFalse(self.checkLegalPocket(
-            SeriesStatus.CURRENT, PackagePublishingPocket.RELEASE))
-
-    def test_checkLegalPocket_allows_stable_proposed(self):
-        """Publishing to PROPOSED in a DEVELOPMENT series is allowed."""
-        self.assertTrue(self.checkLegalPocket(
-            SeriesStatus.CURRENT, PackagePublishingPocket.PROPOSED))
-
-    def test_checkLegalPocket_allows_stable_updates(self):
-        """Publishing to UPDATES in a DEVELOPMENT series is allowed."""
-        self.assertTrue(self.checkLegalPocket(
-            SeriesStatus.CURRENT, PackagePublishingPocket.UPDATES))
-
     def test_valid_specifications_query_count(self):
         distroseries = self.factory.makeDistroSeries()
         distribution = distroseries.distribution
@@ -343,7 +327,7 @@ class TestDistroSeries(TestCaseWithFactory):
         with StormStatementRecorder() as recorder:
             for spec in distroseries.api_valid_specifications:
                 spec.workitems_text
-        self.assertThat(recorder, HasQueryCount(Equals(4)))
+        self.assertThat(recorder, HasQueryCount(Equals(3)))
 
     def test_valid_specifications_preloading_excludes_deleted_workitems(self):
         distroseries = self.factory.makeDistroSeries()

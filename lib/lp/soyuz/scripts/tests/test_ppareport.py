@@ -146,8 +146,8 @@ class TestPPAReport(unittest.TestCase):
         self.assertEquals(
             reporter.output.getvalue().splitlines(), [
                 '= PPAs over 0.01% of their quota =',
-                'http://launchpad.dev/~cprov/+archive/ppa | 1024 | 9',
-                'http://launchpad.dev/~mark/+archive/ppa | 1024 | 9',
+                'http://launchpad.dev/~cprov/+archive/ubuntu/ppa | 1024 | 9',
+                'http://launchpad.dev/~mark/+archive/ubuntu/ppa | 1024 | 9',
                 '',
                 ])
 

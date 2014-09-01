@@ -2579,8 +2579,8 @@ class TestDistroSeriesEditView(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_edit_full_functionality_sets_datereleased(self):
-        # Full functionality distributions (IE: Ubuntu) have datereleased
-        # set when the +edit view is used.
+        # Distributions that use Launchpad for package management (eg.
+        # Ubuntu) have datereleased set when the +edit view is used.
         ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
         distroseries = self.factory.makeDistroSeries(distribution=ubuntu)
         form = {

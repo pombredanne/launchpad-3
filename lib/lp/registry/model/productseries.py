@@ -395,7 +395,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
 
     def setPackaging(self, distroseries, sourcepackagename, owner):
         """See IProductSeries."""
-        if distroseries.distribution.full_functionality:
+        if distroseries.distribution.official_packages:
             source_package = distroseries.getSourcePackage(sourcepackagename)
             if source_package.currentrelease is None:
                 raise AssertionError(

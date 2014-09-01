@@ -664,11 +664,12 @@ class IPersonLimitedView(IHasIcon, IHasLogo):
         Bool(title=_("Is this a probationary user?"), readonly=True))
 
     @operation_parameters(
+        distribution=Reference(schema=Interface, required=False),
         name=TextLine(required=True, constraint=name_validator))
     @operation_returns_entry(Interface)  # Really IArchive.
     @export_read_operation()
     @operation_for_version("beta")
-    def getPPAByName(name):
+    def getPPAByName(distribution, name):
         """Return a PPA with the given name if it exists.
 
         :param name: A string with the exact name of the ppa being looked up.
@@ -1739,6 +1740,7 @@ class IPersonEditRestricted(Interface):
         """
 
     @operation_parameters(
+        distribution=Reference(schema=Interface, required=False),
         name=TextLine(required=True, constraint=name_validator),
         displayname=TextLine(required=False),
         description=TextLine(required=False),
@@ -1747,12 +1749,13 @@ class IPersonEditRestricted(Interface):
         )
     @export_factory_operation(Interface, [])  # Really IArchive.
     @operation_for_version("beta")
-    def createPPA(name=None, displayname=None, description=None,
-                  private=False, suppress_subscription_notifications=False):
+    def createPPA(distribution=None, name=None, displayname=None,
+                  description=None, private=False,
+                  suppress_subscription_notifications=False):
         """Create a PPA.
 
-        :param name: A string with the name of the new PPA to create. If
-            not specified, defaults to 'ppa'.
+        :param distribution: The distribution that this archive is for.
+        :param name: The name of the new PPA to create.
         :param displayname: The displayname for the new PPA.
         :param description: The description for the new PPA.
         :param private: Whether or not to create a private PPA. Defaults to

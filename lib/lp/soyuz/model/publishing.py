@@ -17,6 +17,7 @@ __all__ = [
 
 from collections import defaultdict
 from datetime import datetime
+import hashlib
 from operator import attrgetter
 import os
 import re
@@ -310,9 +311,9 @@ class ArchivePublisherBase:
         else:
             self.setPublished()
 
-    def getIndexStanza(self):
+    def getIndexStanza(self, separate_long_descriptions=False):
         """See `IPublishing`."""
-        fields = self.buildIndexStanzaFields()
+        fields = self.buildIndexStanzaFields(separate_long_descriptions)
         return fields.makeOutput()
 
     def setSuperseded(self):
@@ -737,6 +738,11 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
         return fields
 
+    def getIndexStanza(self):
+        """See `IPublishing`."""
+        fields = self.buildIndexStanzaFields()
+        return fields.makeOutput()
+
     def supersede(self, dominant=None, logger=None):
         """See `ISourcePackagePublishingHistory`."""
         assert self.status in active_publishing_status, (
@@ -991,7 +997,20 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         else:
             super(BinaryPackagePublishingHistory, self).publish(diskpool, log)
 
-    def buildIndexStanzaFields(self):
+    def _getFormattedDescription(self, summary, description):
+        # description field in index is an association of summary and
+        # description or the summary only if include_long_descriptions
+        # is false, as:
+        #
+        # Descrition: <SUMMARY>\n
+        #  <DESCRIPTION L1>
+        #  ...
+        #  <DESCRIPTION LN>
+        descr_lines = [line.lstrip() for line in description.splitlines()]
+        bin_description = '%s\n %s' % (summary, '\n '.join(descr_lines))
+        return bin_description
+
+    def buildIndexStanzaFields(self, separate_long_descriptions=False):
         """See `IPublishing`."""
         bpr = self.binarypackagerelease
         spr = bpr.build.source_package_release
@@ -1005,15 +1024,18 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         bin_sha256 = bin_file.libraryfile.content.sha256
         bin_filepath = os.path.join(
             makePoolPath(spr.name, self.component.name), bin_filename)
-        # description field in index is an association of summary and
-        # description, as:
-        #
-        # Descrition: <SUMMARY>\n
-        #  <DESCRIPTION L1>
-        #  ...
-        #  <DESCRIPTION LN>
-        descr_lines = [line.lstrip() for line in bpr.description.splitlines()]
-        bin_description = '%s\n %s' % (bpr.summary, '\n '.join(descr_lines))
+        description = self._getFormattedDescription(
+            bpr.summary, bpr.description)
+        # Our formatted description isn't \n-terminated, but apt
+        # considers the trailing \n to be part of the data to hash.
+        bin_description_md5 = hashlib.md5(
+            description.encode('utf-8') + '\n').hexdigest()
+        if separate_long_descriptions:
+            # If distroseries.include_long_descriptions is False, the
+            # description should be the summary
+            bin_description = bpr.summary
+        else:
+            bin_description = description
 
         # Dealing with architecturespecific field.
         # Present 'all' in every archive index for architecture
@@ -1060,6 +1082,8 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         fields.append(
             'Phased-Update-Percentage', self.phased_update_percentage)
         fields.append('Description', bin_description)
+        if separate_long_descriptions:
+            fields.append('Description-md5', bin_description_md5)
         if bpr.user_defined_fields:
             fields.extend(bpr.user_defined_fields)
 
@@ -1068,6 +1092,40 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         # When we have the information this will be the place to fill them.
 
         return fields
+
+    def getIndexStanza(self, separate_long_descriptions=False):
+        """See `IPublishing`."""
+        fields = self.buildIndexStanzaFields(separate_long_descriptions)
+        return fields.makeOutput()
+
+    def buildTranslationsStanzaFields(self, packages):
+        """See `IPublishing`."""
+        bpr = self.binarypackagerelease
+
+        bin_description = self._getFormattedDescription(
+            bpr.summary, bpr.description)
+        # Our formatted description isn't \n-terminated, but apt
+        # considers the trailing \n to be part of the data to hash.
+        bin_description_md5 = hashlib.md5(
+            bin_description.encode('utf-8') + '\n').hexdigest()
+        if (bpr.name, bin_description_md5) not in packages:
+            fields = IndexStanzaFields()
+            fields.append('Package', bpr.name)
+            fields.append('Description-md5', bin_description_md5)
+            fields.append('Description-en', bin_description)
+            packages.add((bpr.name, bin_description_md5))
+
+            return fields
+        else:
+            return None
+
+    def getTranslationsStanza(self, packages):
+        """See `IPublishing`."""
+        fields = self.buildTranslationsStanzaFields(packages)
+        if fields is None:
+            return None
+        else:
+            return fields.makeOutput()
 
     def _getOtherPublications(self):
         """Return remaining publications with the same overrides.
@@ -1373,6 +1431,11 @@ class PublishingSet:
         """See `IPublishingSet`."""
         # Expand the dict of binaries into a list of tuples including the
         # architecture.
+        if distroseries.distribution != archive.distribution:
+            raise AssertionError(
+                "Series distribution %s doesn't match archive distribution %s."
+                % (distroseries.distribution.name, archive.distribution.name))
+
         expanded = expand_binary_requests(distroseries, binaries)
         if len(expanded) == 0:
             # The binaries are for a disabled DistroArchSeries or for
@@ -1438,8 +1501,15 @@ class PublishingSet:
                     phased_update_percentage)) in needed],
             get_objects=True)
 
-    def copyBinaries(self, archive, distroseries, pocket, bpphs, policy=None):
+    def copyBinaries(self, archive, distroseries, pocket, bpphs, policy=None,
+                     source_override=None):
         """See `IPublishingSet`."""
+        from lp.soyuz.adapters.overrides import BinaryOverride
+        if distroseries.distribution != archive.distribution:
+            raise AssertionError(
+                "Series distribution %s doesn't match archive distribution %s."
+                % (distroseries.distribution.name, archive.distribution.name))
+
         if bpphs is None:
             return
 
@@ -1467,13 +1537,12 @@ class PublishingSet:
                     bpph.distroarchseries.architecturetag)] = bpph
             with_overrides = {}
             overrides = policy.calculateBinaryOverrides(
-                archive, distroseries, pocket, bpn_archtag.keys())
-            for override in overrides:
-                if override.distro_arch_series is None:
-                    continue
-                bpph = bpn_archtag[
-                    (override.binary_package_name,
-                     override.distro_arch_series.architecturetag)]
+                dict(
+                    ((bpn, archtag), BinaryOverride(
+                        source_override=source_override))
+                    for bpn, archtag in bpn_archtag.keys()))
+            for (bpn, archtag), override in overrides.items():
+                bpph = bpn_archtag[(bpn, archtag)]
                 new_component = override.component or bpph.component
                 new_section = override.section or bpph.section
                 new_priority = override.priority or bpph.priority
@@ -1512,6 +1581,10 @@ class PublishingSet:
         # Avoid circular import.
         from lp.registry.model.distributionsourcepackage import (
             DistributionSourcePackage)
+        if distroseries.distribution != archive.distribution:
+            raise AssertionError(
+                "Series distribution %s doesn't match archive distribution %s."
+                % (distroseries.distribution.name, archive.distribution.name))
 
         pub = SourcePackagePublishingHistory(
             distroseries=distroseries,

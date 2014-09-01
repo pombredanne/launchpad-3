@@ -11,9 +11,11 @@ from storm.expr import (
     Join,
     )
 from storm.store import EmptyResultSet
+import transaction
 
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.scripts.helpers import TransactionFreeOperation
 from lp.services.command_spawner import (
     CommandSpawner,
     OutputLineHandler,
@@ -141,7 +143,9 @@ class FTPArchiveHandler:
         self.generateFileLists(is_careful)
         self.log.debug("Doing apt-ftparchive work.")
         apt_config_filename = self.generateConfig(is_careful)
-        self.runApt(apt_config_filename)
+        transaction.commit()
+        with TransactionFreeOperation():
+            self.runApt(apt_config_filename)
         self.cleanCaches()
 
     def runAptWithArgs(self, apt_config_filename, *args):
@@ -829,4 +833,6 @@ class FTPArchiveHandler:
         with open(apt_config_filename, "w") as fp:
             fp.write(apt_config.getvalue())
         apt_config.close()
-        self.runAptWithArgs(apt_config_filename, "clean")
+        transaction.commit()
+        with TransactionFreeOperation():
+            self.runAptWithArgs(apt_config_filename, "clean")

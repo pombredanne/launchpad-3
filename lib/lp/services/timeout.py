@@ -204,17 +204,13 @@ class TransportWithTimeout(Transport):
 
     def cleanup(self):
         """In the event of a timeout cleanup by closing the connection."""
-        # py2.6 compatibility
-        # In Python 2.6, xmlrpclib.Transport wraps its HTTPConnection in an
-        # HTTP compatibility class. In 2.7 it just uses the conn directly.
-        http_conn = getattr(self.conn, '_conn', self.conn)
         try:
-            http_conn.sock.shutdown(socket.SHUT_RDWR)
+            self.conn.sock.shutdown(socket.SHUT_RDWR)
         except AttributeError:
             # It's possible that the other thread closed the socket
             # beforehand.
             pass
-        http_conn.close()
+        self.conn.close()
 
 
 class SafeTransportWithTimeout(SafeTransport):
