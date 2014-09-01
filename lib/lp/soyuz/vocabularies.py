@@ -98,18 +98,13 @@ class PPAVocabulary(SQLObjectVocabularyBase):
 
     def toTerm(self, archive):
         """See `IVocabulary`."""
+        summary = "No description available"
         try:
-            description = archive.description
-            if description:
-                summary = description.splitlines()[0]
-            else:
-                summary = "No description available"
+            if archive.description:
+                summary = archive.description.splitlines()[0]
         except Unauthorized:
-            summary = None
-
-        token = archive.reference
-
-        return SimpleTerm(archive, token, summary)
+            pass
+        return SimpleTerm(archive, archive.reference, summary)
 
     def getTermByToken(self, token):
         """See `IVocabularyTokenized`."""
