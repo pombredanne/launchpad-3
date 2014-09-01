@@ -376,18 +376,10 @@ class TranslationMerger:
     @classmethod
     def mergePackagingTemplates(cls, productseries, sourcepackagename,
                                 distroseries, tm):
-        template_map = dict()
-        all_templates = list(POTemplateSubset(
-            sourcepackagename=sourcepackagename,
-            distroseries=distroseries))
-        all_templates.extend(POTemplateSubset(
-            productseries=productseries))
-        for template in all_templates:
-            template_map.setdefault(template.name, []).append(template)
-        for name, templates in template_map.iteritems():
-            templates.sort(key=POTemplate.sharingKey, reverse=True)
-            merger = cls(templates, tm)
-            merger.mergePOTMsgSets()
+        subset = getUtility(IPOTemplateSet).getSharingSubset(
+            product=productseries.product)
+        for pot in POTemplateSubset(productseries=productseries):
+            cls._mergeTemplates(subset.getSharingPOTemplates(pot.name), tm)
 
     @classmethod
     def mergeModifiedTemplates(cls, potemplate, tm):
@@ -395,8 +387,12 @@ class TranslationMerger:
             distribution=potemplate.distribution,
             sourcepackagename=potemplate.sourcepackagename,
             product=potemplate.product)
-        templates = list(subset.getSharingPOTemplates(potemplate.name))
-        templates.sort(key=methodcaller('sharingKey'), reverse=True)
+        cls._mergeTemplates(subset.getSharingPOTemplates(potemplate.name), tm)
+
+    @classmethod
+    def _mergeTemplates(cls, templates, tm):
+        templates = list(sorted(
+            templates, key=methodcaller('sharingKey'), reverse=True))
         merger = cls(templates, tm)
         merger.mergeAll()
 

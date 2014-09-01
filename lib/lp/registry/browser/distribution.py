@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for distributions."""
@@ -6,8 +6,8 @@
 __metaclass__ = type
 
 __all__ = [
-    'DerivativeDistributionOverviewMenu',
     'DistributionAddView',
+    'DistributionAdminView',
     'DistributionArchiveMirrorsRSSView',
     'DistributionArchiveMirrorsView',
     'DistributionArchivesView',
@@ -56,6 +56,7 @@ from lp.answers.browser.questiontarget import QuestionTargetTraversalMixin
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
+    LaunchpadEditFormView,
     LaunchpadFormView,
     )
 from lp.app.browser.lazrjs import InlinePersonEditPickerWidget
@@ -92,7 +93,6 @@ from lp.registry.browser.pillar import (
     PillarViewMixin,
     )
 from lp.registry.interfaces.distribution import (
-    IDerivativeDistribution,
     IDistribution,
     IDistributionMirrorMenuMarker,
     IDistributionSet,
@@ -252,7 +252,7 @@ class DistributionMirrorsNavigationMenu(NavigationMenu):
     def _userCanSeeNonPublicMirrorListings(self):
         """Does the user have rights to see non-public mirrors listings?"""
         user = getUtility(ILaunchBag).user
-        return (self.distribution.full_functionality
+        return (self.distribution.supports_mirrors
                 and user is not None
                 and user.inTeam(self.distribution.mirror_admin))
 
@@ -288,6 +288,11 @@ class DistributionNavigationMenu(NavigationMenu, DistributionLinksMixin):
     facet = 'overview'
 
     @enabled_with_permission("launchpad.Admin")
+    def admin(self):
+        text = "Administer"
+        return Link("+admin", text, icon="edit")
+
+    @enabled_with_permission("launchpad.Admin")
     def pubconf(self):
         text = "Configure publisher"
         return Link("+pubconf", text, icon="edit")
@@ -298,8 +303,9 @@ class DistributionNavigationMenu(NavigationMenu, DistributionLinksMixin):
 
     @cachedproperty
     def links(self):
-        return ['edit', 'pubconf', 'subscribe_to_bug_mail',
-                 'edit_bug_mail', 'sharing']
+        return [
+            'edit', 'admin', 'pubconf', 'subscribe_to_bug_mail',
+            'edit_bug_mail', 'sharing']
 
 
 class DistributionOverviewMenu(ApplicationMenu, DistributionLinksMixin):
@@ -352,7 +358,7 @@ class DistributionOverviewMenu(ApplicationMenu, DistributionLinksMixin):
 
     def newmirror(self):
         text = 'Register a new mirror'
-        enabled = self.context.full_functionality
+        enabled = self.context.supports_mirrors
         return Link('+newmirror', text, enabled=enabled, icon='add')
 
     def top_contributors(self):
@@ -370,7 +376,7 @@ class DistributionOverviewMenu(ApplicationMenu, DistributionLinksMixin):
     def _userCanSeeNonPublicMirrorListings(self):
         """Does the user have rights to see non-public mirrors listings?"""
         user = getUtility(ILaunchBag).user
-        return (self.context.full_functionality
+        return (self.context.supports_mirrors
                 and user is not None
                 and user.inTeam(self.context.mirror_admin))
 
@@ -398,14 +404,14 @@ class DistributionOverviewMenu(ApplicationMenu, DistributionLinksMixin):
     @enabled_with_permission('launchpad.Edit')
     def mirror_admin(self):
         text = 'Change mirror admins'
-        enabled = self.context.full_functionality
+        enabled = self.context.supports_mirrors
         return Link('+selectmirroradmins', text, enabled=enabled, icon='edit')
 
     def search(self):
         text = 'Search packages'
         return Link('+search', text, icon='search')
 
-    @enabled_with_permission('launchpad.Admin')
+    @enabled_with_permission('launchpad.Moderate')
     def addseries(self):
         text = 'Add series'
         return Link('+addseries', text, icon='add')
@@ -458,16 +464,6 @@ class DistributionOverviewMenu(ApplicationMenu, DistributionLinksMixin):
         text = 'Configure translations'
         summary = 'Allow users to provide translations for this project.'
         return Link('+configure-translations', text, summary, icon='edit')
-
-
-class DerivativeDistributionOverviewMenu(DistributionOverviewMenu):
-
-    usedfor = IDerivativeDistribution
-
-    @enabled_with_permission('launchpad.Moderate')
-    def addseries(self):
-        text = 'Add series'
-        return Link('+addseries', text, icon='add')
 
 
 class DistributionBugsMenu(PillarBugsMenu):
@@ -972,6 +968,30 @@ class DistributionEditView(RegistryEditFormView,
         self.updateContextFromData(data)
 
 
+class DistributionAdminView(LaunchpadEditFormView):
+
+    schema = IDistribution
+    field_names = [
+        'official_packages',
+        'supports_ppas',
+        'supports_mirrors',
+        ]
+
+    @property
+    def label(self):
+        """See `LaunchpadFormView`."""
+        return 'Administer %s' % self.context.displayname
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
+    @action("Change", name='change')
+    def change_action(self, action, data):
+        self.updateContextFromData(data)
+        self.next_url = canonical_url(self.context)
+
+
 class DistributionSeriesBaseView(LaunchpadView):
     """A base view to list distroseries."""
     @cachedproperty
@@ -1050,7 +1070,7 @@ class DistributionCountryArchiveMirrorsView(LaunchpadView):
 
     def render(self):
         request = self.request
-        if not self.context.full_functionality:
+        if not self.context.supports_mirrors:
             request.response.setStatus(404)
             return u''
         ip_address = ipaddress_from_request(request)

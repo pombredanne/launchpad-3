@@ -166,29 +166,6 @@ class IDistroArchSeriesPublic(IHasBuildRecords, IHasOwner):
         """Search BinaryPackageRelease published in this series for those
         matching the given text."""
 
-    def getReleasedPackages(binary_name, pocket=None, include_pending=False,
-                            archive=None):
-        """Get the publishing records for the given binary package name.
-
-        :param: binary_name: should either be a `BinaryPackageName` instance
-            or else a string which will be looked up as a `BinaryPackageName`;
-        :param: pocket: optional `PackagePublishingPocket` filter, if it is
-            not specified, we look in all pockets.
-        :param: include_pending: optionally return also the pending
-            publication records, those packages that will get published in the
-            next publisher run (it's only useful when we need to know if a
-            given package is known during a publisher run, mostly in
-            pre-upload checks)
-        :param: archive: optional IArchive filter, if is not specified,
-            consider publication in the main_archives, otherwise respect the
-            given value.
-
-        If the BinaryPackageName cannot be found, NotFoundError will be
-        raised.
-
-        :return: a `shortlist` of `IBinaryPackagePublishingHistory` records.
-        """
-
     def __getitem__(name):
         """Getter"""
 

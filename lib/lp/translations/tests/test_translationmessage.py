@@ -12,21 +12,27 @@ from datetime import (
 
 from pytz import UTC
 from storm.locals import Store
+import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.services.propertycache import clear_property_cache
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import (
     TestCaseWithFactory,
     verifyObject,
     )
-from lp.testing.layers import ZopelessDatabaseLayer
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    ZopelessDatabaseLayer,
+    )
 from lp.translations.interfaces.side import (
     ITranslationSideTraitsSet,
     TranslationSide,
     )
 from lp.translations.interfaces.translationmessage import (
     ITranslationMessage,
+    ITranslationMessageSet,
     TranslationConflict,
     )
 from lp.translations.interfaces.translations import TranslationConstants
@@ -1096,3 +1102,30 @@ class TestShareIfPossible(TestCaseWithFactory):
         self.assertTrue(translation.is_diverged)
         translation.shareIfPossible()
         self.assertTrue(translation.is_diverged)
+
+
+class TestPreloading(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_preloadDetails_handles_orphaned_message(self):
+        # preloadDetails works when given a TranslationMessage that has
+        # no POFile. This happens occasionally on production, and the
+        # suggestion rendering code copes with it, so we should too.
+        lang = self.factory.makeLanguage()
+        tm1 = self.factory.makeCurrentTranslationMessage(language=lang)
+        tm2 = self.factory.makeCurrentTranslationMessage(language=lang)
+
+        tm1_pofile = tm1.getOnePOFile()
+        tm2_pofile = tm2.getOnePOFile()
+
+        # Get rid of tm1's POFile.
+        removeSecurityProxy(tm1_pofile).language = self.factory.makeLanguage()
+
+        getUtility(ITranslationMessageSet).preloadDetails(
+            [tm1, tm2], need_pofile=True, need_potemplate=True,
+            need_potemplate_context=True, need_potranslation=True,
+            need_potmsgset=True, need_people=True)
+
+        self.assertIs(None, tm1.browser_pofile)
+        self.assertEqual(tm2_pofile, tm2.browser_pofile)

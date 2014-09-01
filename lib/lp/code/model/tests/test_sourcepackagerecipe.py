@@ -678,8 +678,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
             recipe.requestBuild(archive, person, distroseries)
             build_info.insert(0, {
                 "distroseries": distroseries.displayname,
-                "archive": '%s/%s' %
-                           (archive.owner.name, archive.name)})
+                "archive": archive.reference})
         self.assertEqual(build_info, list(recipe.getPendingBuildInfo()))
 
     def test_getBuilds_cancelled(self):
@@ -1193,8 +1192,7 @@ class TestWebservice(TestCaseWithFactory):
                 pocket=PackagePublishingPocket.RELEASE.title)
             build_info.insert(0, {
                 "distroseries": distroseries.displayname,
-                "archive": '%s/%s' %
-                           (archive.owner.name, archive.name)})
+                "archive": archive.reference})
         self.assertEqual(build_info, list(recipe.getPendingBuildInfo()))
 
     def test_query_count_of_webservice_recipe(self):
@@ -1208,4 +1206,4 @@ class TestWebservice(TestCaseWithFactory):
         store.invalidate()
         with StormStatementRecorder() as recorder:
             webservice.get(url)
-        self.assertThat(recorder, HasQueryCount(Equals(28)))
+        self.assertThat(recorder, HasQueryCount(Equals(25)))

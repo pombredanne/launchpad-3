@@ -16,7 +16,6 @@ from zope.schema.vocabulary import SimpleTerm
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.model.distroseries import DistroSeries
-from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.sorting import sorted_dotted_numbers
 from lp.services.webapp.vocabulary import (
@@ -59,6 +58,5 @@ class BuildableDistroSeries(SQLObjectVocabularyBase):
 
 def target_ppas_vocabulary(context):
     """Return a vocabulary of ppas that the current user can target."""
-    ppas = getUtility(IArchiveSet).getPPAsForUser(getUtility(ILaunchBag).user)
     return make_archive_vocabulary(
-        ppa for ppa in ppas if check_permission('launchpad.Append', ppa))
+        getUtility(IArchiveSet).getPPAsForUser(getUtility(ILaunchBag).user))

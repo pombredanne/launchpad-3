@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Functional tests for uploadprocessor.py."""
@@ -1008,7 +1008,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         body = body.get_payload(decode=True)
 
         self.assertEqual(
-            '[ubuntu/breezy] foocomm 1.0-3 (Accepted)', msg['Subject'])
+            '[ubuntu/partner/breezy] foocomm 1.0-3 (Accepted)', msg['Subject'])
         self.assertFalse(
             'Unable to find foocomm_1.0.orig.tar.gz in upload or '
             'distribution.' in body,
@@ -1069,7 +1069,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
             build_uploadprocessor, upload_dir, build=foocomm_build)
 
         contents = [
-            "Subject: foocomm_1.0-1_i386.changes rejected",
+            "Subject: [ubuntu/partner] foocomm_1.0-1_i386.changes rejected",
             "Attempt to upload binaries specifying build 31, "
             "where they don't fit."]
         self.assertEmail(contents)
@@ -1709,7 +1709,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         from_addr, to_addrs, raw_msg = stub.test_emails.pop()
         msg = message_from_string(raw_msg)
         self.assertEqual(
-            msg['Subject'], 'bar_1.0-2_source.changes rejected')
+            msg['Subject'], '[ubuntu] bar_1.0-2_source.changes rejected')
 
         # Grant the permissions in the proper series.
         self.switchToAdmin()
@@ -1762,7 +1762,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
             rejection_message.splitlines())
 
         contents = [
-            "Subject: bar_1.0-1_source.changes rejected",
+            "Subject: [ubuntu] bar_1.0-1_source.changes rejected",
             "Could not find distribution 'boing'",
             "If you don't understand why your files were rejected",
             "http://answers.launchpad.net/soyuz",
@@ -1930,7 +1930,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
             rejection_message)
 
         contents = [
-            "Subject: bar_1.0-1_source.changes rejected",
+            "Subject: [ubuntu] bar_1.0-1_source.changes rejected",
             "Not permitted to upload to the RELEASE pocket in a series "
             "in the 'CURRENT' state.",
             "If you don't understand why your files were rejected",
@@ -2236,10 +2236,8 @@ class TestUploadHandler(TestUploadProcessorBase):
         # Failures should generate a message that includes the upload log URL.
         self.doFailureRecipeBuild()
         (mail,) = pop_notifications()
-        # Python2.6 prefixes continuation lines with a \t, 2.7 uses a single
-        # space instead, try both to stay compatible (see email/generator.py
-        # Generator._write_headers for details).
-        subject = mail['Subject'].replace('\n\t', ' ').replace('\n ', ' ')
+        # Unfold continuation lines.
+        subject = mail['Subject'].replace('\n ', ' ')
         self.assertIn('Failed to upload', subject)
         body = mail.get_payload(decode=True)
         self.assertIn('Upload Log: http', body)

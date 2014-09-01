@@ -149,12 +149,9 @@ class ArchivePopulator(SoyuzScript):
                     "No PPA for user: '%s'" % from_user)
 
         if the_origin.archive.private:
-            if from_user is not None:
-                the_name = '%s/%s' % (from_user, the_origin.archive.name)
-            else:
-                the_name = the_origin.archive.name
             raise SoyuzScriptError(
-                "Cannot copy from private archive ('%s')" % the_name)
+                "Cannot copy from private archive (%s)"
+                % the_origin.archive.reference)
 
         # Build the destination package location.
         the_destination = build_location(to_distribution, to_suite, component)

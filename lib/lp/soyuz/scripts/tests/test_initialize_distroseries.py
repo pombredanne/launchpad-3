@@ -1,4 +1,4 @@
-# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the initialize_distroseries script machinery."""
@@ -89,7 +89,7 @@ class InitializationHelperTestCase(TestCaseWithFactory):
                          pocket=PackagePublishingPocket.RELEASE):
         if packages is None:
             packages = {'udev': '0.1-1', 'libc6': '2.8-1',
-                'postgresql': '9.0-1', 'chromium': '3.6'}
+                'postgresql': '9.0-1', 'chromium': '3.6', 'vim': '7.4'}
         for package in packages.keys():
             spn = self.factory.getOrMakeSourcePackageName(package)
             spph = self.factory.makeSourcePackagePublishingHistory(
@@ -115,7 +115,7 @@ class InitializationHelperTestCase(TestCaseWithFactory):
                 self.factory.makeBinaryPackageFile(binarypackagerelease=bpr)
 
     def _fullInitialize(self, parents, child=None, previous_series=None,
-                        arches=(), archindep_archtag=None, packagesets=(),
+                        arches=(), archindep_archtag=None, packagesets=None,
                         rebuild=False, distribution=None, overlays=(),
                         overlay_pockets=(), overlay_components=()):
         if child is None:
@@ -150,7 +150,7 @@ class InitializationHelperTestCase(TestCaseWithFactory):
             pocket=PackagePublishingPocket.RELEASE)
         try:
             packageset = getUtility(IPackagesetSet).getByName(
-                packageset_name, distroseries=distroseries)
+                distroseries, packageset_name)
         except NoSuchPackageSet:
             packageset = getUtility(IPackagesetSet).new(
                 packageset_name, packageset_name, distroseries.owner,
@@ -171,6 +171,31 @@ class InitializationHelperTestCase(TestCaseWithFactory):
             distroseries=parent,
             pocket=PackagePublishingPocket.RELEASE)
         return parent, parent_das, parent_das2, source
+
+    def setupPackagingTesting(self):
+        # Setup the environment for testing the packaging links
+        self.parent, self.parent_das = self.setupParent()
+        test1 = getUtility(IPackagesetSet).new(
+            u'test1', u'test 1 packageset', self.parent.owner,
+            distroseries=self.parent)
+        test2 = getUtility(IPackagesetSet).new(
+            u'test2', u'test 2 packageset', self.parent.owner,
+            distroseries=self.parent)
+        packages_test1 = ['udev', 'chromium', 'libc6']
+        packages_test2 = ['postgresql', 'vim']
+        for pkg in packages_test1:
+            test1.addSources(pkg)
+            sp = self.parent.getSourcePackage(pkg)
+            product_series = self.factory.makeProductSeries()
+            product_series.setPackaging(
+                self.parent, sp.sourcepackagename, self.parent.owner)
+        for pkg in packages_test2:
+            test2.addSources(pkg)
+            sp = self.parent.getSourcePackage(pkg)
+            product_series = self.factory.makeProductSeries()
+            product_series.setPackaging(
+                self.parent, sp.sourcepackagename, self.parent.owner)
+        return packages_test1, packages_test2
 
 
 class TestInitializeDistroSeries(InitializationHelperTestCase):
@@ -554,14 +579,12 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
             u'udev', distroseries=child)
         self.assertEqual(
             parent_udev_pubs.count(), child_udev_pubs.count())
-        parent_arch_udev_pubs = parent[
-            parent_das.architecturetag].getReleasedPackages(
-                'udev', include_pending=True)
-        child_arch_udev_pubs = child[
-            parent_das.architecturetag].getReleasedPackages(
-                'udev', include_pending=True)
+        parent_arch_udev_pubs = parent.main_archive.getAllPublishedBinaries(
+            distroarchseries=parent[parent_das.architecturetag], name='udev')
+        child_arch_udev_pubs = child.main_archive.getAllPublishedBinaries(
+            distroarchseries=child[parent_das.architecturetag], name='udev')
         self.assertEqual(
-            len(parent_arch_udev_pubs), len(child_arch_udev_pubs))
+            parent_arch_udev_pubs.count(), child_arch_udev_pubs.count())
         # And the binary package, and linked source package look fine too.
         udev_bin = child_arch_udev_pubs[0].binarypackagerelease
         self.assertEqual(udev_bin.title, u'udev-0.1-1')
@@ -628,12 +651,9 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
             self.parent.main_archive, uploader, test1)
         child = self._fullInitialize([self.parent])
         # We can fetch the copied sets from the child.
-        child_test1 = getUtility(IPackagesetSet).getByName(
-            u'test1', distroseries=child)
-        child_test2 = getUtility(IPackagesetSet).getByName(
-            u'test2', distroseries=child)
-        child_test3 = getUtility(IPackagesetSet).getByName(
-            u'test3', distroseries=child)
+        child_test1 = getUtility(IPackagesetSet).getByName(child, u'test1')
+        child_test2 = getUtility(IPackagesetSet).getByName(child, u'test2')
+        child_test3 = getUtility(IPackagesetSet).getByName(child, u'test3')
         # And we can see they are exact copies, with the related_set for the
         # copies pointing to the packageset in the parent.
         self.assertEqual(test1.description, child_test1.description)
@@ -710,7 +730,7 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
             [previous_parent], previous_series=child,
             distribution=parent.distribution)
         grandchild_packageset = getUtility(IPackagesetSet).getByName(
-            parent_packageset.name, distroseries=grandchild)
+            grandchild, parent_packageset.name)
         # The copied grandchild set has sources matching the child.
         self.assertContentEqual(
             child_packageset.getSourcesIncluded(),
@@ -808,8 +828,7 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
             u'ps', u'packageset', ps_owner, distroseries=self.parent)
         child = self._fullInitialize(
             [self.parent], distribution=self.parent.distribution)
-        child_ps = getUtility(IPackagesetSet).getByName(
-            u'ps', distroseries=child)
+        child_ps = getUtility(IPackagesetSet).getByName(child, u'ps')
         self.assertEqual(ps_owner, child_ps.owner)
 
     def test_packageset_owner_not_preserved_cross_distro(self):
@@ -820,8 +839,7 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
             u'ps', u'packageset', self.factory.makePerson(),
             distroseries=self.parent)
         child = self._fullInitialize([self.parent])
-        child_ps = getUtility(IPackagesetSet).getByName(
-            u'ps', distroseries=child)
+        child_ps = getUtility(IPackagesetSet).getByName(child, u'ps')
         self.assertEqual(child.owner, child_ps.owner)
 
     def test_copy_limit_packagesets(self):
@@ -838,15 +856,14 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         for pkg in packages:
             test1.addSources(pkg)
         packageset1 = getUtility(IPackagesetSet).getByName(
-            u'test1', distroseries=self.parent)
+            self.parent, u'test1')
         child = self._fullInitialize(
             [self.parent], packagesets=(str(packageset1.id),))
-        child_test1 = getUtility(IPackagesetSet).getByName(
-            u'test1', distroseries=child)
+        child_test1 = getUtility(IPackagesetSet).getByName(child, u'test1')
         self.assertEqual(test1.description, child_test1.description)
         self.assertRaises(
             NoSuchPackageSet, getUtility(IPackagesetSet).getByName,
-                u'test2', distroseries=child)
+            child, u'test2')
         parent_srcs = test1.getSourcesIncluded(direct_inclusion=True)
         child_srcs = child_test1.getSourcesIncluded(
             direct_inclusion=True)
@@ -854,6 +871,110 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         child.updatePackageCount()
         self.assertEqual(child.sourcecount, len(packages))
         self.assertEqual(child.binarycount, 2)  # Chromium is FTBFS
+
+    def test_copy_limit_packagesets_empty(self):
+        # If a parent series has packagesets, we don't want to copy any of them
+        self.parent, self.parent_das = self.setupParent()
+        test1 = getUtility(IPackagesetSet).new(
+            u'test1', u'test 1 packageset', self.parent.owner,
+            distroseries=self.parent)
+        getUtility(IPackagesetSet).new(
+            u'test2', u'test 2 packageset', self.parent.owner,
+            distroseries=self.parent)
+        packages = ('udev', 'chromium', 'libc6')
+        for pkg in packages:
+            test1.addSources(pkg)
+        packageset1 = getUtility(IPackagesetSet).getByName(
+            self.parent, u'test1')
+        child = self._fullInitialize(
+            [self.parent], packagesets=[])
+        self.assertRaises(
+            NoSuchPackageSet, getUtility(IPackagesetSet).getByName,
+            child, u'test1')
+        self.assertRaises(
+            NoSuchPackageSet, getUtility(IPackagesetSet).getByName,
+            child, u'test2')
+        self.assertEqual(child.sourcecount, 0)
+        self.assertEqual(child.binarycount, 0)
+
+    def test_copy_limit_packagesets_none(self):
+        # If a parent series has packagesets, we want to copy all of them
+        self.parent, self.parent_das = self.setupParent()
+        test1 = getUtility(IPackagesetSet).new(
+            u'test1', u'test 1 packageset', self.parent.owner,
+            distroseries=self.parent)
+        test2 = getUtility(IPackagesetSet).new(
+            u'test2', u'test 2 packageset', self.parent.owner,
+            distroseries=self.parent)
+        packages_test1 = ('udev', 'chromium', 'libc6')
+        packages_test2 = ('postgresql', 'vim')
+        for pkg in packages_test1:
+            test1.addSources(pkg)
+        for pkg in packages_test2:
+            test2.addSources(pkg)
+        packageset1 = getUtility(IPackagesetSet).getByName(
+            self.parent, u'test1')
+        packageset2 = getUtility(IPackagesetSet).getByName(
+            self.parent, u'test2')
+        child = self._fullInitialize(
+            [self.parent], packagesets=None)
+        child_test1 = getUtility(IPackagesetSet).getByName(child, u'test1')
+        child_test2 = getUtility(IPackagesetSet).getByName(child, u'test2')
+        self.assertEqual(test1.description, child_test1.description)
+        self.assertEqual(test2.description, child_test2.description)
+        parent_srcs_test1 = test1.getSourcesIncluded(direct_inclusion=True)
+        child_srcs_test1 = child_test1.getSourcesIncluded(
+            direct_inclusion=True)
+        self.assertEqual(parent_srcs_test1, child_srcs_test1)
+        parent_srcs_test2 = test2.getSourcesIncluded(direct_inclusion=True)
+        child_srcs_test2 = child_test2.getSourcesIncluded(
+            direct_inclusion=True)
+        self.assertEqual(parent_srcs_test2, child_srcs_test2)
+        child.updatePackageCount()
+        self.assertEqual(child.sourcecount,
+            len(packages_test1) + len(packages_test2))
+        self.assertEqual(child.binarycount, 4)  # Chromium is FTBFS
+
+    def test_copy_packaging_links_some(self):
+        # Test that when copying some packagesets from the parent, only
+        # the packaging links for the copied packages are copied.
+        packages_test1, packages_test2 = self.setupPackagingTesting()
+        packageset1 = getUtility(IPackagesetSet).getByName(
+            self.parent, u'test1')
+        child = self._fullInitialize(
+            [self.parent], packagesets=(str(packageset1.id),))
+        packagings = child.getMostRecentlyLinkedPackagings()
+        names = [
+            packaging.sourcepackagename.name for packaging in packagings]
+        self.assertEqual(
+            0, child.getPrioritizedUnlinkedSourcePackages().count())
+        self.assertEqual(set(packages_test1), set(names))
+
+    def test_copy_packaging_links_empty(self):
+        # Test that when copying no packagesets from the parent, none of
+        # the packaging links for the packages are copied.
+        self.setupPackagingTesting()
+        child = self._fullInitialize(
+            [self.parent], packagesets=[])
+        packagings = child.getMostRecentlyLinkedPackagings()
+        names = [
+            packaging.sourcepackagename.name for packaging in packagings]
+        self.assertEqual(
+            0, child.getPrioritizedUnlinkedSourcePackages().count())
+        self.assertEqual([], names)
+
+    def test_copy_packaging_links_none(self):
+        # Test that when copying all packagesets from the parent, all of
+        # the packaging links are copied.
+        packages_test1, packages_test2 = self.setupPackagingTesting()
+        child = self._fullInitialize(
+            [self.parent], packagesets=None)
+        packagings = child.getMostRecentlyLinkedPackagings()
+        names = [
+            packaging.sourcepackagename.name for packaging in packagings]
+        self.assertEqual(
+            0, child.getPrioritizedUnlinkedSourcePackages().count())
+        self.assertEqual(set(packages_test1 + packages_test2), set(names))
 
     def test_rebuild_flag(self):
         # No binaries will get copied if we specify rebuild=True.
@@ -1027,8 +1148,7 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         child = self._fullInitialize([self.parent1, self.parent2])
 
         # In the child, the identical packagesets are merged into one.
-        child_test1 = getUtility(IPackagesetSet).getByName(
-            u'test1', distroseries=child)
+        child_test1 = getUtility(IPackagesetSet).getByName(child, u'test1')
         child_srcs = child_test1.getSourcesIncluded(
             direct_inclusion=True)
         parent1_srcs = test1_parent1.getSourcesIncluded(direct_inclusion=True)

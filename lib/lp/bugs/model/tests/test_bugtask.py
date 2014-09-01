@@ -2957,7 +2957,8 @@ class TestValidateTarget(TestCaseWithFactory, ValidateTargetMixin):
         task = self.factory.makeBugTask()
         self.factory.makeSourcePackagePublishingHistory(
             distroseries=series, sourcepackagename=dsp.sourcepackagename,
-            archive=self.factory.makeArchive(purpose=ArchivePurpose.PPA))
+            archive=self.factory.makeArchive(
+                distribution=series.distribution, purpose=ArchivePurpose.PPA))
         self.assertRaisesWithContent(
             IllegalTarget,
             "Package %s not published in %s"

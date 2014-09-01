@@ -16,11 +16,8 @@ from lp.archivepublisher.publishing import (
     getPublisher,
     GLOBAL_PUBLISHER_LOCK,
     )
-from lp.registry.interfaces.distribution import IDistributionSet
-from lp.services.scripts.base import (
-    LaunchpadCronScript,
-    LaunchpadScriptFailure,
-    )
+from lp.archivepublisher.scripts.base import PublisherScript
+from lp.services.scripts.base import LaunchpadScriptFailure
 from lp.soyuz.enums import (
     ArchivePurpose,
     ArchiveStatus,
@@ -41,12 +38,14 @@ def is_ppa_public(ppa):
     return not ppa.private
 
 
-class PublishDistro(LaunchpadCronScript):
+class PublishDistro(PublisherScript):
     """Distro publisher."""
 
     lockfilename = GLOBAL_PUBLISHER_LOCK
 
     def add_my_options(self):
+        self.addDistroOptions()
+
         self.parser.add_option(
             "-C", "--careful", action="store_true", dest="careful",
             default=False, help="Turns on all the below careful options.")
@@ -65,14 +64,6 @@ class PublishDistro(LaunchpadCronScript):
             "-A", "--careful-apt", action="store_true", dest="careful_apt",
             default=False,
             help="Make index generation (e.g. apt-ftparchive) careful.")
-
-        self.parser.add_option(
-            "-d", "--distribution", dest="distribution", metavar="DISTRO",
-            default=None, help="The distribution to publish.")
-
-        self.parser.add_option(
-            "-a", "--all-derived", action="store_true", dest="all_derived",
-            default=False, help="Publish all Ubuntu-derived distributions.")
 
         self.parser.add_option(
             '-s', '--suite', metavar='SUITE', dest='suite', action='append',
@@ -178,33 +169,6 @@ class PublishDistro(LaunchpadCronScript):
         if for_ppa and self.options.distsroot:
             raise OptionValueError(
                 "We should not define 'distsroot' in PPA mode!", )
-
-    def findSelectedDistro(self):
-        """Find the `Distribution` named by the --distribution option.
-
-        Defaults to Ubuntu if no name was given.
-        """
-        self.logger.debug("Finding distribution object.")
-        name = self.options.distribution
-        if name is None:
-            # Default to publishing Ubuntu.
-            name = "ubuntu"
-        distro = getUtility(IDistributionSet).getByName(name)
-        if distro is None:
-            raise OptionValueError("Distribution '%s' not found." % name)
-        return distro
-
-    def findDerivedDistros(self):
-        """Find all Ubuntu-derived distributions."""
-        self.logger.debug("Finding derived distributions.")
-        return getUtility(IDistributionSet).getDerivedDistributions()
-
-    def findDistros(self):
-        """Find the selected distribution(s)."""
-        if self.options.all_derived:
-            return self.findDerivedDistros()
-        else:
-            return [self.findSelectedDistro()]
 
     def findSuite(self, distribution, suite):
         """Find the named `suite` in the selected `Distribution`.

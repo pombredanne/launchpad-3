@@ -8,11 +8,13 @@ __metaclass__ = type
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
+from storm.expr import Desc
 import transaction
 from zope.component import getUtility
 from zope.event import notify
 
 from lp.registry.interfaces.packaging import IPackagingUtil
+from lp.services.database.interfaces import IStore
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import (
     IRunnableJob,
@@ -74,9 +76,17 @@ def make_translation_merge_job(factory, not_ubuntu=False):
     productseries = upstream_pofile.potemplate.productseries
     distroseries = package_pofile.potemplate.distroseries
     sourcepackagename = package_pofile.potemplate.sourcepackagename
-    return TranslationMergeJob.create(
-        productseries=productseries, distroseries=distroseries,
-        sourcepackagename=sourcepackagename)
+    factory.makePackagingLink(
+        distroseries=distroseries, sourcepackagename=sourcepackagename,
+        productseries=productseries)
+    # Creating the Packaging will have created a merge job too. Return
+    # it.
+    return TranslationPackagingJob.makeSubclass(
+        IStore(TranslationSharingJob).find(
+            TranslationSharingJob,
+            distroseries=distroseries, sourcepackagename=sourcepackagename,
+            productseries=productseries).order_by(
+                Desc(TranslationSharingJob.id)).first())
 
 
 def get_msg_sets(productseries=None, distroseries=None,

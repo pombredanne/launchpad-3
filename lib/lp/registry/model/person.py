@@ -309,7 +309,10 @@ from lp.soyuz.enums import (
     ArchivePurpose,
     ArchiveStatus,
     )
-from lp.soyuz.interfaces.archive import IArchiveSet
+from lp.soyuz.interfaces.archive import (
+    IArchiveSet,
+    NoSuchPPA,
+    )
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
 from lp.soyuz.model.archive import (
     Archive,
@@ -3058,23 +3061,31 @@ class Person(
                 (ArchiveStatus.ACTIVE, ArchiveStatus.DELETING)),
             filter).order_by(Archive.name)
 
-    def getPPAByName(self, name):
+    def getPPAByName(self, distribution=None, name=None):
         """See `IPerson`."""
-        return getUtility(IArchiveSet).getPPAOwnedByPerson(self, name)
+        assert name is not None
+        if distribution is None:
+            distribution = getUtility(ILaunchpadCelebrities).ubuntu
+        ppa = getUtility(IArchiveSet).getPPAOwnedByPerson(
+            self, distribution=distribution, name=name)
+        if ppa is None:
+            raise NoSuchPPA(name)
+        return ppa
 
-    def createPPA(self, name=None, displayname=None, description=None,
-                  private=False, suppress_subscription_notifications=False):
+    def createPPA(self, distribution=None, name=None, displayname=None,
+                  description=None, private=False,
+                  suppress_subscription_notifications=False):
         """See `IPerson`."""
-        errors = validate_ppa(self, name, private)
+        if distribution is None:
+            distribution = getUtility(ILaunchpadCelebrities).ubuntu
+        if name is None:
+            name = "ppa"
+        errors = validate_ppa(self, distribution, name, private)
         if errors:
             raise PPACreationError(errors)
-        # XXX cprov 2009-03-27 bug=188564: We currently only create PPAs
-        # for Ubuntu distribution. PPA creation should be revisited when we
-        # start supporting other distribution (debian, mainly).
-        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         return getUtility(IArchiveSet).new(
             owner=self, purpose=ArchivePurpose.PPA,
-            distribution=ubuntu, name=name, displayname=displayname,
+            distribution=distribution, name=name, displayname=displayname,
             description=description, private=private,
             suppress_subscription_notifications=(
                 suppress_subscription_notifications))
@@ -3748,6 +3759,10 @@ class PersonSet:
         need_location=False, need_archive=False,
         need_preferred_email=False, need_validity=False, need_icon=False):
         """See `IPersonSet`."""
+        person_ids = set(person_ids)
+        person_ids.discard(None)
+        if not person_ids:
+            return EmptyResultSet()
         origin = [Person]
         conditions = [
             Person.id.is_in(person_ids)]

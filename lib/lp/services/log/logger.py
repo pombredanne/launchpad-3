@@ -9,7 +9,6 @@ __all__ = [
     'DevNullLogger',
     'FakeLogger',
     'LaunchpadLogger',
-    'NullHandler',
     'PrefixFilter',
     ]
 
@@ -92,14 +91,6 @@ class PrefixFilter:
         prefix = self.prefix or record.name
         record.msg = '[%s] %s' % (prefix, record.msg)
         return True
-
-
-class NullHandler(logging.Handler):
-    """A do-nothing Handler used to silence 'No handlers for logger' warnings.
-    """
-
-    def emit(self, record):
-        pass
 
 
 class FakeLogger:

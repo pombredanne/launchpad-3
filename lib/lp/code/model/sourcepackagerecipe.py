@@ -369,8 +369,7 @@ class SourcePackageRecipe(Storm):
         for build in builds:
             result.append(
                 {"distroseries": build.distroseries.displayname,
-                 "archive": '%s/%s' %
-                           (build.archive.owner.name, build.archive.name)})
+                 "archive": build.archive.reference})
         return result
 
     @property

@@ -40,7 +40,6 @@ from lp.services.comments.browser.comment import download_body
 from lp.services.comments.browser.messagecomment import MessageComment
 from lp.services.comments.interfaces.conversation import IComment
 from lp.services.config import config
-from lp.services.features import getFeatureFlag
 from lp.services.librarian.interfaces import ILibraryFileAlias
 from lp.services.propertycache import (
     cachedproperty,
@@ -256,11 +255,6 @@ class CodeReviewCommentAddView(LaunchpadFormView):
         else:
             comment = ''
         return {'comment': comment}
-
-    def setUpFields(self):
-        super(CodeReviewCommentAddView, self).setUpFields()
-        if not getFeatureFlag('code.inline_diff_comments.enabled'):
-            self.form_fields.omit('publish_inline_comments')
 
     @property
     def is_reply(self):

@@ -418,7 +418,7 @@ Now we process the accepted queue items, one more time.
     >>> transaction.commit()
     >>> script = os.path.join(config.root, "scripts", "process-accepted.py")
     >>> process = subprocess.Popen(
-    ...     [sys.executable, script, "ubuntutest", "-q"])
+    ...     [sys.executable, script, "-d", "ubuntutest", "-q"])
     >>> process.wait()
     0
 

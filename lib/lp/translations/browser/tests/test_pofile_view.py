@@ -3,20 +3,91 @@
 
 __metaclass__ = type
 
+from storm.store import Store
+from testtools.matchers import Equals
+from zope.component import getUtility
+
 from lp.app.errors import UnexpectedFormData
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
     BrowserTestCase,
     login,
+    login_person,
     person_logged_in,
+    record_two_runs,
     TestCaseWithFactory,
     )
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     ZopelessDatabaseLayer,
     )
+from lp.testing.matchers import HasQueryCount
+from lp.testing.views import create_initialized_view
 from lp.translations.browser.pofile import POFileTranslateView
 from lp.translations.enums import TranslationPermission
+from lp.translations.interfaces.potemplate import IPOTemplateSet
+from lp.translations.interfaces.translationsperson import ITranslationsPerson
+from lp.translations.model.pofiletranslator import POFileTranslator
+
+
+class TestQueryCount(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_query_count(self):
+        person = self.factory.makePerson()
+        login_person(person)
+        ITranslationsPerson(person).translations_relicensing_agreement = True
+        product = self.factory.makeProduct(owner=person)
+        product.translationpermission = TranslationPermission.OPEN
+        pofile = self.factory.makePOFile(
+            potemplate=self.factory.makePOTemplate(
+                productseries=product.series[0]))
+        pofile.potemplate.productseries.product
+        potmsgsets = [
+            self.factory.makePOTMsgSet(pofile.potemplate) for i in range(10)]
+
+        # Preload a few transaction-crossing caches that would give
+        # extra queries to the first request.
+        getUtility(ILaunchBag).time_zone
+        getUtility(ILaunchpadCelebrities).ubuntu
+        person.inTeam(getUtility(ILaunchpadCelebrities).admin)
+        person.inTeam(getUtility(ILaunchpadCelebrities).rosetta_experts)
+
+        def create_suggestions():
+            for potmsgset in potmsgsets:
+                pot = self.factory.makePOTemplate()
+                self.factory.makeCurrentTranslationMessage(
+                    potmsgset=self.factory.makePOTMsgSet(
+                        singular=potmsgset.msgid_singular.msgid,
+                        potemplate=pot),
+                    language=pofile.language,
+                    translations=[self.factory.getUniqueUnicode()])
+                # A suggestion only shows up if it's actually in a
+                # POFile.
+                self.factory.makePOFile(
+                    potemplate=pot, language=pofile.language)
+                self.factory.makeSuggestion(
+                    pofile=pofile, potmsgset=potmsgset)
+
+            # Ensure that these are valid suggestions.
+            templateset = getUtility(IPOTemplateSet)
+            templateset.wipeSuggestivePOTemplatesCache()
+            templateset.populateSuggestivePOTemplatesCache()
+
+            # And ensure that the credits string is empty, as that's
+            # not currently constant.
+            Store.of(pofile).find(POFileTranslator, pofile=pofile).set(
+                pofileID=self.factory.makePOFile().id)
+
+        nb_objects = 2
+        recorder1, recorder2 = record_two_runs(
+            lambda: create_initialized_view(
+                pofile, '+translate', principal=person)(),
+            create_suggestions, nb_objects)
+        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
 
 
 class TestPOFileTranslateViewInvalidFiltering(TestCaseWithFactory):

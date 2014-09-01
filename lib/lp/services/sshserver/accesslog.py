@@ -52,7 +52,7 @@ class LoggingManager:
         self._orig_handlers = list(log.handlers)
         self._orig_observers = list(tplog.theLogPublisher.observers)
         log.setLevel(logging.INFO)
-        log.addHandler(_NullHandler())
+        log.addHandler(logging.NullHandler())
         handler = WatchedFileHandler(self._access_log_path)
         handler.setFormatter(
             logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
@@ -84,15 +84,3 @@ class LoggingManager:
             tplog.addObserver, tplog.removeObserver)
         getGlobalSiteManager().unregisterHandler(self._log_event)
         self._is_set_up = False
-
-
-class _NullHandler(logging.Handler):
-    """Logging handler that does nothing with messages.
-
-    At the moment, we don't want to do anything with the Twisted log messages
-    that go to the SSH server logger, and we also don't want warnings about
-    there being no handlers. Hence, we use this do-nothing handler.
-    """
-
-    def emit(self, record):
-        pass
