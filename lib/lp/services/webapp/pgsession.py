@@ -101,11 +101,11 @@ class PGSessionData(PGSessionBase):
         table_name = session_data_container.session_data_table_name
         query = """
             UPDATE %s SET last_accessed = CURRENT_TIMESTAMP
-            WHERE client_id IN (?, ?)
+            WHERE client_id = ?
                 AND last_accessed < CURRENT_TIMESTAMP - '%d seconds'::interval
             """ % (table_name, session_data_container.resolution)
         self.store.execute(
-            query, (self.client_id, self.hashed_client_id), noresult=True)
+            query, (self.hashed_client_id,), noresult=True)
 
     def _ensureClientId(self):
         if self._have_ensured_client_id:
@@ -180,13 +180,11 @@ class PGSessionPkgData(DictMixin, PGSessionBase):
     def _populate(self):
         self._data_cache = {}
         query = """
-            SELECT key, pickle FROM %s WHERE client_id IN (?, ?)
+            SELECT key, pickle FROM %s WHERE client_id = ?
                 AND product_id = ?
             """ % self.table_name
         result = self.store.execute(
-            query, (
-                self.session_data.client_id,
-                self.session_data.hashed_client_id, self.product_id))
+            query, (self.session_data.hashed_client_id, self.product_id))
         for key, pickled_value in result:
             value = pickle.loads(str(pickled_value))
             self._data_cache[key] = value
@@ -223,12 +221,12 @@ class PGSessionPkgData(DictMixin, PGSessionBase):
             return
         query = """
             DELETE FROM %s
-            WHERE client_id IN (?, ?) AND product_id = ? AND key = ?
+            WHERE client_id = ? AND product_id = ? AND key = ?
             """ % self.table_name
         self.store.execute(
             query,
-            (self.session_data.client_id, self.session_data.hashed_client_id,
-             self.product_id, ensure_unicode(key)),
+            (self.session_data.hashed_client_id, self.product_id,
+             ensure_unicode(key)),
             noresult=True)
 
     def keys(self):
