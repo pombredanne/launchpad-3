@@ -114,7 +114,7 @@ class PGSessionData(PGSessionBase):
         # about our client id. We're doing it lazily to try and keep anonymous
         # users from having a session.
         self.store.execute(
-            "SELECT ensure_session_client_id(?)", (self.client_id,),
+            "SELECT ensure_session_client_id(?)", (self.hashed_client_id,),
             noresult=True)
         request = get_current_browser_request()
         if request is not None:
@@ -201,7 +201,7 @@ class PGSessionPkgData(DictMixin, PGSessionBase):
         self.session_data._ensureClientId()
         self.store.execute(
             "SELECT set_session_pkg_data(?, ?, ?, ?)",
-            (self.session_data.client_id,
+            (self.session_data.hashed_client_id,
                 self.product_id, key, pickled_value),
             noresult=True)
 
