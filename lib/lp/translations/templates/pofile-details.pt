@@ -14,7 +14,7 @@
         <div tal:replace="structure context/@@+portlet-details" />
         <div class="portlet">
         <h2>Related pages</h2>
-        <ul tal:define="navigation_menu context/menu:navigation">
+        <ul tal:define="navigation_menu context/menu:translations">
         <li
             tal:define="link navigation_menu/translate"
             tal:condition="link/enabled"
@@ -42,7 +42,7 @@
 
         <ul tal:condition="view/contributors">
           <tal:contributors-loop repeat="contributor view/contributors">
-          <li tal:condition="not: contributor/merged"> 
+          <li tal:condition="not: contributor/merged">
               <a tal:replace="structure contributor/fmt:link">
                 Mister Potato
               </a>

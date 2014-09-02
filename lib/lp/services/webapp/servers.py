@@ -1203,7 +1203,12 @@ class WebServicePublication(WebServicePublicationMixin,
             return super(WebServicePublication, self).getResource(request, ob)
 
     def finishReadOnlyRequest(self, request, ob, txn):
-        """Commit the transaction so that created OAuthNonces are stored."""
+        """Commit the transaction even though there should be no writes."""
+        # WebServicePublication used to commit on every request to store
+        # OAuthNonces to prevent replay attacks. But TLS prevents replay
+        # attacks too, so we don't bother with nonces any more. However,
+        # this commit will stay here until we can switch it off in a
+        # controlled test to ensure that nothing depends on it on prod.
         notify(FinishReadOnlyRequestEvent(ob, request))
         # Transaction commits usually need to be aware of the possibility of
         # a doomed transaction.  We do not expect that this code will
@@ -1217,10 +1222,8 @@ class WebServicePublication(WebServicePublicationMixin,
         Web service requests are authenticated using OAuth, except for the
         one made using (presumably) JavaScript on the /api override path.
 
-        Raises a variety of token errors (ClockSkew, NonceAlreadyUsed,
-        TimestampOrderingError, TokenException) which have a webservice error
-        status of Unauthorized - 401.  All of these exceptions represent
-        errors on the part of the client.
+        Raises TokenException which has a webservice error status of
+        Unauthorized - 401.
 
         Raises Unauthorized directly in the case where the consumer is None
         for a non-anonymous request as it may represent a server error.
@@ -1287,9 +1290,6 @@ class WebServicePublication(WebServicePublicationMixin,
         token = consumer.getAccessToken(token_key)
         if token is None:
             raise TokenException('Unknown access token (%s).' % token_key)
-        nonce = form.get('oauth_nonce')
-        timestamp = form.get('oauth_timestamp')
-        token.checkNonceAndTimestamp(nonce, timestamp)
         if token.permission == OAuthPermission.UNAUTHORIZED:
             raise TokenException('Unauthorized token (%s).' % token.key)
         elif token.is_expired:

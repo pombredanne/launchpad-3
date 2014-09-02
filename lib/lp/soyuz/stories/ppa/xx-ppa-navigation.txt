@@ -23,7 +23,7 @@ And the users can click on the item and will be taken to the PPA page.
     >>> anon_browser.getLink('PPA for Celso Providelo').click()
 
     >>> anon_browser.url
-    'http://launchpad.dev/~cprov/+archive/ppa'
+    'http://launchpad.dev/~cprov/+archive/ubuntu/ppa'
 
     >>> print anon_browser.title
     PPA for Celso Providelo : Celso Providelo
@@ -62,7 +62,7 @@ The PPA breadcrumb follows the PPA displayname.
 
     >>> cprov_browser = setupBrowser(
     ...     auth="Basic celso.providelo@canonical.com:test")
-    >>> cprov_browser.open("http://launchpad.dev/~cprov/+archive/ppa")
+    >>> cprov_browser.open("http://launchpad.dev/~cprov/+archive/ubuntu/ppa")
     >>> cprov_browser.getLink("Change details").click()
     >>> cprov_browser.getControl(
     ...    name="field.displayname").value = 'Default PPA'
@@ -98,12 +98,12 @@ the 'View all builds' link.
     Builds : Default PPA : Celso Providelo
 
     >>> anon_browser.url
-    'http://launchpad.dev/~cprov/+archive/ppa/+builds'
+    'http://launchpad.dev/~cprov/+archive/ubuntu/ppa/+builds'
 
 The user could return to the 'PPA' overview by using the breadcrumb link.
 
     >>> print anon_browser.getLink('Default PPA').url
-    http://launchpad.dev/~cprov/+archive/ppa
+    http://launchpad.dev/~cprov/+archive/ubuntu/ppa
 
 The user can navigate to an individual build details:
 
@@ -128,12 +128,12 @@ The user can navigate to an individual build details:
 From that page the user can return to the PPA overview.
 
     >>> anon_browser.getLink('Default PPA').url
-    'http://launchpad.dev/~cprov/+archive/ppa'
+    'http://launchpad.dev/~cprov/+archive/ubuntu/ppa'
 
 When the number of packages in the PPA is large the user will see them
 displayed in batches.
 
-    >>> anon_browser.open('http://launchpad.dev/~cprov/+archive/ppa?batch=1')
+    >>> anon_browser.open('http://launchpad.dev/~cprov/+archive/ubuntu/ppa?batch=1')
 
 Since he is on the first page, the 'First' and 'Previous' links are
 inactive:
@@ -179,8 +179,8 @@ This is the last page, so the next and last links are inactive.
 The 'First' and 'Previous' links, however, are now active.
 
     >>> anon_browser.getLink('First').url
-    'http://launchpad.dev/%7Ecprov/+archive/ppa/+index?batch=1'
+    'http://launchpad.dev/%7Ecprov/+archive/ubuntu/ppa/+index?batch=1'
 
     >>> anon_browser.getLink('Previous').url
-    'http://launchpad.dev/%7Ecprov/+archive/ppa/+index?batch=1&direction=backwards&memo=2&start=1'
+    'http://launchpad.dev/%7Ecprov/+archive/ubuntu/ppa/+index?batch=1&direction=backwards&memo=2&start=1'
 

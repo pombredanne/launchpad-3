@@ -1416,8 +1416,6 @@ class TestBranchDeletion(TestCaseWithFactory):
         preview_diff = self.factory.makePreviewDiff(
             merge_proposal=merge_proposal)
         transaction.commit()
-        self.useFixture(FeatureFixture({
-            'code.inline_diff_comments.enabled': 'enabled'}))
         merge_proposal.saveDraftInlineComment(
             previewdiff_id=preview_diff.id,
             person=self.user,
@@ -1432,8 +1430,6 @@ class TestBranchDeletion(TestCaseWithFactory):
         preview_diff = self.factory.makePreviewDiff(
             merge_proposal=merge_proposal)
         transaction.commit()
-        self.useFixture(FeatureFixture({
-            'code.inline_diff_comments.enabled': 'enabled'}))
         merge_proposal.createComment(
             owner=self.user,
             subject='Delete me!',

@@ -343,3 +343,25 @@ class ITranslationMessageSet(Interface):
             return.
         :param order_by: An SQL ORDER BY clause.
         """
+
+    def preloadDetails(messages, pofile=None, need_pofile=False,
+                       need_potemplate=False, need_potemplate_context=False,
+                       need_potranslation=False, need_potmsgset=False,
+                       need_people=False):
+        """Preload lots of details for `TranslationMessage`s.
+
+        If need_pofile is True, pofile may be left None to indicate that
+        an arbitrary `POFile` containing that message may be picked, or
+        set to a specific `POFile` in which all the messages must exist.
+        In either case, all messages must be for the same language.
+        """
+
+    def preloadPOFilesAndSequences(messages, pofile=None):
+        """Preload browser_pofile and sequence for `TranslationMessage`s.
+
+        All messages must be for the same language.
+
+        If pofile is None, an arbitrary POFile containing each message
+        will be used. Otherwise, each message must exist in the given
+        POFile.
+        """

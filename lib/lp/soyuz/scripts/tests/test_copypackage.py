@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -20,7 +20,6 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.archivepublisher.utils import get_ppa_reference
 from lp.bugs.interfaces.bug import (
     CreateBugParams,
     IBugSet,
@@ -948,7 +947,7 @@ class CopyCheckerTestCase(TestCaseWithFactory):
         copy_checker = CopyChecker(archive, include_binaries=False)
         self.assertRaisesWithContent(
             CannotCopy,
-            'No such distro series sid in distribution debian.',
+            'Series debian sid not supported in archive for ubuntutest.',
             copy_checker.checkCopy, source, sid, pocket, None, False)
 
     def test_checkCopy_respects_sourceformatselection(self):
@@ -1365,9 +1364,8 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
         dsp = self.factory.makeDistroSeriesParent()
         target_archive = dsp.derived_series.main_archive
         override = SourceOverride(
-            source.sourcepackagerelease.sourcepackagename,
-            self.factory.makeComponent(),
-            self.factory.makeSection())
+            component=self.factory.makeComponent(),
+            section=self.factory.makeSection())
         getUtility(ISourcePackageFormatSelectionSet).add(
             dsp.derived_series, SourcePackageFormat.FORMAT_1_0)
         switch_dbuser('archivepublisher')
@@ -1417,7 +1415,7 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
             send_email=True)
         [notification] = pop_notifications()
         self.assertEqual(
-            get_ppa_reference(target_archive), notification['X-Launchpad-PPA'])
+            target_archive.reference, notification['X-Launchpad-Archive'])
         body = notification.get_payload()[0].get_payload()
         expected = (dedent("""\
             Accepted:
@@ -1429,7 +1427,7 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
               * 1.0-2.
 
             --
-            http://launchpad.dev/~archiver/+archive/ppa
+            http://launchpad.dev/~archiver/+archive/ubuntutest/ppa
             """) +
             # Slight contortion to avoid a long line.
             fill(dedent("""\
@@ -1452,6 +1450,10 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
             person=source.sourcepackagerelease.creator,
             check_permissions=False, send_email=True)
         [notification, announcement] = pop_notifications()
+        self.assertEqual(
+            archive.reference, notification['X-Launchpad-Archive'])
+        self.assertEqual(
+            archive.reference, announcement['X-Launchpad-Archive'])
         self.assertEqual('Foo Bar <foo.bar@canonical.com>', notification['To'])
         self.assertEqual('nobby-changes@example.com', announcement['To'])
         for mail in (notification, announcement):
@@ -1588,12 +1590,23 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
 
     def test_copying_unsupported_arch_with_override(self):
         # When the copier is passed an unsupported arch with an override
-        # on the destination series, no binary is copied.
+        # on the destination series, no binary is copied. But an
+        # architecture-independent binary is copied even if the target
+        # has a totally disjoint set of archs.
         archive = self.factory.makeArchive(
             distribution=self.test_publisher.ubuntutest, virtualized=False)
-        source = self.test_publisher.getPubSource(
-            archive=archive, architecturehintlist='all')
-        self.test_publisher.getPubBinaries(pub_source=source)
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            archive=archive)
+        das = self.factory.makeDistroArchSeries(spph.distroseries)
+        spph.distroseries.nominatedarchindep = das
+        self.factory.makeBinaryPackagePublishingHistory(
+            archive=archive, distroarchseries=das,
+            source_package_release=spph.sourcepackagerelease,
+            architecturespecific=True)
+        bpph_indep = self.factory.makeBinaryPackagePublishingHistory(
+            archive=archive, distroarchseries=das,
+            source_package_release=spph.sourcepackagerelease,
+            architecturespecific=False)
 
         # Now make a new distroseries with only one architecture:
         # 'hppa'.
@@ -1603,11 +1616,16 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
         target_archive = self.factory.makeArchive(
             purpose=ArchivePurpose.PRIMARY,
             distribution=self.test_publisher.ubuntutest, virtualized=False)
-        copies = _do_direct_copy(source, target_archive, nobby, source.pocket,
+        copies = _do_direct_copy(spph, target_archive, nobby, spph.pocket,
             include_binaries=True, close_bugs=False, create_dsd_job=False)
 
-        # Only the source package has been copied.
-        self.assertEqual(1, len(copies))
+        # Only the source package and the architecture-independent
+        # binary have been copied.
+        self.assertEqual(2, len(copies))
+        self.assertEqual(
+            spph.sourcepackagerelease, copies[0].sourcepackagerelease)
+        self.assertEqual(
+            bpph_indep.binarypackagerelease, copies[1].binarypackagerelease)
 
     def test_copy_sets_creator(self):
         # The creator for the copied SPPH is the person passed

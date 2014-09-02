@@ -149,17 +149,17 @@ the landscape-developers PPA page.
     >>> name12_browser.getLink("PPA for Landscape Developers").click()
 
     >>> name12_browser.url
-    'http://launchpad.dev/~landscape-developers/+archive/ppa'
+    'http://launchpad.dev/~landscape-developers/+archive/ubuntu/ppa'
 
 Administrators can access all private PPAs.
 
     >>> admin_browser.open("http://launchpad.dev/~cprov")
     >>> admin_browser.getLink("PPA named p3a for Celso Providelo").click()
     >>> admin_browser.url
-    'http://launchpad.dev/~cprov/+archive/p3a'
+    'http://launchpad.dev/~cprov/+archive/ubuntu/p3a'
 
     >>> admin_browser.open("http://launchpad.dev/~landscape-developers")
     >>> admin_browser.getLink("PPA for Landscape Developers").click()
     >>> admin_browser.url
-    'http://launchpad.dev/~landscape-developers/+archive/ppa'
+    'http://launchpad.dev/~landscape-developers/+archive/ubuntu/ppa'
 

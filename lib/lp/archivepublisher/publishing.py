@@ -13,7 +13,12 @@ __metaclass__ = type
 from datetime import datetime
 import errno
 import hashlib
+from itertools import (
+    chain,
+    groupby,
+    )
 import logging
+from operator import attrgetter
 import os
 import shutil
 
@@ -21,6 +26,7 @@ from debian.deb822 import (
     _multivalued,
     Release,
     )
+from storm.expr import Desc
 from zope.component import getUtility
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
@@ -46,8 +52,10 @@ from lp.registry.interfaces.pocket import (
     pocketsuffix,
     )
 from lp.registry.interfaces.series import SeriesStatus
+from lp.registry.model.distroseries import DistroSeries
 from lp.services.database.constants import UTC_NOW
-from lp.services.database.sqlbase import sqlvalues
+from lp.services.database.interfaces import IStore
+from lp.services.features import getFeatureFlag
 from lp.services.librarian.client import LibrarianClient
 from lp.services.utils import file_exists
 from lp.soyuz.enums import (
@@ -61,6 +69,7 @@ from lp.soyuz.interfaces.publishing import (
     active_publishing_status,
     IPublishingSet,
     )
+from lp.soyuz.model.distroarchseries import DistroArchSeries
 from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory,
     SourcePackagePublishingHistory,
@@ -124,14 +133,14 @@ def _setupHtaccess(archive, pubconf, log):
         # is added; bug=376072
         return
 
-    htaccess_path = os.path.join(pubconf.htaccessroot, ".htaccess")
-    htpasswd_path = os.path.join(pubconf.htaccessroot, ".htpasswd")
+    htaccess_path = os.path.join(pubconf.archiveroot, ".htaccess")
+    htpasswd_path = os.path.join(pubconf.archiveroot, ".htpasswd")
     # After the initial htaccess/htpasswd files
     # are created generate_ppa_htaccess is responsible for
     # updating the tokens.
     if not os.path.exists(htaccess_path):
         log.debug("Writing htaccess file.")
-        write_htaccess(htaccess_path, pubconf.htaccessroot)
+        write_htaccess(htaccess_path, pubconf.archiveroot)
         passwords = htpasswd_credentials_for_archive(archive)
         write_htpasswd(htpasswd_path, passwords)
 
@@ -292,29 +301,135 @@ class Publisher(object):
             # provide custom builds for users who haven't upgraded yet.
             return self.distro.series
 
+    def checkLegalPocket(self, distroseries, pocket, is_careful):
+        """Check if the publication can happen in the archive."""
+        if distroseries not in self.consider_series:
+            return False
+        # 'careful' mode re-publishes everything:
+        if is_careful:
+            return True
+        return self.archive.canModifySuite(distroseries, pocket)
+
+    def getPendingSourcePublications(self, is_careful):
+        """Return the specific group of source records to be published."""
+        # Careful publishing should include all PUBLISHED rows, normal run
+        # only includes PENDING ones.
+        statuses = [PackagePublishingStatus.PENDING]
+        if is_careful:
+            statuses.append(PackagePublishingStatus.PUBLISHED)
+
+        publications = IStore(SourcePackagePublishingHistory).find(
+            SourcePackagePublishingHistory,
+            SourcePackagePublishingHistory.archive == self.archive,
+            SourcePackagePublishingHistory.status.is_in(statuses))
+        return publications.order_by(
+            SourcePackagePublishingHistory.distroseriesID,
+            SourcePackagePublishingHistory.pocket,
+            Desc(SourcePackagePublishingHistory.id))
+
+    def publishSources(self, distroseries, pocket, spphs):
+        """Publish sources for a given distroseries and pocket."""
+        self.log.debug(
+            "* Publishing pending sources for %s" %
+            distroseries.getSuite(pocket))
+        for spph in spphs:
+            spph.publish(self._diskpool, self.log)
+
+    def findAndPublishSources(self, is_careful=False):
+        """Search for and publish all pending sources.
+
+        :param is_careful: If True, republish all published records (system
+            will DTRT checking the hash of all published files).
+
+        Consider records returned by getPendingSourcePublications.
+        """
+        dirty_pockets = set()
+        all_spphs = self.getPendingSourcePublications(is_careful)
+        for (distroseries, pocket), spphs in groupby(
+                all_spphs, attrgetter("distroseries", "pocket")):
+            if not self.isAllowed(distroseries, pocket):
+                self.log.debug("* Skipping %s", distroseries.getSuite(pocket))
+            elif not self.checkLegalPocket(distroseries, pocket, is_careful):
+                for spph in spphs:
+                    self.log.error(
+                        "Tried to publish %s (%s) into %s (%s), skipping" % (
+                            spph.displayname, spph.id,
+                            distroseries.getSuite(pocket),
+                            distroseries.status.name))
+            else:
+                self.publishSources(distroseries, pocket, spphs)
+                dirty_pockets.add((distroseries.name, pocket))
+        return dirty_pockets
+
+    def getPendingBinaryPublications(self, is_careful):
+        """Return the specific group of binary records to be published."""
+        statuses = [PackagePublishingStatus.PENDING]
+        if is_careful:
+            statuses.append(PackagePublishingStatus.PUBLISHED)
+
+        publications = IStore(BinaryPackagePublishingHistory).find(
+            BinaryPackagePublishingHistory,
+            BinaryPackagePublishingHistory.archive == self.archive,
+            BinaryPackagePublishingHistory.distroarchseriesID ==
+                DistroArchSeries.id,
+            DistroArchSeries.distroseriesID == DistroSeries.id,
+            BinaryPackagePublishingHistory.status.is_in(statuses))
+        return publications.order_by(
+            DistroSeries.id,
+            BinaryPackagePublishingHistory.pocket,
+            DistroArchSeries.architecturetag,
+            Desc(BinaryPackagePublishingHistory.id))
+
+    def publishBinaries(self, distroarchseries, pocket, bpphs):
+        """Publish binaries for a given distroarchseries and pocket."""
+        self.log.debug(
+            "* Publishing pending binaries for %s/%s" % (
+                distroarchseries.distroseries.getSuite(pocket),
+                distroarchseries.architecturetag))
+        for bpph in bpphs:
+            bpph.publish(self._diskpool, self.log)
+
+    def findAndPublishBinaries(self, is_careful=False):
+        """Search for and publish all pending binaries.
+
+        :param is_careful: If True, republish all published records (system
+            will DTRT checking the hash of all published files).
+
+        Consider records returned by getPendingBinaryPublications.
+        """
+        dirty_pockets = set()
+        all_bpphs = self.getPendingBinaryPublications(is_careful)
+        for (distroarchseries, pocket), bpphs in groupby(
+                all_bpphs, attrgetter("distroarchseries", "pocket")):
+            distroseries = distroarchseries.distroseries
+            if not self.isAllowed(distroseries, pocket):
+                pass  # Already logged by publishSources.
+            elif not self.checkLegalPocket(distroseries, pocket, is_careful):
+                for bpph in bpphs:
+                    self.log.error(
+                        "Tried to publish %s (%s) into %s (%s), skipping" % (
+                            bpph.displayname, bpph.id,
+                            distroseries.getSuite(pocket),
+                            distroseries.status.name))
+            else:
+                self.publishBinaries(distroarchseries, pocket, bpphs)
+                dirty_pockets.add((distroseries.name, pocket))
+        return dirty_pockets
+
     def A_publish(self, force_publishing):
         """First step in publishing: actual package publishing.
 
-        Asks each DistroSeries to publish itself, which causes
-        publishing records to be updated, and files to be placed on disk
-        where necessary.
+        Publish each DistroSeries, which causes publishing records to be
+        updated, and files to be placed on disk where necessary.
         If self.allowed_suites is set, restrict the publication procedure
         to them.
         """
         self.log.debug("* Step A: Publishing packages")
 
-        for distroseries in self.consider_series:
-            for pocket in self.archive.getPockets():
-                if self.isAllowed(distroseries, pocket):
-                    more_dirt = distroseries.publish(
-                        self._diskpool, self.log, self.archive, pocket,
-                        is_careful=force_publishing)
-
-                    self.dirty_pockets.update(more_dirt)
-
-                else:
-                    self.log.debug(
-                        "* Skipping %s/%s", distroseries.name, pocket.name)
+        self.dirty_pockets.update(
+            self.findAndPublishSources(is_careful=force_publishing))
+        self.dirty_pockets.update(
+            self.findAndPublishBinaries(is_careful=force_publishing))
 
     def A2_markPocketsWithDeletionsDirty(self):
         """An intermediate step in publishing to detect deleted packages.
@@ -326,51 +441,49 @@ class Publisher(object):
         self.log.debug("* Step A2: Mark pockets with deletions as dirty")
 
         # Query part that is common to both queries below.
-        base_query = """
-            archive = %s AND
-            status = %s AND
-            scheduleddeletiondate IS NULL AND
-            dateremoved is NULL
-            """ % sqlvalues(self.archive,
-                            PackagePublishingStatus.DELETED)
+        def base_conditions(table):
+            return [
+                table.archive == self.archive,
+                table.status == PackagePublishingStatus.DELETED,
+                table.scheduleddeletiondate == None,
+                table.dateremoved == None,
+                ]
 
         # We need to get a set of (distroseries, pocket) tuples that have
         # publications that are waiting to be deleted.  Each tuple is
         # added to the dirty_pockets set.
 
-        # Loop for each pocket in each distroseries:
-        for distroseries in self.distro.series:
-            for pocket in self.archive.getPockets():
-                if (self.cannotModifySuite(distroseries, pocket)
-                    or not self.isAllowed(distroseries, pocket)):
-                    # We don't want to mark release pockets dirty in a
-                    # stable distroseries, no matter what other bugs
-                    # that precede here have dirtied it.
-                    continue
-                clauses = [base_query]
-                clauses.append("pocket = %s" % sqlvalues(pocket))
-                clauses.append("distroseries = %s" % sqlvalues(distroseries))
+        # Make the source publications query.
+        conditions = base_conditions(SourcePackagePublishingHistory)
+        conditions.append(
+            SourcePackagePublishingHistory.distroseriesID == DistroSeries.id)
+        source_suites = IStore(SourcePackagePublishingHistory).find(
+            (DistroSeries, SourcePackagePublishingHistory.pocket),
+            *conditions).config(distinct=True).order_by(
+                DistroSeries.id, SourcePackagePublishingHistory.pocket)
 
-                # Make the source publications query.
-                source_query = " AND ".join(clauses)
-                sources = SourcePackagePublishingHistory.select(source_query)
-                if not sources.is_empty():
-                    self.markPocketDirty(distroseries, pocket)
-                    # No need to check binaries if the pocket is already
-                    # dirtied from a source.
-                    continue
+        # Make the binary publications query.
+        conditions = base_conditions(BinaryPackagePublishingHistory)
+        conditions.extend([
+            BinaryPackagePublishingHistory.distroarchseriesID ==
+                DistroArchSeries.id,
+            DistroArchSeries.distroseriesID == DistroSeries.id,
+            ])
+        binary_suites = IStore(BinaryPackagePublishingHistory).find(
+            (DistroSeries, BinaryPackagePublishingHistory.pocket),
+            *conditions).config(distinct=True).order_by(
+                DistroSeries.id, BinaryPackagePublishingHistory.pocket)
 
-                # Make the binary publications query.
-                clauses = [base_query]
-                clauses.append("pocket = %s" % sqlvalues(pocket))
-                clauses.append("DistroArchSeries = DistroArchSeries.id")
-                clauses.append("DistroArchSeries.distroseries = %s" %
-                    sqlvalues(distroseries))
-                binary_query = " AND ".join(clauses)
-                binaries = BinaryPackagePublishingHistory.select(binary_query,
-                    clauseTables=['DistroArchSeries'])
-                if not binaries.is_empty():
-                    self.markPocketDirty(distroseries, pocket)
+        for distroseries, pocket in chain(source_suites, binary_suites):
+            if self.isDirty(distroseries, pocket):
+                continue
+            if (self.cannotModifySuite(distroseries, pocket)
+                or not self.isAllowed(distroseries, pocket)):
+                # We don't want to mark release pockets dirty in a
+                # stable distroseries, no matter what other bugs
+                # that precede here have dirtied it.
+                continue
+            self.markPocketDirty(distroseries, pocket)
 
     def B_dominate(self, force_domination):
         """Second step in publishing: domination."""
@@ -528,6 +641,19 @@ class Publisher(object):
 
         self.log.debug("Generating Sources")
 
+        separate_long_descriptions = False
+        if (not distroseries.include_long_descriptions and
+                getFeatureFlag("soyuz.ppa.separate_long_descriptions")):
+            # If include_long_descriptions is False and the feature flag is
+            # enabled, create a Translation-en file. getIndexStanza() will
+            # also omit long descriptions from the Packages.
+            separate_long_descriptions = True
+            packages = set()
+            translation_en = RepositoryIndexFile(
+                os.path.join(self._config.distsroot, suite_name,
+                             component.name, "i18n", "Translation-en"),
+                self._config.temproot)
+
         source_index = RepositoryIndexFile(
             get_sources_path(self._config, suite_name, component),
             self._config.temproot)
@@ -567,11 +693,25 @@ class Publisher(object):
                     # for, eg. ddebs where publish_debug_symbols is
                     # disabled.
                     continue
-                stanza = bpp.getIndexStanza().encode('utf-8') + '\n\n'
+                stanza = bpp.getIndexStanza(separate_long_descriptions).encode(
+                    'utf-8') + '\n\n'
                 indices[subcomp].write(stanza)
+                if separate_long_descriptions:
+                    # If the (Package, Description-md5) pair already exists in
+                    # the set, getTranslationsStanza will return None.
+                    # Otherwise it will add the pair to the set and return a
+                    # stanza to be written to Translation-en.
+                    translation_stanza = bpp.getTranslationsStanza(packages)
+                    if translation_stanza:
+                        translation_stanza = translation_stanza.encode(
+                            'utf-8') + '\n\n'
+                        translation_en.write(translation_stanza)
 
             for index in indices.itervalues():
                 index.close()
+
+        if separate_long_descriptions:
+            translation_en.close()
 
     def cannotModifySuite(self, distroseries, pocket):
         """Return True if the distroseries is stable and pocket is release."""
@@ -788,8 +928,8 @@ class Publisher(object):
         self.log.debug("Writing Index file for %s/%s/i18n" % (
             suite, component))
 
-        i18n_dir = os.path.join(self._config.distsroot, suite, component,
-                                "i18n")
+        i18n_subpath = os.path.join(component, "i18n")
+        i18n_dir = os.path.join(self._config.distsroot, suite, i18n_subpath)
         i18n_files = []
         try:
             for i18n_file in os.listdir(i18n_dir):
@@ -811,13 +951,15 @@ class Publisher(object):
         i18n_index = I18nIndex()
         for i18n_file in sorted(i18n_files):
             entry = self._readIndexFileContents(
-                suite, os.path.join(component, "i18n", i18n_file))
+                suite, os.path.join(i18n_subpath, i18n_file))
             if entry is None:
                 continue
             i18n_index.setdefault("SHA1", []).append({
                 "sha1": hashlib.sha1(entry).hexdigest(),
                 "name": i18n_file,
                 "size": len(entry)})
+            # Schedule i18n files for inclusion in the Release file.
+            all_series_files.add(os.path.join(i18n_subpath, i18n_file))
 
         with open(os.path.join(i18n_dir, "Index"), "w") as f:
             i18n_index.dump(f, "utf-8")
@@ -854,13 +996,10 @@ class Publisher(object):
         be caught and an OOPS report generated.
         """
         assert self.archive.is_ppa
-        root_dir = os.path.join(
-            self._config.distroroot, self.archive.owner.name,
-            self.archive.name)
-
         self.log.info(
             "Attempting to delete archive '%s/%s' at '%s'." % (
-                self.archive.owner.name, self.archive.name, root_dir))
+                self.archive.owner.name, self.archive.name,
+                self._config.archiveroot))
 
         # Set all the publications to DELETED.
         sources = self.archive.getPublishedSources(
@@ -884,8 +1023,8 @@ class Publisher(object):
         for pub in self.archive.getAllPublishedBinaries(include_removed=False):
             pub.dateremoved = UTC_NOW
 
-        for directory in (root_dir, self._config.metaroot):
-            if not os.path.exists(directory):
+        for directory in (self._config.archiveroot, self._config.metaroot):
+            if directory is None or not os.path.exists(directory):
                 continue
             try:
                 shutil.rmtree(directory)
@@ -905,12 +1044,11 @@ class Publisher(object):
         count = 1
         while True:
             try:
-                self.archive.owner.getPPAByName(new_name)
+                self.archive.owner.getPPAByName(
+                    self.archive.distribution, new_name)
             except NoSuchPPA:
                 break
             new_name = '%s%d' % (base_name, count)
             count += 1
         self.archive.name = new_name
-        self.log.info(
-            "Renamed deleted archive '%s/%s'.", self.archive.owner.name,
-            self.archive.name)
+        self.log.info("Renamed deleted archive '%s'.", self.archive.reference)

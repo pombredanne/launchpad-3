@@ -47,6 +47,7 @@ class DistroSeriesParent(Storm):
     initialized = Bool(allow_none=False)
 
     is_overlay = Bool(allow_none=False, default=False)
+    inherit_overrides = Bool(allow_none=False, default=False)
 
     pocket = EnumCol(
         dbName='pocket', notNull=False,
@@ -64,7 +65,8 @@ class DistroSeriesParentSet:
     title = "Cross reference of parent and derived distroseries."
 
     def new(self, derived_series, parent_series, initialized,
-            is_overlay=False, pocket=None, component=None, ordering=1):
+            is_overlay=False, inherit_overrides=False, pocket=None,
+            component=None, ordering=1):
         """Make and return a new `DistroSeriesParent`."""
         store = IMasterStore(DistroSeriesParent)
         dsp = DistroSeriesParent()
@@ -72,6 +74,7 @@ class DistroSeriesParentSet:
         dsp.parent_series = parent_series
         dsp.initialized = initialized
         dsp.is_overlay = is_overlay
+        dsp.inherit_overrides = inherit_overrides
         dsp.pocket = pocket
         dsp.component = component
         dsp.ordering = ordering

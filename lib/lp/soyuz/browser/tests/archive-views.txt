@@ -716,7 +716,7 @@ the owner of the PPA he wants to mark as dependency.
 
 Let's emulate a dependency addition. Note that the form contains, a
 empty 'selected_dependencies' (as it was rendered in the empty
-request) and 'dependency_candidate' contains a valid PPA owner name.
+request) and 'dependency_candidate' contains a valid PPA name.
 Validation checks are documented in
 pagetests/ppa/xx-edit-dependencies.txt.
 
@@ -724,7 +724,7 @@ pagetests/ppa/xx-edit-dependencies.txt.
     ...     cprov.archive, name="+edit-dependencies",
     ...     form={
     ...         'field.selected_dependencies': [],
-    ...         'field.dependency_candidate': 'mark/ppa',
+    ...         'field.dependency_candidate': '~mark/ubuntu/ppa',
     ...         'field.primary_dependencies': 'UPDATES',
     ...         'field.primary_components': 'ALL_COMPONENTS',
     ...         'field.actions.save': 'Save',
@@ -762,10 +762,10 @@ dependency. Each element has:
     PPA for Mark Shuttleworth
 
     >>> print dependency.token
-    mark/ppa
+    ~mark/ubuntu/ppa
 
     >>> print dependency.title.escapedtext
-    <a href="http://launchpad.dev/~mark/+archive/ppa">PPA for Mark
+    <a href="http://launchpad.dev/~mark/+archive/ubuntu/ppa">PPA for Mark
     Shuttleworth</a>
 
 The form focus, now that we have a recorded dependencies, is set to the
@@ -794,7 +794,7 @@ anymore, so it's not rendered as a link.
     PPA for Mark Shuttleworth
 
     >>> print dependency.token
-    mark/ppa
+    ~mark/ubuntu/ppa
 
     >>> print dependency.title
     PPA for Mark Shuttleworth
@@ -805,7 +805,7 @@ initial/empty state.
     >>> view = create_initialized_view(
     ...     cprov.archive, name="+edit-dependencies",
     ...     form={
-    ...         'field.selected_dependencies': ['mark/ppa'],
+    ...         'field.selected_dependencies': ['~mark/ubuntu/ppa'],
     ...         'field.dependency_candidate': '',
     ...         'field.primary_dependencies': 'UPDATES',
     ...         'field.primary_components': 'ALL_COMPONENTS',
@@ -849,7 +849,7 @@ for UPDATES pocket (see archive-dependencies.txt for more information).
     >>> view.widgets.get('primary_dependencies')._getCurrentValue()
     <DBItem PackagePublishingPocket.UPDATES, (20) Updates>
 
-A similar widget is used for the primary archive component overrides ,
+A similar widget is used for the primary archive component overrides,
 which contains two pre-defined options. By default all PPAs use all
 ubuntu components available to satisfy build dependencies, i.e. the
 'multiverse' component.
@@ -965,7 +965,7 @@ option to be selected.
     <DBItem PackagePublishingPocket.UPDATES, (20) Updates>
 
 Dependencies on private PPAs can be only set if the user performing
-the action also have permission to view the private PPA and if the
+the action also has permission to view the private PPA and if the
 context PPA is also private.
 
 The latter guarantee that the P3A buildd_secret won't get exposed in
@@ -988,7 +988,7 @@ PPA the form fails because he has no permission to view its contents.
 
     >>> add_private_form = {
     ...     'field.selected_dependencies': [],
-    ...     'field.dependency_candidate': 'pirulito-team/ppa',
+    ...     'field.dependency_candidate': '~pirulito-team/ubuntu/ppa',
     ...     'field.primary_dependencies': 'UPDATES',
     ...     'field.primary_components': 'FOLLOW_PRIMARY',
     ...     'field.actions.save': 'Save',
@@ -1266,7 +1266,7 @@ options making it the default option, 'This PPA' rendered option.
 
     >>> for item in archive_widget.vocabulary:
     ...     print item.title
-    PPA for Ubuntu Team [~ubuntu-team/ppa]
+    PPA for Ubuntu Team [~ubuntu-team/ubuntu/ppa]
 
     >>> print archive_widget.getInputValue() == cprov.archive
     True
@@ -1316,8 +1316,8 @@ value is submitted.
 
     >>> for item in archive_widget.vocabulary:
     ...     print item.title
-    PPA for Celso Providelo [~cprov/ppa]
-    PPA for No Privileges Person [~no-priv/ppa]
+    PPA for Celso Providelo [~cprov/ubuntu/ppa]
+    PPA for No Privileges Person [~no-priv/ubuntu/ppa]
 
     >>> print archive_widget.getInputValue()
     Traceback (most recent call last):
@@ -1364,7 +1364,7 @@ the public Ubuntu-team PPA, which is empty.
     ...     cprov_private_ppa, name="+copy-packages",
     ...     form={
     ...         'field.selected_sources': [str(private_source.id)],
-    ...         'field.destination_archive': 'ubuntu-team/ppa',
+    ...         'field.destination_archive': '~ubuntu-team/ubuntu/ppa',
     ...         'field.destination_series': '',
     ...         'field.include_binaries': 'REBUILD_SOURCES',
     ...         'field.actions.copy': 'Copy',
@@ -1410,7 +1410,7 @@ If we run the same copy again, it will fail.
     ...     cprov_private_ppa, name="+copy-packages",
     ...     form={
     ...         'field.selected_sources': [str(private_source.id)],
-    ...         'field.destination_archive': 'ubuntu-team/ppa',
+    ...         'field.destination_archive': '~ubuntu-team/ubuntu/ppa',
     ...         'field.destination_series': '',
     ...         'field.include_binaries': 'REBUILD_SOURCES',
     ...         'field.actions.copy': 'Copy',

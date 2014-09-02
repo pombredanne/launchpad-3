@@ -22,10 +22,8 @@ from lp.services.mail.sendmail import format_address
 from lp.services.messages.interfaces.message import IMessageSet
 from lp.services.webapp import canonical_url
 from lp.testing import (
-    feature_flags,
     login,
     login_person,
-    set_feature_flag,
     TestCaseWithFactory,
     )
 from lp.testing.layers import LaunchpadFunctionalLayer
@@ -240,10 +238,6 @@ class TestCodeReviewComment(TestCaseWithFactory):
 
         See `build_inline_comments_section` tests for formatting details.
         """
-        # Enabled corresponding feature flag.
-        self.useContext(feature_flags())
-        set_feature_flag(u'code.inline_diff_comments.enabled', u'enabled')
-
         comment = self.makeCommentWithInlineComments(
             inline_comments={'2': u'Is this from Planet Earth\xa9 ?'})
         mailer = CodeReviewCommentMailer.forCreation(comment)
@@ -265,21 +259,6 @@ class TestCodeReviewComment(TestCaseWithFactory):
             '2010-02-02 15:48:56 +0000'
         ]
         self.assertEqual(expected_lines, ctrl.body.splitlines()[1:10])
-
-    def test_generateEmailWithInlineComments_feature_disabled(self):
-        """Inline comments are not considered if the flag is not enabled."""
-        # Do not enable (set, actually) the corresponding feature flag
-        # ('code.inline_diff_comments.enabled').
-        content = 'CoNtEnT'
-        comment = self.makeCommentWithInlineComments(content=content)
-        mailer = CodeReviewCommentMailer.forCreation(comment)
-        commenter = comment.branch_merge_proposal.registrant
-        ctrl = mailer.generateEmail(
-            commenter.preferredemail.email, commenter)
-        # Only the comment content (footer is ignored) is included in
-        # email body.
-        self.assertEqual(
-            [content], ctrl.body.splitlines()[:-3])
 
     def makeComment(self, email_message):
         message = getUtility(IMessageSet).fromEmail(email_message.as_string())

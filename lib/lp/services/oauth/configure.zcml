@@ -47,7 +47,4 @@
           set_schema="lp.services.oauth.interfaces.IOAuthAccessToken"/>
   </class>
 
-  <class class="lp.services.oauth.model.OAuthNonce">
-      <allow interface="lp.services.oauth.interfaces.IOAuthNonce"/>
-  </class>
 </configure>

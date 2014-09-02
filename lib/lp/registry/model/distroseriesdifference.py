@@ -1,4 +1,4 @@
-# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database classes for a difference between two distribution series."""
@@ -465,7 +465,7 @@ class DistroSeriesDifference(StormBase):
             name_matches = [SPN.name == name_filter]
             try:
                 packageset = getUtility(IPackagesetSet).getByName(
-                    name_filter, distroseries=distro_series)
+                    distro_series, name_filter)
             except NoSuchPackageSet:
                 packageset = None
             if packageset is not None:

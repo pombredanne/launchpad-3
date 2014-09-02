@@ -18,7 +18,6 @@ from lp.services.database.interfaces import (
 from lp.services.oauth.model import (
     OAuthAccessToken,
     OAuthConsumer,
-    OAuthNonce,
     OAuthRequestToken,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
@@ -51,14 +50,9 @@ class OAuthConsumerTestCase(BaseOAuthTestCase):
     class_ = OAuthConsumer
 
 
-class OAuthNonceTestCase(BaseOAuthTestCase):
-    class_ = OAuthNonce
-
-
 def test_suite():
     return unittest.TestSuite((
         unittest.makeSuite(OAuthAccessTokenTestCase),
         unittest.makeSuite(OAuthRequestTokenTestCase),
-        unittest.makeSuite(OAuthNonceTestCase),
         unittest.makeSuite(OAuthConsumerTestCase),
             ))

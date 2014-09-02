@@ -7,7 +7,6 @@ __all__ = [
     ]
 
 from lp.app.browser.tales import DurationFormatterAPI
-from lp.archivepublisher.utils import get_ppa_reference
 from lp.services.config import config
 from lp.services.mail.basemailer import (
     BaseMailer,
@@ -52,6 +51,7 @@ class LiveFSBuildMailer(BaseMailer):
         params = super(LiveFSBuildMailer, self)._getTemplateParams(
             email, recipient)
         params.update({
+            "archive_tag": build.archive.reference,
             "build_id": build.id,
             "build_title": build.title,
             "livefs_name": build.livefs.name,
@@ -66,12 +66,6 @@ class LiveFSBuildMailer(BaseMailer):
             "builder_url": "",
             "build_url": canonical_url(self.build),
             })
-        if build.archive.is_ppa:
-            archive_tag = "%s PPA" % get_ppa_reference(build.archive)
-        else:
-            archive_tag = "%s primary archive" % (
-                build.archive.distribution.name)
-        params["archive_tag"] = archive_tag
         if build.duration is not None:
             duration_formatter = DurationFormatterAPI(build.duration)
             params["build_duration"] = duration_formatter.approximateduration()

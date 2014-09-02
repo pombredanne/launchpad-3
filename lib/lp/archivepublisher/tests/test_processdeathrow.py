@@ -16,7 +16,6 @@ import shutil
 import subprocess
 import sys
 from tempfile import mkdtemp
-from unittest import TestCase
 
 import pytz
 from zope.component import getUtility
@@ -27,10 +26,11 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.services.config import config
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
+from lp.testing import TestCaseWithFactory
 from lp.testing.layers import LaunchpadZopelessLayer
 
 
-class TestProcessDeathRow(TestCase):
+class TestProcessDeathRow(TestCaseWithFactory):
     """Test the process-death-row.py script works properly."""
 
     layer = LaunchpadZopelessLayer
@@ -38,8 +38,7 @@ class TestProcessDeathRow(TestCase):
     def runDeathRow(self, extra_args, distribution="ubuntutest"):
         """Run process-death-row.py, returning the result and output."""
         script = os.path.join(config.root, "scripts", "process-death-row.py")
-        args = [sys.executable, script, "-v", "-d", distribution,
-                "-p", self.primary_test_folder]
+        args = [sys.executable, script, "-v", "-p", self.primary_test_folder]
         args.extend(extra_args)
         process = subprocess.Popen(
             args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -52,6 +51,7 @@ class TestProcessDeathRow(TestCase):
 
     def setUp(self):
         """Set up for a test death row run."""
+        super(TestProcessDeathRow, self).setUp()
         self.setupPrimaryArchive()
         self.setupPPA()
 
@@ -62,6 +62,7 @@ class TestProcessDeathRow(TestCase):
         """Clean up after ourselves."""
         self.tearDownPrimaryArchive()
         self.tearDownPPA()
+        super(TestProcessDeathRow, self).tearDown()
 
     def setupPrimaryArchive(self):
         """Create pending removal publications in ubuntutest PRIMARY archive.
@@ -70,6 +71,8 @@ class TestProcessDeathRow(TestCase):
         and verified.
         """
         ubuntutest = getUtility(IDistributionSet)["ubuntutest"]
+        self.factory.makeDistroSeriesParent(
+            derived_series=ubuntutest.currentseries)
         ut_alsautils = ubuntutest.getSourcePackage("alsa-utils")
         ut_alsautils_109a4 = ut_alsautils.getVersion("1.0.9a-4")
         primary_pubrecs = ut_alsautils_109a4.publishing_history
@@ -168,7 +171,7 @@ class TestProcessDeathRow(TestCase):
 
     def testDryRun(self):
         """Test we don't delete the file or change the db in dry run mode."""
-        self.runDeathRow(["-n"])
+        self.runDeathRow(["-d", "ubuntutest", "-n"])
         self.assertTrue(os.path.exists(self.primary_package_path))
         self.assertTrue(os.path.exists(self.ppa_package_path))
 
@@ -181,7 +184,7 @@ class TestProcessDeathRow(TestCase):
 
     def testWetRun(self):
         """Test we do delete the file and change the db in wet run mode."""
-        self.runDeathRow([])
+        self.runDeathRow(["-d", "ubuntutest"])
         self.assertFalse(os.path.exists(self.primary_package_path))
         self.assertTrue(os.path.exists(self.ppa_package_path))
 
@@ -194,7 +197,7 @@ class TestProcessDeathRow(TestCase):
 
     def testPPARun(self):
         """Test we only work upon PPA."""
-        self.runDeathRow(["--ppa"])
+        self.runDeathRow(["-d", "ubuntutest", "--ppa"])
 
         self.assertTrue(os.path.exists(self.primary_package_path))
         self.assertFalse(os.path.exists(self.ppa_package_path))
@@ -205,3 +208,14 @@ class TestProcessDeathRow(TestCase):
         self.probePublishingStatus(
             self.ppa_pubrec_ids, PackagePublishingStatus.SUPERSEDED)
         self.probeRemoved(self.ppa_pubrec_ids)
+
+    def testDerivedRun(self):
+        self.runDeathRow([])
+        self.assertTrue(os.path.exists(self.primary_package_path))
+        self.assertTrue(os.path.exists(self.ppa_package_path))
+        self.runDeathRow(['--all-derived'])
+        self.assertFalse(os.path.exists(self.primary_package_path))
+        self.assertTrue(os.path.exists(self.ppa_package_path))
+        self.runDeathRow(['--all-derived', '--ppa'])
+        self.assertFalse(os.path.exists(self.primary_package_path))
+        self.assertFalse(os.path.exists(self.ppa_package_path))

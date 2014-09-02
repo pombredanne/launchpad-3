@@ -45,7 +45,8 @@ class TestDistroSeriesParent(TestCaseWithFactory):
         dsp = self.factory.makeDistroSeriesParent(
             derived_series=derived_series,
             parent_series=parent_series,
-            initialized=True)
+            initialized=True,
+            inherit_overrides=True)
 
         self.assertThat(
             dsp,
@@ -54,6 +55,7 @@ class TestDistroSeriesParent(TestCaseWithFactory):
                 parent_series=parent_series,
                 initialized=True,
                 is_overlay=False,
+                inherit_overrides=True,
                 component=None,
                 pocket=None,
                 ))
@@ -79,6 +81,7 @@ class TestDistroSeriesParent(TestCaseWithFactory):
                 parent_series=parent_series,
                 initialized=True,
                 is_overlay=True,
+                inherit_overrides=False,
                 component=universe_component,
                 pocket=PackagePublishingPocket.SECURITY,
                 ))
