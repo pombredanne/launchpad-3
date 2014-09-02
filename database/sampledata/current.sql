@@ -1,6 +1,6 @@
 -- Copyright 2010-2014 Canonical Ltd.  This software is licensed under the
 -- GNU Affero General Public License version 3 (see the file LICENSE).
--- Created using pg_dump (PostgreSQL) 9.3.4
+-- Created using pg_dump (PostgreSQL) 9.3.5
 
 SET check_function_bodies = false;
 SET client_encoding = 'UTF8';
@@ -4554,8 +4554,8 @@ ALTER TABLE livefsfile ENABLE TRIGGER ALL;
 
 ALTER TABLE logintoken DISABLE TRIGGER ALL;
 
-INSERT INTO logintoken (id, requester, requesteremail, email, created, tokentype, token, fingerprint, redirection_url, date_consumed) VALUES (1, NULL, NULL, 'bac@canonical.com', '2008-06-27 14:48:38.308457', 3, 'mzsJ6LBvNKjFqP1Csfw7', NULL, 'http://launchpad.dev', '2008-06-27 14:49:11.149508');
-INSERT INTO logintoken (id, requester, requesteremail, email, created, tokentype, token, fingerprint, redirection_url, date_consumed) VALUES (2, 16, 'foo.bar@canonical.com', 'admin@canonical.com', '2008-08-05 11:59:42.448213', 4, 'QjhD4dRT341fmk51pphn', NULL, NULL, '2008-08-05 12:01:32.086327');
+INSERT INTO logintoken (id, requester, requesteremail, email, created, tokentype, token, fingerprint, redirection_url, date_consumed) VALUES (1, NULL, NULL, 'bac@canonical.com', '2008-06-27 14:48:38.308457', 3, '4d0a02130ab51372bb2114a9abe3ad8482810bdac58a4231c85c005c923cd57c', NULL, 'http://launchpad.dev', '2008-06-27 14:49:11.149508');
+INSERT INTO logintoken (id, requester, requesteremail, email, created, tokentype, token, fingerprint, redirection_url, date_consumed) VALUES (2, 16, 'foo.bar@canonical.com', 'admin@canonical.com', '2008-08-05 11:59:42.448213', 4, 'd617585e5d8be1b4eba0c4d5f5058f0f761f6d2912d8c780b257d483ac3e5c8f', NULL, NULL, '2008-08-05 12:01:32.086327');
 
 
 ALTER TABLE logintoken ENABLE TRIGGER ALL;
