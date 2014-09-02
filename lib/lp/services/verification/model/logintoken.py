@@ -75,7 +75,7 @@ class LoginToken(SQLBase):
         token = kwargs.pop('token', None)
         if token is not None:
             self._plaintext_token = token
-            kwargs['_token'] = token
+            kwargs['_token'] = hashlib.sha256(token).hexdigest()
         super(LoginToken, self).__init__(*args, **kwargs)
 
     _plaintext_token = None

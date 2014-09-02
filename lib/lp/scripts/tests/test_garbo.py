@@ -10,6 +10,7 @@ from datetime import (
     datetime,
     timedelta,
     )
+import hashlib
 import logging
 from StringIO import StringIO
 import time
@@ -968,9 +969,9 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
             path="sample path"))))
         self.runDaily()
         self.assertEqual(0, len(list(store.find(TimeLimitedToken,
-            path="sample path", token="foo"))))
+            path="sample path", token=hashlib.sha256("foo").hexdigest()))))
         self.assertEqual(1, len(list(store.find(TimeLimitedToken,
-            path="sample path", token="bar"))))
+            path="sample path", token=hashlib.sha256("bar").hexdigest()))))
 
     def test_CacheSuggestivePOTemplates(self):
         switch_dbuser('testadmin')
