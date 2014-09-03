@@ -62,7 +62,10 @@ class LoginToken(SQLBase):
     requesteremail = StringCol(dbName='requesteremail', notNull=False,
                                default=None)
     email = StringCol(dbName='email', notNull=True)
+
+    # The hex SHA-256 hash of the token.
     _token = StringCol(dbName='token', unique=True)
+
     tokentype = EnumCol(dbName='tokentype', notNull=True, enum=LoginTokenType)
     date_created = UtcDateTimeCol(dbName='created', notNull=True)
     fingerprint = StringCol(dbName='fingerprint', notNull=False, default=None)
@@ -370,8 +373,7 @@ class LoginTokenSet:
     def __getitem__(self, tokentext):
         """See ILoginTokenSet."""
         token = IStore(LoginToken).find(
-            LoginToken, LoginToken._token.is_in((
-                hashlib.sha256(tokentext).hexdigest(), tokentext))).one()
+            LoginToken, _token=hashlib.sha256(tokentext).hexdigest()).one()
         if token is None:
             raise NotFoundError(tokentext)
         token._plaintext_token = tokentext
