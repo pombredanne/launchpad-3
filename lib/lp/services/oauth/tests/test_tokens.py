@@ -14,13 +14,11 @@ from datetime import (
 import hashlib
 
 import pytz
-import transaction
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from lp.services.features.testing import FeatureFixture
-from lp.services.mail import stub
 from lp.services.oauth.interfaces import (
     IOAuthAccessToken,
     IOAuthConsumer,
@@ -107,19 +105,18 @@ class TestRequestTokenSet(TestOAuth):
 class TestRequestTokens(TestOAuth):
     """Tests for OAuth request token objects."""
 
-    secret_len = 80
-
     def test_newRequestToken(self):
         request_token, secret = self.consumer.newRequestToken()
         verifyObject(IOAuthRequestToken, request_token)
         self.assertIsInstance(secret, unicode)
-        self.assertEqual(removeSecurityProxy(request_token)._secret, secret)
+        self.assertEqual(
+            removeSecurityProxy(request_token)._secret,
+            hashlib.sha256(secret).hexdigest())
 
     def test_key_and_secret_automatically_generated(self):
         request_token, secret = self.consumer.newRequestToken()
         self.assertEqual(len(request_token.key), 20)
-        self.assertEqual(
-            len(removeSecurityProxy(request_token)._secret), self.secret_len)
+        self.assertEqual(len(removeSecurityProxy(request_token)._secret), 64)
 
     def test_date_created(self):
         request_token, _ = self.consumer.newRequestToken()
@@ -268,23 +265,6 @@ class TestRequestTokens(TestOAuth):
         self.assertEquals(person.oauth_request_tokens.count(), 0)
 
 
-class TestRequestTokensHashed(TestRequestTokens):
-
-    secret_len = 64
-
-    def setUp(self):
-        super(TestRequestTokensHashed, self).setUp()
-        self.useFixture(FeatureFixture({'auth.hash_oauth_secrets': 'on'}))
-
-    def test_newRequestToken(self):
-        request_token, secret = self.consumer.newRequestToken()
-        verifyObject(IOAuthRequestToken, request_token)
-        self.assertIsInstance(secret, unicode)
-        self.assertEqual(
-            removeSecurityProxy(request_token)._secret,
-            hashlib.sha256(secret).hexdigest())
-
-
 class TestAccessTokens(TestOAuth):
     """Tests for OAuth access tokens."""
 
@@ -306,14 +286,8 @@ class TestAccessTokens(TestOAuth):
         verifyObject(IOAuthAccessToken, access_token)
         self.assertIsInstance(access_secret, unicode)
         self.assertEqual(
-            removeSecurityProxy(access_token)._secret, access_secret)
-
-        # Make sure the security notification email went out that the new
-        # token was created.
-        transaction.commit()
-        from_addr, to_addr, msg = stub.test_emails.pop()
-        self.assertIn('OAuth token generated', msg)
-        self.assertIn('@example.com', to_addr[0])
+            removeSecurityProxy(access_token)._secret,
+            hashlib.sha256(access_secret).hexdigest())
 
     def test_access_token_inherits_data_fields_from_request_token(self):
         request_token, access_token, _ = (
@@ -409,24 +383,6 @@ class TestAccessTokens(TestOAuth):
         login_person(access_token.person)
         access_token.date_expires = self.a_long_time_ago
         self.assertEquals(person.oauth_access_tokens.count(), 0)
-
-
-class TestAccessTokensHashed(TestAccessTokens):
-
-    def setUp(self):
-        super(TestAccessTokensHashed, self).setUp()
-        self.useFixture(FeatureFixture({'auth.hash_oauth_secrets': 'on'}))
-
-    def test_exchange_request_token_for_access_token(self):
-        # Make sure the basic exchange of request token for access
-        # token works.
-        request_token, access_token, access_secret = (
-            self._exchange_request_token_for_access_token())
-        verifyObject(IOAuthAccessToken, access_token)
-        self.assertIsInstance(access_secret, unicode)
-        self.assertEqual(
-            removeSecurityProxy(access_token)._secret,
-            hashlib.sha256(access_secret).hexdigest())
 
 
 class TestHelperFunctions(TestOAuth):

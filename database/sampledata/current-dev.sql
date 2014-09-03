@@ -1,6 +1,6 @@
 -- Copyright 2010-2014 Canonical Ltd.  This software is licensed under the
 -- GNU Affero General Public License version 3 (see the file LICENSE).
--- Created using pg_dump (PostgreSQL) 9.3.4
+-- Created using pg_dump (PostgreSQL) 9.3.5
 
 SET check_function_bodies = false;
 SET client_encoding = 'UTF8';
@@ -4637,8 +4637,8 @@ ALTER TABLE livefsfile ENABLE TRIGGER ALL;
 
 ALTER TABLE logintoken DISABLE TRIGGER ALL;
 
-INSERT INTO logintoken (id, requester, requesteremail, email, created, tokentype, token, fingerprint, redirection_url, date_consumed) VALUES (1, NULL, NULL, 'bac@canonical.com', '2008-06-27 14:48:38.308457', 3, 'mzsJ6LBvNKjFqP1Csfw7', NULL, 'http://launchpad.dev', '2008-06-27 14:49:11.149508');
-INSERT INTO logintoken (id, requester, requesteremail, email, created, tokentype, token, fingerprint, redirection_url, date_consumed) VALUES (2, 16, 'foo.bar@canonical.com', 'admin@canonical.com', '2008-08-05 11:59:42.448213', 4, 'QjhD4dRT341fmk51pphn', NULL, NULL, '2008-08-05 12:01:32.086327');
+INSERT INTO logintoken (id, requester, requesteremail, email, created, tokentype, token, fingerprint, redirection_url, date_consumed) VALUES (1, NULL, NULL, 'bac@canonical.com', '2008-06-27 14:48:38.308457', 3, '4d0a02130ab51372bb2114a9abe3ad8482810bdac58a4231c85c005c923cd57c', NULL, 'http://launchpad.dev', '2008-06-27 14:49:11.149508');
+INSERT INTO logintoken (id, requester, requesteremail, email, created, tokentype, token, fingerprint, redirection_url, date_consumed) VALUES (2, 16, 'foo.bar@canonical.com', 'admin@canonical.com', '2008-08-05 11:59:42.448213', 4, 'd617585e5d8be1b4eba0c4d5f5058f0f761f6d2912d8c780b257d483ac3e5c8f', NULL, NULL, '2008-08-05 12:01:32.086327');
 
 
 ALTER TABLE logintoken ENABLE TRIGGER ALL;
@@ -5730,8 +5730,8 @@ ALTER TABLE nameblacklist ENABLE TRIGGER ALL;
 
 ALTER TABLE oauthconsumer DISABLE TRIGGER ALL;
 
-INSERT INTO oauthconsumer (id, date_created, disabled, key, secret) VALUES (1, '2008-03-18 20:57:19.108004', false, 'foobar123451432', '');
-INSERT INTO oauthconsumer (id, date_created, disabled, key, secret) VALUES (2, '2008-03-18 20:57:44.710251', false, 'launchpad-library', '');
+INSERT INTO oauthconsumer (id, date_created, disabled, key, secret) VALUES (1, '2008-03-18 20:57:19.108004', false, 'foobar123451432', 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855');
+INSERT INTO oauthconsumer (id, date_created, disabled, key, secret) VALUES (2, '2008-03-18 20:57:44.710251', false, 'launchpad-library', 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855');
 
 
 ALTER TABLE oauthconsumer ENABLE TRIGGER ALL;
@@ -5739,9 +5739,9 @@ ALTER TABLE oauthconsumer ENABLE TRIGGER ALL;
 
 ALTER TABLE oauthaccesstoken DISABLE TRIGGER ALL;
 
-INSERT INTO oauthaccesstoken (id, consumer, person, permission, date_created, date_expires, key, secret, product, project, distribution, sourcepackagename) VALUES (1, 1, 29, 20, '2008-03-18 20:57:44.710251', NULL, 'salgado-read-nonprivate', 'secret', NULL, NULL, NULL, NULL);
-INSERT INTO oauthaccesstoken (id, consumer, person, permission, date_created, date_expires, key, secret, product, project, distribution, sourcepackagename) VALUES (2, 2, 29, 50, '2008-03-18 20:57:44.710251', NULL, 'salgado-change-anything', 'test', NULL, NULL, NULL, NULL);
-INSERT INTO oauthaccesstoken (id, consumer, person, permission, date_created, date_expires, key, secret, product, project, distribution, sourcepackagename) VALUES (3, 2, 52, 20, '2008-05-19 21:36:47.994029', NULL, 'nopriv-read-nonprivate', 'mystery', NULL, NULL, NULL, NULL);
+INSERT INTO oauthaccesstoken (id, consumer, person, permission, date_created, date_expires, key, secret, product, project, distribution, sourcepackagename) VALUES (1, 1, 29, 20, '2008-03-18 20:57:44.710251', NULL, 'salgado-read-nonprivate', '2bb80d537b1da3e38bd30361aa855686bde0eacd7162fef6a25fe97bf527a25b', NULL, NULL, NULL, NULL);
+INSERT INTO oauthaccesstoken (id, consumer, person, permission, date_created, date_expires, key, secret, product, project, distribution, sourcepackagename) VALUES (2, 2, 29, 50, '2008-03-18 20:57:44.710251', NULL, 'salgado-change-anything', '9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08', NULL, NULL, NULL, NULL);
+INSERT INTO oauthaccesstoken (id, consumer, person, permission, date_created, date_expires, key, secret, product, project, distribution, sourcepackagename) VALUES (3, 2, 52, 20, '2008-05-19 21:36:47.994029', NULL, 'nopriv-read-nonprivate', '4f0d9e5f2d159c8bd63247f9470d09f15e1ff431cb88d5a101df49c4c01882e6', NULL, NULL, NULL, NULL);
 
 
 ALTER TABLE oauthaccesstoken ENABLE TRIGGER ALL;

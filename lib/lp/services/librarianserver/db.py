@@ -61,8 +61,7 @@ class Library:
             store = session_store()
             token_found = store.find(TimeLimitedToken,
                 SQL("age(created) < interval '1 day'"),
-                TimeLimitedToken.token.is_in(
-                    (token, hashlib.sha256(token).hexdigest())),
+                TimeLimitedToken.token == hashlib.sha256(token).hexdigest(),
                 TimeLimitedToken.path == path).is_empty()
             store.reset()
             if token_found:
