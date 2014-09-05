@@ -67,6 +67,10 @@ def to_swift(log, start_lfc_id=None, end_lfc_id=None, remove=False):
             or end_fs_path[:len(dirpath)] < dirpath):
             dirnames[:] = []
             continue
+        else:
+            # We need to descent in order, making it possible to resume
+            # an aborted job.
+            dirnames.sort()
 
         log.debug('Scanning {0} for matching files'.format(dirpath))
 
