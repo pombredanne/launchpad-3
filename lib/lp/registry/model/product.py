@@ -1842,7 +1842,7 @@ class ProductSet:
             displayname=displayname, title=title, project=project,
             summary=summary, description=description, homepageurl=homepageurl,
             screenshotsurl=screenshotsurl, wikiurl=wikiurl,
-            downloadurl=downloadurl, freshmeatproject=freshmeatproject,
+            downloadurl=downloadurl, freshmeatproject=None,
             sourceforgeproject=sourceforgeproject,
             programminglang=programminglang,
             project_reviewed=project_reviewed,
