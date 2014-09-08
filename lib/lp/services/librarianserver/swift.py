@@ -68,7 +68,7 @@ def to_swift(log, start_lfc_id=None, end_lfc_id=None, remove=False):
             dirnames[:] = []
             continue
         else:
-            # We need to descent in order, making it possible to resume
+            # We need to descend in order, making it possible to resume
             # an aborted job.
             dirnames.sort()
 
