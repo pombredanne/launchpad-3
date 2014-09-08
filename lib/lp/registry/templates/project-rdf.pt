@@ -27,10 +27,6 @@
         <lp:homepage tal:attributes="rdf:resource context/homepageurl" />
         <lp:wiki tal:condition="context/wikiurl"
                  tal:attributes="rdf:resource context/wikiurl" />
-        <lp:freshmeatProject tal:condition="context/freshmeatproject"
-                             tal:content="context/freshmeatproject">
-            freshmeatproject
-        </lp:freshmeatProject>
         <lp:sourceforgeProject tal:condition="context/sourceforgeproject"
                              tal:content="context/sourceforgeproject">
             sourceforgeproject

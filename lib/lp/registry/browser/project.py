@@ -390,7 +390,7 @@ class ProjectEditView(LaunchpadEditFormView):
         'displayname', 'title', 'summary', 'description',
         'bug_reporting_guidelines', 'bug_reported_acknowledgement',
         'homepageurl', 'bugtracker', 'sourceforgeproject',
-        'freshmeatproject', 'wikiurl']
+        'wikiurl']
 
     @action('Change Details', name='change')
     def edit(self, action, data):
