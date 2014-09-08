@@ -574,7 +574,7 @@ class IProductView(
         TextLine(
             title=_('Freshmeat Project'),
             required=False, description=_("""The Freshmeat project name for
-                this project, if it is in freshmeat.""")),
+                this project, if it is in freshmeat. [DEPRECATED]""")),
         exported_as='freshmeat_project')
 
     homepage_content = Text(
