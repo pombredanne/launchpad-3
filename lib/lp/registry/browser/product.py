@@ -943,13 +943,6 @@ class ProductView(PillarViewMixin, HasAnnouncementsView, SortSeriesMixin,
         return self.context.license_status != LicenseStatus.OPEN_SOURCE
 
     @property
-    def freshmeat_url(self):
-        if self.context.freshmeatproject:
-            return ("http://freshmeat.net/projects/%s"
-                % self.context.freshmeatproject)
-        return None
-
-    @property
     def sourceforge_url(self):
         if self.context.sourceforgeproject:
             return ("http://sourceforge.net/projects/%s"
@@ -960,7 +953,6 @@ class ProductView(PillarViewMixin, HasAnnouncementsView, SortSeriesMixin,
     def has_external_links(self):
         return (self.context.homepageurl or
                 self.context.sourceforgeproject or
-                self.context.freshmeatproject or
                 self.context.wikiurl or
                 self.context.screenshotsurl or
                 self.context.downloadurl)
@@ -975,7 +967,6 @@ class ProductView(PillarViewMixin, HasAnnouncementsView, SortSeriesMixin,
         from lp.services.webapp.menu import MenuLink
         urls = [
             ('Sourceforge project', self.sourceforge_url),
-            ('Freshmeat record', self.freshmeat_url),
             ('Wiki', self.context.wikiurl),
             ('Screenshots', self.context.screenshotsurl),
             ('External downloads', self.context.downloadurl),
@@ -993,7 +984,7 @@ class ProductView(PillarViewMixin, HasAnnouncementsView, SortSeriesMixin,
     def should_display_homepage(self):
         return (self.context.homepageurl and
                 self.context.homepageurl not in
-                    [self.freshmeat_url, self.sourceforge_url])
+                    [self.sourceforge_url])
 
     def requestCountry(self):
         return ICountry(self.request, None)
@@ -1340,7 +1331,6 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
         "homepageurl",
         "information_type",
         "sourceforgeproject",
-        "freshmeatproject",
         "wikiurl",
         "screenshotsurl",
         "downloadurl",
@@ -1781,7 +1771,7 @@ class ProductAddViewBase(ProductLicenseMixin, LaunchpadFormView):
     product = None
     field_names = ['name', 'displayname', 'title', 'summary',
                    'description', 'homepageurl', 'sourceforgeproject',
-                   'freshmeatproject', 'wikiurl', 'screenshotsurl',
+                   'wikiurl', 'screenshotsurl',
                    'downloadurl', 'programminglang',
                    'licenses', 'license_info']
     custom_widget(
