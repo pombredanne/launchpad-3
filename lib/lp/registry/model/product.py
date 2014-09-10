@@ -660,7 +660,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         enum=SpecificationSharingPolicy, notNull=False,
         default=SpecificationSharingPolicy.PUBLIC)
     autoupdate = BoolCol(dbName='autoupdate', notNull=True, default=False)
-    freshmeatproject = StringCol(notNull=False, default=None)
+    freshmeatproject = None
     sourceforgeproject = StringCol(notNull=False, default=None)
     # While the interface defines this field as required, we need to
     # allow it to be NULL so we can create new product records before
@@ -1842,7 +1842,7 @@ class ProductSet:
             displayname=displayname, title=title, project=project,
             summary=summary, description=description, homepageurl=homepageurl,
             screenshotsurl=screenshotsurl, wikiurl=wikiurl,
-            downloadurl=downloadurl, freshmeatproject=freshmeatproject,
+            downloadurl=downloadurl, freshmeatproject=None,
             sourceforgeproject=sourceforgeproject,
             programminglang=programminglang,
             project_reviewed=project_reviewed,

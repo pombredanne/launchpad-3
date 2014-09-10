@@ -244,7 +244,8 @@ class IProjectGroupPublic(
         TextLine(
             title=_("Freshmeat Project Name"),
             description=_("The Freshmeat project name for this "
-                          "project group, if it is in Freshmeat."),
+                          "project group, if it is in Freshmeat. "
+                          "[DEPRECATED]"),
             required=False),
         exported_as="freshmeat_project")
 
