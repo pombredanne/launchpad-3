@@ -112,6 +112,12 @@ def to_swift(log, start_lfc_id=None, end_lfc_id=None, remove=False):
 
             log.debug('Found {0} ({1})'.format(lfc, filename))
 
+            if ISlaveStore(LibraryFileContent).get(
+                    LibraryFileContent, lfc) is None:
+                log.info("{0} exists on disk but not in the db".format(
+                    lfc))
+                continue
+
             container, obj_name = swift_location(lfc)
 
             try:
@@ -136,15 +142,10 @@ def to_swift(log, start_lfc_id=None, end_lfc_id=None, remove=False):
             except swiftclient.ClientException as x:
                 if x.http_status != 404:
                     raise
-                if ISlaveStore(LibraryFileContent).get(
-                        LibraryFileContent, lfc) is None:
-                    log.info("{0} exists on disk but not in the db".format(
-                        lfc))
-                else:
-                    log.info('Putting {0} into Swift ({1}, {2})'.format(
-                        lfc, container, obj_name))
-                    _put(log, swift_connection, lfc, container, obj_name,
-                         fs_path)
+                log.info('Putting {0} into Swift ({1}, {2})'.format(
+                    lfc, container, obj_name))
+                _put(log, swift_connection, lfc, container, obj_name, fs_path)
+
             if remove:
                 os.unlink(fs_path)
 
