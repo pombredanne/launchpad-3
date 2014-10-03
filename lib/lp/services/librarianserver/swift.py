@@ -13,7 +13,6 @@ from contextlib import contextmanager
 import hashlib
 import os.path
 import re
-import sys
 import time
 import urllib
 
@@ -45,13 +44,11 @@ def to_swift(log, start_lfc_id=None, end_lfc_id=None, remove=False):
     if start_lfc_id is None:
         start_lfc_id = 1
     if end_lfc_id is None:
-        end_lfc_id = sys.maxint
-        end_str = 'MAXINT'
-    else:
-        end_str = str(end_lfc_id)
+        # Maximum id capable of being stored on the filesystem - ffffffff
+        end_lfc_id = 4294967295
 
     log.info("Walking disk store {0} from {1} to {2}, inclusive".format(
-        fs_root, start_lfc_id, end_str))
+        fs_root, start_lfc_id, end_lfc_id))
 
     start_fs_path = filesystem_path(start_lfc_id)
     end_fs_path = filesystem_path(end_lfc_id)
