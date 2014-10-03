@@ -811,9 +811,19 @@ def delete_unwanted_swift_files(con):
     if next_wanted_content_id == content_id:
         next_wanted_content_id = get_next_wanted_content_id()
     while next_wanted_content_id is not None:
-        log.error(
-            "LibraryFileContent {0} exists in the database but was not "
-            "found in Swift.".format(next_wanted_content_id))
+        # The entry exists in the database but not in Swift. This is
+        # normal, as there is lag between uploading files to disk and
+        # migrating them into Swift. The important case, where files
+        # are missing and exist neither on disk nor in Swift, is reported
+        # earlier. Still, we should catch if the librarian-feed-swift
+        # has not run recently. Report an error if the file is older
+        # than one week and doesn't exist in Swift.
+        path = get_file_path(next_wanted_content_id)
+        if os.path.exists(path) and (os.stat(path).st_ctime
+                                     < time.time() - (7 * 24 * 60 * 60)):
+            log.error(
+                "LibraryFileContent {0} exists in the database and disk "
+                "but was not found in Swift.".format(next_wanted_content_id))
         next_wanted_content_id = get_next_wanted_content_id()
 
     log.info(
