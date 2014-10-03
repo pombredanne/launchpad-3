@@ -280,5 +280,6 @@ def _relFileLocation(file_id):
     The relative location is obtained by converting file_id into a 8-digit hex
     and then splitting it across four path segments.
     """
+    assert file_id <= 4294967295, 'file id has exceeded filesystem db maximum'
     h = "%08x" % int(file_id)
     return '%s/%s/%s/%s' % (h[:2], h[2:4], h[4:6], h[6:])
