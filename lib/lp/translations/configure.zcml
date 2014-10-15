@@ -225,37 +225,37 @@
         name="translations"
         provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.distribution.IDistribution"
-        factory="lp.translations.browser.translations.TranslationsVHostBreadcrumb"
+        factory="lp.translations.browser.translations.TranslationsFacetBreadcrumb"
         permission="zope.Public"/>
     <adapter
         name="translations"
         provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.distroseries.IDistroSeries"
-        factory="lp.translations.browser.translations.TranslationsVHostBreadcrumb"
+        factory="lp.translations.browser.translations.TranslationsFacetBreadcrumb"
         permission="zope.Public"/>
     <adapter
         name="translations"
         provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.product.IProduct"
-        factory="lp.translations.browser.translations.TranslationsVHostBreadcrumb"
+        factory="lp.translations.browser.translations.TranslationsFacetBreadcrumb"
         permission="zope.Public"/>
     <adapter
         name="translations"
         provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.productseries.IProductSeries"
-        factory="lp.translations.browser.translations.TranslationsVHostBreadcrumb"
+        factory="lp.translations.browser.translations.TranslationsFacetBreadcrumb"
         permission="zope.Public"/>
     <adapter
         name="translations"
         provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.projectgroup.IProjectGroup"
-        factory="lp.translations.browser.translations.TranslationsVHostBreadcrumb"
+        factory="lp.translations.browser.translations.TranslationsFacetBreadcrumb"
         permission="zope.Public"/>
     <adapter
         name="translations"
         provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.person.IPerson"
-        factory="lp.translations.browser.translations.TranslationsVHostBreadcrumb"
+        factory="lp.translations.browser.translations.TranslationsFacetBreadcrumb"
         permission="zope.Public"/>
 
     <!-- Subscribers to registry objects -->
@@ -628,17 +628,17 @@
         <allow interface="lp.buildmaster.interfaces.buildfarmjob.ISpecificBuildFarmJobSource"/>
     </securedutility>
 
-    <!-- TranslationTemplateBuildBehavior -->
+    <!-- TranslationTemplateBuildBehaviour -->
     <class
-        class="lp.translations.model.translationtemplatesbuildbehavior.TranslationTemplatesBuildBehavior">
+        class="lp.translations.model.translationtemplatesbuildbehaviour.TranslationTemplatesBuildBehaviour">
         <allow
-            interface="lp.buildmaster.interfaces.buildfarmjobbehavior.IBuildFarmJobBehavior"/>
+            interface="lp.buildmaster.interfaces.buildfarmjobbehaviour.IBuildFarmJobBehaviour"/>
     </class>
 
     <adapter
-        provides="lp.buildmaster.interfaces.buildfarmjobbehavior.IBuildFarmJobBehavior"
+        provides="lp.buildmaster.interfaces.buildfarmjobbehaviour.IBuildFarmJobBehaviour"
         for="lp.translations.model.translationtemplatesbuild.TranslationTemplatesBuild"
-        factory="lp.translations.model.translationtemplatesbuildbehavior.TranslationTemplatesBuildBehavior"
+        factory="lp.translations.model.translationtemplatesbuildbehaviour.TranslationTemplatesBuildBehaviour"
         />
 
   <webservice:register module="lp.translations.interfaces.webservice" />

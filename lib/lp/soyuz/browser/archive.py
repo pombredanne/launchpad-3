@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for archive."""
@@ -80,7 +80,11 @@ from lp.app.widgets.itemswidgets import (
     )
 from lp.app.widgets.textwidgets import StrippedTextWidget
 from lp.buildmaster.enums import BuildStatus
+from lp.code.interfaces.sourcepackagerecipebuild import (
+    ISourcePackageRecipeBuildSource,
+    )
 from lp.registry.enums import PersonVisibility
+from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
@@ -120,8 +124,8 @@ from lp.soyuz.adapters.archivesourcepublication import (
     ArchiveSourcePublications,
     )
 from lp.soyuz.browser.build import (
-    BuildNavigationMixin,
     BuildRecordsView,
+    get_build_by_id_str,
     )
 from lp.soyuz.browser.sourceslist import SourcesListEntriesWidget
 from lp.soyuz.browser.widgets.archive import PPANameWidget
@@ -142,7 +146,10 @@ from lp.soyuz.interfaces.archive import (
     )
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
-from lp.soyuz.interfaces.binarypackagebuild import BuildSetStatus
+from lp.soyuz.interfaces.binarypackagebuild import (
+    BuildSetStatus,
+    IBinaryPackageBuildSet,
+    )
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
@@ -170,19 +177,20 @@ class ArchiveBadges(HasBadgeBase):
         return "This archive is private."
 
 
-def traverse_named_ppa(person_name, ppa_name):
+def traverse_named_ppa(person, distro_name, ppa_name):
     """For PPAs, traverse the right place.
 
-    :param person_name: The person part of the URL
-    :param ppa_name: The PPA name part of the URL
+    :param person: The PPA owner.
+    :param distro_name: The Distribution name part of the URL.
+    :param ppa_name: The PPA name part of the URL.
     """
-    person = getUtility(IPersonSet).getByName(person_name)
+    distro = getUtility(IDistributionSet).getByName(distro_name)
+    if distro is None:
+        return None
     try:
-        archive = person.getPPAByName(ppa_name)
+        return person.getPPAByName(distro, ppa_name)
     except NoSuchPPA:
-        raise NotFoundError("%s/%s", (person_name, ppa_name))
-
-    return archive
+        return None
 
 
 class DistributionArchiveURL:
@@ -221,14 +229,28 @@ class PPAURL:
 
     @property
     def path(self):
-        return u"+archive/%s" % self.context.name
+        return u"+archive/%s/%s" % (
+            self.context.distribution.name, self.context.name)
 
 
-class ArchiveNavigation(Navigation, FileNavigationMixin,
-                        BuildNavigationMixin):
+class ArchiveNavigation(Navigation, FileNavigationMixin):
     """Navigation methods for IArchive."""
 
     usedfor = IArchive
+
+    @stepthrough('+build')
+    def traverse_build(self, name):
+        build = get_build_by_id_str(IBinaryPackageBuildSet, name)
+        if build is None or build.archive != self.context:
+            return None
+        return build
+
+    @stepthrough('+recipebuild')
+    def traverse_recipebuild(self, name):
+        build = get_build_by_id_str(ISourcePackageRecipeBuildSource, name)
+        if build is None or build.archive != self.context:
+            return None
+        return build
 
     @stepthrough('+sourcepub')
     def traverse_sourcepub(self, name):
@@ -379,8 +401,7 @@ class ArchiveNavigation(Navigation, FileNavigationMixin,
                 except NotFoundError:
                     series = None
             if series is not None:
-                the_item = getUtility(IPackagesetSet).getByName(
-                    item, distroseries=series)
+                the_item = getUtility(IPackagesetSet).getByName(series, item)
         elif item_type == 'pocket':
             # See if "item" is a pocket name.
             try:
@@ -1052,7 +1073,7 @@ class ArchivePackagesView(ArchiveSourcePackageListViewBase):
         count = job_source.getIncompleteJobsForArchive(self.context).count()
         if count > 5:
             return 'Showing 5 of %s' % count
-    
+
     @cachedproperty
     def has_append_perm(self):
         return check_permission('launchpad.Append', self.context)
@@ -1368,9 +1389,9 @@ class PackageCopyingMixin:
 def make_archive_vocabulary(archives):
     terms = []
     for archive in archives:
-        token = '%s/%s' % (archive.owner.name, archive.name)
-        label = '%s [~%s]' % (archive.displayname, token)
-        terms.append(SimpleTerm(archive, token, label))
+        label = '%s [%s]' % (archive.displayname, archive.reference)
+        terms.append(SimpleTerm(archive, archive.reference, label))
+    terms.sort(key=lambda x: x.value.reference)
     return SimpleVocabulary(terms)
 
 
@@ -1414,10 +1435,7 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView,
     @cachedproperty
     def ppas_for_user(self):
         """Return all PPAs for which the user accessing the page can copy."""
-        return list(
-            ppa
-            for ppa in getUtility(IArchiveSet).getPPAsForUser(self.user)
-            if check_permission('launchpad.Append', ppa))
+        return list(getUtility(IArchiveSet).getPPAsForUser(self.user))
 
     @cachedproperty
     def can_copy(self):
@@ -1610,10 +1628,8 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
                     canonical_url(dependency), archive_dependency.title)
             else:
                 dependency_label = archive_dependency.title
-            dependency_token = '%s/%s' % (
-                dependency.owner.name, dependency.name)
             term = SimpleTerm(
-                dependency, dependency_token, dependency_label)
+                dependency, dependency.reference, dependency_label)
             terms.append(term)
         return form.Fields(
             List(__name__='selected_dependencies',
@@ -1911,7 +1927,8 @@ class ArchiveActivateView(LaunchpadFormView):
                 'name for the new PPA and resubmit the form.')
 
         errors = validate_ppa(
-            self.context, proposed_name, private=self.is_private_team)
+            self.context, self.ubuntu, proposed_name,
+            private=self.is_private_team)
         if errors is not None:
             self.addError(errors)
 
@@ -1930,7 +1947,8 @@ class ArchiveActivateView(LaunchpadFormView):
         displayname = data['displayname']
         description = data['description']
         ppa = self.context.createPPA(
-            name, displayname, description, private=self.is_private_team)
+            self.ubuntu, name, displayname, description,
+            private=self.is_private_team)
         self.next_url = canonical_url(ppa)
 
     @property

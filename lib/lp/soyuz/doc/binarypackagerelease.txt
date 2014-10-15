@@ -26,29 +26,6 @@ Useful properties:
    >>> hoary.name
    u'hoary'
 
-Retrieve the respective DistributionSourcePackageRelease, which allow
-us to easily link to a source reference published in the web-ui.
-
-   >>> from lp.soyuz.interfaces.distributionsourcepackagerelease import IDistributionSourcePackageRelease
-   >>> verifyObject(
-   ...    IDistributionSourcePackageRelease,
-   ...    firefox_bin_release.distributionsourcepackagerelease)
-   True
-
-The 'is_new' property tells us whether or not this
-BinaryPackageRelease has ever been published for the DistroArchSeries
-it was built for. If not, then 'is_new' will be True, otherwise False.
-
-   >>> firefox_bin_release.is_new
-   False
-
-   >>> pmount_bin_release = BinaryPackageRelease.get(20)
-   >>> pmount_bin_release.name, pmount_bin_release.version
-   (u'pmount', u'0.1-1')
-
-   >>> pmount_bin_release.is_new
-   True
-
 The IBinaryPackageNameSet.getNotNewByNames() returns all the
 BinaryPackageName records for BinaryPackageReleases that are published
 in the supplied distroseries in the archives with the supplied
@@ -61,6 +38,7 @@ be quickly ascertained through a set operation.
     >>> from lp.soyuz.interfaces.binarypackagename import (
     ...     IBinaryPackageNameSet)
     >>> foobar_name = getUtility(IBinaryPackageNameSet)['foobar']
+    >>> pmount_bin_release = BinaryPackageRelease.get(20)
     >>> name_ids = (
     ...     foobar_name.id,
     ...     pmount_bin_release.binarypackagename.id,

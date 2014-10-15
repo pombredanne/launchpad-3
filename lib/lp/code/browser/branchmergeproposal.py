@@ -61,7 +61,6 @@ from zope.schema.vocabulary import (
     SimpleTerm,
     SimpleVocabulary,
     )
-from zope.security.proxy import removeSecurityProxy
 
 from lp import _
 from lp.app.browser.launchpadform import (
@@ -88,6 +87,7 @@ from lp.code.enums import (
 from lp.code.errors import (
     BranchMergeProposalExists,
     ClaimReviewFailed,
+    DiffNotFound,
     InvalidBranchMergeProposal,
     WrongBranchMergeProposal,
     )
@@ -111,7 +111,10 @@ from lp.services.fields import (
     )
 from lp.services.librarian.interfaces.client import LibrarianServerError
 from lp.services.messages.interfaces.message import IMessageSet
-from lp.services.propertycache import cachedproperty
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
 from lp.services.webapp import (
     canonical_url,
     ContextMenu,
@@ -120,7 +123,6 @@ from lp.services.webapp import (
     Link,
     Navigation,
     stepthrough,
-    stepto,
     )
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.breadcrumb import Breadcrumb
@@ -461,10 +463,17 @@ class BranchMergeProposalNavigation(Navigation):
         except WrongBranchMergeProposal:
             return None
 
-    @stepto("+preview-diff")
-    def preview_diff(self):
-        """Step to the preview diff."""
-        return self.context.preview_diff
+    @stepthrough("+preview-diff")
+    def traverse_preview_diff(self, id):
+        """Navigate to a PreviewDiff through its BMP."""
+        try:
+            id = int(id)
+        except ValueError:
+            return None
+        try:
+            return self.context.getPreviewDiff(id)
+        except (DiffNotFound, WrongBranchMergeProposal):
+            return None
 
     @stepthrough('+review')
     def review(self, id):
@@ -629,20 +638,6 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
         if getFeatureFlag("longpoll.merge_proposals.enabled"):
             cache.objects['merge_proposal_event_key'] = subscribe(
                 self.context).event_key
-        if getFeatureFlag("code.inline_diff_comments.enabled"):
-            cache.objects['inline_diff_comments'] = True
-            cache.objects['preview_diff_timestamps'] = [
-                pd.date_created for pd in self.context.preview_diffs]
-            if self.context.preview_diff:
-                cache.objects['published_inline_comments'] = (
-                    self.context.getInlineComments(
-                        self.preview_diff.date_created))
-                cache.objects['draft_inline_comments'] = (
-                    self.context.getDraftInlineComments(
-                        self.preview_diff.date_created, self.user))
-            else:
-                cache.objects['published_inline_comments'] = []
-                cache.objects['draft_inline_comments'] = []
 
     @action('Claim', name='claim')
     def claim_action(self, action, data):
@@ -688,7 +683,21 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
                 for comment in merge_proposal.all_comments)
             merge_proposal = merge_proposal.supersedes
         comments = sorted(comments, key=operator.attrgetter('date'))
+        self._populate_previewdiffs(comments)
         return CodeReviewConversation(comments)
+
+    def _populate_previewdiffs(self, comments):
+        """Lookup and populate caches for 'previewdiff_id'.
+
+        Only operated on objects providing `ICodeReviewComment`.
+        """
+        comments = [comment for comment in comments
+                    if ICodeReviewComment.providedBy(comment)]
+        cric_set = getUtility(ICodeReviewInlineCommentSet)
+        relations = cric_set.getPreviewDiffsForComments(comments)
+        for comment in comments:
+            get_property_cache(
+                comment).previewdiff_id = relations.get(comment.id)
 
     @property
     def comments(self):

@@ -98,7 +98,7 @@ Testing a bunch of URL links.
     ...     'You can check the PPC md5sums at '
     ...     'ftp://ftp.ubuntu.com/ubuntu/dists/breezy/main/installer-powerpc'
     ...     '/current/images/MD5SUMS\n'
-    ...     'irc://irc.freenode.net/#launchpad\n'
+    ...     'irc://chat.freenode.net/#launchpad\n'
     ...     '\n'
     ...     'I have a Jabber account (jabber:foo@jabber.example.com)\n'
     ...     'Foo Bar <mailto:foo.bar@example.net>')
@@ -106,7 +106,7 @@ Testing a bunch of URL links.
     <p><a rel="nofollow" href="https://launchpad.net/">https:/<wbr />/launchpad.<wbr />net/</a> is the new Launchpad site<br />
     <a rel="nofollow" href="http://example.com/something?foo=bar&amp;hum=baz">http://<wbr />example.<wbr />com/something?<wbr />foo=bar&amp;<wbr />hum=baz</a><br />
     You can check the PPC md5sums at <a rel="nofollow" href="ftp://ftp.ubuntu.com/ubuntu/dists/breezy/main/installer-powerpc/current/images/MD5SUMS">ftp://ftp.<wbr />ubuntu.<wbr />com/ubuntu/<wbr />dists/breezy/<wbr />main/installer-<wbr />powerpc/<wbr />current/<wbr />images/<wbr />MD5SUMS</a><br />
-    <a rel="nofollow" href="irc://irc.freenode.net/#launchpad">irc://irc.<wbr />freenode.<wbr />net/#launchpad</a></p>
+    <a rel="nofollow" href="irc://chat.freenode.net/#launchpad">irc://chat.<wbr />freenode.<wbr />net/#launchpad</a></p>
     <p>I have a Jabber account (<a rel="nofollow" href="jabber:foo@jabber.example.com">jabber:<wbr />foo@jabber.<wbr />example.<wbr />com</a>)<br />
     Foo Bar &lt;<a rel="nofollow" href="mailto:foo.bar@example.net">mailto:<wbr />foo.bar@<wbr />example.<wbr />net</a>&gt;</p>
 
@@ -149,8 +149,8 @@ fmt:text-to-html knows how to linkify URLs:
     ...     'http://www.searchtools.com/test/urls/!exclamation.html\n'
     ...     'http://www.searchtools.com/test/urls/~tilde.html\n'
     ...     'http://www.searchtools.com/test/urls/*asterisk.html\n'
-    ...     'irc://irc.freenode.net/launchpad\n'
-    ...     'irc://irc.freenode.net/%23launchpad,isserver\n'
+    ...     'irc://chat.freenode.net/launchpad\n'
+    ...     'irc://chat.freenode.net/%23launchpad,isserver\n'
     ...     'mailto:noreply@launchpad.net\n'
     ...     'jabber:noreply@launchpad.net\n'
     ...     'http://localhost/foo?xxx&\n'
@@ -189,8 +189,8 @@ fmt:text-to-html knows how to linkify URLs:
     <a rel="nofollow" href="http://www.searchtools.com/test/urls/!exclamation.html">http://<wbr />www.searchtools<wbr />.com/test/<wbr />urls/!exclamati<wbr />on.html</a><br />
     <a rel="nofollow" href="http://www.searchtools.com/test/urls/~tilde.html">http://<wbr />www.searchtools<wbr />.com/test/<wbr />urls/~tilde.<wbr />html</a><br />
     <a rel="nofollow" href="http://www.searchtools.com/test/urls/*asterisk.html">http://<wbr />www.searchtools<wbr />.com/test/<wbr />urls/*asterisk.<wbr />html</a><br />
-    <a rel="nofollow" href="irc://irc.freenode.net/launchpad">irc://irc.<wbr />freenode.<wbr />net/launchpad</a><br />
-    <a rel="nofollow" href="irc://irc.freenode.net/%23launchpad,isserver">irc://irc.<wbr />freenode.<wbr />net/%23launchpa<wbr />d,isserver</a><br />
+    <a rel="nofollow" href="irc://chat.freenode.net/launchpad">irc://chat.<wbr />freenode.<wbr />net/launchpad</a><br />
+    <a rel="nofollow" href="irc://chat.freenode.net/%23launchpad,isserver">irc://chat.<wbr />freenode.<wbr />net/%23launchpa<wbr />d,isserver</a><br />
     <a rel="nofollow" href="mailto:noreply@launchpad.net">mailto:<wbr />noreply@<wbr />launchpad.<wbr />net</a><br />
     <a rel="nofollow" href="jabber:noreply@launchpad.net">jabber:<wbr />noreply@<wbr />launchpad.<wbr />net</a><br />
     <a rel="nofollow" href="http://localhost/foo?xxx&amp;">http://<wbr />localhost/<wbr />foo?xxx&amp;</a><br />

@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -45,7 +45,9 @@ class TestBuildNotify(TestCaseWithFactory):
         self.archive = self.factory.makeArchive(
             distribution=self.distroseries.distribution,
             purpose=ArchivePurpose.PRIMARY)
-        self.ppa = self.factory.makeArchive()
+        self.ppa = self.factory.makeArchive(
+            distribution=self.distroseries.distribution,
+            purpose=ArchivePurpose.PPA)
         buildd_admins = getUtility(IPersonSet).getByName(
             'launchpad-buildd-admins')
         self.buildd_admins_email = []
@@ -93,17 +95,16 @@ class TestBuildNotify(TestCaseWithFactory):
             'main', notification['X-Launchpad-Build-Component'])
         self.assertEquals(
             build.status.name, notification['X-Launchpad-Build-State'])
-        if ppa is True:
+        self.assertEquals(
+            build.archive.reference, notification['X-Launchpad-Archive'])
+        if ppa and build.archive.distribution.name == u'ubuntu':
             self.assertEquals(
                 get_ppa_reference(self.ppa), notification['X-Launchpad-PPA'])
         body = notification.get_payload(decode=True)
         build_log = 'None'
-        if ppa is True:
-            archive = '%s PPA' % get_ppa_reference(build.archive)
+        if ppa:
             source = 'not available'
         else:
-            archive = '%s primary archive' % (
-                self.distroseries.distribution.name)
             source = canonical_url(build.distributionsourcepackagerelease)
         builder = canonical_url(build.builder)
         if build.status == BuildStatus.BUILDING:
@@ -145,8 +146,8 @@ class TestBuildNotify(TestCaseWithFactory):
         """ % (
             build.source_package_release.sourcepackagename.name,
             build.source_package_release.version, self.das.architecturetag,
-            archive, build.status.title, duration, build_log, builder,
-            source, build.title, canonical_url(build)))
+            build.archive.reference, build.status.title, duration, build_log,
+            builder, source, build.title, canonical_url(build)))
         self.assertEquals(expected_body, body)
 
     def test_notify_buildd_admins(self):

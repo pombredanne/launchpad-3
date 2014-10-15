@@ -17,6 +17,8 @@ from zope.component import getUtility
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.archivepublisher.publishing import GLOBAL_PUBLISHER_LOCK
+from lp.archivepublisher.scripts.processaccepted import ProcessAccepted
+from lp.archivepublisher.scripts.publishdistro import PublishDistro
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import (
     PackagePublishingPocket,
@@ -36,8 +38,6 @@ from lp.soyuz.enums import (
     )
 from lp.soyuz.model.distroarchseries import DistroArchSeries
 from lp.soyuz.scripts.custom_uploads_copier import CustomUploadsCopier
-from lp.soyuz.scripts.processaccepted import ProcessAccepted
-from lp.soyuz.scripts.publishdistro import PublishDistro
 
 
 def get_publishable_archives(distribution):
@@ -315,7 +315,7 @@ class PublishFTPMaster(LaunchpadCronScript):
         self.logger.debug(
             "Processing the accepted queue into the publishing records...")
         script = ProcessAccepted(
-            test_args=[distribution.name], logger=self.logger)
+            test_args=["-d", distribution.name], logger=self.logger)
         script.txn = self.txn
         script.main()
 
@@ -476,23 +476,6 @@ class PublishFTPMaster(LaunchpadCronScript):
             os.rename(backup_dists, dists)
             os.rename(temp_dists, backup_dists)
 
-    def generateListings(self, distribution):
-        """Create ls-lR.gz listings."""
-        self.logger.debug("Creating ls-lR.gz...")
-        lslr = "ls-lR.gz"
-        lslr_new = "." + lslr + ".new"
-        for purpose, archive_config in self.configs[distribution].iteritems():
-            lslr_file = os.path.join(archive_config.archiveroot, lslr)
-            new_lslr_file = os.path.join(archive_config.archiveroot, lslr_new)
-            if file_exists(new_lslr_file):
-                os.remove(new_lslr_file)
-            self.executeShell(
-                "cd -- '%s' ; TZ=UTC ls -lR | gzip -9n >'%s'"
-                % (archive_config.archiveroot, lslr_new),
-                failure=LaunchpadScriptFailure(
-                    "Failed to create %s for %s." % (lslr, purpose.title)))
-            os.rename(new_lslr_file, lslr_file)
-
     def clearEmptyDirs(self, distribution):
         """Clear out any redundant empty directories."""
         for archive_config in self.configs[distribution].itervalues():
@@ -532,16 +515,20 @@ class PublishFTPMaster(LaunchpadCronScript):
         self.runParts(distribution, 'finalize.d', env)
 
     def publishSecurityUploads(self, distribution):
-        """Quickly process just the pending security uploads."""
+        """Quickly process just the pending security uploads.
+
+        Returns True if publications were made, False otherwise.
+        """
         self.logger.debug("Expediting security uploads.")
         security_suites = self.getDirtySecuritySuites(distribution)
         if len(security_suites) == 0:
             self.logger.debug("Nothing to do for security publisher.")
-            return
+            return False
 
         self.publishDistroArchive(
             distribution, distribution.main_archive,
             security_suites=security_suites)
+        return True
 
     def publishDistroUploads(self, distribution):
         """Publish the distro's complete uploads."""
@@ -559,12 +546,17 @@ class PublishFTPMaster(LaunchpadCronScript):
             updates on the main archive.  This is much faster, so it
             makes sense to do a security-only run before the main
             event to expedite critical fixes.
+        :return has_published: True if any publication was made to the
+            archive.
         """
+        has_published = False
         try:
             if security_only:
-                self.publishSecurityUploads(distribution)
+                has_published = self.publishSecurityUploads(distribution)
             else:
                 self.publishDistroUploads(distribution)
+                # Let's assume the main archive is always modified
+                has_published = True
 
             # Swizzle the now-updated backup dists and the current dists
             # around.
@@ -577,6 +569,8 @@ class PublishFTPMaster(LaunchpadCronScript):
             # system problems.
             self.recoverWorkingDists()
             raise
+
+        return has_published
 
     def prepareFreshSeries(self, distribution):
         """If there are any new distroseries, prepare them for publishing.
@@ -614,13 +608,12 @@ class PublishFTPMaster(LaunchpadCronScript):
         self.processAccepted(distribution)
 
         self.rsyncBackupDists(distribution)
-        self.publish(distribution, security_only=True)
-        self.runFinalizeParts(distribution, security_only=True)
+        if self.publish(distribution, security_only=True):
+            self.runFinalizeParts(distribution, security_only=True)
 
         if not self.options.security_only:
             self.rsyncBackupDists(distribution)
             self.publish(distribution, security_only=False)
-            self.generateListings(distribution)
             self.clearEmptyDirs(distribution)
             self.runFinalizeParts(distribution, security_only=False)
 

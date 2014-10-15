@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from __future__ import with_statement
@@ -38,7 +38,6 @@ from lp.translations.enums import TranslationPermission
 from lp.translations.interfaces.side import ITranslationSideTraitsSet
 from lp.translations.interfaces.translations import TranslationConstants
 from lp.translations.interfaces.translationsperson import ITranslationsPerson
-from lp.translations.publisher import TranslationsLayer
 
 
 class TestCurrentTranslationMessage_can_dismiss(TestCaseWithFactory):
@@ -266,8 +265,7 @@ class TestResetTranslations(TestCaseWithFactory):
 
         url = canonical_url(self.current_translation) + '/+translate'
         view = create_view(
-            self.current_translation, '+translate', form=form,
-            layer=TranslationsLayer, server_url=url)
+            self.current_translation, '+translate', form=form, server_url=url)
         view.request.method = 'POST'
         view.initialize()
 
@@ -479,12 +477,12 @@ class TestHelpers(TestCaseWithFactory):
             revert_unselected_translations(
                 new_translations, current_message, []))
 
+
 class TestBadSubmission(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
     def getSubmission(self, good=True):
-        original_translations = {0: self.getUniqueString()}
         pofile = self.factory.makePOFile()
         current = self.factory.makeCurrentTranslationMessage(pofile=pofile)
         message = self.factory.makeSuggestion(pofile=pofile)

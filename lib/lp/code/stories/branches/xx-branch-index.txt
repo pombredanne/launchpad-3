@@ -41,6 +41,10 @@ branch's canonical URL -- the one which uses the product name.
     >>> anon_browser.url
     'http://code.launchpad.dev/~eric/fooix/trunk'
 
+    >>> anon_browser.open('http://api.launchpad.dev/devel/~eric/fooey/trunk')
+    >>> anon_browser.url
+    'http://api.launchpad.dev/devel/~eric/fooix/trunk'
+
 
 Recent Revisions
 ----------------

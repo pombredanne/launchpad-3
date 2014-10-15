@@ -8,8 +8,6 @@ __all__ = [
     'CveSet',
     ]
 
-import re
-
 # SQL imports
 from sqlobject import (
     SQLMultipleJoin,
@@ -22,7 +20,10 @@ from storm.store import Store
 # Zope
 from zope.interface import implements
 
-from lp.app.validators.cve import valid_cve
+from lp.app.validators.cve import (
+    CVEREF_PATTERN,
+    valid_cve,
+    )
 from lp.bugs.interfaces.buglink import IBugLinkTarget
 from lp.bugs.interfaces.cve import (
     CveStatus,
@@ -39,9 +40,6 @@ from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.sqlbase import SQLBase
 from lp.services.database.stormexpr import fti_search
-
-
-cverefpat = re.compile(r'(CVE|CAN)-((19|20)\d{2}\-\d{4})')
 
 
 class Cve(SQLBase, BugLinkTargetMixin):
@@ -147,7 +145,7 @@ class CveSet:
         """See ICveSet."""
         # let's look for matching entries
         cves = set()
-        for match in cverefpat.finditer(text):
+        for match in CVEREF_PATTERN.finditer(text):
             # let's get the core CVE data
             sequence = match.group(2)
             # see if there is already a matching CVE ref in the db, and if

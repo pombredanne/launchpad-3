@@ -140,7 +140,8 @@ class TestSpecificationDependencies(TestCaseWithFactory):
         proprietary_blocked = self.factory.makeBlueprint(
             product=product, information_type=InformationType.PROPRIETARY)
         public_blocked = self.factory.makeBlueprint(product=product)
-        proprietary_blocked.createDependency(root)
+        with person_logged_in(owner):
+            proprietary_blocked.createDependency(root)
         public_blocked.createDependency(root)
         # Anonymous (no user) requests only get public blocked specs.
         self.assertEqual(

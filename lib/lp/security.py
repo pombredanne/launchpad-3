@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Security policies for using content objects."""
@@ -196,6 +196,8 @@ from lp.soyuz.interfaces.binarypackagerelease import (
     IBinaryPackageReleaseDownloadCount,
     )
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
+from lp.soyuz.interfaces.livefs import ILiveFS
+from lp.soyuz.interfaces.livefsbuild import ILiveFSBuild
 from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJob
 from lp.soyuz.interfaces.packageset import (
     IPackageset,
@@ -379,7 +381,7 @@ class PillarPersonSharingDriver(AuthorizationBase):
         """Maintainers, drivers, and admins can drive projects."""
         return (user.in_admin or
                 user.isOwner(self.obj.pillar) or
-                user.isOneOfDrivers(self.obj.pillar))
+                user.isDriver(self.obj.pillar))
 
 
 class EditAccountBySelfOrAdmin(AuthorizationBase):
@@ -588,11 +590,11 @@ class EditSpecificationByRelatedPeople(AuthorizationBase):
         assert self.obj.target
         goal = self.obj.goal
         if goal is not None:
-            if user.isOwner(goal) or user.isOneOfDrivers(goal):
+            if user.isOwner(goal) or user.isDriver(goal):
                 return True
         return (user.in_admin or
                 user.isOwner(self.obj.target) or
-                user.isOneOfDrivers(self.obj.target) or
+                user.isDriver(self.obj.target) or
                 user.isOneOf(
                     self.obj, ['owner', 'drafter', 'assignee', 'approver']))
 
@@ -604,7 +606,7 @@ class AdminSpecification(AuthorizationBase):
     def checkAuthenticated(self, user):
         assert self.obj.target
         return (user.isOwner(self.obj.target) or
-                user.isOneOfDrivers(self.obj.target) or
+                user.isDriver(self.obj.target) or
                 user.in_admin)
 
 
@@ -669,10 +671,10 @@ class EditSpecificationSubscription(AuthorizationBase):
 
     def checkAuthenticated(self, user):
         if self.obj.specification.goal is not None:
-            if user.isOneOfDrivers(self.obj.specification.goal):
+            if user.isDriver(self.obj.specification.goal):
                 return True
         else:
-            if user.isOneOfDrivers(self.obj.specification.target):
+            if user.isDriver(self.obj.specification.target):
                 return True
         return (user.inTeam(self.obj.person) or
                 user.isOneOf(
@@ -716,7 +718,7 @@ class AdminProductTranslations(AuthorizationBase):
         able to change translation settings for a product.
         """
         return (user.isOwner(self.obj) or
-                user.isOneOfDrivers(self.obj) or
+                user.isDriver(self.obj) or
                 user.in_rosetta_experts or
                 user.in_admin)
 
@@ -1117,16 +1119,18 @@ class EditDistributionByDistroOwnersOrAdmins(AuthorizationBase):
 class ModerateDistributionByDriversOrOwnersOrAdmins(AuthorizationBase):
     """Distribution drivers, owners, and admins may plan releases.
 
-    Drivers of `IDerivativeDistribution`s can create series. Owners and
-    admins can create series for all `IDistribution`s.
+    Drivers of distributions that don't manage their packages in
+    Launchpad can create series. Owners and admins can create series for
+    all `IDistribution`s.
     """
     permission = 'launchpad.Moderate'
     usedfor = IDistribution
 
     def checkAuthenticated(self, user):
-        if user.isDriver(self.obj) and not self.obj.full_functionality:
-            # Drivers of derivative distributions can create a series that
-            # they will be the release manager for.
+        if user.isDriver(self.obj) and not self.obj.official_packages:
+            # Damage to series with packages managed in Launchpad can
+            # cause serious strife. Restrict changes to the distro
+            # owner.
             return True
         return user.isOwner(self.obj) or user.in_admin
 
@@ -1217,9 +1221,10 @@ class EditDistroSeriesByReleaseManagerOrDistroOwnersOrAdmins(
 
     def checkAuthenticated(self, user):
         if (user.inTeam(self.obj.driver)
-            and not self.obj.distribution.full_functionality):
-            # The series driver (release manager) may edit a series if the
-            # distribution is an `IDerivativeDistribution`
+            and not self.obj.distribution.official_packages):
+            # Damage to series with packages managed in Launchpad can
+            # cause serious strife. Restrict changes to the distro
+            # owner.
             return True
         return (user.inTeam(self.obj.distribution.owner) or
                 user.in_admin)
@@ -1373,7 +1378,7 @@ class ViewAnnouncement(AuthorizationBase):
         # Project drivers can view any project announcements.
         # Launchpad admins can view any announcement.
         assert self.obj.target
-        return (user.isOneOfDrivers(self.obj.target) or
+        return (user.isDriver(self.obj.target) or
                 user.isOwner(self.obj.target) or
                 user.in_admin)
 
@@ -1386,7 +1391,7 @@ class EditAnnouncement(AuthorizationBase):
         """Allow the project owner and drivers to edit any project news."""
 
         assert self.obj.target
-        return (user.isOneOfDrivers(self.obj.target) or
+        return (user.isDriver(self.obj.target) or
                 user.isOwner(self.obj.target) or
                 user.in_admin)
 
@@ -2178,7 +2183,7 @@ class AdminDistroSeriesTranslations(AuthorizationBase):
         Distribution translation managers and distribution series drivers
         can manage IDistroSeries translations.
         """
-        return (user.isOneOfDrivers(self.obj) or
+        return (user.isDriver(self.obj) or
                 self.forwardCheckAuthenticated(user, self.obj.distribution))
 
 
@@ -2200,7 +2205,7 @@ class AdminProductSeriesTranslations(AuthorizationBase):
         """Is the user able to manage `IProductSeries` translations."""
 
         return (user.isOwner(self.obj) or
-                user.isOneOfDrivers(self.obj) or
+                user.isDriver(self.obj) or
                 self.forwardCheckAuthenticated(user, self.obj.product))
 
 
@@ -2600,6 +2605,7 @@ class ViewArchiveSubscriber(DelegatedAuthorization):
 
     def checkAuthenticated(self, user):
         return (user.inTeam(self.obj.subscriber) or
+                user.in_commercial_admin or
                 super(ViewArchiveSubscriber, self).checkAuthenticated(user))
 
 
@@ -2617,6 +2623,7 @@ class EditArchiveSubscriber(DelegatedAuthorization):
 
     def checkAuthenticated(self, user):
         return (user.in_admin or
+                user.in_commercial_admin or
                 super(EditArchiveSubscriber, self).checkAuthenticated(user))
 
 
@@ -2870,3 +2877,69 @@ class EditSourcePackage(AuthorizationBase):
             sourcepackagename=self.obj.sourcepackagename,
             component=None, strict_component=False)
         return reason is None
+
+
+class ViewLiveFS(DelegatedAuthorization):
+    permission = 'launchpad.View'
+    usedfor = ILiveFS
+
+    def __init__(self, obj):
+        super(ViewLiveFS, self).__init__(obj, obj.owner, 'launchpad.View')
+
+
+class EditLiveFS(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = ILiveFS
+
+    def checkAuthenticated(self, user):
+        return (
+            user.isOwner(self.obj) or
+            user.in_commercial_admin or user.in_admin)
+
+
+class AdminLiveFS(AuthorizationBase):
+    """Restrict changing build settings on live filesystems.
+
+    The security of the non-virtualised build farm depends on these
+    settings, so they can only be changed by commercial admins, or by "PPA"
+    self admins on live filesystems that they can already edit.
+    """
+    permission = 'launchpad.Admin'
+    usedfor = ILiveFS
+
+    def checkAuthenticated(self, user):
+        if user.in_commercial_admin or user.in_admin:
+            return True
+        return (
+            user.in_ppa_self_admins
+            and EditLiveFS(self.obj).checkAuthenticated(user))
+
+
+class ViewLiveFSBuild(DelegatedAuthorization):
+    permission = 'launchpad.View'
+    usedfor = ILiveFSBuild
+
+    def iter_objects(self):
+        yield self.obj.livefs
+        yield self.obj.archive
+
+
+class EditLiveFSBuild(AdminByBuilddAdmin):
+    permission = 'launchpad.Edit'
+    usedfor = ILiveFSBuild
+
+    def checkAuthenticated(self, user):
+        """Check edit access for live filesystem builds.
+
+        Allow admins, buildd admins, and the owner of the live filesystem.
+        (Note that the requester of the build is required to be in the team
+        that owns the live filesystem.)
+        """
+        auth_livefs = EditLiveFS(self.obj.livefs)
+        if auth_livefs.checkAuthenticated(user):
+            return True
+        return super(EditLiveFSBuild, self).checkAuthenticated(user)
+
+
+class AdminLiveFSBuild(AdminByBuilddAdmin):
+    usedfor = ILiveFSBuild

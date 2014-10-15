@@ -463,6 +463,6 @@ class RegisterABlueprintButtonPortlet:
             """ % self.target_url
 
 
-class BlueprintsVHostBreadcrumb(Breadcrumb):
+class BlueprintsFacetBreadcrumb(Breadcrumb):
     rootsite = 'blueprints'
     text = 'Blueprints'

@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for sourcepackagerecipe listings."""
@@ -19,7 +19,7 @@ class TestSourcePackageRecipeListing(BrowserTestCase):
         # only one will redirect to that recipe.
         branch = self.factory.makeProductBranch()
         recipe = self.factory.makeSourcePackageRecipe(branches=[branch])
-        recipe2 = self.factory.makeSourcePackageRecipe(branches=[branch])
+        self.factory.makeSourcePackageRecipe(branches=[branch])
         text = self.getMainText(recipe.base_branch, '+recipes')
         self.assertTextMatchesExpressionIgnoreWhitespace("""
             Source Package Recipes for lp:.*
@@ -31,7 +31,7 @@ class TestSourcePackageRecipeListing(BrowserTestCase):
         # only one will redirect to that recipe.
         branch = self.factory.makePackageBranch()
         recipe = self.factory.makeSourcePackageRecipe(branches=[branch])
-        recipe2 = self.factory.makeSourcePackageRecipe(branches=[branch])
+        self.factory.makeSourcePackageRecipe(branches=[branch])
         text = self.getMainText(recipe.base_branch, '+recipes')
         self.assertTextMatchesExpressionIgnoreWhitespace("""
             Source Package Recipes for lp:.*

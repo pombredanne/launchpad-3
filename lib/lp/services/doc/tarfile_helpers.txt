@@ -22,13 +22,10 @@ output we will get.
     ...         if member.type == tarfile.REGTYPE:
     ...             file = tar.extractfile(member)
     ...
-    ...             # XXX: 2010-04-26, Salgado, bug=570244: This is to make
-    ...             # the test pass on python2.5 and 2.6.
-    ...             name = member.name.rstrip('/')
     ...             if file is not None:
-    ...                 print format % (name, file.read())
+    ...                 print format % (member.name, file.read())
     ...             else:
-    ...                 print format % (name, '')
+    ...                 print format % (member.name, '')
     ...         elif member.type == tarfile.SYMTYPE:
     ...             print format % (
     ...                 member.name, "<link to %s>" % member.linkname)

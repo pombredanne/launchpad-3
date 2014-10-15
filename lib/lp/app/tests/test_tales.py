@@ -296,8 +296,8 @@ class TestFormattersAPI(TestCaseWithFactory):
         'http://www.searchtools.com/test/urls/!exclamation.html\n'
         'http://www.searchtools.com/test/urls/~tilde.html\n'
         'http://www.searchtools.com/test/urls/*asterisk.html\n'
-        'irc://irc.freenode.net/launchpad\n'
-        'irc://irc.freenode.net/%23launchpad,isserver\n'
+        'irc://chat.freenode.net/launchpad\n'
+        'irc://chat.freenode.net/%23launchpad,isserver\n'
         'mailto:noreply@launchpad.net\n'
         'jabber:noreply@launchpad.net\n'
         'http://localhost/foo?xxx&\n'
@@ -506,4 +506,5 @@ class TestPackageBuildFormatterAPI(TestCaseWithFactory):
         build, p3a, team_owner = self._make_public_build_for_private_team()
         login_person(team_owner)
         self.assertIn(
-            "[%s/%s]" % (p3a.owner.name, p3a.name), format_link(build))
+            "[~%s/%s/%s]" % (p3a.owner.name, p3a.distribution.name, p3a.name),
+            format_link(build))

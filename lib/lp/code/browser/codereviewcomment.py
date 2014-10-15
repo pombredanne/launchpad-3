@@ -17,15 +17,13 @@ from zope.component import getUtility
 from zope.formlib.widgets import (
     DropdownWidget,
     TextAreaWidget,
+    TextWidget,
     )
 from zope.interface import (
     implements,
     Interface,
     )
-from zope.schema import (
-    Bool,
-    Text,
-    )
+from zope.schema import Text
 
 from lp import _
 from lp.app.browser.launchpadform import (
@@ -42,7 +40,6 @@ from lp.services.comments.browser.comment import download_body
 from lp.services.comments.browser.messagecomment import MessageComment
 from lp.services.comments.interfaces.conversation import IComment
 from lp.services.config import config
-from lp.services.features import getFeatureFlag
 from lp.services.librarian.interfaces import ILibraryFileAlias
 from lp.services.propertycache import (
     cachedproperty,
@@ -96,6 +93,14 @@ class CodeReviewDisplayComment(MessageComment):
             return 'from-superseded'
         else:
             return ''
+
+    @cachedproperty
+    def previewdiff_id(self):
+        inline_comment = getUtility(
+            ICodeReviewInlineCommentSet).getByReviewComment(self.comment)
+        if inline_comment is not None:
+            return inline_comment.previewdiff_id
+        return None
 
     @cachedproperty
     def body_text(self):
@@ -222,9 +227,6 @@ class IEditCodeReviewComment(Interface):
 
     comment = Text(title=_('Comment'), required=False)
 
-    publish_inline_comments = Bool(
-        title=_("Publish draft inline comments"), required=False)
-
 
 class CodeReviewCommentAddView(LaunchpadFormView):
     """View for adding a CodeReviewComment."""
@@ -235,6 +237,7 @@ class CodeReviewCommentAddView(LaunchpadFormView):
 
     schema = IEditCodeReviewComment
 
+    custom_widget('review_type', TextWidget, displayWidth=15)
     custom_widget('comment', TextAreaWidget, cssClass='comment-text')
     custom_widget('vote', MyDropWidget)
 
@@ -252,11 +255,6 @@ class CodeReviewCommentAddView(LaunchpadFormView):
         else:
             comment = ''
         return {'comment': comment}
-
-    def setUpFields(self):
-        super(CodeReviewCommentAddView, self).setUpFields()
-        if not getFeatureFlag('code.inline_diff_comments.enabled'):
-            self.form_fields.omit('publish_inline_comments')
 
     @property
     def is_reply(self):
@@ -284,18 +282,9 @@ class CodeReviewCommentAddView(LaunchpadFormView):
         """Create the comment..."""
         vote = data.get('vote')
         review_type = data.get('review_type')
-        inline_comments = {}
-        diff_timestamp = None
-        if (getFeatureFlag('code.inline_diff_comments.enabled') and
-            data.get('publish_inline_comments')):
-            diff_timestamp = self.previewdiff.date_created
-            inline_comments = (
-                self.branch_merge_proposal.getDraftInlineComments(
-                    diff_timestamp))
-        comment = self.branch_merge_proposal.createComment(
+        self.branch_merge_proposal.createComment(
             self.user, subject=None, content=data['comment'],
-            parent=self.reply_to, vote=vote, review_type=review_type,
-            diff_timestamp=diff_timestamp, inline_comments=inline_comments)
+            parent=self.reply_to, vote=vote, review_type=review_type)
 
     @property
     def next_url(self):

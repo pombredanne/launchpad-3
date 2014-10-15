@@ -7,11 +7,10 @@ __all__ = [
     'RosettaApplicationView',
     'RosettaStatsView',
     'RosettaApplicationNavigation',
-    'TranslateRedirectView',
     'TranslationsLanguageBreadcrumb',
     'TranslationsMixin',
     'TranslationsRedirectView',
-    'TranslationsVHostBreadcrumb',
+    'TranslationsFacetBreadcrumb',
     ]
 
 from zope.component import getUtility
@@ -155,16 +154,6 @@ class RosettaApplicationNavigation(Navigation):
         return getUtility(IProductSet)
 
 
-class TranslateRedirectView(RedirectionView):
-    """Redirects to translations site for +translate page."""
-
-    def __init__(self, context, request):
-        target = canonical_url(
-            context, rootsite='translations', view_name='+translate')
-        super(TranslateRedirectView, self).__init__(
-            target, request, status=301)
-
-
 class TranslationsRedirectView(RedirectionView):
     """Redirects to translations site for +translations page."""
 
@@ -175,7 +164,7 @@ class TranslationsRedirectView(RedirectionView):
             target, request, status=301)
 
 
-class TranslationsVHostBreadcrumb(Breadcrumb):
+class TranslationsFacetBreadcrumb(Breadcrumb):
     rootsite = 'translations'
     text = 'Translations'
 

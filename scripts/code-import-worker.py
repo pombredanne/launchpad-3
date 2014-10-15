@@ -77,7 +77,7 @@ class CodeImportWorker:
             import_worker_cls = BzrSvnImportWorker
         elif source_details.rcstype == 'bzr':
             import_worker_cls = BzrImportWorker
-        elif source_details.rcstype in ['cvs', 'svn']:
+        elif source_details.rcstype == 'cvs':
             import_worker_cls = CSCVSImportWorker
         else:
             raise AssertionError(

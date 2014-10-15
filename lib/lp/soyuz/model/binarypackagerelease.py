@@ -107,40 +107,9 @@ class BinaryPackageRelease(SQLBase):
         return self.binarypackagename.name
 
     @property
-    def distributionsourcepackagerelease(self):
-        """See `IBinaryPackageRelease`."""
-        # import here to avoid circular import problems
-        from lp.soyuz.model.distributionsourcepackagerelease \
-            import DistributionSourcePackageRelease
-        return DistributionSourcePackageRelease(
-            distribution=self.build.distribution,
-            sourcepackagerelease=self.build.source_package_release)
-
-    @property
     def sourcepackagename(self):
         """See `IBinaryPackageRelease`."""
         return self.build.source_package_release.sourcepackagename.name
-
-    @property
-    def is_new(self):
-        """See `IBinaryPackageRelease`."""
-        distroarchseries = self.build.distro_arch_series
-        distroarchseries_binary_package = distroarchseries.getBinaryPackage(
-            self.binarypackagename)
-        return distroarchseries_binary_package.currentrelease is None
-
-    @property
-    def properties(self):
-        """See `IBinaryPackageRelease`."""
-        return {
-            "name": self.name,
-            "version": self.version,
-            "is_new": self.is_new,
-            "architecture": self.build.arch_tag,
-            "component": self.component.name,
-            "section": self.section.name,
-            "priority": self.priority.name,
-            }
 
     @cachedproperty
     def files(self):

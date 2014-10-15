@@ -1,11 +1,10 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Testing the CodeHandler."""
 
 __metaclass__ = type
 
-from difflib import unified_diff
 from textwrap import dedent
 
 from storm.store import Store
@@ -31,7 +30,6 @@ from lp.code.model.branchmergeproposaljob import (
     BranchMergeProposalJob,
     BranchMergeProposalJobType,
     )
-from lp.code.model.diff import PreviewDiff
 from lp.code.tests.helpers import make_merge_proposal_without_reviewers
 from lp.services.config import config
 from lp.services.mail.handlers import mail_handlers
@@ -382,7 +380,7 @@ class TestCodeHandler(TestCaseWithFactory):
     def test_reviewer_with_diff(self):
         """Requesting a review with a diff works."""
         bmp = make_merge_proposal_without_reviewers(self.factory)
-        preview_diff = self.factory.makePreviewDiff(merge_proposal=bmp)
+        self.factory.makePreviewDiff(merge_proposal=bmp)
         # To record the diff in the librarian.
         transaction.commit()
         eric = self.factory.makePerson(name="eric", email="eric@example.com")

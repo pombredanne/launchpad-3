@@ -39,7 +39,7 @@ class FakeTranslationTemplatesSource(TranslationTemplatesBuild):
     How do you fake a utility that is implemented as a class, not a
     factory?  By inheriting from `TranslationTemplatesBuild`, this class
     "copies" the utility.  But you can make it fake the utility's
-    behavior by setting an attribute of the class (not an object!) at
+    behaviour by setting an attribute of the class (not an object!) at
     the beginning of every test.
     """
     # Fake _hasPotteryCompatibleSetup, and if so, make it give what
@@ -130,6 +130,11 @@ class TestTranslationTemplatesBuild(TestCaseWithFactory):
         # future however the scoring system is to be revisited.
         build = self.factory.makeTranslationTemplatesBuild()
         self.assertEqual(2510, build.calculateScore())
+
+    def test_build_cookie(self):
+        build = self.factory.makeTranslationTemplatesBuild()
+        self.assertEqual(
+            'TRANSLATIONTEMPLATESBUILD-%d' % build.id, build.build_cookie)
 
     def test_generatesTemplates(self):
         # A branch "generates templates" if it is a translation branch

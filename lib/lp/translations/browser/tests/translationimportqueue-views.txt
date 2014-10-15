@@ -4,14 +4,11 @@ TranslationImportQueueEntry Edit View
 On this section, we are going to test the edit view class for an
 ITranslationImportQueueEntry object.
 
-    >>> from zope.component import getUtility, getMultiAdapter
-    >>> from lp.layers import setFirstLayer
-    >>> from lp.services.webapp.servers import LaunchpadTestRequest
+    >>> from zope.component import getUtility
     >>> from lp.translations.interfaces.translationimportqueue import (
     ...     ITranslationImportQueue)
     >>> from lp.translations.browser.translationimportqueue import (
     ...     TranslationImportQueueEntryView)
-    >>> from lp.translations.publisher import TranslationsLayer
 
 This view is only accessible for administrators.
 
@@ -49,13 +46,8 @@ Now we create the entry in the queue.
 The view is named "+index" and it is found on the TranslationsLayer. We want
 to get it new for each subsequent test.
 
-    >>> def getTranslationEntryView(entry):
-    ...     request = LaunchpadTestRequest()
-    ...     setFirstLayer(request, TranslationsLayer)
-    ...     view = getMultiAdapter((entry, request), name='+index')
-    ...     view.initialize()
-    ...     return view
-    >>> view = getTranslationEntryView(pot_entry)
+    >>> from lp.testing.views import create_initialized_view
+    >>> view = create_initialized_view(pot_entry, '+index')
     >>> isinstance(view, TranslationImportQueueEntryView)
     True
 
@@ -82,7 +74,7 @@ Validating correct data should not produce an error.
 But declaring a different file type would require different data, so we get
 some errors.
 
-    >>> view = getTranslationEntryView(pot_entry)
+    >>> view = create_initialized_view(pot_entry, '+index')
     >>> data = {
     ...     'file_type': TranslationFileType.PO,
     ...     'path': 'demo.pot',
@@ -94,7 +86,7 @@ some errors.
 
 Also, the filename must be given and the template name must be a valid name.
 
-    >>> view = getTranslationEntryView(pot_entry)
+    >>> view = create_initialized_view(pot_entry, '+index')
     >>> data = {
     ...     'file_type': TranslationFileType.POT,
     ...     'path': None,
@@ -111,7 +103,7 @@ Specifying po file data for po templates is not a good idea either.
     >>> from lp.translations.interfaces.potemplate import IPOTemplateSet
     >>> potemplate = getUtility(IPOTemplateSet).getPOTemplateByPathAndOrigin(
     ...     'po/evolution-2.2.pot', productseries)
-    >>> view = getTranslationEntryView(pot_entry)
+    >>> view = create_initialized_view(pot_entry, '+index')
     >>> data = {
     ...     'file_type': TranslationFileType.POT,
     ...     'path': 'demo.po',
@@ -124,7 +116,7 @@ Specifying po file data for po templates is not a good idea either.
 
 But if it works if you decide that the file in question really is a po file.
 
-    >>> view = getTranslationEntryView(pot_entry)
+    >>> view = create_initialized_view(pot_entry, '+index')
     >>> data = {
     ...     'file_type': TranslationFileType.PO,
     ...     'path': 'demo.po',
@@ -137,7 +129,7 @@ The potemplate entry for the new template is also created.
 
     >>> from lp.translations.interfaces.translationimportqueue import (
     ...     RosettaImportStatus)
-    >>> view = getTranslationEntryView(pot_entry)
+    >>> view = create_initialized_view(pot_entry, '+index')
     >>> view.context.potemplate == None
     True
     >>> data = {
@@ -165,7 +157,7 @@ We can upload to a sourcepackagename in the Ubuntu series.
     ...     'demo.pot', '# foo', True,
     ...     importer, distroseries=ubuntuseries,
     ...     sourcepackagename=packagename)
-    >>> ubuntu_view = getTranslationEntryView(ubuntu_entry)
+    >>> ubuntu_view = create_initialized_view(ubuntu_entry, '+index')
 
 The form now has a field for languagepacks. The value of the field defaults
 to "True" as no potemplate has been set yet.
@@ -195,18 +187,17 @@ Once the template has been set, the view will display its languagepack value
 as the default value.
 
     >>> ubuntu_entry.potemplate.languagepack = False
-    >>> ubuntu_view = getTranslationEntryView(ubuntu_entry)
+    >>> ubuntu_view = create_initialized_view(ubuntu_entry, '+index')
     >>> ubuntu_view.initial_values['languagepack'] == False
     True
 
-For non-Ubuntu distroseries, languagepack is not displayed.
+For a product template, languagepack is not displayed.
 
-    >>> other_series = factory.makeDistroSeries()
+    >>> other_series = factory.makeProductSeries()
     >>> other_entry = queue.addOrUpdateEntry(
     ...     'demo.pot', '# foo', True,
-    ...     importer, distroseries=other_series,
-    ...     sourcepackagename=packagename)
-    >>> other_view = getTranslationEntryView(other_entry)
+    ...     importer, productseries=other_series)
+    >>> other_view = create_initialized_view(other_entry, '+index')
     >>> 'languagepack' in other_view.field_names
     False
 

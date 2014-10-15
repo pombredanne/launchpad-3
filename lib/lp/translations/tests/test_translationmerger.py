@@ -22,7 +22,7 @@ from lp.testing.sampledata import ADMIN_EMAIL
 from lp.translations.model.pomsgid import POMsgID
 from lp.translations.model.potemplate import POTemplate
 from lp.translations.model.potranslation import POTranslation
-from lp.translations.translationmerger import (
+from lp.translations.utilities.translationmerger import (
     MessageSharingMerge,
     TransactionManager,
     TranslationMerger,

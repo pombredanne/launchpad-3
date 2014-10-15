@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the database garbage collector."""
@@ -10,6 +10,7 @@ from datetime import (
     datetime,
     timedelta,
     )
+import hashlib
 import logging
 from StringIO import StringIO
 import time
@@ -41,6 +42,7 @@ from lp.bugs.model.bugnotification import (
     BugNotification,
     BugNotificationRecipient,
     )
+from lp.buildmaster.enums import BuildStatus
 from lp.code.bzr import (
     BranchFormat,
     RepositoryFormat,
@@ -87,16 +89,12 @@ from lp.services.database.constants import (
     )
 from lp.services.database.interfaces import IMasterStore
 from lp.services.features.model import FeatureFlag
+from lp.services.features.testing import FeatureFixture
 from lp.services.identity.interfaces.account import AccountStatus
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.services.job.model.job import Job
 from lp.services.librarian.model import TimeLimitedToken
-from lp.services.log.logger import NullHandler
 from lp.services.messages.model.message import Message
-from lp.services.oauth.model import (
-    OAuthAccessToken,
-    OAuthNonce,
-    )
 from lp.services.openid.model.openidconsumer import OpenIDConsumerNonce
 from lp.services.salesforce.interfaces import ISalesforceVoucherProxy
 from lp.services.salesforce.tests.proxy import TestSalesforceVoucherProxy
@@ -109,6 +107,8 @@ from lp.services.verification.interfaces.authtoken import LoginTokenType
 from lp.services.verification.model.logintoken import LoginToken
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.soyuz.enums import PackagePublishingStatus
+from lp.soyuz.interfaces.livefs import LIVEFS_FEATURE_FLAG
+from lp.soyuz.model.livefsbuild import LiveFSFile
 from lp.soyuz.model.reporting import LatestPersonSourcePackageReleaseCache
 from lp.testing import (
     FakeAdapterMixin,
@@ -386,7 +386,7 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         # Silence the root Logger by instructing the garbo logger to not
         # propagate messages.
         self.log = logging.getLogger('garbo')
-        self.log.addHandler(NullHandler())
+        self.log.addHandler(logging.NullHandler())
         self.log.propagate = 0
 
         # Run the garbage collectors to remove any existing garbage,
@@ -433,47 +433,6 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         save_garbo_job_state('job', {'data': 2})
         data = load_garbo_job_state('job')
         self.assertEqual({'data': 2}, data)
-
-    def test_OAuthNoncePruner(self):
-        now = datetime.now(UTC)
-        timestamps = [
-            now - timedelta(days=2),  # Garbage
-            now - timedelta(days=1) - timedelta(seconds=60),  # Garbage
-            now - timedelta(days=1) + timedelta(seconds=60),  # Not garbage
-            now,  # Not garbage
-            ]
-        switch_dbuser('testadmin')
-        store = IMasterStore(OAuthNonce)
-
-        # Make sure we start with 0 nonces.
-        self.failUnlessEqual(store.find(OAuthNonce).count(), 0)
-
-        for timestamp in timestamps:
-            store.add(OAuthNonce(
-                access_token=OAuthAccessToken.get(1),
-                request_timestamp=timestamp,
-                nonce=str(timestamp)))
-        transaction.commit()
-
-        # Make sure we have 4 nonces now.
-        self.failUnlessEqual(store.find(OAuthNonce).count(), 4)
-
-        self.runFrequently(
-            maximum_chunk_size=60)  # 1 minute maximum chunk size
-
-        store = IMasterStore(OAuthNonce)
-
-        # Now back to two, having removed the two garbage entries.
-        self.failUnlessEqual(store.find(OAuthNonce).count(), 2)
-
-        # And none of them are older than a day.
-        # Hmm... why is it I'm putting tz aware datetimes in and getting
-        # naive datetimes back? Bug in the SQLObject compatibility layer?
-        # Test is still fine as we know the timezone.
-        self.failUnless(
-            store.find(
-                Min(OAuthNonce.request_timestamp)).one().replace(tzinfo=UTC)
-            >= now - timedelta(days=1))
 
     def test_OpenIDConsumerNoncePruner(self):
         now = int(time.mktime(time.gmtime()))
@@ -659,6 +618,30 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         mp2_diff_ids = [removeSecurityProxy(p).id for p in mp2.preview_diffs]
         self.assertEqual([mp1_diff.id], mp1_diff_ids)
         self.assertEqual([mp2_diff.id], mp2_diff_ids)
+
+    def test_PreviewDiffPruner_with_inline_comments(self):
+        # Old PreviewDiffs with published or draft inline comments
+        # are not removed.
+        switch_dbuser('testadmin')
+        mp1 = self.factory.makeBranchMergeProposal()
+        now = datetime.now(UTC)
+        mp1_diff_comment = self.factory.makePreviewDiff(
+            merge_proposal=mp1, date_created=now - timedelta(hours=2))
+        mp1_diff_draft = self.factory.makePreviewDiff(
+            merge_proposal=mp1, date_created=now - timedelta(hours=1))
+        mp1_diff = self.factory.makePreviewDiff(merge_proposal=mp1)
+        # Attach comments on the old diffs, so they are kept in DB.
+        mp1.createComment(
+            owner=mp1.registrant, previewdiff_id=mp1_diff_comment.id,
+            subject='Hold this diff!', inline_comments={'1': '!!!'})
+        mp1.saveDraftInlineComment(
+            previewdiff_id=mp1_diff_draft.id,
+            person=mp1.registrant, comments={'1': '???'})
+        # Run the 'garbo' and verify the old diffs were not removed.
+        self.runDaily()
+        self.assertEqual(
+            [mp1_diff_comment.id, mp1_diff_draft.id, mp1_diff.id],
+            [p.id for p in mp1.preview_diffs])
 
     def test_DiffPruner(self):
         switch_dbuser('testadmin')
@@ -986,9 +969,9 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
             path="sample path"))))
         self.runDaily()
         self.assertEqual(0, len(list(store.find(TimeLimitedToken,
-            path="sample path", token="foo"))))
+            path="sample path", token=hashlib.sha256("foo").hexdigest()))))
         self.assertEqual(1, len(list(store.find(TimeLimitedToken,
-            path="sample path", token="bar"))))
+            path="sample path", token=hashlib.sha256("bar").hexdigest()))))
 
     def test_CacheSuggestivePOTemplates(self):
         switch_dbuser('testadmin')
@@ -1287,6 +1270,43 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         job_data = load_garbo_job_state(
             'PopulateLatestPersonSourcePackageReleaseCache')
         self.assertEqual(spph_2.id, job_data['last_spph_id'])
+
+    def _test_LiveFSFilePruner(self, content_type, interval, expected_count=0):
+        # Garbo should (or should not, if `expected_count=1`) remove LiveFS
+        # files of MIME type `content_type` that finished more than
+        # `interval` days ago.
+        now = datetime.now(UTC)
+        switch_dbuser('testadmin')
+        self.useFixture(FeatureFixture({LIVEFS_FEATURE_FLAG: u'on'}))
+        store = IMasterStore(LiveFSFile)
+
+        db_build = self.factory.makeLiveFSBuild(
+            date_created=now - timedelta(days=interval, minutes=15),
+            status=BuildStatus.FULLYBUILT, duration=timedelta(minutes=10))
+        db_lfa = self.factory.makeLibraryFileAlias(content_type=content_type)
+        db_file = self.factory.makeLiveFSFile(
+            livefsbuild=db_build, libraryfile=db_lfa)
+        Store.of(db_file).flush()
+        self.assertEqual(1, store.find(LiveFSFile).count())
+
+        self.runDaily()
+
+        switch_dbuser('testadmin')
+        self.assertEqual(expected_count, store.find(LiveFSFile).count())
+
+    def test_LiveFSFilePruner_old_binary_files(self):
+        # LiveFS binary files attached to builds over a day old are pruned.
+        self._test_LiveFSFilePruner('application/octet-stream', 1)
+
+    def test_LiveFSFilePruner_old_text_files(self):
+        # LiveFS text files attached to builds over a day old are retained.
+        self._test_LiveFSFilePruner('text/plain', 1, expected_count=1)
+
+    def test_LiveFSFilePruner_recent_binary_files(self):
+        # LiveFS binary files attached to builds less than a day old are
+        # retained.
+        self._test_LiveFSFilePruner(
+            'application/octet-stream', 0, expected_count=1)
 
 
 class TestGarboTasks(TestCaseWithFactory):

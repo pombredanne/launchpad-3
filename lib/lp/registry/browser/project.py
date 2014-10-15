@@ -45,10 +45,7 @@ from zope.schema import Choice
 
 from lp import _
 from lp.answers.browser.question import QuestionAddView
-from lp.answers.browser.questiontarget import (
-    QuestionCollectionAnswersMenu,
-    QuestionTargetFacetMixin,
-    )
+from lp.answers.browser.questiontarget import QuestionCollectionAnswersMenu
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -113,7 +110,10 @@ from lp.services.webapp import (
     )
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.breadcrumb import Breadcrumb
-from lp.services.webapp.menu import NavigationMenu
+from lp.services.webapp.menu import (
+    ALL_LINKS,
+    NavigationMenu,
+    )
 
 
 class ProjectNavigation(Navigation,
@@ -175,41 +175,21 @@ class ProjectSetContextMenu(ContextMenu):
         return Link('+all', text, icon='list')
 
 
-class ProjectFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
+class ProjectFacets(StandardLaunchpadFacets):
     """The links that will appear in the facet menu for an IProjectGroup."""
 
     usedfor = IProjectGroup
-
-    enable_only = ['overview', 'branches', 'bugs', 'specifications',
-                   'answers', 'translations']
 
     @cachedproperty
     def has_products(self):
         return self.context.hasProducts()
 
-    def branches(self):
-        text = 'Code'
-        return Link('', text, enabled=self.has_products)
-
-    def bugs(self):
-        site = 'bugs'
-        text = 'Bugs'
-        return Link('', text, enabled=self.has_products, site=site)
-
-    def answers(self):
-        site = 'answers'
-        text = 'Answers'
-        return Link('', text, enabled=self.has_products, site=site)
-
-    def specifications(self):
-        site = 'blueprints'
-        text = 'Blueprints'
-        return Link('', text, enabled=self.has_products, site=site)
-
-    def translations(self):
-        site = 'translations'
-        text = 'Translations'
-        return Link('', text, enabled=self.has_products, site=site)
+    @property
+    def enable_only(self):
+        if not self.has_products:
+            return ['overview']
+        else:
+            return ALL_LINKS
 
 
 class ProjectAdminMenuMixin:
@@ -410,7 +390,7 @@ class ProjectEditView(LaunchpadEditFormView):
         'displayname', 'title', 'summary', 'description',
         'bug_reporting_guidelines', 'bug_reported_acknowledgement',
         'homepageurl', 'bugtracker', 'sourceforgeproject',
-        'freshmeatproject', 'wikiurl']
+        'wikiurl']
 
     @action('Change Details', name='change')
     def edit(self, action, data):

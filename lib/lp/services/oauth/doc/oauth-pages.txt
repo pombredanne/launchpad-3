@@ -17,7 +17,7 @@ consumer's request to access Launchpad on his behalf.
     >>> consumer = getUtility(IOAuthConsumerSet).getByKey('launchpad-library')
     >>> root = getUtility(ILaunchpadRoot)
     >>> def get_view_with_fresh_token(form):
-    ...     token = consumer.newRequestToken()
+    ...     token, _ = consumer.newRequestToken()
     ...     form.update({'oauth_token': token.key})
     ...     request = LaunchpadTestRequest(form=form)
     ...     login('salgado@ubuntu.com', request)

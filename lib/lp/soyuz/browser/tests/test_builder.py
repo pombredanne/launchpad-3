@@ -71,3 +71,18 @@ class TestBuildersHomepage(TestCaseWithFactory, BuildCreationMixin):
         recorder1, recorder2 = record_two_runs(
             builders_homepage_render, create_build, nb_objects)
         self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
+
+    def test_builders_variety_query_count(self):
+        def create_builds():
+            bqs = [
+                self.factory.makeBinaryPackageBuild().queueBuild(),
+                self.factory.makeSourcePackageRecipeBuild().queueBuild(),
+                self.factory.makeTranslationTemplatesBuild().queueBuild(),
+                ]
+            for bq in bqs:
+                bq.markAsBuilding(self.factory.makeBuilder())
+
+        nb_objects = 2
+        recorder1, recorder2 = record_two_runs(
+            builders_homepage_render, create_builds, nb_objects)
+        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))

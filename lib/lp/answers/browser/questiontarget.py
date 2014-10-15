@@ -6,7 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
-    'AnswersVHostBreadcrumb',
+    'AnswersFacetBreadcrumb',
     'AskAQuestionButtonPortlet',
     'ManageAnswerContactView',
     'SearchQuestionsView',
@@ -14,9 +14,7 @@ __all__ = [
     'QuestionCollectionLatestQuestionsPortlet',
     'QuestionCollectionMyQuestionsView',
     'QuestionCollectionNeedAttentionView',
-    'QuestionCollectionOpenCountView',
     'QuestionCollectionAnswersMenu',
-    'QuestionTargetFacetMixin',
     'QuestionTargetPortletAnswerContactsWithDetails',
     'QuestionTargetTraversalMixin',
     'QuestionTargetAnswersMenu',
@@ -168,23 +166,6 @@ class QuestionCollectionLatestQuestionsPortlet:
         """
         question_collection = IQuestionCollection(self.context)
         return list(question_collection.searchQuestions()[:quantity])
-
-
-class QuestionCollectionOpenCountView:
-    """View used to render the number of open questions.
-
-    This view is used to render the number of open questions on
-    each IDistributionSourcePackage on the person-packages-templates.pt.
-    It is simpler to define generic view and an adapter (since
-    SourcePackageRelease does not provide IQuestionCollection), than
-    to write a specific view for that template.
-    """
-
-    def __call__(self):
-        questiontarget = IQuestionCollection(self.context)
-        open_questions = questiontarget.searchQuestions(
-            status=[QuestionStatus.OPEN, QuestionStatus.NEEDSINFO])
-        return unicode(open_questions.count())
 
 
 class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
@@ -886,16 +867,6 @@ class QuestionTargetPortletAnswerContactsWithDetails(LaunchpadView):
         return self.answercontact_data_js
 
 
-class QuestionTargetFacetMixin:
-    """Mixin for questiontarget facet definition."""
-
-    def answers(self):
-        """Return the link for Answers."""
-        summary = (
-            'Questions for %s' % self.context.displayname)
-        return Link('', 'Answers', summary)
-
-
 class QuestionTargetTraversalMixin:
     """Navigation mixin for IQuestionTarget."""
 
@@ -991,6 +962,6 @@ class QuestionTargetAnswersMenu(QuestionCollectionAnswersMenu):
         return Link('+answer-contact', text, icon='edit')
 
 
-class AnswersVHostBreadcrumb(Breadcrumb):
+class AnswersFacetBreadcrumb(Breadcrumb):
     rootsite = 'answers'
     text = 'Questions'

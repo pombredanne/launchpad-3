@@ -664,7 +664,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         self.assertTrue(browser.url.endswith('/~eric/+recipe/name'))
         # Since no PPA name was entered, the default name (ppa) was used.
         login(ANONYMOUS)
-        new_ppa = self.user.getPPAByName('ppa')
+        new_ppa = self.user.getPPAByName(self.ppa.distribution, 'ppa')
         self.assertIsNot(None, new_ppa)
 
     def test_create_new_ppa_duplicate(self):
@@ -687,7 +687,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         browser.getControl('Create Recipe').click()
         self.assertEqual(
             get_feedback_messages(browser.contents)[1],
-            html_escape("You already have a PPA named 'foo'."))
+            html_escape("You already have a PPA for Ubuntu named 'foo'."))
 
     def test_create_new_ppa_missing_name(self):
         # If a new PPA is being created, and the user has not specified a
@@ -732,7 +732,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         self.assertTrue(browser.url.endswith('/~vikings/+recipe/name'))
         # Since no PPA name was entered, the default name (ppa) was used.
         login(ANONYMOUS)
-        new_ppa = team.getPPAByName('ppa')
+        new_ppa = team.getPPAByName(self.ppa.distribution, 'ppa')
         self.assertIsNot(None, new_ppa)
 
 
@@ -1446,7 +1446,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
             Request builds for cake_recipe
             Archive:
             (nothing selected)
-            Secret PPA [~chef/ppa]
+            Secret PPA [~chef/ubuntu/ppa]
             Distribution series:
             Secret Squirrel
             Hoary
@@ -1677,7 +1677,7 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         """Test the basic index page."""
         main_text = self.getMainText(self.makeBuild(), '+index')
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
-            Owner PPA named build for Owner
+            Owner Code PPA named build for Owner
             created .*
             Build status
             Needs building
@@ -1707,7 +1707,7 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         main_text = self.getMainText(
             release.source_package_recipe_build, '+index')
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
-            Owner PPA named build for Owner
+            Owner Code PPA named build for Owner
             created .*
             Build status
             Successfully built

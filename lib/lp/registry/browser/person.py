@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Person-related view classes."""
@@ -264,6 +264,7 @@ from lp.soyuz.browser.archivesubscription import (
     )
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
+from lp.soyuz.interfaces.livefs import ILiveFSSet
 from lp.soyuz.interfaces.publishing import ISourcePackagePublishingHistory
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 
@@ -355,7 +356,9 @@ class BranchTraversalMixin:
                 self.context, pillar)
             # If accessed through an alias, redirect to the proper name.
             if pillar.name != pillar_name:
-                return self.redirectSubTree(canonical_url(person_product))
+                return self.redirectSubTree(
+                    canonical_url(person_product, request=self.request),
+                    status=301)
             getUtility(IOpenLaunchBag).add(pillar)
             return person_product
         # Otherwise look for a branch.
@@ -405,30 +408,48 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
 
     @stepto('+archive')
     def traverse_archive(self):
+        from lp.soyuz.browser.archive import traverse_named_ppa
 
-        if self.request.stepstogo:
-            # If the URL has something that could be a PPA name in it,
-            # use that, but just in case it fails, keep a copy
-            # of the traversal stack so we can try using the default
-            # archive afterwards:
-            traversal_stack = self.request.getTraversalStack()
-            ppa_name = self.request.stepstogo.consume()
+        # 1.0 API requests are exempt from non-canonical redirects,
+        # since some manually construct URLs and don't cope with
+        # redirects (most notably the Python 2 implementation of
+        # apt-add-repository).
+        redirect_allowed = not (
+            IWebServiceClientRequest.providedBy(self.request)
+            and self.request.annotations.get(
+                self.request.VERSION_ANNOTATION) == '1.0')
 
-            try:
-                from lp.soyuz.browser.archive import traverse_named_ppa
-                return traverse_named_ppa(self.context.name, ppa_name)
-            except NotFoundError:
-                self.request.setTraversalStack(traversal_stack)
-                # and simply continue below...
+        # There are three cases, in order of preference:
+        #  - 2014 onwards: /~wgrant/+archive/ubuntu/ppa:
+        #    The next two URL segments are names of a distribution and a PPA.
+        #
+        #  - 2009-2014: /~wgrant/+archive/ppa:
+        #    The distribution is assumed to be "ubuntu".
+        #
+        #  - 2007-2009: /~wgrant/+archive:
+        #    The distribution is assumed to be "ubuntu" and the PPA "ppa".
+        #
+        # Only the first is canonical, with the others redirecting to it.
+        bits = list(reversed(self.request.getTraversalStack()[-2:]))
+        attempts = []
+        if len(bits) == 2:
+            attempts.append((bits[0], bits[1], 2, False))
+        if len(bits) >= 1:
+            attempts.append(("ubuntu", bits[0], 1, redirect_allowed))
+        attempts.append(("ubuntu", "ppa", 0, True))
 
-        # Otherwise try to get the default PPA and if it exists redirect
-        # to the new-style URL, if it doesn't, return None (to trigger a
-        # NotFound error).
-        default_ppa = self.context.archive
-        if default_ppa is None:
-            return None
-
-        return self.redirectSubTree(canonical_url(default_ppa))
+        # Go through the attempts in order.
+        for distro, ppa, segments, redirect in attempts:
+            ppa = traverse_named_ppa(self.context, distro, ppa)
+            if ppa is not None:
+                for i in range(segments):
+                    self.request.stepstogo.consume()
+                if redirect:
+                    return self.redirectSubTree(
+                        canonical_url(ppa, request=self.request))
+                else:
+                    return ppa
+        return None
 
     @stepthrough('+email')
     def traverse_email(self, email):
@@ -492,6 +513,29 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
         """Traverse to this person's merge queues."""
         return self.context.getMergeQueue(name)
 
+    @stepthrough('+livefs')
+    def traverse_livefs(self, distribution_name):
+        """Traverse to this person's live filesystem images."""
+        if len(self.request.stepstogo) < 2:
+            return None
+
+        distroseries_name = self.request.stepstogo.consume()
+        livefs_name = self.request.stepstogo.consume()
+        livefs = getUtility(ILiveFSSet).interpret(
+            self.context.name, distribution_name, distroseries_name,
+            livefs_name)
+
+        if livefs is None:
+            raise NotFoundError
+
+        if livefs.distro_series.distribution.name != distribution_name:
+            # This live filesystem was accessed through one of its
+            # distribution's aliases, so we must redirect to its canonical
+            # URL.
+            return self.redirectSubTree(canonical_url(livefs))
+
+        return livefs
+
 
 class PersonSetNavigation(Navigation):
 
@@ -542,46 +586,6 @@ class PersonFacets(StandardLaunchpadFacets):
     """The links that will appear in the facet menu for an IPerson."""
 
     usedfor = IPerson
-
-    enable_only = ['overview', 'bugs', 'answers', 'specifications',
-                   'branches', 'translations']
-
-    def overview(self):
-        text = 'Overview'
-        summary = 'General information about %s' % self.context.displayname
-        return Link('', text, summary)
-
-    def bugs(self):
-        text = 'Bugs'
-        summary = (
-            'Bug reports that %s is involved with' % self.context.displayname)
-        return Link('', text, summary)
-
-    def specifications(self):
-        text = 'Blueprints'
-        summary = (
-            'Feature specifications that %s is involved with' %
-            self.context.displayname)
-        return Link('', text, summary)
-
-    def branches(self):
-        text = 'Code'
-        summary = ('Bazaar Branches and revisions registered and authored '
-                   'by %s' % self.context.displayname)
-        return Link('', text, summary)
-
-    def answers(self):
-        text = 'Answers'
-        summary = (
-            'Questions that %s is involved with' % self.context.displayname)
-        return Link('', text, summary)
-
-    def translations(self):
-        text = 'Translations'
-        summary = (
-            'Software that %s is involved in translating' %
-            self.context.displayname)
-        return Link('', text, summary)
 
 
 class CommonMenuLinks:

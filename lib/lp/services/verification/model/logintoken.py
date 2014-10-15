@@ -7,6 +7,8 @@ __all__ = [
     'LoginTokenSet',
     ]
 
+import hashlib
+
 import pytz
 from sqlobject import (
     ForeignKey,
@@ -25,7 +27,10 @@ from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.enumcol import EnumCol
-from lp.services.database.interfaces import IMasterStore
+from lp.services.database.interfaces import (
+    IMasterStore,
+    IStore,
+    )
 from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
@@ -36,7 +41,7 @@ from lp.services.mail.sendmail import (
     format_address,
     simple_sendmail,
     )
-from lp.services.tokens import create_unique_token_for_table
+from lp.services.tokens import create_token
 from lp.services.verification.interfaces.authtoken import LoginTokenType
 from lp.services.verification.interfaces.logintoken import (
     ILoginToken,
@@ -57,7 +62,10 @@ class LoginToken(SQLBase):
     requesteremail = StringCol(dbName='requesteremail', notNull=False,
                                default=None)
     email = StringCol(dbName='email', notNull=True)
-    token = StringCol(dbName='token', unique=True)
+
+    # The hex SHA-256 hash of the token.
+    _token = StringCol(dbName='token', unique=True)
+
     tokentype = EnumCol(dbName='tokentype', notNull=True, enum=LoginTokenType)
     date_created = UtcDateTimeCol(dbName='created', notNull=True)
     fingerprint = StringCol(dbName='fingerprint', notNull=False, default=None)
@@ -65,6 +73,23 @@ class LoginToken(SQLBase):
     password = ''  # Quick fix for Bug #2481
 
     title = 'Launchpad Email Verification'
+
+    def __init__(self, *args, **kwargs):
+        token = kwargs.pop('token', None)
+        if token is not None:
+            self._plaintext_token = token
+            kwargs['_token'] = hashlib.sha256(token).hexdigest()
+        super(LoginToken, self).__init__(*args, **kwargs)
+
+    _plaintext_token = None
+
+    @property
+    def token(self):
+        if self._plaintext_token is None:
+            raise AssertionError(
+                "Token only available for LoginTokens obtained by token in "
+                "the first place. The DB only stores the hashed version.")
+        return self._plaintext_token
 
     def consume(self):
         """See ILoginToken."""
@@ -339,7 +364,7 @@ class LoginTokenSet:
             # Aha! According to our policy, we shouldn't raise ValueError.
             raise ValueError(
                 "tokentype is not an item of LoginTokenType: %s" % tokentype)
-        token = create_unique_token_for_table(20, LoginToken.token)
+        token = create_token(20)
         return LoginToken(requester=requester, requesteremail=requesteremail,
                           email=email, token=token, tokentype=tokentype,
                           created=UTC_NOW, fingerprint=fingerprint,
@@ -347,7 +372,9 @@ class LoginTokenSet:
 
     def __getitem__(self, tokentext):
         """See ILoginTokenSet."""
-        token = LoginToken.selectOneBy(token=tokentext)
+        token = IStore(LoginToken).find(
+            LoginToken, _token=hashlib.sha256(tokentext).hexdigest()).one()
         if token is None:
             raise NotFoundError(tokentext)
+        token._plaintext_token = tokentext
         return token

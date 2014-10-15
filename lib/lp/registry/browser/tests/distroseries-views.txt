@@ -184,7 +184,7 @@ Series that belong to derivative distributions also contain the status field.
     >>> youbuntu = factory.makeDistribution(name='youbuntu')
     >>> yo_series = factory.makeDistroSeries(name='melon')
     >>> yo_series.title = 'Melon'
-    >>> youbuntu.full_functionality
+    >>> youbuntu.official_packages
     False
 
     >>> yo_driver = factory.makePerson(name='yo-driver')
@@ -256,8 +256,8 @@ Administrators can create series, but normal users cannot.
 Drivers can create distro series
 --------------------------------
 
-Users who are appointed as drivers of a distribution can create a series.
-Most distributions are an `IDerivativeDistribution`.
+Users who are appointed as drivers of a distribution that doesn't use
+Launchpad for package management can create a series.
 
     >>> ignored = login_person(yo_driver)
     >>> view = create_view(youbuntu, name='+addseries')
@@ -276,10 +276,11 @@ Most distributions are an `IDerivativeDistribution`.
     >>> print yo_series.displayname
     Island
 
-Ubuntu is an exception. It's drivers cannot create series because Ubuntu
-is an `IBaseDistribution`.
+But drivers of distributions that use Soyuz officially (eg. Ubuntu)
+cannot create series, as that could have serious consequences for the
+primary archive.
 
-    >>> ubuntu.full_functionality
+    >>> ubuntu.official_packages
     True
 
     >>> ignored = login_person(ubuntu.owner.teamowner)
@@ -293,8 +294,8 @@ is an `IBaseDistribution`.
 Drivers editing distro series
 .............................
 
-The series driver (release manager) can edit a series if the series belongs
-to a `IDerivativeDistribution`.
+The series driver (release manager) can edit a series if the series
+doesn't manage its packages in Launchpad.
 
     >>> print yo_series.driver.name
     yo-driver
@@ -317,7 +318,7 @@ to a `IDerivativeDistribution`.
     >>> print yo_series.displayname
     Mountain
 
-Drivers of an `IBaseDistribution` such as Ubuntu cannot edit a series.
+Drivers of packages with packages such as Ubuntu cannot edit a series.
 
     >>> ignored = login_person(ubuntu.owner.teamowner)
     >>> hoary.driver = yo_driver

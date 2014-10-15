@@ -1,4 +1,4 @@
-# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """IBugTarget-related browser views."""
@@ -6,7 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
-    "BugsVHostBreadcrumb",
+    "BugsFacetBreadcrumb",
     "BugsPatchesView",
     "BugTargetBugListingView",
     "BugTargetBugTagsView",
@@ -26,7 +26,6 @@ from functools import partial
 import httplib
 from operator import itemgetter
 import urllib
-from urlparse import urljoin
 
 from lazr.restful.interface import copy_field
 from lazr.restful.interfaces import IJSONRequestCache
@@ -63,7 +62,6 @@ from lp.app.enums import (
     InformationType,
     PRIVATE_INFORMATION_TYPES,
     PUBLIC_INFORMATION_TYPES,
-    SECURITY_INFORMATION_TYPES,
     ServiceUsage,
     )
 from lp.app.errors import (
@@ -115,7 +113,6 @@ from lp.bugs.model.bugtask import BugTask
 from lp.bugs.model.structuralsubscription import (
     get_structural_subscriptions_for_target,
     )
-from lp.bugs.publisher import BugsLayer
 from lp.bugs.utilities.filebugdataparser import FileBugData
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionSet
 from lp.registry.browser.product import ProductConfigureBase
@@ -641,7 +638,7 @@ class FileBugViewBase(LaunchpadFormView):
         # Give the user some feedback on the bug just opened.
         for notification in notifications:
             self.request.response.addNotification(notification)
-        if bug.information_type in SECURITY_INFORMATION_TYPES:
+        if bug.information_type == InformationType.PRIVATESECURITY:
             self.request.response.addNotification(
                 structured(
                 'Security-related bugs are by default private '
@@ -1271,7 +1268,7 @@ class OfficialBugTagsManageView(LaunchpadEditFormView):
         return canonical_url(self.context)
 
 
-class BugsVHostBreadcrumb(Breadcrumb):
+class BugsFacetBreadcrumb(Breadcrumb):
     rootsite = 'bugs'
     text = 'Bugs'
 
@@ -1362,14 +1359,6 @@ class TargetSubscriptionView(LaunchpadView):
 
     def initialize(self):
         super(TargetSubscriptionView, self).initialize()
-        # Some resources such as help files are only provided on the bugs
-        # rootsite.  So if we got here via another, possibly hand-crafted, URL
-        # redirect to the equivalent URL on the bugs rootsite.
-        if not BugsLayer.providedBy(self.request):
-            new_url = urljoin(
-                self.request.getRootURL('bugs'), self.request['PATH_INFO'])
-            self.request.response.redirect(new_url)
-            return
         expose_structural_subscription_data_to_js(
             self.context, self.request, self.user, self.subscriptions)
 

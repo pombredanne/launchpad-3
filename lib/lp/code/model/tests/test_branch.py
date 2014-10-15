@@ -1266,7 +1266,7 @@ class TestBranchDeletion(TestCaseWithFactory):
     def test_specBranchLinkDisablesDeletion(self):
         """A branch linked to a spec cannot be deleted."""
         spec = getUtility(ISpecificationSet).new(
-            name='some-spec', title='Some spec', product=self.product,
+            name='some-spec', title='Some spec', target=self.product,
             owner=self.user, summary='', specurl=None,
             definition_status=NewSpecificationDefinitionStatus.NEW)
         spec.linkBranch(self.branch, self.user)
@@ -1407,6 +1407,36 @@ class TestBranchDeletion(TestCaseWithFactory):
         self.factory.makeSourcePackageRecipe(
             branches=[branch1, branch2])
         branch2.destroySelf(break_references=True)
+
+    def test_destroySelf_with_inline_comments_draft(self):
+        # Draft inline comments related to a deleted branch (source
+        # or target MP branch) also get removed.
+        merge_proposal = self.factory.makeBranchMergeProposal(
+            registrant=self.user, target_branch=self.branch)
+        preview_diff = self.factory.makePreviewDiff(
+            merge_proposal=merge_proposal)
+        transaction.commit()
+        merge_proposal.saveDraftInlineComment(
+            previewdiff_id=preview_diff.id,
+            person=self.user,
+            comments={'1': 'Should vanish.'})
+        self.branch.destroySelf(break_references=True)
+
+    def test_destroySelf_with_inline_comments_published(self):
+        # Published inline comments related to a deleted branch (source
+        # or target MP branch) also get removed.
+        merge_proposal = self.factory.makeBranchMergeProposal(
+            registrant=self.user, target_branch=self.branch)
+        preview_diff = self.factory.makePreviewDiff(
+            merge_proposal=merge_proposal)
+        transaction.commit()
+        merge_proposal.createComment(
+            owner=self.user,
+            subject='Delete me!',
+            previewdiff_id=preview_diff.id,
+            inline_comments={'1': 'Must disappear.'},
+        )
+        self.branch.destroySelf(break_references=True)
 
 
 class TestBranchDeletionConsequences(TestCase):

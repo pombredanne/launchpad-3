@@ -2,7 +2,7 @@
 # NOTE: The first line above must stay first; do not move the copyright
 # notice to the top.  See http://www.python.org/dev/peps/pep-0263/.
 #
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Testing infrastructure for the Launchpad application.
@@ -96,7 +96,10 @@ from lp.bugs.interfaces.cve import (
     ICveSet,
     )
 from lp.bugs.model.bug import FileBugData
-from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.enums import (
+    BuildStatus,
+    BuilderResetProtocol,
+    )
 from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.code.enums import (
     BranchMergeProposalStatus,
@@ -283,6 +286,8 @@ from lp.soyuz.interfaces.component import (
     IComponent,
     IComponentSet,
     )
+from lp.soyuz.interfaces.livefs import ILiveFSSet
+from lp.soyuz.interfaces.livefsbuild import ILiveFSBuildSet
 from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.interfaces.processor import IProcessorSet
@@ -293,10 +298,8 @@ from lp.soyuz.model.component import ComponentSelection
 from lp.soyuz.model.distributionsourcepackagecache import (
     DistributionSourcePackageCache,
     )
-from lp.soyuz.model.files import (
-    BinaryPackageFile,
-    SourcePackageReleaseFile,
-    )
+from lp.soyuz.model.files import BinaryPackageFile
+from lp.soyuz.model.livefsbuild import LiveFSFile
 from lp.soyuz.model.packagediff import PackageDiff
 from lp.testing import (
     admin_logged_in,
@@ -490,8 +493,8 @@ class ObjectFactory:
         if branch_id is None:
             branch_id = self.getUniqueInteger()
         if rcstype is None:
-            rcstype = 'svn'
-        if rcstype in ['svn', 'bzr-svn', 'bzr']:
+            rcstype = 'bzr-svn'
+        if rcstype in ['bzr-svn', 'bzr']:
             assert cvs_root is cvs_module is None
             if url is None:
                 url = self.getUniqueURL()
@@ -2050,13 +2053,17 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                           status=NewSpecificationDefinitionStatus.NEW,
                           implementation_status=None, goal=None, specurl=None,
                           assignee=None, drafter=None, approver=None,
-                          priority=None, whiteboard=None, milestone=None,
-                          information_type=None):
+                          whiteboard=None, milestone=None,
+                          information_type=None, priority=None):
         """Create and return a new, arbitrary Blueprint.
 
         :param product: The product to make the blueprint on.  If one is
             not specified, an arbitrary product is created.
         """
+        if distribution and product:
+            raise AssertionError(
+                'Cannot target a Specification to a distribution and '
+                'a product simultaneously.')
         proprietary = (information_type not in PUBLIC_INFORMATION_TYPES and
             information_type is not None)
         if (product is None and milestone is not None and
@@ -2064,8 +2071,12 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             product = milestone.productseries.product
         if distribution is None and product is None:
             if proprietary:
-                specification_sharing_policy = (
-                    SpecificationSharingPolicy.EMBARGOED_OR_PROPRIETARY)
+                if information_type == InformationType.EMBARGOED:
+                    specification_sharing_policy = (
+                        SpecificationSharingPolicy.EMBARGOED_OR_PROPRIETARY)
+                else:
+                    specification_sharing_policy = (
+                        SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY)
             else:
                 specification_sharing_policy = None
             product = self.makeProduct(
@@ -2078,8 +2089,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             title = self.getUniqueString('title')
         if owner is None:
             owner = self.makePerson()
-        if priority is None:
-            priority = SpecificationPriority.UNDEFINED
         status_names = NewSpecificationDefinitionStatus.items.mapping.keys()
         if status.name in status_names:
             definition_status = status
@@ -2097,10 +2106,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             assignee=assignee,
             drafter=drafter,
             approver=approver,
-            product=product,
-            distribution=distribution,
-            priority=priority)
+            target=product or distribution)
         naked_spec = removeSecurityProxy(spec)
+        if priority is not None:
+            naked_spec.priority = priority
         if status.name not in status_names:
             # Set the closed status after the status has a sane initial state.
             naked_spec.definition_status = status
@@ -2120,7 +2129,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             if proprietary:
                 naked_spec.target._ensurePolicies([information_type])
             naked_spec.transitionToInformationType(
-                information_type, removeSecurityProxy(spec.target).owner)
+                information_type, naked_spec.target.owner)
         return spec
 
     makeBlueprint = makeSpecification
@@ -2237,13 +2246,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         code_import_set = getUtility(ICodeImportSet)
         if svn_branch_url is not None:
-            if rcs_type is None:
-                rcs_type = RevisionControlSystems.SVN
-            else:
-                assert rcs_type in (RevisionControlSystems.SVN,
-                                    RevisionControlSystems.BZR_SVN)
+            assert rcs_type in (None, RevisionControlSystems.BZR_SVN)
             return code_import_set.new(
-                registrant, target, branch_name, rcs_type=rcs_type,
+                registrant, target, branch_name,
+                rcs_type=RevisionControlSystems.BZR_SVN,
                 url=svn_branch_url, review_status=review_status)
         elif git_repo_url is not None:
             assert rcs_type in (None, RevisionControlSystems.GIT)
@@ -2611,14 +2617,15 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeDistroSeriesParent(self, derived_series=None, parent_series=None,
                                initialized=False, is_overlay=False,
-                               pocket=None, component=None):
+                               inherit_overrides=False, pocket=None,
+                               component=None):
         if parent_series is None:
             parent_series = self.makeDistroSeries()
         if derived_series is None:
             derived_series = self.makeDistroSeries()
         return getUtility(IDistroSeriesParentSet).new(
-            derived_series, parent_series, initialized, is_overlay, pocket,
-            component)
+            derived_series, parent_series, initialized, is_overlay,
+            inherit_overrides, pocket, component)
 
     def makeDistroArchSeries(self, distroseries=None,
                              architecturetag=None, processor=None,
@@ -2745,7 +2752,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeBuilder(self, processors=None, url=None, name=None, title=None,
                     owner=None, active=True, virtualized=True, vm_host=None,
-                    manual=False):
+                    vm_reset_protocol=None, manual=False):
         """Make a new builder for i386 virtualized builds by default.
 
         Note: the builder returned will not be able to actually build -
@@ -2762,10 +2769,14 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             title = self.getUniqueString('builder-title')
         if owner is None:
             owner = self.makePerson()
+        if virtualized and vm_reset_protocol is None:
+            vm_reset_protocol = BuilderResetProtocol.PROTO_1_1
 
-        return getUtility(IBuilderSet).new(
-            processors, url, name, title, owner, active, virtualized, vm_host,
-            manual=manual)
+        with admin_logged_in():
+            return getUtility(IBuilderSet).new(
+                processors, url, name, title, owner, active,
+                virtualized, vm_host, manual=manual,
+                vm_reset_protocol=vm_reset_protocol)
 
     def makeRecipeText(self, *branches):
         if len(branches) == 0:
@@ -3436,8 +3447,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             target_archive=distroseries.main_archive,
             target_distroseries=distroseries, requester=requester,
             include_binaries=include_binaries)
-        job.addSourceOverride(SourceOverride(
-            spr.sourcepackagename, spr.component, spr.section))
+        job.addSourceOverride(SourceOverride(spr.component, spr.section))
         try:
             job.run()
         except SuspendJobException:
@@ -3546,9 +3556,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if filetype is None:
             filetype = SourcePackageFileType.DSC
         return ProxyFactory(
-            SourcePackageReleaseFile(
-                sourcepackagerelease=sourcepackagerelease,
-                libraryfile=library_file, filetype=filetype))
+            sourcepackagerelease.addFile(library_file, filetype=filetype))
 
     def makeBinaryPackageBuild(self, source_package_release=None,
             distroarchseries=None, archive=None, builder=None,
@@ -3575,6 +3583,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if distroarchseries is None:
             if source_package_release is not None:
                 distroseries = source_package_release.upload_distroseries
+            elif archive is not None:
+                distroseries = self.makeDistroSeries(
+                    distribution=archive.distribution)
             else:
                 distroseries = self.makeDistroSeries()
             distroarchseries = self.makeDistroArchSeries(
@@ -3596,7 +3607,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 distroseries=distroarchseries.distroseries,
                 sourcepackagename=sourcepackagename)
             self.makeSourcePackagePublishingHistory(
-                distroseries=source_package_release.upload_distroseries,
+                distroseries=distroarchseries.distroseries,
                 archive=archive, sourcepackagerelease=source_package_release,
                 pocket=pocket)
         if status is None:
@@ -3628,6 +3639,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                            scheduleddeletiondate=None,
                                            ancestor=None,
                                            creator=None,
+                                           packageupload=None,
                                            spr_creator=None,
                                            **kwargs):
         """Make a `SourcePackagePublishingHistory`.
@@ -3686,7 +3698,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             spph = getUtility(IPublishingSet).newSourcePublication(
                 archive, sourcepackagerelease, distroseries,
                 sourcepackagerelease.component, sourcepackagerelease.section,
-                pocket, ancestor=ancestor, creator=creator)
+                pocket, ancestor=ancestor, creator=creator,
+                packageupload=packageupload)
 
         naked_spph = removeSecurityProxy(spph)
         naked_spph.status = status
@@ -3924,6 +3937,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if owner is None:
             person = self.getUniqueString(u'package-set-owner')
             owner = self.makePerson(name=person)
+        if distroseries is None:
+            distroseries = getUtility(IDistributionSet)[
+                'ubuntu'].currentseries
         techboard = getUtility(ILaunchpadCelebrities).ubuntu_techboard
         ps_set = getUtility(IPackagesetSet)
         package_set = run_with_login(
@@ -4156,7 +4172,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         """Create a (possibly reviewed) OAuth request token."""
         if consumer is None:
             consumer = self.makeOAuthConsumer()
-        token = consumer.newRequestToken()
+        token, _ = consumer.newRequestToken()
 
         if reviewed_by is not None:
             # Review the token before modifying the date_created,
@@ -4315,6 +4331,81 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         product = self.makeProduct(owner=person)
         product.redeemSubscriptionVoucher(
             self.getUniqueString(), person, person, months)
+
+    def makeLiveFS(self, registrant=None, owner=None, distroseries=None,
+                   name=None, metadata=None, require_virtualized=True,
+                   date_created=DEFAULT):
+        """Make a new LiveFS."""
+        if registrant is None:
+            registrant = self.makePerson()
+        if owner is None:
+            owner = self.makeTeam(registrant)
+        if distroseries is None:
+            distroseries = self.makeDistroSeries()
+        if name is None:
+            name = self.getUniqueString(u"livefs-name")
+        if metadata is None:
+            metadata = {}
+        livefs = getUtility(ILiveFSSet).new(
+            registrant, owner, distroseries, name, metadata,
+            require_virtualized=require_virtualized, date_created=date_created)
+        IStore(livefs).flush()
+        return livefs
+
+    def makeLiveFSBuild(self, requester=None, registrant=None, livefs=None,
+                        archive=None, distroarchseries=None, pocket=None,
+                        unique_key=None, metadata_override=None,
+                        date_created=DEFAULT, status=BuildStatus.NEEDSBUILD,
+                        builder=None, duration=None, **kwargs):
+        """Make a new LiveFSBuild."""
+        if requester is None:
+            requester = self.makePerson()
+        if livefs is None:
+            if "distroseries" in kwargs:
+                distroseries = kwargs["distroseries"]
+                del kwargs["distroseries"]
+            elif distroarchseries is not None:
+                distroseries = distroarchseries.distroseries
+            elif archive is not None:
+                distroseries = self.makeDistroSeries(
+                    distribution=archive.distribution)
+            else:
+                distroseries = None
+            if registrant is None:
+                registrant = requester
+            livefs = self.makeLiveFS(
+                registrant=registrant, distroseries=distroseries, **kwargs)
+        if archive is None:
+            archive = livefs.distro_series.main_archive
+        if distroarchseries is None:
+            distroarchseries = self.makeDistroArchSeries(
+                distroseries=livefs.distro_series)
+        if pocket is None:
+            pocket = PackagePublishingPocket.RELEASE
+        livefsbuild = getUtility(ILiveFSBuildSet).new(
+            requester, livefs, archive, distroarchseries, pocket,
+            unique_key=unique_key, metadata_override=metadata_override,
+            date_created=date_created)
+        if duration is not None:
+            removeSecurityProxy(livefsbuild).updateStatus(
+                BuildStatus.BUILDING, builder=builder,
+                date_started=livefsbuild.date_created)
+            removeSecurityProxy(livefsbuild).updateStatus(
+                status, builder=builder,
+                date_finished=livefsbuild.date_started + duration)
+        else:
+            removeSecurityProxy(livefsbuild).updateStatus(
+                status, builder=builder)
+        IStore(livefsbuild).flush()
+        return livefsbuild
+
+    def makeLiveFSFile(self, livefsbuild=None, libraryfile=None):
+        if livefsbuild is None:
+            livefsbuild = self.makeLiveFSBuild()
+        if libraryfile is None:
+            libraryfile = self.makeLibraryFileAlias()
+        return ProxyFactory(
+            LiveFSFile(livefsbuild=livefsbuild, libraryfile=libraryfile))
 
 
 # Some factory methods return simple Python types. We don't add

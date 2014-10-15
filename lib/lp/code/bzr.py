@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Enumerations relating to Bazaar formats."""
@@ -71,7 +71,6 @@ from bzrlib.repofmt.knitrepo import (
     RepositoryFormatKnit3,
     RepositoryFormatKnit4,
     )
-from bzrlib.tsort import topo_sort
 from lazr.enum import (
     DBEnumeratedType,
     DBItem,

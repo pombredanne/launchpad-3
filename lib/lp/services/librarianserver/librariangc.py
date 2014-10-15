@@ -129,7 +129,7 @@ def delete_expired_blobs(con):
     """Remove expired TemporaryBlobStorage entries and their corresponding
        LibraryFileAlias entries.
 
-       We delete the LibraryFileAliases here as the default behavior of the
+       We delete the LibraryFileAliases here as the default behaviour of the
        garbage collector could leave them hanging around indefinitely.
 
        We also delete any linked ApportJob and Job records here.
@@ -486,8 +486,8 @@ class UnreferencedContentPruner:
         drop_tables(cur, "UnreferencedLibraryFileContent")
         cur.execute("""
             CREATE TEMPORARY TABLE UnreferencedLibraryFileContent (
-                id serial PRIMARY KEY,
-                content integer UNIQUE)
+                id bigserial PRIMARY KEY,
+                content bigint UNIQUE)
             """)
         cur.execute("""
             INSERT INTO UnreferencedLibraryFileContent (content)

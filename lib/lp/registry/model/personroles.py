@@ -59,12 +59,8 @@ class PersonRoles:
 
     def isDriver(self, obj):
         """See IPersonRoles."""
-        return self.inTeam(obj.driver)
-
-    def isOneOfDrivers(self, obj):
-        """See IPersonRoles."""
         if not IHasDrivers.providedBy(obj):
-            return self.isDriver(obj)
+            return self.inTeam(obj.driver)
         for driver in obj.drivers:
             if self.inTeam(driver):
                 return True

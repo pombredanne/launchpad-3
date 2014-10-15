@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser code for the launchpad application."""
@@ -30,7 +30,6 @@ import re
 import time
 import urllib
 
-from lazr.uri import URI
 from zope import i18n
 from zope.component import (
     getGlobalSiteManager,
@@ -138,12 +137,14 @@ from lp.services.webapp.interfaces import (
     ILaunchpadRoot,
     INavigationMenu,
     )
+from lp.services.webapp.menu import get_facet
 from lp.services.webapp.publisher import RedirectionView
 from lp.services.webapp.url import urlappend
-from lp.services.webapp.vhosts import allvhosts
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
+from lp.soyuz.interfaces.livefs import ILiveFSSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.testopenid.interfaces.server import ITestOpenIDApplication
@@ -261,21 +262,18 @@ class Hierarchy(LaunchpadView):
             if breadcrumb is not None:
                 breadcrumbs.append(breadcrumb)
 
-        host = URI(self.request.getURL()).host
-        mainhost = allvhosts.configs['mainsite'].hostname
-        if (len(breadcrumbs) != 0 and
-            host != mainhost and
+        facet = get_facet(self._naked_context_view)
+        if (len(breadcrumbs) != 0 and facet is not None and
             self.vhost_breadcrumb):
-            # We have breadcrumbs and we're not on the mainsite, so we'll
-            # sneak an extra breadcrumb for the vhost we're on.
-            vhost = host.split('.')[0]
+            # We have breadcrumbs and we're on a custom facet, so we'll
+            # sneak an extra breadcrumb for the facet we're on.
 
             # Iterate over the context of our breadcrumbs in reverse order and
-            # for the first one we find an adapter named after the vhost we're
+            # for the first one we find an adapter named after the facet we're
             # on, generate an extra breadcrumb and insert it in our list.
             for idx, breadcrumb in reversed(list(enumerate(breadcrumbs))):
                 extra_breadcrumb = queryAdapter(
-                    breadcrumb.context, IBreadcrumb, name=vhost)
+                    breadcrumb.context, IBreadcrumb, name=facet)
                 if extra_breadcrumb is not None:
                     breadcrumbs.insert(idx + 1, extra_breadcrumb)
                     break
@@ -300,14 +298,27 @@ class Hierarchy(LaunchpadView):
         The `IBreadcrumb` for the requested page is created using the current
         URL and the page's name (i.e. the last path segment of the URL).
 
-        If the requested page (as specified in self.request) is the default
-        one for our parent view's context, return None.
+        If the view is the default one for the object or the current
+        facet, return None -- we'll have injected a *FacetBreadcrumb
+        earlier in the hierarchy which links here.
         """
+        # XXX wgrant 2014-02-25: We should eventually define the
+        # facet-level defaults in app-level ZCML rather than hardcoding
+        # them centrally.
+        facet_defaults = {
+            'answers': '+questions',
+            'branches': '+branches',
+            'bugs': '+bugs',
+            'specifications': '+specs',
+            'translations': '+translations',
+            }
+
         url = self.request.getURL()
         obj = self.request.traversed_objects[-2]
         default_view_name = getDefaultViewName(obj, self.request)
         view = self._naked_context_view
-        if view.__name__ != default_view_name:
+        facet = get_facet(view)
+        if view.__name__ not in (default_view_name, facet_defaults.get(facet)):
             title = getattr(view, 'page_title', None)
             if title is None:
                 title = getattr(view, 'label', None)
@@ -448,42 +459,49 @@ class MaintenanceMessage:
 class LaunchpadRootFacets(StandardLaunchpadFacets):
 
     usedfor = ILaunchpadRoot
-
-    enable_only = ['overview', 'bugs', 'answers', 'specifications',
-                   'translations', 'branches']
+    enable_only = [
+        'overview',
+        'branches',
+        'bugs',
+        'specifications',
+        'translations',
+        'answers',
+        ]
 
     def overview(self):
         target = ''
         text = 'Launchpad Home'
-        return Link(target, text)
+        return Link(target, text, site='mainsite')
 
     def translations(self):
-        target = ''
         text = 'Translations'
-        return Link(target, text)
+        target = 'translations' if self.mainsite_only else ''
+        site = 'mainsite' if self.mainsite_only else 'translations'
+        return Link(target, text, site=site)
 
     def bugs(self):
-        target = ''
         text = 'Bugs'
-        return Link(target, text)
+        target = 'bugs' if self.mainsite_only else ''
+        site = 'mainsite' if self.mainsite_only else 'bugs'
+        return Link(target, text, site=site)
 
     def answers(self):
-        target = ''
         text = 'Answers'
-        summary = 'Launchpad Answer Tracker'
-        return Link(target, text, summary)
+        target = 'questions' if self.mainsite_only else ''
+        site = 'mainsite' if self.mainsite_only else 'answers'
+        return Link(target, text, site=site)
 
     def specifications(self):
-        target = ''
         text = 'Blueprints'
-        summary = 'Launchpad feature specification tracker.'
-        return Link(target, text, summary)
+        target = 'specs' if self.mainsite_only else ''
+        site = 'mainsite' if self.mainsite_only else 'blueprints'
+        return Link(target, text, site=site)
 
     def branches(self):
-        target = ''
         text = 'Code'
-        summary = 'The Code Bazaar'
-        return Link(target, text, summary)
+        target = '+code' if self.mainsite_only else ''
+        site = 'mainsite' if self.mainsite_only else 'code'
+        return Link(target, text, site=site)
 
 
 class LoginStatus:
@@ -658,6 +676,7 @@ class LaunchpadRootNavigation(Navigation):
     # hierarchical navigation model.
     stepto_utilities = {
         '+announcements': IAnnouncementSet,
+        'archives': IArchiveSet,
         '+services': IServiceFactory,
         'binarypackagenames': IBinaryPackageNameSet,
         'branches': IBranchSet,
@@ -672,6 +691,7 @@ class LaunchpadRootNavigation(Navigation):
         'karmaaction': IKarmaActionSet,
         '+imports': ITranslationImportQueue,
         '+languages': ILanguageSet,
+        'livefses': ILiveFSSet,
         '+nameblacklist': INameBlacklistSet,
         'package-sets': IPackagesetSet,
         'people': IPersonSet,

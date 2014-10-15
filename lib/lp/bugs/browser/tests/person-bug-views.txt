@@ -550,7 +550,7 @@ search page allow selection of a milestone.
 Reported bugs
 .............
 
-Similar behavior is found when searching for reported bugs.
+Similar behaviour is found when searching for reported bugs.
 
     >>> reported_bugs_view = create_view(
     ...     user, '+reportedbugs', {'advanced': 1})

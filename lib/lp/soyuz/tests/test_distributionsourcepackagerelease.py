@@ -1,10 +1,9 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests of DistributionSourcePackageRelease."""
 
 from testtools.matchers import LessThan
-from zope.component import getUtility
 
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.model.distributionsourcepackagerelease import (
@@ -29,7 +28,7 @@ class TestDistributionSourcePackageRelease(TestCaseWithFactory):
         super(TestDistributionSourcePackageRelease, self).setUp()
         self.sourcepackagerelease = self.factory.makeSourcePackageRelease()
         self.distroarchseries = self.factory.makeDistroArchSeries(
-            distroseries=self.sourcepackagerelease.sourcepackage.distroseries)
+            distroseries=self.sourcepackagerelease.upload_distroseries)
         distribution = self.distroarchseries.distroseries.distribution
         self.dsp_release = DistributionSourcePackageRelease(
             distribution, self.sourcepackagerelease)
@@ -47,7 +46,7 @@ class TestDistributionSourcePackageRelease(TestCaseWithFactory):
         self.factory.makeSourcePackagePublishingHistory(
             sourcepackagename=sourcepackagename,
             sourcepackagerelease=self.sourcepackagerelease,
-            distroseries=self.sourcepackagerelease.sourcepackage.distroseries,
+            distroseries=self.distroarchseries.distroseries,
             status=PackagePublishingStatus.PUBLISHED)
         self.factory.makeBinaryPackagePublishingHistory(
             binarypackagerelease=bp_release,

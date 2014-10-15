@@ -67,10 +67,7 @@ from lp.code.interfaces.codehosting import (
     branch_id_alias,
     compose_public_url,
     )
-from lp.codehosting.codeimport.foreigntree import (
-    CVSWorkingTree,
-    SubversionWorkingTree,
-    )
+from lp.codehosting.codeimport.foreigntree import CVSWorkingTree
 from lp.codehosting.codeimport.tarball import (
     create_tarball,
     extract_tarball,
@@ -266,9 +263,9 @@ class CodeImportSourceDetails:
 
     :ivar branch_id: The id of the branch associated to this code import, used
         for locating the existing import and the foreign tree.
-    :ivar rcstype: 'svn', 'cvs', 'git', 'bzr-svn', 'bzr' as appropriate.
-    :ivar url: The branch URL if rcstype in ['svn', 'bzr-svn',
-        'git', 'bzr'], None otherwise.
+    :ivar rcstype: 'cvs', 'git', 'bzr-svn', 'bzr' as appropriate.
+    :ivar url: The branch URL if rcstype in ['bzr-svn', 'git', 'bzr'], None
+        otherwise.
     :ivar cvs_root: The $CVSROOT if rcstype == 'cvs', None otherwise.
     :ivar cvs_module: The CVS module if rcstype == 'cvs', None otherwise.
     """
@@ -287,7 +284,7 @@ class CodeImportSourceDetails:
         """Convert command line-style arguments to an instance."""
         branch_id = int(arguments.pop(0))
         rcstype = arguments.pop(0)
-        if rcstype in ['svn', 'bzr-svn', 'git', 'bzr']:
+        if rcstype in ['bzr-svn', 'git', 'bzr']:
             url = arguments.pop(0)
             try:
                 stacked_on_url = arguments.pop(0)
@@ -312,11 +309,7 @@ class CodeImportSourceDetails:
             stacked_on_url = compose_public_url('http', stacked_path)
         else:
             stacked_on_url = None
-        if code_import.rcs_type == RevisionControlSystems.SVN:
-            return cls(
-                branch.id, 'svn', str(code_import.url),
-                stacked_on_url=stacked_on_url)
-        elif code_import.rcs_type == RevisionControlSystems.BZR_SVN:
+        if code_import.rcs_type == RevisionControlSystems.BZR_SVN:
             return cls(
                 branch.id, 'bzr-svn', str(code_import.url),
                 stacked_on_url=stacked_on_url)
@@ -340,7 +333,7 @@ class CodeImportSourceDetails:
         """Return a list of arguments suitable for passing to a child process.
         """
         result = [str(self.branch_id), self.rcstype]
-        if self.rcstype in ['svn', 'bzr-svn', 'git', 'bzr']:
+        if self.rcstype in ['bzr-svn', 'git', 'bzr']:
             result.append(self.url)
             if self.stacked_on_url is not None:
                 result.append(self.stacked_on_url)
@@ -458,10 +451,7 @@ class ForeignTreeStore:
     def _getForeignTree(self, target_path):
         """Return a foreign tree object for `target_path`."""
         source_details = self.import_data_store.source_details
-        if source_details.rcstype == 'svn':
-            return SubversionWorkingTree(
-                source_details.url, str(target_path))
-        elif source_details.rcstype == 'cvs':
+        if source_details.rcstype == 'cvs':
             return CVSWorkingTree(
                 source_details.cvs_root, source_details.cvs_module,
                 target_path)
@@ -613,7 +603,7 @@ class CSCVSImportWorker(ImportWorker):
     def getForeignTree(self):
         """Return the foreign branch object that we are importing from.
 
-        :return: A `SubversionWorkingTree` or a `CVSWorkingTree`.
+        :return: A `CVSWorkingTree`.
         """
         if os.path.isdir(self.FOREIGN_WORKING_TREE_PATH):
             shutil.rmtree(self.FOREIGN_WORKING_TREE_PATH)
@@ -623,7 +613,7 @@ class CSCVSImportWorker(ImportWorker):
     def importToBazaar(self, foreign_tree, bazaar_branch):
         """Actually import `foreign_tree` into `bazaar_branch`.
 
-        :param foreign_tree: A `SubversionWorkingTree` or a `CVSWorkingTree`.
+        :param foreign_tree: A `CVSWorkingTree`.
         :param bazaar_tree: A `bzrlib.branch.Branch`, which must have a
             colocated working tree.
         """

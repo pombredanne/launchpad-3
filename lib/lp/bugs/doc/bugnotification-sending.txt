@@ -730,8 +730,6 @@ Predictably, private bugs are sent with a slightly different header:
 
     >>> for message in trigger_and_get_email_messages(bug_three):
     ...     print_message_header_details(message)
-    foo.bar@canonical.com ['yes'] ['no'] ['Private']
-    mark@example.com ['yes'] ['no']  ['Private']
     test@canonical.com ['yes'] ['no']  ['Private']
 
 Now transition the bug to private security:
@@ -745,8 +743,6 @@ Now transition the bug to private security:
 
     >>> for message in trigger_and_get_email_messages(bug_three):
     ...     print_message_header_details(message)
-    foo.bar@canonical.com ['yes'] ['yes'] ['Private Security']
-    mark@example.com ['yes'] ['yes']  ['Private Security']
     test@canonical.com ['yes'] ['yes']  ['Private Security']
 
 

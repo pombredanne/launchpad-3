@@ -60,7 +60,7 @@ As you can see, the default database policy retrieves objects from
 the master database. This allows our code written before database
 replication was implemented to keep working.
 
-To alter this behavior, you can install a different database policy.
+To alter this behaviour, you can install a different database policy.
 
     >>> from lp.services.database.policy import SlaveDatabasePolicy
     >>> with SlaveDatabasePolicy():

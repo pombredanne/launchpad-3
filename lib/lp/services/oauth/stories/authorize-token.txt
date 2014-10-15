@@ -8,7 +8,7 @@ and authorize or not the consumer to act on his behalf.
     >>> def request_token_for(consumer):
     ...     """Helper method to create a request token."""
     ...     login('salgado@ubuntu.com')
-    ...     token = consumer.newRequestToken()
+    ...     token, _ = consumer.newRequestToken()
     ...     logout()
     ...     return token
 

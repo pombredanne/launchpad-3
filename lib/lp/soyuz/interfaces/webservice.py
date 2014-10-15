@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """All the interfaces that are exposed through the webservice.
@@ -24,11 +24,15 @@ __all__ = [
     'IArchive',
     'IArchiveDependency',
     'IArchivePermission',
+    'IArchiveSet',
     'IArchiveSubscriber',
     'IBinaryPackageBuild',
     'IBinaryPackagePublishingHistory',
     'IBinaryPackageReleaseDownloadCount',
     'IDistroArchSeries',
+    'ILiveFS',
+    'ILiveFSBuild',
+    'ILiveFSSet',
     'IPackageUpload',
     'IPackageset',
     'IPackagesetSet',
@@ -63,6 +67,7 @@ from lp.soyuz.interfaces.archive import (
     CannotUploadToPPA,
     ComponentNotFound,
     IArchive,
+    IArchiveSet,
     InsufficientUploadRights,
     InvalidComponent,
     InvalidPocketForPartnerArchive,
@@ -86,6 +91,11 @@ from lp.soyuz.interfaces.binarypackagerelease import (
     )
 from lp.soyuz.interfaces.buildrecords import IncompatibleArguments
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
+from lp.soyuz.interfaces.livefs import (
+    ILiveFS,
+    ILiveFSSet,
+    )
+from lp.soyuz.interfaces.livefsbuild import ILiveFSBuild
 from lp.soyuz.interfaces.packageset import (
     DuplicatePackagesetName,
     IPackageset,

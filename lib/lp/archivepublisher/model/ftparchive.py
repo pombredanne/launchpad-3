@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from collections import defaultdict
@@ -11,9 +11,11 @@ from storm.expr import (
     Join,
     )
 from storm.store import EmptyResultSet
+import transaction
 
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.scripts.helpers import TransactionFreeOperation
 from lp.services.command_spawner import (
     CommandSpawner,
     OutputLineHandler,
@@ -93,7 +95,8 @@ tree "%(DISTS)s/%(DISTRORELEASEONDISK)s"
     SrcOverride "override.%(DISTRORELEASE)s.$(SECTION).src";
     %(HIDEEXTRA)sExtraOverride "override.%(DISTRORELEASE)s.extra.$(SECTION)";
     Packages::Extensions "%(EXTENSIONS)s";
-    BinCacheDB "packages-%(CACHEINSERT)s$(ARCH).db";
+    BinCacheDB "packages%(CACHEINSERT)s-$(ARCH).db";
+    SrcCacheDB "sources%(CACHEINSERT)s.db";
     Contents " ";
     LongDescription "%(LONGDESCRIPTION)s";
 }
@@ -140,7 +143,9 @@ class FTPArchiveHandler:
         self.generateFileLists(is_careful)
         self.log.debug("Doing apt-ftparchive work.")
         apt_config_filename = self.generateConfig(is_careful)
-        self.runApt(apt_config_filename)
+        transaction.commit()
+        with TransactionFreeOperation():
+            self.runApt(apt_config_filename)
         self.cleanCaches()
 
     def runAptWithArgs(self, apt_config_filename, *args):
@@ -782,7 +787,7 @@ class FTPArchiveHandler:
                         "ARCHITECTURES": " ".join(archs),
                         "SECTIONS": subcomp,
                         "EXTENSIONS": '.%s' % SUBCOMPONENT_TO_EXT[subcomp],
-                        "CACHEINSERT": "%s-" % subcomp,
+                        "CACHEINSERT": "-%s" % subcomp,
                         "DISTS": os.path.basename(self._config.distsroot),
                         "HIDEEXTRA": "// ",
                         "LONGDESCRIPTION": "true",
@@ -828,4 +833,6 @@ class FTPArchiveHandler:
         with open(apt_config_filename, "w") as fp:
             fp.write(apt_config.getvalue())
         apt_config.close()
-        self.runAptWithArgs(apt_config_filename, "clean")
+        transaction.commit()
+        with TransactionFreeOperation():
+            self.runAptWithArgs(apt_config_filename, "clean")

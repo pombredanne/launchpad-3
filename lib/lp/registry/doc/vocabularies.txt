@@ -847,7 +847,7 @@ If a match is done against irc nick, that is ranked higher than a fti match.
 
     >>> irc_person = factory.makePerson(name='ircperson')
     >>> irc_id = ircid_set.new(
-    ...     irc_person, 'irc.freenode.net', 'team')
+    ...     irc_person, 'chat.freenode.net', 'team')
     >>> [person.displayname for person in vocab.search('team')]
     [u'Ircperson', u'HWDB Team', u'No Team Memberships', u'Simple Team',
      u'Ubuntu Team', u'testing Spanish team', u'Hoary Gnome Team',
@@ -857,7 +857,7 @@ If a match is done against irc nick, that is ranked higher than a fti match.
 A match on launchpad name ranks higher than irc nickname:
     >>> lifeless2 = factory.makePerson(name='anotherlifeless')
     >>> irc_id = ircid_set.new(
-    ...     lifeless2, 'irc.freenode.net', 'lifeless')
+    ...     lifeless2, 'chat.freenode.net', 'lifeless')
     >>> [person.displayname for person in vocab.search('lifeless')]
     [u'Robert Collins', u'Anotherlifeless']
 
@@ -879,7 +879,7 @@ Search for names with '%' and '?' is supported.
 
     >>> symbolic_person = factory.makePerson(name='symbolic')
     >>> irc_id = ircid_set.new(
-    ...     symbolic_person, 'irc.freenode.net', '%percent')
+    ...     symbolic_person, 'chat.freenode.net', '%percent')
     >>> irc_id =ircid_set.new(
     ...     symbolic_person, 'irc.fnord.net', 'question?')
     >>> transaction.commit()

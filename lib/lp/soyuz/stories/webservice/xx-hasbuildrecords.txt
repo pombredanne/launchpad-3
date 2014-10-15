@@ -30,7 +30,7 @@ Filtering builds
 
 Celso Providelo PPA builds can be browsed via the API.
 
-    >>> ppa = webservice.get("/~cprov/+archive/ppa").jsonBody()
+    >>> ppa = webservice.get("/~cprov/+archive/ubuntu/ppa").jsonBody()
     >>> ppa_builds = webservice.named_get(
     ...     ppa['self_link'], 'getBuildRecords').jsonBody()
 

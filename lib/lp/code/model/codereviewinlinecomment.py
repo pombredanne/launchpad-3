@@ -10,6 +10,7 @@ __all__ = [
     'CodeReviewInlineCommentSet',
     ]
 
+from storm.expr import LeftJoin
 from storm.locals import (
     Int,
     Reference,
@@ -55,16 +56,18 @@ class CodeReviewInlineCommentDraft(StormBase):
 
 
 class CodeReviewInlineCommentSet:
-
+    """Utility for `CodeReviewInlineComment{,Draft}` handling."""
     implements(ICodeReviewInlineCommentSet)
 
     def _findDraftObject(self, previewdiff, person):
+        """Return the base `CodeReviewInlineCommentDraft` lookup."""
         return IStore(CodeReviewInlineCommentDraft).find(
             CodeReviewInlineCommentDraft,
             CodeReviewInlineCommentDraft.previewdiff_id == previewdiff.id,
             CodeReviewInlineCommentDraft.person_id == person.id).one()
 
     def ensureDraft(self, previewdiff, person, comments):
+        """See `ICodeReviewInlineCommentSet`."""
         cricd = self._findDraftObject(previewdiff, person)
         if not comments:
             if cricd:
@@ -79,6 +82,7 @@ class CodeReviewInlineCommentSet:
         cricd.comments = comments
 
     def publishDraft(self, previewdiff, person, comment):
+        """See `ICodeReviewInlineCommentSet`."""
         cricd = self._findDraftObject(previewdiff, person)
         if cricd is None:
             return
@@ -92,12 +96,14 @@ class CodeReviewInlineCommentSet:
         return cric
 
     def getDraft(self, previewdiff, person):
+        """See `ICodeReviewInlineCommentSet`."""
         cricd = self._findDraftObject(previewdiff, person)
         if not cricd:
             return
         return cricd.comments
 
     def getPublished(self, previewdiff):
+        """See `ICodeReviewInlineCommentSet`."""
         crics = IStore(CodeReviewInlineComment).find(
             CodeReviewInlineComment,
             CodeReviewInlineComment.previewdiff_id == previewdiff.id)
@@ -117,3 +123,36 @@ class CodeReviewInlineCommentSet:
                 }
                 inline_comments.append(comment)
         return inline_comments
+
+    def getByReviewComment(self, comment):
+        """See `ICodeReviewInlineCommentSet`."""
+        return IStore(CodeReviewInlineComment).find(
+            CodeReviewInlineComment,
+            CodeReviewInlineComment.comment_id == comment.id).one()
+
+    def getPreviewDiffsForComments(self, comments):
+        """See `ICodeReviewInlineCommentSet`."""
+        origin = [
+            CodeReviewComment,
+            LeftJoin(CodeReviewInlineComment,
+                     CodeReviewComment.id ==
+                     CodeReviewInlineComment.comment_id),
+        ]
+        relations = IStore(CodeReviewInlineComment).using(*origin).find(
+            (CodeReviewComment.id,
+             CodeReviewInlineComment.previewdiff_id),
+            CodeReviewComment.id.is_in(c.id for c in comments))
+        return dict(relations)
+
+    def removeFromDiffs(self, previewdiff_ids):
+        """See `ICodeReviewInlineCommentSet`."""
+        IStore(CodeReviewInlineComment).find(
+            CodeReviewInlineComment,
+            CodeReviewInlineComment.previewdiff_id.is_in(
+                previewdiff_ids)
+        ).remove()
+        IStore(CodeReviewInlineCommentDraft).find(
+            CodeReviewInlineCommentDraft,
+            CodeReviewInlineCommentDraft.previewdiff_id.is_in(
+                previewdiff_ids)
+        ).remove()

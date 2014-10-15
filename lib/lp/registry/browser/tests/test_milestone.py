@@ -114,7 +114,8 @@ class TestMilestoneViews(BrowserTestCase):
             milestone=milestone)
         with person_logged_in(None):
             browser = self.getViewBrowser(milestone, '+index', user=owner)
-        self.assertIn(specification.name, browser.contents)
+        with person_logged_in(owner):
+            self.assertIn(specification.name, browser.contents)
         with person_logged_in(None):
             browser = self.getViewBrowser(milestone, '+index')
 
@@ -320,25 +321,25 @@ class TestMilestoneDeleteView(TestCaseWithFactory):
         owner = milestone.product.owner
         with person_logged_in(owner):
             view = create_initialized_view(milestone, '+delete', form=form)
-        Store.of(workitem).flush()    
+        Store.of(workitem).flush()
         self.assertEqual([], view.errors)
         self.assertIs(None, workitem.milestone)
 
     def test_delete_milestone_with_private_specification(self):
         policy = SpecificationSharingPolicy.PROPRIETARY
-        product = self.factory.makeProduct(specification_sharing_policy=policy)
+        product = self.factory.makeProduct(
+            specification_sharing_policy=policy)
         milestone = self.factory.makeMilestone(product=product)
         specification = self.factory.makeSpecification(
-            information_type=InformationType.PROPRIETARY, milestone=milestone)
-        ap = getUtility(IAccessPolicySource).find(
-            [(product, InformationType.PROPRIETARY)])
-        getUtility(IAccessPolicyGrantSource).revokeByPolicy(ap)
+            product=product, milestone=milestone,
+            information_type=InformationType.PROPRIETARY)
         form = {'field.actions.delete': 'Delete Milestone'}
         with person_logged_in(product.owner):
             view = create_initialized_view(milestone, '+delete', form=form)
-        Store.of(specification).flush()    
         self.assertEqual([], view.errors)
-        self.assertIs(None, specification.milestone)
+        Store.of(specification).flush()
+        with person_logged_in(product.owner):
+            self.assertIs(None, specification.milestone)
 
 
 class TestQueryCountBase(TestCaseWithFactory):

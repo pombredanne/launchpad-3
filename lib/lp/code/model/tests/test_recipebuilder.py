@@ -1,49 +1,43 @@
-# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Test RecipeBuildBehavior."""
+"""Test RecipeBuildBehaviour."""
 
 __metaclass__ = type
 
 import shutil
 import tempfile
-from textwrap import dedent
 
-from testtools import run_test_with
-from testtools.deferredruntest import (
-    assert_fails_with,
-    AsynchronousDeferredRunTest,
-    )
-from testtools.matchers import StartsWith
 import transaction
-from twisted.internet import defer
 from twisted.trial.unittest import TestCase as TrialTestCase
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interactor import BuilderInteractor
-from lp.buildmaster.interfaces.builder import CannotBuild
-from lp.buildmaster.interfaces.buildfarmjobbehavior import (
-    IBuildFarmJobBehavior,
+from lp.buildmaster.interfaces.buildfarmjobbehaviour import (
+    IBuildFarmJobBehaviour,
     )
 from lp.buildmaster.tests.mock_slaves import (
     MockBuilder,
     OkSlave,
     WaitingSlave,
     )
-from lp.buildmaster.tests.test_buildfarmjobbehavior import (
+from lp.buildmaster.tests.test_buildfarmjobbehaviour import (
     TestGetUploadMethodsMixin,
     TestHandleStatusMixin,
+    TestVerifySuccessfulBuildMixin,
     )
-from lp.code.model.recipebuilder import RecipeBuildBehavior
+from lp.code.model.recipebuilder import RecipeBuildBehaviour
 from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.series import SeriesStatus
 from lp.services.config import config
 from lp.services.log.logger import BufferLogger
 from lp.soyuz.adapters.archivedependencies import (
     get_sources_list_for_building,
     )
+from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
@@ -85,33 +79,19 @@ class TestRecipeBuilder(TestCaseWithFactory):
         spb = self.factory.makeSourcePackageRecipeBuild(
             sourcepackage=sourcepackage, archive=archive,
             recipe=recipe, requester=recipe_owner, distroseries=distroseries)
-        job = IBuildFarmJobBehavior(spb)
+        job = IBuildFarmJobBehaviour(spb)
         return job
 
     def test_providesInterface(self):
-        # RecipeBuildBehavior provides IBuildFarmJobBehavior.
-        recipe_builder = RecipeBuildBehavior(None)
-        self.assertProvides(recipe_builder, IBuildFarmJobBehavior)
+        # RecipeBuildBehaviour provides IBuildFarmJobBehaviour.
+        recipe_builder = RecipeBuildBehaviour(None)
+        self.assertProvides(recipe_builder, IBuildFarmJobBehaviour)
 
     def test_adapts_ISourcePackageRecipeBuild(self):
-        # IBuildFarmJobBehavior adapts a ISourcePackageRecipeBuild
+        # IBuildFarmJobBehaviour adapts a ISourcePackageRecipeBuild
         build = self.factory.makeSourcePackageRecipeBuild()
-        job = IBuildFarmJobBehavior(build)
-        self.assertProvides(job, IBuildFarmJobBehavior)
-
-    def test_display_name(self):
-        # display_name contains a sane description of the job
-        job = self.makeJob()
-        self.assertEquals(job.display_name,
-            "Mydistro, recept, joe")
-
-    def test_logStartBuild(self):
-        # logStartBuild will properly report the package that's being built
-        job = self.makeJob()
-        logger = BufferLogger()
-        job.logStartBuild(logger)
-        self.assertEquals(logger.getLogBuffer(),
-            "INFO startBuild(Mydistro, recept, joe)\n")
+        job = IBuildFarmJobBehaviour(build)
+        self.assertProvides(job, IBuildFarmJobBehaviour)
 
     def test_verifyBuildRequest_valid(self):
         # VerifyBuildRequest won't raise any exceptions when called with a
@@ -138,20 +118,11 @@ class TestRecipeBuilder(TestCaseWithFactory):
         # verifyBuildRequest will raise if a bad pocket is proposed.
         build = self.factory.makeSourcePackageRecipeBuild(
             pocket=PackagePublishingPocket.SECURITY)
-        job = IBuildFarmJobBehavior(build)
+        job = IBuildFarmJobBehaviour(build)
         job.setBuilder(MockBuilder("bob-de-bouwer"), OkSlave())
         e = self.assertRaises(
             AssertionError, job.verifyBuildRequest, BufferLogger())
         self.assertIn('invalid pocket due to the series status of', str(e))
-
-    def test_getBuildCookie(self):
-        # A build cookie is made up of the job type and record id.
-        # The uploadprocessor relies on this format.
-        build = self.factory.makeSourcePackageRecipeBuild()
-        job = IBuildFarmJobBehavior(build)
-        cookie = removeSecurityProxy(job).getBuildCookie()
-        expected_cookie = "RECIPEBRANCHBUILD-%d" % build.id
-        self.assertEquals(expected_cookie, cookie)
 
     def _setBuilderConfig(self):
         """Setup a temporary builder config."""
@@ -286,49 +257,18 @@ class TestRecipeBuilder(TestCaseWithFactory):
         self.assertEquals(
             job.build, SourcePackageRecipeBuild.getByID(job.build.id))
 
-    @run_test_with(AsynchronousDeferredRunTest)
-    def test_dispatchBuildToSlave(self):
-        # Ensure dispatchBuildToSlave will make the right calls to the slave
+    def test_composeBuildRequest(self):
+        # Ensure composeBuildRequest is correct.
         job = self.makeJob()
         test_publisher = SoyuzTestPublisher()
         test_publisher.addFakeChroots(job.build.distroseries)
-        slave = OkSlave()
+        das = job.build.distroseries.nominatedarchindep
         builder = MockBuilder("bob-de-bouwer")
-        builder.processor = getUtility(IProcessorSet).getByName('386')
-        job.setBuilder(builder, slave)
-        logger = BufferLogger()
-        d = defer.maybeDeferred(job.dispatchBuildToSlave, "someid", logger)
-
-        def check_dispatch(ignored):
-            self.assertThat(
-                logger.getLogBuffer(),
-                StartsWith(dedent("""\
-                  INFO Sending chroot file for recipe build to bob-de-bouwer
-                  INFO Initiating build 1-someid on http://fake:0000
-                  """)))
-            self.assertEquals(["ensurepresent", "build"],
-                              [call[0] for call in slave.call_log])
-            build_args = slave.call_log[1][1:]
-            self.assertEquals(build_args[0], job.getBuildCookie())
-            self.assertEquals(build_args[1], "sourcepackagerecipe")
-            self.assertEquals(build_args[3], [])
-            distroarchseries = job.build.distroseries.architectures[0]
-            self.assertEqual(
-                build_args[4], job._extraBuildArgs(distroarchseries))
-        return d.addCallback(check_dispatch)
-
-    @run_test_with(AsynchronousDeferredRunTest)
-    def test_dispatchBuildToSlave_nochroot(self):
-        # dispatchBuildToSlave will fail when there is not chroot tarball
-        # available for the distroseries to build for.
-        job = self.makeJob()
-        #test_publisher = SoyuzTestPublisher()
-        builder = MockBuilder("bob-de-bouwer")
-        builder.processor = getUtility(IProcessorSet).getByName('386')
-        job.setBuilder(builder, OkSlave())
-        logger = BufferLogger()
-        d = defer.maybeDeferred(job.dispatchBuildToSlave, "someid", logger)
-        return assert_fails_with(d, CannotBuild)
+        builder.processor = das.processor
+        job.setBuilder(builder, None)
+        self.assertEqual(
+            ('sourcepackagerecipe', das, {}, job._extraBuildArgs(das)),
+            job.composeBuildRequest(None))
 
 
 class TestBuildNotifications(TrialTestCase):
@@ -340,7 +280,7 @@ class TestBuildNotifications(TrialTestCase):
         from lp.testing.factory import LaunchpadObjectFactory
         self.factory = LaunchpadObjectFactory()
 
-    def prepareBehavior(self, fake_successful_upload=False):
+    def prepareBehaviour(self, fake_successful_upload=False):
         self.queue_record = (
             self.factory.makeSourcePackageRecipeBuild().queueBuild())
         build = self.queue_record.specific_build
@@ -360,11 +300,11 @@ class TestBuildNotifications(TrialTestCase):
             self.addCleanup(config.pop, 'tmp_builddmaster_root')
         self.queue_record.builder = self.factory.makeBuilder()
         slave = WaitingSlave('BuildStatus.OK')
-        return BuilderInteractor.getBuildBehavior(
+        return BuilderInteractor.getBuildBehaviour(
             self.queue_record, self.queue_record.builder, slave)
 
-    def assertDeferredNotifyCount(self, status, behavior, expected_count):
-        d = behavior.handleStatus(self.queue_record, status, {'filemap': {}})
+    def assertDeferredNotifyCount(self, status, behaviour, expected_count):
+        d = behaviour.handleStatus(self.queue_record, status, {'filemap': {}})
 
         def cb(result):
             self.assertEqual(expected_count, len(pop_notifications()))
@@ -375,7 +315,7 @@ class TestBuildNotifications(TrialTestCase):
     def test_handleStatus_PACKAGEFAIL(self):
         """Failing to build the package immediately sends a notification."""
         return self.assertDeferredNotifyCount(
-            "PACKAGEFAIL", self.prepareBehavior(), 1)
+            "PACKAGEFAIL", self.prepareBehaviour(), 1)
 
     def test_handleStatus_OK(self):
         """Building the source package does _not_ immediately send mail.
@@ -383,11 +323,11 @@ class TestBuildNotifications(TrialTestCase):
         (The archive uploader mail send one later.
         """
         return self.assertDeferredNotifyCount(
-            "OK", self.prepareBehavior(), 0)
+            "OK", self.prepareBehaviour(), 0)
 
     def test_handleStatus_OK_successful_upload(self):
         return self.assertDeferredNotifyCount(
-            "OK", self.prepareBehavior(True), 0)
+            "OK", self.prepareBehaviour(True), 0)
 
 
 class MakeSPRecipeBuildMixin:
@@ -399,10 +339,24 @@ class MakeSPRecipeBuildMixin:
         build.queueBuild()
         return build
 
+    def makeUnmodifiableBuild(self):
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        build = self.factory.makeSourcePackageRecipeBuild(
+            archive=archive, status=BuildStatus.BUILDING)
+        build.distro_series.status = SeriesStatus.CURRENT
+        build.queueBuild()
+        return build
+
 
 class TestGetUploadMethodsForSPRecipeBuild(
     MakeSPRecipeBuildMixin, TestGetUploadMethodsMixin, TestCaseWithFactory):
     """IPackageBuild.getUpload-related methods work with SPRecipe builds."""
+
+
+class TestVerifySuccessfulBuildForSPRBuild(
+    MakeSPRecipeBuildMixin, TestVerifySuccessfulBuildMixin,
+    TestCaseWithFactory):
+    """IBuildFarmJobBehaviour.verifySuccessfulBuild works."""
 
 
 class TestHandleStatusForSPRBuild(

@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for distroseries."""
@@ -9,6 +9,7 @@ __all__ = [
     'CurrentSourceReleasesMixin',
     ]
 
+from functools import partial
 from logging import getLogger
 
 from testtools.matchers import Equals
@@ -39,6 +40,7 @@ from lp.testing import (
     ANONYMOUS,
     login,
     person_logged_in,
+    record_two_runs,
     StormStatementRecorder,
     TestCase,
     TestCaseWithFactory,
@@ -245,6 +247,27 @@ class TestDistroSeries(TestCaseWithFactory):
         self.factory.makeDistroSeriesParent(derived_series=distroseries)
         self.assertTrue(distroseries.isDerivedSeries())
 
+    def test_inherit_overrides_from_parents(self):
+        # inherit_overrides_from_parents is an accessor which maps to
+        # all of the series' DistroSeriesParent.inherit_overrides, for
+        # UI simplicity for now.
+        distroseries = self.factory.makeDistroSeries()
+        dsp1 = self.factory.makeDistroSeriesParent(
+            derived_series=distroseries, inherit_overrides=True)
+        dsp2 = self.factory.makeDistroSeriesParent(
+            derived_series=distroseries, inherit_overrides=False)
+        self.assertEqual(True, distroseries.inherit_overrides_from_parents)
+        with person_logged_in(distroseries.distribution.owner):
+            distroseries.inherit_overrides_from_parents = False
+        self.assertEqual(False, dsp1.inherit_overrides)
+        self.assertEqual(False, dsp2.inherit_overrides)
+        self.assertEqual(False, distroseries.inherit_overrides_from_parents)
+        with person_logged_in(distroseries.distribution.owner):
+            distroseries.inherit_overrides_from_parents = True
+        self.assertEqual(True, dsp1.inherit_overrides)
+        self.assertEqual(True, dsp2.inherit_overrides)
+        self.assertEqual(True, distroseries.inherit_overrides_from_parents)
+
     def test_isInitializing(self):
         # The series method isInitializing() returns True only if there is an
         # initialization job with a pending status attached to this series.
@@ -289,43 +312,6 @@ class TestDistroSeries(TestCaseWithFactory):
         self.assertContentEqual(
             [comment], distroseries.getDifferenceComments())
 
-    def checkLegalPocket(self, status, pocket):
-        distroseries = self.factory.makeDistroSeries(status=status)
-        spph = self.factory.makeSourcePackagePublishingHistory(
-            distroseries=distroseries, pocket=pocket)
-        return removeSecurityProxy(distroseries).checkLegalPocket(
-            spph, False, getLogger())
-
-    def test_checkLegalPocket_allows_unstable_release(self):
-        """Publishing to RELEASE in a DEVELOPMENT series is allowed."""
-        self.assertTrue(self.checkLegalPocket(
-            SeriesStatus.DEVELOPMENT, PackagePublishingPocket.RELEASE))
-
-    def test_checkLegalPocket_allows_unstable_proposed(self):
-        """Publishing to PROPOSED in a DEVELOPMENT series is allowed."""
-        self.assertTrue(self.checkLegalPocket(
-            SeriesStatus.DEVELOPMENT, PackagePublishingPocket.PROPOSED))
-
-    def test_checkLegalPocket_forbids_unstable_updates(self):
-        """Publishing to UPDATES in a DEVELOPMENT series is forbidden."""
-        self.assertFalse(self.checkLegalPocket(
-            SeriesStatus.DEVELOPMENT, PackagePublishingPocket.UPDATES))
-
-    def test_checkLegalPocket_forbids_stable_release(self):
-        """Publishing to RELEASE in a DEVELOPMENT series is forbidden."""
-        self.assertFalse(self.checkLegalPocket(
-            SeriesStatus.CURRENT, PackagePublishingPocket.RELEASE))
-
-    def test_checkLegalPocket_allows_stable_proposed(self):
-        """Publishing to PROPOSED in a DEVELOPMENT series is allowed."""
-        self.assertTrue(self.checkLegalPocket(
-            SeriesStatus.CURRENT, PackagePublishingPocket.PROPOSED))
-
-    def test_checkLegalPocket_allows_stable_updates(self):
-        """Publishing to UPDATES in a DEVELOPMENT series is allowed."""
-        self.assertTrue(self.checkLegalPocket(
-            SeriesStatus.CURRENT, PackagePublishingPocket.UPDATES))
-
     def test_valid_specifications_query_count(self):
         distroseries = self.factory.makeDistroSeries()
         distribution = distroseries.distribution
@@ -341,7 +327,7 @@ class TestDistroSeries(TestCaseWithFactory):
         with StormStatementRecorder() as recorder:
             for spec in distroseries.api_valid_specifications:
                 spec.workitems_text
-        self.assertThat(recorder, HasQueryCount(Equals(4)))
+        self.assertThat(recorder, HasQueryCount(Equals(3)))
 
     def test_valid_specifications_preloading_excludes_deleted_workitems(self):
         distroseries = self.factory.makeDistroSeries()
@@ -385,9 +371,12 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
         transaction.commit()
         login(ANONYMOUS)
 
-    def makeSeriesPackage(self, name, is_main=False, bugs=None, messages=None,
-                          is_translations=False):
+    def makeSeriesPackage(self, name=None, is_main=False, bugs=None,
+                          messages=None, is_translations=False, pocket=None,
+                          status=None):
         # Make a published source package.
+        if name is None:
+            name = self.factory.getUniqueString()
         if is_main:
             component = self.main_component
         else:
@@ -397,9 +386,10 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
         else:
             section = 'web'
         sourcepackagename = self.factory.makeSourcePackageName(name)
-        self.factory.makeSourcePackagePublishingHistory(
+        spph = self.factory.makeSourcePackagePublishingHistory(
             sourcepackagename=sourcepackagename, distroseries=self.series,
-            component=component, section_name=section)
+            component=component, section_name=section, pocket=pocket,
+            status=status)
         source_package = self.factory.makeSourcePackage(
             sourcepackagename=sourcepackagename, distroseries=self.series)
         if bugs is not None:
@@ -411,8 +401,35 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
                 distroseries=self.series, sourcepackagename=sourcepackagename,
                 owner=self.user)
             removeSecurityProxy(template).messagecount = messages
+        spr = spph.sourcepackagerelease
+        for extension in ("dsc", "tar.gz"):
+            filename = "%s_%s.%s" % (spr.name, spr.version, extension)
+            spr.addFile(self.factory.makeLibraryFileAlias(
+                filename=filename, db_only=True))
         self.packages[name] = source_package
         return source_package
+
+    def makeSeriesBinaryPackage(self, name=None, is_main=False,
+                                is_translations=False, das=None, pocket=None,
+                                status=None):
+        # Make a published binary package.
+        if name is None:
+            name = self.factory.getUniqueString()
+        source = self.makeSeriesPackage(
+            name=name, is_main=is_main, is_translations=is_translations,
+            pocket=pocket, status=status)
+        spr = source.distinctreleases[0]
+        binarypackagename = self.factory.makeBinaryPackageName(name)
+        bpph = self.factory.makeBinaryPackagePublishingHistory(
+            binarypackagename=binarypackagename, distroarchseries=das,
+            component=spr.component, section_name=spr.section.name,
+            status=status, pocket=pocket, source_package_release=spr)
+        bpr = bpph.binarypackagerelease
+        filename = "%s_%s_%s.deb" % (
+            bpr.name, bpr.version, das.architecturetag)
+        bpr.addFile(self.factory.makeLibraryFileAlias(
+            filename=filename, db_only=True))
+        return bpph
 
     def linkPackage(self, name):
         product_series = self.factory.makeProductSeries()
@@ -485,6 +502,44 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
         names = [packaging.sourcepackagename.name for packaging in packagings]
         expected = [u'translatable', u'linked', u'importabletranslatable']
         self.assertEqual(expected, names)
+
+    def test_getSourcePackagePublishing_query_count(self):
+        # Check that the number of queries required to publish source
+        # packages is constant in the number of source packages.
+        def get_index_stanzas():
+            for spp in self.series.getSourcePackagePublishing(
+                    PackagePublishingPocket.RELEASE, self.universe_component,
+                    self.series.main_archive):
+                spp.getIndexStanza()
+
+        recorder1, recorder2 = record_two_runs(
+            get_index_stanzas,
+            partial(
+                self.makeSeriesPackage, pocket=PackagePublishingPocket.RELEASE,
+                status=PackagePublishingStatus.PUBLISHED),
+            5, 5)
+        self.assertThat(recorder1, HasQueryCount(Equals(11)))
+        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
+
+    def test_getBinaryPackagePublishing_query_count(self):
+        # Check that the number of queries required to publish binary
+        # packages is constant in the number of binary packages.
+        def get_index_stanzas(das):
+            for bpp in self.series.getBinaryPackagePublishing(
+                    das.architecturetag, PackagePublishingPocket.RELEASE,
+                    self.universe_component, self.series.main_archive):
+                bpp.getIndexStanza()
+
+        das = self.factory.makeDistroArchSeries(distroseries=self.series)
+        recorder1, recorder2 = record_two_runs(
+            partial(get_index_stanzas, das),
+            partial(
+                self.makeSeriesBinaryPackage, das=das,
+                pocket=PackagePublishingPocket.RELEASE,
+                status=PackagePublishingStatus.PUBLISHED),
+            5, 5)
+        self.assertThat(recorder1, HasQueryCount(Equals(15)))
+        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
 
 
 class TestDistroSeriesSet(TestCaseWithFactory):

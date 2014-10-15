@@ -12,8 +12,7 @@ __all__ = [
     ]
 
 from datetime import datetime
-from hashlib import md5
-import random
+import hashlib
 from urlparse import urlparse
 
 from lazr.delegates import delegates
@@ -68,6 +67,7 @@ from lp.services.librarian.interfaces.client import (
     IRestrictedLibrarianClient,
     LIBRARIAN_SERVER_DEFAULT_TIMEOUT,
     )
+from lp.services.tokens import create_token
 
 
 class LibraryFileContent(SQLBase):
@@ -299,7 +299,9 @@ class TimeLimitedToken(StormBase):
 
     created = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     path = StringCol(notNull=True)
+    # The hex SHA-256 hash of the token.
     token = StringCol(notNull=True)
+
     __storm_primary__ = ("path", "token")
 
     def __init__(self, path, token, created=None):
@@ -307,7 +309,7 @@ class TimeLimitedToken(StormBase):
         if created is not None:
             self.created = created
         self.path = path
-        self.token = token
+        self.token = hashlib.sha256(token).hexdigest()
 
     @staticmethod
     def allocate(url):
@@ -319,18 +321,9 @@ class TimeLimitedToken(StormBase):
         :return: A url fragment token ready to be attached to the url.
             e.g. 'a%20token'
         """
-        # We use random.random to get a string which varies reasonably, and we
-        # hash it to distribute it widely and get a easily copy and pastable
-        # single string (nice for debugging). The randomness is not a key
-        # factor here: as long as tokens are not guessable, they are hidden by
-        # https, not exposed directly in the API (tokens will be allocated by
-        # the appropriate objects), not by direct access to the
-        # TimeLimitedToken class.
-        baseline = str(random.random())
-        hashed = md5(baseline).hexdigest()
-        token = hashed
         store = session_store()
         path = TimeLimitedToken.url_to_token_path(url)
+        token = create_token(32).encode('ascii')
         store.add(TimeLimitedToken(path, token))
         # The session isn't part of the main transaction model, and in fact it
         # has autocommit on. The commit here is belts and bracers: after

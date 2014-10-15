@@ -1,11 +1,11 @@
-# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Code to build recipes on the buildfarm."""
 
 __metaclass__ = type
 __all__ = [
-    'RecipeBuildBehavior',
+    'RecipeBuildBehaviour',
     ]
 
 import traceback
@@ -15,14 +15,15 @@ from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
 from lp.buildmaster.interfaces.builder import CannotBuild
-from lp.buildmaster.interfaces.buildfarmjobbehavior import (
-    IBuildFarmJobBehavior,
+from lp.buildmaster.interfaces.buildfarmjobbehaviour import (
+    IBuildFarmJobBehaviour,
     )
-from lp.buildmaster.model.buildfarmjobbehavior import BuildFarmJobBehaviorBase
+from lp.buildmaster.model.buildfarmjobbehaviour import (
+    BuildFarmJobBehaviourBase,
+    )
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild,
     )
-from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.config import config
 from lp.soyuz.adapters.archivedependencies import (
     get_primary_current_component,
@@ -30,31 +31,17 @@ from lp.soyuz.adapters.archivedependencies import (
     )
 
 
-class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
+class RecipeBuildBehaviour(BuildFarmJobBehaviourBase):
     """How to build a recipe on the build farm."""
 
     adapts(ISourcePackageRecipeBuild)
-    implements(IBuildFarmJobBehavior)
+    implements(IBuildFarmJobBehaviour)
 
     # The list of build status values for which email notifications are
     # allowed to be sent. It is up to each callback as to whether it will
     # consider sending a notification but it won't do so if the status is not
     # in this list.
-    ALLOWED_STATUS_NOTIFICATIONS = [
-        'OK', 'PACKAGEFAIL', 'DEPFAIL', 'CHROOTFAIL']
-
-    @property
-    def display_name(self):
-        ret = "%s, %s, %s" % (
-            self.build.distroseries.displayname, self.build.recipe.name,
-            self.build.recipe.owner.name)
-        if self._builder is not None:
-            ret += " (on %s)" % self._builder.url
-        return ret
-
-    def logStartBuild(self, logger):
-        """See `IBuildFarmJobBehavior`."""
-        logger.info("startBuild(%s)", self.display_name)
+    ALLOWED_STATUS_NOTIFICATIONS = ['PACKAGEFAIL', 'DEPFAIL', 'CHROOTFAIL']
 
     def _extraBuildArgs(self, distroarchseries, logger=None):
         """
@@ -62,10 +49,7 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
         """
         # Build extra arguments.
         args = {}
-        suite = self.build.distroseries.name
-        if self.build.pocket != PackagePublishingPocket.RELEASE:
-            suite += "-%s" % (self.build.pocket.name.lower())
-        args['suite'] = suite
+        args['suite'] = self.build.distroseries.getSuite(self.build.pocket)
         args['arch_tag'] = distroarchseries.architecturetag
         requester = self.build.requester
         if requester.preferredemail is None:
@@ -112,56 +96,16 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
         args['distroseries_name'] = self.build.distroseries.name
         return args
 
-    def dispatchBuildToSlave(self, build_queue_id, logger):
-        """See `IBuildFarmJobBehavior`."""
-
-        distroseries = self.build.distroseries
-        # Start the binary package build on the slave builder. First
-        # we send the chroot.
-        distroarchseries = distroseries.getDistroArchSeriesByProcessor(
+    def composeBuildRequest(self, logger):
+        das = self.build.distroseries.getDistroArchSeriesByProcessor(
             self._builder.processor)
-        if distroarchseries is None:
-            raise CannotBuild("Unable to find distroarchseries for %s in %s" %
+        if das is None:
+            raise CannotBuild(
+                "Unable to find distroarchseries for %s in %s" %
                 (self._builder.processor.name,
-                self.build.distroseries.displayname))
-        args = self._extraBuildArgs(distroarchseries, logger)
-        chroot = distroarchseries.getChroot()
-        if chroot is None:
-            raise CannotBuild("Unable to find a chroot for %s" %
-                              distroarchseries.displayname)
-        logger.info(
-            "Sending chroot file for recipe build to %s" % self._builder.name)
-        d = self._slave.cacheFile(logger, chroot)
-
-        def got_cache_file(ignored):
-            # Generate a string which can be used to cross-check when
-            # obtaining results so we know we are referring to the right
-            # database object in subsequent runs.
-            buildid = "%s-%s" % (self.build.id, build_queue_id)
-            cookie = self.getBuildCookie()
-            chroot_sha1 = chroot.content.sha1
-            logger.info(
-                "Initiating build %s on %s" % (buildid, self._builder.url))
-
-            return self._slave.build(
-                cookie, "sourcepackagerecipe", chroot_sha1, {}, args)
-
-        def log_build_result((status, info)):
-            message = """%s (%s):
-            ***** RESULT *****
-            %s
-            %s: %s
-            ******************
-            """ % (
-                self._builder.name,
-                self._builder.url,
-                args,
-                status,
-                info,
-                )
-            logger.info(message)
-
-        return d.addCallback(got_cache_file).addCallback(log_build_result)
+                 self.build.distroseries.displayname))
+        return (
+            "sourcepackagerecipe", das, {}, self._extraBuildArgs(das, logger))
 
     def verifyBuildRequest(self, logger):
         """Assert some pre-build checks.

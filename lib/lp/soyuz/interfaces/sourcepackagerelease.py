@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Source package release interfaces."""
@@ -119,20 +119,11 @@ class ISourcePackageRelease(Interface):
     title = Attribute('The title of this sourcepackagerelease')
     age = Attribute('Time passed since the source package release '
                     'is present in Launchpad')
-    latest_build = Attribute("The latest build of this source package "
-        "release, or None")
     failed_builds = Attribute("A (potentially empty) list of build "
         "failures that happened for this source package " "release, or None")
     needs_building = Attribute(
         "A boolean that indicates whether this package still needs to be "
         "built (on any architecture)")
-
-    sourcepackage = Attribute(
-        "The magic SourcePackage for the sourcepackagename and "
-        "distroseries of this object.")
-    distrosourcepackage = Attribute(
-        "The magic DistroSourcePackage for the sourcepackagename and "
-        "distribution of this object.")
 
     current_publishings = Attribute("A list of the current places where "
         "this source package is published, in the form of a list of "
@@ -163,7 +154,7 @@ class ISourcePackageRelease(Interface):
         title=_("Source package recipe build"),
         required=False, readonly=True)
 
-    def addFile(file):
+    def addFile(file, filetype=None):
         """Add the provided library file alias (file) to the list of files
         in this package.
         """

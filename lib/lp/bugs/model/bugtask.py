@@ -793,7 +793,7 @@ class BugTask(SQLBase):
     def _checkAutoconfirmFeatureFlag(self):
         """Does a feature flag enable automatic switching of our bugtasks?"""
         # This method should be ripped out if we determine that we like
-        # this behavior for all projects.
+        # this behaviour for all projects.
         # This is a bit of a feature flag hack, but has been discussed as
         # a reasonable way to deploy this quickly.
         pillar = self.pillar
@@ -1294,8 +1294,7 @@ class BugTask(SQLBase):
         owner_context = context
         if IBugTarget.providedBy(context):
             owner_context = context.pillar
-        return (
-            role.isOwner(owner_context) or role.isOneOfDrivers(context))
+        return role.isOwner(owner_context) or role.isDriver(context)
 
     @classmethod
     def userHasBugSupervisorPrivilegesContext(cls, context, user):

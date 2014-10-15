@@ -147,6 +147,11 @@ class BuildFarmJobMixin:
                                    BuildStatus.UPLOADING,
                                    BuildStatus.SUPERSEDED]
 
+    @property
+    def build_cookie(self):
+        """See `IBuildFarmJob`."""
+        return '%s-%s' % (self.job_type.name, self.id)
+
     def setLog(self, log):
         """See `IBuildFarmJob`."""
         self.log = log

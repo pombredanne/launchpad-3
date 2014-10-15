@@ -42,8 +42,9 @@
                            error python:view.getFieldError(field_name);">
         <p>
           <img src="/@@/warning" /> Package deletion can take some time
-          before the packages are actually removed.  See the full
-          <a href="https://help.launchpad.net/Packaging/PPA">PPA help page</a>.
+          before the packages are actually removed.  See more about
+          <a href="https://help.launchpad.net/Packaging/PPA/Deleting">
+          deleting a package</a>.
         </p>
         <div style="margin-top: 1em;">
           <p>

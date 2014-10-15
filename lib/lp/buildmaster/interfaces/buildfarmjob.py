@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Interface for Soyuz build farm jobs."""
@@ -14,7 +14,10 @@ __all__ = [
     ]
 
 from lazr.enum import DBEnumeratedType
-from lazr.restful.declarations import exported
+from lazr.restful.declarations import (
+    export_as_webservice_entry,
+    exported,
+    )
 from lazr.restful.fields import Reference
 from zope.interface import (
     Attribute,
@@ -61,6 +64,8 @@ class IBuildFarmJobDB(Interface):
 
 class IBuildFarmJob(Interface):
     """Operations that jobs for the build farm must implement."""
+
+    export_as_webservice_entry(as_of='beta')
 
     id = Attribute('The build farm job ID.')
 
@@ -162,6 +167,9 @@ class IBuildFarmJob(Interface):
         title=_("Job type"), required=True, readonly=True,
         vocabulary=BuildFarmJobType,
         description=_("The specific type of job."))
+
+    build_cookie = Attribute(
+        "A string which uniquely identifies the job in the build farm.")
 
     failure_count = Int(
         title=_("Failure Count"), required=False, readonly=True,

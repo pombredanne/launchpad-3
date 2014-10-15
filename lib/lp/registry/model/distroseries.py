@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database classes for a distribution series."""
@@ -6,13 +6,15 @@
 __metaclass__ = type
 
 __all__ = [
+    'ACTIVE_RELEASED_STATUSES',
+    'ACTIVE_UNRELEASED_STATUSES',
     'DistroSeries',
     'DistroSeriesSet',
     ]
 
 import collections
 from cStringIO import StringIO
-import logging
+from operator import attrgetter
 
 import apt_pkg
 from lazr.delegates import delegates
@@ -90,6 +92,10 @@ from lp.registry.model.person import Person
 from lp.registry.model.series import SeriesMixin
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.services.database.bulk import (
+    load_referencing,
+    load_related,
+    )
 from lp.services.database.constants import (
     DEFAULT,
     UTC_NOW,
@@ -99,14 +105,15 @@ from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import (
-    flush_database_caches,
-    flush_database_updates,
     SQLBase,
     sqlvalues,
     )
 from lp.services.database.stormexpr import fti_search
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
-from lp.services.librarian.model import LibraryFileAlias
+from lp.services.librarian.model import (
+    LibraryFileAlias,
+    LibraryFileContent,
+    )
 from lp.services.mail.signedmessage import signed_message_from_string
 from lp.services.propertycache import (
     cachedproperty,
@@ -124,10 +131,7 @@ from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.distributionjob import (
     IInitializeDistroSeriesJobSource,
     )
-from lp.soyuz.interfaces.publishing import (
-    active_publishing_status,
-    ICanPublishPackages,
-    )
+from lp.soyuz.interfaces.publishing import active_publishing_status
 from lp.soyuz.interfaces.queue import (
     IHasQueueItems,
     IPackageUploadSet,
@@ -135,7 +139,9 @@ from lp.soyuz.interfaces.queue import (
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
     )
+from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.binarypackagename import BinaryPackageName
+from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.model.component import Component
 from lp.soyuz.model.distroarchseries import (
     DistroArchSeries,
@@ -145,6 +151,10 @@ from lp.soyuz.model.distroseriesbinarypackage import DistroSeriesBinaryPackage
 from lp.soyuz.model.distroseriespackagecache import DistroSeriesPackageCache
 from lp.soyuz.model.distroseriessourcepackagerelease import (
     DistroSeriesSourcePackageRelease,
+    )
+from lp.soyuz.model.files import (
+    BinaryPackageFile,
+    SourcePackageReleaseFile,
     )
 from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory,
@@ -158,9 +168,6 @@ from lp.soyuz.model.queue import (
 from lp.soyuz.model.section import Section
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.translations.enums import LanguagePackType
-from lp.translations.model.distroseries_translations_copy import (
-    copy_active_translations,
-    )
 from lp.translations.model.distroserieslanguage import (
     DistroSeriesLanguage,
     DummyDistroSeriesLanguage,
@@ -180,15 +187,27 @@ from lp.translations.model.potemplate import (
     )
 
 
+ACTIVE_RELEASED_STATUSES = [
+    SeriesStatus.CURRENT,
+    SeriesStatus.SUPPORTED,
+    ]
+
+
+ACTIVE_UNRELEASED_STATUSES = [
+    SeriesStatus.EXPERIMENTAL,
+    SeriesStatus.DEVELOPMENT,
+    SeriesStatus.FROZEN,
+    ]
+
+
 class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                    HasTranslationImportsMixin, HasTranslationTemplatesMixin,
                    HasMilestonesMixin, SeriesMixin,
                    StructuralSubscriptionTargetMixin):
     """A particular series of a distribution."""
     implements(
-        ICanPublishPackages, IBugSummaryDimension, IDistroSeries,
-        IHasBuildRecords, IHasQueueItems, IServiceUsage,
-        ISeriesBugTarget)
+        IBugSummaryDimension, IDistroSeries, IHasBuildRecords, IHasQueueItems,
+        IServiceUsage, ISeriesBugTarget)
 
     delegates(ISpecificationTarget, 'distribution')
 
@@ -353,6 +372,24 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             DistroArchSeries,
             DistroArchSeries.distroseriesID == self.id,
             DistroArchSeries.processor_id == processor.id).one()
+
+    @property
+    def inherit_overrides_from_parents(self):
+        from lp.registry.interfaces.distroseriesparent import (
+            IDistroSeriesParentSet,
+            )
+        return any(
+            dsp.inherit_overrides for dsp in
+            getUtility(IDistroSeriesParentSet).getByDerivedSeries(self))
+
+    @inherit_overrides_from_parents.setter
+    def inherit_overrides_from_parents(self, value):
+        from lp.registry.interfaces.distroseriesparent import (
+            IDistroSeriesParentSet,
+            )
+        dsps = getUtility(IDistroSeriesParentSet).getByDerivedSeries(self)
+        for dsp in dsps:
+            dsp.inherit_overrides = value
 
     @property
     def enabled_architectures(self):
@@ -935,11 +972,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def isUnstable(self):
         """See `IDistroSeries`."""
-        return self.status in [
-            SeriesStatus.FROZEN,
-            SeriesStatus.DEVELOPMENT,
-            SeriesStatus.EXPERIMENTAL,
-        ]
+        return self.status in ACTIVE_UNRELEASED_STATUSES
 
     def _getAllSources(self):
         """Get all sources ever published in this series' main archives."""
@@ -985,7 +1018,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def getSourcePackagePublishing(self, pocket, component, archive):
         """See `IDistroSeries`."""
-        return Store.of(self).find(
+        spphs = Store.of(self).find(
             SourcePackagePublishingHistory,
             SourcePackagePublishingHistory.archive == archive,
             SourcePackagePublishingHistory.distroseries == self,
@@ -994,9 +1027,31 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             SourcePackagePublishingHistory.status ==
                 PackagePublishingStatus.PUBLISHED)
 
+        def eager_load(spphs):
+            # Preload everything which will be used by
+            # SourcePackagePublishingHistory.buildIndexStanzaFields.
+            load_related(Section, spphs, ["sectionID"])
+            sprs = load_related(
+                SourcePackageRelease, spphs, ["sourcepackagereleaseID"])
+            load_related(SourcePackageName, sprs, ["sourcepackagenameID"])
+            spr_ids = set(map(attrgetter("id"), sprs))
+            sprfs = list(Store.of(self).find(
+                SourcePackageReleaseFile,
+                SourcePackageReleaseFile.sourcepackagereleaseID.is_in(
+                    spr_ids)).order_by(SourcePackageReleaseFile.libraryfileID))
+            file_map = collections.defaultdict(list)
+            for sprf in sprfs:
+                file_map[sprf.sourcepackagerelease].append(sprf)
+            for spr, files in file_map.items():
+                get_property_cache(spr).files = files
+            lfas = load_related(LibraryFileAlias, sprfs, ["libraryfileID"])
+            load_related(LibraryFileContent, lfas, ["contentID"])
+
+        return DecoratedResultSet(spphs, pre_iter_hook=eager_load)
+
     def getBinaryPackagePublishing(self, archtag, pocket, component, archive):
         """See `IDistroSeries`."""
-        return Store.of(self).find(
+        bpphs = Store.of(self).find(
             BinaryPackagePublishingHistory,
             DistroArchSeries.distroseries == self,
             DistroArchSeries.architecturetag == archtag,
@@ -1007,6 +1062,29 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             BinaryPackagePublishingHistory.component == component,
             BinaryPackagePublishingHistory.status ==
                 PackagePublishingStatus.PUBLISHED)
+
+        def eager_load(bpphs):
+            # Preload everything which will be used by
+            # BinaryPackagePublishingHistory.buildIndexStanzaFields.
+            load_related(Section, bpphs, ["sectionID"])
+            bprs = load_related(
+                BinaryPackageRelease, bpphs, ["binarypackagereleaseID"])
+            bpbs = load_related(BinaryPackageBuild, bprs, ["buildID"])
+            sprs = load_related(
+                SourcePackageRelease, bpbs, ["source_package_release_id"])
+            bpfs = load_referencing(
+                BinaryPackageFile, bprs, ["binarypackagereleaseID"])
+            file_map = collections.defaultdict(list)
+            for bpf in bpfs:
+                file_map[bpf.binarypackagerelease].append(bpf)
+            for bpr, files in file_map.items():
+                get_property_cache(bpr).files = files
+            lfas = load_related(LibraryFileAlias, bpfs, ["libraryfileID"])
+            load_related(LibraryFileContent, lfas, ["contentID"])
+            load_related(SourcePackageName, sprs, ["sourcepackagenameID"])
+            load_related(BinaryPackageName, bprs, ["binarypackagenameID"])
+
+        return DecoratedResultSet(bpphs, pre_iter_hook=eager_load)
 
     def getBuildRecords(self, build_state=None, name=None, pocket=None,
                         arch_tag=None, user=None, binary_only=True):
@@ -1243,25 +1321,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 BugSummary.sourcepackagename_id == None
                 )
 
-    def copyTranslationsFromParent(self, transaction, logger=None):
-        """See `IDistroSeries`."""
-        if logger is None:
-            logger = logging
-
-        assert self.defer_translation_imports, (
-            "defer_translation_imports not set!"
-            " That would corrupt translation data mixing new imports"
-            " with the information being copied.")
-
-        assert self.hide_all_translations, (
-            "hide_all_translations not set!"
-            " That would allow users to see and modify incomplete"
-            " translation state.")
-
-        flush_database_updates()
-        flush_database_caches()
-        copy_active_translations(self, transaction, logger)
-
     def getPOFileContributorsByLanguage(self, language):
         """See `IDistroSeries`."""
         contributors = IStore(Person).find(
@@ -1275,73 +1334,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         contributors = contributors.order_by(*Person._storm_sortingColumns)
         contributors = contributors.config(distinct=True)
         return contributors
-
-    def getPendingPublications(self, archive, pocket, is_careful):
-        """See ICanPublishPackages."""
-        queries = ['distroseries = %s' % sqlvalues(self)]
-
-        # Query main archive for this distroseries
-        queries.append('archive=%s' % sqlvalues(archive))
-
-        # Careful publishing should include all PUBLISHED rows, normal run
-        # only includes PENDING ones.
-        statuses = [PackagePublishingStatus.PENDING]
-        if is_careful:
-            statuses.append(PackagePublishingStatus.PUBLISHED)
-        queries.append('status IN %s' % sqlvalues(statuses))
-
-        # Restrict to a specific pocket.
-        queries.append('pocket = %s' % sqlvalues(pocket))
-
-        # Exclude RELEASE pocket if the distroseries was already released,
-        # since it should not change for main archive.
-        # We allow RELEASE publishing for PPAs.
-        # We also allow RELEASE publishing for partner.
-        if (not self.isUnstable() and
-            not archive.allowUpdatesToReleasePocket()):
-            queries.append(
-            'pocket != %s' % sqlvalues(PackagePublishingPocket.RELEASE))
-
-        publications = SourcePackagePublishingHistory.select(
-            " AND ".join(queries), orderBy="-id")
-
-        return publications
-
-    def publish(self, diskpool, log, archive, pocket, is_careful=False):
-        """See ICanPublishPackages."""
-        log.debug("Publishing %s-%s" % (self.title, pocket.name))
-        log.debug("Attempting to publish pending sources.")
-
-        dirty_pockets = set()
-        for spph in self.getPendingPublications(archive, pocket, is_careful):
-            if not self.checkLegalPocket(spph, is_careful, log):
-                continue
-            spph.publish(diskpool, log)
-            dirty_pockets.add((self.name, spph.pocket))
-
-        # propagate publication request to each distroarchseries.
-        for dar in self.architectures:
-            more_dirt = dar.publish(
-                diskpool, log, archive, pocket, is_careful)
-            dirty_pockets.update(more_dirt)
-
-        return dirty_pockets
-
-    def checkLegalPocket(self, publication, is_careful, log):
-        """Check if the publication can happen in the archive."""
-        # 'careful' mode re-publishes everything:
-        if is_careful:
-            return True
-
-        if not publication.archive.canModifySuite(self, publication.pocket):
-            log.error(
-                "Tried to publish %s (%s) into the %s pocket on series %s "
-                "(%s), skipping" % (
-                    publication.displayname, publication.id,
-                    publication.pocket, self.displayname, self.status.name))
-            return False
-
-        return True
 
     @property
     def main_archive(self):
@@ -1547,14 +1539,11 @@ class DistroSeriesSet:
             if isreleased:
                 # The query is filtered on released releases.
                 where_clause += "releasestatus in (%s, %s)" % sqlvalues(
-                    SeriesStatus.CURRENT,
-                    SeriesStatus.SUPPORTED)
+                    *ACTIVE_RELEASED_STATUSES)
             else:
                 # The query is filtered on unreleased releases.
                 where_clause += "releasestatus in (%s, %s, %s)" % sqlvalues(
-                    SeriesStatus.EXPERIMENTAL,
-                    SeriesStatus.DEVELOPMENT,
-                    SeriesStatus.FROZEN)
+                    *ACTIVE_UNRELEASED_STATUSES)
         if orderBy is not None:
             return DistroSeries.select(where_clause, orderBy=orderBy)
         else:

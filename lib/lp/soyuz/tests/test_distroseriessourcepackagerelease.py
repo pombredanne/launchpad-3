@@ -27,7 +27,7 @@ class TestDistroSeriesSourcePackageRelease(TestCaseWithFactory):
         super(TestDistroSeriesSourcePackageRelease, self).setUp()
         self.sourcepackagerelease = self.factory.makeSourcePackageRelease()
         self.distroarchseries = self.factory.makeDistroArchSeries(
-            distroseries=self.sourcepackagerelease.sourcepackage.distroseries)
+            distroseries=self.sourcepackagerelease.upload_distroseries)
         self.dssp_release = DistroSeriesSourcePackageRelease(
             self.distroarchseries.distroseries, self.sourcepackagerelease)
 
@@ -44,7 +44,7 @@ class TestDistroSeriesSourcePackageRelease(TestCaseWithFactory):
         self.factory.makeSourcePackagePublishingHistory(
             sourcepackagename=sourcepackagename,
             sourcepackagerelease=self.sourcepackagerelease,
-            distroseries=self.sourcepackagerelease.sourcepackage.distroseries,
+            distroseries=self.distroarchseries.distroseries,
             status=PackagePublishingStatus.PUBLISHED)
         self.factory.makeBinaryPackagePublishingHistory(
             binarypackagerelease=bp_release,

@@ -104,6 +104,10 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
         self.create_previous_build(335)
         self.assertEqual(335, self.build.estimateDuration().seconds)
 
+    def test_build_cookie(self):
+        build = self.factory.makeBinaryPackageBuild()
+        self.assertEqual('PACKAGEBUILD-%d' % build.id, build.build_cookie)
+
     def addFakeBuildLog(self, build):
         build.setLog(self.factory.makeLibraryFileAlias('mybuildlog.txt'))
 
@@ -127,9 +131,10 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
             archive=self.factory.makeArchive(purpose=ArchivePurpose.PPA))
         self.addFakeBuildLog(build)
         self.assertEqual(
-            'http://launchpad.dev/~%s/+archive/'
+            'http://launchpad.dev/~%s/+archive/%s/'
             '%s/+build/%d/+files/mybuildlog.txt' % (
-                build.archive.owner.name, build.archive.name, build.id),
+                build.archive.owner.name, build.archive.distribution.name,
+                build.archive.name, build.id),
             build.log_url)
 
     def test_getUploader(self):

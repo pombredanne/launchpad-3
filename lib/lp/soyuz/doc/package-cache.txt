@@ -248,12 +248,14 @@ We can invoke the cache updater directly on IDistroSeries:
     ...     warty, archive=ubuntu.main_archive, ztm=transaction,
     ...     log=FakeLogger())
     DEBUG Considering binary 'at'
-    ...
     DEBUG Considering binary 'cdrkit'
     DEBUG Creating new binary cache entry.
-    ...
+    DEBUG Considering binary 'linux-2.6.12'
     DEBUG Considering binary 'mozilla-firefox'
-    ...
+    DEBUG Considering binary 'mozilla-firefox-data'
+    DEBUG Creating new binary cache entry.
+    DEBUG Considering binary 'pmount'
+
 
     >>> print updates
     6

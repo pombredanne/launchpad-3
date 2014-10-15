@@ -333,6 +333,7 @@ to their private_url. Possession of a token is sufficient to grant
 access to a file, regardless of who is logged in. getURL can be asked to
 provide such a token.
 
+    >>> import hashlib
     >>> token_url = file_alias.getURL(include_token=True)
     >>> print token_url
     https://i...restricted.../private.txt?token=...
@@ -342,8 +343,9 @@ provide such a token.
 
     >>> private_path = TimeLimitedToken.url_to_token_path(
     ...        file_alias.private_url)
-    >>> token_url.endswith(session_store().find(
-    ...     TimeLimitedToken, path=private_path).any().token)
+    >>> url_token = token_url.split('=')[1]
+    >>> hashlib.sha256(url_token).hexdigest() == session_store().find(
+    ...     TimeLimitedToken, path=private_path).any().token
     True
 
 LibraryFileAliasView doesn't work on restricted files. This is a

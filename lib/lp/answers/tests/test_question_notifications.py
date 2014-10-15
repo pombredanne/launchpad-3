@@ -196,7 +196,7 @@ class FakeQuestionNotification(QuestionNotification):
 
 
 class QuestionNotificationTestCase(TestCaseWithFactory):
-    """Test common question notification behavior."""
+    """Test common question notification behaviour."""
 
     layer = DatabaseFunctionalLayer
 

@@ -445,6 +445,8 @@ class ExtractVersionTestCase(unittest.TestCase):
         self.assertEqual(version, '0.6')
         version = extract_version('u1f-google-1.2.4.apk')
         self.assertEqual(version, '1.2.4')
+        version = extract_version('unetbootin-linux-603.bin')
+        self.assertEqual(version, '603')
 
     def test_extract_version_name_with_uppercase(self):
         """Verify that the file's version is lowercases."""

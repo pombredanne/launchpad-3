@@ -84,7 +84,7 @@ Note that the generated notification contain the 'extra_info' content:
    * Source Package: cdrkit
    * Version: 1.0
    * Architecture: i386
-   * Archive: ubuntu primary archive
+   * Archive: ubuntu
    * Component: main
    * State: Failed to upload
    * Duration: 1 minute

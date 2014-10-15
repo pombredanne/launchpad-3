@@ -19,7 +19,6 @@ from lp.blueprints.interfaces.specificationtarget import (
     IHasSpecifications,
     ISpecificationTarget,
     )
-from lp.blueprints.publisher import BlueprintsLayer
 from lp.testing import (
     BrowserTestCase,
     login_person,
@@ -81,8 +80,7 @@ class TestHasSpecificationsViewInvolvement(TestCaseWithFactory):
 
     def verify_involvment(self, context):
         self.assertTrue(IHasSpecifications.providedBy(context))
-        view = create_view(
-            context, '+specs', layer=BlueprintsLayer, principal=self.user)
+        view = create_view(context, '+specs', principal=self.user)
         self.assertTrue(
             '<div id="involvement" class="portlet involvement">' in view())
 
@@ -108,8 +106,7 @@ class TestHasSpecificationsViewInvolvement(TestCaseWithFactory):
     def test_person(self):
         context = self.factory.makePerson(name='pistachio')
         self.assertTrue(IHasSpecifications.providedBy(context))
-        view = create_view(
-            context, '+specs', layer=BlueprintsLayer, principal=self.user)
+        view = create_view(context, '+specs', principal=self.user)
         self.assertFalse(
             '<div id="involvement" class="portlet involvement">' in view())
 
@@ -179,11 +176,7 @@ class TestHasSpecificationsTemplates(TestCaseWithFactory):
         used_templates = list()
         for config in test_configurations:
             naked_target.blueprints_usage = config
-            view = create_view(
-                context,
-                '+specs',
-                layer=BlueprintsLayer,
-                principal=self.user)
+            view = create_view(context, '+specs', principal=self.user)
             used_templates.append(view.template.filename)
         self.assertEqual(correct_templates, used_templates)
 
@@ -331,15 +324,16 @@ class TestPrivacy(BrowserTestCase):
         # Other users see the page, but not the private specs.
         proprietary = self.factory.makeSpecification(
             information_type=InformationType.PROPRIETARY)
-        product = proprietary.product
+        product = removeSecurityProxy(proprietary).product
         public = self.factory.makeSpecification(product=product)
         with person_logged_in(product.owner):
             product.blueprints_usage = ServiceUsage.LAUNCHPAD
             browser = self.getViewBrowser(product, '+specs')
         self.assertIn(public.name, browser.contents)
-        self.assertNotIn(proprietary.name, browser.contents)
+        self.assertNotIn(
+            removeSecurityProxy(proprietary).name, browser.contents)
         with person_logged_in(None):
             browser = self.getViewBrowser(product, '+specs',
                                           user=product.owner)
         self.assertIn(public.name, browser.contents)
-        self.assertIn(proprietary.name, browser.contents)
+        self.assertIn(removeSecurityProxy(proprietary).name, browser.contents)

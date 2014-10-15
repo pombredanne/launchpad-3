@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -15,9 +15,11 @@ from testtools.matchers import (
     LessThan,
     Not,
     )
+from testtools.testcase import ExpectedException
 import transaction
 from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
+from zope.security.proxy import removeSecurityProxy
 
 from lp.app.browser.lazrjs import TextAreaEditorWidget
 from lp.app.enums import InformationType
@@ -49,6 +51,7 @@ from lp.services.verification.tests.logintoken import get_token_url_from_email
 from lp.services.webapp import canonical_url
 from lp.services.webapp.escaping import html_escape
 from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.publisher import RedirectionView
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -81,10 +84,65 @@ from lp.testing.pages import (
     find_tag_by_id,
     setupBrowserForUser,
     )
+from lp.testing.publication import test_traverse
 from lp.testing.views import (
     create_initialized_view,
     create_view,
     )
+
+
+class TestPersonNavigation(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def assertRedirect(self, path, redirect):
+        view = test_traverse(path)[1]
+        self.assertIsInstance(view, RedirectionView)
+        self.assertEqual(':/' + redirect, removeSecurityProxy(view).target)
+
+    def test_traverse_archive_distroful(self):
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        in_suf = '/~%s/+archive/%s/%s' % (
+            archive.owner.name, archive.distribution.name, archive.name)
+        self.assertEqual(archive, test_traverse(in_suf)[0])
+        self.assertEqual(archive, test_traverse('/api/devel' + in_suf)[0])
+        self.assertEqual(archive, test_traverse('/api/1.0' + in_suf)[0])
+
+    def test_traverse_archive_distroless(self):
+        # Pre-mid-2014 distroless PPA URLs redirect to the new ones.
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        in_suf = '/~%s/+archive/%s' % (archive.owner.name, archive.name)
+        out_suf = '/~%s/+archive/%s/%s' % (
+            archive.owner.name, archive.distribution.name, archive.name)
+        self.assertRedirect(in_suf, out_suf)
+        self.assertRedirect('/api/devel' + in_suf, '/api/devel' + out_suf)
+        # 1.0 API requests don't redirect, since some manually construct
+        # URLs and don't cope with redirects (most notably the Python 2
+        # implementation of apt-add-repository).
+        self.assertEqual(archive, test_traverse('/api/1.0' + out_suf)[0])
+
+    def test_traverse_archive_distroless_implies_ubuntu(self):
+        # The distroless PPA redirect only finds Ubuntu PPAs, since
+        # distroful URLs were implemented as a requirement for
+        # non-Ubuntu PPAs.
+        other_archive = self.factory.makeArchive(
+            purpose=ArchivePurpose.PPA,
+            distribution=self.factory.makeDistribution())
+        with ExpectedException(NotFound):
+            test_traverse(
+                '/~%s/+archive/%s' % (
+                    other_archive.owner.name, other_archive.name))
+
+    def test_traverse_archive_redirects_nameless(self):
+        # Pre-2009 nameless PPA URLs redirect to the new ones.
+        archive = self.factory.makeArchive(
+            purpose=ArchivePurpose.PPA, name="ppa")
+        in_suf = '/~%s/+archive' % archive.owner.name
+        out_suf = '/~%s/+archive/%s/%s' % (
+            archive.owner.name, archive.distribution.name, archive.name)
+        self.assertRedirect(in_suf, out_suf)
+        self.assertRedirect('/api/devel' + in_suf, '/api/devel' + out_suf)
+        self.assertRedirect('/api/1.0' + in_suf, '/api/1.0' + out_suf)
 
 
 class PersonViewOpenidIdentityUrlTestCase(TestCaseWithFactory):
@@ -211,18 +269,19 @@ class TestPersonIndexView(BrowserTestCase):
 
     def test_assigned_blueprints(self):
         person = self.factory.makePerson()
-
-        def make_started_spec(information_type):
-            enum = SpecificationImplementationStatus
-            return self.factory.makeSpecification(
-                implementation_status=enum.STARTED, assignee=person,
-                information_type=information_type)
-        public_spec = make_started_spec(InformationType.PUBLIC)
-        private_spec = make_started_spec(InformationType.PROPRIETARY)
+        public_spec = self.factory.makeSpecification(
+            assignee=person,
+            implementation_status=SpecificationImplementationStatus.STARTED,
+            information_type=InformationType.PUBLIC)
+        private_name = 'super-private'
+        private_spec = self.factory.makeSpecification(
+            name=private_name, assignee=person,
+            implementation_status=SpecificationImplementationStatus.STARTED,
+            information_type=InformationType.PROPRIETARY)
         with person_logged_in(None):
             browser = self.getViewBrowser(person)
         self.assertIn(public_spec.name, browser.contents)
-        self.assertNotIn(private_spec.name, browser.contents)
+        self.assertNotIn(private_name, browser.contents)
 
     def test_only_assigned_blueprints(self):
         # Only assigned blueprints are listed, not arbitrary related

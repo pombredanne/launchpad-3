@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Update the interface schema values due to circular imports.
@@ -196,6 +196,11 @@ from lp.soyuz.interfaces.binarypackagerelease import (
     )
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
+from lp.soyuz.interfaces.livefs import ILiveFSView
+from lp.soyuz.interfaces.livefsbuild import (
+    ILiveFSBuild,
+    ILiveFSFile,
+    )
 from lp.soyuz.interfaces.packageset import (
     IPackageset,
     IPackagesetSet,
@@ -317,7 +322,11 @@ IPreviewDiff['branch_merge_proposal'].schema = IBranchMergeProposal
 
 patch_reference_property(IPersonViewRestricted, 'archive', IArchive)
 patch_collection_property(IPersonViewRestricted, 'ppas', IArchive)
+patch_plain_parameter_type(
+    IPersonLimitedView, 'getPPAByName', 'distribution', IDistribution)
 patch_entry_return_type(IPersonLimitedView, 'getPPAByName', IArchive)
+patch_plain_parameter_type(
+    IPersonEditRestricted, 'createPPA', 'distribution', IDistribution)
 patch_entry_return_type(IPersonEditRestricted, 'createPPA', IArchive)
 
 IHasBuildRecords['getBuildRecords'].queryTaggedValue(
@@ -352,8 +361,10 @@ patch_plain_parameter_type(IPerson, 'createRecipe', 'daily_build_archive',
                            IArchive)
 patch_plain_parameter_type(IPerson, 'getArchiveSubscriptionURL', 'archive',
                            IArchive)
-
+patch_collection_return_type(
+    IPerson, 'getArchiveSubscriptions', IArchiveSubscriber)
 patch_entry_return_type(IPerson, 'getRecipe', ISourcePackageRecipe)
+patch_collection_return_type(IPerson, 'getOwnedProjects', IProduct)
 
 # IHasRecipe
 patch_collection_property(
@@ -436,13 +447,13 @@ patch_plain_parameter_type(
     IArchive, 'getArchiveDependency', 'dependency', IArchive)
 patch_entry_return_type(IArchive, 'getArchiveDependency', IArchiveDependency)
 patch_plain_parameter_type(
-    IArchive, 'getPublishedSources', 'distroseries', IDistroSeries)
+    IArchive, 'api_getPublishedSources', 'distroseries', IDistroSeries)
 patch_collection_return_type(
-    IArchive, 'getPublishedSources', ISourcePackagePublishingHistory)
+    IArchive, 'api_getPublishedSources', ISourcePackagePublishingHistory)
 patch_choice_parameter_type(
-    IArchive, 'getPublishedSources', 'status', PackagePublishingStatus)
+    IArchive, 'api_getPublishedSources', 'status', PackagePublishingStatus)
 patch_choice_parameter_type(
-    IArchive, 'getPublishedSources', 'pocket', PackagePublishingPocket)
+    IArchive, 'api_getPublishedSources', 'pocket', PackagePublishingPocket)
 patch_plain_parameter_type(
     IArchive, 'getAllPublishedBinaries', 'distroarchseries',
     IDistroArchSeries)
@@ -573,6 +584,15 @@ IDistroSeriesDifferenceComment['comment_author'].schema = IPerson
 
 # IDistroArchSeries
 patch_reference_property(IDistroArchSeries, 'main_archive', IArchive)
+
+# ILiveFSFile
+patch_reference_property(ILiveFSFile, 'livefsbuild', ILiveFSBuild)
+
+# ILiveFSView
+patch_entry_return_type(ILiveFSView, 'requestBuild', ILiveFSBuild)
+ILiveFSView['builds'].value_type.schema = ILiveFSBuild
+ILiveFSView['completed_builds'].value_type.schema = ILiveFSBuild
+ILiveFSView['pending_builds'].value_type.schema = ILiveFSBuild
 
 # IPackageset
 patch_collection_return_type(
@@ -759,7 +779,7 @@ patch_operations_explicit_version(
     "getBuildSummariesForSourceIds", "getComponentsForQueueAdmin",
     "getPackagesetsForSource", "getPackagesetsForSourceUploader",
     "getPackagesetsForUploader", "getPermissionsForPerson",
-    "getPublishedSources", "getQueueAdminsForComponent",
+    "api_getPublishedSources", "getQueueAdminsForComponent",
     "getUploadersForComponent", "getUploadersForPackage",
     "getUploadersForPackageset", "isSourceUploadAllowed",
     "newComponentUploader", "newPackageUploader", "newPackagesetUploader",
@@ -872,6 +892,7 @@ patch_entry_explicit_version(IBugWatch, 'beta')
 
 # IBuilder
 patch_entry_explicit_version(IBuilder, 'beta')
+IBuilder['current_build'].schema = IBuildFarmJob
 
 # IBuilderSet
 patch_operations_explicit_version(IBuilderSet, 'beta', "getByName")

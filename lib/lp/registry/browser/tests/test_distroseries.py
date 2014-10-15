@@ -1293,7 +1293,8 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         self.assertEqual(1, len(links))
         self.assertEqual(versions['derived'], links[0].string.strip())
 
-        link = canonical_url(difference.source_pub.sourcepackagerelease)
+        link = canonical_url(derived_series.getSourcePackageRelease(
+            difference.source_pub.sourcepackagerelease))
         self.assertTrue(link, EndsWith(new_version))
         # The link points to the sourcepackagerelease referenced in the
         # difference.
@@ -2578,8 +2579,8 @@ class TestDistroSeriesEditView(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_edit_full_functionality_sets_datereleased(self):
-        # Full functionality distributions (IE: Ubuntu) have datereleased
-        # set when the +edit view is used.
+        # Distributions that use Launchpad for package management (eg.
+        # Ubuntu) have datereleased set when the +edit view is used.
         ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
         distroseries = self.factory.makeDistroSeries(distribution=ubuntu)
         form = {

@@ -102,7 +102,8 @@ header will close the specified bug.
     >>> print_single_task_status(pmount_bug_id)
     'NEW'
 
-    >>> from lp.soyuz.scripts.processaccepted import close_bugs_for_queue_item
+    >>> from lp.soyuz.model.processacceptedbugsjob import (
+    ...     close_bugs_for_queue_item)
     >>> close_bugs_for_queue_item(queue_item)
 
     >>> print_single_task_status(pmount_bug_id)

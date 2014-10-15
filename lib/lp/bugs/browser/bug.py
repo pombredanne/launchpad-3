@@ -200,13 +200,15 @@ class BugNavigation(Navigation):
 class BugFacets(StandardLaunchpadFacets):
     """The links that will appear in the facet menu for an `IBug`.
 
-    However, we never show this, but it does apply to things like
-    bug nominations, by 'acquisition'.
+    This is rarely seen, as most bug views are actually on BugTask. But
+    it's inherited by views on objects subordinate to the Bug itself,
+    eg.  nominations and attachments, where we don't have a pillar
+    context to switch within.
     """
 
     usedfor = IBug
 
-    enable_only = []
+    enable_only = ['overview']
 
 
 class BugSetNavigation(Navigation):
@@ -258,8 +260,8 @@ class BugContextMenu(ContextMenu):
         return Link('+choose-affected-product', text, icon='add')
 
     def adddistro(self):
-        """Return the 'Also affects distribution' Link."""
-        text = 'Also affects distribution'
+        """Return the 'Also affects distribution/package' Link."""
+        text = 'Also affects distribution/package'
         return Link('+distrotask', text, icon='add')
 
     def subscription(self):

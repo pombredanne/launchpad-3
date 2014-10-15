@@ -26,7 +26,6 @@ from zope.schema import (
     Bool,
     Date,
     Datetime,
-    Dict,
     Int,
     List,
     Object,
@@ -86,19 +85,6 @@ class IBinaryPackageRelease(Interface):
     name = Attribute("Binary Package Name")
     sourcepackagename = Attribute(
         "The name of the source package from where this binary was built.")
-
-    # Properties.
-    distributionsourcepackagerelease = Attribute(
-        "The sourcepackage release in this distribution from which this "
-        "binary was built.")
-
-    is_new = Bool(
-        title=_("New Binary."),
-        description=_("True if there binary version was never published for "
-                      "the architeture it was built for. False otherwise."))
-
-    # This is a dictionary for fast retrieval over the webservice.
-    properties = Dict(title=_("The properties of this binary."))
 
     def addFile(file):
         """Create a BinaryPackageFile record referencing this build

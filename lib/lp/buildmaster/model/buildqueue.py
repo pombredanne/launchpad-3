@@ -39,14 +39,15 @@ from lp.buildmaster.enums import (
     BuildQueueStatus,
     BuildStatus,
     )
-from lp.buildmaster.interfaces.buildfarmjob import (
-    ISpecificBuildFarmJobSource,
-    )
+from lp.buildmaster.interfaces.buildfarmjob import ISpecificBuildFarmJobSource
 from lp.buildmaster.interfaces.buildqueue import (
     IBuildQueue,
     IBuildQueueSet,
     )
-from lp.services.database.bulk import load_related
+from lp.services.database.bulk import (
+    load_referencing,
+    load_related,
+    )
 from lp.services.database.constants import (
     DEFAULT,
     UTC_NOW,
@@ -114,6 +115,11 @@ class BuildQueue(SQLBase):
         specific_source = specific_build_farm_job_sources()[bfj.job_type]
         return specific_source.getByBuildFarmJob(bfj)
 
+    @property
+    def build_cookie(self):
+        """See `IBuildQueue`."""
+        return self.specific_build.build_cookie
+
     def _clear_specific_build_cache(self):
         del get_property_cache(self).specific_build
 
@@ -124,10 +130,10 @@ class BuildQueue(SQLBase):
         load_related(BuildFarmJob, queues, ['_build_farm_job_id'])
         bfj_to_bq = dict((bq._build_farm_job, bq) for bq in queues)
         key = attrgetter('_build_farm_job.job_type')
-        for job_type, grouped_queues in groupby(queues, key=key):
+        for job_type, group in groupby(sorted(queues, key=key), key=key):
             source = getUtility(ISpecificBuildFarmJobSource, job_type.name)
             builds = source.getByBuildFarmJobs(
-                [bq._build_farm_job for bq in grouped_queues])
+                [bq._build_farm_job for bq in group])
             for build in builds:
                 bq = bfj_to_bq[removeSecurityProxy(build).build_farm_job]
                 get_property_cache(bq).specific_build = build
@@ -240,6 +246,16 @@ class BuildQueueSet(object):
     def getByBuilder(self, builder):
         """See `IBuildQueueSet`."""
         return BuildQueue.selectOneBy(builder=builder)
+
+    def preloadForBuilders(self, builders):
+        # Populate builders' currentjob cachedproperty.
+        queues = load_referencing(BuildQueue, builders, ['builderID'])
+        queue_builders = dict(
+            (queue.builderID, queue) for queue in queues)
+        for builder in builders:
+            cache = get_property_cache(builder)
+            cache.currentjob = queue_builders.get(builder.id, None)
+        return queues
 
     def preloadForBuildFarmJobs(self, builds):
         """See `IBuildQueueSet`."""

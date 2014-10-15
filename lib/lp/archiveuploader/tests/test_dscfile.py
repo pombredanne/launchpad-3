@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test dscfile.py"""
@@ -303,7 +303,7 @@ class Test30QuiltSourceFormatVerification(BaseTestSourceFileVerification):
     format = SourcePackageFormat.FORMAT_3_0_QUILT
 
     wrong_files_error = ('foo_1.dsc: must have only an orig.tar.*, a '
-                         'debian.tar.* and optionally orig-*.tar.*')
+                         'debian.tar.*, and optionally orig-*.tar.*')
     comp_conflict_error = 'foo_1.dsc: has more than one orig-bar.tar.*.'
 
     def testFormat30Quilt(self):
@@ -332,7 +332,7 @@ class Test30QuiltSourceFormatVerification(BaseTestSourceFileVerification):
                 {ORIG_TARBALL: 1, DEBIAN_TARBALL: 1, filetype: 1})
 
 
-class Test30QuiltSourceFormatVerification(BaseTestSourceFileVerification):
+class Test30NativeSourceFormatVerification(BaseTestSourceFileVerification):
 
     format = SourcePackageFormat.FORMAT_3_0_NATIVE
 

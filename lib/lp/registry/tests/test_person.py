@@ -1759,8 +1759,13 @@ class Test_getAssignedBugTasksDueBefore(TestCaseWithFactory):
 
 
 def list_result(sprint, filter=None, user=None):
-    result = sprint.specifications(user, SpecificationSort.DATE, filter=filter)
+    result = sprint.specifications(
+        user, SpecificationSort.DATE, filter=filter)
     return list(result)
+
+
+def get_specs(context, user=None, **kwargs):
+    return context.specifications(user, **kwargs)
 
 
 class TestSpecifications(TestCaseWithFactory):
@@ -1787,11 +1792,10 @@ class TestSpecifications(TestCaseWithFactory):
         owner = self.factory.makePerson()
         for count in range(10):
             self.factory.makeSpecification(owner=owner)
-        self.assertEqual(10, owner.specifications(None).count())
-        result = owner.specifications(None, quantity=None).count()
-        self.assertEqual(10, result)
-        self.assertEqual(8, owner.specifications(None, quantity=8).count())
-        self.assertEqual(10, owner.specifications(None, quantity=11).count())
+        self.assertEqual(10, get_specs(owner).count())
+        self.assertEqual(10, get_specs(owner, quantity=None).count())
+        self.assertEqual(8, get_specs(owner, quantity=8).count())
+        self.assertEqual(10, get_specs(owner, quantity=11).count())
 
     def test_date_sort(self):
         # Sort on date_created.
@@ -1823,9 +1827,9 @@ class TestSpecifications(TestCaseWithFactory):
         blueprint3 = self.makeSpec(
             owner, priority=SpecificationPriority.LOW,
             status=SpecificationDefinitionStatus.NEW)
-        result = owner.specifications(None)
+        result = get_specs(owner)
         self.assertEqual([blueprint3, blueprint1, blueprint2], list(result))
-        result = owner.specifications(None, sort=SpecificationSort.PRIORITY)
+        result = get_specs(owner, sort=SpecificationSort.PRIORITY)
         self.assertEqual([blueprint3, blueprint1, blueprint2], list(result))
 
     def test_priority_sort_fallback_status(self):
@@ -1838,9 +1842,9 @@ class TestSpecifications(TestCaseWithFactory):
             owner, status=SpecificationDefinitionStatus.APPROVED, name='c')
         blueprint3 = self.makeSpec(
             owner, status=SpecificationDefinitionStatus.DISCUSSION, name='b')
-        result = owner.specifications(None)
+        result = get_specs(owner)
         self.assertEqual([blueprint2, blueprint3, blueprint1], list(result))
-        result = owner.specifications(None, sort=SpecificationSort.PRIORITY)
+        result = get_specs(owner, sort=SpecificationSort.PRIORITY)
         self.assertEqual([blueprint2, blueprint3, blueprint1], list(result))
 
     def test_priority_sort_fallback_name(self):
@@ -1849,9 +1853,9 @@ class TestSpecifications(TestCaseWithFactory):
         owner = blueprint1.owner
         blueprint2 = self.makeSpec(owner, name='c')
         blueprint3 = self.makeSpec(owner, name='a')
-        result = owner.specifications(None)
+        result = get_specs(owner)
         self.assertEqual([blueprint3, blueprint1, blueprint2], list(result))
-        result = owner.specifications(None, sort=SpecificationSort.PRIORITY)
+        result = get_specs(owner, sort=SpecificationSort.PRIORITY)
         self.assertEqual([blueprint3, blueprint1, blueprint2], list(result))
 
     def test_ignore_inactive(self):
@@ -1860,13 +1864,13 @@ class TestSpecifications(TestCaseWithFactory):
         with celebrity_logged_in('admin'):
             product.active = False
         spec = self.factory.makeSpecification(product=product)
-        self.assertNotIn(spec, spec.owner.specifications(None))
+        self.assertNotIn(spec, get_specs(spec.owner))
 
     def test_include_distro(self):
         # Specs for distributions are included.
         distribution = self.factory.makeDistribution()
         spec = self.factory.makeSpecification(distribution=distribution)
-        self.assertIn(spec, spec.owner.specifications(None))
+        self.assertIn(spec, get_specs(spec.owner))
 
     def test_informational(self):
         # INFORMATIONAL causes only informational specs to be shown.
@@ -1875,11 +1879,10 @@ class TestSpecifications(TestCaseWithFactory):
             implementation_status=enum.INFORMATIONAL)
         owner = informational.owner
         plain = self.factory.makeSpecification(owner=owner)
-        result = owner.specifications(None)
+        result = get_specs(owner)
         self.assertIn(informational, result)
         self.assertIn(plain, result)
-        result = owner.specifications(
-            None, filter=[SpecificationFilter.INFORMATIONAL])
+        result = get_specs(owner, filter=[SpecificationFilter.INFORMATIONAL])
         self.assertIn(informational, result)
         self.assertNotIn(plain, result)
 
@@ -1892,17 +1895,13 @@ class TestSpecifications(TestCaseWithFactory):
             implementation_status=enum.IMPLEMENTED)
         owner = implemented.owner
         non_implemented = self.factory.makeSpecification(owner=owner)
-        result = owner.specifications(
-            None, filter=[SpecificationFilter.COMPLETE])
+        result = get_specs(owner, filter=[SpecificationFilter.COMPLETE])
         self.assertIn(implemented, result)
         self.assertNotIn(non_implemented, result)
-
-        result = owner.specifications(
-            None, filter=[SpecificationFilter.INCOMPLETE])
+        result = get_specs(owner, filter=[SpecificationFilter.INCOMPLETE])
         self.assertNotIn(implemented, result)
         self.assertIn(non_implemented, result)
-        result = owner.specifications(
-            None)
+        result = get_specs(owner)
         self.assertNotIn(implemented, result)
         self.assertIn(non_implemented, result)
 
@@ -1913,7 +1912,7 @@ class TestSpecifications(TestCaseWithFactory):
             implementation_status=enum.IMPLEMENTED)
         owner = implemented.owner
         non_implemented = self.factory.makeSpecification(owner=owner)
-        result = owner.specifications(None, filter=[SpecificationFilter.ALL])
+        result = get_specs(owner, filter=[SpecificationFilter.ALL])
         self.assertContentEqual([implemented, non_implemented], result)
 
     def test_valid(self):
@@ -1926,8 +1925,9 @@ class TestSpecifications(TestCaseWithFactory):
         owner = implemented.owner
         self.factory.makeSpecification(owner=owner, status=d_enum.SUPERSEDED)
         self.factory.makeSpecification(owner=owner, status=d_enum.OBSOLETE)
-        filter = [SpecificationFilter.VALID, SpecificationFilter.COMPLETE]
-        results = owner.specifications(None, filter=filter)
+        results = get_specs(
+            owner,
+            filter=[SpecificationFilter.VALID, SpecificationFilter.COMPLETE])
         self.assertContentEqual([implemented], results)
 
     def test_roles(self):
@@ -1937,7 +1937,7 @@ class TestSpecifications(TestCaseWithFactory):
         person = created.owner
 
         def rlist(filter=None):
-            return list(person.specifications(None, filter=filter))
+            return list(get_specs(person, filter=filter))
         assigned = self.factory.makeSpecification(assignee=person)
         drafting = self.factory.makeSpecification(drafter=person)
         approving = self.factory.makeSpecification(approver=person)
@@ -1966,7 +1966,8 @@ class TestSpecifications(TestCaseWithFactory):
         # Proprietary blueprints are not listed for random users
         blueprint1 = self.makeSpec(
             information_type=InformationType.PROPRIETARY)
-        self.assertEqual([], list_result(blueprint1.owner))
+        owner = removeSecurityProxy(blueprint1).owner
+        self.assertEqual([], list_result(owner))
 
     def test_proprietary_listed_for_artifact_grant(self):
         # Proprietary blueprints are listed for users with an artifact grant.
@@ -1974,21 +1975,24 @@ class TestSpecifications(TestCaseWithFactory):
             information_type=InformationType.PROPRIETARY)
         grant = self.factory.makeAccessArtifactGrant(
             concrete_artifact=blueprint1)
+        owner = removeSecurityProxy(blueprint1).owner
         self.assertEqual(
             [blueprint1],
-            list_result(blueprint1.owner, user=grant.grantee))
+            list_result(owner, user=grant.grantee))
 
     def test_proprietary_listed_for_policy_grant(self):
         # Proprietary blueprints are listed for users with a policy grant.
         blueprint1 = self.makeSpec(
             information_type=InformationType.PROPRIETARY)
+        product = removeSecurityProxy(blueprint1).product
         policy_source = getUtility(IAccessPolicySource)
         (policy,) = policy_source.find(
-            [(blueprint1.product, InformationType.PROPRIETARY)])
+            [(product, InformationType.PROPRIETARY)])
         grant = self.factory.makeAccessPolicyGrant(policy)
+        owner = removeSecurityProxy(blueprint1).owner
         self.assertEqual(
             [blueprint1],
-            list_result(blueprint1.owner, user=grant.grantee))
+            list_result(owner, user=grant.grantee))
 
     def test_storm_sort(self):
         # A Storm expression can be used to sort specs.
@@ -1996,9 +2000,9 @@ class TestSpecifications(TestCaseWithFactory):
         spec = self.factory.makeSpecification(owner=owner, name='a')
         spec2 = self.factory.makeSpecification(owner=owner, name='z')
         spec3 = self.factory.makeSpecification(owner=owner, name='b')
-        self.assertEqual([spec2, spec3, spec],
-                list(owner.specifications(owner,
-                     sort=Desc(Specification.name))))
+        self.assertContentEqual(
+            [spec2, spec3, spec],
+            get_specs(owner, sort=Desc(Specification.name)))
 
     def test_in_progress(self):
         # In-progress filters to exclude not-started and completed.
@@ -2010,18 +2014,18 @@ class TestSpecifications(TestCaseWithFactory):
             owner=owner, implementation_status=enum.STARTED)
         self.factory.makeSpecification(
             owner=owner, implementation_status=enum.IMPLEMENTED)
-        specs = list(owner.specifications(owner, in_progress=True))
-        self.assertEqual([started], specs)
+        self.assertContentEqual([started], get_specs(owner, in_progress=True))
 
     def test_in_progress_all(self):
         # SpecificationFilter.ALL overrides in_progress.
         enum = SpecificationImplementationStatus
         notstarted = self.factory.makeSpecification(
             implementation_status=enum.NOTSTARTED)
-        owner = notstarted.owner
-        specs = list(owner.specifications(
-            owner, filter=[SpecificationFilter.ALL], in_progress=True))
-        self.assertEqual([notstarted], specs)
+        self.assertContentEqual(
+            [notstarted],
+            get_specs(
+                notstarted.owner, filter=[SpecificationFilter.ALL],
+                in_progress=True))
 
     def test_complete_overrides_in_progress(self):
         # SpecificationFilter.COMPLETE overrides in_progress.
@@ -2031,17 +2035,16 @@ class TestSpecifications(TestCaseWithFactory):
         owner = started.owner
         implemented = self.factory.makeSpecification(
             implementation_status=enum.IMPLEMENTED, owner=owner)
-        specs = list(owner.specifications(
-            owner, filter=[SpecificationFilter.COMPLETE], in_progress=True))
-        self.assertEqual([implemented], specs)
+        specs = get_specs(
+            owner, filter=[SpecificationFilter.COMPLETE], in_progress=True)
+        self.assertContentEqual([implemented], specs)
 
     def test_incomplete_overrides_in_progress(self):
         # SpecificationFilter.INCOMPLETE overrides in_progress.
         enum = SpecificationImplementationStatus
         notstarted = self.factory.makeSpecification(
             implementation_status=enum.NOTSTARTED)
-        owner = notstarted.owner
-        specs = list(owner.specifications(
-            owner, filter=[SpecificationFilter.INCOMPLETE],
-            in_progress=True))
-        self.assertEqual([notstarted], specs)
+        specs = get_specs(
+            notstarted.owner, filter=[SpecificationFilter.INCOMPLETE],
+            in_progress=True)
+        self.assertContentEqual([notstarted], specs)

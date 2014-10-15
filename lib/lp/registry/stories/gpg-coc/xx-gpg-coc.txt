@@ -209,9 +209,10 @@ token to a fixed value:
 
     >>> nothing, token_value = token_url.split('http://launchpad.dev/token/')
 
-    >>> import pytz, datetime
+    >>> import datetime, hashlib, pytz
     >>> from lp.services.verification.model.logintoken import LoginToken
-    >>> logintoken = LoginToken.selectOneBy(token=token_value)
+    >>> logintoken = LoginToken.selectOneBy(
+    ...     _token=hashlib.sha256(token_value).hexdigest())
     >>> logintoken.date_created = datetime.datetime(
     ...     2005,04,01, 12,00,00, tzinfo=pytz.timezone('UTC'))
     >>> logintoken.sync()
@@ -296,7 +297,9 @@ If he signs the text correctly, he is redirected to his home page.
 
 Now that the key has been validated, the login token is consumed:
 
-    >>> LoginToken.selectOneBy(token=token_value).date_consumed is not None
+    >>> consumed_token = LoginToken.selectOneBy(
+    ...     _token=hashlib.sha256(token_value).hexdigest())
+    >>> consumed_token.date_consumed is not None
     True
 
 Now Sample Person's sign-only key is associated with his account. He

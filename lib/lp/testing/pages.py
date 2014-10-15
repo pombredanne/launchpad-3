@@ -68,6 +68,12 @@ from lp.testing.systemdocs import (
     stop,
     )
 
+SAMPLEDATA_ACCESS_SECRETS = {
+    'salgado-read-nonprivate': 'secret',
+    'salgado-change-anything': 'test',
+    'nopriv-read-nonprivate': 'mystery',
+    }
+
 
 class UnstickyCookieHTTPCaller(HTTPCaller):
     """HTTPCaller subclass that do not carry cookies across requests.
@@ -113,8 +119,8 @@ class LaunchpadWebServiceCaller(WebServiceCaller):
     """A class for making calls to Launchpad web services."""
 
     def __init__(self, oauth_consumer_key=None, oauth_access_key=None,
-                 handle_errors=True, domain='api.launchpad.dev',
-                 protocol='http'):
+                 oauth_access_secret=None, handle_errors=True,
+                 domain='api.launchpad.dev', protocol='http'):
         """Create a LaunchpadWebServiceCaller.
         :param oauth_consumer_key: The OAuth consumer key to use.
         :param oauth_access_key: The OAuth access key to use for the request.
@@ -124,39 +130,17 @@ class LaunchpadWebServiceCaller(WebServiceCaller):
         Other parameters are passed to the HTTPCaller used to make the calls.
         """
         if oauth_consumer_key is not None and oauth_access_key is not None:
-            login(ANONYMOUS)
-            consumers = getUtility(IOAuthConsumerSet)
-            self.consumer = consumers.getByKey(oauth_consumer_key)
-            if oauth_access_key == '':
-                # The client wants to make an anonymous request.
-                self.access_token = OAuthToken(oauth_access_key, '')
-                if self.consumer is None:
-                    # The client is trying to make an anonymous
-                    # request with a previously unknown consumer. This
-                    # is fine: we manually create a "fake"
-                    # OAuthConsumer (it's "fake" because it's not
-                    # really an IOAuthConsumer as returned by
-                    # IOAuthConsumerSet.getByKey) to be used in the
-                    # requests we make.
-                    self.consumer = OAuthConsumer(oauth_consumer_key, '')
-            else:
-                if self.consumer is None:
-                    # Requests using this caller will be rejected by
-                    # the server, but we have a test that verifies
-                    # such requests _are_ rejected, so we'll create a
-                    # fake OAuthConsumer object.
-                    self.consumer = OAuthConsumer(oauth_consumer_key, '')
-                    self.access_token = OAuthToken(oauth_access_key, '')
-                else:
-                    # The client wants to make an authorized request
-                    # using a recognized consumer key.
-                    self.access_token = self.consumer.getAccessToken(
-                        oauth_access_key)
+            self.consumer = OAuthConsumer(oauth_consumer_key, '')
+            if oauth_access_secret is None:
+                oauth_access_secret = SAMPLEDATA_ACCESS_SECRETS.get(
+                    oauth_access_key, '')
+            self.access_token = OAuthToken(
+                oauth_access_key, oauth_access_secret)
+            # This shouldn't be here, but many old tests expect it.
             logout()
         else:
             self.consumer = None
             self.access_token = None
-
         self.handle_errors = handle_errors
         WebServiceCaller.__init__(self, handle_errors, domain, protocol)
 
@@ -715,11 +699,12 @@ def webservice_for_person(person, consumer_key='launchpad-library',
     consumer = oacs.getByKey(consumer_key)
     if consumer is None:
         consumer = oacs.new(consumer_key)
-    request_token = consumer.newRequestToken()
+    request_token, _ = consumer.newRequestToken()
     request_token.review(person, permission, context)
-    access_token = request_token.createAccessToken()
+    access_token, access_secret = request_token.createAccessToken()
     logout()
-    service = LaunchpadWebServiceCaller(consumer_key, access_token.key)
+    service = LaunchpadWebServiceCaller(
+        consumer_key, access_token.key, access_secret)
     service.user = person
     return service
 

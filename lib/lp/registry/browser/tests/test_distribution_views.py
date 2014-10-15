@@ -1,9 +1,10 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
 import soupmatchers
+from testtools.matchers import MatchesStructure
 from zope.component import getUtility
 
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
@@ -259,6 +260,38 @@ class TestDistroEditView(TestCaseWithFactory):
             self.distribution, '+edit', principal=self.distribution.owner,
             method="POST", form=edit_form)
         self.assertEqual(self.distribution.package_derivatives_email, email)
+
+
+class TestDistributionAdminView(TestCaseWithFactory):
+    """Test the +admin page for a distribution."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_admin(self):
+        distribution = self.factory.makeDistribution()
+        admin = login_celebrity('admin')
+        create_initialized_view(
+            distribution, '+admin', principal=admin,
+            form={
+                'field.official_packages': 'on', 'field.supports_ppas': 'on',
+                'field.supports_mirrors': 'on',
+                'field.actions.change': 'change'})
+        self.assertThat(
+            distribution,
+            MatchesStructure.byEquality(
+                official_packages=True, supports_ppas=True,
+                supports_mirrors=True))
+        create_initialized_view(
+            distribution, '+admin', principal=admin,
+            form={
+                'field.official_packages': '', 'field.supports_ppas': '',
+                'field.supports_mirrors': '',
+                'field.actions.change': 'change'})
+        self.assertThat(
+            distribution,
+            MatchesStructure.byEquality(
+                official_packages=False, supports_ppas=False,
+                supports_mirrors=False))
 
 
 class TestDistroReassignView(TestCaseWithFactory):

@@ -22,12 +22,10 @@ from zope.interface import implements
 
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.sqlbase import sqlvalues
-from lp.soyuz.interfaces.archive import MAIN_ARCHIVE_PURPOSES
 from lp.soyuz.interfaces.distributionsourcepackagerelease import (
     IDistributionSourcePackageRelease,
     )
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
-from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
@@ -94,22 +92,14 @@ class DistributionSourcePackageRelease:
     @property
     def builds(self):
         """See IDistributionSourcePackageRelease."""
-        # We want to return all the builds for this distribution that
-        # were built for a main archive together with the builds for this
-        # distribution that were built for a PPA but have been published
-        # in a main archive.
-        builds_for_distro_exprs = (
-            (BinaryPackageBuild.source_package_release ==
-                self.sourcepackagerelease),
-            BinaryPackageBuild.distribution == self.distribution,
-            )
-
         # First, get all the builds built in a main archive (this will
         # include new and failed builds.)
         builds_built_in_main_archives = Store.of(self.distribution).find(
             BinaryPackageBuild,
-            builds_for_distro_exprs, BinaryPackageBuild.archive == Archive.id,
-            Archive.purpose.is_in(MAIN_ARCHIVE_PURPOSES))
+            BinaryPackageBuild.source_package_release ==
+                self.sourcepackagerelease,
+            BinaryPackageBuild.archive_id.is_in(
+                self.distribution.all_distro_archive_ids))
 
         # Next get all the builds that have a binary published in the
         # main archive... this will include many of those in the above
@@ -117,13 +107,14 @@ class DistributionSourcePackageRelease:
         # ppa builds that have been published in main archives.
         builds_published_in_main_archives = Store.of(self.distribution).find(
             BinaryPackageBuild,
-            builds_for_distro_exprs,
+            BinaryPackageBuild.source_package_release ==
+                self.sourcepackagerelease,
             BinaryPackageRelease.build == BinaryPackageBuild.id,
             BinaryPackagePublishingHistory.binarypackagerelease ==
                 BinaryPackageRelease.id,
-            BinaryPackagePublishingHistory.archive == Archive.id,
-            Archive.purpose.is_in(MAIN_ARCHIVE_PURPOSES)).config(
-                distinct=True)
+            BinaryPackagePublishingHistory.archiveID.is_in(
+                self.distribution.all_distro_archive_ids)).config(
+                    distinct=True)
 
         return builds_built_in_main_archives.union(
             builds_published_in_main_archives).order_by(

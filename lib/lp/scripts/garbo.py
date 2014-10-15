@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database garbage collection."""
@@ -103,7 +103,6 @@ from lp.services.job.model.job import Job
 from lp.services.librarian.model import TimeLimitedToken
 from lp.services.log.logger import PrefixFilter
 from lp.services.looptuner import TunableLoop
-from lp.services.oauth.model import OAuthNonce
 from lp.services.openid.model.openidconsumer import OpenIDConsumerNonce
 from lp.services.propertycache import cachedproperty
 from lp.services.salesforce.interfaces import (
@@ -118,6 +117,7 @@ from lp.services.scripts.base import (
 from lp.services.session.model import SessionData
 from lp.services.verification.model.logintoken import LoginToken
 from lp.soyuz.model.archive import Archive
+from lp.soyuz.model.livefsbuild import LiveFSFile
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.model.reporting import LatestPersonSourcePackageReleaseCache
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
@@ -358,27 +358,12 @@ class DuplicateSessionPruner(SessionPruner):
         """
 
 
-class OAuthNoncePruner(BulkPruner):
-    """An ITunableLoop to prune old OAuthNonce records.
-
-    We remove all OAuthNonce records older than 1 day.
-    """
-    target_table_key = 'access_token, request_timestamp, nonce'
-    target_table_key_type = (
-        'access_token integer, request_timestamp timestamp without time zone,'
-        ' nonce text')
-    target_table_class = OAuthNonce
-    ids_to_prune_query = """
-        SELECT access_token, request_timestamp, nonce FROM OAuthNonce
-        WHERE request_timestamp
-            < CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - CAST('1 day' AS interval)
-        """
-
-
 class PreviewDiffPruner(BulkPruner):
     """A BulkPruner to remove old PreviewDiffs.
 
     We remove all but the latest PreviewDiff for each BranchMergeProposal.
+    All PreviewDiffs containing published or draft inline comments
+    (CodeReviewInlineComment{,Draft}) are also preserved.
     """
     target_table_class = PreviewDiff
     ids_to_prune_query = """
@@ -389,6 +374,8 @@ class PreviewDiffPruner(BulkPruner):
                 ORDER BY PreviewDiff.date_created DESC) AS pos
             FROM previewdiff) AS ss
         WHERE pos > 1
+        EXCEPT SELECT previewdiff FROM CodeReviewInlineComment
+        EXCEPT SELECT previewdiff FROM CodeReviewInlineCommentDraft
         """
 
 
@@ -1359,6 +1346,28 @@ class UnusedAccessPolicyPruner(TunableLoop):
         transaction.commit()
 
 
+class LiveFSFilePruner(BulkPruner):
+    """A BulkPruner to remove old `LiveFSFile`s.
+
+    We remove binary files attached to `LiveFSBuild`s that are more than a
+    day old; these files are very large and are only useful for builds in
+    progress.  Text files are typically small (<1MiB) and useful for
+    retrospective analysis, so we preserve those indefinitely.
+    """
+    target_table_class = LiveFSFile
+    ids_to_prune_query = """
+        SELECT DISTINCT LiveFSFile.id
+        FROM LiveFSFile, LiveFSBuild, LibraryFileAlias
+        WHERE
+            LiveFSFile.livefsbuild = LiveFSBuild.id
+            AND LiveFSFile.libraryfile = LibraryFileAlias.id
+            AND LiveFSBuild.date_finished <
+                CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+                - CAST('1 day' AS interval)
+            AND LibraryFileAlias.mimetype != 'text/plain'
+        """
+
+
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):
     """Abstract base class to run a collection of TunableLoops."""
     script_name = None  # Script name for locking and database user. Override.
@@ -1586,7 +1595,6 @@ class FrequentDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
     script_name = 'garbo-frequently'
     tunable_loops = [
         BugSummaryJournalRollup,
-        OAuthNoncePruner,
         OpenIDConsumerNoncePruner,
         OpenIDConsumerAssociationPruner,
         AntiqueSessionPruner,
@@ -1638,6 +1646,7 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         CodeImportEventPruner,
         CodeImportResultPruner,
         HWSubmissionEmailLinker,
+        LiveFSFilePruner,
         LoginTokenPruner,
         ObsoleteBugAttachmentPruner,
         OldTimeLimitedTokenDeleter,

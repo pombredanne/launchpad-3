@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+import hashlib
 from unittest import TestCase
 
 from zope.publisher.browser import TestRequest
@@ -157,11 +158,11 @@ class TestPgSession(TestCase):
         result = store.execute(
             "SELECT client_id FROM SessionData ORDER BY client_id")
         client_ids = [row[0] for row in result]
-        self.assertEquals(client_ids, [client_id])
+        self.assertEquals(client_ids, [hashlib.sha256(client_id).hexdigest()])
 
         # The session cookie also is now set, via the same "trigger".
         self.assertNotEqual(
             self.request.response.getCookie('launchpad_tests'), None)
 
         # also see the page test xx-no-anonymous-session-cookies for tests of
-        # the cookie behavior.
+        # the cookie behaviour.

@@ -36,6 +36,9 @@
     #add-comment-review-fields div {
       display: inline;
     }
+    .yui3-publishdrafts:before {
+      content: " ";
+    }
     #proposal-summary th {
       font-weight: bold;
       color: #717171;
@@ -144,7 +147,6 @@
         <div id="add-comment-review-fields">
             Review: <tal:review replace="structure comment_form/widgets/vote"/>
             Review type: <tal:review replace="structure comment_form/widgets/review_type"/>
-            <tal:publish_inline_comments condition="features/code.inline_diff_comments.enabled">Publish inline comments: <tal:review replace="structure comment_form/widgets/publish_inline_comments" tal:condition="features/code.inline_diff_comments.enabled"/></tal:publish_inline_comments>
             <div class="actions"
                  tal:content="structure comment_form/actions/field.actions.add/render" />
         </div>
@@ -184,6 +186,10 @@
     </div>
     <div id="review-diff" tal:condition="view/preview_diff">
       <h2>Preview Diff </h2>
+
+      <div class="diff-navigator">
+      </div>
+
       <div class="diff-content">
         <div tal:replace="structure context/@@++diff"/>
       </div>
@@ -202,55 +208,36 @@
 
     Y.on('load', function() {
         var logged_in = LP.links['me'] !== undefined;
-
+        var ic = Y.lp.code.branchmergeproposal.inlinecomments;
+        var diffnav = new ic.DiffNav({srcNode: Y.one('#review-diff')});
         if (logged_in) {
             var comment = new Y.lp.app.comment.CodeReviewComment();
             comment.render();
-
-            comment._add_comment_success = function () {
-                var lp_client = new Y.lp.client.Launchpad();
-                var ns = Y.lp.code.branchmergeproposal.inlinecomments;
-                var diff_timestamp = (
-                    LP.cache.preview_diff_timestamps.slice(-1)[0]);
-                var config = {
-                    on: {
-                        success: function (r) {
-                            LP.cache.published_inline_comments = r;
-                            LP.cache.draft_inline_comments = null;
-                            ns.populate_existing_comments();
-                        },
-                    },
-                    parameters: {
-                        diff_timestamp: diff_timestamp,
-                    }
-                };
-                lp_client.named_get(
-                    LP.cache.context.self_link, 'getInlineComments', config);
-            }
+            comment.on('CodeReviewComment.appended', function () {
+                diffnav.update_on_new_comment();
+            });
             Y.lp.code.branchmergeproposal.status.connect_status(conf);
         }
         Y.lp.code.branchmergeproposal.reviewcomment.connect_links();
-        (new Y.lp.code.branchmergeproposal.reviewcomment.NumberToggle()
-            ).render();
+        diffnav.render();
 
         if (Y.Lang.isValue(LP.cache.merge_proposal_event_key)) {
-            var updater = new Y.lp.code.branchmergeproposal.updater.UpdaterWidget(
-                {
+            var upt = Y.lp.code.branchmergeproposal.updater;
+            var cfg = {
                  srcNode: Y.one('#diff-area'),
                  summary_node: Y.one('#proposal-summary')
-                });
+            };
+            var updater = new upt.UpdaterWidget(cfg);
             Y.on(LP.cache.merge_proposal_event_key, function(data) {
-                if (Y.lp.code.branchmergeproposal.updater.is_mp_diff_updated(data)) {
+                if (upt.is_mp_diff_updated(data)) {
                     updater.update();
                 }
             });
             updater.on(updater.NAME + '.updated', function() {
-                (new Y.lp.code.branchmergeproposal.reviewcomment.NumberToggle()
-                    ).render();
+                diffnav.render();
             });
         }
-
-      }, window);
+    }, window);
 
     Y.on('domready', function() {
         Y.lp.app.widgets.expander.createByCSS(
@@ -259,7 +246,6 @@
             '.expander-content',
             false,
             Y.lp.code.branch.revisionexpander.bmp_diff_loader);
-        Y.lp.code.branchmergeproposal.inlinecomments.setup_inline_comments();
     });
   });
 <tal:script replace="structure string:&lt;/script&gt;" />

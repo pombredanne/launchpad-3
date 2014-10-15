@@ -1,4 +1,4 @@
-# Copyright 2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2012-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test Soyuz vocabularies."""
@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 from testtools.matchers import MatchesStructure
-from zope.schema.vocabulary import SimpleTerm
 
 from lp.soyuz.vocabularies import PPAVocabulary
 from lp.testing import TestCaseWithFactory
@@ -23,5 +22,5 @@ class TestPPAVocabulary(TestCaseWithFactory):
         term = vocab.toTerm(archive)
         self.assertThat(term, MatchesStructure.byEquality(
             value=archive,
-            token='%s/%s' % (archive.owner.name, archive.name),
+            token=archive.reference,
             title='No description available'))

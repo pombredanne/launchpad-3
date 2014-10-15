@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for code import related mailings"""
@@ -27,7 +27,7 @@ class TestNewCodeImports(TestCaseWithFactory):
         fooix = self.factory.makeProduct(name='fooix')
         # Eric needs to be logged in for the mail to be sent.
         login_person(eric)
-        code_import = self.factory.makeProductCodeImport(
+        self.factory.makeProductCodeImport(
             cvs_root=':pserver:anonymouse@cvs.example.com:/cvsroot',
             cvs_module='a_module', branch_name='import',
             product=fooix, registrant=eric)
@@ -50,7 +50,7 @@ class TestNewCodeImports(TestCaseWithFactory):
         fooix = self.factory.makeProduct(name='fooix')
         # Eric needs to be logged in for the mail to be sent.
         login_person(eric)
-        code_import = self.factory.makeProductCodeImport(
+        self.factory.makeProductCodeImport(
             svn_branch_url='svn://svn.example.com/fooix/trunk',
             branch_name='trunk', product=fooix, registrant=eric,
             rcs_type=RevisionControlSystems.BZR_SVN)
@@ -73,7 +73,7 @@ class TestNewCodeImports(TestCaseWithFactory):
         fooix = self.factory.makeProduct(name='fooix')
         # Eric needs to be logged in for the mail to be sent.
         login_person(eric)
-        code_import = self.factory.makeProductCodeImport(
+        self.factory.makeProductCodeImport(
             git_repo_url='git://git.example.com/fooix.git',
             branch_name='master', product=fooix, registrant=eric)
         transaction.commit()
@@ -100,7 +100,7 @@ class TestNewCodeImports(TestCaseWithFactory):
             sourcepackagename='fooix', distroseries=series)
         # Eric needs to be logged in for the mail to be sent.
         login_person(eric)
-        code_import = self.factory.makePackageCodeImport(
+        self.factory.makePackageCodeImport(
             git_repo_url='git://git.example.com/fooix.git',
             branch_name='master', sourcepackage=fooix, registrant=eric)
         transaction.commit()

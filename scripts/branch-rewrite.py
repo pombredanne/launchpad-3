@@ -77,4 +77,4 @@ class BranchRewriteScript(LaunchpadScript):
 
 if __name__ == '__main__':
     BranchRewriteScript("branch-rewrite", dbuser='branch-rewrite').run(
-        isolation='autocommit')
+        isolation='autocommit', use_web_security=True)

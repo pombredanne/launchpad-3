@@ -17,10 +17,7 @@ from lp.blueprints.browser.person_upcomingwork import (
     getWorkItemsDueBefore,
     WorkItemContainer,
     )
-from lp.blueprints.enums import (
-    SpecificationPriority,
-    SpecificationWorkItemStatus,
-    )
+from lp.blueprints.enums import SpecificationWorkItemStatus
 from lp.testing import (
     anonymous_logged_in,
     BrowserTestCase,
@@ -324,17 +321,14 @@ class TestPersonUpcomingWork(BrowserTestCase):
     def test_container_progressbar(self):
         """Check that the per-blueprint progress bar is present."""
         # Create two work items on separate specs. One of them is done and the
-        # other is in progress. Here we create the specs explicitly, using
-        # different priorities to force spec1 to show up first on the page.
+        # other is in progress. Here we create the specs explicitly and in
+        # order to force spec1 to show up first on the page.
         spec1 = self.factory.makeSpecification(
-            product=self.today_milestone.product,
-            priority=SpecificationPriority.HIGH)
+            product=self.today_milestone.product)
         spec2 = self.factory.makeSpecification(
-            product=self.today_milestone.product,
-            priority=SpecificationPriority.LOW)
+            product=self.today_milestone.product)
         spec3 = self.factory.makeSpecification(
-            product=self.today_milestone.product,
-            priority=SpecificationPriority.LOW)
+            product=self.today_milestone.product)
         self.factory.makeSpecificationWorkItem(
             specification=spec1, assignee=self.team.teamowner,
             milestone=self.today_milestone,
@@ -397,8 +391,9 @@ class TestPersonUpcomingWork(BrowserTestCase):
         person = self.factory.makePerson()
         proprietary_spec = self.factory.makeSpecification(
             information_type=InformationType.PROPRIETARY)
+        product = removeSecurityProxy(proprietary_spec).product
         today_milestone = self.factory.makeMilestone(
-            dateexpected=self.today, product=proprietary_spec.product)
+            dateexpected=self.today, product=product)
         public_workitem = self.factory.makeSpecificationWorkItem(
             assignee=person, milestone=today_milestone)
         proprietary_workitem = self.factory.makeSpecificationWorkItem(
@@ -410,8 +405,7 @@ class TestPersonUpcomingWork(BrowserTestCase):
         self.assertNotIn(proprietary_workitem.specification.name,
                          browser.contents)
         browser = self.getViewBrowser(
-            person, view_name='+upcomingwork',
-            user=proprietary_workitem.specification.product.owner)
+            person, view_name='+upcomingwork', user=product.owner)
         self.assertIn(proprietary_workitem.specification.name,
                       browser.contents)
 

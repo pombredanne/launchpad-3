@@ -3,7 +3,7 @@ Launchpad Scripts
 
 Launchpad scripts are built using the LaunchpadScript class in
 lp.services.scripts.base. This, along with the LaunchpadCronScript
-specialization, implement common behavior for all Launchpad command
+specialization, implement common behaviour for all Launchpad command
 line scripts.
 
     >>> from lp.services.scripts.base import (

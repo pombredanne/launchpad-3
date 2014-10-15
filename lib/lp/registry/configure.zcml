@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -246,8 +246,6 @@
             interface="lp.bugs.interfaces.bugtarget.ISeriesBugTarget"/>
         <allow
             interface="lp.soyuz.interfaces.queue.IHasQueueItems"/>
-        <allow
-            interface="lp.soyuz.interfaces.publishing.ICanPublishPackages"/>
         <require
             permission="launchpad.Edit"
             set_schema="lp.app.interfaces.launchpad.IServiceUsage"/>
@@ -270,9 +268,15 @@
 
         <require
             permission="launchpad.Edit"
-            set_attributes="displayname title summary description driver
-                            backports_not_automatic
-                            include_long_descriptions"/>
+            set_attributes="
+                displayname
+                title
+                summary
+                description
+                driver
+                backports_not_automatic
+                include_long_descriptions
+                inherit_overrides_from_parents"/>
 
         <!-- NB: check with SABDFL before modifying these, there is potential to
                                  make a huge mess if these get changed and Soyuz has to republish
@@ -1375,7 +1379,10 @@
         <require
             permission="launchpad.LimitedView"
             attributes="
-                bugtargetdisplayname"/>
+                bugtargetdisplayname
+                getBugTaskWeightFunction
+                pillar
+                searchTasks"/>
 
         <require
             permission="launchpad.View"
@@ -1384,10 +1391,7 @@
                 bug_reporting_guidelines
                 bugtargetname
                 createBug
-                enable_bugfiling_duplicate_search
-                getBugTaskWeightFunction
-                pillar
-                searchTasks"/>
+                enable_bugfiling_duplicate_search"/>
 
         <!-- IHasAliases -->
 
@@ -1732,6 +1736,12 @@
                 redirect_release_uploads
                 summary
                 title"/>
+        <require
+            permission="launchpad.Admin"
+            set_attributes="
+                official_packages
+                supports_mirrors
+                supports_ppas"/>
         <require
             permission="launchpad.BugSupervisor"
             set_attributes="

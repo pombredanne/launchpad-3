@@ -358,21 +358,21 @@ doc/bugactivity.txt for details of the BugActivityItem class).
     status: New &#8594; Confirmed
 
 The activity will be inserted into the footer of the comment. If a
-BugComment has some activity associated with it, it's show_footer
+BugComment has some activity associated with it, it's show_activity
 property will be True.
 
-    >>> bug_comment.show_footer
+    >>> bug_comment.show_activity
     True
 
     >>> bug_comment.activity = []
-    >>> bug_comment.show_footer
+    >>> bug_comment.show_activity
     False
 
-BugComment.show_footer will also be True if a BugWatch is associated
+BugComment.show_activity will also be True if a BugWatch is associated
 with the comment.
 
     >>> bug_comment.bugwatch = factory.makeBugWatch()
-    >>> bug_comment.show_footer
+    >>> bug_comment.show_activity
     True
 
 

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -6,7 +6,6 @@ __all__ = [
     'OAuthAccessToken',
     'OAuthConsumer',
     'OAuthConsumerSet',
-    'OAuthNonce',
     'OAuthRequestToken',
     'OAuthRequestTokenSet',
     'OAuthValidationError',
@@ -16,6 +15,7 @@ from datetime import (
     datetime,
     timedelta,
     )
+import hashlib
 import re
 
 import pytz
@@ -23,11 +23,6 @@ from sqlobject import (
     BoolCol,
     ForeignKey,
     StringCol,
-    )
-from storm.expr import And
-from storm.locals import (
-    Int,
-    Reference,
     )
 from zope.interface import implements
 
@@ -42,23 +37,15 @@ from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.interfaces import IMasterStore
 from lp.services.database.sqlbase import SQLBase
-from lp.services.database.stormbase import StormBase
 from lp.services.librarian.model import LibraryFileAlias
 from lp.services.oauth.interfaces import (
-    ClockSkew,
     IOAuthAccessToken,
     IOAuthConsumer,
     IOAuthConsumerSet,
-    IOAuthNonce,
     IOAuthRequestToken,
     IOAuthRequestTokenSet,
-    NonceAlreadyUsed,
-    TimestampOrderingError,
     )
-from lp.services.tokens import (
-    create_token,
-    create_unique_token_for_table,
-    )
+from lp.services.tokens import create_token
 from lp.services.webapp.interfaces import (
     AccessLevel,
     OAuthPermission,
@@ -66,22 +53,6 @@ from lp.services.webapp.interfaces import (
 
 # How many hours should a request token be valid for?
 REQUEST_TOKEN_VALIDITY = 2
-# The OAuth Core 1.0 spec (http://oauth.net/core/1.0/#nonce) says that a
-# timestamp "MUST be equal or greater than the timestamp used in previous
-# requests," but this is likely to cause problems if the client does request
-# pipelining, so we use a time window (relative to the timestamp of the
-# existing OAuthNonce) to check if the timestamp can is acceptable. As
-# suggested by Robert, we use a window which is at least twice the size of our
-# hard time out. This is a safe bet since no requests should take more than
-# one hard time out.
-TIMESTAMP_ACCEPTANCE_WINDOW = 60  # seconds
-# If the timestamp is far in the future because of a client's clock skew,
-# it will effectively invalidate the authentication tokens when the clock is
-# corrected.  To prevent that from becoming too serious a problem, we raise an
-# exception if the timestamp is off by more than this amount from the server's
-# concept of "now".  We also reject timestamps that are too old by the same
-# amount.
-TIMESTAMP_SKEW_WINDOW = 60 * 60  # seconds, +/-
 
 
 class OAuthValidationError(Exception):
@@ -112,7 +83,11 @@ class OAuthConsumer(OAuthBase, SQLBase):
     date_created = UtcDateTimeCol(default=UTC_NOW, notNull=True)
     disabled = BoolCol(notNull=True, default=False)
     key = StringCol(notNull=True)
-    secret = StringCol(notNull=False, default='')
+    _secret = StringCol(dbName="secret", notNull=False, default='')
+
+    def __init__(self, key, secret):
+        secret = hashlib.sha256(secret).hexdigest()
+        super(OAuthConsumer, self).__init__(key=key, _secret=secret)
 
     # This regular expression singles out a consumer key that
     # represents any and all apps running on a specific computer. The
@@ -171,11 +146,15 @@ class OAuthConsumer(OAuthBase, SQLBase):
         """See `IOAuthConsumer`."""
         return self._integrated_desktop_match_group(1)
 
+    def isSecretValid(self, secret):
+        """See `IOAuthConsumer`."""
+        return hashlib.sha256(secret).hexdigest() == self._secret
+
     def newRequestToken(self):
         """See `IOAuthConsumer`."""
         key, secret = create_token_key_and_secret(table=OAuthRequestToken)
-        return OAuthRequestToken(
-            consumer=self, key=key, secret=secret)
+        return (
+            OAuthRequestToken(consumer=self, key=key, secret=secret), secret)
 
     def getAccessToken(self, key):
         """See `IOAuthConsumer`."""
@@ -212,7 +191,7 @@ class OAuthAccessToken(OAuthBase, SQLBase):
     date_created = UtcDateTimeCol(default=UTC_NOW, notNull=True)
     date_expires = UtcDateTimeCol(notNull=False, default=None)
     key = StringCol(notNull=True)
-    secret = StringCol(notNull=False, default='')
+    _secret = StringCol(dbName="secret", notNull=False, default='')
 
     permission = EnumCol(enum=AccessLevel, notNull=True)
 
@@ -227,6 +206,16 @@ class OAuthAccessToken(OAuthBase, SQLBase):
     distribution = ForeignKey(
         dbName='distribution', foreignKey='Distribution',
         notNull=False, default=None)
+
+    def __init__(self, consumer, permission, key, secret='', person=None,
+                 date_expires=None, product=None, project=None,
+                 distribution=None, sourcepackagename=None):
+        secret = hashlib.sha256(secret).hexdigest()
+        super(OAuthAccessToken, self).__init__(
+            consumer=consumer, permission=permission, key=key,
+            _secret=secret, person=person, date_expires=date_expires,
+            product=product, project=project, distribution=distribution,
+            sourcepackagename=sourcepackagename)
 
     @property
     def context(self):
@@ -249,39 +238,9 @@ class OAuthAccessToken(OAuthBase, SQLBase):
         now = datetime.now(pytz.timezone('UTC'))
         return self.date_expires is not None and self.date_expires <= now
 
-    def checkNonceAndTimestamp(self, nonce, timestamp):
-        """See `IOAuthAccessToken`."""
-        timestamp = float(timestamp)
-        date = datetime.fromtimestamp(timestamp, pytz.UTC)
-        # Determine if the timestamp is too far off from now.
-        skew = timedelta(seconds=TIMESTAMP_SKEW_WINDOW)
-        now = datetime.now(pytz.UTC)
-        if date < (now - skew) or date > (now + skew):
-            raise ClockSkew('Timestamp appears to come from bad system clock')
-        # Determine if the nonce was already used for this timestamp.
-        store = OAuthNonce.getStore()
-        oauth_nonce = store.find(OAuthNonce,
-                                 And(OAuthNonce.access_token == self,
-                                     OAuthNonce.nonce == nonce,
-                                     OAuthNonce.request_timestamp == date)
-                                 ).one()
-        if oauth_nonce is not None:
-            raise NonceAlreadyUsed('This nonce has been used already.')
-        # Determine if the timestamp is too old compared to most recent
-        # request.
-        limit = date + timedelta(seconds=TIMESTAMP_ACCEPTANCE_WINDOW)
-        match = store.find(OAuthNonce,
-                           And(OAuthNonce.access_token == self,
-                               OAuthNonce.request_timestamp > limit)
-                           ).any()
-        if match is not None:
-            raise TimestampOrderingError(
-                'Timestamp too old compared to most recent request')
-        # Looks OK.  Give a Nonce object back.
-        nonce = OAuthNonce(
-            access_token=self, nonce=nonce, request_timestamp=date)
-        store.add(nonce)
-        return nonce
+    def isSecretValid(self, secret):
+        """See `IOAuthConsumer`."""
+        return hashlib.sha256(secret).hexdigest() == self._secret
 
 
 class OAuthRequestToken(OAuthBase, SQLBase):
@@ -295,7 +254,7 @@ class OAuthRequestToken(OAuthBase, SQLBase):
     date_created = UtcDateTimeCol(default=UTC_NOW, notNull=True)
     date_expires = UtcDateTimeCol(notNull=False, default=None)
     key = StringCol(notNull=True)
-    secret = StringCol(notNull=False, default='')
+    _secret = StringCol(dbName="secret", notNull=False, default='')
 
     permission = EnumCol(enum=OAuthPermission, notNull=False, default=None)
     date_reviewed = UtcDateTimeCol(default=None, notNull=False)
@@ -311,6 +270,16 @@ class OAuthRequestToken(OAuthBase, SQLBase):
     distribution = ForeignKey(
         dbName='distribution', foreignKey='Distribution',
         notNull=False, default=None)
+
+    def __init__(self, consumer, key, secret='', permission=None, person=None,
+                 date_expires=None, product=None, project=None,
+                 distribution=None, sourcepackagename=None):
+        secret = hashlib.sha256(secret).hexdigest()
+        super(OAuthRequestToken, self).__init__(
+            consumer=consumer, permission=permission, key=key,
+            _secret=secret, person=person, date_expires=date_expires,
+            product=product, project=project, distribution=distribution,
+            sourcepackagename=sourcepackagename)
 
     @property
     def context(self):
@@ -333,6 +302,10 @@ class OAuthRequestToken(OAuthBase, SQLBase):
         now = datetime.now(pytz.timezone('UTC'))
         expires = self.date_created + timedelta(hours=REQUEST_TOKEN_VALIDITY)
         return expires <= now
+
+    def isSecretValid(self, secret):
+        """See `IOAuthConsumer`."""
+        return hashlib.sha256(secret).hexdigest() == self._secret
 
     def review(self, user, permission, context=None, date_expires=None):
         """See `IOAuthRequestToken`."""
@@ -389,7 +362,7 @@ class OAuthRequestToken(OAuthBase, SQLBase):
             "A new OAuth token consumer was enabled in Launchpad.")
 
         self.destroySelf()
-        return access_token
+        return access_token, secret
 
     @property
     def is_reviewed(self):
@@ -406,36 +379,19 @@ class OAuthRequestTokenSet:
         return OAuthRequestToken.selectOneBy(key=key)
 
 
-class OAuthNonce(OAuthBase, StormBase):
-    """See `IOAuthNonce`."""
-    implements(IOAuthNonce)
-
-    __storm_table__ = 'OAuthNonce'
-    __storm_primary__ = 'access_token_id', 'request_timestamp', 'nonce'
-
-    access_token_id = Int(name='access_token')
-    access_token = Reference(access_token_id, OAuthAccessToken.id)
-    request_timestamp = UtcDateTimeCol(default=UTC_NOW, notNull=True)
-    nonce = StringCol(notNull=True)
-
-    def __init__(self, access_token, request_timestamp, nonce):
-        super(OAuthNonce, self).__init__()
-        self.access_token = access_token
-        self.request_timestamp = request_timestamp
-        self.nonce = nonce
-
-
 def create_token_key_and_secret(table):
     """Create a key and secret for an OAuth token.
 
     :table: The table in which the key/secret are going to be used. Must be
         one of OAuthAccessToken or OAuthRequestToken.
 
-    The key will have a length of 20 and we'll make sure it's not yet in the
-    given table.  The secret will have a length of 80.
+    The key will have a length of 20. The secret will have a length of 80.
     """
+    # Even a length of 20 has 112 bits of entropy, so uniqueness is a
+    # good assumption. If we generate a duplicate then the DB insertion
+    # will crash, which is desirable because it indicates an RNG issue.
     key_length = 20
-    key = create_unique_token_for_table(key_length, getattr(table, "key"))
+    key = create_token(key_length)
     secret_length = 80
     secret = create_token(secret_length)
     return key, secret

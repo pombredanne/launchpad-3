@@ -986,13 +986,13 @@
         name="bugs"
         provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.bugs.interfaces.bugtarget.IBugTarget"
-        factory="lp.bugs.browser.bugtarget.BugsVHostBreadcrumb"
+        factory="lp.bugs.browser.bugtarget.BugsFacetBreadcrumb"
         permission="zope.Public"/>
     <adapter
         name="bugs"
         provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.projectgroup.IProjectGroup"
-        factory="lp.bugs.browser.bugtarget.BugsVHostBreadcrumb"
+        factory="lp.bugs.browser.bugtarget.BugsFacetBreadcrumb"
         permission="zope.Public"/>
 
     <!-- ProcessApportBlobJobs -->

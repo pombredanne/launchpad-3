@@ -31,7 +31,6 @@ __all__ = [
     'ProductReviewLicenseView',
     'ProductSeriesSetView',
     'ProductSetBreadcrumb',
-    'ProductSetFacets',
     'ProductSetNavigation',
     'ProductSetReviewLicensesView',
     'ProductSetView',
@@ -75,10 +74,7 @@ from zope.schema.vocabulary import (
 
 from lp import _
 from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
-from lp.answers.browser.questiontarget import (
-    QuestionTargetFacetMixin,
-    QuestionTargetTraversalMixin,
-    )
+from lp.answers.browser.questiontarget import QuestionTargetTraversalMixin
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -156,7 +152,6 @@ from lp.registry.browser.pillar import (
     PillarNavigationMixin,
     PillarViewMixin,
     )
-from lp.registry.browser.productseries import get_series_branch_error
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import (
     IProduct,
@@ -306,40 +301,10 @@ class ProductLicenseMixin:
             pass
 
 
-class ProductFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
+class ProductFacets(StandardLaunchpadFacets):
     """The links that will appear in the facet menu for an IProduct."""
 
     usedfor = IProduct
-
-    enable_only = ['overview', 'bugs', 'answers', 'specifications',
-                   'translations', 'branches']
-
-    links = StandardLaunchpadFacets.links
-
-    def overview(self):
-        text = 'Overview'
-        summary = 'General information about %s' % self.context.displayname
-        return Link('', text, summary)
-
-    def bugs(self):
-        text = 'Bugs'
-        summary = 'Bugs reported about %s' % self.context.displayname
-        return Link('', text, summary)
-
-    def branches(self):
-        text = 'Code'
-        summary = 'Branches for %s' % self.context.displayname
-        return Link('', text, summary)
-
-    def specifications(self):
-        text = 'Blueprints'
-        summary = 'Feature specifications for %s' % self.context.displayname
-        return Link('', text, summary)
-
-    def translations(self):
-        text = 'Translations'
-        summary = 'Translations of %s in Launchpad' % self.context.displayname
-        return Link('', text, summary)
 
 
 class ProductInvolvementView(PillarInvolvementView):
@@ -634,14 +599,6 @@ def _cmp_distros(a, b):
 class ProductSetBreadcrumb(Breadcrumb):
     """Return a breadcrumb for an `IProductSet`."""
     text = "Projects"
-
-
-class ProductSetFacets(StandardLaunchpadFacets):
-    """The links that will appear in the facet menu for the IProductSet."""
-
-    usedfor = IProductSet
-
-    enable_only = ['overview', 'branches']
 
 
 class SortSeriesMixin:
@@ -986,13 +943,6 @@ class ProductView(PillarViewMixin, HasAnnouncementsView, SortSeriesMixin,
         return self.context.license_status != LicenseStatus.OPEN_SOURCE
 
     @property
-    def freshmeat_url(self):
-        if self.context.freshmeatproject:
-            return ("http://freshmeat.net/projects/%s"
-                % self.context.freshmeatproject)
-        return None
-
-    @property
     def sourceforge_url(self):
         if self.context.sourceforgeproject:
             return ("http://sourceforge.net/projects/%s"
@@ -1003,7 +953,6 @@ class ProductView(PillarViewMixin, HasAnnouncementsView, SortSeriesMixin,
     def has_external_links(self):
         return (self.context.homepageurl or
                 self.context.sourceforgeproject or
-                self.context.freshmeatproject or
                 self.context.wikiurl or
                 self.context.screenshotsurl or
                 self.context.downloadurl)
@@ -1018,7 +967,6 @@ class ProductView(PillarViewMixin, HasAnnouncementsView, SortSeriesMixin,
         from lp.services.webapp.menu import MenuLink
         urls = [
             ('Sourceforge project', self.sourceforge_url),
-            ('Freshmeat record', self.freshmeat_url),
             ('Wiki', self.context.wikiurl),
             ('Screenshots', self.context.screenshotsurl),
             ('External downloads', self.context.downloadurl),
@@ -1036,7 +984,7 @@ class ProductView(PillarViewMixin, HasAnnouncementsView, SortSeriesMixin,
     def should_display_homepage(self):
         return (self.context.homepageurl and
                 self.context.homepageurl not in
-                    [self.freshmeat_url, self.sourceforge_url])
+                    [self.sourceforge_url])
 
     def requestCountry(self):
         return ICountry(self.request, None)
@@ -1383,7 +1331,6 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
         "homepageurl",
         "information_type",
         "sourceforgeproject",
-        "freshmeatproject",
         "wikiurl",
         "screenshotsurl",
         "downloadurl",
@@ -1611,6 +1558,7 @@ class ProductAddSeriesView(LaunchpadFormView):
 
     def validate(self, data):
         """See `LaunchpadFormView`."""
+        from lp.registry.browser.productseries import get_series_branch_error
         branch = data.get('branch')
         if branch is not None:
             message = get_series_branch_error(self.context, branch)
@@ -1823,7 +1771,7 @@ class ProductAddViewBase(ProductLicenseMixin, LaunchpadFormView):
     product = None
     field_names = ['name', 'displayname', 'title', 'summary',
                    'description', 'homepageurl', 'sourceforgeproject',
-                   'freshmeatproject', 'wikiurl', 'screenshotsurl',
+                   'wikiurl', 'screenshotsurl',
                    'downloadurl', 'programminglang',
                    'licenses', 'license_info']
     custom_widget(

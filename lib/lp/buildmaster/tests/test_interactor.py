@@ -1,7 +1,12 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test BuilderInteractor features."""
+
+__all__ = [
+    'FakeBuildQueue',
+    'MockBuilderFactory',
+    ]
 
 import os
 import signal
@@ -16,19 +21,26 @@ from testtools.deferredruntest import (
     SynchronousDeferredRunTest,
     )
 from testtools.matchers import ContainsAll
+from testtools.testcase import ExpectedException
 from twisted.internet import defer
 from twisted.internet.task import Clock
 from twisted.python.failure import Failure
 from twisted.web.client import getPage
 from zope.security.proxy import removeSecurityProxy
 
-from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.enums import (
+    BuilderCleanStatus,
+    BuilderResetProtocol,
+    BuildQueueStatus,
+    BuildStatus,
+    )
 from lp.buildmaster.interactor import (
     BuilderInteractor,
     BuilderSlave,
     extract_vitals_from_db,
     )
 from lp.buildmaster.interfaces.builder import (
+    BuildDaemonIsolationError,
     CannotFetchFile,
     CannotResumeHost,
     )
@@ -43,9 +55,8 @@ from lp.buildmaster.tests.mock_slaves import (
     WaitingSlave,
     )
 from lp.services.config import config
-from lp.services.log.logger import DevNullLogger
-from lp.soyuz.model.binarypackagebuildbehavior import (
-    BinaryPackageBuildBehavior,
+from lp.soyuz.model.binarypackagebuildbehaviour import (
+    BinaryPackageBuildBehaviour,
     )
 from lp.testing import (
     clean_up_reactor,
@@ -57,6 +68,41 @@ from lp.testing.layers import (
     LaunchpadZopelessLayer,
     ZopelessDatabaseLayer,
     )
+
+
+class FakeBuildQueue:
+
+    def __init__(self, cookie='PACKAGEBUILD-1'):
+        self.build_cookie = cookie
+        self.reset = FakeMethod()
+        self.status = BuildQueueStatus.RUNNING
+
+
+class MockBuilderFactory:
+    """A mock builder factory which uses a preset Builder and BuildQueue."""
+
+    def __init__(self, builder, build_queue):
+        self.updateTestData(builder, build_queue)
+        self.get_call_count = 0
+        self.getVitals_call_count = 0
+
+    def update(self):
+        return
+
+    def prescanUpdate(self):
+        return
+
+    def updateTestData(self, builder, build_queue):
+        self._builder = builder
+        self._build_queue = build_queue
+
+    def __getitem__(self, name):
+        self.get_call_count += 1
+        return self._builder
+
+    def getVitals(self, name):
+        self.getVitals_call_count += 1
+        return extract_vitals_from_db(self._builder, self._build_queue)
 
 
 class TestBuilderInteractor(TestCase):
@@ -114,27 +160,6 @@ class TestBuilderInteractor(TestCase):
         d = self.resumeSlaveHost(MockBuilder(virtualized=True, vm_host="pop"))
         return assert_fails_with(d, CannotResumeHost)
 
-    def test_resetOrFail_resume_failure(self):
-        reset_fail_config = """
-            [builddmaster]
-            vm_resume_command: /bin/false"""
-        config.push('reset fail', reset_fail_config)
-        self.addCleanup(config.pop, 'reset fail')
-        builder = MockBuilder(virtualized=True, vm_host="pop", builderok=True)
-        vitals = extract_vitals_from_db(builder)
-        d = BuilderInteractor.resetOrFail(
-            vitals, BuilderInteractor.makeSlaveFromVitals(vitals), builder,
-            DevNullLogger(), Exception())
-        return assert_fails_with(d, CannotResumeHost)
-
-    @defer.inlineCallbacks
-    def test_resetOrFail_nonvirtual(self):
-        builder = MockBuilder(virtualized=False, builderok=True)
-        vitals = extract_vitals_from_db(builder)
-        yield BuilderInteractor().resetOrFail(
-            vitals, None, builder, DevNullLogger(), Exception())
-        self.assertFalse(builder.builderok)
-
     def test_makeSlaveFromVitals(self):
         # Builder.slave is a BuilderSlave that points at the actual Builder.
         # The Builder is only ever used in scripts that run outside of the
@@ -150,98 +175,118 @@ class TestBuilderInteractor(TestCase):
         slave = BuilderInteractor.makeSlaveFromVitals(vitals)
         self.assertEqual(5, slave.timeout)
 
+
+class TestBuilderInteractorCleanSlave(TestCase):
+
+    run_tests_with = AsynchronousDeferredRunTest
+
     @defer.inlineCallbacks
-    def test_rescueIfLost_aborts_lost_and_broken_slave(self):
-        # A slave that's 'lost' should be aborted; when the slave is
-        # broken then abort() should also throw a fault.
+    def assertCleanCalls(self, builder, slave, calls, done):
+        actually_done = yield BuilderInteractor.cleanSlave(
+            extract_vitals_from_db(builder), slave,
+            MockBuilderFactory(builder, None))
+        self.assertEqual(done, actually_done)
+        self.assertEqual(calls, slave.method_log)
+
+    @defer.inlineCallbacks
+    def test_virtual_1_1(self):
+        # Virtual builders using protocol 1.1 get reset, and once the
+        # trigger completes we're happy that it's clean.
+        builder = MockBuilder(
+            virtualized=True, clean_status=BuilderCleanStatus.DIRTY,
+            vm_host='lol', vm_reset_protocol=BuilderResetProtocol.PROTO_1_1)
+        yield self.assertCleanCalls(
+            builder, OkSlave(), ['resume', 'echo'], True)
+
+    @defer.inlineCallbacks
+    def test_virtual_2_0_dirty(self):
+        # Virtual builders using protocol 2.0 get reset and set to
+        # CLEANING. It's then up to the non-Launchpad reset code to set
+        # the builder back to CLEAN using the webservice.
+        builder = MockBuilder(
+            virtualized=True, clean_status=BuilderCleanStatus.DIRTY,
+            vm_host='lol', vm_reset_protocol=BuilderResetProtocol.PROTO_2_0)
+        yield self.assertCleanCalls(builder, OkSlave(), ['resume'], False)
+        self.assertEqual(BuilderCleanStatus.CLEANING, builder.clean_status)
+
+    @defer.inlineCallbacks
+    def test_virtual_2_0_cleaning(self):
+        # Virtual builders using protocol 2.0 only get touched when
+        # they're DIRTY. Once they're cleaning, they're not our problem
+        # until they return to CLEAN, so we ignore them.
+        builder = MockBuilder(
+            virtualized=True, clean_status=BuilderCleanStatus.CLEANING,
+            vm_host='lol', vm_reset_protocol=BuilderResetProtocol.PROTO_2_0)
+        yield self.assertCleanCalls(builder, OkSlave(), [], False)
+        self.assertEqual(BuilderCleanStatus.CLEANING, builder.clean_status)
+
+    @defer.inlineCallbacks
+    def test_virtual_no_protocol(self):
+        # Virtual builders fail to clean unless vm_reset_protocol is
+        # set.
+        builder = MockBuilder(
+            virtualized=True, clean_status=BuilderCleanStatus.DIRTY,
+            vm_host='lol')
+        builder.vm_reset_protocol = None
+        with ExpectedException(
+                CannotResumeHost, "Invalid vm_reset_protocol: None"):
+            yield BuilderInteractor.cleanSlave(
+                extract_vitals_from_db(builder), OkSlave(),
+                MockBuilderFactory(builder, None))
+
+    @defer.inlineCallbacks
+    def test_nonvirtual_idle(self):
+        # An IDLE non-virtual slave is already as clean as we can get it.
+        yield self.assertCleanCalls(
+            MockBuilder(
+                virtualized=False, clean_status=BuilderCleanStatus.DIRTY),
+            OkSlave(), ['status'], True)
+
+    @defer.inlineCallbacks
+    def test_nonvirtual_building(self):
+        # A BUILDING non-virtual slave needs to be aborted. It'll go
+        # through ABORTING and eventually be picked up from WAITING.
+        yield self.assertCleanCalls(
+            MockBuilder(
+                virtualized=False, clean_status=BuilderCleanStatus.DIRTY),
+            BuildingSlave(), ['status', 'abort'], False)
+
+    @defer.inlineCallbacks
+    def test_nonvirtual_aborting(self):
+        # An ABORTING non-virtual slave must be waited out. It should
+        # hit WAITING eventually.
+        yield self.assertCleanCalls(
+            MockBuilder(
+                virtualized=False, clean_status=BuilderCleanStatus.DIRTY),
+            AbortingSlave(), ['status'], False)
+
+    @defer.inlineCallbacks
+    def test_nonvirtual_waiting(self):
+        # A WAITING non-virtual slave just needs clean() called.
+        yield self.assertCleanCalls(
+            MockBuilder(
+                virtualized=False, clean_status=BuilderCleanStatus.DIRTY),
+            WaitingSlave(), ['status', 'clean'], True)
+
+    @defer.inlineCallbacks
+    def test_nonvirtual_broken(self):
+        # A broken non-virtual builder is probably unrecoverable, so the
+        # method just crashes.
+        builder = MockBuilder(
+            virtualized=False, clean_status=BuilderCleanStatus.DIRTY)
+        vitals = extract_vitals_from_db(builder)
         slave = LostBuildingBrokenSlave()
-        slave_status = yield slave.status_dict()
         try:
-            yield BuilderInteractor.rescueIfLost(
-                extract_vitals_from_db(MockBuilder()), slave, slave_status,
-                'trivial')
+            yield BuilderInteractor.cleanSlave(
+                vitals, slave, MockBuilderFactory(builder, None))
         except xmlrpclib.Fault:
-            self.assertIn('abort', slave.call_log)
+            self.assertEqual(['status', 'abort'], slave.call_log)
         else:
-            self.fail("xmlrpclib.Fault not raised")
-
-    @defer.inlineCallbacks
-    def test_recover_idle_slave(self):
-        # An idle slave is not rescued, even if it's not meant to be
-        # idle. SlaveScanner.scan() will clean up the DB side, because
-        # we still report that it's lost.
-        slave = OkSlave()
-        slave_status = yield slave.status_dict()
-        lost = yield BuilderInteractor.rescueIfLost(
-            extract_vitals_from_db(MockBuilder()), slave, slave_status,
-            'trivial')
-        self.assertTrue(lost)
-        self.assertEqual([], slave.call_log)
-
-    @defer.inlineCallbacks
-    def test_recover_ok_slave(self):
-        # An idle slave that's meant to be idle is not rescued.
-        slave = OkSlave()
-        slave_status = yield slave.status_dict()
-        lost = yield BuilderInteractor.rescueIfLost(
-            extract_vitals_from_db(MockBuilder()), slave, slave_status, None)
-        self.assertFalse(lost)
-        self.assertEqual([], slave.call_log)
-
-    @defer.inlineCallbacks
-    def test_recover_waiting_slave_with_good_id(self):
-        # rescueIfLost does not attempt to abort or clean a builder that is
-        # WAITING.
-        waiting_slave = WaitingSlave(build_id='trivial')
-        slave_status = yield waiting_slave.status_dict()
-        lost = yield BuilderInteractor.rescueIfLost(
-            extract_vitals_from_db(MockBuilder()), waiting_slave, slave_status,
-            'trivial')
-        self.assertFalse(lost)
-        self.assertEqual(['status_dict'], waiting_slave.call_log)
-
-    @defer.inlineCallbacks
-    def test_recover_waiting_slave_with_bad_id(self):
-        # If a slave is WAITING with a build for us to get, and the build
-        # cookie cannot be verified, which means we don't recognize the build,
-        # then rescueBuilderIfLost should attempt to abort it, so that the
-        # builder is reset for a new build, and the corrupt build is
-        # discarded.
-        waiting_slave = WaitingSlave(build_id='non-trivial')
-        slave_status = yield waiting_slave.status_dict()
-        lost = yield BuilderInteractor.rescueIfLost(
-            extract_vitals_from_db(MockBuilder()), waiting_slave, slave_status,
-            'trivial')
-        self.assertTrue(lost)
-        self.assertEqual(['status_dict', 'clean'], waiting_slave.call_log)
-
-    @defer.inlineCallbacks
-    def test_recover_building_slave_with_good_id(self):
-        # rescueIfLost does not attempt to abort or clean a builder that is
-        # BUILDING.
-        building_slave = BuildingSlave(build_id='trivial')
-        slave_status = yield building_slave.status_dict()
-        lost = yield BuilderInteractor.rescueIfLost(
-            extract_vitals_from_db(MockBuilder()), building_slave,
-            slave_status, 'trivial')
-        self.assertFalse(lost)
-        self.assertEqual(['status_dict'], building_slave.call_log)
-
-    @defer.inlineCallbacks
-    def test_recover_building_slave_with_bad_id(self):
-        # If a slave is BUILDING with a build id we don't recognize, then we
-        # abort the build, thus stopping it in its tracks.
-        building_slave = BuildingSlave(build_id='non-trivial')
-        slave_status = yield building_slave.status_dict()
-        lost = yield BuilderInteractor.rescueIfLost(
-            extract_vitals_from_db(MockBuilder()), building_slave,
-            slave_status, 'trivial')
-        self.assertTrue(lost)
-        self.assertEqual(['status_dict', 'abort'], building_slave.call_log)
+            self.fail("abort() should crash.")
 
 
 class TestBuilderSlaveStatus(TestCase):
-    # Verify what BuilderSlave.status_dict returns with slaves in different
+    # Verify what BuilderSlave.status returns with slaves in different
     # states.
 
     run_tests_with = AsynchronousDeferredRunTest
@@ -250,7 +295,7 @@ class TestBuilderSlaveStatus(TestCase):
     def assertStatus(self, slave, builder_status=None, build_status=None,
                      build_id=False, logtail=False, filemap=None,
                      dependencies=None):
-        status = yield slave.status_dict()
+        status = yield slave.status()
 
         expected = {}
         if builder_status is not None:
@@ -297,14 +342,14 @@ class TestBuilderInteractorDB(TestCaseWithFactory):
     layer = ZopelessDatabaseLayer
     run_tests_with = AsynchronousDeferredRunTest.make_factory(timeout=10)
 
-    def test_getBuildBehavior_idle(self):
-        """An idle builder has no build behavior."""
+    def test_getBuildBehaviour_idle(self):
+        """An idle builder has no build behaviour."""
         self.assertIs(
             None,
-            BuilderInteractor.getBuildBehavior(None, MockBuilder(), None))
+            BuilderInteractor.getBuildBehaviour(None, MockBuilder(), None))
 
-    def test_getBuildBehavior_building(self):
-        """The current behavior is set automatically from the current job."""
+    def test_getBuildBehaviour_building(self):
+        """The current behaviour is set automatically from the current job."""
         # Set the builder attribute on the buildqueue record so that our
         # builder will think it has a current build.
         builder = self.factory.makeBuilder(name='builder')
@@ -312,15 +357,16 @@ class TestBuilderInteractorDB(TestCaseWithFactory):
         build = self.factory.makeBinaryPackageBuild()
         bq = build.queueBuild()
         bq.markAsBuilding(builder)
-        behavior = BuilderInteractor.getBuildBehavior(bq, builder, slave)
-        self.assertIsInstance(behavior, BinaryPackageBuildBehavior)
-        self.assertEqual(behavior._builder, builder)
-        self.assertEqual(behavior._slave, slave)
+        behaviour = BuilderInteractor.getBuildBehaviour(bq, builder, slave)
+        self.assertIsInstance(behaviour, BinaryPackageBuildBehaviour)
+        self.assertEqual(behaviour._builder, builder)
+        self.assertEqual(behaviour._slave, slave)
 
     def _setupBuilder(self):
         processor = self.factory.makeProcessor(name="i386")
         builder = self.factory.makeBuilder(
             processors=[processor], virtualized=True, vm_host="bladh")
+        builder.setCleanStatus(BuilderCleanStatus.CLEAN)
         self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(OkSlave()))
         distroseries = self.factory.makeDistroSeries()
         das = self.factory.makeDistroArchSeries(
@@ -377,21 +423,30 @@ class TestBuilderInteractorDB(TestCaseWithFactory):
 
         return d.addCallback(check_build_started)
 
-    def test_virtual_job_dispatch_pings_before_building(self):
-        # We need to send a ping to the builder to work around a bug
-        # where sometimes the first network packet sent is dropped.
+    @defer.inlineCallbacks
+    def test_findAndStartJob_requires_clean_slave(self):
+        # findAndStartJob ensures that its slave starts CLEAN.
+        builder, build = self._setupBinaryBuildAndBuilder()
+        builder.setCleanStatus(BuilderCleanStatus.DIRTY)
+        candidate = build.queueBuild()
+        removeSecurityProxy(builder)._findBuildCandidate = FakeMethod(
+            result=candidate)
+        vitals = extract_vitals_from_db(builder)
+        with ExpectedException(
+                BuildDaemonIsolationError,
+                "Attempted to start build on a dirty slave."):
+            yield BuilderInteractor.findAndStartJob(vitals, builder, OkSlave())
+
+    @defer.inlineCallbacks
+    def test_findAndStartJob_dirties_slave(self):
+        # findAndStartJob marks its builder DIRTY before dispatching.
         builder, build = self._setupBinaryBuildAndBuilder()
         candidate = build.queueBuild()
         removeSecurityProxy(builder)._findBuildCandidate = FakeMethod(
             result=candidate)
         vitals = extract_vitals_from_db(builder)
-        slave = OkSlave()
-        d = BuilderInteractor.findAndStartJob(vitals, builder, slave)
-
-        def check_build_started(candidate):
-            self.assertIn(('echo', 'ping'), slave.call_log)
-
-        return d.addCallback(check_build_started)
+        yield BuilderInteractor.findAndStartJob(vitals, builder, OkSlave())
+        self.assertEqual(BuilderCleanStatus.DIRTY, builder.clean_status)
 
 
 class TestSlave(TestCase):
@@ -460,21 +515,21 @@ class TestSlave(TestCase):
 
     @defer.inlineCallbacks
     def test_initial_status(self):
-        # Calling 'status_dict' returns the current status of the slave. The
+        # Calling 'status' returns the current status of the slave. The
         # initial status is IDLE.
         self.slave_helper.getServerSlave()
         slave = self.slave_helper.getClientSlave()
-        status = yield slave.status_dict()
+        status = yield slave.status()
         self.assertEqual(BuilderStatus.IDLE, status['builder_status'])
 
     @defer.inlineCallbacks
     def test_status_after_build(self):
-        # Calling 'status_dict' returns the current status of the slave.
-        # After a build has been triggered, the status is BUILDING.
+        # Calling 'status' returns the current status of the slave.  After a
+        # build has been triggered, the status is BUILDING.
         slave = self.slave_helper.getClientSlave()
         build_id = 'status-build-id'
         yield self.slave_helper.triggerGoodBuild(slave, build_id)
-        status = yield slave.status_dict()
+        status = yield slave.status()
         self.assertEqual(BuilderStatus.BUILDING, status['builder_status'])
         self.assertEqual(build_id, status['build_id'])
         self.assertIsInstance(status['logtail'], xmlrpclib.Binary)
@@ -624,7 +679,7 @@ class TestSlaveTimeouts(TestCase):
         return self.assertCancelled(self.slave.info())
 
     def test_timeout_status(self):
-        return self.assertCancelled(self.slave.status_dict())
+        return self.assertCancelled(self.slave.status())
 
     def test_timeout_ensurepresent(self):
         return self.assertCancelled(
@@ -693,8 +748,7 @@ class TestSlaveWithLibrarian(TestCaseWithFactory):
         self.layer.txn.commit()
         self.slave_helper.getServerSlave()
         slave = self.slave_helper.getClientSlave()
-        d = slave.ensurepresent(
-            lf.content.sha1, lf.http_url, "", "")
+        d = slave.ensurepresent(lf.content.sha1, lf.http_url, "", "")
         d.addCallback(self.assertEqual, [True, 'Download'])
         return d
 
@@ -710,8 +764,7 @@ class TestSlaveWithLibrarian(TestCaseWithFactory):
             self.slave_helper.BASE_URL, lf.content.sha1)
         self.slave_helper.getServerSlave()
         slave = self.slave_helper.getClientSlave()
-        d = slave.ensurepresent(
-            lf.content.sha1, lf.http_url, "", "")
+        d = slave.ensurepresent(lf.content.sha1, lf.http_url, "", "")
 
         def check_file(ignored):
             d = getPage(expected_url.encode('utf8'))
@@ -727,20 +780,18 @@ class TestSlaveWithLibrarian(TestCaseWithFactory):
         contents = ["content1", "content2", "content3"]
         self.slave_helper.getServerSlave()
         slave = self.slave_helper.getClientSlave()
-        filemap = {}
+        files = []
         content_map = {}
 
         def got_files(ignored):
             # Called back when getFiles finishes.  Make sure all the
             # content is as expected.
-            for sha1 in filemap:
-                local_file = filemap[sha1]
-                file = open(local_file)
-                self.assertEqual(content_map[sha1], file.read())
-                file.close()
+            for sha1, local_file in files:
+                with open(local_file) as f:
+                    self.assertEqual(content_map[sha1], f.read())
 
         def finished_uploading(ignored):
-            d = slave.getFiles(filemap)
+            d = slave.getFiles(files)
             return d.addCallback(got_files)
 
         # Set up some files on the builder and store details in
@@ -750,8 +801,12 @@ class TestSlaveWithLibrarian(TestCaseWithFactory):
             filename = content + '.txt'
             lf = self.factory.makeLibraryFileAlias(filename, content=content)
             content_map[lf.content.sha1] = content
-            fd, filemap[lf.content.sha1] = tempfile.mkstemp()
-            self.addCleanup(os.remove, filemap[lf.content.sha1])
+            files.append((lf.content.sha1, tempfile.mkstemp()[1]))
+            self.addCleanup(os.remove, files[-1][1])
+            # Add the same file contents again with a different name, to
+            # ensure that we can tolerate duplication.
+            files.append((lf.content.sha1, tempfile.mkstemp()[1]))
+            self.addCleanup(os.remove, files[-1][1])
             self.layer.txn.commit()
             d = slave.ensurepresent(lf.content.sha1, lf.http_url, "", "")
             dl.append(d)

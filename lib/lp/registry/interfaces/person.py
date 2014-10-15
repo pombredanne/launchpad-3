@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Person interfaces."""
@@ -664,11 +664,12 @@ class IPersonLimitedView(IHasIcon, IHasLogo):
         Bool(title=_("Is this a probationary user?"), readonly=True))
 
     @operation_parameters(
+        distribution=Reference(schema=Interface, required=False),
         name=TextLine(required=True, constraint=name_validator))
     @operation_returns_entry(Interface)  # Really IArchive.
     @export_read_operation()
     @operation_for_version("beta")
-    def getPPAByName(name):
+    def getPPAByName(distribution, name):
         """Return a PPA with the given name if it exists.
 
         :param name: A string with the exact name of the ppa being looked up.
@@ -1029,6 +1030,13 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
 
     @call_with(requester=REQUEST_USER)
     @export_read_operation()
+    @operation_returns_collection_of(Interface)  # Really IArchiveSubscriber
+    @operation_for_version('devel')
+    def getArchiveSubscriptions(requester):
+        """Return (private) archives subscription for this person."""
+
+    @call_with(requester=REQUEST_USER)
+    @export_read_operation()
     @operation_for_version("beta")
     def getArchiveSubscriptionURLs(requester):
         """Return private archive URLs that this person can see.
@@ -1048,6 +1056,10 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
         entry.
 
         It will create a new IArchiveAuthToken if one doesn't already exist.
+
+        It raises `Unauthorized` if the context user does not have a
+        valid subscription for the target archive or the caller is not
+        context user itself.
         """
 
     def getVisiblePPAs(user):
@@ -1149,7 +1161,11 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
         maintains, drives, or is the bug supervisor for.
         """
 
-    def getOwnedProjects(match_name=None):
+    @call_with(user=REQUEST_USER)
+    @operation_returns_collection_of(Interface)  # Really IProduct.
+    @export_read_operation()
+    @operation_for_version("devel")
+    def getOwnedProjects(match_name=None, transitive=False, user=None):
         """Projects owned by this person or teams to which she belongs.
 
         :param match_name: string optional project name to screen the results.
@@ -1724,6 +1740,7 @@ class IPersonEditRestricted(Interface):
         """
 
     @operation_parameters(
+        distribution=Reference(schema=Interface, required=False),
         name=TextLine(required=True, constraint=name_validator),
         displayname=TextLine(required=False),
         description=TextLine(required=False),
@@ -1732,12 +1749,13 @@ class IPersonEditRestricted(Interface):
         )
     @export_factory_operation(Interface, [])  # Really IArchive.
     @operation_for_version("beta")
-    def createPPA(name=None, displayname=None, description=None,
-                  private=False, suppress_subscription_notifications=False):
+    def createPPA(distribution=None, name=None, displayname=None,
+                  description=None, private=False,
+                  suppress_subscription_notifications=False):
         """Create a PPA.
 
-        :param name: A string with the name of the new PPA to create. If
-            not specified, defaults to 'ppa'.
+        :param distribution: The distribution that this archive is for.
+        :param name: The name of the new PPA to create.
         :param displayname: The displayname for the new PPA.
         :param description: The description for the new PPA.
         :param private: Whether or not to create a private PPA. Defaults to

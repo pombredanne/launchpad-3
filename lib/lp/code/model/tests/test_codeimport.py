@@ -62,7 +62,7 @@ class TestCodeImportCreation(TestCaseWithFactory):
             registrant=self.factory.makePerson(),
             target=IBranchTarget(self.factory.makeProduct()),
             branch_name='imported',
-            rcs_type=RevisionControlSystems.SVN,
+            rcs_type=RevisionControlSystems.BZR_SVN,
             url=self.factory.getUniqueURL(scheme="svn"))
         self.assertEqual(
             CodeImportReviewStatus.REVIEWED,
@@ -76,7 +76,7 @@ class TestCodeImportCreation(TestCaseWithFactory):
             registrant=self.factory.makePerson(),
             target=IBranchTarget(self.factory.makeProduct()),
             branch_name='imported',
-            rcs_type=RevisionControlSystems.SVN,
+            rcs_type=RevisionControlSystems.BZR_SVN,
             url=self.factory.getUniqueURL(),
             review_status=None)
         self.assertEqual(

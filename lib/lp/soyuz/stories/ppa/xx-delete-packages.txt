@@ -65,11 +65,11 @@ sources is presented,
     iceweasel...(...) 2007-07-09  Published  Warty           Editors  i386
     pmount - 0.1-1    2007-07-09  Published  Warty           Editors
 
-An informational message also directs the user to the PPA help page
-via a link:
+An informational message also directs the user to the PPA delete package help
+page via a link:
 
-    >>> admin_browser.getLink('PPA help page').url
-    'https://help.launchpad.net/Packaging/PPA'
+    >>> admin_browser.getLink('deleting a package').url
+    'https://help.launchpad.net/Packaging/PPA/Deleting'
 
 The user can update the form to only list published sources with name
 matching the given text.

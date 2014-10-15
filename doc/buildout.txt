@@ -69,7 +69,7 @@ parties, in and out of Canonical, create and release.
   Interacting and negotiating with upstream is undeniably more
   time-consuming than our previous practice of maintaining local bzr
   branches with our patches, especially short-term.  But our previous
-  use of bzr branches is not good open-source community behavior--an
+  use of bzr branches is not good open-source community behaviour--an
   ironic characteristic for a project like Launchpad. It also can
   cause problems down the road, for instance, if the patch becomes
   stale and we want to migrate to new releases.
@@ -507,7 +507,7 @@ you upgrade to the most recent revision, you can clear out the versions of the
 packages for upgrade and give it a try (that is, run steps 4, 5, and 6 of the
 `Add a Package`_ instructions).  Note that, when not given an explicit version
 number, our buildout is set to prefer final releases over alpha and beta
-releases.  If you want to temporarily override this behavior, include
+releases.  If you want to temporarily override this behaviour, include
 ``buildout:prefer-final=false`` as another argument to ``bin/buildout``.
 
 Add a Script

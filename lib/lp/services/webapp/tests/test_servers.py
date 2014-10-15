@@ -378,7 +378,7 @@ class TestBasicLaunchpadRequest(TestCase):
             response.getHeader('X-XSS-Protection'), '1; mode=block')
         self.assertEquals(
             response.getHeader(
-                'Strict-Transport-Security'), 'max-age=2592000')
+                'Strict-Transport-Security'), 'max-age=15552000')
 
     def test_baserequest_recovers_from_bad_path_info_encoding(self):
         # The request object recodes PATH_INFO to ensure sane_environment
@@ -394,10 +394,8 @@ class TestBasicLaunchpadRequest(TestCase):
         # replacement.
         env = {'QUERY_STRING': 'field.title=subproc\xe9s '}
         request = LaunchpadBrowserRequest(StringIO.StringIO(''), env)
-        # XXX: Python 2.6 and 2.7 handle unicode replacement differently.
-        self.assertIn(
-            request.query_string_params['field.title'],
-            ([u'subproc\ufffd'], [u'subproc\ufffds ']))
+        self.assertEqual(
+            [u'subproc\ufffds '], request.query_string_params['field.title'])
 
 
 class TestFeedsBrowserRequest(TestCase):

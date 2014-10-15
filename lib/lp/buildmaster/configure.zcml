@@ -1,4 +1,4 @@
-<!-- Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2010-2014 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -16,10 +16,11 @@
     <class
         class="lp.buildmaster.model.builder.Builder">
         <allow
-            interface="lp.buildmaster.interfaces.builder.IBuilder"/>
+            interface="lp.buildmaster.interfaces.builder.IBuilderView"/>
         <require
             permission="launchpad.Edit"
-            set_schema="lp.buildmaster.interfaces.builder.IBuilder"/>
+            interface="lp.buildmaster.interfaces.builder.IBuilderEdit"
+            set_schema="lp.buildmaster.interfaces.builder.IBuilderView"/>
     </class>
 
 
@@ -29,6 +30,9 @@
         provides="lp.buildmaster.interfaces.builder.IBuilderSet">
         <allow
             interface="lp.buildmaster.interfaces.builder.IBuilderSet"/>
+        <require
+            permission="launchpad.Admin"
+            interface="lp.buildmaster.interfaces.builder.IBuilderSetAdmin"/>
     </securedutility>
     <adapter
         provides="lp.services.webapp.interfaces.IBreadcrumb"

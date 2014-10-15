@@ -37,6 +37,7 @@ __all__ = [
     'Utf8PreferredCharsets',
     ]
 
+from lp.services.features import getFeatureFlag
 from lp.services.webapp.escaping import structured
 from lp.services.webapp.menu import (
     ApplicationMenu,
@@ -84,56 +85,51 @@ class StandardLaunchpadFacets(FacetMenu):
     # provide your own 'usedfor' in subclasses.
     #   usedfor = IWhatever
 
-    links = ['overview', 'branches', 'bugs', 'specifications', 'translations',
-             'answers']
-
-    enable_only = ['overview', 'bugs', 'specifications', 'translations']
+    links = [
+        'overview',
+        'branches',
+        'bugs',
+        'specifications',
+        'translations',
+        'answers',
+        ]
 
     defaultlink = 'overview'
 
-    def _filterLink(self, name, link):
-        if link.site is None:
-            if name == 'specifications':
-                link.site = 'blueprints'
-            elif name == 'branches':
-                link.site = 'code'
-            elif name == 'translations':
-                link.site = 'translations'
-            elif name == 'answers':
-                link.site = 'answers'
-            elif name == 'bugs':
-                link.site = 'bugs'
-            else:
-                link.site = 'mainsite'
-        return link
+    @property
+    def mainsite_only(self):
+        return getFeatureFlag('app.mainsite_only.canonical_url')
 
     def overview(self):
         text = 'Overview'
-        return Link('', text)
+        return Link('', text, site='mainsite')
 
-    def translations(self):
-        text = 'Translations'
-        return Link('', text)
+    def branches(self):
+        text = 'Code'
+        target = '+branches' if self.mainsite_only else ''
+        site = 'mainsite' if self.mainsite_only else 'code'
+        return Link(target, text, site=site)
 
     def bugs(self):
         text = 'Bugs'
-        return Link('', text)
-
-    def answers(self):
-        # This facet is visible but unavailable by default.
-        # See the enable_only list above.
-        text = 'Answers'
-        summary = 'Launchpad Answer Tracker'
-        return Link('', text, summary)
+        target = '+bugs' if self.mainsite_only else ''
+        site = 'mainsite' if self.mainsite_only else 'bugs'
+        return Link(target, text, site=site)
 
     def specifications(self):
         text = 'Blueprints'
-        summary = 'Blueprints and specifications'
-        return Link('', text, summary)
+        target = '+specs' if self.mainsite_only else ''
+        site = 'mainsite' if self.mainsite_only else 'blueprints'
+        return Link(target, text, site=site)
 
-    def branches(self):
-        # this is disabled by default, because relatively few objects have
-        # branch views
-        text = 'Code'
-        summary = 'View related code'
-        return Link('', text, summary=summary)
+    def translations(self):
+        text = 'Translations'
+        target = '+translations' if self.mainsite_only else ''
+        site = 'mainsite' if self.mainsite_only else 'translations'
+        return Link(target, text, site=site)
+
+    def answers(self):
+        text = 'Answers'
+        target = '+questions' if self.mainsite_only else ''
+        site = 'mainsite' if self.mainsite_only else 'answers'
+        return Link(target, text, site=site)

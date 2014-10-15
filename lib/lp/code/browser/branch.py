@@ -83,7 +83,6 @@ from lp.app.browser.launchpadform import (
     )
 from lp.app.browser.lazrjs import EnumChoiceWidget
 from lp.app.enums import InformationType
-from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.vocabularies import InformationTypeVocabulary
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
@@ -107,7 +106,6 @@ from lp.code.enums import (
     BranchType,
     CodeImportResultStatus,
     CodeImportReviewStatus,
-    RevisionControlSystems,
     )
 from lp.code.errors import (
     BranchCreationForbidden,
@@ -256,12 +254,11 @@ class BranchNavigation(Navigation):
     @stepthrough("+translation-templates-build")
     def traverse_translation_templates_build(self, id_string):
         """Traverses to a `TranslationTemplatesBuild`."""
-        try:
-            ttbj_id = int(id_string)
-        except ValueError:
-            raise NotFoundError(id_string)
-        source = getUtility(ITranslationTemplatesBuildSource)
-        return source.getByID(ttbj_id)
+        from lp.soyuz.browser.build import get_build_by_id_str
+        ttb = get_build_by_id_str(ITranslationTemplatesBuildSource, id_string)
+        if ttb is None or ttb.branch != self.context:
+            return None
+        return ttb
 
 
 class BranchEditMenu(NavigationMenu):
@@ -649,14 +646,6 @@ class BranchView(InformationTypePortletMixin, FeedsMixin, BranchMirrorMixin,
             return "/@@/yes"
         else:
             return "/@@/no"
-
-    @property
-    def is_svn_import(self):
-        """True if an imported branch is a SVN import."""
-        # You should only be calling this if it's a code import
-        assert self.context.code_import
-        return self.context.code_import.rcs_type in \
-               (RevisionControlSystems.SVN, RevisionControlSystems.BZR_SVN)
 
     @property
     def url_is_web(self):
@@ -1141,7 +1130,7 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
             owner_field = self.schema['owner']
             any_owner_choice = Choice(
                 __name__='owner', title=owner_field.title,
-                description=_("As an administrator you are able to reassign"
+                description=_("As an administrator you are able to assign"
                                 " this branch to any person or team."),
                 required=True, vocabulary='ValidPersonOrTeam')
             any_owner_field = form.Fields(

@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for builders."""
@@ -6,12 +6,10 @@
 __metaclass__ = type
 
 __all__ = [
-    'BuilderFacets',
     'BuilderOverviewMenu',
     'BuilderNavigation',
     'BuilderSetAddView',
     'BuilderSetBreadcrumb',
-    'BuilderSetFacets',
     'BuilderSetOverviewMenu',
     'BuilderSetNavigation',
     'BuilderSetView',
@@ -39,13 +37,13 @@ from lp.buildmaster.interfaces.builder import (
     IBuilder,
     IBuilderSet,
     )
+from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.model.buildqueue import BuildQueue
-from lp.services.database.interfaces import IStore
-from lp.services.helpers import english_list
-from lp.services.propertycache import (
-    cachedproperty,
-    get_property_cache,
+from lp.code.interfaces.sourcepackagerecipebuild import (
+    ISourcePackageRecipeBuildSource,
     )
+from lp.services.helpers import english_list
+from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (
     ApplicationMenu,
     canonical_url,
@@ -54,28 +52,42 @@ from lp.services.webapp import (
     LaunchpadView,
     Link,
     Navigation,
-    StandardLaunchpadFacets,
     stepthrough,
     )
 from lp.services.webapp.batching import StormRangeFactory
 from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.soyuz.browser.build import (
-    BuildNavigationMixin,
     BuildRecordsView,
+    get_build_by_id_str,
     )
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
+from lp.soyuz.interfaces.livefsbuild import ILiveFSBuildSet
 
 
-class BuilderSetNavigation(GetitemNavigation, BuildNavigationMixin):
+class BuilderSetNavigation(GetitemNavigation):
     """Navigation methods for IBuilderSet."""
     usedfor = IBuilderSet
 
     @stepthrough('+build')
     def traverse_build(self, name):
-        build = super(BuilderSetNavigation, self).traverse_build(name)
+        build = get_build_by_id_str(IBinaryPackageBuildSet, name)
         if build is None:
             return None
-        else:
-            return self.redirectSubTree(canonical_url(build))
+        return self.redirectSubTree(canonical_url(build))
+
+    @stepthrough('+recipebuild')
+    def traverse_recipebuild(self, name):
+        build = get_build_by_id_str(ISourcePackageRecipeBuildSource, name)
+        if build is None:
+            return None
+        return self.redirectSubTree(canonical_url(build))
+
+    @stepthrough('+livefsbuild')
+    def traverse_livefsbuild(self, name):
+        build = get_build_by_id_str(ILiveFSBuildSet, name)
+        if build is None:
+            return None
+        return self.redirectSubTree(canonical_url(build))
 
 
 class BuilderSetBreadcrumb(Breadcrumb):
@@ -85,20 +97,6 @@ class BuilderSetBreadcrumb(Breadcrumb):
 
 class BuilderNavigation(Navigation):
     """Navigation methods for IBuilder."""
-    usedfor = IBuilder
-
-
-class BuilderSetFacets(StandardLaunchpadFacets):
-    """The links that will appear in the facet menu for an IBuilderSet."""
-    enable_only = ['overview']
-
-    usedfor = IBuilderSet
-
-
-class BuilderFacets(StandardLaunchpadFacets):
-    """The links that will appear in the facet menu for an IBuilder."""
-    enable_only = ['overview']
-
     usedfor = IBuilder
 
 
@@ -150,19 +148,6 @@ class BuilderSetView(LaunchpadView):
     def builders(self):
         """All active builders"""
         builders = list(self.context.getBuilders())
-
-        # Populate builders' currentjob cachedproperty.
-        queues = IStore(BuildQueue).find(
-            BuildQueue,
-            BuildQueue.builderID.is_in(
-                builder.id for builder in builders))
-        queue_builders = dict(
-            (queue.builderID, queue) for queue in queues)
-        for builder in builders:
-            cache = get_property_cache(builder)
-            cache.currentjob = queue_builders.get(builder.id, None)
-        # Prefetch the jobs' data.
-        BuildQueue.preloadSpecificBuild(queues)
         return list(sorted(
             builders, key=lambda b: (
                 b.virtualized, tuple(p.id for p in b.processors), b.name)))
@@ -330,7 +315,7 @@ class BuilderSetAddView(LaunchpadFormView):
 
     field_names = [
         'name', 'title', 'processors', 'url', 'active', 'virtualized',
-        'vm_host', 'owner'
+        'vm_host', 'vm_reset_protocol', 'owner'
         ]
     custom_widget('owner', HiddenUserWidget)
     custom_widget('url', TextWidget, displayWidth=30)
@@ -349,6 +334,7 @@ class BuilderSetAddView(LaunchpadFormView):
             active=data.get('active'),
             virtualized=data.get('virtualized'),
             vm_host=data.get('vm_host'),
+            vm_reset_protocol=data.get('vm_reset_protocol'),
             )
         notify(ObjectCreatedEvent(builder))
         self.next_url = canonical_url(builder)
@@ -371,7 +357,8 @@ class BuilderEditView(LaunchpadEditFormView):
 
     field_names = [
         'name', 'title', 'processors', 'url', 'manual', 'owner',
-        'virtualized', 'builderok', 'failnotes', 'vm_host', 'active',
+        'virtualized', 'builderok', 'failnotes', 'vm_host',
+        'vm_reset_protocol', 'active',
         ]
     custom_widget('processors', LabeledMultiCheckBoxWidget)
 

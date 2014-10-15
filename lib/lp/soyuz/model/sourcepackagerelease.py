@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -128,8 +128,6 @@ class SourcePackageRelease(SQLBase):
     dsc_binaries = StringCol(dbName='dsc_binaries')
 
     # MultipleJoins
-    files = SQLMultipleJoin('SourcePackageReleaseFile',
-        joinColumn='sourcepackagerelease', orderBy="libraryfile")
     publishings = SQLMultipleJoin('SourcePackagePublishingHistory',
         joinColumn='sourcepackagerelease', orderBy="-datecreated")
 
@@ -201,13 +199,6 @@ class SourcePackageRelease(SQLBase):
         now = datetime.datetime.now(pytz.timezone('UTC'))
         return now - self.dateuploaded
 
-    @property
-    def latest_build(self):
-        builds = self._cached_builds
-        if len(builds) > 0:
-            return builds[0]
-        return None
-
     def failed_builds(self):
         return [build for build in self._cached_builds
                 if build.buildstate == BuildStatus.FAILEDTOBUILD]
@@ -233,25 +224,6 @@ class SourcePackageRelease(SQLBase):
         return self.sourcepackagename.name
 
     @property
-    def sourcepackage(self):
-        """See ISourcePackageRelease."""
-        # By supplying the sourcepackagename instead of its string name,
-        # we avoid doing an extra query doing getSourcepackage.
-        # XXX 2008-06-16 mpt bug=241298: cprov says this property "won't be as
-        # useful as it looks once we start supporting derivation ... [It] is
-        # dangerous and should be renamed (or removed)".
-        series = self.upload_distroseries
-        return series.getSourcePackage(self.sourcepackagename)
-
-    @property
-    def distrosourcepackage(self):
-        """See ISourcePackageRelease."""
-        # By supplying the sourcepackagename instead of its string name,
-        # we avoid doing an extra query doing getSourcepackage
-        distribution = self.upload_distroseries.distribution
-        return distribution.getSourcePackage(self.sourcepackagename)
-
-    @property
     def title(self):
         return '%s - %s' % (self.sourcepackagename.name, self.version)
 
@@ -269,12 +241,21 @@ class SourcePackageRelease(SQLBase):
             pub.archive for pub in self.publishings.prejoin(['archive']))
         return sorted(archives, key=operator.attrgetter('id'))
 
-    def addFile(self, file):
+    def addFile(self, file, filetype=None):
         """See ISourcePackageRelease."""
-        return SourcePackageReleaseFile(
-            sourcepackagerelease=self,
-            filetype=determine_source_file_type(file.filename),
-            libraryfile=file)
+        if filetype is None:
+            filetype = determine_source_file_type(file.filename)
+        sprf = SourcePackageReleaseFile(
+            sourcepackagerelease=self, filetype=filetype, libraryfile=file)
+        del get_property_cache(self).files
+        return sprf
+
+    @cachedproperty
+    def files(self):
+        """See `ISourcePackageRelease`."""
+        return list(Store.of(self).find(
+            SourcePackageReleaseFile, sourcepackagerelease=self).order_by(
+                SourcePackageReleaseFile.libraryfileID))
 
     def getFileByName(self, filename):
         """See `ISourcePackageRelease`."""
