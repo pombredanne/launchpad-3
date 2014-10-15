@@ -61,6 +61,10 @@ class LibrarianStorage:
     files.
     """
 
+    # Class variables storing some metrics.
+    swift_download_attempts = 0
+    swift_download_fails = 0
+
     def __init__(self, directory, library):
         self.directory = directory
         self.library = library
@@ -78,6 +82,13 @@ class LibrarianStorage:
 
     @defer.inlineCallbacks
     def open(self, fileid):
+        # Log our attempt.
+        self.swift_download_attempts += 1
+
+        if self.swift_download_attempts % 1000 == 0:
+            log.msg('{} Swift download attempts, {} failures'.format(
+                self.swift_download_attempts, self.swift_download_fails))
+
         # First, try and stream the file from Swift.
         container, name = swift.swift_location(fileid)
         swift_connection = swift.connection_pool.get()
@@ -88,9 +99,11 @@ class LibrarianStorage:
             swift_stream = TxSwiftStream(swift_connection, chunks)
             defer.returnValue(swift_stream)
         except swiftclient.ClientException as x:
+            self.swift_download_fails += 1
             if x.http_status != 404:
                 log.err(x)
         except Exception as x:
+            self.swift_download_fails += 1
             log.err(x)
 
         # If Swift failed, for any reason, try and stream the data from
