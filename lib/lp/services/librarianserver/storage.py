@@ -294,6 +294,7 @@ def _relFileLocation(file_id):
     and then splitting it across four path segments.
     """
     file_id = int(file_id)
-    assert file_id <= 4294967295, 'file id has exceeded filesystem db maximum'
+    assert file_id <= 4294967295, (
+        'file id {!r} has exceeded filesystem db maximum'.format(file_id))
     h = "%08x" % file_id
     return '%s/%s/%s/%s' % (h[:2], h[2:4], h[4:6], h[6:])
