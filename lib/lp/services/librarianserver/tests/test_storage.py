@@ -99,7 +99,12 @@ class LibrarianStorageTestCase(unittest.TestCase):
 
         # more than eight digits will make the final segment longer, if that
         # were to ever happen
-        self.assertEqual('12/34/56/789', _relFileLocation(0x123456789))
+        # However, instead of allowing this to happen it is guarded by
+        # an assert. Other tools, such as the garbage collector, rely
+        # on the filesystem layout to efficiently iterate over the objects
+        # in order.
+        # self.assertEqual('12/34/56/789', _relFileLocation(0x123456789))
+        self.assertRaises(AssertionError, _relFileLocation, 0x123456789)
 
     def test_multipleFilesInOnePrefixedDirectory(self):
         # Check that creating a file that will be saved in 11/11/11/11

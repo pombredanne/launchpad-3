@@ -13,7 +13,6 @@ from contextlib import contextmanager
 import hashlib
 import os.path
 import re
-import sys
 import time
 import urllib
 
@@ -45,13 +44,11 @@ def to_swift(log, start_lfc_id=None, end_lfc_id=None, remove=False):
     if start_lfc_id is None:
         start_lfc_id = 1
     if end_lfc_id is None:
-        end_lfc_id = sys.maxint
-        end_str = 'MAXINT'
-    else:
-        end_str = str(end_lfc_id)
+        # Maximum id capable of being stored on the filesystem - ffffffff
+        end_lfc_id = 4294967295
 
     log.info("Walking disk store {0} from {1} to {2}, inclusive".format(
-        fs_root, start_lfc_id, end_str))
+        fs_root, start_lfc_id, end_lfc_id))
 
     start_fs_path = filesystem_path(start_lfc_id)
     end_fs_path = filesystem_path(end_lfc_id)
@@ -153,8 +150,13 @@ def to_swift(log, start_lfc_id=None, end_lfc_id=None, remove=False):
 def _put(log, swift_connection, lfc_id, container, obj_name, fs_path):
     fs_size = os.path.getsize(fs_path)
     fs_file = HashStream(open(fs_path, 'rb'))
+
     db_md5_hash = ISlaveStore(LibraryFileContent).get(
         LibraryFileContent, lfc_id).md5
+
+    assert hasattr(fs_file, 'tell') and hasattr(fs_file, 'seek'), '''
+        File not rewindable
+        '''
 
     if fs_size <= MAX_SWIFT_OBJECT_SIZE:
         swift_md5_hash = swift_connection.put_object(
@@ -297,6 +299,7 @@ class HashStream:
     """Read a file while calculating a checksum as we go."""
     def __init__(self, stream, hash_factory=hashlib.md5):
         self._stream = stream
+        self.hash_factory = hash_factory
         self.hash = hash_factory()
 
     def read(self, size=-1):
@@ -306,6 +309,11 @@ class HashStream:
 
     def tell(self):
         return self._stream.tell()
+
+    def seek(self, offset):
+        """Seek to offset, and reset the hash."""
+        self.hash = self.hash_factory()
+        return self._stream.seek(offset)
 
 
 class ConnectionPool:
