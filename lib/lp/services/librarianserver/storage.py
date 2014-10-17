@@ -61,6 +61,10 @@ class LibrarianStorage:
     files.
     """
 
+    # Class variables storing some metrics.
+    swift_download_attempts = 0
+    swift_download_fails = 0
+
     def __init__(self, directory, library):
         self.directory = directory
         self.library = library
@@ -78,6 +82,13 @@ class LibrarianStorage:
 
     @defer.inlineCallbacks
     def open(self, fileid):
+        # Log our attempt.
+        self.swift_download_attempts += 1
+
+        if self.swift_download_attempts % 1000 == 0:
+            log.msg('{} Swift download attempts, {} failures'.format(
+                self.swift_download_attempts, self.swift_download_fails))
+
         # First, try and stream the file from Swift.
         container, name = swift.swift_location(fileid)
         swift_connection = swift.connection_pool.get()
@@ -89,8 +100,10 @@ class LibrarianStorage:
             defer.returnValue(swift_stream)
         except swiftclient.ClientException as x:
             if x.http_status != 404:
+                self.swift_download_fails += 1
                 log.err(x)
         except Exception as x:
+            self.swift_download_fails += 1
             log.err(x)
 
         # If Swift failed, for any reason, try and stream the data from
@@ -280,6 +293,7 @@ def _relFileLocation(file_id):
     The relative location is obtained by converting file_id into a 8-digit hex
     and then splitting it across four path segments.
     """
+    file_id = int(file_id)
     assert file_id <= 4294967295, 'file id has exceeded filesystem db maximum'
-    h = "%08x" % int(file_id)
+    h = "%08x" % file_id
     return '%s/%s/%s/%s' % (h[:2], h[2:4], h[4:6], h[6:])

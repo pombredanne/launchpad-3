@@ -43,6 +43,7 @@ class LibrarianFeedSwift(LaunchpadCronScript):
             swift.to_swift(
                 self.logger, self.options.start, self.options.end,
                 self.options.remove)
+        self.logger.info('Done')
 
 
 if __name__ == '__main__':

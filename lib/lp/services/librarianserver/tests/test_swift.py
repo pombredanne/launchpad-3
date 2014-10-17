@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 from cStringIO import StringIO
+import hashlib
 import os.path
 import time
 
@@ -21,7 +22,7 @@ from lp.services.librarian.model import LibraryFileAlias
 from lp.services.librarianserver.storage import LibrarianStorage
 from lp.services.log.logger import BufferLogger
 from lp.testing import TestCase
-from lp.testing.layers import LaunchpadZopelessLayer, LibrarianLayer
+from lp.testing.layers import BaseLayer, LaunchpadZopelessLayer, LibrarianLayer
 from lp.testing.swift.fixture import SwiftFixture
 
 from lp.services.librarianserver import swift
@@ -245,3 +246,53 @@ class TestFeedSwift(TestCase):
 
         # Our object round tripped
         self.assertEqual(obj1 + obj2 + obj3, expected_content)
+
+
+class TestHashStream(TestCase):
+    layer = BaseLayer
+
+    def test_read(self):
+        empty_md5 = 'd41d8cd98f00b204e9800998ecf8427e'
+        s = swift.HashStream(StringIO('make me a coffee'))
+        self.assertEqual(s.hash.hexdigest(), empty_md5)
+        data = s.read()
+        self.assertEqual(data, 'make me a coffee')
+        self.assertEqual(s.hash.hexdigest(),
+                         '17dfd3e9f99a2260552e898406c696e9')
+
+    def test_partial_read(self):
+        empty_sha1 = 'da39a3ee5e6b4b0d3255bfef95601890afd80709'
+        s = swift.HashStream(StringIO('make me another coffee'), hashlib.sha1)
+        self.assertEqual(s.hash.hexdigest(), empty_sha1)
+        chunk = s.read(4)
+        self.assertEqual(chunk, 'make')
+        self.assertEqual(s.hash.hexdigest(),
+                         '5821eb27d7b71c9078000da31a5a654c97e401b9')
+        chunk = s.read()
+        self.assertEqual(chunk, ' me another coffee')
+        self.assertEqual(s.hash.hexdigest(),
+                         '8c826e573016ce05f3968044f82507b46fd2aa93')
+
+    def test_tell(self):
+        s = swift.HashStream(StringIO('hurry up with that coffee'))
+        self.assertEqual(s.tell(), 0)
+        s.read(4)
+        self.assertEqual(s.tell(), 4)
+
+    def test_seek(self):
+        s = swift.HashStream(StringIO('hurry up with that coffee'))
+        s.seek(0)
+        self.assertEqual(s.tell(), 0)
+        s.seek(6)
+        self.assertEqual(s.tell(), 6)
+        chunk = s.read()
+        self.assertEqual(chunk, 'up with that coffee')
+        self.assertEqual(s.hash.hexdigest(),
+                         '0687b12af46824e3584530c5262fed36')
+
+        # Seek also must reset the hash.
+        s.seek(2)
+        chunk = s.read(3)
+        self.assertEqual(chunk, 'rry')
+        self.assertEqual(s.hash.hexdigest(),
+                         '35cd51ccd493b67542201d20b6ed7db9')
