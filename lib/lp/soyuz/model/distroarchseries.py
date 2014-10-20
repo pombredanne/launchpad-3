@@ -55,6 +55,7 @@ from lp.soyuz.interfaces.distroarchseries import (
     InvalidChrootUploaded,
     IPocketChroot,
     )
+from lp.soyuz.interfaces.publishing import active_publishing_status
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.model.processor import Processor
@@ -215,7 +216,8 @@ class DistroArchSeries(SQLBase):
         clauses = [
             BinaryPackagePublishingHistory.distroarchseries == self,
             BinaryPackagePublishingHistory.archiveID.is_in(archives),
-            BinaryPackagePublishingHistory.dateremoved == None]
+            BinaryPackagePublishingHistory.status.is_in(
+                active_publishing_status)]
         order_by = [BinaryPackageName.name]
         if text:
             ranking = rank_by_fti(BinaryPackageRelease, text)
