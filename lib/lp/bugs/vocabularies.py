@@ -264,9 +264,7 @@ class BugNominatableSeriesVocabularyBase(NamedSQLObjectVocabulary):
     def __iter__(self):
         bug = self.context.bug
 
-        all_series = self._getNominatableObjects()
-
-        for series in sorted(all_series, key=attrgetter("displayname")):
+        for series in self._getNominatableObjects():
             if bug.canBeNominatedFor(series):
                 yield self.toTerm(series)
 
