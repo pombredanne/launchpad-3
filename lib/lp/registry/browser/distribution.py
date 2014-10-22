@@ -877,9 +877,8 @@ class DistributionAddView(LaunchpadFormView, RequireVirtualizedBuildersMixin,
             )
         archive = distribution.main_archive
         self.updateRequireVirtualized(data['require_virtualized'], archive)
-        if archive.require_virtualized is True:
-            archive.enabled_restricted_processors = data[
-                'enabled_restricted_processors']
+        archive.enabled_restricted_processors = data[
+            'enabled_restricted_processors']
 
         notify(ObjectCreatedEvent(distribution))
         self.next_url = canonical_url(distribution)

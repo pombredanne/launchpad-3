@@ -1568,26 +1568,27 @@ class Person(
     @property
     def super_teams(self):
         """See `IPerson`."""
-        return Store.of(self).using(
-            Join(
+        return PersonSet()._getPrecachedPersons(
+            [Join(
                 Person,
                 TeamParticipation,
-                Person.id == TeamParticipation.teamID
-            )).find(
-                Person,
-                TeamParticipation.personID == self.id,
-                TeamParticipation.teamID != self.id)
+                Person.id == TeamParticipation.teamID)],
+            And(TeamParticipation.personID == self.id,
+                TeamParticipation.teamID != self.id),
+            need_api=True)
 
     @property
     def sub_teams(self):
         """See `IPerson`."""
-        query = """
-            Person.id = TeamParticipation.person AND
-            TeamParticipation.team = %s AND
-            TeamParticipation.person != %s AND
-            Person.teamowner IS NOT NULL
-            """ % sqlvalues(self.id, self.id)
-        return Person.select(query, clauseTables=['TeamParticipation'])
+        return PersonSet()._getPrecachedPersons(
+            [Join(
+                Person,
+                TeamParticipation,
+                Person.id == TeamParticipation.personID)],
+            And(TeamParticipation.teamID == self.id,
+                TeamParticipation.personID != self.id,
+                Person.teamownerID != None),
+            need_api=True)
 
     def getTeamAdminsEmailAddresses(self):
         """See `IPerson`."""
