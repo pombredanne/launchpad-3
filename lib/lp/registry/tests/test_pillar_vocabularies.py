@@ -5,11 +5,7 @@
 
 __metaclass__ = type
 
-from zope.component import getUtility
-
 from lp.app.enums import InformationType
-from lp.app.interfaces.services import IService
-from lp.registry.enums import SharingPermission
 from lp.registry.vocabularies import (
     DistributionOrProductOrProjectGroupVocabulary,
     DistributionOrProductVocabulary,
