@@ -30,7 +30,7 @@ class LibrarianFeedSwift(LaunchpadCronScript):
             dest="start", metavar="CONTENT_ID",
             help="Migrate files starting from CONTENT_ID")
         self.parser.add_option(
-            "-s", "--start-since", action="store", dest='start_since',
+            "--start-since", action="store", dest='start_since',
             default=None, metavar="INTERVAL",
             help="Migrate files starting from INTERVAL (PostgreSQL syntax)")
         self.parser.add_option(
