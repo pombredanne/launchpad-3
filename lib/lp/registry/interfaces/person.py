@@ -2338,12 +2338,14 @@ class IPersonSet(Interface):
         """Prefetch Librarian aliases and content for personal images."""
 
     def getPrecachedPersonsFromIDs(
-        person_ids, need_karma=False, need_ubuntu_coc=False,
-        need_location=False, need_archive=False,
+        person_ids, need_api=False, need_karma=False,
+        need_ubuntu_coc=False, need_location=False, need_archive=False,
         need_preferred_email=False, need_validity=False):
         """Lookup person objects from ids with optional precaching.
 
         :param person_ids: List of person ids.
+        :param need_api: All attributes needed by the JSON
+            representation will be cached.
         :param need_karma: The karma attribute will be cached.
         :param need_ubuntu_coc: The is_ubuntu_coc_signer attribute will be
             cached.

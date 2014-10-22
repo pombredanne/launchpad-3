@@ -1995,11 +1995,7 @@ class Person(
         # manipulation of the object.
         person_set = PersonSet()
         return person_set._getPrecachedPersons(
-            origin, conditions, store=Store.of(self),
-            need_karma=preload_for_api, need_ubuntu_coc=preload_for_api,
-            need_location=preload_for_api, need_archive=preload_for_api,
-            need_preferred_email=preload_for_api,
-            need_validity=preload_for_api)
+            origin, conditions, store=Store.of(self), need_api=preload_for_api)
 
     def _getMembersWithPreferredEmails(self):
         """Helper method for public getMembersWithPreferredEmails.
@@ -3741,9 +3737,10 @@ class PersonSet:
              % sqlvalues(aliases), prejoins=["content"]))
 
     def getPrecachedPersonsFromIDs(
-        self, person_ids, need_karma=False, need_ubuntu_coc=False,
-        need_location=False, need_archive=False,
-        need_preferred_email=False, need_validity=False, need_icon=False):
+        self, person_ids, need_api=False, need_karma=False,
+        need_ubuntu_coc=False, need_location=False, need_archive=False,
+        need_preferred_email=False, need_validity=False,
+        need_icon=False):
         """See `IPersonSet`."""
         person_ids = set(person_ids)
         person_ids.discard(None)
@@ -3753,16 +3750,16 @@ class PersonSet:
         conditions = [
             Person.id.is_in(person_ids)]
         return self._getPrecachedPersons(
-            origin, conditions,
+            origin, conditions, need_api=need_api,
             need_karma=need_karma, need_ubuntu_coc=need_ubuntu_coc,
             need_location=need_location, need_archive=need_archive,
             need_preferred_email=need_preferred_email,
             need_validity=need_validity, need_icon=need_icon)
 
     def _getPrecachedPersons(
-        self, origin, conditions, store=None,
-        need_karma=False, need_ubuntu_coc=False,
-        need_location=False, need_archive=False, need_preferred_email=False,
+        self, origin, conditions, store=None, need_api=False,
+        need_karma=False, need_ubuntu_coc=False, need_location=False,
+        need_archive=False, need_preferred_email=False,
         need_validity=False, need_icon=False):
         """Lookup all members of the team with optional precaching.
 
@@ -3785,13 +3782,13 @@ class PersonSet:
             store = IStore(Person)
         columns = [Person]
         decorators = []
-        if need_karma:
+        if need_karma or need_api:
             # New people have no karmatotalcache rows.
             origin.append(
                 LeftJoin(KarmaTotalCache,
                     KarmaTotalCache.person == Person.id))
             columns.append(KarmaTotalCache)
-        if need_ubuntu_coc:
+        if need_ubuntu_coc or need_api:
             columns.append(
                 Alias(
                     Exists(Select(
@@ -3801,13 +3798,13 @@ class PersonSet:
                             Person._is_ubuntu_coc_signer_condition(),
                             SignedCodeOfConduct.ownerID == Person.id))),
                     name='is_ubuntu_coc_signer'))
-        if need_location:
+        if need_location or need_api:
             # New people have no location rows
             origin.append(
                 LeftJoin(PersonLocation,
                     PersonLocation.person == Person.id))
             columns.append(PersonLocation)
-        if need_archive:
+        if need_archive or need_api:
             # Not everyone has PPAs.
             # It would be nice to cleanly expose the soyuz rules for this to
             # avoid duplicating the relationships.
@@ -3826,7 +3823,7 @@ class PersonSet:
             columns.append(Archive)
 
         # Checking validity requires having a preferred email.
-        if need_preferred_email and not need_validity:
+        if (need_preferred_email or need_api) and not need_validity:
             # Teams don't have email, so a left join
             origin.append(
                 LeftJoin(EmailAddress, EmailAddress.person == Person.id))
@@ -3834,7 +3831,7 @@ class PersonSet:
             conditions = And(conditions,
                 Or(EmailAddress.status == None,
                    EmailAddress.status == EmailAddressStatus.PREFERRED))
-        if need_validity:
+        if need_validity or need_api:
             valid_stuff = Person._validity_queries()
             origin.extend(valid_stuff["joins"])
             columns.extend(valid_stuff["tables"])
@@ -3856,7 +3853,7 @@ class PersonSet:
             cache = get_property_cache(result)
             index = 1
             #-- karma caching
-            if need_karma:
+            if need_karma or need_api:
                 karma = row[index]
                 index += 1
                 if karma is None:
@@ -3865,22 +3862,22 @@ class PersonSet:
                     karma_total = karma.karma_total
                 cache.karma = karma_total
             #-- ubuntu code of conduct signer status caching.
-            if need_ubuntu_coc:
+            if need_ubuntu_coc or need_api:
                 signed = row[index]
                 index += 1
                 cache.is_ubuntu_coc_signer = signed
             #-- location caching
-            if need_location:
+            if need_location or need_api:
                 location = row[index]
                 index += 1
                 cache.location = location
             #-- archive caching
-            if need_archive:
+            if need_archive or need_api:
                 archive = row[index]
                 index += 1
                 cache.archive = archive
             #-- preferred email caching
-            if need_preferred_email and not need_validity:
+            if (need_preferred_email or need_api) and not need_validity:
                 email = row[index]
                 index += 1
                 cache.preferredemail = email
