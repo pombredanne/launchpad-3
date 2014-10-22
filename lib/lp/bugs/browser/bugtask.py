@@ -563,7 +563,8 @@ class BugTargetTraversalMixin:
         travseral_stack = self.request.getTraversalStack()
         if len(travseral_stack) > 0:
             raise NotFoundError
-        return self.redirectSubTree(canonical_url(bug.default_bugtask))
+        return self.redirectSubTree(
+            canonical_url(bug.default_bugtask, request=self.request))
 
 
 class BugTaskNavigation(Navigation):

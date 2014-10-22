@@ -17,7 +17,7 @@ from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.publication import test_traverse
 
 
-class TestBugtaskTraversal(TestCaseWithFactory):
+class TestBugTaskTraversal(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
@@ -47,3 +47,16 @@ class TestBugtaskTraversal(TestCaseWithFactory):
         login_person(bugtask.owner)
         bugtask.delete()
         self.assertRaises(NotFound, test_traverse, bugtask_delete_url)
+
+    def test_traversal_to_nonexistent_bugtask_on_api(self):
+        # Traversing to a non-existent bugtask on the API redirects to
+        # the default bugtask, but also on the API.
+        bug = self.factory.makeBug()
+        product = self.factory.makeProduct()
+        obj, view, request = test_traverse(
+            'http://api.launchpad.dev/1.0/%s/+bug/%d'
+            % (product.name, bug.default_bugtask.bug.id))
+        self.assertEqual(
+            removeSecurityProxy(view).target,
+            'http://api.launchpad.dev/1.0/%s/+bug/%d'
+            % (bug.default_bugtask.target.name, bug.default_bugtask.bug.id))
