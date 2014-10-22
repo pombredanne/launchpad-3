@@ -5,13 +5,20 @@
 
 __metaclass__ = type
 
+from zope.component import getUtility
+
+from lp.app.enums import InformationType
+from lp.app.interfaces.services import IService
+from lp.registry.enums import SharingPermission
 from lp.registry.vocabularies import (
     DistributionOrProductOrProjectGroupVocabulary,
     DistributionOrProductVocabulary,
     PillarVocabularyBase,
     )
 from lp.testing import (
+    admin_logged_in,
     celebrity_logged_in,
+    login_person,
     TestCaseWithFactory,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
@@ -191,3 +198,21 @@ class TestDistributionOrProductOrProjectGroupVocabulary(TestCaseWithFactory,
         result = [term.value for term in terms]
         self.assertEqual([self.product, self.distribution], result)
         self.assertFalse(self.project_group in self.vocabulary)
+
+    def test_invisible_private_projects_are_excluded(self):
+        with admin_logged_in():
+            owner = self.factory.makePerson()
+            private = self.factory.makeProduct(
+                name="private-snark", owner=owner,
+                information_type=InformationType.PROPRIETARY)
+
+        # Anonymous users don't get the private project.
+        terms = self.vocabulary.searchForTerms('snark')
+        result = [term.value for term in terms]
+        self.assertNotIn(private, result)
+
+        # But the owner can see it.
+        login_person(owner)
+        terms = self.vocabulary.searchForTerms('snark')
+        result = [term.value for term in terms]
+        self.assertIn(private, result)
