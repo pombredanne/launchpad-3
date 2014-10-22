@@ -1893,7 +1893,7 @@ class Person(
         return self._members(direct=False)
 
     @property
-    def all_members_prepopulated(self):
+    def api_all_members(self):
         """See `IPerson`."""
         return self._members(direct=False, preload_for_api=True)
 
@@ -1961,7 +1961,7 @@ class Person(
             tables=columns,
             decorators=decorators)
 
-    def _members(self, direct, preload_for_api=False):
+    def _members(self, direct, status=None, preload_for_api=False):
         """Lookup all members of the team with optional precaching.
 
         :param direct: If True only direct members are returned.
@@ -1974,6 +1974,7 @@ class Person(
         #       wrong, but perhaps deliberate.
         origin = [Person]
         if not direct:
+            assert status is None
             origin.append(Join(
                 TeamParticipation, TeamParticipation.person == Person.id))
             conditions = And(
@@ -1982,15 +1983,15 @@ class Person(
                 # But not the team itself.
                 TeamParticipation.person != self.id)
         else:
+            if not isinstance(status, tuple):
+                status = (status,)
             origin.append(Join(
                 TeamMembership, TeamMembership.personID == Person.id))
             conditions = And(
                 # Membership in this team,
                 TeamMembership.team == self.id,
                 # And approved or admin status
-                TeamMembership.status.is_in([
-                    TeamMembershipStatus.APPROVED,
-                    TeamMembershipStatus.ADMIN]))
+                TeamMembership.status.is_in(status))
         # Use a PersonSet object that is not security proxied to allow
         # manipulation of the object.
         person_set = PersonSet()
@@ -2040,6 +2041,12 @@ class Person(
         return self.getMembersByStatus(TeamMembershipStatus.INVITED)
 
     @property
+    def api_invitedmembers(self):
+        return self._members(
+            True, status=TeamMembershipStatus.INVITED,
+            preload_for_api=True)
+
+    @property
     def invited_member_count(self):
         """See `IPerson`."""
         return self.invited_members.count()
@@ -2048,6 +2055,12 @@ class Person(
     def deactivatedmembers(self):
         """See `IPerson`."""
         return self.getMembersByStatus(TeamMembershipStatus.DEACTIVATED)
+
+    @property
+    def api_deactivatedmembers(self):
+        return self._members(
+            True, status=TeamMembershipStatus.DEACTIVATED,
+            preload_for_api=True)
 
     @property
     def deactivated_member_count(self):
@@ -2060,6 +2073,12 @@ class Person(
         return self.getMembersByStatus(TeamMembershipStatus.EXPIRED)
 
     @property
+    def api_expiredmembers(self):
+        return self._members(
+            True, status=TeamMembershipStatus.EXPIRED,
+            preload_for_api=True)
+
+    @property
     def expired_member_count(self):
         """See `IPerson`."""
         return self.expiredmembers.count()
@@ -2070,6 +2089,12 @@ class Person(
         return self.getMembersByStatus(TeamMembershipStatus.PROPOSED)
 
     @property
+    def api_proposedmembers(self):
+        return self._members(
+            True, status=TeamMembershipStatus.PROPOSED,
+            preload_for_api=True)
+
+    @property
     def proposed_member_count(self):
         """See `IPerson`."""
         return self.proposedmembers.count()
@@ -2078,6 +2103,12 @@ class Person(
     def adminmembers(self):
         """See `IPerson`."""
         return self.getMembersByStatus(TeamMembershipStatus.ADMIN)
+
+    @property
+    def api_adminmembers(self):
+        return self._members(
+            True, status=TeamMembershipStatus.ADMIN,
+            preload_for_api=True)
 
     @property
     def approvedmembers(self):
@@ -2093,7 +2124,11 @@ class Person(
     @property
     def api_activemembers(self):
         """See `IPerson`."""
-        return self._members(direct=True, preload_for_api=True)
+        return self._members(
+            direct=True,
+            status=(
+                TeamMembershipStatus.APPROVED, TeamMembershipStatus.ADMIN),
+            preload_for_api=True)
 
     @property
     def active_member_count(self):
@@ -3823,7 +3858,7 @@ class PersonSet:
             columns.append(Archive)
 
         # Checking validity requires having a preferred email.
-        if (need_preferred_email or need_api) and not need_validity:
+        if not need_api and need_preferred_email and not need_validity:
             # Teams don't have email, so a left join
             origin.append(
                 LeftJoin(EmailAddress, EmailAddress.person == Person.id))
@@ -3877,7 +3912,7 @@ class PersonSet:
                 index += 1
                 cache.archive = archive
             #-- preferred email caching
-            if (need_preferred_email or need_api) and not need_validity:
+            if not need_api and need_preferred_email and not need_validity:
                 email = row[index]
                 index += 1
                 cache.preferredemail = email

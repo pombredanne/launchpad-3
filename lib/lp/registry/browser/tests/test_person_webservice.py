@@ -3,18 +3,27 @@
 
 __metaclass__ = type
 
+from testtools.matchers import Equals
+from zope.component import getUtility
 from zope.security.management import endInteraction
 from zope.security.proxy import removeSecurityProxy
 
+from lp.registry.interfaces.person import TeamMembershipStatus
+from lp.registry.interfaces.teammembership import ITeamMembershipSet
 from lp.testing import (
     admin_logged_in,
     launchpadlib_for,
+    record_two_runs,
     login,
     logout,
     TestCaseWithFactory,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
-from lp.testing.pages import LaunchpadWebServiceCaller
+from lp.testing.matchers import HasQueryCount
+from lp.testing.pages import (
+    LaunchpadWebServiceCaller,
+    webservice_for_person,
+    )
 
 
 class TestPersonEmailSecurity(TestCaseWithFactory):
@@ -76,6 +85,35 @@ class TestPersonRepresentation(TestCaseWithFactory):
         self.assertEquals(
             rendered_comment,
             '<a href="/~test-person" class="sprite person">Test Person</a>')
+
+
+class PersonWebServiceTests(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_deactivated_members_query_count(self):
+        with admin_logged_in():
+            team = self.factory.makeTeam()
+            owner = team.teamowner
+            name = team.name
+        ws = webservice_for_person(owner)
+
+        def create_member():
+            with admin_logged_in():
+                person = self.factory.makePerson()
+                team.addMember(person, owner)
+                getUtility(ITeamMembershipSet).getByPersonAndTeam(
+                    person, team).setStatus(
+                        TeamMembershipStatus.DEACTIVATED, owner, u"Go away.")
+
+        def get_members():
+            ws.get('/~%s/deactivated_members' % name).jsonBody()
+
+        # Ensure that we're already in a stable cache state.
+        get_members()
+        recorder1, recorder2 = record_two_runs(
+            get_members, create_member, 2)
+        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
 
 
 class PersonSetWebServiceTests(TestCaseWithFactory):
