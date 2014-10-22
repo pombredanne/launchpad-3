@@ -1895,9 +1895,7 @@ class Person(
     @property
     def all_members_prepopulated(self):
         """See `IPerson`."""
-        return self._members(direct=False, need_karma=True,
-            need_ubuntu_coc=True, need_location=True, need_archive=True,
-            need_preferred_email=True, need_validity=True)
+        return self._members(direct=False, preload_for_api=True)
 
     @staticmethod
     def _validity_queries(person_table=None):
@@ -1963,20 +1961,12 @@ class Person(
             tables=columns,
             decorators=decorators)
 
-    def _members(self, direct, need_karma=False, need_ubuntu_coc=False,
-        need_location=False, need_archive=False, need_preferred_email=False,
-        need_validity=False):
+    def _members(self, direct, preload_for_api=False):
         """Lookup all members of the team with optional precaching.
 
         :param direct: If True only direct members are returned.
-        :param need_karma: The karma attribute will be cached.
-        :param need_ubuntu_coc: The is_ubuntu_coc_signer attribute will be
-            cached.
-        :param need_location: The location attribute will be cached.
-        :param need_archive: The archive attribute will be cached.
-        :param need_preferred_email: The preferred email attribute will be
-            cached.
-        :param need_validity: The is_valid attribute will be cached.
+        :param preload_for_api: Preload attributes contained in the API
+            JSON representation.
         """
         # TODO: consolidate this with getMembersWithPreferredEmails.
         #       The difference between the two is that
@@ -2006,12 +1996,10 @@ class Person(
         person_set = PersonSet()
         return person_set._getPrecachedPersons(
             origin, conditions, store=Store.of(self),
-            need_karma=need_karma,
-            need_ubuntu_coc=need_ubuntu_coc,
-            need_location=need_location,
-            need_archive=need_archive,
-            need_preferred_email=need_preferred_email,
-            need_validity=need_validity)
+            need_karma=preload_for_api, need_ubuntu_coc=preload_for_api,
+            need_location=preload_for_api, need_archive=preload_for_api,
+            need_preferred_email=preload_for_api,
+            need_validity=preload_for_api)
 
     def _getMembersWithPreferredEmails(self):
         """Helper method for public getMembersWithPreferredEmails.
@@ -2109,9 +2097,7 @@ class Person(
     @property
     def api_activemembers(self):
         """See `IPerson`."""
-        return self._members(direct=True, need_karma=True,
-            need_ubuntu_coc=True, need_location=True, need_archive=True,
-            need_preferred_email=True, need_validity=True)
+        return self._members(direct=True, preload_for_api=True)
 
     @property
     def active_member_count(self):
