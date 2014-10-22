@@ -13,9 +13,9 @@ from lp.registry.interfaces.teammembership import ITeamMembershipSet
 from lp.testing import (
     admin_logged_in,
     launchpadlib_for,
-    record_two_runs,
     login,
     logout,
+    record_two_runs,
     TestCaseWithFactory,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
