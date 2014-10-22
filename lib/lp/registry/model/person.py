@@ -2041,7 +2041,7 @@ class Person(
         return self.getMembersByStatus(TeamMembershipStatus.INVITED)
 
     @property
-    def api_invitedmembers(self):
+    def api_invited_members(self):
         return self._members(
             True, status=TeamMembershipStatus.INVITED,
             preload_for_api=True)
