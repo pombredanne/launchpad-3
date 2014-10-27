@@ -1831,24 +1831,28 @@ class PillarVocabularyBase(NamedSQLObjectHugeVocabulary):
             return self.emptySelectResults()
         query = ensure_unicode(query).lower()
         store = IStore(PillarName)
-        equal_clauses = [PillarName.name == query]
-        like_clauses = [
-            PillarName.name != query, PillarName.name.contains_string(query)]
+        origin = [
+            PillarName,
+            LeftJoin(Product, Product.id == PillarName.productID),
+            ]
+        base_clauses = [
+            ProductSet.getProductPrivacyFilter(getUtility(ILaunchBag).user)]
         if self._filter:
-            equal_clauses.extend(self._filter)
-            like_clauses.extend(self._filter)
+            base_clauses.extend(self._filter)
         if vocab_filter:
-            equal_clauses.extend(vocab_filter.filter_terms)
-            like_clauses.extend(vocab_filter.filter_terms)
+            base_clauses.extend(vocab_filter.filter_terms)
+        equal_clauses = base_clauses + [PillarName.name == query]
+        like_clauses = base_clauses + [
+            PillarName.name != query, PillarName.name.contains_string(query)]
         ranked_results = store.execute(
             Union(
                 Select(
                     (PillarName.id, PillarName.name, SQL('100 AS rank')),
-                    tables=[PillarName],
+                    tables=origin,
                     where=And(*equal_clauses)),
                 Select(
                     (PillarName.id, PillarName.name, SQL('50 AS rank')),
-                    tables=[PillarName],
+                    tables=origin,
                     where=And(*like_clauses)),
                 limit=self._limit, order_by=(
                     Desc(SQL('rank')), PillarName.name), all=True))
