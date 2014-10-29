@@ -1930,9 +1930,9 @@ class TestPublisher(TestPublisherBase):
         self.assertEqual(str(len(translation_en_contents)),
                          i18n_index['sha1'][0]['size'])
 
-        # i18n/Index and i18n/Translation-en.bz2 are scheduled for inclusion
-        # in Release.
-        self.assertEqual(2, len(all_files))
+        # i18n/Index,  i18n/Translation-en, i18n/Translation-en.bz2
+        # are scheduled for inclusion in Release.
+        self.assertEqual(3, len(all_files))
         self.assertEqual(
             os.path.join('main', 'i18n', 'Index'), all_files.pop())
         self.assertEqual(
