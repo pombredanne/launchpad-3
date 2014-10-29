@@ -84,9 +84,9 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
         """
         # Create a temporary file that will be a new .htpasswd.
         pub_config = getPubConfig(ppa)
-        if not os.path.exists(pub_config.archiveroot):
-            os.makedirs(pub_config.archiveroot)
-        fd, temp_filename = tempfile.mkstemp(dir=pub_config.archiveroot)
+        if not os.path.exists(pub_config.temproot):
+            os.makedirs(pub_config.temproot)
+        fd, temp_filename = tempfile.mkstemp(dir=pub_config.temproot)
         os.close(fd)
 
         write_htpasswd(
@@ -105,7 +105,10 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
         # The publisher Config object does not have an
         # interface, so we need to remove the security wrapper.
         pub_config = getPubConfig(ppa)
-        htpasswd_filename = os.path.join(pub_config.archiveroot, ".htpasswd")
+        if not os.path.exists(pub_config.archiveroot):
+            os.makedirs(pub_config.archiveroot)
+        htpasswd_filename = os.path.join(
+            pub_config.archiveroot, ".htpasswd")
 
         if (not os.path.isfile(htpasswd_filename) or
             not filecmp.cmp(htpasswd_filename, temp_htpasswd_file)):

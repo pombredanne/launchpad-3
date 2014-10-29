@@ -133,11 +133,11 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         filename = script.generateHtpasswd(self.ppa)
         self.addCleanup(remove_if_exists, filename)
 
-        # It should be a temp file in the same directory as the intended
-        # target file when it's renamed, so that os.rename() won't
-        # complain about renaming across file systems.
+        # It should be a temp file on the same filesystem as the target
+        # file, so os.rename() won't explode. temproot is relied on
+        # elsewhere for this same purpose, so it should be safe.
         pub_config = getPubConfig(self.ppa)
-        self.assertEqual(pub_config.archiveroot, os.path.dirname(filename))
+        self.assertEqual(pub_config.temproot, os.path.dirname(filename))
 
         # Read it back in.
         file_contents = [
