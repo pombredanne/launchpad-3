@@ -77,7 +77,6 @@ from lp.services.webapp.errorlog import (
     ScriptRequest,
     )
 from lp.services.worlddata.model.country import Country
-from lp.soyuz.adapters.buildarch import determine_architectures_to_build
 from lp.soyuz.enums import (
     ArchivePurpose,
     BinaryPackageFormat,
@@ -582,71 +581,11 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             return proxied_urls((lfa,), self)[0]
         return None
 
-    def _getAllowedArchitectures(self, available_archs):
-        """Filter out any restricted architectures not specifically allowed
-        for an archive.
-
-        :param available_archs: Architectures to consider
-        :return: Sequence of `IDistroArch` instances.
-        """
-        # Return all distroarches with unrestricted processors or with
-        # processors the archive is explicitly associated with.
-        return [distroarch for distroarch in available_archs
-            if not distroarch.processor.restricted or
-               distroarch.processor in
-                    self.archive.enabled_restricted_processors]
-
     def createMissingBuilds(self, architectures_available=None, logger=None):
         """See `ISourcePackagePublishingHistory`."""
-        if architectures_available is None:
-            architectures_available = list(
-                self.distroseries.buildable_architectures)
-
-        architectures_available = self._getAllowedArchitectures(
-            architectures_available)
-
-        build_architectures = determine_architectures_to_build(
-            self.sourcepackagerelease.architecturehintlist, self.archive,
-            self.distroseries, architectures_available)
-
-        builds = []
-        for arch in build_architectures:
-            build_candidate = self._createMissingBuildForArchitecture(
-                arch, logger=logger)
-            if build_candidate is not None:
-                builds.append(build_candidate)
-
-        return builds
-
-    def _createMissingBuildForArchitecture(self, arch, logger=None):
-        """Create a build for a given architecture if it doesn't exist yet.
-
-        Return the just-created `IBinaryPackageBuild` record already
-        scored or None if a suitable build is already present.
-        """
-        build_candidate = self.sourcepackagerelease.getBuildByArch(
-            arch, self.archive)
-
-        # Check DistroArchSeries database IDs because the object belongs
-        # to different transactions (architecture_available is cached).
-        if (build_candidate is not None and
-            (build_candidate.distro_arch_series.id == arch.id or
-             build_candidate.status == BuildStatus.FULLYBUILT)):
-            return None
-
-        build = self.sourcepackagerelease.createBuild(
-            distro_arch_series=arch, archive=self.archive, pocket=self.pocket)
-        # Create the builds in suspended mode for disabled archives.
-        build_queue = build.queueBuild(suspended=not self.archive.enabled)
-        Store.of(build).flush()
-
-        if logger is not None:
-            logger.debug(
-                "Created %s [%d] in %s (%d)"
-                % (build.title, build.id, build.archive.displayname,
-                   build_queue.lastscore))
-
-        return build
+        return getUtility(IBinaryPackageBuildSet).createMissingBuilds(
+            self.sourcepackagerelease, self.archive, self.distroseries,
+            self.pocket, architectures_available, logger)
 
     @property
     def files(self):

@@ -48,6 +48,7 @@ from lp.soyuz.interfaces.publishing import (
     )
 from lp.soyuz.interfaces.queue import QueueInconsistentStateError
 from lp.soyuz.interfaces.section import ISectionSet
+from lp.soyuz.model.binarypackagebuild import BinaryPackageBuildSet
 from lp.soyuz.model.distroseriesdifferencejob import find_waiting_jobs
 from lp.soyuz.model.distroseriespackagecache import DistroSeriesPackageCache
 from lp.soyuz.model.publishing import (
@@ -876,7 +877,8 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         pubrec = self.getPubSource(architecturehintlist='any')
         self.assertEqual(
             [self.sparc_distroarch],
-            pubrec._getAllowedArchitectures(available_archs))
+            BinaryPackageBuildSet()._getAllowedArchitectures(
+                pubrec.archive, available_archs))
 
     def test__getAllowedArchitectures_restricted_override(self):
         """Test _getAllowedArchitectures honors overrides of restricted archs.
@@ -889,7 +891,8 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         pubrec = self.getPubSource(architecturehintlist='any')
         self.assertEqual(
             [self.sparc_distroarch, self.avr_distroarch],
-            pubrec._getAllowedArchitectures(available_archs))
+            BinaryPackageBuildSet()._getAllowedArchitectures(
+                pubrec.archive, available_archs))
 
     def test_createMissingBuilds_restricts_any(self):
         """createMissingBuilds() should limit builds targeted at 'any'

@@ -63,7 +63,7 @@ class TestBuildSet(TestCaseWithFactory):
                 version="%s.%s" % (self.factory.getUniqueInteger(), i),
                 distroseries=self.distroseries, architecturehintlist='any')
             self.spphs.append(spph)
-            builds = spph.createMissingBuilds()
+            builds = removeSecurityProxy(spph.createMissingBuilds())
             with person_logged_in(self.admin):
                 for b in builds:
                     b.updateStatus(BuildStatus.BUILDING)

@@ -398,6 +398,20 @@ class IBinaryPackageBuildSet(ISpecificBuildFarmJobSource):
 
         """
 
+    def createMissingBuilds(sourcepackagerelease, archive, distroseries,
+                            pocket, architectures_available=None,
+                            logger=None):
+        """Create missing build records for a source.
+
+        :param architectures_available: options list of `DistroArchSeries`
+            that should be considered for build creation; if not given
+            it will be calculated in place, all architectures for the
+            context distroseries with available chroot.
+        :param logger: optional context Logger object (used on DEBUG level).
+
+        :return: a list of `Builds` created for this source publication.
+        """
+
 
 class IBuildRescoreForm(Interface):
     """Form for rescoring a build."""
