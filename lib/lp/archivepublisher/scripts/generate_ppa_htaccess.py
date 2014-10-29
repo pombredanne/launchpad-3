@@ -99,25 +99,29 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
 
         :return: True if the file was replaced.
         """
-        if self.options.dryrun:
+        try:
+            if self.options.dryrun:
+                return False
+
+            # The publisher Config object does not have an
+            # interface, so we need to remove the security wrapper.
+            pub_config = getPubConfig(ppa)
+            if not os.path.exists(pub_config.archiveroot):
+                os.makedirs(pub_config.archiveroot)
+            htpasswd_filename = os.path.join(
+                pub_config.archiveroot, ".htpasswd")
+
+            if (not os.path.isfile(htpasswd_filename) or
+                not filecmp.cmp(htpasswd_filename, temp_htpasswd_file)):
+                # Atomically replace the old file or create a new file.
+                os.rename(temp_htpasswd_file, htpasswd_filename)
+                self.logger.debug("Replaced htpasswd for %s" % ppa.displayname)
+                return True
+
             return False
-
-        # The publisher Config object does not have an
-        # interface, so we need to remove the security wrapper.
-        pub_config = getPubConfig(ppa)
-        if not os.path.exists(pub_config.archiveroot):
-            os.makedirs(pub_config.archiveroot)
-        htpasswd_filename = os.path.join(
-            pub_config.archiveroot, ".htpasswd")
-
-        if (not os.path.isfile(htpasswd_filename) or
-            not filecmp.cmp(htpasswd_filename, temp_htpasswd_file)):
-            # Atomically replace the old file or create a new file.
-            os.rename(temp_htpasswd_file, htpasswd_filename)
-            self.logger.debug("Replaced htpasswd for %s" % ppa.displayname)
-            return True
-
-        return False
+        finally:
+            if os.path.exists(temp_htpasswd_file):
+                os.unlink(temp_htpasswd_file)
 
     def sendCancellationEmail(self, token):
         """Send an email to the person whose subscription was cancelled."""

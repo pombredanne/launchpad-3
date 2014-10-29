@@ -166,21 +166,29 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         write_file(filename, FILE_CONTENT)
 
         # Write the same contents in a temp file.
-        fd, temp_filename = tempfile.mkstemp(dir=pub_config.archiveroot)
-        file = os.fdopen(fd, "w")
-        file.write(FILE_CONTENT)
-        file.close()
+        def write_tempfile():
+            fd, temp_filename = tempfile.mkstemp(dir=pub_config.archiveroot)
+            file = os.fdopen(fd, "w")
+            file.write(FILE_CONTENT)
+            file.close()
+            return temp_filename
 
         # Replacement should not happen.
+        temp_filename = write_tempfile()
         script = self.getScript()
+        self.assertTrue(os.path.exists(temp_filename))
         self.assertFalse(
             script.replaceUpdatedHtpasswd(self.ppa, temp_filename))
+        self.assertFalse(os.path.exists(temp_filename))
 
         # Writing a different .htpasswd should see it get replaced.
         write_file(filename, "Come to me, son of Jor-El!")
 
+        temp_filename = write_tempfile()
+        self.assertTrue(os.path.exists(temp_filename))
         self.assertTrue(
             script.replaceUpdatedHtpasswd(self.ppa, temp_filename))
+        self.assertFalse(os.path.exists(temp_filename))
 
         os.remove(filename)
 
