@@ -1924,20 +1924,21 @@ class TestPublisher(TestPublisherBase):
             translation_en_contents = translation_en_file.read()
         i18n_index = self.parseI18nIndex(os.path.join(i18n_root, 'Index'))
         self.assertTrue('sha1' in i18n_index)
-        self.assertEqual(1, len(i18n_index['sha1']))
+        self.assertEqual(3, len(i18n_index['sha1']))
         self.assertEqual(hashlib.sha1(translation_en_contents).hexdigest(),
-                         i18n_index['sha1'][0]['sha1'])
+                         i18n_index['sha1'][1]['sha1'])
         self.assertEqual(str(len(translation_en_contents)),
-                         i18n_index['sha1'][0]['size'])
+                         i18n_index['sha1'][1]['size'])
 
-        # i18n/Index,  i18n/Translation-en, i18n/Translation-en.bz2
-        # are scheduled for inclusion in Release.
-        self.assertEqual(3, len(all_files))
-        self.assertEqual(
-            os.path.join('main', 'i18n', 'Index'), all_files.pop())
-        self.assertEqual(
-            os.path.join('main', 'i18n', 'Translation-en.bz2'),
-            all_files.pop())
+        # i18n/Index and i18n/Translation-en.bz2 are scheduled for inclusion
+        # in Release.
+        self.assertEqual(4, len(all_files))
+        self.assertContentEqual(
+            ['main/i18n/Index',
+             'main/i18n/Translation-en',
+             'main/i18n/Translation-en.gz',
+             'main/i18n/Translation-en.bz2'],
+            all_files)
 
     def testWriteSuiteI18nMissingDirectory(self):
         """i18n/Index is not generated when the i18n directory is missing."""
