@@ -935,10 +935,6 @@ class Publisher(object):
             for i18n_file in os.listdir(i18n_dir):
                 if not i18n_file.startswith('Translation-'):
                     continue
-                if not i18n_file.endswith('.bz2'):
-                    # Save bandwidth: mirrors should only need the .bz2
-                    # versions.
-                    continue
                 i18n_files.append(i18n_file)
         except OSError as e:
             if e.errno != errno.ENOENT:
