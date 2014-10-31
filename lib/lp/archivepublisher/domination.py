@@ -70,6 +70,7 @@ from storm.expr import (
     Desc,
     Select,
     )
+from zope.component import getUtility
 
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.database.bulk import load_related
@@ -85,7 +86,10 @@ from lp.soyuz.enums import (
     BinaryPackageFormat,
     PackagePublishingStatus,
     )
-from lp.soyuz.interfaces.publishing import inactive_publishing_status
+from lp.soyuz.interfaces.publishing import (
+    inactive_publishing_status,
+    IPublishingSet,
+    )
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
@@ -289,8 +293,8 @@ class ArchSpecificPublicationsCache:
     @staticmethod
     def _lookUp(spr, archive, distroseries, pocket):
         """Look up an answer in the database."""
-        query = spr.getActiveArchSpecificPublications(
-            archive, distroseries, pocket)
+        query = getUtility(IPublishingSet).getActiveArchSpecificPublications(
+            spr, archive, distroseries, pocket)
         return not query.is_empty()
 
 
