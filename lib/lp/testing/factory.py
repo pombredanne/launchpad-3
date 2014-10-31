@@ -75,7 +75,6 @@ from lp.archiveuploader.dscfile import DSCFile
 from lp.blueprints.enums import (
     NewSpecificationDefinitionStatus,
     SpecificationDefinitionStatus,
-    SpecificationPriority,
     SpecificationWorkItemStatus,
     )
 from lp.blueprints.interfaces.specification import ISpecificationSet

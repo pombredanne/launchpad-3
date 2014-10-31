@@ -63,7 +63,6 @@ from lp.services.propertycache import (
     )
 from lp.soyuz.enums import PackageDiffStatus
 from lp.soyuz.interfaces.archive import MAIN_ARCHIVE_PURPOSES
-from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.packagediff import PackageDiffAlreadyRequested
 from lp.soyuz.interfaces.packagediffjob import IPackageDiffJobSource
 from lp.soyuz.interfaces.queue import QueueInconsistentStateError
