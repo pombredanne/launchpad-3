@@ -1564,32 +1564,6 @@ class PublishingSet:
                 active_publishing_status),
             BinaryPackageRelease.architecturespecific == True)
 
-    def getPackageDiffsForSources(self, one_or_more_source_publications):
-        """See `PublishingSet`."""
-        source_publication_ids = self._extractIDs(
-            one_or_more_source_publications)
-        store = IStore(SourcePackagePublishingHistory)
-        origin = (
-            SourcePackagePublishingHistory,
-            PackageDiff,
-            LeftJoin(LibraryFileAlias,
-                     LibraryFileAlias.id == PackageDiff.diff_contentID),
-            LeftJoin(LibraryFileContent,
-                     LibraryFileContent.id == LibraryFileAlias.contentID),
-            )
-        result_set = store.using(*origin).find(
-            (SourcePackagePublishingHistory, PackageDiff,
-             LibraryFileAlias, LibraryFileContent),
-            SourcePackagePublishingHistory.sourcepackagereleaseID ==
-                PackageDiff.to_sourceID,
-            SourcePackagePublishingHistory.id.is_in(source_publication_ids))
-
-        result_set.order_by(
-            SourcePackagePublishingHistory.id,
-            Desc(PackageDiff.date_requested))
-
-        return result_set
-
     def getChangesFilesForSources(self, one_or_more_source_publications):
         """See `IPublishingSet`."""
         # Avoid circular imports.

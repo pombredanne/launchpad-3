@@ -957,7 +957,6 @@ which create new publishing records, and:
  * getUnpublishedBuildsForSources();
  * getFilesForSources();
  * getBinaryPublicationsForSources();
- * getPackageDiffsForSources();
 
 which receive a list of `SourcePackagePublishingHistory` objects and
 fetch the corresponding information for all of them.
@@ -1211,105 +1210,6 @@ Please note how the result set is ordered by the id of `LibraryFileAlias`
     mno-bin_999_all.deb
     mno-bin_999_all.deb
     pqr-bin_666_all.deb
-
-getPackageDiffsForSources() is also provided by `IPublishingSet`, it
-allows callsites to retrieve all related `PackageDiff` records based
-on a collection of source publications.
-
-The sampledata does not contain any `PackageDiff`s, thus nothing is
-returned for the Celso's sources.
-
-    >>> cprov_diffs = publishing_set.getPackageDiffsForSources(
-    ...     cprov_sources)
-
-    >>> cprov_diffs.count()
-    0
-
-For testing purposes we will create a `PackageDiff` for Celso's
-'pmount' and another for Celso's 'iceweasel' sources.
-
-    >>> a_source = cprov_sources[1]
-    >>> print a_source.displayname
-    iceweasel 1.0 in warty
-
-    >>> to_source = cprov_sources[-2]
-    >>> print to_source.displayname
-    pmount 0.1-1 in warty
-
-    >>> pmount_diff = a_source.sourcepackagerelease.requestDiffTo(
-    ...     cprov, to_source.sourcepackagerelease)
-    >>> print pmount_diff.title
-    diff from 1.0 (in Ubuntu) to 0.1-1
-
-    >>> iceweasel_diff = to_source.sourcepackagerelease.requestDiffTo(
-    ...     cprov, a_source.sourcepackagerelease)
-    >>> print iceweasel_diff.title
-    diff from 0.1-1 (in Ubuntu) to 1.0
-
-    >>> from lp.services.database.sqlbase import flush_database_updates
-    >>> flush_database_updates()
-
-The `PackageDiff` are availble via getPackageDiffsForSources() even if
-they are not completed yet.
-
-    >>> cprov_diffs.count()
-    2
-
-Let's fulfill the file related with the 'pmount' diff.
-
-    >>> from lp.services.librarian.interfaces import (
-    ...     ILibraryFileAliasSet)
-
-    >>> diff_file = getUtility(ILibraryFileAliasSet)[1]
-
-    >>> from zope.security.proxy import removeSecurityProxy
-    >>> naked_diff = removeSecurityProxy(pmount_diff)
-    >>> naked_diff.diff_content = diff_file
-    >>> flush_database_updates()
-
-getPackageDiffsForSources() returns a list of 4-element tuple, ordered
-by ascending publishing id and descending `PackageDiff` creation date,
-containing:
-
- * `SourcePackagePublishingHistory`;
- * `PackageDiff`;
- * `LibraryFileAlias`;
- * `LibraryFileContent`.
-
-    >>> [iceweasel_diff, pmount_diff] = cprov_diffs
-
-    >>> source_pub, diff, file, content = pmount_diff
-
-    >>> print source_pub.displayname
-    pmount 0.1-1 in warty
-
-    >>> print diff.title
-    diff from 1.0 (in Ubuntu) to 0.1-1
-
-    >>> print file.filename
-    netapplet-1.0.0.tar.gz
-
-    >>> print content.md5
-    01234567890123456789012345678900
-
-All elements of the result are present, even if they do not correspond
-to actual objects in the database, which is the case of pending diff
-requests. On pending diffs, `LibraryFileAlias` and
-`LibraryFileContent` elements are None.
-
-    >>> source_pub, diff, file, content = iceweasel_diff
-
-    >>> print source_pub.displayname
-    iceweasel 1.0 in warty
-
-    >>> print diff.title
-    diff from 0.1-1 (in Ubuntu) to 1.0
-
-    >>> print file
-    None
-
-    >>> print content
-    None
 
 getChangesFilesForSources(), provided by IPublishingSet, allows
 call sites to retrieve all .changes files related to a set of source
