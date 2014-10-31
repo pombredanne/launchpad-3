@@ -297,12 +297,6 @@ class SourcePackageRelease(SQLBase):
         else:
             return 0.0
 
-    def createBuild(self, distro_arch_series, pocket, archive,
-                    status=BuildStatus.NEEDSBUILD):
-        """See ISourcePackageRelease."""
-        return getUtility(IBinaryPackageBuildSet).new(
-            self, archive, distro_arch_series, pocket, status=status)
-
     def findBuildsByArchitecture(self, distroseries, archive):
         """Find associated builds, by architecture.
 

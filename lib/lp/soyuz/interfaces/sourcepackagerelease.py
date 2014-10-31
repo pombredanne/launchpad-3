@@ -174,16 +174,6 @@ class ISourcePackageRelease(Interface):
         :return the corresponding `ILibraryFileAlias` if the file was found.
         """
 
-    def createBuild(distroarchseries, pocket, archive, processor=None,
-                    status=None):
-        """Create a build for a given distroarchseries/pocket/archive
-
-        If the processor isn't given, guess it from the distroarchseries.
-        If the status isn't given, use NEEDSBUILD.
-
-        Return the just created IBuild.
-        """
-
     def getBuildByArch(distroarchseries, archive):
         """Return build for the given distroarchseries/archive.
 
