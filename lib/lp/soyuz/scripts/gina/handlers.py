@@ -181,7 +181,7 @@ class ImporterHandler:
         self.distro = self._get_distro(distro_name)
         self.distroseries = self._get_distroseries(distroseries_name)
 
-        self.archinfo = {}
+        self.arch_map = {}
         self.imported_sources = []
         self.imported_bins = {}
 
@@ -192,7 +192,7 @@ class ImporterHandler:
 
         self.sppublisher = SourcePackagePublisher(
             self.distroseries, pocket, self.component_override)
-        # This is initialized in ensure_archinfo
+        # This is initialized in ensure_arch
         self.bppublishers = {}
 
     def commit(self):
@@ -203,25 +203,23 @@ class ImporterHandler:
         """Rollback changes to the database."""
         self.ztm.abort()
 
-    def ensure_archinfo(self, archtag):
+    def ensure_arch(self, archtag):
         """Append retrived distroarchseries info to a dict."""
-        if archtag in self.archinfo.keys():
+        if archtag in self.arch_map:
             return
 
         # Get distroarchseries and processor from the architecturetag.
-        dar = DistroArchSeries.selectOneBy(
+        das = DistroArchSeries.selectOneBy(
                 distroseriesID=self.distroseries.id,
                 architecturetag=archtag)
-        if not dar:
+        if not das:
             raise DataSetupError("Error finding distroarchseries for %s/%s"
                                  % (self.distroseries.name, archtag))
 
-        processor = dar.processor
-        info = {'distroarchseries': dar, 'processor': processor}
-        self.archinfo[archtag] = info
+        self.arch_map[archtag] = das
 
         self.bppublishers[archtag] = BinaryPackagePublisher(
-            dar, self.pocket, self.component_override)
+            das, self.pocket, self.component_override)
         self.imported_bins[archtag] = []
 
     #
@@ -282,9 +280,8 @@ class ImporterHandler:
         happen, for instance, if a binary package didn't change over
         releases, or if Gina runs multiple times over the same release
         """
-        distroarchinfo = self.archinfo[archtag]
-        binarypackagerelease = self.bphandler.checkBin(binarypackagedata,
-                                                       distroarchinfo)
+        binarypackagerelease = self.bphandler.checkBin(
+            binarypackagedata, self.arch_map[archtag])
         if not binarypackagerelease:
             log.debug('BPR not found in preimport: %r %r %r' %
                 (binarypackagedata.package, binarypackagedata.version,
@@ -297,13 +294,12 @@ class ImporterHandler:
 
     def import_binarypackage(self, archtag, binarypackagedata):
         """Handler the binarypackage import process"""
-        distroarchinfo = self.archinfo[archtag]
-
         # We know that preimport_binarycheck has run
-        assert not self.bphandler.checkBin(binarypackagedata, distroarchinfo)
+        assert not self.bphandler.checkBin(
+            binarypackagedata, self.arch_map[archtag])
 
         # Find the sourcepackagerelease that generated this binarypackage.
-        distroseries = distroarchinfo['distroarchseries'].distroseries
+        distroseries = self.arch_map[archtag].distroseries
         sourcepackage = self.locate_sourcepackage(binarypackagedata,
                                                   distroseries)
         if not sourcepackage:
@@ -317,7 +313,7 @@ class ImporterHandler:
                                  binarypackagedata.source_version))
 
         binarypackagerelease = self.bphandler.createBinaryPackage(
-            binarypackagedata, sourcepackage, distroarchinfo, archtag)
+            binarypackagedata, sourcepackage, self.arch_map[archtag], archtag)
         self.publish_binarypackage(binarypackagerelease, binarypackagedata,
                                    archtag)
 
@@ -733,7 +729,7 @@ class BinaryPackageHandler:
         self.archive_root = archive_root
         self.pocket = pocket
 
-    def checkBin(self, binarypackagedata, distroarchinfo):
+    def checkBin(self, binarypackagedata, distroarchseries):
         """Returns a binarypackage -- if it exists."""
         try:
             binaryname = BinaryPackageName.byName(binarypackagedata.package)
@@ -747,7 +743,7 @@ class BinaryPackageHandler:
 
         clauseTables = ["BinaryPackageRelease", "DistroSeries",
                         "BinaryPackageBuild", "DistroArchSeries"]
-        distroseries = distroarchinfo['distroarchseries'].distroseries
+        distroseries = distroarchseries.distroseries
 
         # When looking for binaries, we need to remember that they are
         # shared between distribution releases, so match on the
@@ -777,7 +773,7 @@ class BinaryPackageHandler:
                      distroseries.distribution.name))
         return bpr
 
-    def createBinaryPackage(self, bin, srcpkg, distroarchinfo, archtag):
+    def createBinaryPackage(self, bin, srcpkg, distroarchseries, archtag):
         """Create a new binarypackage."""
         fdir, fname = os.path.split(bin.filename)
         to_upload = check_not_in_librarian(fname, bin.archive_root, fdir)
@@ -788,7 +784,7 @@ class BinaryPackageHandler:
         architecturespecific = (bin.architecture != "all")
 
         bin_name = getUtility(IBinaryPackageNameSet).ensure(bin.package)
-        build = self.ensureBuild(bin, srcpkg, distroarchinfo, archtag)
+        build = self.ensureBuild(bin, srcpkg, distroarchseries, archtag)
 
         # Create the binarypackage entry on lp db.
         binpkg = BinaryPackageRelease(
@@ -828,9 +824,8 @@ class BinaryPackageHandler:
         # Return the binarypackage object.
         return binpkg
 
-    def ensureBuild(self, binary, srcpkg, distroarchinfo, archtag):
+    def ensureBuild(self, binary, srcpkg, distroarchseries, archtag):
         """Ensure a build record."""
-        distroarchseries = distroarchinfo['distroarchseries']
         distribution = distroarchseries.distroseries.distribution
         clauseTables = [
             "BinaryPackageBuild",
