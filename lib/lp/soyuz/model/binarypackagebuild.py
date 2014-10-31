@@ -1429,7 +1429,8 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
         Return the just-created `IBinaryPackageBuild` record already
         scored or None if a suitable build is already present.
         """
-        build_candidate = sourcepackagerelease.getBuildByArch(arch, archive)
+        build_candidate = self.getBySourceAndLocation(
+            sourcepackagerelease, archive, arch)
 
         # Check DistroArchSeries database IDs because the object belongs
         # to different transactions (architecture_available is cached).

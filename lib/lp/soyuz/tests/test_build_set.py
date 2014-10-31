@@ -9,13 +9,20 @@ from zope.security.proxy import removeSecurityProxy
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.soyuz.enums import ArchivePurpose
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    SourcePackageFormat,
+    )
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.binarypackagebuild import (
     BuildSetStatus,
     IBinaryPackageBuildSet,
     )
+from lp.soyuz.interfaces.sourcepackageformat import (
+    ISourcePackageFormatSelectionSet,
+    )
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuildSet
+from lp.soyuz.scripts.packagecopier import do_copy
 from lp.soyuz.tests.test_publishing import (
     SoyuzTestPublisher,
     TestNativePublishingBase,
@@ -312,7 +319,7 @@ class BuildRecordCreationTests(TestNativePublishingBase):
 
 
 class TestFindBySourceAndLocation(TestCaseWithFactory):
-    """Tests for SourcePackageRelease.findBuildsByArchitecture."""
+    """Tests for the _findBySourceAndLocation helper."""
 
     layer = ZopelessDatabaseLayer
 
@@ -347,3 +354,54 @@ class TestFindBySourceAndLocation(TestCaseWithFactory):
             {distroseries.nominatedarchindep.architecturetag: bpr.build},
             BinaryPackageBuildSet()._findBySourceAndLocation(
                 naked_spr, archive, distroseries))
+
+
+class TestGetBySourceAndLocation(TestCaseWithFactory):
+    """Tests for BinaryPackageBuildSet.getBySourceAndLocation()."""
+
+    layer = ZopelessDatabaseLayer
+
+    def test_can_find_build_in_derived_distro_parent(self):
+        # If a derived distribution inherited its binaries from its
+        # parent then getBySourceAndLocation() should look in the parent
+        # to find the build.
+        dsp = self.factory.makeDistroSeriesParent()
+        parent_archive = dsp.parent_series.main_archive
+
+        # Create a built, published package in the parent archive.
+        spr = self.factory.makeSourcePackageRelease(
+            architecturehintlist='any')
+        parent_source_pub = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagerelease=spr, archive=parent_archive,
+            distroseries=dsp.parent_series)
+        das = self.factory.makeDistroArchSeries(
+            distroseries=dsp.parent_series, supports_virtualized=True)
+        orig_build = getUtility(IBinaryPackageBuildSet).new(
+            spr, parent_archive, das, PackagePublishingPocket.RELEASE,
+            status=BuildStatus.FULLYBUILT)
+        bpr = self.factory.makeBinaryPackageRelease(build=orig_build)
+        self.factory.makeBinaryPackagePublishingHistory(
+            binarypackagerelease=bpr, distroarchseries=das,
+            archive=parent_archive)
+
+        # Make an architecture in the derived series with the same
+        # archtag as the parent.
+        das_derived = self.factory.makeDistroArchSeries(
+            dsp.derived_series, architecturetag=das.architecturetag,
+            processor=das.processor, supports_virtualized=True)
+        # Now copy the package to the derived series, with binary.
+        derived_archive = dsp.derived_series.main_archive
+        getUtility(ISourcePackageFormatSelectionSet).add(
+            dsp.derived_series, SourcePackageFormat.FORMAT_1_0)
+
+        do_copy(
+            [parent_source_pub], derived_archive, dsp.derived_series,
+            PackagePublishingPocket.RELEASE, include_binaries=True,
+            check_permissions=False)
+
+        # Searching for the build in the derived series architecture
+        # should automatically pick it up from the parent.
+        found_build = getUtility(
+            IBinaryPackageBuildSet).getBySourceAndLocation(
+                spr, derived_archive, das_derived)
+        self.assertEqual(orig_build, found_build)

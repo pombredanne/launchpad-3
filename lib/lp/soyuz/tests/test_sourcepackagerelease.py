@@ -20,14 +20,9 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
-    SourcePackageFormat,
     )
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.publishing import active_publishing_status
-from lp.soyuz.interfaces.sourcepackageformat import (
-    ISourcePackageFormatSelectionSet,
-    )
-from lp.soyuz.scripts.packagecopier import do_copy
 from lp.testing import (
     TestCaseWithFactory,
     )
@@ -209,52 +204,3 @@ class TestGetActiveArchSpecificPublications(TestCaseWithFactory):
             [by_status[status] for status in active_publishing_status],
             spr.getActiveArchSpecificPublications(
                 bpphs[0].archive, bpphs[0].distroseries, bpphs[0].pocket))
-
-
-class TestSourcePackageReleaseGetBuildByArch(TestCaseWithFactory):
-    """Tests for SourcePackageRelease.getBuildByArch()."""
-
-    layer = ZopelessDatabaseLayer
-
-    def test_can_find_build_in_derived_distro_parent(self):
-        # If a derived distribution inherited its binaries from its
-        # parent then getBuildByArch() should look in the parent to find
-        # the build.
-        dsp = self.factory.makeDistroSeriesParent()
-        parent_archive = dsp.parent_series.main_archive
-
-        # Create a built, published package in the parent archive.
-        spr = self.factory.makeSourcePackageRelease(
-            architecturehintlist='any')
-        parent_source_pub = self.factory.makeSourcePackagePublishingHistory(
-            sourcepackagerelease=spr, archive=parent_archive,
-            distroseries=dsp.parent_series)
-        das = self.factory.makeDistroArchSeries(
-            distroseries=dsp.parent_series, supports_virtualized=True)
-        orig_build = getUtility(IBinaryPackageBuildSet).new(
-            spr, parent_archive, das, PackagePublishingPocket.RELEASE,
-            status=BuildStatus.FULLYBUILT)
-        bpr = self.factory.makeBinaryPackageRelease(build=orig_build)
-        self.factory.makeBinaryPackagePublishingHistory(
-            binarypackagerelease=bpr, distroarchseries=das,
-            archive=parent_archive)
-
-        # Make an architecture in the derived series with the same
-        # archtag as the parent.
-        das_derived = self.factory.makeDistroArchSeries(
-            dsp.derived_series, architecturetag=das.architecturetag,
-            processor=das.processor, supports_virtualized=True)
-        # Now copy the package to the derived series, with binary.
-        derived_archive = dsp.derived_series.main_archive
-        getUtility(ISourcePackageFormatSelectionSet).add(
-            dsp.derived_series, SourcePackageFormat.FORMAT_1_0)
-
-        do_copy(
-            [parent_source_pub], derived_archive, dsp.derived_series,
-            PackagePublishingPocket.RELEASE, include_binaries=True,
-            check_permissions=False)
-
-        # Searching for the build in the derived series architecture
-        # should automatically pick it up from the parent.
-        found_build = spr.getBuildByArch(das_derived, derived_archive)
-        self.assertEqual(orig_build, found_build)
