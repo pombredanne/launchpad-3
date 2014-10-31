@@ -12,16 +12,13 @@ __metaclass__ = type
 from textwrap import dedent
 
 import transaction
-from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
     )
-from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.publishing import active_publishing_status
 from lp.testing import (
     TestCaseWithFactory,
