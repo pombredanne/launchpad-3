@@ -20,6 +20,7 @@ from lp.soyuz.enums import (
     PackagePublishingStatus,
     PackageUploadStatus,
     )
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.soyuz.interfaces.publishing import IPublishingSet
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
@@ -139,9 +140,9 @@ class TestStagedBinaryUploadBase(TestUploadProcessorBase):
     def _createBuild(self, archtag):
         """Create a build record attached to the base source."""
         spr = self.source_queue.sources[0].sourcepackagerelease
-        build = spr.createBuild(
-            distro_arch_series=self.distroseries[archtag],
-            pocket=self.pocket, archive=self.distroseries.main_archive)
+        build = getUtility(IBinaryPackageBuildSet).new(
+            spr, self.distroseries.main_archive, self.distroseries[archtag],
+            self.pocket)
         self.layer.txn.commit()
         return build
 

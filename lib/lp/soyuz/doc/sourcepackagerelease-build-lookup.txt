@@ -39,8 +39,8 @@ Retrieve hoary/i386 and hoary/hppa `DistroArchSeries.
     ...    PackagePublishingPocket)
     >>> pocket_release = PackagePublishingPocket.RELEASE
 
-The base method createBuild() is able to create a build to a given
-distro_arch_series, pocket and archive.
+The base method BinaryPackageBuildSet.new() is able to create a build to
+a given distro_arch_series, pocket and archive.
 
 Build.status, by default is set to NEEDSBUILD, but you can
 optionally provide another status.
@@ -49,8 +49,10 @@ optionally provide another status.
     >>> evo_release = hoary_evo_source['1.0'].sourcepackagerelease
 
     >>> from lp.buildmaster.enums import BuildStatus
-    >>> evo_build_i386 = evo_release.createBuild(
-    ...     hoary_i386, pocket_release, ubuntu.main_archive,
+    >>> from lp.soyuz.interfaces.binarypackagebuild import (
+    ...     IBinaryPackageBuildSet)
+    >>> evo_build_i386 = getUtility(IBinaryPackageBuildSet).new(
+    ...     evo_release, ubuntu.main_archive, hoary_i386, pocket_release,
     ...     status=BuildStatus.FULLYBUILT)
 
     >>> print evo_build_i386.status.name
@@ -192,8 +194,9 @@ introduced by the PPA itself, like new package or new dependency
 versions, so the resulted binary will be influenced by the PPA
 contents at the time it was built.
 
-    >>> evo_build_i386_ppa = copy.sourcepackagerelease.createBuild(
-    ...     hoary_i386, pocket_release, cprov.archive)
+    >>> evo_build_i386_ppa = getUtility(IBinaryPackageBuildSet).new(
+    ...     copy.sourcepackagerelease, cprov.archive, hoary_i386,
+    ...     pocket_release)
 
     >>> evo_build_i386_ppa.status.name
     'NEEDSBUILD'
@@ -219,8 +222,9 @@ As expected, the hoary/hppa build is still missing in both archives.
 When we create a hoary/hppa build in the PPA context, it will continue
 to be missing in the PRIMARY archive context.
 
-    >>> evo_build_hppa_ppa = copy.sourcepackagerelease.createBuild(
-    ...     hoary_hppa, pocket_release, cprov.archive)
+    >>> evo_build_hppa_ppa = getUtility(IBinaryPackageBuildSet).new(
+    ...     copy.sourcepackagerelease, cprov.archive, hoary_hppa,
+    ...     pocket_release)
 
     >>> test_build_hppa_ppa = copy.sourcepackagerelease.getBuildByArch(
     ...     hoary_hppa, cprov.archive)

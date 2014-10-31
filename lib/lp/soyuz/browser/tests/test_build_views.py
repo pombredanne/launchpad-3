@@ -29,6 +29,7 @@ from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.soyuz.browser.build import BuildContextMenu
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.model.queue import PackageUploadBuild
 from lp.testing import (
@@ -68,8 +69,9 @@ class TestBuildViews(TestCaseWithFactory):
         # current_component used by the view returns None in that case.
         spph = self.factory.makeSourcePackagePublishingHistory()
         other_das = self.factory.makeDistroArchSeries()
-        build = spph.sourcepackagerelease.createBuild(
-            other_das, PackagePublishingPocket.RELEASE, spph.archive)
+        build = getUtility(IBinaryPackageBuildSet).new(
+            spph.sourcepackagerelease, spph.archive, other_das,
+            PackagePublishingPocket.RELEASE)
         view = create_initialized_view(build, name="+index")
         self.assertEqual('unknown', view.component_name)
 
