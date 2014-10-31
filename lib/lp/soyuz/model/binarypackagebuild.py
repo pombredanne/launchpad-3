@@ -894,13 +894,16 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
     implements(IBinaryPackageBuildSet)
 
     def new(self, distro_arch_series, source_package_release, archive, pocket,
-            status=BuildStatus.NEEDSBUILD, date_created=None, builder=None):
+            status=BuildStatus.NEEDSBUILD, builder=None):
         """See `IBinaryPackageBuildSet`."""
+        # Force the current timestamp instead of the default UTC_NOW for
+        # the transaction, avoid several row with same datecreated.
+        date_created = datetime.datetime.now(pytz.timezone('UTC'))
         # Create the BuildFarmJob for the new BinaryPackageBuild.
         build_farm_job = getUtility(IBuildFarmJobSource).new(
             BinaryPackageBuild.job_type, status, date_created, builder,
             archive)
-        binary_package_build = BinaryPackageBuild(
+        return BinaryPackageBuild(
             build_farm_job=build_farm_job,
             distro_arch_series=distro_arch_series,
             source_package_release=source_package_release,
@@ -910,10 +913,8 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
             is_distro_archive=archive.is_main,
             distribution=distro_arch_series.distroseries.distribution,
             distro_series=distro_arch_series.distroseries,
-            source_package_name=source_package_release.sourcepackagename)
-        if date_created is not None:
-            binary_package_build.date_created = date_created
-        return binary_package_build
+            source_package_name=source_package_release.sourcepackagename,
+            date_created=date_created)
 
     def getByID(self, id):
         """See `IBinaryPackageBuildSet`."""

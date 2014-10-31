@@ -3617,8 +3617,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 pocket=pocket)
         if status is None:
             status = BuildStatus.NEEDSBUILD
-        if date_created is None:
-            date_created = self.getUniqueDate()
         admins = getUtility(ILaunchpadCelebrities).admin
         with person_logged_in(admins.teamowner):
             binary_package_build = getUtility(IBinaryPackageBuildSet).new(
@@ -3627,7 +3625,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 status=status,
                 archive=archive,
                 pocket=pocket,
-                date_created=date_created,
                 builder=builder)
         IStore(binary_package_build).flush()
         return binary_package_build

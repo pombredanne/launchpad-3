@@ -300,16 +300,10 @@ class SourcePackageRelease(SQLBase):
     def createBuild(self, distro_arch_series, pocket, archive,
                     status=BuildStatus.NEEDSBUILD):
         """See ISourcePackageRelease."""
-        # Force the current timestamp instead of the default
-        # UTC_NOW for the transaction, avoid several row with
-        # same datecreated.
-        date_created = datetime.datetime.now(pytz.timezone('UTC'))
-
         return getUtility(IBinaryPackageBuildSet).new(
             distro_arch_series=distro_arch_series,
             source_package_release=self,
             status=status,
-            date_created=date_created,
             pocket=pocket,
             archive=archive)
 
