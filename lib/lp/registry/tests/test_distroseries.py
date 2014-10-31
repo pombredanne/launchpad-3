@@ -17,6 +17,10 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.archivepublisher.indices import (
+    build_binary_stanza_fields,
+    build_source_stanza_fields,
+    )
 from lp.registry.errors import NoSuchDistroSeries
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -510,7 +514,8 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
             for spp in self.series.getSourcePackagePublishing(
                     PackagePublishingPocket.RELEASE, self.universe_component,
                     self.series.main_archive):
-                spp.getIndexStanza()
+                build_source_stanza_fields(
+                    spp.sourcepackagerelease, spp.component, spp.section)
 
         recorder1, recorder2 = record_two_runs(
             get_index_stanzas,
@@ -528,7 +533,9 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
             for bpp in self.series.getBinaryPackagePublishing(
                     das.architecturetag, PackagePublishingPocket.RELEASE,
                     self.universe_component, self.series.main_archive):
-                bpp.getIndexStanza()
+                build_binary_stanza_fields(
+                    bpp.binarypackagerelease, bpp.component, bpp.section,
+                    bpp.priority, bpp.phased_update_percentage, False)
 
         das = self.factory.makeDistroArchSeries(distroseries=self.series)
         recorder1, recorder2 = record_two_runs(

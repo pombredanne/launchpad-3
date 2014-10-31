@@ -1028,8 +1028,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 PackagePublishingStatus.PUBLISHED)
 
         def eager_load(spphs):
-            # Preload everything which will be used by
-            # SourcePackagePublishingHistory.buildIndexStanzaFields.
+            # Preload everything which will be used by archivepublisher's
+            # build_source_stanza_fields.
             load_related(Section, spphs, ["sectionID"])
             sprs = load_related(
                 SourcePackageRelease, spphs, ["sourcepackagereleaseID"])
@@ -1064,8 +1064,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 PackagePublishingStatus.PUBLISHED)
 
         def eager_load(bpphs):
-            # Preload everything which will be used by
-            # BinaryPackagePublishingHistory.buildIndexStanzaFields.
+            # Preload everything which will be used by archivepublisher's
+            # build_binary_stanza_fields.
             load_related(Section, bpphs, ["sectionID"])
             bprs = load_related(
                 BinaryPackageRelease, bpphs, ["binarypackagereleaseID"])
