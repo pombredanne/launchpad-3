@@ -97,7 +97,7 @@ def format_description(summary, description):
 
 
 def build_source_stanza_fields(spr, component, section):
-    """See `IPublishing`."""
+    """Build a map of fields to be included in a Sources file."""
     # Special fields preparation.
     pool_path = makePoolPath(spr.name, component.name)
     files_list = []
@@ -137,7 +137,11 @@ def build_source_stanza_fields(spr, component, section):
 def build_binary_stanza_fields(bpr, component, section, priority,
                                phased_update_percentage,
                                separate_long_descriptions=False):
-    """See `IPublishing`."""
+    """Build a map of fields to be included in a Packages file.
+
+    :param separate_long_descriptions: if True, the long description will
+    be omitted from the stanza and Description-md5 will be included.
+    """
     spr = bpr.build.source_package_release
 
     # binaries have only one file, the DEB
@@ -218,7 +222,13 @@ def build_binary_stanza_fields(bpr, component, section, priority,
 
 
 def build_translations_stanza_fields(bpr, packages):
-    """See `IPublishing`."""
+    """Build a map of fields to be included in a Translation-en file.
+
+    :param packages: a set of (Package, Description-md5) tuples used to
+        determine if a package has already been added to the translation
+        file. The (Package, Description-md5) tuple will be added if it
+        doesn't aready exist.
+    """
     bin_description = format_description(bpr.summary, bpr.description)
     # Our formatted description isn't \n-terminated, but apt
     # considers the trailing \n to be part of the data to hash.
