@@ -114,7 +114,6 @@ from lp.soyuz.model.files import (
     BinaryPackageFile,
     SourcePackageReleaseFile,
     )
-from lp.soyuz.model.packagediff import PackageDiff
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
@@ -224,20 +223,6 @@ class SourcePackageFilePublishing(FilePublishingBase, SQLBase):
     def publishing_record(self):
         """See `IFilePublishing`."""
         return self.sourcepackagepublishing
-
-    @property
-    def file_type_name(self):
-        """See `ISourcePackagePublishingHistory`."""
-        fn = self.libraryfilealiasfilename
-        if ".orig.tar." in fn:
-            return "orig"
-        if fn.endswith(".dsc"):
-            return "dsc"
-        if ".diff." in fn:
-            return "diff"
-        if fn.endswith(".tar.gz"):
-            return "tar"
-        return "other"
 
 
 class BinaryPackageFilePublishing(FilePublishingBase, SQLBase):

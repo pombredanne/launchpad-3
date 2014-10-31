@@ -252,8 +252,6 @@ class IFilePublishing(Interface):
 
 class ISourcePackageFilePublishing(IFilePublishing):
     """Source package release files and their publishing status"""
-    file_type_name = Attribute(
-        "The uploaded file's type; one of 'orig', 'dsc', 'diff' or 'other'")
     sourcepackagename = TextLine(
             title=_('Binary package name'), required=True, readonly=True,
             )
