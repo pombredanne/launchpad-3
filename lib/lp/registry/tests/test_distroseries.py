@@ -10,7 +10,6 @@ __all__ = [
     ]
 
 from functools import partial
-from logging import getLogger
 
 from testtools.matchers import Equals
 import transaction
@@ -24,7 +23,6 @@ from lp.archivepublisher.indices import (
 from lp.registry.errors import NoSuchDistroSeries
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.registry.interfaces.series import SeriesStatus
 from lp.services.database.interfaces import IStore
 from lp.soyuz.enums import (
     ArchivePurpose,
