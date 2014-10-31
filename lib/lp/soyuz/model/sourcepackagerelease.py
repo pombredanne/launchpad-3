@@ -296,10 +296,6 @@ class SourcePackageRelease(SQLBase):
         else:
             return 0.0
 
-    def getBuildByArch(self, distroarchseries, archive):
-        return getUtility(IBinaryPackageBuildSet).getBySourceAndLocation(
-            self, archive, distroarchseries)
-
     def override(self, component=None, section=None, urgency=None):
         """See ISourcePackageRelease."""
         if component is not None:
