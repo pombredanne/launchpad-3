@@ -24,6 +24,7 @@ from storm.expr import (
     LeftJoin,
     Or,
     )
+from storm.info import ClassAlias
 from storm.locals import (
     Bool,
     DateTime,
@@ -893,27 +894,28 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
 class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
     implements(IBinaryPackageBuildSet)
 
-    def new(self, distro_arch_series, source_package_release, processor,
-            archive, pocket, status=BuildStatus.NEEDSBUILD,
-            date_created=None, builder=None):
+    def new(self, source_package_release, archive, distro_arch_series, pocket,
+            status=BuildStatus.NEEDSBUILD, builder=None):
         """See `IBinaryPackageBuildSet`."""
+        # Force the current timestamp instead of the default UTC_NOW for
+        # the transaction, avoid several row with same datecreated.
+        date_created = datetime.datetime.now(pytz.timezone('UTC'))
         # Create the BuildFarmJob for the new BinaryPackageBuild.
         build_farm_job = getUtility(IBuildFarmJobSource).new(
             BinaryPackageBuild.job_type, status, date_created, builder,
             archive)
-        binary_package_build = BinaryPackageBuild(
+        return BinaryPackageBuild(
             build_farm_job=build_farm_job,
             distro_arch_series=distro_arch_series,
             source_package_release=source_package_release,
-            archive=archive, pocket=pocket, status=status, processor=processor,
+            archive=archive, pocket=pocket, status=status,
+            processor=distro_arch_series.processor,
             virtualized=archive.require_virtualized, builder=builder,
             is_distro_archive=archive.is_main,
             distribution=distro_arch_series.distroseries.distribution,
             distro_series=distro_arch_series.distroseries,
-            source_package_name=source_package_release.sourcepackagename)
-        if date_created is not None:
-            binary_package_build.date_created = date_created
-        return binary_package_build
+            source_package_name=source_package_release.sourcepackagename,
+            date_created=date_created)
 
     def getByID(self, id):
         """See `IBinaryPackageBuildSet`."""
@@ -1150,6 +1152,90 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
             Desc(BinaryPackageBuild.date_created), BinaryPackageBuild.id)
         return resultset
 
+    def _findBySourceAndLocation(self, sourcepackagerelease, archive,
+                                 distroseries):
+        """Find builds for a SourcePackageRelease by series and archive.
+
+        Looks for `BinaryPackageBuild` records for this source package
+        release, with publication records in the given distroseries.
+        There should be at most one of these per architecture.
+
+        :param distroseries: `DistroSeries` to look for.
+        :return: A dict mapping architecture tags (in string form,
+            e.g. 'i386') to `BinaryPackageBuild`s for that build.
+        """
+        # Avoid circular imports.
+        from lp.soyuz.model.distroarchseries import DistroArchSeries
+        from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
+
+        BuildDAS = ClassAlias(DistroArchSeries, 'BuildDAS')
+        PublishDAS = ClassAlias(DistroArchSeries, 'PublishDAS')
+
+        query = IStore(BinaryPackageBuild).find(
+            (BuildDAS.architecturetag, BinaryPackageBuild),
+            BinaryPackageBuild.source_package_release == sourcepackagerelease,
+            BinaryPackageRelease.buildID == BinaryPackageBuild.id,
+            BuildDAS.id == BinaryPackageBuild.distro_arch_series_id,
+            BinaryPackagePublishingHistory.binarypackagereleaseID ==
+                BinaryPackageRelease.id,
+            BinaryPackagePublishingHistory.archiveID == archive.id,
+            PublishDAS.id ==
+                BinaryPackagePublishingHistory.distroarchseriesID,
+            PublishDAS.distroseriesID == distroseries.id,
+            # Architecture-independent binary package releases are built
+            # in the nominated arch-indep architecture but published in
+            # all architectures.  This condition makes sure we consider
+            # only builds that have been published in their own
+            # architecture.
+            PublishDAS.architecturetag == BuildDAS.architecturetag)
+        results = list(query.config(distinct=True))
+        mapped_results = dict(results)
+        assert len(mapped_results) == len(results), (
+            "Found multiple build candidates per architecture: %s.  "
+            "This may mean that we have a serious problem in our DB model.  "
+            "Further investigation is required."
+            % [(tag, build.id) for tag, build in results])
+        return mapped_results
+
+    def getBySourceAndLocation(self, sourcepackagerelease, archive,
+                               distroarchseries):
+        """See IBinaryPackageBuildSet."""
+        # First we try to follow any binaries built from the given source
+        # in a distroarchseries with the given architecturetag and published
+        # in the given (distroarchseries, archive) location.
+        # (Querying all architectures and then picking the right one out
+        # of the result turns out to be much faster than querying for
+        # just the architecture we want).
+        builds_by_arch = self._findBySourceAndLocation(
+            sourcepackagerelease, archive, distroarchseries.distroseries)
+        build = builds_by_arch.get(distroarchseries.architecturetag)
+        if build is not None:
+            # If there was any published binary we can use its original build.
+            # This case covers the situations when both source and binaries
+            # got copied from another location.
+            return build
+
+        # If there was no published binary we have to try to find a
+        # suitable build in all possible location across the distroseries
+        # inheritance tree. See below.
+        clause_tables = ['DistroArchSeries']
+        queries = [
+            "DistroArchSeries.id = BinaryPackageBuild.distro_arch_series AND "
+            "BinaryPackageBuild.archive = %s AND "
+            "DistroArchSeries.architecturetag = %s AND "
+            "BinaryPackageBuild.source_package_release = %s" % (
+            sqlvalues(
+                archive.id, distroarchseries.architecturetag,
+                sourcepackagerelease))]
+
+        # Query only the last build record for this sourcerelease
+        # across all possible locations.
+        query = " AND ".join(queries)
+
+        return BinaryPackageBuild.selectFirst(
+            query, clauseTables=clause_tables,
+            orderBy=['-date_created'])
+
     def getStatusSummaryForBuilds(self, builds):
         """See `IBinaryPackageBuildSet`."""
         # Create a small helper function to collect the builds for a given
@@ -1343,7 +1429,8 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
         Return the just-created `IBinaryPackageBuild` record already
         scored or None if a suitable build is already present.
         """
-        build_candidate = sourcepackagerelease.getBuildByArch(arch, archive)
+        build_candidate = self.getBySourceAndLocation(
+            sourcepackagerelease, archive, arch)
 
         # Check DistroArchSeries database IDs because the object belongs
         # to different transactions (architecture_available is cached).
@@ -1352,7 +1439,8 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
              build_candidate.status == BuildStatus.FULLYBUILT)):
             return None
 
-        build = sourcepackagerelease.createBuild(
+        build = self.new(
+            source_package_release=sourcepackagerelease,
             distro_arch_series=arch, archive=archive, pocket=pocket)
         # Create the builds in suspended mode for disabled archives.
         build_queue = build.queueBuild(suspended=not archive.enabled)

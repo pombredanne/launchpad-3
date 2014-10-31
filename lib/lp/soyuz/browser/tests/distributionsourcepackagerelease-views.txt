@@ -126,11 +126,15 @@ version and their 'builds' are ordered by ascending 'architecturetag'.
     # Create extras builds for the testing DSPR.
     >>> login('foo.bar@canonical.com')
     >>> hoary_amd64 = hoary['amd64']
-    >>> unused = source.sourcepackagerelease.createBuild(
-    ...     hoary_amd64, release_pocket, stp.ubuntutest.main_archive)
+    >>> from lp.soyuz.interfaces.binarypackagebuild import (
+    ...     IBinaryPackageBuildSet)
+    >>> unused = getUtility(IBinaryPackageBuildSet).new(
+    ...     source.sourcepackagerelease, stp.ubuntutest.main_archive,
+    ...     hoary_amd64, release_pocket)
     >>> breezy_hppa = stp.breezy_autotest['hppa']
-    >>> unused = source.sourcepackagerelease.createBuild(
-    ...     breezy_hppa, release_pocket, stp.ubuntutest.main_archive)
+    >>> unused = getUtility(IBinaryPackageBuildSet).new(
+    ...     source.sourcepackagerelease, stp.ubuntutest.main_archive,
+    ...     breezy_hppa, release_pocket)
     >>> login(ANONYMOUS)
 
     >>> dspr_view = create_initialized_view(dspr, name="+index")

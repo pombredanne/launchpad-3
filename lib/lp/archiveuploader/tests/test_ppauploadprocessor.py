@@ -33,6 +33,7 @@ from lp.soyuz.enums import (
     PackageUploadStatus,
     SourcePackageFormat,
     )
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.queue import NonBuildableSourceUploadError
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
@@ -420,9 +421,9 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
 
         # Create a build record for source bar for breezy-i386
         # distroarchseries in cprov PPA.
-        build_bar_i386 = cprov_pub_bar.sourcepackagerelease.createBuild(
-            self.breezy['i386'], PackagePublishingPocket.RELEASE,
-            cprov.archive)
+        build_bar_i386 = getUtility(IBinaryPackageBuildSet).new(
+            cprov_pub_bar.sourcepackagerelease, cprov.archive,
+            self.breezy['i386'], PackagePublishingPocket.RELEASE)
 
         # Binary upload to the just-created build record.
         self.options.context = 'buildd'

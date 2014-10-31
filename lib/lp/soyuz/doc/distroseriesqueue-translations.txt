@@ -77,9 +77,11 @@ queue:
 
 # Do the upload into the system.
 
-    >>> build = source_package_release.createBuild(
-    ...      dapper_amd64, PackagePublishingPocket.RELEASE,
-    ...      dapper.main_archive)
+    >>> from lp.soyuz.interfaces.binarypackagebuild import (
+    ...     IBinaryPackageBuildSet)
+    >>> build = getUtility(IBinaryPackageBuildSet).new(
+    ...     source_package_release, dapper.main_archive,
+    ...     dapper_amd64, PackagePublishingPocket.RELEASE)
 
     >>> buildd_policy = getPolicy(
     ...     name='buildd', distro='ubuntu', distroseries='dapper')
