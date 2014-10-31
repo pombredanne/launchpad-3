@@ -1790,6 +1790,25 @@ class PublishingSet:
 
         return result_set
 
+    def getActiveArchSpecificPublications(self, sourcepackagerelease, archive,
+                                          distroseries, pocket):
+        """See `IPublishingSet`."""
+        return IStore(BinaryPackagePublishingHistory).find(
+            BinaryPackagePublishingHistory,
+            BinaryPackageBuild.source_package_release_id ==
+                sourcepackagerelease.id,
+            BinaryPackageRelease.build == BinaryPackageBuild.id,
+            BinaryPackagePublishingHistory.binarypackagereleaseID ==
+                BinaryPackageRelease.id,
+            BinaryPackagePublishingHistory.archiveID == archive.id,
+            BinaryPackagePublishingHistory.distroarchseriesID ==
+                DistroArchSeries.id,
+            DistroArchSeries.distroseriesID == distroseries.id,
+            BinaryPackagePublishingHistory.pocket == pocket,
+            BinaryPackagePublishingHistory.status.is_in(
+                active_publishing_status),
+            BinaryPackageRelease.architecturespecific == True)
+
     def getPackageDiffsForSources(self, one_or_more_source_publications):
         """See `PublishingSet`."""
         source_publication_ids = self._extractIDs(
