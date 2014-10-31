@@ -9,8 +9,25 @@ import unittest
 
 import apt_pkg
 
-from lp.soyuz.model.publishing import IndexStanzaFields
+from lp.archivepublisher.indices import (
+    build_binary_stanza_fields,
+    build_source_stanza_fields,
+    IndexStanzaFields,
+    )
 from lp.soyuz.tests.test_publishing import TestNativePublishingBase
+
+
+def build_bpph_stanza(bpph):
+    return build_binary_stanza_fields(
+        bpph.binarypackagerelease, bpph.component, bpph.section,
+        bpph.priority, bpph.phased_update_percentage,
+        False)
+
+
+def build_spph_stanza(spph):
+    return build_source_stanza_fields(
+        spph.sourcepackagerelease, spph.component,
+        spph.section)
 
 
 def get_field(stanza_fields, name):
@@ -70,7 +87,7 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
              u'Checksums-Sha256:',
              u' %s 28 foo_666.dsc' % self.dsc_sha256,
              ],
-            pub_source.getIndexStanza().splitlines())
+            build_spph_stanza(pub_source).makeOutput().splitlines())
 
     def testSourceStanzaCustomFields(self):
         """Check just-created source publication Index stanza
@@ -108,7 +125,7 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
              u'Checksums-Sha256:',
              u' %s 28 foo_666.dsc' % self.dsc_sha256,
              u'Python-Version: < 1.5'],
-            pub_source.getIndexStanza().splitlines())
+            build_spph_stanza(pub_source).makeOutput().splitlines())
 
     def testBinaryStanza(self):
         """Check just-created binary publication Index stanza.
@@ -149,7 +166,7 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
              u'Description: Foo app is great',
              u' Well ...',
              u' it does nothing, though'],
-            pub_binary.getIndexStanza().splitlines())
+            build_bpph_stanza(pub_binary).makeOutput().splitlines())
 
     def testBinaryStanzaWithCustomFields(self):
         """Check just-created binary publication Index stanza with
@@ -189,7 +206,7 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
              u' Well ...',
              u' it does nothing, though',
              u'Python-Version: >= 2.4'],
-            pub_binary.getIndexStanza().splitlines())
+            build_bpph_stanza(pub_binary).makeOutput().splitlines())
 
     def testBinaryStanzaDescription(self):
         """ Check the description field.
@@ -240,7 +257,7 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
              u' .',
              u' %s' % ('x' * 100),
              ],
-            pub_binary.getIndexStanza().splitlines())
+            build_bpph_stanza(pub_binary).makeOutput().splitlines())
 
     def testBinaryStanzaWithNonAscii(self):
         """Check how will be a stanza with non-ascii content
@@ -272,7 +289,7 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
              u'Description: Foo app is great',
              u' Using non-ascii as: \xe7\xe3\xe9\xf3',
              ],
-            pub_binary.getIndexStanza().splitlines())
+            build_bpph_stanza(pub_binary).makeOutput().splitlines())
 
     def testBinaryOmitsIdenticalSourceName(self):
         # Binaries omit the Source field if it identical to Package.
@@ -281,7 +298,7 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
             binaryname='foo', pub_source=pub_source)[0]
         self.assertIs(
             None,
-            get_field(pub_binary.buildIndexStanzaFields(), 'Source'))
+            get_field(build_bpph_stanza(pub_binary), 'Source'))
 
     def testBinaryIncludesDifferingSourceName(self):
         # Binaries include a Source field if their name differs.
@@ -290,7 +307,7 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
             binaryname='foo-bin', pub_source=pub_source)[0]
         self.assertEqual(
             u'foo',
-            get_field(pub_binary.buildIndexStanzaFields(), 'Source'))
+            get_field(build_bpph_stanza(pub_binary), 'Source'))
 
     def testBinaryIncludesDifferingSourceVersion(self):
         # Binaries also include a Source field if their versions differ.
@@ -299,7 +316,7 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
             binaryname='foo', version='999', pub_source=pub_source)[0]
         self.assertEqual(
             u'foo (666)',
-            get_field(pub_binary.buildIndexStanzaFields(), 'Source'))
+            get_field(build_bpph_stanza(pub_binary), 'Source'))
 
 
 class TestNativeArchiveIndexesReparsing(TestNativePublishingBase):
@@ -316,7 +333,7 @@ class TestNativeArchiveIndexesReparsing(TestNativePublishingBase):
         """Helper method to return the apt_pkg parser for the stanza."""
         index_filename = tempfile.mktemp()
         index_file = open(index_filename, 'w')
-        index_file.write(stanza.encode('utf-8'))
+        index_file.write(stanza.makeOutput().encode('utf-8'))
         index_file.close()
 
         parser = apt_pkg.TagFile(open(index_filename))
@@ -328,27 +345,27 @@ class TestNativeArchiveIndexesReparsing(TestNativePublishingBase):
 
         return section
 
-    def test_getIndexStanza_binary_stanza(self):
+    def test_binary_stanza(self):
         """Check a binary stanza with APT parser."""
         pub_binary = self.getPubBinaries()[0]
 
-        section = self.write_stanza_and_reparse(pub_binary.getIndexStanza())
+        section = self.write_stanza_and_reparse(build_bpph_stanza(pub_binary))
 
         self.assertEqual(section.get('Package'), 'foo-bin')
         self.assertEqual(
             section.get('Description').splitlines(),
             ['Foo app is great', ' Well ...', ' it does nothing, though'])
 
-    def test_getIndexStanza_source_stanza(self):
+    def test_source_stanza(self):
         """Check a source stanza with APT parser."""
         pub_source = self.getPubSource()
 
-        section = self.write_stanza_and_reparse(pub_source.getIndexStanza())
+        section = self.write_stanza_and_reparse(build_spph_stanza(pub_source))
 
         self.assertEqual(section.get('Package'), 'foo')
         self.assertEqual(section.get('Maintainer'), 'Foo Bar <foo@bar.com>')
 
-    def test_getIndexStanza_with_corrupt_dsc_binaries(self):
+    def test_source_with_corrupt_dsc_binaries(self):
         """Ensure corrupt binary fields are written correctly to indexes.
 
         This is a regression test for bug 436182.
@@ -378,7 +395,7 @@ class TestNativeArchiveIndexesReparsing(TestNativePublishingBase):
         pub_source.sourcepackagerelease.dsc_binaries = (
             'foo_bin,\nbar_bin,\nzed_bin')
 
-        section = self.write_stanza_and_reparse(pub_source.getIndexStanza())
+        section = self.write_stanza_and_reparse(build_spph_stanza(pub_source))
 
         self.assertEqual('foo', section['Package'])
 
@@ -391,7 +408,7 @@ class TestNativeArchiveIndexesReparsing(TestNativePublishingBase):
         # Without the fix, the second binary would not be parsed at all.
         self.assertEqual('foo_bin,\n bar_bin,\n zed_bin', section['Binary'])
 
-    def test_getIndexStanza_with_correct_dsc_binaries(self):
+    def test_source_with_correct_dsc_binaries(self):
         """Ensure correct binary fields are written correctly to indexes.
 
         During upload, our custom parser at:
@@ -412,7 +429,7 @@ class TestNativeArchiveIndexesReparsing(TestNativePublishingBase):
         pub_source.sourcepackagerelease.dsc_binaries = (
             'foo_bin,\n bar_bin,\n zed_bin')
 
-        section = self.write_stanza_and_reparse(pub_source.getIndexStanza())
+        section = self.write_stanza_and_reparse(build_spph_stanza(pub_source))
 
         self.assertEqual('foo', section['Package'])
 
