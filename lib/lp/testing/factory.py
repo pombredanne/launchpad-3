@@ -3578,9 +3578,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         :param builder: An optional builder to assign.
         :param status: The BuildStatus for the build.
         """
-        if processor is None:
-            processor = self.makeProcessor()
         if distroarchseries is None:
+            if processor is None:
+                processor = self.makeProcessor()
             if source_package_release is not None:
                 distroseries = source_package_release.upload_distroseries
             elif archive is not None:
@@ -3590,6 +3590,11 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 distroseries = self.makeDistroSeries()
             distroarchseries = self.makeDistroArchSeries(
                 distroseries=distroseries, processor=processor)
+        else:
+            if (processor is not None
+                    and processor != distroarchseries.processor):
+                raise AssertionError(
+                    "DistroArchSeries and Processor must match.")
         if archive is None:
             if source_package_release is None:
                 archive = distroarchseries.main_archive
@@ -3618,7 +3623,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         with person_logged_in(admins.teamowner):
             binary_package_build = getUtility(IBinaryPackageBuildSet).new(
                 source_package_release=source_package_release,
-                processor=processor,
                 distro_arch_series=distroarchseries,
                 status=status,
                 archive=archive,

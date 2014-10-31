@@ -297,16 +297,9 @@ class SourcePackageRelease(SQLBase):
         else:
             return 0.0
 
-    def createBuild(self, distro_arch_series, pocket, archive, processor=None,
-                    status=None):
+    def createBuild(self, distro_arch_series, pocket, archive,
+                    status=BuildStatus.NEEDSBUILD):
         """See ISourcePackageRelease."""
-        # If a processor is not provided, use the DAS' processor.
-        if processor is None:
-            processor = distro_arch_series.processor
-
-        if status is None:
-            status = BuildStatus.NEEDSBUILD
-
         # Force the current timestamp instead of the default
         # UTC_NOW for the transaction, avoid several row with
         # same datecreated.
@@ -315,7 +308,6 @@ class SourcePackageRelease(SQLBase):
         return getUtility(IBinaryPackageBuildSet).new(
             distro_arch_series=distro_arch_series,
             source_package_release=self,
-            processor=processor,
             status=status,
             date_created=date_created,
             pocket=pocket,

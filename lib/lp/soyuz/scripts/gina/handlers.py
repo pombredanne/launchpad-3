@@ -872,9 +872,7 @@ class BinaryPackageHandler:
                         "for package %s (%s)" %
                         (build.id, binary.package, binary.version))
         else:
-            processor = distroarchinfo['processor']
             build = getUtility(IBinaryPackageBuildSet).new(
-                        processor=processor,
                         distro_arch_series=distroarchseries,
                         status=BuildStatus.FULLYBUILT,
                         source_package_release=srcpkg,

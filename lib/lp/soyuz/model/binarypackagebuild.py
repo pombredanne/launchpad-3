@@ -893,9 +893,8 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
 class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
     implements(IBinaryPackageBuildSet)
 
-    def new(self, distro_arch_series, source_package_release, processor,
-            archive, pocket, status=BuildStatus.NEEDSBUILD,
-            date_created=None, builder=None):
+    def new(self, distro_arch_series, source_package_release, archive, pocket,
+            status=BuildStatus.NEEDSBUILD, date_created=None, builder=None):
         """See `IBinaryPackageBuildSet`."""
         # Create the BuildFarmJob for the new BinaryPackageBuild.
         build_farm_job = getUtility(IBuildFarmJobSource).new(
@@ -905,7 +904,8 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
             build_farm_job=build_farm_job,
             distro_arch_series=distro_arch_series,
             source_package_release=source_package_release,
-            archive=archive, pocket=pocket, status=status, processor=processor,
+            archive=archive, pocket=pocket, status=status,
+            processor=distro_arch_series.processor,
             virtualized=archive.require_virtualized, builder=builder,
             is_distro_archive=archive.is_main,
             distribution=distro_arch_series.distroseries.distribution,

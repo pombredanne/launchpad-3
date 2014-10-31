@@ -295,9 +295,8 @@ class BuildSetStatus(EnumeratedType):
 class IBinaryPackageBuildSet(ISpecificBuildFarmJobSource):
     """Interface for BinaryPackageBuildSet"""
 
-    def new(distro_arch_series, source_package_release, processor,
-            archive, pocket, status=BuildStatus.NEEDSBUILD,
-            date_created=None, builder=None):
+    def new(distro_arch_series, source_package_release, archive, pocket,
+            status=BuildStatus.NEEDSBUILD, date_created=None, builder=None):
         """Create a new `IBinaryPackageBuild`.
 
         :param distro_arch_series: An `IDistroArchSeries`.
