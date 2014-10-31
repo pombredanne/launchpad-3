@@ -583,7 +583,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
     def createMissingBuilds(self, architectures_available=None, logger=None):
         """See `ISourcePackagePublishingHistory`."""
-        return getUtility(IBinaryPackageBuildSet).createMissingBuilds(
+        return getUtility(IBinaryPackageBuildSet).createForSource(
             self.sourcepackagerelease, self.archive, self.distroseries,
             self.pocket, architectures_available, logger)
 

@@ -1335,8 +1335,8 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
             if not distroarch.processor.restricted or
                distroarch.processor in archive.enabled_restricted_processors]
 
-    def createMissingBuilds(self, sourcepackagerelease, archive, distroseries,
-                            pocket, architectures_available=None, logger=None):
+    def createForSource(self, sourcepackagerelease, archive, distroseries,
+                        pocket, architectures_available=None, logger=None):
         """See `ISourcePackagePublishingHistory`."""
         if architectures_available is None:
             architectures_available = list(

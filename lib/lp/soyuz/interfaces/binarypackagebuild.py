@@ -398,9 +398,8 @@ class IBinaryPackageBuildSet(ISpecificBuildFarmJobSource):
 
         """
 
-    def createMissingBuilds(sourcepackagerelease, archive, distroseries,
-                            pocket, architectures_available=None,
-                            logger=None):
+    def createForSource(sourcepackagerelease, archive, distroseries, pocket,
+                        architectures_available=None, logger=None):
         """Create missing build records for a source.
 
         :param architectures_available: options list of `DistroArchSeries`

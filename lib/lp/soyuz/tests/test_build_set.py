@@ -69,7 +69,7 @@ class TestBuildSet(TestCaseWithFactory):
                 distroseries=self.distroseries, architecturehintlist='any')
             self.spphs.append(spph)
             builds = removeSecurityProxy(
-                getUtility(IBinaryPackageBuildSet).createMissingBuilds(
+                getUtility(IBinaryPackageBuildSet).createForSource(
                     spph.sourcepackagerelease, spph.archive,
                     spph.distroseries, spph.pocket))
             with person_logged_in(self.admin):
