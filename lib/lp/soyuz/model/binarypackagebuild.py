@@ -1335,29 +1335,6 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
             if not distroarch.processor.restricted or
                distroarch.processor in archive.enabled_restricted_processors]
 
-    def createForSource(self, sourcepackagerelease, archive, distroseries,
-                        pocket, architectures_available=None, logger=None):
-        """See `ISourcePackagePublishingHistory`."""
-        if architectures_available is None:
-            architectures_available = list(
-                distroseries.buildable_architectures)
-
-        architectures_available = self._getAllowedArchitectures(
-            archive, architectures_available)
-
-        build_architectures = determine_architectures_to_build(
-            sourcepackagerelease.architecturehintlist, archive, distroseries,
-            architectures_available)
-
-        builds = []
-        for arch in build_architectures:
-            build_candidate = self._createMissingBuildForArchitecture(
-                sourcepackagerelease, archive, arch, pocket, logger=logger)
-            if build_candidate is not None:
-                builds.append(build_candidate)
-
-        return builds
-
     def _createMissingBuildForArchitecture(self, sourcepackagerelease,
                                            archive, arch, pocket,
                                            logger=None):
@@ -1388,3 +1365,26 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
                    build_queue.lastscore))
 
         return build
+
+    def createForSource(self, sourcepackagerelease, archive, distroseries,
+                        pocket, architectures_available=None, logger=None):
+        """See `ISourcePackagePublishingHistory`."""
+        if architectures_available is None:
+            architectures_available = list(
+                distroseries.buildable_architectures)
+
+        architectures_available = self._getAllowedArchitectures(
+            archive, architectures_available)
+
+        build_architectures = determine_architectures_to_build(
+            sourcepackagerelease.architecturehintlist, archive, distroseries,
+            architectures_available)
+
+        builds = []
+        for arch in build_architectures:
+            build_candidate = self._createMissingBuildForArchitecture(
+                sourcepackagerelease, archive, arch, pocket, logger=logger)
+            if build_candidate is not None:
+                builds.append(build_candidate)
+
+        return builds
