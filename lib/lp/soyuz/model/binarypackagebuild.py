@@ -1353,7 +1353,8 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
              build_candidate.status == BuildStatus.FULLYBUILT)):
             return None
 
-        build = sourcepackagerelease.createBuild(
+        build = self.new(
+            source_package_release=sourcepackagerelease,
             distro_arch_series=arch, archive=archive, pocket=pocket)
         # Create the builds in suspended mode for disabled archives.
         build_queue = build.queueBuild(suspended=not archive.enabled)

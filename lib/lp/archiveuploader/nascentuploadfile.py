@@ -56,6 +56,7 @@ from lp.soyuz.enums import (
     PackagePublishingPriority,
     PackageUploadCustomFormat,
     )
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.section import ISectionSet
@@ -855,8 +856,10 @@ class BaseBinaryUploadFile(PackageUploadFile):
         else:
             # No luck. Make one.
             # Usually happen for security binary uploads.
-            build = sourcepackagerelease.createBuild(
-                dar, self.policy.pocket, self.policy.archive,
+            build = getUtility(IBinaryPackageBuildSet).new(
+                distro_arch_series=dar,
+                source_package_release=sourcepackagerelease,
+                archive=self.policy.archive, pocket=self.policy.pocket,
                 status=BuildStatus.FULLYBUILT)
             self.logger.debug("Build %s created" % build.id)
         return build
