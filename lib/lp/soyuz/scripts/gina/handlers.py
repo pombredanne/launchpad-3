@@ -868,11 +868,8 @@ class BinaryPackageHandler:
                         (build.id, binary.package, binary.version))
         else:
             build = getUtility(IBinaryPackageBuildSet).new(
-                        distro_arch_series=distroarchseries,
-                        status=BuildStatus.FULLYBUILT,
-                        source_package_release=srcpkg,
-                        pocket=self.pocket,
-                        archive=distroarchseries.main_archive)
+                srcpkg, distroarchseries.main_archive, distroarchseries,
+                self.pocket, status=BuildStatus.FULLYBUILT)
         return build
 
 

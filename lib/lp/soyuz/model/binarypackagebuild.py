@@ -893,7 +893,7 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
 class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
     implements(IBinaryPackageBuildSet)
 
-    def new(self, distro_arch_series, source_package_release, archive, pocket,
+    def new(self, source_package_release, archive, distro_arch_series, pocket,
             status=BuildStatus.NEEDSBUILD, builder=None):
         """See `IBinaryPackageBuildSet`."""
         # Force the current timestamp instead of the default UTC_NOW for

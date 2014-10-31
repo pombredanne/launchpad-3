@@ -857,10 +857,8 @@ class BaseBinaryUploadFile(PackageUploadFile):
             # No luck. Make one.
             # Usually happen for security binary uploads.
             build = getUtility(IBinaryPackageBuildSet).new(
-                distro_arch_series=dar,
-                source_package_release=sourcepackagerelease,
-                archive=self.policy.archive, pocket=self.policy.pocket,
-                status=BuildStatus.FULLYBUILT)
+                sourcepackagerelease, self.policy.archive, dar,
+                self.policy.pocket, status=BuildStatus.FULLYBUILT)
             self.logger.debug("Build %s created" % build.id)
         return build
 

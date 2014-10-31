@@ -301,11 +301,7 @@ class SourcePackageRelease(SQLBase):
                     status=BuildStatus.NEEDSBUILD):
         """See ISourcePackageRelease."""
         return getUtility(IBinaryPackageBuildSet).new(
-            distro_arch_series=distro_arch_series,
-            source_package_release=self,
-            status=status,
-            pocket=pocket,
-            archive=archive)
+            self, archive, distro_arch_series, pocket, status=status)
 
     def findBuildsByArchitecture(self, distroseries, archive):
         """Find associated builds, by architecture.
