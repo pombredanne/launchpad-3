@@ -1162,6 +1162,31 @@ class IPublishingSet(Interface):
              `BinaryPackageRelease`, `BinaryPackageName`, `DistroArchSeries`)
         """
 
+    def getActiveArchSpecificPublications(sourcepackagerelease, archive,
+                                          distroseries, pocket):
+        """Find architecture-specific binary publications for a source.
+
+        For example, say source package release contains binary packages of:
+         * "foo" for i386 (pending in i386)
+         * "foo" for amd64 (published in amd64)
+         * "foo-common" for the "all" architecture (pending or published in
+           various real processor architectures)
+
+        In that case, this search will return foo(i386) and foo(amd64).  The
+        dominator uses this when figuring out whether foo-common can be
+        superseded: we don't track dependency graphs, but we know that the
+        architecture-specific "foo" releases are likely to depend on the
+        architecture-independent foo-common release.
+
+        :param sourcepackagerelease: The `SourcePackageRelease`.
+        :param archive: The `Archive` to search.
+        :param distroseries: The `DistroSeries` to search.
+        :param pocket: The `PackagePublishingPocket` to search.
+        :return: A Storm result set of active, architecture-specific
+            `BinaryPackagePublishingHistory` objects for the source package
+            release in the given `archive`, `distroseries`, and `pocket`.
+        """
+
     def getPackageDiffsForSources(one_or_more_source_publications):
         """Return all `PackageDiff`s for each given source publication.
 
