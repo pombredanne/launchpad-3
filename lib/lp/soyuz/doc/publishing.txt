@@ -300,6 +300,19 @@ IBinaryPackagePublishingHistory also contains similar API conveniences.
     >>> print bpph.section_name
     base
 
+
+Retrieve any SourcePackagePublishingHistory entry.
+
+    >>> from lp.soyuz.interfaces.publishing import (
+    ...     IBinaryPackagePublishingHistory,
+    ...     ISourcePackageFilePublishing,
+    ...     )
+    >>> spph = SourcePackagePublishingHistory.get(10)
+
+    >>> print spph.displayname
+    alsa-utils 1.0.8-1ubuntu1 in warty
+
+
 Files published are accessible via the files property:
 
     >>> any_pub_file = spph.files[-1]
