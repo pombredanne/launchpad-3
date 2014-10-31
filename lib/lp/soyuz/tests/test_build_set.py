@@ -24,7 +24,10 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
-from lp.testing.layers import LaunchpadFunctionalLayer
+from lp.testing.layers import (
+    LaunchpadFunctionalLayer,
+    ZopelessDatabaseLayer,
+    )
 from lp.testing.sampledata import ADMIN_EMAIL
 
 
@@ -306,3 +309,41 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         self.assertEqual(2, len(builds))
         self.assertEqual(self.avr_distroarch, builds[0].distro_arch_series)
         self.assertEqual(self.sparc_distroarch, builds[1].distro_arch_series)
+
+
+class TestFindBySourceAndLocation(TestCaseWithFactory):
+    """Tests for SourcePackageRelease.findBuildsByArchitecture."""
+
+    layer = ZopelessDatabaseLayer
+
+    def test_finds_build_with_matching_pub(self):
+        # _findBySourceAndLocation finds builds for a source package
+        # release.  In particular, an arch-independent BPR is published in
+        # multiple architectures.  But findBuildsByArchitecture only counts
+        # the publication for the same architecture it was built in.
+        distroseries = self.factory.makeDistroSeries()
+        archive = distroseries.main_archive
+        # The series has a nominated arch-indep architecture.
+        distroseries.nominatedarchindep = self.factory.makeDistroArchSeries(
+            distroseries=distroseries)
+
+        bpb = self.factory.makeBinaryPackageBuild(
+            distroarchseries=distroseries.nominatedarchindep)
+        bpr = self.factory.makeBinaryPackageRelease(
+            build=bpb, architecturespecific=False)
+        spr = bpr.build.source_package_release
+
+        # The series also has other architectures.
+        self.factory.makeDistroArchSeries(distroseries=distroseries)
+
+        # makeBinaryPackagePublishingHistory will actually publish an
+        # arch-indep BPR everywhere.
+        self.factory.makeBinaryPackagePublishingHistory(
+            binarypackagerelease=bpr, archive=archive,
+            distroarchseries=distroseries.nominatedarchindep)
+
+        naked_spr = removeSecurityProxy(spr)
+        self.assertEqual(
+            {distroseries.nominatedarchindep.architecturetag: bpr.build},
+            BinaryPackageBuildSet()._findBySourceAndLocation(
+                naked_spr, archive, distroseries))
