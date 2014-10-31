@@ -22,6 +22,7 @@ from lp.soyuz.enums import (
     PackagePublishingStatus,
     SourcePackageFormat,
     )
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.publishing import active_publishing_status
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
@@ -230,8 +231,8 @@ class TestSourcePackageReleaseGetBuildByArch(TestCaseWithFactory):
             distroseries=dsp.parent_series)
         das = self.factory.makeDistroArchSeries(
             distroseries=dsp.parent_series, supports_virtualized=True)
-        orig_build = spr.createBuild(
-            das, PackagePublishingPocket.RELEASE, parent_archive,
+        orig_build = getUtility(IBinaryPackageBuildSet).new(
+            spr, parent_archive, das, PackagePublishingPocket.RELEASE,
             status=BuildStatus.FULLYBUILT)
         bpr = self.factory.makeBinaryPackageRelease(build=orig_build)
         self.factory.makeBinaryPackagePublishingHistory(

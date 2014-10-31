@@ -295,19 +295,15 @@ class BuildSetStatus(EnumeratedType):
 class IBinaryPackageBuildSet(ISpecificBuildFarmJobSource):
     """Interface for BinaryPackageBuildSet"""
 
-    def new(distro_arch_series, source_package_release, processor,
-            archive, pocket, status=BuildStatus.NEEDSBUILD,
-            date_created=None, builder=None):
+    def new(source_package_release, archive, distro_arch_series, pocket,
+            status=BuildStatus.NEEDSBUILD, builder=None):
         """Create a new `IBinaryPackageBuild`.
 
-        :param distro_arch_series: An `IDistroArchSeries`.
         :param source_package_release: An `ISourcePackageRelease`.
-        :param processor: An `IProcessor`.
         :param archive: An `IArchive` in which context the build is built.
+        :param distro_arch_series: An `IDistroArchSeries`.
         :param pocket: An item of `PackagePublishingPocket`.
         :param status: A `BuildStatus` item indicating the builds status.
-        :param date_created: An optional datetime to ensure multiple builds
-            in the same transaction don't all get the same UTC_NOW.
         :param builder: An optional `IBuilder`.
         """
 

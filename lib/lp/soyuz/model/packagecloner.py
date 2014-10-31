@@ -16,7 +16,6 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import (
@@ -58,8 +57,7 @@ class PackageCloner:
     implements(IPackageCloner)
 
     def clonePackages(self, origin, destination, distroarchseries_list=None,
-                      processors=None, sourcepackagenames=None,
-                      always_create=False):
+                      processors=None, sourcepackagenames=None):
         """Copies packages from origin to destination package location.
 
         Binary packages are only copied for the `DistroArchSeries` pairs
@@ -78,9 +76,6 @@ class PackageCloner:
         @param sourcepackagenames: the sourcepackages to copy to the
             destination
         @type sourcepackagenames: Iterable
-        @param always_create: if we should create builds for every source
-            package copied, useful if no binaries are to be copied.
-        @type always_create: Boolean
         """
         # First clone the source packages.
         self._clone_source_packages(
@@ -99,11 +94,10 @@ class PackageCloner:
 
         self._create_missing_builds(
             destination.distroseries, destination.archive,
-            distroarchseries_list, processors, always_create)
+            distroarchseries_list, processors)
 
     def _create_missing_builds(self, distroseries, archive,
-                               distroarchseries_list, processors,
-                               always_create):
+                               distroarchseries_list, processors):
         """Create builds for all cloned source packages.
 
         :param distroseries: the distro series for which to create builds.
@@ -132,16 +126,7 @@ class PackageCloner:
             distroseries=distroseries, status=active_publishing_status)
 
         for pubrec in sources_published:
-            builds = pubrec.createMissingBuilds(
-                architectures_available=architectures)
-            # If the last build was sucessful, we should create a new
-            # build, since createMissingBuilds() won't.
-            if not builds and always_create:
-                for arch in architectures:
-                    build = pubrec.sourcepackagerelease.createBuild(
-                        distro_arch_series=arch, archive=archive,
-                        pocket=PackagePublishingPocket.RELEASE)
-                    build.queueBuild(suspended=not archive.enabled)
+            pubrec.createMissingBuilds(architectures_available=architectures)
             # Commit to avoid MemoryError: bug 304459
             transaction.commit()
 
@@ -269,7 +254,7 @@ class PackageCloner:
 
         self._create_missing_builds(
             destination.distroseries, destination.archive, (),
-            processors, False)
+            processors)
 
     def _compute_packageset_delta(self, origin):
         """Given a source/target archive find obsolete or missing packages.

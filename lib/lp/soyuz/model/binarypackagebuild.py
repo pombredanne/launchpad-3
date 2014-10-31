@@ -893,27 +893,28 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
 class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
     implements(IBinaryPackageBuildSet)
 
-    def new(self, distro_arch_series, source_package_release, processor,
-            archive, pocket, status=BuildStatus.NEEDSBUILD,
-            date_created=None, builder=None):
+    def new(self, source_package_release, archive, distro_arch_series, pocket,
+            status=BuildStatus.NEEDSBUILD, builder=None):
         """See `IBinaryPackageBuildSet`."""
+        # Force the current timestamp instead of the default UTC_NOW for
+        # the transaction, avoid several row with same datecreated.
+        date_created = datetime.datetime.now(pytz.timezone('UTC'))
         # Create the BuildFarmJob for the new BinaryPackageBuild.
         build_farm_job = getUtility(IBuildFarmJobSource).new(
             BinaryPackageBuild.job_type, status, date_created, builder,
             archive)
-        binary_package_build = BinaryPackageBuild(
+        return BinaryPackageBuild(
             build_farm_job=build_farm_job,
             distro_arch_series=distro_arch_series,
             source_package_release=source_package_release,
-            archive=archive, pocket=pocket, status=status, processor=processor,
+            archive=archive, pocket=pocket, status=status,
+            processor=distro_arch_series.processor,
             virtualized=archive.require_virtualized, builder=builder,
             is_distro_archive=archive.is_main,
             distribution=distro_arch_series.distroseries.distribution,
             distro_series=distro_arch_series.distroseries,
-            source_package_name=source_package_release.sourcepackagename)
-        if date_created is not None:
-            binary_package_build.date_created = date_created
-        return binary_package_build
+            source_package_name=source_package_release.sourcepackagename,
+            date_created=date_created)
 
     def getByID(self, id):
         """See `IBinaryPackageBuildSet`."""
@@ -1352,7 +1353,8 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
              build_candidate.status == BuildStatus.FULLYBUILT)):
             return None
 
-        build = sourcepackagerelease.createBuild(
+        build = self.new(
+            source_package_release=sourcepackagerelease,
             distro_arch_series=arch, archive=archive, pocket=pocket)
         # Create the builds in suspended mode for disabled archives.
         build_queue = build.queueBuild(suspended=not archive.enabled)

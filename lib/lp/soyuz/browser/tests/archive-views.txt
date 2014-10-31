@@ -389,9 +389,9 @@ Let's set some builds appropriately to see the results.
     ...     IBinaryPackageBuildSet)
     >>> warty_hppa = getUtility(IDistributionSet)['ubuntu']['warty']['hppa']
     >>> source = view.filtered_sources[0]
-    >>> ignore = source.sourcepackagerelease.createBuild(
-    ...     distro_arch_series=warty_hppa, archive=view.context,
-    ...     pocket=source.pocket)
+    >>> ignore = getUtility(IBinaryPackageBuildSet).new(
+    ...     source.sourcepackagerelease, view.context, warty_hppa,
+    ...     source.pocket)
     >>> builds = getUtility(IBinaryPackageBuildSet).getBuildsForArchive(
     ...     view.context)
     >>> for build in builds:

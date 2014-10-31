@@ -63,7 +63,6 @@ from lp.services.propertycache import (
     )
 from lp.soyuz.enums import PackageDiffStatus
 from lp.soyuz.interfaces.archive import MAIN_ARCHIVE_PURPOSES
-from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.packagediff import PackageDiffAlreadyRequested
 from lp.soyuz.interfaces.packagediffjob import IPackageDiffJobSource
 from lp.soyuz.interfaces.queue import QueueInconsistentStateError
@@ -296,30 +295,6 @@ class SourcePackageRelease(SQLBase):
             return float(results[0])
         else:
             return 0.0
-
-    def createBuild(self, distro_arch_series, pocket, archive, processor=None,
-                    status=None):
-        """See ISourcePackageRelease."""
-        # If a processor is not provided, use the DAS' processor.
-        if processor is None:
-            processor = distro_arch_series.processor
-
-        if status is None:
-            status = BuildStatus.NEEDSBUILD
-
-        # Force the current timestamp instead of the default
-        # UTC_NOW for the transaction, avoid several row with
-        # same datecreated.
-        date_created = datetime.datetime.now(pytz.timezone('UTC'))
-
-        return getUtility(IBinaryPackageBuildSet).new(
-            distro_arch_series=distro_arch_series,
-            source_package_release=self,
-            processor=processor,
-            status=status,
-            date_created=date_created,
-            pocket=pocket,
-            archive=archive)
 
     def findBuildsByArchitecture(self, distroseries, archive):
         """Find associated builds, by architecture.

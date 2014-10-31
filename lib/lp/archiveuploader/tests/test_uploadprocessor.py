@@ -74,6 +74,7 @@ from lp.soyuz.enums import (
     )
 from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.interfaces.publishing import (
@@ -839,9 +840,9 @@ class TestUploadProcessor(TestUploadProcessorBase):
         bar_copied_source = bar_source_pub.copyTo(
             breezy_autotest, PackagePublishingPocket.RELEASE,
             self.ubuntu.main_archive)
-        bar_copied_build = bar_copied_source.sourcepackagerelease.createBuild(
-            breezy_autotest_i386, PackagePublishingPocket.RELEASE,
-            self.ubuntu.main_archive)
+        bar_copied_build = getUtility(IBinaryPackageBuildSet).new(
+            bar_copied_source.sourcepackagerelease, self.ubuntu.main_archive,
+            breezy_autotest_i386, PackagePublishingPocket.RELEASE)
 
         # Re-upload the same 'bar-1.0-1' binary as if it was rebuilt
         # in breezy-autotest context.
@@ -1058,9 +1059,9 @@ class TestUploadProcessor(TestUploadProcessorBase):
         # Fudge a build for foocomm so that it's not in the partner archive.
         # We can then test that uploading a binary package must match the
         # build's archive.
-        foocomm_build = foocomm_spr.createBuild(
-            self.breezy['i386'], PackagePublishingPocket.RELEASE,
-            self.ubuntu.main_archive)
+        foocomm_build = getUtility(IBinaryPackageBuildSet).new(
+            foocomm_spr, self.ubuntu.main_archive, self.breezy['i386'],
+            PackagePublishingPocket.RELEASE)
         self.layer.txn.commit()
         upload_dir = self.queueUpload("foocomm_1.0-1_binary")
         build_uploadprocessor = self.getUploadProcessor(

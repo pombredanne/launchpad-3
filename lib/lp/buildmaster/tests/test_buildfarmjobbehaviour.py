@@ -35,6 +35,7 @@ from lp.buildmaster.tests.mock_slaves import (
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.config import config
 from lp.services.log.logger import BufferLogger
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.testing import (
     TestCase,
@@ -100,9 +101,8 @@ class TestBuildFarmJobBehaviourBase(TestCaseWithFactory):
         pocket = PackagePublishingPocket.RELEASE
         spr = self.factory.makeSourcePackageRelease(
             distroseries=distroseries, archive=archive)
-
-        return spr.createBuild(
-            distroarchseries=distroarchseries, pocket=pocket, archive=archive)
+        return getUtility(IBinaryPackageBuildSet).new(
+            spr, archive, distroarchseries, pocket)
 
     def test_getUploadDirLeaf(self):
         # getUploadDirLeaf returns the current time, followed by the build
