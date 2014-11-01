@@ -114,7 +114,6 @@ from lp.soyuz.model.files import (
     BinaryPackageFile,
     SourcePackageReleaseFile,
     )
-from lp.soyuz.model.packagediff import PackageDiff
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
@@ -224,20 +223,6 @@ class SourcePackageFilePublishing(FilePublishingBase, SQLBase):
     def publishing_record(self):
         """See `IFilePublishing`."""
         return self.sourcepackagepublishing
-
-    @property
-    def file_type_name(self):
-        """See `ISourcePackagePublishingHistory`."""
-        fn = self.libraryfilealiasfilename
-        if ".orig.tar." in fn:
-            return "orig"
-        if fn.endswith(".dsc"):
-            return "dsc"
-        if ".diff." in fn:
-            return "diff"
-        if fn.endswith(".tar.gz"):
-            return "tar"
-        return "other"
 
 
 class BinaryPackageFilePublishing(FilePublishingBase, SQLBase):
@@ -1563,32 +1548,6 @@ class PublishingSet:
             BinaryPackagePublishingHistory.status.is_in(
                 active_publishing_status),
             BinaryPackageRelease.architecturespecific == True)
-
-    def getPackageDiffsForSources(self, one_or_more_source_publications):
-        """See `PublishingSet`."""
-        source_publication_ids = self._extractIDs(
-            one_or_more_source_publications)
-        store = IStore(SourcePackagePublishingHistory)
-        origin = (
-            SourcePackagePublishingHistory,
-            PackageDiff,
-            LeftJoin(LibraryFileAlias,
-                     LibraryFileAlias.id == PackageDiff.diff_contentID),
-            LeftJoin(LibraryFileContent,
-                     LibraryFileContent.id == LibraryFileAlias.contentID),
-            )
-        result_set = store.using(*origin).find(
-            (SourcePackagePublishingHistory, PackageDiff,
-             LibraryFileAlias, LibraryFileContent),
-            SourcePackagePublishingHistory.sourcepackagereleaseID ==
-                PackageDiff.to_sourceID,
-            SourcePackagePublishingHistory.id.is_in(source_publication_ids))
-
-        result_set.order_by(
-            SourcePackagePublishingHistory.id,
-            Desc(PackageDiff.date_requested))
-
-        return result_set
 
     def getChangesFilesForSources(self, one_or_more_source_publications):
         """See `IPublishingSet`."""

@@ -252,8 +252,6 @@ class IFilePublishing(Interface):
 
 class ISourcePackageFilePublishing(IFilePublishing):
     """Source package release files and their publishing status"""
-    file_type_name = Attribute(
-        "The uploaded file's type; one of 'orig', 'dsc', 'diff' or 'other'")
     sourcepackagename = TextLine(
             title=_('Binary package name'), required=True, readonly=True,
             )
@@ -1121,31 +1119,6 @@ class IPublishingSet(Interface):
         :return: A Storm result set of active, architecture-specific
             `BinaryPackagePublishingHistory` objects for the source package
             release in the given `archive`, `distroseries`, and `pocket`.
-        """
-
-    def getPackageDiffsForSources(one_or_more_source_publications):
-        """Return all `PackageDiff`s for each given source publication.
-
-        The returned ResultSet contains entries with the wanted `PackageDiff`s
-        associated with the corresponding source publication and its resulting
-        `LibraryFileAlias` and `LibraryFileContent` in a 4-element tuple. This
-        way the extra information will be cached and the callsites can group
-        package-diffs in any convenient form.
-
-        `LibraryFileAlias` and `LibraryFileContent` elements might be None in
-        case the `PackageDiff` is not completed yet.
-
-        The result is ordered by:
-
-         1. Ascending `SourcePackagePublishingHistory.id`,
-         2. Descending `PackageDiff.date_requested`.
-
-        :param one_or_more_source_publication: list of or a single
-            `SourcePackagePublishingHistory` object.
-
-        :return: a storm ResultSet containing tuples as
-            (`SourcePackagePublishingHistory`, `PackageDiff`,
-             `LibraryFileAlias`, `LibraryFileContent`)
         """
 
     def getChangesFilesForSources(one_or_more_source_publications):
