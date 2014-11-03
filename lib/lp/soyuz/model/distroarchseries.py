@@ -121,7 +121,7 @@ class DistroArchSeries(SQLBase):
     @property
     def isNominatedArchIndep(self):
         """See `IDistroArchSeries`."""
-        return (self.distroseries.nominatedarchindep and
+        return (self.distroseries.nominatedarchindep is not None and
                 self.id == self.distroseries.nominatedarchindep.id)
 
     def getPocketChroot(self):
