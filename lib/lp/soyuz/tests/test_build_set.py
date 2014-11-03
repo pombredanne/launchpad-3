@@ -317,6 +317,17 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         self.assertEqual(self.avr_distroarch, builds[0].distro_arch_series)
         self.assertEqual(self.sparc_distroarch, builds[1].distro_arch_series)
 
+    def test_createMissingBuilds_sets_arch_indep(self):
+        """createMissingBuilds() sets arch_indep=True on builds for the
+        nominatedarchindep architecture.
+        """
+        getUtility(IArchiveArchSet).new(self.archive, self.avr)
+        pubrec = self.getPubSource(architecturehintlist='any')
+        builds = pubrec.createMissingBuilds()
+        self.assertContentEqual(
+            [('avr2001', False), ('sparc64', True)],
+            [(build.processor.name, build.arch_indep) for build in builds])
+
 
 class TestFindBySourceAndLocation(TestCaseWithFactory):
     """Tests for the _findBySourceAndLocation helper."""
