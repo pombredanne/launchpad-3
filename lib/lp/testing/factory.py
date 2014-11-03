@@ -3560,7 +3560,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     def makeBinaryPackageBuild(self, source_package_release=None,
             distroarchseries=None, archive=None, builder=None,
             status=None, pocket=None, date_created=None, processor=None,
-            sourcepackagename=None):
+            sourcepackagename=None, arch_indep=None):
         """Create a BinaryPackageBuild.
 
         If archive is not supplied, the source_package_release is used
@@ -3594,6 +3594,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                     and processor != distroarchseries.processor):
                 raise AssertionError(
                     "DistroArchSeries and Processor must match.")
+        if arch_indep is None:
+            arch_indep = distroarchseries.isNominatedArchIndep
         if archive is None:
             if source_package_release is None:
                 archive = distroarchseries.main_archive
@@ -3624,7 +3626,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 status=status,
                 archive=archive,
                 pocket=pocket,
-                builder=builder)
+                builder=builder,
+                arch_indep=arch_indep)
         IStore(binary_package_build).flush()
         return binary_package_build
 

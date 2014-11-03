@@ -55,6 +55,9 @@ from lp.services.log.logger import BufferLogger
 from lp.soyuz.adapters.archivedependencies import (
     get_sources_list_for_building,
     )
+from lp.soyuz.model.binarypackagebuildbehaviour import (
+    BinaryPackageBuildBehaviour,
+    )
 from lp.soyuz.enums import ArchivePurpose
 from lp.testing import TestCaseWithFactory
 from lp.testing.dbuser import switch_dbuser
@@ -285,6 +288,19 @@ class TestBinaryBuildPackageBehaviour(TestCaseWithFactory):
         self.assertEqual(
             'Soyuz is not yet capable of building SECURITY uploads.',
             str(e))
+
+    def test_arch_indep(self):
+        # BinaryPackageBuild.arch_indep is passed through to the slave.
+        build = self.factory.makeBinaryPackageBuild(arch_indep=False)
+        self.assertIs(
+            False,
+            BinaryPackageBuildBehaviour(build)._extraBuildArgs(build)[
+                'arch_indep'])
+        build = self.factory.makeBinaryPackageBuild(arch_indep=True)
+        self.assertIs(
+            True,
+            BinaryPackageBuildBehaviour(build)._extraBuildArgs(build)[
+                'arch_indep'])
 
     def test_verifyBuildRequest(self):
         # Don't allow a virtual build on a non-virtual builder.
