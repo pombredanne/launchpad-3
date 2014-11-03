@@ -1443,7 +1443,8 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
 
         build = self.new(
             source_package_release=sourcepackagerelease,
-            distro_arch_series=arch, archive=archive, pocket=pocket)
+            distro_arch_series=arch, archive=archive, pocket=pocket,
+            arch_indep=arch.isNominatedArchIndep)
         # Create the builds in suspended mode for disabled archives.
         build_queue = build.queueBuild(suspended=not archive.enabled)
         Store.of(build).flush()
