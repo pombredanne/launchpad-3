@@ -1355,7 +1355,8 @@ class BinaryPackageBuildArchIndepPopulator(TunableLoop):
     def __init__(self, log, abort_time=None):
         super(BinaryPackageBuildArchIndepPopulator, self).__init__(
             log, abort_time)
-        self.start_at = 1
+        state = load_garbo_job_state(self.__class__.__name__) or {}
+        self.start_at = state.get('next_bpb_id', 1)
         self.store = IMasterStore(BinaryPackageBuild)
 
     def findBuilds(self):
@@ -1374,6 +1375,8 @@ class BinaryPackageBuildArchIndepPopulator(TunableLoop):
         for bpb in bpbs:
             bpb.arch_indep = bpb.distro_arch_series.isNominatedArchIndep
         self.start_at = bpbs[-1].id + 1
+        save_garbo_job_state(
+            self.__class__.__name__, {'next_bpb_id': self.start_at})
         transaction.commit()
 
 
