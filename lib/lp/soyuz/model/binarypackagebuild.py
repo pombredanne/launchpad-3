@@ -897,10 +897,12 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
     implements(IBinaryPackageBuildSet)
 
     def new(self, source_package_release, archive, distro_arch_series, pocket,
-            arch_indep=False, status=BuildStatus.NEEDSBUILD, builder=None):
+            arch_indep=None, status=BuildStatus.NEEDSBUILD, builder=None):
         """See `IBinaryPackageBuildSet`."""
         # Force the current timestamp instead of the default UTC_NOW for
         # the transaction, avoid several row with same datecreated.
+        if arch_indep is None:
+            arch_indep = distro_arch_series.isNominatedArchIndep
         date_created = datetime.datetime.now(pytz.timezone('UTC'))
         # Create the BuildFarmJob for the new BinaryPackageBuild.
         build_farm_job = getUtility(IBuildFarmJobSource).new(
@@ -1443,8 +1445,7 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
 
         build = self.new(
             source_package_release=sourcepackagerelease,
-            distro_arch_series=arch, archive=archive, pocket=pocket,
-            arch_indep=arch.isNominatedArchIndep)
+            distro_arch_series=arch, archive=archive, pocket=pocket)
         # Create the builds in suspended mode for disabled archives.
         build_queue = build.queueBuild(suspended=not archive.enabled)
         Store.of(build).flush()
