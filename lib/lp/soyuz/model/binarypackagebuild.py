@@ -170,6 +170,8 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
     pocket = DBEnum(
         name='pocket', enum=PackagePublishingPocket, allow_none=False)
 
+    arch_indep = Bool()
+
     upload_log_id = Int(name='upload_log')
     upload_log = Reference(upload_log_id, 'LibraryFileAlias.id')
 
@@ -895,7 +897,7 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
     implements(IBinaryPackageBuildSet)
 
     def new(self, source_package_release, archive, distro_arch_series, pocket,
-            status=BuildStatus.NEEDSBUILD, builder=None):
+            arch_indep=False, status=BuildStatus.NEEDSBUILD, builder=None):
         """See `IBinaryPackageBuildSet`."""
         # Force the current timestamp instead of the default UTC_NOW for
         # the transaction, avoid several row with same datecreated.
@@ -908,8 +910,8 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
             build_farm_job=build_farm_job,
             distro_arch_series=distro_arch_series,
             source_package_release=source_package_release,
-            archive=archive, pocket=pocket, status=status,
-            processor=distro_arch_series.processor,
+            archive=archive, pocket=pocket, arch_indep=arch_indep,
+            status=status, processor=distro_arch_series.processor,
             virtualized=archive.require_virtualized, builder=builder,
             is_distro_archive=archive.is_main,
             distribution=distro_arch_series.distroseries.distribution,

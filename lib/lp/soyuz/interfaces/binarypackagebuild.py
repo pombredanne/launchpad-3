@@ -85,6 +85,10 @@ class IBinaryPackageBuildView(IPackageBuild):
 
     distro_arch_series_id = Int()
 
+    arch_indep = Bool(
+        title=_("Build architecture independent packages"),
+        required=False, readonly=True)
+
     # Properties
     current_source_publication = exported(
         Reference(
@@ -296,13 +300,15 @@ class IBinaryPackageBuildSet(ISpecificBuildFarmJobSource):
     """Interface for BinaryPackageBuildSet"""
 
     def new(source_package_release, archive, distro_arch_series, pocket,
-            status=BuildStatus.NEEDSBUILD, builder=None):
+            arch_indep=False, status=BuildStatus.NEEDSBUILD, builder=None):
         """Create a new `IBinaryPackageBuild`.
 
         :param source_package_release: An `ISourcePackageRelease`.
         :param archive: An `IArchive` in which context the build is built.
         :param distro_arch_series: An `IDistroArchSeries`.
         :param pocket: An item of `PackagePublishingPocket`.
+        :param arch_indep: Build architecture independent packages in
+            addition to architecture specific ones.
         :param status: A `BuildStatus` item indicating the builds status.
         :param builder: An optional `IBuilder`.
         """
