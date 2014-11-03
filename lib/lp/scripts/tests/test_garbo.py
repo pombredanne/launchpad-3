@@ -116,7 +116,10 @@ from lp.testing import (
     TestCase,
     TestCaseWithFactory,
     )
-from lp.testing.dbuser import switch_dbuser
+from lp.testing.dbuser import (
+    dbuser,
+    switch_dbuser,
+    )
 from lp.testing.layers import (
     DatabaseLayer,
     LaunchpadScriptLayer,
@@ -1307,6 +1310,23 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         # retained.
         self._test_LiveFSFilePruner(
             'application/octet-stream', 0, expected_count=1)
+
+    def test_BinaryPackageBuildArchIndepPopulator(self):
+        with dbuser('testadmin'):
+            ds = self.factory.makeDistroSeries()
+            das1 = self.factory.makeDistroArchSeries(distroseries=ds)
+            ds.nominatedarchindep = das1
+            das2 = self.factory.makeDistroArchSeries(distroseries=ds)
+            bpb1 = self.factory.makeBinaryPackageBuild(distroarchseries=das1)
+            bpb2 = self.factory.makeBinaryPackageBuild(distroarchseries=das2)
+            removeSecurityProxy(bpb1).arch_indep = None
+            removeSecurityProxy(bpb2).arch_indep = None
+
+        with FeatureFixture({'soyuz.bpb_arch_indep_populator.enabled': 'on'}):
+            self.runHourly()
+
+        self.assertIs(True, bpb1.arch_indep)
+        self.assertIs(False, bpb2.arch_indep)
 
 
 class TestGarboTasks(TestCaseWithFactory):

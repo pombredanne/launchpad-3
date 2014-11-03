@@ -117,6 +117,7 @@ from lp.services.scripts.base import (
 from lp.services.session.model import SessionData
 from lp.services.verification.model.logintoken import LoginToken
 from lp.soyuz.model.archive import Archive
+from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.livefsbuild import LiveFSFile
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.model.reporting import LatestPersonSourcePackageReleaseCache
@@ -1346,6 +1347,36 @@ class UnusedAccessPolicyPruner(TunableLoop):
         transaction.commit()
 
 
+class BinaryPackageBuildArchIndepPopulator(TunableLoop):
+    """Populate the status and build_farm_job columns of BuildQueue."""
+
+    maximum_chunk_size = 5000
+
+    def __init__(self, log, abort_time=None):
+        super(BinaryPackageBuildArchIndepPopulator, self).__init__(
+            log, abort_time)
+        self.start_at = 1
+        self.store = IMasterStore(BinaryPackageBuild)
+
+    def findBuilds(self):
+        return self.store.find(
+            BinaryPackageBuild,
+            BinaryPackageBuild.id >= self.start_at).order_by(
+                BinaryPackageBuild.id)
+
+    def isDone(self):
+        return (
+            not getFeatureFlag('soyuz.bpb_arch_indep_populator.enabled')
+            or self.findBuilds().is_empty())
+
+    def __call__(self, chunk_size):
+        bpbs = list(self.findBuilds()[:chunk_size])
+        for bpb in bpbs:
+            bpb.arch_indep = bpb.distro_arch_series.isNominatedArchIndep
+        self.start_at = bpbs[-1].id + 1
+        transaction.commit()
+
+
 class LiveFSFilePruner(BulkPruner):
     """A BulkPruner to remove old `LiveFSFile`s.
 
@@ -1621,6 +1652,7 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         UnusedSessionPruner,
         DuplicateSessionPruner,
         BugHeatUpdater,
+        BinaryPackageBuildArchIndepPopulator,
         ]
     experimental_tunable_loops = []
 
