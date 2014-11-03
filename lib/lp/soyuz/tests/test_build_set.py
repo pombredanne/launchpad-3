@@ -222,20 +222,20 @@ class BuildRecordCreationTests(TestNativePublishingBase):
 
     def setUp(self):
         super(BuildRecordCreationTests, self).setUp()
-        self.distro = self.factory.makeDistribution()
-        self.distroseries = self.factory.makeDistroSeries(
-            distribution=self.distro, name="crazy")
         self.archive = self.factory.makeArchive()
         self.avr = self.factory.makeProcessor(name="avr2001", restricted=True)
-        self.avr_distroarch = self.factory.makeDistroArchSeries(
-            architecturetag='avr', processor=self.avr,
-            distroseries=self.distroseries, supports_virtualized=True)
         self.sparc = self.factory.makeProcessor(
             name="sparc64", restricted=False)
-        self.sparc_distroarch = self.factory.makeDistroArchSeries(
-            architecturetag='sparc', processor=self.sparc,
-            distroseries=self.distroseries, supports_virtualized=True)
-        self.distroseries.nominatedarchindep = self.sparc_distroarch
+        self.x32 = self.factory.makeProcessor(name="x32", restricted=False)
+        self.distro = self.factory.makeDistribution()
+
+        self.distroseries = self.factory.makeDistroSeries(
+            distribution=self.distro, name="crazy")
+        for name, arch in (('avr', self.avr), ('sparc', self.sparc)):
+            self.factory.makeDistroArchSeries(
+                architecturetag=name, processor=arch,
+                distroseries=self.distroseries, supports_virtualized=True)
+        self.distroseries.nominatedarchindep = self.distroseries['sparc']
         self.addFakeChroots(self.distroseries)
 
     def getPubSource(self, architecturehintlist):
@@ -256,10 +256,11 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         For a normal archive, only unrestricted architectures should
         be used.
         """
-        available_archs = [self.sparc_distroarch, self.avr_distroarch]
+        available_archs = [
+            self.distroseries['sparc'], self.distroseries['avr']]
         pubrec = self.getPubSource(architecturehintlist='any')
         self.assertEqual(
-            [self.sparc_distroarch],
+            [self.distroseries['sparc']],
             BinaryPackageBuildSet()._getAllowedArchitectures(
                 pubrec.archive, available_archs))
 
@@ -269,11 +270,12 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         Restricted architectures should only be allowed if there is
         an explicit ArchiveArch association with the archive.
         """
-        available_archs = [self.sparc_distroarch, self.avr_distroarch]
+        available_archs = [
+            self.distroseries['sparc'], self.distroseries['avr']]
         getUtility(IArchiveArchSet).new(self.archive, self.avr)
         pubrec = self.getPubSource(architecturehintlist='any')
         self.assertEqual(
-            [self.sparc_distroarch, self.avr_distroarch],
+            [self.distroseries['sparc'], self.distroseries['avr']],
             BinaryPackageBuildSet()._getAllowedArchitectures(
                 pubrec.archive, available_archs))
 
@@ -284,7 +286,8 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         pubrec = self.getPubSource(architecturehintlist='any')
         builds = pubrec.createMissingBuilds()
         self.assertEqual(1, len(builds))
-        self.assertEqual(self.sparc_distroarch, builds[0].distro_arch_series)
+        self.assertEqual(
+            self.distroseries['sparc'], builds[0].distro_arch_series)
 
     def test_createMissingBuilds_restricts_explicitlist(self):
         """createMissingBuilds() limits builds targeted at a variety of
@@ -293,7 +296,8 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         pubrec = self.getPubSource(architecturehintlist='sparc i386 avr')
         builds = pubrec.createMissingBuilds()
         self.assertEqual(1, len(builds))
-        self.assertEqual(self.sparc_distroarch, builds[0].distro_arch_series)
+        self.assertEqual(
+            self.distroseries['sparc'], builds[0].distro_arch_series)
 
     def test_createMissingBuilds_restricts_all(self):
         """createMissingBuilds() should limit builds targeted at 'all'
@@ -303,7 +307,8 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         pubrec = self.getPubSource(architecturehintlist='all')
         builds = pubrec.createMissingBuilds()
         self.assertEqual(1, len(builds))
-        self.assertEqual(self.sparc_distroarch, builds[0].distro_arch_series)
+        self.assertEqual(
+            self.distroseries['sparc'], builds[0].distro_arch_series)
 
     def test_createMissingBuilds_restrict_override(self):
         """createMissingBuilds() should limit builds targeted at 'any'
@@ -314,19 +319,21 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         pubrec = self.getPubSource(architecturehintlist='any')
         builds = pubrec.createMissingBuilds()
         self.assertEqual(2, len(builds))
-        self.assertEqual(self.avr_distroarch, builds[0].distro_arch_series)
-        self.assertEqual(self.sparc_distroarch, builds[1].distro_arch_series)
+        self.assertEqual(
+            self.distroseries['avr'], builds[0].distro_arch_series)
+        self.assertEqual(
+            self.distroseries['sparc'], builds[1].distro_arch_series)
 
-    def test_createMissingBuilds_sets_arch_indep(self):
+    def test_createMissingBuilds_arch_indep_from_scratch(self):
         """createMissingBuilds() sets arch_indep=True on builds for the
-        nominatedarchindep architecture.
+        nominatedarchindep architecture when no builds already exist.
         """
         getUtility(IArchiveArchSet).new(self.archive, self.avr)
         pubrec = self.getPubSource(architecturehintlist='any')
-        builds = pubrec.createMissingBuilds()
         self.assertContentEqual(
             [('avr2001', False), ('sparc64', True)],
-            [(build.processor.name, build.arch_indep) for build in builds])
+            [(b.processor.name, b.arch_indep)
+             for b in pubrec.createMissingBuilds()])
 
 
 class TestFindBySourceAndLocation(TestCaseWithFactory):
