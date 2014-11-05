@@ -381,7 +381,7 @@ class IBinaryPackageBuildSet(ISpecificBuildFarmJobSource):
         """
 
     def getRelevantToSourceAndLocation(sourcepackagerelease, archive,
-                               distroarchseries):
+                                       distroarchseries):
         """Return build for the given source, archive and distroarchseries.
 
         It looks for a build in any state registered *directly* for the

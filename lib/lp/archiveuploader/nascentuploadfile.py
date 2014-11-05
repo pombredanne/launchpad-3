@@ -848,7 +848,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
 
         # Check if there's a suitable existing build.
         build = getUtility(IBinaryPackageBuildSet).getBySourceAndLocation(
-                sourcepackagerelease, self.policy.archive, dar)
+            sourcepackagerelease, self.policy.archive, dar)
         if build is not None:
             build.updateStatus(BuildStatus.FULLYBUILT)
             self.logger.debug("Updating build for %s: %s" % (
