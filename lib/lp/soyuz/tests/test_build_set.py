@@ -249,6 +249,13 @@ class BuildRecordCreationTests(TestNativePublishingBase):
             archive=self.archive, distroseries=self.distroseries,
             architecturehintlist=architecturehintlist)
 
+    def createBuilds(self, spr, distroseries):
+        self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagerelease=spr, archive=self.archive,
+            distroseries=distroseries, pocket=PackagePublishingPocket.RELEASE)
+        return getUtility(IBinaryPackageBuildSet).createForSource(
+            spr, self.archive, distroseries, PackagePublishingPocket.RELEASE)
+
     def assertBuildsMatch(self, expected, builds):
         actual = {
             build.distro_arch_series.architecturetag: build.arch_indep
@@ -290,16 +297,17 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         """createMissingBuilds() should limit builds targeted at 'any'
         architecture to those allowed for the archive.
         """
-        pubrec = self.getPubSource(architecturehintlist='any')
-        builds = pubrec.createMissingBuilds()
+        spr = self.factory.makeSourcePackageRelease(architecturehintlist='any')
+        builds = self.createBuilds(spr, self.distroseries)
         self.assertBuildsMatch({'sparc': True}, builds)
 
     def test_createMissingBuilds_restricts_explicitlist(self):
         """createMissingBuilds() limits builds targeted at a variety of
         architectures architecture to those allowed for the archive.
         """
-        pubrec = self.getPubSource(architecturehintlist='sparc i386 avr')
-        builds = pubrec.createMissingBuilds()
+        spr = self.factory.makeSourcePackageRelease(
+            architecturehintlist='sparc i386 avr')
+        builds = self.createBuilds(spr, self.distroseries)
         self.assertBuildsMatch({'sparc': True}, builds)
 
     def test_createMissingBuilds_restricts_all(self):
@@ -307,8 +315,8 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         architectures to the nominated independent architecture,
         if that is allowed for the archive.
         """
-        pubrec = self.getPubSource(architecturehintlist='all')
-        builds = pubrec.createMissingBuilds()
+        spr = self.factory.makeSourcePackageRelease(architecturehintlist='all')
+        builds = self.createBuilds(spr, self.distroseries)
         self.assertBuildsMatch({'sparc': True}, builds)
 
     def test_createMissingBuilds_restrict_override(self):
@@ -317,8 +325,8 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         explicitly associated with the archive.
         """
         getUtility(IArchiveArchSet).new(self.archive, self.avr)
-        pubrec = self.getPubSource(architecturehintlist='any')
-        builds = pubrec.createMissingBuilds()
+        spr = self.factory.makeSourcePackageRelease(architecturehintlist='any')
+        builds = self.createBuilds(spr, self.distroseries)
         self.assertBuildsMatch({'sparc': True, 'avr': False}, builds)
 
     def test_createMissingBuilds_arch_indep_from_scratch(self):
