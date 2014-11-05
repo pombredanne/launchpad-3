@@ -249,6 +249,13 @@ class BuildRecordCreationTests(TestNativePublishingBase):
             archive=self.archive, distroseries=self.distroseries,
             architecturehintlist=architecturehintlist)
 
+    def assertBuildsMatch(self, expected, builds):
+        actual = {
+            build.distro_arch_series.architecturetag: build.arch_indep
+            for build in builds}
+        self.assertContentEqual(expected, actual)
+        self.assertEqual(len(actual), len(builds))
+
     def test__getAllowedArchitectures_restricted(self):
         """Test _getAllowedArchitectures doesn't return unrestricted
         archs.
@@ -285,9 +292,7 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         """
         pubrec = self.getPubSource(architecturehintlist='any')
         builds = pubrec.createMissingBuilds()
-        self.assertEqual(1, len(builds))
-        self.assertEqual(
-            self.distroseries['sparc'], builds[0].distro_arch_series)
+        self.assertBuildsMatch({'sparc': True}, builds)
 
     def test_createMissingBuilds_restricts_explicitlist(self):
         """createMissingBuilds() limits builds targeted at a variety of
@@ -295,9 +300,7 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         """
         pubrec = self.getPubSource(architecturehintlist='sparc i386 avr')
         builds = pubrec.createMissingBuilds()
-        self.assertEqual(1, len(builds))
-        self.assertEqual(
-            self.distroseries['sparc'], builds[0].distro_arch_series)
+        self.assertBuildsMatch({'sparc': True}, builds)
 
     def test_createMissingBuilds_restricts_all(self):
         """createMissingBuilds() should limit builds targeted at 'all'
@@ -306,9 +309,7 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         """
         pubrec = self.getPubSource(architecturehintlist='all')
         builds = pubrec.createMissingBuilds()
-        self.assertEqual(1, len(builds))
-        self.assertEqual(
-            self.distroseries['sparc'], builds[0].distro_arch_series)
+        self.assertBuildsMatch({'sparc': True}, builds)
 
     def test_createMissingBuilds_restrict_override(self):
         """createMissingBuilds() should limit builds targeted at 'any'
@@ -318,11 +319,7 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         getUtility(IArchiveArchSet).new(self.archive, self.avr)
         pubrec = self.getPubSource(architecturehintlist='any')
         builds = pubrec.createMissingBuilds()
-        self.assertEqual(2, len(builds))
-        self.assertEqual(
-            self.distroseries['avr'], builds[0].distro_arch_series)
-        self.assertEqual(
-            self.distroseries['sparc'], builds[1].distro_arch_series)
+        self.assertBuildsMatch({'sparc': True, 'avr': False}, builds)
 
     def test_createMissingBuilds_arch_indep_from_scratch(self):
         """createMissingBuilds() sets arch_indep=True on builds for the
@@ -330,10 +327,8 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         """
         getUtility(IArchiveArchSet).new(self.archive, self.avr)
         pubrec = self.getPubSource(architecturehintlist='any')
-        self.assertContentEqual(
-            [('avr2001', False), ('sparc64', True)],
-            [(b.processor.name, b.arch_indep)
-             for b in pubrec.createMissingBuilds()])
+        builds = pubrec.createMissingBuilds()
+        self.assertBuildsMatch({'sparc': True, 'avr': True}, builds)
 
 
 class TestFindBySourceAndLocation(TestCaseWithFactory):
