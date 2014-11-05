@@ -292,8 +292,8 @@ class BuildRecordCreationTests(TestNativePublishingBase):
             BinaryPackageBuildSet()._getAllowedArchitectures(
                 pubrec.archive, available_archs))
 
-    def test_createMissingBuilds_restricts_any(self):
-        """createMissingBuilds() should limit builds targeted at 'any'
+    def test_createForSource_restricts_any(self):
+        """createForSource() should limit builds targeted at 'any'
         architecture to those allowed for the archive.
         """
         self.avr.restricted = True
@@ -301,8 +301,8 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         builds = self.createBuilds(spr, self.distroseries)
         self.assertBuildsMatch({'sparc': True}, builds)
 
-    def test_createMissingBuilds_restricts_explicitlist(self):
-        """createMissingBuilds() limits builds targeted at a variety of
+    def test_createForSource_restricts_explicitlist(self):
+        """createForSource() limits builds targeted at a variety of
         architectures architecture to those allowed for the archive.
         """
         self.avr.restricted = True
@@ -311,8 +311,8 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         builds = self.createBuilds(spr, self.distroseries)
         self.assertBuildsMatch({'sparc': True}, builds)
 
-    def test_createMissingBuilds_restricts_all(self):
-        """createMissingBuilds() should limit builds targeted at 'all'
+    def test_createForSource_restricts_all(self):
+        """createForSource() should limit builds targeted at 'all'
         architectures to the nominated independent architecture,
         if that is allowed for the archive.
         """
@@ -321,8 +321,8 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         builds = self.createBuilds(spr, self.distroseries)
         self.assertBuildsMatch({'sparc': True}, builds)
 
-    def test_createMissingBuilds_restrict_override(self):
-        """createMissingBuilds() should limit builds targeted at 'any'
+    def test_createForSource_restrict_override(self):
+        """createForSource() should limit builds targeted at 'any'
         architecture to architectures that are unrestricted or
         explicitly associated with the archive.
         """
@@ -332,12 +332,12 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         builds = self.createBuilds(spr, self.distroseries)
         self.assertBuildsMatch({'sparc': True, 'avr': False}, builds)
 
-    def test_createMissingBuilds_arch_indep_from_scratch(self):
-        """createMissingBuilds() sets arch_indep=True on builds for the
+    def test_createForSource_arch_indep_from_scratch(self):
+        """createForSource() sets arch_indep=True on builds for the
         nominatedarchindep architecture when no builds already exist.
         """
         pubrec = self.getPubSource(architecturehintlist='any')
-        builds = pubrec.createMissingBuilds()
+        builds = pubrec.createForSource()
         self.assertBuildsMatch({'sparc': True, 'avr': False}, builds)
 
 
