@@ -82,16 +82,16 @@ class TestAddMissingBuilds(TestCaseWithFactory):
     def getBuilds(self):
         """Helper to return build records."""
         bpbs = getUtility(IBinaryPackageBuildSet)
-        any_build_i386 = bpbs.getRelevantToSourceAndLocation(
+        any_build_i386 = bpbs.getBySourceAndLocation(
             self.any.sourcepackagerelease, self.ppa,
             self.stp.breezy_autotest_i386)
-        any_build_hppa = bpbs.getRelevantToSourceAndLocation(
+        any_build_hppa = bpbs.getBySourceAndLocation(
             self.any.sourcepackagerelease, self.ppa,
             self.stp.breezy_autotest_hppa)
-        all_build_i386 = bpbs.getRelevantToSourceAndLocation(
+        all_build_i386 = bpbs.getBySourceAndLocation(
             self.all.sourcepackagerelease, self.ppa,
             self.stp.breezy_autotest_i386)
-        all_build_hppa = bpbs.getRelevantToSourceAndLocation(
+        all_build_hppa = bpbs.getBySourceAndLocation(
             self.all.sourcepackagerelease, self.ppa,
             self.stp.breezy_autotest_hppa)
         return (
@@ -151,10 +151,10 @@ class TestAddMissingBuilds(TestCaseWithFactory):
         # only get a build for i386 which is the nominated architecture-
         # independent build arch.
         bpbs = getUtility(IBinaryPackageBuildSet)
-        all_build_i386 = bpbs.getRelevantToSourceAndLocation(
+        all_build_i386 = bpbs.getBySourceAndLocation(
             self.all.sourcepackagerelease, self.ppa,
             self.stp.breezy_autotest_i386)
-        all_build_hppa = bpbs.getRelevantToSourceAndLocation(
+        all_build_hppa = bpbs.getBySourceAndLocation(
             self.all.sourcepackagerelease, self.ppa,
             self.stp.breezy_autotest_hppa)
         self.assertIsNot(all_build_i386, None)
