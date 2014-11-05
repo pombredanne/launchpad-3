@@ -253,7 +253,7 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         actual = {
             build.distro_arch_series.architecturetag: build.arch_indep
             for build in builds}
-        self.assertContentEqual(expected, actual)
+        self.assertContentEqual(expected.items(), actual.items())
         self.assertEqual(len(actual), len(builds))
 
     def test__getAllowedArchitectures_restricted(self):
@@ -328,7 +328,7 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         getUtility(IArchiveArchSet).new(self.archive, self.avr)
         pubrec = self.getPubSource(architecturehintlist='any')
         builds = pubrec.createMissingBuilds()
-        self.assertBuildsMatch({'sparc': True, 'avr': True}, builds)
+        self.assertBuildsMatch({'sparc': True, 'avr': False}, builds)
 
 
 class TestFindBySourceAndLocation(TestCaseWithFactory):
