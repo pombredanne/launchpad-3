@@ -290,28 +290,6 @@ bug #181736 report for previous mistakes in this area.
     >>> print cprov_build.archive.displayname
     Primary Archive for Ubuntu Linux
 
-Another possible situation is when the user wants to rebuild the
-same source published in hoary to another suite, let's say
-breezy-autotest in his PPA.
-
-    >>> cprov_foo_src = cprov.archive.getPublishedSources(name=u'foo').first()
-
-    >>> breezy_autotest = ubuntu.getSeries('breezy-autotest')
-    >>> copy = cprov_foo_src.copyTo(
-    ...    breezy_autotest, pocket_release, cprov.archive)
-    >>> copy.status = PackagePublishingStatus.PUBLISHED
-    >>> flush_database_updates()
-
-When only the source is copied we do want to rebuild, so it's correct
-when the build lookup returns None.
-
-    >>> copied_release = copy.sourcepackagerelease
-    >>> breezy_autotest_i386 = breezy_autotest['i386']
-    >>> copied_build_candidate = bpbs.getBySourceAndLocation(
-    ...     copied_release, cprov.archive, breezy_autotest_i386)
-    >>> print copied_build_candidate
-    None
-
 It's even possible to copy source and binaries from hoary to warty
 suite in Celso's PPA.
 
