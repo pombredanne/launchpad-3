@@ -7,7 +7,7 @@
 
 IBinaryPackageBuildSet can create and look up build records.
 
-It provides a 'getBySourceAndLocation' method which allows the
+It provides a 'getRelevantToSourceAndLocation' method which allows the
 application to lookup for BinaryPackageBuild records for
 SourcePackageRelease in a given DistroArchSeries and Archive.
 
@@ -48,8 +48,6 @@ optionally provide another status.
     >>> evo_release = hoary_evo_source['1.0'].sourcepackagerelease
 
     >>> from lp.buildmaster.enums import BuildStatus
-    >>> from lp.soyuz.interfaces.binarypackagebuild import (
-    ...     IBinaryPackageBuildSet)
     >>> evo_build_i386 = getUtility(IBinaryPackageBuildSet).new(
     ...     evo_release, ubuntu.main_archive, hoary_i386, pocket_release,
     ...     status=BuildStatus.FULLYBUILT)
@@ -66,14 +64,14 @@ optionally provide another status.
 The build record can be retrieved on hoary/i386 architecture.
 
     >>> bpbs = getUtility(IBinaryPackageBuildSet)
-    >>> test_build_i386 = bpbs.getBySourceAndLocation(
+    >>> test_build_i386 = bpbs.getRelevantToSourceAndLocation(
     ...     evo_release, ubuntu.main_archive, hoary_i386)
     >>> test_build_i386 == evo_build_i386
     True
 
 However a hoary/hppa build is not available.
 
-    >>> test_build_hppa = bpbs.getBySourceAndLocation(
+    >>> test_build_hppa = bpbs.getRelevantToSourceAndLocation(
     ...     evo_release, ubuntu.main_archive, hoary_hppa)
     >>> print test_build_hppa
     None
@@ -107,7 +105,7 @@ ubuntu/breezy-autotest/i386.
 In practical terms it means that another build is not necessary in
 this context.
 
-    >>> breezy_autotest_build = bpbs.getBySourceAndLocation(
+    >>> breezy_autotest_build = bpbs.getRelevantToSourceAndLocation(
     ...     evo_release, ubuntu.main_archive, breezy_autotest_i386)
     >>> print breezy_autotest_build.title
     i386 build of evolution 1.0 in ubuntu hoary RELEASE
@@ -116,7 +114,7 @@ this context.
 == Sources with architecture-independent and specific binaries ==
 
 Even if the source package builds an architecture-independent package,
-no Build record will be returned by getBySourceAndLocation() if
+no Build record will be returned by getRelevantToSourceAndLocation() if
 arch-specific binary packages were not built (see bug #65712 for further
 information).
 
@@ -148,7 +146,7 @@ architecture-independent binary.
 
 The build record for foo in hoary/i386 was created.
 
-    >>> test_build_i386 = bpbs.getBySourceAndLocation(
+    >>> test_build_i386 = bpbs.getRelevantToSourceAndLocation(
     ...     foo_pub_src.sourcepackagerelease, ubuntu.main_archive, hoary_i386)
     >>> print test_build_i386.title
     i386 build of foo 1.0 in ubuntu hoary RELEASE
@@ -162,7 +160,7 @@ the build doesn't exist.
     foo-bin 1.0 in hoary i386
     foo-bin 1.0 in hoary hppa
 
-    >>> test_build_hppa = bpbs.getBySourceAndLocation(
+    >>> test_build_hppa = bpbs.getRelevantToSourceAndLocation(
     ...     foo_pub_src.sourcepackagerelease, ubuntu.main_archive, hoary_hppa)
     >>> print test_build_hppa
     None
@@ -181,7 +179,7 @@ Let's start by copying a PRIMARY archive source to Celso's PPA.
 
 No suitable build will be found for it.
 
-    >>> test_build_i386_ppa = bpbs.getBySourceAndLocation(
+    >>> test_build_i386_ppa = bpbs.getRelevantToSourceAndLocation(
     ...     copy.sourcepackagerelease, cprov.archive, hoary_i386)
     >>> print test_build_i386_ppa
     None
@@ -206,14 +204,14 @@ contents at the time it was built.
 The copied source build lookup in the PPA returns the build created in
 the PPA context, not the PRIMARY archive one.
 
-    >>> test_build_i386_ppa = bpbs.getBySourceAndLocation(
+    >>> test_build_i386_ppa = bpbs.getRelevantToSourceAndLocation(
     ...     copy.sourcepackagerelease, cprov.archive, hoary_i386)
     >>> test_build_i386_ppa == evo_build_i386_ppa
     True
 
 As expected, the hoary/hppa build is still missing in both archives.
 
-    >>> test_build_hppa_ppa = bpbs.getBySourceAndLocation(
+    >>> test_build_hppa_ppa = bpbs.getRelevantToSourceAndLocation(
     ...     copy.sourcepackagerelease, cprov.archive, hoary_hppa)
     >>> print test_build_hppa_ppa
     None
@@ -225,12 +223,12 @@ to be missing in the PRIMARY archive context.
     ...     copy.sourcepackagerelease, cprov.archive, hoary_hppa,
     ...     pocket_release)
 
-    >>> test_build_hppa_ppa = bpbs.getBySourceAndLocation(
+    >>> test_build_hppa_ppa = bpbs.getRelevantToSourceAndLocation(
     ...     copy.sourcepackagerelease, cprov.archive, hoary_hppa)
     >>> print test_build_hppa_ppa.title
     hppa build of evolution 1.0 in ubuntu hoary RELEASE
 
-    >>> test_build_hppa = bpbs.getBySourceAndLocation(
+    >>> test_build_hppa = bpbs.getRelevantToSourceAndLocation(
     ...     evo_release, ubuntu.main_archive, hoary_hppa)
     >>> print test_build_hppa
     None
@@ -255,7 +253,7 @@ hoary PRIMARY archive.
     ...     status=PackagePublishingStatus.PUBLISHED)
 
     >>> foo_source_release = foo_pub_src.sourcepackagerelease
-    >>> build_primary = bpbs.getBySourceAndLocation(
+    >>> build_primary = bpbs.getRelevantToSourceAndLocation(
     ...     foo_source_release, ubuntu.main_archive, hoary_i386)
 
     >>> print build_primary.title
@@ -281,7 +279,7 @@ identify this situation and locate the original build. See the
 bug #181736 report for previous mistakes in this area.
 
     >>> cprov_spr = cprov_src.sourcepackagerelease
-    >>> cprov_build = bpbs.getBySourceAndLocation(
+    >>> cprov_build = bpbs.getRelevantToSourceAndLocation(
     ...     cprov_spr, cprov.archive, hoary_i386)
 
     >>> print cprov_build.title
@@ -311,7 +309,7 @@ following the build path of the corresponding published binaries.
 
     >>> copied_source_release = copied_source.sourcepackagerelease
     >>> warty_i386 = warty['i386']
-    >>> copied_build_candidate = bpbs.getBySourceAndLocation(
+    >>> copied_build_candidate = bpbs.getRelevantToSourceAndLocation(
     ...     copied_source_release, cprov.archive, warty_i386)
 
     >>> print copied_build_candidate.title
@@ -340,7 +338,7 @@ The published binaries build path is followed again to find the
 original build that happened in the primary archive.
 
     >>> mark_spr = mark_src.sourcepackagerelease
-    >>> mark_build = bpbs.getBySourceAndLocation(
+    >>> mark_build = bpbs.getRelevantToSourceAndLocation(
     ...     mark_spr, mark.archive, hoary_i386)
 
     >>> print mark_build.title

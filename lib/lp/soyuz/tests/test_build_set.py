@@ -368,14 +368,14 @@ class TestFindBySourceAndLocation(TestCaseWithFactory):
 
 
 class TestGetBySourceAndLocation(TestCaseWithFactory):
-    """Tests for BinaryPackageBuildSet.getBySourceAndLocation()."""
+    """Tests for BinaryPackageBuildSet.getRelevantToSourceAndLocation()."""
 
     layer = ZopelessDatabaseLayer
 
     def test_can_find_build_in_derived_distro_parent(self):
         # If a derived distribution inherited its binaries from its
-        # parent then getBySourceAndLocation() should look in the parent
-        # to find the build.
+        # parent then getRelevantToSourceAndLocation() should look in
+        # the parent to find the build.
         dsp = self.factory.makeDistroSeriesParent()
         parent_archive = dsp.parent_series.main_archive
 
@@ -413,6 +413,6 @@ class TestGetBySourceAndLocation(TestCaseWithFactory):
         # Searching for the build in the derived series architecture
         # should automatically pick it up from the parent.
         found_build = getUtility(
-            IBinaryPackageBuildSet).getBySourceAndLocation(
+            IBinaryPackageBuildSet).getRelevantToSourceAndLocation(
                 spr, derived_archive, das_derived)
         self.assertEqual(orig_build, found_build)

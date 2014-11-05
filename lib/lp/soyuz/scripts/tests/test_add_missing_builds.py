@@ -82,16 +82,16 @@ class TestAddMissingBuilds(TestCaseWithFactory):
     def getBuilds(self):
         """Helper to return build records."""
         bpbs = getUtility(IBinaryPackageBuildSet)
-        any_build_i386 = bpbs.getBySourceAndLocation(
+        any_build_i386 = bpbs.getRelevantToSourceAndLocation(
             self.any.sourcepackagerelease, self.ppa,
             self.stp.breezy_autotest_i386)
-        any_build_hppa = bpbs.getBySourceAndLocation(
+        any_build_hppa = bpbs.getRelevantToSourceAndLocation(
             self.any.sourcepackagerelease, self.ppa,
             self.stp.breezy_autotest_hppa)
-        all_build_i386 = bpbs.getBySourceAndLocation(
+        all_build_i386 = bpbs.getRelevantToSourceAndLocation(
             self.all.sourcepackagerelease, self.ppa,
             self.stp.breezy_autotest_i386)
-        all_build_hppa = bpbs.getBySourceAndLocation(
+        all_build_hppa = bpbs.getRelevantToSourceAndLocation(
             self.all.sourcepackagerelease, self.ppa,
             self.stp.breezy_autotest_hppa)
         return (
@@ -137,7 +137,7 @@ class TestAddMissingBuilds(TestCaseWithFactory):
         code, stdout, stderr = self.runScript(args)
         self.assertEqual(
             code, 0,
-            "The script returned with a non zero exit code: %s\n%s\n%s"  % (
+            "The script returned with a non zero exit code: %s\n%s\n%s" % (
                 code, stdout, stderr))
 
         # Sync database changes made in the external process.
@@ -151,10 +151,10 @@ class TestAddMissingBuilds(TestCaseWithFactory):
         # only get a build for i386 which is the nominated architecture-
         # independent build arch.
         bpbs = getUtility(IBinaryPackageBuildSet)
-        all_build_i386 = bpbs.getBySourceAndLocation(
+        all_build_i386 = bpbs.getRelevantToSourceAndLocation(
             self.all.sourcepackagerelease, self.ppa,
             self.stp.breezy_autotest_i386)
-        all_build_hppa = bpbs.getBySourceAndLocation(
+        all_build_hppa = bpbs.getRelevantToSourceAndLocation(
             self.all.sourcepackagerelease, self.ppa,
             self.stp.breezy_autotest_hppa)
         self.assertIsNot(all_build_i386, None)

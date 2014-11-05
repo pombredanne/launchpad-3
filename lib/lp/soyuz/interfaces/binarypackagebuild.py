@@ -366,7 +366,7 @@ class IBinaryPackageBuildSet(ISpecificBuildFarmJobSource):
         :return: a list of `IBuild` records not target to PPA archives.
         """
 
-    def getBySourceAndLocation(sourcepackagerelease, archive,
+    def getRelevantToSourceAndLocation(sourcepackagerelease, archive,
                                distroarchseries):
         """Return build for the given source, archive and distroarchseries.
 
