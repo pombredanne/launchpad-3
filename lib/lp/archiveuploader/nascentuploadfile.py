@@ -847,8 +847,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
         dar = self.policy.distroseries[self.archtag]
 
         # Check if there's a suitable existing build.
-        build = getUtility(
-            IBinaryPackageBuildSet).getRelevantToSourceAndLocation(
+        build = getUtility(IBinaryPackageBuildSet).getBySourceAndLocation(
                 sourcepackagerelease, self.policy.archive, dar)
         if build is not None:
             build.updateStatus(BuildStatus.FULLYBUILT)
