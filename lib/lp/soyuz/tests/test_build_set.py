@@ -216,6 +216,25 @@ class TestBuildSet(TestCaseWithFactory):
             IBinaryPackageBuildSet).getBuildsBySourcePackageRelease([])
         self.assertEquals([], builds)
 
+    def test_getBySourceAndLocation(self):
+        self.setUpBuilds()
+        self.assertEqual(
+            self.builds[0],
+            getUtility(IBinaryPackageBuildSet).getBySourceAndLocation(
+                self.builds[0].source_package_release, self.builds[0].archive,
+                self.builds[0].distro_arch_series))
+        self.assertEqual(
+            self.builds[1],
+            getUtility(IBinaryPackageBuildSet).getBySourceAndLocation(
+                self.builds[1].source_package_release, self.builds[1].archive,
+                self.builds[1].distro_arch_series))
+        self.assertIs(
+            None,
+            getUtility(IBinaryPackageBuildSet).getBySourceAndLocation(
+                self.builds[1].source_package_release,
+                self.factory.makeArchive(),
+                self.builds[1].distro_arch_series))
+
 
 class BuildRecordCreationTests(TestNativePublishingBase):
     """Test the creation of build records."""

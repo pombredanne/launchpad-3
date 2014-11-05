@@ -955,6 +955,13 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
                 bfj.id for bfj in build_farm_jobs))
         return DecoratedResultSet(rows, pre_iter_hook=self.preloadBuildsData)
 
+    def getBySourceAndLocation(self, source_package_release, archive,
+                               distro_arch_series):
+        return IStore(BinaryPackageBuild).find(
+            BinaryPackageBuild,
+            source_package_release=source_package_release,
+            archive=archive, distro_arch_series=distro_arch_series).one()
+
     def handleOptionalParamsForBuildQueries(
         self, clauses, origin, status=None, name=None, pocket=None,
         arch_tag=None):
