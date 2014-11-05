@@ -957,6 +957,13 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
                 bfj.id for bfj in build_farm_jobs))
         return DecoratedResultSet(rows, pre_iter_hook=self.preloadBuildsData)
 
+    def getBySourceAndLocation(self, source_package_release, archive,
+                               distro_arch_series):
+        return IStore(BinaryPackageBuild).find(
+            BinaryPackageBuild,
+            source_package_release=source_package_release,
+            archive=archive, distro_arch_series=distro_arch_series).one()
+
     def handleOptionalParamsForBuildQueries(
         self, clauses, origin, status=None, name=None, pocket=None,
         arch_tag=None):
@@ -1201,8 +1208,8 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
             % [(tag, build.id) for tag, build in results])
         return mapped_results
 
-    def getBySourceAndLocation(self, sourcepackagerelease, archive,
-                               distroarchseries):
+    def getRelevantToSourceAndLocation(self, sourcepackagerelease, archive,
+                                       distroarchseries):
         """See IBinaryPackageBuildSet."""
         # First we try to follow any binaries built from the given source
         # in a distroarchseries with the given architecturetag and published
@@ -1433,7 +1440,7 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
         Return the just-created `IBinaryPackageBuild` record already
         scored or None if a suitable build is already present.
         """
-        build_candidate = self.getBySourceAndLocation(
+        build_candidate = self.getRelevantToSourceAndLocation(
             sourcepackagerelease, archive, arch)
 
         # Check DistroArchSeries database IDs because the object belongs

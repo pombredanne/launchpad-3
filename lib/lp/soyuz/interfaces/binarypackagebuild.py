@@ -313,6 +313,20 @@ class IBinaryPackageBuildSet(ISpecificBuildFarmJobSource):
         :param builder: An optional `IBuilder`.
         """
 
+    def getBySourceAndLocation(source_package_release, archive,
+                               distro_arch_series):
+        """Return a build by its source, archive and architecture.
+
+        This is the natural key, and lookups don't consider copies
+        between archives, just the archive in which the build originally
+        occurred.
+
+        :param source_package_release: The `ISourcePackageRelease` that is
+            built.
+        :param archive: The `IArchive` containing the build.
+        :param distro_arch_series: The `IDistroArchSeries` built against.
+        """
+
     def getBuildsForBuilder(builder_id, status=None, name=None, pocket=None,
                             arch_tag=None):
         """Return build records touched by a builder.
@@ -366,8 +380,8 @@ class IBinaryPackageBuildSet(ISpecificBuildFarmJobSource):
         :return: a list of `IBuild` records not target to PPA archives.
         """
 
-    def getBySourceAndLocation(sourcepackagerelease, archive,
-                               distroarchseries):
+    def getRelevantToSourceAndLocation(sourcepackagerelease, archive,
+                                       distroarchseries):
         """Return build for the given source, archive and distroarchseries.
 
         It looks for a build in any state registered *directly* for the

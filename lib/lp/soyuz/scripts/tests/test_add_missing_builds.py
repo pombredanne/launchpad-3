@@ -137,7 +137,7 @@ class TestAddMissingBuilds(TestCaseWithFactory):
         code, stdout, stderr = self.runScript(args)
         self.assertEqual(
             code, 0,
-            "The script returned with a non zero exit code: %s\n%s\n%s"  % (
+            "The script returned with a non zero exit code: %s\n%s\n%s" % (
                 code, stdout, stderr))
 
         # Sync database changes made in the external process.
