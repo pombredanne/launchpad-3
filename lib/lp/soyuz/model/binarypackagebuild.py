@@ -1391,8 +1391,8 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
         """See `ISourcePackagePublishingHistory`."""
 
         # Exclude any architectures which already have built or copied
-        # binaries. A new built can never succeed; its files would
-        # conflict during upload.
+        # binaries. A new build with the same archtag could never
+        # succeed; its files would conflict during upload.
         relevant_builds = self.findBuiltOrPublishedBySourceAndArchive(
             sourcepackagerelease, archive).values()
 
@@ -1406,11 +1406,12 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
             if build is not None:
                 relevant_builds.append(build)
 
-        # Work out if another build has taken the arch-indep role. If
-        # not, we should assign it to one of our new builds.
-        need_arch_indep = not any(bpb.arch_indep for bpb in relevant_builds)
         skip_archtags = set(
             bpb.distro_arch_series.architecturetag for bpb in relevant_builds)
+        # We need to assign the arch-indep role to a build unless an
+        # arch-indep build has already succeeded, or another build in
+        # this series already has it set.
+        need_arch_indep = not any(bpb.arch_indep for bpb in relevant_builds)
 
         # Find the architectures for which the source should end up with
         # binaries, parsing architecturehintlist as you'd expect.
@@ -1427,7 +1428,7 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
             architectures_available, need_arch_indep)
 
         # Filter out any architectures for which we earlier found sufficient
-        # build.
+        # builds.
         needed_architectures = [
             das for das in candidate_architectures
             if das.architecturetag not in skip_archtags]
