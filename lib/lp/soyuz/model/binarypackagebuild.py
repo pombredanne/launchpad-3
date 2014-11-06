@@ -897,10 +897,12 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
     implements(IBinaryPackageBuildSet)
 
     def new(self, source_package_release, archive, distro_arch_series, pocket,
-            arch_indep=False, status=BuildStatus.NEEDSBUILD, builder=None):
+            arch_indep=None, status=BuildStatus.NEEDSBUILD, builder=None):
         """See `IBinaryPackageBuildSet`."""
         # Force the current timestamp instead of the default UTC_NOW for
         # the transaction, avoid several row with same datecreated.
+        if arch_indep is None:
+            arch_indep = distro_arch_series.isNominatedArchIndep
         date_created = datetime.datetime.now(pytz.timezone('UTC'))
         # Create the BuildFarmJob for the new BinaryPackageBuild.
         build_farm_job = getUtility(IBuildFarmJobSource).new(
@@ -954,6 +956,13 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
             BinaryPackageBuild.build_farm_job_id.is_in(
                 bfj.id for bfj in build_farm_jobs))
         return DecoratedResultSet(rows, pre_iter_hook=self.preloadBuildsData)
+
+    def getBySourceAndLocation(self, source_package_release, archive,
+                               distro_arch_series):
+        return IStore(BinaryPackageBuild).find(
+            BinaryPackageBuild,
+            source_package_release=source_package_release,
+            archive=archive, distro_arch_series=distro_arch_series).one()
 
     def handleOptionalParamsForBuildQueries(
         self, clauses, origin, status=None, name=None, pocket=None,
@@ -1199,8 +1208,8 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
             % [(tag, build.id) for tag, build in results])
         return mapped_results
 
-    def getBySourceAndLocation(self, sourcepackagerelease, archive,
-                               distroarchseries):
+    def getRelevantToSourceAndLocation(self, sourcepackagerelease, archive,
+                                       distroarchseries):
         """See IBinaryPackageBuildSet."""
         # First we try to follow any binaries built from the given source
         # in a distroarchseries with the given architecturetag and published
@@ -1431,7 +1440,7 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
         Return the just-created `IBinaryPackageBuild` record already
         scored or None if a suitable build is already present.
         """
-        build_candidate = self.getBySourceAndLocation(
+        build_candidate = self.getRelevantToSourceAndLocation(
             sourcepackagerelease, archive, arch)
 
         # Check DistroArchSeries database IDs because the object belongs
@@ -1443,8 +1452,7 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
 
         build = self.new(
             source_package_release=sourcepackagerelease,
-            distro_arch_series=arch, archive=archive, pocket=pocket,
-            arch_indep=arch.isNominatedArchIndep)
+            distro_arch_series=arch, archive=archive, pocket=pocket)
         # Create the builds in suspended mode for disabled archives.
         build_queue = build.queueBuild(suspended=not archive.enabled)
         Store.of(build).flush()

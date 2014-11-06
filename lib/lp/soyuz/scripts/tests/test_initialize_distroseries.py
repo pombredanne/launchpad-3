@@ -598,7 +598,7 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         self.assertEqual(udev_src.title, u'udev - 0.1-1')
         # The build of udev 0.1-1 has been copied across.
         bpbs = getUtility(IBinaryPackageBuildSet)
-        child_udev = bpbs.getBySourceAndLocation(
+        child_udev = bpbs.getRelevantToSourceAndLocation(
             udev_src, child.main_archive, child[parent_das.architecturetag])
         parent_udev = bpbs.getBySourceAndLocation(
             udev_src, parent.main_archive, parent[parent_das.architecturetag])
