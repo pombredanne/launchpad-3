@@ -452,6 +452,7 @@ class BuildRecordCreationTests(TestNativePublishingBase):
             architecturehintlist='all sparc avr')
         builds = self.createBuilds(spr, self.distroseries2)
         self.assertBuildsMatch({'sparc': False, 'avr': True}, builds)
+        self.completeBuilds(builds, {'sparc': True, 'avr': True})
         new_builds = self.createBuilds(spr, self.distroseries)
         self.assertBuildsMatch({}, new_builds)
 

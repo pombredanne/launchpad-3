@@ -13,8 +13,10 @@ __all__ = [
     ]
 
 import datetime
-from itertools import chain
-from operator import itemgetter
+from operator import (
+    attrgetter,
+    itemgetter,
+    )
 
 import apt_pkg
 import pytz
@@ -1429,6 +1431,22 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
         needed_architectures = [
             das for das in candidate_architectures
             if das.architecturetag not in skip_archtags]
+        if not needed_architectures:
+            return []
+
+        arch_indep_das = None
+        if need_arch_indep:
+            # The ideal arch_indep build is nominatedarchindep. But if
+            # that isn't a build we would otherwise create, use the DAS
+            # with the lowest Processor.id.
+            # XXX wgrant 2014-11-06: The fact that production's
+            # Processor 1 is i386, a good arch-indep candidate, is a
+            # total coincidence and this isn't a hack. I promise.
+            if distroseries.nominatedarchindep in needed_architectures:
+                arch_indep_das = distroseries.nominatedarchindep
+            else:
+                arch_indep_das = sorted(
+                    needed_architectures, key=attrgetter('processor.id'))[0]
 
         # Create builds for the remaining architectures.
         new_builds = []
@@ -1436,7 +1454,7 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
             build = self.new(
                 source_package_release=sourcepackagerelease,
                 distro_arch_series=das, archive=archive, pocket=pocket,
-                arch_indep=need_arch_indep and das.isNominatedArchIndep)
+                arch_indep=das == arch_indep_das)
             new_builds.append(build)
             # Create the builds in suspended mode for disabled archives.
             build_queue = build.queueBuild(suspended=not archive.enabled)
