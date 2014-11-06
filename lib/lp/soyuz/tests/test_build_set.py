@@ -383,7 +383,7 @@ class TestFindBySourceAndLocation(TestCaseWithFactory):
         self.assertEqual(
             {distroseries.nominatedarchindep.architecturetag: bpr.build},
             BinaryPackageBuildSet()._findBySourceAndLocation(
-                naked_spr, archive, distroseries))
+                naked_spr, archive))
 
 
 class TestGetBySourceAndLocation(TestCaseWithFactory):
