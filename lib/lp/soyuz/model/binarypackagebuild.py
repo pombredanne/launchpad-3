@@ -13,7 +13,10 @@ __all__ = [
     ]
 
 import datetime
-from operator import itemgetter
+from operator import (
+    attrgetter,
+    itemgetter,
+    )
 
 import apt_pkg
 import pytz
@@ -1383,58 +1386,83 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
             if not distroarch.processor.restricted or
                distroarch.processor in archive.enabled_restricted_processors]
 
-    def _createMissingBuildForArchitecture(self, sourcepackagerelease,
-                                           archive, arch, pocket,
-                                           logger=None):
-        """Create a build for a given architecture if it doesn't exist yet.
-
-        Return the just-created `IBinaryPackageBuild` record already
-        scored or None if a suitable build is already present.
-        """
-        exact_build = self.getBySourceAndLocation(
-            sourcepackagerelease, archive, arch)
-        if exact_build is not None:
-            return None
-
-        build_candidate = self.findBuiltOrPublishedBySourceAndArchive(
-            sourcepackagerelease, archive).get(arch.architecturetag)
-        if build_candidate is not None:
-            return None
-
-        build = self.new(
-            source_package_release=sourcepackagerelease,
-            distro_arch_series=arch, archive=archive, pocket=pocket)
-        # Create the builds in suspended mode for disabled archives.
-        build_queue = build.queueBuild(suspended=not archive.enabled)
-        Store.of(build).flush()
-
-        if logger is not None:
-            logger.debug(
-                "Created %s [%d] in %s (%d)"
-                % (build.title, build.id, build.archive.displayname,
-                   build_queue.lastscore))
-
-        return build
-
     def createForSource(self, sourcepackagerelease, archive, distroseries,
                         pocket, architectures_available=None, logger=None):
         """See `ISourcePackagePublishingHistory`."""
+
+        # Exclude any architectures which already have built or copied
+        # binaries. A new build with the same archtag could never
+        # succeed; its files would conflict during upload.
+        relevant_builds = self.findBuiltOrPublishedBySourceAndArchive(
+            sourcepackagerelease, archive).values()
+
+        # Find any architectures that already have a build that exactly
+        # matches, regardless of status. We can't create a second build
+        # with the same (SPR, Archive, DAS).
+        # XXX wgrant 2014-11-06: Should use a bulk query.
+        for das in distroseries.architectures:
+            build = self.getBySourceAndLocation(
+                sourcepackagerelease, archive, das)
+            if build is not None:
+                relevant_builds.append(build)
+
+        skip_archtags = set(
+            bpb.distro_arch_series.architecturetag for bpb in relevant_builds)
+        # We need to assign the arch-indep role to a build unless an
+        # arch-indep build has already succeeded, or another build in
+        # this series already has it set.
+        need_arch_indep = not any(bpb.arch_indep for bpb in relevant_builds)
+
+        # Find the architectures for which the source should end up with
+        # binaries, parsing architecturehintlist as you'd expect.
+        # For an architecturehintlist of just 'all', this will
+        # be the current nominatedarchindep if need_arch_indep,
+        # otherwise nothing.
         if architectures_available is None:
             architectures_available = list(
                 distroseries.buildable_architectures)
-
         architectures_available = self._getAllowedArchitectures(
             archive, architectures_available)
-
-        build_architectures = determine_architectures_to_build(
+        candidate_architectures = determine_architectures_to_build(
             sourcepackagerelease.architecturehintlist, archive, distroseries,
-            architectures_available)
+            architectures_available, need_arch_indep)
 
-        builds = []
-        for arch in build_architectures:
-            build_candidate = self._createMissingBuildForArchitecture(
-                sourcepackagerelease, archive, arch, pocket, logger=logger)
-            if build_candidate is not None:
-                builds.append(build_candidate)
+        # Filter out any architectures for which we earlier found sufficient
+        # builds.
+        needed_architectures = [
+            das for das in candidate_architectures
+            if das.architecturetag not in skip_archtags]
+        if not needed_architectures:
+            return []
 
-        return builds
+        arch_indep_das = None
+        if need_arch_indep:
+            # The ideal arch_indep build is nominatedarchindep. But if
+            # that isn't a build we would otherwise create, use the DAS
+            # with the lowest Processor.id.
+            # XXX wgrant 2014-11-06: The fact that production's
+            # Processor 1 is i386, a good arch-indep candidate, is a
+            # total coincidence and this isn't a hack. I promise.
+            if distroseries.nominatedarchindep in needed_architectures:
+                arch_indep_das = distroseries.nominatedarchindep
+            else:
+                arch_indep_das = sorted(
+                    needed_architectures, key=attrgetter('processor.id'))[0]
+
+        # Create builds for the remaining architectures.
+        new_builds = []
+        for das in needed_architectures:
+            build = self.new(
+                source_package_release=sourcepackagerelease,
+                distro_arch_series=das, archive=archive, pocket=pocket,
+                arch_indep=das == arch_indep_das)
+            new_builds.append(build)
+            # Create the builds in suspended mode for disabled archives.
+            build_queue = build.queueBuild(suspended=not archive.enabled)
+            Store.of(build).flush()
+            if logger is not None:
+                logger.debug(
+                    "Created %s [%d] in %s (%d)"
+                    % (build.title, build.id, build.archive.displayname,
+                    build_queue.lastscore))
+        return new_builds
