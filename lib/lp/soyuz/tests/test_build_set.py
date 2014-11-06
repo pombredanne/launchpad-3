@@ -429,6 +429,13 @@ class TestFindBuiltOrPublishedBySourceAndArchive(TestCaseWithFactory):
             self.bpbs.findBuiltOrPublishedBySourceAndArchive(
                 bpb1.source_package_release, target))
 
+        # A third archive still shows nothing.
+        untarget = self.factory.makeArchive()
+        self.assertEqual(
+            {},
+            self.bpbs.findBuiltOrPublishedBySourceAndArchive(
+                bpb1.source_package_release, untarget))
+
     def test_can_find_build_in_derived_distro_parent(self):
         # If a derived distribution inherited its binaries from its
         # parent then findBuiltOrPublishedBySourceAndArchive() should
