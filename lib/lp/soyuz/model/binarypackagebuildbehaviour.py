@@ -139,11 +139,7 @@ class BinaryPackageBuildBehaviour(BuildFarmJobBehaviourBase):
 
         # Build extra arguments.
         args = {}
-        # turn 'arch_indep' ON only if build is archindep or if
-        # the specific architecture is the nominatedarchindep for
-        # this distroseries (in case it requires any archindep source)
-        args['arch_indep'] = das.isNominatedArchIndep
-
+        args['arch_indep'] = build.arch_indep
         args['distribution'] = das.distroseries.distribution.name
         args['suite'] = das.distroseries.getSuite(build.pocket)
         args['arch_tag'] = das.architecturetag

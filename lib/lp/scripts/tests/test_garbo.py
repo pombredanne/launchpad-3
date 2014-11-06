@@ -116,10 +116,7 @@ from lp.testing import (
     TestCase,
     TestCaseWithFactory,
     )
-from lp.testing.dbuser import (
-    dbuser,
-    switch_dbuser,
-    )
+from lp.testing.dbuser import switch_dbuser
 from lp.testing.layers import (
     DatabaseLayer,
     LaunchpadScriptLayer,
