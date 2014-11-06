@@ -1165,12 +1165,9 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
             Desc(BinaryPackageBuild.date_created), BinaryPackageBuild.id)
         return resultset
 
-    def findRelevantBySourceAndArchive(self, sourcepackagerelease, archive):
-        """Find all builds relevant to a SourcePackageRelease in an Archive.
-
-        A relevant build is one that occurred in the archive or had its
-        binaries copied into the archive.
-        """
+    def findBuiltOrPublishedBySourceAndArchive(self, sourcepackagerelease,
+                                               archive):
+        """See `IBinaryPackageBuildSet`."""
         from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
 
         published_query = Select(
@@ -1185,56 +1182,21 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
             where=And(
                 BinaryPackagePublishingHistory.archive == archive,
                 BinaryPackageRelease.build == BinaryPackageBuild.id))
-        result = IStore(BinaryPackageBuild).find(
+        builds = list(IStore(BinaryPackageBuild).find(
             BinaryPackageBuild,
+            BinaryPackageBuild.status == BuildStatus.FULLYBUILT,
             BinaryPackageBuild.source_package_release == sourcepackagerelease,
             Or(
                 BinaryPackageBuild.archive == archive,
-                Exists(published_query)))
-        return result
-
-    def _findBySourceAndLocation(self, sourcepackagerelease, archive):
-        """Find builds for a SourcePackageRelease by series and archive.
-
-        Looks for `BinaryPackageBuild` records for this source package
-        release, with publication records in the given distroseries.
-        There should be at most one of these per architecture.
-
-        :return: A dict mapping architecture tags (in string form,
-            e.g. 'i386') to `BinaryPackageBuild`s for that build.
-        """
-        res = {}
-        for build in self.findRelevantBySourceAndArchive(
-                sourcepackagerelease, archive):
-            arch_tag = build.distro_arch_series.architecturetag
-            # Only the most successful, most recent build for an
-            # architecturetag is interesting.
-            interesting = (
-                arch_tag not in res
-                or build.status == BuildStatus.FULLYBUILT
-                or (build.datecreated > res[arch_tag].datecreated
-                    and res[arch_tag].status != BuildStatus.FULLYBUILT))
-            if interesting:
-                res[arch_tag] = build
-        return res
-
-    def getRelevantToSourceAndLocation(self, sourcepackagerelease, archive,
-                                       distroarchseries):
-        """See IBinaryPackageBuildSet."""
-        # First we try to follow any binaries built from the given source
-        # in a distroarchseries with the given architecturetag and published
-        # in the given (distroarchseries, archive) location.
-        # (Querying all architectures and then picking the right one out
-        # of the result turns out to be much faster than querying for
-        # just the architecture we want).
-        builds_by_arch = self._findBySourceAndLocation(
-            sourcepackagerelease, archive)
-        build = builds_by_arch.get(distroarchseries.architecturetag)
-        if build is not None:
-            # If there was any published binary we can use its original build.
-            # This case covers the situations when both source and binaries
-            # got copied from another location.
-            return build
+                Exists(published_query))))
+        arch_map = {
+            build.distro_arch_series.architecturetag: build
+            for build in builds}
+        if len(arch_map) != len(builds):
+            raise AssertionError(
+                "Multiple successful builds for a single archtag. "
+                "Something is probably corrupt.")
+        return arch_map
 
     def getStatusSummaryForBuilds(self, builds):
         """See `IBinaryPackageBuildSet`."""
@@ -1434,15 +1396,9 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
         if exact_build is not None:
             return None
 
-        # Check for another build related to this archive (built here or
-        # copied to here) for the same source and architecturetag.
-        build_candidate = self.getRelevantToSourceAndLocation(
-            sourcepackagerelease, archive, arch)
-
-        # Check DistroArchSeries database IDs because the object belongs
-        # to different transactions (architecture_available is cached).
-        if (build_candidate is not None and
-                build_candidate.status == BuildStatus.FULLYBUILT):
+        build_candidate = self.findBuiltOrPublishedBySourceAndArchive(
+            sourcepackagerelease, archive).get(arch.architecturetag)
+        if build_candidate is not None:
             return None
 
         build = self.new(
