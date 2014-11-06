@@ -380,8 +380,7 @@ class IBinaryPackageBuildSet(ISpecificBuildFarmJobSource):
         :return: a list of `IBuild` records not target to PPA archives.
         """
 
-    def findBuiltOrPublishedBySourceAndArchive(sourcepackagerelease, archive,
-                                               distroseries):
+    def findBuiltOrPublishedBySourceAndArchive(sourcepackagerelease, archive):
         """Find all successful builds for source relevant to an Archive.
 
         This includes all successful builds for the source directly in
