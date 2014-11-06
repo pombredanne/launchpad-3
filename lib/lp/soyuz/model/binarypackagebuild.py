@@ -1391,27 +1391,24 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
         # Exclude any architectures which already have built or copied
         # binaries. A new built can never succeed; its files would
         # conflict during upload.
-        done_builds = self.findBuiltOrPublishedBySourceAndArchive(
-            sourcepackagerelease, archive)
+        relevant_builds = self.findBuiltOrPublishedBySourceAndArchive(
+            sourcepackagerelease, archive).values()
 
         # Find any architectures that already have a build that exactly
         # matches, regardless of status. We can't create a second build
         # with the same (SPR, Archive, DAS).
         # XXX wgrant 2014-11-06: Should use a bulk query.
-        existing_builds = {}
         for das in distroseries.architectures:
             build = self.getBySourceAndLocation(
                 sourcepackagerelease, archive, das)
             if build is not None:
-                existing_builds[das.architecturetag] = build
+                relevant_builds.append(build)
 
         # Work out if another build has taken the arch-indep role. If
         # not, we should assign it to one of our new builds.
-        need_arch_indep = not any(
-            build.arch_indep for build in
-            chain(done_builds.values(), existing_builds.values()))
-
-        skip_archtags = set(done_builds.keys()) | set(existing_builds.keys())
+        need_arch_indep = not any(bpb.arch_indep for bpb in relevant_builds)
+        skip_archtags = set(
+            bpb.distro_arch_series.architecturetag for bpb in relevant_builds)
 
         # Find the architectures for which the source should end up with
         # binaries, parsing architecturehintlist as you'd expect.
