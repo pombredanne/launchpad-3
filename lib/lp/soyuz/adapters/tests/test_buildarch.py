@@ -34,7 +34,7 @@ class TestDetermineArchitecturesToBuild(TestCaseWithFactory):
                 if arch.architecturetag in allowed_arch_tags]
         architectures = determine_architectures_to_build(
             pub.sourcepackagerelease.architecturehintlist, pub.archive,
-            self.publisher.breezy_autotest, allowed_archs)
+            self.publisher.breezy_autotest, allowed_archs, True)
         self.assertContentEqual(
             expected_arch_tags, [a.architecturetag for a in architectures])
 

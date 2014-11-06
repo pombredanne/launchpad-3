@@ -256,6 +256,16 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         self.distroseries.nominatedarchindep = self.distroseries['sparc']
         self.addFakeChroots(self.distroseries)
 
+        self.distroseries2 = self.factory.makeDistroSeries(
+            distribution=self.distro, name="dumb")
+        for name, arch in (('avr', self.avr), ('sparc', self.sparc),
+                           ('x32', self.x32)):
+            self.factory.makeDistroArchSeries(
+                architecturetag=name, processor=arch,
+                distroseries=self.distroseries2, supports_virtualized=True)
+        self.distroseries2.nominatedarchindep = self.distroseries2['x32']
+        self.addFakeChroots(self.distroseries2)
+
     def getPubSource(self, architecturehintlist):
         """Return a mock source package publishing record for the archive
         and architecture used in this testcase.
@@ -280,6 +290,17 @@ class BuildRecordCreationTests(TestNativePublishingBase):
             for build in builds}
         self.assertContentEqual(expected.items(), actual.items())
         self.assertEqual(len(actual), len(builds))
+
+    def completeBuilds(self, builds, success_map):
+        for build in builds:
+            success_or_failure = success_map.get(
+                build.distro_arch_series.architecturetag, None)
+            if success_or_failure is not None:
+                build.updateStatus(
+                    BuildStatus.FULLYBUILT if success_or_failure
+                    else BuildStatus.FAILEDTOBUILD)
+                del success_map[build.distro_arch_series.architecturetag]
+        self.assertContentEqual([], success_map)
 
     def test__getAllowedArchitectures_restricted(self):
         """Test _getAllowedArchitectures doesn't return unrestricted
@@ -352,6 +373,87 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         spr = self.factory.makeSourcePackageRelease(architecturehintlist='any')
         builds = self.createBuilds(spr, self.distroseries)
         self.assertBuildsMatch({'sparc': True, 'avr': False}, builds)
+
+    def test_createForSource_arch_indep_from_scratch(self):
+        """createForSource() sets arch_indep=True on builds for the
+        nominatedarchindep architecture when no builds already exist.
+        """
+        spr = self.factory.makeSourcePackageRelease(architecturehintlist='any')
+        builds = self.createBuilds(spr, self.distroseries)
+        self.assertBuildsMatch({'sparc': True, 'avr': False}, builds)
+
+    def test_createForSource_any_with_nai_change(self):
+        # A new non-arch-indep build is created for a new
+        # nominatedarchindep architecture if arch-indep has already
+        # built elsewhere.
+        #
+        # This is most important when copying with binaries between
+        # series with different nominatedarchdep (bug #1350208).
+        spr = self.factory.makeSourcePackageRelease(architecturehintlist='any')
+        builds = self.createBuilds(spr, self.distroseries)
+        self.assertBuildsMatch({'sparc': True, 'avr': False}, builds)
+        self.completeBuilds(builds, {'sparc': True, 'avr': True})
+        # The new nominatedarchindep needs to be built, but we already
+        # have arch-indep binaries so arch_indep is False.
+        new_builds = self.createBuilds(spr, self.distroseries2)
+        self.assertBuildsMatch({'x32': False}, new_builds)
+
+    def test_createForSource_any_with_nai_change_and_fail(self):
+        # When the previous arch-indep build has failed, and
+        # nominatedarchindep has changed in the new series, the new
+        # nominatedarchindep has arch_indep=True while the other arch
+        # has arch_indep=False.
+        spr = self.factory.makeSourcePackageRelease(architecturehintlist='any')
+        builds = self.createBuilds(spr, self.distroseries)
+        self.assertBuildsMatch({'sparc': True, 'avr': False}, builds)
+        self.completeBuilds(builds, {'sparc': False, 'avr': True})
+        # The new nominatedarchindep needs to be built, and the previous
+        # nominatedarchindep build failed. We end up with two new
+        # builds, and arch_indep on nominatedarchindep.
+        new_builds = self.createBuilds(spr, self.distroseries2)
+        self.assertBuildsMatch({'x32': True, 'sparc': False}, new_builds)
+
+    def test_createForSource_all_with_nai_change(self):
+        # If we only need arch-indep binaries and they've already built
+        # successfully, no build is created for the new series, even if
+        # nominatedarchindep has changed.
+        spr = self.factory.makeSourcePackageRelease(architecturehintlist='all')
+        builds = self.createBuilds(spr, self.distroseries)
+        self.assertBuildsMatch({'sparc': True}, builds)
+        self.completeBuilds(builds, {'sparc': True})
+        # Despite there being no build for the new nominatedarchindep,
+        # the old arch-indep build is sufficient and no new record is
+        # created.
+        new_builds = self.createBuilds(spr, self.distroseries2)
+        self.assertBuildsMatch({}, new_builds)
+
+    def test_createForSource_all_with_nai_change_and_fail(self):
+        # If the previous arch-indep sole build failed, a new arch-indep
+        # build is created for nominatedarchindep.
+        spr = self.factory.makeSourcePackageRelease(architecturehintlist='all')
+        builds = self.createBuilds(spr, self.distroseries)
+        self.assertBuildsMatch({'sparc': True}, builds)
+        self.completeBuilds(builds, {'sparc': False})
+        # Despite there being no build for the new nominatedarchindep,
+        # the old arch-indep build is sufficient and no new record is
+        # created.
+        new_builds = self.createBuilds(spr, self.distroseries2)
+        self.assertBuildsMatch({'x32': True}, new_builds)
+
+    def test_createForSource_all_and_other_archs(self):
+        # If a source package specifies both 'all' and a set of
+        # architectures that doesn't include nominatedarchindep,
+        # arch_indep is set on the available DistroArchSeries with the
+        # oldest Processor.
+        # This is mostly a hack to avoid hardcoding a preference for
+        # the faster x86-family architectures, so we don't accidentally
+        # build documentation on hppa.
+        spr = self.factory.makeSourcePackageRelease(
+            architecturehintlist='all sparc avr')
+        builds = self.createBuilds(spr, self.distroseries2)
+        self.assertBuildsMatch({'sparc': False, 'avr': True}, builds)
+        new_builds = self.createBuilds(spr, self.distroseries)
+        self.assertBuildsMatch({}, new_builds)
 
 
 class TestFindBuiltOrPublishedBySourceAndArchive(TestCaseWithFactory):

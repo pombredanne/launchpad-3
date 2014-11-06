@@ -1387,16 +1387,6 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
     def createForSource(self, sourcepackagerelease, archive, distroseries,
                         pocket, architectures_available=None, logger=None):
         """See `ISourcePackagePublishingHistory`."""
-        if architectures_available is None:
-            architectures_available = list(
-                distroseries.buildable_architectures)
-
-        architectures_available = self._getAllowedArchitectures(
-            archive, architectures_available)
-
-        candidate_architectures = determine_architectures_to_build(
-            sourcepackagerelease.architecturehintlist, archive, distroseries,
-            architectures_available)
 
         # Exclude any architectures which already have built or copied
         # binaries. A new built can never succeed; its files would
@@ -1415,29 +1405,48 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
             if build is not None:
                 existing_builds[das.architecturetag] = build
 
-        skip_archtags = set(done_builds.keys()) & set(existing_builds.keys())
+        # Work out if another build has taken the arch-indep role. If
+        # not, we should assign it to one of our new builds.
+        need_arch_indep = not any(
+            build.arch_indep for build in
+            chain(done_builds.values(), existing_builds.values()))
+
+        skip_archtags = set(done_builds.keys()) | set(existing_builds.keys())
+
+        # Find the architectures for which the source should end up with
+        # binaries, parsing architecturehintlist as you'd expect.
+        # For an architecturehintlist of just 'all', this will
+        # be the current nominatedarchindep if need_arch_indep,
+        # otherwise nothing.
+        if architectures_available is None:
+            architectures_available = list(
+                distroseries.buildable_architectures)
+        architectures_available = self._getAllowedArchitectures(
+            archive, architectures_available)
+        candidate_architectures = determine_architectures_to_build(
+            sourcepackagerelease.architecturehintlist, archive, distroseries,
+            architectures_available, need_arch_indep)
+
+        # Filter out any architectures for which we earlier found sufficient
+        # build.
         needed_architectures = [
             das for das in candidate_architectures
             if das.architecturetag not in skip_archtags]
 
+        # Create builds for the remaining architectures.
         new_builds = []
         for das in needed_architectures:
-            if self.getBySourceAndLocation(sourcepackagerelease, archive, das):
-                # There's already a (not yet successful) build that
-                # exactly matches what we want.
-                continue
             build = self.new(
                 source_package_release=sourcepackagerelease,
-                distro_arch_series=das, archive=archive, pocket=pocket)
+                distro_arch_series=das, archive=archive, pocket=pocket,
+                arch_indep=need_arch_indep and das.isNominatedArchIndep)
             new_builds.append(build)
             # Create the builds in suspended mode for disabled archives.
             build_queue = build.queueBuild(suspended=not archive.enabled)
             Store.of(build).flush()
-
             if logger is not None:
                 logger.debug(
                     "Created %s [%d] in %s (%d)"
                     % (build.title, build.id, build.archive.displayname,
                     build_queue.lastscore))
-
         return new_builds
