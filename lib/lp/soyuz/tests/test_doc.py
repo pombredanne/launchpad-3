@@ -134,10 +134,6 @@ special = {
         setUp=setUp,
         layer=LaunchpadZopelessLayer,
         ),
-    'sourcepackagerelease-build-lookup.txt': LayeredDocFileSuite(
-        '../doc/sourcepackagerelease-build-lookup.txt',
-        layer=LaunchpadZopelessLayer,
-        ),
     }
 
 

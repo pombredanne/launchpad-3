@@ -242,19 +242,18 @@ class BuildRecordCreationTests(TestNativePublishingBase):
     def setUp(self):
         super(BuildRecordCreationTests, self).setUp()
         self.distro = self.factory.makeDistribution()
+        self.archive = self.factory.makeArchive(distribution=self.distro)
+        self.avr = self.factory.makeProcessor(name="avr2001")
+        self.sparc = self.factory.makeProcessor(name="sparc64")
+        self.x32 = self.factory.makeProcessor(name="x32")
+
         self.distroseries = self.factory.makeDistroSeries(
             distribution=self.distro, name="crazy")
-        self.archive = self.factory.makeArchive()
-        self.avr = self.factory.makeProcessor(name="avr2001", restricted=True)
-        self.avr_distroarch = self.factory.makeDistroArchSeries(
-            architecturetag='avr', processor=self.avr,
-            distroseries=self.distroseries, supports_virtualized=True)
-        self.sparc = self.factory.makeProcessor(
-            name="sparc64", restricted=False)
-        self.sparc_distroarch = self.factory.makeDistroArchSeries(
-            architecturetag='sparc', processor=self.sparc,
-            distroseries=self.distroseries, supports_virtualized=True)
-        self.distroseries.nominatedarchindep = self.sparc_distroarch
+        for name, arch in (('avr', self.avr), ('sparc', self.sparc)):
+            self.factory.makeDistroArchSeries(
+                architecturetag=name, processor=arch,
+                distroseries=self.distroseries, supports_virtualized=True)
+        self.distroseries.nominatedarchindep = self.distroseries['sparc']
         self.addFakeChroots(self.distroseries)
 
     def getPubSource(self, architecturehintlist):
@@ -268,6 +267,20 @@ class BuildRecordCreationTests(TestNativePublishingBase):
             archive=self.archive, distroseries=self.distroseries,
             architecturehintlist=architecturehintlist)
 
+    def createBuilds(self, spr, distroseries):
+        self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagerelease=spr, archive=self.archive,
+            distroseries=distroseries, pocket=PackagePublishingPocket.RELEASE)
+        return getUtility(IBinaryPackageBuildSet).createForSource(
+            spr, self.archive, distroseries, PackagePublishingPocket.RELEASE)
+
+    def assertBuildsMatch(self, expected, builds):
+        actual = {
+            build.distro_arch_series.architecturetag: build.arch_indep
+            for build in builds}
+        self.assertContentEqual(expected.items(), actual.items())
+        self.assertEqual(len(actual), len(builds))
+
     def test__getAllowedArchitectures_restricted(self):
         """Test _getAllowedArchitectures doesn't return unrestricted
         archs.
@@ -275,10 +288,12 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         For a normal archive, only unrestricted architectures should
         be used.
         """
-        available_archs = [self.sparc_distroarch, self.avr_distroarch]
+        self.avr.restricted = True
+        available_archs = [
+            self.distroseries['sparc'], self.distroseries['avr']]
         pubrec = self.getPubSource(architecturehintlist='any')
         self.assertEqual(
-            [self.sparc_distroarch],
+            [self.distroseries['sparc']],
             BinaryPackageBuildSet()._getAllowedArchitectures(
                 pubrec.archive, available_archs))
 
@@ -288,113 +303,149 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         Restricted architectures should only be allowed if there is
         an explicit ArchiveArch association with the archive.
         """
-        available_archs = [self.sparc_distroarch, self.avr_distroarch]
+        self.avr.restricted = True
+        available_archs = [
+            self.distroseries['sparc'], self.distroseries['avr']]
         getUtility(IArchiveArchSet).new(self.archive, self.avr)
         pubrec = self.getPubSource(architecturehintlist='any')
         self.assertEqual(
-            [self.sparc_distroarch, self.avr_distroarch],
+            [self.distroseries['sparc'], self.distroseries['avr']],
             BinaryPackageBuildSet()._getAllowedArchitectures(
                 pubrec.archive, available_archs))
 
-    def test_createMissingBuilds_restricts_any(self):
-        """createMissingBuilds() should limit builds targeted at 'any'
+    def test_createForSource_restricts_any(self):
+        """createForSource() should limit builds targeted at 'any'
         architecture to those allowed for the archive.
         """
-        pubrec = self.getPubSource(architecturehintlist='any')
-        builds = pubrec.createMissingBuilds()
-        self.assertEqual(1, len(builds))
-        self.assertEqual(self.sparc_distroarch, builds[0].distro_arch_series)
+        self.avr.restricted = True
+        spr = self.factory.makeSourcePackageRelease(architecturehintlist='any')
+        builds = self.createBuilds(spr, self.distroseries)
+        self.assertBuildsMatch({'sparc': True}, builds)
 
-    def test_createMissingBuilds_restricts_explicitlist(self):
-        """createMissingBuilds() limits builds targeted at a variety of
+    def test_createForSource_restricts_explicitlist(self):
+        """createForSource() limits builds targeted at a variety of
         architectures architecture to those allowed for the archive.
         """
-        pubrec = self.getPubSource(architecturehintlist='sparc i386 avr')
-        builds = pubrec.createMissingBuilds()
-        self.assertEqual(1, len(builds))
-        self.assertEqual(self.sparc_distroarch, builds[0].distro_arch_series)
+        self.avr.restricted = True
+        spr = self.factory.makeSourcePackageRelease(
+            architecturehintlist='sparc i386 avr')
+        builds = self.createBuilds(spr, self.distroseries)
+        self.assertBuildsMatch({'sparc': True}, builds)
 
-    def test_createMissingBuilds_restricts_all(self):
-        """createMissingBuilds() should limit builds targeted at 'all'
+    def test_createForSource_restricts_all(self):
+        """createForSource() should limit builds targeted at 'all'
         architectures to the nominated independent architecture,
         if that is allowed for the archive.
         """
-        pubrec = self.getPubSource(architecturehintlist='all')
-        builds = pubrec.createMissingBuilds()
-        self.assertEqual(1, len(builds))
-        self.assertEqual(self.sparc_distroarch, builds[0].distro_arch_series)
+        self.avr.restricted = True
+        spr = self.factory.makeSourcePackageRelease(architecturehintlist='all')
+        builds = self.createBuilds(spr, self.distroseries)
+        self.assertBuildsMatch({'sparc': True}, builds)
 
-    def test_createMissingBuilds_restrict_override(self):
-        """createMissingBuilds() should limit builds targeted at 'any'
+    def test_createForSource_restrict_override(self):
+        """createForSource() should limit builds targeted at 'any'
         architecture to architectures that are unrestricted or
         explicitly associated with the archive.
         """
+        self.avr.restricted = True
         getUtility(IArchiveArchSet).new(self.archive, self.avr)
-        pubrec = self.getPubSource(architecturehintlist='any')
-        builds = pubrec.createMissingBuilds()
-        self.assertEqual(2, len(builds))
-        self.assertEqual(self.avr_distroarch, builds[0].distro_arch_series)
-        self.assertEqual(self.sparc_distroarch, builds[1].distro_arch_series)
-
-    def test_createMissingBuilds_sets_arch_indep(self):
-        """createMissingBuilds() sets arch_indep=True on builds for the
-        nominatedarchindep architecture.
-        """
-        getUtility(IArchiveArchSet).new(self.archive, self.avr)
-        pubrec = self.getPubSource(architecturehintlist='any')
-        builds = pubrec.createMissingBuilds()
-        self.assertContentEqual(
-            [('avr2001', False), ('sparc64', True)],
-            [(build.processor.name, build.arch_indep) for build in builds])
+        spr = self.factory.makeSourcePackageRelease(architecturehintlist='any')
+        builds = self.createBuilds(spr, self.distroseries)
+        self.assertBuildsMatch({'sparc': True, 'avr': False}, builds)
 
 
-class TestFindBySourceAndLocation(TestCaseWithFactory):
-    """Tests for the _findBySourceAndLocation helper."""
+class TestFindBuiltOrPublishedBySourceAndArchive(TestCaseWithFactory):
+    """Tests for findBuiltOrPublishedBySourceAndArchive()."""
 
     layer = ZopelessDatabaseLayer
 
-    def test_finds_build_with_matching_pub(self):
-        # _findBySourceAndLocation finds builds for a source package
-        # release.  In particular, an arch-independent BPR is published in
-        # multiple architectures.  But findBuildsByArchitecture only counts
-        # the publication for the same architecture it was built in.
-        distroseries = self.factory.makeDistroSeries()
-        archive = distroseries.main_archive
-        # The series has a nominated arch-indep architecture.
-        distroseries.nominatedarchindep = self.factory.makeDistroArchSeries(
-            distroseries=distroseries)
+    def setUp(self):
+        super(TestFindBuiltOrPublishedBySourceAndArchive, self).setUp()
+        self.bpbs = getUtility(IBinaryPackageBuildSet)
 
-        bpb = self.factory.makeBinaryPackageBuild(
-            distroarchseries=distroseries.nominatedarchindep)
-        bpr = self.factory.makeBinaryPackageRelease(
-            build=bpb, architecturespecific=False)
-        spr = bpr.build.source_package_release
-
-        # The series also has other architectures.
-        self.factory.makeDistroArchSeries(distroseries=distroseries)
-
-        # makeBinaryPackagePublishingHistory will actually publish an
-        # arch-indep BPR everywhere.
-        self.factory.makeBinaryPackagePublishingHistory(
-            binarypackagerelease=bpr, archive=archive,
-            distroarchseries=distroseries.nominatedarchindep)
-
-        naked_spr = removeSecurityProxy(spr)
+    def test_trivial(self):
+        # Builds with status FULLYBUILT with a matching
+        # SourcePackageRelease and Archive are returned.
+        bpb1 = self.factory.makeBinaryPackageBuild(
+            status=BuildStatus.FULLYBUILT)
+        bpb2 = self.factory.makeBinaryPackageBuild(
+            source_package_release=bpb1.source_package_release,
+            archive=bpb1.archive)
         self.assertEqual(
-            {distroseries.nominatedarchindep.architecturetag: bpr.build},
-            BinaryPackageBuildSet()._findBySourceAndLocation(
-                naked_spr, archive, distroseries))
+            {bpb1.distro_arch_series.architecturetag: bpb1},
+            self.bpbs.findBuiltOrPublishedBySourceAndArchive(
+                bpb1.source_package_release, bpb1.archive))
+        bpb2.updateStatus(BuildStatus.FULLYBUILT)
+        self.assertEqual(
+            {bpb1.distro_arch_series.architecturetag: bpb1,
+             bpb2.distro_arch_series.architecturetag: bpb2},
+            self.bpbs.findBuiltOrPublishedBySourceAndArchive(
+                bpb1.source_package_release, bpb1.archive))
 
+    def test_trivial_mismatch(self):
+        # Builds for other sources and archives are ignored.
+        bpb = self.factory.makeBinaryPackageBuild()
+        self.assertEqual(
+            {},
+            self.bpbs.findBuiltOrPublishedBySourceAndArchive(
+                bpb.source_package_release, self.factory.makeArchive()))
+        self.assertEqual(
+            {},
+            self.bpbs.findBuiltOrPublishedBySourceAndArchive(
+                self.factory.makeSourcePackageRelease(), bpb.archive))
 
-class TestGetBySourceAndLocation(TestCaseWithFactory):
-    """Tests for BinaryPackageBuildSet.getRelevantToSourceAndLocation()."""
+    def test_copies_are_found(self):
+        # If a build's binaries are published (with a
+        # BinaryPackagePublishingHistory) in another archive, it shows
+        # up in requests for that archive.
+        bpb1 = self.factory.makeBinaryPackageBuild(
+            status=BuildStatus.FULLYBUILT)
+        bpr1 = self.factory.makeBinaryPackageRelease(build=bpb1)
+        bpb2 = self.factory.makeBinaryPackageBuild(
+            source_package_release=bpb1.source_package_release,
+            archive=bpb1.archive, status=BuildStatus.FULLYBUILT)
+        bpr2 = self.factory.makeBinaryPackageRelease(build=bpb2)
 
-    layer = ZopelessDatabaseLayer
+        # A fresh archive sees no builds.
+        target = self.factory.makeArchive()
+        self.assertEqual(
+            {},
+            self.bpbs.findBuiltOrPublishedBySourceAndArchive(
+                bpb1.source_package_release, target))
+
+        # But copying one build over makes it appear.
+        self.factory.makeBinaryPackagePublishingHistory(
+            binarypackagerelease=bpr1, archive=target)
+        self.assertEqual(
+            {bpb1.distro_arch_series.architecturetag: bpb1},
+            self.bpbs.findBuiltOrPublishedBySourceAndArchive(
+                bpb1.source_package_release, target))
+
+        # Copying the second gives us both.
+        self.factory.makeBinaryPackagePublishingHistory(
+            binarypackagerelease=bpr2, archive=target)
+        self.assertEqual(
+            {bpb1.distro_arch_series.architecturetag: bpb1,
+             bpb2.distro_arch_series.architecturetag: bpb2},
+            self.bpbs.findBuiltOrPublishedBySourceAndArchive(
+                bpb1.source_package_release, target))
+        self.assertEqual(
+            self.bpbs.findBuiltOrPublishedBySourceAndArchive(
+                bpb1.source_package_release, bpb1.archive),
+            self.bpbs.findBuiltOrPublishedBySourceAndArchive(
+                bpb1.source_package_release, target))
+
+        # A third archive still shows nothing.
+        untarget = self.factory.makeArchive()
+        self.assertEqual(
+            {},
+            self.bpbs.findBuiltOrPublishedBySourceAndArchive(
+                bpb1.source_package_release, untarget))
 
     def test_can_find_build_in_derived_distro_parent(self):
         # If a derived distribution inherited its binaries from its
-        # parent then getRelevantToSourceAndLocation() should look in
-        # the parent to find the build.
+        # parent then findBuiltOrPublishedBySourceAndArchive() should
+        # look in the parent to find the build.
         dsp = self.factory.makeDistroSeriesParent()
         parent_archive = dsp.parent_series.main_archive
 
@@ -432,6 +483,6 @@ class TestGetBySourceAndLocation(TestCaseWithFactory):
         # Searching for the build in the derived series architecture
         # should automatically pick it up from the parent.
         found_build = getUtility(
-            IBinaryPackageBuildSet).getRelevantToSourceAndLocation(
-                spr, derived_archive, das_derived)
+            IBinaryPackageBuildSet).findBuiltOrPublishedBySourceAndArchive(
+                spr, derived_archive).get(das_derived.architecturetag)
         self.assertEqual(orig_build, found_build)
