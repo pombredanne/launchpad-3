@@ -348,53 +348,91 @@ class BuildRecordCreationTests(TestNativePublishingBase):
             [(build.processor.name, build.arch_indep) for build in builds])
 
 
-class TestFindBySourceAndLocation(TestCaseWithFactory):
-    """Tests for the _findBySourceAndLocation helper."""
+class TestFindBuiltOrPublishedBySourceAndArchive(TestCaseWithFactory):
+    """Tests for findBuiltOrPublishedBySourceAndArchive()."""
 
     layer = ZopelessDatabaseLayer
 
-    def test_finds_build_with_matching_pub(self):
-        # _findBySourceAndLocation finds builds for a source package
-        # release.  In particular, an arch-independent BPR is published in
-        # multiple architectures.  But findBuildsByArchitecture only counts
-        # the publication for the same architecture it was built in.
-        distroseries = self.factory.makeDistroSeries()
-        archive = distroseries.main_archive
-        # The series has a nominated arch-indep architecture.
-        distroseries.nominatedarchindep = self.factory.makeDistroArchSeries(
-            distroseries=distroseries)
+    def setUp(self):
+        super(TestFindBuiltOrPublishedBySourceAndArchive, self).setUp()
+        self.bpbs = getUtility(IBinaryPackageBuildSet)
 
-        bpb = self.factory.makeBinaryPackageBuild(
-            distroarchseries=distroseries.nominatedarchindep)
-        bpr = self.factory.makeBinaryPackageRelease(
-            build=bpb, architecturespecific=False)
-        spr = bpr.build.source_package_release
-
-        # The series also has other architectures.
-        self.factory.makeDistroArchSeries(distroseries=distroseries)
-
-        # makeBinaryPackagePublishingHistory will actually publish an
-        # arch-indep BPR everywhere.
-        self.factory.makeBinaryPackagePublishingHistory(
-            binarypackagerelease=bpr, archive=archive,
-            distroarchseries=distroseries.nominatedarchindep)
-
-        naked_spr = removeSecurityProxy(spr)
+    def test_trivial(self):
+        # Builds with status FULLYBUILT with a matching
+        # SourcePackageRelease and Archive are returned.
+        bpb1 = self.factory.makeBinaryPackageBuild(
+            status=BuildStatus.FULLYBUILT)
+        bpb2 = self.factory.makeBinaryPackageBuild(
+            source_package_release=bpb1.source_package_release,
+            archive=bpb1.archive)
         self.assertEqual(
-            {distroseries.nominatedarchindep.architecturetag: bpr.build},
-            BinaryPackageBuildSet()._findBySourceAndLocation(
-                naked_spr, archive))
+            {bpb1.distro_arch_series.architecturetag: bpb1},
+            self.bpbs.findBuiltOrPublishedBySourceAndArchive(
+                bpb1.source_package_release, bpb1.archive))
+        bpb2.updateStatus(BuildStatus.FULLYBUILT)
+        self.assertEqual(
+            {bpb1.distro_arch_series.architecturetag: bpb1,
+             bpb2.distro_arch_series.architecturetag: bpb2},
+            self.bpbs.findBuiltOrPublishedBySourceAndArchive(
+                bpb1.source_package_release, bpb1.archive))
 
+    def test_trivial_mismatch(self):
+        # Builds for other sources and archives are ignored.
+        bpb = self.factory.makeBinaryPackageBuild()
+        self.assertEqual(
+            {},
+            self.bpbs.findBuiltOrPublishedBySourceAndArchive(
+                bpb.source_package_release, self.factory.makeArchive()))
+        self.assertEqual(
+            {},
+            self.bpbs.findBuiltOrPublishedBySourceAndArchive(
+                self.factory.makeSourcePackageRelease(), bpb.archive))
 
-class TestGetBySourceAndLocation(TestCaseWithFactory):
-    """Tests for BinaryPackageBuildSet.getRelevantToSourceAndLocation()."""
+    def test_copies_are_found(self):
+        # If a build's binaries are published (with a
+        # BinaryPackagePublishingHistory) in another archive, it shows
+        # up in requests for that archive.
+        bpb1 = self.factory.makeBinaryPackageBuild(
+            status=BuildStatus.FULLYBUILT)
+        bpr1 = self.factory.makeBinaryPackageRelease(build=bpb1)
+        bpb2 = self.factory.makeBinaryPackageBuild(
+            source_package_release=bpb1.source_package_release,
+            archive=bpb1.archive, status=BuildStatus.FULLYBUILT)
+        bpr2 = self.factory.makeBinaryPackageRelease(build=bpb2)
 
-    layer = ZopelessDatabaseLayer
+        # A fresh archive sees no builds.
+        target = self.factory.makeArchive()
+        self.assertEqual(
+            {},
+            self.bpbs.findBuiltOrPublishedBySourceAndArchive(
+                bpb1.source_package_release, target))
+
+        # But copying one build over makes it appear.
+        self.factory.makeBinaryPackagePublishingHistory(
+            binarypackagerelease=bpr1, archive=target)
+        self.assertEqual(
+            {bpb1.distro_arch_series.architecturetag: bpb1},
+            self.bpbs.findBuiltOrPublishedBySourceAndArchive(
+                bpb1.source_package_release, target))
+
+        # Copying the second gives us both.
+        self.factory.makeBinaryPackagePublishingHistory(
+            binarypackagerelease=bpr2, archive=target)
+        self.assertEqual(
+            {bpb1.distro_arch_series.architecturetag: bpb1,
+             bpb2.distro_arch_series.architecturetag: bpb2},
+            self.bpbs.findBuiltOrPublishedBySourceAndArchive(
+                bpb1.source_package_release, target))
+        self.assertEqual(
+            self.bpbs.findBuiltOrPublishedBySourceAndArchive(
+                bpb1.source_package_release, bpb1.archive),
+            self.bpbs.findBuiltOrPublishedBySourceAndArchive(
+                bpb1.source_package_release, target))
 
     def test_can_find_build_in_derived_distro_parent(self):
         # If a derived distribution inherited its binaries from its
-        # parent then getRelevantToSourceAndLocation() should look in
-        # the parent to find the build.
+        # parent then findBuiltOrPublishedBySourceAndArchive() should
+        # look in the parent to find the build.
         dsp = self.factory.makeDistroSeriesParent()
         parent_archive = dsp.parent_series.main_archive
 
@@ -432,6 +470,6 @@ class TestGetBySourceAndLocation(TestCaseWithFactory):
         # Searching for the build in the derived series architecture
         # should automatically pick it up from the parent.
         found_build = getUtility(
-            IBinaryPackageBuildSet).getRelevantToSourceAndLocation(
-                spr, derived_archive, das_derived)
+            IBinaryPackageBuildSet).findBuiltOrPublishedBySourceAndArchive(
+                spr, derived_archive).get(das_derived.architecturetag)
         self.assertEqual(orig_build, found_build)
