@@ -288,6 +288,7 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         For a normal archive, only unrestricted architectures should
         be used.
         """
+        self.avr.restricted = True
         available_archs = [
             self.distroseries['sparc'], self.distroseries['avr']]
         pubrec = self.getPubSource(architecturehintlist='any')
@@ -302,6 +303,7 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         Restricted architectures should only be allowed if there is
         an explicit ArchiveArch association with the archive.
         """
+        self.avr.restricted = True
         available_archs = [
             self.distroseries['sparc'], self.distroseries['avr']]
         getUtility(IArchiveArchSet).new(self.archive, self.avr)
@@ -349,14 +351,6 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         getUtility(IArchiveArchSet).new(self.archive, self.avr)
         spr = self.factory.makeSourcePackageRelease(architecturehintlist='any')
         builds = self.createBuilds(spr, self.distroseries)
-        self.assertBuildsMatch({'sparc': True, 'avr': False}, builds)
-
-    def test_createForSource_arch_indep_from_scratch(self):
-        """createForSource() sets arch_indep=True on builds for the
-        nominatedarchindep architecture when no builds already exist.
-        """
-        pubrec = self.getPubSource(architecturehintlist='any')
-        builds = pubrec.createForSource()
         self.assertBuildsMatch({'sparc': True, 'avr': False}, builds)
 
 
