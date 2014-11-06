@@ -13,6 +13,7 @@ __all__ = [
     ]
 
 import datetime
+from itertools import chain
 from operator import itemgetter
 
 import apt_pkg
@@ -1383,39 +1384,6 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
             if not distroarch.processor.restricted or
                distroarch.processor in archive.enabled_restricted_processors]
 
-    def _createMissingBuildForArchitecture(self, sourcepackagerelease,
-                                           archive, arch, pocket,
-                                           logger=None):
-        """Create a build for a given architecture if it doesn't exist yet.
-
-        Return the just-created `IBinaryPackageBuild` record already
-        scored or None if a suitable build is already present.
-        """
-        exact_build = self.getBySourceAndLocation(
-            sourcepackagerelease, archive, arch)
-        if exact_build is not None:
-            return None
-
-        build_candidate = self.findBuiltOrPublishedBySourceAndArchive(
-            sourcepackagerelease, archive).get(arch.architecturetag)
-        if build_candidate is not None:
-            return None
-
-        build = self.new(
-            source_package_release=sourcepackagerelease,
-            distro_arch_series=arch, archive=archive, pocket=pocket)
-        # Create the builds in suspended mode for disabled archives.
-        build_queue = build.queueBuild(suspended=not archive.enabled)
-        Store.of(build).flush()
-
-        if logger is not None:
-            logger.debug(
-                "Created %s [%d] in %s (%d)"
-                % (build.title, build.id, build.archive.displayname,
-                   build_queue.lastscore))
-
-        return build
-
     def createForSource(self, sourcepackagerelease, archive, distroseries,
                         pocket, architectures_available=None, logger=None):
         """See `ISourcePackagePublishingHistory`."""
@@ -1426,15 +1394,50 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
         architectures_available = self._getAllowedArchitectures(
             archive, architectures_available)
 
-        build_architectures = determine_architectures_to_build(
+        candidate_architectures = determine_architectures_to_build(
             sourcepackagerelease.architecturehintlist, archive, distroseries,
             architectures_available)
 
-        builds = []
-        for arch in build_architectures:
-            build_candidate = self._createMissingBuildForArchitecture(
-                sourcepackagerelease, archive, arch, pocket, logger=logger)
-            if build_candidate is not None:
-                builds.append(build_candidate)
+        # Exclude any architectures which already have built or copied
+        # binaries. A new built can never succeed; its files would
+        # conflict during upload.
+        done_builds = self.findBuiltOrPublishedBySourceAndArchive(
+            sourcepackagerelease, archive)
 
-        return builds
+        # Find any architectures that already have a build that exactly
+        # matches, regardless of status. We can't create a second build
+        # with the same (SPR, Archive, DAS).
+        # XXX wgrant 2014-11-06: Should use a bulk query.
+        existing_builds = {}
+        for das in distroseries.architectures:
+            build = self.getBySourceAndLocation(
+                sourcepackagerelease, archive, das)
+            if build is not None:
+                existing_builds[das.architecturetag] = build
+
+        skip_archtags = set(done_builds.keys()) & set(existing_builds.keys())
+        needed_architectures = [
+            das for das in candidate_architectures
+            if das.architecturetag not in skip_archtags]
+
+        new_builds = []
+        for das in needed_architectures:
+            if self.getBySourceAndLocation(sourcepackagerelease, archive, das):
+                # There's already a (not yet successful) build that
+                # exactly matches what we want.
+                continue
+            build = self.new(
+                source_package_release=sourcepackagerelease,
+                distro_arch_series=das, archive=archive, pocket=pocket)
+            new_builds.append(build)
+            # Create the builds in suspended mode for disabled archives.
+            build_queue = build.queueBuild(suspended=not archive.enabled)
+            Store.of(build).flush()
+
+            if logger is not None:
+                logger.debug(
+                    "Created %s [%d] in %s (%d)"
+                    % (build.title, build.id, build.archive.displayname,
+                    build_queue.lastscore))
+
+        return new_builds
