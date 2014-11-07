@@ -1192,13 +1192,16 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
             Or(
                 BinaryPackageBuild.archive == archive,
                 Exists(published_query))))
+        # XXX wgrant 2014-11-07: We should be able to assert here that
+        # each archtag appeared only once, as a second successful build
+        # should fail to upload due to file conflicts. Unfortunately,
+        # there are 1141 conflicting builds in the primary archive on
+        # production, and they're non-trivial to clean up.
+        # Let's just hope that nothing of value will be lost if we omit
+        # duplicates.
         arch_map = {
             build.distro_arch_series.architecturetag: build
             for build in builds}
-        if len(arch_map) != len(builds):
-            raise AssertionError(
-                "Multiple successful builds for a single archtag. "
-                "Something is probably corrupt.")
         return arch_map
 
     def getStatusSummaryForBuilds(self, builds):
