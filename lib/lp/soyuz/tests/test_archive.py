@@ -800,22 +800,16 @@ class TestArchiveCanUpload(TestCaseWithFactory):
         person, component = self.makePersonWithComponentPermission(archive)
         self.assertCanUpload(archive, person, None, component=component)
 
-    def test_checkUpload_obsolete_series(self):
+    def test_checkUpload_ppa_obsolete_series(self):
         distroseries = self.factory.makeDistroSeries(
             status=SeriesStatus.OBSOLETE)
+        ppa = self.factory.makeArchive(
+            distribution=distroseries.distribution, purpose=ArchivePurpose.PPA)
         self.assertCannotUpload(
-            CannotUploadToSeries, distroseries.distribution.main_archive,
-            self.factory.makePerson(), None, distroseries=distroseries)
-
-    def test_checkUpload_obsolete_series_with_flag(self):
-        distroseries = self.factory.makeDistroSeries(
-            status=SeriesStatus.OBSOLETE)
-        archive = distroseries.distribution.main_archive
-        person, component = self.makePersonWithComponentPermission(archive)
-        removeSecurityProxy(archive).permit_obsolete_series_uploads = True
-        self.assertCanUpload(
-            archive, person, None, distroseries=distroseries,
-            component=component)
+            CannotUploadToSeries, ppa, ppa.owner, None,
+            distroseries=distroseries)
+        removeSecurityProxy(ppa).permit_obsolete_series_uploads = True
+        self.assertCanUpload(ppa, ppa.owner, None, distroseries=distroseries)
 
     def makePackageToUpload(self, distroseries):
         sourcepackagename = self.factory.makeSourcePackageName()
