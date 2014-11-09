@@ -57,7 +57,7 @@ The last published binary can also be accessed directly:
 It also provides access to the last DistroSeriesSourcePackageRelease:
 
     >>> print firefox_dsbp.last_sourcepackagerelease.title
-    "iceweasel" 1.0 source package in The Warty Warthog Release
+    "iceweasel" 1.0 source package in Ubuntu
 
 If a DistroSeriesBinaryPackage doesn't have a DistroSeriesPackageCache,
 then the summary and description fields reflect the situation:

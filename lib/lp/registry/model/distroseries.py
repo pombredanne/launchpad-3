@@ -1224,7 +1224,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             orderBy=['-packageupload.id'])
 
         distro_sprs = [
-            self.getSourcePackageRelease(spr) for spr in last_uploads]
+            self.distribution.getSourcePackageRelease(spr)
+            for spr in last_uploads]
 
         return distro_sprs
 

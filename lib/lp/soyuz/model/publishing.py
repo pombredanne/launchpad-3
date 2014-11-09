@@ -528,9 +528,9 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             self.sourcepackagerelease.sourcepackagename)
 
     @property
-    def meta_distroseriessourcepackagerelease(self):
+    def meta_distributionsourcepackagerelease(self):
         """see `ISourcePackagePublishingHistory`."""
-        return self.distroseries.getSourcePackageRelease(
+        return self.distroseries.distribution.getSourcePackageRelease(
             self.sourcepackagerelease)
 
     # XXX: StevenK 2011-09-13 bug=848563: This can die when

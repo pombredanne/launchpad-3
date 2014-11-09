@@ -403,7 +403,7 @@ class IDistroSeriesPublic(
         """Return the latest five source uploads for this DistroSeries.
 
         It returns a list containing up to five elements as
-        IDistroSeriesSourcePackageRelease instances
+        IDistributionSourcePackageRelease instances
         """
 
     # DistroArchSeries lookup properties/methods.
