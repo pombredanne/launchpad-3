@@ -87,8 +87,8 @@ from lp.registry.model.product import Product
 from lp.services.webapp import (
     ApplicationMenu,
     canonical_url,
-    GetitemNavigation,
     Link,
+    Navigation,
     StandardLaunchpadFacets,
     stepto,
     )
@@ -149,7 +149,7 @@ class SourcePackageFormatterAPI(CustomizableFormatter):
         return {'displayname': displayname}
 
 
-class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
+class SourcePackageNavigation(Navigation, BugTargetTraversalMixin):
 
     usedfor = ISourcePackage
 
@@ -187,6 +187,15 @@ class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
         dsp = self.context.distribution_sourcepackage
         redirection_url = canonical_url(dsp, view_name='+gethelp')
         return self.redirectSubTree(redirection_url, status=303)
+
+    def traverse(self, name):
+        """Deprecated redirect to an IDistributionSourcePackageRelease.
+
+        IDistroSeriesSourcePackageRelease lived here until it was
+        removed in Nov 2014.
+        """
+        dspr = self.context.distribution_sourcepackage.getVersion(name)
+        return self.redirectSubTree(canonical_url(dspr), status=301)
 
 
 @adapter(ISourcePackage)

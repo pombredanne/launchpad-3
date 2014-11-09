@@ -14,11 +14,11 @@ through a DistroSeries and SourceName. The URL schema is:
 
 $LP/ubuntu/$DISTRORELEASE/+source/$SOURCENAME
 
-A SourcePackageRelease once published in a DistroSeries is
-represented by a DistroSeriesSourcePackageRelease and easily reached
-by traversing a SourcePackage instance with a valid version, like:
+A SourcePackageRelease once published in a Distribution is represented
+by a DistributionSourcePackageRelease and easily reached by traversing a
+SourcePackage instance with a valid version, like:
 
-$LP/ubuntu/$DISTRORELEASE/+source/$SOURCENAME/$VERSION
+$LP/ubuntu/+source/$SOURCENAME/$VERSION
 
 The path to click here is a bit involved, since the source package
 page can only be reached by searching or getting a list of all
@@ -236,6 +236,14 @@ We can visit a specific published release of "mozilla-firefox", this
 page is provided by an DistributionSourcePackageRelease instance:
 
   >>> browser.getLink("mozilla-firefox 0.9").click()
+  >>> browser.url
+  'http://launchpad.dev/ubuntu/+source/mozilla-firefox/0.9'
+
+The deprecated DistroSeriesSourcePackageRelease page redirects to the
+same place.
+
+  >>> browser.open(
+  ...     'http://launchpad.dev/ubuntu/warty/+source/mozilla-firefox/0.9')
   >>> browser.url
   'http://launchpad.dev/ubuntu/+source/mozilla-firefox/0.9'
 
