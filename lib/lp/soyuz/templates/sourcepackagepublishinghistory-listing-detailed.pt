@@ -16,8 +16,8 @@
 
   <div class="boardCommentDetails">
     <strong>
-      <a tal:content="context/meta_distroseriessourcepackagerelease/version"
-         tal:attributes="href context/meta_distroseriessourcepackagerelease/fmt:url"
+      <a tal:content="context/sourcepackagerelease/version"
+         tal:attributes="href context/meta_distributionsourcepackagerelease/fmt:url"
       >2.0.39</a>
     </strong>
     <table>

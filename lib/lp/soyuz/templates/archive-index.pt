@@ -244,7 +244,7 @@
               </td>
               <td>
                 <tal:version define="
-                version_name publishing/meta_distroseriessourcepackagerelease/version;"
+                version_name publishing/sourcepackagerelease/version;"
                     content="version_name">
                   2.0.39
                 </tal:version>

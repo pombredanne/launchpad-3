@@ -371,10 +371,10 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
     meta_sourcepackage = Attribute(
         "Return an ISourcePackage meta object correspondent to the "
         "sourcepackagerelease attribute inside a specific distroseries")
-    meta_distroseriessourcepackagerelease = Attribute(
-        "Return an IDistroSeriesSourcePackageRelease meta object "
+    meta_distributionsourcepackagerelease = Attribute(
+        "Return an IDistributionSourcePackageRelease meta object "
         "correspondent to the sourcepackagerelease attribute inside "
-        "a specific distroseries")
+        "this distribution")
 
     source_package_name = exported(
         TextLine(
