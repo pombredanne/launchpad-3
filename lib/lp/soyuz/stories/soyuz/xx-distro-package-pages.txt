@@ -26,9 +26,10 @@ The commercial package lists three files:
   ...     'http://launchpad.dev/ubuntu/breezy-autotest/+source/'
   ...     'commercialpackage/1.0-1')
   >>> print extract_text(find_tag_by_id(browser.contents, 'files'))
-  commercialpackage_1.0.orig.tar.gz (179 bytes)
-  commercialpackage_1.0-1.diff.gz (610 bytes)
-  commercialpackage_1.0-1.dsc (567 bytes)
+  File Size MD5 Checksum
+  commercialpackage_1.0.orig.tar.gz 179 bytes ...
+  commercialpackage_1.0-1.diff.gz 610 bytes ...
+  commercialpackage_1.0-1.dsc 567 bytes ...
 
 If you check out the URL for the DSC, you'll see it's in the +files
 virtual directory:
