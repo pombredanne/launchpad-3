@@ -44,8 +44,8 @@ from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 from lp.soyuz.enums import PackageDiffStatus
-from lp.soyuz.interfaces.distroseriessourcepackagerelease import (
-    IDistroSeriesSourcePackageRelease,
+from lp.soyuz.interfaces.distributionsourcepackagerelease import (
+    IDistributionSourcePackageRelease,
     )
 from lp.soyuz.interfaces.packagediff import IPackageDiff
 from lp.soyuz.interfaces.publishing import ISourcePackagePublishingHistory
@@ -135,14 +135,14 @@ class IDistroSeriesDifferencePublic(Interface):
         required=True, readonly=True)
 
     source_package_release = Reference(
-        IDistroSeriesSourcePackageRelease,
+        IDistributionSourcePackageRelease,
         title=_("Derived source pub"), readonly=True,
         description=_(
             "The published version in the derived series with version "
             "source_version."))
 
     parent_source_package_release = Reference(
-        IDistroSeriesSourcePackageRelease,
+        IDistributionSourcePackageRelease,
         title=_("Parent source pub"), readonly=True,
         description=_(
             "The published version in the derived series with version "
