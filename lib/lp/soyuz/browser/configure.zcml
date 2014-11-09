@@ -20,9 +20,6 @@
             permission="zope.Public"
             class="lp.soyuz.browser.publishing.BinaryPublishingRecordView">
             <browser:page
-                name="+listing-detailed"
-                template="../templates/binarypackagepublishinghistory-listing-detailed.pt"/>
-            <browser:page
                 name="+listing-summary"
                 template="../templates/binarypackagepublishinghistory-listing-summary.pt"/>
             <browser:page
@@ -108,9 +105,6 @@
             <browser:page
                 name="+listing-compact"
                 template="../templates/sourcepackagepublishinghistory-listing-compact.pt"/>
-            <browser:page
-                name="+listing-detailed"
-                template="../templates/sourcepackagepublishinghistory-listing-detailed.pt"/>
             <browser:page
                 name="+listing-summary"
                 template="../templates/sourcepackagepublishinghistory-listing-summary.pt"/>
