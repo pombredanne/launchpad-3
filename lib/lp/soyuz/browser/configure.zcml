@@ -112,9 +112,6 @@
         <browser:page
             name="+copyright"
             template="../templates/sourcepackagerelease-copyright.pt"/>
-        <browser:page
-            name="+files"
-            template="../templates/sourcepackagerelease-files.pt"/>
     </browser:pages>
         <browser:pages
             for="lp.soyuz.interfaces.publishing.ISourcePackagePublishingHistory"
@@ -461,6 +458,9 @@
         <browser:page
             name="+changes"
             template="../templates/distributionsourcepackagerelease-changes.pt"/>
+        <browser:page
+            name="+files"
+            template="../templates/distributionsourcepackagerelease-files.pt"/>
     </browser:pages>
     <browser:page
         for="lp.soyuz.interfaces.distributionsourcepackagerelease.IDistributionSourcePackageRelease"

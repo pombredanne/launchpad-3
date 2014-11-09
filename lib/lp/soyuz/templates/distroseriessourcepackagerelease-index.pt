@@ -33,7 +33,7 @@
       <div class="portlet">
         <h2>Download</h2>
         <div id="files"
-             tal:content="structure context/@@+files" />
+             tal:content="structure context/distributionsourcepackagerelease/@@+files" />
       </div>
     </div>
 
