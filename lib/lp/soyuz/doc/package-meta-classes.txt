@@ -40,8 +40,8 @@ Combining Distribution and SourcePackageRelease:
  >>> verifyObject(IDistributionSourcePackageRelease, dspr)
  True
 
- >>> dspr.displayname, dspr.version
- (u'pmount in ubuntu', u'0.1-1')
+ >>> dspr.displayname
+ u'pmount 0.1-1'
 
 
 Combining DistroSeries and SourcePackageRelease:
