@@ -33,8 +33,8 @@ from lp.soyuz.enums import (
     )
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.model.component import ComponentSelection
-from lp.soyuz.model.distroseriessourcepackagerelease import (
-    DistroSeriesSourcePackageRelease,
+from lp.soyuz.model.distributionsourcepackagerelease import (
+    DistributionSourcePackageRelease,
     )
 from lp.testing import (
     person_logged_in,
@@ -453,7 +453,7 @@ class TestNotification(TestCaseWithFactory):
 
         body = assemble_body(blamer, spr, [], archive, series, "",
                              None, "unapproved")
-        dsspr = DistroSeriesSourcePackageRelease(series, spr)
+        dsspr = DistributionSourcePackageRelease(series.distribution, spr)
         url = canonical_url(dsspr)
         self.assertIn(url, body)
 
