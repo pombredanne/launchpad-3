@@ -491,7 +491,8 @@ class SourcePackageView(LaunchpadView):
         results = {}
         all_arch = sorted([arch.architecturetag for arch in
                            self.context.distroseries.architectures])
-        for bin in self.context.currentrelease.binaries:
+        for bin in self.context.currentrelease.getBinariesForSeries(
+                self.context.distroseries):
             distroarchseries = bin.build.distro_arch_series
             if bin.name not in results:
                 results[bin.name] = []
