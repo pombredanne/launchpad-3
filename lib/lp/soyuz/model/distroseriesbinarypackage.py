@@ -20,9 +20,6 @@ from lp.soyuz.interfaces.distroseriesbinarypackage import (
     IDistroSeriesBinaryPackage,
     )
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
-from lp.soyuz.model.distroseriessourcepackagerelease import (
-    DistroSeriesSourcePackageRelease,
-    )
 from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
 
 
@@ -137,11 +134,14 @@ class DistroSeriesBinaryPackage:
     @property
     def last_sourcepackagerelease(self):
         """See `IDistroSeriesBinaryPackage`."""
+        from lp.soyuz.model.distributionsourcepackagerelease import (
+            DistributionSourcePackageRelease,
+            )
         last_published = self.last_published
         if last_published is None:
             return None
 
         src_pkg_release = last_published.build.source_package_release
 
-        return DistroSeriesSourcePackageRelease(
-            self.distroseries, src_pkg_release)
+        return DistributionSourcePackageRelease(
+            self.distribution, src_pkg_release)
