@@ -201,6 +201,7 @@ via `dget`.
     Downloads
     File                  Size      MD5 Checksum
     testing-dspr_1.0.dsc  28 bytes  5913c3ad52c14a62e6ae7eef51f9ef42
+    View changes file
 
     >>> print anon_browser.getLink('testing-dspr_1.0.dsc').url
     http://.../ubuntutest/+archive/primary/+files/testing-dspr_1.0.dsc
@@ -225,6 +226,7 @@ are available.
     testing-dspr_1.0.dsc  28 bytes  5913c3ad52c14a62e6ae7eef51f9ef42
     Available diffs
     diff from 0.9 to 1.0 (7 bytes)
+    View changes file
 
     >>> print anon_browser.getLink('0.9 to 1.0').url
     http://.../101/testing-dspr_0.9_1.0.diff.gz
