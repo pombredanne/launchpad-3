@@ -16,7 +16,7 @@ $LP/ubuntu/$DISTRORELEASE/+source/$SOURCENAME
 
 A SourcePackageRelease once published in a Distribution is represented
 by a DistributionSourcePackageRelease and easily reached by traversing a
-SourcePackage instance with a valid version, like:
+DistributionSourcePackage instance with a valid version, like:
 
 $LP/ubuntu/+source/$SOURCENAME/$VERSION
 
@@ -296,8 +296,6 @@ Let's check how the page behaves if we no files are present:
   ...     'http://launchpad.dev/ubuntu/+source/cnews/cr.g7-37')
 
 The Downloads portlet indicates that no files are available.
-A string is presented in both 'changesfile' and 'files' sections,
-warning the user that no file is available:
 
   >>> print extract_text(find_portlet(browser.contents, 'Downloads'))
   Downloads
