@@ -135,44 +135,6 @@ class DistroSeriesSourcePackageRelease:
         return self.sourcepackagerelease.files
 
     @property
-    def binaries(self):
-        """See `IDistroSeriesSourcePackageRelease`."""
-        # Avoid circular imports.
-        from lp.soyuz.model.distroarchseries import DistroArchSeries
-        store = Store.of(self.distroseries)
-        result_row = (
-            BinaryPackageRelease, BinaryPackageBuild, BinaryPackageName)
-
-        tables = (
-            BinaryPackageRelease,
-            Join(
-                BinaryPackageBuild,
-                BinaryPackageBuild.id == BinaryPackageRelease.buildID),
-            Join(
-                BinaryPackagePublishingHistory,
-                BinaryPackageRelease.id ==
-                BinaryPackagePublishingHistory.binarypackagereleaseID),
-            Join(
-                DistroArchSeries,
-                DistroArchSeries.id ==
-                BinaryPackagePublishingHistory.distroarchseriesID),
-            Join(
-                BinaryPackageName,
-                BinaryPackageName.id ==
-                BinaryPackageRelease.binarypackagenameID))
-        archive_ids = list(
-            self.distroseries.distribution.all_distro_archive_ids)
-        binaries = store.using(*tables).find(
-            result_row,
-            And(
-                DistroArchSeries.distroseriesID == self.distroseries.id,
-                BinaryPackagePublishingHistory.archiveID.is_in(archive_ids),
-                BinaryPackageBuild.source_package_release ==
-                self.sourcepackagerelease))
-        binaries.order_by(Desc(BinaryPackageRelease.id)).config(distinct=True)
-        return DecoratedResultSet(binaries, itemgetter(0))
-
-    @property
     def changesfile(self):
         """See `IDistroSeriesSourcePackageRelease`."""
         return self.sourcepackagerelease.upload_changesfile

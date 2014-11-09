@@ -9,6 +9,8 @@ __all__ = [
     'DistributionSourcePackageRelease',
     ]
 
+from operator import itemgetter
+
 from lazr.delegates import delegates
 from storm.expr import (
     And,
@@ -75,7 +77,7 @@ class DistributionSourcePackageRelease:
     @property
     def displayname(self):
         """See IDistributionSourcePackageRelease."""
-        return '%s in %s' % (self.name, self.distribution.name)
+        return '%s %s' % (self.name, self.version)
 
     @property
     def title(self):
@@ -191,3 +193,39 @@ class DistributionSourcePackageRelease:
                 publishing.binarypackagerelease.binarypackagename,
                 package_cache)
         return DecoratedResultSet(all_published, make_dsb_package)
+
+    def getBinariesForSeries(self, distroseries):
+        """See `IDistroSeriesSourcePackageRelease`."""
+        # Avoid circular imports.
+        from lp.soyuz.model.distroarchseries import DistroArchSeries
+        store = Store.of(distroseries)
+        result_row = (
+            BinaryPackageRelease, BinaryPackageBuild, BinaryPackageName)
+
+        tables = (
+            BinaryPackageRelease,
+            Join(
+                BinaryPackageBuild,
+                BinaryPackageBuild.id == BinaryPackageRelease.buildID),
+            Join(
+                BinaryPackagePublishingHistory,
+                BinaryPackageRelease.id ==
+                BinaryPackagePublishingHistory.binarypackagereleaseID),
+            Join(
+                DistroArchSeries,
+                DistroArchSeries.id ==
+                BinaryPackagePublishingHistory.distroarchseriesID),
+            Join(
+                BinaryPackageName,
+                BinaryPackageName.id ==
+                BinaryPackageRelease.binarypackagenameID))
+        archive_ids = list(self.distribution.all_distro_archive_ids)
+        binaries = store.using(*tables).find(
+            result_row,
+            And(
+                DistroArchSeries.distroseriesID == distroseries.id,
+                BinaryPackagePublishingHistory.archiveID.is_in(archive_ids),
+                BinaryPackageBuild.source_package_release ==
+                    self.sourcepackagerelease))
+        binaries.order_by(Desc(BinaryPackageRelease.id)).config(distinct=True)
+        return DecoratedResultSet(binaries, itemgetter(0))
