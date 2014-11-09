@@ -61,6 +61,12 @@ class DistroSeriesSourcePackageRelease:
         return self.distroseries.getSourcePackage(self.sourcepackagename)
 
     @property
+    def distributionsourcepackagerelease(self):
+        """See `IDistroSeriesSourcePackageRelease`."""
+        return self.distribution.getSourcePackageRelease(
+            self.sourcepackagerelease)
+
+    @property
     def displayname(self):
         """See `IDistroSeriesSourcePackageRelease`."""
         return '%s %s' % (self.name, self.version)

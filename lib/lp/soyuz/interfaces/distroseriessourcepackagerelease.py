@@ -30,6 +30,8 @@ class IDistroSeriesSourcePackageRelease(ISourcePackageRelease):
 
     distroseries = Attribute("The distro series.")
     sourcepackage = Attribute("The distribution series source package.")
+    distributionsourcepackagerelease = Attribute(
+        "The distribution source package release.")
     sourcepackagerelease = Attribute("The source package release.")
 
     name = Attribute("The source package name as text")
