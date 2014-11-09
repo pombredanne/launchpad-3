@@ -89,7 +89,7 @@ Click on the wanted name to get on the DistroArchSeriesBinaryPackageRelease:
     0.9 : mozilla-firefox : i386 : Warty (4.10) : Ubuntu
 
 This page represents an IDistroArchSeriesBinaryPackageRelease and is
-able to point the user to the IDistroSeriesSourcePackageRelease which
+able to point the user to the IDistributionSourcePackageRelease which
 originated itself:
 
     >>> source_element = find_tag_by_id(browser.contents, 'source')
@@ -224,7 +224,7 @@ Click on the wanted name to get on the DistroArchSeriesBinaryPackageRelease:
     1.0-1 : commercialpackage : i386 : Breezy Badger Autotest (6.6.6) : Ubuntu
 
 This page represents an IDistroArchSeriesBinaryPackageRelease and is
-able to point the user to the IDistroSeriesSourcePackageRelease which
+able to point the user to the IDistributionSourcePackageRelease which
 originated itself:
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'source'))

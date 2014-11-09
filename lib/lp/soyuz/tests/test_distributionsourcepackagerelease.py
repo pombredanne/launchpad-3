@@ -156,7 +156,7 @@ class TestDistributionSourcePackageRelease(TestCaseWithFactory):
 
 
 class TestGetBinariesForSeries(TestCaseWithFactory):
-    """Tests for DistroSeriesSourcePackageRelease."""
+    """Tests for DistributionSourcePackageRelease.getBinariesForSeries."""
 
     layer = DatabaseFunctionalLayer
 
@@ -190,9 +190,8 @@ class TestGetBinariesForSeries(TestCaseWithFactory):
         return bp_release
 
     def test_binaries__no_releases(self):
-        # If no binary releases exist,
-        # DistroSeriesSourcePackageRelease.binaries returns an empty
-        # sequence.
+        # If no binary releases exist, getBinariesForSeries returns an
+        # empty sequence.
         self.assertEqual(
             0,
             self.dspr.getBinariesForSeries(
@@ -200,7 +199,7 @@ class TestGetBinariesForSeries(TestCaseWithFactory):
 
     def test_binaries__one_release_for_source_package(self):
         # If a binary release exists, it is returned by
-        # DistroSeriesSourcePackageRelease.binaries.
+        # getBinariesForSeries.
         bp_release = self.makeBinaryPackageRelease()
         self.assertEqual(
             [bp_release],
@@ -222,7 +221,7 @@ class TestGetBinariesForSeries(TestCaseWithFactory):
         # The properties BinaryPackageRelease.build and
         # and BinaryPackageRelease.binarypackagename of the
         # the result objects are preloaded in the query
-        # issued in DistroSeriesSourcePackageRelease.binaries.
+        # issued in getBinariesForSeries.
         self.makeBinaryPackageRelease()
         # Both properties we want to check have been created
         # in makeBinaryPackageRelease() and are thus already
