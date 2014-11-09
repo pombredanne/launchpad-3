@@ -195,7 +195,7 @@ class DistributionSourcePackageRelease:
         return DecoratedResultSet(all_published, make_dsb_package)
 
     def getBinariesForSeries(self, distroseries):
-        """See `IDistroSeriesSourcePackageRelease`."""
+        """See `IDistributionSourcePackageRelease`."""
         # Avoid circular imports.
         from lp.soyuz.model.distroarchseries import DistroArchSeries
         store = Store.of(distroseries)
