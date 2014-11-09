@@ -435,9 +435,10 @@ class SourcePackage(BugTargetBase, HasCodeImportsMixin,
         for pocket in PackagePublishingPocket.items:
             thedict[pocket] = []
         # add all the sourcepackagereleases in the right place
-        for spr in result:
-            thedict[spr.pocket].append(DistroSeriesSourcePackageRelease(
-                spr.distroseries, spr.sourcepackagerelease))
+        for spph in result:
+            thedict[spph.pocket].append(
+                spph.distroseries.distribution.getSourcePackageRelease(
+                    spph.sourcepackagerelease))
         return thedict
 
     @property

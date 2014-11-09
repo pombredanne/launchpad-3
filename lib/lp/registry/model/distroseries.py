@@ -143,6 +143,9 @@ from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.model.component import Component
+from lp.soyuz.model.distributionsourcepackagerelease import (
+    DistributionSourcePackageRelease,
+    )
 from lp.soyuz.model.distroarchseries import (
     DistroArchSeries,
     PocketChroot,
@@ -1525,7 +1528,7 @@ class DistroSeriesSet:
         for spr, series_id in releases:
             series = getUtility(IDistroSeriesSet).get(series_id)
             result[series.getSourcePackage(spr.sourcepackagename)] = (
-                DistroSeriesSourcePackageRelease(series, spr))
+                DistributionSourcePackageRelease(series.distribution, spr))
         return result
 
     def search(self, distribution=None, isreleased=None, orderBy=None):

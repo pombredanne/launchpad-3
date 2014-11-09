@@ -50,3 +50,6 @@ class IDistributionSourcePackageRelease(ISourcePackageRelease):
     sample_binary_packages = Attribute("A single binary package of each "
         "named package produced from this source package in this "
         "distribution. The are each of form DistroSeriesBinaryPackage.")
+
+    def getBinariesForSeries(distroseries):
+        """Return this SourcePackageRelease's binaries in this DistroSeries."""

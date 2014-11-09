@@ -1466,7 +1466,7 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
 
             Date: %s
             Changed-By: Foo Bar <foo.bar@canonical.com>
-            http://launchpad.dev/ubuntutest/nobby/+source/foo/1.0-2
+            http://launchpad.dev/ubuntutest/+source/foo/1.0-2
             """ % source.sourcepackagerelease.dateuploaded)
         # Spurious newlines are a pain and don't really affect the end
         # results so stripping is the easiest route here.

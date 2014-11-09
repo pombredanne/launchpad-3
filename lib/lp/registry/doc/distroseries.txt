@@ -384,10 +384,10 @@ Check the content IDRSPR binaries & builds attributes:
 
 'binaries' should be inherited from parent release.
 
-    >>> bumpy_firefox_sp.currentrelease.binaries.count()
+    >>> bumpy_firefox_sp.currentrelease.getBinariesForSeries(bumpy).count()
     3
 
-    >>> for bin in bumpy_firefox_sp.currentrelease.binaries:
+    >>> for bin in bumpy_firefox_sp.currentrelease.getBinariesForSeries(bumpy):
     ...     print bin.id, bin.title, bin.build.distro_arch_series.title
     27 mozilla-firefox-data-0.9 The Warty Warthog Release for i386 (386)
     26 mozilla-firefox-0.9 The Warty Warthog Release for hppa (hppa)
@@ -397,12 +397,14 @@ Check the content IDRSPR binaries & builds attributes:
 'builds' should be empty since it was built in parent (warty), not in this
 distroseries (bumby.
 
-    >>> len(bumpy_firefox_sp.currentrelease.builds)
+    >>> bumpy_firefox_dsspr = bumpy.getSourcePackageRelease(
+    ...     bumpy_firefox_sp.currentrelease.sourcepackagerelease)
+    >>> len(bumpy_firefox_dsspr.builds)
     0
 
 the SPR returns all build records for it.
 
-    >>> bumpy_firefox_sp.currentrelease.sourcepackagerelease.builds.count()
+    >>> bumpy_firefox_dsspr.sourcepackagerelease.builds.count()
     4
 
 The new series also has the same packaging links as its parent series.
@@ -570,8 +572,9 @@ Entire publishing history:
 The changesfile attribute contains the package changelog. It is provided as
 an ILibraryFileAlias:
 
-    >>> firefox_srcrel =  warty.getSourcePackage(
-    ...    'mozilla-firefox').currentrelease
+    >>> firefox_dspr = warty.getSourcePackage('mozilla-firefox').currentrelease
+    >>> firefox_srcrel = warty.getSourcePackageRelease(
+    ...     firefox_dspr.sourcepackagerelease)
     >>> print firefox_srcrel.title
     "mozilla-firefox" 0.9 source package in The Warty Warthog Release
 
@@ -580,7 +583,9 @@ an ILibraryFileAlias:
 
 If the package changelog is not available, that attribute is None:
 
-    >>> netapplet_srcrel = hoary.getSourcePackage('netapplet').currentrelease
+    >>> netapplet_dspr = hoary.getSourcePackage('netapplet').currentrelease
+    >>> netapplet_srcrel = hoary.getSourcePackageRelease(
+    ...     netapplet_dspr.sourcepackagerelease)
     >>> netapplet_srcrel.changesfile is None
     True
 

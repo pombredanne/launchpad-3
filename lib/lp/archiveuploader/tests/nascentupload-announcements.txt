@@ -514,7 +514,7 @@ AUTO-APPROVED upload to BACKPORTS pocket via 'sync' policy:
     DEBUG Date: Tue, 25 Apr 2006 10:36:14 -0300
     DEBUG Changed-By: Celso R. Providelo <cprov@ubuntu.com>
     DEBUG Maintainer: Launchpad team <launchpad@lists.canonical.com>
-    DEBUG http://launchpad.dev/ubuntu/hoary/+source/bar/1.0-4
+    DEBUG http://launchpad.dev/ubuntu/+source/bar/1.0-4
     DEBUG
     DEBUG ==
     DEBUG
@@ -734,7 +734,7 @@ changes file is mentioned toward the end of the email.
     Maintainer: Non-ascii maintainer =C4=8Ciha=C5=99 <launchpad@lists.canonical=
     .com>
     Signed-By: Foo Bar <foo.bar@canonical.com>
-    http://launchpad.dev/ubuntu/hoary/+source/bar/1.0-10
+    http://launchpad.dev/ubuntu/+source/bar/1.0-10
     <BLANKLINE>
     =3D=3D
     <BLANKLINE>

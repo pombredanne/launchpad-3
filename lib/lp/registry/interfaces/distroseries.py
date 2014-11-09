@@ -585,7 +585,7 @@ class IDistroSeriesPublic(
             instances.
 
         :return: a dict where the key is a `ISourcePackage`
-            and the value is a `IDistroSeriesSourcePackageRelease`.
+            and the value is a `IDistributionSourcePackageRelease`.
         """
 
     def getPublishedSources(sourcepackage_or_name, pocket=None, version=None,

@@ -30,6 +30,8 @@ class IDistroSeriesSourcePackageRelease(ISourcePackageRelease):
 
     distroseries = Attribute("The distro series.")
     sourcepackage = Attribute("The distribution series source package.")
+    distributionsourcepackagerelease = Attribute(
+        "The distribution source package release.")
     sourcepackagerelease = Attribute("The source package release.")
 
     name = Attribute("The source package name as text")
@@ -48,16 +50,8 @@ class IDistroSeriesSourcePackageRelease(ISourcePackageRelease):
         "be inherited from a parent distribution, not necessarily built "
         "here, but must be published in a main archive.")
 
-    binaries = Attribute(
-        "Return binaries resulted from this sourcepackagerelease and  "
-        "published in this distroseries.")
-
     version = Attribute("The version of the source package release.")
 
     changesfile = Object(
         title=_("Correspondent changesfile."), schema=ILibraryFileAlias,
         readonly=True)
-
-    published_binaries = Attribute(
-        "A list of published `DistroArchSeriesBinaryPackageRelease` for "
-        "all relevant architectures.")
