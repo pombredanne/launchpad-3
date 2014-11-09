@@ -94,7 +94,7 @@ address is linkified to point to the person's profile page.  Here,
 Browsing the individual sourcepackage changelog.
 
     >>> user_browser.open(
-    ...    "http://launchpad.dev/ubuntu/hoary/+source/alsa-utils/1.0.9a-4ubuntu1")
+    ...    "http://launchpad.dev/ubuntu/+source/alsa-utils/1.0.9a-4ubuntu1")
 
 The changelog is still linkified here so that the bug links work,
 although the version link will point to the same page we're already on.

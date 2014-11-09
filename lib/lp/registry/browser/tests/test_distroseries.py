@@ -1293,8 +1293,7 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         self.assertEqual(1, len(links))
         self.assertEqual(versions['derived'], links[0].string.strip())
 
-        link = canonical_url(derived_series.getSourcePackageRelease(
-            difference.source_pub.sourcepackagerelease))
+        link = canonical_url(difference.source_package_release)
         self.assertTrue(link, EndsWith(new_version))
         # The link points to the sourcepackagerelease referenced in the
         # difference.
