@@ -9,30 +9,17 @@ __all__ = [
     'DistroSeriesSourcePackageRelease',
     ]
 
-from operator import itemgetter
-
 from lazr.delegates import delegates
-from storm.expr import (
-    And,
-    Desc,
-    Join,
-    )
+from storm.expr import Desc
 from storm.store import Store
 from zope.interface import implements
 
 from lp.registry.interfaces.distroseries import IDistroSeries
-from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.soyuz.interfaces.distroseriessourcepackagerelease import (
     IDistroSeriesSourcePackageRelease,
     )
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
-from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
-from lp.soyuz.model.binarypackagename import BinaryPackageName
-from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
-from lp.soyuz.model.publishing import (
-    BinaryPackagePublishingHistory,
-    SourcePackagePublishingHistory,
-    )
+from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 
 
 class DistroSeriesSourcePackageRelease:
@@ -138,31 +125,6 @@ class DistroSeriesSourcePackageRelease:
     def changesfile(self):
         """See `IDistroSeriesSourcePackageRelease`."""
         return self.sourcepackagerelease.upload_changesfile
-
-    @property
-    def published_binaries(self):
-        """See `IDistroSeriesSourcePackageRelease`."""
-        target_binaries = []
-
-        # Get the binary packages in each distroarchseries and store them
-        # in target_binaries for returning.  We are looking for *published*
-        # binarypackagereleases in all arches for the 'source' and its
-        # location.
-        for binary in self.binaries:
-            if binary.architecturespecific:
-                considered_arches = [binary.build.distro_arch_series]
-            else:
-                considered_arches = self.distroseries.architectures
-
-            for distroarchseries in considered_arches:
-                dasbpr = distroarchseries.getBinaryPackage(
-                    binary.name)[binary.version]
-                # Only include objects with published binaries.
-                if dasbpr is None or dasbpr.current_publishing_record is None:
-                    continue
-                target_binaries.append(dasbpr)
-
-        return target_binaries
 
 #
 # Publishing lookup methods.

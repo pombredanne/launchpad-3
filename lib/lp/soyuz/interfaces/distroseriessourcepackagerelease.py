@@ -50,16 +50,8 @@ class IDistroSeriesSourcePackageRelease(ISourcePackageRelease):
         "be inherited from a parent distribution, not necessarily built "
         "here, but must be published in a main archive.")
 
-    binaries = Attribute(
-        "Return binaries resulted from this sourcepackagerelease and  "
-        "published in this distroseries.")
-
     version = Attribute("The version of the source package release.")
 
     changesfile = Object(
         title=_("Correspondent changesfile."), schema=ILibraryFileAlias,
         readonly=True)
-
-    published_binaries = Attribute(
-        "A list of published `DistroArchSeriesBinaryPackageRelease` for "
-        "all relevant architectures.")
