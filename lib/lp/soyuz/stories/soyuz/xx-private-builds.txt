@@ -328,20 +328,6 @@ Accessing the build page will now also work:
     >>> print browser.title
     i386 build of privacy-test 666 : PPA named p3a for Celso Providelo : Celso Providelo
 
-When accessing the distroseries source package release page, the builds
-portlet will display a link to the newly unembargoed build:
-
-    >>> browser.open(
-    ...     "http://launchpad.dev/ubuntutest/breezy-autotest/"
-    ...     "+source/privacy-test/666")
-    >>> portlet = find_portlet(browser.contents, 'Builds')
-    >>> print extract_text(portlet)
-    Builds
-    breezy-autotest i386 Successfully built
-
-    >>> print browser.getLink('i386').url
-    http://launchpad.dev/~cprov/+archive/ubuntu/p3a/+build/...
-
 Similarly, when accessing the distribution source package release page,
 the main content will display a link to the newly unembargoed build:
 
