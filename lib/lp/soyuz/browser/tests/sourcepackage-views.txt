@@ -27,7 +27,7 @@ as 'packages', as:
 
   [
    {'pocketdetails': PackagePublishingPocket,
-    'packages': [IDistroSeriesSourcePackagerelease, ...]}
+    'packages': [IDistributionSourcePackagerelease, ...]}
    ...
   ]
 
@@ -97,7 +97,7 @@ return a IPackageRelationshipSet object (see package-relationship.txt).
 Ensure we have fixed bug 31039, by properly escape the
 sourcepackagename before passing to regexp.
 
-  >>> libc = hoary.getSourcePackage('libstdc++')['b8p']
+  >>> libc = ubuntu.getSourcePackage('libstdc++').getVersion('b8p')
   >>> libc_view = queryMultiAdapter((libc, request), name="+changelog")
   >>> print libc_view.changelog_entry
   libstdc++ (9.9-1) hoary; urgency=high
