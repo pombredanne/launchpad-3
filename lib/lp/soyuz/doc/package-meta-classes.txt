@@ -43,8 +43,7 @@ Combining Distribution and SourcePackageRelease:
 
 == Querying builds for DistributionSourcePackageRelease ==
 
-Both the DistroSeriesSourcePackageRelease class and the
-DistributionSourcePackageRelease have a builds() method which
+DistributionSourcePackageRelease objects have a builds() method which
 returns all the builds for the source package that have been published
 in a main archive.
 
@@ -78,8 +77,7 @@ archive:
     >>> binary_pkg_pub_history = test_publisher.publishBinaryInArchive(
     ...     binary_pkg_release, ubuntutest.main_archive)
 
-Next we create our DistroSeriesSourcePackageRelease and our
-DistributionSourcePackageRelease
+Next we create our DistributionSourcePackageRelease.
 
     >>> breezy_autotest = ubuntutest['breezy-autotest']
     >>> ubuntutest_dspr_foo = DistributionSourcePackageRelease(

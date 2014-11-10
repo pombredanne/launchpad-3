@@ -22,12 +22,12 @@ Retrieve its respective View class:
 Check the consistency of a handy structure containing the organized
 published history of a sourcepackage. It should contain a list of
 dictionaries containing all supported pockets as key 'pocketdetails'
-and a list of packages represented by IDistroSeriesSourcePackageRelease
+and a list of packages represented by IDistributionSourcePackageRelease
 as 'packages', as:
 
   [
    {'pocketdetails': PackagePublishingPocket,
-    'packages': [IDistributionSourcePackagerelease, ...]}
+    'packages': [IDistributionSourcePackageRelease, ...]}
    ...
   ]
 
