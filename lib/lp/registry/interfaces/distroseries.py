@@ -572,12 +572,6 @@ class IDistroSeriesPublic(
         binary package may not be published in the distro series.
         """
 
-    def getSourcePackageRelease(sourcepackagerelease):
-        """Return a IDistroSeriesSourcePackageRelease
-
-        sourcepackagerelease is an ISourcePackageRelease.
-        """
-
     def getCurrentSourceReleases(source_package_names):
         """Get the current release of a list of source packages.
 

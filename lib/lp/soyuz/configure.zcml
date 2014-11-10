@@ -292,14 +292,6 @@
             interface="lp.soyuz.interfaces.archivedependency.IArchiveDependency"/>
     </class>
 
-    <!-- DistroSeriesSourcePackageRelease -->
-
-    <class
-        class="lp.soyuz.model.distroseriessourcepackagerelease.DistroSeriesSourcePackageRelease">
-        <allow
-            interface="lp.soyuz.interfaces.distroseriessourcepackagerelease.IDistroSeriesSourcePackageRelease"/>
-    </class>
-
     <!-- PackageDiff -->
 
     <class

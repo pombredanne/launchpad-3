@@ -225,14 +225,6 @@ class SourcePackageRelease(SQLBase):
     def title(self):
         return '%s - %s' % (self.sourcepackagename.name, self.version)
 
-    @property
-    def current_publishings(self):
-        """See ISourcePackageRelease."""
-        from lp.soyuz.model.distroseriessourcepackagerelease import (
-            DistroSeriesSourcePackageRelease)
-        return [DistroSeriesSourcePackageRelease(pub.distroseries, self)
-                for pub in self.publishings]
-
     @cachedproperty
     def published_archives(self):
         archives = set(
