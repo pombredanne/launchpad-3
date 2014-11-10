@@ -170,10 +170,6 @@ class ISourcePackagePublic(IBugTarget, IHasBranches, IHasMergeProposals,
     owner = Attribute(
         "The owner of the distroseries for this source package.")
 
-    def __getitem__(version):
-        """Return the source package release with the given version in this
-        distro series, or None."""
-
     def __hash__():
         """Sourcepackage hash method.
 

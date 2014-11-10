@@ -125,9 +125,6 @@ class ISourcePackageRelease(Interface):
         "A boolean that indicates whether this package still needs to be "
         "built (on any architecture)")
 
-    current_publishings = Attribute("A list of the current places where "
-        "this source package is published, in the form of a list of "
-        "DistroSeriesSourcePackageReleases.")
     published_archives = Attribute("A set of all the archives that this "
         "source package is published in.")
     upload_archive = Attribute(

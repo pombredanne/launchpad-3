@@ -79,9 +79,6 @@ from lp.soyuz.model.binarypackagebuild import (
 from lp.soyuz.model.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease,
     )
-from lp.soyuz.model.distroseriessourcepackagerelease import (
-    DistroSeriesSourcePackageRelease,
-    )
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.translations.model.hastranslationimports import (
@@ -283,15 +280,6 @@ class SourcePackage(BugTargetBase, HasCodeImportsMixin,
         releases = self.distroseries.getCurrentSourceReleases(
             [self.sourcepackagename])
         return releases.get(self)
-
-    def __getitem__(self, version):
-        """See `ISourcePackage`."""
-        latest_package = self._getFirstPublishingHistory(version=version)
-        if latest_package:
-            return DistroSeriesSourcePackageRelease(
-                    self.distroseries, latest_package.sourcepackagerelease)
-        else:
-            return None
 
     @property
     def path(self):

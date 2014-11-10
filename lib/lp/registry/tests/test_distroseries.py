@@ -98,7 +98,7 @@ class CurrentSourceReleasesMixin:
     def test_return_value(self):
         # getCurrentSourceReleases() returns a dict. The corresponding
         # source package is used as the key, with
-        # a DistroSeriesSourcePackageRelease as the values.
+        # a DistributionSourcePackageRelease as the values.
         self.publisher.getPubSource(version='0.9')
         releases = self.target.getCurrentSourceReleases(
             [self.published_package.sourcepackagename])

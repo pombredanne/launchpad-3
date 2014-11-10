@@ -23,7 +23,6 @@ from storm.store import Store
 from zope.interface import implements
 
 from lp.services.database.decoratedresultset import DecoratedResultSet
-from lp.services.database.sqlbase import sqlvalues
 from lp.soyuz.interfaces.distributionsourcepackagerelease import (
     IDistributionSourcePackageRelease,
     )
@@ -121,19 +120,6 @@ class DistributionSourcePackageRelease:
         return builds_built_in_main_archives.union(
             builds_published_in_main_archives).order_by(
                 Desc(BinaryPackageBuild.id))
-
-    @property
-    def binary_package_names(self):
-        """See IDistributionSourcePackageRelease."""
-        return BinaryPackageName.select("""
-            BinaryPackageName.id =
-                BinaryPackageRelease.binarypackagename AND
-            BinaryPackageRelease.build = BinaryPackageBuild.id AND
-            BinaryPackageBuild.source_package_release = %s
-            """ % sqlvalues(self.sourcepackagerelease.id),
-            clauseTables=['BinaryPackageRelease', 'BinaryPackageBuild'],
-            orderBy='name',
-            distinct=True)
 
     @property
     def sample_binary_packages(self):

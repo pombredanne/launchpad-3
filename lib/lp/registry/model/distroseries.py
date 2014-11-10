@@ -152,9 +152,6 @@ from lp.soyuz.model.distroarchseries import (
     )
 from lp.soyuz.model.distroseriesbinarypackage import DistroSeriesBinaryPackage
 from lp.soyuz.model.distroseriespackagecache import DistroSeriesPackageCache
-from lp.soyuz.model.distroseriessourcepackagerelease import (
-    DistroSeriesSourcePackageRelease,
-    )
 from lp.soyuz.model.files import (
     BinaryPackageFile,
     SourcePackageReleaseFile,
@@ -880,10 +877,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             except SQLObjectNotFound:
                 return None
         return DistroSeriesBinaryPackage(self, name)
-
-    def getSourcePackageRelease(self, sourcepackagerelease):
-        """See `IDistroSeries`."""
-        return DistroSeriesSourcePackageRelease(self, sourcepackagerelease)
 
     def getCurrentSourceReleases(self, source_package_names):
         """See `IDistroSeries`."""
