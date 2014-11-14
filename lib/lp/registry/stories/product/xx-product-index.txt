@@ -122,6 +122,7 @@ direct the owner to purchase a subscription.
     >>> firefox = Product.selectOneBy(name="firefox")
     >>> ignored = login_person(firefox.owner)
     >>> firefox.licenses = [License.OTHER_PROPRIETARY]
+    >>> firefox.license_info = u"Internal project."
     >>> flush_database_updates()
     >>> transaction.commit()
     >>> logout()
@@ -145,6 +146,12 @@ Any user can see that the project's licence is proprietary.
     >>> user_browser.open('http://launchpad.dev/firefox')
     >>> user_browser.contents
     '<...This project&rsquo;s licence is proprietary...
+    >>> print extract_text(
+    ...     find_tag_by_id(user_browser.contents, 'licences'))
+    Licences:
+    Other/Proprietary (Internal project.)
+    Commercial subscription expires ...
+
 
 A non-owner does not see that a commercial subscription is due.
 
@@ -169,6 +176,11 @@ category.
     >>> user_browser.open('http://launchpad.dev/firefox')
     >>> print find_tag_by_id(owner_browser.contents, 'license-status')
     None
+    >>> print extract_text(
+    ...     find_tag_by_id(user_browser.contents, 'licences'))
+    Licences:
+    GNU GPL v2
+    Commercial subscription expires ...
 
 
 Commercial Subscription Expiration
