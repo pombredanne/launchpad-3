@@ -2590,7 +2590,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
 
     @property
     def page_title(self):
-        return "Bugs : %s" % self.context.displayname
+        return "Bugs for %s" % self.context.displayname
 
     label = page_title
 
