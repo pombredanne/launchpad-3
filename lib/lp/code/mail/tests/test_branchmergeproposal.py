@@ -114,7 +114,6 @@ class TestMergeProposalMailing(TestCaseWithFactory):
         For more details, see:
         %(bmp)s
         --\x20
-        %(bmp)s
         %(reason)s
         """) % {
             'source': bmp.source_branch.bzr_identity,
@@ -516,7 +515,6 @@ class TestMergeProposalMailing(TestCaseWithFactory):
             For more details, see:
             %(bmp)s
             --\x20
-            %(bmp)s
             You are the owner of lp://dev/~bob/super-product/fix-foo-for-bar.
             """) % {
                 'source': bmp.source_branch.bzr_identity,
@@ -644,7 +642,6 @@ class TestBranchMergeProposalRequestReview(TestCaseWithFactory):
             This branch is awesome.
 
             --\x20
-            %(bmp)s
             You are requested to review the proposed merge of %(source)s"""
             """ into %(target)s.
             """ % {
