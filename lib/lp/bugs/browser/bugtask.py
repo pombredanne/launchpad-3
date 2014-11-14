@@ -3348,7 +3348,7 @@ def bugtask_sort_key(bugtask):
     """
     if IDistribution.providedBy(bugtask.target):
         return (
-            None, bugtask.target.distribution.displayname, None, None, None)
+            None, bugtask.target.displayname, None, None, None)
     elif IDistroSeries.providedBy(bugtask.target):
         return (
             None, bugtask.target.distribution.displayname,
