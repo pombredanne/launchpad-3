@@ -835,6 +835,44 @@ class TestBugTasksTableView(TestCaseWithFactory):
             foo_bugtasks_and_nominations_view.getBugTaskAndNominationViews())
         self.assertEqual([], task_and_nomination_views)
 
+    def test_bugtask_sorting(self):
+        # Product tasks come first, sorted by product then series.
+        # Distro tasks follow, sorted by package, distribution, then
+        # series.
+        foo = self.factory.makeProduct(displayname='Foo')
+        self.factory.makeProductSeries(product=foo, name='2.0')
+        self.factory.makeProductSeries(product=foo, name='1.0')
+        bar = self.factory.makeProduct(displayname='Bar')
+        self.factory.makeProductSeries(product=bar, name='0.0')
+
+        barix = self.factory.makeDistribution(displayname='Barix')
+        self.factory.makeDistroSeries(distribution=barix, name='beta')
+        self.factory.makeDistroSeries(distribution=barix, name='alpha')
+        fooix = self.factory.makeDistribution(displayname='Fooix')
+        self.factory.makeDistroSeries(distribution=fooix, name='beta')
+
+        foo_spn = self.factory.makeSourcePackageName('foo')
+        bar_spn = self.factory.makeSourcePackageName('bar')
+
+        expected_targets = [
+            bar, bar.getSeries('0.0'),
+            foo, foo.getSeries('1.0'), foo.getSeries('2.0'),
+            barix.getSourcePackage(bar_spn),
+            barix.getSeries('beta').getSourcePackage(bar_spn),
+            fooix.getSourcePackage(bar_spn),
+            fooix.getSeries('beta').getSourcePackage(bar_spn),
+            barix.getSourcePackage(foo_spn),
+            barix.getSeries('alpha').getSourcePackage(foo_spn),
+            ]
+
+        bug = self.factory.makeBug(target=expected_targets[0])
+        for target in expected_targets[1:]:
+            self.factory.makeBugTask(bug=bug, target=target)
+        view = create_initialized_view(bug, "+bugtasks-and-nominations-table")
+        subviews = view.getBugTaskAndNominationViews()
+        self.assertEqual(
+            expected_targets, [v.context.target for v in subviews])
+
     def test_bugtarget_parent_shown_for_orphaned_series_tasks(self):
         # Test that a row is shown for the parent of a series task, even
         # if the parent doesn't actually have a task.

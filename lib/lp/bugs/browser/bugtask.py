@@ -3348,9 +3348,34 @@ class TextualBugTaskSearchListingView(BugTaskSearchListingView):
             getUtility(IBugTaskSet).searchBugIds(search_params))
 
 
-def _by_targetname(bugtask):
-    """Normalize the bugtask.targetname, for sorting."""
-    return re.sub(r"\W", "", bugtask.bugtargetdisplayname)
+def bugtask_sort_key(bugtask):
+    """Return a sort key for displaying a set of tasks for a single bug.
+
+    Designed to make sense when bugtargetdisplayname is shown.
+    """
+    if IDistribution.providedBy(bugtask.target):
+        return (
+            None, bugtask.target.distribution.displayname, None, None, None)
+    elif IDistroSeries.providedBy(bugtask.target):
+        return (
+            None, bugtask.target.distribution.displayname,
+            bugtask.target.name, None, None)
+    elif IDistributionSourcePackage.providedBy(bugtask.target):
+        return (
+            bugtask.target.sourcepackagename.name,
+            bugtask.target.distribution.displayname, None, None, None)
+    elif ISourcePackage.providedBy(bugtask.target):
+        return (
+            bugtask.target.sourcepackagename.name,
+            bugtask.target.distribution.displayname,
+            bugtask.target.distroseries.name, None, None)
+    elif IProduct.providedBy(bugtask.target):
+        return (None, None, None, bugtask.target.displayname, None)
+    elif IProductSeries.providedBy(bugtask.target):
+        return (
+            None, None, None, bugtask.target.product.displayname,
+            bugtask.target.name)
+    raise AssertionError("No sort key for %r" % bugtask.target)
 
 
 class BugTasksNominationsView(LaunchpadView):
@@ -3626,19 +3651,7 @@ class BugTasksTableView(LaunchpadView):
         included in the returned results.
         """
         bug = self.context
-        bugtasks = self.bugtasks
-
-        upstream_tasks = [
-            bugtask for bugtask in bugtasks
-            if bugtask.product or bugtask.productseries]
-
-        distro_tasks = [
-            bugtask for bugtask in bugtasks
-            if bugtask.distribution or bugtask.distroseries]
-
-        upstream_tasks.sort(key=_by_targetname)
-        distro_tasks.sort(key=_by_targetname)
-        all_bugtasks = upstream_tasks + distro_tasks
+        all_bugtasks = list(sorted(self.bugtasks, key=bugtask_sort_key))
 
         # Cache whether the bug was converted to a question, since
         # bug.getQuestionCreatedFromBug issues a db query each time it
@@ -3684,7 +3697,7 @@ class BugTasksTableView(LaunchpadView):
                         name='+bugtasks-and-nominations-table-row'))
 
             conjoined_master = bugtask.getConjoinedMaster(
-                bugtasks, bugtasks_by_package)
+                all_bugtasks, bugtasks_by_package)
             view = self._getTableRowView(
                 bugtask, is_converted_to_question,
                 conjoined_master is not None)
