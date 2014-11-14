@@ -26,7 +26,6 @@ __all__ = [
     'BugTaskPrivacyAdapter',
     'BugTaskRemoveQuestionView',
     'BugTaskSearchListingView',
-    'BugTaskSetNavigation',
     'BugTasksNominationsView',
     'BugTasksTableView',
     'BugTaskTableRowView',
@@ -263,7 +262,6 @@ from lp.services.utils import obfuscate_structure
 from lp.services.webapp import (
     canonical_url,
     enabled_with_permission,
-    GetitemNavigation,
     LaunchpadView,
     Link,
     Navigation,
@@ -611,11 +609,6 @@ class BugTaskNavigation(Navigation):
         return getUtility(IBugNominationSet).get(nomination_id)
 
     redirection('references', '..')
-
-
-class BugTaskSetNavigation(GetitemNavigation):
-    """Navigation for the `IbugTaskSet`."""
-    usedfor = IBugTaskSet
 
 
 class BugTaskContextMenu(BugContextMenu):

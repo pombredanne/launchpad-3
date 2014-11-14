@@ -468,9 +468,7 @@
             rootsite="bugs"/>
         <browser:navigation
             module="lp.bugs.browser.bugtask"
-            classes="
-                BugTaskNavigation
-                BugTaskSetNavigation"/>
+            classes="BugTaskNavigation"/>
         <browser:page
             for="lp.bugs.interfaces.bug.IBug"
             class="lp.bugs.browser.bug.BugSubscriptionPortletView"
@@ -545,16 +543,6 @@
             class="lp.bugs.browser.bug.BugMarkAsAffectingUserView"
             permission="launchpad.AnyPerson"
             template="../templates/bug-mark-as-affecting-user.pt"/>
-        <browser:defaultView
-            for="lp.bugs.interfaces.bugtask.IBugTaskSet"
-            name="+index"/>
-        <browser:pages
-            for="lp.bugs.interfaces.bugtask.IBugTaskSet"
-            permission="zope.Public">
-            <browser:page
-                name="+index"
-                template="../templates/bugtasks-index.pt"/>
-        </browser:pages>
         <browser:page
             name="+addcomment"
             for="lp.bugs.interfaces.bugtask.IBugTask"
