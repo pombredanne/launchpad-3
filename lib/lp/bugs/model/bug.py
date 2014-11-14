@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Launchpad bug-related database table classes."""
@@ -44,6 +44,7 @@ from sqlobject import (
     )
 from storm.expr import (
     And,
+    Coalesce,
     Desc,
     In,
     Join,
@@ -650,8 +651,14 @@ class Bug(SQLBase, InformationTypeMixin):
     @property
     def default_bugtask(self):
         """See `IBug`."""
-        return Store.of(self).find(
-            BugTask, bug=self).order_by(BugTask.id).first()
+        from lp.registry.model.product import Product
+        return Store.of(self).using(
+                BugTask,
+                LeftJoin(Product, Product.id == BugTask.productID)
+            ).find(
+                BugTask, bug=self
+            ).order_by(
+                Desc(Coalesce(Product.active, True)), BugTask.id).first()
 
     @property
     def is_complete(self):
