@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """IBugTask-related browser views."""
@@ -2405,28 +2405,16 @@ class BugTaskSearchListingMenu(NavigationMenu):
     @property
     def links(self):
         bug_target = self.context.context
-        if IDistribution.providedBy(bug_target):
+        if IDistroSeries.providedBy(bug_target):
             return (
-                'cve',
-                )
-        elif IDistroSeries.providedBy(bug_target):
-            return (
-                'cve',
                 'nominations',
                 )
-        elif IProduct.providedBy(bug_target):
-            return (
-                'cve',
-                )
-        elif IProductSeries.providedBy(bug_target):
+        if IProductSeries.providedBy(bug_target):
             return (
                 'nominations',
                 )
         else:
             return ()
-
-    def cve(self):
-        return Link('+cve', 'CVE reports', icon='cve')
 
     @enabled_with_permission('launchpad.Edit')
     def bugsupervisor(self):
