@@ -329,7 +329,7 @@ class TestBugTaskSearchListingViewProduct(BugTargetTestCase):
         bug_target = self._makeBugTargetProduct(
             bug_tracker='launchpad', product_name="testproduct")
         view = create_initialized_view(bug_target, '+bugs')
-        self.assertEqual(u'Bugs : Testproduct', view.page_title)
+        self.assertEqual(u'Bugs for Testproduct', view.page_title)
 
     def test_ask_question_does_not_use_launchpad(self):
         bug_target = self._makeBugTargetProduct(
