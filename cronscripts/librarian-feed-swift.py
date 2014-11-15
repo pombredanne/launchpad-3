@@ -11,8 +11,10 @@ import _pythonpath
 
 import os
 
-from lp.services.scripts.base import LaunchpadCronScript
+from lp.services.database.interfaces import ISlaveStore
+from lp.services.librarian.model import LibraryFileContent
 from lp.services.librarianserver import swift
+from lp.services.scripts.base import LaunchpadCronScript
 
 
 class LibrarianFeedSwift(LaunchpadCronScript):
@@ -28,11 +30,21 @@ class LibrarianFeedSwift(LaunchpadCronScript):
             dest="start", metavar="CONTENT_ID",
             help="Migrate files starting from CONTENT_ID")
         self.parser.add_option(
+            "--start-since", action="store", dest='start_since',
+            default=None, metavar="INTERVAL",
+            help="Migrate files starting from INTERVAL (PostgreSQL syntax)")
+        self.parser.add_option(
             "-e", "--end", action="store", type=int, default=None,
             dest="end", metavar="CONTENT_ID",
             help="Migrate files up to and including CONTENT_ID")
 
     def main(self):
+        if self.options.start_since:
+            self.options.start = ISlaveStore(LibraryFileContent).execute("""
+                SELECT MAX(id) FROM LibraryFileContent
+                WHERE datecreated < current_timestamp at time zone 'UTC'
+                    - CAST(%s AS INTERVAL)
+                """, (unicode(self.options.start_since),)).get_one()[0]
         if self.options.ids and (self.options.start or self.options.end):
             self.parser.error(
                 "Cannot specify both individual file(s) and range")
