@@ -168,26 +168,6 @@ class IPublishingView(Interface):
         If all the files get published correctly update its status properly.
         """
 
-    def getIndexStanza():
-        """Return archive index stanza contents
-
-        It's based on the locally provided buildIndexStanzaTemplate method,
-        which differs for binary and source instances.
-
-        :param separate_long_descriptions: if True, the long description will
-            be omitted from the stanza and Description-md5 will be included.
-        """
-
-    def buildIndexStanzaFields():
-        """Build a map of fields and values to be in the Index file.
-
-        The fields and values ae mapped into a dictionary, where the key is
-        the field name and value is the value string.
-
-        :param separate_long_descriptions: if True, the long description will
-            be omitted from the stanza and Description-md5 will be included.
-        """
-
     def requestObsolescence():
         """Make this publication obsolete.
 
@@ -272,8 +252,6 @@ class IFilePublishing(Interface):
 
 class ISourcePackageFilePublishing(IFilePublishing):
     """Source package release files and their publishing status"""
-    file_type_name = Attribute(
-        "The uploaded file's type; one of 'orig', 'dsc', 'diff' or 'other'")
     sourcepackagename = TextLine(
             title=_('Binary package name'), required=True, readonly=True,
             )
@@ -393,10 +371,10 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
     meta_sourcepackage = Attribute(
         "Return an ISourcePackage meta object correspondent to the "
         "sourcepackagerelease attribute inside a specific distroseries")
-    meta_distroseriessourcepackagerelease = Attribute(
-        "Return an IDistroSeriesSourcePackageRelease meta object "
+    meta_distributionsourcepackagerelease = Attribute(
+        "Return an IDistributionSourcePackageRelease meta object "
         "correspondent to the sourcepackagerelease attribute inside "
-        "a specific distroseries")
+        "this distribution")
 
     source_package_name = exported(
         TextLine(
@@ -848,50 +826,6 @@ class IBinaryPackagePublishingHistoryPublic(IPublishingView):
             representing the binaries copied to the destination location.
         """
 
-    def getIndexStanza(separate_long_descriptions=False):
-        """Return archive index stanza contents
-
-        It's based on the locally provided buildIndexStanzaTemplate method,
-        which differs for binary and source instances.
-
-        :param separate_long_descriptions: if True, the long description will
-            be omitted from the stanza and Description-md5 will be included.
-        """
-
-    def buildIndexStanzaFields(separate_long_descriptions=False):
-        """Build a map of fields and values to be in the Index file.
-
-        The fields and values ae mapped into a dictionary, where the key is
-        the field name and value is the value string.
-
-        :param separate_long_descriptions: if True, the long description will
-            be omitted from the stanza and Description-md5 will be included.
-        """
-
-    def getTranslationsStanza(packages):
-        """Return archive Translation-en stanza contents
-
-        It's based on the locally provided buildTranslationsStanzaTemplate
-        method, which differs for binary and source instances.
-
-        :param packages: a set of (Package, Description-md5) tuples used to
-            determine if a package has already been added to the translation
-            file. The (Package, Description-md5) tuple will be added if it
-            doesn't already exist.
-        """
-
-    def buildTranslationsStanzaFields(packages):
-        """Build a map of fields and values to be in the Translation-en file.
-
-        The fields and values ae mapped into a dictionary, where the key is
-        the field name and value is the value string.
-
-        :param packages: a set of (Package, Description-md5) tuples used to
-            determine if a package has already been added to the translation
-            file. The (Package, Description-md5) tuple will be added if it
-            doesn't already exist.
-        """
-
     @export_read_operation()
     def getDownloadCount():
         """Get the download count of this binary package in this archive.
@@ -1162,29 +1096,29 @@ class IPublishingSet(Interface):
              `BinaryPackageRelease`, `BinaryPackageName`, `DistroArchSeries`)
         """
 
-    def getPackageDiffsForSources(one_or_more_source_publications):
-        """Return all `PackageDiff`s for each given source publication.
+    def getActiveArchSpecificPublications(sourcepackagerelease, archive,
+                                          distroseries, pocket):
+        """Find architecture-specific binary publications for a source.
 
-        The returned ResultSet contains entries with the wanted `PackageDiff`s
-        associated with the corresponding source publication and its resulting
-        `LibraryFileAlias` and `LibraryFileContent` in a 4-element tuple. This
-        way the extra information will be cached and the callsites can group
-        package-diffs in any convenient form.
+        For example, say source package release contains binary packages of:
+         * "foo" for i386 (pending in i386)
+         * "foo" for amd64 (published in amd64)
+         * "foo-common" for the "all" architecture (pending or published in
+           various real processor architectures)
 
-        `LibraryFileAlias` and `LibraryFileContent` elements might be None in
-        case the `PackageDiff` is not completed yet.
+        In that case, this search will return foo(i386) and foo(amd64).  The
+        dominator uses this when figuring out whether foo-common can be
+        superseded: we don't track dependency graphs, but we know that the
+        architecture-specific "foo" releases are likely to depend on the
+        architecture-independent foo-common release.
 
-        The result is ordered by:
-
-         1. Ascending `SourcePackagePublishingHistory.id`,
-         2. Descending `PackageDiff.date_requested`.
-
-        :param one_or_more_source_publication: list of or a single
-            `SourcePackagePublishingHistory` object.
-
-        :return: a storm ResultSet containing tuples as
-            (`SourcePackagePublishingHistory`, `PackageDiff`,
-             `LibraryFileAlias`, `LibraryFileContent`)
+        :param sourcepackagerelease: The `SourcePackageRelease`.
+        :param archive: The `Archive` to search.
+        :param distroseries: The `DistroSeries` to search.
+        :param pocket: The `PackagePublishingPocket` to search.
+        :return: A Storm result set of active, architecture-specific
+            `BinaryPackagePublishingHistory` objects for the source package
+            release in the given `archive`, `distroseries`, and `pocket`.
         """
 
     def getChangesFilesForSources(one_or_more_source_publications):

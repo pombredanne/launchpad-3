@@ -10,6 +10,7 @@ from operator import attrgetter
 
 import apt_pkg
 from testtools.matchers import LessThan
+from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.archivepublisher.domination import (
@@ -28,9 +29,13 @@ from lp.registry.interfaces.series import SeriesStatus
 from lp.services.database.sqlbase import flush_database_updates
 from lp.services.log.logger import DevNullLogger
 from lp.soyuz.enums import PackagePublishingStatus
-from lp.soyuz.interfaces.publishing import ISourcePackagePublishingHistory
+from lp.soyuz.interfaces.publishing import (
+    IPublishingSet,
+    ISourcePackagePublishingHistory,
+    )
 from lp.soyuz.tests.test_publishing import TestNativePublishingBase
 from lp.testing import (
+    monkey_patch,
     StormStatementRecorder,
     TestCaseWithFactory,
     )
@@ -1294,7 +1299,10 @@ class TestArchSpecificPublicationsCache(TestCaseWithFactory):
         self.makeBPPH(spr, arch_specific=True)
         bpph = self.makeBPPH(spr, arch_specific=False)
         cache = self.makeCache()
+        fake = FakeMethod()
         cache.hasArchSpecificPublications(bpph)
-        spr.getActiveArchSpecificPublications = FakeMethod()
-        cache.hasArchSpecificPublications(bpph)
-        self.assertEqual(0, spr.getActiveArchSpecificPublications.call_count)
+        with monkey_patch(
+                removeSecurityProxy(getUtility(IPublishingSet)),
+                getActiveArchSpecificPublications=fake):
+            cache.hasArchSpecificPublications(bpph)
+        self.assertEqual(0, fake.call_count)

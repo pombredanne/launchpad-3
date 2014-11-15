@@ -125,9 +125,6 @@ class ISourcePackageRelease(Interface):
         "A boolean that indicates whether this package still needs to be "
         "built (on any architecture)")
 
-    current_publishings = Attribute("A list of the current places where "
-        "this source package is published, in the form of a list of "
-        "DistroSeriesSourcePackageReleases.")
     published_archives = Attribute("A set of all the archives that this "
         "source package is published in.")
     upload_archive = Attribute(
@@ -172,25 +169,6 @@ class ISourcePackageRelease(Interface):
         :raises NotFoundError if no file could be found.
 
         :return the corresponding `ILibraryFileAlias` if the file was found.
-        """
-
-    def createBuild(distroarchseries, pocket, archive, processor=None,
-                    status=None):
-        """Create a build for a given distroarchseries/pocket/archive
-
-        If the processor isn't given, guess it from the distroarchseries.
-        If the status isn't given, use NEEDSBUILD.
-
-        Return the just created IBuild.
-        """
-
-    def getBuildByArch(distroarchseries, archive):
-        """Return build for the given distroarchseries/archive.
-
-        It looks for a build in any state registered *directly* for the
-        given distroarchseries and archive.
-
-        Returns None if a suitable build could not be found.
         """
 
     def override(component=None, section=None, urgency=None):

@@ -110,7 +110,7 @@ def run_gina(options, ztm, target_section):
 
     for archtag in archs:
         try:
-            importer_handler.ensure_archinfo(archtag)
+            importer_handler.ensure_arch(archtag)
         except DataSetupError:
             log.exception("Database setup required for run on %s", archtag)
             sys.exit(1)

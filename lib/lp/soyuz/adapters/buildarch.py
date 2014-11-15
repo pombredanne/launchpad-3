@@ -37,7 +37,7 @@ dpkg_architecture = DpkgArchitectureCache()
 
 
 def determine_architectures_to_build(hintlist, archive, distroseries,
-                                     legal_archseries):
+                                     legal_archseries, need_arch_indep):
     """Return a list of architectures for which this publication should build.
 
     This function answers the question: given a list of architectures and
@@ -78,7 +78,7 @@ def determine_architectures_to_build(hintlist, archive, distroseries,
 
     # 'all' is only used as a last resort, to create an arch-indep build
     # where no builds would otherwise exist.
-    if len(build_tags) == 0 and 'all' in hint_archs:
+    if need_arch_indep and len(build_tags) == 0 and 'all' in hint_archs:
         nominated_arch = distroseries.nominatedarchindep
         if nominated_arch in legal_archseries:
             build_tags = set([nominated_arch.architecturetag])

@@ -31,11 +31,11 @@ Check if the publication is available through the Soyuz package stack:
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> hoary = ubuntu.getSeries('hoary')
 
-    >>> ed_sp = hoary.getSourcePackage('ed')
-    >>> ed_dsspr = ed_sp['0.2-20']
-    >>> ed_dsspr.publishing_history.count()
+    >>> ed_dsp = ubuntu.getSourcePackage('ed')
+    >>> ed_dspr = ed_dsp.getVersion('0.2-20')
+    >>> ed_dspr.publishing_history.count()
     1
-    >>> ed_pub = ed_dsspr.publishing_history[0]
+    >>> ed_pub = ed_dspr.publishing_history[0]
 
     >>> ed_pub.sourcepackagerelease.title
     u'ed - 0.2-20'
@@ -83,10 +83,10 @@ After the mentioned procedure-shortcut, since ed_0.2-21 was
 auto-accepted (i.e, published as PENDING), it should be immediately
 available via the package stack:
 
-    >>> ed21_dsspr = ed_sp['0.2-21']
-    >>> ed21_dsspr.publishing_history.count()
+    >>> ed21_dspr = ed_dsp.getVersion('0.2-21')
+    >>> ed21_dspr.publishing_history.count()
     1
-    >>> ed21_pub = ed21_dsspr.publishing_history[0]
+    >>> ed21_pub = ed21_dspr.publishing_history[0]
 
     >>> ed21_pub.sourcepackagerelease.title
     u'ed - 0.2-21'

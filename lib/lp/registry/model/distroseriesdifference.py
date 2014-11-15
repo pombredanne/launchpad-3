@@ -98,9 +98,6 @@ from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease,
     )
-from lp.soyuz.model.distroseriessourcepackagerelease import (
-    DistroSeriesSourcePackageRelease,
-    )
 from lp.soyuz.model.packageset import Packageset
 from lp.soyuz.model.packagesetsources import PackagesetSources
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
@@ -312,16 +309,17 @@ def eager_load_dsds(dsds):
         if spn_id in source_pubs_for_release:
             spph = source_pubs_for_release[spn_id]
             cache.source_package_release = (
-                DistroSeriesSourcePackageRelease(
-                    dsd.derived_series,
+                DistributionSourcePackageRelease(
+                    dsd.derived_series.distribution,
                     spph.sourcepackagerelease))
         else:
             cache.source_package_release = None
         if spn_id in parent_source_pubs_for_release:
             spph = parent_source_pubs_for_release[spn_id]
             cache.parent_source_package_release = (
-                DistroSeriesSourcePackageRelease(
-                    dsd.parent_series, spph.sourcepackagerelease))
+                DistributionSourcePackageRelease(
+                    dsd.parent_series.distribution,
+                    spph.sourcepackagerelease))
         else:
             cache.parent_source_package_release = None
         cache.latest_comment = latest_comment_by_dsd_id.get(dsd.id)
@@ -702,8 +700,8 @@ class DistroSeriesDifference(StormBase):
         if pub is None:
             return None
         else:
-            return DistroSeriesSourcePackageRelease(
-                distro_series, pub.sourcepackagerelease)
+            return DistributionSourcePackageRelease(
+                distro_series.distribution, pub.sourcepackagerelease)
 
     @cachedproperty
     def base_distro_source_package_release(self):

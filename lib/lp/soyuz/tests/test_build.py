@@ -23,7 +23,10 @@ from lp.soyuz.enums import (
     PackagePublishingPriority,
     PackageUploadStatus,
     )
-from lp.soyuz.interfaces.binarypackagebuild import CannotBeRescored
+from lp.soyuz.interfaces.binarypackagebuild import (
+    CannotBeRescored,
+    IBinaryPackageBuildSet,
+    )
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
@@ -154,8 +157,9 @@ class TestBuild(TestCaseWithFactory):
         # current_component returns None in that case.
         spph = self.publisher.getPubSource()
         other_das = self.factory.makeDistroArchSeries()
-        build = spph.sourcepackagerelease.createBuild(
-            other_das, PackagePublishingPocket.RELEASE, spph.archive)
+        build = getUtility(IBinaryPackageBuildSet).new(
+            spph.sourcepackagerelease, spph.archive, other_das,
+            PackagePublishingPocket.RELEASE)
         self.assertIs(None, build.current_component)
 
     def test_retry_for_released_series(self):

@@ -352,10 +352,10 @@ to the newer version.
                                         no signer (2007-07-09)
     pmount              0.1-1           no signer (2007-07-09)
 
-The link itself will point to the newer version in the distro series.
+The link itself will point to the newer version in the distribution.
 
     >>> print anon_browser.getLink('Newer version').url
-    http://launchpad.dev/ubuntu/warty/+source/iceweasel/1.1
+    http://launchpad.dev/ubuntu/+source/iceweasel/1.1
 
 A Latest updates portlet is included on the index page indicating the
 latest published sources with their states.

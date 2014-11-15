@@ -403,7 +403,7 @@ class IDistroSeriesPublic(
         """Return the latest five source uploads for this DistroSeries.
 
         It returns a list containing up to five elements as
-        IDistroSeriesSourcePackageRelease instances
+        IDistributionSourcePackageRelease instances
         """
 
     # DistroArchSeries lookup properties/methods.
@@ -572,12 +572,6 @@ class IDistroSeriesPublic(
         binary package may not be published in the distro series.
         """
 
-    def getSourcePackageRelease(sourcepackagerelease):
-        """Return a IDistroSeriesSourcePackageRelease
-
-        sourcepackagerelease is an ISourcePackageRelease.
-        """
-
     def getCurrentSourceReleases(source_package_names):
         """Get the current release of a list of source packages.
 
@@ -585,7 +579,7 @@ class IDistroSeriesPublic(
             instances.
 
         :return: a dict where the key is a `ISourcePackage`
-            and the value is a `IDistroSeriesSourcePackageRelease`.
+            and the value is a `IDistributionSourcePackageRelease`.
         """
 
     def getPublishedSources(sourcepackage_or_name, pocket=None, version=None,

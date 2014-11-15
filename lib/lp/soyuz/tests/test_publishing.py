@@ -32,14 +32,15 @@ from lp.services.database.constants import UTC_NOW
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.log.logger import DevNullLogger
 from lp.soyuz.enums import (
+    ArchivePurpose,
     BinaryPackageFormat,
     PackageUploadStatus,
     )
-from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.soyuz.interfaces.publishing import (
+    active_publishing_status,
     DeletionError,
     IPublishingSet,
     OverrideError,
@@ -833,105 +834,6 @@ class TestNativePublishing(TestNativePublishingBase):
         shutil.rmtree(test_temp_dir)
 
 
-class BuildRecordCreationTests(TestNativePublishingBase):
-    """Test the creation of build records."""
-
-    def setUp(self):
-        super(BuildRecordCreationTests, self).setUp()
-        self.distro = self.factory.makeDistribution()
-        self.distroseries = self.factory.makeDistroSeries(
-            distribution=self.distro, name="crazy")
-        self.archive = self.factory.makeArchive()
-        self.avr = self.factory.makeProcessor(name="avr2001", restricted=True)
-        self.avr_distroarch = self.factory.makeDistroArchSeries(
-            architecturetag='avr', processor=self.avr,
-            distroseries=self.distroseries, supports_virtualized=True)
-        self.sparc = self.factory.makeProcessor(
-            name="sparc64", restricted=False)
-        self.sparc_distroarch = self.factory.makeDistroArchSeries(
-            architecturetag='sparc', processor=self.sparc,
-            distroseries=self.distroseries, supports_virtualized=True)
-        self.distroseries.nominatedarchindep = self.sparc_distroarch
-        self.addFakeChroots(self.distroseries)
-
-    def getPubSource(self, architecturehintlist):
-        """Return a mock source package publishing record for the archive
-        and architecture used in this testcase.
-
-        :param architecturehintlist: Architecture hint list
-            (e.g. "i386 amd64")
-        """
-        return super(BuildRecordCreationTests, self).getPubSource(
-            archive=self.archive, distroseries=self.distroseries,
-            architecturehintlist=architecturehintlist)
-
-    def test__getAllowedArchitectures_restricted(self):
-        """Test _getAllowedArchitectures doesn't return unrestricted
-        archs.
-
-        For a normal archive, only unrestricted architectures should
-        be used.
-        """
-        available_archs = [self.sparc_distroarch, self.avr_distroarch]
-        pubrec = self.getPubSource(architecturehintlist='any')
-        self.assertEqual(
-            [self.sparc_distroarch],
-            pubrec._getAllowedArchitectures(available_archs))
-
-    def test__getAllowedArchitectures_restricted_override(self):
-        """Test _getAllowedArchitectures honors overrides of restricted archs.
-
-        Restricted architectures should only be allowed if there is
-        an explicit ArchiveArch association with the archive.
-        """
-        available_archs = [self.sparc_distroarch, self.avr_distroarch]
-        getUtility(IArchiveArchSet).new(self.archive, self.avr)
-        pubrec = self.getPubSource(architecturehintlist='any')
-        self.assertEqual(
-            [self.sparc_distroarch, self.avr_distroarch],
-            pubrec._getAllowedArchitectures(available_archs))
-
-    def test_createMissingBuilds_restricts_any(self):
-        """createMissingBuilds() should limit builds targeted at 'any'
-        architecture to those allowed for the archive.
-        """
-        pubrec = self.getPubSource(architecturehintlist='any')
-        builds = pubrec.createMissingBuilds()
-        self.assertEqual(1, len(builds))
-        self.assertEqual(self.sparc_distroarch, builds[0].distro_arch_series)
-
-    def test_createMissingBuilds_restricts_explicitlist(self):
-        """createMissingBuilds() limits builds targeted at a variety of
-        architectures architecture to those allowed for the archive.
-        """
-        pubrec = self.getPubSource(architecturehintlist='sparc i386 avr')
-        builds = pubrec.createMissingBuilds()
-        self.assertEqual(1, len(builds))
-        self.assertEqual(self.sparc_distroarch, builds[0].distro_arch_series)
-
-    def test_createMissingBuilds_restricts_all(self):
-        """createMissingBuilds() should limit builds targeted at 'all'
-        architectures to the nominated independent architecture,
-        if that is allowed for the archive.
-        """
-        pubrec = self.getPubSource(architecturehintlist='all')
-        builds = pubrec.createMissingBuilds()
-        self.assertEqual(1, len(builds))
-        self.assertEqual(self.sparc_distroarch, builds[0].distro_arch_series)
-
-    def test_createMissingBuilds_restrict_override(self):
-        """createMissingBuilds() should limit builds targeted at 'any'
-        architecture to architectures that are unrestricted or
-        explicitly associated with the archive.
-        """
-        getUtility(IArchiveArchSet).new(self.archive, self.avr)
-        pubrec = self.getPubSource(architecturehintlist='any')
-        builds = pubrec.createMissingBuilds()
-        self.assertEqual(2, len(builds))
-        self.assertEqual(self.avr_distroarch, builds[0].distro_arch_series)
-        self.assertEqual(self.sparc_distroarch, builds[1].distro_arch_series)
-
-
 class PublishingSetTests(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
@@ -1409,6 +1311,92 @@ class TestGetBuiltBinaries(TestNativePublishingBase):
                 for bpf in files:
                     bpf.libraryfile.filename
         self.assertThat(recorder, HasQueryCount(Equals(5)))
+
+
+class TestGetActiveArchSpecificPublications(TestCaseWithFactory):
+
+    layer = ZopelessDatabaseLayer
+
+    def makeSPR(self):
+        """Create a `SourcePackageRelease`."""
+        # Return an un-proxied SPR.  This test is for script code; it
+        # won't get proxied objects in real life.
+        return removeSecurityProxy(self.factory.makeSourcePackageRelease())
+
+    def makeBPPHs(self, spr, number=1):
+        """Create `BinaryPackagePublishingHistory` object(s).
+
+        Each of the publications will be active and architecture-specific.
+        Each will be for the same archive, distroseries, and pocket.
+
+        Since the tests need to create a pocket mismatch, it is guaranteed
+        that the BPPHs are for the UPDATES pocket.
+        """
+        das = self.factory.makeDistroArchSeries()
+        distroseries = das.distroseries
+        archive = distroseries.main_archive
+        pocket = PackagePublishingPocket.UPDATES
+
+        bpbs = [
+            self.factory.makeBinaryPackageBuild(
+                source_package_release=spr, distroarchseries=das)
+            for counter in range(number)]
+        bprs = [
+            self.factory.makeBinaryPackageRelease(
+                build=bpb, architecturespecific=True)
+            for bpb in bpbs]
+
+        return [
+            removeSecurityProxy(
+                self.factory.makeBinaryPackagePublishingHistory(
+                    archive=archive, distroarchseries=das, pocket=pocket,
+                    binarypackagerelease=bpr,
+                    status=PackagePublishingStatus.PUBLISHED))
+            for bpr in bprs]
+
+    def test_getActiveArchSpecificPublications_finds_only_matches(self):
+        spr = self.makeSPR()
+        bpphs = self.makeBPPHs(spr, 5)
+
+        # This BPPH will match our search.
+        match = bpphs[0]
+
+        distroseries = match.distroseries
+        distro = distroseries.distribution
+
+        # These BPPHs will not match our search, each because they fail
+        # one search parameter.
+        bpphs[1].archive = self.factory.makeArchive(
+            distribution=distro, purpose=ArchivePurpose.PARTNER)
+        bpphs[2].distroarchseries = self.factory.makeDistroArchSeries(
+            distroseries=self.factory.makeDistroSeries(distribution=distro))
+        bpphs[3].pocket = PackagePublishingPocket.SECURITY
+        bpphs[4].binarypackagerelease.architecturespecific = False
+
+        self.assertContentEqual(
+            [match],
+            getUtility(IPublishingSet).getActiveArchSpecificPublications(
+                spr, match.archive, match.distroseries, match.pocket))
+
+    def test_getActiveArchSpecificPublications_detects_absence(self):
+        spr = self.makeSPR()
+        distroseries = spr.upload_distroseries
+        result = getUtility(IPublishingSet).getActiveArchSpecificPublications(
+            spr, distroseries.main_archive, distroseries,
+            self.factory.getAnyPocket())
+        self.assertFalse(result.any())
+
+    def test_getActiveArchSpecificPublications_filters_status(self):
+        spr = self.makeSPR()
+        bpphs = self.makeBPPHs(spr, len(PackagePublishingStatus.items))
+        for bpph, status in zip(bpphs, PackagePublishingStatus.items):
+            bpph.status = status
+        by_status = dict((bpph.status, bpph) for bpph in bpphs)
+        self.assertContentEqual(
+            [by_status[status] for status in active_publishing_status],
+            getUtility(IPublishingSet).getActiveArchSpecificPublications(
+                spr, bpphs[0].archive, bpphs[0].distroseries,
+                bpphs[0].pocket))
 
 
 class TestPublishBinaries(TestCaseWithFactory):

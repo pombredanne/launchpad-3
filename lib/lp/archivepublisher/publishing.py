@@ -39,6 +39,11 @@ from lp.archivepublisher.htaccess import (
     write_htaccess,
     write_htpasswd,
     )
+from lp.archivepublisher.indices import (
+    build_binary_stanza_fields,
+    build_source_stanza_fields,
+    build_translations_stanza_fields,
+    )
 from lp.archivepublisher.interfaces.archivesigningkey import (
     IArchiveSigningKey,
     )
@@ -645,8 +650,9 @@ class Publisher(object):
         if (not distroseries.include_long_descriptions and
                 getFeatureFlag("soyuz.ppa.separate_long_descriptions")):
             # If include_long_descriptions is False and the feature flag is
-            # enabled, create a Translation-en file. getIndexStanza() will
-            # also omit long descriptions from the Packages.
+            # enabled, create a Translation-en file.
+            # build_binary_stanza_fields will also omit long descriptions
+            # from the Packages.
             separate_long_descriptions = True
             packages = set()
             translation_en = RepositoryIndexFile(
@@ -660,8 +666,9 @@ class Publisher(object):
 
         for spp in distroseries.getSourcePackagePublishing(
                 pocket, component, self.archive):
-            stanza = spp.getIndexStanza().encode('utf8') + '\n\n'
-            source_index.write(stanza)
+            stanza = build_source_stanza_fields(
+                spp.sourcepackagerelease, spp.component, spp.section)
+            source_index.write(stanza.makeOutput().encode('utf-8') + '\n\n')
 
         source_index.close()
 
@@ -693,19 +700,24 @@ class Publisher(object):
                     # for, eg. ddebs where publish_debug_symbols is
                     # disabled.
                     continue
-                stanza = bpp.getIndexStanza(separate_long_descriptions).encode(
-                    'utf-8') + '\n\n'
-                indices[subcomp].write(stanza)
+                stanza = build_binary_stanza_fields(
+                    bpp.binarypackagerelease, bpp.component, bpp.section,
+                    bpp.priority, bpp.phased_update_percentage,
+                    separate_long_descriptions)
+                indices[subcomp].write(
+                    stanza.makeOutput().encode('utf-8') + '\n\n')
                 if separate_long_descriptions:
-                    # If the (Package, Description-md5) pair already exists in
-                    # the set, getTranslationsStanza will return None.
-                    # Otherwise it will add the pair to the set and return a
-                    # stanza to be written to Translation-en.
-                    translation_stanza = bpp.getTranslationsStanza(packages)
-                    if translation_stanza:
-                        translation_stanza = translation_stanza.encode(
-                            'utf-8') + '\n\n'
-                        translation_en.write(translation_stanza)
+                    # If the (Package, Description-md5) pair already exists
+                    # in the set, build_translations_stanza_fields will
+                    # return None. Otherwise it will add the pair to
+                    # the set and return a stanza to be written to
+                    # Translation-en.
+                    translation_stanza = build_translations_stanza_fields(
+                        bpp.binarypackagerelease, packages)
+                    if translation_stanza is not None:
+                        translation_en.write(
+                            translation_stanza.makeOutput().encode('utf-8')
+                            + '\n\n')
 
             for index in indices.itervalues():
                 index.close()
@@ -934,10 +946,6 @@ class Publisher(object):
         try:
             for i18n_file in os.listdir(i18n_dir):
                 if not i18n_file.startswith('Translation-'):
-                    continue
-                if not i18n_file.endswith('.bz2'):
-                    # Save bandwidth: mirrors should only need the .bz2
-                    # versions.
                     continue
                 i18n_files.append(i18n_file)
         except OSError as e:

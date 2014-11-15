@@ -380,30 +380,18 @@ Build a new ISourcePackage based in the new distroseries:
 
     >>> bumpy_firefox_sp = bumpy.getSourcePackage('mozilla-firefox')
 
-Check the content IDRSPR binaries & builds attributes:
+Check the content IDSPR binaries & builds attributes:
 
-'binaries' should be inherited from parent release.
+getBinariesForSeries() should be inherited from parent release.
 
-    >>> bumpy_firefox_sp.currentrelease.binaries.count()
+    >>> bumpy_firefox_sp.currentrelease.getBinariesForSeries(bumpy).count()
     3
 
-    >>> for bin in bumpy_firefox_sp.currentrelease.binaries:
+    >>> for bin in bumpy_firefox_sp.currentrelease.getBinariesForSeries(bumpy):
     ...     print bin.id, bin.title, bin.build.distro_arch_series.title
     27 mozilla-firefox-data-0.9 The Warty Warthog Release for i386 (386)
     26 mozilla-firefox-0.9 The Warty Warthog Release for hppa (hppa)
     12 mozilla-firefox-0.9 The Warty Warthog Release for i386 (386)
-
-
-'builds' should be empty since it was built in parent (warty), not in this
-distroseries (bumby.
-
-    >>> len(bumpy_firefox_sp.currentrelease.builds)
-    0
-
-the SPR returns all build records for it.
-
-    >>> bumpy_firefox_sp.currentrelease.sourcepackagerelease.builds.count()
-    4
 
 The new series also has the same packaging links as its parent series.
 
@@ -524,107 +512,6 @@ upstream.
     chex
     bjorn
 
-DistroSeries can build meta objects for packages
-------------------------------------------------
-
-    >>> from lp.registry.interfaces.sourcepackage import ISourcePackage
-    >>> from lp.soyuz.interfaces.distroseriesbinarypackage import (
-    ...     IDistroSeriesBinaryPackage,
-    ...     )
-    >>> from lp.soyuz.interfaces.distroseriessourcepackagerelease import (
-    ...     IDistroSeriesSourcePackageRelease,
-    ...     )
-
-    >>> pmount_src_name = SourcePackageName.byName('pmount')
-    >>> pmount_source = hoary.getSourcePackage(pmount_src_name)
-    >>> ISourcePackage.providedBy(pmount_source)
-    True
-
-    >>> from lp.soyuz.model.binarypackagename import (
-    ...                                       BinaryPackageName)
-    >>> pmount_bin_name = BinaryPackageName.byName('pmount')
-    >>> pmount_drbp = hoary.getBinaryPackage(pmount_bin_name)
-    >>> IDistroSeriesBinaryPackage.providedBy(pmount_drbp)
-    True
-    >>> len(pmount_drbp.current_publishings)
-    3
-
-    >>> from lp.soyuz.model.sourcepackagerelease import (
-    ...                                           SourcePackageRelease)
-    >>> pmount_rel = SourcePackageRelease.selectOneBy(
-    ...     sourcepackagenameID=pmount_src_name.id, version='0.1-1')
-    >>> pmount_rel.sourcepackagename.name
-    u'pmount'
-
-    >>> pmount_srcrel = hoary.getSourcePackageRelease(pmount_rel)
-    >>> IDistroSeriesSourcePackageRelease.providedBy(pmount_srcrel)
-    True
-
-Check some properties of DRSPR meta class
-
-Entire publishing history:
-
-    >>> pmount_srcrel.publishing_history.count()
-    1
-
-The changesfile attribute contains the package changelog. It is provided as
-an ILibraryFileAlias:
-
-    >>> firefox_srcrel =  warty.getSourcePackage(
-    ...    'mozilla-firefox').currentrelease
-    >>> print firefox_srcrel.title
-    "mozilla-firefox" 0.9 source package in The Warty Warthog Release
-
-    >>> firefox_srcrel.changesfile
-    <LibraryFileAlias at ...>
-
-If the package changelog is not available, that attribute is None:
-
-    >>> netapplet_srcrel = hoary.getSourcePackage('netapplet').currentrelease
-    >>> netapplet_srcrel.changesfile is None
-    True
-
-Perform `post publication` override:
-
-    >>> new_section = getUtility(ISectionSet)['base']
-
-    >>> override = netapplet_srcrel.publishing_history.first().changeOverride(
-    ...     new_section=new_section)
-
-    >>> override.section == new_section
-    True
-
-    >>> print override.status.name
-    PENDING
-
-    >>> netapplet_srcrel.publishing_history.count()
-    2
-
-Override information about 'pmount' is pending publication:
-
-    >>> overridden = netapplet_srcrel.publishing_history.first()
-    >>> print overridden.status.name
-    PENDING
-
-    >>> print overridden.section.name
-    base
-
-Supersede previous netapplet publication:
-
-    >>> last_published = netapplet_srcrel.publishing_history[1]
-    >>> last_published.supersede()
-    >>> flush_database_updates()
-
-    >>> netapplet_srcrel.publishing_history.count()
-    2
-
-    >>> print last_published.status.name
-    SUPERSEDED
-
-    >>> from lp.services.database.sqlbase import get_transaction_timestamp
-    >>> last_published.datesuperseded == get_transaction_timestamp()
-    True
-
 
 SourcePackagePublishingHistory
 ------------------------------
@@ -645,7 +532,7 @@ the future.
     ...     PackagePublishingPocket.RELEASE, component_main,
     ...     warty.main_archive)
     >>> spphs.count()
-    5
+    6
     >>> for name in sorted(set(
     ...         pkgpub.sourcepackagerelease.sourcepackagename.name
     ...         for pkgpub in spphs)):
@@ -654,6 +541,7 @@ the future.
     evolution
     libstdc++
     linux-source-2.6.15
+    netapplet
     pmount
     >>> hoary.getSourcePackagePublishing(
     ...     PackagePublishingPocket.RELEASE, component_multiverse,
@@ -1016,17 +904,17 @@ Lastest Uploads
 ---------------
 
 IDistroSeries provides the 'getLatestUpload' method which returns a
-list of the last 5 (five) IDistroSeriesSourcePackageRelease (IDRSPR)
+list of the last 5 (five) IDistributionSourcePackageRelease (IDSPR)
 uploaded and published in its context.
 
     >>> warty = ubuntu['warty']
     >>> latest_uploads = warty.getLatestUploads()
 
-Each element is an IDistroSeriesSourcePackageRelease instance:
+Each element is an IDistributionSourcePackageRelease instance:
 
     >>> for upload in latest_uploads:
     ...     print upload.title
-    "mozilla-firefox" 0.9 source package in The Warty Warthog Release
+    "mozilla-firefox" 0.9 source package in Ubuntu
 
 Also, empty results (caused obviously by lack of sample data or very
 earlier development state of a distroseries) are possible:

@@ -26,7 +26,6 @@ from sqlobject import (
     StringCol,
     )
 from storm.expr import Join
-from storm.info import ClassAlias
 from storm.locals import (
     Desc,
     Int,
@@ -63,7 +62,6 @@ from lp.services.propertycache import (
     )
 from lp.soyuz.enums import PackageDiffStatus
 from lp.soyuz.interfaces.archive import MAIN_ARCHIVE_PURPOSES
-from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.packagediff import PackageDiffAlreadyRequested
 from lp.soyuz.interfaces.packagediffjob import IPackageDiffJobSource
 from lp.soyuz.interfaces.queue import QueueInconsistentStateError
@@ -227,14 +225,6 @@ class SourcePackageRelease(SQLBase):
     def title(self):
         return '%s - %s' % (self.sourcepackagename.name, self.version)
 
-    @property
-    def current_publishings(self):
-        """See ISourcePackageRelease."""
-        from lp.soyuz.model.distroseriessourcepackagerelease import (
-            DistroSeriesSourcePackageRelease)
-        return [DistroSeriesSourcePackageRelease(pub.distroseries, self)
-                for pub in self.publishings]
-
     @cachedproperty
     def published_archives(self):
         archives = set(
@@ -296,112 +286,6 @@ class SourcePackageRelease(SQLBase):
             return float(results[0])
         else:
             return 0.0
-
-    def createBuild(self, distro_arch_series, pocket, archive, processor=None,
-                    status=None):
-        """See ISourcePackageRelease."""
-        # If a processor is not provided, use the DAS' processor.
-        if processor is None:
-            processor = distro_arch_series.processor
-
-        if status is None:
-            status = BuildStatus.NEEDSBUILD
-
-        # Force the current timestamp instead of the default
-        # UTC_NOW for the transaction, avoid several row with
-        # same datecreated.
-        date_created = datetime.datetime.now(pytz.timezone('UTC'))
-
-        return getUtility(IBinaryPackageBuildSet).new(
-            distro_arch_series=distro_arch_series,
-            source_package_release=self,
-            processor=processor,
-            status=status,
-            date_created=date_created,
-            pocket=pocket,
-            archive=archive)
-
-    def findBuildsByArchitecture(self, distroseries, archive):
-        """Find associated builds, by architecture.
-
-        Looks for `BinaryPackageBuild` records for this source package
-        release, with publication records in the distroseries associated with
-        `distroarchseries`.  There should be at most one of these per
-        architecture.
-
-        :param distroarchseries: `DistroArchSeries` to look for.
-        :return: A dict mapping architecture tags (in string form,
-            e.g. 'i386') to `BinaryPackageBuild`s for that build.
-        """
-        # Avoid circular imports.
-        from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
-        from lp.soyuz.model.distroarchseries import DistroArchSeries
-        from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
-
-        BuildDAS = ClassAlias(DistroArchSeries, 'BuildDAS')
-        PublishDAS = ClassAlias(DistroArchSeries, 'PublishDAS')
-
-        query = Store.of(self).find(
-            (BuildDAS.architecturetag, BinaryPackageBuild),
-            BinaryPackageBuild.source_package_release == self,
-            BinaryPackageRelease.buildID == BinaryPackageBuild.id,
-            BuildDAS.id == BinaryPackageBuild.distro_arch_series_id,
-            BinaryPackagePublishingHistory.binarypackagereleaseID ==
-                BinaryPackageRelease.id,
-            BinaryPackagePublishingHistory.archiveID == archive.id,
-            PublishDAS.id ==
-                BinaryPackagePublishingHistory.distroarchseriesID,
-            PublishDAS.distroseriesID == distroseries.id,
-            # Architecture-independent binary package releases are built
-            # in the nominated arch-indep architecture but published in
-            # all architectures.  This condition makes sure we consider
-            # only builds that have been published in their own
-            # architecture.
-            PublishDAS.architecturetag == BuildDAS.architecturetag)
-        results = list(query.config(distinct=True))
-        mapped_results = dict(results)
-        assert len(mapped_results) == len(results), (
-            "Found multiple build candidates per architecture: %s.  "
-            "This may mean that we have a serious problem in our DB model.  "
-            "Further investigation is required."
-            % [(tag, build.id) for tag, build in results])
-        return mapped_results
-
-    def getBuildByArch(self, distroarchseries, archive):
-        """See ISourcePackageRelease."""
-        # First we try to follow any binaries built from the given source
-        # in a distroarchseries with the given architecturetag and published
-        # in the given (distroarchseries, archive) location.
-        # (Querying all architectures and then picking the right one out
-        # of the result turns out to be much faster than querying for
-        # just the architecture we want).
-        builds_by_arch = self.findBuildsByArchitecture(
-            distroarchseries.distroseries, archive)
-        build = builds_by_arch.get(distroarchseries.architecturetag)
-        if build is not None:
-            # If there was any published binary we can use its original build.
-            # This case covers the situations when both source and binaries
-            # got copied from another location.
-            return build
-
-        # If there was no published binary we have to try to find a
-        # suitable build in all possible location across the distroseries
-        # inheritance tree. See below.
-        clause_tables = ['DistroArchSeries']
-        queries = [
-            "DistroArchSeries.id = BinaryPackageBuild.distro_arch_series AND "
-            "BinaryPackageBuild.archive = %s AND "
-            "DistroArchSeries.architecturetag = %s AND "
-            "BinaryPackageBuild.source_package_release = %s" % (
-            sqlvalues(archive.id, distroarchseries.architecturetag, self))]
-
-        # Query only the last build record for this sourcerelease
-        # across all possible locations.
-        query = " AND ".join(queries)
-
-        return BinaryPackageBuild.selectFirst(
-            query, clauseTables=clause_tables,
-            orderBy=['-date_created'])
 
     def override(self, component=None, section=None, urgency=None):
         """See ISourcePackageRelease."""
@@ -553,47 +437,3 @@ class SourcePackageRelease(SQLBase):
 
         output = "\n\n".join(chunks)
         return output.decode("utf-8", "replace")
-
-    def getActiveArchSpecificPublications(self, archive, distroseries,
-                                          pocket):
-        """Find architecture-specific binary publications for this release.
-
-        For example, say source package release contains binary packages of:
-         * "foo" for i386 (pending in i386)
-         * "foo" for amd64 (published in amd64)
-         * "foo-common" for the "all" architecture (pending or published in
-           various real processor architectures)
-
-        In that case, this search will return foo(i386) and foo(amd64).  The
-        dominator uses this when figuring out whether foo-common can be
-        superseded: we don't track dependency graphs, but we know that the
-        architecture-specific "foo" releases are likely to depend on the
-        architecture-independent foo-common release.
-
-        :param archive: The `Archive` to search.
-        :param distroseries: The `DistroSeries` to search.
-        :param pocket: The `PackagePublishingPocket` to search.
-        :return: A Storm result set of active, architecture-specific
-            `BinaryPackagePublishingHistory` objects for this source package
-            release and the given `archive`, `distroseries`, and `pocket`.
-        """
-        # Avoid circular imports.
-        from lp.soyuz.interfaces.publishing import active_publishing_status
-        from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
-        from lp.soyuz.model.distroarchseries import DistroArchSeries
-        from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
-
-        return Store.of(self).find(
-            BinaryPackagePublishingHistory,
-            BinaryPackageBuild.source_package_release_id == self.id,
-            BinaryPackageRelease.build == BinaryPackageBuild.id,
-            BinaryPackagePublishingHistory.binarypackagereleaseID ==
-                BinaryPackageRelease.id,
-            BinaryPackagePublishingHistory.archiveID == archive.id,
-            BinaryPackagePublishingHistory.distroarchseriesID ==
-                DistroArchSeries.id,
-            DistroArchSeries.distroseriesID == distroseries.id,
-            BinaryPackagePublishingHistory.pocket == pocket,
-            BinaryPackagePublishingHistory.status.is_in(
-                active_publishing_status),
-            BinaryPackageRelease.architecturespecific == True)

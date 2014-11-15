@@ -85,6 +85,10 @@ class IBinaryPackageBuildView(IPackageBuild):
 
     distro_arch_series_id = Int()
 
+    arch_indep = Bool(
+        title=_("Build architecture independent packages"),
+        required=False, readonly=True)
+
     # Properties
     current_source_publication = exported(
         Reference(
@@ -295,20 +299,32 @@ class BuildSetStatus(EnumeratedType):
 class IBinaryPackageBuildSet(ISpecificBuildFarmJobSource):
     """Interface for BinaryPackageBuildSet"""
 
-    def new(distro_arch_series, source_package_release, processor,
-            archive, pocket, status=BuildStatus.NEEDSBUILD,
-            date_created=None, builder=None):
+    def new(source_package_release, archive, distro_arch_series, pocket,
+            arch_indep=False, status=BuildStatus.NEEDSBUILD, builder=None):
         """Create a new `IBinaryPackageBuild`.
 
-        :param distro_arch_series: An `IDistroArchSeries`.
         :param source_package_release: An `ISourcePackageRelease`.
-        :param processor: An `IProcessor`.
         :param archive: An `IArchive` in which context the build is built.
+        :param distro_arch_series: An `IDistroArchSeries`.
         :param pocket: An item of `PackagePublishingPocket`.
+        :param arch_indep: Build architecture independent packages in
+            addition to architecture specific ones.
         :param status: A `BuildStatus` item indicating the builds status.
-        :param date_created: An optional datetime to ensure multiple builds
-            in the same transaction don't all get the same UTC_NOW.
         :param builder: An optional `IBuilder`.
+        """
+
+    def getBySourceAndLocation(source_package_release, archive,
+                               distro_arch_series):
+        """Return a build by its source, archive and architecture.
+
+        This is the natural key, and lookups don't consider copies
+        between archives, just the archive in which the build originally
+        occurred.
+
+        :param source_package_release: The `ISourcePackageRelease` that is
+            built.
+        :param archive: The `IArchive` containing the build.
+        :param distro_arch_series: The `IDistroArchSeries` built against.
         """
 
     def getBuildsForBuilder(builder_id, status=None, name=None, pocket=None,
@@ -364,6 +380,17 @@ class IBinaryPackageBuildSet(ISpecificBuildFarmJobSource):
         :return: a list of `IBuild` records not target to PPA archives.
         """
 
+    def findBuiltOrPublishedBySourceAndArchive(sourcepackagerelease, archive):
+        """Find all successful builds for source relevant to an Archive.
+
+        This includes all successful builds for the source directly in
+        this archive, and any that had their binaries copied into this
+        archive.
+
+        :return: A dict mapping architecture tags (in string form,
+            e.g. 'i386') to `BinaryPackageBuild`s for that build.
+        """
+
     def getStatusSummaryForBuilds(builds):
         """Return a summary of the build status for the given builds.
 
@@ -396,6 +423,19 @@ class IBinaryPackageBuildSet(ISpecificBuildFarmJobSource):
     def preloadBuildsData(builds):
         """Prefetch the data related to the builds.
 
+        """
+
+    def createForSource(sourcepackagerelease, archive, distroseries, pocket,
+                        architectures_available=None, logger=None):
+        """Create missing build records for a source.
+
+        :param architectures_available: options list of `DistroArchSeries`
+            that should be considered for build creation; if not given
+            it will be calculated in place, all architectures for the
+            context distroseries with available chroot.
+        :param logger: optional context Logger object (used on DEBUG level).
+
+        :return: a list of `Builds` created for this source publication.
         """
 
 

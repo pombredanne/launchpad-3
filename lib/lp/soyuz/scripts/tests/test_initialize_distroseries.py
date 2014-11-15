@@ -22,6 +22,7 @@ from lp.soyuz.enums import (
     SourcePackageFormat,
     )
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packageset import (
     IPackagesetSet,
@@ -596,11 +597,11 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         udev_src = udev_bin.build.source_package_release
         self.assertEqual(udev_src.title, u'udev - 0.1-1')
         # The build of udev 0.1-1 has been copied across.
-        child_udev = udev_src.getBuildByArch(
-            child[parent_das.architecturetag], child.main_archive)
-        parent_udev = udev_src.getBuildByArch(
-            parent[parent_das.architecturetag],
-            parent.main_archive)
+        bpbs = getUtility(IBinaryPackageBuildSet)
+        child_udev = bpbs.findBuiltOrPublishedBySourceAndArchive(
+            udev_src, child.main_archive).get(parent_das.architecturetag)
+        parent_udev = bpbs.getBySourceAndLocation(
+            udev_src, parent.main_archive, parent[parent_das.architecturetag])
         self.assertEqual(parent_udev.id, child_udev.id)
         # We also inherit the permitted source formats from our parent.
         self.assertTrue(

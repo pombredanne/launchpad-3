@@ -13,16 +13,22 @@ __all__ = [
     ]
 
 import datetime
-from operator import itemgetter
+from operator import (
+    attrgetter,
+    itemgetter,
+    )
 
 import apt_pkg
 import pytz
 from sqlobject import SQLObjectNotFound
 from storm.expr import (
+    And,
     Desc,
+    Exists,
     Join,
     LeftJoin,
     Or,
+    Select,
     )
 from storm.locals import (
     Bool,
@@ -89,6 +95,7 @@ from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
     )
+from lp.soyuz.adapters.buildarch import determine_architectures_to_build
 from lp.soyuz.interfaces.binarypackagebuild import (
     BuildSetStatus,
     CannotBeRescored,
@@ -167,6 +174,8 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
 
     pocket = DBEnum(
         name='pocket', enum=PackagePublishingPocket, allow_none=False)
+
+    arch_indep = Bool()
 
     upload_log_id = Int(name='upload_log')
     upload_log = Reference(upload_log_id, 'LibraryFileAlias.id')
@@ -892,27 +901,30 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
 class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
     implements(IBinaryPackageBuildSet)
 
-    def new(self, distro_arch_series, source_package_release, processor,
-            archive, pocket, status=BuildStatus.NEEDSBUILD,
-            date_created=None, builder=None):
+    def new(self, source_package_release, archive, distro_arch_series, pocket,
+            arch_indep=None, status=BuildStatus.NEEDSBUILD, builder=None):
         """See `IBinaryPackageBuildSet`."""
+        # Force the current timestamp instead of the default UTC_NOW for
+        # the transaction, avoid several row with same datecreated.
+        if arch_indep is None:
+            arch_indep = distro_arch_series.isNominatedArchIndep
+        date_created = datetime.datetime.now(pytz.timezone('UTC'))
         # Create the BuildFarmJob for the new BinaryPackageBuild.
         build_farm_job = getUtility(IBuildFarmJobSource).new(
             BinaryPackageBuild.job_type, status, date_created, builder,
             archive)
-        binary_package_build = BinaryPackageBuild(
+        return BinaryPackageBuild(
             build_farm_job=build_farm_job,
             distro_arch_series=distro_arch_series,
             source_package_release=source_package_release,
-            archive=archive, pocket=pocket, status=status, processor=processor,
+            archive=archive, pocket=pocket, arch_indep=arch_indep,
+            status=status, processor=distro_arch_series.processor,
             virtualized=archive.require_virtualized, builder=builder,
             is_distro_archive=archive.is_main,
             distribution=distro_arch_series.distroseries.distribution,
             distro_series=distro_arch_series.distroseries,
-            source_package_name=source_package_release.sourcepackagename)
-        if date_created is not None:
-            binary_package_build.date_created = date_created
-        return binary_package_build
+            source_package_name=source_package_release.sourcepackagename,
+            date_created=date_created)
 
     def getByID(self, id):
         """See `IBinaryPackageBuildSet`."""
@@ -949,6 +961,13 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
             BinaryPackageBuild.build_farm_job_id.is_in(
                 bfj.id for bfj in build_farm_jobs))
         return DecoratedResultSet(rows, pre_iter_hook=self.preloadBuildsData)
+
+    def getBySourceAndLocation(self, source_package_release, archive,
+                               distro_arch_series):
+        return IStore(BinaryPackageBuild).find(
+            BinaryPackageBuild,
+            source_package_release=source_package_release,
+            archive=archive, distro_arch_series=distro_arch_series).one()
 
     def handleOptionalParamsForBuildQueries(
         self, clauses, origin, status=None, name=None, pocket=None,
@@ -1149,6 +1168,42 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
             Desc(BinaryPackageBuild.date_created), BinaryPackageBuild.id)
         return resultset
 
+    def findBuiltOrPublishedBySourceAndArchive(self, sourcepackagerelease,
+                                               archive):
+        """See `IBinaryPackageBuildSet`."""
+        from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
+
+        published_query = Select(
+            1,
+            tables=(
+                BinaryPackagePublishingHistory,
+                Join(
+                    BinaryPackageRelease,
+                    BinaryPackageRelease.id ==
+                        BinaryPackagePublishingHistory.binarypackagereleaseID)
+                ),
+            where=And(
+                BinaryPackagePublishingHistory.archive == archive,
+                BinaryPackageRelease.build == BinaryPackageBuild.id))
+        builds = list(IStore(BinaryPackageBuild).find(
+            BinaryPackageBuild,
+            BinaryPackageBuild.status == BuildStatus.FULLYBUILT,
+            BinaryPackageBuild.source_package_release == sourcepackagerelease,
+            Or(
+                BinaryPackageBuild.archive == archive,
+                Exists(published_query))))
+        # XXX wgrant 2014-11-07: We should be able to assert here that
+        # each archtag appeared only once, as a second successful build
+        # should fail to upload due to file conflicts. Unfortunately,
+        # there are 1141 conflicting builds in the primary archive on
+        # production, and they're non-trivial to clean up.
+        # Let's just hope that nothing of value will be lost if we omit
+        # duplicates.
+        arch_map = {
+            build.distro_arch_series.architecturetag: build
+            for build in builds}
+        return arch_map
+
     def getStatusSummaryForBuilds(self, builds):
         """See `IBinaryPackageBuildSet`."""
         # Create a small helper function to collect the builds for a given
@@ -1320,3 +1375,97 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
             return False
 
         return True
+
+    def _getAllowedArchitectures(self, archive, available_archs):
+        """Filter out any restricted architectures not specifically allowed
+        for an archive.
+
+        :param available_archs: Architectures to consider
+        :return: Sequence of `IDistroArch` instances.
+        """
+        # Return all distroarches with unrestricted processors or with
+        # processors the archive is explicitly associated with.
+        return [distroarch for distroarch in available_archs
+            if not distroarch.processor.restricted or
+               distroarch.processor in archive.enabled_restricted_processors]
+
+    def createForSource(self, sourcepackagerelease, archive, distroseries,
+                        pocket, architectures_available=None, logger=None):
+        """See `ISourcePackagePublishingHistory`."""
+
+        # Exclude any architectures which already have built or copied
+        # binaries. A new build with the same archtag could never
+        # succeed; its files would conflict during upload.
+        relevant_builds = self.findBuiltOrPublishedBySourceAndArchive(
+            sourcepackagerelease, archive).values()
+
+        # Find any architectures that already have a build that exactly
+        # matches, regardless of status. We can't create a second build
+        # with the same (SPR, Archive, DAS).
+        # XXX wgrant 2014-11-06: Should use a bulk query.
+        for das in distroseries.architectures:
+            build = self.getBySourceAndLocation(
+                sourcepackagerelease, archive, das)
+            if build is not None:
+                relevant_builds.append(build)
+
+        skip_archtags = set(
+            bpb.distro_arch_series.architecturetag for bpb in relevant_builds)
+        # We need to assign the arch-indep role to a build unless an
+        # arch-indep build has already succeeded, or another build in
+        # this series already has it set.
+        need_arch_indep = not any(bpb.arch_indep for bpb in relevant_builds)
+
+        # Find the architectures for which the source should end up with
+        # binaries, parsing architecturehintlist as you'd expect.
+        # For an architecturehintlist of just 'all', this will
+        # be the current nominatedarchindep if need_arch_indep,
+        # otherwise nothing.
+        if architectures_available is None:
+            architectures_available = list(
+                distroseries.buildable_architectures)
+        architectures_available = self._getAllowedArchitectures(
+            archive, architectures_available)
+        candidate_architectures = determine_architectures_to_build(
+            sourcepackagerelease.architecturehintlist, archive, distroseries,
+            architectures_available, need_arch_indep)
+
+        # Filter out any architectures for which we earlier found sufficient
+        # builds.
+        needed_architectures = [
+            das for das in candidate_architectures
+            if das.architecturetag not in skip_archtags]
+        if not needed_architectures:
+            return []
+
+        arch_indep_das = None
+        if need_arch_indep:
+            # The ideal arch_indep build is nominatedarchindep. But if
+            # that isn't a build we would otherwise create, use the DAS
+            # with the lowest Processor.id.
+            # XXX wgrant 2014-11-06: The fact that production's
+            # Processor 1 is i386, a good arch-indep candidate, is a
+            # total coincidence and this isn't a hack. I promise.
+            if distroseries.nominatedarchindep in needed_architectures:
+                arch_indep_das = distroseries.nominatedarchindep
+            else:
+                arch_indep_das = sorted(
+                    needed_architectures, key=attrgetter('processor.id'))[0]
+
+        # Create builds for the remaining architectures.
+        new_builds = []
+        for das in needed_architectures:
+            build = self.new(
+                source_package_release=sourcepackagerelease,
+                distro_arch_series=das, archive=archive, pocket=pocket,
+                arch_indep=das == arch_indep_das)
+            new_builds.append(build)
+            # Create the builds in suspended mode for disabled archives.
+            build_queue = build.queueBuild(suspended=not archive.enabled)
+            Store.of(build).flush()
+            if logger is not None:
+                logger.debug(
+                    "Created %s [%d] in %s (%d)"
+                    % (build.title, build.id, build.archive.displayname,
+                    build_queue.lastscore))
+        return new_builds

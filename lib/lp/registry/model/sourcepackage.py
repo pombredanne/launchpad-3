@@ -79,9 +79,6 @@ from lp.soyuz.model.binarypackagebuild import (
 from lp.soyuz.model.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease,
     )
-from lp.soyuz.model.distroseriessourcepackagerelease import (
-    DistroSeriesSourcePackageRelease,
-    )
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.translations.model.hastranslationimports import (
@@ -284,15 +281,6 @@ class SourcePackage(BugTargetBase, HasCodeImportsMixin,
             [self.sourcepackagename])
         return releases.get(self)
 
-    def __getitem__(self, version):
-        """See `ISourcePackage`."""
-        latest_package = self._getFirstPublishingHistory(version=version)
-        if latest_package:
-            return DistroSeriesSourcePackageRelease(
-                    self.distroseries, latest_package.sourcepackagerelease)
-        else:
-            return None
-
     @property
     def path(self):
         """See `ISourcePackage`."""
@@ -435,9 +423,10 @@ class SourcePackage(BugTargetBase, HasCodeImportsMixin,
         for pocket in PackagePublishingPocket.items:
             thedict[pocket] = []
         # add all the sourcepackagereleases in the right place
-        for spr in result:
-            thedict[spr.pocket].append(DistroSeriesSourcePackageRelease(
-                spr.distroseries, spr.sourcepackagerelease))
+        for spph in result:
+            thedict[spph.pocket].append(
+                spph.distroseries.distribution.getSourcePackageRelease(
+                    spph.sourcepackagerelease))
         return thedict
 
     @property

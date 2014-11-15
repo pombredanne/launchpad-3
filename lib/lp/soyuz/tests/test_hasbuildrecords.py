@@ -112,7 +112,7 @@ class TestDistributionHasBuildRecords(TestCaseWithFactory):
                 sourcename=self.factory.getUniqueString(),
                 version="%s.%s" % (self.factory.getUniqueInteger(), i),
                 distroseries=self.distroseries, architecturehintlist='any')
-            builds = spph.createMissingBuilds()
+            builds = removeSecurityProxy(spph.createMissingBuilds())
             for b in builds:
                 b.updateStatus(BuildStatus.BUILDING)
                 if i == 4:
@@ -120,7 +120,7 @@ class TestDistributionHasBuildRecords(TestCaseWithFactory):
                 else:
                     b.updateStatus(BuildStatus.FULLYBUILT)
                 b.buildqueue_record.destroySelf()
-            self.builds += builds
+            self.builds = builds
 
     def test_get_build_records(self):
         # A Distribution also implements IHasBuildRecords.

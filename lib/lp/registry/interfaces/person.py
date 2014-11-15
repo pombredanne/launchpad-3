@@ -1463,7 +1463,8 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
                     "List of direct members with ADMIN or APPROVED status"),
                 value_type=Reference(schema=Interface))),
         exported_as='members')
-    adminmembers = exported(
+    adminmembers = Attribute("List of this team's admins.")
+    api_adminmembers = exported(
         doNotSnapshot(
             CollectionField(
                 title=_("List of this team's admins."),
@@ -1472,7 +1473,7 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
     all_member_count = Attribute(
         "The total number of real people who are members of this team, "
         "including subteams.")
-    all_members_prepopulated = exported(
+    api_all_members = exported(
         doNotSnapshot(
             CollectionField(
                 title=_("All participants of this team."),
@@ -1489,32 +1490,36 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
     approvedmembers = doNotSnapshot(
         Attribute("List of members with APPROVED status"))
     deactivated_member_count = Attribute("Number of deactivated members")
-    deactivatedmembers = exported(
+    deactivatedmembers = Attribute("Former members of the team.")
+    api_deactivatedmembers = exported(
         doNotSnapshot(
             CollectionField(
-                title=_(
-                    "All members whose membership is in the "
-                    "DEACTIVATED state"),
+                title=_("Former members of the team."),
                 value_type=Reference(schema=Interface))),
         exported_as='deactivated_members')
     expired_member_count = Attribute("Number of EXPIRED members.")
-    expiredmembers = exported(
+    expiredmembers = Attribute("Expired members of the team.")
+    api_expiredmembers = exported(
         doNotSnapshot(
             CollectionField(
-                title=_("All members whose membership is in the "
-                        "EXPIRED state"),
+                title=_("Expired members of the team."),
                 value_type=Reference(schema=Interface))),
         exported_as='expired_members')
     inactivemembers = doNotSnapshot(
         Attribute(
             "List of members with EXPIRED or DEACTIVATED status"))
     inactive_member_count = Attribute("Number of inactive members")
-    invited_members = exported(
+    invited_members = Attribute(
+        "Other teams which have been invited to become members of this "
+        "team.")
+    api_invited_members = exported(
         doNotSnapshot(
             CollectionField(
-                title=_("All members whose membership is "
-                        "in the INVITED state"),
-                value_type=Reference(schema=Interface))))
+                title=_(
+                    "Other teams which have been invited to become members "
+                    "of this team."),
+                value_type=Reference(schema=Interface))),
+        exported_as="invited_members")
 
     invited_member_count = Attribute("Number of members with INVITED status")
     member_memberships = exported(
@@ -1531,11 +1536,11 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
     pendingmembers = doNotSnapshot(
         Attribute(
             "List of members with INVITED or PROPOSED status"))
-    proposedmembers = exported(
+    proposedmembers = Attribute("People who have applied to join the team.")
+    api_proposedmembers = exported(
         doNotSnapshot(
             CollectionField(
-                title=_("All members whose membership is in the "
-                        "PROPOSED state"),
+                title=_("People who have applied to join the team."),
                 value_type=Reference(schema=Interface))),
         exported_as='proposed_members')
     proposed_member_count = Attribute("Number of PROPOSED members")
@@ -2338,12 +2343,14 @@ class IPersonSet(Interface):
         """Prefetch Librarian aliases and content for personal images."""
 
     def getPrecachedPersonsFromIDs(
-        person_ids, need_karma=False, need_ubuntu_coc=False,
-        need_location=False, need_archive=False,
+        person_ids, need_api=False, need_karma=False,
+        need_ubuntu_coc=False, need_location=False, need_archive=False,
         need_preferred_email=False, need_validity=False):
         """Lookup person objects from ids with optional precaching.
 
         :param person_ids: List of person ids.
+        :param need_api: All attributes needed by the JSON
+            representation will be cached.
         :param need_karma: The karma attribute will be cached.
         :param need_ubuntu_coc: The is_ubuntu_coc_signer attribute will be
             cached.
@@ -2490,13 +2497,13 @@ class TeamEmailAddressError(Exception):
 
 # Fix value_type.schema of IPersonViewRestricted attributes.
 for name in [
-    'all_members_prepopulated',
+    'api_all_members',
     'api_activemembers',
-    'adminmembers',
-    'proposedmembers',
-    'invited_members',
-    'deactivatedmembers',
-    'expiredmembers',
+    'api_adminmembers',
+    'api_proposedmembers',
+    'api_invited_members',
+    'api_deactivatedmembers',
+    'api_expiredmembers',
     ]:
     IPersonViewRestricted[name].value_type.schema = IPerson
 

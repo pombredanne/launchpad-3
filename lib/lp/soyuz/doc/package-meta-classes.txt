@@ -8,12 +8,9 @@ our Database Model for packages in a intuitive manner, they are:
  >>> from lp.registry.model.sourcepackagename import SourcePackageName
  >>> from lp.soyuz.model.distributionsourcepackagerelease import (
  ...     DistributionSourcePackageRelease)
- >>> from lp.soyuz.model.distroseriessourcepackagerelease import (
- ...     DistroSeriesSourcePackageRelease)
  >>> from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
  >>> from lp.soyuz.interfaces.distributionsourcepackagerelease import IDistributionSourcePackageRelease
- >>> from lp.soyuz.interfaces.distroseriessourcepackagerelease import IDistroSeriesSourcePackageRelease
 
 
 DistributionSourcePackage class is tested in:
@@ -40,29 +37,13 @@ Combining Distribution and SourcePackageRelease:
  >>> verifyObject(IDistributionSourcePackageRelease, dspr)
  True
 
- >>> dspr.displayname, dspr.version
- (u'pmount in ubuntu', u'0.1-1')
+ >>> dspr.displayname
+ u'pmount 0.1-1'
 
 
-Combining DistroSeries and SourcePackageRelease:
+== Querying builds for DistributionSourcePackageRelease ==
 
- >>> distroseries = distribution['hoary']
-
- >>> drspr = DistroSeriesSourcePackageRelease(distroseries,
- ...                                           sourcepackagerelease)
- >>> verifyObject(IDistroSeriesSourcePackageRelease, drspr)
- True
-
- >>> print drspr.displayname
- pmount 0.1-1
-
- >>> print drspr.title
- "pmount" 0.1-1 source package in The Hoary Hedgehog Release
-
-== Querying builds for DistributionSPR and DistroSeriesSPR ==
-
-Both the DistroSeriesSourcePackageRelease class and the
-DistributionSourcePackageRelease have a builds() method which
+DistributionSourcePackageRelease objects have a builds() method which
 returns all the builds for the source package that have been published
 in a main archive.
 
@@ -96,12 +77,9 @@ archive:
     >>> binary_pkg_pub_history = test_publisher.publishBinaryInArchive(
     ...     binary_pkg_release, ubuntutest.main_archive)
 
-Next we create our DistroSeriesSourcePackageRelease and our
-DistributionSourcePackageRelease
+Next we create our DistributionSourcePackageRelease.
 
     >>> breezy_autotest = ubuntutest['breezy-autotest']
-    >>> breezytest_dsspr_foo = DistroSeriesSourcePackageRelease(
-    ...     breezy_autotest, source_pub.sourcepackagerelease)
     >>> ubuntutest_dspr_foo = DistributionSourcePackageRelease(
     ...     ubuntutest, source_pub.sourcepackagerelease)
 
@@ -114,8 +92,6 @@ Create a helper for printing builds:
 
 Now we can query the builds:
 
-    >>> print_builds(breezytest_dsspr_foo.builds)
-    foo in Primary Archive for Ubuntu Test
     >>> print_builds(ubuntutest_dspr_foo.builds)
     foo in Primary Archive for Ubuntu Test
 
@@ -131,9 +107,6 @@ results as well.
     >>> binary_pkg_pub_history = test_publisher.publishBinaryInArchive(
     ...     binary_pkg_release, partner_archive)
 
-    >>> print_builds(breezytest_dsspr_foo.builds)
-    foo in Partner Archive for Ubuntu Test
-    foo in Primary Archive for Ubuntu Test
     >>> print_builds(ubuntutest_dspr_foo.builds)
     foo in Partner Archive for Ubuntu Test
     foo in Primary Archive for Ubuntu Test
@@ -151,14 +124,10 @@ If we publish the source and binary in a PPA,
     ...     build, 'bar-bin')
     >>> binary_pkg_pub_history = test_publisher.publishBinaryInArchive(
     ...     binary_pkg_release, cprov.archive)
-    >>> breezytest_dsspr_bar = DistroSeriesSourcePackageRelease(
-    ...     breezy_autotest, source_pub.sourcepackagerelease)
     >>> ubuntutest_dspr_bar = DistributionSourcePackageRelease(
     ...     ubuntutest, source_pub.sourcepackagerelease)
 
 the build will not be returned.
-
-    >>> print_builds(breezytest_dsspr_bar.builds)
 
     >>> print_builds(ubuntutest_dspr_bar.builds)
 
@@ -170,8 +139,6 @@ there) then it will then be included in the results.
     >>> binary_pkg_pub_history = test_publisher.publishBinaryInArchive(
     ...     binary_pkg_release, ubuntutest.main_archive)
 
-    >>> print_builds(breezytest_dsspr_bar.builds)
-    bar in PPA for Celso Providelo
     >>> print_builds(ubuntutest_dspr_bar.builds)
     bar in PPA for Celso Providelo
 

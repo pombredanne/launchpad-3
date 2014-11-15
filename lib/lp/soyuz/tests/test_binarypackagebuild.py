@@ -89,9 +89,9 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
 
     def create_previous_build(self, duration):
         spr = self.build.source_package_release
-        build = spr.createBuild(
-            distro_arch_series=self.build.distro_arch_series,
-            archive=self.build.archive, pocket=self.build.pocket)
+        build = getUtility(IBinaryPackageBuildSet).new(
+            spr, self.build.archive, self.build.distro_arch_series,
+            self.build.pocket)
         now = datetime.now(pytz.UTC)
         build.updateStatus(
             BuildStatus.BUILDING,

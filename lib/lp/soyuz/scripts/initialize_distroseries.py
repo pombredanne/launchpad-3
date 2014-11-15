@@ -541,7 +541,7 @@ class InitializeDistroSeries:
                         distroarchseries_list = ()
                     getUtility(IPackageCloner).clonePackages(
                         origin, destination, distroarchseries_list,
-                        processors, spns, self.rebuild)
+                        processors, spns)
                 else:
                     # There is only one available pocket in an unreleased
                     # series.

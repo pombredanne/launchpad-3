@@ -20,9 +20,6 @@
             permission="zope.Public"
             class="lp.soyuz.browser.publishing.BinaryPublishingRecordView">
             <browser:page
-                name="+listing-detailed"
-                template="../templates/binarypackagepublishinghistory-listing-detailed.pt"/>
-            <browser:page
                 name="+listing-summary"
                 template="../templates/binarypackagepublishinghistory-listing-summary.pt"/>
             <browser:page
@@ -87,18 +84,6 @@
         for="lp.soyuz.interfaces.sourcepackagerelease.ISourcePackageRelease"
         permission="zope.Public">
         <browser:page
-            name="+portlet-builds"
-            template="../templates/sourcepackagerelease-portlet-builds.pt"/>
-        <browser:page
-            name="+portlet-details"
-            template="../templates/sourcepackagerelease-portlet-details.pt"/>
-        <browser:page
-            name="+portlet-distroseries"
-            template="../templates/sourcepackagerelease-portlet-distroseries.pt"/>
-        <browser:page
-            name="+portlet-details-content"
-            template="../templates/sourcepackagerelease-portlet-details-content.pt"/>
-        <browser:page
             name="+diffs"
             template="../templates/sourcepackagerelease-diffs.pt"/>
     </browser:pages>
@@ -112,9 +97,6 @@
         <browser:page
             name="+copyright"
             template="../templates/sourcepackagerelease-copyright.pt"/>
-        <browser:page
-            name="+files"
-            template="../templates/sourcepackagerelease-files.pt"/>
     </browser:pages>
         <browser:pages
             for="lp.soyuz.interfaces.publishing.ISourcePackagePublishingHistory"
@@ -123,9 +105,6 @@
             <browser:page
                 name="+listing-compact"
                 template="../templates/sourcepackagepublishinghistory-listing-compact.pt"/>
-            <browser:page
-                name="+listing-detailed"
-                template="../templates/sourcepackagepublishinghistory-listing-detailed.pt"/>
             <browser:page
                 name="+listing-summary"
                 template="../templates/sourcepackagepublishinghistory-listing-summary.pt"/>
@@ -158,31 +137,6 @@
         <browser:navigation
             module="lp.soyuz.browser.publishing"
             classes="SourcePackagePublishingHistoryNavigation" />
-    <browser:defaultView
-        for="lp.soyuz.interfaces.distroseriessourcepackagerelease.IDistroSeriesSourcePackageRelease"
-        name="+index"/>
-    <browser:url
-        for="lp.soyuz.interfaces.distroseriessourcepackagerelease.IDistroSeriesSourcePackageRelease"
-        path_expression="string:${version}"
-        attribute_to_parent="sourcepackage"/>
-    <browser:navigation
-        module="lp.soyuz.browser.distroseriessourcepackagerelease"
-        classes="
-            DistroSeriesSourcePackageReleaseNavigation"/>
-    <browser:pages
-        for="lp.soyuz.interfaces.distroseriessourcepackagerelease.IDistroSeriesSourcePackageRelease"
-        class="lp.soyuz.browser.distroseriessourcepackagerelease.DistroSeriesSourcePackageReleaseView"
-        permission="zope.Public">
-        <browser:page
-            name="+index"
-            template="../templates/distroseriessourcepackagerelease-index.pt"/>
-
-        <!-- DistroSeriesSourcePackageRelease Portlets -->
-
-        <browser:page
-            name="+portlet-details"
-            template="../templates/distroseriessourcepackagerelease-portlet-details.pt"/>
-    </browser:pages>
     <browser:defaultView
         for="lp.soyuz.interfaces.distroarchseriesbinarypackagerelease.IDistroArchSeriesBinaryPackageRelease"
         name="+index"/>
@@ -461,6 +415,9 @@
         <browser:page
             name="+changes"
             template="../templates/distributionsourcepackagerelease-changes.pt"/>
+        <browser:page
+            name="+files"
+            template="../templates/distributionsourcepackagerelease-files.pt"/>
     </browser:pages>
     <browser:page
         for="lp.soyuz.interfaces.distributionsourcepackagerelease.IDistributionSourcePackageRelease"

@@ -1284,7 +1284,8 @@ class Archive(SQLBase):
 
         # Define stable/released states.
         stable_states = (SeriesStatus.SUPPORTED,
-                         SeriesStatus.CURRENT)
+                         SeriesStatus.CURRENT,
+                         SeriesStatus.OBSOLETE)
 
         # Deny uploads for RELEASE pocket in stable states.
         if (pocket == PackagePublishingPocket.RELEASE and

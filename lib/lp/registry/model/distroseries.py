@@ -143,15 +143,15 @@ from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.model.component import Component
+from lp.soyuz.model.distributionsourcepackagerelease import (
+    DistributionSourcePackageRelease,
+    )
 from lp.soyuz.model.distroarchseries import (
     DistroArchSeries,
     PocketChroot,
     )
 from lp.soyuz.model.distroseriesbinarypackage import DistroSeriesBinaryPackage
 from lp.soyuz.model.distroseriespackagecache import DistroSeriesPackageCache
-from lp.soyuz.model.distroseriessourcepackagerelease import (
-    DistroSeriesSourcePackageRelease,
-    )
 from lp.soyuz.model.files import (
     BinaryPackageFile,
     SourcePackageReleaseFile,
@@ -878,10 +878,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 return None
         return DistroSeriesBinaryPackage(self, name)
 
-    def getSourcePackageRelease(self, sourcepackagerelease):
-        """See `IDistroSeries`."""
-        return DistroSeriesSourcePackageRelease(self, sourcepackagerelease)
-
     def getCurrentSourceReleases(self, source_package_names):
         """See `IDistroSeries`."""
         return getUtility(IDistroSeriesSet).getCurrentSourceReleases(
@@ -1028,8 +1024,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 PackagePublishingStatus.PUBLISHED)
 
         def eager_load(spphs):
-            # Preload everything which will be used by
-            # SourcePackagePublishingHistory.buildIndexStanzaFields.
+            # Preload everything which will be used by archivepublisher's
+            # build_source_stanza_fields.
             load_related(Section, spphs, ["sectionID"])
             sprs = load_related(
                 SourcePackageRelease, spphs, ["sourcepackagereleaseID"])
@@ -1064,8 +1060,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 PackagePublishingStatus.PUBLISHED)
 
         def eager_load(bpphs):
-            # Preload everything which will be used by
-            # BinaryPackagePublishingHistory.buildIndexStanzaFields.
+            # Preload everything which will be used by archivepublisher's
+            # build_binary_stanza_fields.
             load_related(Section, bpphs, ["sectionID"])
             bprs = load_related(
                 BinaryPackageRelease, bpphs, ["binarypackagereleaseID"])
@@ -1221,7 +1217,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             orderBy=['-packageupload.id'])
 
         distro_sprs = [
-            self.getSourcePackageRelease(spr) for spr in last_uploads]
+            self.distribution.getSourcePackageRelease(spr)
+            for spr in last_uploads]
 
         return distro_sprs
 
@@ -1525,7 +1522,7 @@ class DistroSeriesSet:
         for spr, series_id in releases:
             series = getUtility(IDistroSeriesSet).get(series_id)
             result[series.getSourcePackage(spr.sourcepackagename)] = (
-                DistroSeriesSourcePackageRelease(series, spr))
+                DistributionSourcePackageRelease(series.distribution, spr))
         return result
 
     def search(self, distribution=None, isreleased=None, orderBy=None):

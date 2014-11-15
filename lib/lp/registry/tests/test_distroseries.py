@@ -10,17 +10,19 @@ __all__ = [
     ]
 
 from functools import partial
-from logging import getLogger
 
 from testtools.matchers import Equals
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.archivepublisher.indices import (
+    build_binary_stanza_fields,
+    build_source_stanza_fields,
+    )
 from lp.registry.errors import NoSuchDistroSeries
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.registry.interfaces.series import SeriesStatus
 from lp.services.database.interfaces import IStore
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -31,8 +33,8 @@ from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.distributionjob import (
     IInitializeDistroSeriesJobSource,
     )
-from lp.soyuz.interfaces.distroseriessourcepackagerelease import (
-    IDistroSeriesSourcePackageRelease,
+from lp.soyuz.interfaces.distributionsourcepackagerelease import (
+    IDistributionSourcePackageRelease,
     )
 from lp.soyuz.interfaces.publishing import active_publishing_status
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
@@ -96,7 +98,7 @@ class CurrentSourceReleasesMixin:
     def test_return_value(self):
         # getCurrentSourceReleases() returns a dict. The corresponding
         # source package is used as the key, with
-        # a DistroSeriesSourcePackageRelease as the values.
+        # a DistributionSourcePackageRelease as the values.
         self.publisher.getPubSource(version='0.9')
         releases = self.target.getCurrentSourceReleases(
             [self.published_package.sourcepackagename])
@@ -178,7 +180,7 @@ class TestDistroSeriesCurrentSourceReleases(
     """Test for DistroSeries.getCurrentSourceReleases()."""
 
     layer = LaunchpadFunctionalLayer
-    release_interface = IDistroSeriesSourcePackageRelease
+    release_interface = IDistributionSourcePackageRelease
 
     @property
     def target(self):
@@ -510,7 +512,8 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
             for spp in self.series.getSourcePackagePublishing(
                     PackagePublishingPocket.RELEASE, self.universe_component,
                     self.series.main_archive):
-                spp.getIndexStanza()
+                build_source_stanza_fields(
+                    spp.sourcepackagerelease, spp.component, spp.section)
 
         recorder1, recorder2 = record_two_runs(
             get_index_stanzas,
@@ -528,7 +531,9 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
             for bpp in self.series.getBinaryPackagePublishing(
                     das.architecturetag, PackagePublishingPocket.RELEASE,
                     self.universe_component, self.series.main_archive):
-                bpp.getIndexStanza()
+                build_binary_stanza_fields(
+                    bpp.binarypackagerelease, bpp.component, bpp.section,
+                    bpp.priority, bpp.phased_update_percentage, False)
 
         das = self.factory.makeDistroArchSeries(distroseries=self.series)
         recorder1, recorder2 = record_two_runs(

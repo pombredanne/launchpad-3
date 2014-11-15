@@ -4,5 +4,4 @@
 For more details, see:
 %(proposal_url)s%(gap)s%(comment)s
 -- 
-%(diff_cutoff_warning)s%(proposal_url)s
-%(reason)s%(edit_subscription)s
+%(diff_cutoff_warning)s%(reason)s%(edit_subscription)s
