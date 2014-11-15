@@ -138,7 +138,7 @@
                   </tal:licenses>
                   <tal:none condition="not:context/licenses">None specified</tal:none>
                   <div class="scrolled-box"
-                     condition="view/show_license_info">
+                     tal:condition="view/show_license_info">
                     (<tal:license_info replace="context/license_info" />)
                   </div>
                 </dd>

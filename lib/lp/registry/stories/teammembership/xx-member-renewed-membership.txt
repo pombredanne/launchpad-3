@@ -107,7 +107,7 @@ mech_control TestBrowser voodoo.
     >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
     Renew membership of Karl Tilbury in Mirror Administrators
     ...
-    This membership is going to expire in ... from now; if you want to
+    This membership is going to expire ... from now. If you want to
     remain a member of Mirror Administrators, you must renew it.
     or Cancel
 
@@ -162,7 +162,7 @@ now renew the membership.
     >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
     Renew membership of Landscape Developers in Mirror Administrators
     ...
-    This membership is going to expire in ... from now; if you want this team
+    This membership is going to expire ... from now. If you want this team
     to remain a member of Mirror Administrators, you must renew it.
     or Cancel
 
