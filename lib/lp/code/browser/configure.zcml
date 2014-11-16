@@ -1043,17 +1043,10 @@
             name="+recipes"
             template="../templates/sourcepackagerecipe-listing.pt"/>
 
-        <browser:page
-            for="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"
-            name="+hierarchy"
-            class="lp.code.browser.sourcepackagerecipe.SourcePackageRecipeHierarchy"
-            template="../../app/templates/launchpad-hierarchy.pt"
-            permission="zope.Public"/>
-
         <adapter
             provides="lp.services.webapp.interfaces.IBreadcrumb"
             for="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"
-            factory="lp.services.webapp.breadcrumb.NameBreadcrumb"
+            factory="lp.code.browser.sourcepackagerecipe.SourcePackageRecipeBreadcrumb"
             permission="zope.Public"/>
 
         <browser:page
