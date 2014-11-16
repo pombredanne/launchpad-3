@@ -256,9 +256,14 @@ class Hierarchy(LaunchpadView):
                 if IBreadcrumb(obj, None)).next()]
         except StopIteration:
             return []
-        # Now iterate. Just follow the normal URL hierarchy.
+        # Now iterate. If an object has a breadcrumb, it can override
+        # its parent. Otherwise we just follow the normal URL hierarchy
+        # until we reach the end.
         while True:
             next_obj = None
+            breadcrumb = IBreadcrumb(objects[0], None)
+            if breadcrumb is not None:
+                next_obj = breadcrumb.inside
             if next_obj is None:
                 urldata = ICanonicalUrlData(objects[0], None)
                 if urldata is not None:
@@ -342,9 +347,7 @@ class Hierarchy(LaunchpadView):
                 title = getattr(view, 'label', None)
             if isinstance(title, Message):
                 title = i18n.translate(title, context=self.request)
-            breadcrumb = Breadcrumb(None)
-            breadcrumb._url = url
-            breadcrumb.text = title
+            breadcrumb = Breadcrumb(url=url, text=title)
             return breadcrumb
         else:
             return None
