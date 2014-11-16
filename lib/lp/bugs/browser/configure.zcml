@@ -790,12 +790,6 @@
                 name="+index"
                 template="../templates/remotebug-index.pt"/>
         </browser:pages>
-    <browser:page
-        for="lp.bugs.interfaces.bugbranch.IBugBranch"
-        name="+hierarchy"
-        class="lp.code.browser.branch.BranchHierarchy"
-        template="../../app/templates/launchpad-hierarchy.pt"
-        permission="zope.Public"/>
     <browser:url
         for="lp.bugs.interfaces.bugbranch.IBugBranch"
         path_expression="string:+bug/${bug/id}"

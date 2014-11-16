@@ -186,29 +186,6 @@ def branch_root_context(branch):
     return branch.target.components[0]
 
 
-class BranchHierarchy(Hierarchy):
-    """The hierarchy for a branch should be the product if there is one."""
-
-    @property
-    def objects(self):
-        """See `Hierarchy`."""
-        traversed = list(self.request.traversed_objects)
-        # Pass back the root object.
-        yield traversed.pop(0)
-        # Now pop until we find the branch.
-        branch = traversed.pop(0)
-        while not IBranch.providedBy(branch):
-            branch = traversed.pop(0)
-        # Now pass back the branch components.
-        for component in branch.target.components:
-            yield component
-        # Now the branch.
-        yield branch
-        # Now whatever is left.
-        for obj in traversed:
-            yield obj
-
-
 class BranchNavigation(Navigation):
 
     usedfor = IBranch
