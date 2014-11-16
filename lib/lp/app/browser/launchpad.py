@@ -347,7 +347,7 @@ class Hierarchy(LaunchpadView):
                 title = getattr(view, 'label', None)
             if isinstance(title, Message):
                 title = i18n.translate(title, context=self.request)
-            breadcrumb = Breadcrumb(url=url, text=title)
+            breadcrumb = Breadcrumb(None, url=url, text=title)
             return breadcrumb
         else:
             return None
