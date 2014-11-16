@@ -411,12 +411,15 @@ class Hierarchy(LaunchpadView):
 
     def logo(self):
         """Return the logo image for the top header breadcrumb's context."""
-        logo_context = self.heading_breadcrumb.context
+        logo_context = (
+            self.heading_breadcrumb.context if self.heading_breadcrumb
+            else None)
         adapter = queryAdapter(logo_context, IPathAdapter, 'image')
         if logo_context != self.context.context and logo_context is not None:
-            return '<a href="%s">%s</a>' % (
+            return structured(
+                '<a href="%s">%s</a>',
                 canonical_url(logo_context, rootsite='mainsite'),
-                adapter.logo())
+                adapter.logo()).escapedtext
         else:
             return adapter.logo()
 
