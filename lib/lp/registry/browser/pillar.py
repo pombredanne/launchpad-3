@@ -84,6 +84,13 @@ class PillarPersonBreadcrumb(Breadcrumb):
     def text(self):
         return "Sharing details for %s" % self.context.person.displayname
 
+    @property
+    def inside(self):
+        return Breadcrumb(
+            self.context.pillar,
+            url=canonical_url(self.context.pillar, view_name="+sharing"),
+            text="Sharing", inside=self.context.pillar)
+
 
 class PillarNavigationMixin:
 

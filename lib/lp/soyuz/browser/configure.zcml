@@ -733,17 +733,10 @@
         permission="launchpad.Edit"
         name="+edit"
         template="../../app/templates/generic-edit.pt"/>
-    <browser:page
-        for="lp.soyuz.interfaces.livefs.ILiveFS"
-        class="lp.soyuz.browser.livefs.LiveFSHierarchy"
-        permission="zope.Public"
-        name="+hierarchy"
-        template="../../app/templates/launchpad-hierarchy.pt"
-        />
     <adapter
         provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.soyuz.interfaces.livefs.ILiveFS"
-        factory="lp.services.webapp.breadcrumb.NameBreadcrumb"
+        factory="lp.soyuz.browser.livefs.LiveFSBreadcrumb"
         permission="zope.Public"
         />
     <browser:url

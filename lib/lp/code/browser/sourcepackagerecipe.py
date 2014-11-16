@@ -62,7 +62,6 @@ from zope.schema.vocabulary import (
 from zope.security.proxy import isinstance as zope_isinstance
 
 from lp import _
-from lp.app.browser.launchpad import Hierarchy
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -114,53 +113,23 @@ from lp.services.webapp import (
     structured,
     )
 from lp.services.webapp.authorization import check_permission
-from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.breadcrumb import (
+    Breadcrumb,
+    NameBreadcrumb,
+    )
 from lp.soyuz.interfaces.archive import ArchiveDisabled
 from lp.soyuz.model.archive import validate_ppa
 
 
-class IRecipesForPerson(Interface):
-    """A marker interface for source package recipe sets."""
-
-
-class RecipesForPersonBreadcrumb(Breadcrumb):
-    """A Breadcrumb to handle the "Recipes" link for recipe breadcrumbs."""
-
-    rootsite = 'code'
-    text = 'Recipes'
-
-    implements(IRecipesForPerson)
+class SourcePackageRecipeBreadcrumb(NameBreadcrumb):
 
     @property
-    def url(self):
-        return canonical_url(
-            self.context, view_name="+recipes", rootsite='code')
-
-
-class SourcePackageRecipeHierarchy(Hierarchy):
-    """Hierarchy for Source Package Recipe."""
-
-    vhost_breadcrumb = False
-
-    @property
-    def objects(self):
-        """See `Hierarchy`."""
-        traversed = list(self.request.traversed_objects)
-
-        # Pop the root object
-        yield traversed.pop(0)
-
-        recipe = traversed.pop(0)
-        while not ISourcePackageRecipe.providedBy(recipe):
-            yield recipe
-            recipe = traversed.pop(0)
-
-        # Pop in the "Recipes" link to recipe listings.
-        yield RecipesForPersonBreadcrumb(recipe.owner)
-        yield recipe
-
-        for item in traversed:
-            yield item
+    def inside(self):
+        return Breadcrumb(
+            self.context.owner,
+            url=canonical_url(
+                self.context.owner, view_name="+recipes", rootsite="code"),
+            text="Recipes", inside=self.context.owner)
 
 
 class SourcePackageRecipeNavigationMenu(NavigationMenu):

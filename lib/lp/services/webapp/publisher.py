@@ -39,14 +39,12 @@ from lazr.restful.interfaces import IJSONRequestCache
 from lazr.restful.tales import WebLayerAPI
 from lazr.restful.utils import get_current_browser_request
 import simplejson
-from zope import i18n
 from zope.app.publisher.xmlrpc import IMethodPublisher
 from zope.component import (
     getUtility,
     queryMultiAdapter,
     )
 from zope.component.interfaces import ComponentLookupError
-from zope.i18nmessageid import Message
 from zope.interface import (
     directlyProvides,
     implements,
@@ -1010,34 +1008,6 @@ class Navigation:
                             nextobj = handler(self, nextstep)
                         except NotFoundError:
                             nextobj = None
-                        else:
-                            # Circular import; breaks make.
-                            from lp.services.webapp.breadcrumb import (
-                                Breadcrumb,
-                            )
-                            stepthrough_page = queryMultiAdapter(
-                                    (self.context, self.request), name=name)
-                            if stepthrough_page:
-                                # Not all stepthroughs have a page; if they
-                                # don't, there's no need for a breadcrumb.
-                                page_title = getattr(
-                                    stepthrough_page, 'page_title', None)
-                                label = getattr(
-                                    stepthrough_page, 'label', None)
-                                stepthrough_text = page_title or label
-                                if isinstance(stepthrough_text, Message):
-                                    stepthrough_text = i18n.translate(
-                                        stepthrough_text,
-                                        context=self.request)
-                                stepthrough_url = canonical_url(
-                                    self.context, view_name=name)
-                                stepthrough_breadcrumb = Breadcrumb(
-                                    context=self.context,
-                                    url=stepthrough_url,
-                                    text=stepthrough_text)
-                                self.request.traversed_objects.append(
-                                    stepthrough_breadcrumb)
-
                         return self._handle_next_object(nextobj, request,
                             nextstep)
 

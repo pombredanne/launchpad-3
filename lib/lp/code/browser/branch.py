@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'BranchBreadcrumb',
     'BranchContextMenu',
     'BranchDeletionView',
     'BranchEditStatusView',
@@ -74,7 +75,6 @@ from zope.traversing.interfaces import IPathAdapter
 
 from lp import _
 from lp.app.browser.informationtype import InformationTypePortletMixin
-from lp.app.browser.launchpad import Hierarchy
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -158,6 +158,7 @@ from lp.services.webapp.authorization import (
     check_permission,
     precache_permission_for_objects,
     )
+from lp.services.webapp.breadcrumb import NameBreadcrumb
 from lp.services.webapp.escaping import structured
 from lp.services.webapp.interfaces import ICanonicalUrlData
 from lp.translations.interfaces.translationtemplatesbuild import (
@@ -181,32 +182,16 @@ class BranchURL:
         return self.branch.unique_name
 
 
+class BranchBreadcrumb(NameBreadcrumb):
+
+    @property
+    def inside(self):
+        return self.context.target.components[-1]
+
+
 def branch_root_context(branch):
     """Return the IRootContext for the branch."""
     return branch.target.components[0]
-
-
-class BranchHierarchy(Hierarchy):
-    """The hierarchy for a branch should be the product if there is one."""
-
-    @property
-    def objects(self):
-        """See `Hierarchy`."""
-        traversed = list(self.request.traversed_objects)
-        # Pass back the root object.
-        yield traversed.pop(0)
-        # Now pop until we find the branch.
-        branch = traversed.pop(0)
-        while not IBranch.providedBy(branch):
-            branch = traversed.pop(0)
-        # Now pass back the branch components.
-        for component in branch.target.components:
-            yield component
-        # Now the branch.
-        yield branch
-        # Now whatever is left.
-        for obj in traversed:
-            yield obj
 
 
 class BranchNavigation(Navigation):
