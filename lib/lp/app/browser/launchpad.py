@@ -54,6 +54,7 @@ from zope.schema import (
     TextLine,
     )
 from zope.security.interfaces import Unauthorized
+from zope.security.proxy import removeSecurityProxy
 from zope.traversing.interfaces import (
     IPathAdapter,
     ITraversable,
@@ -317,8 +318,13 @@ class Hierarchy(LaunchpadView):
     @property
     def _naked_context_view(self):
         """Return the unproxied view for the context of the hierarchy."""
-        from zope.security.proxy import removeSecurityProxy
-        return removeSecurityProxy(self.context)
+        # XXX wgrant 2014-11-16: Should just be able to use self.context
+        # here, but some views end up delegating to things that don't
+        # have __name__ or __launchpad_facetname__.
+        if len(self.request.traversed_objects) > 0:
+            return removeSecurityProxy(self.request.traversed_objects[-1])
+        else:
+            return None
 
     def makeBreadcrumbForRequestedPage(self):
         """Return an `IBreadcrumb` for the requested page.
