@@ -692,8 +692,7 @@ class ObjectFormatterAPI:
         ROOT_TITLE = 'Launchpad'
         view = self._context
         request = get_current_browser_request()
-        hierarchy_view = getMultiAdapter(
-            (view.context, request), name='+hierarchy')
+        hierarchy_view = getMultiAdapter((view, request), name='+hierarchy')
         if (isinstance(view, SystemErrorView) or
             hierarchy_view is None or
             not hierarchy_view.display_breadcrumbs):

@@ -905,14 +905,6 @@
       name="required"
       />
 
-  <!-- TALES watermark: namespace -->
-  <adapter
-      for="*"
-      provides="zope.traversing.interfaces.IPathAdapter"
-      factory="lp.app.browser.watermark.WatermarkTalesAdapter"
-      name="watermark"
-      />
-
   <!-- TALES fmt: namespace for strings -->
   <adapter
       for="basestring"
