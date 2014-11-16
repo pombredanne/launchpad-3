@@ -133,6 +133,7 @@ from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.services.webapp.interfaces import (
     IBreadcrumb,
+    ICanonicalUrlData,
     ILaunchBag,
     ILaunchpadRoot,
     INavigationMenu,
@@ -248,7 +249,24 @@ class Hierarchy(LaunchpadView):
     @property
     def objects(self):
         """The objects for which we want breadcrumbs."""
-        return self.request.traversed_objects
+        # Start the chain with the deepest object that has a breadcrumb.
+        try:
+            objects = [(
+                obj for obj in reversed(self.request.traversed_objects)
+                if IBreadcrumb(obj, None)).next()]
+        except StopIteration:
+            return []
+        # Now iterate. Just follow the normal URL hierarchy.
+        while True:
+            next_obj = None
+            if next_obj is None:
+                urldata = ICanonicalUrlData(objects[0], None)
+                if urldata is not None:
+                    next_obj = urldata.inside
+            if next_obj is None:
+                break
+            objects.insert(0, next_obj)
+        return objects
 
     @cachedproperty
     def items(self):

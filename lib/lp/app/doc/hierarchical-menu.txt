@@ -2,8 +2,8 @@ Hierarchical menus
 ==================
 
 The location bar aids users in navigating the depths of Launchpad.  It
-is built from a list of Breadcrumb objects collected during Zope's
-object-traversal step.
+is built from a chain of Breadcrumb objects built up from the URL
+generation rules with some manual override.s
 
 A simple object hierarchy
 -------------------------
