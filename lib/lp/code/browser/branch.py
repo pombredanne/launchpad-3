@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'BranchBreadcrumb',
     'BranchContextMenu',
     'BranchDeletionView',
     'BranchEditStatusView',
@@ -74,7 +75,6 @@ from zope.traversing.interfaces import IPathAdapter
 
 from lp import _
 from lp.app.browser.informationtype import InformationTypePortletMixin
-from lp.app.browser.launchpad import Hierarchy
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -158,6 +158,7 @@ from lp.services.webapp.authorization import (
     check_permission,
     precache_permission_for_objects,
     )
+from lp.services.webapp.breadcrumb import NameBreadcrumb
 from lp.services.webapp.escaping import structured
 from lp.services.webapp.interfaces import ICanonicalUrlData
 from lp.translations.interfaces.translationtemplatesbuild import (
@@ -179,6 +180,13 @@ class BranchURL:
     @property
     def path(self):
         return self.branch.unique_name
+
+
+class BranchBreadcrumb(NameBreadcrumb):
+
+    @property
+    def inside(self):
+        return self.context.target.components[-1]
 
 
 def branch_root_context(branch):

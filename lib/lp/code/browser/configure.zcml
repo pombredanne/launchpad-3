@@ -895,7 +895,7 @@
     <adapter
         provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.code.interfaces.branch.IBranch"
-        factory="lp.services.webapp.breadcrumb.NameBreadcrumb"
+        factory="lp.code.browser.branch.BranchBreadcrumb"
         permission="zope.Public"/>
 
     <adapter
