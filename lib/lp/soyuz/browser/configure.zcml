@@ -142,8 +142,8 @@
         name="+index"/>
     <browser:url
         for="lp.soyuz.interfaces.distroarchseriesbinarypackagerelease.IDistroArchSeriesBinaryPackageRelease"
-        path_expression="string:${name}/${version}"
-        attribute_to_parent="distroarchseries"/>
+        path_expression="version"
+        attribute_to_parent="distroarchseriesbinarypackage"/>
     <browser:navigation
         module="lp.soyuz.browser.distroarchseriesbinarypackagerelease"
         classes="

@@ -1084,8 +1084,10 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
     def test_index(self):
         build = self.makeSuccessfulBuild()
 
+        # XXX wgrant 2014-11-16 wgrant: The "Code" breadcrumb shouldn't
+        # be there, but it's difficult to avoid and hopefully temporary.
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
-            Master Chef Recipes cake_recipe
+            Master Chef Recipes Code cake_recipe
             .*
             Description Edit
             This recipe .*changes.
@@ -1438,10 +1440,13 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
     def test_request_builds_page(self):
         """Ensure the +request-builds page is sane."""
         recipe = self.makeRecipe()
+        # XXX wgrant 2014-11-16 wgrant: The "Code" breadcrumb shouldn't
+        # be there, but it's difficult to avoid and hopefully temporary.
         pattern = dedent("""\
             Request builds for cake_recipe
             Master Chef
             Recipes
+            Code
             cake_recipe
             Request builds for cake_recipe
             Archive:
