@@ -2269,12 +2269,13 @@ class IPersonSet(Interface):
         restrict the search to the dates provided.
         """
 
+    @call_with(preload_for_api=True)
     @operation_parameters(
         text=TextLine(title=_("Search text"), default=u""))
     @operation_returns_collection_of(IPerson)
     @export_read_operation()
     @operation_for_version("beta")
-    def findTeam(text=""):
+    def findTeam(text="", preload_for_api=False):
         """Return all Teams whose name, displayname or email address
         match <text>.
 
