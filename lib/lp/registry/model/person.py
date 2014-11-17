@@ -3774,9 +3774,9 @@ class PersonSet:
 
     def getPrecachedPersonsFromIDs(
         self, person_ids, need_api=False, need_karma=False,
-        need_ubuntu_coc=False, need_location=False, need_archive=False,
-        need_preferred_email=False, need_validity=False,
-        need_icon=False):
+        need_ubuntu_coc=False, need_teamowner=False, need_location=False,
+        need_archive=False, need_preferred_email=False,
+        need_validity=False, need_icon=False):
         """See `IPersonSet`."""
         person_ids = set(person_ids)
         person_ids.discard(None)
@@ -3786,16 +3786,16 @@ class PersonSet:
         conditions = [
             Person.id.is_in(person_ids)]
         return self._getPrecachedPersons(
-            origin, conditions, need_api=need_api,
-            need_karma=need_karma, need_ubuntu_coc=need_ubuntu_coc,
+            origin, conditions, need_api=need_api, need_karma=need_karma,
+            need_ubuntu_coc=need_ubuntu_coc, need_teamowner=need_teamowner,
             need_location=need_location, need_archive=need_archive,
             need_preferred_email=need_preferred_email,
             need_validity=need_validity, need_icon=need_icon)
 
     def _getPrecachedPersons(
         self, origin, conditions, store=None, need_api=False,
-        need_karma=False, need_ubuntu_coc=False, need_location=False,
-        need_archive=False, need_preferred_email=False,
+        need_karma=False, need_ubuntu_coc=False, need_teamowner=False,
+        need_location=False, need_archive=False, need_preferred_email=False,
         need_validity=False, need_icon=False):
         """Lookup all members of the team with optional precaching.
 
@@ -3884,6 +3884,10 @@ class PersonSet:
         columns = tuple(columns)
         raw_result = store.using(*origin).find(columns, conditions)
 
+        def preload_for_people(rows):
+            if need_teamowner or need_api:
+                bulk.load(Person, [row[0].teamownerID for row in rows])
+
         def prepopulate_person(row):
             result = row[0]
             cache = get_property_cache(result)
@@ -3923,6 +3927,7 @@ class PersonSet:
                 decorator(result, column)
             return result
         return DecoratedResultSet(raw_result,
+            pre_iter_hook=preload_for_people,
             result_decorator=prepopulate_person)
 
 
