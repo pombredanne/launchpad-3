@@ -62,7 +62,10 @@ from lp.services.webapp.batching import (
     BatchNavigator,
     StormRangeFactory,
     )
-from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.breadcrumb import (
+    Breadcrumb,
+    DisplaynameBreadcrumb,
+    )
 from lp.services.webapp.menu import (
     ApplicationMenu,
     enabled_with_permission,
@@ -75,6 +78,14 @@ from lp.services.webapp.publisher import (
     nearest,
     stepthrough,
     )
+
+
+class PillarBreadcrumb(DisplaynameBreadcrumb):
+    """Breadcrumb that uses the displayname or title as appropriate."""
+
+    @property
+    def detail(self):
+        return self.context.title
 
 
 class PillarPersonBreadcrumb(Breadcrumb):

@@ -93,10 +93,10 @@
       <div id="watermark" class="watermark-apps-portlet"
         tal:condition="view/macro:has-watermark">
         <div>
-          <span tal:replace="structure view/watermark:logo"></span>
+          <span tal:replace="structure view/@@+hierarchy/logo"></span>
         </div>
         <div class="wide">
-          <h2 tal:replace="structure view/watermark:heading">
+          <h2 tal:replace="structure view/@@+hierarchy/heading">
             Celso Providelo
           </h2>
           <metal:heading_nav
@@ -119,7 +119,7 @@
                 metal:define-slot="heading"
                 >Page Label
               </h1>
-              <tal:breadcrumbs replace="structure context/@@+hierarchy">
+              <tal:breadcrumbs replace="structure view/@@+hierarchy">
                 ProjectName > Branches > Merge Proposals > fix-for-navigation
               </tal:breadcrumbs>
               <div id="registration" class="registering"
