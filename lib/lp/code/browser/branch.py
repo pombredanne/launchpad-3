@@ -189,11 +189,6 @@ class BranchBreadcrumb(NameBreadcrumb):
         return self.context.target.components[-1]
 
 
-def branch_root_context(branch):
-    """Return the IRootContext for the branch."""
-    return branch.target.components[0]
-
-
 class BranchNavigation(Navigation):
 
     usedfor = IBranch

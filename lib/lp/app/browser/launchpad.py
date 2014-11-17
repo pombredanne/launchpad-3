@@ -54,7 +54,11 @@ from zope.schema import (
     TextLine,
     )
 from zope.security.interfaces import Unauthorized
-from zope.traversing.interfaces import ITraversable
+from zope.security.proxy import removeSecurityProxy
+from zope.traversing.interfaces import (
+    IPathAdapter,
+    ITraversable,
+    )
 
 from lp import _
 from lp.answers.interfaces.questioncollection import IQuestionSet
@@ -75,7 +79,11 @@ from lp.app.errors import (
     NotFoundError,
     POSTToNonCanonicalURL,
     )
-from lp.app.interfaces.headings import IMajorHeadingView
+from lp.app.interfaces.headings import (
+    IEditableContextTitle,
+    IMajorHeadingView,
+    IRootContext,
+    )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.interfaces.services import IServiceFactory
 from lp.app.widgets.project import ProjectScopeWidget
@@ -131,6 +139,7 @@ from lp.services.webapp import (
     )
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.escaping import structured
 from lp.services.webapp.interfaces import (
     IBreadcrumb,
     ICanonicalUrlData,
@@ -309,7 +318,9 @@ class Hierarchy(LaunchpadView):
     @property
     def _naked_context_view(self):
         """Return the unproxied view for the context of the hierarchy."""
-        from zope.security.proxy import removeSecurityProxy
+        # XXX wgrant 2014-11-16: Should just be able to use self.context
+        # here, but some views end up delegating to things that don't
+        # have __name__ or __launchpad_facetname__.
         if len(self.request.traversed_objects) > 0:
             return removeSecurityProxy(self.request.traversed_objects[-1])
         else:
@@ -362,6 +373,55 @@ class Hierarchy(LaunchpadView):
         has_major_heading = IMajorHeadingView.providedBy(
             self._naked_context_view)
         return len(self.items) > 1 and not has_major_heading
+
+    @property
+    def heading_breadcrumb(self):
+        try:
+            return (
+                crumb for crumb in self.items
+                if IRootContext.providedBy(crumb.context)).next()
+        except StopIteration:
+            return None
+
+    def heading(self):
+        """Return the heading text for the page.
+
+        If the view provides `IEditableContextTitle` then the top heading is
+        rendered from the view's `title_edit_widget` and is generally
+        editable.
+
+        Otherwise, if the context provides `IHeadingContext` then we return an
+        H1, else an H2.
+        """
+        # Check the view; is the title editable?
+        if IEditableContextTitle.providedBy(self.context):
+            return self.context.title_edit_widget()
+        # The title is static, but only the context's index view gets an H1.
+        heading = 'h1' if IMajorHeadingView.providedBy(self.context) else 'h2'
+        # If there is actually no root context, then it's a top-level
+        # context-less page so Launchpad.net is shown as the branding.
+        if self.heading_breadcrumb:
+            title = self.heading_breadcrumb.detail
+        else:
+            title = 'Launchpad.net'
+        # For non-editable titles, generate the static heading.
+        return structured(
+            "<%(heading)s>%(title)s</%(heading)s>",
+            heading=heading, title=title).escapedtext
+
+    def logo(self):
+        """Return the logo image for the top header breadcrumb's context."""
+        logo_context = (
+            self.heading_breadcrumb.context if self.heading_breadcrumb
+            else None)
+        adapter = queryAdapter(logo_context, IPathAdapter, 'image')
+        if logo_context != self.context.context and logo_context is not None:
+            return structured(
+                '<a href="%s">%s</a>',
+                canonical_url(logo_context, rootsite='mainsite'),
+                structured(adapter.logo())).escapedtext
+        else:
+            return adapter.logo()
 
 
 class ExceptionHierarchy(Hierarchy):

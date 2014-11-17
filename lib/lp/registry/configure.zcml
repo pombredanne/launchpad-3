@@ -457,7 +457,7 @@
     <adapter
         provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.projectgroup.IProjectGroup"
-        factory="lp.services.webapp.breadcrumb.DisplaynameBreadcrumb"
+        factory="lp.registry.browser.pillar.PillarBreadcrumb"
         permission="zope.Public"/>
     <adapter
         provides="lp.services.webapp.interfaces.IBreadcrumb"
@@ -1499,7 +1499,7 @@
     <adapter
         provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.product.IProduct"
-        factory="lp.services.webapp.breadcrumb.DisplaynameBreadcrumb"
+        factory="lp.registry.browser.pillar.PillarBreadcrumb"
         permission="zope.Public"/>
     <adapter
         provides="lp.services.webapp.interfaces.IBreadcrumb"
@@ -1808,7 +1808,7 @@
     <adapter
         provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.distribution.IDistribution"
-        factory="lp.services.webapp.breadcrumb.DisplaynameBreadcrumb"
+        factory="lp.registry.browser.pillar.PillarBreadcrumb"
         permission="zope.Public"/>
     <adapter
         provides="lp.services.webapp.interfaces.IBreadcrumb"

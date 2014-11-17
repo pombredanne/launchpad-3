@@ -17,7 +17,6 @@ from zope.publisher.interfaces import NotFound
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import InformationType
-from lp.app.interfaces.headings import IRootContext
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.interfaces.services import IService
 from lp.bugs.interfaces.bugtask import (
@@ -891,30 +890,6 @@ class TestBranchProposalsVisible(TestCaseWithFactory):
         view = create_view(branch, '+index')
         self.assertTrue(view.no_merges)
         self.assertEqual([], view.dependent_branches)
-
-
-class TestBranchRootContext(TestCaseWithFactory):
-    """Test the adaptation of IBranch to IRootContext."""
-
-    layer = DatabaseFunctionalLayer
-
-    def test_personal_branch(self):
-        # The root context of a personal branch is the person.
-        branch = self.factory.makePersonalBranch()
-        root_context = IRootContext(branch)
-        self.assertEqual(branch.owner, root_context)
-
-    def test_package_branch(self):
-        # The root context of a package branch is the distribution.
-        branch = self.factory.makePackageBranch()
-        root_context = IRootContext(branch)
-        self.assertEqual(branch.distroseries.distribution, root_context)
-
-    def test_product_branch(self):
-        # The root context of a product branch is the product.
-        branch = self.factory.makeProductBranch()
-        root_context = IRootContext(branch)
-        self.assertEqual(branch.product, root_context)
 
 
 class TestBranchEditView(TestCaseWithFactory):
