@@ -401,7 +401,7 @@ class Hierarchy(LaunchpadView):
         # If there is actually no root context, then it's a top-level
         # context-less page so Launchpad.net is shown as the branding.
         if self.heading_breadcrumb:
-            title = self.heading_breadcrumb.text
+            title = self.heading_breadcrumb.detail
         else:
             title = 'Launchpad.net'
         # For non-editable titles, generate the static heading.
@@ -419,7 +419,7 @@ class Hierarchy(LaunchpadView):
             return structured(
                 '<a href="%s">%s</a>',
                 canonical_url(logo_context, rootsite='mainsite'),
-                adapter.logo()).escapedtext
+                structured(adapter.logo())).escapedtext
         else:
             return adapter.logo()
 
