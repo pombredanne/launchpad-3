@@ -72,7 +72,7 @@
         />
 
     <browser:page
-        for="Exception"
+        for="zope.browser.interfaces.ISystemErrorView"
         name="+hierarchy"
         class="lp.app.browser.launchpad.ExceptionHierarchy"
         template="../templates/launchpad-hierarchy.pt"
