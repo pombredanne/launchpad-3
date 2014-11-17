@@ -22,10 +22,7 @@ import operator
 
 from lazr.delegates import delegates
 from lazr.restful.utils import smartquote
-from zope.component import (
-    adapter,
-    getUtility,
-    )
+from zope.component import getUtility
 from zope.interface import (
     implements,
     Interface,
@@ -43,6 +40,7 @@ from lp.app.browser.launchpadform import (
 from lp.app.browser.stringformatter import extract_email_addresses
 from lp.app.browser.tales import CustomizableFormatter
 from lp.app.enums import ServiceUsage
+from lp.app.interfaces.headings import IHeadingBreadcrumb
 from lp.app.interfaces.launchpad import IServiceUsage
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
 from lp.bugs.browser.structuralsubscription import (
@@ -102,10 +100,9 @@ class DistributionSourcePackageFormatterAPI(CustomizableFormatter):
         return {'displayname': displayname}
 
 
-@adapter(IDistributionSourcePackage)
 class DistributionSourcePackageBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `IDistributionSourcePackage`."""
-    implements(IBreadcrumb)
+    implements(IBreadcrumb, IHeadingBreadcrumb)
 
     @property
     def text(self):

@@ -94,7 +94,6 @@ from zope.schema import (
 from lp import _
 from lp.answers.interfaces.questionsperson import IQuestionsPerson
 from lp.app.errors import NameLookupFailed
-from lp.app.interfaces.headings import IRootContext
 from lp.app.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
@@ -1845,7 +1844,7 @@ class IPersonSpecialRestricted(Interface):
 
 class IPerson(IPersonPublic, IPersonLimitedView, IPersonViewRestricted,
               IPersonEditRestricted, IPersonSpecialRestricted, IHasStanding,
-              ISetLocation, IRootContext):
+              ISetLocation):
     """A Person."""
     export_as_webservice_entry(plural_name='people')
 

@@ -41,7 +41,6 @@ from zope.schema import (
     )
 
 from lp import _
-from lp.app.interfaces.headings import IRootContext
 from lp.app.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
@@ -118,7 +117,7 @@ class IProjectGroupPublic(
     ICanGetMilestonesDirectly, IHasAppointedDriver, IHasBranches, IHasBugs,
     IHasDrivers, IHasIcon, IHasLogo, IHasMergeProposals, IHasMilestones,
     IHasMugshot, IHasOwner, IHasSpecifications, IHasSprints,
-    IMakesAnnouncements, IKarmaContext, IRootContext, IHasOfficialBugTags,
+    IMakesAnnouncements, IKarmaContext, IHasOfficialBugTags,
     IServiceUsage):
     """Public IProjectGroup properties."""
 
