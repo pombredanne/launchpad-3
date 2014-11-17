@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+import transaction
 
 from testtools.matchers import LessThan
 from zope.component import getUtility
@@ -110,6 +111,8 @@ class TestPersonSet(TestCaseWithFactory):
         # query to load all the extraneous data. Accessing the
         # attributes should then cause zero queries.
         person_ids = [self.factory.makePerson().id for i in range(3)]
+        person_ids += [self.factory.makeTeam().id for i in range(3)]
+        transaction.commit()
 
         with StormStatementRecorder() as recorder:
             persons = list(self.person_set.getPrecachedPersonsFromIDs(
