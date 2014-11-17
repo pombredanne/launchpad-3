@@ -3658,7 +3658,7 @@ class PersonSet:
         combined_results = email_results.union(name_results)
         return combined_results.order_by(orderBy)
 
-    def findTeam(self, text=""):
+    def findTeam(self, text="", preload_for_api=False):
         """See `IPersonSet`."""
         orderBy = Person._sortingColumnsForSetOperations
         text = ensure_unicode(text)
@@ -3670,8 +3670,13 @@ class PersonSet:
         email_results = store.find(Person, email_query).order_by()
         name_query = self._teamNameQuery(text)
         name_results = store.find(Person, name_query).order_by()
-        combined_results = email_results.union(name_results)
-        return combined_results.order_by(orderBy)
+        result = email_results.union(name_results).order_by(orderBy)
+        if preload_for_api:
+            def preload(people):
+                list(self.getPrecachedPersonsFromIDs(
+                    [person.id for person in people], need_api=True))
+            result = DecoratedResultSet(result, pre_iter_hook=preload)
+        return result
 
     def get(self, personid):
         """See `IPersonSet`."""
