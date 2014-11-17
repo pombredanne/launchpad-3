@@ -5,9 +5,9 @@
 
 __metaclass__ = type
 
-import transaction
 
 from testtools.matchers import LessThan
+import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
