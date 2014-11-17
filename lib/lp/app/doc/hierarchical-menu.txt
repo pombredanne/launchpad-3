@@ -2,8 +2,8 @@ Hierarchical menus
 ==================
 
 The location bar aids users in navigating the depths of Launchpad.  It
-is built from a list of Breadcrumb objects collected during Zope's
-object-traversal step.
+is built from a chain of Breadcrumb objects built up from the URL
+generation rules with some manual override.s
 
 A simple object hierarchy
 -------------------------
@@ -60,9 +60,11 @@ Today we'll be cooking with Spam!
 Discovering breadcrumbs
 -----------------------
 
-The Hierarchy class builds the breadcrumbs by looking at each object in
-the request.traversed_objects attribute.  If a traversed object can be
-adapted to IBreadcrumb, then it is added to the breadcrumbs list.
+The Hierarchy class builds the breadcrumbs by finding the deepest object
+in request.traversed_objects that can be adapted to IBreadcrumb, then
+building the chain by following IBreadcrumb.inside or
+ICanonicalUrlData.inside. Any object in the chain that can be adapted
+to IBreadcrumb is added to the breadcrumbs list.
 
 We'll add the objects to the request's list of traversed objects so
 the hierarchy will discover them.
@@ -129,6 +131,19 @@ domains. The `Hierarchy` model copes fine with objects like that.
     >>> cooker_hierarchy.items
     [<TextualBreadcrumb url='.../+cooker/jamie' text='Jamie'>]
 
+An IBreadcrumb can override ICanonicalUrlData.inside with its inside
+attribute.
+
+    >>> class ParentedTextualBreadcrumb(TextualBreadcrumb):
+    ...     inside = cookbook
+    >>> provideAdapter(ParentedTextualBreadcrumb, [ICooker], IBreadcrumb)
+    >>> cooker_hierarchy = getMultiAdapter(
+    ...     (cooker, cooker_request), name='+hierarchy')
+    >>> cooker_hierarchy.items
+    [<TextualBreadcrumb url='.../joy-of-cooking' text='Joy of cooking'>,
+     <ParentedTextualBreadcrumb url='.../+cooker/jamie' text='Jamie'>]
+
+    >>> provideAdapter(TextualBreadcrumb, [ICooker], IBreadcrumb)
 
 Displaying breadcrumbs
 ----------------------
@@ -142,6 +157,8 @@ above it.
     >>> hierarchy.display_breadcrumbs
     True
 
+    >>> cooker_hierarchy = getMultiAdapter(
+    ...     (cooker, cooker_request), name='+hierarchy')
     >>> len(cooker_hierarchy.items)
     1
     >>> cooker_hierarchy.display_breadcrumbs

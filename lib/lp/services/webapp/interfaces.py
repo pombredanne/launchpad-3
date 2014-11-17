@@ -230,6 +230,9 @@ class IBreadcrumb(Interface):
 
     detail = Attribute('Detailed text of this breadcrumb.')
 
+    inside = Attribute(
+        'Next object up the chain. If not specified, the URL parent is used.')
+
 
 #
 # Canonical URLs

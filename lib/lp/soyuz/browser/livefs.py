@@ -20,16 +20,12 @@ from lazr.restful.interface import (
     use_template,
     )
 from zope.component import getUtility
-from zope.interface import (
-    implements,
-    Interface,
-    )
+from zope.interface import Interface
 from zope.schema import (
     Choice,
     Text,
     )
 
-from lp.app.browser.launchpad import Hierarchy
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -55,7 +51,10 @@ from lp.services.webapp import (
     stepthrough,
     )
 from lp.services.webapp.authorization import check_permission
-from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.breadcrumb import (
+    Breadcrumb,
+    NameBreadcrumb,
+    )
 from lp.soyuz.browser.build import get_build_by_id_str
 from lp.soyuz.interfaces.livefs import (
     ILiveFS,
@@ -78,42 +77,14 @@ class LiveFSNavigation(Navigation):
         return build
 
 
-class ILiveFSesForPerson(Interface):
-    """A marker interface for live filesystem sets."""
-
-
-class LiveFSesForPersonBreadcrumb(Breadcrumb):
-    """A Breadcrumb to handle the "Live filesystems" link."""
-
-    rootsite = None
-    text = 'Live filesystems'
-
-    implements(ILiveFSesForPerson)
+class LiveFSBreadcrumb(NameBreadcrumb):
 
     @property
-    def url(self):
-        return canonical_url(self.context, view_name="+livefs")
-
-
-class LiveFSHierarchy(Hierarchy):
-    """Hierarchy for live filesystems."""
-
-    @property
-    def objects(self):
-        """See `Hierarchy`."""
-        traversed = list(self.request.traversed_objects)
-        # Pop the root object.
-        yield traversed.pop(0)
-        # Pop until we find the live filesystem.
-        livefs = traversed.pop(0)
-        while not ILiveFS.providedBy(livefs):
-            yield livefs
-            livefs = traversed.pop(0)
-        # Pop in the "Live filesystems" link.
-        yield LiveFSesForPersonBreadcrumb(livefs.owner)
-        yield livefs
-        for item in traversed:
-            yield item
+    def inside(self):
+        return Breadcrumb(
+            self.context.owner,
+            url=canonical_url(self.context.owner, view_name="+livefs"),
+            text="Live filesystems", inside=self.context.owner)
 
 
 class LiveFSNavigationMenu(NavigationMenu):

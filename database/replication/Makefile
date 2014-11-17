@@ -83,8 +83,8 @@ stagingsetup:
 	LPCONFIG=${STAGING_CONFIG} ${SHHH} ../schema/security.py \
 	    --log-file=INFO:${STAGING_LOGDIR}/dbupgrade.log
 	@echo Setting feature flags
-	psql -d lpmain_staging -c "INSERT INTO featureflag (flag, scope, priority, value) VALUES ('profiling.enabled', 'team:launchpad', 0, 'on')"
-	psql -d lpmain_staging -c "INSERT INTO featureflag (flag, scope, priority, value) VALUES ('librarian.swift.enabled', 'default', 0, 'on')"
+	-psql -d lpmain_staging -c "INSERT INTO featureflag (flag, scope, priority, value) VALUES ('profiling.enabled', 'team:launchpad', 0, 'on')"
+	-psql -d lpmain_staging -c "INSERT INTO featureflag (flag, scope, priority, value) VALUES ('librarian.swift.enabled', 'default', 0, 'on')"
 	${STAGING_PGBOUNCER} -c 'resume launchpad_staging'
 	${STAGING_PGBOUNCER} -c 'resume launchpad_staging_slave'
 
