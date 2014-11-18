@@ -41,6 +41,7 @@ from lp.app.enums import (
     service_uses_launchpad,
     ServiceUsage,
     )
+from lp.app.interfaces.headings import IHeadingBreadcrumb
 from lp.app.interfaces.launchpad import IServiceUsage
 from lp.app.interfaces.services import IService
 from lp.bugs.browser.structuralsubscription import (
@@ -82,6 +83,7 @@ from lp.services.webapp.publisher import (
 
 class PillarBreadcrumb(DisplaynameBreadcrumb):
     """Breadcrumb that uses the displayname or title as appropriate."""
+    implements(IHeadingBreadcrumb)
 
     @property
     def detail(self):

@@ -29,7 +29,6 @@ from zope.schema import (
     )
 
 from lp import _
-from lp.app.interfaces.headings import IRootContext
 from lp.app.validators.name import name_validator
 from lp.blueprints.interfaces.specificationtarget import IHasSpecifications
 from lp.registry.interfaces.role import (
@@ -57,7 +56,7 @@ class SprintNameField(ContentNameField):
         return getUtility(ISprintSet)[name]
 
 
-class ISprint(IHasOwner, IHasDrivers, IHasSpecifications, IRootContext):
+class ISprint(IHasOwner, IHasDrivers, IHasSpecifications):
     """A sprint, or conference, or meeting."""
 
     id = Int(title=_('The Sprint ID'))

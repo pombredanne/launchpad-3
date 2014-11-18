@@ -39,7 +39,10 @@ from lp.app.browser.launchpadform import (
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
-from lp.app.interfaces.headings import IMajorHeadingView
+from lp.app.interfaces.headings import (
+    IHeadingBreadcrumb,
+    IMajorHeadingView,
+    )
 from lp.app.widgets.date import DateTimeWidget
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin,
@@ -77,7 +80,10 @@ from lp.services.webapp import (
     StandardLaunchpadFacets,
     )
 from lp.services.webapp.batching import BatchNavigator
-from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.breadcrumb import (
+    Breadcrumb,
+    TitleBreadcrumb,
+    )
 
 
 class SprintFacets(StandardLaunchpadFacets):
@@ -93,6 +99,10 @@ class SprintFacets(StandardLaunchpadFacets):
 class SprintNavigation(Navigation):
 
     usedfor = ISprint
+
+
+class SprintBreadcrumb(TitleBreadcrumb):
+    implements(IHeadingBreadcrumb)
 
 
 class SprintOverviewMenu(NavigationMenu):
