@@ -295,20 +295,18 @@ class Hierarchy(LaunchpadView):
                 breadcrumbs.append(breadcrumb)
 
         facet = get_facet(self._naked_context_view)
-        if (len(breadcrumbs) != 0 and facet is not None and
-            self.vhost_breadcrumb):
-            # We have breadcrumbs and we're on a custom facet, so we'll
-            # sneak an extra breadcrumb for the facet we're on.
-
-            # Iterate over the context of our breadcrumbs in reverse order and
-            # for the first one we find an adapter named after the facet we're
-            # on, generate an extra breadcrumb and insert it in our list.
+        if facet is not None and self.vhost_breadcrumb:
+            # Find the last IHeadingBreadcrumb and insert a facet
+            # breadcrumb after it.
+            # XXX: Should also ensure that all subsequent breadcrumbs
+            # are themselved faceted.
             for idx, breadcrumb in reversed(list(enumerate(breadcrumbs))):
-                extra_breadcrumb = queryAdapter(
-                    breadcrumb.context, IBreadcrumb, name=facet)
-                if extra_breadcrumb is not None:
-                    breadcrumbs.insert(idx + 1, extra_breadcrumb)
-                    break
+                if IHeadingBreadcrumb.providedBy(breadcrumb):
+                    extra_breadcrumb = queryAdapter(
+                        breadcrumb.context, IBreadcrumb, name=facet)
+                    if extra_breadcrumb is not None:
+                        breadcrumbs.insert(idx + 1, extra_breadcrumb)
+                        break
         if len(breadcrumbs) > 0:
             page_crumb = self.makeBreadcrumbForRequestedPage()
             if page_crumb:
