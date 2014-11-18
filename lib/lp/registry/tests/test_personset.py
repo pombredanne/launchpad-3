@@ -7,6 +7,7 @@ __metaclass__ = type
 
 
 from testtools.matchers import LessThan
+import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -110,13 +111,15 @@ class TestPersonSet(TestCaseWithFactory):
         # query to load all the extraneous data. Accessing the
         # attributes should then cause zero queries.
         person_ids = [self.factory.makePerson().id for i in range(3)]
+        person_ids += [self.factory.makeTeam().id for i in range(3)]
+        transaction.commit()
 
         with StormStatementRecorder() as recorder:
             persons = list(self.person_set.getPrecachedPersonsFromIDs(
                 person_ids, need_karma=True, need_ubuntu_coc=True,
-                need_location=True, need_archive=True,
+                need_teamowner=True, need_location=True, need_archive=True,
                 need_preferred_email=True, need_validity=True))
-        self.assertThat(recorder, HasQueryCount(LessThan(2)))
+        self.assertThat(recorder, HasQueryCount(LessThan(3)))
 
         with StormStatementRecorder() as recorder:
             for person in persons:
@@ -126,6 +129,7 @@ class TestPersonSet(TestCaseWithFactory):
                 person.location,
                 person.archive
                 person.preferredemail
+                person.teamowner
         self.assertThat(recorder, HasQueryCount(LessThan(1)))
 
     def test_getPrecachedPersonsFromIDs_is_ubuntu_coc_signer(self):
