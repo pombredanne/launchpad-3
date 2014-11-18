@@ -883,7 +883,7 @@
     <adapter
         name="branches"
         provides="lp.services.webapp.interfaces.IBreadcrumb"
-        for="lp.code.interfaces.hasbranches.IHasBranches"
+        for="*"
         factory="lp.code.browser.branchlisting.CodeFacetBreadcrumb"
         permission="zope.Public"/>
 
