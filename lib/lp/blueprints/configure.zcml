@@ -38,7 +38,7 @@
   <adapter
       provides="lp.services.webapp.interfaces.IBreadcrumb"
       for="lp.blueprints.interfaces.sprint.ISprint"
-      factory="lp.services.webapp.breadcrumb.TitleBreadcrumb"
+      factory="lp.blueprints.browser.sprint.SprintBreadcrumb"
       permission="zope.Public"/>
   <adapter
       provides="lp.services.webapp.interfaces.IBreadcrumb"

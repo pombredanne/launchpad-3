@@ -577,6 +577,8 @@
         factory="lp.registry.adapters.package_to_sourcepackagename"
         permission="zope.Public"/>
     <adapter
+        for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
         factory="lp.registry.browser.distributionsourcepackage.DistributionSourcePackageBreadcrumb"/>
 
     <!-- CommercialSubscription -->
@@ -905,7 +907,7 @@
         <adapter
             provides="lp.services.webapp.interfaces.IBreadcrumb"
             for="lp.registry.interfaces.person.IPerson"
-            factory="lp.services.webapp.breadcrumb.DisplaynameBreadcrumb"
+            factory="lp.registry.browser.person.PersonBreadcrumb"
             permission="zope.Public"/>
         <adapter
             provides="lp.services.webapp.interfaces.IBreadcrumb"

@@ -6,21 +6,12 @@
 __metaclass__ = type
 __all__ = [
     'IEditableContextTitle',
+    'IHeadingBreadcrumb',
     'IMajorHeadingView',
-    'IRootContext',
     ]
 
 
-from zope.interface import (
-    Attribute,
-    Interface,
-    )
-
-
-class IRootContext(Interface):
-    """Something that is an object off the Launchpad root."""
-
-    title = Attribute('The title of the root context object.')
+from zope.interface import Interface
 
 
 class IMajorHeadingView(Interface):
@@ -32,3 +23,7 @@ class IEditableContextTitle(Interface):
 
     def title_edit_widget():
         """Return the HTML of the editable title widget."""
+
+
+class IHeadingBreadcrumb(Interface):
+    """This breadcrumb can appear in header and thereby has no facet."""

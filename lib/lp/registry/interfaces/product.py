@@ -74,7 +74,6 @@ from zope.schema.vocabulary import SimpleVocabulary
 from lp import _
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.app.errors import NameLookupFailed
-from lp.app.interfaces.headings import IRootContext
 from lp.app.interfaces.informationtype import IInformationType
 from lp.app.interfaces.launchpad import (
     IHasIcon,
@@ -884,7 +883,7 @@ class IProductEditRestricted(IOfficialBugTagTargetRestricted):
 class IProduct(
     IBugTarget, IHasBugSupervisor, IHasDrivers, IProductEditRestricted,
     IProductModerateRestricted, IProductDriverRestricted, IProductView,
-    IProductLimitedView, IProductPublic, IQuestionTarget, IRootContext,
+    IProductLimitedView, IProductPublic, IQuestionTarget,
     ISpecificationTarget, IStructuralSubscriptionTarget, IInformationType,
     IPillar):
     """A Product.

@@ -81,8 +81,8 @@ from lp.app.errors import (
     )
 from lp.app.interfaces.headings import (
     IEditableContextTitle,
+    IHeadingBreadcrumb,
     IMajorHeadingView,
-    IRootContext,
     )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.interfaces.services import IServiceFactory
@@ -379,7 +379,7 @@ class Hierarchy(LaunchpadView):
         try:
             return (
                 crumb for crumb in self.items
-                if IRootContext.providedBy(crumb.context)).next()
+                if IHeadingBreadcrumb.providedBy(crumb)).next()
         except StopIteration:
             return None
 
