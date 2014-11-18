@@ -205,7 +205,11 @@ class SourcePackageBreadcrumb(Breadcrumb):
 
     @property
     def text(self):
-        return smartquote('"%s" source package') % (self.context.name)
+        return IBreadcrumb(self.context.distroseries).text
+
+    @property
+    def inside(self):
+        return self.context.distribution_sourcepackage
 
 
 class SourcePackageFacets(StandardLaunchpadFacets):
