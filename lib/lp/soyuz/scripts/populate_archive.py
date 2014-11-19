@@ -312,7 +312,8 @@ class ArchivePopulator(SoyuzScript):
     def add_my_options(self):
         """Parse command line arguments for copy archive creation/population.
         """
-        SoyuzScript.add_my_options(self)
+        self.add_transaction_options()
+        self.add_package_location_options()
 
         self.parser.add_option(
             "-a", "--architecture", dest="arch_tags", action="append",
@@ -378,3 +379,8 @@ class ArchivePopulator(SoyuzScript):
             "--nonvirtualized", dest="nonvirtualized", default=False,
             action="store_true",
             help='Create the archive as nonvirtual if specified.')
+
+    def setupLocation(self):
+        # SoyuzScript's default model of a single context location doesn't
+        # make sense here.
+        pass
