@@ -19,7 +19,6 @@ from lp.code.interfaces.branchnamespace import get_branch_namespace
 from lp.registry.interfaces.personproduct import IPersonProduct
 from lp.services.webapp import (
     canonical_url,
-    Link,
     Navigation,
     StandardLaunchpadFacets,
     )

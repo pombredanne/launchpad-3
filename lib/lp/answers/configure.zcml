@@ -18,6 +18,10 @@
       component="lp.answers.publisher.AnswersLayer"
       provides="zope.publisher.interfaces.browser.IDefaultBrowserLayer"
       name="answers" />
+  <utility
+      component="lp.answers.publisher.AnswersFacet"
+      provides="lp.services.webapp.interfaces.IFacet"
+      name="answers" />
 
     <subscriber
         for=".interfaces.question.IQuestion

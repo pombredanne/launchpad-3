@@ -21,7 +21,10 @@
       component="lp.blueprints.publisher.BlueprintsLayer"
       provides="zope.publisher.interfaces.browser.IDefaultBrowserLayer"
       name="blueprints" />
-
+  <utility
+      component="lp.blueprints.publisher.SpecificationsFacet"
+      provides="lp.services.webapp.interfaces.IFacet"
+      name="specifications" />
 
   <lp:help-folder folder="help" name="+help-blueprints" />
 

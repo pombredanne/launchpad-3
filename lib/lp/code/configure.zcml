@@ -21,6 +21,10 @@
       component="lp.code.publisher.CodeLayer"
       provides="zope.publisher.interfaces.browser.IDefaultBrowserLayer"
       name="code" />
+  <utility
+      component="lp.code.publisher.BranchesFacet"
+      provides="lp.services.webapp.interfaces.IFacet"
+      name="branches" />
 
   <!-- Branch Merge Queues -->
   <securedutility

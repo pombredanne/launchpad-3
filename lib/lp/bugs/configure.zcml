@@ -23,6 +23,10 @@
       component="lp.bugs.publisher.BugsLayer"
       provides="zope.publisher.interfaces.browser.IDefaultBrowserLayer"
       name="bugs" />
+  <utility
+      component="lp.bugs.publisher.BugsFacet"
+      provides="lp.services.webapp.interfaces.IFacet"
+      name="bugs" />
 
     <lp:help-folder folder="help" name="+help-bugs" />
 

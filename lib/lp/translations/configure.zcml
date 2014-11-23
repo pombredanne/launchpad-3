@@ -17,10 +17,13 @@
   <publisher
       name="translations"
       factory="lp.translations.publisher.translations_request_publication_factory"/>
-
   <utility
       component="lp.translations.publisher.TranslationsLayer"
       provides="zope.publisher.interfaces.browser.IDefaultBrowserLayer"
+      name="translations" />
+  <utility
+      component="lp.translations.publisher.TranslationsFacet"
+      provides="lp.services.webapp.interfaces.IFacet"
       name="translations" />
 
     <lp:help-folder folder="help" name="+help-translations" />

@@ -35,6 +35,7 @@ from zope.component import (
     getGlobalSiteManager,
     getUtility,
     queryAdapter,
+    queryUtility,
     )
 from zope.datetime import (
     DateTimeError,
@@ -143,6 +144,7 @@ from lp.services.webapp.escaping import structured
 from lp.services.webapp.interfaces import (
     IBreadcrumb,
     ICanonicalUrlData,
+    IFacet,
     ILaunchBag,
     ILaunchpadRoot,
     INavigationMenu,
@@ -336,23 +338,15 @@ class Hierarchy(LaunchpadView):
         facet, return None -- we'll have injected a *FacetBreadcrumb
         earlier in the hierarchy which links here.
         """
-        # XXX wgrant 2014-02-25: We should eventually define the
-        # facet-level defaults in app-level ZCML rather than hardcoding
-        # them centrally.
-        facet_defaults = {
-            'answers': '+questions',
-            'branches': '+branches',
-            'bugs': '+bugs',
-            'specifications': '+specs',
-            'translations': '+translations',
-            }
-
         url = self.request.getURL()
         obj = self.request.traversed_objects[-2]
         default_view_name = getDefaultViewName(obj, self.request)
         view = self._naked_context_view
-        facet = get_facet(view)
-        if view.__name__ not in (default_view_name, facet_defaults.get(facet)):
+        default_views = [default_view_name]
+        facet = queryUtility(IFacet, name=get_facet(view))
+        if facet is not None:
+            default_views.append(facet.default_view)
+        if view.__name__ not in default_views:
             title = getattr(view, 'page_title', None)
             if title is None:
                 title = getattr(view, 'label', None)
