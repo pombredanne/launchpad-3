@@ -12,6 +12,7 @@ __all__ = [
 
 
 from zope.component import queryAdapter
+from zope.interface import implements
 from zope.traversing.interfaces import IPathAdapter
 
 from lp.app.errors import NotFoundError
@@ -23,6 +24,7 @@ from lp.services.webapp import (
     StandardLaunchpadFacets,
     )
 from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.interfaces import IMultiFacetedBreadcrumb
 
 
 class PersonProductNavigation(Navigation):
@@ -42,6 +44,7 @@ class PersonProductNavigation(Navigation):
 
 class PersonProductBreadcrumb(Breadcrumb):
     """Breadcrumb for an `IPersonProduct`."""
+    implements(IMultiFacetedBreadcrumb)
 
     @property
     def text(self):

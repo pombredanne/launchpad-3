@@ -27,7 +27,10 @@ from lazr.restful.interfaces import IJSONRequestCache
 from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
-from zope.interface import Interface
+from zope.interface import (
+    implements,
+    Interface,
+    )
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.schema import (
     Choice,
@@ -90,6 +93,7 @@ from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.batching import BatchNavigator
 from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.services.webapp.escaping import structured
+from lp.services.webapp.interfaces import IMultiFacetedBreadcrumb
 from lp.services.webapp.menu import (
     ApplicationMenu,
     enabled_with_permission,
@@ -198,6 +202,7 @@ class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin,
 
 class DistroSeriesBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `IDistroSeries`."""
+    implements(IMultiFacetedBreadcrumb)
 
     @property
     def text(self):

@@ -1864,7 +1864,8 @@
         factory="lp.registry.adapters.sourcepackage_to_distribution"
         permission="zope.Public"/>
     <adapter
-        factory="lp.registry.browser.sourcepackage.SourcePackageBreadcrumb"/>
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
+        factory="lp.registry.browser.sourcepackage.SourcePackageBreadcrumb" />
     <adapter
         provides="lp.registry.interfaces.sourcepackagename.ISourcePackageName"
         for="lp.registry.interfaces.sourcepackage.ISourcePackage"

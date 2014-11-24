@@ -242,6 +242,10 @@ class IBreadcrumb(Interface):
         'Next object up the chain. If not specified, the URL parent is used.')
 
 
+class IMultiFacetedBreadcrumb(Interface):
+    """A breadcrumb link for an object that transcends facets."""
+
+
 #
 # Canonical URLs
 #

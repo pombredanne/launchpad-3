@@ -94,7 +94,7 @@ from lp.services.webapp import (
     )
 from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.services.webapp.escaping import structured
-from lp.services.webapp.interfaces import IBreadcrumb
+from lp.services.webapp.interfaces import IMultiFacetedBreadcrumb
 from lp.services.webapp.publisher import LaunchpadView
 from lp.services.worlddata.helpers import browser_languages
 from lp.services.worlddata.interfaces.country import ICountry
@@ -201,7 +201,7 @@ class SourcePackageNavigation(Navigation, BugTargetTraversalMixin):
 @adapter(ISourcePackage)
 class SourcePackageBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `ISourcePackage`."""
-    implements(IBreadcrumb)
+    implements(IMultiFacetedBreadcrumb)
 
     @property
     def text(self):
