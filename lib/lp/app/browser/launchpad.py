@@ -312,6 +312,8 @@ class Hierarchy(LaunchpadView):
                         Breadcrumb(
                             breadcrumb.context, rootsite=facet.rootsite,
                             text=facet.text))
+                    for remaining_crumb in breadcrumbs[idx + 1:]:
+                        remaining_crumb.rootsite_override = facet.rootsite
                     break
         if len(breadcrumbs) > 0:
             page_crumb = self.makeBreadcrumbForRequestedPage()
