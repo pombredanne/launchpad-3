@@ -147,6 +147,7 @@ from lp.services.webapp.interfaces import (
     IFacet,
     ILaunchBag,
     ILaunchpadRoot,
+    IMultiFacetedBreadcrumb,
     INavigationMenu,
     )
 from lp.services.webapp.menu import get_facet
@@ -296,7 +297,7 @@ class Hierarchy(LaunchpadView):
             if breadcrumb is not None:
                 breadcrumbs.append(breadcrumb)
 
-        facet = get_facet(self._naked_context_view)
+        facet = queryUtility(IFacet, name=get_facet(self._naked_context_view))
         if (len(breadcrumbs) != 0 and facet is not None and
             self.vhost_breadcrumb):
             # We have breadcrumbs and we're on a custom facet, so we'll
@@ -306,11 +307,13 @@ class Hierarchy(LaunchpadView):
             # for the first one we find an adapter named after the facet we're
             # on, generate an extra breadcrumb and insert it in our list.
             for idx, breadcrumb in reversed(list(enumerate(breadcrumbs))):
-                extra_breadcrumb = queryAdapter(
-                    breadcrumb.context, IBreadcrumb, name=facet)
-                if extra_breadcrumb is not None:
-                    breadcrumbs.insert(idx + 1, extra_breadcrumb)
-                    break
+                if IMultiFacetedBreadcrumb.providedBy(breadcrumb):
+                    extra_breadcrumb = Breadcrumb(
+                        breadcrumb.context, rootsite=facet.rootsite,
+                        text=facet.text)
+                    if extra_breadcrumb is not None:
+                        breadcrumbs.insert(idx + 1, extra_breadcrumb)
+                        break
         if len(breadcrumbs) > 0:
             page_crumb = self.makeBreadcrumbForRequestedPage()
             if page_crumb:
