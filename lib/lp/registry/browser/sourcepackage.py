@@ -31,7 +31,6 @@ from lazr.enum import (
     Item,
     )
 from lazr.restful.interface import copy_field
-from lazr.restful.utils import smartquote
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.component import (
     adapter,
@@ -41,10 +40,7 @@ from zope.component import (
 from zope.formlib.form import Fields
 from zope.formlib.interfaces import IInputWidget
 from zope.formlib.widgets import DropdownWidget
-from zope.interface import (
-    implements,
-    Interface,
-    )
+from zope.interface import Interface
 from zope.schema import (
     Choice,
     TextLine,
@@ -94,7 +90,7 @@ from lp.services.webapp import (
     )
 from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.services.webapp.escaping import structured
-from lp.services.webapp.interfaces import IMultiFacetedBreadcrumb
+from lp.services.webapp.interfaces import IBreadcrumb
 from lp.services.webapp.publisher import LaunchpadView
 from lp.services.worlddata.helpers import browser_languages
 from lp.services.worlddata.interfaces.country import ICountry
@@ -203,7 +199,6 @@ class SourcePackageNavigation(Navigation, BugTargetTraversalMixin):
 @adapter(ISourcePackage)
 class SourcePackageBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `ISourcePackage`."""
-    implements(IMultiFacetedBreadcrumb)
 
     @property
     def text(self):
