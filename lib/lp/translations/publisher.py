@@ -17,11 +17,21 @@ from zope.publisher.interfaces.browser import (
     IDefaultBrowserLayer,
     )
 
+from lp.services.webapp.interfaces import IFacet
 from lp.services.webapp.publication import LaunchpadBrowserPublication
 from lp.services.webapp.servers import (
     LaunchpadBrowserRequest,
     VHostWebServiceRequestPublicationFactory,
     )
+
+
+class TranslationsFacet:
+    implements(IFacet)
+
+    name = "translations"
+    rootsite = "translations"
+    text = "Translations"
+    default_view = "+translations"
 
 
 class TranslationsLayer(IBrowserRequest, IDefaultBrowserLayer):

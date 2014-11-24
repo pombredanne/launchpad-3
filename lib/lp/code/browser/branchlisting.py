@@ -12,7 +12,6 @@ __all__ = [
     'DistributionSourcePackageBranchesView',
     'DistroSeriesBranchListingView',
     'GroupedDistributionSourcePackageBranchesView',
-    'CodeFacetBreadcrumb',
     'PersonBranchesMenu',
     'PersonCodeSummaryView',
     'PersonOwnedBranchesView',
@@ -132,13 +131,7 @@ from lp.services.webapp.authorization import (
     precache_permission_for_objects,
     )
 from lp.services.webapp.batching import TableBatchNavigator
-from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.services.webapp.publisher import LaunchpadView
-
-
-class CodeFacetBreadcrumb(Breadcrumb):
-    rootsite = 'code'
-    text = 'Code'
 
 
 class BranchBadges(HasBadgeBase):

@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 __all__ = [
-    "BugsFacetBreadcrumb",
     "BugsPatchesView",
     "BugTargetBugListingView",
     "BugTargetBugTagsView",
@@ -138,7 +137,6 @@ from lp.services.webapp import (
     )
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.batching import BatchNavigator
-from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.services.webapp.escaping import structured
 
 # A simple vocabulary for the subscribe_to_existing_bug form field.
@@ -1266,11 +1264,6 @@ class OfficialBugTagsManageView(LaunchpadEditFormView):
     def cancel_url(self):
         """The URL the user is sent to when clicking the "cancel" link."""
         return canonical_url(self.context)
-
-
-class BugsFacetBreadcrumb(Breadcrumb):
-    rootsite = 'bugs'
-    text = 'Bugs'
 
 
 class BugsPatchesView(LaunchpadView):
