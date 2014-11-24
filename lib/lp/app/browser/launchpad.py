@@ -256,8 +256,6 @@ class LinkView(LaunchpadView):
 class Hierarchy(LaunchpadView):
     """The hierarchy part of the location bar on each page."""
 
-    vhost_breadcrumb = True
-
     @property
     def objects(self):
         """The objects for which we want breadcrumbs."""
@@ -298,8 +296,7 @@ class Hierarchy(LaunchpadView):
                 breadcrumbs.append(breadcrumb)
 
         facet = queryUtility(IFacet, name=get_facet(self._naked_context_view))
-        if (len(breadcrumbs) != 0 and facet is not None and
-            self.vhost_breadcrumb):
+        if breadcrumbs and facet is not None:
             # We have breadcrumbs and we're on a custom facet, so we'll
             # sneak an extra breadcrumb for the facet we're on.
             # Iterate over the context of our breadcrumbs in reverse order and
