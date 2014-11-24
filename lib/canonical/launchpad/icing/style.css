@@ -441,7 +441,7 @@ a.update-retry {
     overflow: hidden;
     display: block;
 }
-#ppa-install #ppa-reference {
+#ppa-install .ppa-reference {
     white-space: nowrap;
 }
 

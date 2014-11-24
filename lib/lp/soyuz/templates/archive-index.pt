@@ -91,7 +91,7 @@
 
         <p>You can update your system with unsupported packages from
           this untrusted PPA by adding <strong
-          tal:content="context/fmt:reference" id="ppa-reference">ppa:cprov/ppa</strong>
+          tal:content="context/fmt:reference" class="ppa-reference">ppa:cprov/ppa</strong>
           to your system's Software Sources.
           (<a href="/+help-soyuz/ppa-sources-list.html"
               target="help">Read about installing</a>)
