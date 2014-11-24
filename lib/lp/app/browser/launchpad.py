@@ -338,7 +338,7 @@ class Hierarchy(LaunchpadView):
         URL and the page's name (i.e. the last path segment of the URL).
 
         If the view is the default one for the object or the current
-        facet, return None -- we'll have injected a *FacetBreadcrumb
+        facet, return None -- we'll have injected a facet Breadcrumb
         earlier in the hierarchy which links here.
         """
         url = self.request.getURL()

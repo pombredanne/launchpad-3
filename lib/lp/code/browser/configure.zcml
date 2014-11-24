@@ -881,13 +881,6 @@
         template="../templates/active-reviews.pt"/>
 
     <adapter
-        name="branches"
-        provides="lp.services.webapp.interfaces.IBreadcrumb"
-        for="lp.code.interfaces.hasbranches.IHasBranches"
-        factory="lp.code.browser.branchlisting.CodeFacetBreadcrumb"
-        permission="zope.Public"/>
-
-    <adapter
         provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.code.interfaces.branch.IBranch"
         factory="lp.code.browser.branch.BranchBreadcrumb"

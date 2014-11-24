@@ -10,7 +10,6 @@ __all__ = [
     'TranslationsLanguageBreadcrumb',
     'TranslationsMixin',
     'TranslationsRedirectView',
-    'TranslationsFacetBreadcrumb',
     ]
 
 from zope.component import getUtility
@@ -162,11 +161,6 @@ class TranslationsRedirectView(RedirectionView):
             context, rootsite='translations', view_name='+translations')
         super(TranslationsRedirectView, self).__init__(
             target, request, status=301)
-
-
-class TranslationsFacetBreadcrumb(Breadcrumb):
-    rootsite = 'translations'
-    text = 'Translations'
 
 
 class TranslationsLanguageBreadcrumb(Breadcrumb):

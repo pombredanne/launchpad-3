@@ -9,20 +9,6 @@
     xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
     i18n_domain="launchpad">
 
-  <adapter
-      name="specifications"
-      provides="lp.services.webapp.interfaces.IBreadcrumb"
-      for="lp.blueprints.interfaces.specificationtarget.IHasSpecifications"
-      factory="lp.blueprints.browser.specificationtarget.BlueprintsFacetBreadcrumb"
-      permission="zope.Public"/>
-  <adapter
-      name="specifications"
-      provides="lp.services.webapp.interfaces.IBreadcrumb"
-      for="lp.registry.interfaces.person.IPerson"
-      factory="lp.blueprints.browser.specificationtarget.BlueprintsFacetBreadcrumb"
-      permission="zope.Public"/>
-
-
     <browser:navigation
         module="lp.blueprints.browser.sprint"
         classes="

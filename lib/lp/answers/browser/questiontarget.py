@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'AnswersFacetBreadcrumb',
     'AskAQuestionButtonPortlet',
     'ManageAnswerContactView',
     'SearchQuestionsView',
@@ -85,7 +84,6 @@ from lp.services.webapp import (
     )
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.batching import BatchNavigator
-from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.services.webapp.escaping import structured
 from lp.services.webapp.publisher import LaunchpadView
 from lp.services.worlddata.helpers import (
@@ -960,8 +958,3 @@ class QuestionTargetAnswersMenu(QuestionCollectionAnswersMenu):
         """Return a link to the manage answer contact view."""
         text = 'Set answer contact'
         return Link('+answer-contact', text, icon='edit')
-
-
-class AnswersFacetBreadcrumb(Breadcrumb):
-    rootsite = 'answers'
-    text = 'Questions'
