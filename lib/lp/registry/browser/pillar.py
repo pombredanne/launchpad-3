@@ -67,6 +67,7 @@ from lp.services.webapp.breadcrumb import (
     Breadcrumb,
     DisplaynameBreadcrumb,
     )
+from lp.services.webapp.interfaces import IMultiFacetedBreadcrumb
 from lp.services.webapp.menu import (
     ApplicationMenu,
     enabled_with_permission,
@@ -83,7 +84,7 @@ from lp.services.webapp.publisher import (
 
 class PillarBreadcrumb(DisplaynameBreadcrumb):
     """Breadcrumb that uses the displayname or title as appropriate."""
-    implements(IHeadingBreadcrumb)
+    implements(IHeadingBreadcrumb, IMultiFacetedBreadcrumb)
 
     @property
     def detail(self):

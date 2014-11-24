@@ -18,13 +18,25 @@ from zope.publisher.interfaces.browser import (
     IDefaultBrowserLayer,
     )
 
-from lp.services.webapp.interfaces import ILaunchpadContainer
+from lp.services.webapp.interfaces import (
+    IFacet,
+    ILaunchpadContainer,
+    )
 from lp.services.webapp.publication import LaunchpadBrowserPublication
 from lp.services.webapp.publisher import LaunchpadContainer
 from lp.services.webapp.servers import (
     LaunchpadBrowserRequest,
     VHostWebServiceRequestPublicationFactory,
     )
+
+
+class BugsFacet:
+    implements(IFacet)
+
+    name = "bugs"
+    rootsite = "bugs"
+    text = "Bugs"
+    default_view = "+bugs"
 
 
 class BugsLayer(IBrowserRequest, IDefaultBrowserLayer):

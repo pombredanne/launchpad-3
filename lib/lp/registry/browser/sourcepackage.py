@@ -94,7 +94,7 @@ from lp.services.webapp import (
     )
 from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.services.webapp.escaping import structured
-from lp.services.webapp.interfaces import IBreadcrumb
+from lp.services.webapp.interfaces import IMultiFacetedBreadcrumb
 from lp.services.webapp.publisher import LaunchpadView
 from lp.services.worlddata.helpers import browser_languages
 from lp.services.worlddata.interfaces.country import ICountry
@@ -195,13 +195,15 @@ class SourcePackageNavigation(Navigation, BugTargetTraversalMixin):
         removed in Nov 2014.
         """
         dspr = self.context.distribution_sourcepackage.getVersion(name)
+        if dspr is None:
+            return None
         return self.redirectSubTree(canonical_url(dspr), status=301)
 
 
 @adapter(ISourcePackage)
 class SourcePackageBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `ISourcePackage`."""
-    implements(IBreadcrumb)
+    implements(IMultiFacetedBreadcrumb)
 
     @property
     def text(self):

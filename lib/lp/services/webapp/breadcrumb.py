@@ -33,8 +33,10 @@ class Breadcrumb:
     _detail = None
     _url = None
     inside = None
+    _rootsite = None
 
-    def __init__(self, context, url=None, text=None, inside=None):
+    def __init__(self, context, url=None, text=None, inside=None,
+                 rootsite=None):
         self.context = context
         if url is not None:
             self._url = url
@@ -42,6 +44,8 @@ class Breadcrumb:
             self.text = text
         if inside is not None:
             self.inside = inside
+        if rootsite is not None:
+            self._rootsite = rootsite
 
     @property
     def rootsite(self):
@@ -50,6 +54,8 @@ class Breadcrumb:
         If the `ICanonicalUrlData` for our context defines a rootsite, we
         return that, otherwise we return 'mainsite'.
         """
+        if self._rootsite is not None:
+            return self._rootsite
         url_data = ICanonicalUrlData(self.context)
         if url_data.rootsite:
             return url_data.rootsite

@@ -69,7 +69,7 @@ from lp.services.webapp import (
     )
 from lp.services.webapp.batching import BatchNavigator
 from lp.services.webapp.breadcrumb import Breadcrumb
-from lp.services.webapp.interfaces import IBreadcrumb
+from lp.services.webapp.interfaces import IMultiFacetedBreadcrumb
 from lp.services.webapp.menu import (
     ApplicationMenu,
     enabled_with_permission,
@@ -102,7 +102,7 @@ class DistributionSourcePackageFormatterAPI(CustomizableFormatter):
 
 class DistributionSourcePackageBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `IDistributionSourcePackage`."""
-    implements(IBreadcrumb, IHeadingBreadcrumb)
+    implements(IHeadingBreadcrumb, IMultiFacetedBreadcrumb)
 
     @property
     def text(self):
