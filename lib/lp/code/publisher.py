@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'BranchesFacet',
     'CodeBrowserRequest',
     'CodeLayer',
     'code_request_publication_factory',
@@ -18,13 +19,25 @@ from zope.publisher.interfaces.browser import (
     IDefaultBrowserLayer,
     )
 
-from lp.services.webapp.interfaces import ILaunchpadContainer
+from lp.services.webapp.interfaces import (
+    IFacet,
+    ILaunchpadContainer,
+    )
 from lp.services.webapp.publication import LaunchpadBrowserPublication
 from lp.services.webapp.publisher import LaunchpadContainer
 from lp.services.webapp.servers import (
     LaunchpadBrowserRequest,
     VHostWebServiceRequestPublicationFactory,
     )
+
+
+class BranchesFacet:
+    implements(IFacet)
+
+    name = "branches"
+    rootsite = "code"
+    text = "Code"
+    default_view = "+branches"
 
 
 class CodeLayer(IBrowserRequest, IDefaultBrowserLayer):

@@ -252,6 +252,7 @@ from lp.services.webapp.batching import BatchNavigator
 from lp.services.webapp.breadcrumb import DisplaynameBreadcrumb
 from lp.services.webapp.interfaces import (
     ILaunchBag,
+    IMultiFacetedBreadcrumb,
     IOpenLaunchBag,
     )
 from lp.services.webapp.login import (
@@ -276,7 +277,7 @@ COMMASPACE = ', '
 
 
 class PersonBreadcrumb(DisplaynameBreadcrumb):
-    implements(IHeadingBreadcrumb)
+    implements(IHeadingBreadcrumb, IMultiFacetedBreadcrumb)
 
 
 class RestrictedMembershipsPersonView(LaunchpadView):

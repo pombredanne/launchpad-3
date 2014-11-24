@@ -136,6 +136,7 @@ from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.batching import BatchNavigator
 from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.services.webapp.escaping import structured
+from lp.services.webapp.interfaces import IMultiFacetedBreadcrumb
 from lp.services.worlddata.helpers import browser_languages
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.services.worlddata.interfaces.language import ILanguageSet
@@ -188,6 +189,7 @@ class ProductSeriesNavigation(Navigation, BugTargetTraversalMixin,
 
 class ProductSeriesBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `IProductSeries`."""
+    implements(IMultiFacetedBreadcrumb)
 
     @property
     def text(self):

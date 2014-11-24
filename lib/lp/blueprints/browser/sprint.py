@@ -84,6 +84,7 @@ from lp.services.webapp.breadcrumb import (
     Breadcrumb,
     TitleBreadcrumb,
     )
+from lp.services.webapp.interfaces import IMultiFacetedBreadcrumb
 
 
 class SprintFacets(StandardLaunchpadFacets):
@@ -102,7 +103,7 @@ class SprintNavigation(Navigation):
 
 
 class SprintBreadcrumb(TitleBreadcrumb):
-    implements(IHeadingBreadcrumb)
+    implements(IHeadingBreadcrumb, IMultiFacetedBreadcrumb)
 
 
 class SprintOverviewMenu(NavigationMenu):

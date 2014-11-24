@@ -173,7 +173,10 @@ from lp.services.webapp.batching import (
     )
 from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.services.webapp.escaping import structured
-from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.interfaces import (
+    ILaunchBag,
+    IMultiFacetedBreadcrumb,
+    )
 
 
 class TeamPrivacyAdapter:
@@ -1247,7 +1250,7 @@ class TeamNavigation(PersonNavigation):
 
 class TeamBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `ITeam`."""
-    implements(IHeadingBreadcrumb)
+    implements(IHeadingBreadcrumb, IMultiFacetedBreadcrumb)
 
     @property
     def text(self):

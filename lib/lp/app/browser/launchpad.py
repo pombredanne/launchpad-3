@@ -35,6 +35,7 @@ from zope.component import (
     getGlobalSiteManager,
     getUtility,
     queryAdapter,
+    queryUtility,
     )
 from zope.datetime import (
     DateTimeError,
@@ -143,8 +144,10 @@ from lp.services.webapp.escaping import structured
 from lp.services.webapp.interfaces import (
     IBreadcrumb,
     ICanonicalUrlData,
+    IFacet,
     ILaunchBag,
     ILaunchpadRoot,
+    IMultiFacetedBreadcrumb,
     INavigationMenu,
     )
 from lp.services.webapp.menu import get_facet
@@ -253,8 +256,6 @@ class LinkView(LaunchpadView):
 class Hierarchy(LaunchpadView):
     """The hierarchy part of the location bar on each page."""
 
-    vhost_breadcrumb = True
-
     @property
     def objects(self):
         """The objects for which we want breadcrumbs."""
@@ -294,20 +295,21 @@ class Hierarchy(LaunchpadView):
             if breadcrumb is not None:
                 breadcrumbs.append(breadcrumb)
 
-        facet = get_facet(self._naked_context_view)
-        if (len(breadcrumbs) != 0 and facet is not None and
-            self.vhost_breadcrumb):
+        facet = queryUtility(IFacet, name=get_facet(self._naked_context_view))
+        if breadcrumbs and facet is not None:
             # We have breadcrumbs and we're on a custom facet, so we'll
             # sneak an extra breadcrumb for the facet we're on.
-
             # Iterate over the context of our breadcrumbs in reverse order and
-            # for the first one we find an adapter named after the facet we're
-            # on, generate an extra breadcrumb and insert it in our list.
+            # find the first one that implements IMultiFactedBreadcrumb.
+            # It'll be facet-agnostic, so insert a facet-specific one
+            # after it.
             for idx, breadcrumb in reversed(list(enumerate(breadcrumbs))):
-                extra_breadcrumb = queryAdapter(
-                    breadcrumb.context, IBreadcrumb, name=facet)
-                if extra_breadcrumb is not None:
-                    breadcrumbs.insert(idx + 1, extra_breadcrumb)
+                if IMultiFacetedBreadcrumb.providedBy(breadcrumb):
+                    breadcrumbs.insert(
+                        idx + 1,
+                        Breadcrumb(
+                            breadcrumb.context, rootsite=facet.rootsite,
+                            text=facet.text))
                     break
         if len(breadcrumbs) > 0:
             page_crumb = self.makeBreadcrumbForRequestedPage()
@@ -333,26 +335,18 @@ class Hierarchy(LaunchpadView):
         URL and the page's name (i.e. the last path segment of the URL).
 
         If the view is the default one for the object or the current
-        facet, return None -- we'll have injected a *FacetBreadcrumb
+        facet, return None -- we'll have injected a facet Breadcrumb
         earlier in the hierarchy which links here.
         """
-        # XXX wgrant 2014-02-25: We should eventually define the
-        # facet-level defaults in app-level ZCML rather than hardcoding
-        # them centrally.
-        facet_defaults = {
-            'answers': '+questions',
-            'branches': '+branches',
-            'bugs': '+bugs',
-            'specifications': '+specs',
-            'translations': '+translations',
-            }
-
         url = self.request.getURL()
         obj = self.request.traversed_objects[-2]
         default_view_name = getDefaultViewName(obj, self.request)
         view = self._naked_context_view
-        facet = get_facet(view)
-        if view.__name__ not in (default_view_name, facet_defaults.get(facet)):
+        default_views = [default_view_name]
+        facet = queryUtility(IFacet, name=get_facet(view))
+        if facet is not None:
+            default_views.append(facet.default_view)
+        if view.__name__ not in default_views:
             title = getattr(view, 'page_title', None)
             if title is None:
                 title = getattr(view, 'label', None)
