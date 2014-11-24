@@ -435,11 +435,16 @@ a.update-retry {
 }
 #ppa-install .widget-body {
     margin: 1em;
+    whitespace: nowrap;
 }
 #ppa-install .widget-body.lazr-closed {
     height: 0px;
     overflow: hidden;
     display: block;
+}
+
+#ppa-install #ppa-reference {
+    white-space: nowrap;
 }
 
 /* Brand the related PPA versions with the PPA icon (not currently
