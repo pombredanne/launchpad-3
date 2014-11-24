@@ -31,7 +31,7 @@ class AnswersFacet:
 
     name = "answers"
     rootsite = "answers"
-    text = "Answers"
+    text = "Questions"
     default_view = "+questions"
 
 
