@@ -21,6 +21,7 @@ from zope.interface import (
     Interface,
     )
 from zope.schema import (
+    Bool,
     Choice,
     Datetime,
     Int,
@@ -126,6 +127,9 @@ class ISprint(IHasOwner, IHasDrivers, IHasSpecifications):
         title=_('Finishing Date and Time'), required=True)
     datecreated = Datetime(
         title=_('Date Created'), required=True, readonly=True)
+    is_physical = Bool(
+        title=_("Is the sprint being held in a physical location?"),
+        required=True, readonly=False, default=True)
 
     # joins
     attendees = Attribute('The set of attendees at this sprint.')
