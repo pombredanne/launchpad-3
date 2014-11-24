@@ -302,18 +302,18 @@ class Hierarchy(LaunchpadView):
             self.vhost_breadcrumb):
             # We have breadcrumbs and we're on a custom facet, so we'll
             # sneak an extra breadcrumb for the facet we're on.
-
             # Iterate over the context of our breadcrumbs in reverse order and
-            # for the first one we find an adapter named after the facet we're
-            # on, generate an extra breadcrumb and insert it in our list.
+            # find the first one that implements IMultiFactedBreadcrumb.
+            # It'll be facet-agnostic, so insert a facet-specific one
+            # after it.
             for idx, breadcrumb in reversed(list(enumerate(breadcrumbs))):
                 if IMultiFacetedBreadcrumb.providedBy(breadcrumb):
-                    extra_breadcrumb = Breadcrumb(
-                        breadcrumb.context, rootsite=facet.rootsite,
-                        text=facet.text)
-                    if extra_breadcrumb is not None:
-                        breadcrumbs.insert(idx + 1, extra_breadcrumb)
-                        break
+                    breadcrumbs.insert(
+                        idx + 1,
+                        Breadcrumb(
+                            breadcrumb.context, rootsite=facet.rootsite,
+                            text=facet.text))
+                    break
         if len(breadcrumbs) > 0:
             page_crumb = self.makeBreadcrumbForRequestedPage()
             if page_crumb:
