@@ -23,8 +23,7 @@ Announcement breadcrumbs use the announcement title.
     >>> hierarchy = create_initialized_view(
     ...     announcement, '+hierarchy', request=request)
     >>> hierarchy.items
-    [<DisplaynameBreadcrumb ... text='Cube'>,
-     <TitleBreadcrumb ... text='A title'>]
+    [<PillarBreadcrumb ... text='Cube'>, <TitleBreadcrumb ... text='A title'>]
 
 
 Menus

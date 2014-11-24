@@ -195,6 +195,8 @@ class SourcePackageNavigation(Navigation, BugTargetTraversalMixin):
         removed in Nov 2014.
         """
         dspr = self.context.distribution_sourcepackage.getVersion(name)
+        if dspr is None:
+            return None
         return self.redirectSubTree(canonical_url(dspr), status=301)
 
 
