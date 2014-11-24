@@ -255,7 +255,7 @@ class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
             attendance = SprintAttendance(sprint=self, attendee=person)
         attendance.time_starts = time_starts
         attendance.time_ends = time_ends
-        attendance.is_physical = is_physical
+        attendance._is_physical = is_physical
         return attendance
 
     def removeAttendance(self, person):
