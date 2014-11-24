@@ -177,9 +177,9 @@ class TestExtraFacetBreadcrumbsOnHierarchyView(BaseBreadcrumbTestCase):
         dsp_url = canonical_url(target.distribution_sourcepackage)
         dsp_bugs_url = canonical_url(
             target.distribution_sourcepackage, rootsite='bugs')
-        package_url = canonical_url(target)
+        package_bugs_url = canonical_url(target, rootsite='bugs')
 
         self.assertBreadcrumbUrls(
-            [distro_url, dsp_url, dsp_bugs_url, package_url,
+            [distro_url, dsp_url, dsp_bugs_url, package_bugs_url,
              self.package_bugtask_url],
             self.package_bugtask)

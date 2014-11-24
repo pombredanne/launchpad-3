@@ -93,7 +93,7 @@ and Answers.
     >>> anon_browser.open(
     ...     'http://launchpad.dev/ubuntu/hoary/+source/alsa-utils')
     >>> print_location(anon_browser.contents)
-    Hierarchy: Ubuntu > Hoary (5.04) > ?alsa-utils? source package
+    Hierarchy: Ubuntu > ?alsa-utils? package > Hoary (5.04)
     Tabs:
     * Overview (selected) - not linked
     * Code - http://code.launchpad.dev/ubuntu/hoary/+source/alsa-utils

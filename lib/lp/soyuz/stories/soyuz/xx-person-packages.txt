@@ -71,7 +71,7 @@ user follows the "Ubuntu Hoary" link next to cnews:
     <Link text='Ubuntu Hoary' ...>
     >>> link.click()
     >>> browser.title
-    '...cnews... package : Hoary (5.04) : Ubuntu'
+    'Hoary (5.04) : ...cnews... package : Ubuntu'
 
 The third column links to the distribution source package release page. The
 user follows the cnews version link to see the page.
