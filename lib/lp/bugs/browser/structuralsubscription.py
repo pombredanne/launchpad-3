@@ -478,14 +478,14 @@ def expose_user_administered_teams_to_js(request, user, context,
                     precache_permission_for_objects(
                         None, perm, administers_and_in)
 
-            for team in administers_and_in:
+            for team in sorted(administers_and_in, key=attrgetter('name')):
                 if (bug_supervisor is not None and
                     not team.inTeam(bug_supervisor)):
                     continue
                 info.append({
                     'has_preferredemail': team.preferredemail is not None,
                     'link': absoluteURL(team, api_request),
-                    'title': team.title,
+                    'title': team.unique_displayname,
                     'url': canonical_url(team),
                 })
     objects['administratedTeams'] = info
