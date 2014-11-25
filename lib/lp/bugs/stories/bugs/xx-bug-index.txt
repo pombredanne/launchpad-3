@@ -21,7 +21,7 @@ The breadcrumbs and other navigation include a link to the bug itself.
     * Bugs (selected) -
       http://bugs.launchpad.dev/debian/+source/mozilla-firefox
     * Blueprints - not linked
-    * Translations - not linked
+    * Translations - http://translations.launchpad.dev/debian/+source/mozilla-firefox
     * Answers - http://answers.launchpad.dev/debian/+source/mozilla-firefox
     Main heading: Blackhole Trash folder
 
