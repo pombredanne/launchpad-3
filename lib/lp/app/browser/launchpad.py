@@ -373,13 +373,12 @@ class Hierarchy(LaunchpadView):
         return len(self.items) > 1 and not has_major_heading
 
     @property
-    def heading_breadcrumb(self):
-        try:
-            return (
-                crumb for crumb in self.items
-                if IHeadingBreadcrumb.providedBy(crumb)).next()
-        except StopIteration:
-            return None
+    def heading_breadcrumbs(self):
+        crumbs = [
+            crumb for crumb in self.items
+            if IHeadingBreadcrumb.providedBy(crumb)]
+        assert len(crumbs) <= 2
+        return crumbs
 
     def heading(self):
         """Return the heading text for the page.
@@ -398,19 +397,25 @@ class Hierarchy(LaunchpadView):
         heading = 'h1' if IMajorHeadingView.providedBy(self.context) else 'h2'
         # If there is actually no root context, then it's a top-level
         # context-less page so Launchpad.net is shown as the branding.
-        if self.heading_breadcrumb:
-            title = self.heading_breadcrumb.detail
+        crumbs = self.heading_breadcrumbs
+        if len(crumbs) >= 1:
+            title = crumbs[0].detail
         else:
             title = 'Launchpad.net'
         # For non-editable titles, generate the static heading.
-        return structured(
+        markup = structured(
             "<%(heading)s>%(title)s</%(heading)s>",
             heading=heading, title=title).escapedtext
+        if len(crumbs) >= 2:
+            markup += structured(
+                '\n<%(heading)s class="secondary">%(title)s</%(heading)s>',
+                heading=heading, title=crumbs[1].detail).escapedtext
+        return markup
 
     def logo(self):
         """Return the logo image for the top header breadcrumb's context."""
         logo_context = (
-            self.heading_breadcrumb.context if self.heading_breadcrumb
+            self.heading_breadcrumbs[0].context if self.heading_breadcrumbs
             else None)
         adapter = queryAdapter(logo_context, IPathAdapter, 'image')
         if logo_context != self.context.context and logo_context is not None:
