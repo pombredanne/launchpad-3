@@ -18,7 +18,7 @@ the main heading repeats the bug number for clarity:
     * Code - http://code.launchpad.dev/debian/+source/mozilla-firefox
     * Bugs (selected) - http://bugs...dev/debian/+source/mozilla-firefox
     * Blueprints - not linked
-    * Translations - not linked
+    * Translations - http://translations.launchpad.dev/debian/+source/mozilla-firefox
     * Answers - http://answers.launchpad.dev/debian/+source/mozilla-firefox
     Main heading: Activity log for bug #3
 

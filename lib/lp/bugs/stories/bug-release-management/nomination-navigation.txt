@@ -17,6 +17,6 @@ same navigation as the bug page itself.
     * Code - http://code.launchpad.dev/ubuntu/+source/mozilla-firefox
     * Bugs (selected) - http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox
     * Blueprints - not linked
-    * Translations - not linked
+    * Translations - http://translations.launchpad.dev/ubuntu/+source/mozilla-firefox
     * Answers - http://answers.launchpad.dev/ubuntu/+source/mozilla-firefox
     Main heading: Approve or decline nomination for bug #1 in Ubuntu Hoary
