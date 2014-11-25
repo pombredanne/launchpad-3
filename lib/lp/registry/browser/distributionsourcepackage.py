@@ -117,6 +117,7 @@ class DistributionSourcePackageFacets(StandardLaunchpadFacets):
         'overview',
         'branches',
         'bugs',
+        'translations',
         'answers',
         ]
 
