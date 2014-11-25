@@ -350,7 +350,7 @@ class Hierarchy(LaunchpadView):
         facet = queryUtility(IFacet, name=get_facet(view))
         if facet is not None:
             default_views.append(facet.default_view)
-        if view.__name__ not in default_views:
+        if hasattr(view, '__name__') and view.__name__ not in default_views:
             title = getattr(view, 'page_title', None)
             if title is None:
                 title = getattr(view, 'label', None)
