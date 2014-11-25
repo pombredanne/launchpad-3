@@ -7,24 +7,32 @@
   <h2>
     "<tal:name replace="context/name">apache2</tal:name>"
     versions published in
-    <tal:distribution replace="context/distribution/name/capitalize">
+    <tal:distribution replace="context/distribution/displayname">
       ubuntu
     </tal:distribution>
   </h2>
 
-  <div tal:define="cr context/currentrelease">
+  <div>
 
     <div tal:condition="not: context/current_publishing_records/is_empty">
-      <tal:block repeat="item view/all_published_in_active_distroseries">
-        <b><tal:suite replace="item/suite"/></b>
-        <tal:description replace="item/description"/>
-        <br/>
+      <tal:block repeat="pub context/current_publishing_records">
+        <tal:active condition="pub/distroseries/active">
+          <b>
+            <a tal:content="python:pub.distroseries.getSuite(pub.pocket).capitalize()"
+              tal:attributes="href pub/meta_sourcepackage/fmt:url:bugs">Warty</a>
+          </b>
+          (<a tal:content="pub/sourcepackagerelease/version"
+              tal:attributes="href pub/meta_distributionsourcepackagerelease/fmt:url"
+              >1.0</a>):
+          <tal:comp replace="pub/component/name">main</tal:comp>/<tal:sec replace="pub/section/name">admin</tal:sec>
+          <br/>
+        </tal:active>
       </tal:block>
     </div>
 
     <div tal:condition="context/current_publishing_records/is_empty">
       This source is not published in
-      <tal:name replace="context/distribution/name/capitalize"/>
+      <tal:name replace="context/distribution/displayname"/>
     </div>
 
   </div>
