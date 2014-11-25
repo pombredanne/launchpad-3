@@ -56,7 +56,6 @@ from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
 from lp.registry.interfaces.person import IPersonSet
-from lp.registry.interfaces.pocket import pocketsuffix
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.helpers import shortlist
@@ -117,6 +116,7 @@ class DistributionSourcePackageFacets(StandardLaunchpadFacets):
         'overview',
         'branches',
         'bugs',
+        'translations',
         'answers',
         ]
 
@@ -320,27 +320,6 @@ class DistributionSourcePackageView(DistributionSourcePackageBaseView,
     def next_url(self):
         """See `LaunchpadFormView`."""
         return canonical_url(self.context)
-
-    @property
-    def all_published_in_active_distroseries(self):
-        """Return a list of publishings in each active distroseries.
-
-        The list contains dictionaries each with a key of "suite" and
-        "description" where suite is "distroseries-pocket" and
-        description is "(version): component/section".
-        """
-        results = []
-        for pub in self.context.current_publishing_records:
-            if pub.distroseries.active:
-                entry = {
-                    "suite": (pub.distroseries.name.capitalize() +
-                               pocketsuffix[pub.pocket]),
-                    "description": "(%s): %s/%s" % (
-                        pub.sourcepackagerelease.version,
-                        pub.component.name, pub.section.name),
-                    }
-                results.append(entry)
-        return results
 
     @property
     def related_ppa_versions(self):
