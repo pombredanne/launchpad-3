@@ -17,8 +17,13 @@
     <div tal:condition="not: context/current_publishing_records/is_empty">
       <tal:block repeat="pub context/current_publishing_records">
         <tal:active condition="pub/distroseries/active">
-          <b><tal:suite replace="python:pub.distroseries.getSuite(pub.pocket).capitalize()"/></b>
-          (<tal:ver replace="pub/sourcepackagerelease/version">1.0</tal:ver>):
+          <b>
+            <a tal:content="python:pub.distroseries.getSuite(pub.pocket).capitalize()"
+              tal:attributes="href pub/meta_sourcepackage/fmt:url:bugs">Warty</a>
+          </b>
+          (<a tal:content="pub/sourcepackagerelease/version"
+              tal:attributes="href pub/meta_distributionsourcepackagerelease/fmt:url"
+              >1.0</a>):
           <tal:comp replace="pub/component/name">main</tal:comp>/<tal:sec replace="pub/section/name">admin</tal:sec>
           <br/>
         </tal:active>
