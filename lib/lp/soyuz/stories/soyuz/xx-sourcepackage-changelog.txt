@@ -8,12 +8,12 @@ Browse the changelog of a sourcepackage..
     >>> print_location(user_browser.contents)
     Hierarchy: Ubuntu > ...pmount... package > Hoary (5.04) > Change log
     Tabs:
-    * Overview (selected) - http://launchpad.dev/ubuntu/hoary/+source/pmount
-    * Code - http://code.launchpad.dev/ubuntu/hoary/+source/pmount
-    * Bugs - http://bugs.launchpad.dev/ubuntu/hoary/+source/pmount
+    * Overview (selected) - http://launchpad.dev/ubuntu/+source/pmount
+    * Code - http://code.launchpad.dev/ubuntu/+source/pmount
+    * Bugs - http://bugs.launchpad.dev/ubuntu/+source/pmount
     * Blueprints - not linked
-    * Translations - http://translations.launchpad.dev/ubuntu/hoary/+source/pmount
-    * Answers - not linked
+    * Translations - http://translations.launchpad.dev/ubuntu/+source/pmount
+    * Answers - http://answers.launchpad.dev/ubuntu/+source/pmount
     Main heading: Change logs for ...pmount... in Hoary
 
     >>> print extract_text(
