@@ -441,6 +441,9 @@ a.update-retry {
     overflow: hidden;
     display: block;
 }
+#ppa-install .ppa-reference {
+    white-space: nowrap;
+}
 
 /* Brand the related PPA versions with the PPA icon (not currently
    in the sprite image.) */
