@@ -30,37 +30,37 @@ Products directly implement IRootContext.
 
     >>> widget = factory.makeProduct(title='Widget')
     >>> print get_hierarchy(widget).heading()
-    <h...>Widget</h...>
+    <h...><a...>Widget</a></h...>
 
 A series of the product still show the product watermark.
 
     >>> dev_focus = widget.development_focus
     >>> print get_hierarchy(dev_focus).heading()
-    <h...>Widget</h...>
+    <h...><a...>Widget</a></h...>
 
 ProjectGroups also directly implement IRootContext ...
 
     >>> kde = factory.makeProject(title='KDE')
     >>> print get_hierarchy(kde).heading()
-    <h...>KDE</h...>
+    <h...><a...>KDE</a></h...>
 
 ... as do distributions ...
 
     >>> mint = factory.makeDistribution(title='Mint Linux')
     >>> print get_hierarchy(mint).heading()
-    <h...>Mint Linux</h...>
+    <h...><a...>Mint Linux</a></h...>
 
 ... and people ...
 
     >>> eric = factory.makePerson(displayname="Eric the Viking")
     >>> print get_hierarchy(eric).heading()
-    <h...>Eric the Viking</h...>
+    <h...><a...>Eric the Viking</a></h...>
 
 ... and sprints.
 
     >>> sprint = factory.makeSprint(title="Launchpad Epic")
     >>> print get_hierarchy(sprint).heading()
-    <h...>Launchpad Epic</h...>
+    <h...><a...>Launchpad Epic</a></h...>
 
 If there is no root context defined for the object, then the heading is
 'Launchpad.net' (differentiating from the Launchpad project within
@@ -75,7 +75,7 @@ Any HTML in the context title will be escaped to avoid XSS vulnerabilities.
     >>> person = factory.makePerson(
     ...     displayname="Fubar<br/><script>alert('XSS')</script>")
     >>> print get_hierarchy(person).heading()
-    <h...>Fubar&lt;br/&gt;&lt;script&gt;alert(&#x27;XSS&#x27;)&lt;/script&gt;</h...>
+    <h...><a...>Fubar&lt;br/&gt;&lt;script&gt;alert(&#x27;XSS&#x27;)&lt;/script&gt;</a></h...>
 
 
 Watermark images
@@ -109,7 +109,7 @@ is not the index page of the context.  In this case the heading is rendered in
 H2.
 
     >>> print get_hierarchy(widget).heading()
-    <h2>Widget</h2>
+    <h2...><a...>Widget</a></h2>
 
 If the view class implements IMajorHeadingView, then this is the index page
 for the context and the heading is rendered in H1.
@@ -119,4 +119,4 @@ for the context and the heading is rendered in H1.
     >>> class HeadingView(TrivialView):
     ...     implements(IMajorHeadingView)
     >>> print get_hierarchy(widget, viewcls=HeadingView).heading()
-    <h1>Widget</h1>
+    <h1...><a...>Widget</a></h1>
