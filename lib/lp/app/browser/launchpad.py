@@ -43,6 +43,7 @@ from zope.datetime import (
     )
 from zope.i18nmessageid import Message
 from zope.interface import (
+    alsoProvides,
     implements,
     Interface,
     )
@@ -167,6 +168,10 @@ from lp.translations.interfaces.translationimportqueue import (
 from lp.translations.interfaces.translations import IRosettaApplication
 
 
+class IFacetBreadcrumb(Interface):
+    pass
+
+
 class NavigationMenuTabs(LaunchpadView):
     """View class that helps its template render the navigation menu tabs.
 
@@ -253,7 +258,7 @@ class LinkView(LaunchpadView):
 
 
 class Hierarchy(LaunchpadView):
-    """The hierarchy part of the location bar on each page."""
+    """The heading, title, facet links and breadcrumbs parts of each page."""
 
     @property
     def objects(self):
@@ -304,11 +309,11 @@ class Hierarchy(LaunchpadView):
             # after it.
             for idx, breadcrumb in reversed(list(enumerate(breadcrumbs))):
                 if IMultiFacetedBreadcrumb.providedBy(breadcrumb):
-                    breadcrumbs.insert(
-                        idx + 1,
-                        Breadcrumb(
-                            breadcrumb.context, rootsite=facet.rootsite,
-                            text=facet.text))
+                    facet_crumb = Breadcrumb(
+                        breadcrumb.context, rootsite=facet.rootsite,
+                        text=facet.text)
+                    alsoProvides(facet_crumb, IFacetBreadcrumb)
+                    breadcrumbs.insert(idx + 1, facet_crumb)
                     # Ensure that all remaining breadcrumbs are
                     # themselves faceted.
                     for remaining_crumb in breadcrumbs[idx + 1:]:
@@ -319,6 +324,24 @@ class Hierarchy(LaunchpadView):
             if page_crumb:
                 breadcrumbs.append(page_crumb)
         return breadcrumbs
+
+    @property
+    def items_for_body(self):
+        """Return breadcrumbs to display in the page body's hierarchy section.
+
+        While the entire sequence of breadcrumbs must be included in the
+        document title, the first 0-3 are represented specially in the header
+        (headings and facet links), so we don't want to duplicate them in the
+        main content.
+        """
+        crumbs = []
+        for crumb in self.items:
+            if (IHeadingBreadcrumb.providedBy(crumb)
+                    or IFacetBreadcrumb.providedBy(crumb)):
+                crumbs = []
+                continue
+            crumbs.append(crumb)
+        return crumbs
 
     @property
     def _naked_context_view(self):
@@ -369,7 +392,7 @@ class Hierarchy(LaunchpadView):
         # to display breadcrumbs either.
         has_major_heading = IMajorHeadingView.providedBy(
             self._naked_context_view)
-        return len(self.items) > 1 and not has_major_heading
+        return len(self.items_for_body) > 1 and not has_major_heading
 
     @property
     def heading_breadcrumbs(self):
@@ -380,29 +403,26 @@ class Hierarchy(LaunchpadView):
         return crumbs
 
     def heading(self):
-        """Return the heading text for the page.
+        """Return the heading markup for the page.
 
-        If the context provides `IHeadingContext` then we return an
+        If the context provides `IMajorHeadingView` then we return an
         H1, else an H2.
         """
-        # The title is static, but only the context's index view gets an H1.
-        heading = 'h1' if IMajorHeadingView.providedBy(self.context) else 'h2'
+        # The title is static, but only the index view gets an H1.
+        tag = 'h1' if IMajorHeadingView.providedBy(self.context) else 'h2'
         # If there is actually no root context, then it's a top-level
         # context-less page so Launchpad.net is shown as the branding.
-        crumbs = self.heading_breadcrumbs
-        if len(crumbs) >= 1:
-            title = crumbs[0].detail
-        else:
-            title = 'Launchpad.net'
-        # For non-editable titles, generate the static heading.
-        markup = structured(
-            "<%(heading)s>%(title)s</%(heading)s>",
-            heading=heading, title=title).escapedtext
-        if len(crumbs) >= 2:
-            markup += structured(
-                '\n<%(heading)s class="secondary">%(title)s</%(heading)s>',
-                heading=heading, title=crumbs[1].detail).escapedtext
-        return markup
+        crumb_markups = []
+        for crumb in self.heading_breadcrumbs:
+            crumb_markups.append(
+                structured('<a href="%s">%s</a>', crumb.url, crumb.detail))
+        if not crumb_markups:
+            crumb_markups.append('Launchpad.net')
+        content = structured(
+            '<br />'.join(['%s'] * len(crumb_markups)), *crumb_markups)
+        return structured(
+            '<%s id="watermark-heading">%s</%s>',
+            tag, content, tag).escapedtext
 
     def logo(self):
         """Return the logo image for the top header breadcrumb's context."""

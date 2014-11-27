@@ -54,7 +54,6 @@ the blueprints page for 1.0:
     >>> main = find_main_content(user_browser.contents)
     >>> print extract_text(main).encode('ascii', 'backslashreplace')
     Blueprints for 1.0
-    ...
     Launchpad lets projects track the features they intend to implement...
 
 Let's target an existing Mozilla Firefox blueprint to the 1.0 series:
@@ -68,8 +67,6 @@ Let's target an existing Mozilla Firefox blueprint to the 1.0 series:
     >>> main = find_main_content(browser.contents)
     >>> print extract_text(main).encode('ascii', 'backslashreplace')
     Target to a product series
-    Mozilla Firefox
-    ...
     Support Native SVG Objects
     ...
 
@@ -154,7 +151,6 @@ blueprints page for Grumpy:
     >>> main = find_main_content(user_browser.contents)
     >>> print extract_text(main).encode('ascii', 'backslashreplace')
     Blueprints for Grumpy
-    ...
     Launchpad lets projects track the features they intend to implement...
 
 Let's target an existing Ubuntu blueprint to the Grumpy series:
@@ -169,8 +165,6 @@ Let's target an existing Ubuntu blueprint to the Grumpy series:
     >>> main = find_main_content(browser.contents)
     >>> print extract_text(main).encode('ascii', 'backslashreplace')
     Target to a distribution series
-    Ubuntu
-    ...
     CD Media Integrity Check
     ...
     >>> series = browser.getControl('Series Goal')

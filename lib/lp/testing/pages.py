@@ -7,6 +7,7 @@ __metaclass__ = type
 
 from datetime import datetime
 import doctest
+from itertools import chain
 import os
 import pdb
 import pprint
@@ -573,10 +574,11 @@ def print_location(contents):
     The main heading is the first <h1> element in the page.
     """
     doc = find_tag_by_id(contents, 'document')
-    hierarchy = doc.find(attrs={'class': 'breadcrumbs'}).findAll(
-        recursive=False)
+    heading = doc.find(attrs={'id': 'watermark-heading'}).findAll('a')
+    container = doc.find(attrs={'class': 'breadcrumbs'})
+    hierarchy = container.findAll(recursive=False) if container else []
     segments = [extract_text(step).encode('us-ascii', 'replace')
-                for step in hierarchy]
+                for step in chain(heading, hierarchy)]
 
     if len(segments) == 0:
         breadcrumbs = 'None displayed'

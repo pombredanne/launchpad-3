@@ -45,7 +45,7 @@ Its application bar has enabled entries for Code, Bugs and Answers, and
 they all point to the `DistributionSourcePackage` (parent) url.
 
     >>> print_location(anon_browser.contents)
-    Hierarchy: ubuntutest > ?testing-dspr? package > 1.0
+    Hierarchy: Ubuntu Test > ?testing-dspr? package
     Tabs:
     * Overview (selected) - http://launchpad.dev/ubuntutest/+source/testing-dspr
     * Code - http://code.launchpad.dev/ubuntutest/+source/testing-dspr
@@ -168,8 +168,6 @@ of this source in the context distribution are listed.
 
     >>> print extract_text(find_main_content(anon_browser.contents))
     Publishing history of ...testing-dspr... 1.0 source package in ubuntutest
-    ubuntutest
-    ...testing-dspr... package
     1.0
     Publishing history
     ...
@@ -290,9 +288,6 @@ The full change log can be viewed as follows:
 
     >>> print extract_text(find_main_content(user_browser.contents))
     Change log for ...testing-dspr... package in ubuntutest
-    ubuntutest
-    ...testing-dspr... package
-    Change log
     ...
     0.9
     Pending in breezy-autotest-release

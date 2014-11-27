@@ -61,15 +61,6 @@ Now run a search for mozilla-firefox and check that it is found:
     The Mozilla Firefox web browser
     (Matching binaries: mozilla-firefox, mozilla-firefox-data.)
 
-The search page will also present commercial packages:
-
-    >>> browser.goBack()
-    >>> field = browser.getControl(name="text")
-    >>> field.value = 'commercialpackage'
-    >>> browser.getControl('Search', index=0).click()
-    >>> extract_text(find_main_content(browser.contents))
-    u"...commercialpackage... package..."
-
 Now try searching for text that we know to be in a change log entry, to
 prove that FTI works on change logs.  The text we're looking for is
 "placeholder" which is mentioned in the change log entry for pmount and
@@ -203,7 +194,7 @@ The page has an appropriate title and main heading.
     \u201ciceweasel\u201d package : Ubuntu
 
     >>> print_location(user_browser.contents)
-    Hierarchy: Ubuntu > ?iceweasel? package
+    Hierarchy: Ubuntu Linux > ?iceweasel? package
     Tabs:
     * Overview (selected) - not linked
     * Code - http://code.launchpad.dev/ubuntu/+source/iceweasel
@@ -400,7 +391,7 @@ from the index page.
     Change log : \u201cfoobar\u201d package : Ubuntu
 
     >>> print_location(browser.contents)
-    Hierarchy: Ubuntu > ?foobar? package > Change log
+    Hierarchy: Ubuntu Linux > ?foobar? package
     Tabs:
     * Overview (selected) - http://launchpad.dev/ubuntu/+source/foobar
     * Code - http://code.launchpad.dev/ubuntu/+source/foobar
@@ -591,7 +582,7 @@ source package hierarchy.
     Publishing history : \u201calsa-utils\u201d package : Ubuntu
 
     >>> print_location(anon_browser.contents)
-    Hierarchy: Ubuntu > ?alsa-utils? package > Publishing history
+    Hierarchy: Ubuntu Linux > ?alsa-utils? package
     Tabs:
     * Overview (selected) - http://launchpad.dev/ubuntu/+source/alsa-utils
     * Code - http://code.launchpad.dev/ubuntu/+source/alsa-utils

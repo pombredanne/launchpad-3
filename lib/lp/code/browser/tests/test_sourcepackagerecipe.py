@@ -1084,7 +1084,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
     def test_index(self):
         build = self.makeSuccessfulBuild()
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
-            Master Chef Code Recipes cake_recipe
+            Recipes cake_recipe
             .*
             Description Edit
             This recipe .*changes.
@@ -1439,8 +1439,6 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         recipe = self.makeRecipe()
         pattern = dedent("""\
             Request builds for cake_recipe
-            Master Chef
-            Code
             Recipes
             cake_recipe
             Request builds for cake_recipe
@@ -1677,7 +1675,6 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         """Test the basic index page."""
         main_text = self.getMainText(self.makeBuild(), '+index')
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
-            Owner Code PPA named build for Owner
             created .*
             Build status
             Needs building
@@ -1707,7 +1704,6 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         main_text = self.getMainText(
             release.source_package_recipe_build, '+index')
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
-            Owner Code PPA named build for Owner
             created .*
             Build status
             Successfully built

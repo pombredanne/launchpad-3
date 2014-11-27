@@ -357,7 +357,7 @@ class TestLiveFSView(BrowserTestCase):
         build = self.makeBuild(
             status=BuildStatus.FULLYBUILT, duration=timedelta(minutes=30))
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
-            Test Person Live filesystems livefs-name
+            Live filesystems livefs-name
             .*
             Live filesystem information
             Owner: Test Person
