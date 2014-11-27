@@ -82,7 +82,6 @@ from lp.app.errors import (
     POSTToNonCanonicalURL,
     )
 from lp.app.interfaces.headings import (
-    IEditableContextTitle,
     IHeadingBreadcrumb,
     IMajorHeadingView,
     )
@@ -406,26 +405,21 @@ class Hierarchy(LaunchpadView):
     def heading(self):
         """Return the heading markup for the page.
 
-        Otherwiseif the context provides `IMajorHeadingView` then we
-        return an H1, else an H2.
+        If the context provides `IMajorHeadingView` then we return an
+        H1, else an H2.
         """
-        # Check the view; is the title editable?
-        if IEditableContextTitle.providedBy(self.context):
-            tag = 'h1'
-            content = structured(self.context.title_edit_widget())
-        else:
-            # The title is static, but only the index view gets an H1.
-            tag = 'h1' if IMajorHeadingView.providedBy(self.context) else 'h2'
-            # If there is actually no root context, then it's a top-level
-            # context-less page so Launchpad.net is shown as the branding.
-            crumb_markups = []
-            for crumb in self.heading_breadcrumbs:
-                crumb_markups.append(
-                    structured('<a href="%s">%s</a>', crumb.url, crumb.detail))
-            if not crumb_markups:
-                crumb_markups.append('Launchpad.net')
-            content = structured(
-                '<br />'.join(['%s'] * len(crumb_markups)), *crumb_markups)
+        # The title is static, but only the index view gets an H1.
+        tag = 'h1' if IMajorHeadingView.providedBy(self.context) else 'h2'
+        # If there is actually no root context, then it's a top-level
+        # context-less page so Launchpad.net is shown as the branding.
+        crumb_markups = []
+        for crumb in self.heading_breadcrumbs:
+            crumb_markups.append(
+                structured('<a href="%s">%s</a>', crumb.url, crumb.detail))
+        if not crumb_markups:
+            crumb_markups.append('Launchpad.net')
+        content = structured(
+            '<br />'.join(['%s'] * len(crumb_markups)), *crumb_markups)
         return structured(
             '<%s id="watermark-heading">%s</%s>',
             tag, content, tag).escapedtext
