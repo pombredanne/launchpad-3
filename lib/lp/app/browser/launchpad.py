@@ -430,7 +430,7 @@ class Hierarchy(LaunchpadView):
             self.heading_breadcrumbs[0].context if self.heading_breadcrumbs
             else None)
         adapter = queryAdapter(logo_context, IPathAdapter, 'image')
-        if logo_context != self.context.context and logo_context is not None:
+        if logo_context is not None:
             return structured(
                 '<a href="%s">%s</a>',
                 canonical_url(logo_context, rootsite='mainsite'),

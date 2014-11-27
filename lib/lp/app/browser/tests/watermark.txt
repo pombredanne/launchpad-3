@@ -87,7 +87,7 @@ The image for the watermark is determined effectively by context/image:logo.
     <a href="..."><img ... src="/@@/product-logo" /></a>
 
     >>> print get_hierarchy(eric).logo()
-    <img ... src="/@@/person-logo" />
+    <a...><img ... src="/@@/person-logo" /></a>
 
 If there is no root context, the Launchpad logo is shown.
 
