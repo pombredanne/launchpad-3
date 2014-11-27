@@ -276,6 +276,6 @@ Bugs in a product series show up in the patches view for that series.
 The page title and other wording in the page reflects the contents.
 
     >>> print_location(anon_browser.contents)
-    Hierarchy: Patchy 1 > Series trunk > Bugs > Patch attachments in trunk
+    Hierarchy: Patchy 1 > Bugs > Series trunk > Patch attachments in trunk
     Tabs: ...
     Main heading: Patch attachments in trunk

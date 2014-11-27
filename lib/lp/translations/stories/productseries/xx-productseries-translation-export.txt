@@ -45,7 +45,7 @@ The logged-in user sees a page that lets them select an export format, and
 request the download.
 
     >>> print user_browser.title
-    Download : Translations...
+    Download : Series trunk : Translations...
 
 
 === File format ===

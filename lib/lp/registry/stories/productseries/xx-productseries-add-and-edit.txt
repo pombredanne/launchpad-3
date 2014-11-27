@@ -126,4 +126,4 @@ we can create structural bug subscriptions.
     >>> print browser.url
     http://launchpad.dev/firefox/unstable/+subscribe
     >>> print browser.title
-    Subscribe : Bugs : Series unstable : Mozilla Firefox
+    Subscribe : Series unstable : Bugs : Mozilla Firefox

@@ -5,7 +5,7 @@ bugs, as well as a listing.
 
     >>> anon_browser.open('http://bugs.launchpad.dev/ubuntu/warty/+bugs')
     >>> anon_browser.title
-    'Bugs : Warty (4.10) : Ubuntu'
+    'Warty (4.10) : Bugs : Ubuntu'
 
     >>> find_tags_by_class(anon_browser.contents, 'buglisting-row') is not None
     True

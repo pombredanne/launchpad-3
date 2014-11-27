@@ -14,7 +14,7 @@ templates links to per-language overviews.
     http://translations.launchpad.dev/evolution/trunk/+lang/pt_BR
 
     >>> print browser.title
-    Portuguese (Brazil) (pt_BR) : Translations : Series trunk : Evolution
+    Portuguese (Brazil) (pt_BR) : Series trunk : Translations : Evolution
 
 Since there is no translation team to manage Portuguese (Brazil) language
 in the Evolution's translation group, all users will be informed about it

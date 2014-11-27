@@ -81,8 +81,8 @@ from lp.services.webapp.interfaces import (
     IContextMenu,
     IFacetMenu,
     ILaunchBag,
+    ILaunchpadRoot,
     INavigationMenu,
-    IPrimaryContext,
     NoCanonicalUrl,
     )
 from lp.services.webapp.menu import (
@@ -276,13 +276,16 @@ class MenuAPI:
 
     def _facet_menu(self):
         """Return the IFacetMenu related to the context."""
+        # XXX wgrant 2014-11-26: Manually instantiate a Hierarchy view
+        # to find the lowest IHeadingBreadcrumb that's in the title,
+        # ensuring that the facet tabs match what's above them. This
+        # whole class needs refactoring once the UI is stable.
+        from lp.app.browser.launchpad import Hierarchy
         try:
-            try:
-                context = IPrimaryContext(self._context).context
-            except TypeError:
-                # Could not adapt raises a type error.  If there was no
-                # way to adapt, then just use self._context.
-                context = self._context
+            context = self._context
+            crumbs = Hierarchy(context, self._request).heading_breadcrumbs
+            if crumbs:
+                context = crumbs[-1].context
             menu = nearest_adapter(context, IFacetMenu)
         except NoCanonicalUrl:
             menu = None
