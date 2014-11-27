@@ -95,9 +95,8 @@ div.watermark-apps-portlet > div > a > img {
     margin: 0;
     }
 #watermark-heading :first-child {
-    font-weight: bold;
-    font-size: 30px;
-    line-height: 30px;
+    font-size: 32px;
+    line-height: 32px;
     }
 #watermark-heading :link, #watermark-heading :visited {
     color: #000;
