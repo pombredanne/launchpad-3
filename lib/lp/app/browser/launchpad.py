@@ -417,7 +417,7 @@ class Hierarchy(LaunchpadView):
             crumb_markups.append(
                 structured('<a href="%s">%s</a>', crumb.url, crumb.detail))
         if not crumb_markups:
-            crumb_markups.append('Launchpad.net')
+            crumb_markups.append(structured('<span>Launchpad.net</span>'))
         content = structured(
             '<br />'.join(['%s'] * len(crumb_markups)), *crumb_markups)
         return structured(
