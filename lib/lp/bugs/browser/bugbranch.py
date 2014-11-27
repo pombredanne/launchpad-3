@@ -13,7 +13,6 @@ __all__ = [
     ]
 
 from lazr.restful.interfaces import IWebServiceClientRequest
-from lazr.restful.utils import smartquote
 from zope.component import (
     adapts,
     getMultiAdapter,
@@ -136,8 +135,7 @@ class BranchLinkToBugView(LaunchpadFormView):
 
     @property
     def page_title(self):
-        return smartquote(
-            'Link branch "%s" to a bug report' % self.context.displayname)
+        return 'Link branch %s to a bug report' % self.context.displayname
 
     @property
     def next_url(self):

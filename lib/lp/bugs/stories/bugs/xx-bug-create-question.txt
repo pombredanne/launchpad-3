@@ -14,7 +14,7 @@ An anonymous user cannot create a question.
     ...     'http://bugs.launchpad.dev'
     ...     '/ubuntu/+source/linux-source-2.6.15/+bug/10')
     >>> anon_browser.title
-    'Bug #10 ... : Bugs : ...linux-source-2.6.15... package : Ubuntu'
+    'Bug #10 ... : Bugs : linux-source-2.6.15 package : Ubuntu'
 
     >>> anon_browser.getLink('Convert to a question').click()
     Traceback (most recent call last):
@@ -28,7 +28,7 @@ really a question. He chooses to make a question from it.
     ...     'http://bugs.launchpad.dev'
     ...     '/ubuntu/+source/linux-source-2.6.15/+bug/10')
     >>> user_browser.title
-    'Bug #10 ... : Bugs : ...linux-source-2.6.15... package : Ubuntu'
+    'Bug #10 ... : Bugs : linux-source-2.6.15 package : Ubuntu'
 
     >>> user_browser.getLink('Convert to a question').click()
     >>> user_browser.title
@@ -50,7 +50,7 @@ No Privileges Person is shown the bug page again. There is a permanent
 informational message stating that a question was created from the bug.
 
     >>> user_browser.title
-    'Bug #10 ... : Bugs : ...linux-source-2.6.15... package : Ubuntu'
+    'Bug #10 ... : Bugs : linux-source-2.6.15 package : Ubuntu'
 
     >>> content = find_main_content(user_browser.contents)
     >>> content.find(id="bug-is-question")
@@ -105,7 +105,7 @@ No Privileges Person case see that the question was created from a bug.
 He uses the link to Related bug to return to the bug.
 
     >>> print user_browser.title
-    Question #... : Questions : ...linux-source-2.6.15... package : Ubuntu
+    Question #... : Questions : linux-source-2.6.15 package : Ubuntu
 
     >>> print extract_text(
     ...     find_tag_by_id(user_browser.contents, 'original-bug'))
@@ -113,7 +113,7 @@ He uses the link to Related bug to return to the bug.
 
     >>> user_browser.getLink('#10: another test bug').click()
     >>> user_browser.title
-    'Bug #10 ... : Bugs : ...linux-source-2.6.15... package : Ubuntu'
+    'Bug #10 ... : Bugs : linux-source-2.6.15 package : Ubuntu'
 
 
 When a question cannot be created from a bug

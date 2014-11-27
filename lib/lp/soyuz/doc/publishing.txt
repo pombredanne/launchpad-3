@@ -131,14 +131,14 @@ source package release will be returned.
     >>> from lp.services.propertycache import get_property_cache
     >>> del get_property_cache(pub).newer_distroseries_version
     >>> print pub.newer_distroseries_version.title
-    "iceweasel" 1.1 source package in Ubuntu
+    iceweasel 1.1 source package in Ubuntu
 
 We can calculate the newer_distroseries_version for many spph objects at once.
 
     >>> del get_property_cache(pub).newer_distroseries_version
     >>> pub.distroseries.setNewerDistroSeriesVersions([pub])
     >>> print get_property_cache(pub).newer_distroseries_version.title
-    "iceweasel" 1.1 source package in Ubuntu
+    iceweasel 1.1 source package in Ubuntu
 
 A helper is also included to create a summary of the build statuses for
 the spph's related builds, getStatusSummaryForBuilds(), which just

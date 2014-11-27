@@ -71,7 +71,7 @@ user follows the "Ubuntu Hoary" link next to cnews:
     <Link text='Ubuntu Hoary' ...>
     >>> link.click()
     >>> browser.title
-    'Hoary (5.04) : ...cnews... package : Ubuntu'
+    'Hoary (5.04) : cnews package : Ubuntu'
 
 The third column links to the distribution source package release page. The
 user follows the cnews version link to see the page.
@@ -82,7 +82,7 @@ user follows the cnews version link to see the page.
     <Link ... url='http://launchpad.dev/ubuntu/+source/cnews/cr.g7-37'>
     >>> link.click()
     >>> browser.title
-    'cr.g7-37 : \xe2\x80\x9ccnews\xe2\x80\x9d package : Ubuntu'
+    'cr.g7-37 : cnews package : Ubuntu'
 
 
 Batched listing pages

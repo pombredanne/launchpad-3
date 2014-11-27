@@ -21,7 +21,6 @@ import itertools
 import operator
 
 from lazr.delegates import delegates
-from lazr.restful.utils import smartquote
 from zope.component import getUtility
 from zope.interface import (
     implements,
@@ -105,8 +104,7 @@ class DistributionSourcePackageBreadcrumb(Breadcrumb):
 
     @property
     def text(self):
-        return smartquote('"%s" package') % (
-            self.context.sourcepackagename.name)
+        return '%s package' % self.context.sourcepackagename.name
 
 
 class DistributionSourcePackageFacets(StandardLaunchpadFacets):

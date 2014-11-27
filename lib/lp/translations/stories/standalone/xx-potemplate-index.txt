@@ -13,7 +13,7 @@ evolution-2.2 POTemplate page.
     ...     "ubuntu/hoary/+source/evolution/+pots/evolution-2.2/")
     >>> print anon_browser.title
     Template ...evolution-2.2... : Hoary (5.04) :
-    Translations : ...evolution... package : Ubuntu
+    Translations : evolution package : Ubuntu
 
 The owner of the template is diplayed.
 

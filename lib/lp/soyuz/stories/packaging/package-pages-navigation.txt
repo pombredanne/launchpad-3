@@ -16,7 +16,7 @@ pages.
 
     >>> anon_browser.open('http://launchpad.dev/ubuntu/+source/alsa-utils')
     >>> print_location(anon_browser.contents)
-    Hierarchy: Ubuntu Linux > ?alsa-utils? package
+    Hierarchy: Ubuntu Linux > alsa-utils package
     Tabs:
     * Overview (selected) - not linked
     * Code - http://code.launchpad.dev/ubuntu/+source/alsa-utils
@@ -24,11 +24,11 @@ pages.
     * Blueprints - not linked
     * Translations - http://translations.launchpad.dev/ubuntu/+source/alsa-utils
     * Answers - http://answers.launchpad.dev/ubuntu/+source/alsa-utils
-    Main heading: ...alsa-utils... package in Ubuntu
+    Main heading: alsa-utils package in Ubuntu
 
     >>> anon_browser.open('http://bugs.launchpad.dev/ubuntu/+source/alsa-utils')
     >>> print_location(anon_browser.contents)
-    Hierarchy: Ubuntu Linux > ?alsa-utils? package
+    Hierarchy: Ubuntu Linux > alsa-utils package
     Tabs:
     * Overview - http://launchpad.dev/ubuntu/+source/alsa-utils
     * Code - http://code.launchpad.dev/ubuntu/+source/alsa-utils
@@ -49,7 +49,7 @@ source package.
     >>> anon_browser.open(
     ...     'http://launchpad.dev/ubuntu/+source/alsa-utils/1.0.9a-4ubuntu1')
     >>> print_location(anon_browser.contents)
-    Hierarchy: Ubuntu Linux > ?alsa-utils? package
+    Hierarchy: Ubuntu Linux > alsa-utils package
     Tabs:
     * Overview (selected) - http://launchpad.dev/ubuntu/+source/alsa-utils
     * Code - http://code.launchpad.dev/ubuntu/+source/alsa-utils
@@ -57,7 +57,7 @@ source package.
     * Blueprints - not linked
     * Translations - http://translations.launchpad.dev/ubuntu/+source/alsa-utils
     * Answers - http://answers.launchpad.dev/ubuntu/+source/alsa-utils
-    Main heading: ?alsa-utils? 1.0.9a-4ubuntu1 source package in Ubuntu
+    Main heading: alsa-utils 1.0.9a-4ubuntu1 source package in Ubuntu
 
 
 == Distribution source package release build ==
@@ -68,7 +68,7 @@ navigation as its parent distribution source package release.
     >>> anon_browser.open(
     ...     'http://launchpad.dev/ubuntu/+source/alsa-utils/1.0.9a-4ubuntu1/+build/11')
     >>> print_location(anon_browser.contents)
-    Hierarchy: Ubuntu Linux > ?alsa-utils? package > 1.0.9a-4ubuntu1 > i386 build
+    Hierarchy: Ubuntu Linux > alsa-utils package > 1.0.9a-4ubuntu1 > i386 build
     Tabs:
     * Overview (selected) - http://launchpad.dev/ubuntu/+source/alsa-utils
     * Code - http://code.launchpad.dev/ubuntu/+source/alsa-utils
@@ -87,7 +87,7 @@ package's facets.
     >>> anon_browser.open(
     ...     'http://launchpad.dev/ubuntu/hoary/+source/alsa-utils')
     >>> print_location(anon_browser.contents)
-    Hierarchy: Ubuntu Linux > ?alsa-utils? package
+    Hierarchy: Ubuntu Linux > alsa-utils package
     Tabs:
     * Overview (selected) - http://launchpad.dev/ubuntu/+source/alsa-utils
     * Code - http://code.launchpad.dev/ubuntu/+source/alsa-utils
@@ -95,7 +95,7 @@ package's facets.
     * Blueprints - not linked
     * Translations - http://translations.launchpad.dev/ubuntu/+source/alsa-utils
     * Answers - http://answers.launchpad.dev/ubuntu/+source/alsa-utils
-    Main heading: ?alsa-utils? source package in Hoary
+    Main heading: alsa-utils source package in Hoary
 
 
 == Distribution series architecture ==
@@ -131,7 +131,7 @@ Bugs, Blueprints and Translations from the distribution.
     * Blueprints - http://blueprints.launchpad.dev/ubuntu
     * Translations - http://translations.launchpad.dev/ubuntu
     * Answers - http://answers.launchpad.dev/ubuntu
-    Main heading: ?pmount? binary package in Ubuntu Hoary i386
+    Main heading: pmount binary package in Ubuntu Hoary i386
 
 
 == Distribution series architecture binary package release ==

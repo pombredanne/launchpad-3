@@ -18,7 +18,6 @@ from operator import (
 from threading import local
 
 from bzrlib.lru_cache import LRUCache
-from lazr.restful.utils import smartquote
 from sqlobject.sqlbuilder import SQLConstant
 from storm.expr import (
     And,
@@ -171,7 +170,7 @@ class DistributionSourcePackage(BugTargetBase,
     @property
     def title(self):
         """See `IDistributionSourcePackage`."""
-        return smartquote('"%s" package in %s') % (
+        return '%s package in %s' % (
             self.sourcepackagename.name, self.distribution.displayname)
 
     @property

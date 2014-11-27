@@ -223,7 +223,7 @@ Any user can see the copyright for the most recent source package release.
 
     >>> browser.getLink('copyright').click()
     >>> print browser.title
-    Copyright : Warty (4.10) : ...mozilla-firefox... package : Ubuntu
+    Copyright : Warty (4.10) : mozilla-firefox package : Ubuntu
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'copyright'))
     Copyright 2010 Ford Prefect.

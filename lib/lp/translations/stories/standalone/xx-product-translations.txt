@@ -223,7 +223,7 @@ the product is linked to one.
     ...     admin_browser.contents, 'portlet-translatable-packages')
     >>> print extract_text(source_package)
     All translatable distribution packages
-    “evolution” source package in Hoary
+    evolution source package in Hoary
 
 Instead a notice is displayed that the product has no translations.
 
