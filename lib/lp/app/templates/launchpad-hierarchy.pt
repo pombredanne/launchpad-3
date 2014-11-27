@@ -7,7 +7,7 @@
   i18n:domain="launchpad"
   tal:condition="view/display_breadcrumbs">
 
-<tal:breadcrumbs repeat="breadcrumb view/items">
+<tal:breadcrumbs repeat="breadcrumb view/items_for_body">
   <li>
     <a tal:attributes="href breadcrumb/url"
       tal:omit-tag="repeat/breadcrumb/end"><tal:text

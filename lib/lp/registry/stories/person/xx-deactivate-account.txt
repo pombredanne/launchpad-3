@@ -67,10 +67,6 @@ assignee.
     ...     'mozilla-firefox/+bug/3')
     >>> print extract_text(find_main_content(browser.contents))
     Bug Title Test
-    Debian
-    “mozilla-firefox” package
-    Bugs
-    Bug #3
     ...
     Assigned to
     Milestone

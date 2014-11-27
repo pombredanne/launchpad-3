@@ -3,8 +3,7 @@ views for packages for which a user is a bug supervisor.
 
     >>> anon_browser.open("http://launchpad.dev/~name16/+packagebugs")
     >>> print extract_text(find_main_content(anon_browser.contents))
-    Foo Bar
-    ...
+    Package bugs
     Foo Bar is subscribed to these packages.
     ...
     Totals 1 0 1 0
@@ -38,8 +37,7 @@ pmount.
 
     >>> anon_browser.open("http://launchpad.dev/~name16/+packagebugs")
     >>> print extract_text(find_main_content(anon_browser.contents))
-    Foo Bar
-    ...
+    Package bugs
     Foo Bar is subscribed to these packages.
     ...
     Totals 2 0 2 0
