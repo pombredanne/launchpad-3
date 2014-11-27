@@ -39,13 +39,13 @@ The `DistributionSourcePackageRelease` page is accessed from the
 Its title describes exactly what it is about.
 
     >>> anon_browser.title
-    '1.0 : \xe2\x80\x9ctesting-dspr\xe2\x80\x9d package : ubuntutest'
+    '1.0 : testing-dspr package : ubuntutest'
 
 Its application bar has enabled entries for Code, Bugs and Answers, and
 they all point to the `DistributionSourcePackage` (parent) url.
 
     >>> print_location(anon_browser.contents)
-    Hierarchy: Ubuntu Test > ?testing-dspr? package
+    Hierarchy: Ubuntu Test > testing-dspr package
     Tabs:
     * Overview (selected) - http://launchpad.dev/ubuntutest/+source/testing-dspr
     * Code - http://code.launchpad.dev/ubuntutest/+source/testing-dspr
@@ -53,7 +53,7 @@ they all point to the `DistributionSourcePackage` (parent) url.
     * Blueprints - not linked
     * Translations - http://translations.launchpad.dev/ubuntutest/+source/testing-dspr
     * Answers - http://answers.launchpad.dev/ubuntutest/+source/testing-dspr
-    Main heading: ?testing-dspr? 1.0 source package in ubuntutest
+    Main heading: testing-dspr 1.0 source package in ubuntutest
 
 The first section presented ('top-porlet') contains the source package
 release changelog. It shows the reason why this version of the package
@@ -164,7 +164,7 @@ of this source in the context distribution are listed.
 
     >>> from lp.services.helpers import backslashreplace
     >>> print backslashreplace(anon_browser.title)
-    Publishing history : 1.0 : ...testing-dspr... package : ubuntutest
+    Publishing history : 1.0 : testing-dspr package : ubuntutest
 
     >>> print extract_text(find_main_content(anon_browser.contents))
     Publishing history of ...testing-dspr... 1.0 source package in ubuntutest

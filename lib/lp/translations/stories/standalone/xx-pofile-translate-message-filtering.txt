@@ -49,7 +49,7 @@ review the state of the translation.
     ...     '+source/evolution/+pots/evolution-2.2/es/+translate')
     >>> print user_browser.title
     Spanish (es) : Template ...evolution-2.2... :
-    Hoary (5.04) : Translations : ...evolution... package : Ubuntu
+    Hoary (5.04) : Translations : evolution package : Ubuntu
 
 He can see that there are 22 messages.
 
@@ -126,7 +126,7 @@ translations into Australian English.
     >>> user_browser.getControl('Change').click()
     >>> print user_browser.title
     English (Australia) (en_AU) : Template ...evolution-2.2... :
-    Hoary (5.04) : Translations : ...evolution... package : Ubuntu
+    Hoary (5.04) : Translations : evolution package : Ubuntu
 
     >>> contents = find_main_content(user_browser.contents)
     >>> print_batch_header(contents)

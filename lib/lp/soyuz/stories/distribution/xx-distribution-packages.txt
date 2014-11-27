@@ -191,10 +191,10 @@ The page has an appropriate title and main heading.
 
     >>> from lp.services.helpers import backslashreplace
     >>> print backslashreplace(user_browser.title)
-    \u201ciceweasel\u201d package : Ubuntu
+    iceweasel package : Ubuntu
 
     >>> print_location(user_browser.contents)
-    Hierarchy: Ubuntu Linux > ?iceweasel? package
+    Hierarchy: Ubuntu Linux > iceweasel package
     Tabs:
     * Overview (selected) - not linked
     * Code - http://code.launchpad.dev/ubuntu/+source/iceweasel
@@ -202,7 +202,7 @@ The page has an appropriate title and main heading.
     * Blueprints - not linked
     * Translations - http://translations.launchpad.dev/ubuntu/+source/iceweasel
     * Answers - http://answers.launchpad.dev/ubuntu/+source/iceweasel
-    Main heading: ?iceweasel? package in Ubuntu
+    Main heading: iceweasel package in Ubuntu
 
 Under the title there's a short paragraph that says how many 'new' bugs
 and open questions the package has.
@@ -388,10 +388,10 @@ from the index page.
     >>> browser.getLink("View full change log").click()
 
     >>> print backslashreplace(browser.title)
-    Change log : \u201cfoobar\u201d package : Ubuntu
+    Change log : foobar package : Ubuntu
 
     >>> print_location(browser.contents)
-    Hierarchy: Ubuntu Linux > ?foobar? package
+    Hierarchy: Ubuntu Linux > foobar package
     Tabs:
     * Overview (selected) - http://launchpad.dev/ubuntu/+source/foobar
     * Code - http://code.launchpad.dev/ubuntu/+source/foobar
@@ -399,7 +399,7 @@ from the index page.
     * Blueprints - not linked
     * Translations - http://translations.launchpad.dev/ubuntu/+source/foobar
     * Answers - http://answers.launchpad.dev/ubuntu/+source/foobar
-    Main heading: Change log for ?foobar? package in Ubuntu
+    Main heading: Change log for foobar package in Ubuntu
 
 Each version history entry has a header with the version as the title
 and details of the publishing status in each distroseries it's published
@@ -563,7 +563,7 @@ Returning to the distribution source package index page using the
 
     >>> anon_browser.getLink('Overview').click()
     >>> print backslashreplace(anon_browser.title)
-    \u201calsa-utils\u201d package : Ubuntu
+    alsa-utils package : Ubuntu
 
 
 Publishing History
@@ -579,10 +579,10 @@ appropriate title and main heading, but preserving the distribution
 source package hierarchy.
 
     >>> print backslashreplace(anon_browser.title)
-    Publishing history : \u201calsa-utils\u201d package : Ubuntu
+    Publishing history : alsa-utils package : Ubuntu
 
     >>> print_location(anon_browser.contents)
-    Hierarchy: Ubuntu Linux > ?alsa-utils? package
+    Hierarchy: Ubuntu Linux > alsa-utils package
     Tabs:
     * Overview (selected) - http://launchpad.dev/ubuntu/+source/alsa-utils
     * Code - http://code.launchpad.dev/ubuntu/+source/alsa-utils
@@ -590,11 +590,11 @@ source package hierarchy.
     * Blueprints - not linked
     * Translations - http://translations.launchpad.dev/ubuntu/+source/alsa-utils
     * Answers - http://answers.launchpad.dev/ubuntu/+source/alsa-utils
-    Main heading: Publishing history of ?alsa-utils? package in Ubuntu
+    Main heading: Publishing history of alsa-utils package in Ubuntu
 
 Returning to the distribution source package index is also possible via
 the 'back' link at the bottom of the page.
 
     >>> anon_browser.getLink('back').click()
     >>> print backslashreplace(anon_browser.title)
-    \u201calsa-utils\u201d package : Ubuntu
+    alsa-utils package : Ubuntu
