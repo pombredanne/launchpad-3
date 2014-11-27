@@ -81,7 +81,7 @@ class DistributionSourcePackageRelease:
     @property
     def title(self):
         """See IDistributionSourcePackageRelease."""
-        return '"%s" %s source package in %s' % (
+        return '%s %s source package in %s' % (
             self.name, self.version, self.distribution.displayname)
 
     @property

@@ -162,8 +162,8 @@ SourcePackage context will be reachable.
 
     >>> for release in pmount_hoary.releases:
     ...     print release.title, release.publishing_history[0].status.name
-    "pmount" 0.1-1 source package in Ubuntu SUPERSEDED
-    "pmount" 0.1-2 source package in Ubuntu PUBLISHED
+    pmount 0.1-1 source package in Ubuntu SUPERSEDED
+    pmount 0.1-2 source package in Ubuntu PUBLISHED
 
     >>> len(list(pmount_hoary.distinctreleases))
     2
@@ -186,8 +186,8 @@ See bug #179028 for further information.
 
     >>> for release in pmount_hoary.releases:
     ...     print release.title, release.publishing_history[0].status.name
-    "pmount" 0.1-1 source package in Ubuntu SUPERSEDED
-    "pmount" 0.1-2 source package in Ubuntu PUBLISHED
+    pmount 0.1-1 source package in Ubuntu SUPERSEDED
+    pmount 0.1-2 source package in Ubuntu PUBLISHED
 
     >>> len(list(pmount_hoary.distinctreleases))
     2
@@ -218,7 +218,7 @@ method on a distribution:
     mozilla-firefox
 
     >>> print ubuntu_firefox.title.encode('ascii', 'backslashreplace')
-    \u201cmozilla-firefox\u201d package in Ubuntu
+    mozilla-firefox package in Ubuntu
 
     >>> print ubuntu_firefox.displayname
     mozilla-firefox in Ubuntu

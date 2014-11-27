@@ -12,7 +12,6 @@ __all__ = [
 
 from operator import attrgetter
 
-from lazr.restful.utils import smartquote
 from storm.locals import (
     And,
     Desc,
@@ -313,7 +312,7 @@ class SourcePackage(BugTargetBase, HasCodeImportsMixin,
     @property
     def title(self):
         """See `ISourcePackage`."""
-        return smartquote('"%s" source package in %s') % (
+        return '%s source package in %s' % (
             self.sourcepackagename.name, self.distroseries.displayname)
 
     @property

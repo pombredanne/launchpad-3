@@ -45,7 +45,6 @@ from lazr.restful.interface import (
     copy_field,
     use_template,
     )
-from lazr.restful.utils import smartquote
 from lazr.uri import URI
 import pytz
 import simplejson
@@ -976,7 +975,7 @@ class BranchDeletionView(LaunchpadFormView):
 
     @property
     def page_title(self):
-        return smartquote('Delete branch "%s"' % self.context.displayname)
+        return 'Delete branch %s' % self.context.displayname
 
     label = page_title
 
@@ -1068,7 +1067,7 @@ class BranchUpgradeView(LaunchpadFormView):
 
     @property
     def page_title(self):
-        return smartquote('Upgrade branch "%s"' % self.context.displayname)
+        return 'Upgrade branch %s' % self.context.displayname
 
     @property
     def next_url(self):

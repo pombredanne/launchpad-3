@@ -17,7 +17,7 @@ Distro Arch Series Binary Package
 `DistroArchSeriesBinaryPackage`s have a title property:
 
     >>> print pmount_hoary_i386.title
-    "pmount" binary package in Ubuntu Hoary i386
+    pmount binary package in Ubuntu Hoary i386
 
 First, we create a new version of pmount, and a version of mozilla-
 firefox that coincides with pmount's. We're hitch-hiking on two existing

@@ -68,7 +68,7 @@ Launchpad.net).
 
     >>> machine = factory.makeCodeImportMachine()
     >>> print get_hierarchy(machine).heading()
-    <h...>Launchpad.net</h...>
+    <h...><span...>Launchpad.net</span></h...>
 
 Any HTML in the context title will be escaped to avoid XSS vulnerabilities.
 
@@ -87,7 +87,7 @@ The image for the watermark is determined effectively by context/image:logo.
     <a href="..."><img ... src="/@@/product-logo" /></a>
 
     >>> print get_hierarchy(eric).logo()
-    <img ... src="/@@/person-logo" />
+    <a...><img ... src="/@@/person-logo" /></a>
 
 If there is no root context, the Launchpad logo is shown.
 

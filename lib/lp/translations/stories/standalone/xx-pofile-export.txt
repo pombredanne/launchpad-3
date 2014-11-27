@@ -20,7 +20,7 @@ Logged in as a regular user, the +export page is accessible.
 
     >>> print user_browser.title
     Download translation : Spanish (es)... : Hoary (5.04) :
-    Translations : ...evolution... package : Ubuntu
+    Translations : evolution package : Ubuntu
 
     >>> print find_main_content(user_browser.contents)
     <...

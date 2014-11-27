@@ -11,7 +11,6 @@ __all__ = [
     'SpecificationBranchURL',
     ]
 
-from lazr.restful.utils import smartquote
 from zope.interface import implements
 
 from lp import _
@@ -82,8 +81,7 @@ class BranchLinkToSpecificationView(LaunchpadFormView):
 
     @property
     def page_title(self):
-        return smartquote(
-            'Link branch "%s" to a blueprint' % self.context.displayname)
+        return 'Link branch %s to a blueprint' % self.context.displayname
 
     @property
     def next_url(self):

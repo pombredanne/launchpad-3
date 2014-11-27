@@ -119,7 +119,7 @@ Answers facet.
 
     >>> browser.getLink('Answers').click()
     >>> print browser.title
-    Questions : ...evolution... package : Ubuntu
+    Questions : evolution package : Ubuntu
 
     >>> browser.getLink('Ask a question').url
     '.../ubuntu/+source/evolution/+addquestion'
@@ -144,7 +144,7 @@ page:
 
     >>> browser.getLink('Answers').click()
     >>> browser.title
-    'Questions : \xe2\x80\x9cmozilla-firefox\xe2\x80\x9d package : Ubuntu'
+    'Questions : mozilla-firefox package : Ubuntu'
 
     >>> browser.getLink('Ask a question').url
     '.../ubuntu/+source/mozilla-firefox/+addquestion'

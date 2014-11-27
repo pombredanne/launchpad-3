@@ -12,7 +12,6 @@ __all__ = [
     'BranchSubscriptionPrimaryContext',
     ]
 
-from lazr.restful.utils import smartquote
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -153,8 +152,7 @@ class BranchSubscriptionEditOwnView(_BranchSubscriptionView):
 
     @property
     def page_title(self):
-        return smartquote(
-            'Edit subscription to branch "%s"' % self.context.displayname)
+        return 'Edit subscription to branch %s' % self.context.displayname
 
     @property
     def initial_values(self):
@@ -264,8 +262,7 @@ class BranchSubscriptionEditView(LaunchpadEditFormView):
 
     @property
     def page_title(self):
-        return smartquote(
-            'Edit subscription to branch "%s"' % self.branch.displayname)
+        return 'Edit subscription to branch %s' % self.branch.displayname
 
     @property
     def label(self):
