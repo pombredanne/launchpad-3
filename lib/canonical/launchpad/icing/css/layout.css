@@ -85,17 +85,22 @@ div.watermark-apps-portlet > div.wide {
 div.watermark-apps-portlet > div > img,
 div.watermark-apps-portlet > div > a > img {
     display: block;
-    margin: 0 1.5em 0 0;
+    margin: 0 1em 0 0;
     }
 div.watermark-apps-portlet h1, div.watermark-apps-portlet h2 {
     color: #000;
     font-weight: bold;
     font-size: 30px;
-    line-height: 34px;
+    line-height: 30px;
     margin: 0;
     }
+div.watermark-apps-portlet h2.secondary {
+    font-weight: normal;
+    font-size: 20px;
+    line-height: 26px;
+    }
 .watermark-apps-portlet ul.facetmenu {
-    margin-top: 6px;
+    margin-top: 12px;
     margin-left: -0.5em;
     white-space: nowrap;
     }

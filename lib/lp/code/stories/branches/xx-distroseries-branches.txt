@@ -19,13 +19,6 @@ source package name.
 
     >>> browser.open('http://launchpad.dev/mint/stable')
 
-The code tab is now enabled at the distribution series level.
-
-    >>> print_location_apps(browser.contents)
-    * Overview (selected) ...
-    * Code - http://code.launchpad.dev/mint/stable
-    ...
-
 Going to this page shows us a listing of all branches associated with that
 distribution series ordered by most recently changed first.
 

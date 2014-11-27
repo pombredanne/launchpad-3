@@ -693,6 +693,7 @@ link should appear linked. The request is also set as the menu's
     ...         self.url1 = url1  # returned from getURL(1)
     ...         self.method = 'GET'
     ...         self.annotations = {}
+    ...         self.traversed_objects = []
     ...
     ...     def getURL(self, level=0):
     ...         assert 0 <= level <=1, 'level must be 0 or 1'
