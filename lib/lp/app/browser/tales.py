@@ -81,7 +81,6 @@ from lp.services.webapp.interfaces import (
     IContextMenu,
     IFacetMenu,
     ILaunchBag,
-    ILaunchpadRoot,
     INavigationMenu,
     NoCanonicalUrl,
     )
@@ -690,7 +689,7 @@ class ObjectFormatterAPI:
         """The page title to be used.
 
         By default, reverse breadcrumbs are always used if they are available.
-        If not available, then the view's .page_title attribut is used.
+        If not available, then the view's .page_title attribute is used.
         """
         ROOT_TITLE = 'Launchpad'
         view = self._context
@@ -698,7 +697,7 @@ class ObjectFormatterAPI:
         hierarchy_view = getMultiAdapter((view, request), name='+hierarchy')
         if (isinstance(view, SystemErrorView) or
             hierarchy_view is None or
-            not hierarchy_view.display_breadcrumbs):
+            len(hierarchy_view.items) < 2):
             # The breadcrumbs are either not available or are overridden.  If
             # the view has a .page_title attribute use that.
             page_title = getattr(view, 'page_title', None)

@@ -43,6 +43,7 @@ from zope.datetime import (
     )
 from zope.i18nmessageid import Message
 from zope.interface import (
+    alsoProvides,
     implements,
     Interface,
     )
@@ -168,6 +169,10 @@ from lp.translations.interfaces.translationimportqueue import (
 from lp.translations.interfaces.translations import IRosettaApplication
 
 
+class IFacetBreadcrumb(Interface):
+    pass
+
+
 class NavigationMenuTabs(LaunchpadView):
     """View class that helps its template render the navigation menu tabs.
 
@@ -254,7 +259,7 @@ class LinkView(LaunchpadView):
 
 
 class Hierarchy(LaunchpadView):
-    """The hierarchy part of the location bar on each page."""
+    """The heading, title, facet links and breadcrumbs parts of each page."""
 
     @property
     def objects(self):
@@ -305,11 +310,11 @@ class Hierarchy(LaunchpadView):
             # after it.
             for idx, breadcrumb in reversed(list(enumerate(breadcrumbs))):
                 if IMultiFacetedBreadcrumb.providedBy(breadcrumb):
-                    breadcrumbs.insert(
-                        idx + 1,
-                        Breadcrumb(
-                            breadcrumb.context, rootsite=facet.rootsite,
-                            text=facet.text))
+                    facet_crumb = Breadcrumb(
+                        breadcrumb.context, rootsite=facet.rootsite,
+                        text=facet.text)
+                    alsoProvides(facet_crumb, IFacetBreadcrumb)
+                    breadcrumbs.insert(idx + 1, facet_crumb)
                     # Ensure that all remaining breadcrumbs are
                     # themselves faceted.
                     for remaining_crumb in breadcrumbs[idx + 1:]:
@@ -320,6 +325,23 @@ class Hierarchy(LaunchpadView):
             if page_crumb:
                 breadcrumbs.append(page_crumb)
         return breadcrumbs
+
+    @property
+    def items_for_body(self):
+        """Return breadcrumbs to display in the page body's hierarchy section.
+
+        While the entire sequence of breadcrumbs must be included in the
+        document title, the first 0-3 are represented specially in the header
+        (headings and facet links), so we don't want to duplicate them in the
+        main content.
+        """
+        crumbs = []
+        for crumb in self.items:
+            if IHeadingBreadcrumb.providedBy(crumb) or IFacetBreadcrumb.providedBy(crumb):
+                crumbs = []
+                continue
+            crumbs.append(crumb)
+        return crumbs
 
     @property
     def _naked_context_view(self):
@@ -370,7 +392,7 @@ class Hierarchy(LaunchpadView):
         # to display breadcrumbs either.
         has_major_heading = IMajorHeadingView.providedBy(
             self._naked_context_view)
-        return len(self.items) > 1 and not has_major_heading
+        return len(self.items_for_body) > 1 and not has_major_heading
 
     @property
     def heading_breadcrumbs(self):
