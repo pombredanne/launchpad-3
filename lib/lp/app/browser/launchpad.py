@@ -337,7 +337,8 @@ class Hierarchy(LaunchpadView):
         """
         crumbs = []
         for crumb in self.items:
-            if IHeadingBreadcrumb.providedBy(crumb) or IFacetBreadcrumb.providedBy(crumb):
+            if (IHeadingBreadcrumb.providedBy(crumb)
+                    or IFacetBreadcrumb.providedBy(crumb)):
                 crumbs = []
                 continue
             crumbs.append(crumb)
@@ -403,36 +404,31 @@ class Hierarchy(LaunchpadView):
         return crumbs
 
     def heading(self):
-        """Return the heading text for the page.
+        """Return the heading markup for the page.
 
-        If the view provides `IEditableContextTitle` then the top heading is
-        rendered from the view's `title_edit_widget` and is generally
-        editable.
-
-        Otherwise, if the context provides `IHeadingContext` then we return an
-        H1, else an H2.
+        Otherwiseif the context provides `IMajorHeadingView` then we
+        return an H1, else an H2.
         """
         # Check the view; is the title editable?
         if IEditableContextTitle.providedBy(self.context):
-            return self.context.title_edit_widget()
-        # The title is static, but only the context's index view gets an H1.
-        heading = 'h1' if IMajorHeadingView.providedBy(self.context) else 'h2'
-        # If there is actually no root context, then it's a top-level
-        # context-less page so Launchpad.net is shown as the branding.
-        crumbs = self.heading_breadcrumbs
-        if len(crumbs) >= 1:
-            title = crumbs[0].detail
+            tag = 'h1'
+            content = structured(self.context.title_edit_widget())
         else:
-            title = 'Launchpad.net'
-        # For non-editable titles, generate the static heading.
-        markup = structured(
-            "<%(heading)s>%(title)s</%(heading)s>",
-            heading=heading, title=title).escapedtext
-        if len(crumbs) >= 2:
-            markup += structured(
-                '\n<%(heading)s class="secondary">%(title)s</%(heading)s>',
-                heading=heading, title=crumbs[1].detail).escapedtext
-        return markup
+            # The title is static, but only the index view gets an H1.
+            tag = 'h1' if IMajorHeadingView.providedBy(self.context) else 'h2'
+            # If there is actually no root context, then it's a top-level
+            # context-less page so Launchpad.net is shown as the branding.
+            crumb_markups = []
+            for crumb in self.heading_breadcrumbs:
+                crumb_markups.append(
+                    structured('<a href="%s">%s</a>', crumb.url, crumb.detail))
+            if not crumb_markups:
+                crumb_markups.append('Launchpad.net')
+            content = structured(
+                '<br />'.join(['%s'] * len(crumb_markups)), *crumb_markups)
+        return structured(
+            '<%s id="watermark-heading">%s</%s>',
+            tag, content, tag).escapedtext
 
     def logo(self):
         """Return the logo image for the top header breadcrumb's context."""
