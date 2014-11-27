@@ -120,22 +120,3 @@ for the context and the heading is rendered in H1.
     ...     implements(IMajorHeadingView)
     >>> print get_hierarchy(widget, viewcls=HeadingView).heading()
     <h1>Widget</h1>
-
-
-Editable headings
-=================
-
-Some index pages also allow for editing the context's title.  To specify
-this, the view must implement IEditableContextTitle and provide an method
-that returns all the HTML necessary to edit the context, including the
-appropriate H tag.
-
-    >>> from lp.app.interfaces.headings import IEditableContextTitle
-    >>> class EditableView(TrivialView):
-    ...     implements(IEditableContextTitle)
-    ...     def __init__(self, context):
-    ...         self.context = context
-    ...     def title_edit_widget(self):
-    ...         return '<h0>EDIT ME</h0>'
-    >>> print get_hierarchy(widget, viewcls=EditableView).heading()
-    <h0>EDIT ME</h0>

@@ -81,7 +81,6 @@ from lp.app.errors import (
     POSTToNonCanonicalURL,
     )
 from lp.app.interfaces.headings import (
-    IEditableContextTitle,
     IHeadingBreadcrumb,
     IMajorHeadingView,
     )
@@ -383,16 +382,9 @@ class Hierarchy(LaunchpadView):
     def heading(self):
         """Return the heading text for the page.
 
-        If the view provides `IEditableContextTitle` then the top heading is
-        rendered from the view's `title_edit_widget` and is generally
-        editable.
-
-        Otherwise, if the context provides `IHeadingContext` then we return an
+        If the context provides `IHeadingContext` then we return an
         H1, else an H2.
         """
-        # Check the view; is the title editable?
-        if IEditableContextTitle.providedBy(self.context):
-            return self.context.title_edit_widget()
         # The title is static, but only the context's index view gets an H1.
         heading = 'h1' if IMajorHeadingView.providedBy(self.context) else 'h2'
         # If there is actually no root context, then it's a top-level
