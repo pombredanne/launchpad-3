@@ -303,8 +303,6 @@ class Hierarchy(LaunchpadView):
             # find the first one that implements IMultiFactedBreadcrumb.
             # It'll be facet-agnostic, so insert a facet-specific one
             # after it.
-            # XXX: Should also ensure that all subsequent breadcrumbs
-            # are themselved faceted.
             for idx, breadcrumb in reversed(list(enumerate(breadcrumbs))):
                 if IMultiFacetedBreadcrumb.providedBy(breadcrumb):
                     breadcrumbs.insert(
@@ -312,6 +310,8 @@ class Hierarchy(LaunchpadView):
                         Breadcrumb(
                             breadcrumb.context, rootsite=facet.rootsite,
                             text=facet.text))
+                    # Ensure that all remaining breadcrumbs are
+                    # themselves faceted.
                     for remaining_crumb in breadcrumbs[idx + 1:]:
                         remaining_crumb.rootsite_override = facet.rootsite
                     break
