@@ -430,10 +430,8 @@ distribution releases. IDistroSeries offers a way to query translatable
 packages that are linked to upstream productseries.
 
     >>> unlinked_translatables = hoary.getUnlinkedTranslatableSourcePackages()
-    >>> for translatable in unlinked_translatables:
-    ...    print translatable.name
-    pmount
-    mozilla
+    >>> sorted(translatable.name for translatable in unlinked_translatables)
+    [u'mozilla', u'pmount']
 
 The links to upstream product series can be verified using the
 packagings property:
