@@ -85,7 +85,7 @@ div.watermark-apps-portlet > div.wide {
 div.watermark-apps-portlet > div > img,
 div.watermark-apps-portlet > div > a > img {
     display: block;
-    margin: 0 1.5em 0 0;
+    margin: 0 1em 0 0;
     }
 div.watermark-apps-portlet h1, div.watermark-apps-portlet h2 {
     color: #000;
