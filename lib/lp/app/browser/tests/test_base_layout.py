@@ -101,8 +101,6 @@ class TestBaseLayout(TestCaseWithFactory):
         self.assertEqual(
             'yui-main', yui_layout.find(True, id='maincontent')['class'])
         self.assertEqual(
-            'invisible', document.find(True, id='help-pane')['class'])
-        self.assertEqual(
             'footer', yui_layout.find(True, id='footer')['class'])
 
     def verify_watermark(self, document):
