@@ -750,11 +750,6 @@ class ICheckBoxWidgetLayout(IAlwaysSubmittedWidget):
     """A widget that is displayed like a check box with label to the right."""
 
 
-class IPrimaryContext(Interface):
-    """The primary context that used to determine the tabs for the web UI."""
-    context = Attribute('The primary context.')
-
-
 class IFinishReadOnlyRequestEvent(Interface):
     """An event which gets sent when the publication is ended"""
 

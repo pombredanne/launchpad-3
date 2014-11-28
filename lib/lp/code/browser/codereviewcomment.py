@@ -6,7 +6,6 @@ __metaclass__ = type
 __all__ = [
     'CodeReviewCommentAddView',
     'CodeReviewCommentContextMenu',
-    'CodeReviewCommentPrimaryContext',
     'CodeReviewCommentView',
     'CodeReviewDisplayComment',
     ]
@@ -51,7 +50,6 @@ from lp.services.webapp import (
     LaunchpadView,
     Link,
     )
-from lp.services.webapp.interfaces import IPrimaryContext
 
 
 class ICodeReviewDisplayComment(IComment, ICodeReviewComment):
@@ -129,16 +127,6 @@ class CodeReviewDisplayComment(MessageComment):
 def get_message(display_comment):
     """Adapt an ICodeReviwComment to an IMessage."""
     return display_comment.comment.message
-
-
-class CodeReviewCommentPrimaryContext:
-    """The primary context is the comment is that of the source branch."""
-
-    implements(IPrimaryContext)
-
-    def __init__(self, comment):
-        self.context = IPrimaryContext(
-            comment.branch_merge_proposal).context
 
 
 class CodeReviewCommentContextMenu(ContextMenu):

@@ -22,7 +22,6 @@ from lp.code.model.branchtarget import (
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.webapp import canonical_url
-from lp.services.webapp.interfaces import IPrimaryContext
 from lp.testing import (
     person_logged_in,
     run_with_login,
@@ -565,20 +564,3 @@ class TestCheckDefaultStackedOnBranch(TestCaseWithFactory):
         removeSecurityProxy(branch).branchChanged(
             '', self.factory.getUniqueString(), None, None, None)
         self.assertEqual(branch, check_default_stacked_on(branch))
-
-
-class TestPrimaryContext(TestCaseWithFactory):
-
-    layer = DatabaseFunctionalLayer
-
-    def test_package_branch(self):
-        branch = self.factory.makePackageBranch()
-        self.assertEqual(branch.target, IPrimaryContext(branch))
-
-    def test_personal_branch(self):
-        branch = self.factory.makePersonalBranch()
-        self.assertEqual(branch.target, IPrimaryContext(branch))
-
-    def test_product_branch(self):
-        branch = self.factory.makeProductBranch()
-        self.assertEqual(branch.target, IPrimaryContext(branch))
