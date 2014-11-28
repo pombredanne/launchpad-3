@@ -51,13 +51,34 @@ from lp.services.webapp.publisher import (
     )
 
 
-def get_package_search_url(distributionsourcepackage, person_url,
-                           advanced=False, extra_params=None):
+def get_package_search_url(dsp_bugs_url, extra_params=None):
     """Construct a default search URL for a distributionsourcepackage.
 
     Optional filter parameters can be specified as a dict with the
     extra_params argument.
     """
+    params = {
+        "search": "Search",
+        "field.status": [
+            status.title for status in UNRESOLVED_BUGTASK_STATUSES]}
+    if extra_params is not None:
+        # We must UTF-8 encode searchtext to play nicely with
+        # urllib.urlencode, because it may contain non-ASCII characters.
+        if 'field.searchtext' in extra_params:
+            extra_params["field.searchtext"] = (
+                extra_params["field.searchtext"].encode("utf8"))
+        params.update(extra_params)
+    return '%s?%s' % (
+        dsp_bugs_url, urllib.urlencode(sorted(params.items()), doseq=True))
+
+
+def old_get_package_search_url(distributionsourcepackage, person_url,
+                               advanced=False, extra_params=None):
+    """Construct a default search URL for a distributionsourcepackage.
+
+    Optional filter parameters can be specified as a dict with the
+    extra_params argument.
+   """
     params = {
         "field.distribution": distributionsourcepackage.distribution.name,
         "field.sourcepackagename": distributionsourcepackage.name,
@@ -177,89 +198,27 @@ class BugSubscriberPackageBugsOverView(LaunchpadView):
         L = []
         package_counts = getUtility(IBugTaskSet).getBugCountsForPackages(
             self.user, self.context.getBugSubscriberPackages())
-        person_url = canonical_url(self.context)
         for package_counts in package_counts:
-            package = package_counts['package']
+            url = canonical_url(package_counts['package'], rootsite='bugs')
             L.append({
-                'package_name': package.displayname,
-                'package_search_url':
-                    get_package_search_url(package, person_url),
+                'package_name': package_counts['package'].displayname,
+                'package_search_url': get_package_search_url(url),
                 'open_bugs_count': package_counts['open'],
-                'open_bugs_url': self.getOpenBugsURL(package, person_url),
+                'open_bugs_url': get_package_search_url(url),
                 'critical_bugs_count': package_counts['open_critical'],
-                'critical_bugs_url': self.getCriticalBugsURL(
-                    package, person_url),
+                'critical_bugs_url': get_package_search_url(
+                    url, {'field.importance': 'Critical'}),
                 'high_bugs_count': package_counts['open_high'],
-                'high_bugs_url': self.getHighBugsURL(package, person_url),
+                'high_bugs_url': get_package_search_url(
+                    url, {'field.importance': 'High'}),
                 'unassigned_bugs_count': package_counts['open_unassigned'],
-                'unassigned_bugs_url': self.getUnassignedBugsURL(
-                    package, person_url),
+                'unassigned_bugs_url': get_package_search_url(
+                    url, {'assignee_option': 'none'}),
                 'inprogress_bugs_count': package_counts['open_inprogress'],
-                'inprogress_bugs_url': self.getInProgressBugsURL(
-                    package, person_url),
+                'inprogress_bugs_url': get_package_search_url(
+                    url, {'field.status': 'In Progress'}),
             })
-
         return sorted(L, key=itemgetter('package_name'))
-
-    def getOpenBugsURL(self, distributionsourcepackage, person_url):
-        """Return the URL for open bugs on distributionsourcepackage."""
-        status_params = {'field.status': []}
-
-        for status in UNRESOLVED_BUGTASK_STATUSES:
-            status_params['field.status'].append(status.title)
-
-        return get_package_search_url(
-            distributionsourcepackage=distributionsourcepackage,
-            person_url=person_url,
-            extra_params=status_params)
-
-    def getCriticalBugsURL(self, distributionsourcepackage, person_url):
-        """Return the URL for critical bugs on distributionsourcepackage."""
-        critical_bugs_params = {
-            'field.status': [], 'field.importance': "Critical"}
-
-        for status in UNRESOLVED_BUGTASK_STATUSES:
-            critical_bugs_params["field.status"].append(status.title)
-
-        return get_package_search_url(
-            distributionsourcepackage=distributionsourcepackage,
-            person_url=person_url,
-            extra_params=critical_bugs_params)
-
-    def getHighBugsURL(self, distributionsourcepackage, person_url):
-        """Return URL for high bugs on distributionsourcepackage."""
-        high_bugs_params = {
-            'field.status': [], 'field.importance': "High"}
-
-        for status in UNRESOLVED_BUGTASK_STATUSES:
-            high_bugs_params["field.status"].append(status.title)
-
-        return get_package_search_url(
-            distributionsourcepackage=distributionsourcepackage,
-            person_url=person_url,
-            extra_params=high_bugs_params)
-
-    def getUnassignedBugsURL(self, distributionsourcepackage, person_url):
-        """Return the URL for unassigned bugs on distributionsourcepackage."""
-        unassigned_bugs_params = {
-            "field.status": [], "field.unassigned": "on"}
-
-        for status in UNRESOLVED_BUGTASK_STATUSES:
-            unassigned_bugs_params["field.status"].append(status.title)
-
-        return get_package_search_url(
-            distributionsourcepackage=distributionsourcepackage,
-            person_url=person_url,
-            extra_params=unassigned_bugs_params)
-
-    def getInProgressBugsURL(self, distributionsourcepackage, person_url):
-        """Return the URL for unassigned bugs on distributionsourcepackage."""
-        inprogress_bugs_params = {"field.status": "In Progress"}
-
-        return get_package_search_url(
-            distributionsourcepackage=distributionsourcepackage,
-            person_url=person_url,
-            extra_params=inprogress_bugs_params)
 
 
 class BugSubscriberPackageBugsSearchListingView(BugTaskSearchListingView):
@@ -317,7 +276,7 @@ class BugSubscriberPackageBugsSearchListingView(BugTaskSearchListingView):
         """
         if distributionsourcepackage is None:
             distributionsourcepackage = self.current_package
-        return get_package_search_url(
+        return old_get_package_search_url(
             distributionsourcepackage, self.person_url, advanced,
             extra_params)
 
@@ -337,7 +296,7 @@ class BugSubscriberPackageBugsSearchListingView(BugTaskSearchListingView):
         return "Search bugs in %s" % self.current_package.displayname
 
     def getSimpleSearchURL(self):
-        return get_package_search_url(self.current_package, self.person_url)
+        return old_get_package_search_url(self.current_package, self.person_url)
 
     @property
     def label(self):
