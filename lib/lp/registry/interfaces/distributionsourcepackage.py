@@ -22,6 +22,7 @@ from zope.schema import TextLine
 
 from lp import _
 from lp.answers.interfaces.questiontarget import IQuestionTarget
+from lp.app.interfaces.launchpad import IHeadingContext
 from lp.bugs.interfaces.bugtarget import (
     IBugTarget,
     IHasOfficialBugTags,
@@ -38,8 +39,8 @@ from lp.registry.interfaces.role import IHasDrivers
 from lp.soyuz.enums import ArchivePurpose
 
 
-class IDistributionSourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,
-                                 IHasOfficialBugTags,
+class IDistributionSourcePackage(IHeadingContext, IBugTarget, IHasBranches,
+                                 IHasMergeProposals, IHasOfficialBugTags,
                                  IStructuralSubscriptionTarget,
                                  IQuestionTarget, IHasDrivers):
     """Represents a source package in a distribution.
