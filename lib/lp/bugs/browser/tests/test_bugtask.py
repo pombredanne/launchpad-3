@@ -34,11 +34,13 @@ from zope.security.proxy import removeSecurityProxy
 from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.adapters.bugchange import BugTaskStatusChange
+from lp.bugs.browser.buglisting import (
+    BugListingBatchNavigator,
+    BugTaskListingItem,
+    )
 from lp.bugs.browser.bugtask import (
     BugActivityItem,
-    BugListingBatchNavigator,
     BugTaskEditView,
-    BugTaskListingItem,
     BugTasksNominationsView,
     BugTasksTableView,
     )

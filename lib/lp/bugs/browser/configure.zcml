@@ -16,25 +16,25 @@
         facet="bugs">
         <browser:page
             for="lp.bugs.interfaces.bugtarget.IHasBugs"
-            class="lp.bugs.browser.bugtask.BugTargetView"
+            class="lp.bugs.browser.buglisting.BugTargetView"
             name="+portlet-latestbugs"
             permission="zope.Public"
             template="../templates/bugtarget-portlet-latestbugs.pt"/>
         <browser:page
             for="lp.bugs.interfaces.bugtarget.IHasBugs"
-            class="lp.bugs.browser.bugtask.BugListingPortletInfoView"
+            class="lp.bugs.browser.buglisting.BugListingPortletInfoView"
             permission="zope.Public"
             name="+portlet-bugfilters"
             template="../templates/bugtarget-portlet-bugfilters.pt"/>
         <browser:page
             for="lp.bugs.interfaces.bugtarget.IHasBugs"
-            class="lp.bugs.browser.bugtask.BugListingPortletInfoView"
+            class="lp.bugs.browser.buglisting.BugListingPortletInfoView"
             permission="zope.Public"
             name="+bugtarget-portlet-bugfilters-info"
             template="../templates/bugtarget-portlet-bugfilters-content.pt"/>
         <browser:page
             for="lp.bugs.interfaces.bugtarget.IHasBugs"
-            class="lp.bugs.browser.bugtask.BugListingPortletStatsView"
+            class="lp.bugs.browser.buglisting.BugListingPortletStatsView"
             permission="zope.Public"
             name="+bugtarget-portlet-bugfilters-stats"
             template="../templates/bugtarget-portlet-bugfilters-content.pt"/>
@@ -52,25 +52,25 @@
             permission="zope.Public"/>
         <browser:page
             for="lp.bugs.interfaces.bugtarget.IBugTarget"
-            class="lp.bugs.browser.bugtask.TextualBugTaskSearchListingView"
+            class="lp.bugs.browser.buglisting.TextualBugTaskSearchListingView"
             permission="zope.Public"
             name="+bugs-text"
             attribute="__call__"/>
         <browser:page
             for="lp.registry.interfaces.projectgroup.IProjectGroup"
-            class="lp.bugs.browser.bugtask.TextualBugTaskSearchListingView"
+            class="lp.bugs.browser.buglisting.TextualBugTaskSearchListingView"
             permission="zope.Public"
             name="+bugs-text"
             attribute="__call__"/>
         <browser:page
             for="lp.bugs.interfaces.bugtarget.IHasBugs"
-            class="lp.bugs.browser.bugtask.BugTaskSearchListingView"
+            class="lp.bugs.browser.buglisting.BugTaskSearchListingView"
             permission="zope.Public"
             name="+bugs"
             template="../templates/buglisting-default.pt"/>
         <browser:page
             for="lp.bugs.interfaces.bugtarget.IHasExpirableBugs"
-            class="lp.bugs.browser.bugtask.BugTaskExpirableListingView"
+            class="lp.bugs.browser.buglisting.BugTaskExpirableListingView"
             permission="zope.Public"
             name="+expirable-bugs"
             template="../templates/bug-listing-expirable.pt"/>
@@ -250,7 +250,7 @@
         module="lp.bugs.browser.malone"/>
     <browser:page
         for="lp.bugs.interfaces.malone.IMaloneApplication"
-        class="lp.bugs.browser.bugtask.BugsBugTaskSearchListingView"
+        class="lp.bugs.browser.buglisting.BugsBugTaskSearchListingView"
         permission="zope.Public"
         name="+bugs"
         template="../templates/buglisting-embedded-advanced-search.pt"/>
@@ -358,7 +358,7 @@
     <browser:page
         for="lp.registry.interfaces.distroseries.IDistroSeries"
         name="+nominations"
-        class="lp.bugs.browser.bugtask.BugNominationsView"
+        class="lp.bugs.browser.buglisting.BugNominationsView"
         permission="zope.Public"
         template="../templates/series-bug-nominations.pt"/>
     <adapter
@@ -426,14 +426,15 @@
     <browser:page
         for="lp.registry.interfaces.productseries.IProductSeries"
         name="+nominations"
-        class="lp.bugs.browser.bugtask.BugNominationsView"
+        class="lp.bugs.browser.buglisting.BugNominationsView"
         permission="zope.Public"
         template="../templates/series-bug-nominations.pt"/>
         <browser:menus
+            module="lp.bugs.browser.buglisting"
+            classes="BugTaskSearchListingMenu"/>
+        <browser:menus
             module="lp.bugs.browser.bugtask"
-            classes="
-                BugTaskContextMenu
-                BugTaskSearchListingMenu"/>
+            classes="BugTaskContextMenu"/>
         <browser:page
             for="*"
             name="+bugtask-macros-tableview"
@@ -598,7 +599,7 @@
         <browser:page
             name="+listing-view"
             for="lp.bugs.interfaces.bugtask.IBugTask"
-            class="lp.bugs.browser.bugtask.BugTaskListingView"
+            class="lp.bugs.browser.buglisting.BugTaskListingView"
             permission="launchpad.View">
                 </browser:page>
         <browser:page

@@ -12,7 +12,7 @@ __all__ = [
 
 from zope.component import getUtility
 
-from lp.bugs.browser.bugtask import BugTaskListingItem
+from lp.bugs.browser.buglisting import BugTaskListingItem
 from lp.bugs.interfaces.bugtask import (
     IBugTaskSet,
     RESOLVED_BUGTASK_STATUSES,

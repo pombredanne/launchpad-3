@@ -28,7 +28,7 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     )
 from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
-from lp.bugs.browser.bugtask import BugListingBatchNavigator
+from lp.bugs.browser.buglisting import BugListingBatchNavigator
 from lp.bugs.interfaces.buglink import (
     IBugLinkForm,
     IUnlinkBugsForm,

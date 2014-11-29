@@ -6,7 +6,7 @@ of simply returning the correct results, we will redirect the user
 agent to the new location with a permanent redirect so it has an
 opportunity to update bookmarks and so forth.
 
-    >>> from lp.bugs.browser.bugtask import (
+    >>> from lp.bugs.browser.buglisting import (
     ...     BugTaskSearchListingView, rewrite_old_bugtask_status_query_string)
     >>> from lp.services.webapp.servers import LaunchpadTestRequest
 

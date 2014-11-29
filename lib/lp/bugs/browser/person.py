@@ -22,7 +22,7 @@ import urllib
 
 from zope.component import getUtility
 
-from lp.bugs.browser.bugtask import BugTaskSearchListingView
+from lp.bugs.browser.buglisting import BugTaskSearchListingView
 from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     IBugTaskSet,
