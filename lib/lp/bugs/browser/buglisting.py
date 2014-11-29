@@ -1811,6 +1811,12 @@ class BugTaskExpirableListingView(BugTaskSearchListingView):
 class BugNominationsView(BugTaskSearchListingView):
     """View for accepting/declining bug nominations."""
 
+    page_title = 'Nominated bugs'
+
+    @property
+    def label(self):
+        return "Bugs nominated for %s" % self.context.displayname
+
     def search(self):
         """Return all the nominated tasks for this series."""
         if IDistroSeries.providedBy(self.context):
