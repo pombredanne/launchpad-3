@@ -83,9 +83,6 @@
      tal:attributes="action search_url|string:">
   <form method="get" name="search" class="primary search dynamic_bug_listing"
         tal:attributes="action search_url|string:">
-    <h3 tal:content="view/search_macro_title">
-      Search bugs in Ubuntu
-    </h3>
     <p>
     <tal:searchbox replace="structure view/widgets/searchtext" />
     <input type="submit" name="search" value="Search" />

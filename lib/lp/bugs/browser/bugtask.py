@@ -3082,10 +3082,6 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
         """Should the reporter widget be shown on the advanced search page?"""
         return True
 
-    def shouldShowTagsCombinatorWidget(self):
-        """Should the tags combinator widget show on the search page?"""
-        return True
-
     def shouldShowReleaseCriticalPortlet(self):
         """Should the page include a portlet showing release-critical bugs
         for different series.
@@ -3240,21 +3236,6 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
                     view_name='+addquestion')
         else:
             return None
-
-    @property
-    def search_macro_title(self):
-        """The search macro's title text."""
-        return u"Search bugs %s" % self.context_description
-
-    @property
-    def context_description(self):
-        """A phrase describing the context of the bug.
-
-        The phrase is intended to be used for headings like
-        "Bugs in $context", "Search bugs in $context". This
-        property should be overridden for person related views.
-        """
-        return "in %s" % self.context.displayname
 
 
 class BugNominationsView(BugTaskSearchListingView):
@@ -4022,9 +4003,6 @@ class BugsBugTaskSearchListingView(BugTaskSearchListingView):
     def getSearchPageHeading(self):
         """Return the heading to search all Bugs."""
         return "Search all bug reports"
-
-    def search_macro_title(self):
-        return u'Search all bugs'
 
     @property
     def label(self):
