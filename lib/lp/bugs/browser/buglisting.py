@@ -1004,11 +1004,12 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
             return product
         return None
 
-    @property
-    def page_title(self):
-        return "Bugs for %s" % self.context.displayname
+    page_title = 'Bugs'
 
-    label = page_title
+    @property
+    def label(self):
+        if not IHeadingContext.providedBy(self.context):
+            return "Bugs for %s" % self.context.displayname
 
     @property
     def schema(self):
@@ -1735,7 +1736,7 @@ class BugsBugTaskSearchListingView(BugTaskSearchListingView):
                        "importance", "status", "heat"]
     schema = IFrontPageBugTaskSearch
     custom_widget('scope', ProjectScopeWidget)
-    page_title = 'Search'
+    label = page_title = 'Search all bug reports'
 
     def initialize(self):
         """Initialize the view for the request."""
@@ -1764,14 +1765,6 @@ class BugsBugTaskSearchListingView(BugTaskSearchListingView):
                 search_url = "%s/+bugs?%s" % (
                     canonical_url(search_target), query_string)
                 self.request.response.redirect(search_url)
-
-    def getSearchPageHeading(self):
-        """Return the heading to search all Bugs."""
-        return "Search all bug reports"
-
-    @property
-    def label(self):
-        return self.getSearchPageHeading()
 
 
 class BugTaskExpirableListingView(BugTaskSearchListingView):
