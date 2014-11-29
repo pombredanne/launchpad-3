@@ -308,12 +308,6 @@
         permission="zope.Public"
         template="../templates/buglisting-embedded-advanced-search.pt"/>
     <browser:page
-        name="+packagebugs-search"
-        for="lp.registry.interfaces.person.IPerson"
-        class="lp.bugs.browser.person.BugSubscriberPackageBugsSearchListingView"
-        permission="zope.Public"
-        template="../templates/person-packagebugs-search.pt"/>
-    <browser:page
         name="+packagebugs"
         for="lp.registry.interfaces.person.IPerson"
         class="lp.bugs.browser.person.BugSubscriberPackageBugsOverView"
