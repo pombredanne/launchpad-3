@@ -399,7 +399,7 @@ it's up to the callsite to urljoin() the results of
 get_buglisting_search_filter_url() with a bugtarget URL to make it
 useful.
 
-    >>> from lp.bugs.browser.bugtask import (
+    >>> from lp.bugs.browser.buglisting import (
     ...     get_buglisting_search_filter_url)
 
 Calling get_buglisting_search_filter_url() without any parameters will

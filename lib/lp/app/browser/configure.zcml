@@ -539,7 +539,7 @@
       />
 
   <adapter
-      for="lp.bugs.browser.bugtask.BugTaskListingItem"
+      for="lp.bugs.browser.buglisting.BugTaskListingItem"
       provides="zope.traversing.interfaces.IPathAdapter"
       factory="lp.app.browser.tales.BugTaskListingItemImageDisplayAPI"
       name="image"
