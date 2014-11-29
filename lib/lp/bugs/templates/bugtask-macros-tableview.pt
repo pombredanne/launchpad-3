@@ -16,7 +16,7 @@
     <tal:searchbox replace="structure view/widgets/searchtext" />
     <metal:widget use-macro="context/@@+bugtarget-macros-search/sortwidget" />
     <input type="submit" name="search" value="Search" />
-    <a tal:attributes="href view/getSimpleSearchURL">Simple search</a>
+    <a tal:attributes="href string:?">Simple search</a>
 
     <fieldset>
       <legend>Status and importance</legend>

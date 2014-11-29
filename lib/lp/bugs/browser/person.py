@@ -206,10 +206,6 @@ class FilteredSearchListingViewMixin(RelevantMilestonesMixin,
         return super(FilteredSearchListingViewMixin, self).searchUnbatched(
             searchtext, context, extra_params)
 
-    def getSimpleSearchURL(self):
-        """Return a URL that can be used as an href to the simple search."""
-        return canonical_url(self.context, view_name=self.view_name)
-
 
 class PersonAssignedBugTaskSearchListingView(FilteredSearchListingViewMixin):
     """All bugs assigned to someone."""
