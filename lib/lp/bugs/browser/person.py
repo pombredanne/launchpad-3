@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'BugSubscriberPackageBugsSearchListingView',
     'PersonBugsMenu',
     'PersonCommentedBugTaskSearchListingView',
     'PersonAssignedBugTaskSearchListingView',
@@ -22,9 +21,7 @@ from operator import itemgetter
 import urllib
 
 from zope.component import getUtility
-from zope.schema.vocabulary import getVocabularyRegistry
 
-from lp.app.errors import UnexpectedFormData
 from lp.bugs.browser.bugtask import BugTaskSearchListingView
 from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
@@ -38,7 +35,6 @@ from lp.registry.model.milestone import (
     )
 from lp.services.database.bulk import load_related
 from lp.services.feeds.browser import FeedsMixin
-from lp.services.helpers import shortlist
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp.batching import BatchNavigator
 from lp.services.webapp.menu import (
@@ -70,34 +66,6 @@ def get_package_search_url(dsp_bugs_url, extra_params=None):
         params.update(extra_params)
     return '%s?%s' % (
         dsp_bugs_url, urllib.urlencode(sorted(params.items()), doseq=True))
-
-
-def old_get_package_search_url(distributionsourcepackage, person_url,
-                               advanced=False, extra_params=None):
-    """Construct a default search URL for a distributionsourcepackage.
-
-    Optional filter parameters can be specified as a dict with the
-    extra_params argument.
-   """
-    params = {
-        "field.distribution": distributionsourcepackage.distribution.name,
-        "field.sourcepackagename": distributionsourcepackage.name,
-        "search": "Search"}
-    if advanced:
-        params['advanced'] = '1'
-
-    if extra_params is not None:
-        # We must UTF-8 encode searchtext to play nicely with
-        # urllib.urlencode, because it may contain non-ASCII characters.
-        if 'field.searchtext' in extra_params:
-            extra_params["field.searchtext"] = (
-                extra_params["field.searchtext"].encode("utf8"))
-
-        params.update(extra_params)
-
-    query_string = urllib.urlencode(sorted(params.items()), doseq=True)
-
-    return person_url + '/+packagebugs-search?%s' % query_string
 
 
 class PersonBugsMenu(NavigationMenu):
@@ -219,94 +187,6 @@ class BugSubscriberPackageBugsOverView(LaunchpadView):
                     url, {'field.status': 'In Progress'}),
             })
         return sorted(L, key=itemgetter('package_name'))
-
-
-class BugSubscriberPackageBugsSearchListingView(BugTaskSearchListingView):
-    """Bugs reported on packages for a bug subscriber."""
-
-    columns_to_show = ["id", "summary", "importance", "status"]
-    page_title = 'Package bugs'
-
-    @property
-    def current_package(self):
-        """Get the package whose bugs are currently being searched."""
-        if not (
-            self.widgets['distribution'].hasValidInput() and
-            self.widgets['distribution'].getInputValue()):
-            raise UnexpectedFormData("A distribution is required")
-        if not (
-            self.widgets['sourcepackagename'].hasValidInput() and
-            self.widgets['sourcepackagename'].getInputValue()):
-            raise UnexpectedFormData("A sourcepackagename is required")
-
-        distribution = self.widgets['distribution'].getInputValue()
-        return distribution.getSourcePackage(
-            self.widgets['sourcepackagename'].getInputValue())
-
-    def search(self, searchtext=None):
-        distrosourcepackage = self.current_package
-        return BugTaskSearchListingView.search(
-            self, searchtext=searchtext, context=distrosourcepackage)
-
-    def getMilestoneWidgetValues(self):
-        """See `BugTaskSearchListingView`.
-
-        We return only the active milestones on the current distribution
-        since any others are irrelevant.
-        """
-        current_distro = self.current_package.distribution
-        vocabulary_registry = getVocabularyRegistry()
-        vocabulary = vocabulary_registry.get(current_distro, 'Milestone')
-
-        return shortlist([
-            dict(title=milestone.title, value=milestone.token, checked=False)
-            for milestone in vocabulary],
-            longest_expected=10)
-
-    @cachedproperty
-    def person_url(self):
-        return canonical_url(self.context)
-
-    def getBugSubscriberPackageSearchURL(self, distributionsourcepackage=None,
-                                         advanced=False, extra_params=None):
-        """Construct a default search URL for a distributionsourcepackage.
-
-        Optional filter parameters can be specified as a dict with the
-        extra_params argument.
-        """
-        if distributionsourcepackage is None:
-            distributionsourcepackage = self.current_package
-        return old_get_package_search_url(
-            distributionsourcepackage, self.person_url, advanced,
-            extra_params)
-
-    def getBugSubscriberPackageAdvancedSearchURL(self,
-                                              distributionsourcepackage=None):
-        """Build the advanced search URL for a distributionsourcepackage."""
-        return self.getBugSubscriberPackageSearchURL(advanced=True)
-
-    def shouldShowSearchWidgets(self):
-        # XXX: Guilherme Salgado 2005-11-05:
-        # It's not possible to search amongst the bugs on maintained
-        # software, so for now I'll be simply hiding the search widgets.
-        return False
-
-    # Methods that customize the advanced search form.
-    def getAdvancedSearchButtonLabel(self):
-        return "Search bugs in %s" % self.current_package.displayname
-
-    def getSimpleSearchURL(self):
-        return old_get_package_search_url(self.current_package, self.person_url)
-
-    @property
-    def label(self):
-        return self.getSearchPageHeading()
-
-    @property
-    def context_description(self):
-        """See `BugTaskSearchListingView`."""
-        return ("in %s related to %s" %
-                (self.current_package.displayname, self.context.displayname))
 
 
 class PersonAssignedBugTaskSearchListingView(RelevantMilestonesMixin,
