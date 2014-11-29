@@ -90,7 +90,7 @@ The page title and other wording in the page reflects the contents.
     >>> print_location(anon_browser.contents)
     Hierarchy: Patchy 1
     Tabs: ...
-    Main heading: Patch attachments in Patchy 1
+    Main heading: Patch attachments
 
 After creating some more bugs, with some non-patch and some patch
 attachments, and various statuses...
@@ -276,6 +276,6 @@ Bugs in a product series show up in the patches view for that series.
 The page title and other wording in the page reflects the contents.
 
     >>> print_location(anon_browser.contents)
-    Hierarchy: Patchy 1 > Series trunk > Patch attachments in trunk
+    Hierarchy: Patchy 1 > Series trunk > Patch attachments
     Tabs: ...
     Main heading: Patch attachments in trunk

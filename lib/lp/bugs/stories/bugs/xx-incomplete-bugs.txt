@@ -154,7 +154,7 @@ the bug he set to Incomplete previously.
 
     >>> expirable_bugs_link.click()
     >>> print user_browser.title
-    Bugs that can expire in Jokosher...
+    Expirable bugs : Bugs : Jokosher
 
     >>> contents = find_main_content(user_browser.contents)
     >>> print_batch_header(contents)
