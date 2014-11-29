@@ -3241,21 +3241,6 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
         else:
             return None
 
-    @property
-    def search_macro_title(self):
-        """The search macro's title text."""
-        return u"Search bugs %s" % self.context_description
-
-    @property
-    def context_description(self):
-        """A phrase describing the context of the bug.
-
-        The phrase is intended to be used for headings like
-        "Bugs in $context", "Search bugs in $context". This
-        property should be overridden for person related views.
-        """
-        return "in %s" % self.context.displayname
-
 
 class BugNominationsView(BugTaskSearchListingView):
     """View for accepting/declining bug nominations."""
@@ -4022,9 +4007,6 @@ class BugsBugTaskSearchListingView(BugTaskSearchListingView):
     def getSearchPageHeading(self):
         """Return the heading to search all Bugs."""
         return "Search all bug reports"
-
-    def search_macro_title(self):
-        return u'Search all bugs'
 
     @property
     def label(self):
