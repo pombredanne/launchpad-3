@@ -123,10 +123,8 @@ from lp.app.widgets.textwidgets import StrippedTextWidget
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin,
     )
-from lp.bugs.browser.bugtask import (
-    BugTargetTraversalMixin,
-    get_buglisting_search_filter_url,
-    )
+from lp.bugs.browser.buglisting import get_buglisting_search_filter_url
+from lp.bugs.browser.bugtask import BugTargetTraversalMixin
 from lp.bugs.browser.structuralsubscription import (
     expose_structural_subscription_data_to_js,
     StructuralSubscriptionMenuMixin,

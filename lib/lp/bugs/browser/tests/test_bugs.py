@@ -100,7 +100,7 @@ class TestMaloneView(TestCaseWithFactory):
             self.application, '+bugs', rootsite='bugs')
         content = view.render()
         # we should get some valid content out of this
-        self.assertIn('Search all bugs', content)
+        self.assertIn('Search all bug reports', content)
 
     def _assert_getBugData(self, related_bug=None):
         # The getBugData method works as expected.

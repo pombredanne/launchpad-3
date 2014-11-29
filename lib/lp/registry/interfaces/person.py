@@ -98,6 +98,7 @@ from lp.app.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
     IHasMugshot,
+    IHeadingContext,
     IPrivacy,
     )
 from lp.app.validators import LaunchpadValidationError
@@ -1844,7 +1845,7 @@ class IPersonSpecialRestricted(Interface):
 
 class IPerson(IPersonPublic, IPersonLimitedView, IPersonViewRestricted,
               IPersonEditRestricted, IPersonSpecialRestricted, IHasStanding,
-              ISetLocation):
+              ISetLocation, IHeadingContext):
     """A Person."""
     export_as_webservice_entry(plural_name='people')
 
