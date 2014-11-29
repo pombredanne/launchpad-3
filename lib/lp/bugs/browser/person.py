@@ -141,7 +141,7 @@ class RelevantMilestonesMixin:
 
 class BugSubscriberPackageBugsOverView(LaunchpadView):
 
-    page_title = 'Package bugs'
+    label = 'Subscribed packages'
 
     @cachedproperty
     def total_bug_counts(self):
@@ -205,10 +205,6 @@ class FilteredSearchListingViewMixin(RelevantMilestonesMixin,
         extra_params.update(self.getExtraParams(context))
         return super(FilteredSearchListingViewMixin, self).searchUnbatched(
             searchtext, context, extra_params)
-
-    def getSimpleSearchURL(self):
-        """Return a URL that can be used as an href to the simple search."""
-        return canonical_url(self.context, view_name=self.view_name)
 
 
 class PersonAssignedBugTaskSearchListingView(FilteredSearchListingViewMixin):

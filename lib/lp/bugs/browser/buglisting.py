@@ -70,6 +70,7 @@ from lp.app.errors import (
     UnexpectedFormData,
     )
 from lp.app.interfaces.launchpad import (
+    IHeadingContext,
     IPrivacy,
     IServiceUsage,
     )
@@ -1003,11 +1004,12 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
             return product
         return None
 
-    @property
-    def page_title(self):
-        return "Bugs for %s" % self.context.displayname
+    page_title = 'Bugs'
 
-    label = page_title
+    @property
+    def label(self):
+        if not IHeadingContext.providedBy(self.context):
+            return "Bugs for %s" % self.context.displayname
 
     @property
     def schema(self):
@@ -1475,10 +1477,6 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
         """Return data used to render the milestone checkboxes."""
         return self.getWidgetValues("MilestoneWithDateExpected")
 
-    def getSimpleSearchURL(self):
-        """Return a URL that can be used as an href to the simple search."""
-        return canonical_url(self.context) + "/+bugs"
-
     def shouldShowAssigneeWidget(self):
         """Should the assignee widget be shown on the advanced search page?"""
         return True
@@ -1734,7 +1732,7 @@ class BugsBugTaskSearchListingView(BugTaskSearchListingView):
                        "importance", "status", "heat"]
     schema = IFrontPageBugTaskSearch
     custom_widget('scope', ProjectScopeWidget)
-    page_title = 'Search'
+    label = page_title = 'Search all bug reports'
 
     def initialize(self):
         """Initialize the view for the request."""
@@ -1763,14 +1761,6 @@ class BugsBugTaskSearchListingView(BugTaskSearchListingView):
                 search_url = "%s/+bugs?%s" % (
                     canonical_url(search_target), query_string)
                 self.request.response.redirect(search_url)
-
-    def getSearchPageHeading(self):
-        """Return the heading to search all Bugs."""
-        return "Search all bug reports"
-
-    @property
-    def label(self):
-        return self.getSearchPageHeading()
 
 
 class BugTaskExpirableListingView(BugTaskSearchListingView):
@@ -1805,13 +1795,23 @@ class BugTaskExpirableListingView(BugTaskSearchListingView):
             bugtasks, self.request, columns_to_show=self.columns_to_show,
             size=config.malone.buglist_batch_size)
 
+    page_title = 'Expirable bugs'
+
     @property
-    def page_title(self):
-        return "Bugs that can expire in %s" % self.context.title
+    def label(self):
+        if not IHeadingContext.providedBy(self.context):
+            return "%s in %s" % (self.page_title, self.context.displayname)
+        return self.page_title
 
 
 class BugNominationsView(BugTaskSearchListingView):
     """View for accepting/declining bug nominations."""
+
+    page_title = 'Nominated bugs'
+
+    @property
+    def label(self):
+        return "Bugs nominated for %s" % self.context.displayname
 
     def search(self):
         """Return all the nominated tasks for this series."""

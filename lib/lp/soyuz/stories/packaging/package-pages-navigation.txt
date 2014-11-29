@@ -36,7 +36,7 @@ pages.
     * Blueprints - not linked
     * Translations - http://translations.launchpad.dev/ubuntu/+source/alsa-utils
     * Answers - http://answers.launchpad.dev/ubuntu/+source/alsa-utils
-    Main heading: Bugs for alsa-utils in Ubuntu
+    Main heading: (No main heading)
 
 
 == Distribution source package release ==

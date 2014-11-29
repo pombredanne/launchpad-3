@@ -79,7 +79,7 @@ see which bugs will expire if they are not confirmed.
 
     >>> expirable_bugs_link.click()
     >>> print anon_browser.title
-    Bugs that can expire in Ubuntu...
+    Expirable bugs : Bugs : Ubuntu
 
 Debian does not use Launchpad to track bugs; the anonymous user cannot
 see any link reporting that bugs can expire.
