@@ -195,7 +195,7 @@ class PersonAssignedBugTaskSearchListingView(RelevantMilestonesMixin,
 
     columns_to_show = ["id", "summary", "bugtargetdisplayname",
                        "importance", "status"]
-    page_title = 'Assigned bugs'
+    page_title = label = 'Assigned bugs'
     view_name = '+assignedbugs'
 
     def searchUnbatched(self, searchtext=None, context=None,
@@ -225,26 +225,9 @@ class PersonAssignedBugTaskSearchListingView(RelevantMilestonesMixin,
         """Should the tags combinator widget show on the search page?"""
         return False
 
-    @property
-    def context_description(self):
-        """See `BugTaskSearchListingView`."""
-        return "assigned to %s" % self.context.displayname
-
-    def getSearchPageHeading(self):
-        """The header for the search page."""
-        return "Bugs %s" % self.context_description
-
-    def getAdvancedSearchButtonLabel(self):
-        """The Search button for the advanced search page."""
-        return "Search bugs %s" % self.context_description
-
     def getSimpleSearchURL(self):
         """Return a URL that can be used as an href to the simple search."""
         return canonical_url(self.context, view_name="+assignedbugs")
-
-    @property
-    def label(self):
-        return self.getSearchPageHeading()
 
 
 class PersonCommentedBugTaskSearchListingView(RelevantMilestonesMixin,
@@ -253,7 +236,7 @@ class PersonCommentedBugTaskSearchListingView(RelevantMilestonesMixin,
 
     columns_to_show = ["id", "summary", "bugtargetdisplayname",
                        "importance", "status"]
-    page_title = 'Commented bugs'
+    page_title = label = 'Commented bugs'
 
     def searchUnbatched(self, searchtext=None, context=None,
                         extra_params=None):
@@ -270,26 +253,9 @@ class PersonCommentedBugTaskSearchListingView(RelevantMilestonesMixin,
         sup = super(PersonCommentedBugTaskSearchListingView, self)
         return sup.searchUnbatched(searchtext, context, extra_params)
 
-    @property
-    def context_description(self):
-        """See `BugTaskSearchListingView`."""
-        return "commented on by %s" % self.context.displayname
-
-    def getSearchPageHeading(self):
-        """The header for the search page."""
-        return "Bugs %s" % self.context_description
-
-    def getAdvancedSearchButtonLabel(self):
-        """The Search button for the advanced search page."""
-        return "Search bugs %s" % self.context_description
-
     def getSimpleSearchURL(self):
         """Return a URL that can be used as an href to the simple search."""
         return canonical_url(self.context, view_name="+commentedbugs")
-
-    @property
-    def label(self):
-        return self.getSearchPageHeading()
 
 
 class PersonAffectingBugTaskSearchListingView(
@@ -299,7 +265,7 @@ class PersonAffectingBugTaskSearchListingView(
     columns_to_show = ["id", "summary", "bugtargetdisplayname",
                        "importance", "status"]
     view_name = '+affectingbugs'
-    page_title = 'Bugs affecting'   # The context is added externally.
+    page_title = label = 'Bugs affecting'
 
     def searchUnbatched(self, searchtext=None, context=None,
                         extra_params=None):
@@ -328,26 +294,9 @@ class PersonAffectingBugTaskSearchListingView(
         """Should the tags combinator widget show on the search page?"""
         return False
 
-    @property
-    def context_description(self):
-        """See `BugTaskSearchListingView`."""
-        return "affecting %s" % self.context.displayname
-
-    def getSearchPageHeading(self):
-        """The header for the search page."""
-        return "Bugs %s" % self.context_description
-
-    def getAdvancedSearchButtonLabel(self):
-        """The Search button for the advanced search page."""
-        return "Search bugs %s" % self.context_description
-
     def getSimpleSearchURL(self):
         """Return a URL that can be used as an href to the simple search."""
         return canonical_url(self.context, view_name=self.view_name)
-
-    @property
-    def label(self):
-        return self.getSearchPageHeading()
 
 
 class PersonRelatedBugTaskSearchListingView(RelevantMilestonesMixin,
@@ -357,7 +306,7 @@ class PersonRelatedBugTaskSearchListingView(RelevantMilestonesMixin,
 
     columns_to_show = ["id", "summary", "bugtargetdisplayname",
                        "importance", "status"]
-    page_title = 'Related bugs'
+    page_title = label = 'Related bugs'
 
     def searchUnbatched(self, searchtext=None, context=None,
                         extra_params=None):
@@ -392,23 +341,8 @@ class PersonRelatedBugTaskSearchListingView(RelevantMilestonesMixin,
         return context.searchTasks(
             assignee_params, subscriber_params, owner_params, commenter_params)
 
-    @property
-    def context_description(self):
-        """See `BugTaskSearchListingView`."""
-        return "related to %s" % self.context.displayname
-
-    def getSearchPageHeading(self):
-        return "Bugs %s" % self.context_description
-
-    def getAdvancedSearchButtonLabel(self):
-        return "Search bugs %s" % self.context_description
-
     def getSimpleSearchURL(self):
         return canonical_url(self.context, view_name="+bugs")
-
-    @property
-    def label(self):
-        return self.getSearchPageHeading()
 
 
 class PersonReportedBugTaskSearchListingView(RelevantMilestonesMixin,
@@ -417,7 +351,7 @@ class PersonReportedBugTaskSearchListingView(RelevantMilestonesMixin,
 
     columns_to_show = ["id", "summary", "bugtargetdisplayname",
                        "importance", "status"]
-    page_title = 'Reported bugs'
+    page_title = label = 'Reported bugs'
 
     def searchUnbatched(self, searchtext=None, context=None,
                         extra_params=None):
@@ -437,19 +371,6 @@ class PersonReportedBugTaskSearchListingView(RelevantMilestonesMixin,
         sup = super(PersonReportedBugTaskSearchListingView, self)
         return sup.searchUnbatched(searchtext, context, extra_params)
 
-    @property
-    def context_description(self):
-        """See `BugTaskSearchListingView`."""
-        return "reported by %s" % self.context.displayname
-
-    def getSearchPageHeading(self):
-        """The header for the search page."""
-        return "Bugs %s" % self.context_description
-
-    def getAdvancedSearchButtonLabel(self):
-        """The Search button for the advanced search page."""
-        return "Search bugs %s" % self.context_description
-
     def getSimpleSearchURL(self):
         """Return a URL that can be used as an href to the simple search."""
         return canonical_url(self.context, view_name="+reportedbugs")
@@ -462,10 +383,6 @@ class PersonReportedBugTaskSearchListingView(RelevantMilestonesMixin,
         """Should the tags combinator widget show on the search page?"""
         return False
 
-    @property
-    def label(self):
-        return self.getSearchPageHeading()
-
 
 class PersonSubscribedBugTaskSearchListingView(RelevantMilestonesMixin,
                                                BugTaskSearchListingView):
@@ -473,7 +390,7 @@ class PersonSubscribedBugTaskSearchListingView(RelevantMilestonesMixin,
 
     columns_to_show = ["id", "summary", "bugtargetdisplayname",
                        "importance", "status"]
-    page_title = 'Subscribed bugs'
+    page_title = label = 'Subscribed bugs'
     view_name = '+subscribedbugs'
 
     def searchUnbatched(self, searchtext=None, context=None,
@@ -495,26 +412,9 @@ class PersonSubscribedBugTaskSearchListingView(RelevantMilestonesMixin,
         """Should the team subscribed bugs portlet be shown?"""
         return True
 
-    @property
-    def context_description(self):
-        """See `BugTaskSearchListingView`."""
-        return "%s is subscribed to" % self.context.displayname
-
-    def getSearchPageHeading(self):
-        """The header for the search page."""
-        return "Bugs %s" % self.context_description
-
-    def getAdvancedSearchButtonLabel(self):
-        """The Search button for the advanced search page."""
-        return "Search bugs %s is Cc'd to" % self.context.displayname
-
     def getSimpleSearchURL(self):
         """Return a URL that can be used as an href to the simple search."""
         return canonical_url(self.context, view_name="+subscribedbugs")
-
-    @property
-    def label(self):
-        return self.getSearchPageHeading()
 
 
 class PersonSubscriptionsView(LaunchpadView):
