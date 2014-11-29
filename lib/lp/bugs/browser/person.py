@@ -257,14 +257,12 @@ class PersonAffectingBugTaskSearchListingView(FilteredSearchListingViewMixin):
         return True
 
 
-class PersonRelatedBugTaskSearchListingView(RelevantMilestonesMixin,
-                                            BugTaskSearchListingView,
+class PersonRelatedBugTaskSearchListingView(FilteredSearchListingViewMixin,
                                             FeedsMixin):
     """All bugs related to someone."""
 
-    columns_to_show = ["id", "summary", "bugtargetdisplayname",
-                       "importance", "status"]
-    page_title = label = 'Related bugs'
+    label = 'Related bugs'
+    view_name = '+bugs'
 
     def searchUnbatched(self, searchtext=None, context=None,
                         extra_params=None):
@@ -298,9 +296,6 @@ class PersonRelatedBugTaskSearchListingView(RelevantMilestonesMixin,
 
         return context.searchTasks(
             assignee_params, subscriber_params, owner_params, commenter_params)
-
-    def getSimpleSearchURL(self):
-        return canonical_url(self.context, view_name="+bugs")
 
 
 class PersonReportedBugTaskSearchListingView(FilteredSearchListingViewMixin):
