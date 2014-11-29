@@ -8,7 +8,6 @@ __all__ = [
     'BranchLinkToBugView',
     'BugBranchAddView',
     'BugBranchDeleteView',
-    'BugBranchPrimaryContext',
     'BugBranchView',
     ]
 
@@ -38,16 +37,6 @@ from lp.services.webapp import (
     canonical_url,
     LaunchpadView,
     )
-from lp.services.webapp.interfaces import IPrimaryContext
-
-
-class BugBranchPrimaryContext:
-    """The primary context is the bug branch link is that of the branch."""
-
-    implements(IPrimaryContext)
-
-    def __init__(self, bug_branch):
-        self.context = IPrimaryContext(bug_branch.branch).context
 
 
 class BugBranchAddView(LaunchpadFormView):

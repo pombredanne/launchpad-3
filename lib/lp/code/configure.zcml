@@ -323,10 +323,6 @@
       for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal
            lp.code.interfaces.event.IBranchMergeProposalStatusChangeEvent"
       handler="lp.code.subscribers.karma.branch_merge_status_changed"/>
-  <adapter
-      for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
-      provides="lp.services.webapp.interfaces.IPrimaryContext"
-      factory="lp.code.browser.branchmergeproposal.BranchMergeProposalPrimaryContext"/>
 
   <!-- hierarchy -->
 
@@ -385,10 +381,6 @@
         permission="zope.Public"
         set_schema="lp.code.interfaces.branchsubscription.IBranchSubscription"/>
   </class>
-  <adapter
-      for="lp.code.interfaces.branchsubscription.IBranchSubscription"
-      provides="lp.services.webapp.interfaces.IPrimaryContext"
-      factory="lp.code.browser.branchsubscription.BranchSubscriptionPrimaryContext"/>
 
   <!-- Branch -->
 
@@ -432,10 +424,6 @@
       for="lp.code.interfaces.branch.IBranch"
       provides="lp.app.browser.badge.IHasBadges"
       factory="lp.code.browser.branchlisting.BranchBadges"/>
-  <adapter
-      for="lp.code.interfaces.branch.IBranch"
-      provides="lp.services.webapp.interfaces.IPrimaryContext"
-      factory="lp.code.model.branchtarget.branch_to_target"/>
 
   <subscriber
       for="lp.code.interfaces.branch.IBranch
@@ -585,10 +573,6 @@
       for="lp.code.interfaces.codereviewcomment.ICodeReviewComment
            lp.code.interfaces.event.INewCodeReviewCommentEvent"
       handler="lp.code.subscribers.karma.code_review_comment_added"/>
-  <adapter
-      for="lp.code.interfaces.codereviewcomment.ICodeReviewComment"
-      provides="lp.services.webapp.interfaces.IPrimaryContext"
-      factory="lp.code.browser.codereviewcomment.CodeReviewCommentPrimaryContext"/>
 
   <!-- CodeReviewInlineComment -->
 
