@@ -141,7 +141,7 @@ class RelevantMilestonesMixin:
 
 class BugSubscriberPackageBugsOverView(LaunchpadView):
 
-    page_title = 'Package bugs'
+    label = 'Subscribed packages'
 
     @cachedproperty
     def total_bug_counts(self):
