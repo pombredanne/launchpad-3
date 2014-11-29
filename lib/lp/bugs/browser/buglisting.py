@@ -70,6 +70,7 @@ from lp.app.errors import (
     UnexpectedFormData,
     )
 from lp.app.interfaces.launchpad import (
+    IHeadingContext,
     IPrivacy,
     IServiceUsage,
     )
@@ -1805,9 +1806,13 @@ class BugTaskExpirableListingView(BugTaskSearchListingView):
             bugtasks, self.request, columns_to_show=self.columns_to_show,
             size=config.malone.buglist_batch_size)
 
+    page_title = 'Expirable bugs'
+
     @property
-    def page_title(self):
-        return "Bugs that can expire in %s" % self.context.title
+    def label(self):
+        if not IHeadingContext.providedBy(self.context):
+            return "%s in %s" % (self.page_title, self.context.displayname)
+        return self.page_title
 
 
 class BugNominationsView(BugTaskSearchListingView):
