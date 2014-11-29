@@ -95,8 +95,6 @@
     <tal:widget replace="structure view/widgets/has_patch/hidden" />
     <tal:widget replace="structure view/widgets/component/hidden" />
     <tal:widget replace="structure view/widgets/has_no_package/hidden" />
-    </p>
-    <p>
     <a tal:attributes="href advanced_search_url|string:?advanced=1"
     >Advanced search</a>
     </p>
