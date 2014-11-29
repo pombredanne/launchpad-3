@@ -200,14 +200,11 @@ class FilteredSearchListingViewMixin(RelevantMilestonesMixin,
 
     def searchUnbatched(self, searchtext=None, context=None,
                         extra_params=None):
-        if context is None:
-            context = self.context
-
+        context = context or self.context
         extra_params = extra_params or {}
         extra_params.update(self.getExtraParams(context))
-
-        sup = super(FilteredSearchListingViewMixin, self)
-        return sup.searchUnbatched(searchtext, context, extra_params)
+        return super(FilteredSearchListingViewMixin, self).searchUnbatched(
+            searchtext, context, extra_params)
 
     def getSimpleSearchURL(self):
         """Return a URL that can be used as an href to the simple search."""
