@@ -80,7 +80,6 @@ from lp.services.webapp.interfaces import (
     ILaunchpadRoot,
     IOpenLaunchBag,
     IPlacelessAuthUtility,
-    IPrimaryContext,
     NoReferrerError,
     OffsiteFormPostError,
     )
@@ -744,15 +743,6 @@ class LaunchpadBrowserPublication(
 
 class InvalidThreadsConfiguration(Exception):
     """Exception thrown when the number of threads isn't set correctly."""
-
-
-class DefaultPrimaryContext:
-    """The default primary context is the context."""
-
-    implements(IPrimaryContext)
-
-    def __init__(self, context):
-        self.context = context
 
 
 _browser_re = re.compile(r"""(?x)^(

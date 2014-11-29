@@ -532,10 +532,6 @@
             attributes="
                 destroySelf"/>
     </class>
-    <adapter
-        for="lp.bugs.interfaces.bugbranch.IBugBranch"
-        provides="lp.services.webapp.interfaces.IPrimaryContext"
-        factory="lp.bugs.browser.bugbranch.BugBranchPrimaryContext"/>
 
     <!-- hierarchy -->
 
@@ -795,10 +791,6 @@
         <allow
             interface="lp.bugs.interfaces.bugmessage.IBugMessageSet"/>
     </securedutility>
-    <adapter
-        for="lp.bugs.interfaces.bugnomination.IBugNomination"
-        provides="lp.services.webapp.interfaces.IPrimaryContext"
-        factory="lp.bugs.browser.bugnomination.BugNominationPrimaryContext"/>
         <class
             class="lp.bugs.model.bugnomination.BugNomination">
             <require
