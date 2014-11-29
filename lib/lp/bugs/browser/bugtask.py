@@ -3082,10 +3082,6 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
         """Should the reporter widget be shown on the advanced search page?"""
         return True
 
-    def shouldShowTagsCombinatorWidget(self):
-        """Should the tags combinator widget show on the search page?"""
-        return True
-
     def shouldShowReleaseCriticalPortlet(self):
         """Should the page include a portlet showing release-critical bugs
         for different series.

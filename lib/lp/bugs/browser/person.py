@@ -231,10 +231,6 @@ class PersonAssignedBugTaskSearchListingView(FilteredSearchListingViewMixin):
         """Should the team assigned bugs portlet be shown?"""
         return True
 
-    def shouldShowTagsCombinatorWidget(self):
-        """Should the tags combinator widget show on the search page?"""
-        return False
-
 
 class PersonCommentedBugTaskSearchListingView(FilteredSearchListingViewMixin):
     """All bugs commented on by a Person."""
@@ -262,10 +258,6 @@ class PersonAffectingBugTaskSearchListingView(FilteredSearchListingViewMixin):
     def shouldShowTeamPortlet(self):
         """Should the team assigned bugs portlet be shown?"""
         return True
-
-    def shouldShowTagsCombinatorWidget(self):
-        """Should the tags combinator widget show on the search page?"""
-        return False
 
 
 class PersonRelatedBugTaskSearchListingView(RelevantMilestonesMixin,
@@ -327,10 +319,6 @@ class PersonReportedBugTaskSearchListingView(FilteredSearchListingViewMixin):
 
     def shouldShowReporterWidget(self):
         """Should the reporter widget be shown on the advanced search page?"""
-        return False
-
-    def shouldShowTagsCombinatorWidget(self):
-        """Should the tags combinator widget show on the search page?"""
         return False
 
 

@@ -307,8 +307,7 @@
               >An error message.</div>
           </div>
 
-          <div condition="view/shouldShowTagsCombinatorWidget"
-               class="value">
+          <div class="value">
             <label style="font-weight: normal">
               <input id="field.tags_combinator.0"
                      name="field.tags_combinator"
