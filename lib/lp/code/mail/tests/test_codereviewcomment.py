@@ -389,6 +389,9 @@ class TestInlineCommentsSection(testtools.TestCase):
         "@@ -0,0 +1,2 @@\n"
         "+a\n"
         "+b\n"
+        "@@ -1,2 +0,0 @@\n"
+        "-x\n"
+        "-y\n"
         "--- foo\t2009-08-26 15:53:23.000000000 -0400\n"
         "+++ foo\t2009-08-26 15:56:43.000000000 -0400\n"
         "@@ -1,3 +1,4 @@\n"
@@ -435,6 +438,25 @@ class TestInlineCommentsSection(testtools.TestCase):
              u'> -\xe5'],
             self.getSection(comments).splitlines()[5:11])
 
+
+    def test_commentless_hunks_ignored(self):
+        comments = {'4': 'A comment', '14': 'Another comment'}
+        self.assertEqual(
+            ['--- bar\t2009-08-26 15:53:34.000000000 -0400\n',
+             '+++ bar\t1969-12-31 19:00:00.000000000 -0500\n',
+             '@@ -1,3 +0,0 @@\n',
+             '-\xc3\xa5\n',
+             'A comment',
+             '-b\n',
+             '-c\n',
+             '--- baz\t1969-12-31 19:00:00.000000000 -0500\n',
+             '+++ baz\t2009-08-26 15:53:57.000000000 -0400\n',
+             '@@ -1,2 +0,0 @@\n',
+             '-x\n',
+             '-y\n'],
+            self.getSection(comments).splitlines()[:])
+
+
     def test_multi_line_comment(self):
         # Inline comments with multiple lines are rendered appropriately.
         comments = {'2': 'Foo\nBar'}
@@ -460,3 +482,4 @@ class TestInlineCommentsSection(testtools.TestCase):
              'Bar',
              ''],
             self.getSection(comments).splitlines()[5:13])
+

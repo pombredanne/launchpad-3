@@ -10,6 +10,7 @@ __all__ = [
     'CodeReviewCommentMailer',
     ]
 
+import patches # temporary until bzrlib.patches provides line_numbers
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -169,18 +170,43 @@ class CodeReviewCommentMailer(BMPMailer):
                 content, content_type=content_type, filename=filename)
 
 
-def build_inline_comments_section(comments, diff_text):
-    """Return a formatted text section with contextualized comments."""
-    result_lines = []
-    diff_lines = diff_text.splitlines()
-    for num, line in enumerate(diff_lines, 1):
-        result_lines.append(u'> {0}'.format(line.decode('utf-8', 'replace')))
-        comment = comments.get(str(num))
+def comment_in_hunk(hunk, comments):
+    """ Check if comment exists in hunk. """
+
+    for line in hunk.lines:
+        comment = comments.get(str(line.line_number))
         if comment is not None:
-            result_lines.append('')
-            result_lines.extend(comment.splitlines())
-            result_lines.append('')
+            return True
+    return False
+
+
+def build_inline_comments_section(comments, diff_text):
+    """ Return a formatted text section with contextualized comments
+
+    Hunks without comments are skipped to limit verbosity.
+    """
+
+    diff_lines = diff_text.splitlines(True)
+    diff_patches = patches.parse_patches(diff_lines)
+    result_lines = []
+
+    for patch in diff_patches:
+        header_set = False
+
+        for hunk in patch.hunks:
+            if comment_in_hunk(hunk, comments):
+                if not header_set:
+                    # add header if comment exists in this patch's hunks
+                    result_lines.append(patch.get_header())
+                    header_set = True
+                for line in hunk.lines:
+                    result_lines.append(u'> {0}'.format(
+                        line.get_str('').decode('utf-8', 'replace')))
+                    comment = comments.get(str(line.line_number))
+                    if comment is not None:
+                        result_lines.append('')
+                        result_lines.extend(comment.splitlines())
+                        result_lines.append('')
 
     result_text = u'\n'.join(result_lines)
-
     return '\n\nDiff comments:\n\n%s\n\n' % result_text
