@@ -442,19 +442,24 @@ class TestInlineCommentsSection(testtools.TestCase):
     def test_commentless_hunks_ignored(self):
         comments = {'4': 'A comment', '14': 'Another comment'}
         self.assertEqual(
-            ['--- bar\t2009-08-26 15:53:34.000000000 -0400\n',
-             '+++ bar\t1969-12-31 19:00:00.000000000 -0500\n',
-             '@@ -1,3 +0,0 @@\n',
-             '-\xc3\xa5\n',
+            ['> --- bar\t2009-08-26 15:53:34.000000000 -0400\n',
+             '> +++ bar\t1969-12-31 19:00:00.000000000 -0500\n',
+             '> @@ -1,3 +0,0 @@\n',
+             '> -\xc3\xa5\n',
+             '',
              'A comment',
-             '-b\n',
-             '-c\n',
-             '--- baz\t1969-12-31 19:00:00.000000000 -0500\n',
-             '+++ baz\t2009-08-26 15:53:57.000000000 -0400\n',
-             '@@ -1,2 +0,0 @@\n',
-             '-x\n',
-             '-y\n'],
-            self.getSection(comments).splitlines()[:])
+             '',
+             '> -b\n',
+             '> -c\n',
+             '> --- baz\t1969-12-31 19:00:00.000000000 -0500\n',
+             '> +++ baz\t2009-08-26 15:53:57.000000000 -0400\n',
+             '> @@ -1,2 +0,0 @@\n',
+             '> -x\n',
+             '> -y\n',
+             '',
+             'Another comment',
+             ''],
+            self.getSection(comments).splitlines())
 
 
     def test_multi_line_comment(self):
