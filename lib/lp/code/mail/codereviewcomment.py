@@ -171,14 +171,20 @@ class CodeReviewCommentMailer(BMPMailer):
 
 
 def comment_in_hunk(hunk, comments, line_count):
-    """ Check if comment exists in hunk. """
+    """ Check if comment exists in hunk lines. """
 
-    hunk_line_count = line_count + 1
+    # check comment in context line
+    comment = comments.get(str(line_count))
+    if comment is not None:
+        return True
+
+    # check comment in hunk lines
     for line in hunk.lines:
-        comment = comments.get(str(hunk_line_count))
+        line_count = line_count + 1
+        comment = comments.get(str(line_count))
         if comment is not None:
             return True
-        hunk_line_count = hunk_line_count + 1
+
     return False
 
 
@@ -226,7 +232,7 @@ def build_inline_comments_section(comments, diff_text):
             header_set = True
 
         for hunk in patch.hunks:
-            line_count = line_count + 1 # add hunk header
+            line_count = line_count + 1 # add for hunk context line
 
             if comment_in_hunk(hunk, comments, line_count):
                 if not header_set:
@@ -241,5 +247,5 @@ def build_inline_comments_section(comments, diff_text):
             else:
                 line_count = line_count + len(hunk.lines)
 
-    result_text = '\n'.join(result_lines).decode('utf-8', 'replace')
+    result_text = '\n'.join(result_lines).encode('utf-8')
     return '\n\nDiff comments:\n\n%s\n\n' % result_text

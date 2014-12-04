@@ -479,13 +479,13 @@ class TestInlineCommentsSection(testtools.TestCase):
         # Multiple inline comments are redered appropriately.
         comments = {'2': 'Foo', '3': 'Bar'}
         self.assertEqual(
-            ['> +++ bar\t1969-12-31 19:00:00.000000000 -0500',
+            map(unicode, ['> +++ bar\t1969-12-31 19:00:00.000000000 -0500',
              '',
              'Foo',
              '',
              '> @@ -1,3 +0,0 @@',
              '',
              'Bar',
-             ''],
+             '']),
             self.getSection(comments).splitlines()[5:13])
 
