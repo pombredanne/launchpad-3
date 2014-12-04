@@ -239,13 +239,13 @@ class TestCodeReviewComment(TestCaseWithFactory):
         See `build_inline_comments_section` tests for formatting details.
         """
         comment = self.makeCommentWithInlineComments(
-            inline_comments={'2': u'Is this from Planet Earth\xa9 ?'})
+            inline_comments={'2': 'Is this from Planet Earth\xa9 ?'})
         mailer = CodeReviewCommentMailer.forCreation(comment)
         commenter = comment.branch_merge_proposal.registrant
         ctrl = mailer.generateEmail(
             commenter.preferredemail.email, commenter)
 
-        expected_lines = [
+        expected_lines = map(unicode, [
             '',
             'Diff comments:',
             '',
@@ -253,11 +253,11 @@ class TestCodeReviewComment(TestCaseWithFactory):
             '> --- yvo/yc/pbqr/vagresnprf/qvss.cl      '
             '2009-10-01 13:25:12 +0000',
             '',
-            u'Is this from Planet Earth\xa9 ?',
+            'Is this from Planet Earth\xa9 ?',
             '',
-            '> +++ yvo/yc/pbqr/vagresnprf/qvss.cl      '
+            '> +++ yvo/yc/pbqr/vagresnprf/qvss.cl',
             '2010-02-02 15:48:56 +0000'
-        ]
+        ]),
         self.assertEqual(expected_lines, ctrl.body.splitlines()[1:10])
 
     def makeComment(self, email_message):
@@ -426,15 +426,13 @@ class TestInlineCommentsSection(testtools.TestCase):
     def test_single_line_comment(self):
         # The inline comments are correctly contextualized in the diff.
         # and prefixed with '>>> '
-        comments = {'2': u'\u03b4\u03bf\u03ba\u03b9\u03bc\u03ae'}
+        comments = {'2': '\u03b4\u03bf\u03ba\u03b9\u03bc\u03ae'}
         self.assertEqual(
             map(unicode, ['> +++ bar\t1969-12-31 19:00:00.000000000 -0500',
              '',
              '\u03b4\u03bf\u03ba\u03b9\u03bc\u03ae',
-             '',
-             '> @@ -1,3 +0,0 @@',
-             '> -\xc3\xa5\n']),
-            self.getSection(comments).splitlines()[5:11])
+             '']),
+            self.getSection(comments).splitlines()[5:9])
 
 
     def test_commentless_hunks_ignored(self):
@@ -479,13 +477,13 @@ class TestInlineCommentsSection(testtools.TestCase):
         # Multiple inline comments are redered appropriately.
         comments = {'2': 'Foo', '3': 'Bar'}
         self.assertEqual(
-            map(unicode, ['> +++ bar\t1969-12-31 19:00:00.000000000 -0500',
+            ['> +++ bar\t1969-12-31 19:00:00.000000000 -0500',
              '',
              'Foo',
              '',
              '> @@ -1,3 +0,0 @@',
              '',
              'Bar',
-             '']),
+             ''],
             self.getSection(comments).splitlines()[5:13])
 
