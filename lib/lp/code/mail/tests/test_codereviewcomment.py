@@ -411,18 +411,16 @@ class TestInlineCommentsSection(testtools.TestCase):
         # The inline comments section starts with a 4-lines header
         # (empty lines and title) and ends with an empty line.
         section = self.getSection({}).splitlines()
-        header = section[:5]
+        header = section[:4]
         self.assertEqual(
             ['',
              '',
              'Diff comments:',
-             '',
-             '> --- bar\t2009-08-26 15:53:34.000000000 -0400'],
+             '',],
             header)
-        footer = section[-2:]
+        footer = section[-1:]
         self.assertEqual(
-            ['> +e',
-             ''],
+            [''],
             footer)
 
     def test_single_line_comment(self):
@@ -430,49 +428,52 @@ class TestInlineCommentsSection(testtools.TestCase):
         # and prefixed with '>>> '
         comments = {'2': u'\u03b4\u03bf\u03ba\u03b9\u03bc\u03ae'}
         self.assertEqual(
-            ['> +++ bar\t1969-12-31 19:00:00.000000000 -0500',
+            map(unicode, ['> +++ bar\t1969-12-31 19:00:00.000000000 -0500',
              '',
-             u'\u03b4\u03bf\u03ba\u03b9\u03bc\u03ae',
+             '\u03b4\u03bf\u03ba\u03b9\u03bc\u03ae',
              '',
              '> @@ -1,3 +0,0 @@',
-             u'> -\xe5'],
+             '> -\xc3\xa5\n']),
             self.getSection(comments).splitlines()[5:11])
 
 
     def test_commentless_hunks_ignored(self):
-        comments = {'4': 'A comment', '14': 'Another comment'}
+        comments = {'14': 'A comment', '19': 'Another comment'}
         self.assertEqual(
-            ['> --- bar\t2009-08-26 15:53:34.000000000 -0400\n',
-             '> +++ bar\t1969-12-31 19:00:00.000000000 -0500\n',
-             '> @@ -1,3 +0,0 @@\n',
-             '> -\xc3\xa5\n',
+            map(unicode, ['> --- baz\t1969-12-31 19:00:00.000000000 -0500',
+             '> +++ baz\t2009-08-26 15:53:57.000000000 -0400',
+             '> @@ -1,2 +0,0 @@',
+             '> -x',
+             '> -y',
              '',
              'A comment',
              '',
-             '> -b\n',
-             '> -c\n',
-             '> --- baz\t1969-12-31 19:00:00.000000000 -0500\n',
-             '> +++ baz\t2009-08-26 15:53:57.000000000 -0400\n',
-             '> @@ -1,2 +0,0 @@\n',
-             '> -x\n',
-             '> -y\n',
+             '> --- foo\t2009-08-26 15:53:23.000000000 -0400',
+             '> +++ foo\t2009-08-26 15:56:43.000000000 -0400',
+             '> @@ -1,3 +1,4 @@',
+             '>  a',
+             '> -b',
              '',
              'Another comment',
-             ''],
-            self.getSection(comments).splitlines())
+             '',
+             '>  c',
+             '> +d',
+             '> +e']),
+            self.getSection(comments).splitlines()[4:23])
 
 
     def test_multi_line_comment(self):
         # Inline comments with multiple lines are rendered appropriately.
         comments = {'2': 'Foo\nBar'}
         self.assertEqual(
-            ['> +++ bar\t1969-12-31 19:00:00.000000000 -0500',
+            map(unicode, ['> --- bar\t2009-08-26 15:53:34.000000000 -0400',
+             '> +++ bar\t1969-12-31 19:00:00.000000000 -0500',
              '',
              'Foo',
              'Bar',
              '',
-             '> @@ -1,3 +0,0 @@'],
-            self.getSection(comments).splitlines()[5:11])
+             '']),
+            self.getSection(comments).splitlines()[4:])
 
     def test_multiple_comments(self):
         # Multiple inline comments are redered appropriately.

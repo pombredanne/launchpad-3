@@ -182,40 +182,64 @@ def comment_in_hunk(hunk, comments, line_count):
     return False
 
 
+def add_comment(comment):
+    """ Returns a list of correctly formatted comment(s). """
+    comment_lines = []
+    if comment is not None:
+        comment_lines.append('')
+        for comment in comment.splitlines():
+            comment_lines.append(u'%s' % comment)
+        comment_lines.append('')
+    return comment_lines
+
+
+def add_patch_header(patch):
+    """ Returns a list of correctly formmated patch headers. """
+    patch_header_lines = []
+    for p in patch.get_header().splitlines():
+        patch_header_lines.append('> {0}'.format(p))
+    return patch_header_lines
+
+
 def build_inline_comments_section(comments, diff_text):
-    """ Return a formatted text section with contextualized comments
+    """ Return a formatted text section with contextualized comments.
 
     Hunks without comments are skipped to limit verbosity.
+    Comments can be rendered after patch headers, hunk context lines, 
+    and hunk lines.
     """
     diff_lines = diff_text.splitlines(True)
-    diff_patches = patches.parse_patches(diff_lines)
+    diff_patches = patches.parse_patches(diff_lines, allow_dirty=True)
+
     result_lines = []
 
     line_count = 0
     for patch in diff_patches:
         header_set = False
         line_count = line_count + 2 # add patch headers
+        comment = comments.get(str(line_count))
+
+        if comment is not None:
+            # comment exists in patch header, add header and comment
+            result_lines.extend(add_patch_header(patch))
+            result_lines.extend(add_comment(comment))
+            header_set = True
 
         for hunk in patch.hunks:
             line_count = line_count + 1 # add hunk header
 
             if comment_in_hunk(hunk, comments, line_count):
                 if not header_set:
-                    # add header if comment exists in this patch's hunks
-                    result_lines.append('> %s' % patch.get_header())
+                    result_lines.extend(add_patch_header(patch))
                     header_set = True
-
+                result_lines.append(u'> %s' % hunk.get_header().rstrip('\n'))
                 for line in hunk.lines:
                     line_count = line_count + 1
-                    result_lines.append(u'> {0}'.format(
-                        line.get_str('').decode('utf-8', 'replace')))
+                    result_lines.append(u'> %s' % str(line).rstrip('\n'))
                     comment = comments.get(str(line_count))
-                    if comment is not None:
-                        result_lines.append(' ')
-                        result_lines.extend(comment.splitlines())
-                        result_lines.append(' ')
+                    result_lines.extend(add_comment(comment))
             else:
                 line_count = line_count + len(hunk.lines)
 
-    result_text = u'\n'.join(result_lines)
+    result_text = '\n'.join(result_lines).decode('utf-8', 'replace')
     return '\n\nDiff comments:\n\n%s\n\n' % result_text
