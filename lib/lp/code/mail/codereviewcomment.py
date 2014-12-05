@@ -193,7 +193,7 @@ def format_comment(comment):
     if comment is not None:
         comment_lines.append('')
         for comment in comment.splitlines():
-            comment_lines.append(u'%s' % comment)
+            comment_lines.append(u'%s' % comment.decode('utf-8','replace'))
         comment_lines.append('')
     return comment_lines
 
@@ -214,6 +214,7 @@ def build_inline_comments_section(comments, diff_text):
     and hunk lines.
     """
     diff_lines = diff_text.splitlines(True)
+    # allow_dirty() will preserve text not conforming to unified diff
     diff_patches = patches.parse_patches(diff_lines, allow_dirty=True)
     result_lines = []
     line_count = 0

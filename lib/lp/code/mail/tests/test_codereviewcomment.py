@@ -239,26 +239,25 @@ class TestCodeReviewComment(TestCaseWithFactory):
         See `build_inline_comments_section` tests for formatting details.
         """
         comment = self.makeCommentWithInlineComments(
-            inline_comments={'2': 'Is this from Planet Earth\xa9 ?'})
+            inline_comments={'2': 'Is this from Pl\u0060net Earth ?'})
         mailer = CodeReviewCommentMailer.forCreation(comment)
         commenter = comment.branch_merge_proposal.registrant
         ctrl = mailer.generateEmail(
             commenter.preferredemail.email, commenter)
 
-        expected_lines = map(unicode, [
+        expected_lines = [
             '',
             'Diff comments:',
             '',
-            "> === zbqvsvrq svyr 'yvo/yc/pbqr/vagresnprf/qvss.cl'",
-            '> --- yvo/yc/pbqr/vagresnprf/qvss.cl      '
-            '2009-10-01 13:25:12 +0000',
+            ('> --- yvo/yc/pbqr/vagresnprf/qvss.cl      '
+             '2009-10-01 13:25:12 +0000'),
+            ('> +++ yvo/yc/pbqr/vagresnprf/qvss.cl      '
+             '2010-02-02 15:48:56 +0000'),
             '',
-            'Is this from Planet Earth\xa9 ?',
+            'Is this from Pl\u0060net Earth ?',
             '',
-            '> +++ yvo/yc/pbqr/vagresnprf/qvss.cl',
-            '2010-02-02 15:48:56 +0000'
-        ]),
-        self.assertEqual(expected_lines, ctrl.body.splitlines()[1:10])
+        ]
+        self.assertEqual(expected_lines, ctrl.body.splitlines()[1:9])
 
     def makeComment(self, email_message):
         message = getUtility(IMessageSet).fromEmail(email_message.as_string())
