@@ -415,8 +415,7 @@ class TestInlineCommentsSection(testtools.TestCase):
             ['',
              '',
              'Diff comments:',
-             '',],
-            header)
+             ''], header)
         footer = section[-1:]
         self.assertEqual(
             [''],
@@ -432,7 +431,6 @@ class TestInlineCommentsSection(testtools.TestCase):
              '\u03b4\u03bf\u03ba\u03b9\u03bc\u03ae',
              '']),
             self.getSection(comments).splitlines()[5:9])
-
 
     def test_commentless_hunks_ignored(self):
         comments = {'14': 'A comment', '19': 'Another comment'}
@@ -457,7 +455,6 @@ class TestInlineCommentsSection(testtools.TestCase):
              '> +d',
              '> +e']),
             self.getSection(comments).splitlines()[4:23])
-
 
     def test_multi_line_comment(self):
         # Inline comments with multiple lines are rendered appropriately.
@@ -485,4 +482,3 @@ class TestInlineCommentsSection(testtools.TestCase):
              'Bar',
              ''],
             self.getSection(comments).splitlines()[5:13])
-

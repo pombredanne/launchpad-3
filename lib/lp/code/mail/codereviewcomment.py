@@ -193,7 +193,7 @@ def format_comment(comment):
     if comment is not None:
         comment_lines.append('')
         for comment in comment.splitlines():
-            comment_lines.append(u'%s' % comment.decode('utf-8','replace'))
+            comment_lines.append(u'%s' % comment.decode('utf-8', 'replace'))
         comment_lines.append('')
     return comment_lines
 
@@ -221,7 +221,7 @@ def build_inline_comments_section(comments, diff_text):
 
     for patch in diff_patches:
         header_set = False
-        line_count = line_count + 2 # inc patch headers
+        line_count = line_count + 2  # inc patch headers
         comment = comments.get(str(line_count))
 
         if comment is not None:
@@ -231,7 +231,7 @@ def build_inline_comments_section(comments, diff_text):
             header_set = True
 
         for hunk in patch.hunks:
-            line_count = line_count + 1 # inc hunk context line
+            line_count = line_count + 1  # inc hunk context line
 
             if comment_in_hunk(hunk, comments, line_count):
                 if not header_set:
@@ -247,13 +247,13 @@ def build_inline_comments_section(comments, diff_text):
                     result_lines.extend(format_comment(comment))
 
                 for line in hunk.lines:
-                    line_count = line_count + 1 # inc hunk lines
+                    line_count = line_count + 1  # inc hunk lines
                     result_lines.append(u'> %s' % str(
                         line).rstrip('\n').decode('utf-8', 'replace'))
                     comment = comments.get(str(line_count))
                     result_lines.extend(format_comment(comment))
             else:
-                line_count = line_count + len(hunk.lines) # inc hunk lines
+                line_count = line_count + len(hunk.lines)  # inc hunk lines
 
     result_text = '\n'.join(result_lines).encode('utf-8')
     return '\n\nDiff comments:\n\n%s\n\n' % result_text
