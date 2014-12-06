@@ -12,7 +12,6 @@ __all__ = [
     'ProductSeriesDeleteView',
     'ProductSeriesDetailedDisplayView',
     'ProductSeriesEditView',
-    'ProductSeriesFacets',
     'ProductSeriesFileBugRedirect',
     'ProductSeriesInvolvedMenu',
     'ProductSeriesInvolvementView',
@@ -128,7 +127,6 @@ from lp.services.webapp import (
     Link,
     Navigation,
     NavigationMenu,
-    StandardLaunchpadFacets,
     stepthrough,
     stepto,
     )
@@ -193,26 +191,6 @@ class ProductSeriesBreadcrumb(Breadcrumb):
     def text(self):
         """See `IBreadcrumb`."""
         return 'Series ' + self.context.name
-
-
-class ProductSeriesFacets(StandardLaunchpadFacets):
-    """A class that provides the series facets."""
-    usedfor = IProductSeries
-    enable_only = [
-        'overview',
-        'branches',
-        'bugs',
-        'specifications',
-        'translations',
-        ]
-
-    def branches(self):
-        """Return a link to view the branches related to this series."""
-        # XXX wgrant 2014-02-26 bug=183433: Override to go to the
-        # branches for the product. This is inconsistent and weird. Ew.
-        link = super(ProductSeriesFacets, self).branches()
-        link.target = canonical_url(self.context.product, rootsite='code')
-        return link
 
 
 class IProductSeriesInvolved(Interface):
