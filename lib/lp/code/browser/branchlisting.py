@@ -13,10 +13,8 @@ __all__ = [
     'DistroSeriesBranchListingView',
     'GroupedDistributionSourcePackageBranchesView',
     'PersonBranchesMenu',
+    'PersonBranchesView',
     'PersonCodeSummaryView',
-    'PersonOwnedBranchesView',
-    'PersonRegisteredBranchesView',
-    'PersonSubscribedBranchesView',
     'PersonTeamBranchesView',
     'ProductBranchListingView',
     'ProductBranchesMenu',
@@ -944,19 +942,8 @@ class PersonBaseBranchListingView(BranchListingView):
         return message % self.context.displayname
 
 
-class PersonRegisteredBranchesView(PersonBaseBranchListingView):
-    """View for branch listing for a person's registered branches."""
-
-    page_title = _('Registered')
-    label_template = 'Bazaar branches registered by %(displayname)s'
-    no_sort_by = (BranchListingSort.DEFAULT, BranchListingSort.OWNER)
-
-    def _getCollection(self):
-        return getUtility(IAllBranches).registeredBy(self.context)
-
-
-class PersonOwnedBranchesView(PersonBaseBranchListingView):
-    """View for branch listing for a person's owned branches."""
+class PersonBranchesView(PersonBaseBranchListingView):
+    """View for branch listing for a person's branches."""
 
     schema = IPersonBranchListingFilter
     field_names = ['category', 'lifecycle', 'sort_by']
@@ -976,17 +963,6 @@ class PersonOwnedBranchesView(PersonBaseBranchListingView):
             return getUtility(IAllBranches).subscribedBy(self.context)
         elif category == PersonBranchCategory.REGISTERED:
             return getUtility(IAllBranches).registeredBy(self.context)
-
-
-class PersonSubscribedBranchesView(PersonBaseBranchListingView):
-    """View for branch listing for a person's subscribed branches."""
-
-    page_title = _('Subscribed')
-    label_template = 'Bazaar branches subscribed to by %(displayname)s'
-    no_sort_by = (BranchListingSort.DEFAULT, )
-
-    def _getCollection(self):
-        return getUtility(IAllBranches).subscribedBy(self.context)
 
 
 class PersonTeamBranchesView(LaunchpadView):

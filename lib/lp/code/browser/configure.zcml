@@ -699,28 +699,11 @@
             name="+branches"/>
         <browser:page
             for="lp.registry.interfaces.person.IPerson"
-            class="lp.code.browser.branchlisting.PersonOwnedBranchesView"
+            class="lp.code.browser.branchlisting.PersonBranchesView"
             permission="zope.Public"
             name="+branches"
             template="../templates/person-branches.pt"/>
-        <browser:page
-            for="lp.registry.interfaces.person.IPerson"
-            class="lp.code.browser.branchlisting.PersonOwnedBranchesView"
-            permission="zope.Public"
-            name="+ownedbranches"
-            template="../templates/person-branches.pt"/>
-        <browser:page
-            for="lp.registry.interfaces.person.IPerson"
-            class="lp.code.browser.branchlisting.PersonSubscribedBranchesView"
-            permission="zope.Public"
-            name="+subscribedbranches"
-            template="../templates/person-branches.pt"/>
-        <browser:page
-            for="lp.registry.interfaces.person.IPerson"
-            class="lp.code.browser.branchlisting.PersonRegisteredBranchesView"
-            permission="zope.Public"
-            name="+registeredbranches"
-            template="../templates/person-branches.pt"/>
+        <!-- xXX: Need redirects from +{owned,registered,subscribed}branches. -->
         <browser:page
             for="lp.registry.interfaces.person.IPerson"
             class="lp.code.browser.branchlisting.PersonCodeSummaryView"
