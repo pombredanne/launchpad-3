@@ -871,7 +871,7 @@ class PersonBranchesMenu(ApplicationMenu, HasMergeQueuesMenuMixin):
     usedfor = IPerson
     facet = 'branches'
     links = [
-        'owned', 'active_reviews', 'mergequeues', 'source_package_recipes']
+        'branches', 'active_reviews', 'mergequeues', 'source_package_recipes']
     extra_attributes = ['mergequeue_count']
 
     @property
@@ -883,8 +883,7 @@ class PersonBranchesMenu(ApplicationMenu, HasMergeQueuesMenuMixin):
         """
         return self.context
 
-    # XXX: Rename.
-    def owned(self):
+    def branches(self):
         return Link(
             canonical_url(self.context, rootsite='code'), 'Branches')
 
@@ -900,7 +899,7 @@ class PersonBranchesMenu(ApplicationMenu, HasMergeQueuesMenuMixin):
 class PersonProductBranchesMenu(PersonBranchesMenu):
 
     usedfor = IPersonProduct
-    links = ['owned', 'active_reviews', 'source_package_recipes']
+    links = ['branches', 'active_reviews', 'source_package_recipes']
 
     @property
     def person(self):
