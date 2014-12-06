@@ -10,7 +10,6 @@ __all__ = [
     'SourcePackageAssociationPortletView',
     'SourcePackageBreadcrumb',
     'SourcePackageChangeUpstreamView',
-    'SourcePackageFacets',
     'SourcePackageNavigation',
     'SourcePackageOverviewMenu',
     'SourcePackageRemoveUpstreamView',
@@ -85,7 +84,6 @@ from lp.services.webapp import (
     canonical_url,
     Link,
     Navigation,
-    StandardLaunchpadFacets,
     stepto,
     )
 from lp.services.webapp.breadcrumb import Breadcrumb
@@ -207,17 +205,6 @@ class SourcePackageBreadcrumb(Breadcrumb):
     @property
     def inside(self):
         return self.context.distribution_sourcepackage
-
-
-class SourcePackageFacets(StandardLaunchpadFacets):
-
-    usedfor = ISourcePackage
-    enable_only = [
-        'overview',
-        'branches',
-        'bugs',
-        'translations',
-        ]
 
 
 class SourcePackageOverviewMenu(ApplicationMenu):
