@@ -694,6 +694,21 @@
             permission="zope.Public"
             name="+branches"
             template="../templates/person-branches.pt"/>
+        <browser:renamed-page
+            for="lp.registry.interfaces.person.IPerson"
+            name="+ownedbranches"
+            new_name="+branches"
+            rootsite="code"/>
+        <browser:renamed-page
+            for="lp.registry.interfaces.person.IPerson"
+            name="+registeredbranches"
+            new_name="+branches"
+            rootsite="code"/>
+        <browser:renamed-page
+            for="lp.registry.interfaces.person.IPerson"
+            name="+subscribedbranches"
+            new_name="+branches"
+            rootsite="code"/>
         <!-- xXX: Need redirects from +{owned,registered,subscribed}branches. -->
         <browser:page
             for="lp.registry.interfaces.person.IPerson"
@@ -802,6 +817,21 @@
         name="+branches"
         template="../templates/person-branches.pt"
         />
+    <browser:renamed-page
+        for="lp.registry.interfaces.personproduct.IPersonProduct"
+        name="+ownedbranches"
+        new_name="+branches"
+        rootsite="code"/>
+    <browser:renamed-page
+        for="lp.registry.interfaces.personproduct.IPersonProduct"
+        name="+registeredbranches"
+        new_name="+branches"
+        rootsite="code"/>
+    <browser:renamed-page
+        for="lp.registry.interfaces.personproduct.IPersonProduct"
+        name="+subscribedbranches"
+        new_name="+branches"
+        rootsite="code"/>
     <browser:page
         for="lp.registry.interfaces.personproduct.IPersonProduct"
         class="lp.code.browser.branchmergeproposallisting.PersonProductActiveReviewsView"
