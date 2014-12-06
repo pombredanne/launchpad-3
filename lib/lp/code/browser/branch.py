@@ -20,19 +20,14 @@ __all__ = [
     'BranchNameValidationMixin',
     'BranchNavigation',
     'BranchEditMenu',
-    'BranchInProductView',
     'BranchUpgradeView',
     'BranchURL',
     'BranchView',
-    'BranchSubscriptionsView',
     'RegisterBranchMergeProposalView',
     'TryImportAgainView',
     ]
 
-from datetime import (
-    datetime,
-    timedelta,
-    )
+from datetime import datetime
 
 from lazr.enum import (
     EnumeratedType,
@@ -443,15 +438,6 @@ class BranchView(InformationTypePortletMixin, FeedsMixin, BranchMirrorMixin,
             return False
         return self.context.hasSubscription(self.user)
 
-    def recent_revision_count(self, days=30):
-        """Number of revisions committed during the last N days."""
-        timestamp = datetime.now(pytz.UTC) - timedelta(days=days)
-        return self.context.getRevisionsSince(timestamp).count()
-
-    def owner_is_registrant(self):
-        """Is the branch owner the registrant?"""
-        return self.context.owner == self.context.registrant
-
     def owner_is_reviewer(self):
         """Is the branch owner the default reviewer?"""
         if self.context.reviewer == None:
@@ -667,12 +653,6 @@ class BranchView(InformationTypePortletMixin, FeedsMixin, BranchMirrorMixin,
     @property
     def spec_links(self):
         return self.context.getSpecificationLinks(self.user)
-
-
-class BranchInProductView(BranchView):
-
-    show_person_link = True
-    show_product_link = False
 
 
 class BranchNameValidationMixin:
@@ -1191,19 +1171,6 @@ class BranchReviewerEditView(BranchEditFormView):
         return {'reviewer': self.context.code_reviewer}
 
 
-class BranchSubscriptionsView(LaunchpadView):
-    """The view for the branch subscriptions portlet.
-
-    The view is used to provide a decorated list of branch subscriptions
-    in order to provide links to be able to edit the subscriptions
-    based on whether or not the user is able to edit the subscription.
-    """
-
-    def owner_is_registrant(self):
-        """Return whether or not owner is the same as the registrant"""
-        return self.context.owner == self.context.registrant
-
-
 class BranchMergeQueueView(LaunchpadView):
     """The view used to render the merge queue for a branch."""
 
@@ -1457,3 +1424,4 @@ class TryImportAgainView(LaunchpadFormView):
     @property
     def prefix(self):
         return "tryagain"
+
