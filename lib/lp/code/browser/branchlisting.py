@@ -282,6 +282,28 @@ class BranchListingSort(EnumeratedType):
         """)
 
 
+class PersonBranchCategory(EnumeratedType):
+    """Choices for filtering lists of branches related to people."""
+
+    OWNED = Item("""
+        Owned
+
+        Show branches owned by the person or team.
+        """)
+
+    SUBSCRIBED = Item("""
+        Subscribed
+
+        Show branches subscribed to by the person or team.
+        """)
+
+    REGISTERED = Item("""
+        Registered
+
+        Show branches registered by the person or team.
+        """)
+
+
 class IBranchListingFilter(Interface):
     """The schema for the branch listing filtering/ordering form."""
 
@@ -301,6 +323,14 @@ class IBranchListingFilter(Interface):
     sort_by = Choice(
         title=_('ordered by'), vocabulary=BranchListingSort,
         default=BranchListingSort.LIFECYCLE)
+
+
+class IPersonBranchListingFilter(IBranchListingFilter):
+    """The schema for the branch listing filtering/ordering form for people."""
+
+    category = Choice(
+        title=_('Category'), vocabulary=PersonBranchCategory,
+        default=PersonBranchCategory.OWNED)
 
 
 class BranchListingItemsMixin:
@@ -936,12 +966,24 @@ class PersonRegisteredBranchesView(PersonBaseBranchListingView):
 class PersonOwnedBranchesView(PersonBaseBranchListingView):
     """View for branch listing for a person's owned branches."""
 
+    schema = IPersonBranchListingFilter
+    field_names = ['category', 'lifecycle', 'sort_by']
+    custom_widget('category', LaunchpadDropdownWidget)
+
     page_title = _('Owned')
     label_template = 'Bazaar branches owned by %(displayname)s'
     no_sort_by = (BranchListingSort.DEFAULT, BranchListingSort.OWNER)
 
     def _getCollection(self):
-        return getUtility(IAllBranches).ownedBy(self.context)
+        category = PersonBranchCategory.OWNED
+        if self.widgets['category'].hasValidInput():
+            category = self.widgets['category'].getInputValue()
+        if category == PersonBranchCategory.OWNED:
+            return getUtility(IAllBranches).ownedBy(self.context)
+        elif category == PersonBranchCategory.SUBSCRIBED:
+            return getUtility(IAllBranches).subscribedBy(self.context)
+        elif category == PersonBranchCategory.REGISTERED:
+            return getUtility(IAllBranches).registeredBy(self.context)
 
 
 class PersonSubscribedBranchesView(PersonBaseBranchListingView):
