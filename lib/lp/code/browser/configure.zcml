@@ -362,7 +362,6 @@
     <browser:page
         name="+portlet-subscribers"
         for="lp.code.interfaces.branch.IBranch"
-        class="lp.code.browser.branch.BranchSubscriptionsView"
         permission="zope.Public"
         template="../templates/branch-portlet-subscribers.pt"/>
     <browser:page
@@ -371,15 +370,6 @@
         class="lp.code.browser.branchsubscription.BranchPortletSubscribersContent"
         template="../templates/branch-portlet-subscribers-content.pt"
         permission="zope.Public" />
-    <browser:pages
-        for="lp.code.interfaces.branch.IBranch"
-        facet="overview"
-        permission="zope.Public"
-        class="lp.code.browser.branch.BranchInProductView">
-        <browser:page
-            name="+product-summary-listing"
-            template="../templates/branch-summary-listing.pt"/>
-    </browser:pages>
     <browser:page
         for="lp.code.interfaces.branch.IBranch"
         name="+macros"
@@ -700,28 +690,26 @@
             name="+branches"/>
         <browser:page
             for="lp.registry.interfaces.person.IPerson"
-            class="lp.code.browser.branchlisting.PersonOwnedBranchesView"
+            class="lp.code.browser.branchlisting.PersonBranchesView"
             permission="zope.Public"
             name="+branches"
             template="../templates/person-branches.pt"/>
-        <browser:page
+        <browser:renamed-page
             for="lp.registry.interfaces.person.IPerson"
-            class="lp.code.browser.branchlisting.PersonOwnedBranchesView"
-            permission="zope.Public"
             name="+ownedbranches"
-            template="../templates/person-branches.pt"/>
-        <browser:page
+            new_name="+branches"
+            rootsite="code"/>
+        <browser:renamed-page
             for="lp.registry.interfaces.person.IPerson"
-            class="lp.code.browser.branchlisting.PersonSubscribedBranchesView"
-            permission="zope.Public"
-            name="+subscribedbranches"
-            template="../templates/person-branches.pt"/>
-        <browser:page
-            for="lp.registry.interfaces.person.IPerson"
-            class="lp.code.browser.branchlisting.PersonRegisteredBranchesView"
-            permission="zope.Public"
             name="+registeredbranches"
-            template="../templates/person-branches.pt"/>
+            new_name="+branches"
+            rootsite="code"/>
+        <browser:renamed-page
+            for="lp.registry.interfaces.person.IPerson"
+            name="+subscribedbranches"
+            new_name="+branches"
+            rootsite="code"/>
+        <!-- xXX: Need redirects from +{owned,registered,subscribed}branches. -->
         <browser:page
             for="lp.registry.interfaces.person.IPerson"
             class="lp.code.browser.branchlisting.PersonCodeSummaryView"
@@ -824,25 +812,26 @@
 
     <browser:page
         for="lp.registry.interfaces.personproduct.IPersonProduct"
-        class="lp.code.browser.branchlisting.PersonProductOwnedBranchesView"
+        class="lp.code.browser.branchlisting.PersonProductBranchesView"
         permission="zope.Public"
         name="+branches"
         template="../templates/person-branches.pt"
         />
-    <browser:page
+    <browser:renamed-page
         for="lp.registry.interfaces.personproduct.IPersonProduct"
-        class="lp.code.browser.branchlisting.PersonProductSubscribedBranchesView"
-        permission="zope.Public"
-        name="+subscribedbranches"
-        template="../templates/person-branches.pt"
-        />
-    <browser:page
+        name="+ownedbranches"
+        new_name="+branches"
+        rootsite="code"/>
+    <browser:renamed-page
         for="lp.registry.interfaces.personproduct.IPersonProduct"
-        class="lp.code.browser.branchlisting.PersonProductRegisteredBranchesView"
-        permission="zope.Public"
         name="+registeredbranches"
-        template="../templates/person-branches.pt"
-        />
+        new_name="+branches"
+        rootsite="code"/>
+    <browser:renamed-page
+        for="lp.registry.interfaces.personproduct.IPersonProduct"
+        name="+subscribedbranches"
+        new_name="+branches"
+        rootsite="code"/>
     <browser:page
         for="lp.registry.interfaces.personproduct.IPersonProduct"
         class="lp.code.browser.branchmergeproposallisting.PersonProductActiveReviewsView"

@@ -65,7 +65,9 @@ If the branch listing has few enough entries that batching isn't
 needed, then the table is sortable and no batching navigation links are shown.
 
     >>> browser.open('http://code.launchpad.dev/~name12')
-    >>> browser.getLink('Subscribed').click()
+    >>> browser.getControl(name='field.category').displayValue = [
+    ...     'Subscribed']
+    >>> browser.getControl('Filter').click()
     >>> links = find_tag_by_id(browser.contents, 'branch-batch-links')
     >>> links is None
     True
@@ -178,11 +180,13 @@ helpful message supplied.
     >>> print message.renderContents()
     There are branches related to Launchpad Developers...
 
-Subscribed branch listings shouldn't show an option for sorting by "most
+Personal branch listings shouldn't show an option for sorting by "most
 interesting" and should default to sort the most recently changed branches
 first.
 
-    >>> browser.open('http://code.launchpad.dev/~name12/+subscribedbranches')
+    >>> browser.open(
+    ...     'http://code.launchpad.dev/~name12/+branches?'
+    ...     'field.category=subscribed')
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> for row in table.tbody.fetch('tr'):
     ...     print extract_text(row)
@@ -197,8 +201,8 @@ first.
     ['most recently changed first']
     >>> filter_control.displayOptions
     ['by project name', 'by status', 'by branch name',
-    'by owner name', 'most recently changed first',
-    'most neglected first', 'newest first', 'oldest first']
+    'most recently changed first', 'most neglected first', 'newest first',
+    'oldest first']
 
 
 

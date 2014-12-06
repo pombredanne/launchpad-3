@@ -7,14 +7,8 @@
   tal:define="menu context/menu:branches; features request/features">
 
   <table>
-    <tr class="code-links" tal:condition="menu/owned/enabled">
-      <td tal:content="structure menu/owned/render" />
-    </tr>
-    <tr class="code-links" tal:condition="menu/registered/enabled">
-      <td tal:content="structure menu/registered/render" />
-    </tr>
-    <tr class="code-links" tal:condition="menu/subscribed/enabled">
-      <td tal:content="structure menu/subscribed/render" />
+    <tr class="code-links" tal:condition="menu/branches/enabled">
+      <td tal:content="structure menu/branches/render" />
     </tr>
     <tr class="code-links"
         tal:condition="menu/active_reviews/enabled">
