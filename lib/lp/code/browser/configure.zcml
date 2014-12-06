@@ -806,23 +806,9 @@
 
     <browser:page
         for="lp.registry.interfaces.personproduct.IPersonProduct"
-        class="lp.code.browser.branchlisting.PersonProductOwnedBranchesView"
+        class="lp.code.browser.branchlisting.PersonProductBranchesView"
         permission="zope.Public"
         name="+branches"
-        template="../templates/person-branches.pt"
-        />
-    <browser:page
-        for="lp.registry.interfaces.personproduct.IPersonProduct"
-        class="lp.code.browser.branchlisting.PersonProductSubscribedBranchesView"
-        permission="zope.Public"
-        name="+subscribedbranches"
-        template="../templates/person-branches.pt"
-        />
-    <browser:page
-        for="lp.registry.interfaces.personproduct.IPersonProduct"
-        class="lp.code.browser.branchlisting.PersonProductRegisteredBranchesView"
-        permission="zope.Public"
-        name="+registeredbranches"
         template="../templates/person-branches.pt"
         />
     <browser:page
