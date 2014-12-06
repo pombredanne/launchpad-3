@@ -362,7 +362,6 @@
     <browser:page
         name="+portlet-subscribers"
         for="lp.code.interfaces.branch.IBranch"
-        class="lp.code.browser.branch.BranchSubscriptionsView"
         permission="zope.Public"
         template="../templates/branch-portlet-subscribers.pt"/>
     <browser:page

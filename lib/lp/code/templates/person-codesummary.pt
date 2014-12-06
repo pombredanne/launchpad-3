@@ -10,12 +10,6 @@
     <tr class="code-links" tal:condition="menu/owned/enabled">
       <td tal:content="structure menu/owned/render" />
     </tr>
-    <tr class="code-links" tal:condition="menu/registered/enabled">
-      <td tal:content="structure menu/registered/render" />
-    </tr>
-    <tr class="code-links" tal:condition="menu/subscribed/enabled">
-      <td tal:content="structure menu/subscribed/render" />
-    </tr>
     <tr class="code-links"
         tal:condition="menu/active_reviews/enabled">
       <td tal:content="structure menu/active_reviews/render" />

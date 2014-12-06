@@ -24,7 +24,6 @@ __all__ = [
     'BranchUpgradeView',
     'BranchURL',
     'BranchView',
-    'BranchSubscriptionsView',
     'RegisterBranchMergeProposalView',
     'TryImportAgainView',
     ]
@@ -447,10 +446,6 @@ class BranchView(InformationTypePortletMixin, FeedsMixin, BranchMirrorMixin,
         """Number of revisions committed during the last N days."""
         timestamp = datetime.now(pytz.UTC) - timedelta(days=days)
         return self.context.getRevisionsSince(timestamp).count()
-
-    def owner_is_registrant(self):
-        """Is the branch owner the registrant?"""
-        return self.context.owner == self.context.registrant
 
     def owner_is_reviewer(self):
         """Is the branch owner the default reviewer?"""
@@ -1189,19 +1184,6 @@ class BranchReviewerEditView(BranchEditFormView):
     @property
     def initial_values(self):
         return {'reviewer': self.context.code_reviewer}
-
-
-class BranchSubscriptionsView(LaunchpadView):
-    """The view for the branch subscriptions portlet.
-
-    The view is used to provide a decorated list of branch subscriptions
-    in order to provide links to be able to edit the subscriptions
-    based on whether or not the user is able to edit the subscription.
-    """
-
-    def owner_is_registrant(self):
-        """Return whether or not owner is the same as the registrant"""
-        return self.context.owner == self.context.registrant
 
 
 class BranchMergeQueueView(LaunchpadView):
