@@ -949,8 +949,7 @@ class PersonBranchesView(PersonBaseBranchListingView):
     field_names = ['category', 'lifecycle', 'sort_by']
     custom_widget('category', LaunchpadDropdownWidget)
 
-    page_title = _('Owned')
-    label_template = 'Bazaar branches owned by %(displayname)s'
+    page_title = label = None
     no_sort_by = (BranchListingSort.DEFAULT, BranchListingSort.OWNER)
 
     def _getCollection(self):
