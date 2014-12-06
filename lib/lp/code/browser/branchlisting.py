@@ -994,12 +994,12 @@ class PersonProductBranchesView(PersonBranchesView):
         if (self.selected_lifecycle_status is not None
             and self.hasAnyBranchesVisibleByUser()):
             message = (
-                'There are branches of %s owned by %s but none of them '
+                'There are branches of %s for %s but none of them '
                 'match the current filter criteria for this page. '
                 'Try filtering on "Any Status".')
         else:
             message = (
-                'There are no branches of %s owned by %s in Launchpad today.')
+                'There are no branches of %s for %s in Launchpad today.')
         return message % (
             self.context.product.displayname, self.context.person.displayname)
 
