@@ -9,7 +9,6 @@ __all__ = [
     'BugActivity',
     'BugContextMenu',
     'BugEditView',
-    'BugFacets',
     'BugInformationTypePortletView',
     'BugMarkAsAffectingUserView',
     'BugMarkAsDuplicateView',
@@ -120,7 +119,6 @@ from lp.services.webapp import (
     LaunchpadView,
     Link,
     Navigation,
-    StandardLaunchpadFacets,
     stepthrough,
     structured,
     )
@@ -195,20 +193,6 @@ class BugNavigation(Navigation):
                 return getUtility(IBugNominationSet).get(nomination_id)
             except NotFoundError:
                 return None
-
-
-class BugFacets(StandardLaunchpadFacets):
-    """The links that will appear in the facet menu for an `IBug`.
-
-    This is rarely seen, as most bug views are actually on BugTask. But
-    it's inherited by views on objects subordinate to the Bug itself,
-    eg.  nominations and attachments, where we don't have a pillar
-    context to switch within.
-    """
-
-    usedfor = IBug
-
-    enable_only = ['overview']
 
 
 class BugSetNavigation(Navigation):

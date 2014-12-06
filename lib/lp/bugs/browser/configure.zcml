@@ -890,10 +890,6 @@
             module="lp.bugs.browser.bug"
             classes="
                 BugContextMenu"/>
-        <browser:menus
-            module="lp.bugs.browser.bug"
-            classes="
-                BugFacets"/>
         <browser:defaultView
             for="lp.bugs.interfaces.bug.IBug"
             name="+index"/>

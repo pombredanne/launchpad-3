@@ -221,7 +221,6 @@
       name="lazr.restful.EntryResource" />
     <browser:menus
         classes="
-            DistroSeriesFacets
             DistroSeriesOverviewMenu
             DistroSeriesBugsMenu
             DistroSeriesSpecificationsMenu"
@@ -1733,7 +1732,6 @@
         parent_utility="lp.code.interfaces.codehosting.IBazaarApplication"/>
     <browser:menus
         classes="
-            ProductSeriesFacets
             ProductSeriesOverviewMenu
             ProductSeriesBugsMenu
             ProductSeriesOverviewNavigationMenu
@@ -1994,7 +1992,6 @@
         template="../templates/sourcepackage-upstream-connections.pt"/>
     <browser:menus
         classes="
-            SourcePackageFacets
             SourcePackageOverviewMenu"
         module="lp.registry.browser.sourcepackage"/>
     <browser:navigation
