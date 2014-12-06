@@ -816,7 +816,7 @@ class TestBranchBzrIdentity(TestCaseWithFactory):
         login_person(product.owner)
         product.development_focus.branch = branch
         view = create_initialized_view(
-            branch.owner, '+ownedbranches', rootsite='code')
+            branch.owner, '+branches', rootsite='code')
         navigator = view.branches()
         [decorated_branch] = navigator.branches
         self.assertEqual("lp://dev/fooix", decorated_branch.bzr_identity)

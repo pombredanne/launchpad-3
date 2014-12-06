@@ -22,4 +22,3 @@ Since the links point to the code subdomain, the links are relative to the root.
     ...     print anchor['href'], anchor.string
     /fooix                      Other Fooix branches
     /~vikings                   Other branches owned by Vikings
-    /~eric/+registeredbranches  Other branches registered by Eric
