@@ -20,7 +20,6 @@ __all__ = [
     'BranchNameValidationMixin',
     'BranchNavigation',
     'BranchEditMenu',
-    'BranchInProductView',
     'BranchUpgradeView',
     'BranchURL',
     'BranchView',
@@ -28,10 +27,7 @@ __all__ = [
     'TryImportAgainView',
     ]
 
-from datetime import (
-    datetime,
-    timedelta,
-    )
+from datetime import datetime
 
 from lazr.enum import (
     EnumeratedType,
@@ -442,11 +438,6 @@ class BranchView(InformationTypePortletMixin, FeedsMixin, BranchMirrorMixin,
             return False
         return self.context.hasSubscription(self.user)
 
-    def recent_revision_count(self, days=30):
-        """Number of revisions committed during the last N days."""
-        timestamp = datetime.now(pytz.UTC) - timedelta(days=days)
-        return self.context.getRevisionsSince(timestamp).count()
-
     def owner_is_reviewer(self):
         """Is the branch owner the default reviewer?"""
         if self.context.reviewer == None:
@@ -662,12 +653,6 @@ class BranchView(InformationTypePortletMixin, FeedsMixin, BranchMirrorMixin,
     @property
     def spec_links(self):
         return self.context.getSpecificationLinks(self.user)
-
-
-class BranchInProductView(BranchView):
-
-    show_person_link = True
-    show_product_link = False
 
 
 class BranchNameValidationMixin:
@@ -1439,3 +1424,4 @@ class TryImportAgainView(LaunchpadFormView):
     @property
     def prefix(self):
         return "tryagain"
+

@@ -370,15 +370,6 @@
         class="lp.code.browser.branchsubscription.BranchPortletSubscribersContent"
         template="../templates/branch-portlet-subscribers-content.pt"
         permission="zope.Public" />
-    <browser:pages
-        for="lp.code.interfaces.branch.IBranch"
-        facet="overview"
-        permission="zope.Public"
-        class="lp.code.browser.branch.BranchInProductView">
-        <browser:page
-            name="+product-summary-listing"
-            template="../templates/branch-summary-listing.pt"/>
-    </browser:pages>
     <browser:page
         for="lp.code.interfaces.branch.IBranch"
         name="+macros"
