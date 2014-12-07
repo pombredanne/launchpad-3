@@ -218,22 +218,26 @@ def build_inline_comments_section(comments, diff_text):
     line_count = 0
 
     # XXX: Blows up if a modified file header is added
-    # this needs to be handled 
+    # this needs to be handled
 
     for patch in diff_patches:
         header_set = False
-        line_count += 2  # inc patch headers
-        comment = comments.get(str(line_count))
 
-        # XXX: this will not check the first line of the patch header!
-        if comment is not None:
-            # comment in patch header, add header and comment
-            result_lines.extend(format_patch_header(patch))
-            result_lines.extend(format_comment(comment))
+        # get patch headers, but only return if associated comments exist.
+        patch_headers = []
+        patch_comment = False
+        for ph in patch.get_header().splitlines():
+            line_count += 1  # inc patch headers
+            comment = comments.get(str(line_count))
+            patch_headers.append('> {0}'.format(ph))
+            if comment is not None:
+                patch_headers.extend(format_comment(comment))
+                patch_comment = True
+        if patch_comment:
+            result_lines.extend(patch_headers)
             header_set = True
 
         for hunk in patch.hunks:
-
             line_count += 1  # inc hunk context line
 
             if comment_in_hunk(hunk, comments, line_count):

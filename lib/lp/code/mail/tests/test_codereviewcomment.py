@@ -433,6 +433,7 @@ class TestInlineCommentsSection(testtools.TestCase):
             self.getSection(comments).splitlines()[5:9])
 
     def test_commentless_hunks_ignored(self):
+        # Hunks without inline comments are not returned in the diff text.
         comments = {'14': 'A comment', '19': 'Another comment'}
         self.assertEqual(
             map(unicode, ['> --- baz\t1969-12-31 19:00:00.000000000 -0500',
@@ -455,6 +456,22 @@ class TestInlineCommentsSection(testtools.TestCase):
              '> +d',
              '> +e']),
             self.getSection(comments).splitlines()[4:23])
+
+    def test_patch_header_comment(self):
+        # Inline comments in patch headers are rendered correctly.
+        comments = {'1': 'A comment in the patch header', '2': 'aardvark'}
+        self.assertEqual(
+            map(unicode, ['> --- bar\t2009-08-26 15:53:34.000000000 -0400',
+             '',
+             'A comment in the patch header',
+             '',
+             '> +++ bar\t1969-12-31 19:00:00.000000000 -0500',
+             '',
+             'aardvark',
+             '',
+             '']),
+
+            self.getSection(comments).splitlines()[4:13])
 
     def test_multi_line_comment(self):
         # Inline comments with multiple lines are rendered appropriately.
