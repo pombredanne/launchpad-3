@@ -7,6 +7,7 @@ import bz2
 from copy import deepcopy
 from cStringIO import StringIO
 from datetime import datetime
+import hashlib
 import logging
 import os
 
@@ -5389,9 +5390,9 @@ class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
         submission_set = getUtility(IHWSubmissionSet)
         submission = submission_set.getBySubmissionKey(
             'test_submission_id_1')
-        submission_data = self.getSampleData(
+        simple_submission_data = self.getSampleData(
             'simple_valid_hwdb_submission.xml')
-        fillLibrarianFile(submission.raw_submission.id, submission_data)
+        fillLibrarianFile(submission.raw_submission.id, simple_submission_data)
 
         submission_data = self.getSampleData('real_hwdb_submission.xml.bz2')
         submission_key = 'submission-6'
@@ -5408,6 +5409,14 @@ class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
         </foo>
         """
         self.createSubmissionData(submission_data, False, submission_key)
+
+        self.log.setLevel(logging.DEBUG)
+        retrieved_data = submission.raw_submission.read()
+        self.assertEqual(simple_submission_data, retrieved_data)
+        self.assertEqual(
+            '8a54975dcbeb2183f4753f12a623adb5',
+            hashlib.md5(retrieved_data).hexdigest())
+
         process_pending_submissions(self.layer.txn, self.log)
 
         janitor = getUtility(ILaunchpadCelebrities).janitor
