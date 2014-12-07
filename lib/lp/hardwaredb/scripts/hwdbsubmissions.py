@@ -149,8 +149,7 @@ class SubmissionParser(object):
         self._setSoftwareSectionParsers()
         self.record_warnings = record_warnings
 
-    def _logError(self, message, submission_key, create_oops=True,
-                  content=None):
+    def _logError(self, message, submission_key, create_oops=True):
         """Log `message` for an error in submission submission_key`."""
         msg = 'Parsing submission %s: %s' % (submission_key, message)
         if not create_oops:
@@ -158,8 +157,6 @@ class SubmissionParser(object):
                 self.logger.error(msg)
         else:
             self.logger.error(msg)
-        if content is not None:
-            self.logger.debug('Content was: %r', content)
 
     def _logWarning(self, message, warning_id=None):
         """Log `message` for a warning in submission submission_key`."""
@@ -223,7 +220,7 @@ class SubmissionParser(object):
         try:
             tree = etree.parse(StringIO(submission), parser=self.doc_parser)
         except SyntaxError as error_value:
-            self._logError(error_value, submission_key, content=submission)
+            self._logError(error_value, submission_key)
             return None
 
         submission_doc = tree.getroot()
