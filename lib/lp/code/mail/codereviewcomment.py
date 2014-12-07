@@ -11,7 +11,6 @@ __all__ = [
     ]
 
 from bzrlib import patches
-
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -171,7 +170,7 @@ class CodeReviewCommentMailer(BMPMailer):
 
 
 def comment_in_hunk(hunk, comments, line_count):
-    """ Check if comment exists in hunk lines. """
+    """Check if comment exists in hunk lines."""
 
     # check comment in context line
     comment = comments.get(str(line_count))
@@ -188,18 +187,17 @@ def comment_in_hunk(hunk, comments, line_count):
 
 
 def format_comment(comment):
-    """ Returns a list of correctly formatted comment(s). """
+    """Returns a list of correctly formatted comment(s)."""
     comment_lines = []
     if comment is not None:
         comment_lines.append('')
-        for comment in comment.splitlines():
-            comment_lines.append(u'%s' % comment.decode('utf-8', 'replace'))
+        comment_lines.extend(comment.splitlines())
         comment_lines.append('')
     return comment_lines
 
 
 def format_patch_header(patch):
-    """ Returns a list of correctly formmated patch headers. """
+    """Returns a list of correctly formatted patch headers."""
     patch_header_lines = []
     for p in patch.get_header().splitlines():
         patch_header_lines.append('> {0}'.format(p))
@@ -219,11 +217,15 @@ def build_inline_comments_section(comments, diff_text):
     result_lines = []
     line_count = 0
 
+    # XXX: Blows up if a modified file header is added
+    # this needs to be handled 
+
     for patch in diff_patches:
         header_set = False
-        line_count = line_count + 2  # inc patch headers
+        line_count += 2  # inc patch headers
         comment = comments.get(str(line_count))
 
+        # XXX: this will not check the first line of the patch header!
         if comment is not None:
             # comment in patch header, add header and comment
             result_lines.extend(format_patch_header(patch))
@@ -231,7 +233,8 @@ def build_inline_comments_section(comments, diff_text):
             header_set = True
 
         for hunk in patch.hunks:
-            line_count = line_count + 1  # inc hunk context line
+
+            line_count += 1  # inc hunk context line
 
             if comment_in_hunk(hunk, comments, line_count):
                 if not header_set:
@@ -253,7 +256,7 @@ def build_inline_comments_section(comments, diff_text):
                     comment = comments.get(str(line_count))
                     result_lines.extend(format_comment(comment))
             else:
-                line_count = line_count + len(hunk.lines)  # inc hunk lines
+                line_count += len(hunk.lines)  # inc hunk lines
 
-    result_text = '\n'.join(result_lines).encode('utf-8')
+    result_text = '\n'.join(result_lines)
     return '\n\nDiff comments:\n\n%s\n\n' % result_text
