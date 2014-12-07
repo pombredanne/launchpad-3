@@ -11,6 +11,8 @@ import logging
 import os
 
 import pytz
+from testtools.content import Content
+from testtools.content_type import UTF8_TEXT
 from zope.component import getUtility
 from zope.testing.loghandler import Handler
 
@@ -123,9 +125,16 @@ class TestCaseHWDB(TestCase):
         """Setup the test environment."""
         super(TestCaseHWDB, self).setUp()
         self.log = logging.getLogger('test_hwdb_submission_parser')
+        self.addDetail(
+            'process-pending-submissions-log',
+            Content(UTF8_TEXT, lambda: self.getLogData()))
         self.log.setLevel(logging.INFO)
         self.handler = Handler(self)
         self.handler.add(self.log.name)
+
+    def getLogData(self):
+        messages = [record.getMessage() for record in self.handler.records]
+        return '\n'.join(messages)
 
     def assertWarningMessage(self, submission_key, log_message):
         """Search for message in the log entries for submission_key.
@@ -4622,10 +4631,6 @@ class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
         self.handler = Handler(self)
         self.handler.add(self.log.name)
         switch_dbuser('hwdb-submission-processor')
-
-    def getLogData(self):
-        messages = [record.getMessage() for record in self.handler.records]
-        return '\n'.join(messages)
 
     def setHALDevices(self, devices):
         self.parsed_data['hardware']['hal']['devices'] = devices
