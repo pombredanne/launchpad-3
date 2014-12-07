@@ -7,13 +7,10 @@ import bz2
 from copy import deepcopy
 from cStringIO import StringIO
 from datetime import datetime
-import hashlib
 import logging
 import os
 
 import pytz
-from testtools.content import Content
-from testtools.content_type import UTF8_TEXT
 from zope.component import getUtility
 from zope.testing.loghandler import Handler
 
@@ -126,16 +123,9 @@ class TestCaseHWDB(TestCase):
         """Setup the test environment."""
         super(TestCaseHWDB, self).setUp()
         self.log = logging.getLogger('test_hwdb_submission_parser')
-        self.addDetail(
-            'process-pending-submissions-log',
-            Content(UTF8_TEXT, lambda: self.getLogData()))
         self.log.setLevel(logging.INFO)
         self.handler = Handler(self)
         self.handler.add(self.log.name)
-
-    def getLogData(self):
-        messages = [record.getMessage() for record in self.handler.records]
-        return '\n'.join(messages)
 
     def assertWarningMessage(self, submission_key, log_message):
         """Search for message in the log entries for submission_key.
@@ -4633,6 +4623,10 @@ class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
         self.handler.add(self.log.name)
         switch_dbuser('hwdb-submission-processor')
 
+    def getLogData(self):
+        messages = [record.getMessage() for record in self.handler.records]
+        return '\n'.join(messages)
+
     def setHALDevices(self, devices):
         self.parsed_data['hardware']['hal']['devices'] = devices
 
@@ -5390,9 +5384,9 @@ class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
         submission_set = getUtility(IHWSubmissionSet)
         submission = submission_set.getBySubmissionKey(
             'test_submission_id_1')
-        simple_submission_data = self.getSampleData(
+        submission_data = self.getSampleData(
             'simple_valid_hwdb_submission.xml')
-        fillLibrarianFile(submission.raw_submission.id, simple_submission_data)
+        fillLibrarianFile(submission.raw_submission.id, submission_data)
 
         submission_data = self.getSampleData('real_hwdb_submission.xml.bz2')
         submission_key = 'submission-6'
@@ -5409,14 +5403,6 @@ class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
         </foo>
         """
         self.createSubmissionData(submission_data, False, submission_key)
-
-        self.log.setLevel(logging.DEBUG)
-        retrieved_data = submission.raw_submission.read()
-        self.assertEqual(simple_submission_data, retrieved_data)
-        self.assertEqual(
-            '8a54975dcbeb2183f4753f12a623adb5',
-            hashlib.md5(retrieved_data).hexdigest())
-
         process_pending_submissions(self.layer.txn, self.log)
 
         janitor = getUtility(ILaunchpadCelebrities).janitor
