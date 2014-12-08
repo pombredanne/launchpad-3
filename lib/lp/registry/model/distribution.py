@@ -616,8 +616,16 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         from lp.code.model.seriessourcepackagebranch import (
             SeriesSourcePackageBranch)
 
+        # This method returns thousands of branch unique names in a
+        # single call, so the query is perilous and awkwardly tuned to
+        # get a good plan with the normal dataset (the charms distro).
+        OfficialSeries = ClassAlias(DistroSeries)
+
+        ds_ids = Select(
+            DistroSeries.id, tables=[DistroSeries],
+            where=DistroSeries.distributionID == self.id)
         clauses = [
-            DistroSeries.distribution == self.id,
+            DistroSeries.id.is_in(ds_ids),
             get_branch_privacy_filter(user),
         ]
 
@@ -625,17 +633,18 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             # If "since" was provided, take into account.
             clauses.append(Branch.last_scanned > since)
 
-        OfficialSeries = ClassAlias(DistroSeries)
         branches = IStore(self).using(
             Branch,
             Join(DistroSeries,
                  DistroSeries.id == Branch.distroseriesID),
             LeftJoin(
-                SeriesSourcePackageBranch,
-                SeriesSourcePackageBranch.branchID == Branch.id),
-            LeftJoin(
-                OfficialSeries,
-                OfficialSeries.id == SeriesSourcePackageBranch.distroseriesID),
+                Join(
+                    SeriesSourcePackageBranch,
+                    OfficialSeries,
+                    OfficialSeries.id ==
+                        SeriesSourcePackageBranch.distroseriesID),
+                And(SeriesSourcePackageBranch.branchID == Branch.id,
+                    SeriesSourcePackageBranch.distroseriesID.is_in(ds_ids))),
         ).find(
             (Branch.unique_name, Branch.last_scanned_id, OfficialSeries.name),
             And(*clauses)
