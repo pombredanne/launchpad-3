@@ -533,7 +533,6 @@ class BranchListingView(LaunchpadFormView, FeedsMixin):
     # shown in the branch listings.
     show_series_links = False
     extra_columns = []
-    label_template = 'Bazaar branches for %(displayname)s'
     # no_sort_by is a sequence of items from the BranchListingSort
     # enumeration to not offer in the sort_by widget.
     no_sort_by = ()
@@ -549,18 +548,6 @@ class BranchListingView(LaunchpadFormView, FeedsMixin):
         PersonBranchesFeedLink,
         PersonRevisionsFeedLink,
         )
-
-    @property
-    def label(self):
-        return self.label_template % {
-            'displayname': self.context.displayname,
-            'title': getattr(self.context, 'title', 'no-title')}
-
-    @property
-    def page_title(self):
-        """Provide a default for distros and other things without breadcrumbs.
-        """
-        return self.label
 
     table_only_template = ViewPageTemplateFile(
         '../templates/branches-table-include.pt')
@@ -949,7 +936,6 @@ class PersonBranchesView(PersonBaseBranchListingView):
     field_names = ['category', 'lifecycle', 'sort_by']
     custom_widget('category', LaunchpadDropdownWidget)
 
-    page_title = label = None
     no_sort_by = (BranchListingSort.DEFAULT, BranchListingSort.OWNER)
 
     @property
@@ -970,7 +956,6 @@ class PersonBranchesView(PersonBaseBranchListingView):
 class PersonProductBranchesView(PersonBranchesView):
     """Branch listing for a person's branches of a product."""
 
-    label_template = 'Branches of %(product)s for %(person)s'
     no_sort_by = (
         BranchListingSort.DEFAULT, BranchListingSort.OWNER,
         BranchListingSort.PRODUCT)
@@ -983,9 +968,7 @@ class PersonProductBranchesView(PersonBranchesView):
 
     @property
     def label(self):
-        return self.label_template % {
-            'person': self.context.person.displayname,
-            'product': self.context.product.displayname}
+        return 'Branches of %s' % self.context.product.displayname
 
     @property
     def no_branch_message(self):
@@ -1102,7 +1085,6 @@ class ProductBranchListingView(BranchListingView):
 
     show_series_links = True
     no_sort_by = (BranchListingSort.PRODUCT, )
-    label_template = 'Bazaar branches of %(displayname)s'
 
     def _getCollection(self):
         return getUtility(IAllBranches).inProduct(self.context)
@@ -1351,7 +1333,6 @@ class ProjectBranchesView(BranchListingView):
 
     no_sort_by = (BranchListingSort.DEFAULT, )
     extra_columns = ('author', 'product')
-    label_template = 'Bazaar branches of %(displayname)s'
     show_series_links = True
 
     def _getCollection(self):
@@ -1391,8 +1372,6 @@ class BaseSourcePackageBranchesView(BranchListingView):
 class DistributionSourcePackageBranchesView(BaseSourcePackageBranchesView):
     """A general listing of all branches in the distro source package."""
 
-    label_template = 'Bazaar branches for %(title)s'
-
     def _getCollection(self):
         return getUtility(IAllBranches).inDistributionSourcePackage(
             self.context)
@@ -1408,6 +1387,10 @@ class DistributionBranchListingView(BaseSourcePackageBranchesView):
 class DistroSeriesBranchListingView(BaseSourcePackageBranchesView):
     """A general listing of all branches in the distro source package."""
 
+    @property
+    def label(self):
+        return 'Branches for %s' % self.context.displayname
+
     def _getCollection(self):
         return getUtility(IAllBranches).inDistroSeries(self.context)
 
@@ -1415,12 +1398,6 @@ class DistroSeriesBranchListingView(BaseSourcePackageBranchesView):
 class GroupedDistributionSourcePackageBranchesView(LaunchpadView,
                                                    BranchListingItemsMixin):
     """A view that groups branches into distro series."""
-
-    @property
-    def label(self):
-        return 'Bazaar branches for %s' % self.context.title
-
-    page_title = label
 
     def __init__(self, context, request):
         LaunchpadView.__init__(self, context, request)
@@ -1575,7 +1552,9 @@ class GroupedDistributionSourcePackageBranchesView(LaunchpadView,
 
 class SourcePackageBranchesView(BranchListingView):
 
-    label_template = 'Bazaar branches of %(displayname)s'
+    @property
+    def label(self):
+        return 'Branches for %s' % self.context.distroseries.displayname
 
     # XXX: JonathanLange 2009-03-03 spec=package-branches: This page has no
     # menu yet -- do we need one?

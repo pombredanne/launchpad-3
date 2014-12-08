@@ -34,6 +34,7 @@ from lp.app.browser.launchpadform import (
     custom_widget,
     LaunchpadFormView,
     )
+from lp.app.interfaces.launchpad import IHeadingContext
 from lp.app.widgets.itemswidgets import LaunchpadDropdownWidget
 from lp.code.enums import (
     BranchMergeProposalStatus,
@@ -209,10 +210,14 @@ class BranchMergeProposalListingView(LaunchpadFormView):
     extra_columns = []
     _queue_status = None
 
+    page_title = 'Merge proposals'
+
     @property
-    def page_title(self):
-        return "Merge Proposals for %s" % self.context.displayname
-    label = page_title
+    def label(self):
+        if IHeadingContext.providedBy(self.context):
+            return self.page_title
+        else:
+            return "%s for %s" % (self.page_title, self.context.displayname)
 
     @property
     def initial_values(self):
@@ -266,6 +271,8 @@ class BranchMergeProposalListingView(LaunchpadFormView):
 
 class ActiveReviewsView(BranchMergeProposalListingView):
     """Branch merge proposals for a context that are needing review."""
+
+    page_title = "Active reviews"
 
     show_diffs = False
 
@@ -405,12 +412,6 @@ class ActiveReviewsView(BranchMergeProposalListingView):
         return headings
 
     @property
-    def heading(self):
-        return "Active code reviews for %s" % self.context.displayname
-
-    page_title = heading
-
-    @property
     def no_proposal_message(self):
         """Shown when there is no table to show."""
         return "%s has no active code reviews." % self.context.displayname
@@ -450,18 +451,16 @@ class PersonActiveReviewsView(ActiveReviewsView):
 class PersonProductActiveReviewsView(PersonActiveReviewsView):
     """Active reviews for a person in a product."""
 
+    @property
+    def label(self):
+        return '%s for %s' % (
+            self.page_title, self.context.product.displayname)
+
     def _getReviewer(self):
         return self.context.person
 
     def _getCollection(self):
         return getUtility(IAllBranches).inProduct(self.context.product)
-
-    @property
-    def heading(self):
-        return "Active code reviews of %s for %s" % (
-            self.context.product.displayname, self.context.person.displayname)
-
-    page_title = heading
 
     @property
     def no_proposal_message(self):

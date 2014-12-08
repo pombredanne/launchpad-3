@@ -404,9 +404,7 @@ class TestSimplifiedPersonProductBranchesView(
         self.makeABranch()
         page = self.get_branch_list_page()
         h1_matcher = soupmatchers.HTMLContains(
-            soupmatchers.Tag(
-                'Title', 'h1',
-                text='Branches of Bambam for Barney'))
+            soupmatchers.Tag('Title', 'h1', text='Branches of Bambam'))
         self.assertThat(page, h1_matcher)
 
     def test_branch_list_empty(self):
