@@ -459,19 +459,24 @@ class TestInlineCommentsSection(testtools.TestCase):
 
     def test_patch_header_comment(self):
         # Inline comments in patch headers are rendered correctly.
-        comments = {'1': 'A comment in the patch header', '2': 'aardvark'}
+        comments = {'15': 'A comment in the patch header', '16': 'aardvark'}
         self.assertEqual(
-            map(unicode, ['> --- bar\t2009-08-26 15:53:34.000000000 -0400',
-             '',
-             'A comment in the patch header',
-             '',
-             '> +++ bar\t1969-12-31 19:00:00.000000000 -0500',
-             '',
-             'aardvark',
-             '',
-             '']),
-
-            self.getSection(comments).splitlines()[4:13])
+            map(unicode, [
+                '> --- foo\t2009-08-26 15:53:23.000000000 -0400',
+                '',
+                'A comment in the patch header',
+                '',
+                '> +++ foo\t2009-08-26 15:56:43.000000000 -0400',
+                '',
+                'aardvark',
+                '',
+                '> @@ -1,3 +1,4 @@',
+                '>  a',
+                '> -b',
+                '>  c',
+                '> +d',
+                '> +e']),
+            self.getSection(comments).splitlines()[4:18])
 
     def test_multi_line_comment(self):
         # Inline comments with multiple lines are rendered appropriately.
@@ -482,9 +487,8 @@ class TestInlineCommentsSection(testtools.TestCase):
              '',
              'Foo',
              'Bar',
-             '',
              '']),
-            self.getSection(comments).splitlines()[4:])
+            self.getSection(comments).splitlines()[4:10])
 
     def test_multiple_comments(self):
         # Multiple inline comments are redered appropriately.
