@@ -377,6 +377,7 @@ class TestInlineCommentsSection(testtools.TestCase):
     """Tests for `build_inline_comments_section`."""
 
     diff_text = (
+        "=== modified file 'foo/bar/baz.py'\n"
         "--- bar\t2009-08-26 15:53:34.000000000 -0400\n"
         "+++ bar\t1969-12-31 19:00:00.000000000 -0500\n"
         "@@ -1,3 +0,0 @@\n"
@@ -458,7 +459,8 @@ class TestInlineCommentsSection(testtools.TestCase):
             self.getSection(comments).splitlines()[4:23])
 
     def test_patch_header_comment(self):
-        # Inline comments in patch headers are rendered correctly.
+        # Inline comments in patch headers are rendered correctly and
+        # include the patch's hunk(s).
         comments = {'15': 'A comment in the patch header', '16': 'aardvark'}
         self.assertEqual(
             map(unicode, [

@@ -187,13 +187,11 @@ def build_inline_comments_section(comments, diff_text):
     and hunk lines.
     """
     diff_lines = diff_text.splitlines(True)
+
     # allow_dirty() will preserve text not conforming to unified diff
     diff_patches = patches.parse_patches(diff_lines, allow_dirty=True)
     result_lines = []
-    line_count = 0 # track lines in original diff, not provided by bzlib.patches
-
-    # XXX: Blows up if a modified file header is added
-    # this needs to be handled
+    line_count = 0  # track lines in original diff
 
     for patch in diff_patches:
         patch_lines = []
@@ -208,7 +206,7 @@ def build_inline_comments_section(comments, diff_text):
                 patch_lines.extend(format_comment(comment))
                 patch_comment = True
 
-        keep_hunks = [] # hunks with comments to preserve
+        keep_hunks = []  # preserve hunks with comments
         for hunk in patch.hunks:
             hunk_lines = []
             hunk_comment = False
@@ -225,6 +223,7 @@ def build_inline_comments_section(comments, diff_text):
 
             for line in hunk.lines:
                 line_count = line_count + 1  # inc hunk lines
+
                 hunk_lines.append(u'> %s' % str(
                     line).rstrip('\n').decode('utf-8', 'replace'))
                 comment = comments.get(str(line_count))
@@ -232,6 +231,7 @@ def build_inline_comments_section(comments, diff_text):
                     hunk_lines.extend(format_comment(comment))
                     hunk_comment = True
 
+            # preserve hunks for context if comment in patch header
             if patch_comment or hunk_comment:
                 keep_hunks.extend(hunk_lines)
 
