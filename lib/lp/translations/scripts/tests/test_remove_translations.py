@@ -47,7 +47,6 @@ def make_script(args=None):
     if isinstance(args, basestring):
         args = [args]
     script = RemoveTranslations('remove-translations-test', test_args=args)
-    script.logger.setLevel(logging.ERROR)
     return script
 
 
