@@ -1446,7 +1446,8 @@ class TestArchiveDependencies(TestCaseWithFactory):
             name='dependency', private=True, owner=p3a.owner)
         with person_logged_in(p3a.owner):
             bpph = self.factory.makeBinaryPackagePublishingHistory(
-                archive=dependency, status=PackagePublishingStatus.PUBLISHED)
+                archive=dependency, status=PackagePublishingStatus.PUBLISHED,
+                pocket=PackagePublishingPocket.RELEASE)
             p3a.addArchiveDependency(dependency,
                 PackagePublishingPocket.RELEASE)
             build = self.factory.makeBinaryPackageBuild(archive=p3a,
