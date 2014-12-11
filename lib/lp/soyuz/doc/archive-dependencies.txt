@@ -440,6 +440,28 @@ other partner applications by default.
     deb http://archive.launchpad.dev/ubuntu hoary-updates
         main restricted universe multiverse
 
+PARTNER's PROPOSED pocket builds against itself, but still uses the
+default UPDATES dependency for PRIMARY unless overriden by
+ArchiveDependency.
+
+    >>> proposed_source = test_publisher.getPubSource(
+    ...     version='1.2', archive=partner, component='partner',
+    ...     pocket=PackagePublishingPocket.PROPOSED)
+    >>> unused = test_publisher.getPubBinaries(
+    ...     archive=partner, distroseries=proposed_source.distroseries,
+    ...     pocket=PackagePublishingPocket.PROPOSED,
+    ...     status=PackagePublishingStatus.PUBLISHED)
+    >>> [partner_proposed_build] = proposed_source.createMissingBuilds()
+
+    >>> print_building_sources_list(partner_proposed_build)
+    deb http://archive.launchpad.dev/ubuntu-partner hoary partner
+    deb http://archive.launchpad.dev/ubuntu-partner hoary-proposed partner
+    deb http://archive.launchpad.dev/ubuntu hoary
+        main restricted universe multiverse
+    deb http://archive.launchpad.dev/ubuntu hoary-security
+        main restricted universe multiverse
+    deb http://archive.launchpad.dev/ubuntu hoary-updates
+        main restricted universe multiverse
 
 == External build dependencies ==
 
