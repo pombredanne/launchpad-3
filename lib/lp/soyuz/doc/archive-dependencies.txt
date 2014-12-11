@@ -441,7 +441,7 @@ other partner applications by default.
         main restricted universe multiverse
 
 PARTNER's PROPOSED pocket builds against itself, but still uses the
-default UPDATES dependency for PRIMARY unless overriden by
+default UPDATES dependency for PRIMARY unless overridden by
 ArchiveDependency.
 
     >>> proposed_source = test_publisher.getPubSource(
