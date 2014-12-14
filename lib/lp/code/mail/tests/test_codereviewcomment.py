@@ -239,7 +239,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
         See `build_inline_comments_section` tests for formatting details.
         """
         comment = self.makeCommentWithInlineComments(
-            inline_comments={'2': 'Is this from Pl\u0060net Earth ?'})
+            inline_comments={'3': 'Is this from Pl\u0060net Earth ?'})
         mailer = CodeReviewCommentMailer.forCreation(comment)
         commenter = comment.branch_merge_proposal.registrant
         ctrl = mailer.generateEmail(
@@ -249,6 +249,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
             '',
             'Diff comments:',
             '',
+            ("> === zbqvsvrq svyr 'yvo/yc/pbqr/vagresnprf/qvss.cl'"),
             ('> --- yvo/yc/pbqr/vagresnprf/qvss.cl      '
              '2009-10-01 13:25:12 +0000'),
             ('> +++ yvo/yc/pbqr/vagresnprf/qvss.cl      '
@@ -257,7 +258,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
             'Is this from Pl\u0060net Earth ?',
             '',
         ]
-        self.assertEqual(expected_lines, ctrl.body.splitlines()[1:9])
+        self.assertEqual(expected_lines, ctrl.body.splitlines()[1:10])
 
     def makeComment(self, email_message):
         message = getUtility(IMessageSet).fromEmail(email_message.as_string())
@@ -377,6 +378,7 @@ class TestInlineCommentsSection(testtools.TestCase):
     """Tests for `build_inline_comments_section`."""
 
     diff_text = (
+        "=== added directory 'foo/bar'\n"
         "=== modified file 'foo/bar/baz.py'\n"
         "--- bar\t2009-08-26 15:53:34.000000000 -0400\n"
         "+++ bar\t1969-12-31 19:00:00.000000000 -0500\n"
@@ -425,17 +427,17 @@ class TestInlineCommentsSection(testtools.TestCase):
     def test_single_line_comment(self):
         # The inline comments are correctly contextualized in the diff.
         # and prefixed with '>>> '
-        comments = {'2': '\u03b4\u03bf\u03ba\u03b9\u03bc\u03ae'}
+        comments = {'4': '\u03b4\u03bf\u03ba\u03b9\u03bc\u03ae'}
         self.assertEqual(
             map(unicode, ['> +++ bar\t1969-12-31 19:00:00.000000000 -0500',
              '',
              '\u03b4\u03bf\u03ba\u03b9\u03bc\u03ae',
              '']),
-            self.getSection(comments).splitlines()[5:9])
+            self.getSection(comments).splitlines()[7:11])
 
     def test_commentless_hunks_ignored(self):
         # Hunks without inline comments are not returned in the diff text.
-        comments = {'14': 'A comment', '19': 'Another comment'}
+        comments = {'16': 'A comment', '21': 'Another comment'}
         self.assertEqual(
             map(unicode, ['> --- baz\t1969-12-31 19:00:00.000000000 -0500',
              '> +++ baz\t2009-08-26 15:53:57.000000000 -0400',
@@ -461,7 +463,7 @@ class TestInlineCommentsSection(testtools.TestCase):
     def test_patch_header_comment(self):
         # Inline comments in patch headers are rendered correctly and
         # include the patch's hunk(s).
-        comments = {'15': 'A comment in the patch header', '16': 'aardvark'}
+        comments = {'17': 'A comment in the patch header', '18': 'aardvark'}
         self.assertEqual(
             map(unicode, [
                 '> --- foo\t2009-08-26 15:53:23.000000000 -0400',
@@ -482,7 +484,7 @@ class TestInlineCommentsSection(testtools.TestCase):
 
     def test_multi_line_comment(self):
         # Inline comments with multiple lines are rendered appropriately.
-        comments = {'2': 'Foo\nBar'}
+        comments = {'4': 'Foo\nBar'}
         self.assertEqual(
             map(unicode, ['> --- bar\t2009-08-26 15:53:34.000000000 -0400',
              '> +++ bar\t1969-12-31 19:00:00.000000000 -0500',
@@ -490,11 +492,11 @@ class TestInlineCommentsSection(testtools.TestCase):
              'Foo',
              'Bar',
              '']),
-            self.getSection(comments).splitlines()[4:10])
+            self.getSection(comments).splitlines()[6:12])
 
     def test_multiple_comments(self):
         # Multiple inline comments are redered appropriately.
-        comments = {'2': 'Foo', '3': 'Bar'}
+        comments = {'4': 'Foo', '5': 'Bar'}
         self.assertEqual(
             ['> +++ bar\t1969-12-31 19:00:00.000000000 -0500',
              '',
@@ -504,4 +506,4 @@ class TestInlineCommentsSection(testtools.TestCase):
              '',
              'Bar',
              ''],
-            self.getSection(comments).splitlines()[5:13])
+            self.getSection(comments).splitlines()[7:15])

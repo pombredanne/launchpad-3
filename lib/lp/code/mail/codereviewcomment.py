@@ -188,14 +188,21 @@ def build_inline_comments_section(comments, diff_text):
     """
     diff_lines = diff_text.splitlines(True)
 
-    # allow_dirty() will preserve text not conforming to unified diff
-    diff_patches = patches.parse_patches(diff_lines, allow_dirty=True)
+    diff_patches = patches.parse_patches(
+        diff_lines, allow_dirty=True, keep_dirty=True)
     result_lines = []
     line_count = 0  # track lines in original diff
 
     for patch in diff_patches:
         patch_lines = []
+        dirty_head = []
         patch_comment = False
+
+        if isinstance(patch, dict) and 'dirty_head' in patch:
+            for line in patch['dirty_head']:
+                dirty_head.append(u'> %s' % line.rstrip('\n'))
+                line_count += 1 # inc for dirty headers
+            patch = patch['patch']
 
         for ph in patch.get_header().splitlines():
             line_count += 1  # inc patch headers
@@ -237,6 +244,8 @@ def build_inline_comments_section(comments, diff_text):
 
         # Add entire patch and hunks to result if comment found
         if patch_comment or hunk_comment:
+            if len(dirty_head) > 0:
+                result_lines.extend(dirty_head)
             result_lines.extend(patch_lines)
             result_lines.extend(keep_hunks)
 
