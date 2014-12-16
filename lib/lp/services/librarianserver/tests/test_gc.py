@@ -616,10 +616,14 @@ class TestDiskLibrarianGarbageCollection(
         # Long non-hexadecimal number
         noisedir3_path = os.path.join(config.librarian_server.root, '11.bak')
 
+        # A file we will migrate to Swift using the --rename feed-swift option.
+        migrated_path = librariangc.get_file_path(8769786) + '.migrated'
+
         try:
             os.mkdir(noisedir1_path)
             os.mkdir(noisedir2_path)
             os.mkdir(noisedir3_path)
+            os.makedirs(os.path.dirname(migrated_path))
 
             # Files in the noise directories.
             noisefile1_path = os.path.join(noisedir1_path, 'abc')
@@ -628,6 +632,7 @@ class TestDiskLibrarianGarbageCollection(
             open(noisefile1_path, 'w').write('hello')
             open(noisefile2_path, 'w').write('there')
             open(noisefile3_path, 'w').write('testsuite')
+            open(migrated_path, 'w').write('migrant')
 
             # Pretend it is tomorrow to ensure the files don't count as
             # recently created, and run the delete_unwanted_files process.
@@ -649,6 +654,7 @@ class TestDiskLibrarianGarbageCollection(
             self.assert_(os.path.exists(noisefile1_path))
             self.assert_(os.path.exists(noisefile2_path))
             self.assert_(os.path.exists(noisefile3_path))
+            self.assert_(os.path.exists(migrated_path))
         finally:
             # We need to clean this up ourselves, as the standard librarian
             # cleanup only removes files it knows where valid to avoid
@@ -656,12 +662,15 @@ class TestDiskLibrarianGarbageCollection(
             shutil.rmtree(noisedir1_path)
             shutil.rmtree(noisedir2_path)
             shutil.rmtree(noisedir3_path)
+            shutil.rmtree(os.path.dirname(migrated_path))
 
         # Can't check the ordering, so we'll just check that one of the
         # warnings are there.
         self.assertIn(
             "WARNING Ignoring invalid directory zz",
             librariangc.log.getLogBuffer())
+        # No warning about the .migrated file.
+        self.assertNotIn(".migrated", librariangc.log.getLogBuffer())
 
 
 class TestSwiftLibrarianGarbageCollection(
@@ -686,7 +695,7 @@ class TestSwiftLibrarianGarbageCollection(
         # Move files into Swift.
         path = librariangc.get_file_path(self.f1_id)
         assert os.path.exists(path), "Librarian uploads failed"
-        swift.to_swift(BufferLogger(), remove=True)
+        swift.to_swift(BufferLogger(), remove_func=os.unlink)
         assert not os.path.exists(path), "to_swift failed to move files"
 
     def file_exists(self, content_id):
