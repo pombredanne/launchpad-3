@@ -80,12 +80,9 @@
 <metal:block define-macro="simple-search-form">
 <div id="bugs-search-form"
      class="dynamic_bug_listing"
-     tal:attributes="action search_url|string:">
+     tal:attributes="action string:">
   <form method="get" name="search" class="primary search dynamic_bug_listing"
-        tal:attributes="action search_url|string:">
-    <h3 tal:content="view/search_macro_title">
-      Search bugs in Ubuntu
-    </h3>
+        tal:attributes="action string:">
     <p>
     <tal:searchbox replace="structure view/widgets/searchtext" />
     <input type="submit" name="search" value="Search" />
@@ -98,9 +95,7 @@
     <tal:widget replace="structure view/widgets/has_patch/hidden" />
     <tal:widget replace="structure view/widgets/component/hidden" />
     <tal:widget replace="structure view/widgets/has_no_package/hidden" />
-    </p>
-    <p>
-    <a tal:attributes="href advanced_search_url|string:?advanced=1"
+    <a tal:attributes="href string:?advanced=1"
     >Advanced search</a>
     </p>
 

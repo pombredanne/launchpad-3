@@ -10,7 +10,6 @@ __all__ = [
     'SourcePackageAssociationPortletView',
     'SourcePackageBreadcrumb',
     'SourcePackageChangeUpstreamView',
-    'SourcePackageFacets',
     'SourcePackageNavigation',
     'SourcePackageOverviewMenu',
     'SourcePackageRemoveUpstreamView',
@@ -31,7 +30,6 @@ from lazr.enum import (
     Item,
     )
 from lazr.restful.interface import copy_field
-from lazr.restful.utils import smartquote
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.component import (
     adapter,
@@ -41,10 +39,7 @@ from zope.component import (
 from zope.formlib.form import Fields
 from zope.formlib.interfaces import IInputWidget
 from zope.formlib.widgets import DropdownWidget
-from zope.interface import (
-    implements,
-    Interface,
-    )
+from zope.interface import Interface
 from zope.schema import (
     Choice,
     TextLine,
@@ -89,7 +84,6 @@ from lp.services.webapp import (
     canonical_url,
     Link,
     Navigation,
-    StandardLaunchpadFacets,
     stepto,
     )
 from lp.services.webapp.breadcrumb import Breadcrumb
@@ -195,28 +189,22 @@ class SourcePackageNavigation(Navigation, BugTargetTraversalMixin):
         removed in Nov 2014.
         """
         dspr = self.context.distribution_sourcepackage.getVersion(name)
+        if dspr is None:
+            return None
         return self.redirectSubTree(canonical_url(dspr), status=301)
 
 
 @adapter(ISourcePackage)
 class SourcePackageBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `ISourcePackage`."""
-    implements(IBreadcrumb)
 
     @property
     def text(self):
-        return smartquote('"%s" source package') % (self.context.name)
+        return IBreadcrumb(self.context.distroseries).text
 
-
-class SourcePackageFacets(StandardLaunchpadFacets):
-
-    usedfor = ISourcePackage
-    enable_only = [
-        'overview',
-        'branches',
-        'bugs',
-        'translations',
-        ]
+    @property
+    def inside(self):
+        return self.context.distribution_sourcepackage
 
 
 class SourcePackageOverviewMenu(ApplicationMenu):

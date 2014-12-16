@@ -35,6 +35,7 @@ from zope.component import (
     getGlobalSiteManager,
     getUtility,
     queryAdapter,
+    queryUtility,
     )
 from zope.datetime import (
     DateTimeError,
@@ -42,6 +43,7 @@ from zope.datetime import (
     )
 from zope.i18nmessageid import Message
 from zope.interface import (
+    alsoProvides,
     implements,
     Interface,
     )
@@ -54,7 +56,11 @@ from zope.schema import (
     TextLine,
     )
 from zope.security.interfaces import Unauthorized
-from zope.traversing.interfaces import ITraversable
+from zope.security.proxy import removeSecurityProxy
+from zope.traversing.interfaces import (
+    IPathAdapter,
+    ITraversable,
+    )
 
 from lp import _
 from lp.answers.interfaces.questioncollection import IQuestionSet
@@ -75,7 +81,10 @@ from lp.app.errors import (
     NotFoundError,
     POSTToNonCanonicalURL,
     )
-from lp.app.interfaces.headings import IMajorHeadingView
+from lp.app.interfaces.headings import (
+    IHeadingBreadcrumb,
+    IMajorHeadingView,
+    )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.interfaces.services import IServiceFactory
 from lp.app.widgets.project import ProjectScopeWidget
@@ -131,10 +140,14 @@ from lp.services.webapp import (
     )
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.escaping import structured
 from lp.services.webapp.interfaces import (
     IBreadcrumb,
+    ICanonicalUrlData,
+    IFacet,
     ILaunchBag,
     ILaunchpadRoot,
+    IMultiFacetedBreadcrumb,
     INavigationMenu,
     )
 from lp.services.webapp.menu import get_facet
@@ -153,6 +166,10 @@ from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
     )
 from lp.translations.interfaces.translations import IRosettaApplication
+
+
+class IFacetBreadcrumb(Interface):
+    pass
 
 
 class NavigationMenuTabs(LaunchpadView):
@@ -241,14 +258,34 @@ class LinkView(LaunchpadView):
 
 
 class Hierarchy(LaunchpadView):
-    """The hierarchy part of the location bar on each page."""
-
-    vhost_breadcrumb = True
+    """The heading, title, facet links and breadcrumbs parts of each page."""
 
     @property
     def objects(self):
         """The objects for which we want breadcrumbs."""
-        return self.request.traversed_objects
+        # Start the chain with the deepest object that has a breadcrumb.
+        try:
+            objects = [(
+                obj for obj in reversed(self.request.traversed_objects)
+                if IBreadcrumb(obj, None)).next()]
+        except StopIteration:
+            return []
+        # Now iterate. If an object has a breadcrumb, it can override
+        # its parent. Otherwise we just follow the normal URL hierarchy
+        # until we reach the end.
+        while True:
+            next_obj = None
+            breadcrumb = IBreadcrumb(objects[0], None)
+            if breadcrumb is not None:
+                next_obj = breadcrumb.inside
+            if next_obj is None:
+                urldata = ICanonicalUrlData(objects[0], None)
+                if urldata is not None:
+                    next_obj = urldata.inside
+            if next_obj is None:
+                break
+            objects.insert(0, next_obj)
+        return objects
 
     @cachedproperty
     def items(self):
@@ -262,20 +299,25 @@ class Hierarchy(LaunchpadView):
             if breadcrumb is not None:
                 breadcrumbs.append(breadcrumb)
 
-        facet = get_facet(self._naked_context_view)
-        if (len(breadcrumbs) != 0 and facet is not None and
-            self.vhost_breadcrumb):
+        facet = queryUtility(IFacet, name=get_facet(self._naked_context_view))
+        if breadcrumbs and facet is not None:
             # We have breadcrumbs and we're on a custom facet, so we'll
             # sneak an extra breadcrumb for the facet we're on.
-
             # Iterate over the context of our breadcrumbs in reverse order and
-            # for the first one we find an adapter named after the facet we're
-            # on, generate an extra breadcrumb and insert it in our list.
+            # find the first one that implements IMultiFactedBreadcrumb.
+            # It'll be facet-agnostic, so insert a facet-specific one
+            # after it.
             for idx, breadcrumb in reversed(list(enumerate(breadcrumbs))):
-                extra_breadcrumb = queryAdapter(
-                    breadcrumb.context, IBreadcrumb, name=facet)
-                if extra_breadcrumb is not None:
-                    breadcrumbs.insert(idx + 1, extra_breadcrumb)
+                if IMultiFacetedBreadcrumb.providedBy(breadcrumb):
+                    facet_crumb = Breadcrumb(
+                        breadcrumb.context, rootsite=facet.rootsite,
+                        text=facet.text)
+                    alsoProvides(facet_crumb, IFacetBreadcrumb)
+                    breadcrumbs.insert(idx + 1, facet_crumb)
+                    # Ensure that all remaining breadcrumbs are
+                    # themselves faceted.
+                    for remaining_crumb in breadcrumbs[idx + 1:]:
+                        remaining_crumb.rootsite_override = facet.rootsite
                     break
         if len(breadcrumbs) > 0:
             page_crumb = self.makeBreadcrumbForRequestedPage()
@@ -284,9 +326,29 @@ class Hierarchy(LaunchpadView):
         return breadcrumbs
 
     @property
+    def items_for_body(self):
+        """Return breadcrumbs to display in the page body's hierarchy section.
+
+        While the entire sequence of breadcrumbs must be included in the
+        document title, the first 0-3 are represented specially in the header
+        (headings and facet links), so we don't want to duplicate them in the
+        main content.
+        """
+        crumbs = []
+        for crumb in self.items:
+            if (IHeadingBreadcrumb.providedBy(crumb)
+                    or IFacetBreadcrumb.providedBy(crumb)):
+                crumbs = []
+                continue
+            crumbs.append(crumb)
+        return crumbs
+
+    @property
     def _naked_context_view(self):
         """Return the unproxied view for the context of the hierarchy."""
-        from zope.security.proxy import removeSecurityProxy
+        # XXX wgrant 2014-11-16: Should just be able to use self.context
+        # here, but some views end up delegating to things that don't
+        # have __name__ or __launchpad_facetname__.
         if len(self.request.traversed_objects) > 0:
             return removeSecurityProxy(self.request.traversed_objects[-1])
         else:
@@ -299,34 +361,24 @@ class Hierarchy(LaunchpadView):
         URL and the page's name (i.e. the last path segment of the URL).
 
         If the view is the default one for the object or the current
-        facet, return None -- we'll have injected a *FacetBreadcrumb
+        facet, return None -- we'll have injected a facet Breadcrumb
         earlier in the hierarchy which links here.
         """
-        # XXX wgrant 2014-02-25: We should eventually define the
-        # facet-level defaults in app-level ZCML rather than hardcoding
-        # them centrally.
-        facet_defaults = {
-            'answers': '+questions',
-            'branches': '+branches',
-            'bugs': '+bugs',
-            'specifications': '+specs',
-            'translations': '+translations',
-            }
-
         url = self.request.getURL()
         obj = self.request.traversed_objects[-2]
         default_view_name = getDefaultViewName(obj, self.request)
         view = self._naked_context_view
-        facet = get_facet(view)
-        if view.__name__ not in (default_view_name, facet_defaults.get(facet)):
+        default_views = [default_view_name]
+        facet = queryUtility(IFacet, name=get_facet(view))
+        if facet is not None:
+            default_views.append(facet.default_view)
+        if hasattr(view, '__name__') and view.__name__ not in default_views:
             title = getattr(view, 'page_title', None)
             if title is None:
                 title = getattr(view, 'label', None)
             if isinstance(title, Message):
                 title = i18n.translate(title, context=self.request)
-            breadcrumb = Breadcrumb(None)
-            breadcrumb._url = url
-            breadcrumb.text = title
+            breadcrumb = Breadcrumb(None, url=url, text=title)
             return breadcrumb
         else:
             return None
@@ -340,7 +392,51 @@ class Hierarchy(LaunchpadView):
         # to display breadcrumbs either.
         has_major_heading = IMajorHeadingView.providedBy(
             self._naked_context_view)
-        return len(self.items) > 1 and not has_major_heading
+        return len(self.items_for_body) > 1 and not has_major_heading
+
+    @property
+    def heading_breadcrumbs(self):
+        crumbs = [
+            crumb for crumb in self.items
+            if IHeadingBreadcrumb.providedBy(crumb)]
+        assert len(crumbs) <= 2
+        return crumbs
+
+    def heading(self):
+        """Return the heading markup for the page.
+
+        If the context provides `IMajorHeadingView` then we return an
+        H1, else an H2.
+        """
+        # The title is static, but only the index view gets an H1.
+        tag = 'h1' if IMajorHeadingView.providedBy(self.context) else 'h2'
+        # If there is actually no root context, then it's a top-level
+        # context-less page so Launchpad.net is shown as the branding.
+        crumb_markups = []
+        for crumb in self.heading_breadcrumbs:
+            crumb_markups.append(
+                structured('<a href="%s">%s</a>', crumb.url, crumb.detail))
+        if not crumb_markups:
+            crumb_markups.append(structured('<span>Launchpad.net</span>'))
+        content = structured(
+            '<br />'.join(['%s'] * len(crumb_markups)), *crumb_markups)
+        return structured(
+            '<%s id="watermark-heading">%s</%s>',
+            tag, content, tag).escapedtext
+
+    def logo(self):
+        """Return the logo image for the top header breadcrumb's context."""
+        logo_context = (
+            self.heading_breadcrumbs[0].context if self.heading_breadcrumbs
+            else None)
+        adapter = queryAdapter(logo_context, IPathAdapter, 'image')
+        if logo_context is not None:
+            return structured(
+                '<a href="%s">%s</a>',
+                canonical_url(logo_context, rootsite='mainsite'),
+                structured(adapter.logo())).escapedtext
+        else:
+            return adapter.logo()
 
 
 class ExceptionHierarchy(Hierarchy):

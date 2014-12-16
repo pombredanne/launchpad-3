@@ -153,6 +153,23 @@ class PersonSetWebServiceTests(TestCaseWithFactory):
         self.assertReturnsPeople(
             [team_name], '/people?ws.op=findTeam&text=%s' % person_name)
 
+    def test_findTeam_query_count(self):
+        with admin_logged_in():
+            ws = webservice_for_person(self.factory.makePerson())
+
+        def create_match():
+            with admin_logged_in():
+                self.factory.makeTeam(displayname='foobar')
+
+        def find_teams():
+            ws.named_get('/people', 'findTeam', text="foobar").jsonBody()
+
+        # Ensure that we're already in a stable cache state.
+        find_teams()
+        recorder1, recorder2 = record_two_runs(
+            find_teams, create_match, 2)
+        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
+
     def test_findPerson(self):
         # The search can be restricted to people.
         with admin_logged_in():

@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'BranchBreadcrumb',
     'BranchContextMenu',
     'BranchDeletionView',
     'BranchEditStatusView',
@@ -19,19 +20,14 @@ __all__ = [
     'BranchNameValidationMixin',
     'BranchNavigation',
     'BranchEditMenu',
-    'BranchInProductView',
     'BranchUpgradeView',
     'BranchURL',
     'BranchView',
-    'BranchSubscriptionsView',
     'RegisterBranchMergeProposalView',
     'TryImportAgainView',
     ]
 
-from datetime import (
-    datetime,
-    timedelta,
-    )
+from datetime import datetime
 
 from lazr.enum import (
     EnumeratedType,
@@ -44,7 +40,6 @@ from lazr.restful.interface import (
     copy_field,
     use_template,
     )
-from lazr.restful.utils import smartquote
 from lazr.uri import URI
 import pytz
 import simplejson
@@ -74,7 +69,6 @@ from zope.traversing.interfaces import IPathAdapter
 
 from lp import _
 from lp.app.browser.informationtype import InformationTypePortletMixin
-from lp.app.browser.launchpad import Hierarchy
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -158,6 +152,7 @@ from lp.services.webapp.authorization import (
     check_permission,
     precache_permission_for_objects,
     )
+from lp.services.webapp.breadcrumb import NameBreadcrumb
 from lp.services.webapp.escaping import structured
 from lp.services.webapp.interfaces import ICanonicalUrlData
 from lp.translations.interfaces.translationtemplatesbuild import (
@@ -181,32 +176,11 @@ class BranchURL:
         return self.branch.unique_name
 
 
-def branch_root_context(branch):
-    """Return the IRootContext for the branch."""
-    return branch.target.components[0]
-
-
-class BranchHierarchy(Hierarchy):
-    """The hierarchy for a branch should be the product if there is one."""
+class BranchBreadcrumb(NameBreadcrumb):
 
     @property
-    def objects(self):
-        """See `Hierarchy`."""
-        traversed = list(self.request.traversed_objects)
-        # Pass back the root object.
-        yield traversed.pop(0)
-        # Now pop until we find the branch.
-        branch = traversed.pop(0)
-        while not IBranch.providedBy(branch):
-            branch = traversed.pop(0)
-        # Now pass back the branch components.
-        for component in branch.target.components:
-            yield component
-        # Now the branch.
-        yield branch
-        # Now whatever is left.
-        for obj in traversed:
-            yield obj
+    def inside(self):
+        return self.context.target.components[-1]
 
 
 class BranchNavigation(Navigation):
@@ -464,15 +438,6 @@ class BranchView(InformationTypePortletMixin, FeedsMixin, BranchMirrorMixin,
             return False
         return self.context.hasSubscription(self.user)
 
-    def recent_revision_count(self, days=30):
-        """Number of revisions committed during the last N days."""
-        timestamp = datetime.now(pytz.UTC) - timedelta(days=days)
-        return self.context.getRevisionsSince(timestamp).count()
-
-    def owner_is_registrant(self):
-        """Is the branch owner the registrant?"""
-        return self.context.owner == self.context.registrant
-
     def owner_is_reviewer(self):
         """Is the branch owner the default reviewer?"""
         if self.context.reviewer == None:
@@ -688,12 +653,6 @@ class BranchView(InformationTypePortletMixin, FeedsMixin, BranchMirrorMixin,
     @property
     def spec_links(self):
         return self.context.getSpecificationLinks(self.user)
-
-
-class BranchInProductView(BranchView):
-
-    show_person_link = True
-    show_product_link = False
 
 
 class BranchNameValidationMixin:
@@ -996,7 +955,7 @@ class BranchDeletionView(LaunchpadFormView):
 
     @property
     def page_title(self):
-        return smartquote('Delete branch "%s"' % self.context.displayname)
+        return 'Delete branch %s' % self.context.displayname
 
     label = page_title
 
@@ -1088,7 +1047,7 @@ class BranchUpgradeView(LaunchpadFormView):
 
     @property
     def page_title(self):
-        return smartquote('Upgrade branch "%s"' % self.context.displayname)
+        return 'Upgrade branch %s' % self.context.displayname
 
     @property
     def next_url(self):
@@ -1210,19 +1169,6 @@ class BranchReviewerEditView(BranchEditFormView):
     @property
     def initial_values(self):
         return {'reviewer': self.context.code_reviewer}
-
-
-class BranchSubscriptionsView(LaunchpadView):
-    """The view for the branch subscriptions portlet.
-
-    The view is used to provide a decorated list of branch subscriptions
-    in order to provide links to be able to edit the subscriptions
-    based on whether or not the user is able to edit the subscription.
-    """
-
-    def owner_is_registrant(self):
-        """Return whether or not owner is the same as the registrant"""
-        return self.context.owner == self.context.registrant
 
 
 class BranchMergeQueueView(LaunchpadView):
@@ -1478,3 +1424,4 @@ class TryImportAgainView(LaunchpadFormView):
     @property
     def prefix(self):
         return "tryagain"
+

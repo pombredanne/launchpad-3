@@ -3,6 +3,8 @@
 
 __metaclass__ = type
 
+from zope.security.proxy import removeSecurityProxy
+
 from lp.services.webapp.publisher import canonical_url
 from lp.testing import TestCaseWithFactory
 from lp.testing.layers import DatabaseFunctionalLayer
@@ -48,5 +50,8 @@ class BaseBreadcrumbTestCase(TestCaseWithFactory):
 
     def getBreadcrumbsForUrl(self, url):
         obj, view, request = test_traverse(url)
-        view = create_initialized_view(obj, '+hierarchy', request=request)
-        return view.items
+        # Sometimes test_traverse returns the __call__, while the template
+        # always has access to the instance.
+        view = getattr(removeSecurityProxy(view), 'im_self', view)
+        hier = create_initialized_view(view, '+hierarchy', request=request)
+        return hier.items

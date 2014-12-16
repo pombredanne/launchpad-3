@@ -48,7 +48,7 @@ There is a link that allows users with permission to create a PPA.
 While navigating around the PPA the "structural location" includes a PPA:
 
     >>> print_location(anon_browser.contents)
-    Hierarchy: Celso Providelo > PPA for Celso Providelo
+    Hierarchy: Celso Providelo
     Tabs:
     * Overview (selected) - http://launchpad.dev/~cprov
     * Code - http://code.launchpad.dev/~cprov
@@ -69,7 +69,7 @@ The PPA breadcrumb follows the PPA displayname.
     >>> cprov_browser.getControl("Save").click()
 
     >>> print_location(cprov_browser.contents)
-    Hierarchy: Celso Providelo > Default PPA
+    Hierarchy: Celso Providelo
     Tabs:
     * Overview (selected) - http://launchpad.dev/~cprov
     * Code - http://code.launchpad.dev/~cprov

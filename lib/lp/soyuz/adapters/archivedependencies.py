@@ -149,9 +149,10 @@ def expand_dependencies(archive, distro_arch_series, pocket, component,
 
     # Add implicit self-dependency for non-primary contexts.
     if archive.purpose in ALLOW_RELEASE_BUILDS:
-        deps.append((
-            archive, distro_arch_series, PackagePublishingPocket.RELEASE,
-            get_components_for_context(component, pocket)))
+        for expanded_pocket in pocket_dependencies[pocket]:
+            deps.append(
+                (archive, distro_arch_series, expanded_pocket,
+                 get_components_for_context(component, expanded_pocket)))
 
     primary_component = get_primary_current_component(
         archive, distro_series, source_package_name)
@@ -258,7 +259,7 @@ def _has_published_binaries(archive, distroarchseries, pocket):
         return True
 
     published_binaries = archive.getAllPublishedBinaries(
-        distroarchseries=distroarchseries,
+        distroarchseries=distroarchseries, pocket=pocket,
         status=PackagePublishingStatus.PUBLISHED)
     return not published_binaries.is_empty()
 

@@ -9,12 +9,9 @@ __all__ = [
     'BranchSubscriptionAddView',
     'BranchSubscriptionEditOwnView',
     'BranchSubscriptionEditView',
-    'BranchSubscriptionPrimaryContext',
     ]
 
-from lazr.restful.utils import smartquote
 from zope.component import getUtility
-from zope.interface import implements
 
 from lp.app.browser.launchpadform import (
     action,
@@ -34,16 +31,6 @@ from lp.services.webapp.authorization import (
     precache_permission_for_objects,
     )
 from lp.services.webapp.escaping import structured
-from lp.services.webapp.interfaces import IPrimaryContext
-
-
-class BranchSubscriptionPrimaryContext:
-    """The primary context is the subscription is that of the branch."""
-
-    implements(IPrimaryContext)
-
-    def __init__(self, branch_subscription):
-        self.context = IPrimaryContext(branch_subscription.branch).context
 
 
 class BranchPortletSubscribersContent(LaunchpadView):
@@ -153,8 +140,7 @@ class BranchSubscriptionEditOwnView(_BranchSubscriptionView):
 
     @property
     def page_title(self):
-        return smartquote(
-            'Edit subscription to branch "%s"' % self.context.displayname)
+        return 'Edit subscription to branch %s' % self.context.displayname
 
     @property
     def initial_values(self):
@@ -264,8 +250,7 @@ class BranchSubscriptionEditView(LaunchpadEditFormView):
 
     @property
     def page_title(self):
-        return smartquote(
-            'Edit subscription to branch "%s"' % self.branch.displayname)
+        return 'Edit subscription to branch %s' % self.branch.displayname
 
     @property
     def label(self):

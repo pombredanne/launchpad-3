@@ -18,6 +18,10 @@
       component="lp.answers.publisher.AnswersLayer"
       provides="zope.publisher.interfaces.browser.IDefaultBrowserLayer"
       name="answers" />
+  <utility
+      component="lp.answers.publisher.AnswersFacet"
+      provides="lp.services.webapp.interfaces.IFacet"
+      name="answers" />
 
     <subscriber
         for=".interfaces.question.IQuestion
@@ -257,26 +261,7 @@
     <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
-
   <lp:help-folder folder="help" name="+help-answers"/>
-  <adapter
-      name="answers"
-      provides="lp.services.webapp.interfaces.IBreadcrumb"
-      for="lp.answers.interfaces.questiontarget.IQuestionTarget"
-      factory="lp.answers.browser.questiontarget.AnswersFacetBreadcrumb"
-      permission="zope.Public"/>
-  <adapter
-      name="answers"
-      provides="lp.services.webapp.interfaces.IBreadcrumb"
-      for="lp.registry.interfaces.projectgroup.IProjectGroup"
-      factory="lp.answers.browser.questiontarget.AnswersFacetBreadcrumb"
-      permission="zope.Public"/>
-  <adapter
-      name="answers"
-      provides="lp.services.webapp.interfaces.IBreadcrumb"
-      for="lp.registry.interfaces.person.IPerson"
-      factory="lp.answers.browser.questiontarget.AnswersFacetBreadcrumb"
-      permission="zope.Public"/>
 
   <webservice:register module="lp.answers.interfaces.webservice" />
 </configure>

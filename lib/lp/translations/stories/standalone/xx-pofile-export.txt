@@ -19,8 +19,8 @@ Logged in as a regular user, the +export page is accessible.
     >>> user_browser.getLink('Download').click()
 
     >>> print user_browser.title
-    Download translation : Spanish (es)...
-    ...evolution... package : Translations : Hoary (5.04) : Ubuntu
+    Download translation : Spanish (es)... : Hoary (5.04) :
+    Translations : evolution package : Ubuntu
 
     >>> print find_main_content(user_browser.contents)
     <...

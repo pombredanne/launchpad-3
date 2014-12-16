@@ -207,20 +207,6 @@ class TestBugTaskSearchListingPage(BrowserTestCase):
         self.assertFalse(
             'Y.lp.app.batchnavigator.BatchNavigatorHooks' in view())
 
-    def test_search_macro_title(self):
-        # The title text is displayed for the macro `simple-search-form`.
-        product = self.factory.makeProduct(
-            displayname='Test Product', official_malone=True)
-        view = create_initialized_view(product, '+bugs')
-        self.assertEqual(
-            'Search bugs in Test Product', view.search_macro_title)
-
-        # The title is shown.
-        form_title_matches = Tag(
-            'Search form title', 'h3', text=view.search_macro_title)
-        view = create_initialized_view(product, '+bugs')
-        self.assertThat(view.render(), HTMLContains(form_title_matches))
-
     def test_search_macro_div_node_with_css_class(self):
         # The <div> enclosing the search form in the macro
         # `simple-search-form` has the CSS class "dynamic_bug_listing".
@@ -324,12 +310,6 @@ class TestBugTaskSearchListingViewProduct(BugTargetTestCase):
         link = canonical_url(
             bug_target.ubuntu_packages[0], force_local_path=True)
         self.assertEqual(link, content.a['href'])
-
-    def test_product_index_title(self):
-        bug_target = self._makeBugTargetProduct(
-            bug_tracker='launchpad', product_name="testproduct")
-        view = create_initialized_view(bug_target, '+bugs')
-        self.assertEqual(u'Bugs for Testproduct', view.page_title)
 
     def test_ask_question_does_not_use_launchpad(self):
         bug_target = self._makeBugTargetProduct(

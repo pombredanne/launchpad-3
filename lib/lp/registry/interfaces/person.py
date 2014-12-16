@@ -94,11 +94,11 @@ from zope.schema import (
 from lp import _
 from lp.answers.interfaces.questionsperson import IQuestionsPerson
 from lp.app.errors import NameLookupFailed
-from lp.app.interfaces.headings import IRootContext
 from lp.app.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
     IHasMugshot,
+    IHeadingContext,
     IPrivacy,
     )
 from lp.app.validators import LaunchpadValidationError
@@ -1845,7 +1845,7 @@ class IPersonSpecialRestricted(Interface):
 
 class IPerson(IPersonPublic, IPersonLimitedView, IPersonViewRestricted,
               IPersonEditRestricted, IPersonSpecialRestricted, IHasStanding,
-              ISetLocation, IRootContext):
+              ISetLocation, IHeadingContext):
     """A Person."""
     export_as_webservice_entry(plural_name='people')
 
@@ -2269,12 +2269,13 @@ class IPersonSet(Interface):
         restrict the search to the dates provided.
         """
 
+    @call_with(preload_for_api=True)
     @operation_parameters(
         text=TextLine(title=_("Search text"), default=u""))
     @operation_returns_collection_of(IPerson)
     @export_read_operation()
     @operation_for_version("beta")
-    def findTeam(text=""):
+    def findTeam(text="", preload_for_api=False):
         """Return all Teams whose name, displayname or email address
         match <text>.
 

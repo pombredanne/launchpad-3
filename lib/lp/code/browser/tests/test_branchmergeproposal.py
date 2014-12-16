@@ -60,7 +60,6 @@ from lp.services.messages.model.message import MessageSet
 from lp.services.webapp import canonical_url
 from lp.services.webapp.interfaces import (
     BrowserNotificationLevel,
-    IPrimaryContext,
     )
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
@@ -79,20 +78,6 @@ from lp.testing.layers import (
     LaunchpadFunctionalLayer,
     )
 from lp.testing.views import create_initialized_view
-
-
-class TestBranchMergeProposalPrimaryContext(TestCaseWithFactory):
-    """Tests the adaptation of a merge proposal into a primary context."""
-
-    layer = DatabaseFunctionalLayer
-
-    def testPrimaryContext(self):
-        # The primary context of a merge proposal is the same as the primary
-        # context of the source_branch.
-        bmp = self.factory.makeBranchMergeProposal()
-        self.assertEqual(
-            IPrimaryContext(bmp).context,
-            IPrimaryContext(bmp.source_branch).context)
 
 
 class TestBranchMergeProposalContextMenu(TestCaseWithFactory):

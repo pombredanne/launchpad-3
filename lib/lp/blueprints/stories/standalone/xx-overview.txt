@@ -50,12 +50,10 @@ targeted to a given product series. Let's pick the Mozilla Firefox 1.0
 series as an example. To begin with, there are no blueprints listed on
 the blueprints page for 1.0:
 
-    >>> user_browser.open('http://launchpad.dev/firefox/1.0')
-    >>> user_browser.getLink('Blueprints').click()
+    >>> user_browser.open('http://blueprints.launchpad.dev/firefox/1.0')
     >>> main = find_main_content(user_browser.contents)
     >>> print extract_text(main).encode('ascii', 'backslashreplace')
     Blueprints for 1.0
-    ...
     Launchpad lets projects track the features they intend to implement...
 
 Let's target an existing Mozilla Firefox blueprint to the 1.0 series:
@@ -69,8 +67,6 @@ Let's target an existing Mozilla Firefox blueprint to the 1.0 series:
     >>> main = find_main_content(browser.contents)
     >>> print extract_text(main).encode('ascii', 'backslashreplace')
     Target to a product series
-    Mozilla Firefox
-    ...
     Support Native SVG Objects
     ...
 
@@ -114,8 +110,7 @@ Now we'll target our chosen blueprint to the new milestone:
 Now the blueprint listing for the 1.0 series includes an entry for our chosen
 blueprint. It also lists the milestone to which the blueprint is targeted:
 
-    >>> user_browser.open('http://launchpad.dev/firefox/1.0')
-    >>> user_browser.getLink('Blueprints').click()
+    >>> user_browser.open('http://blueprints.launchpad.dev/firefox/1.0')
     >>> main = find_main_content(user_browser.contents)
     >>> print extract_text(main).encode('ascii', 'backslashreplace')
     Blueprints for 1.0...
@@ -152,12 +147,10 @@ those targeted to a given distribution series. Let's pick the Grumpy Groundhog
 series as an example. To begin with, there are no blueprints listed on the
 blueprints page for Grumpy:
 
-    >>> user_browser.open('http://launchpad.dev/ubuntu/grumpy')
-    >>> user_browser.getLink('Blueprints').click()
+    >>> user_browser.open('http://blueprints.launchpad.dev/ubuntu/grumpy')
     >>> main = find_main_content(user_browser.contents)
     >>> print extract_text(main).encode('ascii', 'backslashreplace')
     Blueprints for Grumpy
-    ...
     Launchpad lets projects track the features they intend to implement...
 
 Let's target an existing Ubuntu blueprint to the Grumpy series:
@@ -172,8 +165,6 @@ Let's target an existing Ubuntu blueprint to the Grumpy series:
     >>> main = find_main_content(browser.contents)
     >>> print extract_text(main).encode('ascii', 'backslashreplace')
     Target to a distribution series
-    Ubuntu
-    ...
     CD Media Integrity Check
     ...
     >>> series = browser.getControl('Series Goal')
@@ -215,8 +206,7 @@ Now we'll target our chosen blueprint to the new milestone:
 Finally, the blueprint listing for Grumpy includes an entry for our chosen
 blueprint. It also lists the milestone to which the blueprint is targeted:
 
-    >>> user_browser.open('http://launchpad.dev/ubuntu/grumpy')
-    >>> user_browser.getLink('Blueprints').click()
+    >>> user_browser.open('http://blueprints.launchpad.dev/ubuntu/grumpy')
     >>> main = find_main_content(user_browser.contents)
     >>> print extract_text(main).encode('ascii', 'backslashreplace')
     Blueprints for Grumpy...

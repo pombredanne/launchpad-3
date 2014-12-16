@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'BugSubscriberPackageBugsSearchListingView',
     'PersonBugsMenu',
     'PersonCommentedBugTaskSearchListingView',
     'PersonAssignedBugTaskSearchListingView',
@@ -22,10 +21,8 @@ from operator import itemgetter
 import urllib
 
 from zope.component import getUtility
-from zope.schema.vocabulary import getVocabularyRegistry
 
-from lp.app.errors import UnexpectedFormData
-from lp.bugs.browser.bugtask import BugTaskSearchListingView
+from lp.bugs.browser.buglisting import BugTaskSearchListingView
 from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     IBugTaskSet,
@@ -38,7 +35,6 @@ from lp.registry.model.milestone import (
     )
 from lp.services.database.bulk import load_related
 from lp.services.feeds.browser import FeedsMixin
-from lp.services.helpers import shortlist
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp.batching import BatchNavigator
 from lp.services.webapp.menu import (
@@ -51,32 +47,25 @@ from lp.services.webapp.publisher import (
     )
 
 
-def get_package_search_url(distributionsourcepackage, person_url,
-                           advanced=False, extra_params=None):
+def get_package_search_url(dsp_bugs_url, extra_params=None):
     """Construct a default search URL for a distributionsourcepackage.
 
     Optional filter parameters can be specified as a dict with the
     extra_params argument.
     """
     params = {
-        "field.distribution": distributionsourcepackage.distribution.name,
-        "field.sourcepackagename": distributionsourcepackage.name,
-        "search": "Search"}
-    if advanced:
-        params['advanced'] = '1'
-
+        "search": "Search",
+        "field.status": [
+            status.title for status in UNRESOLVED_BUGTASK_STATUSES]}
     if extra_params is not None:
         # We must UTF-8 encode searchtext to play nicely with
         # urllib.urlencode, because it may contain non-ASCII characters.
         if 'field.searchtext' in extra_params:
             extra_params["field.searchtext"] = (
                 extra_params["field.searchtext"].encode("utf8"))
-
         params.update(extra_params)
-
-    query_string = urllib.urlencode(sorted(params.items()), doseq=True)
-
-    return person_url + '/+packagebugs-search?%s' % query_string
+    return '%s?%s' % (
+        dsp_bugs_url, urllib.urlencode(sorted(params.items()), doseq=True))
 
 
 class PersonBugsMenu(NavigationMenu):
@@ -152,7 +141,7 @@ class RelevantMilestonesMixin:
 
 class BugSubscriberPackageBugsOverView(LaunchpadView):
 
-    page_title = 'Package bugs'
+    label = 'Subscribed packages'
 
     @cachedproperty
     def total_bug_counts(self):
@@ -177,202 +166,55 @@ class BugSubscriberPackageBugsOverView(LaunchpadView):
         L = []
         package_counts = getUtility(IBugTaskSet).getBugCountsForPackages(
             self.user, self.context.getBugSubscriberPackages())
-        person_url = canonical_url(self.context)
         for package_counts in package_counts:
-            package = package_counts['package']
+            url = canonical_url(package_counts['package'], rootsite='bugs')
             L.append({
-                'package_name': package.displayname,
-                'package_search_url':
-                    get_package_search_url(package, person_url),
+                'package_name': package_counts['package'].displayname,
+                'package_search_url': get_package_search_url(url),
                 'open_bugs_count': package_counts['open'],
-                'open_bugs_url': self.getOpenBugsURL(package, person_url),
+                'open_bugs_url': get_package_search_url(url),
                 'critical_bugs_count': package_counts['open_critical'],
-                'critical_bugs_url': self.getCriticalBugsURL(
-                    package, person_url),
+                'critical_bugs_url': get_package_search_url(
+                    url, {'field.importance': 'Critical'}),
                 'high_bugs_count': package_counts['open_high'],
-                'high_bugs_url': self.getHighBugsURL(package, person_url),
+                'high_bugs_url': get_package_search_url(
+                    url, {'field.importance': 'High'}),
                 'unassigned_bugs_count': package_counts['open_unassigned'],
-                'unassigned_bugs_url': self.getUnassignedBugsURL(
-                    package, person_url),
+                'unassigned_bugs_url': get_package_search_url(
+                    url, {'assignee_option': 'none'}),
                 'inprogress_bugs_count': package_counts['open_inprogress'],
-                'inprogress_bugs_url': self.getInProgressBugsURL(
-                    package, person_url),
+                'inprogress_bugs_url': get_package_search_url(
+                    url, {'field.status': 'In Progress'}),
             })
-
         return sorted(L, key=itemgetter('package_name'))
 
-    def getOpenBugsURL(self, distributionsourcepackage, person_url):
-        """Return the URL for open bugs on distributionsourcepackage."""
-        status_params = {'field.status': []}
 
-        for status in UNRESOLVED_BUGTASK_STATUSES:
-            status_params['field.status'].append(status.title)
-
-        return get_package_search_url(
-            distributionsourcepackage=distributionsourcepackage,
-            person_url=person_url,
-            extra_params=status_params)
-
-    def getCriticalBugsURL(self, distributionsourcepackage, person_url):
-        """Return the URL for critical bugs on distributionsourcepackage."""
-        critical_bugs_params = {
-            'field.status': [], 'field.importance': "Critical"}
-
-        for status in UNRESOLVED_BUGTASK_STATUSES:
-            critical_bugs_params["field.status"].append(status.title)
-
-        return get_package_search_url(
-            distributionsourcepackage=distributionsourcepackage,
-            person_url=person_url,
-            extra_params=critical_bugs_params)
-
-    def getHighBugsURL(self, distributionsourcepackage, person_url):
-        """Return URL for high bugs on distributionsourcepackage."""
-        high_bugs_params = {
-            'field.status': [], 'field.importance': "High"}
-
-        for status in UNRESOLVED_BUGTASK_STATUSES:
-            high_bugs_params["field.status"].append(status.title)
-
-        return get_package_search_url(
-            distributionsourcepackage=distributionsourcepackage,
-            person_url=person_url,
-            extra_params=high_bugs_params)
-
-    def getUnassignedBugsURL(self, distributionsourcepackage, person_url):
-        """Return the URL for unassigned bugs on distributionsourcepackage."""
-        unassigned_bugs_params = {
-            "field.status": [], "field.unassigned": "on"}
-
-        for status in UNRESOLVED_BUGTASK_STATUSES:
-            unassigned_bugs_params["field.status"].append(status.title)
-
-        return get_package_search_url(
-            distributionsourcepackage=distributionsourcepackage,
-            person_url=person_url,
-            extra_params=unassigned_bugs_params)
-
-    def getInProgressBugsURL(self, distributionsourcepackage, person_url):
-        """Return the URL for unassigned bugs on distributionsourcepackage."""
-        inprogress_bugs_params = {"field.status": "In Progress"}
-
-        return get_package_search_url(
-            distributionsourcepackage=distributionsourcepackage,
-            person_url=person_url,
-            extra_params=inprogress_bugs_params)
-
-
-class BugSubscriberPackageBugsSearchListingView(BugTaskSearchListingView):
-    """Bugs reported on packages for a bug subscriber."""
-
-    columns_to_show = ["id", "summary", "importance", "status"]
-    page_title = 'Package bugs'
+class FilteredSearchListingViewMixin(RelevantMilestonesMixin,
+                                     BugTaskSearchListingView):
+    columns_to_show = ["id", "summary", "bugtargetdisplayname",
+                       "importance", "status"]
 
     @property
-    def current_package(self):
-        """Get the package whose bugs are currently being searched."""
-        if not (
-            self.widgets['distribution'].hasValidInput() and
-            self.widgets['distribution'].getInputValue()):
-            raise UnexpectedFormData("A distribution is required")
-        if not (
-            self.widgets['sourcepackagename'].hasValidInput() and
-            self.widgets['sourcepackagename'].getInputValue()):
-            raise UnexpectedFormData("A sourcepackagename is required")
+    def page_title(self):
+        return self.label
 
-        distribution = self.widgets['distribution'].getInputValue()
-        return distribution.getSourcePackage(
-            self.widgets['sourcepackagename'].getInputValue())
-
-    def search(self, searchtext=None):
-        distrosourcepackage = self.current_package
-        return BugTaskSearchListingView.search(
-            self, searchtext=searchtext, context=distrosourcepackage)
-
-    def getMilestoneWidgetValues(self):
-        """See `BugTaskSearchListingView`.
-
-        We return only the active milestones on the current distribution
-        since any others are irrelevant.
-        """
-        current_distro = self.current_package.distribution
-        vocabulary_registry = getVocabularyRegistry()
-        vocabulary = vocabulary_registry.get(current_distro, 'Milestone')
-
-        return shortlist([
-            dict(title=milestone.title, value=milestone.token, checked=False)
-            for milestone in vocabulary],
-            longest_expected=10)
-
-    @cachedproperty
-    def person_url(self):
-        return canonical_url(self.context)
-
-    def getBugSubscriberPackageSearchURL(self, distributionsourcepackage=None,
-                                         advanced=False, extra_params=None):
-        """Construct a default search URL for a distributionsourcepackage.
-
-        Optional filter parameters can be specified as a dict with the
-        extra_params argument.
-        """
-        if distributionsourcepackage is None:
-            distributionsourcepackage = self.current_package
-        return get_package_search_url(
-            distributionsourcepackage, self.person_url, advanced,
-            extra_params)
-
-    def getBugSubscriberPackageAdvancedSearchURL(self,
-                                              distributionsourcepackage=None):
-        """Build the advanced search URL for a distributionsourcepackage."""
-        return self.getBugSubscriberPackageSearchURL(advanced=True)
-
-    def shouldShowSearchWidgets(self):
-        # XXX: Guilherme Salgado 2005-11-05:
-        # It's not possible to search amongst the bugs on maintained
-        # software, so for now I'll be simply hiding the search widgets.
-        return False
-
-    # Methods that customize the advanced search form.
-    def getAdvancedSearchButtonLabel(self):
-        return "Search bugs in %s" % self.current_package.displayname
-
-    def getSimpleSearchURL(self):
-        return get_package_search_url(self.current_package, self.person_url)
-
-    @property
-    def label(self):
-        return self.getSearchPageHeading()
-
-    @property
-    def context_description(self):
-        """See `BugTaskSearchListingView`."""
-        return ("in %s related to %s" %
-                (self.current_package.displayname, self.context.displayname))
+    def searchUnbatched(self, searchtext=None, context=None,
+                        extra_params=None):
+        context = context or self.context
+        extra_params = extra_params or {}
+        extra_params.update(self.getExtraParams(context))
+        return super(FilteredSearchListingViewMixin, self).searchUnbatched(
+            searchtext, context, extra_params)
 
 
-class PersonAssignedBugTaskSearchListingView(RelevantMilestonesMixin,
-                                             BugTaskSearchListingView):
+class PersonAssignedBugTaskSearchListingView(FilteredSearchListingViewMixin):
     """All bugs assigned to someone."""
 
-    columns_to_show = ["id", "summary", "bugtargetdisplayname",
-                       "importance", "status"]
-    page_title = 'Assigned bugs'
+    label = 'Assigned bugs'
     view_name = '+assignedbugs'
 
-    def searchUnbatched(self, searchtext=None, context=None,
-                        extra_params=None):
-        """Return the open bugs assigned to a person."""
-        if context is None:
-            context = self.context
-
-        if extra_params is None:
-            extra_params = dict()
-        else:
-            extra_params = dict(extra_params)
-        extra_params['assignee'] = context
-
-        sup = super(PersonAssignedBugTaskSearchListingView, self)
-        return sup.searchUnbatched(searchtext, context, extra_params)
+    def getExtraParams(self, context):
+        return {'assignee': context}
 
     def shouldShowAssigneeWidget(self):
         """Should the assignee widget be shown on the advanced search page?"""
@@ -382,100 +224,25 @@ class PersonAssignedBugTaskSearchListingView(RelevantMilestonesMixin,
         """Should the team assigned bugs portlet be shown?"""
         return True
 
-    def shouldShowTagsCombinatorWidget(self):
-        """Should the tags combinator widget show on the search page?"""
-        return False
 
-    @property
-    def context_description(self):
-        """See `BugTaskSearchListingView`."""
-        return "assigned to %s" % self.context.displayname
-
-    def getSearchPageHeading(self):
-        """The header for the search page."""
-        return "Bugs %s" % self.context_description
-
-    def getAdvancedSearchButtonLabel(self):
-        """The Search button for the advanced search page."""
-        return "Search bugs %s" % self.context_description
-
-    def getSimpleSearchURL(self):
-        """Return a URL that can be used as an href to the simple search."""
-        return canonical_url(self.context, view_name="+assignedbugs")
-
-    @property
-    def label(self):
-        return self.getSearchPageHeading()
-
-
-class PersonCommentedBugTaskSearchListingView(RelevantMilestonesMixin,
-                                              BugTaskSearchListingView):
+class PersonCommentedBugTaskSearchListingView(FilteredSearchListingViewMixin):
     """All bugs commented on by a Person."""
 
-    columns_to_show = ["id", "summary", "bugtargetdisplayname",
-                       "importance", "status"]
-    page_title = 'Commented bugs'
+    label = 'Commented bugs'
+    view_name = '+commentedbugs'
 
-    def searchUnbatched(self, searchtext=None, context=None,
-                        extra_params=None):
-        """Return the open bugs commented on by a person."""
-        if context is None:
-            context = self.context
-
-        if extra_params is None:
-            extra_params = dict()
-        else:
-            extra_params = dict(extra_params)
-        extra_params['bug_commenter'] = context
-
-        sup = super(PersonCommentedBugTaskSearchListingView, self)
-        return sup.searchUnbatched(searchtext, context, extra_params)
-
-    @property
-    def context_description(self):
-        """See `BugTaskSearchListingView`."""
-        return "commented on by %s" % self.context.displayname
-
-    def getSearchPageHeading(self):
-        """The header for the search page."""
-        return "Bugs %s" % self.context_description
-
-    def getAdvancedSearchButtonLabel(self):
-        """The Search button for the advanced search page."""
-        return "Search bugs %s" % self.context_description
-
-    def getSimpleSearchURL(self):
-        """Return a URL that can be used as an href to the simple search."""
-        return canonical_url(self.context, view_name="+commentedbugs")
-
-    @property
-    def label(self):
-        return self.getSearchPageHeading()
+    def getExtraParams(self, context):
+        return {'bug_commenter': context}
 
 
-class PersonAffectingBugTaskSearchListingView(
-    RelevantMilestonesMixin, BugTaskSearchListingView):
+class PersonAffectingBugTaskSearchListingView(FilteredSearchListingViewMixin):
     """All bugs affecting someone."""
 
-    columns_to_show = ["id", "summary", "bugtargetdisplayname",
-                       "importance", "status"]
+    label = 'Bugs affecting'
     view_name = '+affectingbugs'
-    page_title = 'Bugs affecting'   # The context is added externally.
 
-    def searchUnbatched(self, searchtext=None, context=None,
-                        extra_params=None):
-        """Return the open bugs assigned to a person."""
-        if context is None:
-            context = self.context
-
-        if extra_params is None:
-            extra_params = dict()
-        else:
-            extra_params = dict(extra_params)
-        extra_params['affected_user'] = context
-
-        sup = super(PersonAffectingBugTaskSearchListingView, self)
-        return sup.searchUnbatched(searchtext, context, extra_params)
+    def getExtraParams(self, context):
+        return {'affected_user': context}
 
     def shouldShowAssigneeWidget(self):
         """Should the assignee widget be shown on the advanced search page?"""
@@ -485,40 +252,13 @@ class PersonAffectingBugTaskSearchListingView(
         """Should the team assigned bugs portlet be shown?"""
         return True
 
-    def shouldShowTagsCombinatorWidget(self):
-        """Should the tags combinator widget show on the search page?"""
-        return False
 
-    @property
-    def context_description(self):
-        """See `BugTaskSearchListingView`."""
-        return "affecting %s" % self.context.displayname
-
-    def getSearchPageHeading(self):
-        """The header for the search page."""
-        return "Bugs %s" % self.context_description
-
-    def getAdvancedSearchButtonLabel(self):
-        """The Search button for the advanced search page."""
-        return "Search bugs %s" % self.context_description
-
-    def getSimpleSearchURL(self):
-        """Return a URL that can be used as an href to the simple search."""
-        return canonical_url(self.context, view_name=self.view_name)
-
-    @property
-    def label(self):
-        return self.getSearchPageHeading()
-
-
-class PersonRelatedBugTaskSearchListingView(RelevantMilestonesMixin,
-                                            BugTaskSearchListingView,
+class PersonRelatedBugTaskSearchListingView(FilteredSearchListingViewMixin,
                                             FeedsMixin):
     """All bugs related to someone."""
 
-    columns_to_show = ["id", "summary", "bugtargetdisplayname",
-                       "importance", "status"]
-    page_title = 'Related bugs'
+    label = 'Related bugs'
+    view_name = '+bugs'
 
     def searchUnbatched(self, searchtext=None, context=None,
                         extra_params=None):
@@ -553,129 +293,35 @@ class PersonRelatedBugTaskSearchListingView(RelevantMilestonesMixin,
         return context.searchTasks(
             assignee_params, subscriber_params, owner_params, commenter_params)
 
-    @property
-    def context_description(self):
-        """See `BugTaskSearchListingView`."""
-        return "related to %s" % self.context.displayname
 
-    def getSearchPageHeading(self):
-        return "Bugs %s" % self.context_description
-
-    def getAdvancedSearchButtonLabel(self):
-        return "Search bugs %s" % self.context_description
-
-    def getSimpleSearchURL(self):
-        return canonical_url(self.context, view_name="+bugs")
-
-    @property
-    def label(self):
-        return self.getSearchPageHeading()
-
-
-class PersonReportedBugTaskSearchListingView(RelevantMilestonesMixin,
-                                             BugTaskSearchListingView):
+class PersonReportedBugTaskSearchListingView(FilteredSearchListingViewMixin):
     """All bugs reported by someone."""
 
-    columns_to_show = ["id", "summary", "bugtargetdisplayname",
-                       "importance", "status"]
-    page_title = 'Reported bugs'
+    label = 'Reported bugs'
+    view_name = '+reportedbugs'
 
-    def searchUnbatched(self, searchtext=None, context=None,
-                        extra_params=None):
-        """Return the bugs reported by a person."""
-        if context is None:
-            context = self.context
-
-        if extra_params is None:
-            extra_params = dict()
-        else:
-            extra_params = dict(extra_params)
+    def getExtraParams(self, context):
         # Specify both owner and bug_reporter to try to prevent the same
         # bug (but different tasks) being displayed.
-        extra_params['owner'] = context
-        extra_params['bug_reporter'] = context
-
-        sup = super(PersonReportedBugTaskSearchListingView, self)
-        return sup.searchUnbatched(searchtext, context, extra_params)
-
-    @property
-    def context_description(self):
-        """See `BugTaskSearchListingView`."""
-        return "reported by %s" % self.context.displayname
-
-    def getSearchPageHeading(self):
-        """The header for the search page."""
-        return "Bugs %s" % self.context_description
-
-    def getAdvancedSearchButtonLabel(self):
-        """The Search button for the advanced search page."""
-        return "Search bugs %s" % self.context_description
-
-    def getSimpleSearchURL(self):
-        """Return a URL that can be used as an href to the simple search."""
-        return canonical_url(self.context, view_name="+reportedbugs")
+        return {'owner': context, 'bug_reporter': context}
 
     def shouldShowReporterWidget(self):
         """Should the reporter widget be shown on the advanced search page?"""
         return False
 
-    def shouldShowTagsCombinatorWidget(self):
-        """Should the tags combinator widget show on the search page?"""
-        return False
 
-    @property
-    def label(self):
-        return self.getSearchPageHeading()
-
-
-class PersonSubscribedBugTaskSearchListingView(RelevantMilestonesMixin,
-                                               BugTaskSearchListingView):
+class PersonSubscribedBugTaskSearchListingView(FilteredSearchListingViewMixin):
     """All bugs someone is subscribed to."""
 
-    columns_to_show = ["id", "summary", "bugtargetdisplayname",
-                       "importance", "status"]
-    page_title = 'Subscribed bugs'
+    label = 'Subscribed bugs'
     view_name = '+subscribedbugs'
 
-    def searchUnbatched(self, searchtext=None, context=None,
-                        extra_params=None):
-        """Return the bugs subscribed to by a person."""
-        if context is None:
-            context = self.context
-
-        if extra_params is None:
-            extra_params = dict()
-        else:
-            extra_params = dict(extra_params)
-        extra_params['subscriber'] = context
-
-        sup = super(PersonSubscribedBugTaskSearchListingView, self)
-        return sup.searchUnbatched(searchtext, context, extra_params)
+    def getExtraParams(self, context):
+        return {'subscriber': context}
 
     def shouldShowTeamPortlet(self):
         """Should the team subscribed bugs portlet be shown?"""
         return True
-
-    @property
-    def context_description(self):
-        """See `BugTaskSearchListingView`."""
-        return "%s is subscribed to" % self.context.displayname
-
-    def getSearchPageHeading(self):
-        """The header for the search page."""
-        return "Bugs %s" % self.context_description
-
-    def getAdvancedSearchButtonLabel(self):
-        """The Search button for the advanced search page."""
-        return "Search bugs %s is Cc'd to" % self.context.displayname
-
-    def getSimpleSearchURL(self):
-        """Return a URL that can be used as an href to the simple search."""
-        return canonical_url(self.context, view_name="+subscribedbugs")
-
-    @property
-    def label(self):
-        return self.getSearchPageHeading()
 
 
 class PersonSubscriptionsView(LaunchpadView):

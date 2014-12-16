@@ -118,10 +118,11 @@ class TestExtraBreadcrumbForLeafPageOnHierarchyView(BaseBreadcrumbTestCase):
             page_title = Message(
                 '${name} test', mapping={'name': 'breadcrumb'})
             __name__ = 'test-page'
+            context = self.product
         test_view = TestView()
         request = LaunchpadTestRequest()
         request.traversed_objects = [self.product, test_view]
-        hierarchy_view = Hierarchy(self.product, request)
+        hierarchy_view = Hierarchy(test_view, request)
         breadcrumb = hierarchy_view.makeBreadcrumbForRequestedPage()
         self.assertEquals(breadcrumb.text, 'breadcrumb test')
 
@@ -173,11 +174,12 @@ class TestExtraFacetBreadcrumbsOnHierarchyView(BaseBreadcrumbTestCase):
     def test_package_bugtask(self):
         target = self.package_bugtask.target
         distro_url = canonical_url(target.distribution)
-        distroseries_url = canonical_url(target.distroseries)
-        package_url = canonical_url(target)
+        dsp_url = canonical_url(target.distribution_sourcepackage)
+        dsp_bugs_url = canonical_url(
+            target.distribution_sourcepackage, rootsite='bugs')
         package_bugs_url = canonical_url(target, rootsite='bugs')
 
         self.assertBreadcrumbUrls(
-            [distro_url, distroseries_url, package_url, package_bugs_url,
+            [distro_url, dsp_url, dsp_bugs_url, package_bugs_url,
              self.package_bugtask_url],
             self.package_bugtask)

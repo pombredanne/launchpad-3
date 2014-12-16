@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 __all__ = [
-    "BugsFacetBreadcrumb",
     "BugsPatchesView",
     "BugTargetBugListingView",
     "BugTargetBugTagsView",
@@ -69,6 +68,7 @@ from lp.app.errors import (
     UnexpectedFormData,
     )
 from lp.app.interfaces.launchpad import (
+    IHeadingContext,
     ILaunchpadCelebrities,
     ILaunchpadUsage,
     )
@@ -138,7 +138,6 @@ from lp.services.webapp import (
     )
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.batching import BatchNavigator
-from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.services.webapp.escaping import structured
 
 # A simple vocabulary for the subscribe_to_existing_bug form field.
@@ -967,6 +966,8 @@ class FilebugShowSimilarBugsView(FileBugViewBase):
 
 class FileBugGuidedView(FilebugShowSimilarBugsView):
 
+    page_title = 'Report a bug'
+
     _SEARCH_FOR_DUPES = ViewPageTemplateFile(
         "../templates/bugtarget-filebug-search.pt")
     _PROJECTGROUP_SEARCH_FOR_DUPES = ViewPageTemplateFile(
@@ -992,10 +993,6 @@ class FileBugGuidedView(FilebugShowSimilarBugsView):
             # explaining the preferred bug-filing procedure.
             self.request.response.redirect(
                 config.malone.ubuntu_bug_filing_url)
-
-    @property
-    def page_title(self):
-        return 'Report a bug about %s' % self.context.title
 
     @safe_action
     @action("Continue", name="search")
@@ -1030,6 +1027,8 @@ class FileBugGuidedView(FilebugShowSimilarBugsView):
 class ProjectGroupFileBugGuidedView(LaunchpadFormView):
     """Guided filebug pages for IProjectGroup."""
 
+    page_title = 'Report a bug'
+
     schema = IProjectGroupBugAddForm
 
     custom_widget('title', TextWidget, displayWidth=40)
@@ -1040,10 +1039,6 @@ class ProjectGroupFileBugGuidedView(LaunchpadFormView):
     @property
     def field_names(self):
         return ['product', 'title', 'tags']
-
-    @property
-    def page_title(self):
-        return 'Report a bug about %s' % self.context.title
 
     @cachedproperty
     def products_using_malone(self):
@@ -1228,15 +1223,7 @@ class OfficialBugTagsManageView(LaunchpadEditFormView):
     schema = IOfficialBugTagTargetPublic
     custom_widget('official_bug_tags', LargeBugTagsWidget)
 
-    @property
-    def label(self):
-        """The form label."""
-        return 'Manage official bug tags for %s' % self.context.title
-
-    @property
-    def page_title(self):
-        """The page title."""
-        return self.label
+    label = 'Manage official bug tags'
 
     @action('Save', name='save')
     def save_action(self, action, data):
@@ -1268,19 +1255,16 @@ class OfficialBugTagsManageView(LaunchpadEditFormView):
         return canonical_url(self.context)
 
 
-class BugsFacetBreadcrumb(Breadcrumb):
-    rootsite = 'bugs'
-    text = 'Bugs'
-
-
 class BugsPatchesView(LaunchpadView):
     """View list of patch attachments associated with bugs."""
+
+    page_title = 'Patch attachments'
 
     @property
     def label(self):
         """The display label for the view."""
-        if IPerson.providedBy(self.context):
-            return 'Patch attachments for %s' % self.context.displayname
+        if IHeadingContext.providedBy(self.context):
+            return self.page_title
         else:
             return 'Patch attachments in %s' % self.context.displayname
 
@@ -1357,6 +1341,15 @@ class BugsPatchesView(LaunchpadView):
 class TargetSubscriptionView(LaunchpadView):
     """A view to show all a person's structural subscriptions to a target."""
 
+    page_title = 'Your subscriptions'
+
+    @property
+    def label(self):
+        if IHeadingContext.providedBy(self.context):
+            return self.page_title
+        else:
+            return "Your subscriptions to %s" % self.context.displayname
+
     def initialize(self):
         super(TargetSubscriptionView, self).initialize()
         expose_structural_subscription_data_to_js(
@@ -1366,9 +1359,3 @@ class TargetSubscriptionView(LaunchpadView):
     def subscriptions(self):
         return get_structural_subscriptions_for_target(
             self.context, self.user)
-
-    @property
-    def label(self):
-        return "Your subscriptions to %s" % (self.context.displayname,)
-
-    page_title = label

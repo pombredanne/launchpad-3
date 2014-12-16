@@ -166,7 +166,7 @@ available to those who have permissions to edit that sprint.
 
     >>> anon_browser.open('http://launchpad.dev/sprints/ubz')
     >>> print anon_browser.title
-    Ubuntu Below Zero (sprint or meeting)
+    Ubuntu Below Zero : Meetings
 
     >>> anon_browser.getLink('Change details')
     Traceback (most recent call last):
@@ -179,7 +179,7 @@ We will log in as Sample Person and edit the ubz sprint.
 
     >>> browser.open('http://launchpad.dev/sprints/ubz')
     >>> print browser.title
-    Ubuntu Below Zero (sprint or meeting)
+    Ubuntu Below Zero : Meetings
 
     >>> address = 'Holiday Inn Select, Downtown Montreal, Canada'
     >>> address in browser.contents

@@ -430,10 +430,8 @@ distribution releases. IDistroSeries offers a way to query translatable
 packages that are linked to upstream productseries.
 
     >>> unlinked_translatables = hoary.getUnlinkedTranslatableSourcePackages()
-    >>> for translatable in unlinked_translatables:
-    ...    print translatable.name
-    pmount
-    mozilla
+    >>> sorted(translatable.name for translatable in unlinked_translatables)
+    [u'mozilla', u'pmount']
 
 The links to upstream product series can be verified using the
 packagings property:
@@ -914,7 +912,7 @@ Each element is an IDistributionSourcePackageRelease instance:
 
     >>> for upload in latest_uploads:
     ...     print upload.title
-    "mozilla-firefox" 0.9 source package in Ubuntu
+    mozilla-firefox 0.9 source package in Ubuntu
 
 Also, empty results (caused obviously by lack of sample data or very
 earlier development state of a distroseries) are possible:

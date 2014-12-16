@@ -32,6 +32,7 @@ from zope.schema import (
     )
 
 from lp import _
+from lp.app.interfaces.launchpad import IHeadingContext
 from lp.registry.enums import (
     BranchSharingPolicy,
     BugSharingPolicy,
@@ -50,7 +51,7 @@ __all__ = [
     ]
 
 
-class IPillar(Interface):
+class IPillar(IHeadingContext):
     """An object that might be a project, a project group, or a distribution.
 
     This is a polymorphic object served by the pillar set. Check the

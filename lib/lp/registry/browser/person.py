@@ -14,6 +14,7 @@ __all__ = [
     'PersonAnswerContactForView',
     'PersonAnswersMenu',
     'PersonBrandingView',
+    'PersonBreadcrumb',
     'PersonCodeOfConductEditView',
     'PersonDeactivateAccountView',
     'PersonEditEmailsView',
@@ -126,6 +127,7 @@ from lp.app.errors import (
     NotFoundError,
     UnexpectedFormData,
     )
+from lp.app.interfaces.headings import IHeadingBreadcrumb
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.validators.email import valid_email
 from lp.app.widgets.image import ImageChangeWidget
@@ -247,8 +249,10 @@ from lp.services.webapp import (
     )
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.breadcrumb import DisplaynameBreadcrumb
 from lp.services.webapp.interfaces import (
     ILaunchBag,
+    IMultiFacetedBreadcrumb,
     IOpenLaunchBag,
     )
 from lp.services.webapp.login import (
@@ -270,6 +274,10 @@ from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 
 
 COMMASPACE = ', '
+
+
+class PersonBreadcrumb(DisplaynameBreadcrumb):
+    implements(IHeadingBreadcrumb, IMultiFacetedBreadcrumb)
 
 
 class RestrictedMembershipsPersonView(LaunchpadView):

@@ -166,7 +166,7 @@ format, and request the download.
     ...     'http://translations.launchpad.dev/'
     ...     'ubuntu/hoary/+source/mozilla/+export')
     >>> browser.title
-    'Download : \xe2\x80\x9cmozilla...
+    'Download : Hoary (5.04) : Translations : mozilla package : Ubuntu'
 
     >>> browser.getControl('Request Download').click()
 

@@ -5,7 +5,6 @@
 
 __metaclass__ = type
 __all__ = [
-    'branch_to_target',
     'PackageBranchTarget',
     'PersonBranchTarget',
     'ProductBranchTarget',
@@ -30,11 +29,6 @@ from lp.registry.interfaces.series import SeriesStatus
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.interfaces import ICanonicalUrlData
 from lp.services.webapp.sorting import sorted_version_numbers
-
-
-def branch_to_target(branch):
-    """Adapt an IBranch to an IBranchTarget."""
-    return branch.target
 
 
 class _BaseBranchTarget:

@@ -82,7 +82,6 @@ from lp.services.webapp.interfaces import (
     IFacetMenu,
     ILaunchBag,
     INavigationMenu,
-    IPrimaryContext,
     NoCanonicalUrl,
     )
 from lp.services.webapp.menu import (
@@ -276,13 +275,16 @@ class MenuAPI:
 
     def _facet_menu(self):
         """Return the IFacetMenu related to the context."""
+        # XXX wgrant 2014-11-26: Manually instantiate a Hierarchy view
+        # to find the lowest IHeadingBreadcrumb that's in the title,
+        # ensuring that the facet tabs match what's above them. This
+        # whole class needs refactoring once the UI is stable.
+        from lp.app.browser.launchpad import Hierarchy
         try:
-            try:
-                context = IPrimaryContext(self._context).context
-            except TypeError:
-                # Could not adapt raises a type error.  If there was no
-                # way to adapt, then just use self._context.
-                context = self._context
+            context = self._context
+            crumbs = Hierarchy(context, self._request).heading_breadcrumbs
+            if crumbs:
+                context = crumbs[-1].context
             menu = nearest_adapter(context, IFacetMenu)
         except NoCanonicalUrl:
             menu = None
@@ -687,16 +689,15 @@ class ObjectFormatterAPI:
         """The page title to be used.
 
         By default, reverse breadcrumbs are always used if they are available.
-        If not available, then the view's .page_title attribut is used.
+        If not available, then the view's .page_title attribute is used.
         """
         ROOT_TITLE = 'Launchpad'
         view = self._context
         request = get_current_browser_request()
-        hierarchy_view = getMultiAdapter(
-            (view.context, request), name='+hierarchy')
+        hierarchy_view = getMultiAdapter((view, request), name='+hierarchy')
         if (isinstance(view, SystemErrorView) or
             hierarchy_view is None or
-            not hierarchy_view.display_breadcrumbs):
+            len(hierarchy_view.items) < 2):
             # The breadcrumbs are either not available or are overridden.  If
             # the view has a .page_title attribute use that.
             page_title = getattr(view, 'page_title', None)

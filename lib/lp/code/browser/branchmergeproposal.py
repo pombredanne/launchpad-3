@@ -21,7 +21,6 @@ __all__ = [
     'BranchMergeProposalJumpQueueView',
     'BranchMergeProposalNavigation',
     'BranchMergeProposalMergedView',
-    'BranchMergeProposalPrimaryContext',
     'BranchMergeProposalRequestReviewView',
     'BranchMergeProposalResubmitView',
     'BranchMergeProposalSubscribersView',
@@ -127,7 +126,6 @@ from lp.services.webapp import (
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.services.webapp.escaping import structured
-from lp.services.webapp.interfaces import IPrimaryContext
 from lp.services.webapp.menu import NavigationMenu
 
 
@@ -151,16 +149,6 @@ def latest_proposals_for_each_branch(proposals):
     return sorted(
         [proposal for proposal, date_created in targets.itervalues()],
         key=operator.attrgetter('date_created'), reverse=True)
-
-
-class BranchMergeProposalPrimaryContext:
-    """The primary context is the proposal is that of the source branch."""
-
-    implements(IPrimaryContext)
-
-    def __init__(self, branch_merge_proposal):
-        self.context = IPrimaryContext(
-            branch_merge_proposal.source_branch).context
 
 
 class BranchMergeProposalBreadcrumb(Breadcrumb):

@@ -162,7 +162,7 @@ A project milestone page has the same navigation as the project:
     1.0 : Mozilla Firefox
 
     >>> print_location(anon_browser.contents)
-    Hierarchy: Mozilla Firefox > 1.0
+    Hierarchy: Mozilla Firefox
     Tabs:
     * Overview (selected) - http://launchpad.dev/firefox
     * Code - http://code.launchpad.dev/firefox
@@ -180,7 +180,7 @@ distribution:
     3.1 : Debian
 
     >>> print_location(anon_browser.contents)
-    Hierarchy: Debian > 3.1
+    Hierarchy: Debian GNU/Linux
     Tabs:
     * Overview (selected) - http://launchpad.dev/debian
     * Code - http://code.launchpad.dev/debian

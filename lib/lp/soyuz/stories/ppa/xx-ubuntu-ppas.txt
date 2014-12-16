@@ -5,7 +5,7 @@ The Ubuntu Linux page contains a link to get to the Personal Package Archives.
     >>> anon_browser.open("http://launchpad.dev/ubuntu")
     >>> anon_browser.getLink("Personal Package Archives").click()
     >>> print_location(anon_browser.contents)
-    Hierarchy: Ubuntu > Personal Package Archives
+    Hierarchy: Ubuntu Linux
     Tabs:
     * Overview (selected) - http://launchpad.dev/ubuntu
     * Code - http://code.launchpad.dev/ubuntu
@@ -447,7 +447,6 @@ link to a repository that doesn't exist yet.
     >>> anon_browser.open("http://launchpad.dev/~no-priv/+archive/ubuntu/ppa")
     >>> print extract_text(find_main_content(anon_browser.contents))
     PPA for No Privileges Person
-    ...
     PPA description
     I am not allowed to say, I have no privs.
     Adding this PPA to your system

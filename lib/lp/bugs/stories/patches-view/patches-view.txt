@@ -13,7 +13,7 @@ and has no bugs.
     ...     anybody = factory.makePerson()
     >>> with_anybody = with_person_logged_in(anybody)
     >>> patchy_product = with_anybody(factory.makeProduct)(
-    ...     name='patchy-product-1', displayname="Patchy 1")
+    ...     name='patchy-product-1', displayname="Patchy 1", title="Patchy 1")
     >>> transaction.commit()
 
 We don't see any patches when we open the patches view.
@@ -88,9 +88,9 @@ patches view.
 The page title and other wording in the page reflects the contents.
 
     >>> print_location(anon_browser.contents)
-    Hierarchy: Patchy 1 > Bugs > Patch attachments in Patchy 1
+    Hierarchy: Patchy 1
     Tabs: ...
-    Main heading: Patch attachments in Patchy 1
+    Main heading: Patch attachments
 
 After creating some more bugs, with some non-patch and some patch
 attachments, and various statuses...
@@ -276,6 +276,6 @@ Bugs in a product series show up in the patches view for that series.
 The page title and other wording in the page reflects the contents.
 
     >>> print_location(anon_browser.contents)
-    Hierarchy: Patchy 1 > Series trunk > Bugs > Patch attachments in trunk
+    Hierarchy: Patchy 1 > Series trunk > Patch attachments
     Tabs: ...
     Main heading: Patch attachments in trunk

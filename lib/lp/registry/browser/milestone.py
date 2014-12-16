@@ -46,7 +46,7 @@ from lp.app.browser.launchpadform import (
     safe_action,
     )
 from lp.app.widgets.date import DateWidget
-from lp.bugs.browser.bugtask import BugTaskListingItem
+from lp.bugs.browser.buglisting import BugTaskListingItem
 from lp.bugs.browser.structuralsubscription import (
     expose_structural_subscription_data_to_js,
     StructuralSubscriptionMenuMixin,

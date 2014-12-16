@@ -37,8 +37,8 @@ delete the branch.
 
     >>> delete_link.click()
     >>> print extract_text(find_main_content(browser.contents))
-    Delete branch “lp://dev/~alice/earthlynx/to-delete”
-    Earth Lynx...
+    Delete branch lp://dev/~alice/earthlynx/to-delete
+    to-delete ...
     Branch deletion is permanent.
     or Cancel
 

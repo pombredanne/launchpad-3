@@ -5,7 +5,12 @@
   <form method="get" name="filter" id="filter_form"
         style="padding-bottom: 0.5em"
         tal:attributes="action context/view/form_action|context/request/URL">
-    <label for="field.lifecycle">
+    <tal:category condition="context/view/widgets/category|nothing">
+      <tal:category-selector replace="structure context/view/widgets/category"/>
+      branches with status:
+    </tal:category>
+    <label tal:condition="not:context/view/widgets/category|nothing"
+           for="field.lifecycle">
       Branches with status:
     </label>
     <tal:lifecycle-selector replace="structure context/view/widgets/lifecycle"/>

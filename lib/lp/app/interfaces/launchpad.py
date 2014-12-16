@@ -14,6 +14,7 @@ __all__ = [
     'IHasIcon',
     'IHasLogo',
     'IHasMugshot',
+    'IHeadingContext',
     'ILaunchpadCelebrities',
     'ILaunchpadUsage',
     'IPrivacy',
@@ -179,3 +180,13 @@ class IHasDateCreated(Interface):
     """Something created on a certain date."""
 
     datecreated = Attribute("The date on which I was created.")
+
+
+class IHeadingContext(Interface):
+    """Something that appears in a page's header section.
+
+    This is a marker to allow views to avoid duplicating header
+    information in the body. The header is generated from
+    IHeadingBreadcrumbs, so you also need to define one of those for
+    each of these.
+    """

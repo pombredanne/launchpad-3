@@ -237,6 +237,11 @@ a.bg-image {
     width:2%;
     border-left: 1px solid #ddd;
 }
+.boardCommentDetails .editorShortcutTip {
+    float: right;
+    font-size: 0.9em;
+    color: gray;
+}
 .boardCommentBody {padding: 0.5em 12px 0;}
 .boardCommentActivity {
   padding: 0.5em 12px;
@@ -440,6 +445,9 @@ a.update-retry {
     height: 0px;
     overflow: hidden;
     display: block;
+}
+#ppa-install .ppa-reference {
+    white-space: nowrap;
 }
 
 /* Brand the related PPA versions with the PPA icon (not currently

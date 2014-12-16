@@ -41,6 +41,7 @@ from lp.app.enums import (
     service_uses_launchpad,
     ServiceUsage,
     )
+from lp.app.interfaces.headings import IHeadingBreadcrumb
 from lp.app.interfaces.launchpad import IServiceUsage
 from lp.app.interfaces.services import IService
 from lp.bugs.browser.structuralsubscription import (
@@ -62,7 +63,11 @@ from lp.services.webapp.batching import (
     BatchNavigator,
     StormRangeFactory,
     )
-from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.breadcrumb import (
+    Breadcrumb,
+    DisplaynameBreadcrumb,
+    )
+from lp.services.webapp.interfaces import IMultiFacetedBreadcrumb
 from lp.services.webapp.menu import (
     ApplicationMenu,
     enabled_with_permission,
@@ -77,12 +82,28 @@ from lp.services.webapp.publisher import (
     )
 
 
+class PillarBreadcrumb(DisplaynameBreadcrumb):
+    """Breadcrumb that uses the displayname or title as appropriate."""
+    implements(IHeadingBreadcrumb, IMultiFacetedBreadcrumb)
+
+    @property
+    def detail(self):
+        return self.context.title
+
+
 class PillarPersonBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `IPillarPerson`."""
 
     @property
     def text(self):
         return "Sharing details for %s" % self.context.person.displayname
+
+    @property
+    def inside(self):
+        return Breadcrumb(
+            self.context.pillar,
+            url=canonical_url(self.context.pillar, view_name="+sharing"),
+            text="Sharing", inside=self.context.pillar)
 
 
 class PillarNavigationMixin:

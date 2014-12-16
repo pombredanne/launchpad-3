@@ -6,6 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'AnswersBrowserRequest',
+    'AnswersFacet',
     'AnswersLayer',
     'answers_request_publication_factory',
     ]
@@ -17,11 +18,21 @@ from zope.publisher.interfaces.browser import (
     IDefaultBrowserLayer,
     )
 
+from lp.services.webapp.interfaces import IFacet
 from lp.services.webapp.publication import LaunchpadBrowserPublication
 from lp.services.webapp.servers import (
     LaunchpadBrowserRequest,
     VHostWebServiceRequestPublicationFactory,
     )
+
+
+class AnswersFacet:
+    implements(IFacet)
+
+    name = "answers"
+    rootsite = "answers"
+    text = "Questions"
+    default_view = "+questions"
 
 
 class AnswersLayer(IBrowserRequest, IDefaultBrowserLayer):

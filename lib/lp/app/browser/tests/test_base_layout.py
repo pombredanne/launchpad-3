@@ -37,10 +37,6 @@ class TestBaseLayout(TestCaseWithFactory):
     def setUp(self):
         super(TestBaseLayout, self).setUp()
         self.user = self.factory.makePerson(name='waffles')
-        self.request = LaunchpadTestRequest(
-            SERVER_URL='http://launchpad.dev',
-            PATH_INFO='/~waffles/+layout')
-        self.request.setPrincipal(self.user)
         self.context = None
 
     def makeTemplateView(self, layout, context=None):
@@ -48,6 +44,7 @@ class TestBaseLayout(TestCaseWithFactory):
 
         class TemplateView(LaunchpadView):
             """A simple view to test base-layout."""
+            __name__ = '+template'
             __launchpad_facetname__ = 'overview'
             template = ViewPageTemplateFile(
                 'testfiles/%s.pt' % layout.replace('_', '-'))
@@ -57,7 +54,14 @@ class TestBaseLayout(TestCaseWithFactory):
             self.context = self.user
         else:
             self.context = context
-        return TemplateView(self.context, self.request)
+
+        request = LaunchpadTestRequest(
+            SERVER_URL='http://launchpad.dev', PATH_INFO='/~waffles/+layout')
+        request.setPrincipal(self.user)
+        request.traversed_objects.append(self.context)
+        view = TemplateView(self.context, request)
+        request.traversed_objects.append(view)
+        return view
 
     def test_base_layout_doctype(self):
         # Verify that the document is a html DOCTYPE.
@@ -97,8 +101,6 @@ class TestBaseLayout(TestCaseWithFactory):
         self.assertEqual(
             'yui-main', yui_layout.find(True, id='maincontent')['class'])
         self.assertEqual(
-            'invisible', document.find(True, id='help-pane')['class'])
-        self.assertEqual(
             'footer', yui_layout.find(True, id='footer')['class'])
 
     def verify_watermark(self, document):
@@ -108,10 +110,11 @@ class TestBaseLayout(TestCaseWithFactory):
         self.assertEqual('watermark-apps-portlet', watermark['class'])
         if self.context.is_team:
             self.assertEqual('/@@/team-logo', watermark.img['src'])
-            self.assertEqual(u'\u201cWaffles\u201d team', watermark.h2.string)
+            self.assertEqual(
+                u'\u201cWaffles\u201d team', watermark.h2.a.string)
         else:
             self.assertEqual('/@@/person-logo', watermark.img['src'])
-            self.assertEqual('Waffles', watermark.h2.string)
+            self.assertEqual('Waffles', watermark.h2.a.string)
         self.assertEqual('facetmenu', watermark.ul['class'])
 
     def test_main_side(self):

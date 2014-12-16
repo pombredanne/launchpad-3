@@ -8,7 +8,7 @@ translation overview for Evolution in Hoary.
     ...     'http://translations.launchpad.dev/ubuntu/hoary/'
     ...     '+source/evolution')
     >>> anon_browser.title
-    '...evolution...package : Translations : Hoary (5.04) : Ubuntu'
+    'Hoary (5.04) : Translations : ...evolution...package : Ubuntu'
 
     >>> content = find_main_content(anon_browser.contents)
     >>> print extract_text(content.findAll('h1')[0]).encode(

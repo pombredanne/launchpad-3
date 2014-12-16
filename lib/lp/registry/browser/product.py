@@ -104,7 +104,6 @@ from lp.app.enums import (
     ServiceUsage,
     )
 from lp.app.errors import NotFoundError
-from lp.app.interfaces.headings import IEditableContextTitle
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.utilities import json_dump_information_types
 from lp.app.vocabularies import InformationTypeVocabulary
@@ -124,10 +123,8 @@ from lp.app.widgets.textwidgets import StrippedTextWidget
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin,
     )
-from lp.bugs.browser.bugtask import (
-    BugTargetTraversalMixin,
-    get_buglisting_search_filter_url,
-    )
+from lp.bugs.browser.buglisting import get_buglisting_search_filter_url
+from lp.bugs.browser.bugtask import BugTargetTraversalMixin
 from lp.bugs.browser.structuralsubscription import (
     expose_structural_subscription_data_to_js,
     StructuralSubscriptionMenuMixin,
@@ -877,7 +874,7 @@ class ProductDownloadFileMixin:
 class ProductView(PillarViewMixin, HasAnnouncementsView, SortSeriesMixin,
                   FeedsMixin, ProductDownloadFileMixin):
 
-    implements(IProductActionMenu, IEditableContextTitle)
+    implements(IProductActionMenu)
 
     @property
     def maintainer_widget(self):
@@ -905,11 +902,6 @@ class ProductView(PillarViewMixin, HasAnnouncementsView, SortSeriesMixin,
         super(ProductView, self).initialize()
         self.status_message = None
         product = self.context
-        title_field = IProduct['title']
-        title = "Edit this title"
-        self.title_edit_widget = TextLineEditorWidget(
-            product, title_field, title, 'h1', max_width='95%',
-            truncate_lines=2)
         programming_lang = IProduct['programminglang']
         title = 'Edit programming languages'
         additional_arguments = {

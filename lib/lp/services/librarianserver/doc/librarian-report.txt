@@ -11,7 +11,7 @@ storage.
     >>> print '\n' + out
     <BLANKLINE>
     ...
-    133 bytes    hwsubmission in 2 files
+    4866 bytes    hwsubmission in 2 files
     ...
 
 

@@ -10,7 +10,6 @@ __all__ = [
     'DistroSeriesAdminView',
     'DistroSeriesBreadcrumb',
     'DistroSeriesEditView',
-    'DistroSeriesFacets',
     'DistroSeriesInitializeView',
     'DistroSeriesLocalDifferencesView',
     'DistroSeriesMissingPackagesView',
@@ -82,10 +81,7 @@ from lp.services.browser_helpers import get_plural_text
 from lp.services.database.constants import UTC_NOW
 from lp.services.features import getFeatureFlag
 from lp.services.propertycache import cachedproperty
-from lp.services.webapp import (
-    GetitemNavigation,
-    StandardLaunchpadFacets,
-    )
+from lp.services.webapp import GetitemNavigation
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.batching import BatchNavigator
 from lp.services.webapp.breadcrumb import Breadcrumb
@@ -202,18 +198,6 @@ class DistroSeriesBreadcrumb(Breadcrumb):
     @property
     def text(self):
         return self.context.named_version
-
-
-class DistroSeriesFacets(StandardLaunchpadFacets):
-
-    usedfor = IDistroSeries
-    enable_only = [
-        'overview',
-        'branches',
-        'bugs',
-        'specifications',
-        'translations',
-        ]
 
 
 class DistroSeriesOverviewMenu(

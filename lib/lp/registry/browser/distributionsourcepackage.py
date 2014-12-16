@@ -21,11 +21,7 @@ import itertools
 import operator
 
 from lazr.delegates import delegates
-from lazr.restful.utils import smartquote
-from zope.component import (
-    adapter,
-    getUtility,
-    )
+from zope.component import getUtility
 from zope.interface import (
     implements,
     Interface,
@@ -43,6 +39,7 @@ from lp.app.browser.launchpadform import (
 from lp.app.browser.stringformatter import extract_email_addresses
 from lp.app.browser.tales import CustomizableFormatter
 from lp.app.enums import ServiceUsage
+from lp.app.interfaces.headings import IHeadingBreadcrumb
 from lp.app.interfaces.launchpad import IServiceUsage
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
 from lp.bugs.browser.structuralsubscription import (
@@ -58,7 +55,6 @@ from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
 from lp.registry.interfaces.person import IPersonSet
-from lp.registry.interfaces.pocket import pocketsuffix
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.helpers import shortlist
@@ -71,7 +67,7 @@ from lp.services.webapp import (
     )
 from lp.services.webapp.batching import BatchNavigator
 from lp.services.webapp.breadcrumb import Breadcrumb
-from lp.services.webapp.interfaces import IBreadcrumb
+from lp.services.webapp.interfaces import IMultiFacetedBreadcrumb
 from lp.services.webapp.menu import (
     ApplicationMenu,
     enabled_with_permission,
@@ -102,15 +98,13 @@ class DistributionSourcePackageFormatterAPI(CustomizableFormatter):
         return {'displayname': displayname}
 
 
-@adapter(IDistributionSourcePackage)
 class DistributionSourcePackageBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `IDistributionSourcePackage`."""
-    implements(IBreadcrumb)
+    implements(IHeadingBreadcrumb, IMultiFacetedBreadcrumb)
 
     @property
     def text(self):
-        return smartquote('"%s" package') % (
-            self.context.sourcepackagename.name)
+        return '%s package' % self.context.sourcepackagename.name
 
 
 class DistributionSourcePackageFacets(StandardLaunchpadFacets):
@@ -120,6 +114,7 @@ class DistributionSourcePackageFacets(StandardLaunchpadFacets):
         'overview',
         'branches',
         'bugs',
+        'translations',
         'answers',
         ]
 
@@ -323,27 +318,6 @@ class DistributionSourcePackageView(DistributionSourcePackageBaseView,
     def next_url(self):
         """See `LaunchpadFormView`."""
         return canonical_url(self.context)
-
-    @property
-    def all_published_in_active_distroseries(self):
-        """Return a list of publishings in each active distroseries.
-
-        The list contains dictionaries each with a key of "suite" and
-        "description" where suite is "distroseries-pocket" and
-        description is "(version): component/section".
-        """
-        results = []
-        for pub in self.context.current_publishing_records:
-            if pub.distroseries.active:
-                entry = {
-                    "suite": (pub.distroseries.name.capitalize() +
-                               pocketsuffix[pub.pocket]),
-                    "description": "(%s): %s/%s" % (
-                        pub.sourcepackagerelease.version,
-                        pub.component.name, pub.section.name),
-                    }
-                results.append(entry)
-        return results
 
     @property
     def related_ppa_versions(self):

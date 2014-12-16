@@ -26,7 +26,6 @@ from lp.code.browser.branchlisting import (
     BranchListingSort,
     BranchListingView,
     GroupedDistributionSourcePackageBranchesView,
-    PersonProductSubscribedBranchesView,
     SourcePackageBranchesView,
     )
 from lp.code.model.branch import Branch
@@ -331,10 +330,6 @@ class TestSimplifiedPersonBranchesView(TestCaseWithFactory):
 
         self.code_base_url = 'http://code.launchpad.dev/~barney'
         self.base_url = 'http://launchpad.dev/~barney'
-        self.registered_branches_matcher = soupmatchers.HTMLContains(
-            soupmatchers.Tag(
-                'Registered link', 'a', text='Registered branches',
-                attrs={'href': self.base_url + '/+registeredbranches'}))
         self.default_target = self.person
 
     def makeABranch(self):
@@ -347,45 +342,23 @@ class TestSimplifiedPersonBranchesView(TestCaseWithFactory):
             return create_initialized_view(
                 target, page_name, rootsite='code', principal=self.user)()
 
-    def test_branch_list_h1(self):
-        self.makeABranch()
-        page = self.get_branch_list_page()
-        h1_matcher = soupmatchers.HTMLContains(
-            soupmatchers.Tag(
-                'Title', 'h1', text='Bazaar branches owned by Barney'))
-        self.assertThat(page, h1_matcher)
-
     def test_branch_list_empty(self):
         page = self.get_branch_list_page()
         empty_message_matcher = soupmatchers.HTMLContains(
             soupmatchers.Tag(
-                'Empty message', 'p',
+                'Empty message', 'div',
                 text='There are no branches related to Barney '
                      'in Launchpad today.'))
         self.assertThat(page, empty_message_matcher)
 
-    def test_branch_list_registered_link(self):
-        self.makeABranch()
-        page = self.get_branch_list_page()
-        self.assertThat(page, self.registered_branches_matcher)
-
-    def test_branch_list_owned_link(self):
+    def test_branch_list_branches_link(self):
         # The link to the owned branches is always displayed.
-        owned_branches_matcher = soupmatchers.HTMLContains(
+        branches_matcher = soupmatchers.HTMLContains(
             soupmatchers.Tag(
-                'Owned link', 'a', text='Owned branches',
+                'Branches link', 'a', text='Branches',
                 attrs={'href': self.code_base_url}))
-        page = self.get_branch_list_page(page_name='+subscribedbranches')
-        self.assertThat(page, owned_branches_matcher)
-
-    def test_branch_list_subscribed_link(self):
-        # The link to the subscribed branches is always displayed.
-        subscribed_branches_matcher = soupmatchers.HTMLContains(
-            soupmatchers.Tag(
-                'Subscribed link', 'a', text='Subscribed branches',
-                attrs={'href': self.base_url + '/+subscribedbranches'}))
-        page = self.get_branch_list_page()
-        self.assertThat(page, subscribed_branches_matcher)
+        page = self.get_branch_list_page(page_name='+branches')
+        self.assertThat(page, branches_matcher)
 
     def test_branch_list_activereviews_link(self):
         # The link to the active reviews is always displayed.
@@ -395,11 +368,6 @@ class TestSimplifiedPersonBranchesView(TestCaseWithFactory):
                 attrs={'href': self.base_url + '/+activereviews'}))
         page = self.get_branch_list_page()
         self.assertThat(page, active_review_matcher)
-
-    def test_branch_list_no_registered_link_team(self):
-        self.makeABranch()
-        page = self.get_branch_list_page(target=self.team)
-        self.assertThat(page, Not(self.registered_branches_matcher))
 
     def test_branch_list_recipes_link(self):
         # The link to the source package recipes is always displayed.
@@ -426,10 +394,6 @@ class TestSimplifiedPersonProductBranchesView(
             self.team, self.product)
         self.code_base_url = 'http://code.launchpad.dev/~barney/bambam'
         self.base_url = 'http://launchpad.dev/~barney/bambam'
-        self.registered_branches_matcher = soupmatchers.HTMLContains(
-            soupmatchers.Tag(
-                'Registered link', 'a', text='Registered branches',
-                attrs={'href': self.base_url + '/+registeredbranches'}))
         self.default_target = self.person_product
 
     def makeABranch(self):
@@ -440,17 +404,15 @@ class TestSimplifiedPersonProductBranchesView(
         self.makeABranch()
         page = self.get_branch_list_page()
         h1_matcher = soupmatchers.HTMLContains(
-            soupmatchers.Tag(
-                'Title', 'h1',
-                text='Bazaar Branches of Bambam owned by Barney'))
+            soupmatchers.Tag('Title', 'h1', text='Branches of Bambam'))
         self.assertThat(page, h1_matcher)
 
     def test_branch_list_empty(self):
         page = self.get_branch_list_page()
         empty_message_matcher = soupmatchers.HTMLContains(
             soupmatchers.Tag(
-                'Empty message', 'p',
-                text='There are no branches of Bambam owned by Barney '
+                'Empty message', 'div',
+                text='There are no branches of Bambam for Barney '
                      'in Launchpad today.'))
         self.assertThat(page, empty_message_matcher)
 
@@ -798,29 +760,3 @@ class TestProjectGroupBranches(TestCaseWithFactory,
         # The correct template is used for batch requests.
         product = self.factory.makeProduct(project=self.project)
         self._test_batch_template(product)
-
-
-class FauxPageTitleContext:
-
-    displayname = 'DISPLAY-NAME'
-
-    class person:
-        displayname = 'PERSON'
-
-    class product:
-        displayname = 'PRODUCT'
-
-
-class TestPageTitle(TestCase):
-    """The various views should have a page_title attribute/property."""
-
-    def test_branch_listing_view(self):
-        view = BranchListingView(FauxPageTitleContext, None)
-        self.assertEqual(
-            'Bazaar branches for DISPLAY-NAME', view.page_title)
-
-    def test_person_product_subscribed_branches_view(self):
-        view = PersonProductSubscribedBranchesView(FauxPageTitleContext, None)
-        self.assertEqual(
-            'Bazaar Branches of PRODUCT subscribed to by PERSON',
-            view.page_title)

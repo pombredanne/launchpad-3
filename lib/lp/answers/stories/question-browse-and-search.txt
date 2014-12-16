@@ -254,7 +254,7 @@ source package's question listing.
     >>> browser.open('http://launchpad.dev/ubuntu/+questions')
     >>> browser.getLink('mozilla-firefox').click()
     >>> browser.title
-    'Questions : \xe2\x80\x9cmozilla-firefox\xe2\x80\x9d package : Ubuntu'
+    'Questions : mozilla-firefox package : Ubuntu'
     >>> soup = find_main_content(browser.contents)
     >>> soup('table', 'listing')
     [<table...
@@ -376,7 +376,7 @@ He needs to login to access that page:
     ...     '+questions')
     >>> sample_person_browser.getLink('My questions').click()
     >>> print repr(sample_person_browser.title)
-    'Questions you asked about mozilla-firefox in Ubuntu : Questions : \xe2\x80\x9cmozilla-firefox\xe2\x80\x9d package : Ubuntu'
+    'Questions you asked about mozilla-firefox in Ubuntu : Questions : mozilla-firefox package : Ubuntu'
     >>> questions = find_tag_by_id(
     ...     sample_person_browser.contents, 'question-listing')
     >>> for question in questions.fetch('td', 'questionTITLE'):
@@ -520,7 +520,7 @@ These contexts are links to the context question listing.
 
     >>> browser.getLink('mozilla-firefox in Ubuntu').click()
     >>> print repr(browser.title)
-    'Questions : \xe2\x80\x9cmozilla-firefox\xe2\x80\x9d package : Ubuntu'
+    'Questions : mozilla-firefox package : Ubuntu'
 
 The listing is searchable and can restrict also the list of displayed
 questions to a particular status:

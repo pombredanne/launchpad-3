@@ -72,7 +72,7 @@
         />
 
     <browser:page
-        for="Exception"
+        for="zope.browser.interfaces.ISystemErrorView"
         name="+hierarchy"
         class="lp.app.browser.launchpad.ExceptionHierarchy"
         template="../templates/launchpad-hierarchy.pt"
@@ -539,7 +539,7 @@
       />
 
   <adapter
-      for="lp.bugs.browser.bugtask.BugTaskListingItem"
+      for="lp.bugs.browser.buglisting.BugTaskListingItem"
       provides="zope.traversing.interfaces.IPathAdapter"
       factory="lp.app.browser.tales.BugTaskListingItemImageDisplayAPI"
       name="image"
@@ -903,14 +903,6 @@
       provides="zope.traversing.interfaces.IPathAdapter"
       factory="lp.app.browser.tales.PermissionRequiredQuery"
       name="required"
-      />
-
-  <!-- TALES watermark: namespace -->
-  <adapter
-      for="*"
-      provides="zope.traversing.interfaces.IPathAdapter"
-      factory="lp.app.browser.watermark.WatermarkTalesAdapter"
-      name="watermark"
       />
 
   <!-- TALES fmt: namespace for strings -->

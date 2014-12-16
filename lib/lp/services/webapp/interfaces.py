@@ -78,6 +78,14 @@ class UnsafeFormGetSubmissionError(Exception):
 # Menus and Facets
 #
 
+class IFacet(Interface):
+    """Interface for metadata about facets."""
+
+    rootsite = Attribute("Rootsite name")
+    title = Attribute("Title")
+    default_view = Attribute("Default view for multi-faceted objects")
+
+
 class IMenu(Interface):
     """Public interface for facets, menus, extra facets and extra menus."""
 
@@ -229,6 +237,13 @@ class IBreadcrumb(Interface):
     text = Attribute('Text of this breadcrumb.')
 
     detail = Attribute('Detailed text of this breadcrumb.')
+
+    inside = Attribute(
+        'Next object up the chain. If not specified, the URL parent is used.')
+
+
+class IMultiFacetedBreadcrumb(Interface):
+    """A breadcrumb link for an object that transcends facets."""
 
 
 #
@@ -733,11 +748,6 @@ class IMultiLineWidgetLayout(Interface):
 
 class ICheckBoxWidgetLayout(IAlwaysSubmittedWidget):
     """A widget that is displayed like a check box with label to the right."""
-
-
-class IPrimaryContext(Interface):
-    """The primary context that used to determine the tabs for the web UI."""
-    context = Attribute('The primary context.')
 
 
 class IFinishReadOnlyRequestEvent(Interface):

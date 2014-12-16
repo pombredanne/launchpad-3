@@ -23,6 +23,10 @@
       component="lp.bugs.publisher.BugsLayer"
       provides="zope.publisher.interfaces.browser.IDefaultBrowserLayer"
       name="bugs" />
+  <utility
+      component="lp.bugs.publisher.BugsFacet"
+      provides="lp.services.webapp.interfaces.IFacet"
+      name="bugs" />
 
     <lp:help-folder folder="help" name="+help-bugs" />
 
@@ -528,10 +532,6 @@
             attributes="
                 destroySelf"/>
     </class>
-    <adapter
-        for="lp.bugs.interfaces.bugbranch.IBugBranch"
-        provides="lp.services.webapp.interfaces.IPrimaryContext"
-        factory="lp.bugs.browser.bugbranch.BugBranchPrimaryContext"/>
 
     <!-- hierarchy -->
 
@@ -791,10 +791,6 @@
         <allow
             interface="lp.bugs.interfaces.bugmessage.IBugMessageSet"/>
     </securedutility>
-    <adapter
-        for="lp.bugs.interfaces.bugnomination.IBugNomination"
-        provides="lp.services.webapp.interfaces.IPrimaryContext"
-        factory="lp.bugs.browser.bugnomination.BugNominationPrimaryContext"/>
         <class
             class="lp.bugs.model.bugnomination.BugNomination">
             <require
@@ -982,18 +978,6 @@
         <allow
             interface="lp.bugs.interfaces.bugnotification.IBugNotificationSet"/>
     </securedutility>
-    <adapter
-        name="bugs"
-        provides="lp.services.webapp.interfaces.IBreadcrumb"
-        for="lp.bugs.interfaces.bugtarget.IBugTarget"
-        factory="lp.bugs.browser.bugtarget.BugsFacetBreadcrumb"
-        permission="zope.Public"/>
-    <adapter
-        name="bugs"
-        provides="lp.services.webapp.interfaces.IBreadcrumb"
-        for="lp.registry.interfaces.projectgroup.IProjectGroup"
-        factory="lp.bugs.browser.bugtarget.BugsFacetBreadcrumb"
-        permission="zope.Public"/>
 
     <!-- ProcessApportBlobJobs -->
     <class class="lp.bugs.model.apportjob.ProcessApportBlobJob">

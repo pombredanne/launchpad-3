@@ -81,6 +81,7 @@ from lp.app.browser.launchpadform import (
     )
 from lp.app.browser.tales import PersonFormatterAPI
 from lp.app.errors import UnexpectedFormData
+from lp.app.interfaces.headings import IHeadingBreadcrumb
 from lp.app.validators import LaunchpadValidationError
 from lp.app.validators.validation import validate_new_team_email
 from lp.app.widgets.itemswidgets import (
@@ -172,7 +173,10 @@ from lp.services.webapp.batching import (
     )
 from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.services.webapp.escaping import structured
-from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.interfaces import (
+    ILaunchBag,
+    IMultiFacetedBreadcrumb,
+    )
 
 
 class TeamPrivacyAdapter:
@@ -1246,6 +1250,7 @@ class TeamNavigation(PersonNavigation):
 
 class TeamBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `ITeam`."""
+    implements(IHeadingBreadcrumb, IMultiFacetedBreadcrumb)
 
     @property
     def text(self):
