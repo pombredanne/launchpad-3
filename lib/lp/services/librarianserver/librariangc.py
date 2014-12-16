@@ -628,7 +628,7 @@ def delete_unwanted_disk_files(con):
         if 'lost+found' in dirnames:
             dirnames.remove('lost+found')
         filenames = set([fn for fn in filenames
-                         if not fn.endswith('.migrated'])
+                         if not fn.endswith('.migrated')])
         filenames.discard('librarian.pid')
         filenames.discard('librarian.log')
 
