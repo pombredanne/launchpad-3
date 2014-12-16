@@ -433,7 +433,7 @@ class UnreferencedLibraryFileAliasPruner:
             "SELECT COALESCE(max(id),0) FROM UnreferencedLibraryFileAlias")
         self.max_id = cur.fetchone()[0]
         log.debug(
-            "%d unreferenced LibraryFileContent to remove." % self.max_id)
+            "%d unreferenced LibraryFileAlias to remove." % self.max_id)
         con.commit()
 
     def isDone(self):
@@ -627,7 +627,8 @@ def delete_unwanted_disk_files(con):
             dirnames.remove('incoming')
         if 'lost+found' in dirnames:
             dirnames.remove('lost+found')
-        filenames = set(filenames)
+        filenames = set(fn for fn in filenames
+                        if not fn.endswith('.migrated'))
         filenames.discard('librarian.pid')
         filenames.discard('librarian.log')
 
