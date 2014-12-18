@@ -61,8 +61,8 @@ class DistributionSourcePackageReleaseNavigation(Navigation):
     def redirect_latestbuild(self, name):
         build = self.context.getBuildsByArchTag(name).first()
         if build is not None:
-            return self.redirectSubTree(canonical_url(build))
-        return self.redirectSubTree(canonical_url(self.context))
+            return self.redirectSubTree(canonical_url(build), status=303)
+        return self.redirectSubTree(canonical_url(self.context), status=303)
 
 
 class DistributionSourcePackageReleaseView(LaunchpadView):

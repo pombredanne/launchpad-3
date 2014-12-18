@@ -44,19 +44,21 @@ class TestDistributionSourcePackageReleaseNavigation(TestCaseWithFactory):
         return canonical_url(distribution.getSourcePackageRelease(spr)), builds
 
     def test_latestbuild_known_arch(self):
-        # +latestbuild traverses to the most recent build for the requested
+        # +latestbuild redirects to the most recent build for the requested
         # architecture.
         dspr_url, builds = self.setUpLatestBuildTests()
         _, view, _ = test_traverse("%s/+latestbuild/arch" % dspr_url)
         self.assertEqual(
             canonical_url(builds[1]), removeSecurityProxy(view).target)
+        self.assertEqual(303, removeSecurityProxy(view).status)
 
     def test_latestbuild_unknown_arch(self):
         # If there is no build for the requested architecture, +latestbuild
-        # traverses to the context DSPR.
+        # redirects to the context DSPR.
         dspr_url, _ = self.setUpLatestBuildTests()
-        obj, _, _ = test_traverse("%s/+latestbuild/unknown" % dspr_url)
+        obj, view, _ = test_traverse("%s/+latestbuild/unknown" % dspr_url)
         self.assertEqual(dspr_url, canonical_url(obj))
+        self.assertEqual(303, removeSecurityProxy(view).status)
 
 
 class TestDistributionSourcePackageReleaseFiles(TestCaseWithFactory):
