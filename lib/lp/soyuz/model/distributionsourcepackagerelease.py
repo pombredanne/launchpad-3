@@ -30,6 +30,7 @@ from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
+from lp.soyuz.model.distroarchseries import DistroArchSeries
 from lp.soyuz.model.distroseriesbinarypackage import DistroSeriesBinaryPackage
 from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory,
@@ -90,9 +91,7 @@ class DistributionSourcePackageRelease:
         return self.getPublishingHistories(
             self.distribution, [self.sourcepackagerelease])
 
-    @property
-    def builds(self):
-        """See IDistributionSourcePackageRelease."""
+    def _getBuilds(self, clauses=[]):
         # First, get all the builds built in a main archive (this will
         # include new and failed builds.)
         builds_built_in_main_archives = Store.of(self.distribution).find(
@@ -100,7 +99,8 @@ class DistributionSourcePackageRelease:
             BinaryPackageBuild.source_package_release ==
                 self.sourcepackagerelease,
             BinaryPackageBuild.archive_id.is_in(
-                self.distribution.all_distro_archive_ids))
+                self.distribution.all_distro_archive_ids),
+            *clauses)
 
         # Next get all the builds that have a binary published in the
         # main archive... this will include many of those in the above
@@ -114,12 +114,25 @@ class DistributionSourcePackageRelease:
             BinaryPackagePublishingHistory.binarypackagerelease ==
                 BinaryPackageRelease.id,
             BinaryPackagePublishingHistory.archiveID.is_in(
-                self.distribution.all_distro_archive_ids)).config(
-                    distinct=True)
+                self.distribution.all_distro_archive_ids),
+            *clauses).config(distinct=True)
 
         return builds_built_in_main_archives.union(
             builds_published_in_main_archives).order_by(
                 Desc(BinaryPackageBuild.id))
+
+    @property
+    def builds(self):
+        """See IDistributionSourcePackageRelease."""
+        return self._getBuilds()
+
+    def getBuildsByArchTag(self, arch_tag):
+        """See IDistributionSourcePackageRelease."""
+        clauses = [
+            BinaryPackageBuild.distro_arch_series_id == DistroArchSeries.id,
+            DistroArchSeries.architecturetag == arch_tag,
+            ]
+        return self._getBuilds(clauses)
 
     @property
     def sample_binary_packages(self):
