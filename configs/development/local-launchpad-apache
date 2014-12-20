@@ -1,7 +1,14 @@
-NameVirtualHost %LISTEN_ADDRESS%:80
-NameVirtualHost %LISTEN_ADDRESS%:443
+<IfVersion < 2.3.11>
+  NameVirtualHost %LISTEN_ADDRESS%:80
+  NameVirtualHost %LISTEN_ADDRESS%:443
+</IfVersion>
 
-RewriteLock /var/tmp/rewrite-lock
+<IfVersion >= 2.3.4>
+  Mutex file:/var/tmp rewrite-map
+</IfVersion>
+<IfVersion < 2.3.4>
+  RewriteLock /var/tmp/rewrite-lock
+</IfVersion>
 
 # These have to be first so non-Host/non-SNI requests don't hit bazaar etc.
 # But they can't have a ServerAlias wildcard or they'll shadow bazaar.

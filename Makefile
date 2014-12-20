@@ -442,10 +442,17 @@ copy-certificates:
 copy-apache-config:
 	# We insert the absolute path to the branch-rewrite script
 	# into the Apache config as we copy the file into position.
+	set -e; \
+	apachever="$$(dpkg-query -W --showformat='$${Version}' apache2)"; \
+	if dpkg --compare-versions "$$apachever" ge 2.4.1-1~; then \
+		base=local-launchpad.conf; \
+	else \
+		base=local-launchpad; \
+	fi; \
 	sed -e 's,%BRANCH_REWRITE%,$(shell pwd)/scripts/branch-rewrite.py,' \
 		-e 's,%LISTEN_ADDRESS%,$(LISTEN_ADDRESS),' \
 		configs/development/local-launchpad-apache > \
-		/etc/apache2/sites-available/local-launchpad
+		/etc/apache2/sites-available/$$base
 	touch $(CODEHOSTING_ROOT)/rewrite.log
 	chown -R $(SUDO_UID):$(SUDO_GID) $(CODEHOSTING_ROOT)
 	if [ ! -d /srv/launchpad.dev ]; then \
