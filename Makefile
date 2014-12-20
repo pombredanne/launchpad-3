@@ -457,7 +457,7 @@ enable-apache-launchpad: copy-apache-config copy-certificates
 	a2ensite local-launchpad
 
 reload-apache: enable-apache-launchpad
-	/etc/init.d/apache2 restart
+	service apache2 restart
 
 TAGS: compile
 	# emacs tags
