@@ -461,6 +461,7 @@ copy-apache-config:
 	fi
 
 enable-apache-launchpad: copy-apache-config copy-certificates
+	[ ! -e /etc/apache2/mods-available/version.load ] || a2enmod version
 	a2ensite local-launchpad
 
 reload-apache: enable-apache-launchpad
