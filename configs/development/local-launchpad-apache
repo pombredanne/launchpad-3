@@ -28,8 +28,13 @@
   ServerAlias bugs.launchpad.dev code.launchpad.dev feeds.launchpad.dev
   ServerAlias translations.launchpad.dev xmlrpc.launchpad.dev testopenid.dev
   <Proxy *>
-    Order deny,allow
-    Allow from 127.0.0.0/255.0.0.0
+    <IfVersion >= 2.4>
+      Require ip 127.0.0.0/255.0.0.0
+    </IfVersion>
+    <IfVersion < 2.4>
+      Order deny,allow
+      Allow from 127.0.0.0/255.0.0.0
+    </IfVersion>
   </Proxy>
   SSLEngine On
   SSLCertificateFile /etc/apache2/ssl/launchpad.crt
@@ -62,8 +67,14 @@
 
   ProxyRequests off
   <Proxy *>
-    Order deny,allow
-    Allow from localhost 127.0.0.0/255.0.0.0
+    <IfVersion >= 2.4>
+      Require host localhost
+      Require ip 127.0.0.0/255.0.0.0
+    </IfVersion>
+    <IfVersion < 2.4>
+      Order deny,allow
+      Allow from localhost 127.0.0.0/255.0.0.0
+    </IfVersion>
   </Proxy>
   ProxyTimeout 20
 
@@ -98,8 +109,14 @@
 
   ProxyRequests off
   <Proxy *>
-    Order deny,allow
-    Allow from localhost 127.0.0.0/255.0.0.0
+    <IfVersion >= 2.4>
+      Require host localhost
+      Require ip 127.0.0.0/255.0.0.0
+    </IfVersion>
+    <IfVersion < 2.4>
+      Order deny,allow
+      Allow from localhost 127.0.0.0/255.0.0.0
+    </IfVersion>
   </Proxy>
   ProxyTimeout 20
 
@@ -121,9 +138,14 @@
 
   DocumentRoot /var/tmp/bazaar.launchpad.dev/mirrors
   <Directory /var/tmp/bazaar.launchpad.dev/mirrors/>
-    Order Deny,Allow
-    Deny from all
-    Allow from 127.0.0.0/255.0.0.0
+    <IfVersion >= 2.4>
+      Require ip 127.0.0.0/255.0.0.0
+    </IfVersion>
+    <IfVersion < 2.4>
+      Order Deny,Allow
+      Deny from all
+      Allow from 127.0.0.0/255.0.0.0
+    </IfVersion>
     Options SymLinksIfOwnerMatch
     AllowOverride None
     Options Indexes
@@ -146,9 +168,14 @@
 
   DocumentRoot /var/tmp/ppa
   <Directory /var/tmp/ppa/>
-    Order Deny,Allow
-    Deny from all
-    Allow from 127.0.0.0/255.0.0.0
+    <IfVersion >= 2.4>
+      Require ip 127.0.0.0/255.0.0.0
+    </IfVersion>
+    <IfVersion < 2.4>
+      Order Deny,Allow
+      Deny from all
+      Allow from 127.0.0.0/255.0.0.0
+    </IfVersion>
     AllowOverride AuthConfig
     Options Indexes
   </Directory>
@@ -160,9 +187,14 @@
 
   DocumentRoot /var/tmp/archive
   <Directory /var/tmp/archive/>
-    Order Deny,Allow
-    Deny from all
-    Allow from 127.0.0.0/255.0.0.0
+    <IfVersion >= 2.4>
+      Require ip 127.0.0.0/255.0.0.0
+    </IfVersion>
+    <IfVersion < 2.4>
+      Order Deny,Allow
+      Deny from all
+      Allow from 127.0.0.0/255.0.0.0
+    </IfVersion>
     Options Indexes
   </Directory>
 </VirtualHost>
