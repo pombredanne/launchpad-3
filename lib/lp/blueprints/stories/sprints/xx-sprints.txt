@@ -247,8 +247,8 @@ dates will be changed too, since they follow local time:
     http://launchpad.dev/sprints/ubz
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'start-end'))
-    Starts: 08:30 CST on Tuesday, 2006-01-10
-    Ends: 17:00 CST on Sunday, 2006-02-12
+    Starts: 08:30 ACST on Tuesday, 2006-01-10
+    Ends: 17:00 ACST on Sunday, 2006-02-12
 
 
 We should be able to see the workload of a sprint:
