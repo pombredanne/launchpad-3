@@ -480,11 +480,11 @@ the user moves the mouse over the last commit for a particular branch.
     >>> for commit in find_tags_by_class(browser.contents, 'popupTitle'):
     ...     print extract_text(commit)
     Author: mark.shuttleworth
-    Revision Date: 2005-03-09 23:45:00 WST
+    Revision Date: 2005-03-09 23:45:00 AWST
     Import of Mozilla Firefox 0.9.1
     Author: mark.shuttleworth
-    Revision Date: 2005-03-09 23:50:00 WST
+    Revision Date: 2005-03-09 23:50:00 AWST
     Import of Mozilla Firefox 0.9
     Author: mark.shuttleworth
-    Revision Date: 2005-03-09 23:40:00 WST
+    Revision Date: 2005-03-09 23:40:00 AWST
     Import of Mozilla Firefox 0.9.2
