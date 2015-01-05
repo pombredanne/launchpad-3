@@ -483,7 +483,7 @@ If the person has no time_zone specified, we use UTC.
     u'Australia/Perth'
 
     >>> test_tales("person/fmt:local-time", person=sample_person)
-    '... WST'
+    '... AWST'
 
     >>> print mark.time_zone
     None
