@@ -53,6 +53,7 @@ from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactGrantSource,
     IAccessPolicySource,
     )
+from lp.registry.interfaces.person import IPersonSet
 from lp.security import (
     AdminSpecification,
     EditSpecificationByRelatedPeople,
@@ -413,6 +414,27 @@ class SpecificationTests(TestCaseWithFactory):
             self.write_access_to_ISpecificationView(
                 specification.target.owner, specification,
                 error_expected=False, attribute='name', value='foo')
+
+    def test_registry_write_access(self):
+        # Users with special privileges can change the attributes
+        # of public and private specifcations.
+        specification = self.factory.makeSpecification()
+        removeSecurityProxy(specification.target)._ensurePolicies(
+            PRIVATE_INFORMATION_TYPES)
+        all_types = specification.getAllowedInformationTypes(
+            specification.owner)
+        expert = self.factory.makePerson(
+            member_of=[getUtility(IPersonSet).getByName('registry')])
+        for information_type in all_types:
+            with person_logged_in(specification.target.owner):
+                specification.transitionToInformationType(
+                    information_type, specification.owner)
+            self.write_access_to_ISpecificationView(
+                expert, specification, error_expected=False,
+                attribute='whiteboard', value='foo')
+            self.write_access_to_ISpecificationView(
+                expert, specification, error_expected=False,
+                attribute='name', value='foo')
 
     def _fetch_specs_visible_for_user(self, user):
         return Store.of(self.product).find(
