@@ -945,8 +945,8 @@ class PeopleSearchView(LaunchpadView):
 
 
 class DeactivateAccountSchema(Interface):
-    comment = copy_field(
-        IPerson['account_status_comment'], readonly=False, __name__='comment')
+    comment = Text(
+        title=_("Why are you deactivating your account?"), required=False)
 
 
 class PersonDeactivateAccountView(LaunchpadFormView):

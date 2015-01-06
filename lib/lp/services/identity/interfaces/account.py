@@ -269,12 +269,10 @@ class IAccountViewRestricted(Interface):
     openid_identifiers = Attribute(_("Linked OpenId Identifiers"))
 
     date_status_set = Datetime(
-        title=_('Date status last modified.'),
-        required=True, readonly=False)
+        title=_('Date status last modified.'), required=True, readonly=False)
 
     status_comment = Text(
-        title=_("Why are you deactivating your account?"),
-        required=False, readonly=False)
+        title=_("Account status comments"), required=False, readonly=False)
 
     def reactivate(comment):
         """Activate this account.

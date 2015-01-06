@@ -576,7 +576,7 @@ class IPersonPublic(IPrivacy):
         title=_("The status of this person's account"), required=False,
         readonly=True, vocabulary=AccountStatus)
     account_status_comment = Text(
-        title=_("Why are you deactivating your account?"), required=False,
+        title=_("Account status comments"), required=False,
         readonly=True)
     visibility = exported(
         Choice(title=_("Visibility"),
