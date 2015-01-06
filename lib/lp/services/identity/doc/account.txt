@@ -81,7 +81,7 @@ An account has a displayname.
 Account objects have a useful string representation.
 
     >>> account
-    <Account 'No Privileges Person' (Active account)>
+    <Account 'No Privileges Person' (Active)>
 
 The account has other metadata.
 

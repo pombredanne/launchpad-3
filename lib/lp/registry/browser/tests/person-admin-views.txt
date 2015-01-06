@@ -126,7 +126,7 @@ an account is suspended, the preferred email address is disabled.
     >>> user.account_status
     <DBItem AccountStatus.SUSPENDED, ...>
     >>> user.account_status_comment
-    u'... name16: Active account -> Suspended Launchpad account:
+    u'... name16: Active -> Suspended:
     Wanted by the galactic police.\n'
     >>> print user.preferredemail
     None
@@ -140,8 +140,7 @@ No one can force account status to an invalid transition:
     ...     }
     >>> view = create_initialized_view(user, '+reviewaccount', form=form)
     >>> [e[2] for e in view.errors]
-    [AccountStatusError(u'The status cannot change
-                        from Suspended Launchpad account to Active account')]
+    [AccountStatusError(u'The status cannot change from Suspended to Active')]
 
 
 An admin can deactivate a suspended user's account too. Unlike the act of
@@ -159,9 +158,7 @@ user must log in to restore the email addresses using the reactivate step.
     >>> user.account_status
     <DBItem AccountStatus.DEACTIVATED, ...>
     >>> user.account_status_comment
-    u"... name16: Active account -> Suspended Launchpad account:
-    Wanted by the galactic police.\n...
-    name16: Suspended Launchpad account -> Deactivated account:
-    Zaphod's a hoopy frood.\n"
+    u"... name16: Active -> Suspended: Wanted by the galactic police.\n...
+    name16: Suspended -> Deactivated: Zaphod's a hoopy frood.\n"
     >>> print user.preferredemail
     None

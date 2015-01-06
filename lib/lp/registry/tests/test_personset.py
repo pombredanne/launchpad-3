@@ -554,7 +554,7 @@ class TestPersonSetGetOrCreateByOpenIDIdentifier(TestCaseWithFactory):
         self.assertTrue(db_updated)
         self.assertEndsWith(
             removeSecurityProxy(person.account).status_comment,
-            ": Deactivated account -> Active account: "
+            ": Deactivated -> Active: "
             "when purchasing an application via Software Center.\n")
 
     def test_existing_suspended_account(self):

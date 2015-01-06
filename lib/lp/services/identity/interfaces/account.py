@@ -48,25 +48,25 @@ class AccountStatus(DBEnumeratedType):
     """The status of an account."""
 
     NOACCOUNT = DBItem(10, """
-        Unactivated account
+        Unactivated
 
         The account has not yet been activated.
         """)
 
     ACTIVE = DBItem(20, """
-        Active account
+        Active
 
         The account is active.
         """)
 
     DEACTIVATED = DBItem(30, """
-        Deactivated account
+        Deactivated
 
         The account has been deactivated by the account's owner.
         """)
 
     SUSPENDED = DBItem(40, """
-        Suspended Launchpad account
+        Suspended
 
         The account has been suspended by a Launchpad admin.
         """)

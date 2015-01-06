@@ -27,7 +27,7 @@ class TestAccount(TestCaseWithFactory):
         distro = self.factory.makeAccount(u'\xdc-account')
         ignore, displayname, status_1, status_2 = repr(distro).rsplit(' ', 3)
         self.assertEqual("'\\xdc-account'", displayname)
-        self.assertEqual('(Active account)>', '%s %s' % (status_1, status_2))
+        self.assertEqual('(Active)>', '%s %s' % (status_1, status_2))
 
     def test_account_repr_unicode(self):
         # Verify that Unicode displayname is ascii safe.
