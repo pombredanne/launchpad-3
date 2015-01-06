@@ -978,9 +978,14 @@ class SpecificationGoalDecideView(LaunchpadFormView):
     cancel_url = next_url
 
 
+class ISpecificationRetargetingSchema(Interface):
+
+    target = copy_field(ISpecification['target'], readonly=False)
+
+
 class SpecificationRetargetingView(LaunchpadFormView):
 
-    schema = ISpecification
+    schema = ISpecificationRetargetingSchema
     field_names = ['target']
     label = _('Move this blueprint to a different project')
 

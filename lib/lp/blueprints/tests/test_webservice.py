@@ -5,16 +5,20 @@
 
 __metaclass__ = type
 
+import json
+
 from testtools.matchers import MatchesStructure
 import transaction
 from zope.security.management import endInteraction
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.blueprints.enums import SpecificationDefinitionStatus
+from lp.registry.enums import SpecificationSharingPolicy
 from lp.services.webapp.interaction import ANONYMOUS
 from lp.services.webapp.interfaces import OAuthPermission
-from lp.registry.enums import SpecificationSharingPolicy
 from lp.testing import (
+    admin_logged_in,
     api_url,
     launchpadlib_for,
     person_logged_in,
@@ -232,6 +236,55 @@ class SpecificationAttributeWebserviceTests(SpecificationWebserviceTestCase):
         spec_webservice = self.getSpecOnWebservice(spec)
         self.assertEqual(1, spec_webservice.bugs.total_size)
         self.assertEqual(bug.id, spec_webservice.bugs[0].id)
+
+
+class SpecificationMutationTests(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_set_information_type(self):
+        product = self.factory.makeProduct(
+            specification_sharing_policy=(
+                SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY))
+        spec = self.factory.makeSpecification(product=product)
+        self.assertEqual(InformationType.PUBLIC, spec.information_type)
+        spec_url = api_url(spec)
+        webservice = webservice_for_person(
+            product.owner, permission=OAuthPermission.WRITE_PRIVATE)
+        response = webservice.patch(
+            spec_url, "application/json",
+            json.dumps(dict(information_type='Proprietary')),
+            api_version='devel')
+        self.assertEqual(209, response.status)
+        with admin_logged_in():
+            self.assertEqual(
+                InformationType.PROPRIETARY, spec.information_type)
+
+    def test_set_target(self):
+        old_target = self.factory.makeProduct()
+        spec = self.factory.makeSpecification(product=old_target, name='foo')
+        new_target = self.factory.makeProduct(displayname='Fooix')
+        spec_url = api_url(spec)
+        new_target_url = api_url(new_target)
+        webservice = webservice_for_person(
+            old_target.owner, permission=OAuthPermission.WRITE_PRIVATE)
+        response = webservice.patch(
+            spec_url, "application/json",
+            json.dumps(dict(target_link=new_target_url)), api_version='devel')
+        self.assertEqual(301, response.status)
+        with admin_logged_in():
+            self.assertEqual(new_target, spec.target)
+
+            # Moving another spec with the same name fails.
+            other_spec = self.factory.makeSpecification(
+                product=old_target, name='foo')
+            other_spec_url = api_url(other_spec)
+        response = webservice.patch(
+            other_spec_url, "application/json",
+            json.dumps(dict(target_link=new_target_url)), api_version='devel')
+        self.assertEqual(400, response.status)
+        self.assertEqual(
+            "There is already a blueprint named foo for Fooix.", response.body)
 
 
 class SpecificationTargetTests(SpecificationWebserviceTestCase):

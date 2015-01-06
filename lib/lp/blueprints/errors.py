@@ -9,11 +9,16 @@ __all__ = [
     'TargetAlreadyHasSpecification',
     ]
 
+import httplib
 
+from lazr.restful.declarations import error_status
+
+
+@error_status(httplib.BAD_REQUEST)
 class TargetAlreadyHasSpecification(Exception):
     """The ISpecificationTarget already has a specification of that name."""
 
     def __init__(self, target, name):
-        msg = "The target %s already has a specification named %s" % (
-                target, name)
+        msg = "There is already a blueprint named %s for %s." % (
+                name, target.displayname)
         super(TargetAlreadyHasSpecification, self).__init__(msg)
