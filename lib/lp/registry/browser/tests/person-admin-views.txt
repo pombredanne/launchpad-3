@@ -79,7 +79,7 @@ An admin can see a user's account information.
     >>> print view.errors
     []
     >>> view.field_names
-    ['displayname', 'status', 'status_comment']
+    ['status', 'comment']
     >>> view.label
     "Review person's account"
 
@@ -99,15 +99,12 @@ not need to look in the db.
 The admin can change the user's account information.
 
     >>> form = {
-    ...     'field.displayname': 'The Zaphod Beeblebrox',
     ...     'field.status': 'ACTIVE',
     ...     'field.actions.change': 'Change',
     ...     }
     >>> view = create_initialized_view(user, '+reviewaccount', form=form)
     >>> print view.errors
     []
-    >>> print user.displayname
-    Zaphod Beeblebrox
 
 An admin can suspend a user's account using the +reviewaccount view. When
 an account is suspended, the preferred email address is disabled.
@@ -118,9 +115,8 @@ an account is suspended, the preferred email address is disabled.
     None
 
     >>> form = {
-    ...     'field.displayname': 'Zaphod Beeblebrox',
     ...     'field.status': 'SUSPENDED',
-    ...     'field.status_comment': "Wanted by the galactic police.",
+    ...     'field.comment': "Wanted by the galactic police.",
     ...     'field.actions.change': 'Change',
     ...     }
     >>> view = create_initialized_view(user, '+reviewaccount', form=form)
@@ -129,15 +125,15 @@ an account is suspended, the preferred email address is disabled.
     >>> transaction.commit()
     >>> user.account_status
     <DBItem AccountStatus.SUSPENDED, ...>
-    >>> print user.account_status_comment
-    Wanted by the galactic police.
+    >>> user.account_status_comment
+    u'... name16: Active account -> Suspended Launchpad account:
+    Wanted by the galactic police.\n'
     >>> print user.preferredemail
     None
 
 No one can force account status to an invalid transition:
 
     >>> form = {
-    ...     'field.displayname': 'Zaphod Beeblebrox',
     ...     'field.status': 'ACTIVE',
     ...     'field.status_comment': "Zaphod's a hoopy frood.",
     ...     'field.actions.change': 'Change',
@@ -153,9 +149,8 @@ suspension, reactivation does not change the user's email addresses; the
 user must log in to restore the email addresses using the reactivate step.
 
     >>> form = {
-    ...     'field.displayname': 'Zaphod Beeblebrox',
     ...     'field.status': 'DEACTIVATED',
-    ...     'field.status_comment': "Zaphod's a hoopy frood.",
+    ...     'field.comment': "Zaphod's a hoopy frood.",
     ...     'field.actions.change': 'Change',
     ...     }
     >>> view = create_initialized_view(user, '+reviewaccount', form=form)
@@ -163,7 +158,10 @@ user must log in to restore the email addresses using the reactivate step.
     []
     >>> user.account_status
     <DBItem AccountStatus.DEACTIVATED, ...>
-    >>> print user.account_status_comment
-    Zaphod's a hoopy frood.
+    >>> user.account_status_comment
+    u"... name16: Active account -> Suspended Launchpad account:
+    Wanted by the galactic police.\n...
+    name16: Suspended Launchpad account -> Deactivated account:
+    Zaphod's a hoopy frood.\n"
     >>> print user.preferredemail
     None

@@ -253,7 +253,7 @@ class IAccountPublic(Interface):
 
     status = AccountStatusChoice(
         title=_("The status of this account"), required=True,
-        readonly=False, vocabulary=AccountStatus)
+        readonly=True, vocabulary=AccountStatus)
 
 
 class IAccountViewRestricted(Interface):
@@ -283,7 +283,7 @@ class IAccountViewRestricted(Interface):
 class IAccountModerateRestricted(Interface):
 
     status_comment = Text(
-        title=_("Account status comments"), required=False, readonly=False)
+        title=_("Account status comments"), required=False, readonly=True)
 
     def setStatus(status, user, comment):
         """Change the status of this account.
