@@ -9,6 +9,8 @@ __all__ = [
     'AccountSet',
     ]
 
+import datetime
+
 from sqlobject import StringCol
 from storm.locals import ReferenceSet
 from zope.interface import implements
@@ -64,10 +66,27 @@ class Account(SQLBase):
         return "<%s '%s' (%s)>" % (
             self.__class__.__name__, displayname, self.status)
 
+    def addStatusComment(self, user, comment):
+        """See `IAccountModerateRestricted`."""
+        prefix = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
+        if user is not None:
+            prefix += ' %s' % user.name
+        old_lines = (
+            self.status_comment.splitlines() if self.status_comment else [])
+        self.status_comment = '\n'.join(
+            old_lines + ['%s: %s' % (prefix, comment), ''])
+
+    def setStatus(self, status, user, comment):
+        """See `IAccountModerateRestricted`."""
+        comment = comment or ''
+        self.addStatusComment(
+            user, '%s -> %s: %s' % (self.status.title, status.title, comment))
+        # date_status_set is maintained by a DB trigger.
+        self.status = status
+
     def reactivate(self, comment):
         """See `IAccountSpecialRestricted`."""
-        self.status = AccountStatus.ACTIVE
-        self.status_comment = comment
+        self.setStatus(AccountStatus.ACTIVE, None, comment)
 
 
 class AccountSet:

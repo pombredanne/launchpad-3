@@ -2207,10 +2207,9 @@ class Person(
         return errors
 
     def preDeactivate(self, comment):
+        self.account.setStatus(AccountStatus.DEACTIVATED, self, comment)
         for email in self.validatedemails:
             email.status = EmailAddressStatus.NEW
-        self.account_status = AccountStatus.DEACTIVATED
-        self.account_status_comment = comment
         self.preferredemail.status = EmailAddressStatus.NEW
         del get_property_cache(self).preferredemail
 

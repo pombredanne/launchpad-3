@@ -65,7 +65,7 @@ Reviewing a person's account
 The +reviewaccount allows admins to see and edit user account information.
 Non-admins cannot access it.
 
-    >>> view = create_initialized_view(user, '+reviewaccount')
+    >>> view = create_view(user, '+reviewaccount')
     >>> check_permission('launchpad.Admin', view)
     False
 

@@ -11,9 +11,9 @@ __all__ = [
     'AccountSuspendedError',
     'AccountCreationRationale',
     'IAccount',
+    'IAccountModerateRestricted',
     'IAccountPublic',
     'IAccountSet',
-    'IAccountSpecialRestricted',
     'IAccountViewRestricted',
     'INACTIVE_ACCOUNT_STATUSES',
     ]
@@ -269,10 +269,7 @@ class IAccountViewRestricted(Interface):
     openid_identifiers = Attribute(_("Linked OpenId Identifiers"))
 
     date_status_set = Datetime(
-        title=_('Date status last modified.'), required=True, readonly=False)
-
-    status_comment = Text(
-        title=_("Account status comments"), required=False, readonly=False)
+        title=_('Date status last modified.'), required=True, readonly=True)
 
     def reactivate(comment):
         """Activate this account.
@@ -283,7 +280,22 @@ class IAccountViewRestricted(Interface):
         """
 
 
-class IAccount(IAccountPublic, IAccountViewRestricted):
+class IAccountModerateRestricted(Interface):
+
+    status_comment = Text(
+        title=_("Account status comments"), required=False, readonly=False)
+
+    def setStatus(status, user, comment):
+        """Change the status of this account.
+
+        :param user: The user performing the action or None.
+        :param comment: An explanation of the change to be logged in
+            status_comment.
+        """
+
+
+class IAccount(IAccountPublic, IAccountViewRestricted,
+               IAccountModerateRestricted):
     """Interface describing an `Account`."""
 
 

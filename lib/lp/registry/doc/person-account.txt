@@ -49,8 +49,8 @@ Matsubara can.
     True
     >>> matsubara.account.status
     <DBItem AccountStatus.ACTIVE, ...>
-    >>> matsubara.account.status_comment
-    u'test'
+    >>> removeSecurityProxy(matsubara.account).status_comment
+    u'...: Unactivated account -> Active account: test\n'
     >>> removeSecurityProxy(matsubara.preferredemail).email
     u'matsubara@async.com.br'
 
@@ -148,7 +148,8 @@ adds a '-deactivatedaccount' suffix to the person's name...
     <DBItem AccountStatus.DEACTIVATED...
 
     >>> foobar.account_status_comment
-    u"I'm a person who doesn't want to be listed as a Launchpad user."
+    u"... name16: Active account -> Deactivated account:
+    I'm a person who doesn't want to be listed as a Launchpad user.\n"
 
 ...to have no team memberships...
 
@@ -222,8 +223,11 @@ Accounts can be reactivated.
     >>> foobar.account.status
     <DBItem AccountStatus.ACTIVE...
 
-    >>> foobar.account.status_comment
-    u'User reactivated the account using reset password.'
+    >>> removeSecurityProxy(foobar.account).status_comment
+    u"... name16: Active account -> Deactivated account: I'm a person
+    who doesn't want to be listed as a Launchpad user.\n...:
+    Deactivated account -> Active account:
+    User reactivated the account using reset password.\n"
 
 The person name is fixed if it was altered when it was deactivated.
 

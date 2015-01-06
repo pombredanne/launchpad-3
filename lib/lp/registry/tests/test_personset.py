@@ -552,9 +552,10 @@ class TestPersonSetGetOrCreateByOpenIDIdentifier(TestCaseWithFactory):
         self.assertEqual(person, found_person)
         self.assertEqual(AccountStatus.ACTIVE, person.account.status)
         self.assertTrue(db_updated)
-        self.assertEqual(
-            "when purchasing an application via Software Center.",
-            removeSecurityProxy(person.account).status_comment)
+        self.assertEndsWith(
+            removeSecurityProxy(person.account).status_comment,
+            ": Deactivated account -> Active account: "
+            "when purchasing an application via Software Center.\n")
 
     def test_existing_suspended_account(self):
         # An existing suspended account will raise an exception.
