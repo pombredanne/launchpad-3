@@ -560,34 +560,17 @@ class Person(
     mugshot = ForeignKey(
         dbName='mugshot', foreignKey='LibraryFileAlias', default=None)
 
-    def _get_account_status(self):
-        account = IStore(Account).get(Account, self.accountID)
-        if account is not None:
-            return account.status
+    @property
+    def account_status(self):
+        if self.account is not None:
+            return self.account.status
         else:
             return AccountStatus.NOACCOUNT
 
-    def _set_account_status(self, value):
-        assert self.accountID is not None, 'No account for this Person'
-        self.account.status = value
-
-    # Deprecated - this value has moved to the Account table.
-    # We provide this shim for backwards compatibility.
-    account_status = property(_get_account_status, _set_account_status)
-
-    def _get_account_status_comment(self):
-        account = IStore(Account).get(Account, self.accountID)
-        if account is not None:
-            return account.status_comment
-
-    def _set_account_status_comment(self, value):
-        assert self.accountID is not None, 'No account for this Person'
-        self.account.status_comment = value
-
-    # Deprecated - this value has moved to the Account table.
-    # We provide this shim for backwards compatibility.
-    account_status_comment = property(
-            _get_account_status_comment, _set_account_status_comment)
+    @property
+    def account_status_comment(self):
+        if self.account is not None:
+            return self.account.status_comment
 
     teamowner = ForeignKey(
         dbName='teamowner', foreignKey='Person', default=None,
