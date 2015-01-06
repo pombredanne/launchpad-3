@@ -253,7 +253,8 @@ class SprintAddView(LaunchpadFormView):
     schema = ISprint
     label = "Register a meeting"
     field_names = ['name', 'title', 'summary', 'home_page', 'driver',
-                   'time_zone', 'time_starts', 'time_ends', 'address',
+                   'time_zone', 'time_starts', 'time_ends', 'is_physical',
+                   'address',
                    ]
     custom_widget('summary', TextAreaWidget, height=5)
     custom_widget('time_starts', DateTimeWidget, display_zone=False)
@@ -292,6 +293,7 @@ class SprintAddView(LaunchpadFormView):
             time_zone=data['time_zone'],
             time_starts=data['time_starts'],
             time_ends=data['time_ends'],
+            is_physical=data['is_physical'],
             address=data['address'],
             )
         self.request.response.addInfoNotification('Sprint created.')
@@ -321,7 +323,8 @@ class SprintEditView(LaunchpadEditFormView):
     label = "Edit sprint details"
 
     field_names = ['name', 'title', 'summary', 'home_page', 'driver',
-                   'time_zone', 'time_starts', 'time_ends', 'address',
+                   'time_zone', 'time_starts', 'time_ends', 'is_physical',
+                   'address',
                    ]
     custom_widget('summary', TextAreaWidget, height=5)
     custom_widget('time_starts', DateTimeWidget, display_zone=False)

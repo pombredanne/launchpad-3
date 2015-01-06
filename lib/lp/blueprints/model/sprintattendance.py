@@ -35,8 +35,12 @@ class SprintAttendance(StormBase):
 
     time_starts = UtcDateTimeCol(notNull=True)
     time_ends = UtcDateTimeCol(notNull=True)
-    is_physical = Bool(default=True)
+    _is_physical = Bool(name='is_physical', default=True)
 
     def __init__(self, sprint, attendee):
         self.sprint = sprint
         self.attendee = attendee
+
+    @property
+    def is_physical(self):
+        return self.sprint.is_physical and self._is_physical
