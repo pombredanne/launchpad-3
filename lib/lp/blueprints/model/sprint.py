@@ -10,6 +10,7 @@ __all__ = [
 
 
 from sqlobject import (
+    BoolCol,
     ForeignKey,
     StringCol,
     )
@@ -90,6 +91,7 @@ class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
     time_zone = StringCol(notNull=True)
     time_starts = UtcDateTimeCol(notNull=True)
     time_ends = UtcDateTimeCol(notNull=True)
+    is_physical = BoolCol(notNull=True, default=True)
 
     # attributes
 
@@ -253,7 +255,7 @@ class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
             attendance = SprintAttendance(sprint=self, attendee=person)
         attendance.time_starts = time_starts
         attendance.time_ends = time_ends
-        attendance.is_physical = is_physical
+        attendance._is_physical = is_physical
         return attendance
 
     def removeAttendance(self, person):
@@ -321,13 +323,13 @@ class SprintSet:
 
     def new(self, owner, name, title, time_zone, time_starts, time_ends,
             summary, address=None, driver=None, home_page=None,
-            mugshot=None, logo=None, icon=None):
+            mugshot=None, logo=None, icon=None, is_physical=True):
         """See `ISprintSet`."""
         return Sprint(owner=owner, name=name, title=title,
             time_zone=time_zone, time_starts=time_starts,
             time_ends=time_ends, summary=summary, driver=driver,
             home_page=home_page, mugshot=mugshot, icon=icon,
-            logo=logo, address=address)
+            logo=logo, address=address, is_physical=is_physical)
 
 
 class HasSprintsMixin:
