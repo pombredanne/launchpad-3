@@ -572,12 +572,11 @@ class IPersonPublic(IPrivacy):
         exported_as='is_valid')
     is_team = exported(
         Bool(title=_('Is this object a team?'), readonly=True))
-    account_status = Choice(
-        title=_("The status of this person's account"), required=False,
-        readonly=True, vocabulary=AccountStatus)
-    account_status_comment = Text(
-        title=_("Account status comments"), required=False,
-        readonly=True)
+    account_status = exported(
+        Choice(
+            title=_("The status of this person's account"), required=True,
+            readonly=True, vocabulary=AccountStatus),
+        as_of='devel')
     visibility = exported(
         Choice(title=_("Visibility"),
                description=_(
@@ -1843,9 +1842,29 @@ class IPersonSpecialRestricted(Interface):
         """
 
 
+class IPersonModerateRestricted(Interface):
+    """IPerson attributes that require launchpad.Moderate permission."""
+
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        status=copy_field(IAccount['status']),
+        comment=Text(title=_("Status change comment"), required=True))
+    @export_write_operation()
+    @operation_for_version('devel')
+    def setAccountStatus(status, user, comment):
+        """Set the status of this person's account."""
+
+    account_status_comment = exported(
+        Text(
+            title=_("Account status history"), required=False,
+            readonly=True),
+        as_of='devel')
+
+
 class IPerson(IPersonPublic, IPersonLimitedView, IPersonViewRestricted,
-              IPersonEditRestricted, IPersonSpecialRestricted, IHasStanding,
-              ISetLocation, IHeadingContext):
+              IPersonEditRestricted, IPersonModerateRestricted,
+              IPersonSpecialRestricted, IHasStanding, ISetLocation,
+              IHeadingContext):
     """A Person."""
     export_as_webservice_entry(plural_name='people')
 
@@ -2484,6 +2503,11 @@ class ISoftwareCenterAgentApplication(ILaunchpadApplication):
 @error_status(httplib.FORBIDDEN)
 class ImmutableVisibilityError(Exception):
     """A change in team membership visibility is not allowed."""
+
+
+@error_status(httplib.BAD_REQUEST)
+class NoAccountError(Exception):
+    """The person has no account."""
 
 
 class NoSuchPerson(NameLookupFailed):

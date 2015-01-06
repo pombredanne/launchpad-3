@@ -189,6 +189,7 @@ from lp.registry.interfaces.person import (
     IPersonSet,
     IPersonSettings,
     ITeam,
+    NoAccountError,
     PersonalStanding,
     PersonCreationRationale,
     TeamEmailAddressError,
@@ -571,6 +572,11 @@ class Person(
     def account_status_comment(self):
         if self.account is not None:
             return self.account.status_comment
+
+    def setAccountStatus(self, status, user, comment):
+        if self.is_team or self.account is None:
+            raise NoAccountError()
+        self.account.setStatus(status, user, comment)
 
     teamowner = ForeignKey(
         dbName='teamowner', foreignKey='Person', default=None,
