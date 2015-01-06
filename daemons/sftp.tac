@@ -5,6 +5,7 @@
 #     twistd -noy sftp.tac
 # or similar.  Refer to the twistd(1) man page for details.
 
+from lazr.sshserver.service import SSHService
 from twisted.application import service
 from twisted.protocols.policies import TimeoutFactory
 
@@ -20,7 +21,6 @@ from lp.codehosting.sshserver.daemon import (
     PRIVATE_KEY_FILE,
     PUBLIC_KEY_FILE,
     )
-from lp.services.sshserver.service import SSHService
 from lp.services.twistedsupport.gracefulshutdown import (
     ConnTrackingFactoryWrapper,
     make_web_status_service,

@@ -30,6 +30,7 @@ from bzrlib import (
     urlutils,
     )
 from bzrlib.transport.local import LocalTransport
+from lazr.sshserver.sftp import FileIsADirectory
 from twisted.conch.interfaces import (
     ISFTPFile,
     ISFTPServer,
@@ -45,7 +46,6 @@ from lp.codehosting.vfs import (
     LaunchpadServer,
     )
 from lp.services.config import config
-from lp.services.sshserver.sftp import FileIsADirectory
 from lp.services.twistedsupport import gatherResults
 
 
