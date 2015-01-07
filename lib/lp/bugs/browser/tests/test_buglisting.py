@@ -237,6 +237,18 @@ class TestBugTaskSearchListingPage(BrowserTestCase):
         view = create_initialized_view(product, '+bugs')
         self.assertThat(view.render(), HTMLContains(search_form_matches))
 
+    def test_redirects_to_bug_from_search_form(self):
+        bug = self.factory.makeBug()
+        login_person(bug.owner)
+        default_bugtask_url = canonical_url(bug.default_bugtask, rootsite='bugs')
+
+        browser = self.getUserBrowser("http://bugs.launchpad.dev/")
+        input_field = browser.getControl(name='field.searchtext')
+        input_field.value = str(bug.id)
+        browser.getControl(name='search').click()
+
+        self.assertEqual(default_bugtask_url, browser.url)
+
 
 class BugTargetTestCase(TestCaseWithFactory):
     """Test helpers for setting up `IBugTarget` tests."""
