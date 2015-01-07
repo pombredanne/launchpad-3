@@ -189,6 +189,7 @@ from lp.registry.interfaces.person import (
     IPersonSet,
     IPersonSettings,
     ITeam,
+    NoAccountError,
     PersonalStanding,
     PersonCreationRationale,
     TeamEmailAddressError,
@@ -560,34 +561,22 @@ class Person(
     mugshot = ForeignKey(
         dbName='mugshot', foreignKey='LibraryFileAlias', default=None)
 
-    def _get_account_status(self):
-        account = IStore(Account).get(Account, self.accountID)
-        if account is not None:
-            return account.status
+    @property
+    def account_status(self):
+        if self.account is not None:
+            return self.account.status
         else:
             return AccountStatus.NOACCOUNT
 
-    def _set_account_status(self, value):
-        assert self.accountID is not None, 'No account for this Person'
-        self.account.status = value
+    @property
+    def account_status_history(self):
+        if self.account is not None:
+            return self.account.status_history
 
-    # Deprecated - this value has moved to the Account table.
-    # We provide this shim for backwards compatibility.
-    account_status = property(_get_account_status, _set_account_status)
-
-    def _get_account_status_comment(self):
-        account = IStore(Account).get(Account, self.accountID)
-        if account is not None:
-            return account.status_comment
-
-    def _set_account_status_comment(self, value):
-        assert self.accountID is not None, 'No account for this Person'
-        self.account.status_comment = value
-
-    # Deprecated - this value has moved to the Account table.
-    # We provide this shim for backwards compatibility.
-    account_status_comment = property(
-            _get_account_status_comment, _set_account_status_comment)
+    def setAccountStatus(self, status, user, comment):
+        if self.is_team or self.account is None:
+            raise NoAccountError()
+        self.account.setStatus(status, user, comment)
 
     teamowner = ForeignKey(
         dbName='teamowner', foreignKey='Person', default=None,
@@ -2207,10 +2196,9 @@ class Person(
         return errors
 
     def preDeactivate(self, comment):
+        self.account.setStatus(AccountStatus.DEACTIVATED, self, comment)
         for email in self.validatedemails:
             email.status = EmailAddressStatus.NEW
-        self.account_status = AccountStatus.DEACTIVATED
-        self.account_status_comment = comment
         self.preferredemail.status = EmailAddressStatus.NEW
         del get_property_cache(self).preferredemail
 

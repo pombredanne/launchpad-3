@@ -990,6 +990,7 @@
                 set_attributes="displayname icon logo visibility"/>
             <require
                 permission="launchpad.Moderate"
+                interface="lp.registry.interfaces.person.IPersonModerateRestricted"
                 set_attributes="name"/>
             <require
                 permission="launchpad.Special"
