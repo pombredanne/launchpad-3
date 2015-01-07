@@ -593,6 +593,7 @@ class EditSpecificationByRelatedPeople(AuthorizationBase):
             if user.isOwner(goal) or user.isDriver(goal):
                 return True
         return (user.in_admin or
+                user.in_registry_experts or
                 user.isOwner(self.obj.target) or
                 user.isDriver(self.obj.target) or
                 user.isOneOf(
@@ -605,9 +606,11 @@ class AdminSpecification(AuthorizationBase):
 
     def checkAuthenticated(self, user):
         assert self.obj.target
-        return (user.isOwner(self.obj.target) or
-                user.isDriver(self.obj.target) or
-                user.in_admin)
+        return (
+                user.in_admin or
+                user.in_registry_experts or
+                user.isOwner(self.obj.target) or
+                user.isDriver(self.obj.target))
 
 
 class DriverSpecification(AuthorizationBase):
