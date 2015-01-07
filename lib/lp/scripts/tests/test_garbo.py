@@ -843,12 +843,12 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
                 1)
 
         account = person.account
-        account.status = status
+        account.setStatus(status, None, 'Go away')
         # We flush because a trigger sets the date_status_set and we need to
         # modify it ourselves.
         Store.of(account).flush()
         if interval is not None:
-            account.date_status_set = interval
+            removeSecurityProxy(account).date_status_set = interval
 
         self.runDaily()
 

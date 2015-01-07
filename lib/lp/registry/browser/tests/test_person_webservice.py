@@ -8,10 +8,16 @@ from zope.component import getUtility
 from zope.security.management import endInteraction
 from zope.security.proxy import removeSecurityProxy
 
-from lp.registry.interfaces.person import TeamMembershipStatus
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    TeamMembershipStatus,
+    )
 from lp.registry.interfaces.teammembership import ITeamMembershipSet
+from lp.services.identity.interfaces.account import AccountStatus
+from lp.services.webapp.interfaces import OAuthPermission
 from lp.testing import (
     admin_logged_in,
+    api_url,
     launchpadlib_for,
     login,
     logout,
@@ -59,6 +65,62 @@ class TestPersonEmailSecurity(TestCaseWithFactory):
         person = lp.people['target']
         emails = list(person.confirmed_email_addresses)
         self.assertEqual([], emails)
+
+
+class TestPersonAccountStatus(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_account_status_history_restricted(self):
+        person = self.factory.makePerson()
+        registrar = self.factory.makePerson(
+            member_of=[getUtility(IPersonSet).getByName('registry')])
+        removeSecurityProxy(person.account).status_history = u'Test'
+        person_url = api_url(person)
+
+        # A normal user cannot read account_status_history. Not even
+        # their own.
+        body = webservice_for_person(
+                person, permission=OAuthPermission.WRITE_PRIVATE).get(
+            person_url, api_version='devel').jsonBody()
+        self.assertEqual('Active', body['account_status'])
+        self.assertEqual(
+            'tag:launchpad.net:2008:redacted', body['account_status_history'])
+
+        # A member of ~registry can see it all.
+        body = webservice_for_person(
+                registrar, permission=OAuthPermission.WRITE_PRIVATE).get(
+            person_url, api_version='devel').jsonBody()
+        self.assertEqual('Active', body['account_status'])
+        self.assertEqual('Test', body['account_status_history'])
+
+    def test_setAccountStatus(self):
+        person = self.factory.makePerson()
+        registrar = self.factory.makePerson(
+            name='registrar',
+            member_of=[getUtility(IPersonSet).getByName('registry')])
+        person_url = api_url(person)
+
+        # A normal user cannot set even their own account status.
+        webservice = webservice_for_person(
+            person, permission=OAuthPermission.WRITE_PRIVATE)
+        response = webservice.named_post(
+            person_url, 'setAccountStatus', status='Suspended',
+            comment='Go away', api_version='devel')
+        self.assertEqual(401, response.status)
+
+        # A member of ~registry can do what they wish.
+        webservice = webservice_for_person(
+            registrar, permission=OAuthPermission.WRITE_PRIVATE)
+        response = webservice.named_post(
+            person_url, 'setAccountStatus', status='Suspended',
+            comment='Go away', api_version='devel')
+        self.assertEqual(200, response.status)
+        with admin_logged_in():
+            self.assertEqual(AccountStatus.SUSPENDED, person.account_status)
+            self.assertEndsWith(
+                person.account_status_history,
+                'registrar: Active -> Suspended: Go away\n')
 
 
 class TestPersonRepresentation(TestCaseWithFactory):

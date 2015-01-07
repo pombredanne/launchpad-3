@@ -945,8 +945,8 @@ class PeopleSearchView(LaunchpadView):
 
 
 class DeactivateAccountSchema(Interface):
-    comment = copy_field(
-        IPerson['account_status_comment'], readonly=False, __name__='comment')
+    comment = Text(
+        title=_("Why are you deactivating your account?"), required=False)
 
 
 class PersonDeactivateAccountView(LaunchpadFormView):
@@ -1176,13 +1176,19 @@ class PersonAdministerView(PersonRenameFormMixin):
         self.updateContextFromData(data)
 
 
-class PersonAccountAdministerView(LaunchpadEditFormView):
+class IAccountAdministerSchema(Interface):
+
+    status = copy_field(IAccount['status'], required=True, readonly=False)
+    comment = Text(
+        title=_('Status change comment'), required=True, readonly=False)
+
+
+class PersonAccountAdministerView(LaunchpadFormView):
     """Administer an `IAccount` belonging to an `IPerson`."""
-    schema = IAccount
+    schema = IAccountAdministerSchema
     label = "Review person's account"
-    field_names = ['displayname', 'status', 'status_comment']
-    custom_widget(
-        'status_comment', TextAreaWidget, height=5, width=60)
+    field_names = ['status', 'comment']
+    custom_widget('comment', TextAreaWidget, height=5, width=60)
 
     def __init__(self, context, request):
         """See `LaunchpadEditFormView`."""
@@ -1191,6 +1197,10 @@ class PersonAccountAdministerView(LaunchpadEditFormView):
         # It also means that permissions are checked on IAccount, not IPerson.
         self.person = self.context
         self.context = self.person.account
+
+    @property
+    def initial_values(self):
+        return {'status': self.context.status}
 
     @property
     def is_viewing_person(self):
@@ -1232,20 +1242,20 @@ class PersonAccountAdministerView(LaunchpadEditFormView):
     @action('Change', name='change')
     def change_action(self, action, data):
         """Update the IAccount."""
-        if (data['status'] == AccountStatus.SUSPENDED
-            and self.context.status != AccountStatus.SUSPENDED):
+        if data['status'] == self.context.status:
+            return
+        if data['status'] == AccountStatus.SUSPENDED:
             # The preferred email address is removed to ensure no email
             # is sent to the user.
             self.person.setPreferredEmail(None)
             self.request.response.addInfoNotification(
-                u'The account "%s" has been suspended.' % (
-                    self.context.displayname))
-        if (data['status'] == AccountStatus.ACTIVE
-            and self.context.status != AccountStatus.ACTIVE):
+                u'The account "%s" has been suspended.'
+                % self.context.displayname)
+        elif data['status'] == AccountStatus.DEACTIVATED:
             self.request.response.addInfoNotification(
-                u'The user is reactivated. He must use the '
-                u'"forgot password" to log in.')
-        self.updateContextFromData(data)
+                u'The account "%s" is now deactivated. The user can log in '
+                u'to reactivate it.' % self.context.displayname)
+        self.context.setStatus(data['status'], self.user, data['comment'])
 
 
 class PersonVouchersView(LaunchpadFormView):

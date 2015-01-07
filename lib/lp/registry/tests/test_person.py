@@ -1348,7 +1348,7 @@ class TestGetRecipients(TestCaseWithFactory):
         """
         owner = self.factory.makePerson(email='foo@bar.com')
         team = self.factory.makeTeam(owner)
-        owner.account.status = AccountStatus.DEACTIVATED
+        owner.setAccountStatus(AccountStatus.DEACTIVATED, None, 'gbcw')
         self.assertContentEqual([], get_recipients(team))
 
     def test_get_recipients_team_with_disabled_member_account(self):
@@ -1357,7 +1357,7 @@ class TestGetRecipients(TestCaseWithFactory):
         See <https://bugs.launchpad.net/launchpad/+bug/855150>
         """
         person = self.factory.makePerson(email='foo@bar.com')
-        person.account.status = AccountStatus.DEACTIVATED
+        person.setAccountStatus(AccountStatus.DEACTIVATED, None, 'gbcw')
         team = self.factory.makeTeam(members=[person])
         self.assertContentEqual([team.teamowner], get_recipients(team))
 
@@ -1367,7 +1367,7 @@ class TestGetRecipients(TestCaseWithFactory):
         See <https://bugs.launchpad.net/launchpad/+bug/855150>
         """
         person = self.factory.makePerson(email='foo@bar.com')
-        person.account.status = AccountStatus.DEACTIVATED
+        person.setAccountStatus(AccountStatus.DEACTIVATED, None, 'gbcw')
         team1 = self.factory.makeTeam(members=[person])
         team2 = self.factory.makeTeam(members=[team1])
         self.assertContentEqual(
