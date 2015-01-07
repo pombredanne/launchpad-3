@@ -858,7 +858,8 @@ include them as well.
 
     >>> from lp.services.identity.interfaces.account import AccountStatus
     >>> dave = personset.getByName('justdave')
-    >>> removeSecurityProxy(dave).account_status = AccountStatus.DEACTIVATED
+    >>> removeSecurityProxy(dave).setAccountStatus(
+    ...     AccountStatus.DEACTIVATED, None, 'gbcw')
     >>> transaction.commit()
     >>> list(personset.findPerson('dave'))
     []
@@ -868,7 +869,8 @@ include them as well.
     Dave Miller (justdave): [u'dave.miller@ubuntulinux.com',
                              u'justdave@bugzilla.org']
 
-    >>> removeSecurityProxy(dave).account_status = AccountStatus.ACTIVE
+    >>> removeSecurityProxy(dave).setAccountStatus(
+    ...     AccountStatus.ACTIVE, None, 'Welcome back')
     >>> flush_database_updates()
     >>> login(ANONYMOUS)
 

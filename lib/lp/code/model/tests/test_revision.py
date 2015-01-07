@@ -127,7 +127,7 @@ class TestRevisionKarma(TestCaseWithFactory):
         author = self.factory.makePerson()
         rev = self.factory.makeRevision(
             author=author.preferredemail.email)
-        author.account.status = AccountStatus.SUSPENDED
+        author.setAccountStatus(AccountStatus.SUSPENDED, None, 'spammer!')
         branch = self.factory.makeProductBranch()
         branch.createBranchRevision(1, rev)
         self.assertTrue(rev.karma_allocated)

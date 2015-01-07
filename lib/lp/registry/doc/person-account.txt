@@ -144,10 +144,10 @@ adds a '-deactivatedaccount' suffix to the person's name...
 
 ...an account status of DEACTIVATED...
 
-    >>> foobar.account_status
+    >>> foobar.account.status
     <DBItem AccountStatus.DEACTIVATED...
 
-    >>> foobar.account_status_comment
+    >>> removeSecurityProxy(foobar.account).status_comment
     u"... name16: Active -> Deactivated:
     I'm a person who doesn't want to be listed as a Launchpad user.\n"
 
@@ -226,7 +226,7 @@ Accounts can be reactivated.
     >>> removeSecurityProxy(foobar.account).status_comment
     u"... name16: Active -> Deactivated: I'm a person
     who doesn't want to be listed as a Launchpad user.\n...:
-    Deactivated -> Active :
+    Deactivated -> Active:
     User reactivated the account using reset password.\n"
 
 The person name is fixed if it was altered when it was deactivated.

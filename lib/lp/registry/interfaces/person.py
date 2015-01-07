@@ -27,6 +27,7 @@ __all__ = [
     'ITeamContactAddressForm',
     'ITeamReassignment',
     'ImmutableVisibilityError',
+    'NoAccountError',
     'NoSuchPerson',
     'PersonCreationRationale',
     'PersonalStanding',
