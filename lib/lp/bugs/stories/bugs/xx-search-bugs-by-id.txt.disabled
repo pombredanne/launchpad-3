@@ -3,15 +3,6 @@ no longer has a specific field for looking up bug reports by number.
 It should be re-enabled once the Bugs global search field acquires
 this ability.
 
-If we enter a bug ID in the search form on the Bugs front page, we
-get redirected to the bug with the corresponding id.
-
-  >>> browser.open("http://bugs.launchpad.dev/")
-  >>> control = browser.getControl(name="id")
-  >>> control.value = "2"
-  >>> browser.getControl(name="jump_to_bug").click()
-  >>> browser.url
-  'http://launchpad.dev/ubuntu-product/+bug/2'
 
 If we enter an ID that doesn't exist, we stay on the malone front page
 and an error message is displayed:
