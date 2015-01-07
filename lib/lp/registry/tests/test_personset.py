@@ -553,7 +553,7 @@ class TestPersonSetGetOrCreateByOpenIDIdentifier(TestCaseWithFactory):
         self.assertEqual(AccountStatus.ACTIVE, person.account.status)
         self.assertTrue(db_updated)
         self.assertEndsWith(
-            removeSecurityProxy(person.account).status_comment,
+            removeSecurityProxy(person.account).status_history,
             ": Deactivated -> Active: "
             "when purchasing an application via Software Center.\n")
 

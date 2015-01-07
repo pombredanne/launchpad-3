@@ -49,7 +49,7 @@ Matsubara can.
     True
     >>> matsubara.account.status
     <DBItem AccountStatus.ACTIVE, ...>
-    >>> removeSecurityProxy(matsubara.account).status_comment
+    >>> removeSecurityProxy(matsubara.account).status_history
     u'...: Unactivated -> Active: test\n'
     >>> removeSecurityProxy(matsubara.preferredemail).email
     u'matsubara@async.com.br'
@@ -147,7 +147,7 @@ adds a '-deactivatedaccount' suffix to the person's name...
     >>> foobar.account.status
     <DBItem AccountStatus.DEACTIVATED...
 
-    >>> removeSecurityProxy(foobar.account).status_comment
+    >>> removeSecurityProxy(foobar.account).status_history
     u"... name16: Active -> Deactivated:
     I'm a person who doesn't want to be listed as a Launchpad user.\n"
 
@@ -223,7 +223,7 @@ Accounts can be reactivated.
     >>> foobar.account.status
     <DBItem AccountStatus.ACTIVE...
 
-    >>> removeSecurityProxy(foobar.account).status_comment
+    >>> removeSecurityProxy(foobar.account).status_history
     u"... name16: Active -> Deactivated: I'm a person
     who doesn't want to be listed as a Launchpad user.\n...:
     Deactivated -> Active:

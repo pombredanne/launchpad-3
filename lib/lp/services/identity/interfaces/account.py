@@ -282,7 +282,7 @@ class IAccountViewRestricted(Interface):
 
 class IAccountModerateRestricted(Interface):
 
-    status_comment = Text(
+    status_history = Text(
         title=_("Account status comments"), required=False, readonly=True)
 
     def setStatus(status, user, comment):
@@ -290,7 +290,7 @@ class IAccountModerateRestricted(Interface):
 
         :param user: The user performing the action or None.
         :param comment: An explanation of the change to be logged in
-            status_comment.
+            status_history.
         """
 
 

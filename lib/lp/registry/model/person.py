@@ -569,9 +569,9 @@ class Person(
             return AccountStatus.NOACCOUNT
 
     @property
-    def account_status_comment(self):
+    def account_status_history(self):
         if self.account is not None:
-            return self.account.status_comment
+            return self.account.status_history
 
     def setAccountStatus(self, status, user, comment):
         if self.is_team or self.account is None:

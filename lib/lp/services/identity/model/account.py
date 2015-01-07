@@ -56,7 +56,7 @@ class Account(SQLBase):
     status = AccountStatusEnumCol(
         enum=AccountStatus, default=AccountStatus.NOACCOUNT, notNull=True)
     date_status_set = UtcDateTimeCol(notNull=True, default=UTC_NOW)
-    status_comment = StringCol(dbName='status_comment', default=None)
+    status_history = StringCol(dbName='status_comment', default=None)
 
     openid_identifiers = ReferenceSet(
         "Account.id", OpenIdIdentifier.account_id)
@@ -72,8 +72,8 @@ class Account(SQLBase):
         if user is not None:
             prefix += ' %s' % user.name
         old_lines = (
-            self.status_comment.splitlines() if self.status_comment else [])
-        self.status_comment = '\n'.join(
+            self.status_history.splitlines() if self.status_history else [])
+        self.status_history = '\n'.join(
             old_lines + ['%s: %s' % (prefix, comment), ''])
 
     def setStatus(self, status, user, comment):

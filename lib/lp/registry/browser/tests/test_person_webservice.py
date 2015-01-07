@@ -71,28 +71,28 @@ class TestPersonAccountStatus(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_account_status_comment_restricted(self):
+    def test_account_status_history_restricted(self):
         person = self.factory.makePerson()
         registrar = self.factory.makePerson(
             member_of=[getUtility(IPersonSet).getByName('registry')])
-        removeSecurityProxy(person.account).status_comment = u'Test'
+        removeSecurityProxy(person.account).status_history = u'Test'
         person_url = api_url(person)
 
-        # A normal user cannot read account_status_comment. Not even
+        # A normal user cannot read account_status_history. Not even
         # their own.
         body = webservice_for_person(
                 person, permission=OAuthPermission.WRITE_PRIVATE).get(
             person_url, api_version='devel').jsonBody()
         self.assertEqual('Active', body['account_status'])
         self.assertEqual(
-            'tag:launchpad.net:2008:redacted', body['account_status_comment'])
+            'tag:launchpad.net:2008:redacted', body['account_status_history'])
 
         # A member of ~registry can see it all.
         body = webservice_for_person(
                 registrar, permission=OAuthPermission.WRITE_PRIVATE).get(
             person_url, api_version='devel').jsonBody()
         self.assertEqual('Active', body['account_status'])
-        self.assertEqual('Test', body['account_status_comment'])
+        self.assertEqual('Test', body['account_status_history'])
 
     def test_setAccountStatus(self):
         person = self.factory.makePerson()
@@ -119,7 +119,7 @@ class TestPersonAccountStatus(TestCaseWithFactory):
         with admin_logged_in():
             self.assertEqual(AccountStatus.SUSPENDED, person.account_status)
             self.assertEndsWith(
-                person.account_status_comment,
+                person.account_status_history,
                 'registrar: Active -> Suspended: Go away\n')
 
 

@@ -1855,7 +1855,7 @@ class IPersonModerateRestricted(Interface):
     def setAccountStatus(status, user, comment):
         """Set the status of this person's account."""
 
-    account_status_comment = exported(
+    account_status_history = exported(
         Text(
             title=_("Account status history"), required=False,
             readonly=True),

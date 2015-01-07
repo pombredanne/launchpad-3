@@ -80,7 +80,7 @@
               </tr>
               <tr>
                 <th>Status history:</th>
-                <td tal:content="structure context/status_comment/fmt:text-to-html">
+                <td tal:content="structure context/status_history/fmt:text-to-html">
                   2015-01-05 cprov Active -&gt; Suspended: Suspended for evil.
                 </td>
               </tr>

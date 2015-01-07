@@ -98,7 +98,7 @@ The account has other metadata.
     True
 
     >>> from zope.security.proxy import removeSecurityProxy
-    >>> removeSecurityProxy(account).status_comment
+    >>> print removeSecurityProxy(account).status_history
     None
 
     >>> print account.displayname
