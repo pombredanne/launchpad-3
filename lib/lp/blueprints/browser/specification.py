@@ -197,7 +197,7 @@ class INewSpecificationTarget(Interface):
 
     Requires the user to specify a distribution or a product as a target.
     """
-    use_template(ISpecification, include=['target'])
+    target = copy_field(ISpecification['target'], readonly=False)
 
 
 class NewSpecificationView(LaunchpadFormView):
