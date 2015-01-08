@@ -1230,16 +1230,15 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
         if data:
             searchtext = data.get("searchtext")
             if searchtext:
-                bug_number = ""
+                if (
+                    len(searchtext.split(' ')) == 1 and
+                    searchtext.startswith('#') and
+                    searchtext[1:].isdigit()
+                ):
+                    searchtext = searchtext[1:]
                 if searchtext.isdigit():
-                    bug_number = searchtext
-                if len(searchtext.split(' ')) == 1 and searchtext[0] == '#' and \
-                searchtext[1:].isdigit():
-                    bug_number = searchtext[1:]
-
-                if bug_number:
                     try:
-                        bug = getUtility(IBugSet).get(bug_number)
+                        bug = getUtility(IBugSet).get(searchtext)
                     except NotFoundError:
                         pass
                     else:
