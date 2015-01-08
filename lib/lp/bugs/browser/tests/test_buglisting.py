@@ -249,6 +249,30 @@ class TestBugTaskSearchListingPage(BrowserTestCase):
 
         self.assertEqual(default_bugtask_url, browser.url)
 
+    def test_redirects_to_bug_from_search_form_with_hash(self):
+        bug = self.factory.makeBug()
+        login_person(bug.owner)
+        default_bugtask_url = canonical_url(bug.default_bugtask, rootsite='bugs')
+
+        browser = self.getUserBrowser("http://bugs.launchpad.dev/")
+        input_field = browser.getControl(name='field.searchtext')
+        input_field.value = "#%d" % bug.id
+        browser.getControl(name='search').click()
+
+        self.assertEqual(default_bugtask_url, browser.url)
+
+    def test_doesnt_redirect_to_bug_from_search_form_with_multiple_terms(self):
+        bug = self.factory.makeBug()
+        login_person(bug.owner)
+        default_bugtask_url = canonical_url(bug.default_bugtask, rootsite='bugs')
+
+        browser = self.getUserBrowser("http://bugs.launchpad.dev/")
+        input_field = browser.getControl(name='field.searchtext')
+        input_field.value = "#%d otherterm" % bug.id
+        browser.getControl(name='search').click()
+
+        self.assertNotEqual(default_bugtask_url, browser.url)
+
 
 class BugTargetTestCase(TestCaseWithFactory):
     """Test helpers for setting up `IBugTarget` tests."""
