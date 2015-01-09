@@ -99,7 +99,9 @@ class LibrarianStorage:
             swift_stream = TxSwiftStream(swift_connection, chunks)
             defer.returnValue(swift_stream)
         except swiftclient.ClientException as x:
-            if x.http_status != 404:
+            if x.http_status == 404:
+                swift.connection_pool.put(swift_connection)
+            else:
                 self.swift_download_fails += 1
                 log.err(x)
         except Exception as x:
