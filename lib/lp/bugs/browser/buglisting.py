@@ -1229,13 +1229,16 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
 
         if data:
             searchtext = data.get("searchtext")
-            if searchtext and searchtext.isdigit():
-                try:
-                    bug = getUtility(IBugSet).get(searchtext)
-                except NotFoundError:
-                    pass
-                else:
-                    self.request.response.redirect(canonical_url(bug))
+            if searchtext:
+                if searchtext.startswith('#'):
+                    searchtext = searchtext[1:]
+                if searchtext.isdigit():
+                    try:
+                        bug = getUtility(IBugSet).get(searchtext)
+                    except NotFoundError:
+                        pass
+                    else:
+                        self.request.response.redirect(canonical_url(bug))
 
             assignee_option = self.request.form.get("assignee_option")
             if assignee_option == "none":
