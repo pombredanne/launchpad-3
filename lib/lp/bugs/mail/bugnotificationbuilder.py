@@ -156,6 +156,9 @@ class BugNotificationBuilder:
                     '%s (%s)' % (event_creator.displayname,
                         event_creator.name)))
 
+        # Add the notification -type header.
+        self.common_headers.append(('X-Launchpad-Notification-Type', 'bug'))
+
     def build(self, from_address, to_address, body, subject, email_date,
               rationale=None, references=None, message_id=None, filters=None):
         """Construct the notification.
