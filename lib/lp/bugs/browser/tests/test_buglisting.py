@@ -237,7 +237,7 @@ class TestBugTaskSearchListingPage(BrowserTestCase):
         view = create_initialized_view(product, '+bugs')
         self.assertThat(view.render(), HTMLContains(search_form_matches))
 
-    def assertSearchTermRedirects(term_format_string, must_redirect):
+    def assertSearchTermRedirects(self, term_format_string, must_redirect):
         """Search for a bug with 'term_format_string', test if we redirect."""
         bug = self.factory.makeBug()
         login_person(bug.owner)

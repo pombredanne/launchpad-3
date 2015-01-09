@@ -1230,11 +1230,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
         if data:
             searchtext = data.get("searchtext")
             if searchtext:
-                if (
-                    len(searchtext.split(' ')) == 1 and
-                    searchtext.startswith('#') and
-                    searchtext[1:].isdigit()
-                ):
+                if searchtext.startswith('#'):
                     searchtext = searchtext[1:]
                 if searchtext.isdigit():
                     try:
