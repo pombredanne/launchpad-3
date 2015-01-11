@@ -218,3 +218,33 @@ class TestPublicOrPrivateTeamsExistence(TestCaseWithFactory):
             removeSecurityProxy(private_team))
         self.assertTrue(checker.checkAuthenticated(IPersonRoles(team_user)))
         self.assertFalse(checker.checkAuthenticated(IPersonRoles(other_user)))
+
+    def test_can_list_team_with_expired_private_team(self):
+        team_owner = self.factory.makePerson()
+        team_member = self.factory.makePerson()
+        main_team = self.factory.makeTeam(
+            owner=team_owner,
+            visibility=PersonVisibility.PRIVATE,
+        )
+        private_team = self.factory.makeTeam(
+            owner=team_owner,
+            visibility=PersonVisibility.PRIVATE
+        )
+        with person_logged_in(team_owner):
+            # Canno add a team with status = DEACTIVATED, so add it as approved
+            # and then retract the membership.
+            main_team.addMember(
+                private_team,
+                team_owner,
+                status=TeamMembershipStatus.APPROVED,
+                force_team_add=True,
+            )
+            main_team.retractTeamMembership(private_team, team_owner)
+            main_team.addMember(
+                team_member,
+                team_owner,
+                status=TeamMembershipStatus.APPROVED
+            )
+
+        checker = PublicOrPrivateTeamsExistence(main_team)
+        self.assertTrue(checker.checkAuthenticated(IPersonRoles(team_member)))
