@@ -40,7 +40,6 @@ from lp.services.config import config
 PRIVATE_KEY_FILE = 'ssh_host_key_rsa'
 PUBLIC_KEY_FILE = 'ssh_host_key_rsa.pub'
 
-OOPS_CONFIG_SECTION = 'codehosting'
 LOG_NAME = 'codehosting'
 ACCESS_LOG_NAME = 'codehosting.access'
 

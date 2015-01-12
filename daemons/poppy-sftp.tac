@@ -109,7 +109,6 @@ svc = SSHService(
     portal=make_portal(),
     private_key_path=config.poppy.host_key_private,
     public_key_path=config.poppy.host_key_public,
-    oops_configuration='poppy',
     main_log='poppy',
     access_log='poppy.access',
     access_log_path=config.poppy.access_log,
