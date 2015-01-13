@@ -7,6 +7,13 @@
 
 import logging
 
+from lazr.sshserver.auth import (
+    LaunchpadAvatar,
+    PublicKeyFromLaunchpadChecker,
+    )
+from lazr.sshserver.service import SSHService
+from lazr.sshserver.session import DoNothingSession
+
 from twisted.application import service
 from twisted.conch.interfaces import ISession
 from twisted.conch.ssh import filetransfer
@@ -26,10 +33,6 @@ from lp.poppy.twistedftp import (
     FTPServiceFactory,
     )
 from lp.poppy.twistedsftp import SFTPServer
-from lp.services.sshserver.auth import (
-    LaunchpadAvatar, PublicKeyFromLaunchpadChecker)
-from lp.services.sshserver.service import SSHService
-from lp.services.sshserver.session import DoNothingSession
 from lp.services.twistedsupport.loggingsupport import set_up_oops_reporting
 
 
@@ -106,7 +109,6 @@ svc = SSHService(
     portal=make_portal(),
     private_key_path=config.poppy.host_key_private,
     public_key_path=config.poppy.host_key_public,
-    oops_configuration='poppy',
     main_log='poppy',
     access_log='poppy.access',
     access_log_path=config.poppy.access_log,
