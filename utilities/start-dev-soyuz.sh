@@ -31,7 +31,7 @@ start_twistd buildd-manager daemons/buildd-manager.tac
 mkdir -p /var/tmp/txpkgupload/incoming
 export TXPKGUPLOAD_ROOT=/var/tmp/txpkgupload/incoming
 start_twistd_plugin txpkgupload pkgupload \
-    -c configs/development/txpkgupload.yaml
+    --config-file configs/development/txpkgupload.yaml
 
 
 echo "Done."
