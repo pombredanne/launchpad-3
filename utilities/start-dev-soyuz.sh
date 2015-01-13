@@ -29,7 +29,6 @@ start_twistd_plugin() {
 start_twistd testkeyserver lib/lp/testing/keyserver/testkeyserver.tac
 start_twistd buildd-manager daemons/buildd-manager.tac
 mkdir -p /var/tmp/txpkgupload/incoming
-export TXPKGUPLOAD_ROOT=/var/tmp/txpkgupload/incoming
 start_twistd_plugin txpkgupload pkgupload \
     --config-file configs/development/txpkgupload.yaml
 
