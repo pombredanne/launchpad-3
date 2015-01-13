@@ -14,6 +14,8 @@ import logging
 import os
 import tempfile
 
+from lazr.sshserver.events import SFTPClosed
+from lazr.sshserver.sftp import FileIsADirectory
 from twisted.conch.interfaces import (
     ISFTPFile,
     ISFTPServer,
@@ -26,8 +28,6 @@ from zope.interface import implements
 
 from lp.poppy.filesystem import UploadFileSystem
 from lp.poppy.hooks import Hooks
-from lp.services.sshserver.events import SFTPClosed
-from lp.services.sshserver.sftp import FileIsADirectory
 
 
 class SFTPServer:

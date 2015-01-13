@@ -8,9 +8,9 @@ __metaclass__ = type
 import os
 
 from fixtures import TempDir
+from lazr.sshserver.sftp import FileIsADirectory
 
 from lp.poppy.twistedsftp import SFTPServer
-from lp.services.sshserver.sftp import FileIsADirectory
 from lp.testing import (
     NestedTempfile,
     TestCase,
