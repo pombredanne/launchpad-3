@@ -18,9 +18,9 @@ start_twistd_plugin() {
     # Start twistd for plugin service $1.
     name=$1
     plugin=$2
-    shift
+    shift 2
     echo "Starting $name."
-    bin/twistd \
+    "bin/twistd-for-$name" \
         --logfile "/var/tmp/development-$name.log" \
         --pidfile "/var/tmp/development-$name.pid" \
         "$plugin" "$@"
@@ -30,7 +30,8 @@ start_twistd testkeyserver lib/lp/testing/keyserver/testkeyserver.tac
 start_twistd buildd-manager daemons/buildd-manager.tac
 mkdir -p /var/tmp/txpkgupload/incoming
 export TXPKGUPLOAD_ROOT=/var/tmp/txpkgupload/incoming
-start_twistd_plugin txpkgupload pkgupload
+start_twistd_plugin txpkgupload pkgupload \
+    -c configs/development/txpkgupload.yaml
 
 
 echo "Done."
