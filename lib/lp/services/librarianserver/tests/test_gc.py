@@ -583,7 +583,7 @@ class TestLibrarianGarbageCollectionBase:
         librariangc.confirm_no_clock_skew(self.con)
 
         # To test this function raises an excption when it should,
-        # the garbage collector into thinking it is tomorrow.
+        # fool the garbage collector into thinking it is tomorrow.
         with self.librariangc_thinking_it_is_tomorrow():
             self.assertRaises(
                 Exception, librariangc.confirm_no_clock_skew, (self.con,)
@@ -620,8 +620,8 @@ class TestDiskLibrarianGarbageCollection(
 
         switch_dbuser(config.librarian_gc.dbuser)
 
-        # Now, we will move the directory containing the trash somewhere else
-        # and make a symlink to it.
+        # Now rename the file to pretend that librarian-feed-swift has
+        # dealt with it.
         path_aborted = librariangc.get_file_path(id_aborted)
         os.rename(path_aborted, path_aborted + '.migrated')
 
