@@ -282,10 +282,10 @@ class IBugView(Interface):
             readonly=True))
     has_cves = Bool(title=u"True if the bug has cve entries.")
     cve_links = Attribute('Links between this bug and CVE entries.')
-    duplicates = exported(
+    duplicates = exported(doNotSnapshot(
         CollectionField(
             title=_("MultiJoin of bugs which are dupes of this one."),
-            value_type=BugField(), readonly=True))
+            value_type=BugField(), readonly=True)))
     # See lp.bugs.model.bug.Bug.attachments for why there are two similar
     # properties here.
     # attachments_unpopulated would more naturally be attachments, and
