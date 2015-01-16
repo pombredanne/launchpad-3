@@ -156,13 +156,13 @@ class FileImporterTestCase(TestCaseWithFactory):
         return POFileImporter(translation_entry, GettextPOImporter(), None)
 
     def _createImporterForExportedEntries(self):
-        """Set up entries that where exported from LP, i.e. that contain the
+        """Set up entries that were exported from LP, i.e. that contain the
         'X-Launchpad-Export-Date:' header."""
         return self._createFileImporters(
             TEST_TEMPLATE_EXPORTED, TEST_TRANSLATION_EXPORTED, False)
 
     def _createImporterForUpstreamEntries(self):
-        """Set up entries that where not exported from LP, i.e. that do not
+        """Set up entries that were not exported from LP, i.e. that do not
         contain the 'X-Launchpad-Export-Date:' header."""
         return self._createFileImporters(
             TEST_TEMPLATE_UPSTREAM, TEST_TRANSLATION_UPSTREAM, True)
