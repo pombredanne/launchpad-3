@@ -707,9 +707,8 @@ def delete_unwanted_disk_files(con):
             next_wanted_content_id = get_next_wanted_content_id()
 
     log.info(
-            "Deleted %d files from disk that where no longer referenced "
-            "in the db" % removed_count
-            )
+        "Deleted %d files from disk that were no longer referenced "
+        "in the db." % removed_count)
 
 
 def swift_files(max_lfc_id):
@@ -828,8 +827,8 @@ def delete_unwanted_swift_files(con):
         next_wanted_content_id = get_next_wanted_content_id()
 
     log.info(
-        "Deleted {0} files from Swift that where no longer referenced"
-        "in the db".format(removed_count))
+        "Deleted {0} files from Swift that were no longer referenced "
+        "in the db.".format(removed_count))
 
 
 def get_file_path(content_id):
