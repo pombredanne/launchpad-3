@@ -181,3 +181,11 @@ class BinaryPackageReleaseDownloadCount(Storm):
     def binary_package_version(self):
         """See `IBinaryPackageReleaseDownloadCount`."""
         return self.binary_package_release.version
+
+    @property
+    def country_code(self):
+        """See `IBinaryPackageReleaseDownloadCount`."""
+        if self.country is not None:
+            return self.country.iso3166code2
+        else:
+            return "unknown"
