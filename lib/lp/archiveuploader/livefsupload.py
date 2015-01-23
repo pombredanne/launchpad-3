@@ -38,9 +38,7 @@ class LiveFSUpload:
 
         for dirpath, _, filenames in os.walk(self.upload_path):
             if dirpath == self.upload_path:
-                # All relevant files will be in a subdirectory; this is a
-                # simple way to avoid uploading any .distro file that may
-                # exist.
+                # All relevant files will be in a subdirectory.
                 continue
             for livefs_file in sorted(filenames):
                 livefs_path = os.path.join(dirpath, livefs_file)

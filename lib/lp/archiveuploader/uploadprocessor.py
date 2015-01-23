@@ -268,9 +268,8 @@ class UploadHandler:
         """Process a single changes file.
 
         This is done by obtaining the appropriate upload policy (according
-        to command-line options and the value in the .distro file beside
-        the upload, if present), creating a NascentUpload object and calling
-        its process method.
+        to command-line options), creating a NascentUpload object and
+        calling its process method.
 
         We obtain the context for this processing from the relative path,
         within the upload folder, of this changes file. This influences
@@ -442,9 +441,6 @@ class UploadHandler:
     def removeUpload(self, logger):
         """Remove an upload that has succesfully been processed.
 
-        This includes moving the given upload directory and moving the
-        matching .distro file, if it exists.
-
         :param logger: The logger to use for logging results.
         """
         if self.processor.keep or self.processor.dry_run:
@@ -453,11 +449,6 @@ class UploadHandler:
 
         logger.debug("Removing upload directory %s", self.upload_path)
         shutil.rmtree(self.upload_path)
-
-        distro_filename = self.upload_path + ".distro"
-        if os.path.isfile(distro_filename):
-            logger.debug("Removing distro file %s", distro_filename)
-            os.remove(distro_filename)
 
     def moveProcessedUpload(self, destination, logger):
         """Move or remove the upload depending on the status of the upload.
@@ -473,9 +464,6 @@ class UploadHandler:
     def moveUpload(self, subdir_name, logger):
         """Move the upload to the named subdir of the root, eg 'accepted'.
 
-        This includes moving the given upload directory and moving the
-        matching .distro file, if it exists.
-
         :param subdir_name: Name of the subdirectory to move to.
         :param logger: The logger to use for logging results.
         """
@@ -490,15 +478,6 @@ class UploadHandler:
         logger.debug("Moving upload directory %s to %s" %
             (self.upload_path, target_path))
         shutil.move(self.upload_path, target_path)
-
-        distro_filename = self.upload_path + ".distro"
-        if os.path.isfile(distro_filename):
-            target_path = os.path.join(self.processor.base_fsroot,
-                                       subdir_name,
-                                       os.path.basename(distro_filename))
-            logger.debug("Moving distro file %s to %s" % (distro_filename,
-                                                            target_path))
-            shutil.move(distro_filename, target_path)
 
     @staticmethod
     def orderFilenames(fnames):
