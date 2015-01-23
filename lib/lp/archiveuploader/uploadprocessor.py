@@ -49,10 +49,8 @@ __metaclass__ = type
 
 import os
 import shutil
-import stat
 import sys
 
-from contrib.glock import GlobalLock
 from sqlobject import SQLObjectNotFound
 from zope.component import getUtility
 
@@ -204,45 +202,14 @@ class UploadProcessor:
     def locateDirectories(self, fsroot):
         """Return a list of upload directories in a given queue.
 
-        This method operates on the queue atomically, i.e. it suppresses
-        changes in the queue directory, like new uploads, by acquiring
-        the shared upload_queue lockfile while the directory are listed.
-
         :param fsroot: path to a 'queue' directory to be inspected.
 
         :return: a list of upload directories found in the queue
             alphabetically sorted.
         """
-        # Protecting listdir by a lock ensures that we only get completely
-        # finished directories listed. See lp.poppy.hooks for the other
-        # locking place.
-        lockfile_path = os.path.join(fsroot, ".lock")
-        fsroot_lock = GlobalLock(lockfile_path)
-        mode = stat.S_IMODE(os.stat(lockfile_path).st_mode)
-
-        # XXX cprov 20081024 bug=185731: The lockfile permission can only be
-        # changed by its owner. Since we can't predict which process will
-        # create it in production systems we simply ignore errors when trying
-        # to grant the right permission. At least, one of the process will
-        # be able to do so.
-        try:
-            os.chmod(lockfile_path, mode | stat.S_IWGRP)
-        except OSError as err:
-            self.log.debug('Could not fix the lockfile permission: %s' % err)
-
-        try:
-            fsroot_lock.acquire(blocking=True)
-            dir_names = os.listdir(fsroot)
-        finally:
-            # Skip lockfile deletion, see similar code in lp.poppy.hooks.
-            fsroot_lock.release(skip_delete=True)
-
-        sorted_dir_names = sorted(
-            dir_name
-            for dir_name in dir_names
+        return sorted(
+            dir_name for dir_name in os.listdir(fsroot)
             if os.path.isdir(os.path.join(fsroot, dir_name)))
-
-        return sorted_dir_names
 
 
 class UploadHandler:

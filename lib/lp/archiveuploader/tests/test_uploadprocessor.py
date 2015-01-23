@@ -438,11 +438,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.getUploadProcessor(None)
 
     def testLocateDirectories(self):
-        """Return a sorted list of subdirs in a directory.
-
-        We don't test that we block on the lockfile, as this is trivial
-        code but tricky to test.
-        """
+        """Return a sorted list of subdirs in a directory."""
         testdir = tempfile.mkdtemp()
         try:
             os.mkdir("%s/dir3" % testdir)
