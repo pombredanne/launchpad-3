@@ -1,0 +1,47 @@
+##
+## txpkgupload configuration.
+##
+
+## The FTP service.
+#
+ftp:
+  ## The port to run the FTP server on.
+  port: 2121
+
+## The SFTP service.
+#
+sftp:
+  ## The URL of the XML-RPC endpoint that handles authentication of SSH
+  ## users.
+  authentication_endpoint: "http://xmlrpc-private.launchpad.dev:8087/authserver"
+  ## The absolute path to the private key used for the SFTP server.
+  host_key_private: "configs/development/txpkgupload-sftp"
+  ## The absolute path to the public key used for the SFTP server.
+  host_key_public: "configs/development/txpkgupload-sftp.pub"
+  ## An announcement printed to users when they connect.
+  # banner: "hello"
+  ## The port to run the SFTP server on, expressed in Twisted's "strports"
+  ## mini-language.
+  port: "tcp:5023"
+
+## OOPS configuration.
+#
+oops:
+  ## Directory in which to place OOPS reports.
+  # directory: ""
+  ## The reporter used when generating OOPS reports.
+  # reporter: "PKGUPLOAD"
+
+## The access log location.  Information such as connection, SSH login and
+## session start times will be logged here.
+access_log: "/tmp/txpkgupload-access.log"
+
+## Connections that are idle for more than this many seconds are
+## disconnected.
+# idle_timeout: 3600
+
+## Where on the filesystem do uploads live?
+fsroot: "/var/tmp/txpkgupload/incoming"
+
+# If true, enable additional debug logging.
+# debug: false

@@ -126,3 +126,8 @@ class IBinaryPackageReleaseDownloadCount(Interface):
         ReferenceChoice(
             title=_('Country'), required=False, readonly=True,
             vocabulary='CountryName', schema=ICountry))
+
+    country_code = TextLine(
+        title=_("Country code"), required=True, readonly=True,
+        description=_(
+            'The ISO 3166-2 country code for this count, or "unknown".'))

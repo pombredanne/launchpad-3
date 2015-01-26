@@ -19,6 +19,7 @@ from subprocess import (
 import sys
 import tempfile
 
+from contextlib import contextmanager
 from sqlobject import SQLObjectNotFound
 from swiftclient import client as swiftclient
 import transaction
@@ -437,6 +438,25 @@ class TestLibrarianGarbageCollectionBase:
                 len(results), 0, 'Too many results %r' % (results,)
                 )
 
+    @contextmanager
+    def librariangc_thinking_it_is_tomorrow(self):
+        org_time = librariangc.time
+        org_utcnow = librariangc._utcnow
+
+        def tomorrow_time():
+            return org_time() + 24 * 60 * 60 + 1
+
+        def tomorrow_utcnow():
+            return datetime.utcnow() + timedelta(days=1, seconds=1)
+
+        try:
+            librariangc.time = tomorrow_time
+            librariangc._utcnow = tomorrow_utcnow
+            yield
+        finally:
+            librariangc.time = org_time
+            librariangc._utcnow = org_utcnow
+
     def test_deleteUnwantedFiles(self):
         self.ztm.begin()
         cur = cursor()
@@ -473,22 +493,8 @@ class TestLibrarianGarbageCollectionBase:
 
         # To test removal does occur when we want it to, we need to trick
         # the garbage collector into thinking it is tomorrow.
-        org_time = librariangc.time
-        org_utcnow = librariangc._utcnow
-
-        def tomorrow_time():
-            return org_time() + 24 * 60 * 60 + 1
-
-        def tomorrow_utcnow():
-            return datetime.utcnow() + timedelta(days=1, seconds=1)
-
-        try:
-            librariangc.time = tomorrow_time
-            librariangc._utcnow = tomorrow_utcnow
+        with self.librariangc_thinking_it_is_tomorrow():
             librariangc.delete_unwanted_files(self.con)
-        finally:
-            librariangc.time = org_time
-            librariangc._utcnow = org_utcnow
 
         self.failIf(self.file_exists(content_id))
 
@@ -577,19 +583,11 @@ class TestLibrarianGarbageCollectionBase:
         librariangc.confirm_no_clock_skew(self.con)
 
         # To test this function raises an excption when it should,
-        # the garbage collector into thinking it is tomorrow.
-        org_time = librariangc.time
-
-        def tomorrow_time():
-            return org_time() + 24 * 60 * 60 + 1
-
-        try:
-            librariangc.time = tomorrow_time
+        # fool the garbage collector into thinking it is tomorrow.
+        with self.librariangc_thinking_it_is_tomorrow():
             self.assertRaises(
                 Exception, librariangc.confirm_no_clock_skew, (self.con,)
                 )
-        finally:
-            librariangc.time = org_time
 
 
 class TestDiskLibrarianGarbageCollection(
@@ -602,6 +600,39 @@ class TestDiskLibrarianGarbageCollection(
     def remove_file(self, content_id):
         path = librariangc.get_file_path(content_id)
         os.unlink(path)
+
+    def test_delete_unwanted_files_handles_migrated(self):
+        # Files that have been uploaded to Swift have ".migrated"
+        # appended to their names. These are treated just like the
+        # original file, ignoring the extension.
+        switch_dbuser('testadmin')
+        content = 'foo'
+        lfa = LibraryFileAlias.get(self.client.addFile(
+            'foo.txt', len(content), StringIO(content), 'text/plain'))
+        id_aborted = lfa.contentID
+        # Roll back the database changes, leaving the file on disk.
+        transaction.abort()
+
+        lfa = LibraryFileAlias.get(self.client.addFile(
+            'bar.txt', len(content), StringIO(content), 'text/plain'))
+        transaction.commit()
+        id_committed = lfa.contentID
+
+        switch_dbuser(config.librarian_gc.dbuser)
+
+        # Now rename the file to pretend that librarian-feed-swift has
+        # dealt with it.
+        path_aborted = librariangc.get_file_path(id_aborted)
+        os.rename(path_aborted, path_aborted + '.migrated')
+
+        path_committed = librariangc.get_file_path(id_committed)
+        os.rename(path_committed, path_committed + '.migrated')
+
+        with self.librariangc_thinking_it_is_tomorrow():
+            librariangc.delete_unwanted_files(self.con)
+
+        self.assertFalse(os.path.exists(path_aborted + '.migrated'))
+        self.assertTrue(os.path.exists(path_committed + '.migrated'))
 
     def test_deleteUnwantedFilesIgnoresNoise(self):
         # Directories with invalid names in the storage area are
@@ -616,8 +647,10 @@ class TestDiskLibrarianGarbageCollection(
         # Long non-hexadecimal number
         noisedir3_path = os.path.join(config.librarian_server.root, '11.bak')
 
-        # A file we will migrate to Swift using the --rename feed-swift option.
-        migrated_path = librariangc.get_file_path(8769786) + '.migrated'
+        # A file with the ".migrated" suffix has migrated to Swift but
+        # may still be removed from disk as unwanted by the GC. Other
+        # suffixes are unknown and stay around.
+        migrated_path = librariangc.get_file_path(8769786) + '.noise'
 
         try:
             os.mkdir(noisedir1_path)
@@ -636,16 +669,8 @@ class TestDiskLibrarianGarbageCollection(
 
             # Pretend it is tomorrow to ensure the files don't count as
             # recently created, and run the delete_unwanted_files process.
-            org_time = librariangc.time
-
-            def tomorrow_time():
-                return org_time() + 24 * 60 * 60 + 1
-
-            try:
-                librariangc.time = tomorrow_time
+            with self.librariangc_thinking_it_is_tomorrow():
                 librariangc.delete_unwanted_files(self.con)
-            finally:
-                librariangc.time = org_time
 
             # None of the rubbish we created has been touched.
             self.assert_(os.path.isdir(noisedir1_path))

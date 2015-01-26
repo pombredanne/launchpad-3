@@ -13,6 +13,7 @@ from bzrlib import (
 from bzrlib.tests import TestCaseInTempDir
 from bzrlib.transport import get_transport
 from bzrlib.transport.memory import MemoryTransport
+from lazr.sshserver.sftp import FileIsADirectory
 from testtools.deferredruntest import (
     assert_fails_with,
     AsynchronousDeferredRunTest,
@@ -33,7 +34,6 @@ from lp.codehosting.sftp import (
     TransportSFTPServer,
     )
 from lp.codehosting.sshserver.daemon import CodehostingAvatar
-from lp.services.sshserver.sftp import FileIsADirectory
 from lp.services.utils import file_exists
 from lp.testing import TestCase
 from lp.testing.factory import LaunchpadObjectFactory
