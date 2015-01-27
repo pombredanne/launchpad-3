@@ -110,8 +110,6 @@ class BugNotificationBuilder:
             ('X-Launchpad-Bug', bugtask.asEmailHeaderValue())
             for bugtask in bug.bugtasks)
 
-        self.common_headers.append()
-
         # X-Launchpad-Bug-Tags
         if len(bug.tags) > 0:
             self.common_headers.append(
