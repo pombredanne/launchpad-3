@@ -1001,7 +1001,7 @@ class Person(
             (Product, Distribution, KarmaCache.karmavalue),
              KarmaCache.personID == self.id,
              KarmaCache.category == None,
-             KarmaCache.project == None,
+             KarmaCache.projectgroup == None,
              Or(
                 And(Product.id != None, Product.active == True,
                     ProductSet.getProductPrivacyFilter(user)),
@@ -1264,7 +1264,7 @@ class Person(
             KarmaCache.category == KarmaCategory.id,
             KarmaCache.person == self.id,
             KarmaCache.product == None,
-            KarmaCache.project == None,
+            KarmaCache.projectgroup == None,
             KarmaCache.distribution == None,
             KarmaCache.sourcepackagename == None)
         result = store.find((KarmaCache, KarmaCategory), conditions)
