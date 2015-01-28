@@ -370,7 +370,7 @@ class DebBinaryUploadFileTests(PackageUploadFileTestCase):
                                   data_format=None, members=None):
         """Create a DebBinaryUploadFile."""
         if data_format is not None or members is not None:
-            data = self.createDeb(filename, data_format, members)
+            data = self.createDeb(filename, data_format, members=members)
         else:
             data = "DUMMY DATA"
         (path, md5, sha1, size) = self.writeUploadFile(filename, data)
