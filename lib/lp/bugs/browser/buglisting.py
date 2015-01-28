@@ -1717,7 +1717,7 @@ class TextualBugTaskSearchListingView(BugTaskSearchListingView):
         elif IProduct.providedBy(self.context):
             search_params.setProduct(self.context)
         elif IProjectGroup.providedBy(self.context):
-            search_params.setProject(self.context)
+            search_params.setProjectGroup(self.context)
         elif (ISourcePackage.providedBy(self.context) or
               IDistributionSourcePackage.providedBy(self.context)):
             search_params.setSourcePackage(self.context)
