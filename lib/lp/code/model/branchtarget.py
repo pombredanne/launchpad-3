@@ -82,9 +82,8 @@ class PackageBranchTarget(_BaseBranchTarget):
 
     def getNamespace(self, owner):
         """See `IBranchTarget`."""
-        from lp.code.model.branchnamespace import (
-            PackageNamespace)
-        return PackageNamespace(owner, self.sourcepackage)
+        from lp.code.model.branchnamespace import PackageBranchNamespace
+        return PackageBranchNamespace(owner, self.sourcepackage)
 
     @property
     def collection(self):
@@ -216,9 +215,8 @@ class PersonBranchTarget(_BaseBranchTarget):
 
     def getNamespace(self, owner):
         """See `IBranchTarget`."""
-        from lp.code.model.branchnamespace import (
-            PersonalNamespace)
-        return PersonalNamespace(owner)
+        from lp.code.model.branchnamespace import PersonalBranchNamespace
+        return PersonalBranchNamespace(owner)
 
     @property
     def collection(self):
@@ -302,9 +300,8 @@ class ProductBranchTarget(_BaseBranchTarget):
 
     def getNamespace(self, owner):
         """See `IBranchTarget`."""
-        from lp.code.model.branchnamespace import (
-            ProductNamespace)
-        return ProductNamespace(owner, self.product)
+        from lp.code.model.branchnamespace import ProjectBranchNamespace
+        return ProjectBranchNamespace(owner, self.product)
 
     @property
     def collection(self):
