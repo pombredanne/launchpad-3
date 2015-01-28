@@ -348,14 +348,15 @@ class DebBinaryUploadFileTests(PackageUploadFileTestCase):
                 "protocols",
             }
 
-    def createDeb(self, filename, data_format):
+    def createDeb(self, filename, data_format, members=None):
         """Return the contents of a dummy .deb file."""
         tempdir = self.makeTemporaryDirectory()
-        members = [
-            "debian-binary",
-            "control.tar.gz",
-            "data.tar.%s" % data_format,
-            ]
+        if members is None:
+            members = [
+                "debian-binary",
+                "control.tar.gz",
+                "data.tar.%s" % data_format,
+                ]
         for member in members:
             write_file(os.path.join(tempdir, member), "")
         retcode = subprocess.call(
@@ -366,10 +367,10 @@ class DebBinaryUploadFileTests(PackageUploadFileTestCase):
 
     def createDebBinaryUploadFile(self, filename, component_and_section,
                                   priority_name, package, version, changes,
-                                  data_format=None):
+                                  data_format=None, members=None):
         """Create a DebBinaryUploadFile."""
-        if data_format:
-            data = self.createDeb(filename, data_format)
+        if data_format is not None or members is not None:
+            data = self.createDeb(filename, data_format, members)
         else:
             data = "DUMMY DATA"
         (path, md5, sha1, size) = self.writeUploadFile(filename, data)
@@ -403,6 +404,16 @@ class DebBinaryUploadFileTests(PackageUploadFileTestCase):
         control = self.getBaseControl()
         uploadfile.parseControl(control)
         self.assertEqual([], list(uploadfile.verifyFormat()))
+
+    def test_verifyDebTimestamp_SystemError(self):
+        # verifyDebTimestamp produces a reasonable error if we provoke a
+        # SystemError from apt_inst.DebFile.
+        uploadfile = self.createDebBinaryUploadFile(
+            "empty_0.1_all.deb", "main/admin", "extra", "empty", "0.1", None,
+            members=[])
+        self.assertEqual(
+            ["No debian archive, missing control.tar.gz"],
+            ["".join(error.args) for error in uploadfile.verifyDebTimestamp()])
 
     def test_storeInDatabase(self):
         # storeInDatabase creates a BinaryPackageRelease.

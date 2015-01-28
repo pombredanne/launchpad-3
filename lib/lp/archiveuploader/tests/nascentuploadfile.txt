@@ -523,21 +523,3 @@ being too new:
     [UploadError('ed_0.2-20_i386.deb:
     has 26 file(s) with a time stamp too far in the past
     (e.g. control [Thu Jan  3 19:29:01 2008]).',)]
-
-And we get a reasonable error if we provoke a SystemError from
-apt_inst.DebFile.
-
-    >>> import tempfile
-    >>> temp_path = tempfile.mkdtemp('nascentuploadfile')
-    >>> empty_ar_path = os.path.join(temp_path, 'empty_0.1_all.deb')
-    >>> with open(empty_ar_path, 'w') as f:
-    ...     f.write("!<arch>\n")
-
-    >>> empty_ar = DebBinaryUploadFile(
-    ...     empty_ar_path, dict(MD5='d41d8cd98f00b204e9800998ecf8427e'), 0,
-    ...     'main/admin', 'extra', 'foo', '1.2', ed_binary_changes,
-    ...     modified_insecure_policy, DevNullLogger())
-    >>> list(empty_ar.verifyDebTimestamp())
-    [UploadError('No debian archive, missing control.tar.gz',)]
-
-    >>> shutil.rmtree(temp_path)
