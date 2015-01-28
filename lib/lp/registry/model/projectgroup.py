@@ -301,7 +301,7 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
             unsupported_target = None
 
         return QuestionTargetSearch(
-            project=self,
+            projectgroup=self,
             search_text=search_text, status=status,
             language=language, sort=sort, owner=owner,
             needs_attention_from=needs_attention_from,
