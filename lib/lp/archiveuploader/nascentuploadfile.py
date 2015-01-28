@@ -742,7 +742,8 @@ class BaseBinaryUploadFile(PackageUploadFile):
             # We get an error from the constructor if the .deb does not
             # contain all the expected top-level members (debian-binary,
             # control.tar.gz, and data.tar.*).
-            yield UploadError(error)
+            yield UploadError(str(error))
+            return
         try:
             deb_file.control.go(tar_checker.callback)
             deb_file.data.go(tar_checker.callback)
