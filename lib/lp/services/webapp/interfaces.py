@@ -282,7 +282,7 @@ class NoCanonicalUrl(TypeError):
 # implementation into two parts, having a different name for the webapp/ bits.
 class ILaunchBag(Interface):
     person = Attribute('IPerson, or None')
-    project = Attribute('IProjectGroup, or None')
+    projectgroup = Attribute('IProjectGroup, or None')
     product = Attribute('IProduct, or None')
     distribution = Attribute('IDistribution, or None')
     distroseries = Attribute('IDistroSeries, or None')
