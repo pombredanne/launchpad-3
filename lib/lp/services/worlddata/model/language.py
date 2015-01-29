@@ -197,7 +197,7 @@ class LanguageSet:
                     KarmaCategory.name == 'translations',
                     KarmaCache.categoryID == KarmaCategory.id,
                     KarmaCache.productID == None,
-                    KarmaCache.projectID == None,
+                    KarmaCache.projectgroupID == None,
                     KarmaCache.sourcepackagenameID == None,
                     KarmaCache.distributionID == None)),
             PersonLanguage.personID ==
