@@ -28,7 +28,6 @@ from lp.services.database.sqlbase import block_implicit_flushes
 from lp.services.identity.interfaces.account import IAccount
 from lp.services.webapp.interaction import get_current_principal
 from lp.services.webapp.interfaces import (
-    ILaunchBag,
     ILoggedInEvent,
     IOpenLaunchBag,
     )
