@@ -88,7 +88,7 @@ from lp.services.fields import (
 from lp.translations.interfaces.translationpolicy import ITranslationPolicy
 
 
-class ProjectNameField(PillarNameField):
+class ProjectGroupNameField(PillarNameField):
 
     @property
     def _content_iface(self):
@@ -103,7 +103,7 @@ class IProjectGroupModerate(IPillar):
             description=_("Whether or not this project group has been "
                           "reviewed.")))
     name = exported(
-        ProjectNameField(
+        ProjectGroupNameField(
             title=_('Name'),
             required=True,
             description=_(

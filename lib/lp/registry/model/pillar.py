@@ -137,12 +137,12 @@ class PillarNameSet:
             "One (and only one) of product, project or distribution may be "
             "NOT NULL: %s" % row[1:])
 
-        id, product, project, distribution = row
+        id, product, projectgroup, distribution = row
 
         if product is not None:
             return getUtility(IProductSet).get(product)
-        elif project is not None:
-            return getUtility(IProjectGroupSet).get(project)
+        elif projectgroup is not None:
+            return getUtility(IProjectGroupSet).get(projectgroup)
         else:
             return getUtility(IDistributionSet).get(distribution)
 
@@ -161,7 +161,7 @@ class PillarNameSet:
             LeftJoin(
                 OtherPillarName, PillarName.alias_for == OtherPillarName.id),
             LeftJoin(Product, PillarName.product == Product.id),
-            LeftJoin(ProjectGroup, PillarName.project == ProjectGroup.id),
+            LeftJoin(ProjectGroup, PillarName.projectgroup == ProjectGroup.id),
             LeftJoin(
                 Distribution, PillarName.distribution == Distribution.id),
             ]
@@ -231,7 +231,7 @@ class PillarNameSet:
                 stacklevel=2)
         pillars = []
         # Prefill pillar.product.licenses.
-        for pillar_name, other, product, project, distro, licenses in (
+        for pillar_name, other, product, projectgroup, distro, licenses in (
             result[:limit]):
             pillar = pillar_name.pillar
             if IProduct.providedBy(pillar):
@@ -281,7 +281,7 @@ class PillarName(SQLBase):
         dbName='name', notNull=True, unique=True, alternateID=True)
     product = ForeignKey(
         foreignKey='Product', dbName='product')
-    project = ForeignKey(
+    projectgroup = ForeignKey(
         foreignKey='ProjectGroup', dbName='project')
     distribution = ForeignKey(
         foreignKey='Distribution', dbName='distribution')
@@ -297,8 +297,8 @@ class PillarName(SQLBase):
 
         if pillar_name.distribution is not None:
             return pillar_name.distribution
-        elif pillar_name.project is not None:
-            return pillar_name.project
+        elif pillar_name.projectgroup is not None:
+            return pillar_name.projectgroup
         elif pillar_name.product is not None:
             return pillar_name.product
         else:
