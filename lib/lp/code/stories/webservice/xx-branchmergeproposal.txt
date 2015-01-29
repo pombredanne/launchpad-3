@@ -412,7 +412,7 @@ the projects that are part of the project group.
 
     >>> login('admin@canonical.com')
     >>> projectgroup = factory.makeProject(name='widgets')
-    >>> fooix.project = projectgroup
+    >>> fooix.projectgroup = projectgroup
     >>> blob = factory.makeProduct(name='blob', projectgroup=projectgroup)
     >>> proposal = factory.makeBranchMergeProposal(
     ...     product=blob, set_state=BranchMergeProposalStatus.NEEDS_REVIEW)

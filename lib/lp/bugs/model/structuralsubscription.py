@@ -268,13 +268,13 @@ class ProductTargetHelper:
 
     def __init__(self, target):
         self.target = target
-        self.target_parent = target.project
+        self.target_parent = target.projectgroup
         self.target_arguments = {"product": target}
         self.pillar = target
-        if target.project is not None:
+        if target.projectgroup is not None:
             self.join = Or(
                 StructuralSubscription.product == target,
-                StructuralSubscription.projectgroup == target.project)
+                StructuralSubscription.projectgroup == target.projectgroup)
         else:
             self.join = (
                 StructuralSubscription.product == target)

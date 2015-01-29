@@ -996,12 +996,12 @@ class ProductView(PillarViewMixin, HasAnnouncementsView, SortSeriesMixin,
 
     @cachedproperty
     def effective_driver(self):
-        """Return the product driver or the project driver."""
+        """Return the product driver or the project group driver."""
         if self.context.driver is not None:
             driver = self.context.driver
-        elif (self.context.project is not None and
-              self.context.project.driver is not None):
-            driver = self.context.project.driver
+        elif (self.context.projectgroup is not None and
+              self.context.projectgroup.driver is not None):
+            driver = self.context.projectgroup.driver
         else:
             driver = None
         return driver
@@ -1319,7 +1319,7 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
         "title",
         "summary",
         "description",
-        "project",
+        "projectgroup",
         "homepageurl",
         "information_type",
         "sourceforgeproject",
@@ -2064,7 +2064,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
     def create_product(self, data):
         """Create the product from the user data."""
         # Get optional data.
-        project = data.get('project')
+        projectgroup = data.get('projectgroup')
         description = data.get('description')
         disclaim_maintainer = data.get('disclaim_maintainer', False)
         if disclaim_maintainer:
@@ -2086,7 +2086,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
             licenses=data['licenses'],
             license_info=data['license_info'],
             information_type=data.get('information_type'),
-            project=project)
+            projectgroup=projectgroup)
 
     def link_source_package(self, product, data):
         if (data.get('distroseries') is not None
