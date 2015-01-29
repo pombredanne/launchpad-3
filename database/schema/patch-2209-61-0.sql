@@ -24,28 +24,28 @@ CREATE TABLE GitRepository (
     date_last_modified timestamp without time zone DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC') NOT NULL,
     registrant integer NOT NULL REFERENCES person,
     owner integer NOT NULL REFERENCES person,
-    product integer REFERENCES product,
+    project integer REFERENCES product,
     distribution integer REFERENCES distribution,
     sourcepackagename integer REFERENCES sourcepackagename,
     name text,
     information_type integer NOT NULL,
     access_policy integer,
     access_grants integer[],
-    CONSTRAINT one_container CHECK (((product IS NULL) OR (distribution IS NULL)) AND ((distribution IS NULL) = (sourcepackagename IS NULL))),
+    CONSTRAINT one_container CHECK (((project IS NULL) OR (distribution IS NULL)) AND ((distribution IS NULL) = (sourcepackagename IS NULL))),
     CONSTRAINT valid_name CHECK (valid_git_repository_name(name))
 );
 
-CREATE UNIQUE INDEX gitrepository__owner__product__name__key
-    ON GitRepository(owner, product, name) WHERE product IS NOT NULL AND distribution IS NULL;
+CREATE UNIQUE INDEX gitrepository__owner__project__name__key
+    ON GitRepository(owner, project, name) WHERE project IS NOT NULL AND distribution IS NULL;
 CREATE UNIQUE INDEX gitrepository__owner__distribution__sourcepackagename__name__key
-    ON GitRepository(owner, distribution, sourcepackagename, name) WHERE product IS NULL AND distribution IS NOT NULL;
+    ON GitRepository(owner, distribution, sourcepackagename, name) WHERE project IS NULL AND distribution IS NOT NULL;
 CREATE UNIQUE INDEX gitrepository__owner__name__key
-    ON GitRepository(owner, name) WHERE product IS NULL AND distribution IS NULL;
+    ON GitRepository(owner, name) WHERE project IS NULL AND distribution IS NULL;
 
 COMMENT ON TABLE GitRepository IS 'Git repository';
 COMMENT ON COLUMN GitRepository.registrant IS 'The user who registered the repository.';
 COMMENT ON COLUMN GitRepository.owner IS 'The owner of the repository.';
-COMMENT ON COLUMN GitRepository.product IS 'The product that this repository belongs to.';
+COMMENT ON COLUMN GitRepository.project IS 'The project that this repository belongs to.';
 COMMENT ON COLUMN GitRepository.distribution IS 'The distribution that this repository belongs to.';
 COMMENT ON COLUMN GitRepository.sourcepackagename IS 'The source package that this repository belongs to.';
 COMMENT ON COLUMN GitRepository.name IS 'The name of this repository, if it is not the default one for its owner.';
