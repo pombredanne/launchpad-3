@@ -710,15 +710,15 @@ class TestProjectGroupBranches(TestCaseWithFactory,
 
     def setUp(self):
         super(TestProjectGroupBranches, self).setUp()
-        self.project = self.factory.makeProject()
+        self.projectgroup = self.factory.makeProject()
 
     def test_no_branches_gets_message_not_listing(self):
         # If there are no product branches on the project's products, then
         # the view shows the no code hosting message instead of a listing.
-        self.factory.makeProduct(project=self.project)
+        self.factory.makeProduct(projectgroup=self.projectgroup)
         view = create_initialized_view(
-            self.project, name='+branches', rootsite='code')
-        displayname = self.project.displayname
+            self.projectgroup, name='+branches', rootsite='code')
+        displayname = self.projectgroup.displayname
         expected_text = normalize_whitespace(
             ("Launchpad does not know where any of %s's "
              "projects host their code." % displayname))
@@ -727,25 +727,25 @@ class TestProjectGroupBranches(TestCaseWithFactory,
         self.assertEqual(expected_text, text)
 
     def test_branches_get_listing(self):
-        # If a product has a branch, then the project view has a branch
-        # listing.
-        product = self.factory.makeProduct(project=self.project)
+        # If a product has a branch, then the project group view has a
+        # branch listing.
+        product = self.factory.makeProduct(projectgroup=self.projectgroup)
         self.factory.makeProductBranch(product=product)
         view = create_initialized_view(
-            self.project, name='+branches', rootsite='code')
+            self.projectgroup, name='+branches', rootsite='code')
         table = find_tag_by_id(view(), "branchtable")
         self.assertIsNot(None, table)
 
     def test_search_batch_request(self):
         # A search request with a 'batch_request' query parameter causes the
         # view to just render the next batch of results.
-        product = self.factory.makeProduct(project=self.project)
+        product = self.factory.makeProduct(projectgroup=self.projectgroup)
         self._test_search_batch_request(product, view_name='+all-branches')
 
     def test_ajax_batch_navigation_feature_flag(self):
         # The Javascript to wire up the ajax batch navigation behaviour is
         # correctly hidden behind a feature flag.
-        product = self.factory.makeProduct(project=self.project)
+        product = self.factory.makeProduct(projectgroup=self.projectgroup)
         for i in range(10):
             self.factory.makeProductBranch(product=product)
         self._test_ajax_batch_navigation_feature_flag(
@@ -753,10 +753,10 @@ class TestProjectGroupBranches(TestCaseWithFactory,
 
     def test_non_batch_template(self):
         # The correct template is used for non batch requests.
-        product = self.factory.makeProduct(project=self.project)
+        product = self.factory.makeProduct(projectgroup=self.projectgroup)
         self._test_non_batch_template(product, 'buglisting-default.pt')
 
     def test_batch_template(self):
         # The correct template is used for batch requests.
-        product = self.factory.makeProduct(project=self.project)
+        product = self.factory.makeProduct(projectgroup=self.projectgroup)
         self._test_batch_template(product)

@@ -62,7 +62,7 @@ class TestProjectGroupView(BrowserTestCase):
         owner = self.factory.makePerson()
         product = self.factory.makeProduct(
             information_type=InformationType.PROPRIETARY,
-            project=self.project_group, owner=owner)
+            projectgroup=self.project_group, owner=owner)
         owner_browser = self.getViewBrowser(self.project_group,
                                             user=owner)
         with person_logged_in(owner):
@@ -77,11 +77,11 @@ class TestProjectGroupView(BrowserTestCase):
         owner = self.factory.makePerson()
         public_product = self.factory.makeProduct(
             information_type=InformationType.PUBLIC,
-            project=self.project_group, owner=owner)
+            projectgroup=self.project_group, owner=owner)
         public_milestone = self.factory.makeMilestone(product=public_product)
         product = self.factory.makeProduct(
             information_type=InformationType.PROPRIETARY,
-            project=self.project_group, owner=owner)
+            projectgroup=self.project_group, owner=owner)
         milestone = self.factory.makeMilestone(product=product,
                                                name=public_milestone.name)
         (group_milestone,) = self.project_group.milestones
@@ -109,10 +109,10 @@ class TestProjectGroupView(BrowserTestCase):
             owning_team.addMember(teammember, owner)
         group = self.factory.makeProject(owner=owning_team)
         private = self.factory.makeProduct(
-            project=group, owner=owner,
+            projectgroup=group, owner=owner,
             information_type=InformationType.PROPRIETARY, name='private')
         public = self.factory.makeProduct(
-            project=group, owner=owner, name='public')
+            projectgroup=group, owner=owner, name='public')
         private_milestone = self.factory.makeMilestone(
             product=private, name='1.0')
         public_milestone = self.factory.makeMilestone(
@@ -203,19 +203,22 @@ class TestProjectGroupAddProductViews(TestCaseWithFactory):
         # Information type controls are provided when creating a project via a
         # project group.
         form = make_product_form(action=1)
-        project = self.factory.makeProject()
-        with person_logged_in(project.owner):
-            view = create_initialized_view(project, '+newproduct', form=form)
+        projectgroup = self.factory.makeProject()
+        with person_logged_in(projectgroup.owner):
+            view = create_initialized_view(
+                projectgroup, '+newproduct', form=form)
         self.assertIn('information_type_data',
                       IJSONRequestCache(view.request).objects)
         self.assertIsNot(None, view.view.form_fields.get('information_type'))
 
     def test_information_type_saved(self):
         # Setting information_type to PROPRIETARY via form actually works.
-        project = self.factory.makeProject()
-        form = make_product_form(project.owner, action=2, proprietary=True)
-        with person_logged_in(project.owner):
-            view = create_initialized_view(project, '+newproduct', form=form)
+        projectgroup = self.factory.makeProject()
+        form = make_product_form(
+            projectgroup.owner, action=2, proprietary=True)
+        with person_logged_in(projectgroup.owner):
+            view = create_initialized_view(
+                projectgroup, '+newproduct', form=form)
         self.assertEqual(0, len(view.view.errors))
         product = getUtility(IProductSet).getByName(form['field.name'])
         self.assertEqual(InformationType.PROPRIETARY, product.information_type)

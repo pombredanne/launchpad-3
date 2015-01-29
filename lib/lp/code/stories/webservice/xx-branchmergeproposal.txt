@@ -411,9 +411,9 @@ Getting the merge proposals for a project group will get all the proposals for a
 the projects that are part of the project group.
 
     >>> login('admin@canonical.com')
-    >>> project = factory.makeProject(name='widgets')
-    >>> fooix.project = project
-    >>> blob = factory.makeProduct(name='blob', project=project)
+    >>> projectgroup = factory.makeProject(name='widgets')
+    >>> fooix.project = projectgroup
+    >>> blob = factory.makeProduct(name='blob', projectgroup=projectgroup)
     >>> proposal = factory.makeBranchMergeProposal(
     ...     product=blob, set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
     >>> proposal.source_branch.owner.name = 'mary'

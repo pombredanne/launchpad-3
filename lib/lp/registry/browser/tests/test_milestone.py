@@ -490,7 +490,7 @@ class TestProjectGroupMilestoneIndexQueryCount(TestQueryCountBase):
         # A ProjectGroup milestone doesn't exist unless one of its
         # Projects has a milestone of that name.
         product = self.factory.makeProduct(
-            owner=self.owner, project=self.project_group)
+            owner=self.owner, projectgroup=self.project_group)
         self.product_milestone = self.factory.makeMilestone(
             productseries=product.development_focus,
             name=self.milestone_name)
@@ -605,7 +605,7 @@ class TestMilestoneTagView(TestQueryCountBase):
         self.product = self.factory.makeProduct(
             name="product1",
             owner=self.owner,
-            project=self.project_group)
+            projectgroup=self.project_group)
         self.milestone = self.factory.makeMilestone(product=self.product)
         with person_logged_in(self.owner):
             self.milestone.setTags(self.tags, self.owner)

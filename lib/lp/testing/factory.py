@@ -940,7 +940,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return release_file
 
     def makeProduct(
-        self, name=None, project=None, displayname=None,
+        self, name=None, projectgroup=None, displayname=None,
         licenses=None, owner=None, registrant=None,
         title=None, summary=None, official_malone=None,
         translations_usage=None, bug_supervisor=None, driver=None, icon=None,
@@ -984,7 +984,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 summary,
                 self.getUniqueString('description'),
                 licenses=licenses,
-                project=project,
+                project=projectgroup,
                 registrant=registrant,
                 icon=icon,
                 information_type=information_type)

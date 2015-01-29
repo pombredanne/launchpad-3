@@ -99,7 +99,7 @@ class TestBugTargetFileBugConfirmationMessage(TestCaseWithFactory):
         # group has a customized bug filing confirmation message,
         # this message is displayed.
         project_group = self.factory.makeProject()
-        product = self.factory.makeProduct(project=project_group)
+        product = self.factory.makeProduct(projectgroup=project_group)
 
         # Without any customized bug filing confirmation message, the
         # default message is used.
@@ -130,7 +130,7 @@ class TestBugTargetFileBugConfirmationMessage(TestCaseWithFactory):
         # group has a customized bug filing confirmation message,
         # this message is displayed.
         project_group = self.factory.makeProject()
-        product = self.factory.makeProduct(project=project_group)
+        product = self.factory.makeProduct(projectgroup=project_group)
         product_series = self.factory.makeProductSeries(product=product)
 
         # Without any customized bug filing confirmation message, the
@@ -825,7 +825,7 @@ class ProjectGroupFileBugGuidedViewTestCase(TestCaseWithFactory):
         project_group = self.factory.makeProject()
         owner = project_group.owner
         product = self.factory.makeProduct(
-            owner=owner, name=product_name, project=project_group)
+            owner=owner, name=product_name, projectgroup=project_group)
         with person_logged_in(owner):
             product.official_malone = True
         form = {

@@ -232,9 +232,9 @@ Project group branches
 Branches are also accessible for a project group.
 
     >>> login('admin@canonical.com')
-    >>> project = factory.makeProject(name='widgets')
-    >>> fooix.project = project
-    >>> blob = factory.makeProduct(name='blob', project=project)
+    >>> projectgroup = factory.makeProject(name='widgets')
+    >>> fooix.project = projectgroup
+    >>> blob = factory.makeProduct(name='blob', projectgroup=projectgroup)
     >>> branch = factory.makeProductBranch(product=blob, name='bar')
     >>> branch.owner.name = 'mary'
     >>> logout()

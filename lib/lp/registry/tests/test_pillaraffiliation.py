@@ -110,8 +110,9 @@ class TestPillarAffiliation(TestCaseWithFactory):
     def test_product_group_driver_affiliation(self):
         # A person who is the driver for a product's group is affiliated.
         person = self.factory.makePerson()
-        project = self.factory.makeProject(driver=person)
-        product = self.factory.makeProduct(project=project, name='pting')
+        projectgroup = self.factory.makeProject(driver=person)
+        product = self.factory.makeProduct(
+            projectgroup=projectgroup, name='pting')
         self._check_affiliated_with_product(person, product, 'driver')
 
     def test_no_product_bug_supervisor_affiliation(self):
@@ -400,9 +401,9 @@ class TestProductSeriesPillarAffiliation(TestCaseWithFactory):
         # affiliated. Here, the affiliation is with the product.
         owner = self.factory.makePerson()
         driver = self.factory.makePerson()
-        project = self.factory.makeProject(driver=driver)
+        projectgroup = self.factory.makeProject(driver=driver)
         product = self.factory.makeProduct(
-            owner=owner, project=project, name='pting')
+            owner=owner, projectgroup=projectgroup, name='pting')
         productseries = self.factory.makeProductSeries(
             owner=owner, product=product)
         [badges] = (
