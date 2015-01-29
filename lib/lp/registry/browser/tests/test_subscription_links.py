@@ -453,7 +453,7 @@ class ProductDoesNotUseLPView(_DoesNotUseLP):
         # parent has a bugtracker (see bug 770287).
         projectgroup = self.factory.makeProject()
         with person_logged_in(self.target.owner):
-            self.target.projectgroup = projectgroup
+            self.target.project = projectgroup
         self.factory.makeProduct(
             projectgroup=projectgroup, official_malone=True)
         self._create_scenario(self.regular_user)
