@@ -446,7 +446,7 @@
     <browser:url
         for="lp.registry.interfaces.projectgroup.IProjectGroupSeries"
         path_expression="string:+series/${name}"
-        attribute_to_parent="project"/>
+        attribute_to_parent="projectgroup"/>
     <browser:menus
         classes="
             ProjectActionMenu
