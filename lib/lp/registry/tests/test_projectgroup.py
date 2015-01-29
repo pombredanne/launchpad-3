@@ -111,7 +111,7 @@ class ProjectGroupSearchTestCase(TestCaseWithFactory):
             name="zazzle-product",
             title="Hoozah",
             owner=self.person)
-        product.projectgroup = self.projectgroup1
+        product.project = self.projectgroup1
         results = self.projectgroupset.search(
             text="Hoozah", search_products=False)
         self.assertEqual(0, results.count())
@@ -123,7 +123,7 @@ class ProjectGroupSearchTestCase(TestCaseWithFactory):
             name="zazzle-product",
             title="Hoozah",
             owner=self.person)
-        product.projectgroup = self.projectgroup1
+        product.project = self.projectgroup1
         results = self.projectgroupset.search(
             text="Hoozah", search_products=True)
         self.assertEqual(1, results.count())
