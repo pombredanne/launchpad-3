@@ -116,7 +116,7 @@ class IPillarName(Interface):
     id = Int(title=_('The PillarName ID'))
     name = TextLine(title=u"The name.")
     product = Attribute('The project that has this name, or None')
-    project = Attribute('The project that has this name, or None')
+    projectgroup = Attribute('The project group that has this name, or None')
     distribution = Attribute('The distribution that has this name, or None')
     active = Attribute('The pillar is active')
     pillar = Attribute('The pillar object')

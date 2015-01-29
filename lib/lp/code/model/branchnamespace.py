@@ -538,7 +538,7 @@ class BranchNamespaceSet:
         If the given name is '+junk' or None, return None.
 
         :raise NoSuchProduct if there's no pillar with the given name or it is
-            a project.
+            a project group.
         """
         if pillar_name == '+junk':
             return None
