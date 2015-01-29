@@ -38,7 +38,7 @@ from lp.services.utils import utc_now
 
 class Announcement(SQLBase):
     """A news item. These allow us to generate lists of recent news for
-    projects, products and distributions.
+    project groups, products and distributions.
     """
     implements(IAnnouncement)
 
@@ -53,7 +53,7 @@ class Announcement(SQLBase):
         dbName='registrant', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
     product = ForeignKey(dbName='product', foreignKey='Product')
-    project = ForeignKey(dbName='project', foreignKey='ProjectGroup')
+    projectgroup = ForeignKey(dbName='project', foreignKey='ProjectGroup')
     distribution = ForeignKey(
         dbName='distribution', foreignKey='Distribution')
     title = StringCol(notNull=True)
@@ -76,8 +76,8 @@ class Announcement(SQLBase):
     def target(self):
         if self.product is not None:
             return self.product
-        elif self.project is not None:
-            return self.project
+        elif self.projectgroup is not None:
+            return self.projectgroup
         elif self.distribution is not None:
             return self.distribution
         else:
@@ -94,13 +94,13 @@ class Announcement(SQLBase):
         if IProduct.providedBy(target):
             self.product = target
             self.distribution = None
-            self.project = None
+            self.projectgroup = None
         elif IDistribution.providedBy(target):
             self.distribution = target
-            self.project = None
+            self.projectgroup = None
             self.product = None
         elif IProjectGroup.providedBy(target):
-            self.project = target
+            self.projectgroup = target
             self.distribution = None
             self.product = None
         else:
@@ -192,11 +192,11 @@ class MakesAnnouncements(HasAnnouncements):
         """See IHasAnnouncements."""
 
         # We establish the appropriate target property.
-        project = product = distribution = None
+        projectgroup = product = distribution = None
         if IProduct.providedBy(self):
             product = self
         elif IProjectGroup.providedBy(self):
-            project = self
+            projectgroup = self
         elif IDistribution.providedBy(self):
             distribution = self
         else:
@@ -209,7 +209,7 @@ class MakesAnnouncements(HasAnnouncements):
             summary = summary,
             url = url,
             product = product,
-            project = project,
+            projectgroup = projectgroup,
             distribution = distribution
             )
 

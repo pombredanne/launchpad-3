@@ -145,8 +145,8 @@ Any of the pillars that can make announcements can generate a listing of
 announcements. The listings can either include unpublished items, or just be
 of published items that are visible to everyone.
 
-Note that products that are part of a project will show all the project
-announcements, and vice versa.
+Note that products that are part of a project group will show all the
+project group announcements, and vice versa.
 
     >>> import transaction
     >>> transaction.commit()
