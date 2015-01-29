@@ -336,7 +336,7 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IQuestionCollection`."""
         return FAQSearch(
             search_text=search_text, owner=owner, sort=sort,
-            project=self).getResults()
+            projectgroup=self).getResults()
 
     def hasProducts(self):
         """Returns True if a project has products associated with it, False
