@@ -197,7 +197,7 @@ class OAuthAccessToken(OAuthBase, SQLBase):
 
     product = ForeignKey(
         dbName='product', foreignKey='Product', notNull=False, default=None)
-    project = ForeignKey(
+    projectgroup = ForeignKey(
         dbName='project', foreignKey='ProjectGroup', notNull=False,
         default=None)
     sourcepackagename = ForeignKey(
@@ -208,22 +208,22 @@ class OAuthAccessToken(OAuthBase, SQLBase):
         notNull=False, default=None)
 
     def __init__(self, consumer, permission, key, secret='', person=None,
-                 date_expires=None, product=None, project=None,
+                 date_expires=None, product=None, projectgroup=None,
                  distribution=None, sourcepackagename=None):
         secret = hashlib.sha256(secret).hexdigest()
         super(OAuthAccessToken, self).__init__(
             consumer=consumer, permission=permission, key=key,
             _secret=secret, person=person, date_expires=date_expires,
-            product=product, project=project, distribution=distribution,
-            sourcepackagename=sourcepackagename)
+            product=product, projectgroup=projectgroup,
+            distribution=distribution, sourcepackagename=sourcepackagename)
 
     @property
     def context(self):
         """See `IOAuthToken`."""
         if self.product:
             return self.product
-        elif self.project:
-            return self.project
+        elif self.projectgroup:
+            return self.projectgroup
         elif self.distribution:
             if self.sourcepackagename:
                 return self.distribution.getSourcePackage(
@@ -261,7 +261,7 @@ class OAuthRequestToken(OAuthBase, SQLBase):
 
     product = ForeignKey(
         dbName='product', foreignKey='Product', notNull=False, default=None)
-    project = ForeignKey(
+    projectgroup = ForeignKey(
         dbName='project', foreignKey='ProjectGroup', notNull=False,
         default=None)
     sourcepackagename = ForeignKey(
@@ -272,22 +272,22 @@ class OAuthRequestToken(OAuthBase, SQLBase):
         notNull=False, default=None)
 
     def __init__(self, consumer, key, secret='', permission=None, person=None,
-                 date_expires=None, product=None, project=None,
+                 date_expires=None, product=None, projectgroup=None,
                  distribution=None, sourcepackagename=None):
         secret = hashlib.sha256(secret).hexdigest()
         super(OAuthRequestToken, self).__init__(
             consumer=consumer, permission=permission, key=key,
             _secret=secret, person=person, date_expires=date_expires,
-            product=product, project=project, distribution=distribution,
-            sourcepackagename=sourcepackagename)
+            product=product, projectgroup=projectgroup,
+            distribution=distribution, sourcepackagename=sourcepackagename)
 
     @property
     def context(self):
         """See `IOAuthToken`."""
         if self.product:
             return self.product
-        elif self.project:
-            return self.project
+        elif self.projectgroup:
+            return self.projectgroup
         elif self.distribution:
             if self.sourcepackagename:
                 return self.distribution.getSourcePackage(
@@ -323,7 +323,7 @@ class OAuthRequestToken(OAuthBase, SQLBase):
         if IProduct.providedBy(context):
             self.product = context
         elif IProjectGroup.providedBy(context):
-            self.project = context
+            self.projectgroup = context
         elif IDistribution.providedBy(context):
             self.distribution = context
         elif IDistributionSourcePackage.providedBy(context):
@@ -352,7 +352,7 @@ class OAuthRequestToken(OAuthBase, SQLBase):
             consumer=self.consumer, person=self.person, key=key,
             secret=secret, permission=access_level,
             date_expires=self.date_expires, product=self.product,
-            project=self.project, distribution=self.distribution,
+            projectgroup=self.projectgroup, distribution=self.distribution,
             sourcepackagename=self.sourcepackagename)
 
         # We want to notify the user that this oauth token has been generated

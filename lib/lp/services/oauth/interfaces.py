@@ -148,8 +148,8 @@ class IOAuthToken(Interface):
         description=_('The key used to identify this token.  It is included '
                       'by the consumer in each request.'))
     product = Choice(title=_('Project'), required=False, vocabulary='Product')
-    project = Choice(
-        title=_('Project'), required=False, vocabulary='ProjectGroup')
+    projectgroup = Choice(
+        title=_('Project Group'), required=False, vocabulary='ProjectGroup')
     sourcepackagename = Choice(
         title=_("Package"), required=False, vocabulary='SourcePackageName')
     distribution = Choice(

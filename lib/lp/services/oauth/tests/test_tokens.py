@@ -223,9 +223,9 @@ class TestRequestTokens(TestOAuth):
             self.factory.makeProduct)
         self.assertEquals(token.context.name, name)
 
-    def test_review_with_project_context(self):
+    def test_review_with_project_group_context(self):
         # When reviewing a request token, the context may be set to a
-        # project.
+        # project group.
         token, name = self._reviewed_token_for_context(
             self.factory.makeProject)
         self.assertEquals(token.context.name, name)
