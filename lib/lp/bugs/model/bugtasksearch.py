@@ -427,12 +427,12 @@ def _build_query(params):
         #     join_tables += tables
         #     extra_clauses += clauses
 
-    if params.project:
+    if params.projectgroup:
         clauseTables.append(Product)
         extra_clauses.append(And(
             BugTaskFlat.product_id == Product.id,
             search_value_to_storm_where_condition(
-                Product.project, params.project)))
+                Product.project, params.projectgroup)))
 
     if params.omit_dupes:
         extra_clauses.append(BugTaskFlat.duplicateof == None)
@@ -483,7 +483,7 @@ def _build_query(params):
         # Milestones apply to all structural subscription searches.
         ss_clauses = [
             In(BugTaskFlat.milestone_id, Select(SS.milestoneID, tables=[SS]))]
-        if (params.project is None
+        if (params.projectgroup is None
             and params.product is None and params.productseries is None):
             # This search is *not* contrained to project related bugs, so
             # include distro, distroseries, DSP and SP subscriptions.
@@ -518,9 +518,9 @@ def _build_query(params):
         if params.distribution is None and params.distroseries is None:
             # This search is *not* contrained to distro related bugs so
             # include products, productseries, and project group subscriptions.
-            project_match = True
-            if params.project is not None:
-                project_match = Product.project == params.project
+            projectgroup_match = True
+            if params.projectgroup is not None:
+                projectgroup_match = Product.project == params.projectgroup
             ss_clauses.append(In(
                 BugTaskFlat.product_id,
                 Select(SS.productID, tables=[SS])))
@@ -532,7 +532,7 @@ def _build_query(params):
                 Select(Product.id, tables=[SS, Product],
                        where=And(
                            SS.projectID == Product.projectID,
-                           project_match,
+                           projectgroup_match,
                            Product.active))))
         extra_clauses.append(Or(*ss_clauses))
 
