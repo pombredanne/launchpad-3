@@ -73,8 +73,8 @@ class TestTranslationPermission(TestCaseWithFactory):
 
     def makeProductInProjectGroup(self):
         """Create a `Product` that's in a `ProjectGroup`."""
-        project = self.factory.makeProject()
-        return self.factory.makeProduct(project=project)
+        projectgroup = self.factory.makeProject()
+        return self.factory.makeProduct(projectgroup=projectgroup)
 
     def closeTranslations(self, product):
         """Set translation permissions for `product` to Closed.

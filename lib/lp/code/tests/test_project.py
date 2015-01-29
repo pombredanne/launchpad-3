@@ -15,16 +15,16 @@ class TestProjectBranches(TestCaseWithFactory):
 
     def setUp(self):
         super(TestProjectBranches, self).setUp()
-        self.project = self.factory.makeProject()
-        self.product = self.factory.makeProduct(project=self.project)
+        self.projectgroup = self.factory.makeProject()
+        self.product = self.factory.makeProduct(projectgroup=self.projectgroup)
 
     def test_has_branches_with_no_branches(self):
-        # If there are no product branches on the project's products, then
-        # has branches returns False.
-        self.assertFalse(self.project.has_branches())
+        # If there are no product branches on the project group's products,
+        # then has_branches returns False.
+        self.assertFalse(self.projectgroup.has_branches())
 
     def test_has_branches_with_branches(self):
-        # If a product has a branch, then the product's project returns
-        # true for has_branches.
+        # If a product has a branch, then the product's project group
+        # returns true for has_branches.
         self.factory.makeProductBranch(product=self.product)
-        self.assertTrue(self.project.has_branches())
+        self.assertTrue(self.projectgroup.has_branches())

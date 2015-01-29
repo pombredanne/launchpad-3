@@ -191,8 +191,8 @@ class TestRevisionCache(TestCaseWithFactory):
         # Revisions across a project group can be determined using the
         # inProjectGroup method.
         projectgroup = self.factory.makeProject()
-        product1 = self.factory.makeProduct(project=projectgroup)
-        product2 = self.factory.makeProduct(project=projectgroup)
+        product1 = self.factory.makeProduct(projectgroup=projectgroup)
+        product2 = self.factory.makeProduct(projectgroup=projectgroup)
         rev1 = self.makeCachedRevision(product=product1)
         rev2 = self.makeCachedRevision(product=product2)
         # Make two other revisions, one in a different product, and another
