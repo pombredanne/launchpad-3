@@ -9,7 +9,7 @@ __all__ = [
     'branch_collection_for_distro_series',
     'branch_collection_for_person',
     'branch_collection_for_product',
-    'branch_collection_for_project',
+    'branch_collection_for_project_group',
     'branch_collection_for_source_package',
     'branch_collection_for_distro_source_package',
     ]
@@ -25,9 +25,9 @@ def branch_collection_for_product(product):
     return getUtility(IAllBranches).inProduct(product)
 
 
-def branch_collection_for_project(project):
-    """Adapt a project to a branch collection."""
-    return getUtility(IAllBranches).inProject(project)
+def branch_collection_for_project_group(project_group):
+    """Adapt a project group to a branch collection."""
+    return getUtility(IAllBranches).inProjectGroup(project_group)
 
 
 def branch_collection_for_person(person):

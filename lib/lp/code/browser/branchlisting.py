@@ -1336,7 +1336,7 @@ class ProjectBranchesView(BranchListingView):
     show_series_links = True
 
     def _getCollection(self):
-        return getUtility(IAllBranches).inProject(self.context)
+        return getUtility(IAllBranches).inProjectGroup(self.context)
 
     @property
     def no_branch_message(self):
