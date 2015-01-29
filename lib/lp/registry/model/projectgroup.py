@@ -262,7 +262,7 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def _customizeSearchParams(self, search_params):
         """Customize `search_params` for this milestone."""
-        search_params.setProject(self)
+        search_params.setProjectGroup(self)
 
     def _getOfficialTagClause(self):
         """See `OfficialBugTagTargetMixin`."""

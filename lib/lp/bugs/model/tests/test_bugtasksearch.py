@@ -1057,7 +1057,7 @@ class ProjectGroupTarget(BugTargetTestBase, BugTargetWithBugSuperVisor,
             bugtasks=self.bugtasks2, owner=self.searchtarget2.owner)
 
     def setBugParamsTarget(self, params, target):
-        params.setProject(target)
+        params.setProjectGroup(target)
 
     def makeBugTasks(self, bugtarget=None, bugtasks=None, owner=None):
         """Create bug tasks for the search target."""
