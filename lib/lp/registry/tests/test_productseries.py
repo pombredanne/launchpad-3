@@ -358,7 +358,7 @@ class TestProductSeriesDrivers(TestCaseWithFactory):
             self.projectgroup = self.factory.makeProject()
         else:
             self.projectgroup = None
-        self.product = self.factory.makeProduct(project=self.projectgroup)
+        self.product = self.factory.makeProduct(projectgroup=self.projectgroup)
         self.series = self.product.getSeries('trunk')
 
     def test_drivers_nodrivers_group(self):

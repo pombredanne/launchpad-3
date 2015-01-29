@@ -2518,7 +2518,7 @@ class TestBugTaskListingItem(TestCaseWithFactory):
     def test_tag_urls_use_view_context(self):
         """urls contain the correct project group if target_context is None"""
         project_group = self.factory.makeProject()
-        product = self.factory.makeProduct(project=project_group)
+        product = self.factory.makeProduct(projectgroup=project_group)
         bug = self.factory.makeBug(target=product)
         with person_logged_in(bug.owner):
             bug.tags = ['foo']

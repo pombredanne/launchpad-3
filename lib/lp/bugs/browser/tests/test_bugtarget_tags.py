@@ -14,20 +14,21 @@ class TestBugTargetTags(TestCaseWithFactory):
 
     def setUp(self):
         super(TestBugTargetTags, self).setUp()
-        self.project = self.factory.makeProject()
-        self.target_product = self.factory.makeProduct(project=self.project)
+        self.project_group = self.factory.makeProject()
+        self.target_product = self.factory.makeProduct(
+            projectgroup=self.project_group)
 
     def test_no_tags(self):
         self.factory.makeBug(target=self.target_product)
         view = create_view(
-            self.project,
+            self.project_group,
             name="+bugtarget-portlet-tags-content")
         self.assertEqual([], [tag['tag'] for tag in view.tags_cloud_data])
 
     def test_tags(self):
         self.factory.makeBug(target=self.target_product, tags=['foo'])
         view = create_view(
-            self.project,
+            self.project_group,
             name="+bugtarget-portlet-tags-content")
         self.assertEqual(
             [u'foo'],
@@ -43,7 +44,7 @@ class TestBugTargetTags(TestCaseWithFactory):
             self.factory.makeBug(
                 target=self.target_product, tags=['tag-first'])
         view = create_view(
-            self.project,
+            self.project_group,
             name="+bugtarget-portlet-tags-content")
         self.assertEqual(
             [u'tag-first', u'tag-middle', u'tag-last'],

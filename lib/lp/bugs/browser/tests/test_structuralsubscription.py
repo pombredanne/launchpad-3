@@ -180,8 +180,8 @@ class TestStructuralSubscribersPortletViewBase(TestCaseWithFactory):
             self.target, name='+portlet-structural-subscribers')
 
     def setUpTarget(self):
-        project = self.factory.makeProject()
-        self.target = self.factory.makeProduct(project=project)
+        projectgroup = self.factory.makeProject()
+        self.target = self.factory.makeProduct(projectgroup=projectgroup)
 
     def test_target_label(self):
         # The target_label attribute of StructuralSubscribersPortletView
