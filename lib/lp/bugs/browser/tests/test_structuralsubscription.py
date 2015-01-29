@@ -110,7 +110,7 @@ class TestMilestoneStructuralSubscriptionTraversal(
         self.navigation = MilestoneNavigation
 
 
-class TestProjectStructuralSubscriptionTraversal(
+class TestProjectGroupStructuralSubscriptionTraversal(
     StructuralSubscriptionTraversalTestBase):
     """Test IStructuralSubscription traversal from IProjectGroup."""
 

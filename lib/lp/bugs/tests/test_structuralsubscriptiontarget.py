@@ -332,7 +332,7 @@ class TestStructuralSubscriptionTargetHelper(TestCaseWithFactory):
         self.assertEqual(target, helper.target)
         self.assertEqual(None, helper.target_parent)
         self.assertEqual(target, helper.pillar)
-        self.assertEqual({"project": target}, helper.target_arguments)
+        self.assertEqual({"projectgroup": target}, helper.target_arguments)
         self.assertEqual(
             u"StructuralSubscription.project = ?",
             compile_storm(helper.join))
