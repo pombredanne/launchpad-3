@@ -39,8 +39,9 @@ share their name namespace are Product, ProjectGroup and Distribution.
     ...
     NotFoundError: 'fnord'
 
-Inactive products/projects are not available through PillarNameSet unless we
-use the special getByName() method which returns active/inactive pillars..
+Inactive projects/project groups are not available through PillarNameSet
+unless we use the special getByName() method which returns active/inactive
+pillars.
 
     >>> 'gimp' in pillar_set
     True
