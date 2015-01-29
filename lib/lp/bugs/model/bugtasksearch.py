@@ -531,7 +531,7 @@ def _build_query(params):
                 BugTaskFlat.product_id,
                 Select(Product.id, tables=[SS, Product],
                        where=And(
-                           SS.projectID == Product.projectID,
+                           SS.projectgroupID == Product.projectID,
                            projectgroup_match,
                            Product.active))))
         extra_clauses.append(Or(*ss_clauses))
