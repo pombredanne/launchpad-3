@@ -132,7 +132,7 @@
   <adapter
       for="lp.registry.interfaces.projectgroup.IProjectGroup"
       provides="lp.code.interfaces.branchcollection.IBranchCollection"
-      factory="lp.code.adapters.branchcollection.branch_collection_for_project"/>
+      factory="lp.code.adapters.branchcollection.branch_collection_for_project_group"/>
   <adapter
       for="lp.registry.interfaces.distribution.IDistribution"
       provides="lp.code.interfaces.branchcollection.IBranchCollection"
@@ -178,7 +178,7 @@
   <adapter
       for="lp.registry.interfaces.projectgroup.IProjectGroup"
       provides="lp.code.interfaces.revisioncache.IRevisionCache"
-      factory="lp.code.adapters.revisioncache.revision_cache_for_project"/>
+      factory="lp.code.adapters.revisioncache.revision_cache_for_project_group"/>
   <adapter
       for="lp.registry.interfaces.distribution.IDistribution"
       provides="lp.code.interfaces.revisioncache.IRevisionCache"

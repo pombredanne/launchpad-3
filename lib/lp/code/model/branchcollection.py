@@ -540,10 +540,10 @@ class GenericBranchCollection:
         return self._filterBy(
             [Branch.product == product], exclude_from_search=['product'])
 
-    def inProject(self, project):
+    def inProjectGroup(self, projectgroup):
         """See `IBranchCollection`."""
         return self._filterBy(
-            [Product.project == project.id],
+            [Product.project == projectgroup.id],
             table=Product, join=Join(Product, Branch.product == Product.id))
 
     def inDistribution(self, distribution):
