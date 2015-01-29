@@ -613,20 +613,20 @@ class ProjectGroupSeries(HasSpecificationsMixin):
 
     implements(IProjectGroupSeries)
 
-    def __init__(self, project, name):
-        self.project = project
+    def __init__(self, projectgroup, name):
+        self.projectgroup = projectgroup
         self.name = name
 
     def specifications(self, user, sort=None, quantity=None, filter=None,
                        need_people=True, need_branches=True,
                        need_workitems=False):
-        return self.project.specifications(
+        return self.projectgroup.specifications(
             user, sort, quantity, filter, self.name, need_people=need_people,
             need_branches=need_branches, need_workitems=need_workitems)
 
     @property
     def title(self):
-        return "%s Series %s" % (self.project.title, self.name)
+        return "%s Series %s" % (self.projectgroup.title, self.name)
 
     @property
     def displayname(self):
