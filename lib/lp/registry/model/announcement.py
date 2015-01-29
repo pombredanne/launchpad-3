@@ -81,7 +81,7 @@ class Announcement(SQLBase):
         elif self.distribution is not None:
             return self.distribution
         else:
-            raise AssertionError, 'Announcement has no obvious target'
+            raise AssertionError('Announcement has no obvious target')
 
     @property
     def date_updated(self):
@@ -104,7 +104,7 @@ class Announcement(SQLBase):
             self.distribution = None
             self.product = None
         else:
-            raise AssertionError, 'Unknown target'
+            raise AssertionError('Unknown target')
         self.date_last_modified = UTC_NOW
 
     def retract(self):
@@ -172,7 +172,7 @@ class HasAnnouncements:
             query += """ AND
                 (Announcement.project = %s OR Announcement.product IN
                     (SELECT id FROM Product WHERE project = %s))
-                    """ % sqlvalues (self.id, self.id)
+                    """ % sqlvalues(self.id, self.id)
         elif IDistribution.providedBy(self):
             query += (' AND Announcement.distribution = %s'
                 % sqlvalues(self.id))
@@ -181,7 +181,7 @@ class HasAnnouncements:
             # all announcements.
             pass
         else:
-            raise AssertionError, 'Unsupported announcement target'
+            raise AssertionError('Unsupported announcement target')
         return Announcement.select(query, limit=limit)
 
 
@@ -200,17 +200,17 @@ class MakesAnnouncements(HasAnnouncements):
         elif IDistribution.providedBy(self):
             distribution = self
         else:
-            raise AssertionError, 'Unsupported announcement target'
+            raise AssertionError('Unsupported announcement target')
 
         # Create the announcement in the database.
         announcement = Announcement(
-            registrant = user,
-            title = title,
-            summary = summary,
-            url = url,
-            product = product,
-            projectgroup = projectgroup,
-            distribution = distribution
+            registrant=user,
+            title=title,
+            summary=summary,
+            url=url,
+            product=product,
+            projectgroup=projectgroup,
+            distribution=distribution,
             )
 
         announcement.setPublicationDate(publication_date)
@@ -224,6 +224,3 @@ class AnnouncementSet(HasAnnouncements):
 
     displayname = 'Launchpad-hosted'
     title = 'Launchpad'
-
-
-

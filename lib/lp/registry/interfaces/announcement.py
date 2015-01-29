@@ -115,5 +115,3 @@ class IAnnouncementSet(IHasAnnouncements):
 
     displayname = Attribute("Launchpad")
     title = Attribute("Launchpad title")
-
-
