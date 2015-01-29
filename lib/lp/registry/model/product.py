@@ -371,7 +371,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     _table = 'Product'
 
-    project = ForeignKey(
+    projectgroup = ForeignKey(
         foreignKey="ProjectGroup", dbName="project", notNull=False,
         default=None)
     _owner = ForeignKey(
@@ -1113,8 +1113,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             return None
         elif self.bugtracker is not None:
             return self.bugtracker
-        elif self.project is not None:
-            return self.project.bugtracker
+        elif self.projectgroup is not None:
+            return self.projectgroup.bugtracker
         else:
             return None
 
@@ -1177,12 +1177,12 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IProduct`."""
         drivers = set()
         drivers.add(self.driver)
-        if self.project is not None:
-            drivers.add(self.project.driver)
+        if self.projectgroup is not None:
+            drivers.add(self.projectgroup.driver)
         drivers.discard(None)
         if len(drivers) == 0:
-            if self.project is not None:
-                drivers.add(self.project.owner)
+            if self.projectgroup is not None:
+                drivers.add(self.projectgroup.owner)
             else:
                 drivers.add(self.owner)
         return sorted(drivers, key=lambda driver: driver.displayname)
@@ -1404,9 +1404,9 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def getInheritedTranslationPolicy(self):
         """See `ITranslationPolicy`."""
-        # A Product inherits parts of it its effective translation
-        # policy from its ProjectGroup, if any.
-        return self.project
+        # A Product inherits parts of its effective translation policy from
+        # its ProjectGroup, if any.
+        return self.projectgroup
 
     def sharesTranslationsWithOtherSide(self, person, language,
                                         sourcepackage=None,
@@ -1569,14 +1569,15 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         return False
 
 
-def get_precached_products(products, need_licences=False, need_projects=False,
-                        need_series=False, need_releases=False,
-                        role_names=None, need_role_validity=False):
+def get_precached_products(products, need_licences=False,
+                           need_projectgroups=False, need_series=False,
+                           need_releases=False, role_names=None,
+                           need_role_validity=False):
     """Load and cache product information.
 
     :param products: the products for which to pre-cache information
     :param need_licences: whether to cache license information
-    :param need_projects: whether to cache project information
+    :param need_projectgroups: whether to cache project group information
     :param need_series: whether to cache series information
     :param need_releases: whether to cache release information
     :param role_names: the role names to cache eg bug_supervisor
@@ -1659,8 +1660,9 @@ def get_precached_products(products, need_licences=False, need_projects=False,
             cache = caches[license.productID]
             if not license.license in cache._cached_licenses:
                 cache._cached_licenses.append(license.license)
-    if need_projects:
-        bulk.load_related(ProjectGroup, products_by_id.values(), ['projectID'])
+    if need_projectgroups:
+        bulk.load_related(
+            ProjectGroup, products_by_id.values(), ['projectgroupID'])
     bulk.load_related(ProductSeries, products_by_id.values(),
         ['development_focusID'])
     if role_names is not None:
@@ -1813,7 +1815,7 @@ class ProductSet:
         return results
 
     def createProduct(self, owner, name, displayname, title, summary,
-                      description=None, project=None, homepageurl=None,
+                      description=None, projectgroup=None, homepageurl=None,
                       screenshotsurl=None, wikiurl=None,
                       downloadurl=None, freshmeatproject=None,
                       sourceforgeproject=None, programminglang=None,
@@ -1839,7 +1841,7 @@ class ProductSet:
                     ' Projects.')
         product = Product(
             owner=owner, registrant=registrant, name=name,
-            displayname=displayname, title=title, project=project,
+            displayname=displayname, title=title, projectgroup=projectgroup,
             summary=summary, description=description, homepageurl=homepageurl,
             screenshotsurl=screenshotsurl, wikiurl=wikiurl,
             downloadurl=downloadurl, freshmeatproject=None,
@@ -2007,7 +2009,7 @@ class ProductSet:
 
         def eager_load(products):
             return get_precached_products(
-                products, need_licences=True, need_projects=True,
+                products, need_licences=True, need_projectgroups=True,
                 role_names=[
                     '_owner', 'registrant', 'bug_supervisor', 'driver'])
 

@@ -348,7 +348,7 @@ A project group with no translatable products is shown by
 
     >>> product = factory.makeProduct()
     >>> project_group = factory.makeProject()
-    >>> product.project = project_group
+    >>> product.projectgroup = project_group
     >>> project_group.has_translatable()
     False
 

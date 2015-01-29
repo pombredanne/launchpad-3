@@ -543,7 +543,7 @@ class GenericBranchCollection:
     def inProjectGroup(self, projectgroup):
         """See `IBranchCollection`."""
         return self._filterBy(
-            [Product.project == projectgroup.id],
+            [Product.projectgroup == projectgroup.id],
             table=Product, join=Join(Product, Branch.product == Product.id))
 
     def inDistribution(self, distribution):

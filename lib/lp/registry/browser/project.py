@@ -148,11 +148,11 @@ class ProjectSetNavigation(Navigation):
     usedfor = IProjectGroupSet
 
     def traverse(self, name):
-        # Raise a 404 on an invalid project name
-        project = self.context.getByName(name)
-        if project is None:
+        # Raise a 404 on an invalid project group name
+        projectgroup = self.context.getByName(name)
+        if projectgroup is None:
             raise NotFoundError(name)
-        return self.redirectSubTree(canonical_url(project))
+        return self.redirectSubTree(canonical_url(projectgroup))
 
 
 class ProjectSetBreadcrumb(Breadcrumb):
@@ -499,7 +499,7 @@ class ProjectGroupAddStepTwo(ProjectAddStepTwo):
             licenses=data['licenses'],
             license_info=data['license_info'],
             information_type=data.get('information_type'),
-            project=self.context,
+            projectgroup=self.context,
             )
 
     @property
@@ -591,12 +591,12 @@ class ProjectAddView(LaunchpadFormView):
     custom_widget('homepageurl', TextWidget, displayWidth=30)
     label = _('Register a project group with Launchpad')
     page_title = label
-    project = None
+    projectgroup = None
 
     @action(_('Add'), name='add')
     def add_action(self, action, data):
         """Create the new Project from the form details."""
-        self.project = getUtility(IProjectGroupSet).new(
+        self.projectgroup = getUtility(IProjectGroupSet).new(
             name=data['name'].lower().strip(),
             displayname=data['displayname'],
             title=data['title'],
@@ -605,12 +605,13 @@ class ProjectAddView(LaunchpadFormView):
             description=data['description'],
             owner=data['owner'],
             )
-        notify(ObjectCreatedEvent(self.project))
+        notify(ObjectCreatedEvent(self.projectgroup))
 
     @property
     def next_url(self):
-        assert self.project is not None, 'No project has been created'
-        return canonical_url(self.project)
+        assert self.projectgroup is not None, (
+            'No project group has been created')
+        return canonical_url(self.projectgroup)
 
 
 class ProjectBrandingView(BrandingChangeView):
@@ -655,7 +656,8 @@ class ProjectAddQuestionView(QuestionAddView):
             data=self.initial_values, ignore_request=False)
 
     def createProductField(self):
-        """Create a Choice field to select one of the project's products."""
+        """Create a Choice field to select one of the project group's
+        products."""
         return form.Fields(
             Choice(
                 __name__='product', vocabulary='ProjectProducts',
@@ -670,8 +672,8 @@ class ProjectAddQuestionView(QuestionAddView):
     @property
     def page_title(self):
         """The current page title."""
-        return _('Ask a question about a project in ${project}',
-                 mapping=dict(project=self.context.displayname))
+        return _('Ask a question about a project in ${projectgroup}',
+                 mapping=dict(projectgroup=self.context.displayname))
 
     @property
     def question_target(self):

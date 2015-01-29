@@ -388,7 +388,7 @@ def _build_query(params):
                         Milestone.id,
                         tables=[Milestone, Product],
                         where=And(
-                            Product.project == params.milestone.target,
+                            Product.projectgroup == params.milestone.target,
                             Milestone.productID == Product.id,
                             Milestone.name == params.milestone.name,
                             ProductSet.getProductPrivacyFilter(params.user)))))
@@ -410,7 +410,7 @@ def _build_query(params):
                     Milestone.id,
                     tables=[Milestone, Product, MilestoneTag],
                     where=And(
-                        Product.project == params.milestone_tag.target,
+                        Product.projectgroup == params.milestone_tag.target,
                         Milestone.productID == Product.id,
                         Milestone.id == MilestoneTag.milestone_id,
                         MilestoneTag.tag.is_in(params.milestone_tag.tags)),
@@ -432,7 +432,7 @@ def _build_query(params):
         extra_clauses.append(And(
             BugTaskFlat.product_id == Product.id,
             search_value_to_storm_where_condition(
-                Product.project, params.projectgroup)))
+                Product.projectgroup, params.projectgroup)))
 
     if params.omit_dupes:
         extra_clauses.append(BugTaskFlat.duplicateof == None)
@@ -520,7 +520,8 @@ def _build_query(params):
             # include products, productseries, and project group subscriptions.
             projectgroup_match = True
             if params.projectgroup is not None:
-                projectgroup_match = Product.project == params.projectgroup
+                projectgroup_match = (
+                    Product.projectgroup == params.projectgroup)
             ss_clauses.append(In(
                 BugTaskFlat.product_id,
                 Select(SS.productID, tables=[SS])))
@@ -531,7 +532,7 @@ def _build_query(params):
                 BugTaskFlat.product_id,
                 Select(Product.id, tables=[SS, Product],
                        where=And(
-                           SS.projectgroupID == Product.projectID,
+                           SS.projectgroupID == Product.projectgroupID,
                            projectgroup_match,
                            Product.active))))
         extra_clauses.append(Or(*ss_clauses))
