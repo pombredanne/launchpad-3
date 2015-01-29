@@ -292,7 +292,7 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
         self.factory.makeProductBranch()
         self.factory.makeAnyBranch()
         projectgroup = self.factory.makeProject()
-        removeSecurityProxy(branch.product).project = projectgroup
+        removeSecurityProxy(branch.product).projectgroup = projectgroup
         collection = self.all_branches.inProjectGroup(projectgroup)
         self.assertEqual([branch], list(collection.getBranches()))
 

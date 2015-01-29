@@ -161,13 +161,13 @@ class HasAnnouncements:
                 Announcement.active IS TRUE
                 """
         if IProduct.providedBy(self):
-            if self.project is None:
+            if self.projectgroup is None:
                 query += """ AND
                     Announcement.product = %s""" % sqlvalues(self.id)
             else:
                 query += """ AND
                     (Announcement.product = %s OR Announcement.project = %s)
-                    """ % sqlvalues(self.id, self.project)
+                    """ % sqlvalues(self.id, self.projectgroup)
         elif IProjectGroup.providedBy(self):
             query += """ AND
                 (Announcement.project = %s OR Announcement.product IN

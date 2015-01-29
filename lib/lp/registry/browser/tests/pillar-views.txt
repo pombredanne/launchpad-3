@@ -155,7 +155,7 @@ Project groups are supported too, but they only display the
 applications used by their products.
 
     >>> project_group = factory.makeProject(name='box', owner=product.owner)
-    >>> product.project = project_group
+    >>> product.projectgroup = project_group
 
     >>> view = create_view(project_group, '+get-involved')
     >>> print view.blueprints_usage.name

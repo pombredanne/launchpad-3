@@ -383,7 +383,7 @@ anything actually set.
 If there is a project group on the product, we would expect the project
 group owner:
 
-    >>> print series.product.project.name
+    >>> print series.product.projectgroup.name
     testproj
     >>> for d in series.drivers:
     ...     print d.name
@@ -392,14 +392,14 @@ group owner:
 If there is NO project group on the product, then we expect the product
 owner:
 
-    >>> product.project = None
+    >>> product.projectgroup = None
     >>> for d in series.drivers:
     ...     print d.name
     mark
 
 Now let's put the project group back:
 
-    >>> product.project = projectgroup.id
+    >>> product.projectgroup = projectgroup.id
     >>> flush_database_updates()
 
 Edgar and cprov will be the drivers.
@@ -434,7 +434,7 @@ as driver, too.
 
 Without a project group, the driver role falls back to the product owner.
 
-    >>> product.project = None
+    >>> product.projectgroup = None
     >>> for d in series.drivers:
     ...     print d.name
     cprov

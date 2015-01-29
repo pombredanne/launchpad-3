@@ -1072,7 +1072,7 @@ class ProjectGroupTarget(BugTargetTestBase, BugTargetWithBugSuperVisor,
         with person_logged_in(owner):
             product = self.factory.makeProduct(owner=owner)
             self.products.append(product)
-            product.project = self.searchtarget
+            product.projectgroup = self.searchtarget
             bugtasks.append(
                 self.factory.makeBugTask(target=product))
             bugtasks[-1].importance = BugTaskImportance.HIGH
@@ -1081,7 +1081,7 @@ class ProjectGroupTarget(BugTargetTestBase, BugTargetWithBugSuperVisor,
 
             product = self.factory.makeProduct(owner=owner)
             self.products.append(product)
-            product.project = self.searchtarget
+            product.projectgroup = self.searchtarget
             bugtasks.append(
                 self.factory.makeBugTask(target=product))
             bugtasks[-1].importance = BugTaskImportance.LOW
@@ -1090,7 +1090,7 @@ class ProjectGroupTarget(BugTargetTestBase, BugTargetWithBugSuperVisor,
 
             product = self.factory.makeProduct(owner=owner)
             self.products.append(product)
-            product.project = self.searchtarget
+            product.projectgroup = self.searchtarget
             bugtasks.append(
                 self.factory.makeBugTask(target=product))
             bugtasks[-1].importance = BugTaskImportance.CRITICAL
@@ -2390,7 +2390,7 @@ class TargetLessTestCase(TestCaseWithFactory):
         self.factory.makeBug(target=product)
         with person_logged_in(product.owner):
             project_group = self.factory.makeProject(owner=product.owner)
-            product.project = project_group
+            product.projectgroup = project_group
         with person_logged_in(subscriber):
             project_group.addBugSubscription(subscriber, subscriber)
         params = BugTaskSearchParams(

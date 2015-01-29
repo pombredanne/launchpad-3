@@ -984,7 +984,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 summary,
                 self.getUniqueString('description'),
                 licenses=licenses,
-                project=projectgroup,
+                projectgroup=projectgroup,
                 registrant=registrant,
                 icon=icon,
                 information_type=information_type)

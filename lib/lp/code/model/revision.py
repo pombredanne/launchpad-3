@@ -521,7 +521,7 @@ class RevisionSet:
             conditions = And(conditions, Branch.product == obj)
         elif IProjectGroup.providedBy(obj):
             origin.append(Join(Product, Branch.product == Product.id))
-            conditions = And(conditions, Product.project == obj)
+            conditions = And(conditions, Product.projectgroup == obj)
         else:
             raise AssertionError(
                 "Not an IProduct or IProjectGroup: %r" % obj)

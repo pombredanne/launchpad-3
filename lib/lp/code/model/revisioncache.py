@@ -109,7 +109,7 @@ class GenericRevisionCollection:
         """See `IRevisionCollection`."""
         return self._filterBy(
             [RevisionCache.product == Product.id,
-             Product.project == projectgroup])
+             Product.projectgroup == projectgroup])
 
     def inSourcePackage(self, package):
         """See `IRevisionCollection`."""

@@ -106,7 +106,7 @@ class TestRobotsProjectGroup(BrowserTestCase, TestRobotsMixin):
         self.factory.makePOTemplate(
             productseries=self.product.development_focus)
         self.naked_translatable = removeSecurityProxy(self.product)
-        self.naked_translatable.project = self.target
+        self.naked_translatable.projectgroup = self.target
 
 
 class TestRobotsProductSeries(BrowserTestCase, TestRobotsMixin):
