@@ -163,7 +163,6 @@ from lp.services.messages.interfaces.message import (
     )
 from lp.services.webservice.apihelpers import (
     patch_choice_parameter_type,
-    patch_choice_vocabulary,
     patch_collection_property,
     patch_collection_return_type,
     patch_entry_explicit_version,
@@ -693,7 +692,7 @@ patch_plain_parameter_type(
     IBug, 'getNominationFor', 'target', IBugTarget)
 patch_plain_parameter_type(
     IBug, 'getNominations', 'target', IBugTarget)
-patch_choice_vocabulary(
+patch_choice_parameter_type(
     IBug, 'subscribe', 'level', BugNotificationLevel)
 
 

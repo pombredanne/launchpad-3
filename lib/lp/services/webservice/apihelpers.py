@@ -119,20 +119,6 @@ def patch_collection_property(exported_class, property_name,
     exported_class[property_name].value_type.schema = collection_type
 
 
-def patch_choice_vocabulary(exported_class, method_name, param_name,
-                            vocabulary):
-    """Set the `Vocabulary` for a `Choice` parameter for a given method.
-
-    :param exported_class: The class containing the property.
-    :param property_name: The name of the property whose type you need
-        to patch.
-    :param vocabulary: The `Vocabulary` type.
-    """
-    exported_class[method_name].queryTaggedValue(
-        LAZR_WEBSERVICE_EXPORTED)[
-            'params'][param_name].vocabulary = vocabulary
-
-
 def patch_entry_explicit_version(interface, version):
     """Make it look as though an entry definition used as_of.
 
