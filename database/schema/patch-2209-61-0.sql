@@ -27,7 +27,7 @@ CREATE TABLE GitRepository (
     project integer REFERENCES product,
     distribution integer REFERENCES distribution,
     sourcepackagename integer REFERENCES sourcepackagename,
-    name text,
+    name text NOT NULL,
     information_type integer NOT NULL,
     access_policy integer,
     access_grants integer[],
