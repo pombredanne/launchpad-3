@@ -48,6 +48,7 @@ from zope.schema import (
 from lp import _
 from lp.app.errors import NotFoundError
 from lp.services.librarian.interfaces import ILibraryFileAlias
+from lp.services.webservice.apihelpers import patch_reference_property
 
 
 class IMessage(Interface):
@@ -117,7 +118,7 @@ class IMessage(Interface):
 
 
 # Fix for self-referential schema.
-IMessage['parent'].schema = IMessage
+patch_reference_property(IMessage, 'parent', IMessage)
 
 
 class IMessageSet(Interface):

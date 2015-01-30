@@ -119,6 +119,17 @@ def patch_collection_property(exported_class, property_name,
     exported_class[property_name].value_type.schema = collection_type
 
 
+def patch_choice_property(exported_class, property_name, choice_type):
+    """Set the `Choice` type of the given property on the given class.
+
+    :param exported_class: The class containing the property.
+    :param property_name: The name of the property whose type you need
+        to patch.
+    :param choice_type: The new `Choice` type for the property.
+    """
+    exported_class[property_name].vocabulary = choice_type
+
+
 def patch_entry_explicit_version(interface, version):
     """Make it look as though an entry definition used as_of.
 

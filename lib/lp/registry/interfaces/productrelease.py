@@ -59,6 +59,7 @@ from lp.services.fields import (
     ContentNameField,
     PersonChoice,
     )
+from lp.services.webservice.apihelpers import patch_reference_property
 
 
 def file_size_constraint(value, max_size):
@@ -386,7 +387,8 @@ class IProductRelease(IProductReleaseEditRestricted, IProductReleaseView,
 
 
 # Set the schema for IProductReleaseFile now that IProductRelease is defined.
-IProductReleaseFile['productrelease'].schema = IProductRelease
+patch_reference_property(
+    IProductReleaseFile, 'productrelease', IProductRelease)
 
 
 class IProductReleaseFileAddForm(Interface):

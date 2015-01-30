@@ -61,9 +61,10 @@ from lp.code.interfaces.sourcepackagerecipe import ISourcePackageRecipe
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild,
     )
+from lp.services.webservice.apihelpers import patch_collection_property
 
 
-IBranchMergeQueue['branches'].value_type.schema = IBranch
+patch_collection_property(IBranchMergeQueue, 'branches', IBranch)
 
 # XXX: JonathanLange 2010-11-09 bug=673083: Legacy work-around for circular
 # import bugs.  Break this up into a per-package thing.

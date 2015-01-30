@@ -96,6 +96,7 @@ from lp.services.fields import (
     StrippedTextLine,
     Summary,
     )
+from lp.services.webservice.apihelpers import patch_collection_property
 
 
 class BugTaskImportance(DBEnumeratedType):
@@ -793,10 +794,10 @@ class IBugTask(IHasDateCreated, IHasBug, IBugTaskDelete):
 
 # Set schemas that were impossible to specify during the definition of
 # IBugTask itself.
-IBugTask['related_tasks'].value_type.schema = IBugTask
+patch_collection_property(IBugTask, 'related_tasks', IBugTask)
 
 # We are forced to define this now to avoid circular import problems.
-IBugWatch['bugtasks'].value_type.schema = IBugTask
+patch_collection_property(IBugWatch, 'bugtasks', IBugTask)
 
 
 class IBugTaskDelta(Interface):
