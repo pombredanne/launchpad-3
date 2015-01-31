@@ -140,6 +140,10 @@ from lp.services.fields import (
     Title,
     URIField,
     )
+from lp.services.webservice.apihelpers import (
+    patch_collection_property,
+    patch_reference_property,
+    )
 from lp.translations.interfaces.hastranslationimports import (
     IHasTranslationImports,
     )
@@ -903,8 +907,8 @@ class IProduct(
 
 
 # Fix cyclic references.
-IProjectGroup['products'].value_type = Reference(IProduct)
-IProductRelease['product'].schema = IProduct
+patch_collection_property(IProjectGroup, 'products', IProduct)
+patch_reference_property(IProductRelease, 'product', IProduct)
 
 
 class IProductSet(Interface):
@@ -1171,6 +1175,7 @@ class InvalidProductName(LaunchpadValidationError):
 # Fix circular imports.
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
-IDistributionSourcePackage['upstream_product'].schema = IProduct
+patch_reference_property(
+    IDistributionSourcePackage, 'upstream_product', IProduct)
 
-ICommercialSubscription['product'].schema = IProduct
+patch_reference_property(ICommercialSubscription, 'product', IProduct)

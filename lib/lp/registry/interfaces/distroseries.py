@@ -26,7 +26,6 @@ from lazr.restful.declarations import (
     export_read_operation,
     export_write_operation,
     exported,
-    LAZR_WEBSERVICE_EXPORTED,
     operation_for_version,
     operation_parameters,
     operation_returns_collection_of,
@@ -91,6 +90,7 @@ from lp.services.fields import (
     Title,
     UniqueField,
     )
+from lp.services.webservice.apihelpers import patch_plain_parameter_type
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.translations.interfaces.hastranslationimports import (
     IHasTranslationImports,
@@ -968,8 +968,8 @@ class IDistroSeries(IDistroSeriesEditRestricted, IDistroSeriesPublic,
 
 # We assign the schema for an `IHasBugs` method argument here
 # in order to avoid circular dependencies.
-IHasBugs['searchTasks'].queryTaggedValue(LAZR_WEBSERVICE_EXPORTED)[
-    'params']['nominated_for'].schema = IDistroSeries
+patch_plain_parameter_type(
+    IHasBugs, 'searchTasks', 'nominated_for', IDistroSeries)
 
 
 class IDistroSeriesSet(Interface):

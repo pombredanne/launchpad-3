@@ -93,6 +93,10 @@ from lp.services.fields import (
     Title,
     )
 from lp.services.messages.interfaces.message import IMessage
+from lp.services.webservice.apihelpers import (
+    patch_collection_property,
+    patch_reference_property,
+    )
 
 
 class CreateBugParams:
@@ -1013,16 +1017,16 @@ class IBug(IBugPublic, IBugView, IBugEdit, IHasLinkedBranches):
 
 
 # We are forced to define these now to avoid circular import problems.
-IBugAttachment['bug'].schema = IBug
-IBugWatch['bug'].schema = IBug
-IMessage['bugs'].value_type.schema = IBug
-ICve['bugs'].value_type.schema = IBug
+patch_reference_property(IBugAttachment, 'bug', IBug)
+patch_reference_property(IBugWatch, 'bug', IBug)
+patch_collection_property(IMessage, 'bugs', IBug)
+patch_collection_property(ICve, 'bugs', IBug)
 
 # In order to avoid circular dependencies, we only import
 # IBugSubscription (which itself imports IBug) here, and assign it as
 # the value type for the `subscriptions` collection.
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
-IBug['subscriptions'].value_type.schema = IBugSubscription
+patch_collection_property(IBug, 'subscriptions', IBugSubscription)
 
 
 class IBugDelta(Interface):
