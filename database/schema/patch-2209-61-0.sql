@@ -121,4 +121,30 @@ CREATE TABLE GitRef (
     commit_sha1 character(40) NOT NULL 
 );
 
+CREATE TABLE GitShortcut (
+    id serial PRIMARY KEY,
+    date_created timestamp without time zone DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC') NOT NULL,
+    registrant integer NOT NULL REFERENCES person,
+    owner integer REFERENCES person,
+    project integer REFERENCES product,
+    distribution integer REFERENCES distribution,
+    sourcepackagename integer REFERENCES sourcepackagename,
+    git_repository integer NOT NULL REFERENCES gitrepository,
+    CONSTRAINT one_target CHECK (((project IS NULL) OR (distribution IS NULL)) AND ((distribution IS NULL) = (sourcepackagename IS NULL)))
+);
+
+CREATE UNIQUE INDEX gitshortcut__owner__project__git_repository__key
+    ON GitShortcut(owner, project, git_repository) WHERE project IS NOT NULL AND distribution IS NULL;
+CREATE UNIQUE INDEX gitshortcut__owner__distribution__sourcepackagename__git_repository_key
+    ON GitShortcut(owner, distribution, sourcepackagename, git_repository) WHERE project IS NULL AND distribution IS NOT NULL;
+
+COMMENT ON TABLE GitShortcut IS 'The preferred Git repository for a project or distribution source package target, possibly per-owner.';
+COMMENT ON COLUMN GitShortcut.date_created IS 'The date this link was created.';
+COMMENT ON COLUMN GitShortcut.registrant IS 'The person who registered this link.';
+COMMENT ON COLUMN GitShortcut.owner IS 'The person whose preferred Git repository this is, if any.';
+COMMENT ON COLUMN GitShortcut.project IS 'The project that the Git repository is linked to.';
+COMMENT ON COLUMN GitShortcut.distribution IS 'The distribution that the Git repository is linked to.';
+COMMENT ON COLUMN GitShortcut.sourcepackagename IS 'The source package that the Git repository is linked to.';
+COMMENT ON COLUMN GitShortcut.git_repository IS 'The Git repository being linked.';
+
 INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 61, 0);
