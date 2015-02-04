@@ -126,6 +126,9 @@ COMMENT ON COLUMN GitRef.repository IS 'The repository containing this reference
 COMMENT ON COLUMN GitRef.path IS 'The full path of the reference, e.g. refs/heads/master.';
 COMMENT ON COLUMN GitRef.commit_sha1 IS 'The SHA-1 hash of the object pointed to by this reference.';
 
+CREATE INDEX gitref__repository__path__idx
+    ON GitRef(repository, path);
+
 CREATE TABLE GitShortcut (
     id serial PRIMARY KEY,
     date_created timestamp without time zone DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC') NOT NULL,
