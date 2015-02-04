@@ -1776,7 +1776,7 @@ class VocabularyFilterProjectGroup(VocabularyFilter):
 
     @property
     def filter_terms(self):
-        return [PillarName.project != None]
+        return [PillarName.projectgroup != None]
 
 
 class VocabularyFilterDistribution(VocabularyFilter):
@@ -1863,7 +1863,7 @@ class PillarVocabularyBase(NamedSQLObjectHugeVocabulary):
 class DistributionOrProductVocabulary(PillarVocabularyBase):
     """Active `IDistribution` or `IProduct` objects vocabulary."""
     displayname = 'Select a project'
-    _filter = [PillarName.project == None, PillarName.active == True]
+    _filter = [PillarName.projectgroup == None, PillarName.active == True]
 
     def __contains__(self, obj):
         if IProduct.providedBy(obj):

@@ -50,3 +50,11 @@ class TestBugNotificationBuilder(TestCaseWithFactory):
         self.assertContentEqual(
             [u"Testing filter", u"Second testing filter"],
             message.get_all("X-Launchpad-Subscription"))
+
+    def test_mails_contain_notification_type_header(self):
+        utc_now = datetime.now(pytz.UTC)
+        message = self.builder.build(
+            'from', 'to', 'body', 'subject', utc_now, filters=[])
+        self.assertEqual(
+            "bug", message.get("X-Launchpad-Notification-Type", None))
+

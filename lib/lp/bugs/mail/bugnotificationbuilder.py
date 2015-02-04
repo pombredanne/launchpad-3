@@ -102,6 +102,7 @@ class BugNotificationBuilder:
         self.common_headers = [
             ('Reply-To', get_bugmail_replyto_address(bug)),
             ('Sender', config.canonical.bounce_address),
+            ('X-Launchpad-Notification-Type', 'bug'),
             ]
 
         # X-Launchpad-Bug

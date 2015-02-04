@@ -15,7 +15,6 @@ __metaclass__ = type
 __all__ = []
 
 
-from lazr.restful.declarations import LAZR_WEBSERVICE_EXPORTED
 from lazr.restful.fields import Reference
 
 from lp.blueprints.interfaces.specification import ISpecification
@@ -163,7 +162,7 @@ from lp.services.messages.interfaces.message import (
     )
 from lp.services.webservice.apihelpers import (
     patch_choice_parameter_type,
-    patch_choice_vocabulary,
+    patch_choice_property,
     patch_collection_property,
     patch_collection_return_type,
     patch_entry_explicit_version,
@@ -234,34 +233,29 @@ from lp.translations.interfaces.translationimportqueue import (
     )
 
 
-IBranch['bug_branches'].value_type.schema = IBugBranch
-IBranch['linked_bugs'].value_type.schema = IBug
-IBranch['dependent_branches'].value_type.schema = IBranchMergeProposal
-IBranch['getSubscription'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)['return_type'].schema = IBranchSubscription
-IBranch['landing_candidates'].value_type.schema = IBranchMergeProposal
-IBranch['landing_targets'].value_type.schema = IBranchMergeProposal
-IBranch['linkBug'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)['params']['bug'].schema = IBug
-IBranch['linkSpecification'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)['params']['spec'].schema = ISpecification
-IBranch['product'].schema = IProduct
-
+patch_collection_property(IBranch, 'bug_branches', IBugBranch)
+patch_collection_property(IBranch, 'linked_bugs', IBug)
+patch_collection_property(IBranch, 'dependent_branches', IBranchMergeProposal)
+patch_entry_return_type(IBranch, 'getSubscription', IBranchSubscription)
+patch_collection_property(IBranch, 'landing_candidates', IBranchMergeProposal)
+patch_collection_property(IBranch, 'landing_targets', IBranchMergeProposal)
+patch_plain_parameter_type(IBranch, 'linkBug', 'bug', IBug)
 patch_plain_parameter_type(
-    IBranch, 'setTarget', 'project', IProduct)
+    IBranch, 'linkSpecification', 'spec', ISpecification)
+patch_reference_property(IBranch, 'product', IProduct)
+
+patch_plain_parameter_type(IBranch, 'setTarget', 'project', IProduct)
 patch_plain_parameter_type(
     IBranch, 'setTarget', 'source_package', ISourcePackage)
 patch_reference_property(IBranch, 'sourcepackage', ISourcePackage)
 patch_reference_property(IBranch, 'code_import', ICodeImport)
 
-IBranch['spec_links'].value_type.schema = ISpecificationBranch
-IBranch['subscribe'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)['return_type'].schema = IBranchSubscription
-IBranch['subscriptions'].value_type.schema = IBranchSubscription
-IBranch['unlinkBug'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)['params']['bug'].schema = IBug
-IBranch['unlinkSpecification'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)['params']['spec'].schema = ISpecification
+patch_collection_property(IBranch, 'spec_links', ISpecificationBranch)
+patch_entry_return_type(IBranch, 'subscribe', IBranchSubscription)
+patch_collection_property(IBranch, 'subscriptions', IBranchSubscription)
+patch_plain_parameter_type(IBranch, 'unlinkBug', 'bug', IBug)
+patch_plain_parameter_type(
+    IBranch, 'unlinkSpecification', 'spec', ISpecification)
 
 patch_entry_return_type(IBranch, '_createMergeProposal', IBranchMergeProposal)
 patch_plain_parameter_type(
@@ -274,17 +268,17 @@ patch_collection_return_type(
 patch_collection_return_type(
     IBranchSet, 'getMergeProposals', IBranchMergeProposal)
 
-IBranchMergeProposal['getComment'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)['return_type'].schema = ICodeReviewComment
-IBranchMergeProposal['createComment'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)['params']['parent'].schema = \
-        ICodeReviewComment
+patch_entry_return_type(IBranchMergeProposal, 'getComment', ICodeReviewComment)
+patch_plain_parameter_type(
+    IBranchMergeProposal, 'createComment', 'parent', ICodeReviewComment)
 patch_entry_return_type(
     IBranchMergeProposal, 'createComment', ICodeReviewComment)
-IBranchMergeProposal['all_comments'].value_type.schema = ICodeReviewComment
-IBranchMergeProposal['nominateReviewer'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)['return_type'].schema = ICodeReviewVoteReference
-IBranchMergeProposal['votes'].value_type.schema = ICodeReviewVoteReference
+patch_collection_property(
+    IBranchMergeProposal, 'all_comments', ICodeReviewComment)
+patch_entry_return_type(
+    IBranchMergeProposal, 'nominateReviewer', ICodeReviewVoteReference)
+patch_collection_property(
+    IBranchMergeProposal, 'votes', ICodeReviewVoteReference)
 patch_collection_return_type(
     IBranchMergeProposal, 'getRelatedBugTasks', IBugTask)
 
@@ -293,32 +287,27 @@ patch_collection_return_type(
     IHasMergeProposals, 'getMergeProposals', IBranchMergeProposal)
 patch_collection_return_type(
     IHasRequestedReviews, 'getRequestedReviews', IBranchMergeProposal)
-patch_entry_return_type(
-    IHasCodeImports, 'newCodeImport', ICodeImport)
-patch_plain_parameter_type(
-    IHasCodeImports, 'newCodeImport', 'owner', IPerson)
+patch_entry_return_type(IHasCodeImports, 'newCodeImport', ICodeImport)
+patch_plain_parameter_type(IHasCodeImports, 'newCodeImport', 'owner', IPerson)
 
 # IBugTask
 
-IBugTask['findSimilarBugs'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)['return_type'].value_type.schema = IBug
+patch_collection_return_type(IBugTask, 'findSimilarBugs', IBug)
 patch_plain_parameter_type(
     IBug, 'linkHWSubmission', 'submission', IHWSubmission)
 patch_plain_parameter_type(
     IBug, 'unlinkHWSubmission', 'submission', IHWSubmission)
-patch_collection_return_type(
-    IBug, 'getHWSubmissions', IHWSubmission)
-IBug['getNominations'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)['params']['nominations'].value_type.schema = (
-        IBugNomination)
+patch_collection_return_type(IBug, 'getHWSubmissions', IHWSubmission)
+patch_list_parameter_type(
+    IBug, 'getNominations', 'nominations', Reference(schema=IBugNomination))
 patch_entry_return_type(IBug, 'addNomination', IBugNomination)
 patch_entry_return_type(IBug, 'getNominationFor', IBugNomination)
 patch_collection_return_type(IBug, 'getNominations', IBugNomination)
 
-patch_choice_parameter_type(
-    IHasBugs, 'searchTasks', 'hardware_bus', HWBus)
+patch_choice_parameter_type(IHasBugs, 'searchTasks', 'hardware_bus', HWBus)
 
-IPreviewDiff['branch_merge_proposal'].schema = IBranchMergeProposal
+patch_reference_property(
+    IPreviewDiff, 'branch_merge_proposal', IBranchMergeProposal)
 
 patch_reference_property(IPersonViewRestricted, 'archive', IArchive)
 patch_collection_property(IPersonViewRestricted, 'ppas', IArchive)
@@ -329,28 +318,21 @@ patch_plain_parameter_type(
     IPersonEditRestricted, 'createPPA', 'distribution', IDistribution)
 patch_entry_return_type(IPersonEditRestricted, 'createPPA', IArchive)
 
-IHasBuildRecords['getBuildRecords'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)[
-        'params']['pocket'].vocabulary = PackagePublishingPocket
-IHasBuildRecords['getBuildRecords'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)[
-        'params']['build_state'].vocabulary = BuildStatus
-IHasBuildRecords['getBuildRecords'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)[
-        'return_type'].value_type.schema = IBinaryPackageBuild
+patch_choice_parameter_type(
+    IHasBuildRecords, 'getBuildRecords', 'pocket', PackagePublishingPocket)
+patch_choice_parameter_type(
+    IHasBuildRecords, 'getBuildRecords', 'build_state', BuildStatus)
+patch_collection_return_type(
+    IHasBuildRecords, 'getBuildRecords', IBinaryPackageBuild)
 
-ISourcePackagePublic['distroseries'].schema = IDistroSeries
-ISourcePackagePublic['productseries'].schema = IProductSeries
-ISourcePackagePublic['getBranch'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)[
-        'params']['pocket'].vocabulary = PackagePublishingPocket
-ISourcePackagePublic['getBranch'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)['return_type'].schema = IBranch
-ISourcePackageEdit['setBranch'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)[
-        'params']['pocket'].vocabulary = PackagePublishingPocket
-ISourcePackageEdit['setBranch'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)['params']['branch'].schema = IBranch
+patch_reference_property(ISourcePackagePublic, 'distroseries', IDistroSeries)
+patch_reference_property(ISourcePackagePublic, 'productseries', IProductSeries)
+patch_choice_parameter_type(
+    ISourcePackagePublic, 'getBranch', 'pocket', PackagePublishingPocket)
+patch_entry_return_type(ISourcePackagePublic, 'getBranch', IBranch)
+patch_choice_parameter_type(
+    ISourcePackageEdit, 'setBranch', 'pocket', PackagePublishingPocket)
+patch_plain_parameter_type(ISourcePackageEdit, 'setBranch', 'branch', IBranch)
 patch_reference_property(ISourcePackage, 'distribution', IDistribution)
 
 # IPerson
@@ -367,19 +349,16 @@ patch_entry_return_type(IPerson, 'getRecipe', ISourcePackageRecipe)
 patch_collection_return_type(IPerson, 'getOwnedProjects', IProduct)
 
 # IHasRecipe
-patch_collection_property(
-    IHasRecipes, 'recipes', ISourcePackageRecipe)
+patch_collection_property(IHasRecipes, 'recipes', ISourcePackageRecipe)
 
-IPerson['hardware_submissions'].value_type.schema = IHWSubmission
+patch_collection_property(IPerson, 'hardware_submissions', IHWSubmission)
 
 # publishing.py
-ISourcePackagePublishingHistoryPublic['getBuilds'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)['return_type'].value_type.schema = (
-        IBinaryPackageBuild)
-ISourcePackagePublishingHistoryPublic[
-    'getPublishedBinaries'].queryTaggedValue(
-        LAZR_WEBSERVICE_EXPORTED)[
-            'return_type'].value_type.schema = IBinaryPackagePublishingHistory
+patch_collection_return_type(
+    ISourcePackagePublishingHistoryPublic, 'getBuilds', IBinaryPackageBuild)
+patch_collection_return_type(
+    ISourcePackagePublishingHistoryPublic, 'getPublishedBinaries',
+    IBinaryPackagePublishingHistory)
 patch_reference_property(
     IBinaryPackagePublishingHistory, 'distroarchseries',
     IDistroArchSeries)
@@ -505,45 +484,39 @@ patch_plain_parameter_type(
     IArchive, 'enableRestrictedProcessor', 'processor', IProcessor)
 
 # IBuildFarmJob
-IBuildFarmJob['status'].vocabulary = BuildStatus
-IBuildFarmJob['buildqueue_record'].schema = IBuildQueue
+patch_choice_property(IBuildFarmJob, 'status', BuildStatus)
+patch_reference_property(IBuildFarmJob, 'buildqueue_record', IBuildQueue)
 
 # IComment
-IComment['comment_author'].schema = IPerson
+patch_reference_property(IComment, 'comment_author', IPerson)
 
 # IDistribution
-IDistribution['series'].value_type.schema = IDistroSeries
-IDistribution['derivatives'].value_type.schema = IDistroSeries
-patch_reference_property(
-    IDistribution, 'currentseries', IDistroSeries)
-patch_entry_return_type(
-    IDistribution, 'getArchive', IArchive)
-patch_entry_return_type(
-    IDistribution, 'getSeries', IDistroSeries)
+patch_collection_property(IDistribution, 'series', IDistroSeries)
+patch_collection_property(IDistribution, 'derivatives', IDistroSeries)
+patch_reference_property(IDistribution, 'currentseries', IDistroSeries)
+patch_entry_return_type(IDistribution, 'getArchive', IArchive)
+patch_entry_return_type(IDistribution, 'getSeries', IDistroSeries)
 patch_collection_return_type(
     IDistribution, 'getDevelopmentSeries', IDistroSeries)
 patch_entry_return_type(
     IDistribution, 'getSourcePackage', IDistributionSourcePackage)
 patch_collection_return_type(
     IDistribution, 'searchSourcePackages', IDistributionSourcePackage)
-patch_reference_property(
-    IDistribution, 'main_archive', IArchive)
-IDistribution['all_distro_archives'].value_type.schema = IArchive
+patch_reference_property(IDistribution, 'main_archive', IArchive)
+patch_collection_property(IDistribution, 'all_distro_archives', IArchive)
 
 
 # IDistributionMirror
-IDistributionMirror['distribution'].schema = IDistribution
+patch_reference_property(IDistributionMirror, 'distribution', IDistribution)
 
 
 # IDistroSeries
 patch_entry_return_type(
     IDistroSeries, 'getDistroArchSeries', IDistroArchSeries)
-patch_reference_property(
-    IDistroSeries, 'main_archive', IArchive)
+patch_reference_property(IDistroSeries, 'main_archive', IArchive)
 patch_collection_property(
     IDistroSeries, 'enabled_architectures', IDistroArchSeries)
-patch_reference_property(
-    IDistroSeries, 'distribution', IDistribution)
+patch_reference_property(IDistroSeries, 'distribution', IDistribution)
 patch_choice_parameter_type(
     IDistroSeries, 'getPackageUploads', 'status', PackageUploadStatus)
 patch_choice_parameter_type(
@@ -558,10 +531,8 @@ patch_collection_return_type(
 patch_reference_property(IDistroSeries, 'previous_series', IDistroSeries)
 patch_reference_property(
     IDistroSeries, 'nominatedarchindep', IDistroArchSeries)
-patch_collection_return_type(
-    IDistroSeries, 'getDerivedSeries', IDistroSeries)
-patch_collection_return_type(
-    IDistroSeries, 'getParentSeries', IDistroSeries)
+patch_collection_return_type(IDistroSeries, 'getDerivedSeries', IDistroSeries)
+patch_collection_return_type(IDistroSeries, 'getParentSeries', IDistroSeries)
 patch_plain_parameter_type(
     IDistroSeries, 'getDifferencesTo', 'parent_series', IDistroSeries)
 patch_choice_parameter_type(
@@ -580,7 +551,8 @@ patch_reference_property(
     IDistroSeriesDifference, 'latest_comment', IDistroSeriesDifferenceComment)
 
 # IDistroSeriesDifferenceComment
-IDistroSeriesDifferenceComment['comment_author'].schema = IPerson
+patch_reference_property(
+    IDistroSeriesDifferenceComment, 'comment_author', IPerson)
 
 # IDistroArchSeries
 patch_reference_property(IDistroArchSeries, 'main_archive', IArchive)
@@ -590,24 +562,21 @@ patch_reference_property(ILiveFSFile, 'livefsbuild', ILiveFSBuild)
 
 # ILiveFSView
 patch_entry_return_type(ILiveFSView, 'requestBuild', ILiveFSBuild)
-ILiveFSView['builds'].value_type.schema = ILiveFSBuild
-ILiveFSView['completed_builds'].value_type.schema = ILiveFSBuild
-ILiveFSView['pending_builds'].value_type.schema = ILiveFSBuild
+patch_collection_property(ILiveFSView, 'builds', ILiveFSBuild)
+patch_collection_property(ILiveFSView, 'completed_builds', ILiveFSBuild)
+patch_collection_property(ILiveFSView, 'pending_builds', ILiveFSBuild)
 
 # IPackageset
-patch_collection_return_type(
-    IPackageset, 'setsIncluded', IPackageset)
-patch_collection_return_type(
-    IPackageset, 'setsIncludedBy', IPackageset)
+patch_collection_return_type(IPackageset, 'setsIncluded', IPackageset)
+patch_collection_return_type(IPackageset, 'setsIncludedBy', IPackageset)
 patch_plain_parameter_type(
     IPackageset, 'getSourcesSharedBy', 'other_package_set', IPackageset)
 patch_plain_parameter_type(
     IPackageset, 'getSourcesNotSharedBy', 'other_package_set', IPackageset)
-patch_collection_return_type(
-    IPackageset, 'relatedSets', IPackageset)
+patch_collection_return_type(IPackageset, 'relatedSets', IPackageset)
 
 # IPackageUpload
-IPackageUpload['pocket'].vocabulary = PackagePublishingPocket
+patch_choice_property(IPackageUpload, 'pocket', PackagePublishingPocket)
 patch_reference_property(IPackageUpload, 'distroseries', IDistroSeries)
 patch_reference_property(IPackageUpload, 'archive', IArchive)
 patch_reference_property(IPackageUpload, 'copy_source_archive', IArchive)
@@ -646,20 +615,13 @@ patch_collection_property(
     ISourcePackageRecipe, 'completed_builds', ISourcePackageRecipeBuild)
 
 # IHasBugs
-patch_plain_parameter_type(
-    IHasBugs, 'searchTasks', 'assignee', IPerson)
-patch_plain_parameter_type(
-    IHasBugs, 'searchTasks', 'bug_reporter', IPerson)
-patch_plain_parameter_type(
-    IHasBugs, 'searchTasks', 'bug_supervisor', IPerson)
-patch_plain_parameter_type(
-    IHasBugs, 'searchTasks', 'bug_commenter', IPerson)
-patch_plain_parameter_type(
-    IHasBugs, 'searchTasks', 'bug_subscriber', IPerson)
-patch_plain_parameter_type(
-    IHasBugs, 'searchTasks', 'owner', IPerson)
-patch_plain_parameter_type(
-    IHasBugs, 'searchTasks', 'affected_user', IPerson)
+patch_plain_parameter_type(IHasBugs, 'searchTasks', 'assignee', IPerson)
+patch_plain_parameter_type(IHasBugs, 'searchTasks', 'bug_reporter', IPerson)
+patch_plain_parameter_type(IHasBugs, 'searchTasks', 'bug_supervisor', IPerson)
+patch_plain_parameter_type(IHasBugs, 'searchTasks', 'bug_commenter', IPerson)
+patch_plain_parameter_type(IHasBugs, 'searchTasks', 'bug_subscriber', IPerson)
+patch_plain_parameter_type(IHasBugs, 'searchTasks', 'owner', IPerson)
+patch_plain_parameter_type(IHasBugs, 'searchTasks', 'affected_user', IPerson)
 patch_plain_parameter_type(
     IHasBugs, 'searchTasks', 'structural_subscriber', IPerson)
 
@@ -693,7 +655,7 @@ patch_plain_parameter_type(
     IBug, 'getNominationFor', 'target', IBugTarget)
 patch_plain_parameter_type(
     IBug, 'getNominations', 'target', IBugTarget)
-patch_choice_vocabulary(
+patch_choice_parameter_type(
     IBug, 'subscribe', 'level', BugNotificationLevel)
 
 
@@ -740,10 +702,8 @@ patch_collection_return_type(
 patch_reference_property(IProductSeries, 'product', IProduct)
 
 # ISpecification
-ISpecification['linkBug'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)['params']['bug'].schema = IBug
-ISpecification['unlinkBug'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)['params']['bug'].schema = IBug
+patch_plain_parameter_type(ISpecification, 'linkBug', 'bug', IBug)
+patch_plain_parameter_type(ISpecification, 'unlinkBug', 'bug', IBug)
 patch_collection_property(ISpecification, 'dependencies', ISpecification)
 patch_collection_property(
     ISpecification, 'linked_branches', ISpecificationBranch)
@@ -892,7 +852,7 @@ patch_entry_explicit_version(IBugWatch, 'beta')
 
 # IBuilder
 patch_entry_explicit_version(IBuilder, 'beta')
-IBuilder['current_build'].schema = IBuildFarmJob
+patch_reference_property(IBuilder, 'current_build', IBuildFarmJob)
 
 # IBuilderSet
 patch_operations_explicit_version(IBuilderSet, 'beta', "getByName")

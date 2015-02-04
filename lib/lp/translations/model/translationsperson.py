@@ -294,7 +294,8 @@ class TranslationsPerson:
                                 ServiceUsage.LAUNCHPAD,
                             Product.active == True)),
                     LeftJoin(
-                        ProjectGroup, ProjectGroup.id == Product.projectID),
+                        ProjectGroup,
+                        ProjectGroup.id == Product.projectgroupID),
                     Join(
                         SQL('reviewable_groups'),
                         SQL('reviewable_groups.id') ==
@@ -348,7 +349,7 @@ class TranslationsPerson:
             Product.active == True))
 
         ProjectJoin = LeftJoin(
-            ProjectGroup, ProjectGroup.id == Product.projectID)
+            ProjectGroup, ProjectGroup.id == Product.projectgroupID)
 
         # Look up translation group.
         groupjoin_conditions = Or(

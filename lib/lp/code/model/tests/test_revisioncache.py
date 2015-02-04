@@ -187,19 +187,20 @@ class TestRevisionCache(TestCaseWithFactory):
         revision_cache = getUtility(IRevisionCache).inProduct(product)
         self.assertCollectionContents([rev1, rev2], revision_cache)
 
-    def test_in_project(self):
+    def test_in_project_group(self):
         # Revisions across a project group can be determined using the
-        # inProject method.
-        project = self.factory.makeProject()
-        product1 = self.factory.makeProduct(project=project)
-        product2 = self.factory.makeProduct(project=project)
+        # inProjectGroup method.
+        projectgroup = self.factory.makeProject()
+        product1 = self.factory.makeProduct(projectgroup=projectgroup)
+        product2 = self.factory.makeProduct(projectgroup=projectgroup)
         rev1 = self.makeCachedRevision(product=product1)
         rev2 = self.makeCachedRevision(product=product2)
-        # Make two other revisions, on in a different product, and another
+        # Make two other revisions, one in a different product, and another
         # general one.
         self.makeCachedRevision(product=self.factory.makeProduct())
         self.makeCachedRevision()
-        revision_cache = getUtility(IRevisionCache).inProject(project)
+        revision_cache = getUtility(IRevisionCache).inProjectGroup(
+            projectgroup)
         self.assertCollectionContents([rev1, rev2], revision_cache)
 
     def test_in_source_package(self):

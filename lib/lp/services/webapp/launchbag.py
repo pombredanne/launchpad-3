@@ -28,7 +28,6 @@ from lp.services.database.sqlbase import block_implicit_flushes
 from lp.services.identity.interfaces.account import IAccount
 from lp.services.webapp.interaction import get_current_principal
 from lp.services.webapp.interfaces import (
-    ILaunchBag,
     ILoggedInEvent,
     IOpenLaunchBag,
     )
@@ -45,7 +44,7 @@ class LaunchBag:
     # Map Interface to attribute name.
     _registry = {
         IPerson: 'person',
-        IProjectGroup: 'project',
+        IProjectGroup: 'projectgroup',
         IProduct: 'product',
         IDistribution: 'distribution',
         IDistroSeries: 'distroseries',
@@ -102,12 +101,12 @@ class LaunchBag:
         return self._store.person
 
     @property
-    def project(self):
+    def projectgroup(self):
         store = self._store
-        if store.project is not None:
-            return store.project
+        if store.projectgroup is not None:
+            return store.projectgroup
         elif store.product is not None:
-            return store.product.project
+            return store.product.projectgroup
         else:
             return None
 

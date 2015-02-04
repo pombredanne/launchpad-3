@@ -657,8 +657,8 @@ class SourcePackageUpstreamConnectionsView(LaunchpadView):
             return True
         bugtracker = product.bugtracker
         if bugtracker is None:
-            if product.project is not None:
-                bugtracker = product.project.bugtracker
+            if product.projectgroup is not None:
+                bugtracker = product.projectgroup.bugtracker
         if bugtracker is None:
             return False
         return True

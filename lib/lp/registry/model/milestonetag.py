@@ -93,7 +93,7 @@ class ProjectGroupMilestoneTag(MilestoneData):
             tables=[Milestone, Product],
             where=And(
                 Milestone.productID == Product.id,
-                Product.project == self.target,
+                Product.projectgroup == self.target,
                 tag_constraints))
 
 

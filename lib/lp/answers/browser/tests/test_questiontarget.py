@@ -143,14 +143,14 @@ class TestSearchQuestionsViewTemplate(TestCaseWithFactory):
         product = self.factory.makeProduct()
         project_group = self.factory.makeProject(owner=product.owner)
         with person_logged_in(product.owner):
-            product.project = project_group
+            product.projectgroup = project_group
         self.assertViewTemplate(project_group, 'unknown-support.pt')
 
     def test_template_projectgroup_answers_usage_launchpad(self):
         product = self.factory.makeProduct()
         project_group = self.factory.makeProject(owner=product.owner)
         with person_logged_in(product.owner):
-            product.project = project_group
+            product.projectgroup = project_group
             product.answers_usage = ServiceUsage.LAUNCHPAD
         self.assertViewTemplate(project_group, 'question-listing.pt')
 

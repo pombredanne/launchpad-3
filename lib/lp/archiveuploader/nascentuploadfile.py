@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Specific models for uploaded files"""
@@ -742,7 +742,8 @@ class BaseBinaryUploadFile(PackageUploadFile):
             # We get an error from the constructor if the .deb does not
             # contain all the expected top-level members (debian-binary,
             # control.tar.gz, and data.tar.*).
-            yield UploadError(error)
+            yield UploadError(str(error))
+            return
         try:
             deb_file.control.go(tar_checker.callback)
             deb_file.data.go(tar_checker.callback)
