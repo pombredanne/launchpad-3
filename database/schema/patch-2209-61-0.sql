@@ -121,6 +121,11 @@ CREATE TABLE GitRef (
     commit_sha1 character(40) NOT NULL 
 );
 
+COMMENT ON TABLE GitRef IS 'A reference in a Git repository.';
+COMMENT ON COLUMN GitRef.repository IS 'The repository containing this reference.';
+COMMENT ON COLUMN GitRef.path IS 'The full path of the reference, e.g. refs/heads/master.';
+COMMENT ON COLUMN GitRef.commit_sha1 IS 'The SHA-1 hash of the object pointed to by this reference.';
+
 CREATE TABLE GitShortcut (
     id serial PRIMARY KEY,
     date_created timestamp without time zone DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC') NOT NULL,
