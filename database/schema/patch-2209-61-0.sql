@@ -62,14 +62,14 @@ ALTER TABLE AccessArtifact DROP CONSTRAINT has_artifact;
 ALTER TABLE AccessArtifact
     ADD CONSTRAINT has_artifact CHECK ((null_count(ARRAY[bug, branch, gitrepository, specification]) = 3));
 
-CREATE OR REPLACE FUNCTION gitrepository_denorm_access(branch_id integer)
+CREATE OR REPLACE FUNCTION gitrepository_denorm_access(gitrepository_id integer)
     RETURNS void LANGUAGE sql SECURITY DEFINER SET search_path = public AS $$
     UPDATE GitRepository
         SET access_policy = policies[1], access_grants = grants
         FROM
             build_access_cache(
-                (SELECT id FROM accessartifact WHERE branch = $1),
-                (SELECT information_type FROM branch WHERE id = $1))
+                (SELECT id FROM accessartifact WHERE gitrepository = $1),
+                (SELECT information_type FROM gitrepository WHERE id = $1))
             AS (policies integer[], grants integer[])
         WHERE id = $1;
 $$;
