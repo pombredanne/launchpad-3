@@ -1151,13 +1151,33 @@ class BugSuperviseDistributionSourcePackage(AuthorizationBase):
 
 
 class EditDistributionSourcePackage(AuthorizationBase):
-    """DistributionSourcePackage is not editable.
-
-    But EditStructuralSubscription needs launchpad.Edit defined on all
-    targets.
-    """
     permission = 'launchpad.Edit'
     usedfor = IDistributionSourcePackage
+
+    def checkAuthenticated(self, user):
+        """Anyone who can upload a package can edit it.
+
+        Checking upload permission requires a distroseries; a reasonable
+        approximation is to check whether the user can upload the package to
+        the current series.
+        """
+        if user.in_admin:
+            return True
+
+        distribution = self.obj.distribution
+        if user.inTeam(distribution.owner):
+            return True
+
+        # We use verifyUpload() instead of checkUpload() because we don't
+        # have a pocket.  It returns the reason the user can't upload or
+        # None if they are allowed.
+        if distribution.currentseries is None:
+            return False
+        reason = distribution.main_archive.verifyUpload(
+            user.person, sourcepackagename=self.obj.sourcepackagename,
+            component=None, distroseries=distribution.currentseries,
+            strict_component=False)
+        return reason is None
 
 
 class BugTargetOwnerOrBugSupervisorOrAdmins(AuthorizationBase):

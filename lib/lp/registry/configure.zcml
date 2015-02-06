@@ -556,6 +556,14 @@
                 bug_reporting_guidelines
                 enable_bugfiling_duplicate_search
                 "/>
+
+        <!-- IHasGitRepositories -->
+
+        <allow
+            interface="lp.code.interfaces.hasgitrepositories.IHasGitRepositoriesView" />
+        <require
+            permission="launchpad.Edit"
+            interface="lp.code.interfaces.hasgitrepositories.IHasGitRepositoriesEdit" />
     </class>
     <adapter
         provides="lp.registry.interfaces.distribution.IDistribution"
