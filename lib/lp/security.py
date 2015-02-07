@@ -83,6 +83,10 @@ from lp.code.interfaces.codereviewcomment import (
     )
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.code.interfaces.diff import IPreviewDiff
+from lp.code.interfaces.gitrepository import (
+    IGitRepository,
+    user_has_special_git_repository_access,
+    )
 from lp.code.interfaces.sourcepackagerecipe import ISourcePackageRecipe
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild,
@@ -2194,6 +2198,56 @@ class AdminBranch(AuthorizationBase):
 
     def checkAuthenticated(self, user):
         return user.in_admin
+
+
+class ViewGitRepository(AuthorizationBase):
+    """Controls visibility of Git repositories.
+
+    A person can see the repository if the repository is public, they are
+    the owner of the repository, they are in the team that owns the
+    repository, they have an access grant to the repository, or they are a
+    Launchpad administrator.
+    """
+    permission = 'launchpad.View'
+    usedfor = IGitRepository
+
+    def checkAuthenticated(self, user):
+        return self.obj.visibleByUser(user.person)
+
+    def checkUnauthenticated(self):
+        return self.obj.visibleByUser(None)
+
+
+class EditGitRepository(AuthorizationBase):
+    """The owner or admins can edit Git repositories."""
+    permission = 'launchpad.Edit'
+    usedfor = IGitRepository
+
+    def checkAuthenticated(self, user):
+        # XXX cjwatson 2015-01-23: People who can upload source packages to
+        # a distribution should be able to push to the corresponding
+        # "official" repositories, once those are defined.
+        return (
+            user.inTeam(self.obj.owner) or
+            user_has_special_git_repository_access(user.person))
+
+
+class ModerateGitRepository(EditGitRepository):
+    """The owners, project owners, and admins can moderate Git repositories."""
+    permission = 'launchpad.Moderate'
+
+    def checkAuthenticated(self, user):
+        if super(ModerateGitRepository, self).checkAuthenticated(user):
+            return True
+        project = self.obj.project
+        if project is not None and user.inTeam(project.owner):
+            return True
+        return user.in_commercial_admin
+
+
+class AdminGitRepository(AdminByAdminsTeam):
+    """The admins can administer Git repositories."""
+    usedfor = IGitRepository
 
 
 class AdminDistroSeriesTranslations(AuthorizationBase):
