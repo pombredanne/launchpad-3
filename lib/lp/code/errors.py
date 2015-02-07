@@ -28,11 +28,18 @@ __all__ = [
     'CodeImportNotInReviewedState',
     'ClaimReviewFailed',
     'DiffNotFound',
+    'GitRepositoryCreationException',
+    'GitRepositoryCreationFault',
+    'GitRepositoryCreationForbidden',
+    'GitRepositoryCreatorNotMemberOfOwnerTeam',
+    'GitRepositoryCreatorNotOwner',
+    'GitRepositoryExists',
     'InvalidBranchMergeProposal',
     'InvalidMergeQueueConfig',
     'InvalidNamespace',
     'NoLinkedBranch',
     'NoSuchBranch',
+    'NoSuchGitRepository',
     'PrivateBranchRecipe',
     'ReviewNotPending',
     'StaleLastMirrored',
@@ -310,6 +317,62 @@ class WrongBranchMergeProposal(Exception):
 
 class UnknownBranchTypeError(Exception):
     """Raised when the user specifies an unrecognized branch type."""
+
+
+class GitRepositoryCreationException(Exception):
+    """Base class for Git repository creation exceptions."""
+
+
+@error_status(httplib.CONFLICT)
+class GitRepositoryExists(GitRepositoryCreationException):
+    """Raised when creating a Git repository that already exists."""
+
+    def __init__(self, existing_repository):
+        params = {
+            "name": existing_repository.name,
+            "context": existing_repository.namespace.name,
+            }
+        message = (
+            'A Git repository with the name "%(name)s" already exists for '
+            '%(context)s.' % params)
+        self.existing_repository = existing_repository
+        GitRepositoryCreationException.__init__(self, message)
+
+
+class GitRepositoryCreationForbidden(GitRepositoryCreationException):
+    """A visibility policy forbids Git repository creation.
+
+    The exception is raised if the policy for the project does not allow the
+    creator of the repository to create a repository for that project.
+    """
+
+
+@error_status(httplib.BAD_REQUEST)
+class GitRepositoryCreatorNotMemberOfOwnerTeam(GitRepositoryCreationException):
+    """Git repository creator is not a member of the owner team.
+
+    Raised when a user is attempting to create a repository and set the
+    owner of the repository to a team that they are not a member of.
+    """
+
+
+@error_status(httplib.BAD_REQUEST)
+class GitRepositoryCreatorNotOwner(GitRepositoryCreationException):
+    """A user cannot create a Git repository belonging to another user.
+
+    Raised when a user is attempting to create a repository and set the
+    owner of the repository to another user.
+    """
+
+
+class GitRepositoryCreationFault(GitRepositoryCreationException):
+    """Raised when there is a hosting fault creating a Git repository."""
+
+
+class NoSuchGitRepository(NameLookupFailed):
+    """Raised when we try to load a Git repository that does not exist."""
+
+    _message_prefix = "No such Git repository"
 
 
 @error_status(httplib.BAD_REQUEST)

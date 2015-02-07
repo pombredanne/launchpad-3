@@ -838,6 +838,26 @@
     <allow interface="lp.code.interfaces.gitrepository.IGitRepositorySet" />
   </securedutility>
 
+  <!-- GitNamespace -->
+
+  <class class="lp.code.model.gitnamespace.PackageGitNamespace">
+    <allow interface="lp.code.interfaces.gitnamespace.IGitNamespace" />
+    <allow interface="lp.code.interfaces.gitnamespace.IGitNamespacePolicy" />
+  </class>
+  <class class="lp.code.model.gitnamespace.PersonalGitNamespace">
+    <allow interface="lp.code.interfaces.gitnamespace.IGitNamespace" />
+    <allow interface="lp.code.interfaces.gitnamespace.IGitNamespacePolicy" />
+  </class>
+  <class class="lp.code.model.gitnamespace.ProjectGitNamespace">
+    <allow interface="lp.code.interfaces.gitnamespace.IGitNamespace" />
+    <allow interface="lp.code.interfaces.gitnamespace.IGitNamespacePolicy" />
+  </class>
+  <securedutility
+      class="lp.code.model.gitnamespace.GitNamespaceSet"
+      provides="lp.code.interfaces.gitnamespace.IGitNamespaceSet">
+    <allow interface="lp.code.interfaces.gitnamespace.IGitNamespaceSet" />
+  </securedutility>
+
   <lp:help-folder folder="help" name="+help-code" />
 
   <!-- Diffs -->

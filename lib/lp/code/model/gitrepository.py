@@ -34,6 +34,10 @@ from lp.app.enums import (
 from lp.app.interfaces.informationtype import IInformationType
 from lp.app.interfaces.launchpad import IPrivacy
 from lp.app.interfaces.services import IService
+from lp.code.interfaces.gitnamespace import (
+    get_git_namespace_for_target,
+    IGitNamespacePolicy,
+    )
 from lp.code.interfaces.gitrepository import (
     GitPathMixin,
     IGitRepository,
@@ -156,9 +160,27 @@ class GitRepository(StormBase, GitPathMixin):
 
     def setTarget(self, user, target):
         """See `IGitRepository`."""
-        # XXX cjwatson 2015-02-06: Fill this in once IGitNamespace is in
-        # place.
-        raise NotImplementedError
+        if IPerson.providedBy(target):
+            owner = IPerson(target)
+            if (self.information_type in PRIVATE_INFORMATION_TYPES and
+                (not owner.is_team or
+                 owner.visibility != PersonVisibility.PRIVATE)):
+                raise GitTargetError(
+                    "Only private teams may have personal private "
+                    "repositories.")
+        namespace = get_git_namespace_for_target(target, self.owner)
+        if (self.information_type not in
+            namespace.getAllowedInformationTypes(user)):
+            raise GitTargetError(
+                "%s repositories are not allowed for target %s." % (
+                    self.information_type.title, target.displayname))
+        namespace.moveRepository(self, user, rename_if_necessary=True)
+        self._reconcileAccess()
+
+    @property
+    def namespace(self):
+        """See `IGitRepository`."""
+        return get_git_namespace_for_target(self.target, self.owner)
 
     @property
     def displayname(self):
@@ -249,9 +271,8 @@ class GitRepository(StormBase, GitPathMixin):
             types = set(PUBLIC_INFORMATION_TYPES + PRIVATE_INFORMATION_TYPES)
         else:
             # Otherwise the permitted types are defined by the namespace.
-            # XXX cjwatson 2015-01-19: Define permitted types properly.  For
-            # now, non-admins only get public repository access.
-            types = set(PUBLIC_INFORMATION_TYPES)
+            policy = IGitNamespacePolicy(self.namespace)
+            types = set(policy.getAllowedInformationTypes(user))
         return types
 
     def transitionToInformationType(self, information_type, user,
@@ -284,9 +305,8 @@ class GitRepository(StormBase, GitPathMixin):
 
     def setOwner(self, new_owner, user):
         """See `IGitRepository`."""
-        # XXX cjwatson 2015-02-06: Fill this in once IGitNamespace is in
-        # place.
-        raise NotImplementedError
+        new_namespace = get_git_namespace_for_target(self.target, new_owner)
+        new_namespace.moveRepository(self, user, rename_if_necessary=True)
 
     def destroySelf(self):
         raise NotImplementedError
@@ -300,28 +320,27 @@ class GitRepositorySet:
     def new(self, registrant, owner, target, name, information_type=None,
             date_created=DEFAULT):
         """See `IGitRepositorySet`."""
-        # XXX cjwatson 2015-02-06: Fill this in once IGitNamespace is in
-        # place.
-        raise NotImplementedError
+        namespace = get_git_namespace_for_target(target, owner)
+        return namespace.createRepository(
+            registrant, name, information_type=information_type,
+            date_created=date_created)
 
     def getPersonalRepository(self, person, repository_name):
         """See `IGitRepositorySet`."""
-        # XXX cjwatson 2015-02-06: Fill this in once IGitNamespace is in
-        # place.
-        raise NotImplementedError
+        namespace = get_git_namespace_for_target(person, person)
+        return namespace.getByName(repository_name)
 
     def getProjectRepository(self, person, project, repository_name=None):
         """See `IGitRepositorySet`."""
-        # XXX cjwatson 2015-02-06: Fill this in once IGitNamespace is in
-        # place.
-        raise NotImplementedError
+        namespace = get_git_namespace_for_target(project, person)
+        return namespace.getByName(repository_name)
 
     def getPackageRepository(self, person, distribution, sourcepackagename,
                               repository_name=None):
         """See `IGitRepositorySet`."""
-        # XXX cjwatson 2015-02-06: Fill this in once IGitNamespace is in
-        # place.
-        raise NotImplementedError
+        namespace = get_git_namespace_for_target(
+            distribution.getSourcePackage(sourcepackagename), person)
+        return namespace.getByName(repository_name)
 
     def getByPath(self, user, path):
         """See `IGitRepositorySet`."""

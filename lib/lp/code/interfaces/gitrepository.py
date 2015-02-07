@@ -142,6 +142,9 @@ class IGitRepositoryView(Interface):
         schema=IHasGitRepositories,
         description=_("The target of the repository."))
 
+    namespace = Attribute(
+        "The namespace of this repository, as an `IGitNamespace`.")
+
     information_type = Choice(
         title=_("Information Type"), vocabulary=InformationType,
         required=True, readonly=True, default=InformationType.PUBLIC,
