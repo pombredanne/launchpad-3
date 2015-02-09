@@ -102,11 +102,7 @@ from lp.code.interfaces.hasbranches import (
     IHasCodeImports,
     IHasMergeProposals,
     )
-from lp.code.interfaces.hasgitrepositories import (
-    IHasGitRepositories,
-    IHasGitRepositoriesEdit,
-    IHasGitRepositoriesView,
-    )
+from lp.code.interfaces.hasgitrepositories import IHasGitRepositories
 from lp.code.interfaces.hasrecipes import IHasRecipes
 from lp.registry.enums import (
     BranchSharingPolicy,
@@ -480,8 +476,7 @@ class IProductView(
     IHasMugshot, IHasSprints, IHasTranslationImports,
     ITranslationPolicy, IKarmaContext, IMakesAnnouncements,
     IOfficialBugTagTargetPublic, IHasOOPSReferences,
-    IHasRecipes, IHasCodeImports, IServiceUsage,
-    IHasGitRepositoriesView):
+    IHasRecipes, IHasCodeImports, IServiceUsage, IHasGitRepositories):
     """Public IProduct properties."""
 
     registrant = exported(
@@ -843,8 +838,7 @@ class IProductView(
         """
 
 
-class IProductEditRestricted(IOfficialBugTagTargetRestricted,
-                             IHasGitRepositoriesEdit):
+class IProductEditRestricted(IOfficialBugTagTargetRestricted):
     """`IProduct` properties which require launchpad.Edit permission."""
 
     @mutator_for(IProductView['bug_sharing_policy'])
@@ -896,7 +890,7 @@ class IProduct(
     IProductModerateRestricted, IProductDriverRestricted, IProductView,
     IProductLimitedView, IProductPublic, IQuestionTarget,
     ISpecificationTarget, IStructuralSubscriptionTarget, IInformationType,
-    IPillar, IHasGitRepositories):
+    IPillar):
     """A Product.
 
     The Launchpad Registry describes the open source world as ProjectGroups

@@ -7,15 +7,17 @@ __metaclass__ = type
 
 __all__ = [
     'IHasGitRepositories',
-    'IHasGitRepositoriesEdit',
-    'IHasGitRepositoriesView',
     ]
 
 from zope.interface import Interface
 
 
-class IHasGitRepositoriesView(Interface):
-    """Viewing an object that has related Git repositories."""
+class IHasGitRepositories(Interface):
+    """An object that has related Git repositories.
+
+    A project contains Git repositories, a source package on a distribution
+    contains branches, and a person contains "personal" branches.
+    """
 
     def getGitRepositories(visible_by_user=None, eager_load=False):
         """Returns all Git repositories related to this object.
@@ -25,10 +27,6 @@ class IHasGitRepositoriesView(Interface):
             collection.
         :returns: A list of `IGitRepository` objects.
         """
-
-
-class IHasGitRepositoriesEdit(Interface):
-    """Editing an object that has related Git repositories."""
 
     def createGitRepository(registrant, owner, name, information_type=None):
         """Create a Git repository for this target and return it.
@@ -40,11 +38,3 @@ class IHasGitRepositoriesEdit(Interface):
             one different from the target's default.  The type must conform
             to the target's code sharing policy.  (optional)
         """
-
-
-class IHasGitRepositories(IHasGitRepositoriesView, IHasGitRepositoriesEdit):
-    """An object that has related Git repositories.
-
-    A project contains Git repositories, a source package on a distribution
-    contains branches, and a person contains "personal" branches.
-    """
