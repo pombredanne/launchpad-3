@@ -52,7 +52,7 @@ COMMENT ON COLUMN GitRepository.name IS 'The name of this repository.';
 COMMENT ON COLUMN GitRepository.information_type IS 'Enum describing what type of information is stored, such as type of private or security related data, and used to determine how to apply an access policy.';
 
 ALTER TABLE AccessArtifact
-    ADD COLUMN gitrepository integer REFERENCES gitrepository DEFAULT NULL;
+    ADD COLUMN gitrepository integer REFERENCES gitrepository;
 
 CREATE UNIQUE INDEX accessartifact__gitrepository__key
     ON AccessArtifact(gitrepository) WHERE gitrepository IS NOT NULL;
