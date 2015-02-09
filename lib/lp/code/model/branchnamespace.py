@@ -6,9 +6,9 @@
 __metaclass__ = type
 __all__ = [
     'BranchNamespaceSet',
+    'BRANCH_POLICY_ALLOWED_TYPES',
     'PackageBranchNamespace',
     'PersonalBranchNamespace',
-    'BRANCH_POLICY_ALLOWED_TYPES',
     'ProjectBranchNamespace',
     ]
 
