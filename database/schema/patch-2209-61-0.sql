@@ -48,7 +48,7 @@ COMMENT ON COLUMN GitRepository.owner IS 'The owner of the repository.';
 COMMENT ON COLUMN GitRepository.project IS 'The project that this repository belongs to.';
 COMMENT ON COLUMN GitRepository.distribution IS 'The distribution that this repository belongs to.';
 COMMENT ON COLUMN GitRepository.sourcepackagename IS 'The source package that this repository belongs to.';
-COMMENT ON COLUMN GitRepository.name IS 'The name of this repository, if it is not the default one for its owner.';
+COMMENT ON COLUMN GitRepository.name IS 'The name of this repository.';
 COMMENT ON COLUMN GitRepository.information_type IS 'Enum describing what type of information is stored, such as type of private or security related data, and used to determine how to apply an access policy.';
 
 ALTER TABLE AccessArtifact
