@@ -115,19 +115,16 @@ CREATE TRIGGER gitrepository_maintain_access_cache
     FOR EACH ROW EXECUTE PROCEDURE gitrepository_maintain_access_cache_trig();
 
 CREATE TABLE GitRef (
-    id serial PRIMARY KEY,
     repository integer NOT NULL REFERENCES gitrepository,
     path text NOT NULL,
-    commit_sha1 character(40) NOT NULL 
+    commit_sha1 character(40) NOT NULL,
+    PRIMARY KEY (repository, path)
 );
 
 COMMENT ON TABLE GitRef IS 'A reference in a Git repository.';
 COMMENT ON COLUMN GitRef.repository IS 'The repository containing this reference.';
 COMMENT ON COLUMN GitRef.path IS 'The full path of the reference, e.g. refs/heads/master.';
 COMMENT ON COLUMN GitRef.commit_sha1 IS 'The SHA-1 hash of the object pointed to by this reference.';
-
-CREATE INDEX gitref__repository__path__idx
-    ON GitRef(repository, path);
 
 CREATE TABLE GitShortcut (
     id serial PRIMARY KEY,
