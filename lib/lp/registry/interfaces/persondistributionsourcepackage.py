@@ -19,16 +19,12 @@ from lp.registry.interfaces.distributionsourcepackage import (
     )
 
 
-class IPersonDistributionSourcePackageView(Interface):
-    """Viewing a person's view on a source package in a distribution."""
+class IPersonDistributionSourcePackage(Interface):
+    """A person's view on a source package in a distribution."""
 
     person = Reference(IPerson)
     distro_source_package = Reference(IDistributionSourcePackage)
     displayname = TextLine()
-
-
-class IPersonDistributionSourcePackage(IPersonDistributionSourcePackageView):
-    """A person's view on a source package in a distribution."""
 
 
 class IPersonDistributionSourcePackageFactory(Interface):

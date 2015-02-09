@@ -2070,7 +2070,7 @@
     <class
         class="lp.registry.model.persondistributionsourcepackage.PersonDistributionSourcePackage">
         <allow
-            interface="lp.registry.interfaces.persondistributionsourcepackage.IPersonDistributionSourcePackageView" />
+            interface="lp.registry.interfaces.persondistributionsourcepackage.IPersonDistributionSourcePackage" />
     </class>
 
     <adapter
