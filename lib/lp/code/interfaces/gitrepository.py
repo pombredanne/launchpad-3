@@ -6,7 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
-    'GitPathMixin',
+    'GitIdentityMixin',
     'git_repository_name_validator',
     'IGitRepository',
     'IGitRepositorySet',
@@ -338,7 +338,7 @@ class IGitRepositorySet(Interface):
         """
 
 
-class GitPathMixin:
+class GitIdentityMixin:
     """This mixin class determines Git repository paths.
 
     Used by both the model GitRepository class and the browser repository

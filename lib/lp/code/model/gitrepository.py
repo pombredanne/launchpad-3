@@ -35,7 +35,7 @@ from lp.app.interfaces.informationtype import IInformationType
 from lp.app.interfaces.launchpad import IPrivacy
 from lp.app.interfaces.services import IService
 from lp.code.interfaces.gitrepository import (
-    GitPathMixin,
+    GitIdentityMixin,
     IGitRepository,
     IGitRepositorySet,
     user_has_special_git_repository_access,
@@ -78,7 +78,7 @@ def git_repository_modified(repository, event):
     repository.date_last_modified = UTC_NOW
 
 
-class GitRepository(StormBase, GitPathMixin):
+class GitRepository(StormBase, GitIdentityMixin):
     """See `IGitRepository`."""
 
     __storm_table__ = 'GitRepository'
