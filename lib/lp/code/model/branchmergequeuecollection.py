@@ -28,7 +28,7 @@ class GenericBranchMergeQueueCollection:
     implements(IBranchMergeQueueCollection)
 
     def __init__(self, store=None, merge_queue_filter_expressions=None,
-                 tables=None, exclude_from_search=None):
+                 tables=None):
         """Construct a `GenericBranchMergeQueueCollection`.
 
         :param store: The store to look in for merge queues. If not specified,
@@ -48,9 +48,6 @@ class GenericBranchMergeQueueCollection:
         if tables is None:
             tables = {}
         self._tables = tables
-        if exclude_from_search is None:
-            exclude_from_search = []
-        self._exclude_from_search = exclude_from_search
 
     def count(self):
         return self._getCount()
@@ -66,23 +63,19 @@ class GenericBranchMergeQueueCollection:
         else:
             return self._store
 
-    def _filterBy(self, expressions, table=None, join=None,
-                  exclude_from_search=None):
+    def _filterBy(self, expressions, table=None, join=None):
         """Return a subset of this collection, filtered by 'expressions'."""
         tables = self._tables.copy()
         if table is not None:
             if join is None:
                 raise InvalidFilter("Cannot specify a table without a join.")
             tables[table] = join
-        if exclude_from_search is None:
-            exclude_from_search = []
         if expressions is None:
             expressions = []
         return self.__class__(
             self.store,
             self._merge_queue_filter_expressions + expressions,
-            tables,
-            self._exclude_from_search + exclude_from_search)
+            tables)
 
     def _getMergeQueueExpressions(self):
         """Return the where expressions for this collection."""
@@ -107,43 +100,34 @@ class GenericBranchMergeQueueCollection:
             user_has_special_merge_queue_access(person)):
             return self
         return VisibleBranchMergeQueueCollection(
-            person,
-            self._store, None,
-            self._tables, self._exclude_from_search)
+            person, self._store, None, self._tables)
 
 
 class VisibleBranchMergeQueueCollection(GenericBranchMergeQueueCollection):
     """A mergequeue collection which provides queues visible by a user."""
 
     def __init__(self, person, store=None,
-                 merge_queue_filter_expressions=None, tables=None,
-                 exclude_from_search=None):
+                 merge_queue_filter_expressions=None, tables=None):
         super(VisibleBranchMergeQueueCollection, self).__init__(
             store=store,
             merge_queue_filter_expressions=merge_queue_filter_expressions,
-            tables=tables,
-            exclude_from_search=exclude_from_search,
-        )
+            tables=tables)
         self._user = person
 
-    def _filterBy(self, expressions, table=None, join=None,
-                  exclude_from_search=None):
+    def _filterBy(self, expressions, table=None, join=None):
         """Return a subset of this collection, filtered by 'expressions'."""
         tables = self._tables.copy()
         if table is not None:
             if join is None:
                 raise InvalidFilter("Cannot specify a table without a join.")
             tables[table] = join
-        if exclude_from_search is None:
-            exclude_from_search = []
         if expressions is None:
             expressions = []
         return self.__class__(
             self._user,
             self.store,
             self._merge_queue_filter_expressions + expressions,
-            tables,
-            self._exclude_from_search + exclude_from_search)
+            tables)
 
     def visibleByUser(self, person):
         """See `IBranchMergeQueueCollection`."""
