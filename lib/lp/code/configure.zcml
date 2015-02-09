@@ -503,15 +503,15 @@
                     max_diff_lines
                     review_level"/>
   </class>
-  <class class="lp.code.model.branchnamespace.PackageNamespace">
+  <class class="lp.code.model.branchnamespace.PackageBranchNamespace">
     <allow interface="lp.code.interfaces.branchnamespace.IBranchNamespace"/>
     <allow interface="lp.code.interfaces.branchnamespace.IBranchNamespacePolicy"/>
   </class>
-  <class class="lp.code.model.branchnamespace.PersonalNamespace">
+  <class class="lp.code.model.branchnamespace.PersonalBranchNamespace">
     <allow interface="lp.code.interfaces.branchnamespace.IBranchNamespace"/>
     <allow interface="lp.code.interfaces.branchnamespace.IBranchNamespacePolicy"/>
   </class>
-  <class class="lp.code.model.branchnamespace.ProductNamespace">
+  <class class="lp.code.model.branchnamespace.ProjectBranchNamespace">
     <allow interface="lp.code.interfaces.branchnamespace.IBranchNamespace"/>
     <allow interface="lp.code.interfaces.branchnamespace.IBranchNamespacePolicy"/>
   </class>
