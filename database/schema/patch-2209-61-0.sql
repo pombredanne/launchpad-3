@@ -36,9 +36,9 @@ CREATE TABLE GitRepository (
 );
 
 CREATE UNIQUE INDEX gitrepository__owner__project__name__key
-    ON GitRepository(owner, project, name) WHERE project IS NOT NULL AND distribution IS NULL;
+    ON GitRepository(owner, project, name) WHERE project IS NOT NULL;
 CREATE UNIQUE INDEX gitrepository__owner__distribution__sourcepackagename__name__key
-    ON GitRepository(owner, distribution, sourcepackagename, name) WHERE project IS NULL AND distribution IS NOT NULL;
+    ON GitRepository(owner, distribution, sourcepackagename, name) WHERE distribution IS NOT NULL;
 CREATE UNIQUE INDEX gitrepository__owner__name__key
     ON GitRepository(owner, name) WHERE project IS NULL AND distribution IS NULL;
 
