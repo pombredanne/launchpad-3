@@ -225,7 +225,7 @@ class GitRepository(StormBase, GitIdentityMixin):
         # This may need to change later to improve support for sharding.
         return str(self.id)
 
-    def codebrowse_url(self):
+    def getCodebrowseUrl(self):
         """See `IGitRepository`."""
         return urlutils.join(
             config.codehosting.git_browse_root, self.unique_name)

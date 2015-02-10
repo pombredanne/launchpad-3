@@ -176,7 +176,7 @@ class IGitRepositoryView(Interface):
             "'lp:' plus a shortcut version of the path via that target.  "
             "Otherwise it is simply 'lp:' plus the unique name."))
 
-    def codebrowse_url():
+    def getCodebrowseUrl():
         """Construct a browsing URL for this branch."""
 
     def addToLaunchBag(launchbag):
