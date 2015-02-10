@@ -386,9 +386,7 @@ class GitRepositorySet:
 
     def getRepositories(self, limit=50, eager_load=True):
         """See `IGitRepositorySet`."""
-        # XXX cjwatson 2015-02-06: Fill this in once IGitCollection is in
-        # place.
-        raise NotImplementedError
+        return []
 
 
 def get_git_repository_privacy_filter(user):

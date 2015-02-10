@@ -350,12 +350,10 @@ class IGitRepositorySet(Interface):
             search for the overall default repository for this target.
         """
 
-    def getRepositories(limit=50, eager_load=True):
-        """Return a collection of repositories.
+    def getRepositories():
+        """Return an empty collection of repositories.
 
-        :param eager_load: If True (the default because this is used in the
-            web service and it needs the related objects to create links)
-            eager load related objects (projects, etc.).
+        This only exists to keep lazr.restful happy.
         """
 
 
