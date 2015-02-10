@@ -165,7 +165,7 @@ class GitRepository(StormBase, GitIdentityMixin):
         else:
             return self.project
 
-    def setTarget(self, user, target):
+    def setTarget(self, target, user):
         """See `IGitRepository`."""
         # XXX cjwatson 2015-02-06: Fill this in once IGitNamespace is in
         # place.

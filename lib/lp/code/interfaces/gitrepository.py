@@ -255,7 +255,7 @@ class IGitRepositoryEdit(Interface):
     def setOwner(new_owner, user):
         """Set the owner of the repository to be `new_owner`."""
 
-    def setTarget(user, target):
+    def setTarget(target, user):
         """Set the target of the repository."""
 
     def destroySelf():
