@@ -120,7 +120,6 @@ class GitRepository(StormBase, GitIdentityMixin):
     information_type = EnumCol(enum=InformationType, notNull=True)
     owner_default = Bool(name='owner_default', allow_none=False)
     target_default = Bool(name='target_default', allow_none=False)
-    access_policy = Int(name='access_policy')
 
     def __init__(self, registrant, owner, name, information_type, date_created,
                  project=None, distribution=None, sourcepackagename=None):
@@ -429,7 +428,7 @@ def get_git_repository_privacy_filter(user):
 
     policy_grant_query = Coalesce(
         ArrayIntersects(
-            Array(GitRepository.access_policy),
+            Array(SQL("GitRepository.access_policy")),
             Select(
                 ArrayAgg(AccessPolicyGrant.policy_id),
                 tables=(AccessPolicyGrant,
