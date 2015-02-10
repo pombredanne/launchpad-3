@@ -143,16 +143,16 @@ class IGitRepositoryView(Interface):
             "Otherwise it is simply 'lp:' plus the unique name."))
 
     def getCodebrowseUrl():
-        """Construct a browsing URL for this branch."""
+        """Construct a browsing URL for this Git repository."""
 
     def addToLaunchBag(launchbag):
-        """Add information about this branch to `launchbag'.
+        """Add information about this Git repository to `launchbag'.
 
-        Use this when traversing to this branch in the web UI.
+        Use this when traversing to this Git repository in the web UI.
 
-        In particular, add information about the branch's target to the
-        launchbag. If the branch has a product, add that; if it has a source
-        package, add lots of information about that.
+        In particular, add information about the Git repository's target to
+        the launchbag.  If the Git repository has a project, add that; if it
+        has a distribution source package, add its distribution.
 
         :param launchbag: `ILaunchBag`.
         """
@@ -176,10 +176,10 @@ class IGitRepositoryView(Interface):
         """Return a sorted list of `ICanHasLinkedGitRepository` objects.
 
         There is one result for each related object that the repository is
-        linked to.  For example, in the case where a branch is linked to a
-        project and is also its owner's preferred branch for that project,
-        the link objects for both the project and the person-project are
-        returned.
+        linked to.  For example, in the case where a repository is linked to
+        a project and is also its owner's preferred repository for that
+        project, the link objects for both the project and the
+        person-project are returned.
 
         The sorting uses the defined order of the linked objects where the
         more important links are sorted first.
