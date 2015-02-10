@@ -111,8 +111,7 @@ class IGitRepositoryView(Interface):
         title=_("Project"), required=False, readonly=True,
         vocabulary="Product", schema=IProduct,
         description=_(
-            "The project that this Git repository belongs to. None if it "
-            "belongs to a distribution source package instead."))
+            "The project that this Git repository belongs to, or None."))
 
     # The distribution and sourcepackagename attributes are exported
     # together as distro_source_package.
@@ -120,21 +119,19 @@ class IGitRepositoryView(Interface):
         title=_("Distribution"), required=False,
         vocabulary="Distribution",
         description=_(
-            "The distribution that this Git repository belongs to. None if it "
-            "belongs to a project instead."))
+            "The distribution that this Git repository belongs to, or None."))
 
     sourcepackagename = Choice(
         title=_("Source Package Name"), required=False,
         vocabulary="SourcePackageName",
         description=_(
-            "The source package that this Git repository belongs to. None if "
-            "it belongs to a project instead. Source package repositories "
-            "always belong to a distribution."))
+            "The source package that this Git repository belongs to, or None. "
+            "Source package repositories always belong to a distribution."))
 
     distro_source_package = Reference(
         title=_(
             "The IDistributionSourcePackage that this Git repository belongs "
-            "to. None if it belongs to a project instead."),
+            "to, or None."),
         schema=IDistributionSourcePackage, required=False, readonly=True)
 
     target = Reference(
