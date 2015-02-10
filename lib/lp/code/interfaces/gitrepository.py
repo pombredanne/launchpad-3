@@ -148,6 +148,17 @@ class IGitRepositoryView(Interface):
         description=_(
             "The type of information contained in this repository."))
 
+    owner_default = Bool(
+        title=_("Owner default"), required=True, readonly=True,
+        description=_(
+            "Whether this repository is the default for its owner and "
+            "target."))
+
+    target_default = Bool(
+        title=_("Target default"), required=True, readonly=True,
+        description=_(
+            "Whether this repository is the default for its target."))
+
     unique_name = Text(
         title=_("Unique name"), readonly=True,
         description=_(
@@ -265,6 +276,20 @@ class IGitRepositoryModerate(Interface):
 class IGitRepositoryEdit(Interface):
     """IGitRepository methods that require launchpad.Edit permission."""
 
+    def setOwnerDefault(value):
+        """Set whether this repository is the default for its owner-target.
+
+        :param value: True if this repository should be the owner-target
+        default, otherwise False.
+        """
+
+    def setTargetDefault(value):
+        """Set whether this repository is the default for its target.
+
+        :param value: True if this repository should be the target default,
+        otherwise False.
+        """
+
     def setOwner(new_owner, user):
         """Set the owner of the repository to be `new_owner`."""
 
@@ -328,6 +353,15 @@ class IGitRepositorySet(Interface):
     def getPackageRepository(person, distribution, sourcepackagename,
                              repository_name=None):
         """Find a package repository."""
+
+    def getDefaultRepository(target, owner=None):
+        """Get the default repository for a target or owner-target.
+
+        :param target: An `IHasGitRepositories`.
+        :param owner: An `IPerson`, in which case search for that person's
+            default repository for this target; or None, in which case
+            search for the overall default repository for this target.
+        """
 
     def getRepositories(limit=50, eager_load=True):
         """Return a collection of repositories.

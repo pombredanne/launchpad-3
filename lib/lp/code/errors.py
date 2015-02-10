@@ -28,6 +28,7 @@ __all__ = [
     'CodeImportNotInReviewedState',
     'ClaimReviewFailed',
     'DiffNotFound',
+    'GitTargetError',
     'InvalidBranchMergeProposal',
     'InvalidMergeQueueConfig',
     'InvalidNamespace',
@@ -310,6 +311,10 @@ class WrongBranchMergeProposal(Exception):
 
 class UnknownBranchTypeError(Exception):
     """Raised when the user specifies an unrecognized branch type."""
+
+
+class GitTargetError(Exception):
+    """Raised when there is an error determining a Git repository target."""
 
 
 @error_status(httplib.BAD_REQUEST)
