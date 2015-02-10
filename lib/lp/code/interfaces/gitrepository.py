@@ -93,7 +93,7 @@ class IGitRepositoryView(Interface):
         title=_("Date created"), required=True, readonly=True)
 
     date_last_modified = Datetime(
-        title=_("Date last modified"), required=True, readonly=False)
+        title=_("Date last modified"), required=True, readonly=True)
 
     registrant = PublicPersonChoice(
         title=_("Registrant"), required=True, readonly=True,
