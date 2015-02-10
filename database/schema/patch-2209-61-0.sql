@@ -29,10 +29,14 @@ CREATE TABLE GitRepository (
     sourcepackagename integer REFERENCES sourcepackagename,
     name text NOT NULL,
     information_type integer NOT NULL,
+    owner_default boolean DEFAULT false NOT NULL,
+    target_default boolean DEFAULT false NOT NULL,
     access_policy integer,
     access_grants integer[],
     CONSTRAINT one_container CHECK (((project IS NULL) OR (distribution IS NULL)) AND ((distribution IS NULL) = (sourcepackagename IS NULL))),
-    CONSTRAINT valid_name CHECK (valid_git_repository_name(name))
+    CONSTRAINT valid_name CHECK (valid_git_repository_name(name)),
+    CONSTRAINT default_implies_target CHECK (((project IS NOT NULL) OR (distribution IS NOT NULL)) OR (NOT owner_default AND NOT target_default)),
+    CONSTRAINT target_implies_owner CHECK (owner_default OR NOT target_default)
 );
 
 CREATE UNIQUE INDEX gitrepository__owner__project__name__key
@@ -50,6 +54,8 @@ COMMENT ON COLUMN GitRepository.distribution IS 'The distribution that this repo
 COMMENT ON COLUMN GitRepository.sourcepackagename IS 'The source package that this repository belongs to.';
 COMMENT ON COLUMN GitRepository.name IS 'The name of this repository.';
 COMMENT ON COLUMN GitRepository.information_type IS 'Enum describing what type of information is stored, such as type of private or security related data, and used to determine how to apply an access policy.';
+COMMENT ON COLUMN GitRepository.owner_default IS 'True if this repository is the default for its owner and target.';
+COMMENT ON COLUMN GitRepository.target_default IS 'True if this repository is the default for its target.';
 
 ALTER TABLE AccessArtifact
     ADD COLUMN gitrepository integer REFERENCES gitrepository;
@@ -125,31 +131,5 @@ COMMENT ON TABLE GitRef IS 'A reference in a Git repository.';
 COMMENT ON COLUMN GitRef.repository IS 'The repository containing this reference.';
 COMMENT ON COLUMN GitRef.path IS 'The full path of the reference, e.g. refs/heads/master.';
 COMMENT ON COLUMN GitRef.commit_sha1 IS 'The SHA-1 hash of the object pointed to by this reference.';
-
-CREATE TABLE GitShortcut (
-    id serial PRIMARY KEY,
-    date_created timestamp without time zone DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC') NOT NULL,
-    registrant integer NOT NULL REFERENCES person,
-    owner integer REFERENCES person,
-    project integer REFERENCES product,
-    distribution integer REFERENCES distribution,
-    sourcepackagename integer REFERENCES sourcepackagename,
-    git_repository integer NOT NULL REFERENCES gitrepository,
-    CONSTRAINT one_target CHECK (((project IS NULL) OR (distribution IS NULL)) AND ((distribution IS NULL) = (sourcepackagename IS NULL)))
-);
-
-CREATE UNIQUE INDEX gitshortcut__owner__project__git_repository__key
-    ON GitShortcut(owner, project, git_repository) WHERE project IS NOT NULL AND distribution IS NULL;
-CREATE UNIQUE INDEX gitshortcut__owner__distribution__sourcepackagename__git_repository_key
-    ON GitShortcut(owner, distribution, sourcepackagename, git_repository) WHERE project IS NULL AND distribution IS NOT NULL;
-
-COMMENT ON TABLE GitShortcut IS 'The preferred Git repository for a project or distribution source package target, possibly per-owner.';
-COMMENT ON COLUMN GitShortcut.date_created IS 'The date this link was created.';
-COMMENT ON COLUMN GitShortcut.registrant IS 'The person who registered this link.';
-COMMENT ON COLUMN GitShortcut.owner IS 'The person whose preferred Git repository this is, if any.';
-COMMENT ON COLUMN GitShortcut.project IS 'The project that the Git repository is linked to.';
-COMMENT ON COLUMN GitShortcut.distribution IS 'The distribution that the Git repository is linked to.';
-COMMENT ON COLUMN GitShortcut.sourcepackagename IS 'The source package that the Git repository is linked to.';
-COMMENT ON COLUMN GitShortcut.git_repository IS 'The Git repository being linked.';
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 61, 0);
