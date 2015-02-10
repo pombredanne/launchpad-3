@@ -2239,8 +2239,9 @@ class ModerateGitRepository(EditGitRepository):
     def checkAuthenticated(self, user):
         if super(ModerateGitRepository, self).checkAuthenticated(user):
             return True
-        project = self.obj.project
-        if project is not None and user.inTeam(project.owner):
+        target = self.obj.target
+        if (target is not None and IProduct.providedBy(target) and
+            user.inTeam(target.owner)):
             return True
         return user.in_commercial_admin
 

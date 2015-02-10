@@ -15,10 +15,7 @@ __all__ = [
 
 import re
 
-from lazr.restful.fields import (
-    Reference,
-    ReferenceChoice,
-    )
+from lazr.restful.fields import Reference
 from zope.interface import (
     Attribute,
     Interface,
@@ -36,10 +33,6 @@ from lp import _
 from lp.app.enums import InformationType
 from lp.app.validators import LaunchpadValidationError
 from lp.code.interfaces.hasgitrepositories import IHasGitRepositories
-from lp.registry.interfaces.distributionsourcepackage import (
-    IDistributionSourcePackage,
-    )
-from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.role import IPersonRoles
 from lp.services.fields import (
     PersonChoice,
@@ -106,33 +99,6 @@ class IGitRepositoryView(Interface):
         description=_(
             "The owner of this Git repository. This controls who can modify "
             "the repository."))
-
-    project = ReferenceChoice(
-        title=_("Project"), required=False, readonly=True,
-        vocabulary="Product", schema=IProduct,
-        description=_(
-            "The project that this Git repository belongs to, or None."))
-
-    # The distribution and sourcepackagename attributes are exported
-    # together as distro_source_package.
-    distribution = Choice(
-        title=_("Distribution"), required=False,
-        vocabulary="Distribution",
-        description=_(
-            "The distribution that this Git repository belongs to, or None."))
-
-    sourcepackagename = Choice(
-        title=_("Source Package Name"), required=False,
-        vocabulary="SourcePackageName",
-        description=_(
-            "The source package that this Git repository belongs to, or None. "
-            "Source package repositories always belong to a distribution."))
-
-    distro_source_package = Reference(
-        title=_(
-            "The IDistributionSourcePackage that this Git repository belongs "
-            "to, or None."),
-        schema=IDistributionSourcePackage, required=False, readonly=True)
 
     target = Reference(
         title=_("Target"), required=True, readonly=True,
