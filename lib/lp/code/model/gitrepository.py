@@ -384,7 +384,7 @@ class GitRepositorySet:
             clauses.append(GitRepository.target_default == True)
         return IStore(GitRepository).find(GitRepository, *clauses).one()
 
-    def getRepositories(self, limit=50, eager_load=True):
+    def getRepositories(self):
         """See `IGitRepositorySet`."""
         return []
 
