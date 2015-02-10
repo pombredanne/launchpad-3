@@ -359,25 +359,6 @@ class GitRepositorySet:
         # place.
         raise NotImplementedError
 
-    def getPersonalRepository(self, person, repository_name):
-        """See `IGitRepositorySet`."""
-        # XXX cjwatson 2015-02-06: Fill this in once IGitNamespace is in
-        # place.
-        raise NotImplementedError
-
-    def getProjectRepository(self, person, project, repository_name=None):
-        """See `IGitRepositorySet`."""
-        # XXX cjwatson 2015-02-06: Fill this in once IGitNamespace is in
-        # place.
-        raise NotImplementedError
-
-    def getPackageRepository(self, person, distribution, sourcepackagename,
-                              repository_name=None):
-        """See `IGitRepositorySet`."""
-        # XXX cjwatson 2015-02-06: Fill this in once IGitNamespace is in
-        # place.
-        raise NotImplementedError
-
     def getByPath(self, user, path):
         """See `IGitRepositorySet`."""
         # XXX cjwatson 2015-02-06: Fill this in once IGitLookup is in place.

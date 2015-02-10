@@ -341,16 +341,6 @@ class IGitRepositorySet(Interface):
         Return None if no match was found.
         """
 
-    def getPersonalRepository(person, repository_name):
-        """Find a personal repository."""
-
-    def getProjectRepository(person, project, repository_name=None):
-        """Find a project repository."""
-
-    def getPackageRepository(person, distribution, sourcepackagename,
-                             repository_name=None):
-        """Find a package repository."""
-
     def getDefaultRepository(target, owner=None):
         """Get the default repository for a target or owner-target.
 
