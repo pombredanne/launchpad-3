@@ -172,17 +172,16 @@ class IGitRepositoryView(Interface):
         This is used on the storage backend.
         """
 
-    def getRepositoryLinks():
-        """Return a sorted list of `ICanHasLinkedGitRepository` objects.
+    def getRepositoryDefaults():
+        """Return a sorted list of `ICanHasDefaultGitRepository` objects.
 
-        There is one result for each related object that the repository is
-        linked to.  For example, in the case where a repository is linked to
-        a project and is also its owner's preferred repository for that
-        project, the link objects for both the project and the
-        person-project are returned.
+        There is one result for each related object for which this
+        repository is the default.  For example, in the case where a
+        repository is the default for a project and is also its owner's
+        default repository for that project, the objects for both the
+        project and the person-project are returned.
 
-        The sorting uses the defined order of the linked objects where the
-        more important links are sorted first.
+        More important related objects are sorted first.
         """
 
     def getRepositoryIdentities():
@@ -190,21 +189,21 @@ class IGitRepositoryView(Interface):
 
         Returns a list of tuples of path and context object.  There is at
         least one alias for any repository, and that is the repository
-        itself.  For linked repositories, the context object is the
-        appropriate linked object.
+        itself.  For default repositories, the context object is the
+        appropriate default object.
 
-        Where a repository is linked to a product or a distribution source
-        package, the repository is available through a number of different
-        URLs.  These URLs are the aliases for the repository.
+        Where a repository is the default for a product or a distribution
+        source package, the repository is available through a number of
+        different URLs.  These URLs are the aliases for the repository.
 
-        For example, a repository which is linked to the 'fooix' project and
-        which is also its owner's preferred repository for that project is
-        accessible using:
-          fooix - the linked object is the project fooix
-          ~fooix-owner/fooix - the linked object is the person-project
+        For example, a repository which is the default for the 'fooix'
+        project and which is also its owner's default repository for that
+        project is accessible using:
+          fooix - the context object is the project fooix
+          ~fooix-owner/fooix - the context object is the person-project
               ~fooix-owner and fooix
           ~fooix-owner/fooix/g/fooix - the unique name of the repository
-              where the linked object is the repository itself.
+              where the context object is the repository itself.
         """
 
 
@@ -328,7 +327,7 @@ class GitIdentityMixin:
 
     Used by both the model GitRepository class and the browser repository
     listing item.  This allows the browser code to cache the associated
-    links which reduces query counts.
+    context objects which reduces query counts.
     """
 
     @property
@@ -342,16 +341,17 @@ class GitIdentityMixin:
         """See `IGitRepository`."""
         return "lp:" + self.shortened_path
 
-    def getRepositoryLinks(self):
+    def getRepositoryDefaults(self):
         """See `IGitRepository`."""
-        # XXX cjwatson 2015-02-06: This will return shortcut links once
+        # XXX cjwatson 2015-02-06: This will return shortcut defaults once
         # they're implemented.
         return []
 
     def getRepositoryIdentities(self):
         """See `IGitRepository`."""
         identities = [
-            (link.path, link.context) for link in self.getRepositoryLinks()]
+            (default.path, default.context)
+            for default in self.getRepositoryDefaults()]
         identities.append((self.unique_name, self))
         return identities
 
