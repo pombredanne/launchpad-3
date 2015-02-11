@@ -139,6 +139,9 @@ class TestDetermineArchitecturesToBuild(TestCase):
         # the hint list) is chosen.
         self.assertArchsForHint(
             'all', {'armel': True}, indep_hint_list='armel hppa')
+        self.assertArchsForHint(
+            'all', {'hppa': True}, indep_hint_list='armel hppa',
+            allowed_arch_tags=['hppa', 'armel', 'i386'])
 
     def test_indep_hint_only_unsatisfiable(self):
         # An indep hint list that matches nothing results in no builds
