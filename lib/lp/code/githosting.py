@@ -23,8 +23,13 @@ class GitHostingClient:
     def endpoint(self):
         return config.codehosting.internal_git_endpoint
 
+    def _makeSession(self):
+        session = requests.Session()
+        session.trust_env = False
+        return session
+
     def create(self, path):
-        response = requests.post(
+        response = self._makeSession().post(
             urljoin(self.endpoint, "create"), data={"path": path})
         if response.status_code != 200:
             raise GitRepositoryCreationFault(
