@@ -57,6 +57,7 @@ from lp.code.model.gitrepository import GitRepository
 from lp.registry.enums import PersonVisibility
 from lp.registry.errors import NoSuchSourcePackageName
 from lp.registry.interfaces.distribution import (
+    IDistribution,
     IDistributionSet,
     NoSuchDistribution,
     )
@@ -546,8 +547,6 @@ class GitNamespaceSet:
             namespace = self.get(person, project=pillar)
             git_literal = get_next_segment()
         else:
-            distribution_name = get_next_segment()
-            distribution = self._findDistroSeries(pillar, distribution_name)
             source_literal = get_next_segment()
             if source_literal != "+source":
                 raise InvalidNamespace("/".join(traversed_segments))
@@ -555,7 +554,7 @@ class GitNamespaceSet:
             sourcepackagename = self._findSourcePackageName(
                 sourcepackagename_name)
             namespace = self.get(
-                person, distribution=distribution,
+                person, distribution=IDistribution(pillar),
                 sourcepackagename=sourcepackagename)
             git_literal = get_next_segment()
         if git_literal != "g":
