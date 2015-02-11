@@ -18,11 +18,13 @@ from storm.expr import (
     SQL,
     )
 from storm.locals import (
+    Bool,
     DateTime,
     Int,
     Reference,
     Unicode,
     )
+from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -34,12 +36,13 @@ from lp.app.enums import (
 from lp.app.interfaces.informationtype import IInformationType
 from lp.app.interfaces.launchpad import IPrivacy
 from lp.app.interfaces.services import IService
+from lp.code.errors import GitTargetError
 from lp.code.interfaces.gitnamespace import (
     get_git_namespace_for_target,
     IGitNamespacePolicy,
     )
 from lp.code.interfaces.gitrepository import (
-    GitPathMixin,
+    GitIdentityMixin,
     IGitRepository,
     IGitRepositorySet,
     user_has_special_git_repository_access,
@@ -49,6 +52,10 @@ from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactSource,
     IAccessPolicySource,
     )
+from lp.registry.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage,
+    )
+from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.sharingjob import (
     IRemoveArtifactSubscriptionsJobSource,
@@ -64,6 +71,7 @@ from lp.services.database.constants import (
     UTC_NOW,
     )
 from lp.services.database.enumcol import EnumCol
+from lp.services.database.interfaces import IStore
 from lp.services.database.stormbase import StormBase
 from lp.services.database.stormexpr import (
     Array,
@@ -82,7 +90,7 @@ def git_repository_modified(repository, event):
     repository.date_last_modified = UTC_NOW
 
 
-class GitRepository(StormBase, GitPathMixin):
+class GitRepository(StormBase, GitIdentityMixin):
     """See `IGitRepository`."""
 
     __storm_table__ = 'GitRepository'
@@ -114,7 +122,8 @@ class GitRepository(StormBase, GitPathMixin):
     name = Unicode(name='name', allow_none=False)
 
     information_type = EnumCol(enum=InformationType, notNull=True)
-    access_policy = Int(name='access_policy')
+    owner_default = Bool(name='owner_default', allow_none=False)
+    target_default = Bool(name='target_default', allow_none=False)
 
     def __init__(self, registrant, owner, name, information_type, date_created,
                  project=None, distribution=None, sourcepackagename=None):
@@ -128,6 +137,8 @@ class GitRepository(StormBase, GitPathMixin):
         self.project = project
         self.distribution = distribution
         self.sourcepackagename = sourcepackagename
+        self.owner_default = False
+        self.target_default = False
 
     @property
     def unique_name(self):
@@ -158,7 +169,7 @@ class GitRepository(StormBase, GitPathMixin):
         else:
             return self.project
 
-    def setTarget(self, user, target):
+    def setTarget(self, target, user):
         """See `IGitRepository`."""
         if IPerson.providedBy(target):
             owner = IPerson(target)
@@ -182,6 +193,50 @@ class GitRepository(StormBase, GitPathMixin):
         """See `IGitRepository`."""
         return get_git_namespace_for_target(self.target, self.owner)
 
+    def _getSearchClauses(self):
+        if self.project is not None:
+            return [GitRepository.project == self.project]
+        elif self.distribution is not None:
+            return [
+                GitRepository.distribution == self.distribution,
+                GitRepository.sourcepackagename == self.sourcepackagename,
+                ]
+        else:
+            return [
+                GitRepository.project == None,
+                GitRepository.distribution == None,
+                ]
+
+    def setOwnerDefault(self, value):
+        """See `IGitRepository`."""
+        if value:
+            # Look for an existing owner-target default and remove it.  It
+            # may also be a target default, in which case we need to remove
+            # that too.
+            clauses = [
+                GitRepository.owner == self.owner,
+                GitRepository.owner_default == True,
+                ] + self._getSearchClauses()
+            existing = Store.of(self).find(GitRepository, *clauses).one()
+            if existing is not None:
+                existing.target_default = False
+                existing.owner_default = False
+        self.owner_default = value
+
+    def setTargetDefault(self, value):
+        """See `IGitRepository`."""
+        if value:
+            # Any target default must also be an owner-target default.
+            self.setOwnerDefault(True)
+            # Look for an existing target default and remove it.
+            clauses = [
+                GitRepository.target_default == True,
+                ] + self._getSearchClauses()
+            existing = Store.of(self).find(GitRepository, *clauses).one()
+            if existing is not None:
+                existing.target_default = False
+        self.target_default = value
+
     @property
     def displayname(self):
         return self.git_identity
@@ -191,7 +246,7 @@ class GitRepository(StormBase, GitPathMixin):
         # This may need to change later to improve support for sharding.
         return str(self.id)
 
-    def codebrowse_url(self):
+    def getCodebrowseUrl(self):
         """See `IGitRepository`."""
         return urlutils.join(
             config.codehosting.git_browse_root, self.unique_name)
@@ -325,33 +380,34 @@ class GitRepositorySet:
             registrant, name, information_type=information_type,
             date_created=date_created)
 
-    def getPersonalRepository(self, person, repository_name):
-        """See `IGitRepositorySet`."""
-        namespace = get_git_namespace_for_target(person, person)
-        return namespace.getByName(repository_name)
-
-    def getProjectRepository(self, person, project, repository_name=None):
-        """See `IGitRepositorySet`."""
-        namespace = get_git_namespace_for_target(project, person)
-        return namespace.getByName(repository_name)
-
-    def getPackageRepository(self, person, distribution, sourcepackagename,
-                              repository_name=None):
-        """See `IGitRepositorySet`."""
-        namespace = get_git_namespace_for_target(
-            distribution.getSourcePackage(sourcepackagename), person)
-        return namespace.getByName(repository_name)
-
     def getByPath(self, user, path):
         """See `IGitRepositorySet`."""
         # XXX cjwatson 2015-02-06: Fill this in once IGitLookup is in place.
         raise NotImplementedError
 
-    def getRepositories(self, limit=50, eager_load=True):
+    def getDefaultRepository(self, target, owner=None):
         """See `IGitRepositorySet`."""
-        # XXX cjwatson 2015-02-06: Fill this in once IGitCollection is in
-        # place.
-        raise NotImplementedError
+        clauses = []
+        if IProduct.providedBy(target):
+            clauses.append(GitRepository.project == target)
+        elif IDistributionSourcePackage.providedBy(target):
+            clauses.append(GitRepository.distribution == target.distribution)
+            clauses.append(
+                GitRepository.sourcepackagename == target.sourcepackagename)
+        elif owner is not None:
+            raise GitTargetError(
+                "Cannot get a person's default Git repository for another "
+                "person.")
+        if owner is not None:
+            clauses.append(GitRepository.owner == owner)
+            clauses.append(GitRepository.owner_default == True)
+        else:
+            clauses.append(GitRepository.target_default == True)
+        return IStore(GitRepository).find(GitRepository, *clauses).one()
+
+    def getRepositories(self):
+        """See `IGitRepositorySet`."""
+        return []
 
 
 def get_git_repository_privacy_filter(user):
@@ -372,7 +428,7 @@ def get_git_repository_privacy_filter(user):
 
     policy_grant_query = Coalesce(
         ArrayIntersects(
-            Array(GitRepository.access_policy),
+            Array(SQL("GitRepository.access_policy")),
             Select(
                 ArrayAgg(AccessPolicyGrant.policy_id),
                 tables=(AccessPolicyGrant,

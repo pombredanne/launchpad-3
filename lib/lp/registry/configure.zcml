@@ -560,10 +560,7 @@
         <!-- IHasGitRepositories -->
 
         <allow
-            interface="lp.code.interfaces.hasgitrepositories.IHasGitRepositoriesView" />
-        <require
-            permission="launchpad.Edit"
-            interface="lp.code.interfaces.hasgitrepositories.IHasGitRepositoriesEdit" />
+            interface="lp.code.interfaces.hasgitrepositories.IHasGitRepositories" />
     </class>
     <adapter
         provides="lp.registry.interfaces.distribution.IDistribution"

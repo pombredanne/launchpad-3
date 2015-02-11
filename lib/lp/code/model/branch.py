@@ -208,7 +208,6 @@ class Branch(SQLBase, BzrIdentityMixin):
     mirror_status_message = StringCol(default=None)
     information_type = EnumCol(
         enum=InformationType, default=InformationType.PUBLIC)
-    access_policy = IntCol()
 
     @property
     def private(self):
@@ -1661,7 +1660,7 @@ def get_branch_privacy_filter(user, branch_class=Branch):
 
     policy_grant_query = Coalesce(
         ArrayIntersects(
-            Array(branch_class.access_policy),
+            Array(SQL('%s.access_policy' % branch_class.__storm_table__)),
             Select(
                 ArrayAgg(AccessPolicyGrant.policy_id),
                 tables=(AccessPolicyGrant,

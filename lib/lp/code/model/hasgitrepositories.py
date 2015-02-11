@@ -4,7 +4,6 @@
 __metaclass__ = type
 __all__ = [
     'HasGitRepositoriesMixin',
-    'HasGitShortcutsMixin',
     ]
 
 from zope.component import getUtility

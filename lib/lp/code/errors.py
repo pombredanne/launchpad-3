@@ -34,6 +34,7 @@ __all__ = [
     'GitRepositoryCreatorNotMemberOfOwnerTeam',
     'GitRepositoryCreatorNotOwner',
     'GitRepositoryExists',
+    'GitTargetError',
     'InvalidBranchMergeProposal',
     'InvalidMergeQueueConfig',
     'InvalidNamespace',
@@ -367,6 +368,10 @@ class GitRepositoryCreatorNotOwner(GitRepositoryCreationException):
 
 class GitRepositoryCreationFault(GitRepositoryCreationException):
     """Raised when there is a hosting fault creating a Git repository."""
+
+
+class GitTargetError(Exception):
+    """Raised when there is an error determining a Git repository target."""
 
 
 class NoSuchGitRepository(NameLookupFailed):

@@ -6,7 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
-    'GitPathMixin',
+    'GitIdentityMixin',
     'git_repository_name_validator',
     'IGitRepository',
     'IGitRepositorySet',
@@ -15,10 +15,7 @@ __all__ = [
 
 import re
 
-from lazr.restful.fields import (
-    Reference,
-    ReferenceChoice,
-    )
+from lazr.restful.fields import Reference
 from zope.interface import (
     Attribute,
     Interface,
@@ -36,10 +33,6 @@ from lp import _
 from lp.app.enums import InformationType
 from lp.app.validators import LaunchpadValidationError
 from lp.code.interfaces.hasgitrepositories import IHasGitRepositories
-from lp.registry.interfaces.distributionsourcepackage import (
-    IDistributionSourcePackage,
-    )
-from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.role import IPersonRoles
 from lp.services.fields import (
     PersonChoice,
@@ -93,7 +86,7 @@ class IGitRepositoryView(Interface):
         title=_("Date created"), required=True, readonly=True)
 
     date_last_modified = Datetime(
-        title=_("Date last modified"), required=True, readonly=False)
+        title=_("Date last modified"), required=True, readonly=True)
 
     registrant = PublicPersonChoice(
         title=_("Registrant"), required=True, readonly=True,
@@ -106,36 +99,6 @@ class IGitRepositoryView(Interface):
         description=_(
             "The owner of this Git repository. This controls who can modify "
             "the repository."))
-
-    project = ReferenceChoice(
-        title=_("Project"), required=False, readonly=True,
-        vocabulary="Product", schema=IProduct,
-        description=_(
-            "The project that this Git repository belongs to. None if it "
-            "belongs to a distribution source package instead."))
-
-    # The distribution and sourcepackagename attributes are exported
-    # together as distro_source_package.
-    distribution = Choice(
-        title=_("Distribution"), required=False,
-        vocabulary="Distribution",
-        description=_(
-            "The distribution that this Git repository belongs to. None if it "
-            "belongs to a project instead."))
-
-    sourcepackagename = Choice(
-        title=_("Source Package Name"), required=False,
-        vocabulary="SourcePackageName",
-        description=_(
-            "The source package that this Git repository belongs to. None if "
-            "it belongs to a project instead. Source package repositories "
-            "always belong to a distribution."))
-
-    distro_source_package = Reference(
-        title=_(
-            "The IDistributionSourcePackage that this Git repository belongs "
-            "to. None if it belongs to a project instead."),
-        schema=IDistributionSourcePackage, required=False, readonly=True)
 
     target = Reference(
         title=_("Target"), required=True, readonly=True,
@@ -150,6 +113,17 @@ class IGitRepositoryView(Interface):
         required=True, readonly=True, default=InformationType.PUBLIC,
         description=_(
             "The type of information contained in this repository."))
+
+    owner_default = Bool(
+        title=_("Owner default"), required=True, readonly=True,
+        description=_(
+            "Whether this repository is the default for its owner and "
+            "target."))
+
+    target_default = Bool(
+        title=_("Target default"), required=True, readonly=True,
+        description=_(
+            "Whether this repository is the default for its target."))
 
     unique_name = Text(
         title=_("Unique name"), readonly=True,
@@ -171,17 +145,17 @@ class IGitRepositoryView(Interface):
             "'lp:' plus a shortcut version of the path via that target.  "
             "Otherwise it is simply 'lp:' plus the unique name."))
 
-    def codebrowse_url():
-        """Construct a browsing URL for this branch."""
+    def getCodebrowseUrl():
+        """Construct a browsing URL for this Git repository."""
 
     def addToLaunchBag(launchbag):
-        """Add information about this branch to `launchbag'.
+        """Add information about this Git repository to `launchbag'.
 
-        Use this when traversing to this branch in the web UI.
+        Use this when traversing to this Git repository in the web UI.
 
-        In particular, add information about the branch's target to the
-        launchbag. If the branch has a product, add that; if it has a source
-        package, add lots of information about that.
+        In particular, add information about the Git repository's target to
+        the launchbag.  If the Git repository has a project, add that; if it
+        has a distribution source package, add its distribution.
 
         :param launchbag: `ILaunchBag`.
         """
@@ -201,17 +175,16 @@ class IGitRepositoryView(Interface):
         This is used on the storage backend.
         """
 
-    def getRepositoryLinks():
-        """Return a sorted list of `ICanHasLinkedGitRepository` objects.
+    def getRepositoryDefaults():
+        """Return a sorted list of `ICanHasDefaultGitRepository` objects.
 
-        There is one result for each related object that the repository is
-        linked to.  For example, in the case where a branch is linked to a
-        project and is also its owner's preferred branch for that project,
-        the link objects for both the project and the person-project are
-        returned.
+        There is one result for each related object for which this
+        repository is the default.  For example, in the case where a
+        repository is the default for a project and is also its owner's
+        default repository for that project, the objects for both the
+        project and the person-project are returned.
 
-        The sorting uses the defined order of the linked objects where the
-        more important links are sorted first.
+        More important related objects are sorted first.
         """
 
     def getRepositoryIdentities():
@@ -219,21 +192,21 @@ class IGitRepositoryView(Interface):
 
         Returns a list of tuples of path and context object.  There is at
         least one alias for any repository, and that is the repository
-        itself.  For linked repositories, the context object is the
-        appropriate linked object.
+        itself.  For default repositories, the context object is the
+        appropriate default object.
 
-        Where a repository is linked to a product or a distribution source
-        package, the repository is available through a number of different
-        URLs.  These URLs are the aliases for the repository.
+        Where a repository is the default for a product or a distribution
+        source package, the repository is available through a number of
+        different URLs.  These URLs are the aliases for the repository.
 
-        For example, a repository which is linked to the 'fooix' project and
-        which is also its owner's preferred repository for that project is
-        accessible using:
-          fooix - the linked object is the project fooix
-          ~fooix-owner/fooix - the linked object is the person-project
+        For example, a repository which is the default for the 'fooix'
+        project and which is also its owner's default repository for that
+        project is accessible using:
+          fooix - the context object is the project fooix
+          ~fooix-owner/fooix - the context object is the person-project
               ~fooix-owner and fooix
           ~fooix-owner/fooix/g/fooix - the unique name of the repository
-              where the linked object is the repository itself.
+              where the context object is the repository itself.
         """
 
 
@@ -268,10 +241,24 @@ class IGitRepositoryModerate(Interface):
 class IGitRepositoryEdit(Interface):
     """IGitRepository methods that require launchpad.Edit permission."""
 
+    def setOwnerDefault(value):
+        """Set whether this repository is the default for its owner-target.
+
+        :param value: True if this repository should be the owner-target
+        default, otherwise False.
+        """
+
+    def setTargetDefault(value):
+        """Set whether this repository is the default for its target.
+
+        :param value: True if this repository should be the target default,
+        otherwise False.
+        """
+
     def setOwner(new_owner, user):
         """Set the owner of the repository to be `new_owner`."""
 
-    def setTarget(user, target):
+    def setTarget(target, user):
         """Set the target of the repository."""
 
     def destroySelf():
@@ -322,31 +309,28 @@ class IGitRepositorySet(Interface):
         Return None if no match was found.
         """
 
-    def getPersonalRepository(person, repository_name):
-        """Find a personal repository."""
+    def getDefaultRepository(target, owner=None):
+        """Get the default repository for a target or owner-target.
 
-    def getProjectRepository(person, project, repository_name=None):
-        """Find a project repository."""
+        :param target: An `IHasGitRepositories`.
+        :param owner: An `IPerson`, in which case search for that person's
+            default repository for this target; or None, in which case
+            search for the overall default repository for this target.
+        """
 
-    def getPackageRepository(person, distribution, sourcepackagename,
-                             repository_name=None):
-        """Find a package repository."""
+    def getRepositories():
+        """Return an empty collection of repositories.
 
-    def getRepositories(limit=50, eager_load=True):
-        """Return a collection of repositories.
-
-        :param eager_load: If True (the default because this is used in the
-            web service and it needs the related objects to create links)
-            eager load related objects (projects, etc.).
+        This only exists to keep lazr.restful happy.
         """
 
 
-class GitPathMixin:
+class GitIdentityMixin:
     """This mixin class determines Git repository paths.
 
     Used by both the model GitRepository class and the browser repository
     listing item.  This allows the browser code to cache the associated
-    links which reduces query counts.
+    context objects which reduces query counts.
     """
 
     @property
@@ -360,16 +344,17 @@ class GitPathMixin:
         """See `IGitRepository`."""
         return "lp:" + self.shortened_path
 
-    def getRepositoryLinks(self):
+    def getRepositoryDefaults(self):
         """See `IGitRepository`."""
-        # XXX cjwatson 2015-02-06: This will return shortcut links once
+        # XXX cjwatson 2015-02-06: This will return shortcut defaults once
         # they're implemented.
         return []
 
     def getRepositoryIdentities(self):
         """See `IGitRepository`."""
         identities = [
-            (link.path, link.context) for link in self.getRepositoryLinks()]
+            (default.path, default.context)
+            for default in self.getRepositoryDefaults()]
         identities.append((self.unique_name, self))
         return identities
 

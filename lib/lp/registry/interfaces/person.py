@@ -111,11 +111,7 @@ from lp.code.interfaces.hasbranches import (
     IHasMergeProposals,
     IHasRequestedReviews,
     )
-from lp.code.interfaces.hasgitrepositories import (
-    IHasGitRepositories,
-    IHasGitRepositoriesEdit,
-    IHasGitRepositoriesView,
-    )
+from lp.code.interfaces.hasgitrepositories import IHasGitRepositories
 from lp.code.interfaces.hasrecipes import IHasRecipes
 from lp.registry.enums import (
     EXCLUSIVE_TEAM_POLICY,
@@ -693,8 +689,7 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
                     IHasMergeProposals, IHasMugshot,
                     IHasLocation, IHasRequestedReviews, IObjectWithLocation,
                     IHasBugs, IHasRecipes, IHasTranslationImports,
-                    IPersonSettings, IQuestionsPerson,
-                    IHasGitRepositoriesView):
+                    IPersonSettings, IQuestionsPerson, IHasGitRepositories):
     """IPerson attributes that require launchpad.View permission."""
     account = Object(schema=IAccount)
     accountID = Int(title=_('Account ID'), required=True, readonly=True)
@@ -1587,7 +1582,7 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
         """
 
 
-class IPersonEditRestricted(IHasGitRepositoriesEdit):
+class IPersonEditRestricted(Interface):
     """IPerson attributes that require launchpad.Edit permission."""
 
     @call_with(requester=REQUEST_USER)
@@ -1876,7 +1871,7 @@ class IPersonModerateRestricted(Interface):
 class IPerson(IPersonPublic, IPersonLimitedView, IPersonViewRestricted,
               IPersonEditRestricted, IPersonModerateRestricted,
               IPersonSpecialRestricted, IHasStanding, ISetLocation,
-              IHeadingContext, IHasGitRepositories):
+              IHeadingContext):
     """A Person."""
     export_as_webservice_entry(plural_name='people')
 
