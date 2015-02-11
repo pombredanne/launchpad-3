@@ -36,7 +36,10 @@ from lp.app.enums import (
 from lp.app.interfaces.informationtype import IInformationType
 from lp.app.interfaces.launchpad import IPrivacy
 from lp.app.interfaces.services import IService
-from lp.code.errors import GitTargetError
+from lp.code.errors import (
+    GitDefaultConflict,
+    GitTargetError,
+    )
 from lp.code.interfaces.gitrepository import (
     GitIdentityMixin,
     IGitRepository,
@@ -185,14 +188,12 @@ class GitRepository(StormBase, GitIdentityMixin):
                 "for %s on '%s'." %
                 (self.owner.displayname, self.target.displayname))
         if value:
-            # Look for an existing owner-target default and remove it.  It
-            # may also be a target default, in which case we need to remove
-            # that too.
+            # Check for an existing owner-target default.
             existing = getUtility(IGitRepositorySet).getDefaultRepository(
                 self.target, owner=self.owner)
             if existing is not None:
-                existing.target_default = False
-                existing.owner_default = False
+                raise GitDefaultConflict(
+                    existing, self.target, owner=self.owner)
         self.owner_default = value
 
     def setTargetDefault(self, value):
@@ -204,11 +205,11 @@ class GitRepository(StormBase, GitIdentityMixin):
         if value:
             # Any target default must also be an owner-target default.
             self.setOwnerDefault(True)
-            # Look for an existing target default and remove it.
+            # Check for an existing target default.
             existing = getUtility(IGitRepositorySet).getDefaultRepository(
                 self.target)
             if existing is not None:
-                existing.target_default = False
+                raise GitDefaultConflict(existing, self.target)
         self.target_default = value
 
     @property
