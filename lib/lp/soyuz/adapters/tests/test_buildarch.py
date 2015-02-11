@@ -3,10 +3,44 @@
 
 __metaclass__ = type
 
-from lp.soyuz.adapters.buildarch import determine_architectures_to_build
+from lp.soyuz.adapters.buildarch import (
+    determine_architectures_to_build,
+    DpkgArchitectureCache,
+    )
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    TestCase,
+    TestCaseWithFactory,
+    )
 from lp.testing.layers import LaunchpadZopelessLayer
+
+
+class TestDpkgArchitectureCache(TestCase):
+
+    def test_multiple(self):
+        self.assertContentEqual(
+            ['amd64', 'armhf'],
+            DpkgArchitectureCache().findAllMatches(
+                ['amd64', 'i386', 'armhf'], ['amd64', 'armhf']))
+
+    def test_any(self):
+        self.assertContentEqual(
+            ['amd64', 'i386', 'kfreebsd-amd64'],
+            DpkgArchitectureCache().findAllMatches(
+                ['amd64', 'i386', 'kfreebsd-amd64'], ['any']))
+
+    def test_all(self):
+        self.assertContentEqual(
+            [],
+            DpkgArchitectureCache().findAllMatches(
+                ['amd64', 'i386', 'kfreebsd-amd64'], ['all']))
+
+    def test_partial_wildcards(self):
+        self.assertContentEqual(
+            ['amd64', 'i386', 'kfreebsd-amd64'],
+            DpkgArchitectureCache().findAllMatches(
+                ['amd64', 'i386', 'kfreebsd-amd64', 'kfreebsd-i386'],
+                ['linux-any', 'any-amd64']))
 
 
 class TestDetermineArchitecturesToBuild(TestCaseWithFactory):
