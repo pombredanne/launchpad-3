@@ -24,9 +24,9 @@ from storm.locals import (
     Reference,
     Unicode,
     )
-from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
+from zope.security.interfaces import Unauthorized
 
 from lp.app.enums import (
     InformationType,
@@ -36,7 +36,10 @@ from lp.app.enums import (
 from lp.app.interfaces.informationtype import IInformationType
 from lp.app.interfaces.launchpad import IPrivacy
 from lp.app.interfaces.services import IService
-from lp.code.errors import GitTargetError
+from lp.code.errors import (
+    GitDefaultConflict,
+    GitTargetError,
+    )
 from lp.code.interfaces.gitnamespace import (
     get_git_namespace_for_target,
     IGitNamespacePolicy,
@@ -79,6 +82,7 @@ from lp.services.database.stormexpr import (
     ArrayIntersects,
     )
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp.authorization import check_permission
 
 
 def git_repository_modified(repository, event):
@@ -163,14 +167,15 @@ class GitRepository(StormBase, GitIdentityMixin):
     def __repr__(self):
         return "<GitRepository %r (%d)>" % (self.unique_name, self.id)
 
-    @property
+    @cachedproperty
     def target(self):
         """See `IGitRepository`."""
         if self.project is None:
             if self.distribution is None:
                 return self.owner
             else:
-                return self.distro_source_package
+                return self.distribution.getSourcePackage(
+                    self.sourcepackagename)
         else:
             return self.project
 
@@ -198,48 +203,36 @@ class GitRepository(StormBase, GitIdentityMixin):
         """See `IGitRepository`."""
         return get_git_namespace_for_target(self.target, self.owner)
 
-    def _getSearchClauses(self):
-        if self.project is not None:
-            return [GitRepository.project == self.project]
-        elif self.distribution is not None:
-            return [
-                GitRepository.distribution == self.distribution,
-                GitRepository.sourcepackagename == self.sourcepackagename,
-                ]
-        else:
-            return [
-                GitRepository.project == None,
-                GitRepository.distribution == None,
-                ]
-
     def setOwnerDefault(self, value):
         """See `IGitRepository`."""
+        if not check_permission("launchpad.Edit", self.owner):
+            raise Unauthorized(
+                "You don't have permission to change the default repository "
+                "for %s on '%s'." %
+                (self.owner.displayname, self.target.displayname))
         if value:
-            # Look for an existing owner-target default and remove it.  It
-            # may also be a target default, in which case we need to remove
-            # that too.
-            clauses = [
-                GitRepository.owner == self.owner,
-                GitRepository.owner_default == True,
-                ] + self._getSearchClauses()
-            existing = Store.of(self).find(GitRepository, *clauses).one()
+            # Check for an existing owner-target default.
+            existing = getUtility(IGitRepositorySet).getDefaultRepository(
+                self.target, owner=self.owner)
             if existing is not None:
-                existing.target_default = False
-                existing.owner_default = False
+                raise GitDefaultConflict(
+                    existing, self.target, owner=self.owner)
         self.owner_default = value
 
     def setTargetDefault(self, value):
         """See `IGitRepository`."""
+        if not check_permission("launchpad.Edit", self.target):
+            raise Unauthorized(
+                "You don't have permission to change the default repository "
+                "for '%s'." % self.target.displayname)
         if value:
             # Any target default must also be an owner-target default.
             self.setOwnerDefault(True)
-            # Look for an existing target default and remove it.
-            clauses = [
-                GitRepository.target_default == True,
-                ] + self._getSearchClauses()
-            existing = Store.of(self).find(GitRepository, *clauses).one()
+            # Check for an existing target default.
+            existing = getUtility(IGitRepositorySet).getDefaultRepository(
+                self.target)
             if existing is not None:
-                existing.target_default = False
+                raise GitDefaultConflict(existing, self.target)
         self.target_default = value
 
     @property
@@ -255,14 +248,6 @@ class GitRepository(StormBase, GitIdentityMixin):
         """See `IGitRepository`."""
         return urlutils.join(
             config.codehosting.git_browse_root, self.unique_name)
-
-    @cachedproperty
-    def distro_source_package(self):
-        """See `IGitRepository`."""
-        if self.distribution is not None:
-            return self.distribution.getSourcePackage(self.sourcepackagename)
-        else:
-            return None
 
     @property
     def private(self):
@@ -291,11 +276,6 @@ class GitRepository(StormBase, GitIdentityMixin):
                 pillars = [self.project]
         reconcile_access_for_artifact(
             self, self.information_type, pillars, wanted_links)
-
-    def addToLaunchBag(self, launchbag):
-        """See `IGitRepository`."""
-        launchbag.add(self.project)
-        launchbag.add(self.distribution)
 
     @cachedproperty
     def _known_viewers(self):
@@ -399,10 +379,9 @@ class GitRepositorySet:
             clauses.append(GitRepository.distribution == target.distribution)
             clauses.append(
                 GitRepository.sourcepackagename == target.sourcepackagename)
-        elif owner is not None:
+        else:
             raise GitTargetError(
-                "Cannot get a person's default Git repository for another "
-                "person.")
+                "Personal repositories cannot be defaults for any target.")
         if owner is not None:
             clauses.append(GitRepository.owner == owner)
             clauses.append(GitRepository.owner_default == True)

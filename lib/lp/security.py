@@ -1158,6 +1158,17 @@ class EditDistributionSourcePackage(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = IDistributionSourcePackage
 
+    def _checkUpload(self, user, archive, distroseries):
+        # We use verifyUpload() instead of checkUpload() because we don't
+        # have a pocket.  It returns the reason the user can't upload or
+        # None if they are allowed.
+        if distroseries is None:
+            return False
+        reason = archive.verifyUpload(
+            user.person, sourcepackagename=self.obj.sourcepackagename,
+            component=None, distroseries=distroseries, strict_component=False)
+        return reason is None
+
     def checkAuthenticated(self, user):
         """Anyone who can upload a package can edit it.
 
@@ -1172,16 +1183,8 @@ class EditDistributionSourcePackage(AuthorizationBase):
         if user.inTeam(distribution.owner):
             return True
 
-        # We use verifyUpload() instead of checkUpload() because we don't
-        # have a pocket.  It returns the reason the user can't upload or
-        # None if they are allowed.
-        if distribution.currentseries is None:
-            return False
-        reason = distribution.main_archive.verifyUpload(
-            user.person, sourcepackagename=self.obj.sourcepackagename,
-            component=None, distroseries=distribution.currentseries,
-            strict_component=False)
-        return reason is None
+        return self._checkUpload(
+            user, distribution.main_archive, distribution.currentseries)
 
 
 class BugTargetOwnerOrBugSupervisorOrAdmins(AuthorizationBase):
@@ -2933,8 +2936,7 @@ class ViewPublisherConfig(AdminByAdminsTeam):
     usedfor = IPublisherConfig
 
 
-class EditSourcePackage(AuthorizationBase):
-    permission = 'launchpad.Edit'
+class EditSourcePackage(EditDistributionSourcePackage):
     usedfor = ISourcePackage
 
     def checkAuthenticated(self, user):
@@ -2946,15 +2948,8 @@ class EditSourcePackage(AuthorizationBase):
         if user.inTeam(distribution.owner):
             return True
 
-        # We use verifyUpload() instead of checkUpload() because
-        # we don't have a pocket.
-        # It returns the reason the user can't upload
-        # or None if they are allowed.
-        reason = distribution.main_archive.verifyUpload(
-            user.person, distroseries=self.obj.distroseries,
-            sourcepackagename=self.obj.sourcepackagename,
-            component=None, strict_component=False)
-        return reason is None
+        return self._checkUpload(
+            user, distribution.main_archive, self.obj.distroseries)
 
 
 class ViewLiveFS(DelegatedAuthorization):

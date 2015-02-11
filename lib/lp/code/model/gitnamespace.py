@@ -199,6 +199,7 @@ class _BaseGitNamespace:
         naked_repository = removeSecurityProxy(repository)
         naked_repository.owner = self.owner
         self._retargetRepository(naked_repository)
+        del get_property_cache(naked_repository).target
         naked_repository.name = new_name
 
     def getRepositories(self):
@@ -264,7 +265,6 @@ class PersonalGitNamespace(_BaseGitNamespace):
         repository.project = None
         repository.distribution = None
         repository.sourcepackagename = None
-        del get_property_cache(repository).distro_source_package
 
     @property
     def _is_private_team(self):
@@ -320,7 +320,6 @@ class ProjectGitNamespace(_BaseGitNamespace):
         repository.project = self.project
         repository.distribution = None
         repository.sourcepackagename = None
-        del get_property_cache(repository).distro_source_package
 
     def getAllowedInformationTypes(self, who=None):
         """See `IGitNamespace`."""
@@ -385,7 +384,6 @@ class PackageGitNamespace(_BaseGitNamespace):
         repository.project = None
         repository.distribution = dsp.distribution
         repository.sourcepackagename = dsp.sourcepackagename
-        get_property_cache(repository).distro_source_package = dsp
 
     def getAllowedInformationTypes(self, who=None):
         """See `IGitNamespace`."""

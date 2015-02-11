@@ -28,6 +28,7 @@ __all__ = [
     'CodeImportNotInReviewedState',
     'ClaimReviewFailed',
     'DiffNotFound',
+    'GitDefaultConflict',
     'GitRepositoryCreationException',
     'GitRepositoryCreationFault',
     'GitRepositoryCreationForbidden',
@@ -378,6 +379,31 @@ class NoSuchGitRepository(NameLookupFailed):
     """Raised when we try to load a Git repository that does not exist."""
 
     _message_prefix = "No such Git repository"
+
+
+@error_status(httplib.CONFLICT)
+class GitDefaultConflict(Exception):
+    """Raised when trying to set a Git repository as the default for
+    something that already has a default."""
+
+    def __init__(self, existing_repository, target, owner=None):
+        params = {
+            "unique_name": existing_repository.unique_name,
+            "target": target.displayname,
+            "owner": owner.displayname,
+            }
+        if owner is None:
+            message = (
+                "The default repository for '%(target)s' is already set to "
+                "%(unique_name)s." % params)
+        else:
+            message = (
+                "%(owner)'s default repository for '%(target)s' is already "
+                "set to %(unique_name)s." % params)
+        self.existing_repository = existing_repository
+        self.target = target
+        self.owner = owner
+        Exception.__init__(self, message)
 
 
 @error_status(httplib.BAD_REQUEST)
