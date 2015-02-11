@@ -48,7 +48,7 @@ class TestDetermineArchitecturesToBuild(TestCase):
             allowed_arch_tags = ['armel', 'hppa', 'i386']
         arch_tags = determine_architectures_to_build(
             hint_string, indep_hint_list, allowed_arch_tags, 'i386', True)
-        self.assertContentEqual(expected_arch_tags, arch_tags)
+        self.assertContentEqual(expected_arch_tags.items(), arch_tags.items())
 
     def test_single_architecture(self):
         # A hint string with a single arch resolves to just that arch.
@@ -58,7 +58,7 @@ class TestDetermineArchitecturesToBuild(TestCase):
         # A hint string with multiple archs resolves to just those
         # archs.
         self.assertArchsForHint(
-            'amd64 i386 hppa', {'hppa': True, 'i386': False})
+            'amd64 i386 hppa', {'hppa': False, 'i386': True})
 
     def test_independent(self):
         # 'all' is special, meaning just a single build. The
@@ -76,7 +76,7 @@ class TestDetermineArchitecturesToBuild(TestCase):
     def test_wildcard(self):
         # 'any' is a wildcard that matches all available archs.
         self.assertArchsForHint(
-            'any', {'armel': True, 'hppa': True, 'i386': True})
+            'any', {'armel': False, 'hppa': False, 'i386': True})
 
     def test_kernel_specific_architecture(self):
         # Since we only support Linux-based architectures, 'linux-foo'
@@ -99,7 +99,7 @@ class TestDetermineArchitecturesToBuild(TestCase):
     def test_kernel_specific_architecture_wildcard(self):
         # Wildcards work for archs too: 'linux-any' is treated like 'any'.
         self.assertArchsForHint(
-            'linux-any', {'armel': True, 'hppa': True, 'i386': True})
+            'linux-any', {'armel': False, 'hppa': False, 'i386': True})
 
     def test_unknown_kernel_specific_architecture_wildcard(self):
         # But unknown kernels continue to result in nothing.
@@ -108,7 +108,7 @@ class TestDetermineArchitecturesToBuild(TestCase):
     def test_wildcard_and_independent(self):
         # 'all' continues to be ignored alongside a valid wildcard.
         self.assertArchsForHint(
-            'all linux-any', {'armel': True, 'hppa': True, 'i386': True})
+            'all linux-any', {'armel': False, 'hppa': False, 'i386': True})
 
     def test_kernel_independent_is_invalid(self):
         # 'linux-all' isn't supported.
@@ -118,7 +118,7 @@ class TestDetermineArchitecturesToBuild(TestCase):
         # 'any-any' is redundant with 'any', but dpkg-architecture supports
         # it anyway.
         self.assertArchsForHint(
-            'any-any', {'armel': True, 'hppa': False, 'i386': False})
+            'any-any', {'armel': False, 'hppa': False, 'i386': True})
 
     def test_no_all_builds_when_nominatedarchindep_not_permitted(self):
         # Some archives (eg. armel rebuilds) don't want arch-indep
@@ -140,13 +140,13 @@ class TestDetermineArchitecturesToBuild(TestCase):
         # Unlike nominatedarchindep, a hinted indep will cause an
         # additional build to be created if necessary.
         self.assertArchsForHint(
-            'armel all', {'armel': True, 'hppa': False},
+            'armel all', {'armel': False, 'hppa': True},
             indep_hint_list='hppa')
 
     def test_indep_hint_wildcard(self):
         # An indep hint list can include wildcards.
         self.assertArchsForHint(
-            'armel all', {'armel': True, 'hppa': False},
+            'armel all', {'armel': False, 'hppa': True},
             indep_hint_list='any-hppa')
 
     def test_indep_hint_coalesces(self):
