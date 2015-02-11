@@ -24,7 +24,6 @@ from storm.locals import (
     Reference,
     Unicode,
     )
-from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
 from zope.security.interfaces import Unauthorized
@@ -178,20 +177,6 @@ class GitRepository(StormBase, GitIdentityMixin):
         # place.
         raise NotImplementedError
 
-    def _getSearchClauses(self):
-        if self.project is not None:
-            return [GitRepository.project == self.project]
-        elif self.distribution is not None:
-            return [
-                GitRepository.distribution == self.distribution,
-                GitRepository.sourcepackagename == self.sourcepackagename,
-                ]
-        else:
-            return [
-                GitRepository.project == None,
-                GitRepository.distribution == None,
-                ]
-
     def setOwnerDefault(self, value):
         """See `IGitRepository`."""
         if not check_permission("launchpad.Edit", self.owner):
@@ -203,11 +188,8 @@ class GitRepository(StormBase, GitIdentityMixin):
             # Look for an existing owner-target default and remove it.  It
             # may also be a target default, in which case we need to remove
             # that too.
-            clauses = [
-                GitRepository.owner == self.owner,
-                GitRepository.owner_default == True,
-                ] + self._getSearchClauses()
-            existing = Store.of(self).find(GitRepository, *clauses).one()
+            existing = getUtility(IGitRepositorySet).getDefaultRepository(
+                self.target, owner=self.owner)
             if existing is not None:
                 existing.target_default = False
                 existing.owner_default = False
@@ -223,10 +205,8 @@ class GitRepository(StormBase, GitIdentityMixin):
             # Any target default must also be an owner-target default.
             self.setOwnerDefault(True)
             # Look for an existing target default and remove it.
-            clauses = [
-                GitRepository.target_default == True,
-                ] + self._getSearchClauses()
-            existing = Store.of(self).find(GitRepository, *clauses).one()
+            existing = getUtility(IGitRepositorySet).getDefaultRepository(
+                self.target)
             if existing is not None:
                 existing.target_default = False
         self.target_default = value
