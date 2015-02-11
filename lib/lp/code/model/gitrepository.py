@@ -270,11 +270,6 @@ class GitRepository(StormBase, GitIdentityMixin):
         reconcile_access_for_artifact(
             self, self.information_type, pillars, wanted_links)
 
-    def addToLaunchBag(self, launchbag):
-        """See `IGitRepository`."""
-        launchbag.add(self.project)
-        launchbag.add(self.distribution)
-
     @cachedproperty
     def _known_viewers(self):
         """A set of known persons able to view this repository.

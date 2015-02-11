@@ -145,18 +145,6 @@ class IGitRepositoryView(Interface):
     def getCodebrowseUrl():
         """Construct a browsing URL for this Git repository."""
 
-    def addToLaunchBag(launchbag):
-        """Add information about this Git repository to `launchbag'.
-
-        Use this when traversing to this Git repository in the web UI.
-
-        In particular, add information about the Git repository's target to
-        the launchbag.  If the Git repository has a project, add that; if it
-        has a distribution source package, add its distribution.
-
-        :param launchbag: `ILaunchBag`.
-        """
-
     def visibleByUser(user):
         """Can the specified user see this repository?"""
 
