@@ -69,9 +69,8 @@ class TestDetermineArchitecturesToBuild(TestCase):
         self.assertArchsForHint('hppa all', ['hppa'])
 
     def test_fictional_and_independent(self):
-        # But 'all' is useful if present with an arch that wouldn't
-        # generate a build.
-        self.assertArchsForHint('foo all', ['i386'])
+        # 'all' doesn't make an unbuildable string buildable.
+        self.assertArchsForHint('fiction all', [])
 
     def test_wildcard(self):
         # 'any' is a wildcard that matches all available archs.

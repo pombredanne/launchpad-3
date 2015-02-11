@@ -36,29 +36,35 @@ class DpkgArchitectureCache:
 dpkg_architecture = DpkgArchitectureCache()
 
 
-def determine_architectures_to_build(hintlist, valid_archs,
+def resolve_arch_spec(hintlist, valid_archs):
+    hint_archs = set(hintlist.split())
+    if hint_archs == set(["all"]):
+        return None
+    return set(dpkg_architecture.findAllMatches(valid_archs, hint_archs))
+
+
+def determine_architectures_to_build(hint_list, valid_archs,
                                      nominated_arch_indep, need_arch_indep):
     """Return a set of architectures to build.
 
-    :param hintlist: A string of the architectures this source package
+    :param hint_list: A string of the architectures this source package
         specifies it builds for.
     :param valid_archs: a list of all architecture tags that we can
         create builds for.
     :param nominated_arch_indep: a preferred architecture tag for
         architecture-independent builds. May be None.
-    :return: a set of architecture tags for which the source publication in
-        question should be built.
+    :return: a set of architecture tags for which the source publication
+        should get an architecture-dependent build, and a set of
+        architecture tags that can be used for an architecture-independent
+        build.
     """
-    hint_archs = set(hintlist.split())
-    build_archs = set(
-        dpkg_architecture.findAllMatches(valid_archs, hint_archs))
+    build_archs = resolve_arch_spec(hint_list, valid_archs)
 
     # 'all' is only used as a last resort, to create an arch-indep build
     # where no builds would otherwise exist.
-    if need_arch_indep and len(build_archs) == 0 and 'all' in hint_archs:
-        if nominated_arch_indep in valid_archs:
+    if build_archs is None:
+        if need_arch_indep and nominated_arch_indep in valid_archs:
             return set([nominated_arch_indep])
         else:
             return set()
-
     return build_archs
