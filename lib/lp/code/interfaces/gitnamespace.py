@@ -9,7 +9,6 @@ __all__ = [
     'IGitNamespace',
     'IGitNamespacePolicy',
     'IGitNamespaceSet',
-    'lookup_git_namespace',
     'split_git_unique_name',
     ]
 
@@ -235,10 +234,6 @@ def get_git_namespace(target, owner):
             sourcepackagename=target.sourcepackagename)
     else:
         return getUtility(IGitNamespaceSet).get(owner)
-
-
-def lookup_git_namespace(namespace_name):
-    return getUtility(IGitNamespaceSet).lookup(namespace_name)
 
 
 def split_git_unique_name(unique_name):
