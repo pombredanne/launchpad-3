@@ -50,6 +50,7 @@ from lp.code.interfaces.gitrepository import (
     IGitRepositorySet,
     user_has_special_git_repository_access,
     )
+from lp.registry.enums import PersonVisibility
 from lp.registry.errors import CannotChangeInformationType
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactSource,
@@ -58,6 +59,7 @@ from lp.registry.interfaces.accesspolicy import (
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
+from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.sharingjob import (
