@@ -37,6 +37,17 @@ class DpkgArchitectureCache:
 dpkg_architecture = DpkgArchitectureCache()
 
 
+def find_valid_architectures(hintlist, archive, distroseries,
+                             legal_archseries):
+    # The 'PPA supported' flag only applies to virtualized archives
+    candidates = list(legal_archseries)
+    if archive.require_virtualized:
+        candidates = [
+            arch for arch in candidates if arch.supports_virtualized]
+    return set(
+        arch.architecturetag for arch in candidates if arch.enabled)
+
+
 def determine_architectures_to_build(hintlist, archive, distroseries,
                                      legal_archseries, need_arch_indep):
     """Return a list of architectures for which this publication should build.
@@ -58,24 +69,13 @@ def determine_architectures_to_build(hintlist, archive, distroseries,
     :return: a list of `DistroArchSeries` for which the source publication in
         question should be built.
     """
-    # The 'PPA supported' flag only applies to virtualized archives
-    if archive.require_virtualized:
-        legal_archseries = [
-            arch for arch in legal_archseries if arch.supports_virtualized]
-        # Cope with no virtualization support at all. It usually happens when
-        # a distroseries is created and initialized, by default no
-        # architecture supports its. Distro-team might take some time to
-        # decide which architecture will be allowed for PPAs and queue-builder
-        # will continue to work meanwhile.
-        if not legal_archseries:
-            return []
-
-    legal_arch_tags = set(
-        arch.architecturetag for arch in legal_archseries if arch.enabled)
+    archs = find_valid_architectures(
+        hintlist, archive, distroseries, legal_archseries)
+    if not archs:
+        return []
 
     hint_archs = set(hintlist.split())
-    build_tags = set(dpkg_architecture.findAllMatches(
-        legal_arch_tags, hint_archs))
+    build_tags = set(dpkg_architecture.findAllMatches(archs, hint_archs))
 
     # 'all' is only used as a last resort, to create an arch-indep build
     # where no builds would otherwise exist.
