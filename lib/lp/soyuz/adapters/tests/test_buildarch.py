@@ -132,6 +132,12 @@ class TestDetermineArchitecturesToBuild(TestCase):
         # architecture, declared using XS-Build-Indep-Architecture.
         self.assertArchsForHint('all', {'hppa': True}, indep_hint_list='hppa')
 
+    def test_indep_hint_only_multiple(self):
+        # The earliest available architecture in the available list (not
+        # the hint list) is chosen.
+        self.assertArchsForHint(
+            'all', {'armel': True}, indep_hint_list='armel hppa')
+
     def test_indep_hint_only_unsatisfiable(self):
         # An indep hint list that matches nothing results in no builds
         self.assertArchsForHint('all', {}, indep_hint_list='fiction')
