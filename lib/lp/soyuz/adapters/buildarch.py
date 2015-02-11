@@ -40,8 +40,9 @@ def resolve_arch_spec(hintlist, valid_archs):
     hint_archs = set(hintlist.split())
     # 'all' is only used if it's a purely arch-indep package.
     if hint_archs == set(["all"]):
-        return None
-    return set(dpkg_architecture.findAllMatches(valid_archs, hint_archs))
+        return set(), True
+    return (
+        set(dpkg_architecture.findAllMatches(valid_archs, hint_archs)), False)
 
 
 def determine_architectures_to_build(hint_list, need_archs,
@@ -58,27 +59,30 @@ def determine_architectures_to_build(hint_list, need_archs,
     :return: a map of architecture tag to arch-indep flag for each build
         that should be created.
     """
-    build_archs = resolve_arch_spec(hint_list, need_archs)
+    build_archs, indep_only = resolve_arch_spec(hint_list, need_archs)
+    indep_archs = set(build_archs)
 
-    if build_archs is None:
-        if need_arch_indep and nominated_arch_indep in need_archs:
-            # The hint list is just "all". Ask for a nominatedarchindep build.
-            build_archs = [nominated_arch_indep]
-        else:
-            build_archs = []
-
-    build_map = {arch: False for arch in build_archs}
-
+    indep_arch = None
     if need_arch_indep:
+        # The hint list is just "all". Ask for a nominatedarchindep build.
+        if indep_only and nominated_arch_indep in need_archs:
+            indep_archs = [nominated_arch_indep]
+
+        # Try to avoid adding a new build if an existing one would work.
+        both_archs = set(build_archs) & set(indep_archs)
+        if both_archs:
+            indep_archs = list(both_archs)
+
         # The ideal arch_indep build is nominatedarchindep. But if we're
         # not creating a build for it, use the first candidate DAS that
         # made it this far.
-        if nominated_arch_indep in build_map:
-            build_map[nominated_arch_indep] = True
-        else:
-            for arch in need_archs:
-                if arch in build_map:
-                    build_map[arch] = True
-                    break
+        for arch in [nominated_arch_indep] + need_archs:
+            if arch in indep_archs:
+                indep_arch = arch
+                break
 
-    return build_map
+    # Ensure that we build the indep arch.
+    if indep_arch is not None and indep_arch not in build_archs:
+        build_archs.add(indep_arch)
+
+    return {arch: arch == indep_arch for arch in build_archs}
