@@ -54,18 +54,31 @@ def determine_architectures_to_build(hint_list, need_archs,
         create builds for.
     :param nominated_arch_indep: a preferred architecture tag for
         architecture-independent builds. May be None.
-    :return: a set of architecture tags for which the source publication
-        should get an architecture-dependent build, and a set of
-        architecture tags that can be used for an architecture-independent
-        build.
+    :return: a map of architecture tag to arch-indep flag for each build
+        that should be created.
     """
     build_archs = resolve_arch_spec(hint_list, need_archs)
 
     if build_archs is None:
-        # The hint list is just "all". Create a nominatedarchindep build
-        # if we can.
         if need_arch_indep and nominated_arch_indep in need_archs:
-            return set([nominated_arch_indep])
+            # The hint list is just "all". Ask for a nominatedarchindep build.
+            build_archs = [nominated_arch_indep]
         else:
-            return set()
-    return build_archs
+            build_archs = []
+
+    build_map = {arch: False for arch in build_archs}
+
+    if build_archs and need_arch_indep:
+        # The ideal arch_indep build is nominatedarchindep. But if
+        # that isn't a build we would otherwise create, use the DAS
+        # with the lowest Processor.id.
+        # XXX wgrant 2014-11-06: The fact that production's
+        # Processor 1 is i386, a good arch-indep candidate, is a
+        # total coincidence and this isn't a hack. I promise.
+        if nominated_arch_indep in build_map:
+            build_map[nominated_arch_indep] = True
+        else:
+            # XXX: Restore ordering.
+            build_map[build_map.keys()[0]] = True
+
+    return build_map

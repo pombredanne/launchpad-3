@@ -47,7 +47,7 @@ class TestDetermineArchitecturesToBuild(TestCase):
         if allowed_arch_tags is None:
             allowed_arch_tags = ['armel', 'hppa', 'i386']
         arch_tags = determine_architectures_to_build(
-            hint_string, allowed_arch_tags, 'i386', True)
+            hint_string, allowed_arch_tags, 'i386', True).keys()
         self.assertContentEqual(expected_arch_tags, arch_tags)
 
     def test_single_architecture(self):

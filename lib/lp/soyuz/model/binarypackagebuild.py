@@ -1438,38 +1438,22 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
             distroseries.nominatedarchindep.architecturetag
             if distroseries.nominatedarchindep else None)
 
-        # Filter the valid archs against the hint list.
-        create_arch_tags = determine_architectures_to_build(
+        # Filter the valid archs against the hint list and work out
+        # their arch-indepness.
+        create_tag_map = determine_architectures_to_build(
             sourcepackagerelease.architecturehintlist,
             [das.architecturetag for das in need_archs],
             nominated_arch_indep_tag, need_arch_indep)
-        create_architectures = set(
-            das for das in need_archs
-            if das.architecturetag in create_arch_tags)
-        if not create_architectures:
-            return []
-
-        arch_indep_das = None
-        if need_arch_indep:
-            # The ideal arch_indep build is nominatedarchindep. But if
-            # that isn't a build we would otherwise create, use the DAS
-            # with the lowest Processor.id.
-            # XXX wgrant 2014-11-06: The fact that production's
-            # Processor 1 is i386, a good arch-indep candidate, is a
-            # total coincidence and this isn't a hack. I promise.
-            if distroseries.nominatedarchindep in create_architectures:
-                arch_indep_das = distroseries.nominatedarchindep
-            else:
-                arch_indep_das = sorted(
-                    create_architectures, key=attrgetter('processor.id'))[0]
 
         # Create builds for the remaining architectures.
         new_builds = []
-        for das in create_architectures:
+        for das in need_archs:
+            if das.architecturetag not in create_tag_map:
+                continue
             build = self.new(
                 source_package_release=sourcepackagerelease,
                 distro_arch_series=das, archive=archive, pocket=pocket,
-                arch_indep=das == arch_indep_das)
+                arch_indep=create_tag_map[das.architecturetag])
             new_builds.append(build)
             # Create the builds in suspended mode for disabled archives.
             build_queue = build.queueBuild(suspended=not archive.enabled)
