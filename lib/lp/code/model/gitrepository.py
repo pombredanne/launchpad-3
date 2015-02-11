@@ -163,14 +163,15 @@ class GitRepository(StormBase, GitIdentityMixin):
     def __repr__(self):
         return "<GitRepository %r (%d)>" % (self.unique_name, self.id)
 
-    @property
+    @cachedproperty
     def target(self):
         """See `IGitRepository`."""
         if self.project is None:
             if self.distribution is None:
                 return self.owner
             else:
-                return self.distro_source_package
+                return self.distribution.getSourcePackage(
+                    self.sourcepackagename)
         else:
             return self.project
 
@@ -225,14 +226,6 @@ class GitRepository(StormBase, GitIdentityMixin):
         """See `IGitRepository`."""
         return urlutils.join(
             config.codehosting.git_browse_root, self.unique_name)
-
-    @cachedproperty
-    def distro_source_package(self):
-        """See `IGitRepository`."""
-        if self.distribution is not None:
-            return self.distribution.getSourcePackage(self.sourcepackagename)
-        else:
-            return None
 
     @property
     def private(self):
