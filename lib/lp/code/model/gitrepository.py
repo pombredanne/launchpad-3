@@ -41,7 +41,7 @@ from lp.code.errors import (
     GitTargetError,
     )
 from lp.code.interfaces.gitnamespace import (
-    get_git_namespace_for_target,
+    get_git_namespace,
     IGitNamespacePolicy,
     )
 from lp.code.interfaces.gitrepository import (
@@ -189,7 +189,7 @@ class GitRepository(StormBase, GitIdentityMixin):
                 raise GitTargetError(
                     "Only private teams may have personal private "
                     "repositories.")
-        namespace = get_git_namespace_for_target(target, self.owner)
+        namespace = get_git_namespace(target, self.owner)
         if (self.information_type not in
             namespace.getAllowedInformationTypes(user)):
             raise GitTargetError(
@@ -201,7 +201,7 @@ class GitRepository(StormBase, GitIdentityMixin):
     @property
     def namespace(self):
         """See `IGitRepository`."""
-        return get_git_namespace_for_target(self.target, self.owner)
+        return get_git_namespace(self.target, self.owner)
 
     def setOwnerDefault(self, value):
         """See `IGitRepository`."""
@@ -345,7 +345,7 @@ class GitRepository(StormBase, GitIdentityMixin):
 
     def setOwner(self, new_owner, user):
         """See `IGitRepository`."""
-        new_namespace = get_git_namespace_for_target(self.target, new_owner)
+        new_namespace = get_git_namespace(self.target, new_owner)
         new_namespace.moveRepository(self, user, rename_if_necessary=True)
 
     def destroySelf(self):
@@ -360,7 +360,7 @@ class GitRepositorySet:
     def new(self, registrant, owner, target, name, information_type=None,
             date_created=DEFAULT):
         """See `IGitRepositorySet`."""
-        namespace = get_git_namespace_for_target(target, owner)
+        namespace = get_git_namespace(target, owner)
         return namespace.createRepository(
             registrant, name, information_type=information_type,
             date_created=date_created)

@@ -6,7 +6,6 @@
 __metaclass__ = type
 __all__ = [
     'get_git_namespace',
-    'get_git_namespace_for_target',
     'IGitNamespace',
     'IGitNamespacePolicy',
     'IGitNamespaceSet',
@@ -227,22 +226,15 @@ class IGitNamespaceSet(Interface):
         """
 
 
-def get_git_namespace(person, project=None, distribution=None,
-                      sourcepackagename=None):
-    return getUtility(IGitNamespaceSet).get(
-        person, project=project, distribution=distribution,
-        sourcepackagename=sourcepackagename)
-
-
-def get_git_namespace_for_target(target, owner):
+def get_git_namespace(target, owner):
     if IProduct.providedBy(target):
-        return get_git_namespace(owner, project=target)
+        return getUtility(IGitNamespaceSet).get(owner, project=target)
     elif IDistributionSourcePackage.providedBy(target):
-        return get_git_namespace(
+        return getUtility(IGitNamespaceSet).get(
             owner, distribution=target.distribution,
             sourcepackagename=target.sourcepackagename)
     else:
-        return get_git_namespace(owner)
+        return getUtility(IGitNamespaceSet).get(owner)
 
 
 def lookup_git_namespace(namespace_name):
