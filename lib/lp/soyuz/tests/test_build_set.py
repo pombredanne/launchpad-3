@@ -236,6 +236,73 @@ class TestBuildSet(TestCaseWithFactory):
                 self.builds[1].distro_arch_series))
 
 
+class TestGetAllowedArchitectures(TestCaseWithFactory):
+    """Tests for _getAllowedArchitectures."""
+
+    layer = ZopelessDatabaseLayer
+
+    def setUp(self):
+        super(TestGetAllowedArchitectures, self).setUp()
+        self.avr = self.factory.makeProcessor(name="avr2001")
+        self.sparc = self.factory.makeProcessor(name="sparc64")
+        self.distroseries = self.factory.makeDistroSeries()
+        for name, arch in (('avr', self.avr), ('sparc', self.sparc)):
+            self.factory.makeDistroArchSeries(
+                architecturetag=name, processor=arch,
+                distroseries=self.distroseries, supports_virtualized=True)
+        self.archive = self.factory.makeArchive(
+            distribution=self.distroseries.distribution)
+
+    def test_normal(self):
+        self.assertContentEqual(
+            [self.distroseries['sparc'], self.distroseries['avr']],
+            BinaryPackageBuildSet()._getAllowedArchitectures(
+                self.archive, self.distroseries.architectures))
+
+    def test_restricted(self):
+        # Restricted architectures aren't returned by default.
+        self.avr.restricted = True
+        self.assertContentEqual(
+            [self.distroseries['sparc']],
+            BinaryPackageBuildSet()._getAllowedArchitectures(
+                self.archive, self.distroseries.architectures))
+
+    def test_restricted_override(self):
+        # Restricted architectures are returned if allowed by the archive.
+        self.avr.restricted = True
+        getUtility(IArchiveArchSet).new(self.archive, self.avr)
+        self.assertContentEqual(
+            [self.distroseries['sparc'], self.distroseries['avr']],
+            BinaryPackageBuildSet()._getAllowedArchitectures(
+                self.archive, self.distroseries.architectures))
+
+    def test_disabled_architectures_omitted(self):
+        # Disabled architectures are not buildable, so are excluded.
+        self.distroseries['sparc'].enabled = False
+        self.assertContentEqual(
+            [self.distroseries['avr']],
+            BinaryPackageBuildSet()._getAllowedArchitectures(
+                self.archive, self.distroseries.architectures))
+
+    def test_virt_archives_have_only_virt_archs(self):
+        # For archives which must build on virtual builders, only
+        # virtual archs are returned.
+        self.distroseries['sparc'].supports_virtualized = False
+        self.assertContentEqual(
+            [self.distroseries['avr']],
+            BinaryPackageBuildSet()._getAllowedArchitectures(
+                self.archive, self.distroseries.architectures))
+
+    def test_nonvirt_archives_have_only_all_archs(self):
+        # Non-virtual archives can build on all unrestricted architectures.
+        self.distroseries['sparc'].supports_virtualized = False
+        self.archive.require_virtualized = False
+        self.assertContentEqual(
+            [self.distroseries['sparc'], self.distroseries['avr']],
+            BinaryPackageBuildSet()._getAllowedArchitectures(
+                self.archive, self.distroseries.architectures))
+
+
 class BuildRecordCreationTests(TestNativePublishingBase):
     """Test the creation of build records."""
 
@@ -301,38 +368,6 @@ class BuildRecordCreationTests(TestNativePublishingBase):
                     else BuildStatus.FAILEDTOBUILD)
                 del success_map[build.distro_arch_series.architecturetag]
         self.assertContentEqual([], success_map)
-
-    def test__getAllowedArchitectures_restricted(self):
-        """Test _getAllowedArchitectures doesn't return unrestricted
-        archs.
-
-        For a normal archive, only unrestricted architectures should
-        be used.
-        """
-        self.avr.restricted = True
-        available_archs = [
-            self.distroseries['sparc'], self.distroseries['avr']]
-        pubrec = self.getPubSource(architecturehintlist='any')
-        self.assertEqual(
-            [self.distroseries['sparc']],
-            BinaryPackageBuildSet()._getAllowedArchitectures(
-                pubrec.archive, available_archs))
-
-    def test__getAllowedArchitectures_restricted_override(self):
-        """Test _getAllowedArchitectures honors overrides of restricted archs.
-
-        Restricted architectures should only be allowed if there is
-        an explicit ArchiveArch association with the archive.
-        """
-        self.avr.restricted = True
-        available_archs = [
-            self.distroseries['sparc'], self.distroseries['avr']]
-        getUtility(IArchiveArchSet).new(self.archive, self.avr)
-        pubrec = self.getPubSource(architecturehintlist='any')
-        self.assertEqual(
-            [self.distroseries['sparc'], self.distroseries['avr']],
-            BinaryPackageBuildSet()._getAllowedArchitectures(
-                pubrec.archive, available_archs))
 
     def test_createForSource_restricts_any(self):
         """createForSource() should limit builds targeted at 'any'

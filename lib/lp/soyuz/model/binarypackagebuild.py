@@ -1385,9 +1385,16 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
         """
         # Return all distroarches with unrestricted processors or with
         # processors the archive is explicitly associated with.
-        return [distroarch for distroarch in available_archs
-            if not distroarch.processor.restricted or
-               distroarch.processor in archive.enabled_restricted_processors]
+        return [
+            das for das in available_archs
+            if (
+                das.enabled
+                and (
+                    not das.processor.restricted
+                    or das.processor in archive.enabled_restricted_processors)
+                and (
+                    das.supports_virtualized
+                    or not archive.require_virtualized))]
 
     def createForSource(self, sourcepackagerelease, archive, distroseries,
                         pocket, architectures_available=None, logger=None):
@@ -1427,7 +1434,7 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
         architectures_available = self._getAllowedArchitectures(
             archive, architectures_available)
         candidate_architectures = determine_architectures_to_build(
-            sourcepackagerelease.architecturehintlist, archive, distroseries,
+            sourcepackagerelease.architecturehintlist, distroseries,
             architectures_available, need_arch_indep)
 
         # Filter out any architectures for which we earlier found sufficient

@@ -67,7 +67,7 @@ class TestDetermineArchitecturesToBuild(TestCaseWithFactory):
                 arch for arch in self.publisher.breezy_autotest.architectures
                 if arch.architecturetag in allowed_arch_tags]
         architectures = determine_architectures_to_build(
-            pub.sourcepackagerelease.architecturehintlist, pub.archive,
+            pub.sourcepackagerelease.architecturehintlist,
             self.publisher.breezy_autotest, allowed_archs, True)
         self.assertContentEqual(
             expected_arch_tags, [a.architecturetag for a in architectures])
@@ -145,17 +145,6 @@ class TestDetermineArchitecturesToBuild(TestCaseWithFactory):
         # 'any-any' is redundant with 'any', but dpkg-architecture supports
         # it anyway.
         self.assertArchsForHint('any-any', ['armel', 'hppa', 'i386'])
-
-    def test_disabled_architectures_omitted(self):
-        # Disabled architectures are not buildable, so are excluded.
-        self.publisher.breezy_autotest['hppa'].enabled = False
-        self.assertArchsForHint('any', ['armel', 'i386'])
-
-    def test_virtualized_archives_have_only_virtualized_archs(self):
-        # For archives which must build on virtual builders, only
-        # virtual archs are returned.
-        self.publisher.breezy_autotest.main_archive.require_virtualized = True
-        self.assertArchsForHint('any', ['i386'])
 
     def test_no_all_builds_when_nominatedarchindep_not_permitted(self):
         # Some archives (eg. armel rebuilds) don't want arch-indep
