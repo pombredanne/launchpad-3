@@ -1446,7 +1446,7 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
         # Filter the valid archs against the hint list and work out
         # their arch-indepness.
         create_tag_map = determine_architectures_to_build(
-            sourcepackagerelease.architecturehintlist,
+            sourcepackagerelease.architecturehintlist, None,
             [das.architecturetag for das in need_archs],
             nominated_arch_indep_tag, need_arch_indep)
 

@@ -45,12 +45,14 @@ def resolve_arch_spec(hintlist, valid_archs):
         set(dpkg_architecture.findAllMatches(valid_archs, hint_archs)), False)
 
 
-def determine_architectures_to_build(hint_list, need_archs,
+def determine_architectures_to_build(hint_list, indep_hint_list, need_archs,
                                      nominated_arch_indep, need_arch_indep):
     """Return a set of architectures to build.
 
     :param hint_list: a string of the architectures this source package
         specifies it builds for.
+    :param indep_hint_list: a string of the architectures this source package
+        specifies it can build architecture-independent packages on.
     :param need_archs: an ordered list of all architecture tags that we can
         create builds for. the first usable one gets the arch-indep flag.
     :param nominated_arch_indep: the default architecture tag for
@@ -60,13 +62,24 @@ def determine_architectures_to_build(hint_list, need_archs,
         that should be created.
     """
     build_archs, indep_only = resolve_arch_spec(hint_list, need_archs)
-    indep_archs = set(build_archs)
+
+    # Use the indep hint list if it's set, otherwise fall back to the
+    # main architecture list.
+    indep_archs = None
+    if indep_hint_list:
+        indep_archs, _ = resolve_arch_spec(indep_hint_list, need_archs)
+    if indep_archs is None and not indep_only:
+        indep_archs = set(build_archs)
 
     indep_arch = None
     if need_arch_indep:
-        # The hint list is just "all". Ask for a nominatedarchindep build.
-        if indep_only and nominated_arch_indep in need_archs:
-            indep_archs = [nominated_arch_indep]
+        # The package recommends no architectures at all, so ask for a
+        # nominatedarchindep build.
+        if indep_only and indep_archs is None:
+            if nominated_arch_indep in need_archs:
+                indep_archs = [nominated_arch_indep]
+            else:
+                indep_archs = []
 
         # Try to avoid adding a new build if an existing one would work.
         both_archs = set(build_archs) & set(indep_archs)

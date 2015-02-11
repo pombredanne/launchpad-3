@@ -43,11 +43,12 @@ class TestDetermineArchitecturesToBuild(TestCase):
     """
 
     def assertArchsForHint(self, hint_string, expected_arch_tags,
-                           allowed_arch_tags=None):
+                           allowed_arch_tags=None, indep_hint_list=None):
         if allowed_arch_tags is None:
             allowed_arch_tags = ['armel', 'hppa', 'i386']
         arch_tags = determine_architectures_to_build(
-            hint_string, allowed_arch_tags, 'i386', True).keys()
+            hint_string, indep_hint_list, allowed_arch_tags, 'i386',
+            True).keys()
         self.assertContentEqual(expected_arch_tags, arch_tags)
 
     def test_single_architecture(self):
@@ -121,3 +122,37 @@ class TestDetermineArchitecturesToBuild(TestCase):
         # i386) is omitted, no builds will be created for arch-indep
         # sources.
         self.assertArchsForHint('all', [], allowed_arch_tags=['hppa'])
+
+    # TODO: Test arch-indep flag.
+
+    def test_indep_hint_only(self):
+        # Some packages need to build arch-indep builds on a specific
+        # architecture, declared using XS-Build-Indep-Architecture.
+        self.assertArchsForHint('all', ['hppa'], indep_hint_list='hppa')
+
+    def test_indep_hint_only_unsatisfiable(self):
+        # An indep hint list that matches nothing results in no builds
+        self.assertArchsForHint('all', [], indep_hint_list='fiction')
+
+    def test_indep_hint(self):
+        # Unlike nominatedarchindep, a hinted indep will cause an
+        # additional build to be created if necessary.
+        self.assertArchsForHint(
+            'armel all', ['armel', 'hppa'], indep_hint_list='hppa')
+
+    def test_indep_hint_wildcard(self):
+        # An indep hint list can include wildcards.
+        self.assertArchsForHint(
+            'armel all', ['armel', 'hppa'], indep_hint_list='any-hppa')
+
+    def test_indep_hint_coalesces(self):
+        # An indep hint list that matches an existing build will avoid
+        # creating another.
+        self.assertArchsForHint(
+            'hppa all', ['hppa'], indep_hint_list='linux-any')
+
+    def test_indep_hint_unsatisfiable(self):
+        # An indep hint list that matches nothing results in no
+        # additional builds
+        self.assertArchsForHint(
+            'armel all', ['armel'], indep_hint_list='fiction')
