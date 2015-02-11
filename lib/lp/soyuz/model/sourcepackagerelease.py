@@ -172,7 +172,7 @@ class SourcePackageRelease(SQLBase):
 
     def getUserDefinedField(self, name):
         if self.user_defined_fields:
-            for k, v in self.user_defined_fields.iteritems():
+            for k, v in self.user_defined_fields:
                 if k.lower() == name.lower():
                     return v
 
