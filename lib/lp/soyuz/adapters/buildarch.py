@@ -50,7 +50,7 @@ def find_valid_architectures(hintlist, archive, distroseries,
 
 def determine_architectures_to_build(hintlist, archive, distroseries,
                                      legal_archseries, need_arch_indep):
-    """Return a list of architectures for which this publication should build.
+    """Return a set of architectures for which this publication should build.
 
     This function answers the question: given a list of architectures and
     an archive, what architectures should we build it for? It takes a set of
@@ -66,7 +66,7 @@ def determine_architectures_to_build(hintlist, archive, distroseries,
     :param: distroseries: the context `DistroSeries`.
     :param: legal_archseries: a list of all initialized `DistroArchSeries`
         to be considered.
-    :return: a list of `DistroArchSeries` for which the source publication in
+    :return: a set of `DistroArchSeries` for which the source publication in
         question should be built.
     """
     archs = find_valid_architectures(
@@ -86,7 +86,4 @@ def determine_architectures_to_build(hintlist, archive, distroseries,
         else:
             build_tags = set()
 
-    sorted_archseries = sorted(
-        legal_archseries, key=attrgetter('architecturetag'))
-    return [arch for arch in sorted_archseries
-            if arch.architecturetag in build_tags]
+    return set(a for a in legal_archseries if a.architecturetag in build_tags)
