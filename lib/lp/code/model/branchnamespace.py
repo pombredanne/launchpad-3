@@ -9,9 +9,9 @@ __all__ = [
     'BRANCH_POLICY_ALLOWED_TYPES',
     'BRANCH_POLICY_DEFAULT_TYPES',
     'BRANCH_POLICY_REQUIRED_GRANTS',
-    'PackageNamespace',
-    'PersonalNamespace',
-    'ProductNamespace',
+    'PackageBranchNamespace',
+    'PersonalBranchNamespace',
+    'ProjectBranchNamespace',
     ]
 
 
@@ -113,7 +113,7 @@ BRANCH_POLICY_REQUIRED_GRANTS = {
     }
 
 
-class _BaseNamespace:
+class _BaseBranchNamespace:
     """Common code for branch namespaces."""
 
     def createBranch(self, branch_type, name, registrant, url=None,
@@ -289,7 +289,7 @@ class _BaseNamespace:
         raise NotImplementedError
 
 
-class PersonalNamespace(_BaseNamespace):
+class PersonalBranchNamespace(_BaseBranchNamespace):
     """A namespace for personal (or 'junk') branches.
 
     Branches in this namespace have names like '~foo/+junk/bar'.
@@ -337,11 +337,11 @@ class PersonalNamespace(_BaseNamespace):
         return IBranchTarget(self.owner)
 
 
-class ProductNamespace(_BaseNamespace):
-    """A namespace for product branches.
+class ProjectBranchNamespace(_BaseBranchNamespace):
+    """A namespace for project branches.
 
     This namespace is for all the branches owned by a particular person in a
-    particular product.
+    particular project.
     """
 
     implements(IBranchNamespace, IBranchNamespacePolicy)
@@ -393,7 +393,7 @@ class ProductNamespace(_BaseNamespace):
         return default_type
 
 
-class PackageNamespace(_BaseNamespace):
+class PackageBranchNamespace(_BaseBranchNamespace):
     """A namespace for source package branches.
 
     This namespace is for all the branches owned by a particular person in a
@@ -442,15 +442,15 @@ class BranchNamespaceSet:
                 "product implies no distroseries or sourcepackagename. "
                 "Got %r, %r, %r."
                 % (product, distroseries, sourcepackagename))
-            return ProductNamespace(person, product)
+            return ProjectBranchNamespace(person, product)
         elif distroseries is not None:
             assert sourcepackagename is not None, (
                 "distroseries implies sourcepackagename. Got %r, %r"
                 % (distroseries, sourcepackagename))
-            return PackageNamespace(
+            return PackageBranchNamespace(
                 person, SourcePackage(sourcepackagename, distroseries))
         else:
-            return PersonalNamespace(person)
+            return PersonalBranchNamespace(person)
 
     def parse(self, namespace_name):
         """See `IBranchNamespaceSet`."""

@@ -125,8 +125,8 @@ class GitRepository(StormBase, GitIdentityMixin):
     owner_default = Bool(name='owner_default', allow_none=False)
     target_default = Bool(name='target_default', allow_none=False)
 
-    def __init__(self, registrant, owner, name, information_type, date_created,
-                 project=None, distribution=None, sourcepackagename=None):
+    def __init__(self, registrant, owner, target, name, information_type,
+                 date_created):
         super(GitRepository, self).__init__()
         self.registrant = registrant
         self.owner = owner
@@ -134,9 +134,14 @@ class GitRepository(StormBase, GitIdentityMixin):
         self.information_type = information_type
         self.date_created = date_created
         self.date_last_modified = date_created
-        self.project = project
-        self.distribution = distribution
-        self.sourcepackagename = sourcepackagename
+        self.project = None
+        self.distribution = None
+        self.sourcepackagename = None
+        if IProduct.providedBy(target):
+            self.project = target
+        elif IDistributionSourcePackage.providedBy(target):
+            self.distribution = target.distribution
+            self.sourcepackagename = target.sourcepackagename
         self.owner_default = False
         self.target_default = False
 

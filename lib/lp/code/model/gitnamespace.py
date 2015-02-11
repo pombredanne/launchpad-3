@@ -107,24 +107,14 @@ class _BaseGitNamespace:
         self.validateRegistrant(registrant)
         self.validateRepositoryName(name)
 
-        project = getattr(self, "project", None)
-        dsp = getattr(self, "distro_source_package", None)
-        if dsp is None:
-            distribution = None
-            sourcepackagename = None
-        else:
-            distribution = dsp.distribution
-            sourcepackagename = dsp.sourcepackagename
-
         if information_type is None:
             information_type = self.getDefaultInformationType(registrant)
             if information_type is None:
                 raise GitRepositoryCreationForbidden()
 
         repository = GitRepository(
-            registrant, self.owner, name, information_type, date_created,
-            project=project, distribution=distribution,
-            sourcepackagename=sourcepackagename)
+            registrant, self.owner, self.target, name, information_type,
+            date_created)
         repository._reconcileAccess()
 
         # Commit the transaction so that we can get the id column and thus
