@@ -11,10 +11,7 @@ __all__ = [
     'ProjectGitNamespace',
     ]
 
-from urlparse import urljoin
-
 from lazr.lifecycle.event import ObjectCreatedEvent
-import requests
 from storm.locals import And
 import transaction
 from zope.component import getUtility
@@ -30,7 +27,6 @@ from lp.app.enums import (
     )
 from lp.app.interfaces.services import IService
 from lp.code.errors import (
-    GitRepositoryCreationFault,
     GitRepositoryCreationForbidden,
     GitRepositoryCreatorNotMemberOfOwnerTeam,
     GitRepositoryCreatorNotOwner,
@@ -38,6 +34,7 @@ from lp.code.errors import (
     InvalidNamespace,
     NoSuchGitRepository,
     )
+from lp.code.githosting import GitHostingClient
 from lp.code.interfaces.gitnamespace import (
     IGitNamespace,
     IGitNamespacePolicy,
@@ -76,25 +73,9 @@ from lp.registry.interfaces.product import (
     )
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
-from lp.services.config import config
 from lp.services.database.constants import DEFAULT
 from lp.services.database.interfaces import IStore
 from lp.services.propertycache import get_property_cache
-
-
-class GitHostingClient:
-    """A client for the internal API provided by the Git hosting system."""
-
-    @property
-    def endpoint(self):
-        return config.codehosting.internal_git_endpoint
-
-    def create(self, path):
-        response = requests.post(
-            urljoin(self.endpoint, "create"), data={"path": path})
-        if response.status_code != 200:
-            raise GitRepositoryCreationFault(
-                "Failed to create Git repository: %s" % response.text)
 
 
 class _BaseGitNamespace:
