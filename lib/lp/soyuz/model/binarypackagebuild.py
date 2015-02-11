@@ -1428,28 +1428,25 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
         # For an architecturehintlist of just 'all', this will
         # be the current nominatedarchindep if need_arch_indep,
         # otherwise nothing.
-        valid_archs = list(
+        potential_archs = list(
             architectures_available or distroseries.buildable_architectures)
-        valid_archs = self._getAllowedArchitectures(archive, valid_archs)
+        need_archs = [
+            das for das in
+            self._getAllowedArchitectures(archive, potential_archs)
+            if das.architecturetag not in skip_archtags]
         nominated_arch_indep_tag = (
             distroseries.nominatedarchindep.architecturetag
             if distroseries.nominatedarchindep else None)
 
         # Filter the valid archs against the hint list.
-        candidate_arch_tags = determine_architectures_to_build(
+        create_arch_tags = determine_architectures_to_build(
             sourcepackagerelease.architecturehintlist,
-            [das.architecturetag for das in valid_archs],
+            [das.architecturetag for das in need_archs],
             nominated_arch_indep_tag, need_arch_indep)
-        candidate_architectures = set(
-            das for das in valid_archs
-            if das.architecturetag in candidate_arch_tags)
-
-        # Filter out any architectures for which we earlier found sufficient
-        # builds.
-        needed_architectures = [
-            das for das in candidate_architectures
-            if das.architecturetag not in skip_archtags]
-        if not needed_architectures:
+        create_architectures = set(
+            das for das in need_archs
+            if das.architecturetag in create_arch_tags)
+        if not create_architectures:
             return []
 
         arch_indep_das = None
@@ -1460,15 +1457,15 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
             # XXX wgrant 2014-11-06: The fact that production's
             # Processor 1 is i386, a good arch-indep candidate, is a
             # total coincidence and this isn't a hack. I promise.
-            if distroseries.nominatedarchindep in needed_architectures:
+            if distroseries.nominatedarchindep in create_architectures:
                 arch_indep_das = distroseries.nominatedarchindep
             else:
                 arch_indep_das = sorted(
-                    needed_architectures, key=attrgetter('processor.id'))[0]
+                    create_architectures, key=attrgetter('processor.id'))[0]
 
         # Create builds for the remaining architectures.
         new_builds = []
-        for das in needed_architectures:
+        for das in create_architectures:
             build = self.new(
                 source_package_release=sourcepackagerelease,
                 distro_arch_series=das, archive=archive, pocket=pocket,
