@@ -48,12 +48,13 @@ def determine_architectures_to_build(hint_list, need_archs,
                                      nominated_arch_indep, need_arch_indep):
     """Return a set of architectures to build.
 
-    :param hint_list: A string of the architectures this source package
+    :param hint_list: a string of the architectures this source package
         specifies it builds for.
-    :param need_archs: a list of all architecture tags that we can
-        create builds for.
-    :param nominated_arch_indep: a preferred architecture tag for
-        architecture-independent builds. May be None.
+    :param need_archs: an ordered list of all architecture tags that we can
+        create builds for. the first usable one gets the arch-indep flag.
+    :param nominated_arch_indep: the default architecture tag for
+        arch-indep-only packages. may be None.
+    :param need_arch_indep: should an arch-indep build be created if possible?
     :return: a map of architecture tag to arch-indep flag for each build
         that should be created.
     """
@@ -68,17 +69,16 @@ def determine_architectures_to_build(hint_list, need_archs,
 
     build_map = {arch: False for arch in build_archs}
 
-    if build_archs and need_arch_indep:
-        # The ideal arch_indep build is nominatedarchindep. But if
-        # that isn't a build we would otherwise create, use the DAS
-        # with the lowest Processor.id.
-        # XXX wgrant 2014-11-06: The fact that production's
-        # Processor 1 is i386, a good arch-indep candidate, is a
-        # total coincidence and this isn't a hack. I promise.
+    if need_arch_indep:
+        # The ideal arch_indep build is nominatedarchindep. But if we're
+        # not creating a build for it, use the first candidate DAS that
+        # made it this far.
         if nominated_arch_indep in build_map:
             build_map[nominated_arch_indep] = True
         else:
-            # XXX: Restore ordering.
-            build_map[build_map.keys()[0]] = True
+            for arch in need_archs:
+                if arch in build_map:
+                    build_map[arch] = True
+                    break
 
     return build_map

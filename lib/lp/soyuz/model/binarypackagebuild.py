@@ -1423,17 +1423,22 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
         # this series already has it set.
         need_arch_indep = not any(bpb.arch_indep for bpb in relevant_builds)
 
-        # Find the architectures for which the source should end up with
-        # binaries, parsing architecturehintlist as you'd expect.
-        # For an architecturehintlist of just 'all', this will
-        # be the current nominatedarchindep if need_arch_indep,
-        # otherwise nothing.
-        potential_archs = list(
-            architectures_available or distroseries.buildable_architectures)
-        need_archs = [
-            das for das in
-            self._getAllowedArchitectures(archive, potential_archs)
-            if das.architecturetag not in skip_archtags]
+        # Find the architectures for which the source chould end up with
+        # new binaries. Exclude architectures not allowed in this
+        # archive and architectures that have already built. Order by
+        # Processor.id so determine_architectures_to_build is
+        # deterministic.
+        # XXX wgrant 2014-11-06: The fact that production's
+        # Processor 1 is i386, a good arch-indep candidate, is a
+        # total coincidence and this isn't a hack. I promise.
+        need_archs = sorted(
+            [das for das in
+             self._getAllowedArchitectures(
+                 archive,
+                 architectures_available
+                    or distroseries.buildable_architectures)
+             if das.architecturetag not in skip_archtags],
+            key=attrgetter('processor.id'))
         nominated_arch_indep_tag = (
             distroseries.nominatedarchindep.architecturetag
             if distroseries.nominatedarchindep else None)
