@@ -691,10 +691,9 @@ def merge_people(from_person, to_person, reviewer, delete=False):
         ('bugsummaryjournal', 'viewed_by'),
         ('latestpersonsourcepackagereleasecache', 'creator'),
         ('latestpersonsourcepackagereleasecache', 'maintainer'),
-        # These need handling before we deploy the git code, but can be
+        # This needs handling before we deploy the git code, but can be
         # ignored for the purpose of deploying the database tables.
         ('gitrepository', 'owner'),
-        ('gitshortcut', 'owner'),
         ]
 
     references = list(postgresql.listReferences(cur, 'person', 'id'))
