@@ -77,14 +77,14 @@ def determine_architectures_to_build(hint_list, indep_hint_list, need_archs,
         # nominatedarchindep build.
         if indep_only and indep_archs is None:
             if nominated_arch_indep in need_archs:
-                indep_archs = [nominated_arch_indep]
+                indep_archs = set([nominated_arch_indep])
             else:
-                indep_archs = []
+                indep_archs = set()
 
         # Try to avoid adding a new build if an existing one would work.
         both_archs = set(build_archs) & set(indep_archs)
         if both_archs:
-            indep_archs = list(both_archs)
+            indep_archs = both_archs
 
         # The ideal arch_indep build is nominatedarchindep. But if we're
         # not creating a build for it, use the first candidate DAS that
