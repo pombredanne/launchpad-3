@@ -43,11 +43,13 @@ class TestDetermineArchitecturesToBuild(TestCase):
     """
 
     def assertArchsForHint(self, hint_string, expected_arch_tags,
-                           allowed_arch_tags=None, indep_hint_list=None):
+                           allowed_arch_tags=None, indep_hint_list=None,
+                           need_arch_indep=True):
         if allowed_arch_tags is None:
             allowed_arch_tags = ['armel', 'hppa', 'i386']
         arch_tags = determine_architectures_to_build(
-            hint_string, indep_hint_list, allowed_arch_tags, 'i386', True)
+            hint_string, indep_hint_list, allowed_arch_tags, 'i386',
+            need_arch_indep)
         self.assertContentEqual(expected_arch_tags.items(), arch_tags.items())
 
     def test_single_architecture(self):
@@ -166,3 +168,15 @@ class TestDetermineArchitecturesToBuild(TestCase):
         # additional builds
         self.assertArchsForHint(
             'armel all', {'armel': False}, indep_hint_list='fiction')
+
+    def test_no_need_arch_indep(self):
+        self.assertArchsForHint(
+            'armel all', {'armel': False}, need_arch_indep=False)
+
+    def test_no_need_arch_indep_hint(self):
+        self.assertArchsForHint(
+            'armel all', {'armel': False}, indep_hint_list='hppa',
+            need_arch_indep=False)
+
+    def test_no_need_arch_indep_only(self):
+        self.assertArchsForHint('all', {}, need_arch_indep=False)
