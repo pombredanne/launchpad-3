@@ -8,7 +8,6 @@ __all__ = [
     ]
 
 
-from operator import attrgetter
 import os
 import subprocess
 
@@ -37,37 +36,29 @@ class DpkgArchitectureCache:
 dpkg_architecture = DpkgArchitectureCache()
 
 
-def determine_architectures_to_build(hintlist, distroseries, valid_archs,
-                                     need_arch_indep):
-    """Return a set of architectures for which this publication should build.
+def determine_architectures_to_build(hintlist, valid_archs,
+                                     nominated_arch_indep, need_arch_indep):
+    """Return a set of architectures to build.
 
-    This function answers the question: given a list of architectures and
-    an archive, what architectures should we build it for? It takes a set of
-    legal distroarchseries and the distribution series for which we are
-    building.
-
-    For PPA publications we only consider architectures supported by PPA
-    subsystem (`DistroArchSeries`.supports_virtualized flag).
-
-    :param: hintlist: A string of the architectures this source package
+    :param hintlist: A string of the architectures this source package
         specifies it builds for.
-    :param: distroseries: the context `DistroSeries`.
-    :param: valid_archs: a list of all `DistroArchSeries` that we can
+    :param valid_archs: a list of all architecture tags that we can
         create builds for.
-    :return: a set of `DistroArchSeries` for which the source publication in
+    :param nominated_arch_indep: a preferred architecture tag for
+        architecture-independent builds. May be None.
+    :return: a set of architecture tags for which the source publication in
         question should be built.
     """
-    valid_tags = set(das.architecturetag for das in valid_archs)
     hint_archs = set(hintlist.split())
-    build_tags = set(dpkg_architecture.findAllMatches(valid_tags, hint_archs))
+    build_archs = set(
+        dpkg_architecture.findAllMatches(valid_archs, hint_archs))
 
     # 'all' is only used as a last resort, to create an arch-indep build
     # where no builds would otherwise exist.
-    if need_arch_indep and len(build_tags) == 0 and 'all' in hint_archs:
-        nominated_arch = distroseries.nominatedarchindep
-        if nominated_arch in valid_archs:
-            build_tags = set([nominated_arch.architecturetag])
+    if need_arch_indep and len(build_archs) == 0 and 'all' in hint_archs:
+        if nominated_arch_indep in valid_archs:
+            return set([nominated_arch_indep])
         else:
-            build_tags = set()
+            return set()
 
-    return set(a for a in valid_archs if a.architecturetag in build_tags)
+    return build_archs

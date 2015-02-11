@@ -61,16 +61,14 @@ class TestDetermineArchitecturesToBuild(TestCaseWithFactory):
     def assertArchitecturesToBuild(self, expected_arch_tags, pub,
                                    allowed_arch_tags=None):
         if allowed_arch_tags is None:
-            allowed_archs = self.publisher.breezy_autotest.architectures
-        else:
-            allowed_archs = [
-                arch for arch in self.publisher.breezy_autotest.architectures
-                if arch.architecturetag in allowed_arch_tags]
-        architectures = determine_architectures_to_build(
-            pub.sourcepackagerelease.architecturehintlist,
-            self.publisher.breezy_autotest, allowed_archs, True)
-        self.assertContentEqual(
-            expected_arch_tags, [a.architecturetag for a in architectures])
+            allowed_arch_tags = [
+                das.architecturetag for das in
+                self.publisher.breezy_autotest.architectures]
+        arch_tags = determine_architectures_to_build(
+            pub.sourcepackagerelease.architecturehintlist, allowed_arch_tags,
+            self.publisher.breezy_autotest.nominatedarchindep.architecturetag,
+            True)
+        self.assertContentEqual(expected_arch_tags, arch_tags)
 
     def assertArchsForHint(self, hint_string, expected_arch_tags,
                            allowed_arch_tags=None, sourcename=None):
