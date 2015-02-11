@@ -90,7 +90,6 @@ class GitHostingClient:
         return config.codehosting.internal_git_endpoint
 
     def create(self, path):
-        print("GitHostingClient.create: %s" % path)
         response = requests.post(
             urljoin(self.endpoint, "create"), data={"path": path})
         if response.status_code != 200:
