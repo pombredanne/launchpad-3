@@ -384,10 +384,9 @@ class GitRepositorySet:
             clauses.append(GitRepository.distribution == target.distribution)
             clauses.append(
                 GitRepository.sourcepackagename == target.sourcepackagename)
-        elif owner is not None:
+        else:
             raise GitTargetError(
-                "Cannot get a person's default Git repository for another "
-                "person.")
+                "Personal repositories cannot be defaults for any target.")
         if owner is not None:
             clauses.append(GitRepository.owner == owner)
             clauses.append(GitRepository.owner_default == True)

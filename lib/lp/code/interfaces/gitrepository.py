@@ -312,6 +312,9 @@ class IGitRepositorySet(Interface):
         :param owner: An `IPerson`, in which case search for that person's
             default repository for this target; or None, in which case
             search for the overall default repository for this target.
+
+        :raises GitTargetError: if `target` is an `IPerson`.
+        :return: An `IGitRepository`, or None.
         """
 
     def getRepositories():
