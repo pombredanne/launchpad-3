@@ -142,6 +142,31 @@ class IGitRepositoryView(Interface):
             "'lp:' plus a shortcut version of the path via that target.  "
             "Otherwise it is simply 'lp:' plus the unique name."))
 
+    def setOwnerDefault(value):
+        """Set whether this repository is the default for its owner-target.
+
+        This is for internal use; the caller should ensure permission to edit
+        the owner, should arrange to remove any existing owner-target default
+        (including any target default with the same owner), and should check
+        that this repository is attached to the desired target.
+
+        :raises Unauthorized: if lacking permission to edit the owner.
+        :param value: True if this repository should be the owner-target
+        default, otherwise False.
+        """
+
+    def setTargetDefault(value):
+        """Set whether this repository is the default for its target.
+
+        This is for internal use; the caller should ensure permission to edit
+        the target, should arrange to remove any existing target default, and
+        should check that this repository is attached to the desired target.
+
+        :raises Unauthorized: if lacking permission to edit the target.
+        :param value: True if this repository should be the target default,
+        otherwise False.
+        """
+
     def getCodebrowseUrl():
         """Construct a browsing URL for this Git repository."""
 
@@ -225,20 +250,6 @@ class IGitRepositoryModerate(Interface):
 
 class IGitRepositoryEdit(Interface):
     """IGitRepository methods that require launchpad.Edit permission."""
-
-    def setOwnerDefault(value):
-        """Set whether this repository is the default for its owner-target.
-
-        :param value: True if this repository should be the owner-target
-        default, otherwise False.
-        """
-
-    def setTargetDefault(value):
-        """Set whether this repository is the default for its target.
-
-        :param value: True if this repository should be the target default,
-        otherwise False.
-        """
 
     def setOwner(new_owner, user):
         """Set the owner of the repository to be `new_owner`."""
