@@ -7,12 +7,7 @@ from lp.soyuz.adapters.buildarch import (
     determine_architectures_to_build,
     DpkgArchitectureCache,
     )
-from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-from lp.testing import (
-    TestCase,
-    TestCaseWithFactory,
-    )
-from lp.testing.layers import LaunchpadZopelessLayer
+from lp.testing import TestCase
 
 
 class TestDpkgArchitectureCache(TestCase):
@@ -43,40 +38,17 @@ class TestDpkgArchitectureCache(TestCase):
                 ['linux-any', 'any-amd64']))
 
 
-class TestDetermineArchitecturesToBuild(TestCaseWithFactory):
+class TestDetermineArchitecturesToBuild(TestCase):
     """Test that determine_architectures_to_build correctly interprets hints.
     """
 
-    layer = LaunchpadZopelessLayer
-
-    def setUp(self):
-        super(TestDetermineArchitecturesToBuild, self).setUp()
-        self.publisher = SoyuzTestPublisher()
-        self.publisher.prepareBreezyAutotest()
-        armel = self.factory.makeProcessor('armel', 'armel', 'armel')
-        self.publisher.breezy_autotest.newArch(
-            'armel', armel, False, self.publisher.person)
-        self.publisher.addFakeChroots()
-
-    def assertArchitecturesToBuild(self, expected_arch_tags, pub,
-                                   allowed_arch_tags=None):
-        if allowed_arch_tags is None:
-            allowed_arch_tags = [
-                das.architecturetag for das in
-                self.publisher.breezy_autotest.architectures]
-        arch_tags = determine_architectures_to_build(
-            pub.sourcepackagerelease.architecturehintlist, allowed_arch_tags,
-            self.publisher.breezy_autotest.nominatedarchindep.architecturetag,
-            True)
-        self.assertContentEqual(expected_arch_tags, arch_tags)
-
     def assertArchsForHint(self, hint_string, expected_arch_tags,
-                           allowed_arch_tags=None, sourcename=None):
-        """Assert that the given hint resolves to the expected archtags."""
-        pub = self.publisher.getPubSource(
-            sourcename=sourcename, architecturehintlist=hint_string)
-        self.assertArchitecturesToBuild(
-            expected_arch_tags, pub, allowed_arch_tags=allowed_arch_tags)
+                           allowed_arch_tags=None):
+        if allowed_arch_tags is None:
+            allowed_arch_tags = ['armel', 'hppa', 'i386']
+        arch_tags = determine_architectures_to_build(
+            hint_string, allowed_arch_tags, 'i386', True)
+        self.assertContentEqual(expected_arch_tags, arch_tags)
 
     def test_single_architecture(self):
         # A hint string with a single arch resolves to just that arch.
