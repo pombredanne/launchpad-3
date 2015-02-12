@@ -151,6 +151,7 @@ class GitRepository(StormBase, GitIdentityMixin):
         self.owner_default = False
         self.target_default = False
 
+    # Marker for references to Git URL layouts: ##GITNAMESPACE##
     @property
     def unique_name(self):
         names = {"owner": self.owner.name, "repository": self.name}

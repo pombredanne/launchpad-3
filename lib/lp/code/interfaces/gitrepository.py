@@ -290,6 +290,7 @@ class IGitRepositorySet(Interface):
             to the target's code sharing policy.  (optional)
         """
 
+    # Marker for references to Git URL layouts: ##GITNAMESPACE##
     def getByPath(user, path):
         """Find a repository by its path.
 
