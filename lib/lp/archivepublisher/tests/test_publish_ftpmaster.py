@@ -1,4 +1,4 @@
-# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test publish-ftpmaster cron script."""
@@ -8,6 +8,7 @@ __metaclass__ = type
 import logging
 import os
 from textwrap import dedent
+import time
 
 from apt_pkg import TagFile
 from testtools.matchers import (
@@ -24,6 +25,7 @@ from lp.archivepublisher.scripts.publish_ftpmaster import (
     compose_shell_boolean,
     find_run_parts_dir,
     get_working_dists,
+    newer_mtime,
     PublishFTPMaster,
     shell_quote,
     )
@@ -38,6 +40,7 @@ from lp.services.log.logger import (
     BufferLogger,
     DevNullLogger,
     )
+from lp.services.osutils import write_file
 from lp.services.scripts.base import LaunchpadScriptFailure
 from lp.services.utils import file_exists
 from lp.soyuz.enums import (
@@ -206,6 +209,46 @@ class TestPublishFTPMasterHelpers(TestCase):
 
     def test_compose_shell_boolean_shows_False_as_no(self):
         self.assertEqual("no", compose_shell_boolean(False))
+
+
+class TestNewerMtime(TestCase):
+
+    def setUp(self):
+        super(TestCase, self).setUp()
+        tempdir = self.useTempDir()
+        self.a = os.path.join(tempdir, "a")
+        self.b = os.path.join(tempdir, "b")
+
+    def test_both_missing(self):
+        self.assertFalse(newer_mtime(self.a, self.b))
+
+    def test_one_missing(self):
+        write_file(self.b, "")
+        self.assertFalse(newer_mtime(self.a, self.b))
+
+    def test_other_missing(self):
+        write_file(self.a, "")
+        self.assertTrue(newer_mtime(self.a, self.b))
+
+    def test_older(self):
+        write_file(self.a, "")
+        os.utime(self.a, (0, 0))
+        write_file(self.b, "")
+        self.assertFalse(newer_mtime(self.a, self.b))
+
+    def test_equal(self):
+        now = time.time()
+        write_file(self.a, "")
+        os.utime(self.a, (now, now))
+        write_file(self.b, "")
+        os.utime(self.b, (now, now))
+        self.assertFalse(newer_mtime(self.a, self.b))
+
+    def test_newer(self):
+        write_file(self.a, "")
+        write_file(self.b, "")
+        os.utime(self.b, (0, 0))
+        self.assertTrue(newer_mtime(self.a, self.b))
 
 
 class TestFindRunPartsDir(TestCaseWithFactory, HelpersMixin):
@@ -795,6 +838,31 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
                 read_marker_file([archive_root, "marker file"]).rstrip(),
                 "Did not find expected marker for %s."
                 % archive.purpose.title)
+
+    def test_updateContentsFile_installs_changed(self):
+        distro = self.makeDistroWithPublishDirectory()
+        distroseries = self.factory.makeDistroSeries(distribution=distro)
+        das = self.factory.makeDistroArchSeries(distroseries=distroseries)
+        script = self.makeScript(distro)
+        script.setUp()
+        script.setUpDirs()
+        archive_config = getPubConfig(distro.main_archive)
+        contents_filename = "Contents-%s.gz" % das.architecturetag
+        backup_suite = os.path.join(
+            archive_config.archiveroot + "-distscopy", "dists",
+            distroseries.name)
+        os.makedirs(backup_suite)
+        write_marker_file([backup_suite, contents_filename], "Old Contents")
+        os.utime(os.path.join(backup_suite, contents_filename), (0, 0))
+        content_suite = os.path.join(
+            archive_config.distroroot, "contents-generation", distro.name,
+            "dists", distroseries.name)
+        os.makedirs(content_suite)
+        write_marker_file(
+            [content_suite, ".%s" % contents_filename], "Contents")
+        script.updateContentsFile(distro, distroseries.name, das)
+        self.assertEqual(
+            "Contents", read_marker_file([backup_suite, contents_filename]))
 
     def test_publish_always_returns_true_for_primary(self):
         script = self.makeScript()

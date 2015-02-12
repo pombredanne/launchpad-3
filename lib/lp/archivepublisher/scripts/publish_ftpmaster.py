@@ -1,4 +1,4 @@
-# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Master distro publishing script."""
@@ -10,6 +10,7 @@ __all__ = [
 
 from datetime import datetime
 import os
+import shutil
 
 from pytz import utc
 from zope.component import getUtility
@@ -154,6 +155,19 @@ def map_distro_pubconfigs(distro):
     return dict(
         (purpose, config)
         for purpose, config in candidates if config is not None)
+
+
+def newer_mtime(one_file, other_file):
+    """Is one_file newer than other_file, or is other_file missing?"""
+    try:
+        one_mtime = os.stat(one_file).st_mtime
+    except OSError:
+        return False
+    try:
+        other_mtime = os.stat(other_file).st_mtime
+    except OSError:
+        return True
+    return one_mtime > other_mtime
 
 
 class PublishFTPMaster(LaunchpadCronScript):
@@ -539,6 +553,32 @@ class PublishFTPMaster(LaunchpadCronScript):
                 # most of its time.
                 self.publishDistroArchive(distribution, archive)
 
+    def updateContentsFile(self, distribution, suite, arch):
+        """Update a single Contents file if necessary."""
+        config = self.configs[distribution][ArchivePurpose.PRIMARY]
+        backup_dists = get_backup_dists(config)
+        content_dists = os.path.join(
+            config.distroroot, "contents-generation", distribution.name,
+            "dists")
+        contents_filename = "Contents-%s" % arch.architecturetag
+        current_contents = os.path.join(
+            backup_dists, suite, "%s.gz" % contents_filename)
+        new_contents = os.path.join(
+            content_dists, suite, ".%s.gz" % contents_filename)
+        if newer_mtime(new_contents, current_contents):
+            self.logger.debug(
+                "Installing new Contents file for %s/%s.", suite,
+                arch.architecturetag)
+            shutil.copy2(new_contents, current_contents)
+
+    def updateContentsFiles(self, distribution):
+        """Pick up updated Contents files if necessary."""
+        for series in distribution.getSupportedSeries():
+            for pocket in PackagePublishingPocket.items:
+                suite = series.getSuite(pocket)
+                for arch in series.enabled_architectures:
+                    self.updateContentsFile(distribution, suite, arch)
+
     def publish(self, distribution, security_only=False):
         """Do the main publishing work.
 
@@ -557,6 +597,8 @@ class PublishFTPMaster(LaunchpadCronScript):
                 self.publishDistroUploads(distribution)
                 # Let's assume the main archive is always modified
                 has_published = True
+
+            self.updateContentsFiles(distribution)
 
             # Swizzle the now-updated backup dists and the current dists
             # around.

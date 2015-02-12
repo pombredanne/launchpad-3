@@ -15,6 +15,7 @@ from lp.archivepublisher.scripts.generate_contents_files import (
     execute,
     GenerateContentsFiles,
     )
+from lp.archivepublisher.scripts.publish_ftpmaster import PublishFTPMaster
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.log.logger import DevNullLogger
 from lp.services.osutils import write_file
@@ -260,7 +261,8 @@ class TestGenerateContentsFiles(TestCaseWithFactory):
             script.content_archive, StartsWith(script.config.distroroot))
 
     def test_main(self):
-        # If run end-to-end, the script generates Contents.gz files.
+        # If run end-to-end, the script generates Contents.gz files, and a
+        # following publisher run will put those files in their final place.
         distro = self.makeDistro()
         distroseries = self.factory.makeDistroSeries(distribution=distro)
         processor = self.factory.makeProcessor()
@@ -278,6 +280,13 @@ class TestGenerateContentsFiles(TestCaseWithFactory):
         self.assertNotEqual([], list(script.getSuites()))
         fake_overrides(script, distroseries)
         script.process()
+        self.assertTrue(file_exists(os.path.join(
+            script.content_archive, distro.name, "dists", suite,
+            ".Contents-%s.gz" % das.architecturetag)))
+        publisher_script = PublishFTPMaster(test_args=["-d", distro.name])
+        publisher_script.txn = self.layer.txn
+        publisher_script.logger = DevNullLogger()
+        publisher_script.main()
         self.assertTrue(file_exists(os.path.join(
             script.config.distsroot, suite,
             "Contents-%s.gz" % das.architecturetag)))
