@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database classes for implementing distribution items."""
@@ -784,6 +784,14 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             DistroSeries,
             distribution=self,
             status=SeriesStatus.DEVELOPMENT)
+
+    def getSupportedSeries(self):
+        """See `IDistribution`."""
+        unsupported_status = (SeriesStatus.EXPERIMENTAL,
+                              SeriesStatus.OBSOLETE)
+        for series in self.series:
+            if series.status not in unsupported_status:
+                yield series
 
     def getMilestone(self, name):
         """See `IDistribution`."""

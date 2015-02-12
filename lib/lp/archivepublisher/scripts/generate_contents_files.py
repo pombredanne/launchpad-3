@@ -1,4 +1,4 @@
-# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Archive Contents files generator."""
@@ -16,7 +16,6 @@ from zope.component import getUtility
 from lp.archivepublisher.config import getPubConfig
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.registry.interfaces.series import SeriesStatus
 from lp.services.command_spawner import (
     CommandSpawner,
     OutputLineHandler,
@@ -132,20 +131,9 @@ class GenerateContentsFiles(LaunchpadCronScript):
             if not file_exists(path):
                 os.makedirs(path)
 
-    def getSupportedSeries(self):
-        """Return suites that are supported in this distribution.
-
-        "Supported" means not EXPERIMENTAL or OBSOLETE.
-        """
-        unsupported_status = (SeriesStatus.EXPERIMENTAL,
-                              SeriesStatus.OBSOLETE)
-        for series in self.distribution:
-            if series.status not in unsupported_status:
-                yield series
-
     def getSuites(self):
         """Return suites that are actually supported in this distribution."""
-        for series in self.getSupportedSeries():
+        for series in self.distribution.getSupportedSeries():
             for pocket in PackagePublishingPocket.items:
                 suite = series.getSuite(pocket)
                 if file_exists(os.path.join(self.config.distsroot, suite)):

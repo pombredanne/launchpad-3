@@ -1,4 +1,4 @@
-# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test for the `generate-contents-files` script."""
@@ -182,14 +182,6 @@ class TestGenerateContentsFiles(TestCaseWithFactory):
         script = self.makeScript(das.distroseries.distribution)
         self.assertEqual(
             [das.architecturetag], script.getArchs(distroseries.name))
-
-    def test_getSupportedSeries(self):
-        # getSupportedSeries returns the supported distroseries in the
-        # distribution.
-        script = self.makeScript()
-        distroseries = self.factory.makeDistroSeries(
-            distribution=script.distribution)
-        self.assertIn(distroseries, script.getSupportedSeries())
 
     def test_getSuites(self):
         # getSuites returns the full names (distroseries-pocket) of the
