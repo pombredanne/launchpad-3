@@ -1385,9 +1385,16 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
         """
         # Return all distroarches with unrestricted processors or with
         # processors the archive is explicitly associated with.
-        return [distroarch for distroarch in available_archs
-            if not distroarch.processor.restricted or
-               distroarch.processor in archive.enabled_restricted_processors]
+        return [
+            das for das in available_archs
+            if (
+                das.enabled
+                and (
+                    not das.processor.restricted
+                    or das.processor in archive.enabled_restricted_processors)
+                and (
+                    das.supports_virtualized
+                    or not archive.require_virtualized))]
 
     def createForSource(self, sourcepackagerelease, archive, distroseries,
                         pocket, architectures_available=None, logger=None):
@@ -1421,14 +1428,21 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
         # For an architecturehintlist of just 'all', this will
         # be the current nominatedarchindep if need_arch_indep,
         # otherwise nothing.
-        if architectures_available is None:
-            architectures_available = list(
-                distroseries.buildable_architectures)
-        architectures_available = self._getAllowedArchitectures(
-            archive, architectures_available)
-        candidate_architectures = determine_architectures_to_build(
-            sourcepackagerelease.architecturehintlist, archive, distroseries,
-            architectures_available, need_arch_indep)
+        valid_archs = list(
+            architectures_available or distroseries.buildable_architectures)
+        valid_archs = self._getAllowedArchitectures(archive, valid_archs)
+        nominated_arch_indep_tag = (
+            distroseries.nominatedarchindep.architecturetag
+            if distroseries.nominatedarchindep else None)
+
+        # Filter the valid archs against the hint list.
+        candidate_arch_tags = determine_architectures_to_build(
+            sourcepackagerelease.architecturehintlist,
+            [das.architecturetag for das in valid_archs],
+            nominated_arch_indep_tag, need_arch_indep)
+        candidate_architectures = set(
+            das for das in valid_archs
+            if das.architecturetag in candidate_arch_tags)
 
         # Filter out any architectures for which we earlier found sufficient
         # builds.

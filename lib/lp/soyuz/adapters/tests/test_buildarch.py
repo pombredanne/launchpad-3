@@ -3,48 +3,52 @@
 
 __metaclass__ = type
 
-from lp.soyuz.adapters.buildarch import determine_architectures_to_build
-from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-from lp.testing import TestCaseWithFactory
-from lp.testing.layers import LaunchpadZopelessLayer
+from lp.soyuz.adapters.buildarch import (
+    determine_architectures_to_build,
+    DpkgArchitectureCache,
+    )
+from lp.testing import TestCase
 
 
-class TestDetermineArchitecturesToBuild(TestCaseWithFactory):
+class TestDpkgArchitectureCache(TestCase):
+
+    def test_multiple(self):
+        self.assertContentEqual(
+            ['amd64', 'armhf'],
+            DpkgArchitectureCache().findAllMatches(
+                ['amd64', 'i386', 'armhf'], ['amd64', 'armhf']))
+
+    def test_any(self):
+        self.assertContentEqual(
+            ['amd64', 'i386', 'kfreebsd-amd64'],
+            DpkgArchitectureCache().findAllMatches(
+                ['amd64', 'i386', 'kfreebsd-amd64'], ['any']))
+
+    def test_all(self):
+        self.assertContentEqual(
+            [],
+            DpkgArchitectureCache().findAllMatches(
+                ['amd64', 'i386', 'kfreebsd-amd64'], ['all']))
+
+    def test_partial_wildcards(self):
+        self.assertContentEqual(
+            ['amd64', 'i386', 'kfreebsd-amd64'],
+            DpkgArchitectureCache().findAllMatches(
+                ['amd64', 'i386', 'kfreebsd-amd64', 'kfreebsd-i386'],
+                ['linux-any', 'any-amd64']))
+
+
+class TestDetermineArchitecturesToBuild(TestCase):
     """Test that determine_architectures_to_build correctly interprets hints.
     """
 
-    layer = LaunchpadZopelessLayer
-
-    def setUp(self):
-        super(TestDetermineArchitecturesToBuild, self).setUp()
-        self.publisher = SoyuzTestPublisher()
-        self.publisher.prepareBreezyAutotest()
-        armel = self.factory.makeProcessor('armel', 'armel', 'armel')
-        self.publisher.breezy_autotest.newArch(
-            'armel', armel, False, self.publisher.person)
-        self.publisher.addFakeChroots()
-
-    def assertArchitecturesToBuild(self, expected_arch_tags, pub,
-                                   allowed_arch_tags=None):
-        if allowed_arch_tags is None:
-            allowed_archs = self.publisher.breezy_autotest.architectures
-        else:
-            allowed_archs = [
-                arch for arch in self.publisher.breezy_autotest.architectures
-                if arch.architecturetag in allowed_arch_tags]
-        architectures = determine_architectures_to_build(
-            pub.sourcepackagerelease.architecturehintlist, pub.archive,
-            self.publisher.breezy_autotest, allowed_archs, True)
-        self.assertContentEqual(
-            expected_arch_tags, [a.architecturetag for a in architectures])
-
     def assertArchsForHint(self, hint_string, expected_arch_tags,
-                           allowed_arch_tags=None, sourcename=None):
-        """Assert that the given hint resolves to the expected archtags."""
-        pub = self.publisher.getPubSource(
-            sourcename=sourcename, architecturehintlist=hint_string)
-        self.assertArchitecturesToBuild(
-            expected_arch_tags, pub, allowed_arch_tags=allowed_arch_tags)
+                           allowed_arch_tags=None):
+        if allowed_arch_tags is None:
+            allowed_arch_tags = ['armel', 'hppa', 'i386']
+        arch_tags = determine_architectures_to_build(
+            hint_string, allowed_arch_tags, 'i386', True)
+        self.assertContentEqual(expected_arch_tags, arch_tags)
 
     def test_single_architecture(self):
         # A hint string with a single arch resolves to just that arch.
@@ -111,17 +115,6 @@ class TestDetermineArchitecturesToBuild(TestCaseWithFactory):
         # 'any-any' is redundant with 'any', but dpkg-architecture supports
         # it anyway.
         self.assertArchsForHint('any-any', ['armel', 'hppa', 'i386'])
-
-    def test_disabled_architectures_omitted(self):
-        # Disabled architectures are not buildable, so are excluded.
-        self.publisher.breezy_autotest['hppa'].enabled = False
-        self.assertArchsForHint('any', ['armel', 'i386'])
-
-    def test_virtualized_archives_have_only_virtualized_archs(self):
-        # For archives which must build on virtual builders, only
-        # virtual archs are returned.
-        self.publisher.breezy_autotest.main_archive.require_virtualized = True
-        self.assertArchsForHint('any', ['i386'])
 
     def test_no_all_builds_when_nominatedarchindep_not_permitted(self):
         # Some archives (eg. armel rebuilds) don't want arch-indep
