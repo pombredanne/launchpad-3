@@ -36,29 +36,62 @@ class DpkgArchitectureCache:
 dpkg_architecture = DpkgArchitectureCache()
 
 
-def determine_architectures_to_build(hintlist, valid_archs,
+def resolve_arch_spec(hintlist, valid_archs):
+    hint_archs = set(hintlist.split())
+    # 'all' is only used if it's a purely arch-indep package.
+    if hint_archs == set(["all"]):
+        return set(), True
+    return (
+        set(dpkg_architecture.findAllMatches(valid_archs, hint_archs)), False)
+
+
+def determine_architectures_to_build(hint_list, indep_hint_list, need_archs,
                                      nominated_arch_indep, need_arch_indep):
     """Return a set of architectures to build.
 
-    :param hintlist: A string of the architectures this source package
+    :param hint_list: a string of the architectures this source package
         specifies it builds for.
-    :param valid_archs: a list of all architecture tags that we can
-        create builds for.
-    :param nominated_arch_indep: a preferred architecture tag for
-        architecture-independent builds. May be None.
-    :return: a set of architecture tags for which the source publication in
-        question should be built.
+    :param indep_hint_list: a string of the architectures this source package
+        specifies it can build architecture-independent packages on.
+    :param need_archs: an ordered list of all architecture tags that we can
+        create builds for. the first usable one gets the arch-indep flag.
+    :param nominated_arch_indep: the default architecture tag for
+        arch-indep-only packages. may be None.
+    :param need_arch_indep: should an arch-indep build be created if possible?
+    :return: a map of architecture tag to arch-indep flag for each build
+        that should be created.
     """
-    hint_archs = set(hintlist.split())
-    build_archs = set(
-        dpkg_architecture.findAllMatches(valid_archs, hint_archs))
+    build_archs, indep_only = resolve_arch_spec(hint_list, need_archs)
 
-    # 'all' is only used as a last resort, to create an arch-indep build
-    # where no builds would otherwise exist.
-    if need_arch_indep and len(build_archs) == 0 and 'all' in hint_archs:
-        if nominated_arch_indep in valid_archs:
-            return set([nominated_arch_indep])
-        else:
-            return set()
+    # Use the indep hint list if it's set, otherwise fall back to the
+    # main architecture list. If that's not set either (ie. it's just
+    # "all"), default to nominatedarchindep.
+    if indep_hint_list:
+        indep_archs, _ = resolve_arch_spec(indep_hint_list, need_archs)
+    elif not indep_only:
+        indep_archs = set(build_archs)
+    elif nominated_arch_indep in need_archs:
+        indep_archs = set([nominated_arch_indep])
+    else:
+        indep_archs = set()
 
-    return build_archs
+    indep_arch = None
+    if need_arch_indep:
+        # Try to avoid adding a new build if an existing one would work.
+        both_archs = set(build_archs) & set(indep_archs)
+        if both_archs:
+            indep_archs = both_archs
+
+        # The ideal arch_indep build is nominatedarchindep. But if we're
+        # not creating a build for it, use the first candidate DAS that
+        # made it this far.
+        for arch in [nominated_arch_indep] + need_archs:
+            if arch in indep_archs:
+                indep_arch = arch
+                break
+
+    # Ensure that we build the indep arch.
+    if indep_arch is not None and indep_arch not in build_archs:
+        build_archs.add(indep_arch)
+
+    return {arch: arch == indep_arch for arch in build_archs}

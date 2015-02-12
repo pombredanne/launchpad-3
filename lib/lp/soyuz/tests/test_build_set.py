@@ -491,6 +491,19 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         new_builds = self.createBuilds(spr, self.distroseries)
         self.assertBuildsMatch({}, new_builds)
 
+    def test_createForSource_build_indep_architecture(self):
+        # A user defined field of Build-Indep-Architecture provides a
+        # custom hint list to override Architecture and
+        # nominatedarchindep for arch-indep purposes.
+        spr = self.factory.makeSourcePackageRelease(
+            architecturehintlist='sparc all',
+            user_defined_fields=[('build-indep-architecture', 'avr')])
+        builds = self.createBuilds(spr, self.distroseries2)
+        self.assertBuildsMatch({'sparc': False, 'avr': True}, builds)
+        self.completeBuilds(builds, {'sparc': True, 'avr': True})
+        new_builds = self.createBuilds(spr, self.distroseries)
+        self.assertBuildsMatch({}, new_builds)
+
 
 class TestFindBuiltOrPublishedBySourceAndArchive(TestCaseWithFactory):
     """Tests for findBuiltOrPublishedBySourceAndArchive()."""
