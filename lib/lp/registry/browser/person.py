@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Person-related view classes."""
@@ -154,6 +154,7 @@ from lp.registry.browser.teamjoin import TeamJoinMixin
 from lp.registry.enums import PersonVisibility
 from lp.registry.errors import VoucherAlreadyRedeemed
 from lp.registry.interfaces.codeofconduct import ISignedCodeOfConductSet
+from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.gpg import IGPGKeySet
 from lp.registry.interfaces.irc import IIrcIDSet
 from lp.registry.interfaces.jabber import (
@@ -171,6 +172,9 @@ from lp.registry.interfaces.person import (
     IPerson,
     IPersonClaim,
     IPersonSet,
+    )
+from lp.registry.interfaces.persondistributionsourcepackage import (
+    IPersonDistributionSourcePackageFactory,
     )
 from lp.registry.interfaces.personproduct import IPersonProductFactory
 from lp.registry.interfaces.persontransferjob import (
@@ -357,7 +361,9 @@ class BranchTraversalMixin:
         raise NotFoundError
 
     def traverse(self, pillar_name):
-        # If the pillar is a product, then return the PersonProduct.
+        # If the pillar is a product, then return the PersonProduct; if it
+        # is a distribution and further segments provide a source package,
+        # then return the PersonDistributionSourcePackage.
         pillar = getUtility(IPillarNameSet).getByName(pillar_name)
         if IProduct.providedBy(pillar):
             person_product = getUtility(IPersonProductFactory).create(
@@ -369,6 +375,25 @@ class BranchTraversalMixin:
                     status=301)
             getUtility(IOpenLaunchBag).add(pillar)
             return person_product
+        elif IDistribution.providedBy(pillar):
+            if (len(self.request.stepstogo) >= 2 and
+                self.request.stepstogo.peek() == "+source"):
+                self.request.stepstogo.consume()
+                spn_name = self.request.stepstogo.consume()
+                dsp = IDistribution(pillar).getSourcePackage(spn_name)
+                if dsp is not None:
+                    factory = getUtility(
+                        IPersonDistributionSourcePackageFactory)
+                    person_dsp = factory.create(self.context, dsp)
+                    # If accessed through an alias, redirect to the proper
+                    # name.
+                    if pillar.name != pillar_name:
+                        return self.redirectSubTree(
+                            canonical_url(person_dsp, request=self.request),
+                            status=301)
+                    getUtility(IOpenLaunchBag).add(pillar)
+                    return person_dsp
+
         # Otherwise look for a branch.
         try:
             branch = getUtility(IBranchNamespaceSet).traverse(
