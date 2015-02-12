@@ -231,6 +231,7 @@ class PersonalGitNamespace(_BaseGitNamespace):
             GitRepository.distribution == None,
             GitRepository.sourcepackagename == None)
 
+    # Marker for references to Git URL layouts: ##GITNAMESPACE##
     @property
     def name(self):
         """See `IGitNamespace`."""
@@ -286,6 +287,7 @@ class ProjectGitNamespace(_BaseGitNamespace):
             GitRepository.owner == self.owner,
             GitRepository.project == self.project)
 
+    # Marker for references to Git URL layouts: ##GITNAMESPACE##
     @property
     def name(self):
         """See `IGitNamespace`."""
@@ -347,6 +349,7 @@ class PackageGitNamespace(_BaseGitNamespace):
             GitRepository.distribution == dsp.distribution,
             GitRepository.sourcepackagename == dsp.sourcepackagename)
 
+    # Marker for references to Git URL layouts: ##GITNAMESPACE##
     @property
     def name(self):
         """See `IGitNamespace`."""
@@ -420,6 +423,7 @@ class GitNamespaceSet:
         return self._findOrRaise(
             NoSuchPerson, person_name, getUtility(IPersonSet).getByName)
 
+    # Marker for references to Git URL layouts: ##GITNAMESPACE##
     def _findPillar(self, pillar_name):
         """Find and return the pillar with the given name.
 
@@ -471,6 +475,7 @@ class GitNamespaceSet:
         data = self._realize(names)
         return self.get(**data)
 
+    # Marker for references to Git URL layouts: ##GITNAMESPACE##
     def parse(self, namespace_name):
         """See `IGitNamespaceSet`."""
         data = dict(
@@ -498,6 +503,7 @@ class GitNamespaceSet:
         names = self.parse(namespace_name)
         return self.interpret(**names)
 
+    # Marker for references to Git URL layouts: ##GITNAMESPACE##
     def traverse(self, segments):
         """See `IGitNamespaceSet`."""
         traversed_segments = []

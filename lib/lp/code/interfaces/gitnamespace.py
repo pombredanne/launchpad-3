@@ -236,6 +236,7 @@ def get_git_namespace(target, owner):
         return getUtility(IGitNamespaceSet).get(owner)
 
 
+# Marker for references to Git URL layouts: ##GITNAMESPACE##
 def split_git_unique_name(unique_name):
     """Return the namespace and repository names of a unique name."""
     try:
