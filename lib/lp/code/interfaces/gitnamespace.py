@@ -34,7 +34,7 @@ class IGitNamespace(Interface):
     target = Attribute("The `IHasGitRepositories` for this namespace.")
 
     def createRepository(registrant, name, information_type=None,
-                         date_created=None, with_hosting=True):
+                         date_created=None):
         """Create and return an `IGitRepository` in this namespace."""
 
     def isNameUsed(name):

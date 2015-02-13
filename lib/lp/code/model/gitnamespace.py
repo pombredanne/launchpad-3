@@ -80,7 +80,7 @@ class _BaseGitNamespace:
     """Common code for Git repository namespaces."""
 
     def createRepository(self, registrant, name, information_type=None,
-                         date_created=DEFAULT, with_hosting=True):
+                         date_created=DEFAULT):
         """See `IGitNamespace`."""
 
         self.validateRegistrant(registrant)
