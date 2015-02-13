@@ -13,7 +13,6 @@ __all__ = [
 
 from lazr.lifecycle.event import ObjectCreatedEvent
 from storm.locals import And
-import transaction
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
@@ -34,7 +33,6 @@ from lp.code.errors import (
     InvalidNamespace,
     NoSuchGitRepository,
     )
-from lp.code.githosting import GitHostingClient
 from lp.code.interfaces.gitnamespace import (
     IGitNamespace,
     IGitNamespacePolicy,
@@ -97,15 +95,6 @@ class _BaseGitNamespace:
             registrant, self.owner, self.target, name, information_type,
             date_created)
         repository._reconcileAccess()
-
-        # Commit the transaction so that we can get the id column and thus
-        # construct the hosting path.
-        transaction.commit()
-        # XXX cjwatson 2015-02-02: If the hosting service is unavailable, we
-        # should defer to a job and (at least in the browser case) issue a
-        # notification.
-        if with_hosting:
-            GitHostingClient().create(repository.getInternalPath())
 
         notify(ObjectCreatedEvent(repository))
 
