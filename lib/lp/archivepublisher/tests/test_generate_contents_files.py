@@ -282,7 +282,7 @@ class TestGenerateContentsFiles(TestCaseWithFactory):
         script.process()
         self.assertTrue(file_exists(os.path.join(
             script.content_archive, distro.name, "dists", suite,
-            ".Contents-%s.gz" % das.architecturetag)))
+            "Contents-%s-staged.gz" % das.architecturetag)))
         publisher_script = PublishFTPMaster(test_args=["-d", distro.name])
         publisher_script.txn = self.layer.txn
         publisher_script.logger = DevNullLogger()

@@ -564,7 +564,7 @@ class PublishFTPMaster(LaunchpadCronScript):
         current_contents = os.path.join(
             backup_dists, suite, "%s.gz" % contents_filename)
         new_contents = os.path.join(
-            content_dists, suite, ".%s.gz" % contents_filename)
+            content_dists, suite, "%s-staged.gz" % contents_filename)
         if newer_mtime(new_contents, current_contents):
             self.logger.debug(
                 "Installing new Contents file for %s/%s.", suite,

@@ -847,22 +847,25 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         script.setUp()
         script.setUpDirs()
         archive_config = getPubConfig(distro.main_archive)
-        contents_filename = "Contents-%s.gz" % das.architecturetag
+        contents_filename = "Contents-%s" % das.architecturetag
         backup_suite = os.path.join(
             archive_config.archiveroot + "-distscopy", "dists",
             distroseries.name)
         os.makedirs(backup_suite)
-        write_marker_file([backup_suite, contents_filename], "Old Contents")
-        os.utime(os.path.join(backup_suite, contents_filename), (0, 0))
+        write_marker_file(
+            [backup_suite, "%s.gz" % contents_filename], "Old Contents")
+        os.utime(
+            os.path.join(backup_suite, "%s.gz" % contents_filename), (0, 0))
         content_suite = os.path.join(
             archive_config.distroroot, "contents-generation", distro.name,
             "dists", distroseries.name)
         os.makedirs(content_suite)
         write_marker_file(
-            [content_suite, ".%s" % contents_filename], "Contents")
+            [content_suite, "%s-staged.gz" % contents_filename], "Contents")
         script.updateContentsFile(distro, distroseries.name, das)
         self.assertEqual(
-            "Contents", read_marker_file([backup_suite, contents_filename]))
+            "Contents",
+            read_marker_file([backup_suite, "%s.gz" % contents_filename]))
 
     def test_publish_always_returns_true_for_primary(self):
         script = self.makeScript()

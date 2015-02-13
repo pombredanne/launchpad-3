@@ -262,7 +262,7 @@ class GenerateContentsFiles(LaunchpadCronScript):
             new_contents = os.path.join(
                 contents_dir, "%s.gz" % contents_filename)
             contents_dest = os.path.join(
-                contents_dir, ".%s.gz" % contents_filename)
+                contents_dir, "%s-staged.gz" % contents_filename)
 
             os.rename(current_contents, last_contents)
             os.rename(new_contents, contents_dest)
