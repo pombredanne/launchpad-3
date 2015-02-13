@@ -170,6 +170,12 @@ class SourcePackageRelease(SQLBase):
             return []
         return simplejson.loads(self._user_defined_fields)
 
+    def getUserDefinedField(self, name):
+        if self.user_defined_fields:
+            for k, v in self.user_defined_fields:
+                if k.lower() == name.lower():
+                    return v
+
     @cachedproperty
     def package_diffs(self):
         return list(Store.of(self).find(

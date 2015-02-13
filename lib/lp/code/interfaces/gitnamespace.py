@@ -243,6 +243,6 @@ def split_git_unique_name(unique_name):
         namespace_name, literal, repository_name = unique_name.rsplit("/", 2)
     except ValueError:
         raise InvalidNamespace(unique_name)
-    if literal != "g":
+    if literal != "+git":
         raise InvalidNamespace(unique_name)
     return namespace_name, repository_name

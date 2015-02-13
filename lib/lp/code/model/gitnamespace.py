@@ -216,7 +216,7 @@ class _BaseGitNamespace:
 class PersonalGitNamespace(_BaseGitNamespace):
     """A namespace for personal repositories.
 
-    Repositories in this namespace have names like "~foo/g/bar".
+    Repositories in this namespace have names like "~foo/+git/bar".
     """
 
     implements(IGitNamespace, IGitNamespacePolicy)
@@ -427,12 +427,12 @@ class GitNamespaceSet:
     def _findPillar(self, pillar_name):
         """Find and return the pillar with the given name.
 
-        If the given name is 'g' or None, return None.
+        If the given name is '+git' or None, return None.
 
         :raise NoSuchProduct if there's no pillar with the given name or it
             is a project group.
         """
-        if pillar_name == "g":
+        if pillar_name == "+git":
             return None
         pillar = self._findOrRaise(
             NoSuchProduct, pillar_name, getUtility(IPillarNameSet).getByName)
@@ -541,7 +541,7 @@ class GitNamespaceSet:
                 person, distribution=IDistribution(pillar),
                 sourcepackagename=sourcepackagename)
             git_literal = get_next_segment()
-        if git_literal != "g":
+        if git_literal != "+git":
             raise InvalidNamespace("/".join(traversed_segments))
         repository_name = get_next_segment()
         return self._findOrRaise(

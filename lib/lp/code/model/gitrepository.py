@@ -164,7 +164,7 @@ class GitRepository(StormBase, GitIdentityMixin):
             names["source"] = self.sourcepackagename.name
         else:
             fmt = "~%(owner)s"
-        fmt += "/g/%(repository)s"
+        fmt += "/+git/%(repository)s"
         return fmt % names
 
     def __repr__(self):
