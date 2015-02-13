@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Interfaces including and related to IDistribution."""
@@ -407,6 +407,9 @@ class IDistributionPublic(
     @export_read_operation()
     def getDevelopmentSeries():
         """Return the DistroSeries which are marked as in development."""
+
+    def getNonObsoleteSeries():
+        """Return the non-OBSOLETE DistroSeries in this distribution."""
 
     def resolveSeriesAlias(name):
         """Resolve a series alias.
