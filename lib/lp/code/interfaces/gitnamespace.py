@@ -210,8 +210,9 @@ class IGitNamespaceSet(Interface):
         will often be unconsumed segments that can be used for further
         traversal.
 
-        :param segments: An iterable of names of Launchpad components.
-            The first segment is the username, *not* preceded by a '~`.
+        :param segments: An iterable of URL segments, a prefix of which
+            identifies a Git repository.  The first segment is the username,
+            *not* preceded by a '~`.
         :raise InvalidNamespace: if there are not enough segments to define a
             repository.
         :raise NoSuchPerson: if the person referred to cannot be found.
