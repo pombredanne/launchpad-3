@@ -427,7 +427,8 @@ class GitNamespaceSet:
     def _findPillar(self, pillar_name):
         """Find and return the pillar with the given name.
 
-        If the given name is '+git' or None, return None.
+        If the given name is '+git' (indicating a personal repository) or
+        None, return None.
 
         :raise NoSuchProduct if there's no pillar with the given name or it
             is a project group.
