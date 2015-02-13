@@ -257,7 +257,7 @@ class GenerateContentsFiles(LaunchpadCronScript):
         # re-fetch them unnecessarily.
         if differ_in_content(current_contents, last_contents):
             self.logger.debug(
-                "Installing new Contents file for %s/%s.", suite, arch)
+                "Staging new Contents file for %s/%s.", suite, arch)
 
             new_contents = os.path.join(
                 contents_dir, "%s.gz" % contents_filename)
