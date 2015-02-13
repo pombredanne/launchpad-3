@@ -1,4 +1,4 @@
-# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Archive Contents files generator."""
@@ -16,7 +16,6 @@ from zope.component import getUtility
 from lp.archivepublisher.config import getPubConfig
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.registry.interfaces.series import SeriesStatus
 from lp.services.command_spawner import (
     CommandSpawner,
     OutputLineHandler,
@@ -132,20 +131,9 @@ class GenerateContentsFiles(LaunchpadCronScript):
             if not file_exists(path):
                 os.makedirs(path)
 
-    def getSupportedSeries(self):
-        """Return suites that are supported in this distribution.
-
-        "Supported" means not EXPERIMENTAL or OBSOLETE.
-        """
-        unsupported_status = (SeriesStatus.EXPERIMENTAL,
-                              SeriesStatus.OBSOLETE)
-        for series in self.distribution:
-            if series.status not in unsupported_status:
-                yield series
-
     def getSuites(self):
-        """Return suites that are actually supported in this distribution."""
-        for series in self.getSupportedSeries():
+        """Return suites that need Contents files."""
+        for series in self.distribution.getNonObsoleteSeries():
             for pocket in PackagePublishingPocket.items:
                 suite = series.getSuite(pocket)
                 if file_exists(os.path.join(self.config.distsroot, suite)):
@@ -269,12 +257,12 @@ class GenerateContentsFiles(LaunchpadCronScript):
         # re-fetch them unnecessarily.
         if differ_in_content(current_contents, last_contents):
             self.logger.debug(
-                "Installing new Contents file for %s/%s.", suite, arch)
+                "Staging new Contents file for %s/%s.", suite, arch)
 
             new_contents = os.path.join(
                 contents_dir, "%s.gz" % contents_filename)
             contents_dest = os.path.join(
-                self.config.distsroot, suite, "%s.gz" % contents_filename)
+                contents_dir, "%s-staged.gz" % contents_filename)
 
             os.rename(current_contents, last_contents)
             os.rename(new_contents, contents_dest)

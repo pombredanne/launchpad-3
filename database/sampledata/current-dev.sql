@@ -1,4 +1,4 @@
--- Copyright 2010-2014 Canonical Ltd.  This software is licensed under the
+-- Copyright 2010-2015 Canonical Ltd.  This software is licensed under the
 -- GNU Affero General Public License version 3 (see the file LICENSE).
 -- Created using pg_dump (PostgreSQL) 9.3.5
 
@@ -1272,6 +1272,13 @@ INSERT INTO distribution (id, name, title, description, domainname, owner, displ
 ALTER TABLE distribution ENABLE TRIGGER ALL;
 
 
+ALTER TABLE gitrepository DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE gitrepository ENABLE TRIGGER ALL;
+
+
 ALTER TABLE productseries DISABLE TRIGGER ALL;
 
 INSERT INTO productseries (id, product, name, summary, releasefileglob, releaseverstyle, datecreated, driver, owner, status, translations_autoimport_mode, branch, translations_branch) VALUES (1, 4, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, '2005-06-06 08:59:51.895136', NULL, 12, 2, 1, NULL, NULL);
@@ -1364,9 +1371,9 @@ ALTER TABLE specification ENABLE TRIGGER ALL;
 
 ALTER TABLE accessartifact DISABLE TRIGGER ALL;
 
-INSERT INTO accessartifact (id, bug, branch, specification) VALUES (1, 14, NULL, NULL);
-INSERT INTO accessartifact (id, bug, branch, specification) VALUES (2, NULL, 29, NULL);
-INSERT INTO accessartifact (id, bug, branch, specification) VALUES (3, NULL, 30, NULL);
+INSERT INTO accessartifact (id, bug, branch, specification, gitrepository) VALUES (1, 14, NULL, NULL, NULL);
+INSERT INTO accessartifact (id, bug, branch, specification, gitrepository) VALUES (2, NULL, 29, NULL, NULL);
+INSERT INTO accessartifact (id, bug, branch, specification, gitrepository) VALUES (3, NULL, 30, NULL, NULL);
 
 
 ALTER TABLE accessartifact ENABLE TRIGGER ALL;
@@ -3848,6 +3855,19 @@ ALTER TABLE garbojobstate DISABLE TRIGGER ALL;
 
 
 ALTER TABLE garbojobstate ENABLE TRIGGER ALL;
+
+
+ALTER TABLE gitref DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE gitref ENABLE TRIGGER ALL;
+
+
+
+
+
+
 
 
 

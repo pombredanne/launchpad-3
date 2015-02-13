@@ -151,6 +151,9 @@ class ISourcePackageRelease(Interface):
         title=_("Source package recipe build"),
         required=False, readonly=True)
 
+    def getUserDefinedField(name):
+        """Case-insensitively get a user-defined field."""
+
     def addFile(file, filetype=None):
         """Add the provided library file alias (file) to the list of files
         in this package.
