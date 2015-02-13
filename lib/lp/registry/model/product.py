@@ -362,8 +362,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
               OfficialBugTagTargetMixin, HasBranchesMixin,
               HasCustomLanguageCodesMixin, HasMergeProposalsMixin,
               HasCodeImportsMixin, InformationTypeMixin,
-              TranslationPolicyMixin,
-              HasGitRepositoriesMixin):
+              TranslationPolicyMixin, HasGitRepositoriesMixin):
     """A Product."""
 
     implements(

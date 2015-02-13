@@ -120,8 +120,7 @@ class DistributionSourcePackage(BugTargetBase,
                                 HasBranchesMixin,
                                 HasCustomLanguageCodesMixin,
                                 HasMergeProposalsMixin,
-                                HasDriversMixin,
-                                HasGitRepositoriesMixin):
+                                HasDriversMixin, HasGitRepositoriesMixin):
     """This is a "Magic Distribution Source Package". It is not an
     SQLObject, but instead it represents a source package with a particular
     name in a particular distribution. You can then ask it all sorts of
