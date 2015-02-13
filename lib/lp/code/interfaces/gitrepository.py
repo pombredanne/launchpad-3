@@ -215,7 +215,7 @@ class IGitRepositoryView(Interface):
           fooix - the context object is the project fooix
           ~fooix-owner/fooix - the context object is the person-project
               ~fooix-owner and fooix
-          ~fooix-owner/fooix/g/fooix - the unique name of the repository
+          ~fooix-owner/fooix/+git/fooix - the unique name of the repository
               where the context object is the repository itself.
         """
 
@@ -293,9 +293,9 @@ class IGitRepositorySet(Interface):
 
         Any of these forms may be used, with or without a leading slash:
             Unique names:
-                ~OWNER/PROJECT/g/NAME
-                ~OWNER/DISTRO/+source/SOURCE/g/NAME
-                ~OWNER/g/NAME
+                ~OWNER/PROJECT/+git/NAME
+                ~OWNER/DISTRO/+source/SOURCE/+git/NAME
+                ~OWNER/+git/NAME
             Owner-target default aliases:
                 ~OWNER/PROJECT
                 ~OWNER/DISTRO/+source/SOURCE
