@@ -408,11 +408,8 @@ class IDistributionPublic(
     def getDevelopmentSeries():
         """Return the DistroSeries which are marked as in development."""
 
-    def getSupportedSeries():
-        """Return the DistroSeries that are supported in this distribution.
-
-        "Supported" means not EXPERIMENTAL or OBSOLETE.
-        """
+    def getNonObsoleteSeries():
+        """Return the non-OBSOLETE DistroSeries in this distribution."""
 
     def resolveSeriesAlias(name):
         """Resolve a series alias.

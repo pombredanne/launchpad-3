@@ -573,7 +573,7 @@ class PublishFTPMaster(LaunchpadCronScript):
 
     def updateContentsFiles(self, distribution):
         """Pick up updated Contents files if necessary."""
-        for series in distribution.getSupportedSeries():
+        for series in distribution.getNonObsoleteSeries():
             for pocket in PackagePublishingPocket.items:
                 suite = series.getSuite(pocket)
                 for arch in series.enabled_architectures:

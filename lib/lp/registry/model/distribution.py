@@ -785,12 +785,10 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             distribution=self,
             status=SeriesStatus.DEVELOPMENT)
 
-    def getSupportedSeries(self):
+    def getNonObsoleteSeries(self):
         """See `IDistribution`."""
-        unsupported_status = (SeriesStatus.EXPERIMENTAL,
-                              SeriesStatus.OBSOLETE)
         for series in self.series:
-            if series.status not in unsupported_status:
+            if series.status != SeriesStatus.OBSOLETE:
                 yield series
 
     def getMilestone(self, name):

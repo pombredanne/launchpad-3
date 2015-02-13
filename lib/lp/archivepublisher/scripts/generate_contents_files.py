@@ -132,8 +132,8 @@ class GenerateContentsFiles(LaunchpadCronScript):
                 os.makedirs(path)
 
     def getSuites(self):
-        """Return suites that are actually supported in this distribution."""
-        for series in self.distribution.getSupportedSeries():
+        """Return suites that need Contents files."""
+        for series in self.distribution.getNonObsoleteSeries():
             for pocket in PackagePublishingPocket.items:
                 suite = series.getSuite(pocket)
                 if file_exists(os.path.join(self.config.distsroot, suite)):

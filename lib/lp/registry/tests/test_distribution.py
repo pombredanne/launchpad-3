@@ -416,7 +416,7 @@ class SeriesTests(TestCaseWithFactory):
         self.assertEqual(
             series, distro.getSeries("devel", follow_aliases=True))
 
-    def test_getSupportedSeries(self):
+    def test_getNonObsoleteSeries(self):
         distro = self.factory.makeDistribution()
         self.factory.makeDistroSeries(
             distribution=distro, status=SeriesStatus.OBSOLETE)
@@ -424,10 +424,11 @@ class SeriesTests(TestCaseWithFactory):
             distribution=distro, status=SeriesStatus.CURRENT)
         development = self.factory.makeDistroSeries(
             distribution=distro, status=SeriesStatus.DEVELOPMENT)
-        self.factory.makeDistroSeries(
+        experimental = self.factory.makeDistroSeries(
             distribution=distro, status=SeriesStatus.EXPERIMENTAL)
         self.assertContentEqual(
-            [current, development], list(distro.getSupportedSeries()))
+            [current, development, experimental],
+            list(distro.getNonObsoleteSeries()))
 
 
 class DerivativesTests(TestCaseWithFactory):
