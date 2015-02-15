@@ -221,19 +221,24 @@ class BuildFarmJobBehaviourBase:
             % (self.build.build_cookie, self.build.title,
                self.build.buildqueue_record.builder.name, status))
         if status == 'OK':
+            yield self.storeLogFromSlave()
+            # handleSuccess will sometimes perform write operations
+            # outside the database transaction, so a failure between
+            # here and the commit can cause duplicated results. For
+            # example, a BinaryPackageBuild will end up in the upload
+            # queue twice if notify() crashes.
             yield self.handleSuccess(slave_status, logger)
         elif status in fail_status_map:
             # XXX wgrant: The builder should be set long before here, but
             # currently isn't.
+            yield self.storeLogFromSlave()
             self.build.updateStatus(
                 fail_status_map[status],
                 builder=self.build.buildqueue_record.builder,
                 slave_status=slave_status)
-            transaction.commit()
         else:
             raise BuildDaemonError(
                 "Build returned unexpected status: %r" % status)
-        yield self.storeLogFromSlave()
         if notify:
             self.build.notify()
         self.build.buildqueue_record.destroySelf()
