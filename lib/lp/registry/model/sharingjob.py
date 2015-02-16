@@ -10,7 +10,6 @@ __all__ = [
     'RemoveArtifactSubscriptionsJob',
     ]
 
-import contextlib
 import logging
 
 from lazr.delegates import delegates
@@ -87,7 +86,6 @@ from lp.services.job.model.job import (
     )
 from lp.services.job.runner import BaseRunnableJob
 from lp.services.mail.sendmail import format_address_for_person
-from lp.services.webapp import errorlog
 
 
 class SharingJobType(DBEnumeratedType):

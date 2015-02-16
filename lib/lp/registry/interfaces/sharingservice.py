@@ -320,7 +320,8 @@ class ISharingService(IService):
         branches=List(
             Reference(schema=IBranch), title=_('Branches'), required=False),
         specifications=List(
-            Reference(schema=ISpecification), title=_('Specifications'), required=False))
+            Reference(schema=ISpecification), title=_('Specifications'),
+            required=False))
     @operation_for_version('devel')
     def revokeAccessGrants(pillar, grantee, user, bugs=None, branches=None,
                            gitrepositories=None, specifications=None):

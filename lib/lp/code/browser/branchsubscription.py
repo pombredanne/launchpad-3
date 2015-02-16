@@ -200,7 +200,7 @@ class BranchSubscriptionAddOtherView(_BranchSubscriptionView):
     page_title = label = "Subscribe to branch"
 
     def validate(self, data):
-        if data.has_key('person'):
+        if 'person' in data:
             person = data['person']
             subscription = self.context.getSubscription(person)
             if subscription is None and not self.context.userCanBeSubscribed(
