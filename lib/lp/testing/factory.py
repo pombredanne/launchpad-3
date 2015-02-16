@@ -118,6 +118,7 @@ from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.code.interfaces.codeimportevent import ICodeImportEventSet
 from lp.code.interfaces.codeimportmachine import ICodeImportMachineSet
 from lp.code.interfaces.codeimportresult import ICodeImportResultSet
+from lp.code.interfaces.gitnamespace import get_git_namespace
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.interfaces.sourcepackagerecipe import (
@@ -1667,6 +1668,93 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             rev_id=revision_id, parent_ids=parent_ids,
             revision_date=revision_date)
         return branch.createBranchRevision(sequence, revision)
+
+    def makeGitRepository(self, owner=None, project=_DEFAULT,
+                          distro_source_package=None, registrant=None,
+                          name=None, information_type=None,
+                          **optional_repository_args):
+        """Create and return a new, arbitrary GitRepository.
+
+        Any parameters for `IGitNamespace.createRepository` can be specified
+        to override the default ones.
+        """
+        if owner is None:
+            owner = self.makePerson()
+        if name is None:
+            name = self.getUniqueString('gitrepository').decode('utf-8')
+
+        if distro_source_package is None:
+            if project is _DEFAULT:
+                project = self.makeProduct()
+            target = project
+        else:
+            assert project is _DEFAULT, (
+                "Passed both distribution source package and project details")
+            target = distro_source_package
+
+        if registrant is None:
+            if owner.is_team:
+                registrant = removeSecurityProxy(owner).teamowner
+            else:
+                registrant = owner
+
+        namespace = get_git_namespace(target, owner)
+        repository = namespace.createRepository(
+            registrant=registrant, name=name, **optional_repository_args)
+        naked_repository = removeSecurityProxy(repository)
+        if information_type is not None:
+            naked_repository.transitionToInformationType(
+                information_type, registrant, verify_policy=False)
+        return repository
+
+    def makePackageGitRepository(self, distro_source_package=None,
+                                 distribution=None, sourcepackagename=None,
+                                 **kwargs):
+        """Make a package Git repository on an arbitrary package.
+
+        See `makeGitRepository` for more information on arguments.
+
+        You can pass in either `distro_source_package` or one or both of
+        `distribution` and `sourcepackagename`, but not combinations or all
+        of them.
+        """
+        assert not(distro_source_package is not None and
+                   distribution is not None), (
+            "Don't pass in both distro_source_package and distribution")
+        assert not(distro_source_package is not None
+                   and sourcepackagename is not None), (
+            "Don't pass in both distro_source_package and sourcepackagename")
+        if distro_source_package is None:
+            distro_source_package = self.makeDistributionSourcePackage(
+                distribution=distribution, sourcepackagename=sourcepackagename)
+        return self.makeGitRepository(
+            distro_source_package=distro_source_package, **kwargs)
+
+    def makePersonalGitRepository(self, owner=None, **kwargs):
+        """Make a personal Git repository on an arbitrary person.
+
+        See `makeGitRepository` for more information on arguments.
+        """
+        if owner is None:
+            owner = self.makePerson()
+        return self.makeGitRepository(
+            owner=owner, project=None, distro_source_package=None, **kwargs)
+
+    def makeProjectGitRepository(self, project=None, **kwargs):
+        """Make a project Git repository on an arbitrary project.
+
+        See `makeGitRepository` for more information on arguments.
+        """
+        if project is None:
+            project = self.makeProduct()
+        return self.makeGitRepository(project=project, **kwargs)
+
+    def makeAnyGitRepository(self, **kwargs):
+        """Make a Git repository without caring about its container.
+
+        See `makeGitRepository` for more information on arguments.
+        """
+        return self.makeProjectGitRepository(**kwargs)
 
     def makeBug(self, target=None, owner=None, bug_watch_url=None,
                 information_type=None, date_closed=None, title=None,
