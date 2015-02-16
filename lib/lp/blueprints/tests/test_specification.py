@@ -1,4 +1,4 @@
-# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for Specification."""
@@ -490,7 +490,7 @@ class SpecificationTests(TestCaseWithFactory):
                 product=product, information_type=InformationType.PROPRIETARY)
             spec.subscribe(user, subscribed_by=owner)
             service = getUtility(IService, 'sharing')
-            ignored, ignored, shared_specs = service.getVisibleArtifacts(
+            _, _, _, shared_specs = service.getVisibleArtifacts(
                 user, specifications=[spec])
             self.assertEqual([spec], shared_specs)
             # The spec is also returned by getSharedSpecifications(),
@@ -507,7 +507,7 @@ class SpecificationTests(TestCaseWithFactory):
             service.sharePillarInformation(
                 product, user_2, owner, permissions)
             spec.subscribe(user_2, subscribed_by=owner)
-            ignored, ignored, shared_specs = service.getVisibleArtifacts(
+            _, _, _, shared_specs = service.getVisibleArtifacts(
                 user_2, specifications=[spec])
             self.assertEqual([spec], shared_specs)
             self.assertEqual(
@@ -527,7 +527,7 @@ class SpecificationTests(TestCaseWithFactory):
             spec.subscribe(user, subscribed_by=owner)
             spec.unsubscribe(user, unsubscribed_by=owner)
             service = getUtility(IService, 'sharing')
-            ignored, ignored, shared_specs = service.getVisibleArtifacts(
+            _, _, _, shared_specs = service.getVisibleArtifacts(
                 user, specifications=[spec])
             self.assertEqual([], shared_specs)
 

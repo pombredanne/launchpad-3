@@ -1,4 +1,4 @@
-# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Interfaces for pillar and artifact access policies."""
@@ -35,6 +35,7 @@ class IAccessArtifact(Interface):
     concrete_artifact = Attribute("Concrete artifact")
     bug_id = Attribute("bug_id")
     branch_id = Attribute("branch_id")
+    gitrepository_id = Attribute("gitrepository_id")
     specification_id = Attribute("specification_id")
 
 

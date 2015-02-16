@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Common views for objects that implement `IPillar`."""
@@ -444,12 +444,14 @@ class PillarPersonSharingView(LaunchpadView):
     def _loadSharedArtifacts(self):
         # As a concrete can by linked via more than one policy, we use sets to
         # filter out dupes.
-        self.bugtasks, self.branches, self.specifications = (
+        (self.bugtasks, self.branches, self.gitrepositories,
+         self.specifications) = (
             self.sharing_service.getSharedArtifacts(
                 self.pillar, self.person, self.user))
         bug_ids = set([bugtask.bug.id for bugtask in self.bugtasks])
         self.shared_bugs_count = len(bug_ids)
         self.shared_branches_count = len(self.branches)
+        self.shared_gitrepositories_count = len(self.gitrepositories)
         self.shared_specifications_count = len(self.specifications)
 
     def _build_specification_template_data(self, specs, request):

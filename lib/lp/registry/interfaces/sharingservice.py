@@ -1,4 +1,4 @@
-# Copyright 2012-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2012-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Interfaces for sharing service."""
@@ -108,7 +108,7 @@ class ISharingService(IService):
 
         :param user: the user making the request. Only artifacts visible to the
              user will be included in the result.
-        :return: a (bugtasks, branches, specifications) tuple
+        :return: a (bugtasks, branches, gitrepositories, specifications) tuple
         """
 
     def checkPillarArtifactAccess(pillar, user):
@@ -148,6 +148,14 @@ class ISharingService(IService):
         :return: a collection of branches
         """
 
+    def getSharedGitRepositories(pillar, person, user):
+        """Return the Git repositories shared between the pillar and person.
+
+        :param user: the user making the request. Only Git repositories
+             visible to the user will be included in the result.
+        :return: a collection of Git repositories.
+        """
+
     @export_read_operation()
     @call_with(user=REQUEST_USER)
     @operation_parameters(
@@ -163,19 +171,25 @@ class ISharingService(IService):
         :return: a collection of specifications.
         """
 
-    def getVisibleArtifacts(person, branches=None, bugs=None):
+    def getVisibleArtifacts(person, bugs=None, branches=None,
+                            gitrepositories=None, specifications=None):
         """Return the artifacts shared with person.
 
         Given lists of artifacts, return those a person has access to either
         via a policy grant or artifact grant.
 
         :param person: the person whose access is being checked.
-        :param branches: the branches to check for which a person has access.
         :param bugs: the bugs to check for which a person has access.
+        :param branches: the branches to check for which a person has access.
+        :param gitrepositories: the Git repositories to check for which a
+            person has access.
+        :param specifications: the specifications to check for which a
+            person has access.
         :return: a collection of artifacts the person can see.
         """
 
-    def getInvisibleArtifacts(person, branches=None, bugs=None):
+    def getInvisibleArtifacts(person, bugs=None, branches=None,
+                              gitrepositories=None):
         """Return the artifacts which are not shared with person.
 
         Given lists of artifacts, return those a person does not have access to
@@ -184,8 +198,10 @@ class ISharingService(IService):
           access to private information. Internal use only. *
 
         :param person: the person whose access is being checked.
-        :param branches: the branches to check for which a person has access.
         :param bugs: the bugs to check for which a person has access.
+        :param branches: the branches to check for which a person has access.
+        :param gitrepositories: the Git repositories to check for which a
+            person has access.
         :return: a collection of artifacts the person can not see.
         """
 
@@ -306,8 +322,8 @@ class ISharingService(IService):
         specifications=List(
             Reference(schema=ISpecification), title=_('Specifications'), required=False))
     @operation_for_version('devel')
-    def revokeAccessGrants(pillar, grantee, user, branches=None, bugs=None,
-                           specifications=None):
+    def revokeAccessGrants(pillar, grantee, user, bugs=None, branches=None,
+                           gitrepositories=None, specifications=None):
         """Remove a grantee's access to the specified artifacts.
 
         :param pillar: the pillar from which to remove access
@@ -315,6 +331,7 @@ class ISharingService(IService):
         :param user: the user making the request
         :param bugs: the bugs for which to revoke access
         :param branches: the branches for which to revoke access
+        :param gitrepositories: the Git repositories for which to revoke access
         :param specifications: the specifications for which to revoke access
         """
 
@@ -328,14 +345,15 @@ class ISharingService(IService):
         branches=List(
             Reference(schema=IBranch), title=_('Branches'), required=False))
     @operation_for_version('devel')
-    def ensureAccessGrants(grantees, user, branches=None, bugs=None,
-                           specifications=None):
+    def ensureAccessGrants(grantees, user, bugs=None, branches=None,
+                           gitrepositories=None, specifications=None):
         """Ensure a grantee has an access grant to the specified artifacts.
 
         :param grantees: the people or teams for whom to grant access
         :param user: the user making the request
         :param bugs: the bugs for which to grant access
         :param branches: the branches for which to grant access
+        :param gitrepositories: the Git repositories for which to grant access
         :param specifications: the specifications for which to grant access
         """
 
