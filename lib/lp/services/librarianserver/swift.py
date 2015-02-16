@@ -346,6 +346,9 @@ class ConnectionPool:
         exception has been raised (apart from a 404), don't trust the
         swift_connection and throw it away.
         '''
+        if not isinstance(swift_connection, swiftclient.Connection):
+            raise AssertionError(
+                "%r is not a swiftclient Connection." % swift_connection)
         if swift_connection not in self._pool:
             self._pool.append(swift_connection)
             while len(self._pool) > self.MAX_POOL_SIZE:
