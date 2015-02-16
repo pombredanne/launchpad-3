@@ -376,8 +376,8 @@ class TestGitRepositorySetTarget(TestCaseWithFactory):
         self.assertEqual(owner, repository.target)
 
     def test_public_to_proprietary_only_project(self):
-        # A repository cannot be moved to a target where the sharing policy does
-        # not allow it.
+        # A repository cannot be moved to a target where the sharing policy
+        # does not allow it.
         owner = self.factory.makePerson()
         commercial_project = self.factory.makeProduct(
             owner=owner, branch_sharing_policy=BranchSharingPolicy.PROPRIETARY)
