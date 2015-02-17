@@ -670,7 +670,7 @@ class BuildUploadHandler(UploadHandler):
             if recipe_deleted:
                 # For a deleted recipe, no need to notify that uploading has
                 # failed - we just log a warning.
-                self.processor.log.warn(
+                self.processor.log.info(
                     "Recipe for build %s was deleted. Ignoring." %
                     self.upload)
             else:
