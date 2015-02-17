@@ -23,6 +23,7 @@ from storm.expr import (
     Coalesce,
     Count,
     Desc,
+    Exists,
     Or,
     Select,
     SQL,
@@ -250,18 +251,16 @@ class Builder(SQLBase):
             qualified_query %= sub_query
             return qualified_query
 
-        extra_queries = []
+        job_type_conditions = []
         job_sources = specific_build_farm_job_sources()
         for job_type, job_source in job_sources.iteritems():
             query = job_source.addCandidateSelectionCriteria(
                 self.processor, self.virtualized)
-            if query == '':
-                # This job class does not need to refine candidate jobs
-                # further.
-                continue
-
-            # The sub-query should only apply to jobs of the right type.
-            extra_queries.append(qualify_subquery(job_type, query))
+            if query:
+                job_type_conditions.append(
+                    Or(
+                        BuildFarmJob.job_type != job_type,
+                        Exists(SQL(query))))
 
         store = IStore(self.__class__)
         candidate_jobs = store.using(BuildQueue, BuildFarmJob).find(
@@ -275,7 +274,7 @@ class Builder(SQLBase):
                 BuildQueue.processor == None),
             BuildQueue.virtualized == self.virtualized,
             BuildQueue.builder == None,
-            And(*(SQL(extra) for extra in extra_queries))
+            And(*job_type_conditions)
             ).order_by(Desc(BuildQueue.lastscore), BuildQueue.id)
 
         logger = self._getSlaveScannerLogger()
