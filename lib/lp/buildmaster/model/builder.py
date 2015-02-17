@@ -278,7 +278,11 @@ class Builder(SQLBase):
             ).order_by(Desc(BuildQueue.lastscore), BuildQueue.id)
 
         logger = self._getSlaveScannerLogger()
-        for (candidate_id,) in candidate_jobs:
+        # Only try the first handful of jobs. It's much easier on the
+        # database, the chance of a large prefix of the queue being
+        # bad candidates is negligible, and we want reasonably bounded
+        # per-cycle performance even if the prefix is large.
+        for (candidate_id,) in candidate_jobs[:10]:
             candidate = getUtility(IBuildQueueSet).get(candidate_id)
             job_source = job_sources[
                 removeSecurityProxy(candidate)._build_farm_job.job_type]
