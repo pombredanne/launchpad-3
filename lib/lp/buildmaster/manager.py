@@ -219,7 +219,20 @@ def recover_failure(logger, vitals, builder, retry, exception):
         elif job_action == False:
             # Fail and dequeue the job.
             logger.info("Failing job %s.", job.build_cookie)
-            job.specific_build.updateStatus(BuildStatus.FAILEDTOBUILD)
+            if job.specific_build.status == BuildStatus.FULLYBUILT:
+                # A FULLYBUILT build should be out of our hands, and
+                # probably has artifacts like binaries attached. It's
+                # impossible to enter the state twice, so don't revert
+                # the status. Something's wrong, so log an OOPS and get
+                # it out of the queue to avoid further corruption.
+                logger.warning(
+                    "Build is already successful! Dequeuing but leaving build "
+                    "status alone. Something is very wrong.")
+            else:
+                # Whatever it was before, we want it failed. We're an
+                # error handler, so let's not risk more errors.
+                job.specific_build.updateStatus(
+                    BuildStatus.FAILEDTOBUILD, force_invalid_transition=True)
             job.destroySelf()
         elif job_action == True:
             # Reset the job so it will be retried elsewhere.
