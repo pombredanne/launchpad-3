@@ -582,9 +582,7 @@ class TestSlaveScannerWithLibrarian(TestCaseWithFactory):
         # Mock out the build behaviour's handleSuccess so it doesn't
         # try to upload things to the librarian or queue.
         def handleSuccess(self, slave_status, logger):
-            build.updateStatus(
-                BuildStatus.UPLOADING, builder, slave_status=slave_status)
-            transaction.commit()
+            return BuildStatus.UPLOADING
         self.patch(
             BinaryPackageBuildBehaviour, 'handleSuccess', handleSuccess)
 

@@ -101,10 +101,6 @@ class TranslationTemplatesBuildBehaviour(BuildFarmJobBehaviourBase):
         If this fails for whatever unforeseen reason, a future run will
         retry it.
         """
-        self.build.updateStatus(
-            BuildStatus.UPLOADING,
-            builder=self.build.buildqueue_record.builder)
-        transaction.commit()
         logger.debug("Processing successful templates build.")
         filemap = slave_status.get('filemap')
         filename = yield self._readTarball(
@@ -116,7 +112,6 @@ class TranslationTemplatesBuildBehaviour(BuildFarmJobBehaviourBase):
         # dangerous.
         if filename is None:
             logger.error("Build produced no tarball.")
-            self.build.updateStatus(BuildStatus.FULLYBUILT)
         else:
             tarball_file = open(filename)
             try:
@@ -129,9 +124,9 @@ class TranslationTemplatesBuildBehaviour(BuildFarmJobBehaviourBase):
                     self._uploadTarball(
                         self.build.buildqueue_record.specific_build.branch,
                         tarball, logger)
+                    transaction.commit()
                     logger.debug("Upload complete.")
             finally:
-                self.build.updateStatus(BuildStatus.FULLYBUILT)
                 tarball_file.close()
                 os.remove(filename)
-        transaction.commit()
+        defer.returnValue(BuildStatus.FULLYBUILT)
