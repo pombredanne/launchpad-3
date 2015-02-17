@@ -319,6 +319,7 @@ class SlaveScanner:
         return d
 
     def _updateDateScanned(self, ignored):
+        self.logger.debug("Scan finished for builder %s" % self.builder_name)
         self.date_scanned = datetime.datetime.utcnow()
 
     def _scanFailed(self, retry, failure):
@@ -541,6 +542,7 @@ class NewBuildersScanner:
 
     def scan(self):
         """If a new builder appears, create a SlaveScanner for it."""
+        self.manager.logger.debug("Refreshing builders from the database.")
         try:
             self.manager.builder_factory.update()
             new_builders = self.checkForNewBuilders()
@@ -550,6 +552,7 @@ class NewBuildersScanner:
                 "Failure while updating builders:\n",
                 exc_info=True)
             transaction.abort()
+        self.manager.logger.debug("Builder refresh complete.")
 
     def checkForNewBuilders(self):
         """See if any new builders were added."""
