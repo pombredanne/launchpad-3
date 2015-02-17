@@ -618,10 +618,21 @@ class BuildUploadHandler(UploadHandler):
         Build uploads always contain a single package per leaf.
         """
         logger = BufferLogger()
-        if self.build.status != BuildStatus.UPLOADING:
+        if self.build.status == BuildStatus.BUILDING:
+            # Handoff from buildd-manager isn't complete until the
+            # status is UPLOADING.
+            self.processor.log.info("Build status is BUILDING. Ignoring.")
+            return
+        elif self.build.status != BuildStatus.UPLOADING:
+            # buildd-manager should only have given us a directory
+            # during BUILDING or UPLOADING. Anything else indicates a
+            # bug, so get the upload out of the queue before the status
+            # changes to something that might accidentally let it be
+            # accepted.
             self.processor.log.warn(
-                "Expected build status to be 'UPLOADING', was %s. Ignoring." %
+                "Expected build status to be UPLOADING or BUILDING, was %s.",
                 self.build.status.name)
+            self.moveUpload(UploadStatusEnum.FAILED, logger)
             return
         try:
             # The recipe may have been deleted so we need to flag that here
