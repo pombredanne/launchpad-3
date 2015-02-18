@@ -205,8 +205,6 @@ class GitRepository(StormBase, GitIdentityMixin):
                 "You don't have permission to change the default repository "
                 "for '%s'." % self.target.displayname)
         if value:
-            # Any target default must also be an owner-target default.
-            self.setOwnerDefault(True)
             # Check for an existing target default.
             existing = getUtility(IGitRepositorySet).getDefaultRepository(
                 self.target)
