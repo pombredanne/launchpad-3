@@ -101,6 +101,10 @@ class TranslationTemplatesBuildBehaviour(BuildFarmJobBehaviourBase):
         If this fails for whatever unforeseen reason, a future run will
         retry it.
         """
+        self.build.updateStatus(
+            BuildStatus.UPLOADING,
+            builder=self.build.buildqueue_record.builder)
+        transaction.commit()
         logger.debug("Processing successful templates build.")
         filemap = slave_status.get('filemap')
         filename = yield self._readTarball(
