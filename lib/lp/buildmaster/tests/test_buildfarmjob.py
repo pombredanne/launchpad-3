@@ -180,6 +180,7 @@ class TestBuildFarmJobMixin(TestCaseWithFactory):
 
         # Setting it to BUILDING for the first time sets date_started
         # and date_first_dispatched.
+        self.build_farm_job.updateStatus(BuildStatus.NEEDSBUILD)
         self.build_farm_job.updateStatus(BuildStatus.BUILDING)
         self.assertIsNot(None, self.build_farm_job.date_started)
         first = self.build_farm_job.date_started
@@ -211,6 +212,8 @@ class TestBuildFarmJobMixin(TestCaseWithFactory):
             build.updateStatus(status)
             self.assertIs(None, build.date_started)
             self.assertIs(None, build.date_finished)
+            build.updateStatus(
+                BuildStatus.NEEDSBUILD, force_invalid_transition=True)
             build.updateStatus(BuildStatus.BUILDING)
             self.assertIsNot(None, build.date_started)
             self.assertIs(None, build.date_finished)

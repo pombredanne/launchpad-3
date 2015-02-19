@@ -8,6 +8,7 @@ __metaclass__ = type
 from testtools.matchers import Equals
 from zope.component import getUtility
 
+from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.services.job.model.job import Job
 from lp.soyuz.browser.tests.test_builder_views import BuildCreationMixin
@@ -43,6 +44,8 @@ class TestBuildersHomepage(TestCaseWithFactory, BuildCreationMixin):
     def test_builders_binary_package_build_query_count(self):
         def create_build():
             build = self.createBinaryPackageBuild()
+            build.updateStatus(
+                BuildStatus.NEEDSBUILD, force_invalid_transition=True)
             queue = build.queueBuild()
             queue.markAsBuilding(build.builder)
 
@@ -54,6 +57,8 @@ class TestBuildersHomepage(TestCaseWithFactory, BuildCreationMixin):
     def test_builders_recipe_build_query_count(self):
         def create_build():
             build = self.createRecipeBuildWithBuilder()
+            build.updateStatus(
+                BuildStatus.NEEDSBUILD, force_invalid_transition=True)
             queue = build.queueBuild()
             queue.markAsBuilding(build.builder)
 

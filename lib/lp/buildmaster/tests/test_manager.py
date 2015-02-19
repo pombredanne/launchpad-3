@@ -1107,6 +1107,26 @@ class TestFailureAssessments(TestCaseWithFactory):
         self.assertEqual(self.build.status, BuildStatus.FAILEDTOBUILD)
         self.assertEqual(0, self.builder.failure_count)
 
+    def test_bad_job_does_not_unsucceed(self):
+        # If a FULLYBUILT build somehow ends up back in buildd-manager,
+        # all manner of failures can occur as invariants are violated.
+        # But we can't just fail and later retry the build as normal, as
+        # a FULLYBUILT build has binaries. Instead, failure handling
+        # just destroys the BuildQueue and leaves the status as
+        # FULLYBUILT.
+        self.build.updateStatus(BuildStatus.FULLYBUILT)
+        self.build.gotFailure()
+        self.build.gotFailure()
+        self.builder.gotFailure()
+
+        log = self._recover_failure("failnotes")
+        self.assertIn("Failing job", log)
+        self.assertIn("Build is already successful!", log)
+        self.assertIn("Resetting failure count of builder", log)
+        self.assertIs(None, self.builder.currentjob)
+        self.assertEqual(self.build.status, BuildStatus.FULLYBUILT)
+        self.assertEqual(0, self.builder.failure_count)
+
     def test_failure_during_cancellation_cancels(self):
         self.buildqueue.cancel()
         self.assertEqual(BuildStatus.CANCELLING, self.build.status)
