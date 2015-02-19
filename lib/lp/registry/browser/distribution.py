@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for distributions."""
@@ -1104,7 +1104,7 @@ class DistributionMirrorsView(LaunchpadView):
 
     @cachedproperty
     def mirror_count(self):
-        return self.mirrors.count()
+        return len(self.mirrors)
 
     def _sum_throughput(self, mirrors):
         """Given a list of mirrors, calculate the total bandwidth
@@ -1181,10 +1181,6 @@ class DistributionArchiveMirrorsView(DistributionMirrorsView):
     def mirrors(self):
         return self.context.archive_mirrors_by_country
 
-    @cachedproperty
-    def mirror_count(self):
-        return len(self.mirrors)
-
 
 class DistributionSeriesMirrorsView(DistributionMirrorsView):
 
@@ -1196,10 +1192,6 @@ class DistributionSeriesMirrorsView(DistributionMirrorsView):
     @cachedproperty
     def mirrors(self):
         return self.context.cdimage_mirrors_by_country
-
-    @cachedproperty
-    def mirror_count(self):
-        return len(self.mirrors)
 
 
 class DistributionMirrorsRSSBaseView(LaunchpadView):

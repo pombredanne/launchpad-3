@@ -9,6 +9,7 @@ __all__ = [
     'DistributionSet',
     ]
 
+from collections import defaultdict
 import itertools
 from operator import itemgetter
 
@@ -113,6 +114,7 @@ from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 from lp.registry.model.announcement import MakesAnnouncements
 from lp.registry.model.distributionmirror import (
     DistributionMirror,
+    MirrorCDImageDistroSeries,
     MirrorDistroArchSeries,
     MirrorDistroSeriesSource,
     )
@@ -130,6 +132,7 @@ from lp.registry.model.milestone import (
 from lp.registry.model.oopsreferences import referenced_oops
 from lp.registry.model.pillar import HasAliasMixin
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.services.database.bulk import load_referencing
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.decoratedresultset import DecoratedResultSet
@@ -422,17 +425,21 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         else:
             return [archive.id]
 
-    def _getActiveMirrors(self, mirror_content_type,
-            by_country=False, needs_fresh=False):
+    def _getMirrors(self, content=None, enabled=True,
+                    status=MirrorStatus.OFFICIAL, by_country=False,
+                    needs_fresh=False, needs_cdimage_series=False):
         """Builds the query to get the mirror data for various purposes."""
-        mirrors = list(Store.of(self).find(
-            DistributionMirror,
-            And(
-                DistributionMirror.distribution == self.id,
-                DistributionMirror.content == mirror_content_type,
-                DistributionMirror.enabled == True,
-                DistributionMirror.status == MirrorStatus.OFFICIAL,
-                DistributionMirror.official_candidate == True)))
+        clauses = [
+            DistributionMirror.distribution == self.id,
+            DistributionMirror.status == status,
+            ]
+        if content is not None:
+            clauses.append(DistributionMirror.content == content)
+        if enabled is not None:
+            clauses.append(DistributionMirror.enabled == enabled)
+        if status != MirrorStatus.UNOFFICIAL:
+            clauses.append(DistributionMirror.official_candidate == True)
+        mirrors = list(Store.of(self).find(DistributionMirror, And(*clauses)))
 
         if by_country and mirrors:
             # Since country data is needed, fetch countries into the cache.
@@ -472,59 +479,71 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                     mirror.id, None)
                 cache.source_mirror_freshness = source_mirror_freshness.get(
                     mirror.id, None)
+
+        if needs_cdimage_series and mirrors:
+            all_cdimage_series = load_referencing(
+                MirrorCDImageDistroSeries, mirrors, ["distribution_mirrorID"])
+            cdimage_series = defaultdict(list)
+            for series in all_cdimage_series:
+                cdimage_series[series.distribution_mirrorID].append(series)
+            for mirror in mirrors:
+                cache = get_property_cache(mirror)
+                cache.cdimage_series = cdimage_series.get(mirror.id, [])
+
         return mirrors
 
     @property
     def archive_mirrors(self):
         """See `IDistribution`."""
-        return self._getActiveMirrors(MirrorContent.ARCHIVE)
+        return self._getMirrors(content=MirrorContent.ARCHIVE)
 
     @property
     def archive_mirrors_by_country(self):
         """See `IDistribution`."""
-        return self._getActiveMirrors(
-            MirrorContent.ARCHIVE,
+        return self._getMirrors(
+            content=MirrorContent.ARCHIVE,
             by_country=True,
             needs_fresh=True)
 
     @property
     def cdimage_mirrors(self, by_country=False):
         """See `IDistribution`."""
-        return self._getActiveMirrors(MirrorContent.RELEASE)
+        return self._getMirrors(
+            content=MirrorContent.RELEASE,
+            needs_cdimage_series=True)
 
     @property
     def cdimage_mirrors_by_country(self):
         """See `IDistribution`."""
-        return self._getActiveMirrors(
-            MirrorContent.RELEASE,
-            by_country=True)
+        return self._getMirrors(
+            content=MirrorContent.RELEASE,
+            by_country=True,
+            needs_cdimage_series=True)
 
     @property
     def disabled_mirrors(self):
         """See `IDistribution`."""
-        return Store.of(self).find(
-            DistributionMirror,
-            distribution=self,
+        return self._getMirrors(
             enabled=False,
-            status=MirrorStatus.OFFICIAL,
-            official_candidate=True)
+            by_country=True,
+            needs_fresh=True)
 
     @property
     def unofficial_mirrors(self):
         """See `IDistribution`."""
-        return Store.of(self).find(
-            DistributionMirror,
-            distribution=self,
-            status=MirrorStatus.UNOFFICIAL)
+        return self._getMirrors(
+            enabled=None,
+            status=MirrorStatus.UNOFFICIAL,
+            by_country=True,
+            needs_fresh=True)
 
     @property
     def pending_review_mirrors(self):
         """See `IDistribution`."""
-        return Store.of(self).find(
-            DistributionMirror,
-            distribution=self,
-            status=MirrorStatus.PENDING_REVIEW,
-            official_candidate=True)
+        return self._getMirrors(
+            enabled=None,
+            by_country=True,
+            status=MirrorStatus.PENDING_REVIEW)
 
     @property
     def drivers(self):

@@ -1,23 +1,34 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
 import soupmatchers
-from testtools.matchers import MatchesStructure
+from testtools.matchers import (
+    Equals,
+    MatchesStructure,
+    )
 from zope.component import getUtility
 
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.registry.browser.distribution import DistributionPublisherConfigView
 from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.distributionmirror import (
+    MirrorContent,
+    MirrorStatus,
+    )
 from lp.services.webapp.servers import LaunchpadTestRequest
+from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.testing import (
     login,
     login_celebrity,
+    login_person,
+    record_two_runs,
     TestCaseWithFactory,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.matchers import HasQueryCount
 from lp.testing.sampledata import LAUNCHPAD_ADMIN
 from lp.testing.views import create_initialized_view
 
@@ -333,3 +344,84 @@ class TestDistroReassignView(TestCaseWithFactory):
                 'Header should say maintainer (not owner)', 'h1',
                 text='Change the maintainer of Boobuntu'))
         self.assertThat(view.render(), header_match)
+
+
+class TestDistributionMirrorsViewMixin:
+    """Mixin to help test a distribution mirrors view."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_query_count(self):
+        # The number of queries required to render the mirror table is
+        # constant in the number of mirrors.
+        person = self.factory.makePerson()
+        distro = self.factory.makeDistribution(owner=person)
+        login_celebrity("admin")
+        distro.supports_mirrors = True
+        login_person(person)
+        distro.mirror_admin = person
+        countries = iter(getUtility(ICountrySet))
+
+        def render_mirrors():
+            text = create_initialized_view(
+                distro, self.view, principal=person).render()
+            self.assertNotIn("We don't know of any", text)
+            return text
+
+        def create_mirror():
+            mirror = self.factory.makeMirror(
+                distro, country=next(countries), official_candidate=True)
+            self.configureMirror(mirror)
+
+        recorder1, recorder2 = record_two_runs(
+            render_mirrors, create_mirror, 10)
+        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
+
+
+class TestDistributionArchiveMirrorsView(
+    TestDistributionMirrorsViewMixin, TestCaseWithFactory):
+
+    view = "+archivemirrors"
+
+    def configureMirror(self, mirror):
+        mirror.enabled = True
+        mirror.status = MirrorStatus.OFFICIAL
+
+
+class TestDistributionSeriesMirrorsView(
+    TestDistributionMirrorsViewMixin, TestCaseWithFactory):
+
+    view = "+cdmirrors"
+
+    def configureMirror(self, mirror):
+        mirror.enabled = True
+        mirror.content = MirrorContent.RELEASE
+        mirror.status = MirrorStatus.OFFICIAL
+
+
+class TestDistributionDisabledMirrorsView(
+    TestDistributionMirrorsViewMixin, TestCaseWithFactory):
+
+    view = "+disabledmirrors"
+
+    def configureMirror(self, mirror):
+        mirror.enabled = False
+        mirror.status = MirrorStatus.OFFICIAL
+
+
+class TestDistributionUnofficialMirrorsView(
+    TestDistributionMirrorsViewMixin, TestCaseWithFactory):
+
+    view = "+unofficialmirrors"
+
+    def configureMirror(self, mirror):
+        mirror.status = MirrorStatus.UNOFFICIAL
+
+
+class TestDistributionPendingReviewMirrorsView(
+    TestDistributionMirrorsViewMixin, TestCaseWithFactory):
+
+    view = "+pendingreviewmirrors"
+
+    def configureMirror(self, mirror):
+        mirror.status = MirrorStatus.PENDING_REVIEW
