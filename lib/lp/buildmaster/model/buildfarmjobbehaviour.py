@@ -220,6 +220,7 @@ class BuildFarmJobBehaviourBase:
             'Processing finished job %s (%s) from builder %s: %s'
             % (self.build.build_cookie, self.build.title,
                self.build.buildqueue_record.builder.name, status))
+        build_status = None
         if status == 'OK':
             yield self.storeLogFromSlave()
             # handleSuccess will sometimes perform write operations
@@ -227,18 +228,26 @@ class BuildFarmJobBehaviourBase:
             # here and the commit can cause duplicated results. For
             # example, a BinaryPackageBuild will end up in the upload
             # queue twice if notify() crashes.
-            yield self.handleSuccess(slave_status, logger)
+            build_status = yield self.handleSuccess(slave_status, logger)
         elif status in fail_status_map:
             # XXX wgrant: The builder should be set long before here, but
             # currently isn't.
             yield self.storeLogFromSlave()
-            self.build.updateStatus(
-                fail_status_map[status],
-                builder=self.build.buildqueue_record.builder,
-                slave_status=slave_status)
+            build_status = fail_status_map[status]
         else:
             raise BuildDaemonError(
                 "Build returned unexpected status: %r" % status)
+
+        # Set the status and dequeue the build atomically. Setting the
+        # status to UPLOADING constitutes handoff to process-upload, so
+        # doing that before we've removed the BuildQueue causes races.
+
+        # XXX wgrant: The builder should be set long before here, but
+        # currently isn't.
+        self.build.updateStatus(
+            build_status,
+            builder=self.build.buildqueue_record.builder,
+            slave_status=slave_status)
         if notify:
             self.build.notify()
         self.build.buildqueue_record.destroySelf()
@@ -260,8 +269,7 @@ class BuildFarmJobBehaviourBase:
         if build.job_type == BuildFarmJobType.PACKAGEBUILD:
             build = build.buildqueue_record.specific_build
             if not build.current_source_publication:
-                build.updateStatus(BuildStatus.SUPERSEDED)
-                return
+                defer.returnValue(BuildStatus.SUPERSEDED)
 
         self.verifySuccessfulBuild()
 
@@ -295,11 +303,6 @@ class BuildFarmJobBehaviourBase:
             filenames_to_download.append((filemap[filename], out_file_name))
         yield self._slave.getFiles(filenames_to_download)
 
-        # XXX wgrant: The builder should be set long before here, but
-        # currently isn't.
-        build.updateStatus(
-            BuildStatus.UPLOADING, builder=build.buildqueue_record.builder,
-            slave_status=slave_status)
         transaction.commit()
 
         # Move the directory used to grab the binaries into incoming
@@ -312,3 +315,5 @@ class BuildFarmJobBehaviourBase:
         if not os.path.exists(target_dir):
             os.mkdir(target_dir)
         os.rename(grab_dir, os.path.join(target_dir, upload_leaf))
+
+        defer.returnValue(BuildStatus.UPLOADING)
