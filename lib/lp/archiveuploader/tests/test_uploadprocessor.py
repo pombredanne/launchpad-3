@@ -142,6 +142,7 @@ class TestUploadProcessorBase(TestCaseWithFactory):
 
         self.queue_folder = tempfile.mkdtemp()
         self.incoming_folder = os.path.join(self.queue_folder, "incoming")
+        self.failed_folder = os.path.join(self.queue_folder, "failed")
         os.makedirs(self.incoming_folder)
 
         self.test_files_dir = os.path.join(config.root,
@@ -2258,9 +2259,7 @@ class TestUploadHandler(TestUploadProcessorBase):
         self.assertIsNot(None, build.duration)
         self.assertIs(None, build.upload_log)
 
-    def testBuildWithInvalidStatus(self):
-        # Builds with an invalid (non-UPLOADING) status should trigger
-        # a warning but be left alone.
+    def processUploadWithBuildStatus(self, status):
         upload_dir = self.queueUpload("bar_1.0-1")
         self.processUpload(self.uploadprocessor, upload_dir)
         source_pub = self.publishPackage('bar', '1.0-1')
@@ -2272,9 +2271,10 @@ class TestUploadHandler(TestUploadProcessorBase):
             status=PackageUploadStatus.ACCEPTED,
             version=u"1.0-1", name=u"bar")
         queue_item.setDone()
+        stub.test_emails.pop()
 
         build.buildqueue_record.markAsBuilding(self.factory.makeBuilder())
-        build.updateStatus(BuildStatus.BUILDING)
+        build.updateStatus(status)
         self.switchToUploader()
 
         shutil.rmtree(upload_dir)
@@ -2287,17 +2287,40 @@ class TestUploadHandler(TestUploadProcessorBase):
             "bar_1.0-1_binary", queue_entry=leaf_name)
         self.options.context = 'buildd'
         self.options.builds = True
-        len(stub.test_emails)
+        self.assertEqual([], stub.test_emails)
         BuildUploadHandler(self.uploadprocessor, self.incoming_folder,
             leaf_name).process()
         self.layer.txn.commit()
+
+        return build, leaf_name
+
+    def testBuildStillBuilding(self):
+        # Builds that are still BUILDING should be left alone.  The
+        # upload directory may already be in place, but buildd-manager
+        # will set the status to UPLOADING when it's handed off.
+        build, leaf_name = self.processUploadWithBuildStatus(
+            BuildStatus.BUILDING)
         # The build status is not changed
         self.assertTrue(
             os.path.exists(os.path.join(self.incoming_folder, leaf_name)))
         self.assertEquals(BuildStatus.BUILDING, build.status)
+        self.assertLogContains("Build status is BUILDING. Ignoring.")
+
+    def testBuildWithInvalidStatus(self):
+        # Builds with an invalid (not UPLOADING or BUILDING) status
+        # should trigger a failure. We've probably raced with
+        # buildd-manager due to a new and assuredly extra-special bug.
+        build, leaf_name = self.processUploadWithBuildStatus(
+            BuildStatus.NEEDSBUILD)
+        # The build status is not changed, but the upload has moved.
+        self.assertFalse(
+            os.path.exists(os.path.join(self.incoming_folder, leaf_name)))
+        self.assertTrue(
+            os.path.exists(os.path.join(self.failed_folder, leaf_name)))
+        self.assertEquals(BuildStatus.NEEDSBUILD, build.status)
         self.assertLogContains(
-            "Expected build status to be 'UPLOADING', was BUILDING. "
-            "Ignoring.")
+            "Expected build status to be UPLOADING or BUILDING, was "
+            "NEEDSBUILD.")
 
     def testOrderFilenames(self):
         """orderFilenames sorts _source.changes ahead of other files."""
