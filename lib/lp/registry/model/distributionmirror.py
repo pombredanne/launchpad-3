@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Module docstring goes here."""
@@ -82,7 +82,10 @@ from lp.services.mail.sendmail import (
     format_address,
     simple_sendmail,
     )
-from lp.services.propertycache import cachedproperty
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
 from lp.services.webapp import (
     canonical_url,
     urlappend,
@@ -339,7 +342,7 @@ class DistributionMirror(SQLBase):
                     'For series mirrors we need to know the '
                     'expected_file_count in order to tell if it should '
                     'be disabled or not.')
-            if expected_file_count > self.cdimage_series.count():
+            if expected_file_count > len(self.cdimage_series):
                 return True
         else:
             if not (self.source_series or self.arch_series):
@@ -458,6 +461,7 @@ class DistributionMirror(SQLBase):
             mirror = MirrorCDImageDistroSeries(
                 distribution_mirror=self, distroseries=distroseries,
                 flavour=flavour)
+        del get_property_cache(self).cdimage_series
         return mirror
 
     def deleteMirrorCDImageSeries(self, distroseries, flavour):
@@ -467,21 +471,24 @@ class DistributionMirror(SQLBase):
             flavour=flavour)
         if mirror is not None:
             mirror.destroySelf()
+        del get_property_cache(self).cdimage_series
 
     def deleteAllMirrorCDImageSeries(self):
         """See IDistributionMirror"""
         for mirror in self.cdimage_series:
             mirror.destroySelf()
+        del get_property_cache(self).cdimage_series
 
     @property
     def arch_series(self):
         """See IDistributionMirror"""
         return MirrorDistroArchSeries.selectBy(distribution_mirror=self)
 
-    @property
+    @cachedproperty
     def cdimage_series(self):
         """See IDistributionMirror"""
-        return MirrorCDImageDistroSeries.selectBy(distribution_mirror=self)
+        return list(
+            MirrorCDImageDistroSeries.selectBy(distribution_mirror=self))
 
     @property
     def source_series(self):
