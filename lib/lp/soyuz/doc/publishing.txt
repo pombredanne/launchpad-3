@@ -212,7 +212,8 @@ Nor will it be included in the unpublished builds:
 By default, only FULLYBUILT builds are included in the returned
 unpublished builds:
 
-    >>> builds[1].updateStatus(BuildStatus.SUPERSEDED)
+    >>> builds[1].updateStatus(
+    ...     BuildStatus.SUPERSEDED, force_invalid_transition=True)
     >>> for _, build, _ in ps.getUnpublishedBuildsForSources([spph]):
     ...     print build.title
 
@@ -226,7 +227,8 @@ But the returned build-states can be set explicitly:
 
 Just switch it back to FULLYBUILT before continuing:
 
-    >>> builds[1].updateStatus(BuildStatus.FULLYBUILT)
+    >>> builds[1].updateStatus(
+    ...     BuildStatus.FULLYBUILT, force_invalid_transition=True)
 
 After publishing the second binary, the status changes to FULLYBUILT as
 per normal:
