@@ -265,7 +265,9 @@ class POFileView(LaunchpadView):
 
     @cachedproperty
     def contributors(self):
-        return list(self.context.contributors)
+        return list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+            [person.id for person in self.context.contributors],
+            need_validity=True))
 
     @cachedproperty
     def user_can_edit(self):
