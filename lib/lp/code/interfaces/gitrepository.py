@@ -196,6 +196,7 @@ class IGitRepositoryView(Interface):
         More important related objects are sorted first.
         """
 
+    # Marker for references to Git URL layouts: ##GITNAMESPACE##
     def getRepositoryIdentities():
         """A list of aliases for a repository.
 
