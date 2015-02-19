@@ -807,6 +807,37 @@
   <adapter factory="lp.code.model.linkedbranch.PackageLinkedBranch" />
   <adapter factory="lp.code.model.linkedbranch.DistributionPackageLinkedBranch" />
 
+  <!-- GitRepository -->
+
+  <class class="lp.code.model.gitrepository.GitRepository">
+    <require
+        permission="launchpad.View"
+        interface="lp.app.interfaces.launchpad.IPrivacy
+                   lp.code.interfaces.gitrepository.IGitRepositoryView
+                   lp.code.interfaces.gitrepository.IGitRepositoryModerateAttributes" />
+    <require
+        permission="launchpad.Moderate"
+        interface="lp.code.interfaces.gitrepository.IGitRepositoryModerate"
+        set_schema="lp.code.interfaces.gitrepository.IGitRepositoryModerateAttributes" />
+    <require
+        permission="launchpad.Edit"
+        interface="lp.code.interfaces.gitrepository.IGitRepositoryEdit" />
+  </class>
+  <subscriber
+      for="lp.code.interfaces.gitrepository.IGitRepository zope.lifecycleevent.interfaces.IObjectModifiedEvent"
+      handler="lp.code.model.gitrepository.git_repository_modified"/>
+
+  <!-- GitRepositorySet -->
+
+  <class class="lp.code.model.gitrepository.GitRepositorySet">
+    <allow interface="lp.code.interfaces.gitrepository.IGitRepositorySet" />
+  </class>
+  <securedutility
+      class="lp.code.model.gitrepository.GitRepositorySet"
+      provides="lp.code.interfaces.gitrepository.IGitRepositorySet">
+    <allow interface="lp.code.interfaces.gitrepository.IGitRepositorySet" />
+  </securedutility>
+
   <lp:help-folder folder="help" name="+help-code" />
 
   <!-- Diffs -->

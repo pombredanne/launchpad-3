@@ -146,6 +146,7 @@ from lp.code.model.hasbranches import (
     HasMergeProposalsMixin,
     HasRequestedReviewsMixin,
     )
+from lp.code.model.hasgitrepositories import HasGitRepositoriesMixin
 from lp.registry.enums import (
     EXCLUSIVE_TEAM_POLICY,
     INCLUSIVE_TEAM_POLICY,
@@ -476,7 +477,7 @@ _readonly_person_settings = readonly_settings(
 class Person(
     SQLBase, HasBugsBase, HasSpecificationsMixin, HasTranslationImportsMixin,
     HasBranchesMixin, HasMergeProposalsMixin, HasRequestedReviewsMixin,
-    QuestionsPersonMixin):
+    QuestionsPersonMixin, HasGitRepositoriesMixin):
     """A Person."""
 
     implements(IPerson, IHasIcon, IHasLogo, IHasMugshot)
