@@ -316,6 +316,8 @@ class BuilderInteractor(object):
                     builder_factory[vitals.name].setCleanStatus(
                         BuilderCleanStatus.CLEANING)
                     transaction.commit()
+                    logger = cls._getSlaveScannerLogger()
+                    logger.info("%s is being cleaned.", vitals.name)
                 defer.returnValue(False)
             raise CannotResumeHost(
                 "Invalid vm_reset_protocol: %r" % vitals.vm_reset_protocol)

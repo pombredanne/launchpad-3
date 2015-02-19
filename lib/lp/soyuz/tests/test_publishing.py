@@ -431,7 +431,9 @@ class SoyuzTestPublisher:
         # Adjust the build record in way it looks complete.
         date_finished = datetime.datetime(2008, 1, 1, 0, 5, 0, tzinfo=pytz.UTC)
         date_started = date_finished - datetime.timedelta(minutes=5)
-        build.updateStatus(BuildStatus.BUILDING, date_started=date_started)
+        build.updateStatus(
+            BuildStatus.BUILDING, date_started=date_started,
+            force_invalid_transition=True)
         build.updateStatus(BuildStatus.FULLYBUILT, date_finished=date_finished)
         buildlog_filename = 'buildlog_%s-%s-%s.%s_%s_%s.txt.gz' % (
             build.distribution.name,
