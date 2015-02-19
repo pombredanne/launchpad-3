@@ -128,7 +128,7 @@ class IGitRepositoryView(Interface):
             "Unique name of the repository, including the owner and project "
             "names."))
 
-    displayname = Text(
+    display_name = Text(
         title=_("Display name"), readonly=True,
         description=_("Display name of the repository."))
 

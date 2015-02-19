@@ -213,7 +213,7 @@ class GitRepository(StormBase, GitIdentityMixin):
         self.target_default = value
 
     @property
-    def displayname(self):
+    def display_name(self):
         return self.git_identity
 
     def getInternalPath(self):
