@@ -145,10 +145,10 @@ class IGitRepositoryView(Interface):
     def setOwnerDefault(value):
         """Set whether this repository is the default for its owner-target.
 
-        This is for internal use; the caller should ensure permission to edit
-        the owner, should arrange to remove any existing owner-target default
-        (including any target default with the same owner), and should check
-        that this repository is attached to the desired target.
+        This is for internal use; the caller should ensure permission to
+        edit the owner, should arrange to remove any existing owner-target
+        default, and should check that this repository is attached to the
+        desired target.
 
         :raises Unauthorized: if lacking permission to edit the owner.
         :param value: True if this repository should be the owner-target
