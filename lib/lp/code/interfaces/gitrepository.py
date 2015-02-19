@@ -106,7 +106,7 @@ class IGitRepositoryView(Interface):
         description=_("The target of the repository."))
 
     information_type = Choice(
-        title=_("Information Type"), vocabulary=InformationType,
+        title=_("Information type"), vocabulary=InformationType,
         required=True, readonly=True, default=InformationType.PUBLIC,
         description=_(
             "The type of information contained in this repository."))
