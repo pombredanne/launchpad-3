@@ -266,7 +266,7 @@ class IGitRepository(IGitRepositoryView, IGitRepositoryModerateAttributes,
     """A Git repository."""
 
     private = Bool(
-        title=_("Repository is confidential"), required=False, readonly=True,
+        title=_("Private"), required=False, readonly=True,
         description=_("This repository is visible only to its subscribers."))
 
 
