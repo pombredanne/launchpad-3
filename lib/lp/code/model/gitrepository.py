@@ -165,14 +165,12 @@ class GitRepository(StormBase, GitIdentityMixin):
     @cachedproperty
     def target(self):
         """See `IGitRepository`."""
-        if self.project is None:
-            if self.distribution is None:
-                return self.owner
-            else:
-                return self.distribution.getSourcePackage(
-                    self.sourcepackagename)
-        else:
+        if self.project is not None:
             return self.project
+        elif self.distribution is not None:
+            return self.distribution.getSourcePackage(self.sourcepackagename)
+        else:
+            return self.owner
 
     def setTarget(self, target, user):
         """See `IGitRepository`."""
