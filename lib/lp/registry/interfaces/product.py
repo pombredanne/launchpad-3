@@ -102,6 +102,7 @@ from lp.code.interfaces.hasbranches import (
     IHasCodeImports,
     IHasMergeProposals,
     )
+from lp.code.interfaces.hasgitrepositories import IHasGitRepositories
 from lp.code.interfaces.hasrecipes import IHasRecipes
 from lp.registry.enums import (
     BranchSharingPolicy,
@@ -475,7 +476,7 @@ class IProductView(
     IHasMugshot, IHasSprints, IHasTranslationImports,
     ITranslationPolicy, IKarmaContext, IMakesAnnouncements,
     IOfficialBugTagTargetPublic, IHasOOPSReferences,
-    IHasRecipes, IHasCodeImports, IServiceUsage):
+    IHasRecipes, IHasCodeImports, IServiceUsage, IHasGitRepositories):
     """Public IProduct properties."""
 
     registrant = exported(

@@ -43,6 +43,7 @@ from lp.code.model.hasbranches import (
     HasBranchesMixin,
     HasMergeProposalsMixin,
     )
+from lp.code.model.hasgitrepositories import HasGitRepositoriesMixin
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
@@ -119,7 +120,7 @@ class DistributionSourcePackage(BugTargetBase,
                                 HasBranchesMixin,
                                 HasCustomLanguageCodesMixin,
                                 HasMergeProposalsMixin,
-                                HasDriversMixin):
+                                HasDriversMixin, HasGitRepositoriesMixin):
     """This is a "Magic Distribution Source Package". It is not an
     SQLObject, but instead it represents a source package with a particular
     name in a particular distribution. You can then ask it all sorts of
