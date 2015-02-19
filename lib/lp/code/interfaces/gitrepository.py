@@ -150,9 +150,8 @@ class IGitRepositoryView(Interface):
         default, and should check that this repository is attached to the
         desired target.
 
-        :raises Unauthorized: if lacking permission to edit the owner.
         :param value: True if this repository should be the owner-target
-        default, otherwise False.
+            default, otherwise False.
         """
 
     def setTargetDefault(value):
@@ -163,9 +162,8 @@ class IGitRepositoryView(Interface):
         default, and should check that this repository is attached to the
         desired target.
 
-        :raises Unauthorized: if lacking permission to edit the target.
         :param value: True if this repository should be the target default,
-        otherwise False.
+            otherwise False.
         """
 
     def getCodebrowseUrl():

@@ -26,7 +26,6 @@ from storm.locals import (
     )
 from zope.component import getUtility
 from zope.interface import implements
-from zope.security.interfaces import Unauthorized
 
 from lp.app.enums import (
     InformationType,
@@ -78,7 +77,6 @@ from lp.services.database.stormexpr import (
     ArrayIntersects,
     )
 from lp.services.propertycache import cachedproperty
-from lp.services.webapp.authorization import check_permission
 
 
 def git_repository_modified(repository, event):
@@ -184,11 +182,6 @@ class GitRepository(StormBase, GitIdentityMixin):
 
     def setOwnerDefault(self, value):
         """See `IGitRepository`."""
-        if not check_permission("launchpad.Edit", self.owner):
-            raise Unauthorized(
-                "You don't have permission to change the default repository "
-                "for %s on '%s'." %
-                (self.owner.displayname, self.target.displayname))
         if value:
             # Check for an existing owner-target default.
             existing = getUtility(IGitRepositorySet).getDefaultRepository(
@@ -200,10 +193,6 @@ class GitRepository(StormBase, GitIdentityMixin):
 
     def setTargetDefault(self, value):
         """See `IGitRepository`."""
-        if not check_permission("launchpad.Edit", self.target):
-            raise Unauthorized(
-                "You don't have permission to change the default repository "
-                "for '%s'." % self.target.displayname)
         if value:
             # Check for an existing target default.
             existing = getUtility(IGitRepositorySet).getDefaultRepository(
