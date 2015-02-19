@@ -158,9 +158,10 @@ class IGitRepositoryView(Interface):
     def setTargetDefault(value):
         """Set whether this repository is the default for its target.
 
-        This is for internal use; the caller should ensure permission to edit
-        the target, should arrange to remove any existing target default, and
-        should check that this repository is attached to the desired target.
+        This is for internal use; the caller should ensure permission to
+        edit the target, should arrange to remove any existing target
+        default, and should check that this repository is attached to the
+        desired target.
 
         :raises Unauthorized: if lacking permission to edit the target.
         :param value: True if this repository should be the target default,
