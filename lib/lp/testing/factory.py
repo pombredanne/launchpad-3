@@ -1700,53 +1700,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 information_type, registrant, verify_policy=False)
         return repository
 
-    def makePackageGitRepository(self, distro_source_package=None,
-                                 distribution=None, sourcepackagename=None,
-                                 **kwargs):
-        """Make a package Git repository on an arbitrary package.
-
-        See `makeGitRepository` for more information on arguments.
-
-        You can pass in either `distro_source_package` or one or both of
-        `distribution` and `sourcepackagename`, but not combinations or all
-        of them.
-        """
-        assert not(distro_source_package is not None and
-                   distribution is not None), (
-            "Don't pass in both distro_source_package and distribution")
-        assert not(distro_source_package is not None
-                   and sourcepackagename is not None), (
-            "Don't pass in both distro_source_package and sourcepackagename")
-        if distro_source_package is None:
-            distro_source_package = self.makeDistributionSourcePackage(
-                distribution=distribution, sourcepackagename=sourcepackagename)
-        return self.makeGitRepository(target=distro_source_package, **kwargs)
-
-    def makePersonalGitRepository(self, owner=None, **kwargs):
-        """Make a personal Git repository on an arbitrary person.
-
-        See `makeGitRepository` for more information on arguments.
-        """
-        if owner is None:
-            owner = self.makePerson()
-        return self.makeGitRepository(owner=owner, target=None, **kwargs)
-
-    def makeProjectGitRepository(self, project=None, **kwargs):
-        """Make a project Git repository on an arbitrary project.
-
-        See `makeGitRepository` for more information on arguments.
-        """
-        if project is None:
-            project = self.makeProduct()
-        return self.makeGitRepository(target=project, **kwargs)
-
-    def makeAnyGitRepository(self, **kwargs):
-        """Make a Git repository without caring about its container.
-
-        See `makeGitRepository` for more information on arguments.
-        """
-        return self.makeProjectGitRepository(**kwargs)
-
     def makeBug(self, target=None, owner=None, bug_watch_url=None,
                 information_type=None, date_closed=None, title=None,
                 date_created=None, description=None, comment=None,
