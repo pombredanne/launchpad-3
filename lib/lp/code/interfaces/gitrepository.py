@@ -16,6 +16,7 @@ __all__ = [
 import re
 
 from lazr.restful.fields import Reference
+from zope.component import getUtility
 from zope.interface import (
     Attribute,
     Interface,
@@ -32,7 +33,16 @@ from zope.schema import (
 from lp import _
 from lp.app.enums import InformationType
 from lp.app.validators import LaunchpadValidationError
+from lp.code.interfaces.defaultgit import ICanHasDefaultGitRepository
 from lp.code.interfaces.hasgitrepositories import IHasGitRepositories
+from lp.registry.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage,
+    )
+from lp.registry.interfaces.persondistributionsourcepackage import (
+    IPersonDistributionSourcePackageFactory,
+    )
+from lp.registry.interfaces.personproduct import IPersonProductFactory
+from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.role import IPersonRoles
 from lp.services.fields import (
     PersonChoice,
@@ -349,9 +359,23 @@ class GitIdentityMixin:
 
     def getRepositoryDefaults(self):
         """See `IGitRepository`."""
-        # XXX cjwatson 2015-02-06: This will return shortcut defaults once
-        # they're implemented.
-        return []
+        defaults = []
+        if self.target_default:
+            defaults.append(ICanHasDefaultGitRepository(self.target))
+        if self.owner_default:
+            if IProduct.providedBy(self.target):
+                factory = getUtility(IPersonProductFactory)
+                default = factory.create(self.owner, self.target)
+            elif IDistributionSourcePackage.providedBy(self.target):
+                factory = getUtility(IPersonDistributionSourcePackageFactory)
+                default = factory.create(self.owner, self.target)
+            else:
+                # Also enforced by database constraint.
+                raise AssertionError(
+                    "Only projects or packages can have owner-target default "
+                    "repositories.")
+            defaults.append(ICanHasDefaultGitRepository(default))
+        return sorted(defaults)
 
     def getRepositoryIdentities(self):
         """See `IGitRepository`."""

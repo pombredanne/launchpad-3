@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Interfaces including and related to IProduct."""
@@ -837,6 +837,12 @@ class IProductView(
         The number of milestones returned per series is limited.
         """
 
+    def getDefaultGitRepository():
+        """Get the default Git repository for this project.
+
+        :return: An `IGitRepository`, or None.
+        """
+
 
 class IProductEditRestricted(IOfficialBugTagTargetRestricted):
     """`IProduct` properties which require launchpad.Edit permission."""
@@ -882,6 +888,12 @@ class IProductEditRestricted(IOfficialBugTagTargetRestricted):
         Iterate through exceptions explaining why the type should not be
         changed.  Has the side-effect of creating a commercial subscription if
         permitted.
+        """
+
+    def setDefaultGitRepository(git_repository):
+        """Set the default Git repository for this project.
+
+        :param git_repository: An `IGitRepository`, or None to unset.
         """
 
 

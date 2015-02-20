@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementation classes for a Person."""
@@ -140,7 +140,9 @@ from lp.bugs.interfaces.bugtasksearch import (
     )
 from lp.bugs.model.bugtarget import HasBugsBase
 from lp.bugs.model.structuralsubscription import StructuralSubscription
+from lp.code.errors import GitTargetError
 from lp.code.interfaces.branchcollection import IAllBranches
+from lp.code.interfaces.gitrepository import IGitRepositorySet
 from lp.code.model.hasbranches import (
     HasBranchesMixin,
     HasMergeProposalsMixin,
@@ -3248,6 +3250,27 @@ class Person(
         # Create the required access policy grant.
         grants = [(policy, self, self)]
         getUtility(IAccessPolicyGrantSource).grant(grants)
+
+    def getDefaultGitRepository(self, target):
+        """See `IPerson`."""
+        return getUtility(IGitRepositorySet).getDefaultRepository(target, self)
+
+    def setDefaultGitRepository(self, target, git_repository):
+        """See `IPerson`."""
+        if IPerson.providedBy(target):
+            raise GitTargetError(
+                "Cannot set a person's default Git repository for a person, "
+                "only for a project or a package.")
+        if git_repository is not None:
+            if git_repository.target != target:
+                raise GitTargetError(
+                    "Cannot set default Git repository to one attached to "
+                    "another target.")
+            git_repository.setOwnerDefault(True)
+        else:
+            previous = self.getDefaultGitRepository(target)
+            if previous is not None:
+                previous.setOwnerDefault(False)
 
 
 class PersonSet:

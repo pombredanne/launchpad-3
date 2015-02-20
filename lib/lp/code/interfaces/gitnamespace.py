@@ -76,6 +76,14 @@ class IGitNamespace(Interface):
         :return: `IGitRepository` if found, otherwise 'default'.
         """
 
+    def getDefault():
+        """Find the default repository for this namespace.
+
+        This returns owner-target defaults, e.g. `lp:~owner/project`.  For
+        target defaults such as `lp:project`, use
+        `IGitRepositorySet.getDefaultForTarget` instead.
+        """
+
     def __eq__(other):
         """Is this namespace the same as another namespace?"""
 

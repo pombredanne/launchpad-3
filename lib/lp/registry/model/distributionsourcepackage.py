@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Classes to represent source packages in a distribution."""
@@ -32,6 +32,7 @@ from storm.locals import (
     Unicode,
     )
 import transaction
+from zope.component import getUtility
 from zope.interface import implements
 
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
@@ -39,6 +40,8 @@ from lp.bugs.model.bugtarget import BugTargetBase
 from lp.bugs.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
     )
+from lp.code.errors import GitTargetError
+from lp.code.interfaces.gitrepository import IGitRepositorySet
 from lp.code.model.hasbranches import (
     HasBranchesMixin,
     HasMergeProposalsMixin,
@@ -447,6 +450,23 @@ class DistributionSourcePackage(BugTargetBase,
         """See `IDistributionSourcePackage`."""
         return [dspr for (dspr, pubs) in
                 self.getReleasesAndPublishingHistory()]
+
+    def getDefaultGitRepository(self):
+        """See `IDistributionSourcePackage`."""
+        return getUtility(IGitRepositorySet).getDefaultRepository(self)
+
+    def setDefaultGitRepository(self, git_repository):
+        """See `IDistributionSourcePackage`."""
+        if git_repository is not None:
+            if git_repository.target != self:
+                raise GitTargetError(
+                    "Cannot set default Git repository to one attached to "
+                    "another target.")
+            git_repository.setTargetDefault(True)
+        else:
+            previous = self.getDefaultGitRepository()
+            if previous is not None:
+                previous.setTargetDefault(False)
 
     def __eq__(self, other):
         """See `IDistributionSourcePackage`."""

@@ -516,6 +516,7 @@
                 findRelatedArchivePublications
                 findRelatedArchives
                 getBranches
+                getDefaultGitRepository
                 getMergeProposals
                 getReleasesAndPublishingHistory
                 getUsedBugTagsWithOpenCounts
@@ -528,11 +529,17 @@
                 personHasDriverRights
                 publishing_history
                 releases
+                setDefaultGitRepository
                 sourcepackagename
                 subscribers
                 summary
                 title
                 upstream_product"/>
+        <require
+            permission="launchpad.Edit"
+            set_attributes="
+                setDefaultGitRepository
+                " />
 
         <!-- IStructuralSubscriptionTarget -->
 
