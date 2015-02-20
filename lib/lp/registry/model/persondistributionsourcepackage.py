@@ -37,3 +37,12 @@ class PersonDistributionSourcePackage:
     def displayname(self):
         return '%s in %s' % (
             self.person.displayname, self.distro_source_package.displayname)
+
+    def __eq__(self, other):
+        return (
+            IPersonDistributionSourcePackage.providedBy(other) and
+            self.person.id == other.person.id and
+            self.distro_source_package == other.distro_source_package)
+
+    def __ne__(self, other):
+        return not self == other
