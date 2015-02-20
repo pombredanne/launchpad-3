@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -914,7 +914,7 @@ class Branch(SQLBase, BzrIdentityMixin):
             subscription.review_level = code_review_level
         # Grant the subscriber access if they can't see the branch.
         service = getUtility(IService, 'sharing')
-        ignored, branches, ignored = service.getVisibleArtifacts(
+        _, branches, _, _ = service.getVisibleArtifacts(
             person, branches=[self], ignore_permissions=True)
         if not branches:
             service.ensureAccessGrants(
@@ -928,7 +928,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         # currently accessible to the person but which the subscribed_by user
         # has edit permissions for.
         service = getUtility(IService, 'sharing')
-        ignored, invisible_stacked_branches = service.getInvisibleArtifacts(
+        _, invisible_stacked_branches, _ = service.getInvisibleArtifacts(
             person, branches=self.getStackedOnBranches())
         editable_stacked_on_branches = [
             branch for branch in invisible_stacked_branches

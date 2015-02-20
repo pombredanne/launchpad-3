@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -758,7 +758,7 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
             # Grant the subscriber access if they can't see the
             # specification.
             service = getUtility(IService, 'sharing')
-            ignored, ignored, shared_specs = service.getVisibleArtifacts(
+            _, _, _, shared_specs = service.getVisibleArtifacts(
                 person, specifications=[self], ignore_permissions=True)
             if not shared_specs:
                 service.ensureAccessGrants(

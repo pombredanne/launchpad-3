@@ -1,4 +1,4 @@
-# Copyright 2012-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2012-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Classes for pillar and artifact sharing service."""
@@ -194,10 +194,12 @@ class SharingService:
 
     @available_with_permission('launchpad.Driver', 'pillar')
     def getSharedArtifacts(self, pillar, person, user, include_bugs=True,
-                           include_branches=True, include_specifications=True):
+                           include_branches=True, include_gitrepositories=True,
+                           include_specifications=True):
         """See `ISharingService`."""
         bug_ids = set()
         branch_ids = set()
+        gitrepository_ids = set()
         specification_ids = set()
         for artifact in self.getArtifactGrantsForPersonOnPillar(
             pillar, person):
@@ -205,6 +207,8 @@ class SharingService:
                 bug_ids.add(artifact.bug_id)
             elif artifact.branch_id and include_branches:
                 branch_ids.add(artifact.branch_id)
+            elif artifact.gitrepository_id and include_gitrepositories:
+                gitrepository_ids.add(artifact.gitrepository_id)
             elif artifact.specification_id and include_specifications:
                 specification_ids.add(artifact.specification_id)
 
@@ -221,11 +225,14 @@ class SharingService:
             wanted_branches = all_branches.visibleByUser(user).withIds(
                 *branch_ids)
             branches = list(wanted_branches.getBranches())
+        # Load the Git repositories.
+        gitrepositories = []
+        # XXX cjwatson 2015-02-16: Fill in once IGitCollection is in place.
         specifications = []
         if specification_ids:
             specifications = load(Specification, specification_ids)
 
-        return bugtasks, branches, specifications
+        return bugtasks, branches, gitrepositories, specifications
 
     def checkPillarArtifactAccess(self, pillar, user):
         """See `ISharingService`."""
@@ -245,25 +252,33 @@ class SharingService:
     @available_with_permission('launchpad.Driver', 'pillar')
     def getSharedBugs(self, pillar, person, user):
         """See `ISharingService`."""
-        bugtasks, ignore, ignore = self.getSharedArtifacts(
+        bugtasks, _, _, _ = self.getSharedArtifacts(
             pillar, person, user, include_branches=False,
-            include_specifications=False)
+            include_gitrepositories=False, include_specifications=False)
         return bugtasks
 
     @available_with_permission('launchpad.Driver', 'pillar')
     def getSharedBranches(self, pillar, person, user):
         """See `ISharingService`."""
-        ignore, branches, ignore = self.getSharedArtifacts(
+        _, branches, _, _ = self.getSharedArtifacts(
             pillar, person, user, include_bugs=False,
-            include_specifications=False)
+            include_gitrepositories=False, include_specifications=False)
         return branches
+
+    @available_with_permission('launchpad.Driver', 'pillar')
+    def getSharedGitRepositories(self, pillar, person, user):
+        """See `ISharingService`."""
+        _, _, gitrepositories, _ = self.getSharedArtifacts(
+            pillar, person, user, include_bugs=False, include_branches=False,
+            include_specifications=False)
+        return gitrepositories
 
     @available_with_permission('launchpad.Driver', 'pillar')
     def getSharedSpecifications(self, pillar, person, user):
         """See `ISharingService`."""
-        ignore, ignore, specifications = self.getSharedArtifacts(
-            pillar, person, user, include_bugs=False,
-            include_branches=False)
+        _, _, _, specifications = self.getSharedArtifacts(
+            pillar, person, user, include_bugs=False, include_branches=False,
+            include_gitrepositories=False)
         return specifications
 
     def _getVisiblePrivateSpecificationIDs(self, person, specifications):
@@ -300,11 +315,13 @@ class SharingService:
             TeamParticipation.personID == person.id,
             In(Specification.id, spec_ids)))
 
-    def getVisibleArtifacts(self, person, branches=None, bugs=None,
-                            specifications=None, ignore_permissions=False):
+    def getVisibleArtifacts(self, person, bugs=None, branches=None,
+                            gitrepositories=None, specifications=None,
+                            ignore_permissions=False):
         """See `ISharingService`."""
         bugs_by_id = {}
         branches_by_id = {}
+        gitrepositories_by_id = {}
         for bug in bugs or []:
             if (not ignore_permissions
                 and not check_permission('launchpad.View', bug)):
@@ -315,6 +332,11 @@ class SharingService:
                 and not check_permission('launchpad.View', branch)):
                 raise Unauthorized
             branches_by_id[branch.id] = branch
+        for gitrepository in gitrepositories or []:
+            if (not ignore_permissions
+                and not check_permission('launchpad.View', gitrepository)):
+                raise Unauthorized
+            gitrepositories_by_id[gitrepository.id] = gitrepository
         for spec in specifications or []:
             if (not ignore_permissions
                 and not check_permission('launchpad.View', spec)):
@@ -336,6 +358,11 @@ class SharingService:
                 *branches_by_id.keys())
             visible_branches = list(wanted_branches.getBranches())
 
+        # Load the Git repositories.
+        visible_gitrepositories = []
+        # XXX cjwatson 2015-02-16: Fill in once IGitCollection is in place.
+
+        # Load the specifications.
         visible_specs = []
         if specifications:
             visible_private_spec_ids = self._getVisiblePrivateSpecificationIDs(
@@ -344,16 +371,22 @@ class SharingService:
                 spec for spec in specifications
                 if spec.id in visible_private_spec_ids or not spec.private]
 
-        return visible_bugs, visible_branches, visible_specs
+        return (
+            visible_bugs, visible_branches, visible_gitrepositories,
+            visible_specs)
 
-    def getInvisibleArtifacts(self, person, branches=None, bugs=None):
+    def getInvisibleArtifacts(self, person, bugs=None, branches=None,
+                              gitrepositories=None):
         """See `ISharingService`."""
         bugs_by_id = {}
         branches_by_id = {}
+        gitrepositories_by_id = {}
         for bug in bugs or []:
             bugs_by_id[bug.id] = bug
         for branch in branches or []:
             branches_by_id[branch.id] = branch
+        for gitrepository in gitrepositories or []:
+            gitrepositories_by_id[gitrepository.id] = gitrepository
 
         # Load the bugs.
         visible_bug_ids = set()
@@ -376,7 +409,11 @@ class SharingService:
                 branches_by_id[branch_id]
                 for branch_id in invisible_branch_ids]
 
-        return invisible_bugs, invisible_branches
+        # Load the Git repositories.
+        invisible_gitrepositories = []
+        # XXX cjwatson 2015-02-16: Fill in once IGitCollection is in place.
+
+        return invisible_bugs, invisible_branches, invisible_gitrepositories
 
     def getPeopleWithoutAccess(self, concrete_artifact, people):
         """See `ISharingService`."""
@@ -722,42 +759,51 @@ class SharingService:
         return invisible_types
 
     @available_with_permission('launchpad.Edit', 'pillar')
-    def revokeAccessGrants(self, pillar, grantee, user, branches=None,
-                           bugs=None, specifications=None):
+    def revokeAccessGrants(self, pillar, grantee, user, bugs=None,
+                           branches=None, gitrepositories=None,
+                           specifications=None):
         """See `ISharingService`."""
 
-        if not branches and not bugs and not specifications:
+        if (not bugs and not branches and not gitrepositories and
+            not specifications):
             raise ValueError(
-                "Either bugs, branches or specifications must be specified")
+                "Either bugs, branches, gitrepositories, or specifications "
+                "must be specified")
 
         artifacts = []
-        if branches:
-            artifacts.extend(branches)
         if bugs:
             artifacts.extend(bugs)
+        if branches:
+            artifacts.extend(branches)
+        if gitrepositories:
+            artifacts.extend(gitrepositories)
         if specifications:
             artifacts.extend(specifications)
-        # Find the access artifacts associated with the bugs and branches.
+        # Find the access artifacts associated with the bugs, branches, Git
+        # repositories, and specifications.
         accessartifact_source = getUtility(IAccessArtifactSource)
         artifacts_to_delete = accessartifact_source.find(artifacts)
-        # Revoke access to bugs/branches for the specified grantee.
+        # Revoke access to artifacts for the specified grantee.
         getUtility(IAccessArtifactGrantSource).revokeByArtifact(
             artifacts_to_delete, [grantee])
 
         # Create a job to remove subscriptions for artifacts the grantee can no
         # longer see.
-        getUtility(IRemoveArtifactSubscriptionsJobSource).create(
+        return getUtility(IRemoveArtifactSubscriptionsJobSource).create(
             user, artifacts, grantee=grantee, pillar=pillar)
 
-    def ensureAccessGrants(self, grantees, user, branches=None, bugs=None,
-                           specifications=None, ignore_permissions=False):
+    def ensureAccessGrants(self, grantees, user, bugs=None, branches=None,
+                           gitrepositories=None, specifications=None,
+                           ignore_permissions=False):
         """See `ISharingService`."""
 
         artifacts = []
-        if branches:
-            artifacts.extend(branches)
         if bugs:
             artifacts.extend(bugs)
+        if branches:
+            artifacts.extend(branches)
+        if gitrepositories:
+            artifacts.extend(gitrepositories)
         if specifications:
             artifacts.extend(specifications)
         if not ignore_permissions:
@@ -767,15 +813,15 @@ class SharingService:
                 if not check_permission('launchpad.Edit', artifact):
                     raise Unauthorized
 
-        # Ensure there are access artifacts associated with the bugs and
-        # branches.
+        # Ensure there are access artifacts associated with the bugs,
+        # branches, Git repositories, and specifications.
         artifacts = getUtility(IAccessArtifactSource).ensure(artifacts)
         aagsource = getUtility(IAccessArtifactGrantSource)
         artifacts_with_grants = [
             artifact_grant.abstract_artifact
             for artifact_grant in
             aagsource.find(product(artifacts, grantees))]
-        # Create access to bugs/branches for the specified grantee for which a
+        # Create access to artifacts for the specified grantee for which a
         # grant does not already exist.
         missing_artifacts = set(artifacts) - set(artifacts_with_grants)
         getUtility(IAccessArtifactGrantSource).grant(
