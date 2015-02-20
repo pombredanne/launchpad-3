@@ -1669,8 +1669,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             revision_date=revision_date)
         return branch.createBranchRevision(sequence, revision)
 
-    def makeGitRepository(self, owner=None, project=_DEFAULT,
-                          distro_source_package=None, registrant=None,
+    def makeGitRepository(self, owner=None, target=_DEFAULT, registrant=None,
                           name=None, information_type=None,
                           **optional_repository_args):
         """Create and return a new, arbitrary GitRepository.
@@ -1683,14 +1682,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if name is None:
             name = self.getUniqueString('gitrepository').decode('utf-8')
 
-        if distro_source_package is None:
-            if project is _DEFAULT:
-                project = self.makeProduct()
-            target = project
-        else:
-            assert project is _DEFAULT, (
-                "Passed both distribution source package and project details")
-            target = distro_source_package
+        if target is _DEFAULT:
+            target = self.makeProduct()
 
         if registrant is None:
             if owner.is_team:
@@ -1727,8 +1720,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if distro_source_package is None:
             distro_source_package = self.makeDistributionSourcePackage(
                 distribution=distribution, sourcepackagename=sourcepackagename)
-        return self.makeGitRepository(
-            distro_source_package=distro_source_package, **kwargs)
+        return self.makeGitRepository(target=distro_source_package, **kwargs)
 
     def makePersonalGitRepository(self, owner=None, **kwargs):
         """Make a personal Git repository on an arbitrary person.
@@ -1737,8 +1729,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         """
         if owner is None:
             owner = self.makePerson()
-        return self.makeGitRepository(
-            owner=owner, project=None, distro_source_package=None, **kwargs)
+        return self.makeGitRepository(owner=owner, target=None, **kwargs)
 
     def makeProjectGitRepository(self, project=None, **kwargs):
         """Make a project Git repository on an arbitrary project.
@@ -1747,7 +1738,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         """
         if project is None:
             project = self.makeProduct()
-        return self.makeGitRepository(project=project, **kwargs)
+        return self.makeGitRepository(target=project, **kwargs)
 
     def makeAnyGitRepository(self, **kwargs):
         """Make a Git repository without caring about its container.
