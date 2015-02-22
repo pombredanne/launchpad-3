@@ -14,8 +14,8 @@ class TestQuestionSearch(TestCaseWithFactory):
 
     def test_projectgroup_with_inactive_products_not_in_results(self):
         group = self.factory.makeProject()
-        product = self.factory.makeProduct(project=group)
-        inactive = self.factory.makeProduct(project=group)
+        product = self.factory.makeProduct(projectgroup=group)
+        inactive = self.factory.makeProduct(projectgroup=group)
         question = self.factory.makeQuestion(target=product)
         self.factory.makeQuestion(target=inactive)
         removeSecurityProxy(inactive).active = False

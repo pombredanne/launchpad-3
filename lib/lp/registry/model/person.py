@@ -146,6 +146,7 @@ from lp.code.model.hasbranches import (
     HasMergeProposalsMixin,
     HasRequestedReviewsMixin,
     )
+from lp.code.model.hasgitrepositories import HasGitRepositoriesMixin
 from lp.registry.enums import (
     EXCLUSIVE_TEAM_POLICY,
     INCLUSIVE_TEAM_POLICY,
@@ -476,7 +477,7 @@ _readonly_person_settings = readonly_settings(
 class Person(
     SQLBase, HasBugsBase, HasSpecificationsMixin, HasTranslationImportsMixin,
     HasBranchesMixin, HasMergeProposalsMixin, HasRequestedReviewsMixin,
-    QuestionsPersonMixin):
+    QuestionsPersonMixin, HasGitRepositoriesMixin):
     """A Person."""
 
     implements(IPerson, IHasIcon, IHasLogo, IHasMugshot)
@@ -1001,7 +1002,7 @@ class Person(
             (Product, Distribution, KarmaCache.karmavalue),
              KarmaCache.personID == self.id,
              KarmaCache.category == None,
-             KarmaCache.project == None,
+             KarmaCache.projectgroup == None,
              Or(
                 And(Product.id != None, Product.active == True,
                     ProductSet.getProductPrivacyFilter(user)),
@@ -1264,7 +1265,7 @@ class Person(
             KarmaCache.category == KarmaCategory.id,
             KarmaCache.person == self.id,
             KarmaCache.product == None,
-            KarmaCache.project == None,
+            KarmaCache.projectgroup == None,
             KarmaCache.distribution == None,
             KarmaCache.sourcepackagename == None)
         result = store.find((KarmaCache, KarmaCategory), conditions)

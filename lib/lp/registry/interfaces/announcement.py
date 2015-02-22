@@ -67,7 +67,7 @@ class IAnnouncement(Interface):
     # The potential pillars to which the Announcement could belong, of which
     # only 1 should not be None.
     product = Attribute("The product for this announcement.")
-    project = Attribute("The project for this announcement.")
+    projectgroup = Attribute("The project group for this announcement.")
     distribution = Attribute("The distribution for this announcement.")
 
     target = Attribute("The pillar to which this announcement belongs.")
@@ -115,5 +115,3 @@ class IAnnouncementSet(IHasAnnouncements):
 
     displayname = Attribute("Launchpad")
     title = Attribute("Launchpad title")
-
-

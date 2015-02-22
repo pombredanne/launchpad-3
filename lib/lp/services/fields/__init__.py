@@ -795,7 +795,7 @@ class LocationField(Field):
 
 
 class PillarNameField(BlacklistableContentNameField):
-    """Base field used for names of distros/projects/products."""
+    """Base field used for names of distros/project groups/products."""
 
     errormessage = _("%s is already used by another project")
 

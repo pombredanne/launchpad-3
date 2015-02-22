@@ -399,7 +399,8 @@ class TestBuildViews(TestCaseWithFactory):
             # BPBs in certain states need a bit tweaking to appear in
             # the result of getBuildRecords().
             if status == BuildStatus.FULLYBUILT:
-                build.updateStatus(BuildStatus.BUILDING)
+                build.updateStatus(
+                    BuildStatus.BUILDING, force_invalid_transition=True)
                 build.updateStatus(BuildStatus.FULLYBUILT)
             elif status in (BuildStatus.NEEDSBUILD, BuildStatus.BUILDING):
                 build.queueBuild()

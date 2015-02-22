@@ -140,7 +140,7 @@ class KarmaCache(SQLBase):
         dbName='karmavalue', notNull=True)
     product = ForeignKey(
         dbName='product', foreignKey='Product', notNull=False)
-    project = ForeignKey(
+    projectgroup = ForeignKey(
         dbName='project', foreignKey='ProjectGroup', notNull=False)
     distribution = ForeignKey(
         dbName='distribution', foreignKey='Distribution', notNull=False)
@@ -154,21 +154,24 @@ class KarmaCacheManager:
     implements(IKarmaCacheManager)
 
     def new(self, value, person_id, category_id, product_id=None,
-            distribution_id=None, sourcepackagename_id=None, project_id=None):
+            distribution_id=None, sourcepackagename_id=None,
+            projectgroup_id=None):
         """See IKarmaCacheManager."""
         return KarmaCache(
             karmavalue=value, person=person_id, category=category_id,
             product=product_id, distribution=distribution_id,
-            sourcepackagename=sourcepackagename_id, project=project_id)
+            sourcepackagename=sourcepackagename_id,
+            projectgroup=projectgroup_id)
 
     def updateKarmaValue(self, value, person_id, category_id, product_id=None,
                          distribution_id=None, sourcepackagename_id=None,
-                         project_id=None):
+                         projectgroup_id=None):
         """See IKarmaCacheManager."""
         entry = self._getEntry(
             person_id=person_id, category_id=category_id,
             product_id=product_id, distribution_id=distribution_id,
-            project_id=project_id, sourcepackagename_id=sourcepackagename_id)
+            projectgroup_id=projectgroup_id,
+            sourcepackagename_id=sourcepackagename_id)
         if entry is None:
             raise NotFoundError("KarmaCache not found: %s" % vars())
         else:
@@ -177,7 +180,7 @@ class KarmaCacheManager:
 
     def _getEntry(self, person_id, category_id, product_id=None,
                   distribution_id=None, sourcepackagename_id=None,
-                  project_id=None):
+                  projectgroup_id=None):
         """Return the KarmaCache entry with the given arguments.
 
         Return None if it's not found.
@@ -187,7 +190,7 @@ class KarmaCacheManager:
             KarmaCache.personID == person_id,
             KarmaCache.categoryID == category_id,
             KarmaCache.productID == product_id,
-            KarmaCache.projectID == project_id,
+            KarmaCache.projectgroupID == projectgroup_id,
             KarmaCache.distributionID == distribution_id,
             KarmaCache.sourcepackagenameID == sourcepackagename_id).one()
 
@@ -244,10 +247,10 @@ class KarmaContextMixin:
         elif IDistribution.providedBy(self):
             condition = KarmaCache.distributionID == self.id
         elif IProjectGroup.providedBy(self):
-            condition = KarmaCache.projectID == self.id
+            condition = KarmaCache.projectgroupID == self.id
         else:
             raise AssertionError(
-                "Not a product, project or distribution: %r" % self)
+                "Not a product, project group or distribution: %r" % self)
 
         if category is not None:
             category = category.id

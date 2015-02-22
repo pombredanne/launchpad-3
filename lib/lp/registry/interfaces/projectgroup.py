@@ -88,7 +88,7 @@ from lp.services.fields import (
 from lp.translations.interfaces.translationpolicy import ITranslationPolicy
 
 
-class ProjectNameField(PillarNameField):
+class ProjectGroupNameField(PillarNameField):
 
     @property
     def _content_iface(self):
@@ -103,7 +103,7 @@ class IProjectGroupModerate(IPillar):
             description=_("Whether or not this project group has been "
                           "reviewed.")))
     name = exported(
-        ProjectNameField(
+        ProjectGroupNameField(
             title=_('Name'),
             required=True,
             description=_(
@@ -420,8 +420,8 @@ class IProjectGroupSeries(IHasSpecifications, IHasAppointedDriver, IHasIcon,
     """Interface for ProjectGroupSeries.
 
     This class provides the specifications related to a "virtual project
-    series", i.e., to those specifactions that are assigned to a series
-    of a product which is part of this project.
+    group series", i.e., to those specifications that are assigned to a
+    series of a product which is part of this project group.
     """
     name = TextLine(title=u'The name of the product series.',
                     required=True, readonly=True,
@@ -434,6 +434,7 @@ class IProjectGroupSeries(IHasSpecifications, IHasAppointedDriver, IHasIcon,
     title = TextLine(title=u'The title for this project series.',
                      required=True, readonly=True)
 
-    project = Object(schema=IProjectGroup,
-                     title=u"The project this series belongs to",
-                     required=True, readonly=True)
+    projectgroup = Object(
+        schema=IProjectGroup,
+        title=u"The project group this series belongs to",
+        required=True, readonly=True)

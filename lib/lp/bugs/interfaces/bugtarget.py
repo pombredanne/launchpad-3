@@ -28,7 +28,6 @@ from lazr.restful.declarations import (
     export_read_operation,
     export_write_operation,
     exported,
-    LAZR_WEBSERVICE_EXPORTED,
     operation_for_version,
     operation_parameters,
     operation_removed_in_version,
@@ -67,6 +66,10 @@ from lp.bugs.interfaces.bugtasksearch import (
     )
 from lp.registry.enums import BugSharingPolicy
 from lp.services.fields import Tag
+from lp.services.webservice.apihelpers import (
+    patch_plain_parameter_type,
+    patch_reference_property,
+    )
 
 
 search_tasks_params_common = {
@@ -352,9 +355,9 @@ class IBugTarget(IHasBugs):
 
 # We assign the schema for an `IBugTask` attribute here
 # in order to avoid circular dependencies.
-IBugTask['target'].schema = IBugTarget
-IBugTask['transitionToTarget'].getTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)['params']['target'].schema = IBugTarget
+patch_reference_property(IBugTask, 'target', IBugTarget)
+patch_plain_parameter_type(
+    IBugTask, 'transitionToTarget', 'target', IBugTarget)
 
 
 class BugDistroSeriesTargetDetails:

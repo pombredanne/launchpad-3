@@ -83,6 +83,10 @@ from lp.code.interfaces.codereviewcomment import (
     )
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.code.interfaces.diff import IPreviewDiff
+from lp.code.interfaces.gitrepository import (
+    IGitRepository,
+    user_has_special_git_repository_access,
+    )
 from lp.code.interfaces.sourcepackagerecipe import ISourcePackageRecipe
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild,
@@ -1151,13 +1155,36 @@ class BugSuperviseDistributionSourcePackage(AuthorizationBase):
 
 
 class EditDistributionSourcePackage(AuthorizationBase):
-    """DistributionSourcePackage is not editable.
-
-    But EditStructuralSubscription needs launchpad.Edit defined on all
-    targets.
-    """
     permission = 'launchpad.Edit'
     usedfor = IDistributionSourcePackage
+
+    def _checkUpload(self, user, archive, distroseries):
+        # We use verifyUpload() instead of checkUpload() because we don't
+        # have a pocket.  It returns the reason the user can't upload or
+        # None if they are allowed.
+        if distroseries is None:
+            return False
+        reason = archive.verifyUpload(
+            user.person, sourcepackagename=self.obj.sourcepackagename,
+            component=None, distroseries=distroseries, strict_component=False)
+        return reason is None
+
+    def checkAuthenticated(self, user):
+        """Anyone who can upload a package can edit it.
+
+        Checking upload permission requires a distroseries; a reasonable
+        approximation is to check whether the user can upload the package to
+        the current series.
+        """
+        if user.in_admin:
+            return True
+
+        distribution = self.obj.distribution
+        if user.inTeam(distribution.owner):
+            return True
+
+        return self._checkUpload(
+            user, distribution.main_archive, distribution.currentseries)
 
 
 class BugTargetOwnerOrBugSupervisorOrAdmins(AuthorizationBase):
@@ -2176,6 +2203,57 @@ class AdminBranch(AuthorizationBase):
         return user.in_admin
 
 
+class ViewGitRepository(AuthorizationBase):
+    """Controls visibility of Git repositories.
+
+    A person can see the repository if the repository is public, they are
+    the owner of the repository, they are in the team that owns the
+    repository, they have an access grant to the repository, or they are a
+    Launchpad administrator.
+    """
+    permission = 'launchpad.View'
+    usedfor = IGitRepository
+
+    def checkAuthenticated(self, user):
+        return self.obj.visibleByUser(user.person)
+
+    def checkUnauthenticated(self):
+        return self.obj.visibleByUser(None)
+
+
+class EditGitRepository(AuthorizationBase):
+    """The owner or admins can edit Git repositories."""
+    permission = 'launchpad.Edit'
+    usedfor = IGitRepository
+
+    def checkAuthenticated(self, user):
+        # XXX cjwatson 2015-01-23: People who can upload source packages to
+        # a distribution should be able to push to the corresponding
+        # "official" repositories, once those are defined.
+        return (
+            user.inTeam(self.obj.owner) or
+            user_has_special_git_repository_access(user.person))
+
+
+class ModerateGitRepository(EditGitRepository):
+    """The owners, project owners, and admins can moderate Git repositories."""
+    permission = 'launchpad.Moderate'
+
+    def checkAuthenticated(self, user):
+        if super(ModerateGitRepository, self).checkAuthenticated(user):
+            return True
+        target = self.obj.target
+        if (target is not None and IProduct.providedBy(target) and
+            user.inTeam(target.owner)):
+            return True
+        return user.in_commercial_admin
+
+
+class AdminGitRepository(AdminByAdminsTeam):
+    """The admins can administer Git repositories."""
+    usedfor = IGitRepository
+
+
 class AdminDistroSeriesTranslations(AuthorizationBase):
     permission = 'launchpad.TranslationsAdmin'
     usedfor = IDistroSeries
@@ -2858,8 +2936,7 @@ class ViewPublisherConfig(AdminByAdminsTeam):
     usedfor = IPublisherConfig
 
 
-class EditSourcePackage(AuthorizationBase):
-    permission = 'launchpad.Edit'
+class EditSourcePackage(EditDistributionSourcePackage):
     usedfor = ISourcePackage
 
     def checkAuthenticated(self, user):
@@ -2871,15 +2948,8 @@ class EditSourcePackage(AuthorizationBase):
         if user.inTeam(distribution.owner):
             return True
 
-        # We use verifyUpload() instead of checkUpload() because
-        # we don't have a pocket.
-        # It returns the reason the user can't upload
-        # or None if they are allowed.
-        reason = distribution.main_archive.verifyUpload(
-            user.person, distroseries=self.obj.distroseries,
-            sourcepackagename=self.obj.sourcepackagename,
-            component=None, strict_component=False)
-        return reason is None
+        return self._checkUpload(
+            user, distribution.main_archive, self.obj.distroseries)
 
 
 class ViewLiveFS(DelegatedAuthorization):

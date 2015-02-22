@@ -126,8 +126,8 @@ class IBranchCollection(Interface):
     def inProduct(product):
         """Restrict the collection to branches in 'product'."""
 
-    def inProject(project):
-        """Restrict the collection to branches in 'project'."""
+    def inProjectGroup(projectgroup):
+        """Restrict the collection to branches in 'projectgroup'."""
 
     def inSourcePackage(package):
         """Restrict the collection to branches in 'package'.

@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -556,6 +556,11 @@
                 bug_reporting_guidelines
                 enable_bugfiling_duplicate_search
                 "/>
+
+        <!-- IHasGitRepositories -->
+
+        <allow
+            interface="lp.code.interfaces.hasgitrepositories.IHasGitRepositories" />
     </class>
     <adapter
         provides="lp.registry.interfaces.distribution.IDistribution"
@@ -1320,7 +1325,7 @@
                 official_codehosting
                 owner
                 programminglang
-                project
+                projectgroup
                 redeemSubscriptionVoucher
                 releaseroot
                 screenshotsurl
@@ -2063,6 +2068,27 @@
         provides="lp.registry.interfaces.packaging.IPackagingUtil">
         <allow
             interface="lp.registry.interfaces.packaging.IPackagingUtil"/>
+    </securedutility>
+
+    <!-- PersonDistributionSourcePackage -->
+
+    <class
+        class="lp.registry.model.persondistributionsourcepackage.PersonDistributionSourcePackage">
+        <allow
+            interface="lp.registry.interfaces.persondistributionsourcepackage.IPersonDistributionSourcePackage" />
+    </class>
+
+    <adapter
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
+        for="lp.registry.interfaces.persondistributionsourcepackage.IPersonDistributionSourcePackage"
+        factory="lp.registry.browser.persondistributionsourcepackage.PersonDistributionSourcePackageBreadcrumb"
+        permission="zope.Public"/>
+
+    <securedutility
+        component="lp.registry.model.persondistributionsourcepackage.PersonDistributionSourcePackage"
+        provides="lp.registry.interfaces.persondistributionsourcepackage.IPersonDistributionSourcePackageFactory">
+        <allow
+            interface="lp.registry.interfaces.persondistributionsourcepackage.IPersonDistributionSourcePackageFactory"/>
     </securedutility>
 
     <!-- PersonNotification -->

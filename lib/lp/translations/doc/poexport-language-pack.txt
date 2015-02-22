@@ -413,7 +413,7 @@ Librarian.
 Then, export with a date limit: we should only get the second PO file.
 The way to set date limits is setting when the base language pack was
 exported, thus, we set it and request an update export, which means we
-should get only files that where updated after 2000-01-02.
+should get only files that were updated after 2000-01-02.
 
     >>> series.language_pack_base.date_exported = d2000_01_02
     >>> transaction.commit()

@@ -1679,7 +1679,7 @@ class TestProjectGroupBugs(TestCaseWithFactory, BugTaskViewTestMixin):
         """Create a new product and add it to the project group."""
         product = self.factory.makeProduct(official_malone=tracks_bugs_in_lp)
         with person_logged_in(product.owner):
-            product.project = self.target
+            product.projectgroup = self.target
 
     def test_empty_project_group(self):
         # An empty project group does not use Launchpad for bugs.
@@ -2518,7 +2518,7 @@ class TestBugTaskListingItem(TestCaseWithFactory):
     def test_tag_urls_use_view_context(self):
         """urls contain the correct project group if target_context is None"""
         project_group = self.factory.makeProject()
-        product = self.factory.makeProduct(project=project_group)
+        product = self.factory.makeProduct(projectgroup=project_group)
         bug = self.factory.makeBug(target=product)
         with person_logged_in(bug.owner):
             bug.tags = ['foo']

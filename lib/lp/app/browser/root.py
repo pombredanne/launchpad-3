@@ -494,9 +494,12 @@ class LaunchpadSearchView(LaunchpadFormView):
         vocab = vocabulary_registry.get(
             None, 'DistributionOrProductOrProjectGroup')
         try:
-            return vocab.getTermByToken(name).value
+            pillar = vocab.getTermByToken(name).value
+            if check_permission("launchpad.View", pillar):
+                return pillar
         except LookupError:
-            return None
+            pass
+        return None
 
     def searchPages(self, query_terms, start=0):
         """Return the up to 20 pages that match the query_terms, or None.

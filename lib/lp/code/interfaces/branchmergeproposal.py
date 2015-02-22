@@ -85,6 +85,7 @@ from lp.services.job.interfaces.job import (
     IRunnableJob,
     )
 from lp.services.webapp.interfaces import ITableBatchNavigator
+from lp.services.webservice.apihelpers import patch_reference_property
 
 
 BRANCH_MERGE_PROPOSAL_FINAL_STATES = (
@@ -723,7 +724,7 @@ class IBranchMergeProposalGetter(Interface):
         """
 
 for name in ['supersedes', 'superseded_by']:
-    IBranchMergeProposal[name].schema = IBranchMergeProposal
+    patch_reference_property(IBranchMergeProposal, name, IBranchMergeProposal)
 
 
 class IMergeProposalNeedsReviewEmailJob(IRunnableJob):

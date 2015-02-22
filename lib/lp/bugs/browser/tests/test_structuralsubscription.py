@@ -110,7 +110,7 @@ class TestMilestoneStructuralSubscriptionTraversal(
         self.navigation = MilestoneNavigation
 
 
-class TestProjectStructuralSubscriptionTraversal(
+class TestProjectGroupStructuralSubscriptionTraversal(
     StructuralSubscriptionTraversalTestBase):
     """Test IStructuralSubscription traversal from IProjectGroup."""
 
@@ -180,8 +180,8 @@ class TestStructuralSubscribersPortletViewBase(TestCaseWithFactory):
             self.target, name='+portlet-structural-subscribers')
 
     def setUpTarget(self):
-        project = self.factory.makeProject()
-        self.target = self.factory.makeProduct(project=project)
+        projectgroup = self.factory.makeProject()
+        self.target = self.factory.makeProduct(projectgroup=projectgroup)
 
     def test_target_label(self):
         # The target_label attribute of StructuralSubscribersPortletView

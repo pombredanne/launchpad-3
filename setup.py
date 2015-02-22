@@ -55,6 +55,7 @@ setup(
         'lazr.restful',
         'lazr.jobrunner',
         'lazr.smtptest',
+        'lazr.sshserver',
         'lazr.testing',
         'lazr.uri',
         'lpjsmin',

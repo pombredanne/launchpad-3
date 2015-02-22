@@ -1398,17 +1398,6 @@ def ws_object(launchpad, obj):
     return launchpad.load(canonical_url(obj, request=api_request))
 
 
-class NestedTempfile(fixtures.Fixture):
-    """Nest all temporary files and directories inside a top-level one."""
-
-    def setUp(self):
-        super(NestedTempfile, self).setUp()
-        tempdir = fixtures.TempDir()
-        self.useFixture(tempdir)
-        patch = fixtures.MonkeyPatch("tempfile.tempdir", tempdir.path)
-        self.useFixture(patch)
-
-
 @contextmanager
 def monkey_patch(context, **kwargs):
     """In the ContextManager scope, monkey-patch values.

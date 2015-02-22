@@ -523,6 +523,7 @@ the bug so that they are not calculated for every recipient.
     ...     print ': '.join(header)
     Reply-To: Bug 4 <4@bugs.launchpad.net>
     Sender: bounces@canonical.com
+    X-Launchpad-Notification-Type: bug
     X-Launchpad-Bug: product=firefox; ...; assignee=None;
     X-Launchpad-Bug-Tags: bar foo
     X-Launchpad-Bug-Information-Type: Private Security

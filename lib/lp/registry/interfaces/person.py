@@ -59,7 +59,6 @@ from lazr.restful.declarations import (
     export_read_operation,
     export_write_operation,
     exported,
-    LAZR_WEBSERVICE_EXPORTED,
     mutator_for,
     operation_for_version,
     operation_parameters,
@@ -112,6 +111,7 @@ from lp.code.interfaces.hasbranches import (
     IHasMergeProposals,
     IHasRequestedReviews,
     )
+from lp.code.interfaces.hasgitrepositories import IHasGitRepositories
 from lp.code.interfaces.hasrecipes import IHasRecipes
 from lp.registry.enums import (
     EXCLUSIVE_TEAM_POLICY,
@@ -162,6 +162,12 @@ from lp.services.identity.interfaces.account import (
 from lp.services.identity.interfaces.emailaddress import IEmailAddress
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.interfaces import ILaunchpadApplication
+from lp.services.webservice.apihelpers import (
+    patch_collection_property,
+    patch_collection_return_type,
+    patch_plain_parameter_type,
+    patch_reference_property,
+    )
 from lp.services.worlddata.interfaces.language import ILanguage
 from lp.translations.interfaces.hastranslationimports import (
     IHasTranslationImports,
@@ -683,7 +689,7 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
                     IHasMergeProposals, IHasMugshot,
                     IHasLocation, IHasRequestedReviews, IObjectWithLocation,
                     IHasBugs, IHasRecipes, IHasTranslationImports,
-                    IPersonSettings, IQuestionsPerson):
+                    IPersonSettings, IQuestionsPerson, IHasGitRepositories):
     """IPerson attributes that require launchpad.View permission."""
     account = Object(schema=IAccount)
     accountID = Int(title=_('Account ID'), required=True, readonly=True)
@@ -2531,53 +2537,51 @@ for name in [
     'api_deactivatedmembers',
     'api_expiredmembers',
     ]:
-    IPersonViewRestricted[name].value_type.schema = IPerson
+    patch_collection_property(IPersonViewRestricted, name, IPerson)
 
-IPersonViewRestricted['sub_teams'].value_type.schema = ITeam
-IPersonViewRestricted['super_teams'].value_type.schema = ITeam
+patch_collection_property(IPersonViewRestricted, 'sub_teams', ITeam)
+patch_collection_property(IPersonViewRestricted, 'super_teams', ITeam)
 # XXX: salgado, 2008-08-01: Uncomment these when teams_*participated_in are
 # exported again.
-# IPersonViewRestricted['teams_participated_in'].value_type.schema = ITeam
-# IPersonViewRestricted[
-#   'teams_indirectly_participated_in'].value_type.schema = ITeam
+# patch_collection_property(
+#     IPersonViewRestricted, 'teams_participated_in', ITeam)
+# patch_collection_property(
+#     IPersonViewRestricted, 'teams_indirectly_participated_in', ITeam)
 
 # Fix schema of operation parameters. We need zope.deferredimport!
 params_to_fix = [
     # XXX: salgado, 2008-08-01: Uncomment these when they are exported again.
     # (IPersonViewRestricted['findPathToTeam'], 'team'),
     # (IPersonViewRestricted['inTeam'], 'team'),
-    (IPersonEditRestricted['join'], 'team'),
-    (IPersonEditRestricted['leave'], 'team'),
-    (IPersonEditRestricted['addMember'], 'person'),
-    (IPersonEditRestricted['acceptInvitationToBeMemberOf'], 'team'),
-    (IPersonEditRestricted['declineInvitationToBeMemberOf'], 'team'),
-    (IPersonEditRestricted['retractTeamMembership'], 'team'),
+    ('join', 'team'),
+    ('leave', 'team'),
+    ('addMember', 'person'),
+    ('acceptInvitationToBeMemberOf', 'team'),
+    ('declineInvitationToBeMemberOf', 'team'),
+    ('retractTeamMembership', 'team'),
     ]
 for method, name in params_to_fix:
-    method.queryTaggedValue(
-        'lazr.restful.exported')['params'][name].schema = IPerson
+    patch_plain_parameter_type(IPersonEditRestricted, method, name, IPerson)
 
 # Fix schema of operation return values.
 # XXX: salgado, 2008-08-01: Uncomment when findPathToTeam is exported again.
-# IPersonPublic['findPathToTeam'].queryTaggedValue(
-#     'lazr.webservice.exported')['return_type'].value_type.schema = IPerson
-IPersonViewRestricted['getMembersByStatus'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)['return_type'].value_type.schema = IPerson
-IPersonViewRestricted['getOwnedTeams'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)['return_type'].value_type.schema = ITeam
+# patch_collection_return_type(IPersonPublic, 'findPathToTeam', IPerson)
+patch_collection_return_type(
+    IPersonViewRestricted, 'getMembersByStatus', IPerson)
+patch_collection_return_type(IPersonViewRestricted, 'getOwnedTeams', ITeam)
 
 # Fix schema of ITeamMembership fields.  Has to be done here because of
 # circular dependencies.
 for name in ['team', 'person', 'last_changed_by']:
-    ITeamMembership[name].schema = IPerson
+    patch_reference_property(ITeamMembership, name, IPerson)
 
 # Fix schema of ITeamParticipation fields.  Has to be done here because of
 # circular dependencies.
 for name in ['team', 'person']:
-    ITeamParticipation[name].schema = IPerson
+    patch_reference_property(ITeamParticipation, name, IPerson)
 
 # Thank circular dependencies once again.
-IIrcID['person'].schema = IPerson
-IJabberID['person'].schema = IPerson
-IWikiName['person'].schema = IPerson
-IEmailAddress['person'].schema = IPerson
+patch_reference_property(IIrcID, 'person', IPerson)
+patch_reference_property(IJabberID, 'person', IPerson)
+patch_reference_property(IWikiName, 'person', IPerson)
+patch_reference_property(IEmailAddress, 'person', IPerson)

@@ -469,7 +469,7 @@ class ProjectMilestone(MilestoneData, HasBugsBase):
             where=And(
                 Milestone.name == self.name,
                 Milestone.productID == Product.id,
-                Product.project == self.target,
+                Product.projectgroup == self.target,
                 ProductSet.getProductPrivacyFilter(user)))
 
     @property

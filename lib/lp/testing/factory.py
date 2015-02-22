@@ -2,7 +2,7 @@
 # NOTE: The first line above must stay first; do not move the copyright
 # notice to the top.  See http://www.python.org/dev/peps/pep-0263/.
 #
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Testing infrastructure for the Launchpad application.
@@ -118,6 +118,7 @@ from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.code.interfaces.codeimportevent import ICodeImportEventSet
 from lp.code.interfaces.codeimportmachine import ICodeImportMachineSet
 from lp.code.interfaces.codeimportresult import ICodeImportResultSet
+from lp.code.interfaces.gitnamespace import get_git_namespace
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.interfaces.sourcepackagerecipe import (
@@ -940,7 +941,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return release_file
 
     def makeProduct(
-        self, name=None, project=None, displayname=None,
+        self, name=None, projectgroup=None, displayname=None,
         licenses=None, owner=None, registrant=None,
         title=None, summary=None, official_malone=None,
         translations_usage=None, bug_supervisor=None, driver=None, icon=None,
@@ -984,7 +985,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 summary,
                 self.getUniqueString('description'),
                 licenses=licenses,
-                project=project,
+                projectgroup=projectgroup,
                 registrant=registrant,
                 icon=icon,
                 information_type=information_type)
@@ -1667,6 +1668,37 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             rev_id=revision_id, parent_ids=parent_ids,
             revision_date=revision_date)
         return branch.createBranchRevision(sequence, revision)
+
+    def makeGitRepository(self, owner=None, target=_DEFAULT, registrant=None,
+                          name=None, information_type=None,
+                          **optional_repository_args):
+        """Create and return a new, arbitrary GitRepository.
+
+        Any parameters for `IGitNamespace.createRepository` can be specified
+        to override the default ones.
+        """
+        if owner is None:
+            owner = self.makePerson()
+        if name is None:
+            name = self.getUniqueString('gitrepository').decode('utf-8')
+
+        if target is _DEFAULT:
+            target = self.makeProduct()
+
+        if registrant is None:
+            if owner.is_team:
+                registrant = removeSecurityProxy(owner).teamowner
+            else:
+                registrant = owner
+
+        namespace = get_git_namespace(target, owner)
+        repository = namespace.createRepository(
+            registrant=registrant, name=name, **optional_repository_args)
+        naked_repository = removeSecurityProxy(repository)
+        if information_type is not None:
+            naked_repository.transitionToInformationType(
+                information_type, registrant, verify_policy=False)
+        return repository
 
     def makeBug(self, target=None, owner=None, bug_watch_url=None,
                 information_type=None, date_closed=None, title=None,

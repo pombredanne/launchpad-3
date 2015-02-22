@@ -255,11 +255,9 @@ class LibraryFileAliasSet(object):
             client = getUtility(IRestrictedLibrarianClient)
         else:
             client = getUtility(ILibrarianClient)
-        try:
-            fid = client.addFile(
-                name, size, file, contentType, expires, debugID)
-        except IntegrityError:
+        if '/' in name:
             raise InvalidFilename("Filename cannot contain slashes.")
+        fid = client.addFile(name, size, file, contentType, expires, debugID)
         lfa = IMasterStore(LibraryFileAlias).find(
             LibraryFileAlias, LibraryFileAlias.id == fid).one()
         assert lfa is not None, "client.addFile didn't!"

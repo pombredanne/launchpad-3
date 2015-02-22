@@ -18,10 +18,10 @@ class LaunchpadProductContainer(LaunchpadContainer):
     def isWithin(self, scope):
         """Is this product within the given scope?
 
-        A product is within itself or its project.
+        A product is within itself or its project group.
         """
 
-        return scope == self.context or scope == self.context.project
+        return scope == self.context or scope == self.context.projectgroup
 
 
 class LaunchpadDistributionSourcePackageContainer(LaunchpadContainer):

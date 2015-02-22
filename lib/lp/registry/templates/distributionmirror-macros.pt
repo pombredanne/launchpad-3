@@ -46,10 +46,11 @@
         <td tal:condition="show_mirror_type">
           <span tal:replace="mirror/content/title" />
         </td>
-        <td tal:condition="show_freshness"
-            tal:define="freshness mirror/getOverallFreshness">
-          <span tal:content="freshness/title"
-            tal:attributes="class string:distromirrorstatus${freshness/name}" />
+        <td tal:condition="show_freshness">
+          <tal:freshness define="freshness mirror/getOverallFreshness">
+            <span tal:content="freshness/title"
+              tal:attributes="class string:distromirrorstatus${freshness/name}" />
+          </tal:freshness>
         </td>
       </tr>
 

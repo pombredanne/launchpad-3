@@ -132,7 +132,7 @@
   <adapter
       for="lp.registry.interfaces.projectgroup.IProjectGroup"
       provides="lp.code.interfaces.branchcollection.IBranchCollection"
-      factory="lp.code.adapters.branchcollection.branch_collection_for_project"/>
+      factory="lp.code.adapters.branchcollection.branch_collection_for_project_group"/>
   <adapter
       for="lp.registry.interfaces.distribution.IDistribution"
       provides="lp.code.interfaces.branchcollection.IBranchCollection"
@@ -178,7 +178,7 @@
   <adapter
       for="lp.registry.interfaces.projectgroup.IProjectGroup"
       provides="lp.code.interfaces.revisioncache.IRevisionCache"
-      factory="lp.code.adapters.revisioncache.revision_cache_for_project"/>
+      factory="lp.code.adapters.revisioncache.revision_cache_for_project_group"/>
   <adapter
       for="lp.registry.interfaces.distribution.IDistribution"
       provides="lp.code.interfaces.revisioncache.IRevisionCache"
@@ -503,15 +503,15 @@
                     max_diff_lines
                     review_level"/>
   </class>
-  <class class="lp.code.model.branchnamespace.PackageNamespace">
+  <class class="lp.code.model.branchnamespace.PackageBranchNamespace">
     <allow interface="lp.code.interfaces.branchnamespace.IBranchNamespace"/>
     <allow interface="lp.code.interfaces.branchnamespace.IBranchNamespacePolicy"/>
   </class>
-  <class class="lp.code.model.branchnamespace.PersonalNamespace">
+  <class class="lp.code.model.branchnamespace.PersonalBranchNamespace">
     <allow interface="lp.code.interfaces.branchnamespace.IBranchNamespace"/>
     <allow interface="lp.code.interfaces.branchnamespace.IBranchNamespacePolicy"/>
   </class>
-  <class class="lp.code.model.branchnamespace.ProductNamespace">
+  <class class="lp.code.model.branchnamespace.ProjectBranchNamespace">
     <allow interface="lp.code.interfaces.branchnamespace.IBranchNamespace"/>
     <allow interface="lp.code.interfaces.branchnamespace.IBranchNamespacePolicy"/>
   </class>
@@ -806,6 +806,57 @@
   <adapter factory="lp.code.model.linkedbranch.ProductLinkedBranch" />
   <adapter factory="lp.code.model.linkedbranch.PackageLinkedBranch" />
   <adapter factory="lp.code.model.linkedbranch.DistributionPackageLinkedBranch" />
+
+  <!-- GitRepository -->
+
+  <class class="lp.code.model.gitrepository.GitRepository">
+    <require
+        permission="launchpad.View"
+        interface="lp.app.interfaces.launchpad.IPrivacy
+                   lp.code.interfaces.gitrepository.IGitRepositoryView
+                   lp.code.interfaces.gitrepository.IGitRepositoryModerateAttributes" />
+    <require
+        permission="launchpad.Moderate"
+        interface="lp.code.interfaces.gitrepository.IGitRepositoryModerate"
+        set_schema="lp.code.interfaces.gitrepository.IGitRepositoryModerateAttributes" />
+    <require
+        permission="launchpad.Edit"
+        interface="lp.code.interfaces.gitrepository.IGitRepositoryEdit" />
+  </class>
+  <subscriber
+      for="lp.code.interfaces.gitrepository.IGitRepository zope.lifecycleevent.interfaces.IObjectModifiedEvent"
+      handler="lp.code.model.gitrepository.git_repository_modified"/>
+
+  <!-- GitRepositorySet -->
+
+  <class class="lp.code.model.gitrepository.GitRepositorySet">
+    <allow interface="lp.code.interfaces.gitrepository.IGitRepositorySet" />
+  </class>
+  <securedutility
+      class="lp.code.model.gitrepository.GitRepositorySet"
+      provides="lp.code.interfaces.gitrepository.IGitRepositorySet">
+    <allow interface="lp.code.interfaces.gitrepository.IGitRepositorySet" />
+  </securedutility>
+
+  <!-- GitNamespace -->
+
+  <class class="lp.code.model.gitnamespace.PackageGitNamespace">
+    <allow interface="lp.code.interfaces.gitnamespace.IGitNamespace" />
+    <allow interface="lp.code.interfaces.gitnamespace.IGitNamespacePolicy" />
+  </class>
+  <class class="lp.code.model.gitnamespace.PersonalGitNamespace">
+    <allow interface="lp.code.interfaces.gitnamespace.IGitNamespace" />
+    <allow interface="lp.code.interfaces.gitnamespace.IGitNamespacePolicy" />
+  </class>
+  <class class="lp.code.model.gitnamespace.ProjectGitNamespace">
+    <allow interface="lp.code.interfaces.gitnamespace.IGitNamespace" />
+    <allow interface="lp.code.interfaces.gitnamespace.IGitNamespacePolicy" />
+  </class>
+  <securedutility
+      class="lp.code.model.gitnamespace.GitNamespaceSet"
+      provides="lp.code.interfaces.gitnamespace.IGitNamespaceSet">
+    <allow interface="lp.code.interfaces.gitnamespace.IGitNamespaceSet" />
+  </securedutility>
 
   <lp:help-folder folder="help" name="+help-code" />
 

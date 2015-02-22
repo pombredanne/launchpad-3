@@ -14,6 +14,8 @@ import socket
 import sys
 import urlparse
 
+from lazr.sshserver.events import AvatarEvent
+from lazr.sshserver.session import DoNothingSession
 from twisted.internet import (
     error,
     interfaces,
@@ -25,8 +27,6 @@ from zope.interface import implements
 
 from lp.codehosting import get_bzr_path
 from lp.services.config import config
-from lp.services.sshserver.events import AvatarEvent
-from lp.services.sshserver.session import DoNothingSession
 
 
 class BazaarSSHStarted(AvatarEvent):

@@ -151,7 +151,7 @@ class BugTaskSearchParams:
     """
 
     product = None
-    project = None
+    projectgroup = None
     distribution = None
     distroseries = None
     productseries = None
@@ -244,9 +244,9 @@ class BugTaskSearchParams:
         """Set the upstream context on which to filter the search."""
         self.product = product
 
-    def setProject(self, project):
+    def setProjectGroup(self, projectgroup):
         """Set the upstream context on which to filter the search."""
-        self.project = project
+        self.projectgroup = projectgroup
 
     def setDistribution(self, distribution):
         """Set the distribution context on which to filter the search."""
@@ -340,7 +340,7 @@ class BugTaskSearchParams:
         elif IDistributionSourcePackage.providedBy(instance):
             self.setSourcePackage(target)
         elif IProjectGroup.providedBy(instance):
-            self.setProject(target)
+            self.setProjectGroup(target)
         else:
             raise AssertionError("unknown target type %r" % target)
 

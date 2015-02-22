@@ -48,6 +48,7 @@ from lp.registry.browser import (
 from lp.registry.interfaces.productrelease import (
     IProductRelease,
     IProductReleaseFileAddForm,
+    UpstreamFileType,
     )
 from lp.services.webapp import (
     canonical_url,
@@ -303,7 +304,13 @@ class ProductReleaseAddDownloadFileView(LaunchpadFormView):
                 file_upload.filename)
 
             if content_type is None:
-                content_type = "text/plain"
+                if filetype in (
+                    UpstreamFileType.CODETARBALL,
+                    UpstreamFileType.INSTALLER
+                ):
+                    content_type = "application/octet-stream"
+                else:
+                    content_type = "text/plain"
 
             # signature_upload is u'' if no file is specified in
             # the browser.

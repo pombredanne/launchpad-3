@@ -105,11 +105,11 @@ class GenericRevisionCollection:
         return self._filterBy(
             [RevisionCache.product == product])
 
-    def inProject(self, project):
+    def inProjectGroup(self, projectgroup):
         """See `IRevisionCollection`."""
         return self._filterBy(
             [RevisionCache.product == Product.id,
-             Product.project == project])
+             Product.projectgroup == projectgroup])
 
     def inSourcePackage(self, package):
         """See `IRevisionCollection`."""

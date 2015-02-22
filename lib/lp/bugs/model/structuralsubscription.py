@@ -105,8 +105,8 @@ class StructuralSubscription(Storm):
     productseriesID = Int("productseries", default=None)
     productseries = Reference(productseriesID, "ProductSeries.id")
 
-    projectID = Int("project", default=None)
-    project = Reference(projectID, "ProjectGroup.id")
+    projectgroupID = Int("project", default=None)
+    projectgroup = Reference(projectgroupID, "ProjectGroup.id")
 
     milestoneID = Int("milestone", default=None)
     milestone = Reference(milestoneID, "Milestone.id")
@@ -148,8 +148,8 @@ class StructuralSubscription(Storm):
             return self.product
         elif self.productseries is not None:
             return self.productseries
-        elif self.project is not None:
-            return self.project
+        elif self.projectgroup is not None:
+            return self.projectgroup
         elif self.milestone is not None:
             return self.milestone
         elif self.distribution is not None:
@@ -214,9 +214,9 @@ class ProjectGroupTargetHelper:
     def __init__(self, target):
         self.target = target
         self.target_parent = None
-        self.target_arguments = {"project": target}
+        self.target_arguments = {"projectgroup": target}
         self.pillar = target
-        self.join = (StructuralSubscription.project == target)
+        self.join = (StructuralSubscription.projectgroup == target)
 
 
 class DistributionSourcePackageTargetHelper:
@@ -268,13 +268,13 @@ class ProductTargetHelper:
 
     def __init__(self, target):
         self.target = target
-        self.target_parent = target.project
+        self.target_parent = target.projectgroup
         self.target_arguments = {"product": target}
         self.pillar = target
-        if target.project is not None:
+        if target.projectgroup is not None:
             self.join = Or(
                 StructuralSubscription.product == target,
-                StructuralSubscription.project == target.project)
+                StructuralSubscription.projectgroup == target.projectgroup)
         else:
             self.join = (
                 StructuralSubscription.product == target)

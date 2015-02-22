@@ -187,7 +187,7 @@ class ProjectBranchFeed(BranchListingFeed):
     usedfor = IProjectGroup
 
     def _getCollection(self):
-        return getUtility(IAllBranches).inProject(self.context)
+        return getUtility(IAllBranches).inProjectGroup(self.context)
 
 
 class PersonBranchFeed(BranchListingFeed):
@@ -362,7 +362,7 @@ class ProjectRevisionFeed(ProjectRevisionFeedBase):
 
     def _getRevisionCache(self):
         """See `RevisionListingFeed`."""
-        return getUtility(IRevisionCache).inProject(self.context)
+        return getUtility(IRevisionCache).inProjectGroup(self.context)
 
 
 class RevisionPerson:

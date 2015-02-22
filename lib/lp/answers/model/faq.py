@@ -169,17 +169,17 @@ class FAQSearch:
     sort = None
     product = None
     distribution = None
-    project = None
+    projectgroup = None
 
     def __init__(self, search_text=None, owner=None, sort=None, product=None,
-                 distribution=None, project=None):
+                 distribution=None, projectgroup=None):
         """Initialize a new FAQ search.
 
         See `IFAQCollection`.searchFAQs for the basic parameters description.
         Additional parameters:
         :param product: The product in which to search for FAQs.
         :param distribution: The distribution in which to search for FAQs.
-        :param project: The project in which to search for FAQs.
+        :param projectgroup: The project group in which to search for FAQs.
         """
         if search_text is not None:
             assert isinstance(search_text, basestring), (
@@ -199,24 +199,25 @@ class FAQSearch:
         if product is not None:
             assert IProduct.providedBy(product), (
                 'product should be an IProduct, not %s' % type(product))
-            assert distribution is None and project is None, (
-                'can only use one of product, distribution, or project')
+            assert distribution is None and projectgroup is None, (
+                'can only use one of product, distribution, or projectgroup')
             self.product = product
 
         if distribution is not None:
             assert IDistribution.providedBy(distribution), (
                 'distribution should be an IDistribution, %s' %
                 type(distribution))
-            assert product is None and project is None, (
-                'can only use one of product, distribution, or project')
+            assert product is None and projectgroup is None, (
+                'can only use one of product, distribution, or projectgroup')
             self.distribution = distribution
 
-        if project is not None:
-            assert IProjectGroup.providedBy(project), (
-                'project should be an IProjectGroup, not %s' % type(project))
+        if projectgroup is not None:
+            assert IProjectGroup.providedBy(projectgroup), (
+                'projectgroup should be an IProjectGroup, not %s' %
+                type(projectgroup))
             assert product is None and distribution is None, (
-                'can only use one of product, distribution, or project')
-            self.project = project
+                'can only use one of product, distribution, or projectgroup')
+            self.projectgroup = projectgroup
 
     def getResults(self):
         """Return the FAQs matching this search."""
@@ -242,16 +243,16 @@ class FAQSearch:
             constraints.append(
                 'FAQ.distribution = %s' % sqlvalues(self.distribution))
 
-        if self.project:
+        if self.projectgroup:
             constraints.append(
                 'FAQ.product = Product.id AND Product.project = %s' % (
-                    sqlvalues(self.project)))
+                    sqlvalues(self.projectgroup)))
 
         return '\n AND '.join(constraints)
 
     def getClauseTables(self):
         """Return the tables that should be added to the FROM clause."""
-        if self.project:
+        if self.projectgroup:
             return ['Product']
         else:
             return []

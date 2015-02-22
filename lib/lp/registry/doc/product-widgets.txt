@@ -39,7 +39,7 @@ in a specified external location.
 
 Firefox has not yet selected a bug tracker.
 
-    >>> print firefox.project.bugtracker
+    >>> print firefox.projectgroup.bugtracker
     None
 
     >>> from BeautifulSoup import BeautifulSoup, Tag
@@ -69,7 +69,7 @@ this bug tracker as selected.
 
     >>> gnome_bugzilla = tracker_set.getByName('gnome-bugzilla')
     >>> login('foo.bar@canonical.com')
-    >>> firefox.project.bugtracker = gnome_bugzilla
+    >>> firefox.projectgroup.bugtracker = gnome_bugzilla
 
     >>> print_items(widget())
     [ ] In Launchpad
@@ -79,8 +79,8 @@ this bug tracker as selected.
 
 On second thought, Firefox has no specified bug tracker.
 
-    >>> old_firefox_project = firefox.project
-    >>> firefox.project = None
+    >>> old_firefox_projectgroup = firefox.projectgroup
+    >>> firefox.projectgroup = None
 
     >>> print_items(widget())
     [ ] In Launchpad

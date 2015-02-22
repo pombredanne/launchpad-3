@@ -1,4 +1,4 @@
-# Copyright 2012-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2012-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -1075,9 +1075,10 @@ class TestSharingService(TestCaseWithFactory):
 
         # Check that grantees have expected access grants and subscriptions.
         for person in [team_grantee, person_grantee]:
-            visible_bugs, visible_branches, visible_specs = (
+            visible_bugs, visible_branches, _, visible_specs = (
                 self.service.getVisibleArtifacts(
-                    person, branches, bugs, specifications))
+                    person, bugs=bugs, branches=branches,
+                    specifications=specifications))
             self.assertContentEqual(bugs or [], visible_bugs)
             self.assertContentEqual(branches or [], visible_branches)
             self.assertContentEqual(specifications or [], visible_specs)
@@ -1102,8 +1103,9 @@ class TestSharingService(TestCaseWithFactory):
         for person in [team_grantee, person_grantee]:
             for bug in bugs or []:
                 self.assertNotIn(person, bug.getDirectSubscribers())
-            visible_bugs, visible_branches, visible_specs = (
-                self.service.getVisibleArtifacts(person, branches, bugs))
+            visible_bugs, visible_branches, _, visible_specs = (
+                self.service.getVisibleArtifacts(
+                    person, bugs=bugs, branches=branches))
             self.assertContentEqual([], visible_bugs)
             self.assertContentEqual([], visible_branches)
             self.assertContentEqual([], visible_specs)
@@ -1386,7 +1388,7 @@ class TestSharingService(TestCaseWithFactory):
             product, grantee, user)
 
         # Check the results.
-        shared_bugtasks, shared_branches, shared_specs = (
+        shared_bugtasks, shared_branches, _, shared_specs = (
             self.service.getSharedArtifacts(product, grantee, user))
         self.assertContentEqual(bug_tasks[:9], shared_bugtasks)
         self.assertContentEqual(branches[:9], shared_branches)
@@ -1673,8 +1675,9 @@ class TestSharingService(TestCaseWithFactory):
         # Test the getVisibleArtifacts method.
         grantee, ignore, branches, bugs, specs = self._make_Artifacts()
         # Check the results.
-        shared_bugs, shared_branches, shared_specs = (
-            self.service.getVisibleArtifacts(grantee, branches, bugs, specs))
+        shared_bugs, shared_branches, _, shared_specs = (
+            self.service.getVisibleArtifacts(
+                grantee, bugs=bugs, branches=branches, specifications=specs))
         self.assertContentEqual(bugs[:5], shared_bugs)
         self.assertContentEqual(branches[:5], shared_branches)
         self.assertContentEqual(specs[:5], shared_specs)
@@ -1683,8 +1686,9 @@ class TestSharingService(TestCaseWithFactory):
         # getVisibleArtifacts() returns private specifications if
         # user has a policy grant for the pillar of the specification.
         ignore, owner, branches, bugs, specs = self._make_Artifacts()
-        shared_bugs, shared_branches, shared_specs = (
-            self.service.getVisibleArtifacts(owner, branches, bugs, specs))
+        shared_bugs, shared_branches, _, shared_specs = (
+            self.service.getVisibleArtifacts(
+                owner, bugs=bugs, branches=branches, specifications=specs))
         self.assertContentEqual(bugs, shared_bugs)
         self.assertContentEqual(branches, shared_branches)
         self.assertContentEqual(specs, shared_specs)
@@ -1693,8 +1697,9 @@ class TestSharingService(TestCaseWithFactory):
         # Test the getInvisibleArtifacts method.
         grantee, ignore, branches, bugs, specs = self._make_Artifacts()
         # Check the results.
-        not_shared_bugs, not_shared_branches = (
-            self.service.getInvisibleArtifacts(grantee, branches, bugs))
+        not_shared_bugs, not_shared_branches, _ = (
+            self.service.getInvisibleArtifacts(
+                grantee, bugs=bugs, branches=branches))
         self.assertContentEqual(bugs[5:], not_shared_bugs)
         self.assertContentEqual(branches[5:], not_shared_branches)
 
@@ -1718,7 +1723,7 @@ class TestSharingService(TestCaseWithFactory):
                 information_type=InformationType.USERDATA)
             bugs.append(bug)
 
-        shared_bugs, shared_branches, shared_specs = (
+        shared_bugs, shared_branches, _, shared_specs = (
             self.service.getVisibleArtifacts(grantee, bugs=bugs))
         self.assertContentEqual(bugs, shared_bugs)
 
@@ -1726,7 +1731,7 @@ class TestSharingService(TestCaseWithFactory):
         for x in range(0, 5):
             change_callback(bugs[x], owner)
         # Check the results.
-        shared_bugs, shared_branches, shared_specs = (
+        shared_bugs, shared_branches, _, shared_specs = (
             self.service.getVisibleArtifacts(grantee, bugs=bugs))
         self.assertContentEqual(bugs[5:], shared_bugs)
 
@@ -1975,15 +1980,3 @@ class TestLaunchpadlib(ApiTestMixin, TestCaseWithFactory):
             pillar=ws_pillar, person=ws_grantee)
         self.assertEqual(1, len(specifications))
         self.assertEqual(specifications[0].name, self.spec.name)
-
-    def test_getSharedArtifacts(self):
-        # Test the exported getSharedArtifacts() method.
-        ws_pillar = ws_object(self.launchpad, self.pillar)
-        ws_grantee = ws_object(self.launchpad, self.grantee)
-        (bugtasks, branches, specs) = self.service.getSharedArtifacts(
-            pillar=ws_pillar, person=ws_grantee)
-        self.assertEqual(1, len(bugtasks))
-        self.assertEqual(1, len(branches))
-        self.assertEqual(1, len(specs))
-        self.assertEqual(bugtasks[0]['title'], self.bug.default_bugtask.title)
-        self.assertEqual(branches[0]['unique_name'], self.branch.unique_name)

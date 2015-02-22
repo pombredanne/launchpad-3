@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -446,7 +446,7 @@
     <browser:url
         for="lp.registry.interfaces.projectgroup.IProjectGroupSeries"
         path_expression="string:+series/${name}"
-        attribute_to_parent="project"/>
+        attribute_to_parent="projectgroup"/>
     <browser:menus
         classes="
             ProjectActionMenu
@@ -2152,6 +2152,19 @@
         name="+remove-packaging"
         template="../templates/sourcepackage-remove-packaging.pt"
         />
+
+    <browser:url
+        for="lp.registry.interfaces.persondistributionsourcepackage.IPersonDistributionSourcePackage"
+        path_expression="string:${distro_source_package/distribution/name}/+source/${distro_source_package/sourcepackagename/name}"
+        attribute_to_parent="person"/>
+    <browser:navigation
+        module="lp.registry.browser.persondistributionsourcepackage"
+        classes="
+            PersonDistributionSourcePackageNavigation"/>
+    <browser:menus
+        classes="
+            PersonDistributionSourcePackageFacets"
+        module="lp.registry.browser.persondistributionsourcepackage"/>
 
     <browser:url
         for="lp.registry.interfaces.personproduct.IPersonProduct"

@@ -116,7 +116,6 @@ class TranslationTemplatesBuildBehaviour(BuildFarmJobBehaviourBase):
         # dangerous.
         if filename is None:
             logger.error("Build produced no tarball.")
-            self.build.updateStatus(BuildStatus.FULLYBUILT)
         else:
             tarball_file = open(filename)
             try:
@@ -129,9 +128,9 @@ class TranslationTemplatesBuildBehaviour(BuildFarmJobBehaviourBase):
                     self._uploadTarball(
                         self.build.buildqueue_record.specific_build.branch,
                         tarball, logger)
+                    transaction.commit()
                     logger.debug("Upload complete.")
             finally:
-                self.build.updateStatus(BuildStatus.FULLYBUILT)
                 tarball_file.close()
                 os.remove(filename)
-        transaction.commit()
+        defer.returnValue(BuildStatus.FULLYBUILT)

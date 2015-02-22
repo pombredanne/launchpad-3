@@ -285,15 +285,15 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
         collection = self.all_branches.inProduct(branch.product)
         self.assertEqual([branch], list(collection.getBranches()))
 
-    def test_inProject(self):
-        # 'inProject' returns a new collection restricted to branches in the
-        # given project.
+    def test_inProjectGroup(self):
+        # 'inProjectGroup' returns a new collection restricted to branches
+        # in the given project group.
         branch = self.factory.makeProductBranch()
         self.factory.makeProductBranch()
         self.factory.makeAnyBranch()
-        project = self.factory.makeProject()
-        removeSecurityProxy(branch.product).project = project
-        collection = self.all_branches.inProject(project)
+        projectgroup = self.factory.makeProject()
+        removeSecurityProxy(branch.product).projectgroup = projectgroup
+        collection = self.all_branches.inProjectGroup(projectgroup)
         self.assertEqual([branch], list(collection.getBranches()))
 
     def test_isExclusive(self):

@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Functional tests for uploadprocessor.py."""
@@ -142,6 +142,7 @@ class TestUploadProcessorBase(TestCaseWithFactory):
 
         self.queue_folder = tempfile.mkdtemp()
         self.incoming_folder = os.path.join(self.queue_folder, "incoming")
+        self.failed_folder = os.path.join(self.queue_folder, "failed")
         os.makedirs(self.incoming_folder)
 
         self.test_files_dir = os.path.join(config.root,
@@ -438,11 +439,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.getUploadProcessor(None)
 
     def testLocateDirectories(self):
-        """Return a sorted list of subdirs in a directory.
-
-        We don't test that we block on the lockfile, as this is trivial
-        code but tricky to test.
-        """
+        """Return a sorted list of subdirs in a directory."""
         testdir = tempfile.mkdtemp()
         try:
             os.mkdir("%s/dir3" % testdir)
@@ -457,19 +454,14 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
     def _makeUpload(self, testdir):
         """Create a dummy upload for testing the move/remove methods."""
-        upload = tempfile.mkdtemp(dir=testdir)
-        distro = upload + ".distro"
-        f = open(distro, mode="w")
-        f.write("foo")
-        f.close()
-        return upload, distro
+        return tempfile.mkdtemp(dir=testdir)
 
     def testMoveUpload(self):
-        """moveUpload should move the upload directory and .distro file."""
+        """moveUpload should move the upload directory."""
         testdir = tempfile.mkdtemp()
         try:
-            # Create an upload, a .distro and a target to move it to.
-            upload, distro = self._makeUpload(testdir)
+            # Create an upload and a target to move it to.
+            upload = self._makeUpload(testdir)
             target = tempfile.mkdtemp(dir=testdir)
             target_name = os.path.basename(target)
             upload_name = os.path.basename(upload)
@@ -482,19 +474,15 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
             # Check it moved
             self.assertTrue(os.path.exists(os.path.join(target, upload_name)))
-            self.assertTrue(os.path.exists(os.path.join(
-                target, upload_name + ".distro")))
             self.assertFalse(os.path.exists(upload))
-            self.assertFalse(os.path.exists(distro))
         finally:
             shutil.rmtree(testdir)
 
     def testMoveProcessUploadAccepted(self):
         testdir = tempfile.mkdtemp()
         try:
-            # Create an upload, a .distro and a target to move it to.
-            upload, distro = self._makeUpload(testdir)
-            upload_name = os.path.basename(upload)
+            # Create an upload and a target to move it to.
+            upload = self._makeUpload(testdir)
 
             # Remove it
             self.options.base_fsroot = testdir
@@ -503,12 +491,8 @@ class TestUploadProcessor(TestUploadProcessorBase):
             handler.moveProcessedUpload("accepted", self.log)
 
             # Check it was removed, not moved
-            self.assertFalse(os.path.exists(os.path.join(
-                testdir, "accepted")))
-            self.assertFalse(os.path.exists(os.path.join(testdir,
-                "accepted", upload_name + ".distro")))
+            self.assertFalse(os.path.exists(os.path.join(testdir, "accepted")))
             self.assertFalse(os.path.exists(upload))
-            self.assertFalse(os.path.exists(distro))
         finally:
             shutil.rmtree(testdir)
 
@@ -516,8 +500,8 @@ class TestUploadProcessor(TestUploadProcessorBase):
         """moveProcessedUpload moves if the result was not successful."""
         testdir = tempfile.mkdtemp()
         try:
-            # Create an upload, a .distro and a target to move it to.
-            upload, distro = self._makeUpload(testdir)
+            # Create an upload and a target to move it to.
+            upload = self._makeUpload(testdir)
             upload_name = os.path.basename(upload)
 
             # Move it
@@ -527,21 +511,18 @@ class TestUploadProcessor(TestUploadProcessorBase):
             handler.moveProcessedUpload("rejected", self.log)
 
             # Check it moved
-            self.assertTrue(os.path.exists(os.path.join(testdir,
-                "rejected", upload_name)))
-            self.assertTrue(os.path.exists(os.path.join(testdir,
-                "rejected", upload_name + ".distro")))
+            self.assertTrue(os.path.exists(os.path.join(
+                testdir, "rejected", upload_name)))
             self.assertFalse(os.path.exists(upload))
-            self.assertFalse(os.path.exists(distro))
         finally:
             shutil.rmtree(testdir)
 
     def testRemoveUpload(self):
-        """RemoveUpload removes the upload directory and .distro file."""
+        """RemoveUpload removes the upload directory."""
         testdir = tempfile.mkdtemp()
         try:
-            # Create an upload, a .distro and a target to move it to.
-            upload, distro = self._makeUpload(testdir)
+            # Create an upload and a target to move it to.
+            upload = self._makeUpload(testdir)
             os.path.basename(upload)
 
             # Remove it
@@ -551,10 +532,8 @@ class TestUploadProcessor(TestUploadProcessorBase):
             handler.removeUpload(self.log)
 
             # Check it was removed, not moved
-            self.assertFalse(os.path.exists(os.path.join(
-                testdir, "accepted")))
+            self.assertFalse(os.path.exists(os.path.join(testdir, "accepted")))
             self.assertFalse(os.path.exists(upload))
-            self.assertFalse(os.path.exists(distro))
         finally:
             shutil.rmtree(testdir)
 
@@ -2280,9 +2259,7 @@ class TestUploadHandler(TestUploadProcessorBase):
         self.assertIsNot(None, build.duration)
         self.assertIs(None, build.upload_log)
 
-    def testBuildWithInvalidStatus(self):
-        # Builds with an invalid (non-UPLOADING) status should trigger
-        # a warning but be left alone.
+    def processUploadWithBuildStatus(self, status):
         upload_dir = self.queueUpload("bar_1.0-1")
         self.processUpload(self.uploadprocessor, upload_dir)
         source_pub = self.publishPackage('bar', '1.0-1')
@@ -2294,9 +2271,10 @@ class TestUploadHandler(TestUploadProcessorBase):
             status=PackageUploadStatus.ACCEPTED,
             version=u"1.0-1", name=u"bar")
         queue_item.setDone()
+        stub.test_emails.pop()
 
         build.buildqueue_record.markAsBuilding(self.factory.makeBuilder())
-        build.updateStatus(BuildStatus.BUILDING)
+        build.updateStatus(status)
         self.switchToUploader()
 
         shutil.rmtree(upload_dir)
@@ -2309,17 +2287,40 @@ class TestUploadHandler(TestUploadProcessorBase):
             "bar_1.0-1_binary", queue_entry=leaf_name)
         self.options.context = 'buildd'
         self.options.builds = True
-        len(stub.test_emails)
+        self.assertEqual([], stub.test_emails)
         BuildUploadHandler(self.uploadprocessor, self.incoming_folder,
             leaf_name).process()
         self.layer.txn.commit()
+
+        return build, leaf_name
+
+    def testBuildStillBuilding(self):
+        # Builds that are still BUILDING should be left alone.  The
+        # upload directory may already be in place, but buildd-manager
+        # will set the status to UPLOADING when it's handed off.
+        build, leaf_name = self.processUploadWithBuildStatus(
+            BuildStatus.BUILDING)
         # The build status is not changed
         self.assertTrue(
             os.path.exists(os.path.join(self.incoming_folder, leaf_name)))
         self.assertEquals(BuildStatus.BUILDING, build.status)
+        self.assertLogContains("Build status is BUILDING. Ignoring.")
+
+    def testBuildWithInvalidStatus(self):
+        # Builds with an invalid (not UPLOADING or BUILDING) status
+        # should trigger a failure. We've probably raced with
+        # buildd-manager due to a new and assuredly extra-special bug.
+        build, leaf_name = self.processUploadWithBuildStatus(
+            BuildStatus.NEEDSBUILD)
+        # The build status is not changed, but the upload has moved.
+        self.assertFalse(
+            os.path.exists(os.path.join(self.incoming_folder, leaf_name)))
+        self.assertTrue(
+            os.path.exists(os.path.join(self.failed_folder, leaf_name)))
+        self.assertEquals(BuildStatus.NEEDSBUILD, build.status)
         self.assertLogContains(
-            "Expected build status to be 'UPLOADING', was BUILDING. "
-            "Ignoring.")
+            "Expected build status to be UPLOADING or BUILDING, was "
+            "NEEDSBUILD.")
 
     def testOrderFilenames(self):
         """orderFilenames sorts _source.changes ahead of other files."""

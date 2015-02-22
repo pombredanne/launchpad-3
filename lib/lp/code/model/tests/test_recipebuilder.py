@@ -284,7 +284,6 @@ class TestBuildNotifications(TrialTestCase):
         self.queue_record = (
             self.factory.makeSourcePackageRecipeBuild().queueBuild())
         build = self.queue_record.specific_build
-        build.updateStatus(BuildStatus.FULLYBUILT)
         if fake_successful_upload:
             removeSecurityProxy(build).verifySuccessfulUpload = FakeMethod(
                 result=True)

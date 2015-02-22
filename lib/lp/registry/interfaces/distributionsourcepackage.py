@@ -34,6 +34,7 @@ from lp.code.interfaces.hasbranches import (
     IHasBranches,
     IHasMergeProposals,
     )
+from lp.code.interfaces.hasgitrepositories import IHasGitRepositories
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.role import IHasDrivers
 from lp.soyuz.enums import ArchivePurpose
@@ -42,7 +43,8 @@ from lp.soyuz.enums import ArchivePurpose
 class IDistributionSourcePackage(IHeadingContext, IBugTarget, IHasBranches,
                                  IHasMergeProposals, IHasOfficialBugTags,
                                  IStructuralSubscriptionTarget,
-                                 IQuestionTarget, IHasDrivers):
+                                 IQuestionTarget, IHasDrivers,
+                                 IHasGitRepositories):
     """Represents a source package in a distribution.
 
     Create IDistributionSourcePackages by invoking
