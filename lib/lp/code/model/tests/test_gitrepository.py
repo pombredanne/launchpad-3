@@ -29,7 +29,10 @@ from lp.code.interfaces.gitnamespace import (
     IGitNamespacePolicy,
     IGitNamespaceSet,
     )
-from lp.code.interfaces.gitrepository import IGitRepository
+from lp.code.interfaces.gitrepository import (
+    IGitRepository,
+    IGitRepositorySet,
+    )
 from lp.registry.enums import BranchSharingPolicy
 from lp.registry.interfaces.persondistributionsourcepackage import (
     IPersonDistributionSourcePackageFactory,
@@ -486,3 +489,27 @@ class TestGitRepositorySetTarget(TestCaseWithFactory):
             self.assertRaises(
                 GitTargetError, repository.setTarget,
                 target=commercial_project, user=owner)
+
+
+class TestGitRepositorySet(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_provides_IGitRepositorySet(self):
+        # GitRepositorySet instances provide IGitRepositorySet.
+        verifyObject(IGitRepositorySet, getUtility(IGitRepositorySet))
+
+    def test_getByPath(self):
+        # getByPath returns a repository matching the path that it's given.
+        a = self.factory.makeGitRepository()
+        self.factory.makeGitRepository()
+        repository = getUtility(IGitRepositorySet).getByPath(
+            a.owner, a.shortened_path)
+        self.assertEqual(a, repository)
+
+    def test_getByPath_not_found(self):
+        # If a repository cannot be found for a path, then getByPath returns
+        # None.
+        person = self.factory.makePerson()
+        self.assertIsNone(
+            getUtility(IGitRepositorySet).getByPath(person, "nonexistent"))

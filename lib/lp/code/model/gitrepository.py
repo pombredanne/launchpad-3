@@ -24,21 +24,30 @@ from storm.locals import (
     Reference,
     Unicode,
     )
-from zope.component import getUtility
+from zope.component import (
+    getAdapter,
+    getUtility,
+    )
 from zope.interface import implements
+from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import (
     InformationType,
     PRIVATE_INFORMATION_TYPES,
     PUBLIC_INFORMATION_TYPES,
     )
+from lp.app.errors import NotFoundError
 from lp.app.interfaces.informationtype import IInformationType
 from lp.app.interfaces.launchpad import IPrivacy
+from lp.app.interfaces.security import IAuthorization
 from lp.app.interfaces.services import IService
 from lp.code.errors import (
     GitDefaultConflict,
     GitTargetError,
+    InvalidGitRepositoryException,
+    InvalidNamespace,
     )
+from lp.code.interfaces.gitlookup import IGitLookup
 from lp.code.interfaces.gitnamespace import (
     get_git_namespace,
     IGitNamespacePolicy,
@@ -59,8 +68,14 @@ from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
 from lp.registry.interfaces.person import IPerson
-from lp.registry.interfaces.product import IProduct
-from lp.registry.interfaces.role import IHasOwner
+from lp.registry.interfaces.product import (
+    InvalidProductName,
+    IProduct,
+    )
+from lp.registry.interfaces.role import (
+    IHasOwner,
+    IPersonRoles,
+    )
 from lp.registry.interfaces.sharingjob import (
     IRemoveArtifactSubscriptionsJobSource,
     )
@@ -355,8 +370,18 @@ class GitRepositorySet:
 
     def getByPath(self, user, path):
         """See `IGitRepositorySet`."""
-        # XXX cjwatson 2015-02-06: Fill this in once IGitLookup is in place.
-        raise NotImplementedError
+        try:
+            repository = getUtility(IGitLookup).getByPath(path)
+        except (InvalidGitRepositoryException, InvalidNamespace,
+                InvalidProductName, NotFoundError):
+            return None
+        authz = getAdapter(
+            removeSecurityProxy(repository), IAuthorization, 'launchpad.View')
+        if ((user is None and authz.checkUnauthenticated()) or
+            (user is not None and authz.checkAuthenticated(
+                IPersonRoles(user)))):
+            return repository
+        return None
 
     def getDefaultRepository(self, target, owner=None):
         """See `IGitRepositorySet`."""
