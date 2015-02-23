@@ -47,6 +47,7 @@ from lp.code.errors import (
     InvalidGitRepositoryException,
     InvalidNamespace,
     )
+from lp.code.interfaces.gitcollection import IAllGitRepositories
 from lp.code.interfaces.gitlookup import IGitLookup
 from lp.code.interfaces.gitnamespace import (
     get_git_namespace,
@@ -303,9 +304,8 @@ class GitRepository(StormBase, GitIdentityMixin):
         elif user.id in self._known_viewers:
             return True
         else:
-            # XXX cjwatson 2015-02-06: Fill this in once IGitCollection is
-            # in place.
-            return False
+            return not getUtility(IAllGitRepositories).withIds(
+                self.id).visibleByUser(user).is_empty()
 
     def getAllowedInformationTypes(self, user):
         """See `IGitRepository`."""

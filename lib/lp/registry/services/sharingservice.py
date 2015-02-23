@@ -36,6 +36,7 @@ from lp.blueprints.model.specification import Specification
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
 from lp.code.interfaces.branchcollection import IAllBranches
+from lp.code.interfaces.gitcollection import IAllGitRepositories
 from lp.registry.enums import (
     BranchSharingPolicy,
     BugSharingPolicy,
@@ -227,7 +228,11 @@ class SharingService:
             branches = list(wanted_branches.getBranches())
         # Load the Git repositories.
         gitrepositories = []
-        # XXX cjwatson 2015-02-16: Fill in once IGitCollection is in place.
+        if gitrepository_ids:
+            all_gitrepositories = getUtility(IAllGitRepositories)
+            wanted_gitrepositories = all_gitrepositories.visibleByUser(
+                user).withIds(*gitrepository_ids)
+            gitrepositories = list(wanted_gitrepositories.getRepositories())
         specifications = []
         if specification_ids:
             specifications = load(Specification, specification_ids)
@@ -360,7 +365,12 @@ class SharingService:
 
         # Load the Git repositories.
         visible_gitrepositories = []
-        # XXX cjwatson 2015-02-16: Fill in once IGitCollection is in place.
+        if gitrepositories_by_id:
+            all_gitrepositories = getUtility(IAllGitRepositories)
+            wanted_gitrepositories = all_gitrepositories.visibleByUser(
+                person).withIds(*gitrepositories_by_id.keys())
+            visible_gitrepositories = list(
+                wanted_gitrepositories.getRepositories())
 
         # Load the specifications.
         visible_specs = []
@@ -411,7 +421,17 @@ class SharingService:
 
         # Load the Git repositories.
         invisible_gitrepositories = []
-        # XXX cjwatson 2015-02-16: Fill in once IGitCollection is in place.
+        if gitrepositories_by_id:
+            all_gitrepositories = getUtility(IAllGitRepositories)
+            visible_gitrepository_ids = all_gitrepositories.visibleByUser(
+                person).withIds(
+                    *gitrepositories_by_id.keys()).getRepositoryIds()
+            invisible_gitrepository_ids = (
+                set(gitrepositories_by_id.keys()).difference(
+                    visible_gitrepository_ids))
+            invisible_gitrepositories = [
+                gitrepositories_by_id[gitrepository_id]
+                for gitrepository_id in invisible_gitrepository_ids]
 
         return invisible_bugs, invisible_branches, invisible_gitrepositories
 

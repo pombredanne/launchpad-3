@@ -1,4 +1,4 @@
-# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -278,6 +278,13 @@ class TestAccessArtifactBranch(BaseAccessArtifactTests,
 
     def getConcreteArtifact(self):
         return self.factory.makeBranch()
+
+
+class TestAccessArtifactGitRepository(BaseAccessArtifactTests,
+                                      TestCaseWithFactory):
+
+    def getConcreteArtifact(self):
+        return self.factory.makeGitRepository()
 
 
 class TestAccessArtifactBug(BaseAccessArtifactTests,
