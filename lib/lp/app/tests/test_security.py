@@ -220,56 +220,36 @@ class TestPublicOrPrivateTeamsExistence(TestCaseWithFactory):
         self.assertTrue(checker.checkAuthenticated(IPersonRoles(team_user)))
         self.assertFalse(checker.checkAuthenticated(IPersonRoles(other_user)))
 
-    def test_can_list_team_with_deactivated_private_team(self):
+    def assertTeamOwnerCanListPrivateTeamWithTeamStatus(self, team_status):
         main_team_owner = self.factory.makePerson()
         main_team = self.factory.makeTeam(
             owner=main_team_owner,
-            visibility=PersonVisibility.PRIVATE,
-        )
+            visibility=PersonVisibility.PRIVATE)
         private_team_owner = self.factory.makePerson()
         private_team = self.factory.makeTeam(
             owner=private_team_owner,
-            visibility=PersonVisibility.PRIVATE
-        )
+            visibility=PersonVisibility.PRIVATE)
         with admin_logged_in():
-            # Canno add a team with status = DEACTIVATED, so add it as approved
-            # and then retract the membership.
+            # Cannot add a team with a non-APPROVED / PENDING status, so add
+            # it as approved and then edit the membership.
             main_team.addMember(
                 private_team,
                 main_team_owner,
                 status=TeamMembershipStatus.APPROVED,
-                force_team_add=True,
-            )
-            private_team.retractTeamMembership(main_team, main_team_owner)
-
-        checker = PublicOrPrivateTeamsExistence(removeSecurityProxy(private_team))
-        self.assertTrue(checker.checkAuthenticated(IPersonRoles(main_team_owner)))
-
-    def test_can_list_team_with_expired_private_team(self):
-        main_team_owner = self.factory.makePerson()
-        main_team = self.factory.makeTeam(
-            owner=main_team_owner,
-            visibility=PersonVisibility.PRIVATE,
-        )
-        private_team_owner = self.factory.makePerson()
-        private_team = self.factory.makeTeam(
-            owner=private_team_owner,
-            visibility=PersonVisibility.PRIVATE
-        )
-        with admin_logged_in():
-            # Canno add a team with status = DEACTIVATED, so add it as approved
-            # and then retract the membership.
-            main_team.addMember(
-                private_team,
-                main_team_owner,
-                status=TeamMembershipStatus.APPROVED,
-                force_team_add=True,
-            )
+                force_team_add=True)
             main_team.setMembershipData(
                 private_team,
-                TeamMembershipStatus.EXPIRED,
-                main_team_owner
-            )
+                team_status,
+                main_team_owner)
 
         checker = PublicOrPrivateTeamsExistence(removeSecurityProxy(private_team))
         self.assertTrue(checker.checkAuthenticated(IPersonRoles(main_team_owner)))
+
+    def test_can_list_team_with_deactivated_private_team(self):
+        self.assertTeamOwnerCanListPrivateTeamWithTeamStatus(
+            TeamMembershipStatus.DEACTIVATED)
+
+    def test_can_list_team_with_expired_private_team(self):
+        self.assertTeamOwnerCanListPrivateTeamWithTeamStatus(
+            TeamMembershipStatus.EXPIRED)
+
