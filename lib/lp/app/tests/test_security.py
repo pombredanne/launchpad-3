@@ -240,7 +240,7 @@ class TestPublicOrPrivateTeamsExistence(TestCaseWithFactory):
                 status=TeamMembershipStatus.APPROVED,
                 force_team_add=True,
             )
-            main_team.retractTeamMembership(private_team, main_team_owner)
+            private_team.retractTeamMembership(main_team, main_team_owner)
 
-        checker = PublicOrPrivateTeamsExistence(private_team)
+        checker = PublicOrPrivateTeamsExistence(removeSecurityProxy(private_team))
         self.assertTrue(checker.checkAuthenticated(IPersonRoles(main_team_owner)))
