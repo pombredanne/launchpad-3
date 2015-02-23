@@ -15,7 +15,7 @@ __metaclass__ = type
 
 __all__ = [
     'patch_choice_parameter_type',
-    'patch_choice_vocabulary',
+    'patch_choice_property',
     'patch_collection_property',
     'patch_collection_return_type',
     'patch_entry_explicit_version',
