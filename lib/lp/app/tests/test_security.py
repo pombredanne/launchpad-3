@@ -26,6 +26,7 @@ from lp.registry.interfaces.teammembership import (
     )
 from lp.security import PublicOrPrivateTeamsExistence
 from lp.testing import (
+    admin_logged_in,
     person_logged_in,
     TestCase,
     TestCaseWithFactory,
@@ -230,7 +231,7 @@ class TestPublicOrPrivateTeamsExistence(TestCaseWithFactory):
             owner=private_team_owner,
             visibility=PersonVisibility.PRIVATE
         )
-        with person_logged_in(main_team_owner):
+        with admin_logged_in():
             # Canno add a team with status = DEACTIVATED, so add it as approved
             # and then retract the membership.
             main_team.addMember(
