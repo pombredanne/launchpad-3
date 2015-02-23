@@ -1038,9 +1038,10 @@ class PublicOrPrivateTeamsExistence(AuthorizationBase):
                 return True
 
             # If it's not, the private team may still be a pending membership,
+            # deactivated membership, or an expired membership,
             # which still needs to be visible to team members.
             BAD_STATES = (
-                TeamMembershipStatus.DEACTIVATED.value,
+                # TeamMembershipStatus.DEACTIVATED.value,
                 TeamMembershipStatus.EXPIRED.value,
                 TeamMembershipStatus.DECLINED.value,
                 TeamMembershipStatus.INVITATION_DECLINED.value,
