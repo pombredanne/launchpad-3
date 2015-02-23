@@ -26,6 +26,7 @@ from lp.registry.interfaces.teammembership import (
     )
 from lp.security import PublicOrPrivateTeamsExistence
 from lp.testing import (
+    admin_logged_in,
     person_logged_in,
     TestCase,
     TestCaseWithFactory,
@@ -218,3 +219,37 @@ class TestPublicOrPrivateTeamsExistence(TestCaseWithFactory):
             removeSecurityProxy(private_team))
         self.assertTrue(checker.checkAuthenticated(IPersonRoles(team_user)))
         self.assertFalse(checker.checkAuthenticated(IPersonRoles(other_user)))
+
+    def assertTeamOwnerCanListPrivateTeamWithTeamStatus(self, team_status):
+        main_team_owner = self.factory.makePerson()
+        main_team = self.factory.makeTeam(
+            owner=main_team_owner,
+            visibility=PersonVisibility.PRIVATE)
+        private_team_owner = self.factory.makePerson()
+        private_team = self.factory.makeTeam(
+            owner=private_team_owner,
+            visibility=PersonVisibility.PRIVATE)
+        with admin_logged_in():
+            # Cannot add a team with a non-APPROVED / PENDING status, so add
+            # it as approved and then edit the membership.
+            main_team.addMember(
+                private_team,
+                main_team_owner,
+                status=TeamMembershipStatus.APPROVED,
+                force_team_add=True)
+            main_team.setMembershipData(
+                private_team,
+                team_status,
+                main_team_owner)
+
+        checker = PublicOrPrivateTeamsExistence(removeSecurityProxy(private_team))
+        self.assertTrue(checker.checkAuthenticated(IPersonRoles(main_team_owner)))
+
+    def test_can_list_team_with_deactivated_private_team(self):
+        self.assertTeamOwnerCanListPrivateTeamWithTeamStatus(
+            TeamMembershipStatus.DEACTIVATED)
+
+    def test_can_list_team_with_expired_private_team(self):
+        self.assertTeamOwnerCanListPrivateTeamWithTeamStatus(
+            TeamMembershipStatus.EXPIRED)
+
