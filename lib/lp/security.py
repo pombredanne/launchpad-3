@@ -1042,7 +1042,7 @@ class PublicOrPrivateTeamsExistence(AuthorizationBase):
             # which still needs to be visible to team members.
             BAD_STATES = (
                 # TeamMembershipStatus.DEACTIVATED.value,
-                TeamMembershipStatus.EXPIRED.value,
+                # TeamMembershipStatus.EXPIRED.value,
                 TeamMembershipStatus.DECLINED.value,
                 TeamMembershipStatus.INVITATION_DECLINED.value,
                 )
