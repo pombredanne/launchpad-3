@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementation of the recipe storage.
@@ -46,6 +46,8 @@ from lp.code.errors import (
     )
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.model.branch import Branch
+from lp.registry.model.distroseries import DistroSeries
+from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.database.bulk import (
     load_referencing,
     load_related,
@@ -323,14 +325,23 @@ class SourcePackageRecipeData(Storm):
 
     @staticmethod
     def preLoadReferencedBranches(sourcepackagerecipedatas):
+        # Circular imports.
+        from lp.code.model.branchcollection import GenericBranchCollection
+        from lp.registry.model.product import Product
         # Load the related Branch, _SourcePackageRecipeDataInstruction.
-        load_related(
+        base_branches = load_related(
             Branch, sourcepackagerecipedatas, ['base_branch_id'])
         sprd_instructions = load_referencing(
             _SourcePackageRecipeDataInstruction,
             sourcepackagerecipedatas, ['recipe_data_id'])
         sub_branches = load_related(
             Branch, sprd_instructions, ['branch_id'])
+        all_branches = base_branches + sub_branches
+        # Pre-load branches' data.
+        load_related(SourcePackageName, all_branches, ['sourcepackagenameID'])
+        load_related(DistroSeries, all_branches, ['distroseriesID'])
+        load_related(Product, all_branches, ['productID'])
+        GenericBranchCollection.preloadDataForBranches(all_branches)
         # Store the pre-fetched objects on the sourcepackagerecipedatas
         # objects.
         branch_to_recipe_data = dict([

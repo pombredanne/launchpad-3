@@ -1406,9 +1406,13 @@ class Branch(SQLBase, BzrIdentityMixin):
     @property
     def recipes(self):
         """See `IHasRecipes`."""
+        from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
         from lp.code.model.sourcepackagerecipedata import (
-            SourcePackageRecipeData)
-        return SourcePackageRecipeData.findRecipes(self)
+            SourcePackageRecipeData,
+            )
+        hook = SourcePackageRecipe.preLoadDataForSourcePackageRecipes
+        return DecoratedResultSet(
+            SourcePackageRecipeData.findRecipes(self), pre_iter_hook=hook)
 
     merge_queue_id = Int(name='merge_queue', allow_none=True)
     merge_queue = Reference(merge_queue_id, 'BranchMergeQueue.id')
