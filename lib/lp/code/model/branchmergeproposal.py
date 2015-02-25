@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database class for branch merge prosals."""
@@ -84,7 +84,6 @@ from lp.registry.interfaces.person import (
     )
 from lp.registry.interfaces.product import IProduct
 from lp.registry.model.person import Person
-from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.config import config
 from lp.services.database.bulk import load_related
 from lp.services.database.constants import (
@@ -1014,8 +1013,6 @@ class BranchMergeProposal(SQLBase):
         # Circular imports.
         from lp.code.model.branch import Branch
         from lp.code.model.branchcollection import GenericBranchCollection
-        from lp.registry.model.product import Product
-        from lp.registry.model.distroseries import DistroSeries
 
         ids = set()
         source_branch_ids = set()
@@ -1059,9 +1056,6 @@ class BranchMergeProposal(SQLBase):
             person_ids, need_validity=True))
 
         # Pre-load branches' data.
-        load_related(SourcePackageName, branches, ['sourcepackagenameID'])
-        load_related(DistroSeries, branches, ['distroseriesID'])
-        load_related(Product, branches, ['productID'])
         GenericBranchCollection.preloadDataForBranches(branches)
 
 

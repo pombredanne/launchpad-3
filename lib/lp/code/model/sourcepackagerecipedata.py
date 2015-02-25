@@ -46,8 +46,6 @@ from lp.code.errors import (
     )
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.model.branch import Branch
-from lp.registry.model.distroseries import DistroSeries
-from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.database.bulk import (
     load_referencing,
     load_related,
@@ -325,9 +323,8 @@ class SourcePackageRecipeData(Storm):
 
     @staticmethod
     def preLoadReferencedBranches(sourcepackagerecipedatas):
-        # Circular imports.
+        # Circular import.
         from lp.code.model.branchcollection import GenericBranchCollection
-        from lp.registry.model.product import Product
         # Load the related Branch, _SourcePackageRecipeDataInstruction.
         base_branches = load_related(
             Branch, sourcepackagerecipedatas, ['base_branch_id'])
@@ -338,9 +335,6 @@ class SourcePackageRecipeData(Storm):
             Branch, sprd_instructions, ['branch_id'])
         all_branches = base_branches + sub_branches
         # Pre-load branches' data.
-        load_related(SourcePackageName, all_branches, ['sourcepackagenameID'])
-        load_related(DistroSeries, all_branches, ['distroseriesID'])
-        load_related(Product, all_branches, ['productID'])
         GenericBranchCollection.preloadDataForBranches(all_branches)
         # Store the pre-fetched objects on the sourcepackagerecipedatas
         # objects.
