@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database classes including and related to Product."""
@@ -1520,12 +1520,14 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     @property
     def recipes(self):
         """See `IHasRecipes`."""
-        return Store.of(self).find(
+        recipes = Store.of(self).find(
             SourcePackageRecipe,
             SourcePackageRecipe.id ==
                 SourcePackageRecipeData.sourcepackage_recipe_id,
             SourcePackageRecipeData.base_branch == Branch.id,
             Branch.product == self)
+        hook = SourcePackageRecipe.preLoadDataForSourcePackageRecipes
+        return DecoratedResultSet(recipes, pre_iter_hook=hook)
 
     def getBugTaskWeightFunction(self):
         """Provide a weight function to determine optimal bug task.

@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementation classes for a Person."""
@@ -3158,10 +3158,11 @@ class Person(
     def recipes(self):
         """See `IHasRecipes`."""
         from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
-        store = Store.of(self)
-        return store.find(
+        recipes = Store.of(self).find(
             SourcePackageRecipe,
             SourcePackageRecipe.owner == self)
+        hook = SourcePackageRecipe.preLoadDataForSourcePackageRecipes
+        return DecoratedResultSet(recipes, pre_iter_hook=hook)
 
     def canAccess(self, obj, attribute):
         """See `IPerson.`"""

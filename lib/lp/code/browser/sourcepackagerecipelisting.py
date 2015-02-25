@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Base class view for sourcepackagerecipe listings."""
@@ -13,6 +13,7 @@ __all__ = [
     ]
 
 
+from lp.code.browser.decorations import DecoratedBranch
 from lp.services.feeds.browser import FeedsMixin
 from lp.services.webapp import (
     canonical_url,
@@ -56,6 +57,13 @@ class RecipeListingView(LaunchpadView, FeedsMixin):
 class BranchRecipeListingView(RecipeListingView):
 
     branch_enabled = False
+
+    def initialize(self):
+        super(BranchRecipeListingView, self).initialize()
+        # Replace our context with a decorated branch, if it is not already
+        # decorated.
+        if not isinstance(self.context, DecoratedBranch):
+            self.context = DecoratedBranch(self.context)
 
 
 class PersonRecipeListingView(RecipeListingView):
