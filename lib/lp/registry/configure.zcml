@@ -529,7 +529,6 @@
                 personHasDriverRights
                 publishing_history
                 releases
-                setDefaultGitRepository
                 sourcepackagename
                 subscribers
                 summary
@@ -537,7 +536,7 @@
                 upstream_product"/>
         <require
             permission="launchpad.Edit"
-            set_attributes="
+            attributes="
                 setDefaultGitRepository
                 " />
 
