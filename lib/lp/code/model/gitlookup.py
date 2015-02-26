@@ -66,6 +66,7 @@ class RootGitTraversable:
 
     implements(IDefaultGitTraversable)
 
+    # Marker for references to Git URL layouts: ##GITNAMESPACE##
     def traverse(self, owner, name, segments):
         """See `IDefaultGitTraversable`.
 
@@ -114,6 +115,7 @@ class DistributionGitTraversable(_BaseGitTraversable):
     adapts(IDistribution)
     implements(IDefaultGitTraversable)
 
+    # Marker for references to Git URL layouts: ##GITNAMESPACE##
     def traverse(self, owner, name, segments):
         """See `IDefaultGitTraversable`.
 
