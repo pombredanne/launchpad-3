@@ -3062,7 +3062,7 @@ class PersonEditMailingListsView(LaunchpadFormView):
 
     def initialize(self):
         if self.context.is_team:
-            # +editemails is not available on teams.
+            # +editmailinglists is not available on teams.
             name = self.request['PATH_INFO'].split('/')[-1]
             raise NotFound(self, name, request=self.request)
         super(PersonEditMailingListsView, self).initialize()
