@@ -17,6 +17,7 @@ from lp.code.interfaces.gitlookup import (
     IDefaultGitTraverser,
     IGitLookup,
     )
+from lp.code.interfaces.gitrepository import IGitRepositorySet
 from lp.registry.errors import NoSuchSourcePackageName
 from lp.registry.interfaces.person import NoSuchPerson
 from lp.registry.interfaces.persondistributionsourcepackage import (
@@ -83,7 +84,8 @@ class TestGetByPath(TestCaseWithFactory):
     def test_project_default(self):
         repository = self.factory.makeGitRepository()
         with person_logged_in(repository.target.owner):
-            repository.target.setDefaultGitRepository(repository)
+            getUtility(IGitRepositorySet).setDefaultRepository(
+                repository.target, repository)
         self.assertEqual(
             repository, self.lookup.getByPath(repository.shortened_path))
 
@@ -97,7 +99,8 @@ class TestGetByPath(TestCaseWithFactory):
         dsp = self.factory.makeDistributionSourcePackage()
         repository = self.factory.makeGitRepository(target=dsp)
         with person_logged_in(repository.target.distribution.owner):
-            repository.target.setDefaultGitRepository(repository)
+            getUtility(IGitRepositorySet).setDefaultRepository(
+                repository.target, repository)
         self.assertEqual(
             repository, self.lookup.getByPath(repository.shortened_path))
 
@@ -192,7 +195,8 @@ class TestGetByUrl(TestCaseWithFactory):
         # getByUrl honours default repositories when looking up URLs.
         repository = self.makeProjectRepository()
         with person_logged_in(repository.target.owner):
-            repository.target.setDefaultGitRepository(repository)
+            getUtility(IGitRepositorySet).setDefaultRepository(
+                repository.target, repository)
         self.assertUrlMatches("lp:bb", repository)
 
     def test_uriToHostingPath(self):
