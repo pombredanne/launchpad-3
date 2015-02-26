@@ -683,6 +683,13 @@ class TestPersonEditView(TestPersonRenameFormMixin, TestCaseWithFactory):
         browser = setupBrowserForUser(user=self.person)
         self.assertRaises(NotFound, browser.open, url)
 
+    def test_team_editmailinglists_not_found(self):
+        """Teams should not have a +editmailinglists page."""
+        team = self.factory.makeTeam(owner=self.person, members=[self.person])
+        url = '%s/+editmailinglists' % canonical_url(team)
+        browser = setupBrowserForUser(user=self.person)
+        self.assertRaises(NotFound, browser.open, url)
+
     def test_email_string_validation_no_email_prodvided(self):
         """+editemails should warn if no email is provided."""
         no_email = ''
