@@ -652,6 +652,9 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
     def scheduleDiffUpdates():
         """Create UpdatePreviewDiffJobs for this branch's targets."""
 
+    def markRecipesStale():
+        """Mark all recipes associated with this branch as stale."""
+
     def getStackedBranches():
         """The branches that are stacked on this one."""
 

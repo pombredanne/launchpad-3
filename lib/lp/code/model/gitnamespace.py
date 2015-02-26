@@ -30,8 +30,6 @@ from lp.code.errors import (
     GitRepositoryCreatorNotMemberOfOwnerTeam,
     GitRepositoryCreatorNotOwner,
     GitRepositoryExists,
-    InvalidNamespace,
-    NoSuchGitRepository,
     )
 from lp.code.interfaces.gitnamespace import (
     IGitNamespace,
@@ -50,27 +48,9 @@ from lp.code.model.branchnamespace import (
     )
 from lp.code.model.gitrepository import GitRepository
 from lp.registry.enums import PersonVisibility
-from lp.registry.errors import NoSuchSourcePackageName
-from lp.registry.interfaces.distribution import (
-    IDistribution,
-    IDistributionSet,
-    NoSuchDistribution,
-    )
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
-from lp.registry.interfaces.person import (
-    IPersonSet,
-    NoSuchPerson,
-    )
-from lp.registry.interfaces.pillar import IPillarNameSet
-from lp.registry.interfaces.product import (
-    IProduct,
-    IProductSet,
-    NoSuchProduct,
-    )
-from lp.registry.interfaces.projectgroup import IProjectGroup
-from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.services.database.constants import DEFAULT
 from lp.services.database.interfaces import IStore
 from lp.services.propertycache import get_property_cache
@@ -184,12 +164,6 @@ class _BaseGitNamespace:
         if match is None:
             match = default
         return match
-
-    def getDefault(self):
-        """See `IGitNamespace`."""
-        return IStore(GitRepository).find(
-            GitRepository, self._getRepositoriesClause(),
-            GitRepository.owner_default == True).one()
 
     def getAllowedInformationTypes(self, who=None):
         """See `IGitNamespace`."""
@@ -403,142 +377,3 @@ class GitNamespaceSet:
                 person, distribution.getSourcePackage(sourcepackagename))
         else:
             return PersonalGitNamespace(person)
-
-    def _findOrRaise(self, error, name, finder, *args):
-        if name is None:
-            return None
-        args = list(args)
-        args.append(name)
-        result = finder(*args)
-        if result is None:
-            raise error(name)
-        return result
-
-    def _findPerson(self, person_name):
-        return self._findOrRaise(
-            NoSuchPerson, person_name, getUtility(IPersonSet).getByName)
-
-    # Marker for references to Git URL layouts: ##GITNAMESPACE##
-    def _findPillar(self, pillar_name):
-        """Find and return the pillar with the given name.
-
-        If the given name is '+git' (indicating a personal repository) or
-        None, return None.
-
-        :raise NoSuchProduct if there's no pillar with the given name or it
-            is a project group.
-        """
-        if pillar_name == "+git":
-            return None
-        pillar = self._findOrRaise(
-            NoSuchProduct, pillar_name, getUtility(IPillarNameSet).getByName)
-        if IProjectGroup.providedBy(pillar):
-            raise NoSuchProduct(pillar_name)
-        return pillar
-
-    def _findProject(self, project_name):
-        return self._findOrRaise(
-            NoSuchProduct, project_name, getUtility(IProductSet).getByName)
-
-    def _findDistribution(self, distribution_name):
-        return self._findOrRaise(
-            NoSuchDistribution, distribution_name,
-            getUtility(IDistributionSet).getByName)
-
-    def _findSourcePackageName(self, sourcepackagename_name):
-        return self._findOrRaise(
-            NoSuchSourcePackageName, sourcepackagename_name,
-            getUtility(ISourcePackageNameSet).queryByName)
-
-    def _realize(self, names):
-        """Turn a dict of object names into a dict of objects.
-
-        Takes the results of `IGitNamespaceSet.parse` and turns them into a
-        dict where the values are Launchpad objects.
-        """
-        data = {}
-        data["person"] = self._findPerson(names["person"])
-        data["project"] = self._findProject(names["project"])
-        data["distribution"] = self._findDistribution(names["distribution"])
-        data["sourcepackagename"] = self._findSourcePackageName(
-            names["sourcepackagename"])
-        return data
-
-    def interpret(self, person, project, distribution, sourcepackagename):
-        names = dict(
-            person=person, project=project, distribution=distribution,
-            sourcepackagename=sourcepackagename)
-        data = self._realize(names)
-        return self.get(**data)
-
-    # Marker for references to Git URL layouts: ##GITNAMESPACE##
-    def parse(self, namespace_name):
-        """See `IGitNamespaceSet`."""
-        data = dict(
-            person=None, project=None, distribution=None,
-            sourcepackagename=None)
-        tokens = namespace_name.split("/")
-        if len(tokens) == 1:
-            data["person"] = tokens[0]
-        elif len(tokens) == 2:
-            data["person"] = tokens[0]
-            data["project"] = tokens[1]
-        elif len(tokens) == 4 and tokens[2] == "+source":
-            data["person"] = tokens[0]
-            data["distribution"] = tokens[1]
-            data["sourcepackagename"] = tokens[3]
-        else:
-            raise InvalidNamespace(namespace_name)
-        if not data["person"].startswith("~"):
-            raise InvalidNamespace(namespace_name)
-        data["person"] = data["person"][1:]
-        return data
-
-    def lookup(self, namespace_name):
-        """See `IGitNamespaceSet`."""
-        names = self.parse(namespace_name)
-        return self.interpret(**names)
-
-    # Marker for references to Git URL layouts: ##GITNAMESPACE##
-    def traverse(self, segments):
-        """See `IGitNamespaceSet`."""
-        traversed_segments = []
-
-        def get_next_segment():
-            try:
-                result = segments.next()
-            except StopIteration:
-                raise InvalidNamespace("/".join(traversed_segments))
-            if result is None:
-                raise AssertionError("None segment passed to traverse()")
-            if not isinstance(result, unicode):
-                result = result.decode("US-ASCII")
-            traversed_segments.append(result)
-            return result
-
-        person_name = get_next_segment()
-        person = self._findPerson(person_name)
-        pillar_name = get_next_segment()
-        pillar = self._findPillar(pillar_name)
-        if pillar is None:
-            namespace = self.get(person)
-            git_literal = pillar_name
-        elif IProduct.providedBy(pillar):
-            namespace = self.get(person, project=pillar)
-            git_literal = get_next_segment()
-        else:
-            source_literal = get_next_segment()
-            if source_literal != "+source":
-                raise InvalidNamespace("/".join(traversed_segments))
-            sourcepackagename_name = get_next_segment()
-            sourcepackagename = self._findSourcePackageName(
-                sourcepackagename_name)
-            namespace = self.get(
-                person, distribution=IDistribution(pillar),
-                sourcepackagename=sourcepackagename)
-            git_literal = get_next_segment()
-        if git_literal != "+git":
-            raise InvalidNamespace("/".join(traversed_segments))
-        repository_name = get_next_segment()
-        return self._findOrRaise(
-            NoSuchGitRepository, repository_name, namespace.getByName)

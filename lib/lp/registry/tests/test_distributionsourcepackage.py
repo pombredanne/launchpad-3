@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for DistributionSourcePackage."""
@@ -11,7 +11,6 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.code.errors import GitTargetError
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.model.distributionsourcepackage import (
     DistributionSourcePackage,
@@ -23,7 +22,6 @@ from lp.services.database.sqlbase import flush_database_updates
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
-    person_logged_in,
     StormStatementRecorder,
     TestCaseWithFactory,
     )
@@ -166,36 +164,6 @@ class TestDistributionSourcePackage(TestCaseWithFactory):
             distribution=distribution)
         driver = distribution.drivers[0]
         self.assertTrue(dsp.personHasDriverRights(driver))
-
-    def test_default_git_repository_round_trip(self):
-        # A default Git repository set using setDefaultGitRepository can be
-        # retrieved using getDefaultGitRepository.
-        dsp = self.factory.makeDistributionSourcePackage()
-        self.assertIsNone(dsp.getDefaultGitRepository())
-        repository = self.factory.makeGitRepository(target=dsp)
-        with person_logged_in(dsp.distribution.owner):
-            dsp.setDefaultGitRepository(repository)
-        self.assertEqual(repository, dsp.getDefaultGitRepository())
-
-    def test_setDefaultGitRepository_None(self):
-        # setDefaultGitRepository(None) clears the default.
-        dsp = self.factory.makeDistributionSourcePackage()
-        repository = self.factory.makeGitRepository(target=dsp)
-        with person_logged_in(dsp.distribution.owner):
-            dsp.setDefaultGitRepository(repository)
-            dsp.setDefaultGitRepository(None)
-        self.assertIsNone(dsp.getDefaultGitRepository())
-
-    def test_setDefaultGitRepository_different_target(self):
-        # setDefaultGitRepository refuses if the repository is attached to a
-        # different target.
-        dsp = self.factory.makeDistributionSourcePackage()
-        other_dsp = self.factory.makeDistributionSourcePackage(
-            distribution=dsp.distribution)
-        repository = self.factory.makeGitRepository(target=other_dsp)
-        with person_logged_in(dsp.distribution.owner):
-            self.assertRaises(
-                GitTargetError, dsp.setDefaultGitRepository, repository)
 
 
 class TestDistributionSourcePackageFindRelatedArchives(TestCaseWithFactory):
