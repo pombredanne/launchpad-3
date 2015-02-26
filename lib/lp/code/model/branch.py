@@ -619,6 +619,11 @@ class Branch(SQLBase, BzrIdentityMixin):
                     merge_proposal, old.revision_id, new.revision_id)
         return jobs
 
+    def markRecipesStale(self):
+        """See `IBranch`."""
+        for recipe in self._recipes:
+            recipe.is_stale = True
+
     def addToLaunchBag(self, launchbag):
         """See `IBranch`."""
         launchbag.add(self.product)
@@ -1404,11 +1409,19 @@ class Branch(SQLBase, BzrIdentityMixin):
         return can_access
 
     @property
+    def _recipes(self):
+        """Undecorated version of recipes for use by `markRecipesStale`."""
+        from lp.code.model.sourcepackagerecipedata import (
+            SourcePackageRecipeData,
+            )
+        return SourcePackageRecipeData.findRecipes(self)
+
+    @property
     def recipes(self):
         """See `IHasRecipes`."""
-        from lp.code.model.sourcepackagerecipedata import (
-            SourcePackageRecipeData)
-        return SourcePackageRecipeData.findRecipes(self)
+        from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
+        hook = SourcePackageRecipe.preLoadDataForSourcePackageRecipes
+        return DecoratedResultSet(self._recipes, pre_iter_hook=hook)
 
     merge_queue_id = Int(name='merge_queue', allow_none=True)
     merge_queue = Reference(merge_queue_id, 'BranchMergeQueue.id')

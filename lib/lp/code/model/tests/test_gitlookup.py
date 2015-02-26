@@ -9,20 +9,16 @@ from lazr.uri import URI
 from zope.component import getUtility
 
 from lp.code.errors import (
-    CannotHaveDefaultGitRepository,
     InvalidNamespace,
-    NoDefaultGitRepository,
+    NoSuchGitRepository,
     )
 from lp.code.interfaces.gitlookup import (
-    IDefaultGitTraverser,
     IGitLookup,
+    IGitTraverser,
     )
+from lp.code.interfaces.gitrepository import IGitRepositorySet
 from lp.registry.errors import NoSuchSourcePackageName
 from lp.registry.interfaces.person import NoSuchPerson
-from lp.registry.interfaces.persondistributionsourcepackage import (
-    IPersonDistributionSourcePackageFactory,
-    )
-from lp.registry.interfaces.personproduct import IPersonProductFactory
 from lp.registry.interfaces.product import (
     InvalidProductName,
     NoSuchProduct,
@@ -83,7 +79,8 @@ class TestGetByPath(TestCaseWithFactory):
     def test_project_default(self):
         repository = self.factory.makeGitRepository()
         with person_logged_in(repository.target.owner):
-            repository.target.setDefaultGitRepository(repository)
+            getUtility(IGitRepositorySet).setDefaultRepository(
+                repository.target, repository)
         self.assertEqual(
             repository, self.lookup.getByPath(repository.shortened_path))
 
@@ -97,7 +94,8 @@ class TestGetByPath(TestCaseWithFactory):
         dsp = self.factory.makeDistributionSourcePackage()
         repository = self.factory.makeGitRepository(target=dsp)
         with person_logged_in(repository.target.distribution.owner):
-            repository.target.setDefaultGitRepository(repository)
+            getUtility(IGitRepositorySet).setDefaultRepository(
+                repository.target, repository)
         self.assertEqual(
             repository, self.lookup.getByPath(repository.shortened_path))
 
@@ -107,20 +105,17 @@ class TestGetByPath(TestCaseWithFactory):
         self.assertEqual(
             repository, self.lookup.getByPath(repository.unique_name))
 
-    def test_cannot_have_default_git_repository(self):
+    def test_invalid_namespace(self):
         # If `getByPath` is given a path to something with no default Git
-        # repository, such as a distribution, it raises
-        # CannotHaveDefaultGitRepository.
+        # repository, such as a distribution, it returns None.
         distro = self.factory.makeDistribution()
-        self.assertRaises(
-            CannotHaveDefaultGitRepository, self.lookup.getByPath, distro.name)
+        self.assertIsNone(self.lookup.getByPath(distro.name))
 
     def test_no_default_git_repository(self):
         # If `getByPath` is given a path to something that could have a Git
-        # repository but doesn't, it raises NoDefaultGitRepository.
+        # repository but doesn't, it returns None.
         project = self.factory.makeProduct()
-        self.assertRaises(
-            NoDefaultGitRepository, self.lookup.getByPath, project.name)
+        self.assertIsNone(self.lookup.getByPath(project.name))
 
 
 class TestGetByUrl(TestCaseWithFactory):
@@ -192,7 +187,8 @@ class TestGetByUrl(TestCaseWithFactory):
         # getByUrl honours default repositories when looking up URLs.
         repository = self.makeProjectRepository()
         with person_logged_in(repository.target.owner):
-            repository.target.setDefaultGitRepository(repository)
+            getUtility(IGitRepositorySet).setDefaultRepository(
+                repository.target, repository)
         self.assertUrlMatches("lp:bb", repository)
 
     def test_uriToHostingPath(self):
@@ -212,127 +208,233 @@ class TestGetByUrl(TestCaseWithFactory):
         self.assertIsNone(self.lookup.uriToHostingPath(uri))
 
 
-class TestDefaultGitTraverser(TestCaseWithFactory):
-    """Tests for the default repository traverser."""
+class TestGitTraverser(TestCaseWithFactory):
+    """Tests for the repository traverser."""
 
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        super(TestDefaultGitTraverser, self).setUp()
-        self.traverser = getUtility(IDefaultGitTraverser)
+        super(TestGitTraverser, self).setUp()
+        self.traverser = getUtility(IGitTraverser)
 
-    def assertTraverses(self, path, result):
-        self.assertEqual(result, self.traverser.traverse(path))
+    def assertTraverses(self, path, owner, target, repository=None):
+        self.assertEqual(
+            (owner, target, repository), self.traverser.traverse_path(path))
 
     def test_nonexistent_project(self):
-        # `traverse` raises `NoSuchProduct` when resolving a path of
+        # `traverse_path` raises `NoSuchProduct` when resolving a path of
         # 'project' if the project doesn't exist.
-        self.assertRaises(NoSuchProduct, self.traverser.traverse, "bb")
+        self.assertRaises(NoSuchProduct, self.traverser.traverse_path, "bb")
 
     def test_invalid_project(self):
-        # `traverse` raises `InvalidProductName` when resolving a path for a
-        # completely invalid default project repository.
-        self.assertRaises(InvalidProductName, self.traverser.traverse, "b")
+        # `traverse_path` raises `InvalidProductName` when resolving a path
+        # for a completely invalid default project repository.
+        self.assertRaises(
+            InvalidProductName, self.traverser.traverse_path, "b")
 
     def test_project(self):
-        # `traverse` resolves the name of a project to the project itself.
+        # `traverse_path` resolves the name of a project to the project itself.
         project = self.factory.makeProduct()
-        self.assertTraverses(project.name, project)
+        self.assertTraverses(project.name, None, project)
+
+    def test_project_no_named_repositories(self):
+        # Projects do not have named repositories without an owner context,
+        # so trying to traverse to them raises `InvalidNamespace`.
+        project = self.factory.makeProduct()
+        repository = self.factory.makeGitRepository(target=project)
+        self.assertRaises(
+            InvalidNamespace, self.traverser.traverse_path,
+            "%s/+git/%s" % (project.name, repository.name))
 
     def test_no_such_distribution(self):
-        # `traverse` raises `NoSuchProduct` if the distribution doesn't
+        # `traverse_path` raises `NoSuchProduct` if the distribution doesn't
         # exist.  That's because it can't tell the difference between the
         # name of a project that doesn't exist and the name of a
         # distribution that doesn't exist.
         self.assertRaises(
-            NoSuchProduct, self.traverser.traverse, "distro/+source/package")
+            NoSuchProduct, self.traverser.traverse_path,
+            "distro/+source/package")
 
     def test_missing_sourcepackagename(self):
-        # `traverse` raises `InvalidNamespace` if there are no segments
+        # `traverse_path` raises `InvalidNamespace` if there are no segments
         # after '+source'.
         self.factory.makeDistribution(name="distro")
         self.assertRaises(
-            InvalidNamespace, self.traverser.traverse, "distro/+source")
+            InvalidNamespace, self.traverser.traverse_path, "distro/+source")
 
     def test_no_such_sourcepackagename(self):
-        # `traverse` raises `NoSuchSourcePackageName` if the package in
+        # `traverse_path` raises `NoSuchSourcePackageName` if the package in
         # distro/+source/package doesn't exist.
         self.factory.makeDistribution(name="distro")
         self.assertRaises(
-            NoSuchSourcePackageName, self.traverser.traverse,
+            NoSuchSourcePackageName, self.traverser.traverse_path,
             "distro/+source/nonexistent")
 
     def test_package(self):
-        # `traverse` resolves 'distro/+source/package' to the distribution
-        # source package.
+        # `traverse_path` resolves 'distro/+source/package' to the
+        # distribution source package.
         dsp = self.factory.makeDistributionSourcePackage()
         path = "%s/+source/%s" % (
             dsp.distribution.name, dsp.sourcepackagename.name)
-        self.assertTraverses(path, dsp)
+        self.assertTraverses(path, None, dsp)
+
+    def test_package_no_named_repositories(self):
+        # Packages do not have named repositories without an owner context,
+        # so trying to traverse to them raises `InvalidNamespace`.
+        dsp = self.factory.makeDistributionSourcePackage()
+        repository = self.factory.makeGitRepository(target=dsp)
+        self.assertRaises(
+            InvalidNamespace, self.traverser.traverse_path,
+            "%s/+source/%s/+git/%s" % (
+                dsp.distribution.name, dsp.sourcepackagename.name,
+                repository.name))
 
     def test_nonexistent_person(self):
-        # `traverse` raises `NoSuchPerson` when resolving a path of
+        # `traverse_path` raises `NoSuchPerson` when resolving a path of
         # '~person/project' if the person doesn't exist.
-        self.assertRaises(NoSuchPerson, self.traverser.traverse, "~person/bb")
+        self.assertRaises(
+            NoSuchPerson, self.traverser.traverse_path, "~person/bb")
 
     def test_nonexistent_person_project(self):
-        # `traverse` raises `NoSuchProduct` when resolving a path of
+        # `traverse_path` raises `NoSuchProduct` when resolving a path of
         # '~person/project' if the project doesn't exist.
         self.factory.makePerson(name="person")
-        self.assertRaises(NoSuchProduct, self.traverser.traverse, "~person/bb")
+        self.assertRaises(
+            NoSuchProduct, self.traverser.traverse_path, "~person/bb")
 
     def test_invalid_person_project(self):
-        # `traverse` raises `InvalidProductName` when resolving a path for a
-        # person and a completely invalid default project repository.
+        # `traverse_path` raises `InvalidProductName` when resolving a path
+        # for a person and a completely invalid default project repository.
         self.factory.makePerson(name="person")
         self.assertRaises(
-            InvalidProductName, self.traverser.traverse, "~person/b")
+            InvalidProductName, self.traverser.traverse_path, "~person/b")
+
+    def test_person_missing_repository_name(self):
+        # `traverse_path` raises `InvalidNamespace` if there are no segments
+        # after '+git'.
+        self.factory.makePerson(name="person")
+        self.assertRaises(
+            InvalidNamespace, self.traverser.traverse_path, "~person/+git")
+
+    def test_person_no_such_repository(self):
+        # `traverse_path` raises `NoSuchGitRepository` if the repository in
+        # project/+git/repository doesn't exist.
+        self.factory.makePerson(name="person")
+        self.assertRaises(
+            NoSuchGitRepository, self.traverser.traverse_path,
+            "~person/+git/repository")
+
+    def test_person_repository(self):
+        # `traverse_path` resolves an existing project repository.
+        person = self.factory.makePerson(name="person")
+        repository = self.factory.makeGitRepository(
+            owner=person, target=person, name=u"repository")
+        self.assertTraverses(
+            "~person/+git/repository", person, person, repository)
 
     def test_person_project(self):
-        # `traverse` resolves '~person/project' to a PersonProduct.
+        # `traverse_path` resolves '~person/project' to the person and the
+        # project.
         person = self.factory.makePerson()
         project = self.factory.makeProduct()
-        person_project = getUtility(IPersonProductFactory).create(
-            person, project)
         self.assertTraverses(
-            "~%s/%s" % (person.name, project.name), person_project)
+            "~%s/%s" % (person.name, project.name), person, project)
+
+    def test_person_project_missing_repository_name(self):
+        # `traverse_path` raises `InvalidNamespace` if there are no segments
+        # after '+git'.
+        person = self.factory.makePerson()
+        project = self.factory.makeProduct()
+        self.assertRaises(
+            InvalidNamespace, self.traverser.traverse_path,
+            "~%s/%s/+git" % (person.name, project.name))
+
+    def test_person_project_no_such_repository(self):
+        # `traverse_path` raises `NoSuchGitRepository` if the repository in
+        # ~person/project/+git/repository doesn't exist.
+        person = self.factory.makePerson()
+        project = self.factory.makeProduct()
+        self.assertRaises(
+            NoSuchGitRepository, self.traverser.traverse_path,
+            "~%s/%s/+git/nonexistent" % (person.name, project.name))
+
+    def test_person_project_repository(self):
+        # `traverse_path` resolves an existing person-project repository.
+        person = self.factory.makePerson()
+        project = self.factory.makeProduct()
+        repository = self.factory.makeGitRepository(
+            owner=person, target=project)
+        self.assertTraverses(
+            "~%s/%s/+git/%s" % (person.name, project.name, repository.name),
+            person, project, repository)
 
     def test_no_such_person_distribution(self):
-        # `traverse` raises `NoSuchProduct` when resolving a path of
+        # `traverse_path` raises `NoSuchProduct` when resolving a path of
         # '~person/distro' if the distribution doesn't exist.  That's
         # because it can't tell the difference between the name of a project
         # that doesn't exist and the name of a distribution that doesn't
         # exist.
         self.factory.makePerson(name="person")
         self.assertRaises(
-            NoSuchProduct, self.traverser.traverse,
+            NoSuchProduct, self.traverser.traverse_path,
             "~person/distro/+source/package")
 
     def test_missing_person_sourcepackagename(self):
-        # `traverse` raises `InvalidNamespace` if there are no segments
+        # `traverse_path` raises `InvalidNamespace` if there are no segments
         # after '+source' in a person-DSP path.
         self.factory.makePerson(name="person")
         self.factory.makeDistribution(name="distro")
         self.assertRaises(
-            InvalidNamespace, self.traverser.traverse,
+            InvalidNamespace, self.traverser.traverse_path,
             "~person/distro/+source")
 
     def test_no_such_person_sourcepackagename(self):
-        # `traverse` raises `NoSuchSourcePackageName` if the package in
+        # `traverse_path` raises `NoSuchSourcePackageName` if the package in
         # ~person/distro/+source/package doesn't exist.
         self.factory.makePerson(name="person")
         self.factory.makeDistribution(name="distro")
         self.assertRaises(
-            NoSuchSourcePackageName, self.traverser.traverse,
+            NoSuchSourcePackageName, self.traverser.traverse_path,
             "~person/distro/+source/nonexistent")
 
     def test_person_package(self):
-        # `traverse` resolves '~person/distro/+source/package' to a
-        # PersonDistributionSourcePackage.
+        # `traverse_path` resolves '~person/distro/+source/package' to the
+        # person and the DSP.
         person = self.factory.makePerson()
         dsp = self.factory.makeDistributionSourcePackage()
-        person_dsp = getUtility(
-            IPersonDistributionSourcePackageFactory).create(person, dsp)
         path = "~%s/%s/+source/%s" % (
             person.name, dsp.distribution.name, dsp.sourcepackagename.name)
-        self.assertTraverses(path, person_dsp)
+        self.assertTraverses(path, person, dsp)
+
+    def test_person_package_missing_repository_name(self):
+        # `traverse_path` raises `InvalidNamespace` if there are no segments
+        # after '+git'.
+        person = self.factory.makePerson()
+        dsp = self.factory.makeDistributionSourcePackage()
+        self.assertRaises(
+            InvalidNamespace, self.traverser.traverse_path,
+            "~%s/%s/+source/%s/+git" % (
+                person.name, dsp.distribution.name,
+                dsp.sourcepackagename.name))
+
+    def test_person_package_no_such_repository(self):
+        # `traverse_path` raises `NoSuchGitRepository` if the repository in
+        # ~person/project/+git/repository doesn't exist.
+        person = self.factory.makePerson()
+        dsp = self.factory.makeDistributionSourcePackage()
+        self.assertRaises(
+            NoSuchGitRepository, self.traverser.traverse_path,
+            "~%s/%s/+source/%s/+git/nonexistent" % (
+                person.name, dsp.distribution.name,
+                dsp.sourcepackagename.name))
+
+    def test_person_package_repository(self):
+        # `traverse_path` resolves an existing person-package repository.
+        person = self.factory.makePerson()
+        dsp = self.factory.makeDistributionSourcePackage()
+        repository = self.factory.makeGitRepository(owner=person, target=dsp)
+        self.assertTraverses(
+            "~%s/%s/+source/%s/+git/%s" % (
+                person.name, dsp.distribution.name, dsp.sourcepackagename.name,
+                repository.name),
+            person, dsp, repository)

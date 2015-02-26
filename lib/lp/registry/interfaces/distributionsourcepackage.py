@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Source package in Distribution interfaces."""
@@ -174,18 +174,6 @@ class IDistributionSourcePackage(IHeadingContext, IBugTarget, IHasBranches,
         See https://bugs.launchpad.net/soyuz/+bug/236922 for a plan
         on how this criteria will be centrally encoded.
         """)
-
-    def getDefaultGitRepository():
-        """Get the default Git repository for this package.
-
-        :return: An `IGitRepository`, or None.
-        """
-
-    def setDefaultGitRepository(git_repository):
-        """Set the default Git repository for this package.
-
-        :param git_repository: An `IGitRepository`, or None to unset.
-        """
 
     def __eq__(other):
         """IDistributionSourcePackage comparison method.

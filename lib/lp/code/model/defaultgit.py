@@ -8,10 +8,6 @@ __metaclass__ = type
 # adapting another object.
 __all__ = []
 
-from lazr.enum import (
-    EnumeratedType,
-    Item,
-    )
 from zope.component import adapts
 from zope.interface import implements
 
@@ -24,16 +20,6 @@ from lp.registry.interfaces.persondistributionsourcepackage import (
     )
 from lp.registry.interfaces.personproduct import IPersonProduct
 from lp.registry.interfaces.product import IProduct
-
-
-class DefaultGitRepositoryOrder(EnumeratedType):
-    """An enum used only for ordering."""
-
-    PROJECT = Item("Project shortcut")
-    DISTRIBUTION_SOURCE_PACKAGE = Item("Distribution source package shortcut")
-    OWNER_PROJECT = Item("Owner's default for a project")
-    OWNER_DISTRIBUTION_SOURCE_PACKAGE = Item(
-        "Owner's default for a distribution source package")
 
 
 class BaseDefaultGitRepository:
@@ -59,35 +45,15 @@ class ProjectDefaultGitRepository(BaseDefaultGitRepository):
     adapts(IProduct)
     implements(ICanHasDefaultGitRepository)
 
-    sort_order = DefaultGitRepositoryOrder.PROJECT
+    sort_order = 0
 
     def __init__(self, project):
         self.context = project
 
     @property
-    def project(self):
-        return self.context
-
-    def __cmp__(self, other):
-        result = super(ProjectDefaultGitRepository, self).__cmp__(other)
-        if result != 0:
-            return result
-        else:
-            return cmp(self.project.name, other.project.name)
-
-    @property
-    def repository(self):
-        """See `ICanHasDefaultGitRepository`."""
-        return self.context.getDefaultGitRepository()
-
-    def setRepository(self, repository):
-        """See `ICanHasDefaultGitRepository`."""
-        self.context.setDefaultGitRepository(repository)
-
-    @property
     def path(self):
         """See `ICanHasDefaultGitRepository`."""
-        return self.project.name
+        return self.context.name
 
 
 class PackageDefaultGitRepository(BaseDefaultGitRepository):
@@ -96,47 +62,17 @@ class PackageDefaultGitRepository(BaseDefaultGitRepository):
     adapts(IDistributionSourcePackage)
     implements(ICanHasDefaultGitRepository)
 
-    sort_order = DefaultGitRepositoryOrder.DISTRIBUTION_SOURCE_PACKAGE
+    sort_order = 0
 
     def __init__(self, distro_source_package):
         self.context = distro_source_package
 
     @property
-    def distro_source_package(self):
-        return self.context
-
-    @property
-    def distribution(self):
-        return self.context.distribution
-
-    @property
-    def sourcepackagename(self):
-        return self.context.sourcepackagename
-
-    def __cmp__(self, other):
-        result = super(PackageDefaultGitRepository, self).__cmp__(other)
-        if result != 0:
-            return result
-        else:
-            my_names = (self.distribution.name, self.sourcepackagename.name)
-            other_names = (
-                other.distribution.name, other.sourcepackagename.name)
-            return cmp(my_names, other_names)
-
-    @property
-    def repository(self):
-        """See `ICanHasDefaultGitRepository`."""
-        return self.context.getDefaultGitRepository()
-
-    def setRepository(self, repository):
-        """See `ICanHasDefaultGitRepository`."""
-        self.context.setDefaultGitRepository(repository)
-
-    @property
     def path(self):
         """See `ICanHasDefaultGitRepository`."""
         return "%s/+source/%s" % (
-            self.distribution.name, self.sourcepackagename.name)
+            self.context.distribution.name,
+            self.context.sourcepackagename.name)
 
 
 class OwnerProjectDefaultGitRepository(BaseDefaultGitRepository):
@@ -145,45 +81,15 @@ class OwnerProjectDefaultGitRepository(BaseDefaultGitRepository):
     adapts(IPersonProduct)
     implements(ICanHasDefaultGitRepository)
 
-    sort_order = DefaultGitRepositoryOrder.OWNER_PROJECT
+    sort_order = 1
 
     def __init__(self, person_project):
         self.context = person_project
 
     @property
-    def person_project(self):
-        return self.context
-
-    @property
-    def person(self):
-        return self.context.person
-
-    @property
-    def project(self):
-        return self.context.product
-
-    def __cmp__(self, other):
-        result = super(OwnerProjectDefaultGitRepository, self).__cmp__(other)
-        if result != 0:
-            return result
-        else:
-            my_names = (self.person.name, self.project.name)
-            other_names = (other.person.name, other.project.name)
-            return cmp(my_names, other_names)
-
-    @property
-    def repository(self):
-        """See `ICanHasDefaultGitRepository`."""
-        return self.context.getDefaultGitRepository(self.project)
-
-    def setRepository(self, repository):
-        """See `ICanHasDefaultGitRepository`."""
-        self.context.setDefaultGitRepository(self.project, repository)
-
-    @property
     def path(self):
         """See `ICanHasDefaultGitRepository`."""
-        return "~%s/%s" % (self.person.name, self.project.name)
+        return "~%s/%s" % (self.context.person.name, self.context.product.name)
 
 
 class OwnerPackageDefaultGitRepository(BaseDefaultGitRepository):
@@ -193,57 +99,15 @@ class OwnerPackageDefaultGitRepository(BaseDefaultGitRepository):
     adapts(IPersonDistributionSourcePackage)
     implements(ICanHasDefaultGitRepository)
 
-    sort_order = DefaultGitRepositoryOrder.OWNER_DISTRIBUTION_SOURCE_PACKAGE
+    sort_order = 1
 
     def __init__(self, person_distro_source_package):
         self.context = person_distro_source_package
 
     @property
-    def person_distro_source_package(self):
-        return self.context
-
-    @property
-    def person(self):
-        return self.context.person
-
-    @property
-    def distro_source_package(self):
-        return self.context.distro_source_package
-
-    @property
-    def distribution(self):
-        return self.distro_source_package.distribution
-
-    @property
-    def sourcepackagename(self):
-        return self.distro_source_package.sourcepackagename
-
-    def __cmp__(self, other):
-        result = super(OwnerPackageDefaultGitRepository, self).__cmp__(other)
-        if result != 0:
-            return result
-        else:
-            my_names = (
-                self.person.name, self.distribution.name,
-                self.sourcepackagename.name)
-            other_names = (
-                other.person.name, other.distribution.name,
-                other.sourcepackagename.name)
-            return cmp(my_names, other_names)
-
-    @property
-    def repository(self):
-        """See `ICanHasDefaultGitRepository`."""
-        return self.context.getDefaultGitRepository(self.distro_source_package)
-
-    def setRepository(self, repository):
-        """See `ICanHasDefaultGitRepository`."""
-        self.context.setDefaultGitRepository(
-            self.distro_source_package, repository)
-
-    @property
     def path(self):
         """See `ICanHasDefaultGitRepository`."""
+        dsp = self.context.distro_source_package
         return "~%s/%s/+source/%s" % (
-            self.person.name, self.distribution.name,
-            self.sourcepackagename.name)
+            self.context.person.name, dsp.distribution.name,
+            dsp.sourcepackagename.name)

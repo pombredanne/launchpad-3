@@ -20,10 +20,9 @@ __all__ = [
     'BuildNotAllowedForDistro',
     'BranchMergeProposalExists',
     'CannotDeleteBranch',
+    'CannotHaveLinkedBranch',
     'CannotUpgradeBranch',
     'CannotUpgradeNonHosted',
-    'CannotHaveDefaultGitRepository',
-    'CannotHaveLinkedBranch',
     'CodeImportAlreadyRequested',
     'CodeImportAlreadyRunning',
     'CodeImportNotInReviewedState',
@@ -38,10 +37,8 @@ __all__ = [
     'GitRepositoryExists',
     'GitTargetError',
     'InvalidBranchMergeProposal',
-    'InvalidGitRepositoryException',
     'InvalidMergeQueueConfig',
     'InvalidNamespace',
-    'NoDefaultGitRepository',
     'NoLinkedBranch',
     'NoSuchBranch',
     'NoSuchGitRepository',
@@ -376,41 +373,6 @@ class GitRepositoryCreationFault(GitRepositoryCreationException):
 
 class GitTargetError(Exception):
     """Raised when there is an error determining a Git repository target."""
-
-
-class InvalidGitRepositoryException(Exception):
-    """Base exception for an error resolving a Git repository for a component.
-
-    Subclasses should set _msg_template to match their required display
-    message.
-    """
-
-    _msg_template = "Invalid Git repository for: %s"
-
-    def __init__(self, component):
-        self.component = component
-        # It's expected that components have a name attribute,
-        # so let's assume they will and deal with any error if it occurs.
-        try:
-            component_name = component.name
-        except AttributeError:
-            component_name = str(component)
-        # The display_message contains something readable for the user.
-        self.display_message = self._msg_template % component_name
-        Exception.__init__(self, self._msg_template % (repr(component),))
-
-
-class CannotHaveDefaultGitRepository(InvalidGitRepositoryException):
-    """Raised when we try to get the default Git repository for a thing that
-    can't."""
-
-    _msg_template = "%s cannot have default Git repositories."""
-
-
-class NoDefaultGitRepository(InvalidGitRepositoryException):
-    """Raised when there's no default Git repository for a thing."""
-
-    _msg_template = "%s has no default Git repository."
 
 
 class NoSuchGitRepository(NameLookupFailed):
