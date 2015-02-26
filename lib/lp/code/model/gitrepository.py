@@ -44,7 +44,6 @@ from lp.app.interfaces.services import IService
 from lp.code.errors import (
     GitDefaultConflict,
     GitTargetError,
-    InvalidGitRepositoryException,
     InvalidNamespace,
     )
 from lp.code.interfaces.gitlookup import IGitLookup
@@ -374,8 +373,7 @@ class GitRepositorySet:
         """See `IGitRepositorySet`."""
         try:
             repository = getUtility(IGitLookup).getByPath(path)
-        except (InvalidGitRepositoryException, InvalidNamespace,
-                InvalidProductName, NotFoundError):
+        except (InvalidNamespace, InvalidProductName, NotFoundError):
             return None
         authz = getAdapter(
             removeSecurityProxy(repository), IAuthorization, 'launchpad.View')

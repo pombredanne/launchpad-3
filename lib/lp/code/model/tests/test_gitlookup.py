@@ -8,11 +8,7 @@ __metaclass__ = type
 from lazr.uri import URI
 from zope.component import getUtility
 
-from lp.code.errors import (
-    CannotHaveDefaultGitRepository,
-    InvalidNamespace,
-    NoDefaultGitRepository,
-    )
+from lp.code.errors import InvalidNamespace
 from lp.code.interfaces.gitlookup import (
     IDefaultGitTraverser,
     IGitLookup,
@@ -20,10 +16,6 @@ from lp.code.interfaces.gitlookup import (
 from lp.code.interfaces.gitrepository import IGitRepositorySet
 from lp.registry.errors import NoSuchSourcePackageName
 from lp.registry.interfaces.person import NoSuchPerson
-from lp.registry.interfaces.persondistributionsourcepackage import (
-    IPersonDistributionSourcePackageFactory,
-    )
-from lp.registry.interfaces.personproduct import IPersonProductFactory
 from lp.registry.interfaces.product import (
     InvalidProductName,
     NoSuchProduct,
@@ -110,20 +102,17 @@ class TestGetByPath(TestCaseWithFactory):
         self.assertEqual(
             repository, self.lookup.getByPath(repository.unique_name))
 
-    def test_cannot_have_default_git_repository(self):
+    def test_invalid_namespace(self):
         # If `getByPath` is given a path to something with no default Git
-        # repository, such as a distribution, it raises
-        # CannotHaveDefaultGitRepository.
+        # repository, such as a distribution, it raises InvalidNamespace.
         distro = self.factory.makeDistribution()
-        self.assertRaises(
-            CannotHaveDefaultGitRepository, self.lookup.getByPath, distro.name)
+        self.assertRaises(InvalidNamespace, self.lookup.getByPath, distro.name)
 
     def test_no_default_git_repository(self):
         # If `getByPath` is given a path to something that could have a Git
-        # repository but doesn't, it raises NoDefaultGitRepository.
+        # repository but doesn't, it returns None.
         project = self.factory.makeProduct()
-        self.assertRaises(
-            NoDefaultGitRepository, self.lookup.getByPath, project.name)
+        self.assertIsNone(self.lookup.getByPath(project.name))
 
 
 class TestGetByUrl(TestCaseWithFactory):
@@ -225,8 +214,8 @@ class TestDefaultGitTraverser(TestCaseWithFactory):
         super(TestDefaultGitTraverser, self).setUp()
         self.traverser = getUtility(IDefaultGitTraverser)
 
-    def assertTraverses(self, path, result):
-        self.assertEqual(result, self.traverser.traverse(path))
+    def assertTraverses(self, path, owner, target):
+        self.assertEqual((owner, target), self.traverser.traverse(path))
 
     def test_nonexistent_project(self):
         # `traverse` raises `NoSuchProduct` when resolving a path of
@@ -241,7 +230,7 @@ class TestDefaultGitTraverser(TestCaseWithFactory):
     def test_project(self):
         # `traverse` resolves the name of a project to the project itself.
         project = self.factory.makeProduct()
-        self.assertTraverses(project.name, project)
+        self.assertTraverses(project.name, None, project)
 
     def test_no_such_distribution(self):
         # `traverse` raises `NoSuchProduct` if the distribution doesn't
@@ -272,7 +261,7 @@ class TestDefaultGitTraverser(TestCaseWithFactory):
         dsp = self.factory.makeDistributionSourcePackage()
         path = "%s/+source/%s" % (
             dsp.distribution.name, dsp.sourcepackagename.name)
-        self.assertTraverses(path, dsp)
+        self.assertTraverses(path, None, dsp)
 
     def test_nonexistent_person(self):
         # `traverse` raises `NoSuchPerson` when resolving a path of
@@ -293,13 +282,11 @@ class TestDefaultGitTraverser(TestCaseWithFactory):
             InvalidProductName, self.traverser.traverse, "~person/b")
 
     def test_person_project(self):
-        # `traverse` resolves '~person/project' to a PersonProduct.
+        # `traverse` resolves '~person/project' to the person and the project.
         person = self.factory.makePerson()
         project = self.factory.makeProduct()
-        person_project = getUtility(IPersonProductFactory).create(
-            person, project)
         self.assertTraverses(
-            "~%s/%s" % (person.name, project.name), person_project)
+            "~%s/%s" % (person.name, project.name), person, project)
 
     def test_no_such_person_distribution(self):
         # `traverse` raises `NoSuchProduct` when resolving a path of
@@ -331,12 +318,10 @@ class TestDefaultGitTraverser(TestCaseWithFactory):
             "~person/distro/+source/nonexistent")
 
     def test_person_package(self):
-        # `traverse` resolves '~person/distro/+source/package' to a
-        # PersonDistributionSourcePackage.
+        # `traverse` resolves '~person/distro/+source/package' to the person
+        # and the DSP.
         person = self.factory.makePerson()
         dsp = self.factory.makeDistributionSourcePackage()
-        person_dsp = getUtility(
-            IPersonDistributionSourcePackageFactory).create(person, dsp)
         path = "~%s/%s/+source/%s" % (
             person.name, dsp.distribution.name, dsp.sourcepackagename.name)
-        self.assertTraverses(path, person_dsp)
+        self.assertTraverses(path, person, dsp)
