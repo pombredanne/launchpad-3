@@ -2722,8 +2722,6 @@ class PersonEditEmailsView(LaunchpadFormView):
                   orientation='vertical')
     custom_widget('UNVALIDATED_SELECTED', LaunchpadRadioWidget,
                   orientation='vertical')
-    custom_widget('mailing_list_auto_subscribe_policy',
-                  LaunchpadRadioWidgetWithDescription)
 
     label = 'Change your e-mail settings'
 
@@ -2746,9 +2744,7 @@ class PersonEditEmailsView(LaunchpadFormView):
         self.form_fields = (self._validated_emails_field() +
                             self._unvalidated_emails_field() +
                             FormFields(TextLine(__name__='newemail',
-                                                title=u'Add a new address'))
-                            + self._mailing_list_fields()
-                            + self._autosubscribe_policy_fields())
+                                                title=u'Add a new address')))
 
     @property
     def initial_values(self):
@@ -2769,20 +2765,8 @@ class PersonEditEmailsView(LaunchpadFormView):
         unvalidated = self.unvalidated_addresses
         if len(unvalidated) > 0:
             unvalidated = unvalidated.pop()
-        initial = dict(VALIDATED_SELECTED=validated,
-                       UNVALIDATED_SELECTED=unvalidated)
-
-        # Defaults for the mailing list autosubscribe buttons.
-        policy = self.context.mailing_list_auto_subscribe_policy
-        initial.update(mailing_list_auto_subscribe_policy=policy)
-
-        return initial
-
-    def setUpWidgets(self, context=None):
-        """See `LaunchpadFormView`."""
-        super(PersonEditEmailsView, self).setUpWidgets(context)
-        widget = self.widgets['mailing_list_auto_subscribe_policy']
-        widget.display_label = False
+        return dict(VALIDATED_SELECTED=validated,
+                    UNVALIDATED_SELECTED=unvalidated)
 
     def _validated_emails_field(self):
         """Create a field with a vocabulary of validated emails.
@@ -2823,75 +2807,6 @@ class PersonEditEmailsView(LaunchpadFormView):
             Choice(__name__='UNVALIDATED_SELECTED', title=title,
                    source=SimpleVocabulary(terms)),
             custom_widget=self.custom_widgets['UNVALIDATED_SELECTED'])
-
-    def _mailing_list_subscription_type(self, mailing_list):
-        """Return the context user's subscription type for the given list.
-
-        This is 'Preferred address' if the user is subscribed using her
-        preferred address and 'Don't subscribe' if the user is not
-        subscribed at all. Otherwise it's the EmailAddress under
-        which the user is subscribed to this mailing list.
-        """
-        subscription = mailing_list.getSubscription(self.context)
-        if subscription is None:
-            return "Don't subscribe"
-        elif subscription.email_address is None:
-            return 'Preferred address'
-        else:
-            return subscription.email_address
-
-    def _mailing_list_fields(self):
-        """Creates a field for each mailing list the user can subscribe to.
-
-        If a team doesn't have a mailing list, or the mailing list
-        isn't usable, it's not included.
-        """
-        mailing_list_set = getUtility(IMailingListSet)
-        fields = []
-        terms = [
-            SimpleTerm("Preferred address"),
-            SimpleTerm("Don't subscribe"),
-            ]
-        for email in self.validated_addresses:
-            terms.append(SimpleTerm(email, email.email))
-        for team in self.context.teams_participated_in:
-            mailing_list = mailing_list_set.get(team.name)
-            if mailing_list is not None and mailing_list.is_usable:
-                name = 'subscription.%s' % team.name
-                value = self._mailing_list_subscription_type(mailing_list)
-                field = Choice(__name__=name,
-                               title=team.name,
-                               source=SimpleVocabulary(terms), default=value)
-                fields.append(field)
-        return FormFields(*fields)
-
-    def _autosubscribe_policy_fields(self):
-        """Create a field for each mailing list auto-subscription option."""
-        return FormFields(
-            Choice(__name__='mailing_list_auto_subscribe_policy',
-                   title=_('When should Launchpad automatically subscribe '
-                           'you to a team&#x2019;s mailing list?'),
-                   source=MailingListAutoSubscribePolicy))
-
-    @property
-    def mailing_list_widgets(self):
-        """Return all the mailing list subscription widgets."""
-        mailing_list_set = getUtility(IMailingListSet)
-        widgets = []
-        for widget in self.widgets:
-            if widget.name.startswith('field.subscription.'):
-                team_name = widget.label
-                mailing_list = mailing_list_set.get(team_name)
-                assert mailing_list is not None, 'Missing mailing list'
-                widget_dict = dict(
-                    team=mailing_list.team,
-                    widget=widget,
-                    )
-                widgets.append(widget_dict)
-                # We'll put the label in the first column, so don't include it
-                # in the second column.
-                widget.display_label = False
-        return widgets
 
     def _validate_selected_address(self, data, field='VALIDATED_SELECTED'):
         """A generic validator for this view's actions.
@@ -3123,77 +3038,6 @@ class PersonEditEmailsView(LaunchpadFormView):
                 "(If the message doesn't arrive in a few minutes, your mail "
                 "provider might use 'greylisting', which could delay the "
                 "message for up to an hour or two.)" % newemail)
-        self.next_url = self.action_url
-
-    def validate_action_update_subscriptions(self, action, data):
-        """Make sure the user is subscribing using a valid address.
-
-        Valid addresses are the ones presented as options for the mailing
-        list widgets.
-        """
-        names = [widget_dict['widget'].context.getName()
-                 for widget_dict in self.mailing_list_widgets]
-        self.validate_widgets(data, names)
-        return self.errors
-
-    @action(_("Update Subscriptions"), name="update_subscriptions",
-            validator=validate_action_update_subscriptions)
-    def action_update_subscriptions(self, action, data):
-        """Change the user's mailing list subscriptions."""
-        mailing_list_set = getUtility(IMailingListSet)
-        dirty = False
-        prefix_length = len('subscription.')
-        for widget_dict in self.mailing_list_widgets:
-            widget = widget_dict['widget']
-            mailing_list_name = widget.context.getName()[prefix_length:]
-            mailing_list = mailing_list_set.get(mailing_list_name)
-            new_value = data[widget.context.getName()]
-            old_value = self._mailing_list_subscription_type(mailing_list)
-            if IEmailAddress.providedBy(new_value):
-                new_value_string = new_value.email
-            else:
-                new_value_string = new_value
-            if new_value_string != old_value:
-                dirty = True
-                if new_value == "Don't subscribe":
-                    # Delete the subscription.
-                    mailing_list.unsubscribe(self.context)
-                else:
-                    if new_value == "Preferred address":
-                        # If the user is subscribed but not under any
-                        # particular address, her current preferred
-                        # address will always be used.
-                        new_value = None
-                    subscription = mailing_list.getSubscription(self.context)
-                    if subscription is None:
-                        mailing_list.subscribe(self.context, new_value)
-                    else:
-                        mailing_list.changeAddress(self.context, new_value)
-        if dirty:
-            self.request.response.addInfoNotification(
-                "Subscriptions updated.")
-        self.next_url = self.action_url
-
-    def validate_action_update_autosubscribe_policy(self, action, data):
-        """Ensure that the requested auto-subscribe setting is valid."""
-        # XXX mars 2008-04-27 bug=223303:
-        # This validator appears pointless and untestable, but it is
-        # required for LaunchpadFormView to tell apart the three <form>
-        # elements on the page.
-
-        widget = self.widgets['mailing_list_auto_subscribe_policy']
-        self.validate_widgets(data, widget.name)
-        return self.errors
-
-    @action(
-        _('Update Policy'),
-        name="update_autosubscribe_policy",
-        validator=validate_action_update_autosubscribe_policy)
-    def action_update_autosubscribe_policy(self, action, data):
-        newpolicy = data['mailing_list_auto_subscribe_policy']
-        self.context.mailing_list_auto_subscribe_policy = newpolicy
-        self.request.response.addInfoNotification(
-            'Your auto-subscribe policy has been updated.')
         self.next_url = self.action_url
 
 
