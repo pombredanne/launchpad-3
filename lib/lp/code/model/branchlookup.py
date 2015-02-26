@@ -72,13 +72,13 @@ from lp.services.database.interfaces import IStore
 from lp.services.webapp.authorization import check_permission
 
 
-def adapt(provided, interface):
+def adapt(obj, interface):
     """Adapt 'obj' to 'interface', using multi-adapters if necessary."""
-    required = interface(provided, None)
+    required = interface(obj, None)
     if required is not None:
         return required
     try:
-        return queryMultiAdapter(provided, interface)
+        return queryMultiAdapter(obj, interface)
     except TypeError:
         return None
 
