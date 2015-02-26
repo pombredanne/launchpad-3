@@ -148,59 +148,6 @@ class IGitNamespaceSet(Interface):
     def get(person, project=None, distribution=None, sourcepackagename=None):
         """Return the appropriate `IGitNamespace` for the given objects."""
 
-    def interpret(person, project, distribution, sourcepackagename):
-        """Like `get`, but takes names of objects.
-
-        :raise NoSuchPerson: If the person referred to cannot be found.
-        :raise NoSuchProduct: If the project referred to cannot be found.
-        :raise NoSuchDistribution: If the distribution referred to cannot be
-            found.
-        :raise NoSuchSourcePackageName: If the sourcepackagename referred to
-            cannot be found.
-        :return: An `IGitNamespace`.
-        """
-
-    def parse(namespace_name):
-        """Parse 'namespace_name' into its components.
-
-        The name of a namespace is actually a path containing many elements,
-        each of which maps to a particular kind of object in Launchpad.
-        Elements that can appear in a namespace name are: 'person',
-        'project', 'distribution', and 'sourcepackagename'.
-
-        `parse` returns a dict which maps the names of these elements (e.g.
-        'person', 'project') to the values of these elements (e.g. 'mark',
-        'firefox').  If the given path doesn't include a particular kind of
-        element, the dict maps that element name to None.
-
-        For example::
-            parse('~foo/bar') => {
-                'person': 'foo', 'project': 'bar', 'distribution': None,
-                'sourcepackagename': None,
-                }
-
-        If the given 'namespace_name' cannot be parsed, then we raise an
-        `InvalidNamespace` error.
-
-        :raise InvalidNamespace: If the name is too long, too short, or
-            malformed.
-        :return: A dict with keys matching each component in
-            'namespace_name'.
-        """
-
-    def lookup(namespace_name):
-        """Return the `IGitNamespace` for 'namespace_name'.
-
-        :raise InvalidNamespace: if namespace_name cannot be parsed.
-        :raise NoSuchPerson: if the person referred to cannot be found.
-        :raise NoSuchProduct: if the project referred to cannot be found.
-        :raise NoSuchDistribution: if the distribution referred to cannot be
-            found.
-        :raise NoSuchSourcePackageName: if the sourcepackagename referred to
-            cannot be found.
-        :return: An `IGitNamespace`.
-        """
-
 
 def get_git_namespace(target, owner):
     if IProduct.providedBy(target):
