@@ -64,21 +64,17 @@ class ProjectDefaultGitRepository(BaseDefaultGitRepository):
     def __init__(self, project):
         self.context = project
 
-    @property
-    def project(self):
-        return self.context
-
     def __cmp__(self, other):
         result = super(ProjectDefaultGitRepository, self).__cmp__(other)
         if result != 0:
             return result
         else:
-            return cmp(self.project.name, other.project.name)
+            return cmp(self.context.name, other.context.name)
 
     @property
     def path(self):
         """See `ICanHasDefaultGitRepository`."""
-        return self.project.name
+        return self.context.name
 
 
 class PackageDefaultGitRepository(BaseDefaultGitRepository):
@@ -92,33 +88,25 @@ class PackageDefaultGitRepository(BaseDefaultGitRepository):
     def __init__(self, distro_source_package):
         self.context = distro_source_package
 
-    @property
-    def distro_source_package(self):
-        return self.context
-
-    @property
-    def distribution(self):
-        return self.context.distribution
-
-    @property
-    def sourcepackagename(self):
-        return self.context.sourcepackagename
-
     def __cmp__(self, other):
         result = super(PackageDefaultGitRepository, self).__cmp__(other)
         if result != 0:
             return result
         else:
-            my_names = (self.distribution.name, self.sourcepackagename.name)
+            my_names = (
+                self.context.distribution.name,
+                self.context.sourcepackagename.name)
             other_names = (
-                other.distribution.name, other.sourcepackagename.name)
+                other.context.distribution.name,
+                other.context.sourcepackagename.name)
             return cmp(my_names, other_names)
 
     @property
     def path(self):
         """See `ICanHasDefaultGitRepository`."""
         return "%s/+source/%s" % (
-            self.distribution.name, self.sourcepackagename.name)
+            self.context.distribution.name,
+            self.context.sourcepackagename.name)
 
 
 class OwnerProjectDefaultGitRepository(BaseDefaultGitRepository):
@@ -132,27 +120,20 @@ class OwnerProjectDefaultGitRepository(BaseDefaultGitRepository):
     def __init__(self, person_project):
         self.context = person_project
 
-    @property
-    def person(self):
-        return self.context.person
-
-    @property
-    def project(self):
-        return self.context.product
-
     def __cmp__(self, other):
         result = super(OwnerProjectDefaultGitRepository, self).__cmp__(other)
         if result != 0:
             return result
         else:
-            my_names = (self.person.name, self.project.name)
-            other_names = (other.person.name, other.project.name)
+            my_names = (self.context.person.name, self.context.product.name)
+            other_names = (
+                other.context.person.name, other.context.product.name)
             return cmp(my_names, other_names)
 
     @property
     def path(self):
         """See `ICanHasDefaultGitRepository`."""
-        return "~%s/%s" % (self.person.name, self.project.name)
+        return "~%s/%s" % (self.context.person.name, self.context.product.name)
 
 
 class OwnerPackageDefaultGitRepository(BaseDefaultGitRepository):
@@ -167,38 +148,25 @@ class OwnerPackageDefaultGitRepository(BaseDefaultGitRepository):
     def __init__(self, person_distro_source_package):
         self.context = person_distro_source_package
 
-    @property
-    def person(self):
-        return self.context.person
-
-    @property
-    def distro_source_package(self):
-        return self.context.distro_source_package
-
-    @property
-    def distribution(self):
-        return self.distro_source_package.distribution
-
-    @property
-    def sourcepackagename(self):
-        return self.distro_source_package.sourcepackagename
-
     def __cmp__(self, other):
         result = super(OwnerPackageDefaultGitRepository, self).__cmp__(other)
         if result != 0:
             return result
         else:
+            my_dsp = self.context.distro_source_package
+            other_dsp = other.context.distro_source_package
             my_names = (
-                self.person.name, self.distribution.name,
-                self.sourcepackagename.name)
+                self.context.person.name, my_dsp.distribution.name,
+                my_dsp.sourcepackagename.name)
             other_names = (
-                other.person.name, other.distribution.name,
-                other.sourcepackagename.name)
+                other.context.person.name, other_dsp.distribution.name,
+                other_dsp.sourcepackagename.name)
             return cmp(my_names, other_names)
 
     @property
     def path(self):
         """See `ICanHasDefaultGitRepository`."""
+        dsp = self.context.distro_source_package
         return "~%s/%s/+source/%s" % (
-            self.person.name, self.distribution.name,
-            self.sourcepackagename.name)
+            self.context.person.name, dsp.distribution.name,
+            dsp.sourcepackagename.name)
