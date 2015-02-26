@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -39,7 +39,6 @@ from lp.bugs.interfaces.bugtasksearch import (
     IllegalRelatedBugTasksParams,
     )
 from lp.bugs.model.bug import Bug
-from lp.code.errors import GitTargetError
 from lp.registry.enums import (
     PersonVisibility,
     TeamMembershipPolicy,
@@ -774,51 +773,6 @@ class TestPerson(TestCaseWithFactory):
         team = self.factory.makeTeam()
         self.assertContentEqual(
             [], getUtility(IAccessPolicySource).findByTeam([team]))
-
-    def test_default_git_repository_round_trip(self):
-        # A default Git repository set using setDefaultGitRepository can be
-        # retrieved using getDefaultGitRepository.
-        person = self.factory.makePerson()
-        project = self.factory.makeProduct()
-        self.assertIsNone(person.getDefaultGitRepository(project))
-        repository = self.factory.makeGitRepository(
-            owner=person, target=project)
-        with person_logged_in(person):
-            person.setDefaultGitRepository(project, repository)
-        self.assertEqual(repository, person.getDefaultGitRepository(project))
-
-    def test_setDefaultGitRepository_None(self):
-        # setDefaultGitRepository(target, None) clears the default.
-        person = self.factory.makePerson()
-        project = self.factory.makeProduct()
-        repository = self.factory.makeGitRepository(
-            owner=person, target=project)
-        with person_logged_in(person):
-            person.setDefaultGitRepository(project, repository)
-            person.setDefaultGitRepository(project, None)
-        self.assertIsNone(person.getDefaultGitRepository(project))
-
-    def test_setDefaultGitRepository_refuses_person(self):
-        # setDefaultGitRepository refuses if the target is a person.
-        person = self.factory.makePerson()
-        repository = self.factory.makeGitRepository(owner=person)
-        with person_logged_in(person):
-            self.assertRaises(
-                GitTargetError, person.setDefaultGitRepository, person,
-                repository)
-
-    def test_setDefaultGitRepository_different_target(self):
-        # setDefaultGitRepository refuses if the repository is attached to a
-        # different target.
-        person = self.factory.makePerson()
-        project = self.factory.makeProduct()
-        other_project = self.factory.makeProduct()
-        repository = self.factory.makeGitRepository(
-            owner=person, target=other_project)
-        with person_logged_in(person):
-            self.assertRaises(
-                GitTargetError, person.setDefaultGitRepository, project,
-                repository)
 
 
 class TestPersonStates(TestCaseWithFactory):

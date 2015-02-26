@@ -516,7 +516,6 @@
                 findRelatedArchivePublications
                 findRelatedArchives
                 getBranches
-                getDefaultGitRepository
                 getMergeProposals
                 getReleasesAndPublishingHistory
                 getUsedBugTagsWithOpenCounts
@@ -534,11 +533,6 @@
                 summary
                 title
                 upstream_product"/>
-        <require
-            permission="launchpad.Edit"
-            attributes="
-                setDefaultGitRepository
-                " />
 
         <!-- IStructuralSubscriptionTarget -->
 
