@@ -8,10 +8,6 @@ __metaclass__ = type
 # adapting another object.
 __all__ = []
 
-from lazr.enum import (
-    EnumeratedType,
-    Item,
-    )
 from zope.component import adapts
 from zope.interface import implements
 
@@ -24,16 +20,6 @@ from lp.registry.interfaces.persondistributionsourcepackage import (
     )
 from lp.registry.interfaces.personproduct import IPersonProduct
 from lp.registry.interfaces.product import IProduct
-
-
-class DefaultGitRepositoryOrder(EnumeratedType):
-    """An enum used only for ordering."""
-
-    PROJECT = Item("Project shortcut")
-    DISTRIBUTION_SOURCE_PACKAGE = Item("Distribution source package shortcut")
-    OWNER_PROJECT = Item("Owner's default for a project")
-    OWNER_DISTRIBUTION_SOURCE_PACKAGE = Item(
-        "Owner's default for a distribution source package")
 
 
 class BaseDefaultGitRepository:
@@ -59,17 +45,10 @@ class ProjectDefaultGitRepository(BaseDefaultGitRepository):
     adapts(IProduct)
     implements(ICanHasDefaultGitRepository)
 
-    sort_order = DefaultGitRepositoryOrder.PROJECT
+    sort_order = 0
 
     def __init__(self, project):
         self.context = project
-
-    def __cmp__(self, other):
-        result = super(ProjectDefaultGitRepository, self).__cmp__(other)
-        if result != 0:
-            return result
-        else:
-            return cmp(self.context.name, other.context.name)
 
     @property
     def path(self):
@@ -83,23 +62,10 @@ class PackageDefaultGitRepository(BaseDefaultGitRepository):
     adapts(IDistributionSourcePackage)
     implements(ICanHasDefaultGitRepository)
 
-    sort_order = DefaultGitRepositoryOrder.DISTRIBUTION_SOURCE_PACKAGE
+    sort_order = 0
 
     def __init__(self, distro_source_package):
         self.context = distro_source_package
-
-    def __cmp__(self, other):
-        result = super(PackageDefaultGitRepository, self).__cmp__(other)
-        if result != 0:
-            return result
-        else:
-            my_names = (
-                self.context.distribution.name,
-                self.context.sourcepackagename.name)
-            other_names = (
-                other.context.distribution.name,
-                other.context.sourcepackagename.name)
-            return cmp(my_names, other_names)
 
     @property
     def path(self):
@@ -115,20 +81,10 @@ class OwnerProjectDefaultGitRepository(BaseDefaultGitRepository):
     adapts(IPersonProduct)
     implements(ICanHasDefaultGitRepository)
 
-    sort_order = DefaultGitRepositoryOrder.OWNER_PROJECT
+    sort_order = 1
 
     def __init__(self, person_project):
         self.context = person_project
-
-    def __cmp__(self, other):
-        result = super(OwnerProjectDefaultGitRepository, self).__cmp__(other)
-        if result != 0:
-            return result
-        else:
-            my_names = (self.context.person.name, self.context.product.name)
-            other_names = (
-                other.context.person.name, other.context.product.name)
-            return cmp(my_names, other_names)
 
     @property
     def path(self):
@@ -143,25 +99,10 @@ class OwnerPackageDefaultGitRepository(BaseDefaultGitRepository):
     adapts(IPersonDistributionSourcePackage)
     implements(ICanHasDefaultGitRepository)
 
-    sort_order = DefaultGitRepositoryOrder.OWNER_DISTRIBUTION_SOURCE_PACKAGE
+    sort_order = 1
 
     def __init__(self, person_distro_source_package):
         self.context = person_distro_source_package
-
-    def __cmp__(self, other):
-        result = super(OwnerPackageDefaultGitRepository, self).__cmp__(other)
-        if result != 0:
-            return result
-        else:
-            my_dsp = self.context.distro_source_package
-            other_dsp = other.context.distro_source_package
-            my_names = (
-                self.context.person.name, my_dsp.distribution.name,
-                my_dsp.sourcepackagename.name)
-            other_names = (
-                other.context.person.name, other_dsp.distribution.name,
-                other_dsp.sourcepackagename.name)
-            return cmp(my_names, other_names)
 
     @property
     def path(self):
