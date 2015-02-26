@@ -19,6 +19,10 @@
          id="no-contact-address">
           Currently you don't have a contact address in Launchpad.
       </p>
+      <p>Looking to <a
+        tal:define="link context/menu:overview/editmailinglists"
+        tal:attributes="href link/target" 
+        >configure your mailing list subscriptions?</a></p>
     </metal:extra-info>
 
     <metal:widgets fill-slot="widgets">

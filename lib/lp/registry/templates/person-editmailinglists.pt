@@ -16,7 +16,11 @@
 
     <p>You're a member of one or more teams with active mailing
       lists. You can subscribe to a team's mailing list using any of
-      your verified email addresses.</p>
+      your verified email addresses. You can <a
+        tal:define="link context/menu:overview/editemailaddresses"
+        tal:attributes="href link/target" 
+        >configure your verified email addresses here</a>.
+    </p>
 
     <table class="listing" style="width: 45em;">
       <thead>
