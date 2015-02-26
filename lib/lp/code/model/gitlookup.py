@@ -19,11 +19,9 @@ from zope.component import (
     )
 from zope.interface import implements
 
+from lp.app.errors import NameLookupFailed
 from lp.app.validators.name import valid_name
-from lp.code.errors import (
-    InvalidNamespace,
-    NoSuchGitRepository,
-    )
+from lp.code.errors import InvalidNamespace
 from lp.code.interfaces.gitlookup import (
     IDefaultGitTraversable,
     IDefaultGitTraverser,
@@ -193,12 +191,7 @@ class GitLookup:
         path = self.uriToHostingPath(uri)
         if path is None:
             return None
-        try:
-            return self.getByPath(path)
-        except (
-            InvalidNamespace, InvalidProductName, NoSuchGitRepository,
-            NoSuchPerson, NoSuchProduct, NoSuchSourcePackageName):
-            return None
+        return self.getByPath(path)
 
     def getByUniqueName(self, unique_name):
         """See `IGitLookup`."""
@@ -211,7 +204,7 @@ class GitLookup:
                 if list(segments):
                     raise InvalidNamespace(path)
                 return repository
-        except InvalidNamespace:
+        except (InvalidNamespace, NameLookupFailed):
             pass
         return None
 
@@ -224,7 +217,10 @@ class GitLookup:
 
         # Try parsing as a shortcut.
         repository_set = getUtility(IGitRepositorySet)
-        owner, target = getUtility(IDefaultGitTraverser).traverse(path)
+        try:
+            owner, target = getUtility(IDefaultGitTraverser).traverse(path)
+        except (InvalidNamespace, InvalidProductName, NameLookupFailed):
+            return None
         if owner is None:
             return repository_set.getDefaultRepository(target)
         else:

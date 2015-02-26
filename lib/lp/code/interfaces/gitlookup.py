@@ -106,19 +106,5 @@ class IGitLookup(Interface):
                 PROJECT
                 DISTRO/+source/SOURCE
 
-        :raises InvalidNamespace: If the path is not in one of the valid
-            namespaces for a repository.
-        :raises InvalidProductName: If the given project in a project
-            shortcut is an invalid name for a project.
-
-        :raises NoSuchGitRepository: If we can't find a repository that
-            matches the repository component of the path.
-        :raises NoSuchPerson: If we can't find a person who matches the
-            person component of the path.
-        :raises NoSuchProduct: If we can't find a project that matches the
-            project component of the path.
-        :raises NoSuchSourcePackageName: If the source package referred to
-            does not exist.
-
         :return: An `IGitRepository`, or None.
         """

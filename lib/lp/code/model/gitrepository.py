@@ -32,14 +32,12 @@ from lp.app.enums import (
     PRIVATE_INFORMATION_TYPES,
     PUBLIC_INFORMATION_TYPES,
     )
-from lp.app.errors import NotFoundError
 from lp.app.interfaces.informationtype import IInformationType
 from lp.app.interfaces.launchpad import IPrivacy
 from lp.app.interfaces.services import IService
 from lp.code.errors import (
     GitDefaultConflict,
     GitTargetError,
-    InvalidNamespace,
     )
 from lp.code.interfaces.gitlookup import IGitLookup
 from lp.code.interfaces.gitnamespace import (
@@ -62,10 +60,7 @@ from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
 from lp.registry.interfaces.person import IPerson
-from lp.registry.interfaces.product import (
-    InvalidProductName,
-    IProduct,
-    )
+from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.sharingjob import (
     IRemoveArtifactSubscriptionsJobSource,
@@ -363,11 +358,8 @@ class GitRepositorySet:
 
     def getByPath(self, user, path):
         """See `IGitRepositorySet`."""
-        try:
-            repository = getUtility(IGitLookup).getByPath(path)
-        except (InvalidNamespace, InvalidProductName, NotFoundError):
-            return None
-        if repository.visibleByUser(user):
+        repository = getUtility(IGitLookup).getByPath(path)
+        if repository is not None and repository.visibleByUser(user):
             return repository
         return None
 

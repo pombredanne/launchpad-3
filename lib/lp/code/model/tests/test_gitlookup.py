@@ -104,9 +104,9 @@ class TestGetByPath(TestCaseWithFactory):
 
     def test_invalid_namespace(self):
         # If `getByPath` is given a path to something with no default Git
-        # repository, such as a distribution, it raises InvalidNamespace.
+        # repository, such as a distribution, it returns None.
         distro = self.factory.makeDistribution()
-        self.assertRaises(InvalidNamespace, self.lookup.getByPath, distro.name)
+        self.assertIsNone(self.lookup.getByPath(distro.name))
 
     def test_no_default_git_repository(self):
         # If `getByPath` is given a path to something that could have a Git
