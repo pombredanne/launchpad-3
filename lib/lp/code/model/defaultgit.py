@@ -133,10 +133,6 @@ class OwnerProjectDefaultGitRepository(BaseDefaultGitRepository):
         self.context = person_project
 
     @property
-    def person_project(self):
-        return self.context
-
-    @property
     def person(self):
         return self.context.person
 
@@ -170,10 +166,6 @@ class OwnerPackageDefaultGitRepository(BaseDefaultGitRepository):
 
     def __init__(self, person_distro_source_package):
         self.context = person_distro_source_package
-
-    @property
-    def person_distro_source_package(self):
-        return self.context
 
     @property
     def person(self):
