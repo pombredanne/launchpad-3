@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementations of `IBranchCollection`."""
@@ -66,6 +66,7 @@ from lp.registry.model.distribution import Distribution
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.person import Person
 from lp.registry.model.product import Product
+from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database.bulk import (
     load_referencing,
@@ -236,8 +237,11 @@ class GenericBranchCollection:
 
     @staticmethod
     def preloadDataForBranches(branches):
-        """Preload branches cached associated product series and
+        """Preload branches' cached associated targets, product series, and
         suite source packages."""
+        load_related(SourcePackageName, branches, ['sourcepackagenameID'])
+        load_related(DistroSeries, branches, ['distroseriesID'])
+        load_related(Product, branches, ['productID'])
         caches = dict((branch.id, get_property_cache(branch))
             for branch in branches)
         branch_ids = caches.keys()
@@ -281,7 +285,6 @@ class GenericBranchCollection:
             if not branch_ids:
                 return
             GenericBranchCollection.preloadDataForBranches(rows)
-            load_related(Product, rows, ['productID'])
             # So far have only needed the persons for their canonical_url - no
             # need for validity etc in the /branches API call.
             load_related(Person, rows,
