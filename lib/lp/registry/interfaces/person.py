@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Person interfaces."""
@@ -1581,13 +1581,6 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
         If no orderby is provided, Person.sortingColumns is used.
         """
 
-    def getDefaultGitRepository(target):
-        """Get this person's default Git repository for this target.
-
-        :param target: An `IHasGitRepositories`.
-        :return: An `IGitRepository`, or None.
-        """
-
 
 class IPersonEditRestricted(Interface):
     """IPerson attributes that require launchpad.Edit permission."""
@@ -1784,13 +1777,6 @@ class IPersonEditRestricted(Interface):
         :raises: `PPACreationError` if an error is encountered
 
         :return: a PPA `IArchive` record.
-        """
-
-    def setDefaultGitRepository(target, git_repository):
-        """Set this person's default Git repository for this target.
-
-        :param target: An `IHasGitRepositories`.
-        :param git_repository: An `IGitRepository`, or None to unset.
         """
 
 

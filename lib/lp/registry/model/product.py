@@ -116,9 +116,7 @@ from lp.bugs.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
     )
 from lp.code.enums import BranchType
-from lp.code.errors import GitTargetError
 from lp.code.interfaces.branch import DEFAULT_BRANCH_STATUS_IN_LISTING
-from lp.code.interfaces.gitrepository import IGitRepositorySet
 from lp.code.model.branch import Branch
 from lp.code.model.branchnamespace import BRANCH_POLICY_ALLOWED_TYPES
 from lp.code.model.hasbranches import (
@@ -1522,12 +1520,14 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     @property
     def recipes(self):
         """See `IHasRecipes`."""
-        return Store.of(self).find(
+        recipes = Store.of(self).find(
             SourcePackageRecipe,
             SourcePackageRecipe.id ==
                 SourcePackageRecipeData.sourcepackage_recipe_id,
             SourcePackageRecipeData.base_branch == Branch.id,
             Branch.product == self)
+        hook = SourcePackageRecipe.preLoadDataForSourcePackageRecipes
+        return DecoratedResultSet(recipes, pre_iter_hook=hook)
 
     def getBugTaskWeightFunction(self):
         """Provide a weight function to determine optimal bug task.
@@ -1570,23 +1570,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             self._known_viewers.add(user.id)
             return True
         return False
-
-    def getDefaultGitRepository(self):
-        """See `IProductView`."""
-        return getUtility(IGitRepositorySet).getDefaultRepository(self)
-
-    def setDefaultGitRepository(self, git_repository):
-        """See `IProductEditRestricted`."""
-        if git_repository is not None:
-            if git_repository.target != self:
-                raise GitTargetError(
-                    "Cannot set default Git repository to one attached to "
-                    "another target.")
-            git_repository.setTargetDefault(True)
-        else:
-            previous = self.getDefaultGitRepository()
-            if previous is not None:
-                previous.setTargetDefault(False)
 
 
 def get_precached_products(products, need_licences=False,

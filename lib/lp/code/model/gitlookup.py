@@ -19,32 +19,24 @@ from zope.component import (
     )
 from zope.interface import implements
 
+from lp.app.errors import NameLookupFailed
 from lp.app.validators.name import valid_name
-from lp.code.errors import (
-    CannotHaveDefaultGitRepository,
-    InvalidNamespace,
-    NoDefaultGitRepository,
-    NoSuchGitRepository,
-    )
-from lp.code.interfaces.defaultgit import get_default_git_repository
+from lp.code.errors import InvalidNamespace
 from lp.code.interfaces.gitlookup import (
     IDefaultGitTraversable,
     IDefaultGitTraverser,
     IGitLookup,
     )
 from lp.code.interfaces.gitnamespace import IGitNamespaceSet
+from lp.code.interfaces.gitrepository import IGitRepositorySet
+from lp.code.interfaces.hasgitrepositories import IHasGitRepositories
 from lp.code.model.gitrepository import GitRepository
 from lp.registry.errors import NoSuchSourcePackageName
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.person import (
-    IPerson,
     IPersonSet,
     NoSuchPerson,
     )
-from lp.registry.interfaces.persondistributionsourcepackage import (
-    IPersonDistributionSourcePackageFactory,
-    )
-from lp.registry.interfaces.personproduct import IPersonProductFactory
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import (
     InvalidProductName,
@@ -54,13 +46,13 @@ from lp.services.config import config
 from lp.services.database.interfaces import IStore
 
 
-def adapt(provided, interface):
+def adapt(obj, interface):
     """Adapt 'obj' to 'interface', using multi-adapters if necessary."""
-    required = interface(provided, None)
+    required = interface(obj, None)
     if required is not None:
         return required
     try:
-        return queryMultiAdapter(provided, interface)
+        return queryMultiAdapter(obj, interface)
     except TypeError:
         return None
 
@@ -69,33 +61,39 @@ class RootGitTraversable:
     """Root traversable for default Git repository objects.
 
     Corresponds to '/' in the path.  From here, you can traverse to a
-    person, a distribution, or a project.
+    distribution or a project, optionally with a person context as well.
     """
 
     implements(IDefaultGitTraversable)
 
-    def traverse(self, name, segments):
+    # Marker for references to Git URL layouts: ##GITNAMESPACE##
+    def traverse(self, owner, name, segments):
         """See `IDefaultGitTraversable`.
 
+        :raise InvalidNamespace: If 'name' begins with a '~', but there are
+            no further segments.
         :raise InvalidProductName: If 'name' is not a valid name.
         :raise NoSuchPerson: If 'name' begins with a '~', but the remainder
             doesn't match an existing person.
         :raise NoSuchProduct: If 'name' doesn't match an existing pillar.
-        :return: `IPerson` or `IPillar`.
+        :return: A tuple of (`IPerson`, `IPillar`).
         """
+        assert owner is None
         if name.startswith("~"):
-            person_name = name[1:]
-            person = getUtility(IPersonSet).getByName(person_name)
-            if person is None:
-                raise NoSuchPerson(person_name)
-            return person
+            if not segments:
+                raise InvalidNamespace(name)
+            owner_name = name[1:]
+            owner = getUtility(IPersonSet).getByName(owner_name)
+            if owner is None:
+                raise NoSuchPerson(owner_name)
+            name = segments.pop(0)
         if not valid_name(name):
             raise InvalidProductName(name)
         pillar = getUtility(IPillarNameSet).getByName(name)
         if pillar is None:
             # Actually, the pillar is no such *anything*.
             raise NoSuchProduct(name)
-        return pillar
+        return owner, pillar
 
 
 class _BaseGitTraversable:
@@ -117,7 +115,8 @@ class DistributionGitTraversable(_BaseGitTraversable):
     adapts(IDistribution)
     implements(IDefaultGitTraversable)
 
-    def traverse(self, name, segments):
+    # Marker for references to Git URL layouts: ##GITNAMESPACE##
+    def traverse(self, owner, name, segments):
         """See `IDefaultGitTraversable`.
 
         :raise InvalidNamespace: If 'name' is not '+source' or there are no
@@ -132,53 +131,7 @@ class DistributionGitTraversable(_BaseGitTraversable):
         distro_source_package = self.context.getSourcePackage(spn_name)
         if distro_source_package is None:
             raise NoSuchSourcePackageName(spn_name)
-        return distro_source_package
-
-
-class PersonGitTraversable(_BaseGitTraversable):
-    """Default Git repository traversable for people.
-
-    From here, you can traverse to a person-distribution-source-package or a
-    person-project.
-    """
-
-    adapts(IPerson)
-    implements(IDefaultGitTraversable)
-
-    def traverse(self, name, segments):
-        """See `IDefaultGitTraversable`.
-
-        :raise InvalidNamespace: If 'name' matches an existing distribution,
-            and the next segment is not '+source' or there are no further
-            segments.
-        :raise InvalidProductName: If 'name' is not a valid name.
-        :raise NoSuchProduct: If 'name' doesn't match an existing pillar.
-        :raise NoSuchSourcePackageName: If 'name' matches an existing
-            distribution, and the segment after '+source' doesn't match an
-            existing source package name.
-        :return: `IPersonProduct` or `IPersonDistributionSourcePackage`.
-        """
-        if not valid_name(name):
-            raise InvalidProductName(name)
-        pillar = getUtility(IPillarNameSet).getByName(name)
-        if pillar is None:
-            # Actually, the pillar is no such *anything*.
-            raise NoSuchProduct(name)
-        # XXX cjwatson 2015-02-23: This would be neater if
-        # IPersonDistribution existed.
-        if IDistribution.providedBy(pillar):
-            if len(segments) < 2:
-                raise InvalidNamespace(name)
-            segments.pop(0)
-            spn_name = segments.pop(0)
-            distro_source_package = pillar.getSourcePackage(spn_name)
-            if distro_source_package is None:
-                raise NoSuchSourcePackageName(spn_name)
-            return getUtility(IPersonDistributionSourcePackageFactory).create(
-                self.context, distro_source_package)
-        else:
-            return getUtility(IPersonProductFactory).create(
-                self.context, pillar)
+        return owner, distro_source_package
 
 
 class DefaultGitTraverser:
@@ -189,16 +142,19 @@ class DefaultGitTraverser:
     def traverse(self, path):
         """See `IDefaultGitTraverser`."""
         segments = path.split("/")
+        owner = None
+        target = None
         traversable = RootGitTraversable()
         while segments:
             name = segments.pop(0)
-            context = traversable.traverse(name, segments)
-            traversable = adapt(context, IDefaultGitTraversable)
+            owner, target = traversable.traverse(owner, name, segments)
+            traversable = adapt(target, IDefaultGitTraversable)
             if traversable is None:
                 break
-        if segments:
+        if (segments or target is None or
+            not IHasGitRepositories.providedBy(target)):
             raise InvalidNamespace(path)
-        return context
+        return owner, target
 
 
 class GitLookup:
@@ -237,13 +193,7 @@ class GitLookup:
         path = self.uriToHostingPath(uri)
         if path is None:
             return None
-        try:
-            return self.getByPath(path)
-        except (
-            CannotHaveDefaultGitRepository, InvalidNamespace,
-            InvalidProductName, NoDefaultGitRepository, NoSuchGitRepository,
-            NoSuchPerson, NoSuchProduct, NoSuchSourcePackageName):
-            return None
+        return self.getByPath(path)
 
     def getByUniqueName(self, unique_name):
         """See `IGitLookup`."""
@@ -256,7 +206,7 @@ class GitLookup:
                 if list(segments):
                     raise InvalidNamespace(path)
                 return repository
-        except InvalidNamespace:
+        except (InvalidNamespace, NameLookupFailed):
             pass
         return None
 
@@ -268,8 +218,12 @@ class GitLookup:
             return repository
 
         # Try parsing as a shortcut.
-        object_with_git_repository_default = getUtility(
-            IDefaultGitTraverser).traverse(path)
-        default = get_default_git_repository(
-            object_with_git_repository_default)
-        return default.repository
+        repository_set = getUtility(IGitRepositorySet)
+        try:
+            owner, target = getUtility(IDefaultGitTraverser).traverse(path)
+        except (InvalidNamespace, InvalidProductName, NameLookupFailed):
+            return None
+        if owner is None:
+            return repository_set.getDefaultRepository(target)
+        else:
+            return repository_set.getDefaultRepositoryForOwner(owner, target)

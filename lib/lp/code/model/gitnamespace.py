@@ -185,12 +185,6 @@ class _BaseGitNamespace:
             match = default
         return match
 
-    def getDefault(self):
-        """See `IGitNamespace`."""
-        return IStore(GitRepository).find(
-            GitRepository, self._getRepositoriesClause(),
-            GitRepository.owner_default == True).one()
-
     def getAllowedInformationTypes(self, who=None):
         """See `IGitNamespace`."""
         raise NotImplementedError

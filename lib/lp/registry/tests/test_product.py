@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -56,7 +56,6 @@ from lp.blueprints.model.specification import (
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from lp.bugs.interfaces.bugtarget import BUG_POLICY_ALLOWED_TYPES
-from lp.code.errors import GitTargetError
 from lp.code.model.branchnamespace import BRANCH_POLICY_ALLOWED_TYPES
 from lp.registry.enums import (
     BranchSharingPolicy,
@@ -1227,35 +1226,6 @@ class TestProduct(TestCaseWithFactory):
             product.setBranchSharingPolicy(BranchSharingPolicy.PROPRIETARY)
         self.assertIsNot(None, getUtility(IAccessPolicySource).find(
             [(product, InformationType.EMBARGOED)]).one())
-
-    def test_default_git_repository_round_trip(self):
-        # A default Git repository set using setDefaultGitRepository can be
-        # retrieved using getDefaultGitRepository.
-        product = self.factory.makeProduct()
-        self.assertIsNone(product.getDefaultGitRepository())
-        repository = self.factory.makeGitRepository(target=product)
-        with person_logged_in(product.owner):
-            product.setDefaultGitRepository(repository)
-        self.assertEqual(repository, product.getDefaultGitRepository())
-
-    def test_setDefaultGitRepository_None(self):
-        # setDefaultGitRepository(None) clears the default.
-        product = self.factory.makeProduct()
-        repository = self.factory.makeGitRepository(target=product)
-        with person_logged_in(product.owner):
-            product.setDefaultGitRepository(repository)
-            product.setDefaultGitRepository(None)
-        self.assertIsNone(product.getDefaultGitRepository())
-
-    def test_setDefaultGitRepository_different_target(self):
-        # setDefaultGitRepository refuses if the repository is attached to a
-        # different target.
-        product = self.factory.makeProduct()
-        other_product = self.factory.makeProduct()
-        repository = self.factory.makeGitRepository(target=other_product)
-        with person_logged_in(product.owner):
-            self.assertRaises(
-                GitTargetError, product.setDefaultGitRepository, repository)
 
 
 class TestProductBugInformationTypes(TestCaseWithFactory):

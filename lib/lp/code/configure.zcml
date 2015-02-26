@@ -928,7 +928,6 @@
     <allow interface="lp.code.interfaces.gitlookup.IDefaultGitTraverser" />
   </securedutility>
   <adapter factory="lp.code.model.gitlookup.DistributionGitTraversable" />
-  <adapter factory="lp.code.model.gitlookup.PersonGitTraversable" />
 
   <lp:help-folder folder="help" name="+help-code" />
 

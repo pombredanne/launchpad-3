@@ -140,9 +140,7 @@ from lp.bugs.interfaces.bugtasksearch import (
     )
 from lp.bugs.model.bugtarget import HasBugsBase
 from lp.bugs.model.structuralsubscription import StructuralSubscription
-from lp.code.errors import GitTargetError
 from lp.code.interfaces.branchcollection import IAllBranches
-from lp.code.interfaces.gitrepository import IGitRepositorySet
 from lp.code.model.hasbranches import (
     HasBranchesMixin,
     HasMergeProposalsMixin,
@@ -3160,10 +3158,11 @@ class Person(
     def recipes(self):
         """See `IHasRecipes`."""
         from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
-        store = Store.of(self)
-        return store.find(
+        recipes = Store.of(self).find(
             SourcePackageRecipe,
             SourcePackageRecipe.owner == self)
+        hook = SourcePackageRecipe.preLoadDataForSourcePackageRecipes
+        return DecoratedResultSet(recipes, pre_iter_hook=hook)
 
     def canAccess(self, obj, attribute):
         """See `IPerson.`"""
@@ -3250,27 +3249,6 @@ class Person(
         # Create the required access policy grant.
         grants = [(policy, self, self)]
         getUtility(IAccessPolicyGrantSource).grant(grants)
-
-    def getDefaultGitRepository(self, target):
-        """See `IPerson`."""
-        return getUtility(IGitRepositorySet).getDefaultRepository(target, self)
-
-    def setDefaultGitRepository(self, target, git_repository):
-        """See `IPerson`."""
-        if IPerson.providedBy(target):
-            raise GitTargetError(
-                "Cannot set a person's default Git repository for a person, "
-                "only for a project or a package.")
-        if git_repository is not None:
-            if git_repository.target != target:
-                raise GitTargetError(
-                    "Cannot set default Git repository to one attached to "
-                    "another target.")
-            git_repository.setOwnerDefault(True)
-        else:
-            previous = self.getDefaultGitRepository(target)
-            if previous is not None:
-                previous.setOwnerDefault(False)
 
 
 class PersonSet:

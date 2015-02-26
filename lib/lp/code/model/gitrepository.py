@@ -24,28 +24,20 @@ from storm.locals import (
     Reference,
     Unicode,
     )
-from zope.component import (
-    getAdapter,
-    getUtility,
-    )
+from zope.component import getUtility
 from zope.interface import implements
-from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import (
     InformationType,
     PRIVATE_INFORMATION_TYPES,
     PUBLIC_INFORMATION_TYPES,
     )
-from lp.app.errors import NotFoundError
 from lp.app.interfaces.informationtype import IInformationType
 from lp.app.interfaces.launchpad import IPrivacy
-from lp.app.interfaces.security import IAuthorization
 from lp.app.interfaces.services import IService
 from lp.code.errors import (
     GitDefaultConflict,
     GitTargetError,
-    InvalidGitRepositoryException,
-    InvalidNamespace,
     )
 from lp.code.interfaces.gitlookup import IGitLookup
 from lp.code.interfaces.gitnamespace import (
@@ -68,14 +60,8 @@ from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
 from lp.registry.interfaces.person import IPerson
-from lp.registry.interfaces.product import (
-    InvalidProductName,
-    IProduct,
-    )
-from lp.registry.interfaces.role import (
-    IHasOwner,
-    IPersonRoles,
-    )
+from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.sharingjob import (
     IRemoveArtifactSubscriptionsJobSource,
     )
@@ -98,6 +84,7 @@ from lp.services.database.stormexpr import (
     ArrayIntersects,
     )
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp.authorization import available_with_permission
 
 
 def git_repository_modified(repository, event):
@@ -221,8 +208,9 @@ class GitRepository(StormBase, GitIdentityMixin):
         """See `IGitRepository`."""
         if value:
             # Check for an existing owner-target default.
-            existing = getUtility(IGitRepositorySet).getDefaultRepository(
-                self.target, owner=self.owner)
+            repository_set = getUtility(IGitRepositorySet)
+            existing = repository_set.getDefaultRepositoryForOwner(
+                self.owner, self.target)
             if existing is not None:
                 raise GitDefaultConflict(
                     existing, self.target, owner=self.owner)
@@ -370,22 +358,14 @@ class GitRepositorySet:
 
     def getByPath(self, user, path):
         """See `IGitRepositorySet`."""
-        try:
-            repository = getUtility(IGitLookup).getByPath(path)
-        except (InvalidGitRepositoryException, InvalidNamespace,
-                InvalidProductName, NotFoundError):
-            return None
-        authz = getAdapter(
-            removeSecurityProxy(repository), IAuthorization, 'launchpad.View')
-        if ((user is None and authz.checkUnauthenticated()) or
-            (user is not None and authz.checkAuthenticated(
-                IPersonRoles(user)))):
+        repository = getUtility(IGitLookup).getByPath(path)
+        if repository is not None and repository.visibleByUser(user):
             return repository
         return None
 
-    def getDefaultRepository(self, target, owner=None):
+    def getDefaultRepository(self, target):
         """See `IGitRepositorySet`."""
-        clauses = []
+        clauses = [GitRepository.target_default == True]
         if IProduct.providedBy(target):
             clauses.append(GitRepository.project == target)
         elif IDistributionSourcePackage.providedBy(target):
@@ -395,12 +375,64 @@ class GitRepositorySet:
         else:
             raise GitTargetError(
                 "Personal repositories cannot be defaults for any target.")
-        if owner is not None:
-            clauses.append(GitRepository.owner == owner)
-            clauses.append(GitRepository.owner_default == True)
-        else:
-            clauses.append(GitRepository.target_default == True)
         return IStore(GitRepository).find(GitRepository, *clauses).one()
+
+    def getDefaultRepositoryForOwner(self, owner, target):
+        """See `IGitRepositorySet`."""
+        clauses = [
+            GitRepository.owner == owner,
+            GitRepository.owner_default == True,
+            ]
+        if IProduct.providedBy(target):
+            clauses.append(GitRepository.project == target)
+        elif IDistributionSourcePackage.providedBy(target):
+            clauses.append(GitRepository.distribution == target.distribution)
+            clauses.append(
+                GitRepository.sourcepackagename == target.sourcepackagename)
+        else:
+            raise GitTargetError(
+                "Personal repositories cannot be defaults for any target.")
+        return IStore(GitRepository).find(GitRepository, *clauses).one()
+
+    @available_with_permission('launchpad.Edit', 'target')
+    def setDefaultRepository(self, target, repository):
+        """See `IGitRepositorySet`."""
+        if IPerson.providedBy(target):
+            raise GitTargetError(
+                "Cannot set a default Git repository for a person, only "
+                "for a project or a package.")
+        if repository is not None:
+            if repository.target != target:
+                raise GitTargetError(
+                    "Cannot set default Git repository to one attached to "
+                    "another target.")
+            repository.setTargetDefault(True)
+        else:
+            previous = self.getDefaultRepository(target)
+            if previous is not None:
+                previous.setTargetDefault(False)
+
+    @available_with_permission('launchpad.Edit', 'owner')
+    def setDefaultRepositoryForOwner(self, owner, target, repository):
+        """See `IGitRepositorySet`."""
+        if IPerson.providedBy(target):
+            raise GitTargetError(
+                "Cannot set a default Git repository for a person, only "
+                "for a project or a package.")
+        if repository is not None:
+            if repository.target != target:
+                raise GitTargetError(
+                    "Cannot set default Git repository to one attached to "
+                    "another target.")
+            if repository.owner != owner:
+                raise GitTargetError(
+                    "Cannot set a person's default Git repository to one "
+                    "owned by somebody else.")
+            repository.setOwnerDefault(True)
+        else:
+            previous = self.getDefaultRepositoryForOwner(owner, target)
+            if previous is not None:
+                previous.setOwnerDefault(False)
 
     def getRepositories(self):
         """See `IGitRepositorySet`."""

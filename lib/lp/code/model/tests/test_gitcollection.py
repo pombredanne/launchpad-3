@@ -17,6 +17,7 @@ from lp.code.interfaces.gitcollection import (
     IAllGitRepositories,
     IGitCollection,
     )
+from lp.code.interfaces.gitrepository import IGitRepositorySet
 from lp.code.model.gitcollection import GenericGitCollection
 from lp.code.model.gitrepository import GitRepository
 from lp.registry.enums import PersonVisibility
@@ -26,7 +27,6 @@ from lp.registry.model.persondistributionsourcepackage import (
     )
 from lp.registry.model.personproduct import PersonProduct
 from lp.services.database.interfaces import IStore
-from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
     person_logged_in,
     StormStatementRecorder,
@@ -539,7 +539,8 @@ class TestSearch(TestCaseWithFactory):
         repository = self.factory.makeGitRepository(
             owner=fooix.owner, target=fooix)
         with person_logged_in(fooix.owner):
-            fooix.setDefaultGitRepository(repository)
+            getUtility(IGitRepositorySet).setDefaultRepository(
+                fooix, repository)
         self.factory.makeGitRepository()
         search_results = self.collection.search('lp:fooix')
         self.assertEqual([repository], list(search_results))

@@ -319,16 +319,44 @@ class IGitRepositorySet(Interface):
         Return None if no match was found.
         """
 
-    def getDefaultRepository(target, owner=None):
-        """Get the default repository for a target or owner-target.
+    def getDefaultRepository(target):
+        """Get the default repository for a target.
 
         :param target: An `IHasGitRepositories`.
-        :param owner: An `IPerson`, in which case search for that person's
-            default repository for this target; or None, in which case
-            search for the overall default repository for this target.
 
         :raises GitTargetError: if `target` is an `IPerson`.
         :return: An `IGitRepository`, or None.
+        """
+
+    def getDefaultRepositoryForOwner(owner, target):
+        """Get a person's default repository for a target.
+
+        :param owner: An `IPerson`.
+        :param target: An `IHasGitRepositories`.
+
+        :raises GitTargetError: if `target` is an `IPerson`.
+        :return: An `IGitRepository`, or None.
+        """
+
+    def setDefaultRepository(target, repository):
+        """Set the default repository for a target.
+
+        :param target: An `IHasGitRepositories`.
+        :param repository: An `IGitRepository`, or None to unset the default
+            repository.
+
+        :raises GitTargetError: if `target` is an `IPerson`.
+        """
+
+    def setDefaultRepositoryForOwner(owner, target, repository):
+        """Set a person's default repository for a target.
+
+        :param owner: An `IPerson`.
+        :param target: An `IHasGitRepositories`.
+        :param repository: An `IGitRepository`, or None to unset the default
+            repository.
+
+        :raises GitTargetError: if `target` is an `IPerson`.
         """
 
     def getRepositories():

@@ -17,13 +17,16 @@ class IDefaultGitTraversable(Interface):
     """A thing that can be traversed to find a thing with a default Git
     repository."""
 
-    def traverse(name, segments):
+    def traverse(owner, name, segments):
         """Return the object beneath this one that matches 'name'.
 
+        :param owner: The current `IPerson` context, or None.
         :param name: The name of the object being traversed to.
         :param segments: Remaining path segments.
-        :return: An `IDefaultGitTraversable` object if traversing should
-            continue; an `ICanHasDefaultGitRepository` object otherwise.
+        :return: A tuple of
+            * an `IPerson`, or None;
+            * an `IDefaultGitTraversable` object if traversing should
+              continue; an `ICanHasDefaultGitRepository` object otherwise.
         """
 
 
@@ -35,7 +38,7 @@ class IDefaultGitTraverser(Interface):
         """Traverse to the object referred to by 'path'.
 
         :raises InvalidNamespace: If the path cannot be parsed as a
-            namespace.
+            repository namespace.
         :raises InvalidProductName: If the project component of the path is
             not a valid name.
         :raises NoSuchPerson: If the first segment of the path begins with a
@@ -45,11 +48,9 @@ class IDefaultGitTraverser(Interface):
         :raises NoSuchSourcePackageName: If the source package referred to
             does not exist.
 
-        :return: One of
+        :return: A tuple of an `IPerson` or None, and one of
             * `IProduct`
             * `IDistributionSourcePackage`
-            * `IPersonProduct`
-            * `IPersonDistributionSourcePackage`
         """
 
 
@@ -105,27 +106,5 @@ class IGitLookup(Interface):
                 PROJECT
                 DISTRO/+source/SOURCE
 
-        :raises InvalidNamespace: If the path looks like a unique repository
-            name but doesn't have enough segments to be a unique name.
-        :raises InvalidProductName: If the given project in a project
-            shortcut is an invalid name for a project.
-
-        :raises NoSuchGitRepository: If we can't find a repository that
-            matches the repository component of the path.
-        :raises NoSuchPerson: If we can't find a person who matches the
-            person component of the path.
-        :raises NoSuchProduct: If we can't find a project that matches the
-            project component of the path.
-        :raises NoSuchSourcePackageName: If the source package referred to
-            does not exist.
-
-        :raises NoDefaultGitRepository: If the path refers to an existing
-            thing that's not a Git repository and has no default repository
-            associated with it.  For example, a product without a default
-            repository.
-        :raises CannotHaveDefaultGitRepository: If the path refers to an
-            existing thing that cannot have a default Git repository
-            associated with it.  For example, a distribution.
-
-        :return: An `IGitRepository`.
+        :return: An `IGitRepository`, or None.
         """
