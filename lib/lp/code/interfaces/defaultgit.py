@@ -24,14 +24,6 @@ class ICanHasDefaultGitRepository(Interface):
     """Something that has a default Git repository."""
 
     context = Attribute("The object that can have a default Git repository.")
-    repository = Attribute("The default Git repository.")
     path = Attribute(
         "The path for the default Git repository. "
         "Note that this will be set even if there is no default repository.")
-
-    def setRepository(repository):
-        """Set the default repository.
-
-        :param repository: An `IGitRepository`.  After calling this,
-            `ICanHasDefaultGitRepository.repository` will be `repository`.
-        """

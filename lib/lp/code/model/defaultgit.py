@@ -12,14 +12,10 @@ from lazr.enum import (
     EnumeratedType,
     Item,
     )
-from zope.component import (
-    adapts,
-    getUtility,
-    )
+from zope.component import adapts
 from zope.interface import implements
 
 from lp.code.interfaces.defaultgit import ICanHasDefaultGitRepository
-from lp.code.interfaces.gitrepository import IGitRepositorySet
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
@@ -80,16 +76,6 @@ class ProjectDefaultGitRepository(BaseDefaultGitRepository):
             return cmp(self.project.name, other.project.name)
 
     @property
-    def repository(self):
-        """See `ICanHasDefaultGitRepository`."""
-        return getUtility(IGitRepositorySet).getDefaultRepository(self.context)
-
-    def setRepository(self, repository):
-        """See `ICanHasDefaultGitRepository`."""
-        return getUtility(IGitRepositorySet).setDefaultRepository(
-            self.context, repository)
-
-    @property
     def path(self):
         """See `ICanHasDefaultGitRepository`."""
         return self.project.name
@@ -129,16 +115,6 @@ class PackageDefaultGitRepository(BaseDefaultGitRepository):
             return cmp(my_names, other_names)
 
     @property
-    def repository(self):
-        """See `ICanHasDefaultGitRepository`."""
-        return getUtility(IGitRepositorySet).getDefaultRepository(self.context)
-
-    def setRepository(self, repository):
-        """See `ICanHasDefaultGitRepository`."""
-        return getUtility(IGitRepositorySet).setDefaultRepository(
-            self.context, repository)
-
-    @property
     def path(self):
         """See `ICanHasDefaultGitRepository`."""
         return "%s/+source/%s" % (
@@ -176,17 +152,6 @@ class OwnerProjectDefaultGitRepository(BaseDefaultGitRepository):
             my_names = (self.person.name, self.project.name)
             other_names = (other.person.name, other.project.name)
             return cmp(my_names, other_names)
-
-    @property
-    def repository(self):
-        """See `ICanHasDefaultGitRepository`."""
-        return getUtility(IGitRepositorySet).getDefaultRepositoryForOwner(
-            self.person, self.project)
-
-    def setRepository(self, repository):
-        """See `ICanHasDefaultGitRepository`."""
-        return getUtility(IGitRepositorySet).setDefaultRepositoryForOwner(
-            self.person, self.project, repository)
 
     @property
     def path(self):
@@ -238,17 +203,6 @@ class OwnerPackageDefaultGitRepository(BaseDefaultGitRepository):
                 other.person.name, other.distribution.name,
                 other.sourcepackagename.name)
             return cmp(my_names, other_names)
-
-    @property
-    def repository(self):
-        """See `ICanHasDefaultGitRepository`."""
-        return getUtility(IGitRepositorySet).getDefaultRepositoryForOwner(
-            self.person, self.distro_source_package)
-
-    def setRepository(self, repository):
-        """See `ICanHasDefaultGitRepository`."""
-        return getUtility(IGitRepositorySet).setDefaultRepositoryForOwner(
-            self.person, self.distro_source_package, repository)
 
     @property
     def path(self):
