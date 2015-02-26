@@ -723,6 +723,7 @@ class PersonOverviewMenu(ApplicationMenu, PersonMenuMixin,
         'branding',
         'editemailaddresses',
         'editlanguages',
+        'editmailinglists',
         'editircnicknames',
         'editjabberids',
         'editsshkeys',
@@ -779,6 +780,12 @@ class PersonOverviewMenu(ApplicationMenu, PersonMenuMixin,
     def editemailaddresses(self):
         target = '+editemails'
         text = 'Change e-mail settings'
+        return Link(target, text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def editmailinglists(self):
+        target = '+editmailinglists'
+        text = 'Manage mailing list subscriptions'
         return Link(target, text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')

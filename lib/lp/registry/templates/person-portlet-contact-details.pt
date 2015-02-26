@@ -49,6 +49,12 @@
           </span>
         </tal:emails>
       </dd>
+      <dd>
+        <a
+        tal:define="link context/menu:overview/editmailinglists"
+        tal:condition="link/enabled"
+        tal:content="structure link/fmt:link" />
+      </dd>
     </dl>
 
 
