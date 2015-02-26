@@ -874,11 +874,14 @@
     <allow interface="lp.code.interfaces.gitlookup.IGitLookup" />
   </securedutility>
   <securedutility
-      class="lp.code.model.gitlookup.DefaultGitTraverser"
-      provides="lp.code.interfaces.gitlookup.IDefaultGitTraverser">
-    <allow interface="lp.code.interfaces.gitlookup.IDefaultGitTraverser" />
+      class="lp.code.model.gitlookup.GitTraverser"
+      provides="lp.code.interfaces.gitlookup.IGitTraverser">
+    <allow interface="lp.code.interfaces.gitlookup.IGitTraverser" />
   </securedutility>
+  <adapter factory="lp.code.model.gitlookup.PersonGitTraversable" />
+  <adapter factory="lp.code.model.gitlookup.ProjectGitTraversable" />
   <adapter factory="lp.code.model.gitlookup.DistributionGitTraversable" />
+  <adapter factory="lp.code.model.gitlookup.DistributionSourcePackageGitTraversable" />
 
   <lp:help-folder folder="help" name="+help-code" />
 

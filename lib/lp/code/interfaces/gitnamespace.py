@@ -201,30 +201,6 @@ class IGitNamespaceSet(Interface):
         :return: An `IGitNamespace`.
         """
 
-    def traverse(segments):
-        """Look up the Git repository at the path given by 'segments'.
-
-        The iterable 'segments' will be consumed until a repository is
-        found.  As soon as a repository is found, the repository will be
-        returned and the consumption of segments will stop.  Thus, there
-        will often be unconsumed segments that can be used for further
-        traversal.
-
-        :param segments: An iterable of URL segments, a prefix of which
-            identifies a Git repository.  The first segment is the username,
-            *not* preceded by a '~`.
-        :raise InvalidNamespace: if there are not enough segments to define a
-            repository.
-        :raise NoSuchPerson: if the person referred to cannot be found.
-        :raise NoSuchProduct: if the product or distro referred to cannot be
-            found.
-        :raise NoSuchDistribution: if the distribution referred to cannot be
-            found.
-        :raise NoSuchSourcePackageName: if the sourcepackagename referred to
-            cannot be found.
-        :return: `IGitRepository`.
-        """
-
 
 def get_git_namespace(target, owner):
     if IProduct.providedBy(target):
