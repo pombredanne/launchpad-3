@@ -24,12 +24,8 @@ from storm.locals import (
     Reference,
     Unicode,
     )
-from zope.component import (
-    getAdapter,
-    getUtility,
-    )
+from zope.component import getUtility
 from zope.interface import implements
-from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import (
     InformationType,
@@ -39,7 +35,6 @@ from lp.app.enums import (
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.informationtype import IInformationType
 from lp.app.interfaces.launchpad import IPrivacy
-from lp.app.interfaces.security import IAuthorization
 from lp.app.interfaces.services import IService
 from lp.code.errors import (
     GitDefaultConflict,
@@ -71,10 +66,7 @@ from lp.registry.interfaces.product import (
     InvalidProductName,
     IProduct,
     )
-from lp.registry.interfaces.role import (
-    IHasOwner,
-    IPersonRoles,
-    )
+from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.sharingjob import (
     IRemoveArtifactSubscriptionsJobSource,
     )
@@ -375,11 +367,7 @@ class GitRepositorySet:
             repository = getUtility(IGitLookup).getByPath(path)
         except (InvalidNamespace, InvalidProductName, NotFoundError):
             return None
-        authz = getAdapter(
-            removeSecurityProxy(repository), IAuthorization, 'launchpad.View')
-        if ((user is None and authz.checkUnauthenticated()) or
-            (user is not None and authz.checkAuthenticated(
-                IPersonRoles(user)))):
+        if repository.visibleByUser(user):
             return repository
         return None
 
