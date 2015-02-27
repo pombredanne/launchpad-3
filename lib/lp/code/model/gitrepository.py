@@ -26,6 +26,7 @@ from storm.locals import (
     )
 from zope.component import getUtility
 from zope.interface import implements
+from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import (
     InformationType,
@@ -39,6 +40,7 @@ from lp.code.errors import (
     GitDefaultConflict,
     GitTargetError,
     )
+from lp.code.interfaces.gitcollection import IAllGitRepositories
 from lp.code.interfaces.gitlookup import IGitLookup
 from lp.code.interfaces.gitnamespace import (
     get_git_namespace,
@@ -291,9 +293,8 @@ class GitRepository(StormBase, GitIdentityMixin):
         elif user.id in self._known_viewers:
             return True
         else:
-            # XXX cjwatson 2015-02-06: Fill this in once IGitCollection is
-            # in place.
-            return False
+            return not getUtility(IAllGitRepositories).withIds(
+                self.id).visibleByUser(user).is_empty()
 
     def getAllowedInformationTypes(self, user):
         """See `IGitRepository`."""
@@ -359,7 +360,11 @@ class GitRepositorySet:
     def getByPath(self, user, path):
         """See `IGitRepositorySet`."""
         repository = getUtility(IGitLookup).getByPath(path)
-        if repository is not None and repository.visibleByUser(user):
+        if repository is None:
+            return None
+        # removeSecurityProxy is safe here since we're explicitly performing
+        # a permission check.
+        if removeSecurityProxy(repository).visibleByUser(user):
             return repository
         return None
 

@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Security policies for using content objects."""
@@ -83,6 +83,7 @@ from lp.code.interfaces.codereviewcomment import (
     )
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.code.interfaces.diff import IPreviewDiff
+from lp.code.interfaces.gitcollection import IGitCollection
 from lp.code.interfaces.gitrepository import (
     IGitRepository,
     user_has_special_git_repository_access,
@@ -1018,6 +1019,12 @@ class PublicOrPrivateTeamsExistence(AuthorizationBase):
             visible_branches = branches.visibleByUser(user.person)
             mp = visible_branches.getMergeProposalsForReviewer(self.obj)
             if not mp.is_empty():
+                return True
+
+            # Grant visibility to people who can see Git repositories owned
+            # by the private team.
+            team_repositories = IGitCollection(self.obj)
+            if not team_repositories.visibleByUser(user.person).is_empty():
                 return True
 
             # Grant visibility to users in a team that has the private team as
