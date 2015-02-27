@@ -721,49 +721,45 @@ class POFile(SQLBase, POFileMixIn):
         # translation. If one of them is empty, the POTMsgSet is not included
         # in this list.
 
-        clauses, clause_tables = self._getTranslatedMessagesQuery()
+        translated_clauses, clause_tables = self._getTranslatedMessagesQuery()
         other_side_flag_name = getUtility(
             ITranslationSideTraitsSet).getForTemplate(
                 self.potemplate).other_side_traits.flag_name
-        clauses.extend([
-            'TranslationTemplateItem.potmsgset = POTMsgSet.id',
-            'TranslationMessage.%s IS FALSE' % other_side_flag_name,
-            ])
+        clauses = [
+            TranslationTemplateItem.potmsgsetID == POTMsgSet.id,
+            Not(getattr(TranslationMessage, other_side_flag_name)),
+            ]
+        clauses.extend(SQL(clause) for clause in translated_clauses)
 
-        imported_no_diverged = (
-            '''NOT EXISTS (
-                 SELECT * FROM TranslationMessage AS diverged
-                   WHERE
-                     diverged.%(flag_name)s IS TRUE AND
-                     diverged.id <> imported.id AND
-                     diverged.potemplate = %(potemplate)s AND
-                     diverged.language = %(language)s AND
-                     diverged.potmsgset=TranslationMessage.potmsgset)''' % (
-                dict(
-                    flag_name=other_side_flag_name,
-                    potemplate=quote(self.potemplate),
-                    language=quote(self.language),
-                    )))
+        Imported = ClassAlias(TranslationMessage, 'Imported')
+        Diverged = ClassAlias(TranslationMessage, 'Diverged')
+        imported_no_diverged = Not(Exists(
+            Select(
+                1,
+                tables=[Diverged],
+                where=And(
+                    getattr(Diverged, other_side_flag_name),
+                    Diverged.id != Imported.id,
+                    Diverged.potemplateID == self.potemplate.id,
+                    Diverged.languageID == self.language.id,
+                    Diverged.potmsgsetID == TranslationMessage.potmsgsetID))))
         imported_clauses = [
-            'imported.id <> TranslationMessage.id',
-            'imported.potmsgset = POTMsgSet.id',
-            'imported.language = %s' % sqlvalues(self.language),
-            'imported.%s IS TRUE' % other_side_flag_name,
-            '(imported.potemplate=%s OR ' % sqlvalues(self.potemplate) +
-            '   (imported.potemplate IS NULL AND ' + imported_no_diverged
-            + '  ))',
+            Imported.id != TranslationMessage.id,
+            Imported.potmsgsetID == POTMsgSet.id,
+            Imported.languageID == self.language.id,
+            getattr(Imported, other_side_flag_name),
+            Or(
+                Imported.potemplateID == self.potemplate.id,
+                And(Imported.potemplateID == None, imported_no_diverged)),
             ]
         imported_clauses.extend(
+            SQL(clause) for clause in
             self._getCompletePluralFormsConditions('imported'))
-        exists_imported_query = (
-            'EXISTS ('
-            '  SELECT * FROM TranslationMessage AS imported'
-            '      WHERE ' + ' AND '.join(imported_clauses) + ')')
-        clauses.append(exists_imported_query)
+        clauses.append(Exists(Select(
+            1, tables=[Imported], where=And(*imported_clauses))))
 
         clause_tables.insert(0, POTMsgSet)
-        query = ' AND '.join(clauses)
-        return self._getOrderedPOTMsgSets(clause_tables, query)
+        return self._getOrderedPOTMsgSets(clause_tables, And(*clauses))
 
     def messageCount(self):
         """See `IRosettaStats`."""
