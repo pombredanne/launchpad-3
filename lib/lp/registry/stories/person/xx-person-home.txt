@@ -48,9 +48,11 @@ But Foo Bar can:
     >>> admin_browser.open('http://launchpad.dev/~name12')
     >>> print extract_text(
     ...     find_tag_by_id(admin_browser.contents, 'email-addresses'))
-    Email: Change e-mail settings
+    Email:
     test@canonical.com
     testing@canonical.com
+    Change e-mail settings
+    Manage mailing list subscriptions
 
 
 Open ID link

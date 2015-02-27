@@ -595,7 +595,7 @@ lists will not have the box checked.
 
     # Restore James' setting.
     >>> browser.open('http://launchpad.dev/~jblack')
-    >>> browser.getLink(url="+editemails").click()
+    >>> browser.getLink(url="+editmailinglists").click()
     >>> set_autosubscribe_policy_and_submit('ON_REGISTRATION', browser)
     ( ) Never subscribe to mailing lists
     (*) Ask me when I join a team
