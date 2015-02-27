@@ -1010,6 +1010,12 @@
                 template="../templates/person-editemails.pt"/>
         </browser:pages>
         <browser:page
+            for="lp.registry.interfaces.person.IPerson"
+            permission="launchpad.Edit"
+            class="lp.registry.browser.person.PersonEditMailingListsView"
+            name="+editmailinglists"
+            template="../templates/person-editmailinglists.pt"/>
+        <browser:page
             name="+oauth-tokens"
             for="lp.registry.interfaces.person.IPerson"
             class="lp.registry.browser.person.PersonOAuthTokensView"
