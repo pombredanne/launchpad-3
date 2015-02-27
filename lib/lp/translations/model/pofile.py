@@ -588,7 +588,7 @@ class POFile(SQLBase, POFileMixIn):
         clause_tables = ['TranslationTemplateItem', 'TranslationMessage']
         clauses = self._getClausesForPOFileMessages()
         clauses.append('TranslationMessage.%s IS TRUE' % flag_name)
-        self._appendCompletePluralFormsConditions(clauses)
+        clauses.extend(self._getCompletePluralFormsConditions())
 
         # A message is current in this pofile if:
         #  * it's current (above) AND
@@ -753,8 +753,8 @@ class POFile(SQLBase, POFileMixIn):
             '   (imported.potemplate IS NULL AND ' + imported_no_diverged
             + '  ))',
             ]
-        self._appendCompletePluralFormsConditions(imported_clauses,
-                                                  'imported')
+        imported_clauses.extend(
+            self._getCompletePluralFormsConditions('imported'))
         exists_imported_query = (
             'EXISTS ('
             '  SELECT * FROM TranslationMessage AS imported'
@@ -793,16 +793,17 @@ class POFile(SQLBase, POFileMixIn):
             self.rosettacount,
             self.unreviewed_count)
 
-    def _appendCompletePluralFormsConditions(self, query,
-                                             table_name='TranslationMessage'):
+    def _getCompletePluralFormsConditions(self,
+                                          table_name='TranslationMessage'):
         """Add conditions to implement ITranslationMessage.is_complete in SQL.
 
         :param query: A list of AND SQL conditions where the implementation of
             ITranslationMessage.is_complete will be appended as SQL
             conditions.
         """
-        query.append('%(table_name)s.msgstr0 IS NOT NULL' % {
-            'table_name': table_name})
+        query = [
+            '%(table_name)s.msgstr0 IS NOT NULL' % {'table_name': table_name},
+            ]
         if self.language.pluralforms > 1:
             plurals_query = ' AND '.join(
                 '%(table_name)s.msgstr%(plural_form)d IS NOT NULL' % {
@@ -824,11 +825,9 @@ class POFile(SQLBase, POFileMixIn):
         side_traits = getUtility(ITranslationSideTraitsSet).getForTemplate(
             self.potemplate)
         complete_plural_clause_this_side = ' AND '.join(
-            self._appendCompletePluralFormsConditions(
-                [], table_name='Current'))
+            self._getCompletePluralFormsConditions(table_name='Current'))
         complete_plural_clause_other_side = ' AND '.join(
-            self._appendCompletePluralFormsConditions(
-                [], table_name='Other'))
+            self._getCompletePluralFormsConditions(table_name='Other'))
         params = {
             'potemplate': quote(self.potemplate),
             'language': quote(self.language),
