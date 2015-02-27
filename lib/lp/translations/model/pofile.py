@@ -585,42 +585,34 @@ class POFile(SQLBase, POFileMixIn):
         """
         flag_name = getUtility(ITranslationSideTraitsSet).getForTemplate(
             self.potemplate).flag_name
-        clause_tables = ['TranslationTemplateItem', 'TranslationMessage']
-        clauses = self._getClausesForPOFileMessages()
-        clauses.append('TranslationMessage.%s IS TRUE' % flag_name)
-        clauses.extend(self._getCompletePluralFormsConditions())
+        clause_tables = [TranslationTemplateItem, TranslationMessage]
+        clauses = self._getStormClausesForPOFileMessages()
+        clauses.append(getattr(TranslationMessage, flag_name))
+        clauses.extend(
+            SQL(clause) for clause in self._getCompletePluralFormsConditions())
 
         # A message is current in this pofile if:
         #  * it's current (above) AND
         #  * (it's diverged AND non-empty)
         #     OR (it's shared AND non-empty AND no diverged one exists)
-        diverged_translation_clauses = [
-            'TranslationMessage.potemplate = %s' % sqlvalues(self.potemplate),
-        ]
-        diverged_translation_query = ' AND '.join(
-            diverged_translation_clauses)
+        diverged_translation_clause = (
+            TranslationMessage.potemplateID == self.potemplate.id,
+            )
 
-        shared_translation_clauses = [
-            'TranslationMessage.potemplate IS NULL',
-            '''NOT EXISTS (
-                 SELECT * FROM TranslationMessage AS diverged
-                   WHERE
-                     diverged.potemplate=%(potemplate)s AND
-                     diverged.%(flag_name)s IS TRUE AND
-                     diverged.language = %(language)s AND
-                     diverged.potmsgset=TranslationMessage.potmsgset)''' % (
-                dict(
-                     flag_name=flag_name,
-                     language=quote(self.language),
-                     potemplate=quote(self.potemplate),
-                     )
-                ),
-        ]
-        shared_translation_query = ' AND '.join(shared_translation_clauses)
+        Diverged = ClassAlias(TranslationMessage, 'Diverged')
+        shared_translation_clause = And(
+            TranslationMessage.potemplateID == None,
+            Not(Exists(Select(
+                1,
+                tables=[Diverged],
+                where=And(
+                    Diverged.potemplateID == self.potemplate.id,
+                    getattr(Diverged, flag_name),
+                    Diverged.languageID == self.language.id,
+                    Diverged.potmsgsetID == TranslationMessage.potmsgsetID)))))
 
-        translated_query = ('( (' + diverged_translation_query + ') OR ('
-                            + shared_translation_query + ') )')
-        clauses.append(translated_query)
+        clauses.append(
+            Or(diverged_translation_clause, shared_translation_clause))
         return (clauses, clause_tables)
 
     def getPOTMsgSetTranslated(self):
@@ -628,7 +620,7 @@ class POFile(SQLBase, POFileMixIn):
         clauses, clause_tables = self._getTranslatedMessagesQuery()
         query = And(
             TranslationTemplateItem.potmsgsetID == POTMsgSet.id,
-            *(SQL(clause) for clause in clauses))
+            *clauses)
         clause_tables.insert(0, POTMsgSet)
         return self._getOrderedPOTMsgSets(clause_tables, query)
 
@@ -649,7 +641,7 @@ class POFile(SQLBase, POFileMixIn):
                 TranslationTemplateItem.potmsgsetID ==
                     TranslationTemplateItem.potmsgsetID,
                 POTMsgSet.id == TranslationTemplateItem.potmsgsetID,
-                *(SQL(clause) for clause in translated_clauses)))
+                *translated_clauses))
         clauses = [
             TranslationTemplateItem.potemplateID == self.potemplate.id,
             TranslationTemplateItem.potmsgsetID == POTMsgSet.id,
@@ -721,15 +713,14 @@ class POFile(SQLBase, POFileMixIn):
         # translation. If one of them is empty, the POTMsgSet is not included
         # in this list.
 
-        translated_clauses, clause_tables = self._getTranslatedMessagesQuery()
+        clauses, clause_tables = self._getTranslatedMessagesQuery()
         other_side_flag_name = getUtility(
             ITranslationSideTraitsSet).getForTemplate(
                 self.potemplate).other_side_traits.flag_name
-        clauses = [
+        clauses.extend([
             TranslationTemplateItem.potmsgsetID == POTMsgSet.id,
             Not(getattr(TranslationMessage, other_side_flag_name)),
-            ]
-        clauses.extend(SQL(clause) for clause in translated_clauses)
+            ])
 
         Imported = ClassAlias(TranslationMessage, 'Imported')
         Diverged = ClassAlias(TranslationMessage, 'Diverged')
