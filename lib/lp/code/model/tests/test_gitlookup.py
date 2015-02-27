@@ -191,21 +191,21 @@ class TestGetByUrl(TestCaseWithFactory):
                 repository.target, repository)
         self.assertUrlMatches("lp:bb", repository)
 
-    def test_uriToHostingPath(self):
-        # uriToHostingPath only supports our own URLs with certain schemes.
+    def test_uriToPath(self):
+        # uriToPath only supports our own URLs with certain schemes.
         uri = URI(config.codehosting.git_anon_root)
         uri.path = "/~foo/bar/baz"
         # Test valid schemes.
         for scheme in ("git", "git+ssh", "https", "ssh"):
             uri.scheme = scheme
-            self.assertEqual("~foo/bar/baz", self.lookup.uriToHostingPath(uri))
+            self.assertEqual("~foo/bar/baz", self.lookup.uriToPath(uri))
         # Test an invalid scheme.
         uri.scheme = "ftp"
-        self.assertIsNone(self.lookup.uriToHostingPath(uri))
+        self.assertIsNone(self.lookup.uriToPath(uri))
         # Test valid scheme but invalid domain.
         uri.scheme = 'sftp'
         uri.host = 'example.com'
-        self.assertIsNone(self.lookup.uriToHostingPath(uri))
+        self.assertIsNone(self.lookup.uriToPath(uri))
 
 
 class TestGitTraverser(TestCaseWithFactory):

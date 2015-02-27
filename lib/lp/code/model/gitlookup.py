@@ -295,7 +295,7 @@ class GitLookup:
         return repository
 
     @staticmethod
-    def uriToHostingPath(uri):
+    def uriToPath(uri):
         """See `IGitLookup`."""
         schemes = ('git', 'git+ssh', 'https', 'ssh')
         codehosting_host = URI(config.codehosting.git_anon_root).host
@@ -315,7 +315,7 @@ class GitLookup:
         except InvalidURIError:
             return None
 
-        path = self.uriToHostingPath(uri)
+        path = self.uriToPath(uri)
         if path is None:
             return None
         return self.getByPath(path)

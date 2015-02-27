@@ -101,7 +101,7 @@ class IGitLookup(Interface):
         :return: An `IGitRepository`, or None.
         """
 
-    def uriToHostingPath(uri):
+    def uriToPath(uri):
         """Return the path for the URI, if the URI is on codehosting.
 
         This does not ensure that the path is valid.
