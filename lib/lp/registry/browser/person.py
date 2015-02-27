@@ -723,6 +723,7 @@ class PersonOverviewMenu(ApplicationMenu, PersonMenuMixin,
         'branding',
         'editemailaddresses',
         'editlanguages',
+        'editmailinglists',
         'editircnicknames',
         'editjabberids',
         'editsshkeys',
@@ -779,6 +780,12 @@ class PersonOverviewMenu(ApplicationMenu, PersonMenuMixin,
     def editemailaddresses(self):
         target = '+editemails'
         text = 'Change e-mail settings'
+        return Link(target, text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def editmailinglists(self):
+        target = '+editmailinglists'
+        text = 'Manage mailing list subscriptions'
         return Link(target, text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
@@ -2722,8 +2729,6 @@ class PersonEditEmailsView(LaunchpadFormView):
                   orientation='vertical')
     custom_widget('UNVALIDATED_SELECTED', LaunchpadRadioWidget,
                   orientation='vertical')
-    custom_widget('mailing_list_auto_subscribe_policy',
-                  LaunchpadRadioWidgetWithDescription)
 
     label = 'Change your e-mail settings'
 
@@ -2746,9 +2751,7 @@ class PersonEditEmailsView(LaunchpadFormView):
         self.form_fields = (self._validated_emails_field() +
                             self._unvalidated_emails_field() +
                             FormFields(TextLine(__name__='newemail',
-                                                title=u'Add a new address'))
-                            + self._mailing_list_fields()
-                            + self._autosubscribe_policy_fields())
+                                                title=u'Add a new address')))
 
     @property
     def initial_values(self):
@@ -2769,20 +2772,8 @@ class PersonEditEmailsView(LaunchpadFormView):
         unvalidated = self.unvalidated_addresses
         if len(unvalidated) > 0:
             unvalidated = unvalidated.pop()
-        initial = dict(VALIDATED_SELECTED=validated,
-                       UNVALIDATED_SELECTED=unvalidated)
-
-        # Defaults for the mailing list autosubscribe buttons.
-        policy = self.context.mailing_list_auto_subscribe_policy
-        initial.update(mailing_list_auto_subscribe_policy=policy)
-
-        return initial
-
-    def setUpWidgets(self, context=None):
-        """See `LaunchpadFormView`."""
-        super(PersonEditEmailsView, self).setUpWidgets(context)
-        widget = self.widgets['mailing_list_auto_subscribe_policy']
-        widget.display_label = False
+        return dict(VALIDATED_SELECTED=validated,
+                    UNVALIDATED_SELECTED=unvalidated)
 
     def _validated_emails_field(self):
         """Create a field with a vocabulary of validated emails.
@@ -2823,75 +2814,6 @@ class PersonEditEmailsView(LaunchpadFormView):
             Choice(__name__='UNVALIDATED_SELECTED', title=title,
                    source=SimpleVocabulary(terms)),
             custom_widget=self.custom_widgets['UNVALIDATED_SELECTED'])
-
-    def _mailing_list_subscription_type(self, mailing_list):
-        """Return the context user's subscription type for the given list.
-
-        This is 'Preferred address' if the user is subscribed using her
-        preferred address and 'Don't subscribe' if the user is not
-        subscribed at all. Otherwise it's the EmailAddress under
-        which the user is subscribed to this mailing list.
-        """
-        subscription = mailing_list.getSubscription(self.context)
-        if subscription is None:
-            return "Don't subscribe"
-        elif subscription.email_address is None:
-            return 'Preferred address'
-        else:
-            return subscription.email_address
-
-    def _mailing_list_fields(self):
-        """Creates a field for each mailing list the user can subscribe to.
-
-        If a team doesn't have a mailing list, or the mailing list
-        isn't usable, it's not included.
-        """
-        mailing_list_set = getUtility(IMailingListSet)
-        fields = []
-        terms = [
-            SimpleTerm("Preferred address"),
-            SimpleTerm("Don't subscribe"),
-            ]
-        for email in self.validated_addresses:
-            terms.append(SimpleTerm(email, email.email))
-        for team in self.context.teams_participated_in:
-            mailing_list = mailing_list_set.get(team.name)
-            if mailing_list is not None and mailing_list.is_usable:
-                name = 'subscription.%s' % team.name
-                value = self._mailing_list_subscription_type(mailing_list)
-                field = Choice(__name__=name,
-                               title=team.name,
-                               source=SimpleVocabulary(terms), default=value)
-                fields.append(field)
-        return FormFields(*fields)
-
-    def _autosubscribe_policy_fields(self):
-        """Create a field for each mailing list auto-subscription option."""
-        return FormFields(
-            Choice(__name__='mailing_list_auto_subscribe_policy',
-                   title=_('When should Launchpad automatically subscribe '
-                           'you to a team&#x2019;s mailing list?'),
-                   source=MailingListAutoSubscribePolicy))
-
-    @property
-    def mailing_list_widgets(self):
-        """Return all the mailing list subscription widgets."""
-        mailing_list_set = getUtility(IMailingListSet)
-        widgets = []
-        for widget in self.widgets:
-            if widget.name.startswith('field.subscription.'):
-                team_name = widget.label
-                mailing_list = mailing_list_set.get(team_name)
-                assert mailing_list is not None, 'Missing mailing list'
-                widget_dict = dict(
-                    team=mailing_list.team,
-                    widget=widget,
-                    )
-                widgets.append(widget_dict)
-                # We'll put the label in the first column, so don't include it
-                # in the second column.
-                widget.display_label = False
-        return widgets
 
     def _validate_selected_address(self, data, field='VALIDATED_SELECTED'):
         """A generic validator for this view's actions.
@@ -3124,6 +3046,140 @@ class PersonEditEmailsView(LaunchpadFormView):
                 "provider might use 'greylisting', which could delay the "
                 "message for up to an hour or two.)" % newemail)
         self.next_url = self.action_url
+
+
+class PersonEditMailingListsView(LaunchpadFormView):
+    """A view for editing a person's mailing list subscriptions."""
+
+    implements(IPersonEditMenu)
+
+    schema = IEmailAddress
+
+    custom_widget('mailing_list_auto_subscribe_policy',
+                  LaunchpadRadioWidgetWithDescription)
+
+    label = 'Change your mailing list subscriptions'
+
+    def initialize(self):
+        if self.context.is_team:
+            # +editmailinglists is not available on teams.
+            name = self.request['PATH_INFO'].split('/')[-1]
+            raise NotFound(self, name, request=self.request)
+        super(PersonEditMailingListsView, self).initialize()
+
+    def setUpFields(self):
+        """Set up fields for this view.
+
+        The main fields of interest are the selection fields with custom
+        vocabularies for the lists of validated and unvalidated email
+        addresses.
+        """
+        super(PersonEditMailingListsView, self).setUpFields()
+        self.form_fields = (self._mailing_list_fields()
+                            + self._autosubscribe_policy_fields())
+
+    @property
+    def initial_values(self):
+        """Set up default values for the radio widgets.
+
+        A radio widget must have a selected value, so we select the
+        first unvalidated and validated email addresses in the lists
+        to be the default for the corresponding widgets.
+
+        The only exception is if the user has a preferred email
+        address: then, that address is used as the default validated
+        email address.
+        """
+        # Defaults for the mailing list autosubscribe buttons.
+        return dict(
+            mailing_list_auto_subscribe_policy=
+                self.context.mailing_list_auto_subscribe_policy)
+
+    def setUpWidgets(self, context=None):
+        """See `LaunchpadFormView`."""
+        super(PersonEditMailingListsView, self).setUpWidgets(context)
+        widget = self.widgets['mailing_list_auto_subscribe_policy']
+        widget.display_label = False
+
+    def _mailing_list_subscription_type(self, mailing_list):
+        """Return the context user's subscription type for the given list.
+
+        This is 'Preferred address' if the user is subscribed using her
+        preferred address and 'Don't subscribe' if the user is not
+        subscribed at all. Otherwise it's the EmailAddress under
+        which the user is subscribed to this mailing list.
+        """
+        subscription = mailing_list.getSubscription(self.context)
+        if subscription is None:
+            return "Don't subscribe"
+        elif subscription.email_address is None:
+            return 'Preferred address'
+        else:
+            return subscription.email_address
+
+    def _mailing_list_fields(self):
+        """Creates a field for each mailing list the user can subscribe to.
+
+        If a team doesn't have a mailing list, or the mailing list
+        isn't usable, it's not included.
+        """
+        mailing_list_set = getUtility(IMailingListSet)
+        fields = []
+        terms = [
+            SimpleTerm("Preferred address"),
+            SimpleTerm("Don't subscribe"),
+            ]
+        for email in self.validated_addresses:
+            terms.append(SimpleTerm(email, email.email))
+        for team in self.context.teams_participated_in:
+            mailing_list = mailing_list_set.get(team.name)
+            if mailing_list is not None and mailing_list.is_usable:
+                name = 'subscription.%s' % team.name
+                value = self._mailing_list_subscription_type(mailing_list)
+                field = Choice(__name__=name,
+                               title=team.name,
+                               source=SimpleVocabulary(terms), default=value)
+                fields.append(field)
+        return FormFields(*fields)
+
+    def _autosubscribe_policy_fields(self):
+        """Create a field for each mailing list auto-subscription option."""
+        return FormFields(
+            Choice(__name__='mailing_list_auto_subscribe_policy',
+                   title=_('When should Launchpad automatically subscribe '
+                           'you to a team&#x2019;s mailing list?'),
+                   source=MailingListAutoSubscribePolicy))
+
+    @property
+    def mailing_list_widgets(self):
+        """Return all the mailing list subscription widgets."""
+        mailing_list_set = getUtility(IMailingListSet)
+        widgets = []
+        for widget in self.widgets:
+            if widget.name.startswith('field.subscription.'):
+                team_name = widget.label
+                mailing_list = mailing_list_set.get(team_name)
+                assert mailing_list is not None, 'Missing mailing list'
+                widget_dict = dict(
+                    team=mailing_list.team,
+                    widget=widget,
+                    )
+                widgets.append(widget_dict)
+                # We'll put the label in the first column, so don't include it
+                # in the second column.
+                widget.display_label = False
+        return widgets
+
+    @property
+    def validated_addresses(self):
+        """All of this person's validated email addresses, including
+        their preferred address (if any).
+        """
+        addresses = []
+        if self.context.preferredemail:
+            addresses.append(self.context.preferredemail)
+        addresses += list(self.context.validatedemails)
+        return addresses
 
     def validate_action_update_subscriptions(self, action, data):
         """Make sure the user is subscribing using a valid address.

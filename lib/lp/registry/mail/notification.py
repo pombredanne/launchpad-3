@@ -148,7 +148,7 @@ def notify_team_join(event):
                 'team-list-subscribe-block.txt', app='registry')
             editemails_url = urlappend(
                 canonical_url(getUtility(ILaunchpadRoot)),
-                'people/+me/+editemails')
+                'people/+me/+editmailinglists')
             list_instructions = template % dict(editemails_url=editemails_url)
         else:
             list_instructions = ''
@@ -257,7 +257,7 @@ def notify_mailinglist_activated(mailinglist, event):
     headers = {}
     subject = "New Mailing List for %s" % team.displayname
     template = get_email_template('new-mailing-list.txt', app='registry')
-    editemails_url = '%s/+editemails'
+    editemails_url = '%s/+editmailinglists'
 
     for person in team.allmembers:
         if person.is_team or person.preferredemail is None:

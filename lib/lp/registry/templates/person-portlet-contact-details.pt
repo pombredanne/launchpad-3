@@ -15,9 +15,7 @@
         <dd tal:content="context/name"/>
     </dl>
     <dl id="email-addresses">
-      <dt>Email:
-        <a tal:replace="structure overview_menu/editemailaddresses/fmt:icon" />
-      </dt>
+      <dt>Email:</dt>
       <dd
         tal:attributes="title view/visible_email_address_description">
         <tal:not_logged_in
@@ -48,6 +46,16 @@
             <br tal:omit-tag="repeat/email/end" />
           </span>
         </tal:emails>
+      </dd>
+      <dd>
+        <a
+          tal:define="link context/menu:overview/editemailaddresses"
+          tal:condition="link/enabled"
+          tal:content="structure link/fmt:link" /><br />
+        <a
+          tal:define="link context/menu:overview/editmailinglists"
+          tal:condition="link/enabled"
+          tal:content="structure link/fmt:link" />
       </dd>
     </dl>
 
