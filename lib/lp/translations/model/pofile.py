@@ -225,7 +225,7 @@ class POFileMixIn(RosettaStats):
                POTMsgSet.msgid_singular IN (
                  SELECT POMsgID.id FROM POMsgID
                    WHERE id IN (
-                     SELECT DISTINCT(msgid_singular)
+                     SELECT DISTINCT(POTMsgSet.msgid_singular)
                        FROM POTMsgSet
                        JOIN TranslationTemplateItem
                          ON TranslationTemplateItem.potmsgset = POTMsgSet.id
@@ -246,7 +246,7 @@ class POFileMixIn(RosettaStats):
                POTMsgSet.msgid_plural IN (
                  SELECT POMsgID.id FROM POMsgID
                    WHERE id IN (
-                     SELECT DISTINCT(msgid_plural)
+                     SELECT DISTINCT(POTMsgSet.msgid_plural)
                        FROM POTMsgSet
                        JOIN TranslationTemplateItem
                          ON TranslationTemplateItem.potmsgset = POTMsgSet.id
