@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """People Merge related wiew classes."""
@@ -25,6 +25,7 @@ from lp.app.browser.launchpadform import (
     )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.code.interfaces.branchcollection import IAllBranches
+from lp.code.interfaces.gitcollection import IAllGitRepositories
 from lp.registry.interfaces.mailinglist import (
     MailingListStatus,
     PURGE_STATES,
@@ -77,6 +78,13 @@ class ValidatingMergeView(LaunchpadFormView):
             if not all_branches.ownedBy(dupe_person).isPrivate().is_empty():
                 self.addError(
                     _("${name} owns private branches that must be "
+                      "deleted or transferred to another owner first.",
+                    mapping=dict(name=dupe_person.name)))
+            all_repositories = getUtility(IAllGitRepositories)
+            if not all_repositories.ownedBy(
+                    dupe_person).isPrivate().is_empty():
+                self.addError(
+                    _("${name} owns private Git repositories that must be "
                       "deleted or transferred to another owner first.",
                     mapping=dict(name=dupe_person.name)))
             if dupe_person.isMergePending():

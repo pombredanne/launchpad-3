@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 """Test the peoplemerge browser module."""
 
@@ -286,7 +286,7 @@ class TestValidatingMergeView(TestCaseWithFactory):
             view.errors)
 
     def test_cannot_merge_person_with_private_branches(self):
-        # A team or user with a private branches cannot be merged.
+        # A team or user with a private branch cannot be merged.
         self.factory.makeBranch(
             owner=self.dupe, information_type=InformationType.USERDATA)
         login_celebrity('registry_experts')
@@ -294,6 +294,18 @@ class TestValidatingMergeView(TestCaseWithFactory):
             self.person_set, '+requestmerge', form=self.getForm())
         self.assertEqual(
             [u"dupe owns private branches that must be deleted or "
+              "transferred to another owner first."],
+            view.errors)
+
+    def test_cannot_merge_person_with_private_git_repositories(self):
+        # A team or user with a private Git repository cannot be merged.
+        self.factory.makeGitRepository(
+            owner=self.dupe, information_type=InformationType.USERDATA)
+        login_celebrity('registry_experts')
+        view = create_initialized_view(
+            self.person_set, '+requestmerge', form=self.getForm())
+        self.assertEqual(
+            [u"dupe owns private Git repositories that must be deleted or "
               "transferred to another owner first."],
             view.errors)
 
