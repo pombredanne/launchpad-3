@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 from datetime import datetime
+from functools import partial
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 import pytz
@@ -24,12 +25,20 @@ from lp.code.errors import (
     GitRepositoryCreatorNotOwner,
     GitTargetError,
     )
+from lp.code.interfaces.defaultgit import ICanHasDefaultGitRepository
 from lp.code.interfaces.gitnamespace import (
     IGitNamespacePolicy,
     IGitNamespaceSet,
     )
-from lp.code.interfaces.gitrepository import IGitRepository
+from lp.code.interfaces.gitrepository import (
+    IGitRepository,
+    IGitRepositorySet,
+    )
 from lp.registry.enums import BranchSharingPolicy
+from lp.registry.interfaces.persondistributionsourcepackage import (
+    IPersonDistributionSourcePackageFactory,
+    )
+from lp.registry.interfaces.personproduct import IPersonProductFactory
 from lp.services.database.constants import UTC_NOW
 from lp.services.webapp.authorization import check_permission
 from lp.testing import (
@@ -96,6 +105,10 @@ class TestGitIdentityMixin(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def setUp(self):
+        super(TestGitIdentityMixin, self).setUp()
+        self.repository_set = getUtility(IGitRepositorySet)
+
     def assertGitIdentity(self, repository, identity_path):
         """Assert that the Git identity of 'repository' is 'identity_path'.
 
@@ -111,6 +124,53 @@ class TestGitIdentityMixin(TestCaseWithFactory):
         repository = self.factory.makeGitRepository()
         self.assertGitIdentity(repository, repository.unique_name)
 
+    def test_git_identity_default_for_project(self):
+        # If a repository is the default for a project, then its Git
+        # identity is the project name.
+        project = self.factory.makeProduct()
+        repository = self.factory.makeGitRepository(
+            owner=project.owner, target=project)
+        with person_logged_in(project.owner):
+            self.repository_set.setDefaultRepository(project, repository)
+        self.assertGitIdentity(repository, project.name)
+
+    def test_git_identity_default_for_package(self):
+        # If a repository is the default for a package, then its Git
+        # identity uses the path to that package.
+        dsp = self.factory.makeDistributionSourcePackage()
+        repository = self.factory.makeGitRepository(target=dsp)
+        with admin_logged_in():
+            self.repository_set.setDefaultRepository(dsp, repository)
+        self.assertGitIdentity(
+            repository,
+            "%s/+source/%s" % (
+                dsp.distribution.name, dsp.sourcepackagename.name))
+
+    def test_git_identity_owner_default_for_project(self):
+        # If a repository is a person's default for a project, then its Git
+        # identity is a combination of the person and project names.
+        project = self.factory.makeProduct()
+        repository = self.factory.makeGitRepository(target=project)
+        with person_logged_in(repository.owner):
+            self.repository_set.setDefaultRepositoryForOwner(
+                repository.owner, project, repository)
+        self.assertGitIdentity(
+            repository, "~%s/%s" % (repository.owner.name, project.name))
+
+    def test_git_identity_owner_default_for_package(self):
+        # If a repository is a person's default for a package, then its Git
+        # identity is a combination of the person name and the package path.
+        dsp = self.factory.makeDistributionSourcePackage()
+        repository = self.factory.makeGitRepository(target=dsp)
+        with person_logged_in(repository.owner):
+            self.repository_set.setDefaultRepositoryForOwner(
+                repository.owner, dsp, repository)
+        self.assertGitIdentity(
+            repository,
+            "~%s/%s/+source/%s" % (
+                repository.owner.name, dsp.distribution.name,
+                dsp.sourcepackagename.name))
+
     def test_identities_no_defaults(self):
         # If there are no defaults, the only repository identity is the
         # unique name.
@@ -119,8 +179,54 @@ class TestGitIdentityMixin(TestCaseWithFactory):
             [(repository.unique_name, repository)],
             repository.getRepositoryIdentities())
 
-    # XXX cjwatson 2015-02-12: This will need to be expanded once support
-    # for default repositories is in place.
+    def test_default_for_project(self):
+        # If a repository is the default for a project, then that is the
+        # preferred identity.  Target defaults are preferred over
+        # owner-target defaults.
+        eric = self.factory.makePerson(name="eric")
+        fooix = self.factory.makeProduct(name="fooix", owner=eric)
+        repository = self.factory.makeGitRepository(
+            owner=eric, target=fooix, name=u"fooix-repo")
+        with person_logged_in(fooix.owner):
+            self.repository_set.setDefaultRepositoryForOwner(
+                repository.owner, fooix, repository)
+            self.repository_set.setDefaultRepository(fooix, repository)
+        eric_fooix = getUtility(IPersonProductFactory).create(eric, fooix)
+        self.assertEqual(
+            [ICanHasDefaultGitRepository(target)
+             for target in (fooix, eric_fooix)],
+            repository.getRepositoryDefaults())
+        self.assertEqual(
+            [("fooix", fooix), ("~eric/fooix", eric_fooix),
+             ("~eric/fooix/+git/fooix-repo", repository)],
+            repository.getRepositoryIdentities())
+
+    def test_default_for_package(self):
+        # If a repository is the default for a package, then that is the
+        # preferred identity.  Target defaults are preferred over
+        # owner-target defaults.
+        mint = self.factory.makeDistribution(name="mint")
+        eric = self.factory.makePerson(name="eric")
+        mint_choc = self.factory.makeDistributionSourcePackage(
+            distribution=mint, sourcepackagename="choc")
+        repository = self.factory.makeGitRepository(
+            owner=eric, target=mint_choc, name=u"choc-repo")
+        dsp = repository.target
+        with admin_logged_in():
+            self.repository_set.setDefaultRepositoryForOwner(
+                repository.owner, dsp, repository)
+            self.repository_set.setDefaultRepository(dsp, repository)
+        eric_dsp = getUtility(IPersonDistributionSourcePackageFactory).create(
+            eric, dsp)
+        self.assertEqual(
+            [ICanHasDefaultGitRepository(target)
+             for target in (dsp, eric_dsp)],
+            repository.getRepositoryDefaults())
+        self.assertEqual(
+            [("mint/+source/choc", dsp),
+             ("~eric/mint/+source/choc", eric_dsp),
+             ("~eric/mint/+source/choc/+git/choc-repo", repository)],
+            repository.getRepositoryIdentities())
 
 
 class TestGitRepositoryDateLastModified(TestCaseWithFactory):
@@ -392,3 +498,133 @@ class TestGitRepositorySetTarget(TestCaseWithFactory):
             self.assertRaises(
                 GitTargetError, repository.setTarget,
                 target=commercial_project, user=owner)
+
+
+class TestGitRepositorySet(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestGitRepositorySet, self).setUp()
+        self.repository_set = getUtility(IGitRepositorySet)
+
+    def test_provides_IGitRepositorySet(self):
+        # GitRepositorySet instances provide IGitRepositorySet.
+        verifyObject(IGitRepositorySet, self.repository_set)
+
+    def test_setDefaultRepository_refuses_person(self):
+        # setDefaultRepository refuses if the target is a person.
+        person = self.factory.makePerson()
+        repository = self.factory.makeGitRepository(owner=person)
+        with person_logged_in(person):
+            self.assertRaises(
+                GitTargetError, self.repository_set.setDefaultRepository,
+                person, repository)
+
+    def test_setDefaultRepositoryForOwner_refuses_person(self):
+        # setDefaultRepositoryForOwner refuses if the target is a person.
+        person = self.factory.makePerson()
+        repository = self.factory.makeGitRepository(owner=person)
+        with person_logged_in(person):
+            self.assertRaises(
+                GitTargetError,
+                self.repository_set.setDefaultRepositoryForOwner,
+                person, person, repository)
+
+
+class TestGitRepositorySetDefaultsMixin:
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestGitRepositorySetDefaultsMixin, self).setUp()
+        self.repository_set = getUtility(IGitRepositorySet)
+        self.get_method = self.repository_set.getDefaultRepository
+        self.set_method = self.repository_set.setDefaultRepository
+
+    def makeGitRepository(self, target):
+        return self.factory.makeGitRepository(target=target)
+
+    def test_default_repository_round_trip(self):
+        # A target's default Git repository set using setDefaultRepository*
+        # can be retrieved using getDefaultRepository*.
+        target = self.makeTarget()
+        repository = self.makeGitRepository(target)
+        self.assertIsNone(self.get_method(target))
+        with person_logged_in(self.getPersonForLogin(target)):
+            self.set_method(target, repository)
+        self.assertEqual(repository, self.get_method(target))
+
+    def test_set_default_repository_None(self):
+        # setDefaultRepository*(target, None) clears the default.
+        target = self.makeTarget()
+        repository = self.makeGitRepository(target)
+        with person_logged_in(self.getPersonForLogin(target)):
+            self.set_method(target, repository)
+            self.set_method(target, None)
+        self.assertIsNone(self.get_method(target))
+
+    def test_set_default_repository_different_target(self):
+        # setDefaultRepository* refuses if the repository is attached to a
+        # different target.
+        target = self.makeTarget()
+        other_target = self.makeTarget(template=target)
+        repository = self.makeGitRepository(other_target)
+        with person_logged_in(self.getPersonForLogin(target)):
+            self.assertRaises(
+                GitTargetError, self.set_method, target, repository)
+
+
+class TestGitRepositorySetDefaultsProject(
+    TestGitRepositorySetDefaultsMixin, TestCaseWithFactory):
+
+    def makeTarget(self, template=None):
+        return self.factory.makeProduct()
+
+    @staticmethod
+    def getPersonForLogin(target):
+        return target.owner
+
+
+class TestGitRepositorySetDefaultsPackage(
+    TestGitRepositorySetDefaultsMixin, TestCaseWithFactory):
+
+    def makeTarget(self, template=None):
+        kwargs = {}
+        if template is not None:
+            kwargs["distribution"] = template.distribution
+        return self.factory.makeDistributionSourcePackage(**kwargs)
+
+    @staticmethod
+    def getPersonForLogin(target):
+        return target.distribution.owner
+
+
+class TestGitRepositorySetDefaultsOwnerMixin(
+    TestGitRepositorySetDefaultsMixin):
+
+    def setUp(self):
+        super(TestGitRepositorySetDefaultsOwnerMixin, self).setUp()
+        self.person = self.factory.makePerson()
+        self.get_method = partial(
+            self.repository_set.getDefaultRepositoryForOwner, self.person)
+        self.set_method = partial(
+            self.repository_set.setDefaultRepositoryForOwner, self.person)
+
+    def makeGitRepository(self, target):
+        return self.factory.makeGitRepository(owner=self.person, target=target)
+
+    def getPersonForLogin(self, target):
+        return self.person
+
+
+class TestGitRepositorySetDefaultsOwnerProject(
+    TestGitRepositorySetDefaultsOwnerMixin,
+    TestGitRepositorySetDefaultsProject):
+    pass
+
+
+class TestGitRepositorySetDefaultsOwnerPackage(
+    TestGitRepositorySetDefaultsOwnerMixin,
+    TestGitRepositorySetDefaultsPackage):
+    pass
