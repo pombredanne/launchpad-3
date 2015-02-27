@@ -23,6 +23,7 @@ from sqlobject import (
     )
 from storm.expr import (
     And,
+    Cast,
     Coalesce,
     Desc,
     Exists,
@@ -662,55 +663,55 @@ class POFile(SQLBase, POFileMixIn):
         """See `IPOFile`."""
         flag_name = getUtility(ITranslationSideTraitsSet).getForTemplate(
             self.potemplate).flag_name
-        clauses = self._getClausesForPOFileMessages()
-        msgstr_clause = make_plurals_sql_fragment(
-            "TranslationMessage.msgstr%(form)d IS NOT NULL", "OR")
+        clauses = self._getStormClausesForPOFileMessages()
+        msgstr_clause = Or(*(
+            getattr(TranslationMessage, 'msgstr%d' % form) != None
+            for form in xrange(TranslationConstants.MAX_PLURAL_FORMS)))
         clauses.extend([
-            'TranslationTemplateItem.potmsgset = POTMsgSet.id',
-            'TranslationMessage.%s IS NOT TRUE' % flag_name,
-            "(%s)" % msgstr_clause,
+            TranslationTemplateItem.potmsgsetID == POTMsgSet.id,
+            Not(getattr(TranslationMessage, flag_name)),
+            msgstr_clause,
             ])
 
-        diverged_translation_query = (
-            '''(SELECT COALESCE(diverged.date_reviewed, diverged.date_created)
-                 FROM TranslationMessage AS diverged
-                 WHERE
-                   diverged.%(flag_name)s IS TRUE AND
-                   diverged.potemplate = %(potemplate)s AND
-                   diverged.language = %(language)s AND
-                   diverged.potmsgset=POTMsgSet.id)''' % dict(
-            flag_name=flag_name,
-            potemplate=quote(self.potemplate),
-            language=quote(self.language)))
+        Diverged = ClassAlias(TranslationMessage, "Diverged")
+        diverged_translation_query = Select(
+            Coalesce(Diverged.date_reviewed, Diverged.date_created),
+            tables=[Diverged],
+            where=And(
+                getattr(Diverged, flag_name),
+                Diverged.potmsgsetID == POTMsgSet.id,
+                Diverged.languageID == self.language.id,
+                Diverged.potemplateID == self.potemplate.id))
 
-        shared_translation_query = (
-            '''(SELECT COALESCE(shared.date_reviewed, shared.date_created)
-                 FROM TranslationMessage AS shared
-                 WHERE
-                   shared.%(flag_name)s IS TRUE AND
-                   shared.potemplate IS NULL AND
-                   shared.language = %(language)s AND
-                   shared.potmsgset=POTMsgSet.id)''' % dict(
-            flag_name=flag_name,
-            language=quote(self.language)))
-        beginning_of_time = "TIMESTAMP '1970-01-01 00:00:00'"
-        newer_than_query = (
-            "TranslationMessage.date_created > COALESCE(" +
-            ",".join([diverged_translation_query,
-                      shared_translation_query,
-                      beginning_of_time]) + ")")
-        clauses.append(newer_than_query)
+        Shared = ClassAlias(TranslationMessage, "Shared")
+        shared_translation_query = Select(
+            Coalesce(Shared.date_reviewed, Shared.date_created),
+            tables=[Shared],
+            where=And(
+                getattr(Shared, flag_name),
+                Shared.potmsgsetID == POTMsgSet.id,
+                Shared.languageID == self.language.id,
+                Shared.potemplateID == None))
+
+        beginning_of_time = Cast(u'1970-01-01 00:00:00', 'timestamp')
+        clauses.append(
+            TranslationMessage.date_created >
+                Coalesce(
+                    diverged_translation_query, shared_translation_query,
+                    beginning_of_time))
 
         # A POT set has "new" suggestions if there is a non current
         # TranslationMessage newer than the current reviewed one.
-        query = (
-            """POTMsgSet.id IN (SELECT DISTINCT TranslationMessage.potmsgset
-                 FROM TranslationMessage, TranslationTemplateItem, POTMsgSet
-                 WHERE (%(query)s)) AND
-               POTMsgSet.id=TranslationTemplateItem.potmsgset AND
-               TranslationTemplateItem.potemplate=%(potemplate)s
-            """ % dict(query=' AND '.join(clauses),
-                       potemplate=quote(self.potemplate)))
+        query = And(
+            POTMsgSet.id.is_in(
+                Select(
+                    TranslationMessage.potmsgsetID,
+                    tables=[
+                        TranslationMessage, TranslationTemplateItem,
+                        POTMsgSet],
+                    where=And(*clauses))),
+            POTMsgSet.id == TranslationTemplateItem.potmsgsetID,
+            TranslationTemplateItem.potemplateID == self.potemplate.id)
         return self._getOrderedPOTMsgSets(
             [POTMsgSet, TranslationTemplateItem], query)
 
