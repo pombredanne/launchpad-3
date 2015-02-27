@@ -268,7 +268,6 @@ class POFileMixIn(RosettaStats):
         Orders the result by TranslationTemplateItem.sequence which must
         be among `origin_tables`.
         """
-        # XXX
         if isinstance(query, basestring):
             query = SQL(query)
         results = IMasterStore(POTMsgSet).using(origin_tables).find(
@@ -606,10 +605,10 @@ class POFile(SQLBase, POFileMixIn):
                 1,
                 tables=[Diverged],
                 where=And(
-                    Diverged.potemplateID == self.potemplate.id,
-                    getattr(Diverged, flag_name),
+                    Diverged.potmsgsetID == TranslationMessage.potmsgsetID,
                     Diverged.languageID == self.language.id,
-                    Diverged.potmsgsetID == TranslationMessage.potmsgsetID)))))
+                    getattr(Diverged, flag_name),
+                    Diverged.potemplateID == self.potemplate.id)))))
 
         clauses.append(
             Or(diverged_translation_clause, shared_translation_clause))
@@ -670,9 +669,9 @@ class POFile(SQLBase, POFileMixIn):
             Coalesce(Diverged.date_reviewed, Diverged.date_created),
             tables=[Diverged],
             where=And(
-                getattr(Diverged, flag_name),
                 Diverged.potmsgsetID == POTMsgSet.id,
                 Diverged.languageID == self.language.id,
+                getattr(Diverged, flag_name),
                 Diverged.potemplateID == self.potemplate.id))
 
         Shared = ClassAlias(TranslationMessage, "Shared")
@@ -680,9 +679,9 @@ class POFile(SQLBase, POFileMixIn):
             Coalesce(Shared.date_reviewed, Shared.date_created),
             tables=[Shared],
             where=And(
-                getattr(Shared, flag_name),
                 Shared.potmsgsetID == POTMsgSet.id,
                 Shared.languageID == self.language.id,
+                getattr(Shared, flag_name),
                 Shared.potemplateID == None))
 
         beginning_of_time = Cast(u'1970-01-01 00:00:00', 'timestamp')
@@ -729,11 +728,11 @@ class POFile(SQLBase, POFileMixIn):
                 1,
                 tables=[Diverged],
                 where=And(
-                    getattr(Diverged, other_side_flag_name),
                     Diverged.id != Imported.id,
-                    Diverged.potemplateID == self.potemplate.id,
+                    Diverged.potmsgsetID == TranslationMessage.potmsgsetID,
                     Diverged.languageID == self.language.id,
-                    Diverged.potmsgsetID == TranslationMessage.potmsgsetID))))
+                    getattr(Diverged, other_side_flag_name),
+                    Diverged.potemplateID == self.potemplate.id))))
         imported_clauses = [
             Imported.id != TranslationMessage.id,
             Imported.potmsgsetID == POTMsgSet.id,
