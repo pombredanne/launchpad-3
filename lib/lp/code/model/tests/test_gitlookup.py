@@ -309,6 +309,15 @@ class TestGitTraverser(TestCaseWithFactory):
         self.assertRaises(
             InvalidProductName, self.traverser.traverse_path, "~person/b")
 
+    def test_invalid_person_project_group(self):
+        # Project groups do not have repositories, so `traverse_path` raises
+        # `InvalidNamespace` when asked to traverse to them.
+        person = self.factory.makePerson()
+        project_group = self.factory.makeProject()
+        self.assertRaises(
+            InvalidNamespace, self.traverser.traverse_path,
+            "~%s/%s/+git/repository" % (person.name, project_group.name))
+
     def test_person_missing_repository_name(self):
         # `traverse_path` raises `InvalidNamespace` if there are no segments
         # after '+git'.

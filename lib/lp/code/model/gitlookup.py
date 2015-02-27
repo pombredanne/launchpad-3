@@ -259,7 +259,7 @@ class GitTraverser:
         repository = None
         traversable = RootGitTraversable()
         segments_iter = SegmentIterator(segments)
-        while True:
+        while traversable is not None:
             try:
                 name = next(segments_iter)
             except StopIteration:
