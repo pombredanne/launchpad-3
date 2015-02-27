@@ -512,6 +512,19 @@ class TestGitRepositorySet(TestCaseWithFactory):
         # GitRepositorySet instances provide IGitRepositorySet.
         verifyObject(IGitRepositorySet, self.repository_set)
 
+    def test_getByPath(self):
+        # getByPath returns a repository matching the path that it's given.
+        a = self.factory.makeGitRepository()
+        self.factory.makeGitRepository()
+        repository = self.repository_set.getByPath(a.owner, a.shortened_path)
+        self.assertEqual(a, repository)
+
+    def test_getByPath_not_found(self):
+        # If a repository cannot be found for a path, then getByPath returns
+        # None.
+        person = self.factory.makePerson()
+        self.assertIsNone(self.repository_set.getByPath(person, "nonexistent"))
+
     def test_setDefaultRepository_refuses_person(self):
         # setDefaultRepository refuses if the target is a person.
         person = self.factory.makePerson()

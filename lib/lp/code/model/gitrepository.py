@@ -39,6 +39,7 @@ from lp.code.errors import (
     GitDefaultConflict,
     GitTargetError,
     )
+from lp.code.interfaces.gitlookup import IGitLookup
 from lp.code.interfaces.gitnamespace import (
     get_git_namespace,
     IGitNamespacePolicy,
@@ -357,8 +358,10 @@ class GitRepositorySet:
 
     def getByPath(self, user, path):
         """See `IGitRepositorySet`."""
-        # XXX cjwatson 2015-02-06: Fill this in once IGitLookup is in place.
-        raise NotImplementedError
+        repository = getUtility(IGitLookup).getByPath(path)
+        if repository is not None and repository.visibleByUser(user):
+            return repository
+        return None
 
     def getDefaultRepository(self, target):
         """See `IGitRepositorySet`."""
