@@ -700,7 +700,8 @@ class POFile(SQLBase, POFileMixIn):
                     tables=[
                         TranslationMessage, TranslationTemplateItem,
                         POTMsgSet],
-                    where=And(*clauses))),
+                    where=And(*clauses),
+                    distinct=True)),
             POTMsgSet.id == TranslationTemplateItem.potmsgsetID,
             TranslationTemplateItem.potemplateID == self.potemplate.id)
         return self._getOrderedPOTMsgSets(
