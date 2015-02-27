@@ -12,14 +12,12 @@
         method="post" enctype="multipart/form-data"
         accept-charset="UTF-8" tal:condition="view/mailing_list_widgets">
 
-    <h2>Mailing list subscriptions</h2>
-
     <p>You're a member of one or more teams with active mailing
       lists. You can subscribe to a team's mailing list using any of
-      your verified email addresses. You can <a
+      <a
         tal:define="link context/menu:overview/editemailaddresses"
-        tal:attributes="href link/target" 
-        >configure your verified email addresses here</a>.
+        tal:attributes="href link/target">
+        your verified email addresses</a>.
     </p>
 
     <table class="listing" style="width: 45em;">
@@ -43,7 +41,7 @@
         method="post" enctype="multipart/form-data"
         accept-charset="UTF-8">
 
-    <h2>Automatic subscription to mailing lists</h2>
+    <h2>Automatic subscription</h2>
 
     <div id="notification-info">When a team you are a member of creates a new
         mailing list, you will receive an email notification offering you the

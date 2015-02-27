@@ -3091,8 +3091,9 @@ class PersonEditMailingListsView(LaunchpadFormView):
         email address.
         """
         # Defaults for the mailing list autosubscribe buttons.
-        return dict(mailing_list_auto_subscribe_policy=
-                    self.context.mailing_list_auto_subscribe_policy)
+        return dict(
+            mailing_list_auto_subscribe_policy=
+                self.context.mailing_list_auto_subscribe_policy)
 
     def setUpWidgets(self, context=None):
         """See `LaunchpadFormView`."""
@@ -3177,7 +3178,7 @@ class PersonEditMailingListsView(LaunchpadFormView):
         addresses = []
         if self.context.preferredemail:
             addresses.append(self.context.preferredemail)
-        addresses += [email for email in self.context.validatedemails]
+        addresses += list(self.context.validatedemails)
         return addresses
 
     def validate_action_update_subscriptions(self, action, data):
