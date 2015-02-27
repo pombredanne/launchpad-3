@@ -9,6 +9,7 @@ __all__ = [
     ]
 
 from itertools import product
+from operator import attrgetter
 
 from lazr.restful.interfaces import IWebBrowserOriginatingRequest
 from lazr.restful.utils import get_current_web_service_request
@@ -324,51 +325,50 @@ class SharingService:
                             gitrepositories=None, specifications=None,
                             ignore_permissions=False):
         """See `ISharingService`."""
-        bugs_by_id = {}
-        branches_by_id = {}
-        gitrepositories_by_id = {}
+        bug_ids = []
+        branch_ids = []
+        gitrepository_ids = []
         for bug in bugs or []:
             if (not ignore_permissions
                 and not check_permission('launchpad.View', bug)):
                 raise Unauthorized
-            bugs_by_id[bug.id] = bug
+            bug_ids.append(bug.id)
         for branch in branches or []:
             if (not ignore_permissions
                 and not check_permission('launchpad.View', branch)):
                 raise Unauthorized
-            branches_by_id[branch.id] = branch
+            branch_ids.append(branch.id)
         for gitrepository in gitrepositories or []:
             if (not ignore_permissions
                 and not check_permission('launchpad.View', gitrepository)):
                 raise Unauthorized
-            gitrepositories_by_id[gitrepository.id] = gitrepository
+            gitrepository_ids.append(gitrepository.id)
         for spec in specifications or []:
             if (not ignore_permissions
                 and not check_permission('launchpad.View', spec)):
                 raise Unauthorized
 
         # Load the bugs.
-        visible_bug_ids = []
-        if bugs_by_id:
-            param = BugTaskSearchParams(
-                user=person, bug=any(*bugs_by_id.keys()))
+        visible_bugs = []
+        if bug_ids:
+            param = BugTaskSearchParams(user=person, bug=any(*bug_ids))
             visible_bug_ids = set(getUtility(IBugTaskSet).searchBugIds(param))
-        visible_bugs = [bugs_by_id[bug_id] for bug_id in visible_bug_ids]
+            visible_bugs = [bug for bug in bugs if bug.id in visible_bug_ids]
 
         # Load the branches.
         visible_branches = []
-        if branches_by_id:
+        if branch_ids:
             all_branches = getUtility(IAllBranches)
             wanted_branches = all_branches.visibleByUser(person).withIds(
-                *branches_by_id.keys())
+                *branch_ids)
             visible_branches = list(wanted_branches.getBranches())
 
         # Load the Git repositories.
         visible_gitrepositories = []
-        if gitrepositories_by_id:
+        if gitrepository_ids:
             all_gitrepositories = getUtility(IAllGitRepositories)
             wanted_gitrepositories = all_gitrepositories.visibleByUser(
-                person).withIds(*gitrepositories_by_id.keys())
+                person).withIds(*gitrepository_ids)
             visible_gitrepositories = list(
                 wanted_gitrepositories.getRepositories())
 
@@ -388,50 +388,37 @@ class SharingService:
     def getInvisibleArtifacts(self, person, bugs=None, branches=None,
                               gitrepositories=None):
         """See `ISharingService`."""
-        bugs_by_id = {}
-        branches_by_id = {}
-        gitrepositories_by_id = {}
-        for bug in bugs or []:
-            bugs_by_id[bug.id] = bug
-        for branch in branches or []:
-            branches_by_id[branch.id] = branch
-        for gitrepository in gitrepositories or []:
-            gitrepositories_by_id[gitrepository.id] = gitrepository
+        bug_ids = list(map(attrgetter("id"), bugs or []))
+        branch_ids = list(map(attrgetter("id"), branches or []))
+        gitrepository_ids = list(map(attrgetter("id"), gitrepositories or []))
 
         # Load the bugs.
-        visible_bug_ids = set()
-        if bugs_by_id:
-            param = BugTaskSearchParams(
-                user=person, bug=any(*bugs_by_id.keys()))
+        invisible_bugs = []
+        if bug_ids:
+            param = BugTaskSearchParams(user=person, bug=any(*bug_ids))
             visible_bug_ids = set(getUtility(IBugTaskSet).searchBugIds(param))
-        invisible_bug_ids = set(bugs_by_id.keys()).difference(visible_bug_ids)
-        invisible_bugs = [bugs_by_id[bug_id] for bug_id in invisible_bug_ids]
+            invisible_bugs = [
+                bug for bug in bugs if bug.id not in visible_bug_ids]
 
         # Load the branches.
         invisible_branches = []
-        if branches_by_id:
+        if branch_ids:
             all_branches = getUtility(IAllBranches)
             visible_branch_ids = all_branches.visibleByUser(person).withIds(
-                *branches_by_id.keys()).getBranchIds()
-            invisible_branch_ids = (
-                set(branches_by_id.keys()).difference(visible_branch_ids))
+                *branch_ids).getBranchIds()
             invisible_branches = [
-                branches_by_id[branch_id]
-                for branch_id in invisible_branch_ids]
+                branch for branch in branches
+                if branch.id not in visible_branch_ids]
 
         # Load the Git repositories.
         invisible_gitrepositories = []
-        if gitrepositories_by_id:
+        if gitrepository_ids:
             all_gitrepositories = getUtility(IAllGitRepositories)
             visible_gitrepository_ids = all_gitrepositories.visibleByUser(
-                person).withIds(
-                    *gitrepositories_by_id.keys()).getRepositoryIds()
-            invisible_gitrepository_ids = (
-                set(gitrepositories_by_id.keys()).difference(
-                    visible_gitrepository_ids))
+                person).withIds(*gitrepository_ids).getRepositoryIds()
             invisible_gitrepositories = [
-                gitrepositories_by_id[gitrepository_id]
-                for gitrepository_id in invisible_gitrepository_ids]
+                gitrepository for gitrepository in gitrepositories
+                if gitrepository.id not in visible_gitrepository_ids]
 
         return invisible_bugs, invisible_branches, invisible_gitrepositories
 
