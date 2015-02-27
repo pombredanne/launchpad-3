@@ -858,6 +858,55 @@
     <allow interface="lp.code.interfaces.gitnamespace.IGitNamespaceSet" />
   </securedutility>
 
+  <!-- GitCollection -->
+
+  <class class="lp.code.model.gitcollection.GenericGitCollection">
+    <allow interface="lp.code.interfaces.gitcollection.IGitCollection"/>
+  </class>
+  <class class="lp.code.model.gitcollection.AnonymousGitCollection">
+    <allow interface="lp.code.interfaces.gitcollection.IGitCollection"/>
+  </class>
+  <class class="lp.code.model.gitcollection.VisibleGitCollection">
+    <allow interface="lp.code.interfaces.gitcollection.IGitCollection"/>
+  </class>
+  <adapter
+      for="storm.store.Store"
+      provides="lp.code.interfaces.gitcollection.IGitCollection"
+      factory="lp.code.model.gitcollection.GenericGitCollection"/>
+  <adapter
+      for="lp.registry.interfaces.product.IProduct"
+      provides="lp.code.interfaces.gitcollection.IGitCollection"
+      factory="lp.code.adapters.gitcollection.git_collection_for_project"/>
+  <adapter
+      for="lp.registry.interfaces.projectgroup.IProjectGroup"
+      provides="lp.code.interfaces.gitcollection.IGitCollection"
+      factory="lp.code.adapters.gitcollection.git_collection_for_project_group"/>
+  <adapter
+      for="lp.registry.interfaces.distribution.IDistribution"
+      provides="lp.code.interfaces.gitcollection.IGitCollection"
+      factory="lp.code.adapters.gitcollection.git_collection_for_distribution"/>
+  <adapter
+      for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
+      provides="lp.code.interfaces.gitcollection.IGitCollection"
+      factory="lp.code.adapters.gitcollection.git_collection_for_distro_source_package"/>
+  <adapter
+      for="lp.registry.interfaces.person.IPerson"
+      provides="lp.code.interfaces.gitcollection.IGitCollection"
+      factory="lp.code.adapters.gitcollection.git_collection_for_person"/>
+  <adapter
+      for="lp.registry.interfaces.personproduct.IPersonProduct"
+      provides="lp.code.interfaces.gitcollection.IGitCollection"
+      factory="lp.code.adapters.gitcollection.git_collection_for_person_product"/>
+  <adapter
+      for="lp.registry.interfaces.persondistributionsourcepackage.IPersonDistributionSourcePackage"
+      provides="lp.code.interfaces.gitcollection.IGitCollection"
+      factory="lp.code.adapters.gitcollection.git_collection_for_person_distro_source_package"/>
+  <securedutility
+      class="lp.code.model.gitcollection.GenericGitCollection"
+      provides="lp.code.interfaces.gitcollection.IAllGitRepositories">
+    <allow interface="lp.code.interfaces.gitcollection.IAllGitRepositories"/>
+  </securedutility>
+
   <!-- Default Git repositories -->
 
   <adapter factory="lp.code.model.defaultgit.ProjectDefaultGitRepository" />
