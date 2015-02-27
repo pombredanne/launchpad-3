@@ -267,8 +267,11 @@ class POFileMixIn(RosettaStats):
         Orders the result by TranslationTemplateItem.sequence which must
         be among `origin_tables`.
         """
+        # XXX
+        if isinstance(query, basestring):
+            query = SQL(query)
         results = IMasterStore(POTMsgSet).using(origin_tables).find(
-            POTMsgSet, SQL(query))
+            POTMsgSet, query)
         return results.order_by(TranslationTemplateItem.sequence)
 
     def findPOTMsgSetsContaining(self, text):
@@ -647,18 +650,14 @@ class POFile(SQLBase, POFileMixIn):
             "   FROM TranslationTemplateItem, TranslationMessage, POTMsgSet"
             "   WHERE " + " AND ".join(translated_clauses) + ")")
         clauses = [
-            'TranslationTemplateItem.potemplate = %s' % sqlvalues(
-                self.potemplate),
-            'TranslationTemplateItem.potmsgset = POTMsgSet.id',
-            'TranslationTemplateItem.sequence > 0',
+            TranslationTemplateItem.potemplate == self.potemplate,
+            TranslationTemplateItem.potmsgset == POTMsgSet.id,
+            TranslationTemplateItem.sequence > 0,
+            Not(TranslationTemplateItem.potmsgsetID.is_in(
+                SQL(translated_query))),
             ]
-        clauses.append(
-            'TranslationTemplateItem.potmsgset NOT IN (%s)' % (
-                translated_query))
-
-        query = ' AND '.join(clauses)
         return self._getOrderedPOTMsgSets(
-            [POTMsgSet, TranslationTemplateItem], query)
+            [POTMsgSet, TranslationTemplateItem], And(*clauses))
 
     def getPOTMsgSetWithNewSuggestions(self):
         """See `IPOFile`."""
