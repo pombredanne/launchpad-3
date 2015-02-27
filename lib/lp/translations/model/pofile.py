@@ -625,9 +625,9 @@ class POFile(SQLBase, POFileMixIn):
     def getPOTMsgSetTranslated(self):
         """See `IPOFile`."""
         clauses, clause_tables = self._getTranslatedMessagesQuery()
-        clauses.append('TranslationTemplateItem.potmsgset = POTMsgSet.id')
-
-        query = ' AND '.join(clauses)
+        query = And(
+            TranslationTemplateItem.potmsgsetID == POTMsgSet.id,
+            *(SQL(clause) for clause in clauses))
         clause_tables.insert(0, POTMsgSet)
         return self._getOrderedPOTMsgSets(clause_tables, query)
 
@@ -636,25 +636,24 @@ class POFile(SQLBase, POFileMixIn):
         # We get all POTMsgSet.ids with translations, and later
         # exclude them using a NOT IN subselect.
         translated_clauses, clause_tables = self._getTranslatedMessagesQuery()
-        translated_clauses.append(
-            'POTMsgSet.id=TranslationTemplateItem.potmsgset')
-        # Even though this seems silly, Postgres prefers
-        # TranslationTemplateItem index if we add it (and on staging we
-        # get more than a 10x speed improvement: from 8s to 0.7s).  We
-        # also need to put it before any other clauses to be actually useful.
-        translated_clauses.insert(0,
-            'TranslationTemplateItem.potmsgset ='
-            ' TranslationTemplateItem.potmsgset')
-        translated_query = (
-            "(SELECT POTMsgSet.id"
-            "   FROM TranslationTemplateItem, TranslationMessage, POTMsgSet"
-            "   WHERE " + " AND ".join(translated_clauses) + ")")
+        translated_query = Select(
+            POTMsgSet.id,
+            tables=[TranslationTemplateItem, TranslationMessage, POTMsgSet],
+            where=And(
+                # Even though this seems silly, Postgres prefers
+                # TranslationTemplateItem index if we add it (and on
+                # staging we get more than a 10x speed improvement: from
+                # 8s to 0.7s).  We also need to put it before any other
+                # clauses to be actually useful.
+                TranslationTemplateItem.potmsgsetID ==
+                    TranslationTemplateItem.potmsgsetID,
+                POTMsgSet.id == TranslationTemplateItem.potmsgsetID,
+                *(SQL(clause) for clause in translated_clauses)))
         clauses = [
-            TranslationTemplateItem.potemplate == self.potemplate,
-            TranslationTemplateItem.potmsgset == POTMsgSet.id,
+            TranslationTemplateItem.potemplateID == self.potemplate.id,
+            TranslationTemplateItem.potmsgsetID == POTMsgSet.id,
             TranslationTemplateItem.sequence > 0,
-            Not(TranslationTemplateItem.potmsgsetID.is_in(
-                SQL(translated_query))),
+            Not(TranslationTemplateItem.potmsgsetID.is_in(translated_query)),
             ]
         return self._getOrderedPOTMsgSets(
             [POTMsgSet, TranslationTemplateItem], And(*clauses))
