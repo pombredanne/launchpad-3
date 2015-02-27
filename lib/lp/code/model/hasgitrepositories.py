@@ -8,6 +8,7 @@ __all__ = [
 
 from zope.component import getUtility
 
+from lp.code.interfaces.gitcollection import IGitCollection
 from lp.code.interfaces.gitrepository import IGitRepositorySet
 
 
@@ -23,6 +24,5 @@ class HasGitRepositoriesMixin:
 
     def getGitRepositories(self, visible_by_user=None, eager_load=False):
         """See `IHasGitRepositories`."""
-        # XXX cjwatson 2015-02-06: Fill this in once IGitCollection is in
-        # place.
-        raise NotImplementedError
+        collection = IGitCollection(self).visibleByUser(visible_by_user)
+        return collection.getRepositories(eager_load=eager_load)
