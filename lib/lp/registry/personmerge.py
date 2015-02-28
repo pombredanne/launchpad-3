@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Person/team merger implementation."""
@@ -14,6 +14,7 @@ from lp.code.interfaces.branchcollection import (
     IAllBranches,
     IBranchCollection,
     )
+from lp.code.interfaces.gitcollection import IGitCollection
 from lp.registry.interfaces.mailinglist import (
     IMailingListSet,
     MailingListStatus,
@@ -150,6 +151,13 @@ def _mergeBranchMergeQueues(cur, from_id, to_id):
     cur.execute('''
         UPDATE BranchMergeQueue SET owner = %(to_id)s WHERE owner =
         %(from_id)s''', dict(to_id=to_id, from_id=from_id))
+
+
+def _mergeGitRepositories(from_person, to_person):
+    # This shouldn't use removeSecurityProxy.
+    repositories = getUtility(IGitCollection).ownedBy(from_person)
+    for repository in repositories.getRepositories():
+        removeSecurityProxy(repository).setOwner(to_person, to_person)
 
 
 def _mergeSourcePackageRecipes(from_person, to_person):
@@ -691,9 +699,6 @@ def merge_people(from_person, to_person, reviewer, delete=False):
         ('bugsummaryjournal', 'viewed_by'),
         ('latestpersonsourcepackagereleasecache', 'creator'),
         ('latestpersonsourcepackagereleasecache', 'maintainer'),
-        # This needs handling before we deploy the git code, but can be
-        # ignored for the purpose of deploying the database tables.
-        ('gitrepository', 'owner'),
         ]
 
     references = list(postgresql.listReferences(cur, 'person', 'id'))
@@ -743,6 +748,11 @@ def merge_people(from_person, to_person, reviewer, delete=False):
 
     _mergeBranchMergeQueues(cur, from_id, to_id)
     skip.append(('branchmergequeue', 'owner'))
+
+    # Update the GitRepositories that will not conflict, and fudge the names
+    # of ones that *do* conflict.
+    _mergeGitRepositories(from_person, to_person)
+    skip.append(('gitrepository', 'owner'))
 
     _mergeSourcePackageRecipes(from_person, to_person)
     skip.append(('sourcepackagerecipe', 'owner'))
