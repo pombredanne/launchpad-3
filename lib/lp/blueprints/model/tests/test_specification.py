@@ -24,6 +24,7 @@ from lp.app.interfaces.services import IService
 from lp.app.validators import LaunchpadValidationError
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.blueprints.interfaces.specificationworkitem import (
+    ISpecificationWorkItemSet,
     SpecificationWorkItemStatus,
     )
 from lp.blueprints.model.specificationworkitem import SpecificationWorkItem
@@ -658,6 +659,15 @@ class TestSpecificationWorkItems(TestCaseWithFactory):
         return dict(
             title=wi.title, status=wi.status, assignee=wi.assignee,
             milestone=wi.milestone, sequence=sequence)
+
+    def test_workitemspecificationset_can_unlink_milestones(self):
+        milestone = self.factory.makeMilestone()
+        work_item = self.factory.makeSpecificationWorkItem(milestone=milestone)
+        self.assertEqual(work_item.milestone, milestone)
+
+        getUtility(ISpecificationWorkItemSet).unlinkMilestone(milestone)
+
+        self.assertEqual(work_item.milestone, None)
 
 
 class TestSpecificationInformationType(TestCaseWithFactory):
