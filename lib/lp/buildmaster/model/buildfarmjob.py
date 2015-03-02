@@ -35,6 +35,7 @@ from lp.buildmaster.enums import (
     )
 from lp.buildmaster.interfaces.buildfarmjob import (
     IBuildFarmJob,
+    IBuildFarmJobDB,
     IBuildFarmJobSet,
     IBuildFarmJobSource,
     )
@@ -71,7 +72,7 @@ class BuildFarmJob(Storm):
     """A base implementation for `IBuildFarmJob` classes."""
     __storm_table__ = 'BuildFarmJob'
 
-    implements(IBuildFarmJob)
+    implements(IBuildFarmJob, IBuildFarmJobDB)
     classProvides(IBuildFarmJobSource)
 
     id = Int(primary=True)
