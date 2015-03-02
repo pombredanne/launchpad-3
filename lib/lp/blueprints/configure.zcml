@@ -87,6 +87,14 @@
         interface="lp.blueprints.interfaces.specificationworkitem.ISpecificationWorkItem"/>
   </class>
 
+  <!-- SpecificationWorkItemSet -->
+
+  <securedutility
+      class="lp.blueprints.model.specificationworkitem.SpecificationWorkItemSet"
+      provides="lp.blueprints.interfaces.specificationworkitem.ISpecificationWorkItemSet">
+    <allow interface="lp.blueprints.interfaces.specificationworkitem.ISpecificationWorkItemSet"/>
+  </securedutility>
+
   <!-- SpecificationDependency -->
 
   <class class="lp.blueprints.model.specificationdependency.SpecificationDependency">
