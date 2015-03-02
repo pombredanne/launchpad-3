@@ -49,7 +49,7 @@ from lp.buildmaster.enums import (
     BuildStatus,
     )
 from lp.buildmaster.interfaces.buildfarmjob import (
-    IBuildFarmJob,
+    IBuildFarmJobDB,
     InconsistentBuildFarmJobError,
     ISpecificBuildFarmJobSource,
     )
@@ -439,7 +439,7 @@ def getSpecificJobs(jobs):
     builds = []
     key = attrgetter('job_type.name')
     nonspecific_jobs = sorted(
-        (job for job in jobs if IBuildFarmJob.providedBy(job)), key=key)
+        (job for job in jobs if IBuildFarmJobDB.providedBy(job)), key=key)
     job_builds = {}
     for job_type_name, grouped_jobs in groupby(nonspecific_jobs, key=key):
         # Fetch the jobs in batches grouped by their job type.
@@ -463,7 +463,7 @@ def getSpecificJobs(jobs):
     try:
         return [
             job_builds[job.id]
-            if IBuildFarmJob.providedBy(job) else job for job in jobs]
+            if IBuildFarmJobDB.providedBy(job) else job for job in jobs]
     except KeyError:
         raise InconsistentBuildFarmJobError(
             "Could not find all the related specific jobs.")
