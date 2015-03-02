@@ -49,11 +49,11 @@ from lp.buildmaster.enums import (
     BuildStatus,
     )
 from lp.buildmaster.interfaces.buildfarmjob import (
+    IBuildFarmJob,
     InconsistentBuildFarmJobError,
     ISpecificBuildFarmJobSource,
     )
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
-from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.services.librarian.browser import (
     FileNavigationMixin,
     ProxiedLibraryFileAlias,
@@ -439,7 +439,7 @@ def getSpecificJobs(jobs):
     builds = []
     key = attrgetter('job_type.name')
     nonspecific_jobs = sorted(
-        (job for job in jobs if zope_isinstance(job, BuildFarmJob)), key=key)
+        (job for job in jobs if IBuildFarmJob.providedBy(job)), key=key)
     job_builds = {}
     for job_type_name, grouped_jobs in groupby(nonspecific_jobs, key=key):
         # Fetch the jobs in batches grouped by their job type.
@@ -463,7 +463,7 @@ def getSpecificJobs(jobs):
     try:
         return [
             job_builds[job.id]
-            if zope_isinstance(job, BuildFarmJob) else job for job in jobs]
+            if IBuildFarmJob.providedBy(job) else job for job in jobs]
     except KeyError:
         raise InconsistentBuildFarmJobError(
             "Could not find all the related specific jobs.")
