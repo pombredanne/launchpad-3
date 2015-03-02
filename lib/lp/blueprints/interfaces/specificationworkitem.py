@@ -84,7 +84,7 @@ class ISpecificationWorkItem(Interface):
 
 
 class ISpecificationWorkItemSet(Interface):
-    """SpecificationWorkItem's public attributes and methods."""
+    """SpecificationWorkItemSet's public attributes and methods."""
 
     def unlinkMilestone(milestone):
         """Unlink the given milestone from all SpecificationWorkItems."""

@@ -668,15 +668,15 @@ class TestSpecificationWorkItems(TestCaseWithFactory):
         work_item_3 = self.factory.makeSpecificationWorkItem(milestone=milestone_b)
 
 
-        self.assertEqual(work_item_1.milestone, milestone_a)
-        self.assertEqual(work_item_2.milestone, milestone_a)
-        self.assertEqual(work_item_3.milestone, milestone_b)
+        self.assertEqual(milestone_a, work_item_1.milestone)
+        self.assertEqual(milestone_a, work_item_2.milestone)
+        self.assertEqual(milestone_b, work_item_3.milestone)
 
         getUtility(ISpecificationWorkItemSet).unlinkMilestone(milestone_a)
 
-        self.assertIs(work_item_1.milestone, None)
-        self.assertIs(work_item_2.milestone, None)
-        self.assertEqual(work_item_3.milestone, milestone_b)
+        self.assertIs(None, work_item_1.milestone)
+        self.assertIs(None, work_item_2.milestone)
+        self.assertEqual(milestone_b, work_item_3.milestone)
 
 
 class TestSpecificationInformationType(TestCaseWithFactory):

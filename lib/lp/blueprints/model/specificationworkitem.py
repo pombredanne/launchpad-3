@@ -73,6 +73,7 @@ class SpecificationWorkItemSet:
     implements(ISpecificationWorkItemSet)
 
     def unlinkMilestone(self, milestone):
+        """See `ISpecificationWorkItemSet`."""
         Store.of(milestone).find(
             SpecificationWorkItem, milestone_id=milestone.id).set(
                 milestone_id=None)
