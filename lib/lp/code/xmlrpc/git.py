@@ -133,10 +133,8 @@ class GitAPI(LaunchpadXMLRPCView):
                 "Cannot create Git repository at '%s'" % path)
         except NoSuchPerson as e:
             raise faults.NotFound("User/team '%s' does not exist." % e.name)
-        except NoSuchProduct as e:
+        except (NoSuchProduct, InvalidProductName) as e:
             raise faults.NotFound("Project '%s' does not exist." % e.name)
-        except InvalidProductName as e:
-            raise faults.InvalidProductName(e.name)
         except NoSuchSourcePackageName as e:
             try:
                 getUtility(ISourcePackageNameSet).new(e.name)

@@ -86,15 +86,6 @@ class TestGitAPI(TestCaseWithFactory):
             path, permission, requester, can_authenticate)
         self.assertEqual(faults.NotFound(message), fault)
 
-    def assertInvalidProductName(self, requester, path, name,
-                                 permission="read", can_authenticate=False):
-        """Assert that looking at the given path returns InvalidProductName."""
-        if requester not in (LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES):
-            requester = requester.id
-        fault = self.git_api.translatePath(
-            path, permission, requester, can_authenticate)
-        self.assertEqual(faults.InvalidProductName(name), fault)
-
     def assertInvalidSourcePackageName(self, requester, path, name,
                                        permission="read",
                                        can_authenticate=False):
@@ -336,9 +327,9 @@ class TestGitAPI(TestCaseWithFactory):
     def test_translatePath_create_invalid_project(self):
         # Creating a repository with an invalid project name fails.
         requester = self.factory.makePerson()
-        self.assertInvalidProductName(
-            requester, u"/_bad_project/+git/random", "_bad_project",
-            permission="write")
+        self.assertNotFound(
+            requester, u"/_bad_project/+git/random",
+            "Project '_bad_project' does not exist.", permission="write")
 
     def test_translatePath_create_missing_sourcepackagename(self):
         # If translatePath is asked to create a repository for a missing
