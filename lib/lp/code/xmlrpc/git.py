@@ -166,17 +166,12 @@ class GitAPI(LaunchpadXMLRPCView):
                         "You cannot set the default Git repository for '%s'." %
                         path)
 
-            # The transaction hasn't been committed yet (and shouldn't be
-            # until the non-transactional work is complete), so
-            # repository.id will not yet have been filled in, but we need it
-            # to create the hosting path.
-            store = Store.of(repository)
-            repository_id = store.execute(
-                """SELECT currval('gitrepository_id_seq')""").get_one()[0]
+            # Flush to make sure that repository.id is populated.
+            Store.of(repository).flush()
+            assert repository.id is not None
 
-            hosting_path = repository.getInternalPathForID(repository_id)
             # XXX cjwatson 2015-02-27: Turn any exceptions into proper faults.
-            self.hosting_client.create(hosting_path)
+            self.hosting_client.create(repository.getInternalPath())
         except Exception:
             # We don't want to keep the repository we created.
             transaction.abort()
