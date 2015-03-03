@@ -9,10 +9,12 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import InformationType
+from lp.code.errors import GitRepositoryCreationFault
 from lp.code.interfaces.codehosting import (
     LAUNCHPAD_ANONYMOUS,
     LAUNCHPAD_SERVICES,
     )
+from lp.code.interfaces.gitcollection import IAllGitRepositories
 from lp.code.interfaces.gitrepository import (
     GIT_REPOSITORY_NAME_VALIDATION_ERROR_MESSAGE,
     IGitRepositorySet,
@@ -30,12 +32,20 @@ from lp.xmlrpc import faults
 
 
 class FakeGitHostingClient:
+    """A GitHostingClient lookalike that just logs calls."""
 
     def __init__(self):
         self.calls = []
 
     def create(self, path):
         self.calls.append(("create", path))
+
+
+class BrokenGitHostingClient:
+    """A GitHostingClient lookalike that pretends the remote end is down."""
+
+    def create(self, path):
+        raise GitRepositoryCreationFault("nothing here")
 
 
 class TestGitAPI(TestCaseWithFactory):
@@ -499,3 +509,18 @@ class TestGitAPI(TestCaseWithFactory):
             path.strip("/"))
         self.assertPermissionDenied(
             requester, path, message=message, permission="write")
+
+    def test_translatePath_create_broken_hosting_service(self):
+        # If the hosting service is down, trying to create a repository
+        # fails and doesn't leave junk around in the Launchpad database.
+        self.git_api.hosting_client = BrokenGitHostingClient()
+        requester = self.factory.makePerson()
+        initial_count = getUtility(IAllGitRepositories).count()
+        # XXX cjwatson 2015-01-03: This exception should in fact be turned
+        # into a fault.
+        self.assertRaises(
+            GitRepositoryCreationFault, self.git_api.translatePath,
+            u"/~%s/+git/random" % requester.name, "write", requester.id, False)
+        login(ANONYMOUS)
+        self.assertEqual(
+            initial_count, getUtility(IAllGitRepositories).count())
