@@ -60,12 +60,22 @@ class TestGitAPI(TestCaseWithFactory):
     def assertPermissionDenied(self, requester, path,
                                message="Permission denied.",
                                permission="read", can_authenticate=False):
-        """Assert that looking at the given path gives permission denied."""
+        """Assert that looking at the given path returns PermissionDenied."""
         if requester not in (LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES):
             requester = requester.id
         fault = self.git_api.translatePath(
             path, permission, requester, can_authenticate)
         self.assertEqual(faults.PermissionDenied(message), fault)
+
+    def assertUnauthorized(self, requester, path,
+                           message="Authorisation required.",
+                           permission="read", can_authenticate=False):
+        """Assert that looking at the given path returns Unauthorized."""
+        if requester not in (LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES):
+            requester = requester.id
+        fault = self.git_api.translatePath(
+            path, permission, requester, can_authenticate)
+        self.assertEqual(faults.Unauthorized(message), fault)
 
     def assertNotFound(self, requester, path, message, permission="read",
                        can_authenticate=False):
@@ -97,11 +107,11 @@ class TestGitAPI(TestCaseWithFactory):
         self.assertEqual(faults.InvalidSourcePackageName(name), fault)
 
     def assertTranslates(self, requester, path, repository, writable,
-                         permission="read"):
+                         permission="read", can_authenticate=False):
         if requester not in (LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES):
             requester = requester.id
         translation = self.git_api.translatePath(
-            path, permission, requester, False)
+            path, permission, requester, can_authenticate)
         login(ANONYMOUS)
         self.assertEqual(
             {"path": repository.getInternalPath(), "writable": writable},
@@ -170,12 +180,20 @@ class TestGitAPI(TestCaseWithFactory):
             self.factory.makeGitRepository(
                 information_type=InformationType.USERDATA))
         path = u"/%s" % repository.unique_name
-        self.assertPermissionDenied(LAUNCHPAD_ANONYMOUS, path)
+        self.assertPermissionDenied(
+            LAUNCHPAD_ANONYMOUS, path, can_authenticate=False)
+        self.assertUnauthorized(
+            LAUNCHPAD_ANONYMOUS, path, can_authenticate=True)
 
     def test_translatePath_anonymous_public_repository(self):
         repository = self.factory.makeGitRepository()
         path = u"/%s" % repository.unique_name
-        self.assertTranslates(LAUNCHPAD_ANONYMOUS, path, repository, False)
+        self.assertTranslates(
+            LAUNCHPAD_ANONYMOUS, path, repository, False,
+            can_authenticate=False)
+        self.assertTranslates(
+            LAUNCHPAD_ANONYMOUS, path, repository, False,
+            can_authenticate=True)
 
     def test_translatePath_owned(self):
         requester = self.factory.makePerson()
@@ -210,13 +228,13 @@ class TestGitAPI(TestCaseWithFactory):
         path = u"/%s" % repository.target.name
         self.assertTranslates(requester, path, repository, False)
 
-    def assertCreates(self, requester, path):
+    def assertCreates(self, requester, path, can_authenticate=False):
         if requester in (LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES):
             requester_id = requester
         else:
             requester_id = requester.id
         translation = self.git_api.translatePath(
-            path, "write", requester_id, False)
+            path, "write", requester_id, can_authenticate)
         login(ANONYMOUS)
         repository = getUtility(IGitRepositorySet).getByPath(
             requester, path.lstrip("/"))
@@ -277,7 +295,11 @@ class TestGitAPI(TestCaseWithFactory):
         # Anonymous users cannot create repositories.
         project = self.factory.makeProject()
         self.assertPathTranslationError(
-            LAUNCHPAD_ANONYMOUS, u"/%s" % project.name, permission="write")
+            LAUNCHPAD_ANONYMOUS, u"/%s" % project.name,
+            permission="write", can_authenticate=False)
+        self.assertPathTranslationError(
+            LAUNCHPAD_ANONYMOUS, u"/%s" % project.name,
+            permission="write", can_authenticate=True)
 
     def test_translatePath_create_invalid_namespace(self):
         # Trying to create a repository at a path that isn't valid for Git

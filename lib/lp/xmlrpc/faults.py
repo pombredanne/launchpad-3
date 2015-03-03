@@ -47,6 +47,7 @@ __all__ = [
     'PermissionDenied',
     'RequiredParameterMissing',
     'TeamEmailAddress',
+    'Unauthorized',
     'UnexpectedStatusReport',
     ]
 
@@ -509,3 +510,15 @@ class TeamEmailAddress(LaunchpadFault):
     def __init__(self, email, openid_identifier):
         LaunchpadFault.__init__(
             self, email=email, openid_identifier=openid_identifier)
+
+
+# American English spelling to line up with httplib etc.
+class Unauthorized(LaunchpadFault):
+    """Permission was denied, but authorisation may help."""
+
+    error_code = 410
+    msg_template = (
+        "%(message)s")
+
+    def __init__(self, message="Authorisation required."):
+        LaunchpadFault.__init__(self, message=message)

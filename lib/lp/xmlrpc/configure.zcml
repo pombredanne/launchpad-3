@@ -220,4 +220,8 @@
   <class class="lp.xmlrpc.faults.InvalidSourcePackageName">
     <require like_class="xmlrpclib.Fault" />
   </class>
+
+  <class class="lp.xmlrpc.faults.Unauthorized">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
 </configure>

@@ -39,8 +39,8 @@ class IGitAPI(Interface):
         :param permission: "read" or "write".
         :param requester_id: The database ID of the person requesting the
             path translation, or None for an anonymous request.
-        :param can_authenticate: True if the requester is anonymous but
-            could authenticate, otherwise False.
+        :param can_authenticate: True if the frontend can request
+            authentication, otherwise False.
 
         :returns: A `PathTranslationError` fault if 'path' cannot be
             translated; a `PermissionDenied` fault if the requester cannot

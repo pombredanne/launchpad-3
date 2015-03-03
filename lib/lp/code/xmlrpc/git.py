@@ -193,19 +193,24 @@ class GitAPI(LaunchpadXMLRPCView):
     def _translatePath(self, requester, path, permission, can_authenticate):
         if requester == LAUNCHPAD_ANONYMOUS:
             requester = None
-        result = self._performLookup(path)
-        if result is None and requester is not None and permission == "write":
-            self._createRepository(requester, path)
+        try:
             result = self._performLookup(path)
-        if result is None:
-            raise faults.PathTranslationError(path)
-        if permission != "read" and not result["writable"]:
-            # XXX 2015-02-03 cjwatson: We should make use of
-            # can_authenticate to distinguish between "read-only to
-            # authenticated user" and "might be able to write if logged
-            # in".
-            raise faults.PermissionDenied()
-        return result
+            if (result is None and requester is not None and
+                permission == "write"):
+                self._createRepository(requester, path)
+                result = self._performLookup(path)
+            if result is None:
+                raise faults.PathTranslationError(path)
+            if permission != "read" and not result["writable"]:
+                raise faults.PermissionDenied()
+            return result
+        except faults.PermissionDenied:
+            # Turn "permission denied" for anonymous HTTP requests into
+            # "authorisation required", so that the user-agent has a chance
+            # to try HTTP basic auth.
+            if can_authenticate and requester is None:
+                raise faults.Unauthorized()
+            raise
 
     def translatePath(self, path, permission, requester_id, can_authenticate):
         """See `IGitAPI`."""
