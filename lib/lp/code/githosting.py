@@ -35,14 +35,18 @@ class GitHostingClient:
         return 5.0
 
     def create(self, path):
-        # XXX cjwatson 2015-03-01: Once we're on requests >= 2.4.2, we
-        # should just use post(json=) and drop the explicit Content-Type
-        # header.
-        response = self._makeSession().post(
-            urljoin(self.endpoint, "repo"),
-            headers={"Content-Type": "application/json"},
-            data=json.dumps({"repo_path": path, "bare_repo": True}),
-            timeout=self.timeout)
+        try:
+            # XXX cjwatson 2015-03-01: Once we're on requests >= 2.4.2, we
+            # should just use post(json=) and drop the explicit Content-Type
+            # header.
+            response = self._makeSession().post(
+                urljoin(self.endpoint, "repo"),
+                headers={"Content-Type": "application/json"},
+                data=json.dumps({"repo_path": path, "bare_repo": True}),
+                timeout=self.timeout)
+        except Exception as e:
+            raise GitRepositoryCreationFault(
+                "Failed to create Git repository: %s" % unicode(e))
         if response.status_code != 200:
             raise GitRepositoryCreationFault(
                 "Failed to create Git repository: %s" % response.text)
