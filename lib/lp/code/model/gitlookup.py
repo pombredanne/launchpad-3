@@ -342,6 +342,8 @@ class GitLookup:
             return None
         if repository is not None:
             return repository
+        if IPerson.providedBy(target):
+            return None
         repository_set = getUtility(IGitRepositorySet)
         if owner is None:
             return repository_set.getDefaultRepository(target)
