@@ -232,10 +232,16 @@ class GitRepository(StormBase, GitIdentityMixin):
     def display_name(self):
         return self.git_identity
 
+    @staticmethod
+    def getInternalPathForId(repository_id):
+        """See `IGitRepository`."""
+        # This may need to change later to improve support for sharding.
+        return str(repository_id)
+
     def getInternalPath(self):
         """See `IGitRepository`."""
         # This may need to change later to improve support for sharding.
-        return str(self.id)
+        return self.getInternalPathForId(self.id)
 
     def getCodebrowseUrl(self):
         """See `IGitRepository`."""

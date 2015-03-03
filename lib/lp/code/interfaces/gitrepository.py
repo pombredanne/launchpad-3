@@ -191,6 +191,12 @@ class IGitRepositoryView(Interface):
         If the user is a Launchpad admin, any type is acceptable.
         """
 
+    def getInternalPathForId(repository_id):
+        """Get the internal path to the repository with this ID.
+
+        This is used on the storage backend.
+        """
+
     def getInternalPath():
         """Get the internal path to this repository.
 
