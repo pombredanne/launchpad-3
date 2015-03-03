@@ -163,7 +163,8 @@ class GitAPI(LaunchpadXMLRPCView):
                     default_func(repository)
                 except Unauthorized:
                     raise faults.PermissionDenied(
-                        "Cannot create default Git repository at '%s'." % path)
+                        "You cannot set the default Git repository for '%s'." %
+                        path)
 
             # The transaction hasn't been committed yet (and shouldn't be
             # until the non-transactional work is complete), so

@@ -411,7 +411,7 @@ class TestGitAPI(TestCaseWithFactory):
         requester = self.factory.makePerson()
         project = self.factory.makeProduct()
         path = u"/%s" % project.name
-        message = "Cannot create default Git repository at '%s'." % (
+        message = "You cannot set the default Git repository for '%s'." % (
             path.strip("/"))
         self.assertPermissionDenied(
             requester, path, message=message, permission="write")
@@ -458,7 +458,7 @@ class TestGitAPI(TestCaseWithFactory):
         team = self.factory.makeTeam(members=[requester])
         project = self.factory.makeProduct()
         path = u"/~%s/%s" % (team.name, project.name)
-        message = "Cannot create default Git repository at '%s'." % (
+        message = "You cannot set the default Git repository for '%s'." % (
             path.strip("/"))
         self.assertPermissionDenied(
             requester, path, message=message, permission="write")
@@ -495,7 +495,7 @@ class TestGitAPI(TestCaseWithFactory):
         dsp = self.factory.makeDistributionSourcePackage()
         path = u"/~%s/%s/+source/%s" % (
             team.name, dsp.distribution.name, dsp.sourcepackagename.name)
-        message = "Cannot create default Git repository at '%s'." % (
+        message = "You cannot set the default Git repository for '%s'." % (
             path.strip("/"))
         self.assertPermissionDenied(
             requester, path, message=message, permission="write")
