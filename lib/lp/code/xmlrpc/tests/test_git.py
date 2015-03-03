@@ -27,7 +27,10 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
-from lp.testing.layers import LaunchpadFunctionalLayer
+from lp.testing.layers import (
+    AppServerLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.xmlrpc import faults
 
 
@@ -48,13 +51,11 @@ class BrokenGitHostingClient:
         raise GitRepositoryCreationFault("nothing here")
 
 
-class TestGitAPI(TestCaseWithFactory):
-    """Tests for the implementation of `IGitAPI`."""
-
-    layer = LaunchpadFunctionalLayer
+class TestGitAPIMixin:
+    """Helper methods for `IGitAPI` tests, and security-relevant tests."""
 
     def setUp(self):
-        super(TestGitAPI, self).setUp()
+        super(TestGitAPIMixin, self).setUp()
         self.git_api = GitAPI(None, None)
         self.git_api.hosting_client = FakeGitHostingClient()
 
@@ -132,6 +133,142 @@ class TestGitAPI(TestCaseWithFactory):
             {"path": repository.getInternalPath(), "writable": writable},
             translation)
 
+    def assertCreates(self, requester, path, can_authenticate=False):
+        if requester in (LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES):
+            requester_id = requester
+        else:
+            requester_id = requester.id
+        translation = self.git_api.translatePath(
+            path, "write", requester_id, can_authenticate)
+        login(ANONYMOUS)
+        repository = getUtility(IGitRepositorySet).getByPath(
+            requester, path.lstrip("/"))
+        self.assertIsNotNone(repository)
+        self.assertEqual(requester, repository.registrant)
+        self.assertEqual(
+            {"path": repository.getInternalPath(), "writable": True},
+            translation)
+        self.assertEqual(
+            [("create", repository.getInternalPath())],
+            self.git_api.hosting_client.calls)
+        return repository
+
+    def test_translatePath_private_repository(self):
+        requester = self.factory.makePerson()
+        repository = removeSecurityProxy(
+            self.factory.makeGitRepository(
+                owner=requester, information_type=InformationType.USERDATA))
+        path = u"/%s" % repository.unique_name
+        self.assertTranslates(requester, path, repository, True)
+
+    def test_translatePath_cannot_see_private_repository(self):
+        requester = self.factory.makePerson()
+        repository = removeSecurityProxy(
+            self.factory.makeGitRepository(
+                information_type=InformationType.USERDATA))
+        path = u"/%s" % repository.unique_name
+        self.assertPermissionDenied(requester, path)
+
+    def test_translatePath_anonymous_cannot_see_private_repository(self):
+        repository = removeSecurityProxy(
+            self.factory.makeGitRepository(
+                information_type=InformationType.USERDATA))
+        path = u"/%s" % repository.unique_name
+        self.assertPermissionDenied(
+            LAUNCHPAD_ANONYMOUS, path, can_authenticate=False)
+        self.assertUnauthorized(
+            LAUNCHPAD_ANONYMOUS, path, can_authenticate=True)
+
+    def test_translatePath_team_unowned(self):
+        requester = self.factory.makePerson()
+        team = self.factory.makeTeam(self.factory.makePerson())
+        repository = self.factory.makeGitRepository(owner=team)
+        path = u"/%s" % repository.unique_name
+        self.assertTranslates(requester, path, repository, False)
+        self.assertPermissionDenied(requester, path, permission="write")
+
+    def test_translatePath_create_personal_team_denied(self):
+        # translatePath refuses to create a personal repository for a team
+        # of which the requester is not a member.
+        requester = self.factory.makePerson()
+        team = self.factory.makeTeam()
+        message = "%s is not a member of %s" % (
+            requester.displayname, team.displayname)
+        self.assertPermissionDenied(
+            requester, u"/~%s/+git/random" % team.name, message=message,
+            permission="write")
+
+    def test_translatePath_create_other_user(self):
+        # Creating a repository for another user fails.
+        requester = self.factory.makePerson()
+        other_person = self.factory.makePerson()
+        project = self.factory.makeProduct()
+        name = self.factory.getUniqueString()
+        path = u"/~%s/%s/+git/%s" % (other_person.name, project.name, name)
+        message = "%s cannot create Git repositories owned by %s" % (
+            requester.displayname, other_person.displayname)
+        self.assertPermissionDenied(
+            requester, path, message=message, permission="write")
+
+    def test_translatePath_create_project_not_owner(self):
+        # Somebody without edit permission on the project cannot create a
+        # repository and immediately set it as the default for that project.
+        requester = self.factory.makePerson()
+        project = self.factory.makeProduct()
+        path = u"/%s" % project.name
+        message = "You cannot set the default Git repository for '%s'." % (
+            path.strip("/"))
+        initial_count = getUtility(IAllGitRepositories).count()
+        self.assertPermissionDenied(
+            requester, path, message=message, permission="write")
+        # No repository was created.
+        login(ANONYMOUS)
+        self.assertEqual(
+            initial_count, getUtility(IAllGitRepositories).count())
+
+    def test_translatePath_create_project_not_team_owner_default(self):
+        # A non-owner member of a team cannot immediately set a
+        # newly-created team-owned repository as that team's default for a
+        # project.
+        requester = self.factory.makePerson()
+        team = self.factory.makeTeam(members=[requester])
+        project = self.factory.makeProduct()
+        path = u"/~%s/%s" % (team.name, project.name)
+        message = "You cannot set the default Git repository for '%s'." % (
+            path.strip("/"))
+        initial_count = getUtility(IAllGitRepositories).count()
+        self.assertPermissionDenied(
+            requester, path, message=message, permission="write")
+        # No repository was created.
+        login(ANONYMOUS)
+        self.assertEqual(
+            initial_count, getUtility(IAllGitRepositories).count())
+
+    def test_translatePath_create_package_not_team_owner_default(self):
+        # A non-owner member of a team cannot immediately set a
+        # newly-created team-owned repository as that team's default for a
+        # package.
+        requester = self.factory.makePerson()
+        team = self.factory.makeTeam(members=[requester])
+        dsp = self.factory.makeDistributionSourcePackage()
+        path = u"/~%s/%s/+source/%s" % (
+            team.name, dsp.distribution.name, dsp.sourcepackagename.name)
+        message = "You cannot set the default Git repository for '%s'." % (
+            path.strip("/"))
+        initial_count = getUtility(IAllGitRepositories).count()
+        self.assertPermissionDenied(
+            requester, path, message=message, permission="write")
+        # No repository was created.
+        login(ANONYMOUS)
+        self.assertEqual(
+            initial_count, getUtility(IAllGitRepositories).count())
+
+
+class TestGitAPI(TestGitAPIMixin, TestCaseWithFactory):
+    """Tests for the implementation of `IGitAPI`."""
+
+    layer = LaunchpadFunctionalLayer
+
     def test_translatePath_cannot_translate(self):
         # Sometimes translatePath will not know how to translate a path.
         # When this happens, it returns a Fault saying so, including the
@@ -174,32 +311,6 @@ class TestGitAPI(TestCaseWithFactory):
             requester.name)
         self.assertPathTranslationError(requester, path)
 
-    def test_translatePath_private_repository(self):
-        requester = self.factory.makePerson()
-        repository = removeSecurityProxy(
-            self.factory.makeGitRepository(
-                owner=requester, information_type=InformationType.USERDATA))
-        path = u"/%s" % repository.unique_name
-        self.assertTranslates(requester, path, repository, True)
-
-    def test_translatePath_cannot_see_private_repository(self):
-        requester = self.factory.makePerson()
-        repository = removeSecurityProxy(
-            self.factory.makeGitRepository(
-                information_type=InformationType.USERDATA))
-        path = u"/%s" % repository.unique_name
-        self.assertPermissionDenied(requester, path)
-
-    def test_translatePath_anonymous_cannot_see_private_repository(self):
-        repository = removeSecurityProxy(
-            self.factory.makeGitRepository(
-                information_type=InformationType.USERDATA))
-        path = u"/%s" % repository.unique_name
-        self.assertPermissionDenied(
-            LAUNCHPAD_ANONYMOUS, path, can_authenticate=False)
-        self.assertUnauthorized(
-            LAUNCHPAD_ANONYMOUS, path, can_authenticate=True)
-
     def test_translatePath_anonymous_public_repository(self):
         repository = self.factory.makeGitRepository()
         path = u"/%s" % repository.unique_name
@@ -225,14 +336,6 @@ class TestGitAPI(TestCaseWithFactory):
         self.assertTranslates(
             requester, path, repository, True, permission="write")
 
-    def test_translatePath_team_unowned(self):
-        requester = self.factory.makePerson()
-        team = self.factory.makeTeam(self.factory.makePerson())
-        repository = self.factory.makeGitRepository(owner=team)
-        path = u"/%s" % repository.unique_name
-        self.assertTranslates(requester, path, repository, False)
-        self.assertPermissionDenied(requester, path, permission="write")
-
     def test_translatePath_shortened_path(self):
         # translatePath translates the shortened path to a repository.
         requester = self.factory.makePerson()
@@ -242,26 +345,6 @@ class TestGitAPI(TestCaseWithFactory):
                 repository.target, repository)
         path = u"/%s" % repository.target.name
         self.assertTranslates(requester, path, repository, False)
-
-    def assertCreates(self, requester, path, can_authenticate=False):
-        if requester in (LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES):
-            requester_id = requester
-        else:
-            requester_id = requester.id
-        translation = self.git_api.translatePath(
-            path, "write", requester_id, can_authenticate)
-        login(ANONYMOUS)
-        repository = getUtility(IGitRepositorySet).getByPath(
-            requester, path.lstrip("/"))
-        self.assertIsNotNone(repository)
-        self.assertEqual(requester, repository.registrant)
-        self.assertEqual(
-            {"path": repository.getInternalPath(), "writable": True},
-            translation)
-        self.assertEqual(
-            [("create", repository.getInternalPath())],
-            self.git_api.hosting_client.calls)
-        return repository
 
     def test_translatePath_create_project(self):
         # translatePath creates a project repository that doesn't exist, if
@@ -294,17 +377,6 @@ class TestGitAPI(TestCaseWithFactory):
         requester = self.factory.makePerson()
         team = self.factory.makeTeam(members=[requester])
         self.assertCreates(requester, u"/~%s/+git/random" % team.name)
-
-    def test_translatePath_create_personal_team_denied(self):
-        # translatePath refuses to create a personal repository for a team
-        # of which the requester is not a member.
-        requester = self.factory.makePerson()
-        team = self.factory.makeTeam()
-        message = "%s is not a member of %s" % (
-            requester.displayname, team.displayname)
-        self.assertPermissionDenied(
-            requester, u"/~%s/+git/random" % team.name, message=message,
-            permission="write")
 
     def test_translatePath_anonymous_cannot_create(self):
         # Anonymous users cannot create repositories.
@@ -377,18 +449,6 @@ class TestGitAPI(TestCaseWithFactory):
         self.assertInvalidSourcePackageName(
             requester, path, "new package", permission="write")
 
-    def test_translatePath_create_other_user(self):
-        # Creating a repository for another user fails.
-        requester = self.factory.makePerson()
-        other_person = self.factory.makePerson()
-        project = self.factory.makeProduct()
-        name = self.factory.getUniqueString()
-        path = u"/~%s/%s/+git/%s" % (other_person.name, project.name, name)
-        message = "%s cannot create Git repositories owned by %s" % (
-            requester.displayname, other_person.displayname)
-        self.assertPermissionDenied(
-            requester, path, message=message, permission="write")
-
     def test_translatePath_create_bad_name(self):
         # Creating a repository with an invalid name fails.
         requester = self.factory.makePerson()
@@ -429,22 +489,6 @@ class TestGitAPI(TestCaseWithFactory):
         self.assertTrue(repository.target_default)
         self.assertFalse(repository.owner_default)
 
-    def test_translatePath_create_project_not_owner(self):
-        # Somebody without edit permission on the project cannot create a
-        # repository and immediately set it as the default for that project.
-        requester = self.factory.makePerson()
-        project = self.factory.makeProduct()
-        path = u"/%s" % project.name
-        message = "You cannot set the default Git repository for '%s'." % (
-            path.strip("/"))
-        initial_count = getUtility(IAllGitRepositories).count()
-        self.assertPermissionDenied(
-            requester, path, message=message, permission="write")
-        # No repository was created.
-        login(ANONYMOUS)
-        self.assertEqual(
-            initial_count, getUtility(IAllGitRepositories).count())
-
     def test_translatePath_create_package_default_denied(self):
         # A repository cannot (yet) be created and immediately set as the
         # default for a package.
@@ -479,24 +523,6 @@ class TestGitAPI(TestCaseWithFactory):
         self.assertFalse(repository.target_default)
         self.assertTrue(repository.owner_default)
 
-    def test_translatePath_create_project_not_team_owner_default(self):
-        # A non-owner member of a team cannot immediately set a
-        # newly-created team-owned repository as that team's default for a
-        # project.
-        requester = self.factory.makePerson()
-        team = self.factory.makeTeam(members=[requester])
-        project = self.factory.makeProduct()
-        path = u"/~%s/%s" % (team.name, project.name)
-        message = "You cannot set the default Git repository for '%s'." % (
-            path.strip("/"))
-        initial_count = getUtility(IAllGitRepositories).count()
-        self.assertPermissionDenied(
-            requester, path, message=message, permission="write")
-        # No repository was created.
-        login(ANONYMOUS)
-        self.assertEqual(
-            initial_count, getUtility(IAllGitRepositories).count())
-
     def test_translatePath_create_package_owner_default(self):
         # A repository can be created and immediately set as its owner's
         # default for a package.
@@ -520,25 +546,6 @@ class TestGitAPI(TestCaseWithFactory):
         self.assertFalse(repository.target_default)
         self.assertTrue(repository.owner_default)
 
-    def test_translatePath_create_package_not_team_owner_default(self):
-        # A non-owner member of a team cannot immediately set a
-        # newly-created team-owned repository as that team's default for a
-        # package.
-        requester = self.factory.makePerson()
-        team = self.factory.makeTeam(members=[requester])
-        dsp = self.factory.makeDistributionSourcePackage()
-        path = u"/~%s/%s/+source/%s" % (
-            team.name, dsp.distribution.name, dsp.sourcepackagename.name)
-        message = "You cannot set the default Git repository for '%s'." % (
-            path.strip("/"))
-        initial_count = getUtility(IAllGitRepositories).count()
-        self.assertPermissionDenied(
-            requester, path, message=message, permission="write")
-        # No repository was created.
-        login(ANONYMOUS)
-        self.assertEqual(
-            initial_count, getUtility(IAllGitRepositories).count())
-
     def test_translatePath_create_broken_hosting_service(self):
         # If the hosting service is down, trying to create a repository
         # fails and doesn't leave junk around in the Launchpad database.
@@ -558,3 +565,13 @@ class TestGitAPI(TestCaseWithFactory):
         self.assertIn(
             "GitRepositoryCreationFault: nothing here",
             self.oopses[0]["tb_text"])
+
+
+class TestGitAPISecurity(TestGitAPIMixin, TestCaseWithFactory):
+    """Slow tests for `IGitAPI`.
+
+    These use AppServerLayer to check that `run_with_login` is behaving
+    itself properly.
+    """
+
+    layer = AppServerLayer
