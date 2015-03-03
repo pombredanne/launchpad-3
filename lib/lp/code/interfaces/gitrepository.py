@@ -7,6 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'GitIdentityMixin',
+    'GIT_REPOSITORY_NAME_VALIDATION_ERROR_MESSAGE',
     'git_repository_name_validator',
     'IGitRepository',
     'IGitRepositorySet',
