@@ -8,10 +8,6 @@ __all__ = [
     'GitAPI',
     ]
 
-from bzrlib.urlutils import (
-    escape,
-    unescape,
-    )
 from storm.store import Store
 import transaction
 from zope.component import getUtility
@@ -146,7 +142,7 @@ class GitAPI(LaunchpadXMLRPCView):
         except NoSuchProduct as e:
             raise faults.NotFound("Project '%s' does not exist." % e.name)
         except InvalidProductName as e:
-            raise faults.InvalidProductName(escape(e.name))
+            raise faults.InvalidProductName(e.name)
         except NoSuchSourcePackageName as e:
             try:
                 getUtility(ISourcePackageNameSet).new(e.name)
@@ -217,4 +213,4 @@ class GitAPI(LaunchpadXMLRPCView):
             requester_id = LAUNCHPAD_ANONYMOUS
         return run_with_login(
             requester_id, self._translatePath,
-            unescape(path).strip("/"), permission, can_authenticate)
+            path.strip("/"), permission, can_authenticate)

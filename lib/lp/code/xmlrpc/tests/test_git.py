@@ -5,7 +5,6 @@
 
 __metaclass__ = type
 
-from bzrlib.urlutils import escape
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -55,7 +54,7 @@ class TestGitAPI(TestCaseWithFactory):
         if requester not in (LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES):
             requester = requester.id
         fault = self.git_api.translatePath(
-            escape(path), permission, requester, can_authenticate)
+            path, permission, requester, can_authenticate)
         self.assertEqual(faults.PathTranslationError(path.strip("/")), fault)
 
     def assertPermissionDenied(self, requester, path,
@@ -65,7 +64,7 @@ class TestGitAPI(TestCaseWithFactory):
         if requester not in (LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES):
             requester = requester.id
         fault = self.git_api.translatePath(
-            escape(path), permission, requester, can_authenticate)
+            path, permission, requester, can_authenticate)
         self.assertEqual(faults.PermissionDenied(message), fault)
 
     def assertNotFound(self, requester, path, message, permission="read",
@@ -74,7 +73,7 @@ class TestGitAPI(TestCaseWithFactory):
         if requester not in (LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES):
             requester = requester.id
         fault = self.git_api.translatePath(
-            escape(path), permission, requester, can_authenticate)
+            path, permission, requester, can_authenticate)
         self.assertEqual(faults.NotFound(message), fault)
 
     def assertInvalidProductName(self, requester, path, name,
@@ -83,7 +82,7 @@ class TestGitAPI(TestCaseWithFactory):
         if requester not in (LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES):
             requester = requester.id
         fault = self.git_api.translatePath(
-            escape(path), permission, requester, can_authenticate)
+            path, permission, requester, can_authenticate)
         self.assertEqual(faults.InvalidProductName(name), fault)
 
     def assertInvalidSourcePackageName(self, requester, path, name,
@@ -94,7 +93,7 @@ class TestGitAPI(TestCaseWithFactory):
         if requester not in (LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES):
             requester = requester.id
         fault = self.git_api.translatePath(
-            escape(path), permission, requester, can_authenticate)
+            path, permission, requester, can_authenticate)
         self.assertEqual(faults.InvalidSourcePackageName(name), fault)
 
     def assertTranslates(self, requester, path, repository, writable,
@@ -102,7 +101,7 @@ class TestGitAPI(TestCaseWithFactory):
         if requester not in (LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES):
             requester = requester.id
         translation = self.git_api.translatePath(
-            escape(path), permission, requester, False)
+            path, permission, requester, False)
         login(ANONYMOUS)
         self.assertEqual(
             {"path": repository.getInternalPath(), "writable": writable},
@@ -217,7 +216,7 @@ class TestGitAPI(TestCaseWithFactory):
         else:
             requester_id = requester.id
         translation = self.git_api.translatePath(
-            escape(path), "write", requester_id, False)
+            path, "write", requester_id, False)
         login(ANONYMOUS)
         repository = getUtility(IGitRepositorySet).getByPath(
             requester, path.lstrip("/"))
