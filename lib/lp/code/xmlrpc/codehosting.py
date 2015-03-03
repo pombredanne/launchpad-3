@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'CodehostingAPI',
     'datetime_from_tuple',
+    'run_with_login',
     ]
 
 
