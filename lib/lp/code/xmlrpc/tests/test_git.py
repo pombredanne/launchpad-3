@@ -433,8 +433,8 @@ class TestGitAPI(TestCaseWithFactory):
         path = u"/%s/+source/%s" % (
             dsp.distribution.name, dsp.sourcepackagename.name)
         message = (
-            "Cannot create default package repository; push to a per-owner "
-            "repository instead.")
+            "Cannot automatically set the default repository for this target; "
+            "push to a named repository instead.")
         self.assertPermissionDenied(
             requester, path, message=message, permission="write")
 

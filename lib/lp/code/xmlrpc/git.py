@@ -38,13 +38,7 @@ from lp.registry.errors import (
     InvalidName,
     NoSuchSourcePackageName,
     )
-from lp.registry.interfaces.distributionsourcepackage import (
-    IDistributionSourcePackage,
-    )
-from lp.registry.interfaces.person import (
-    IPerson,
-    NoSuchPerson,
-    )
+from lp.registry.interfaces.person import NoSuchPerson
 from lp.registry.interfaces.product import (
     InvalidProductName,
     NoSuchProduct,
@@ -104,17 +98,17 @@ class GitAPI(LaunchpadXMLRPCView):
             namespace_name)
         # split_git_unique_name should have left us without a repository name.
         assert repository is None
-        if repository_name is None and IPerson.providedBy(target):
-            raise InvalidNamespace(path)
         if owner is None:
-            if IDistributionSourcePackage.providedBy(target):
-                raise GitRepositoryCreationForbidden(
-                    "Cannot create default package repository; push to a "
-                    "per-owner repository instead.")
             repository_owner = requester
         else:
             repository_owner = owner
         namespace = get_git_namespace(target, repository_owner)
+        if repository_name is None and not namespace.has_defaults:
+            raise InvalidNamespace(path)
+        if owner is None and not namespace.allow_push_to_set_default:
+            raise GitRepositoryCreationForbidden(
+                "Cannot automatically set the default repository for this "
+                "target; push to a named repository instead.")
         if repository_name is None:
             def default_func(new_repository):
                 repository_set = getUtility(IGitRepositorySet)

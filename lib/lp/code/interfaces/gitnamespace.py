@@ -86,6 +86,13 @@ class IGitNamespace(Interface):
 class IGitNamespacePolicy(Interface):
     """Methods relating to Git repository creation and validation."""
 
+    has_defaults = Attribute(
+        "True iff the target of this namespace may have a default repository.")
+
+    allow_push_to_set_default = Attribute(
+        "True iff this namespace permits automatically setting a default "
+        "repository on push.")
+
     def getAllowedInformationTypes(who):
         """Get the information types that a repository in this namespace can
         have.
