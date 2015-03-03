@@ -159,9 +159,9 @@ class GitAPI(LaunchpadXMLRPCView):
                 raise faults.InvalidSourcePackageName(e.name)
             return self._createRepository(requester, path)
         except NameLookupFailed as e:
-            raise faults.NotFound(str(e))
+            raise faults.NotFound(unicode(e))
         except GitRepositoryCreationForbidden as e:
-            raise faults.PermissionDenied(str(e))
+            raise faults.PermissionDenied(unicode(e))
 
         try:
             repository = namespace.createRepository(
@@ -177,7 +177,7 @@ class GitAPI(LaunchpadXMLRPCView):
             # repository).  Log an OOPS for investigation.
             self._reportError(path, e)
         except GitRepositoryCreationException as e:
-            raise faults.PermissionDenied(str(e))
+            raise faults.PermissionDenied(unicode(e))
 
         try:
             if default_func:
