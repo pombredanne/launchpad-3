@@ -437,8 +437,13 @@ class TestGitAPI(TestCaseWithFactory):
         path = u"/%s" % project.name
         message = "You cannot set the default Git repository for '%s'." % (
             path.strip("/"))
+        initial_count = getUtility(IAllGitRepositories).count()
         self.assertPermissionDenied(
             requester, path, message=message, permission="write")
+        # No repository was created.
+        login(ANONYMOUS)
+        self.assertEqual(
+            initial_count, getUtility(IAllGitRepositories).count())
 
     def test_translatePath_create_package_default_denied(self):
         # A repository cannot (yet) be created and immediately set as the
@@ -484,8 +489,13 @@ class TestGitAPI(TestCaseWithFactory):
         path = u"/~%s/%s" % (team.name, project.name)
         message = "You cannot set the default Git repository for '%s'." % (
             path.strip("/"))
+        initial_count = getUtility(IAllGitRepositories).count()
         self.assertPermissionDenied(
             requester, path, message=message, permission="write")
+        # No repository was created.
+        login(ANONYMOUS)
+        self.assertEqual(
+            initial_count, getUtility(IAllGitRepositories).count())
 
     def test_translatePath_create_package_owner_default(self):
         # A repository can be created and immediately set as its owner's
@@ -521,8 +531,13 @@ class TestGitAPI(TestCaseWithFactory):
             team.name, dsp.distribution.name, dsp.sourcepackagename.name)
         message = "You cannot set the default Git repository for '%s'." % (
             path.strip("/"))
+        initial_count = getUtility(IAllGitRepositories).count()
         self.assertPermissionDenied(
             requester, path, message=message, permission="write")
+        # No repository was created.
+        login(ANONYMOUS)
+        self.assertEqual(
+            initial_count, getUtility(IAllGitRepositories).count())
 
     def test_translatePath_create_broken_hosting_service(self):
         # If the hosting service is down, trying to create a repository
