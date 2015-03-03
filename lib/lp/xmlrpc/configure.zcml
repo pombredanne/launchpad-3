@@ -48,6 +48,19 @@
     />
 
   <securedutility
+    class="lp.systemhomes.GitApplication"
+    provides="lp.code.interfaces.gitapi.IGitApplication">
+    <allow interface="lp.code.interfaces.gitapi.IGitApplication"/>
+  </securedutility>
+
+  <xmlrpc:view
+    for="lp.code.interfaces.gitapi.IGitApplication"
+    interface="lp.code.interfaces.gitapi.IGitAPI"
+    class="lp.code.xmlrpc.git.GitAPI"
+    permission="zope.Public"
+    />
+
+  <securedutility
     class="lp.systemhomes.PrivateMaloneApplication"
     provides="lp.bugs.interfaces.malone.IPrivateMaloneApplication">
     <allow interface="lp.bugs.interfaces.malone.IPrivateMaloneApplication"/>

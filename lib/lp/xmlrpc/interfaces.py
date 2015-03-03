@@ -34,3 +34,5 @@ class IPrivateApplication(ILaunchpadApplication):
         """Canonical SSO XML-RPC end point.""")
 
     featureflags = Attribute("""Feature flag information endpoint""")
+
+    git = Attribute("Git end point.")

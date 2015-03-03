@@ -24,6 +24,7 @@ from lp.code.interfaces.codehosting import ICodehostingApplication
 from lp.code.interfaces.codeimportscheduler import (
     ICodeImportSchedulerApplication,
     )
+from lp.code.interfaces.gitapi import IGitApplication
 from lp.registry.interfaces.mailinglist import IMailingListApplication
 from lp.registry.interfaces.person import (
     ICanonicalSSOApplication,
@@ -79,6 +80,11 @@ class PrivateApplication:
     def featureflags(self):
         """See `IPrivateApplication`."""
         return getUtility(IFeatureFlagApplication)
+
+    @property
+    def git(self):
+        """See `IPrivateApplication`."""
+        return getUtility(IGitApplication)
 
 
 class ISelfTest(Interface):

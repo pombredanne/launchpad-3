@@ -47,6 +47,7 @@ from lp.code.interfaces.codehosting import (
 from lp.code.interfaces.codeimportscheduler import (
     ICodeImportSchedulerApplication,
     )
+from lp.code.interfaces.gitapi import IGitApplication
 from lp.hardwaredb.interfaces.hwdb import (
     IHWDBApplication,
     IHWDeviceSet,
@@ -90,6 +91,12 @@ class CodeImportSchedulerApplication:
     implements(ICodeImportSchedulerApplication)
 
     title = "Code Import Scheduler"
+
+
+class GitApplication:
+    implements(IGitApplication)
+
+    title = "Git API"
 
 
 class PrivateMaloneApplication:
