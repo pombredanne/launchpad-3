@@ -181,7 +181,7 @@ class GitAPI(LaunchpadXMLRPCView):
             repository_id = store.execute(
                 """SELECT currval('gitrepository_id_seq')""").get_one()[0]
 
-            hosting_path = repository.getInternalPathForId(repository_id)
+            hosting_path = repository.getInternalPathForID(repository_id)
             # XXX cjwatson 2015-02-27: Turn any exceptions into proper faults.
             self.hosting_client.create(hosting_path)
         except Exception:
