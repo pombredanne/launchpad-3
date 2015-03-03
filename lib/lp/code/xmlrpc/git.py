@@ -147,7 +147,7 @@ class GitAPI(LaunchpadXMLRPCView):
                 self._getGitNamespaceExtras(path, requester))
         except InvalidNamespace:
             raise faults.PermissionDenied(
-                "Cannot create Git repository at '%s'" % path)
+                "'%s' is not a valid Git repository path." % path)
         except NoSuchPerson as e:
             raise faults.NotFound("User/team '%s' does not exist." % e.name)
         except (NoSuchProduct, InvalidProductName) as e:

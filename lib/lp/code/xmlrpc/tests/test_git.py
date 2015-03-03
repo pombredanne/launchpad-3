@@ -393,10 +393,9 @@ class TestGitAPI(TestGitAPIMixin, TestCaseWithFactory):
         # repositories returns a PermissionDenied fault.
         requester = self.factory.makePerson()
         path = u"/~%s" % requester.name
+        message = "'%s' is not a valid Git repository path." % path.strip("/")
         self.assertPermissionDenied(
-            requester, path,
-            message="Cannot create Git repository at '%s'" % path.strip("/"),
-            permission="write")
+            requester, path, message=message, permission="write")
 
     def test_translatePath_create_no_such_person(self):
         # Creating a repository for a non-existent person fails.
