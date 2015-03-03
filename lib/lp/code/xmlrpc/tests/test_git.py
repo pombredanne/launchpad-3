@@ -141,13 +141,11 @@ class TestGitAPI(TestCaseWithFactory):
 
     def test_translatePath_no_such_repository(self):
         requester = self.factory.makePerson()
-        repository = self.factory.makeGitRepository()
         path = u"/%s/+git/no-such-repository" % requester.name
         self.assertPathTranslationError(requester, path)
 
     def test_translatePath_no_such_repository_non_ascii(self):
         requester = self.factory.makePerson()
-        repository = self.factory.makeGitRepository()
         path = u"/%s/+git/\N{LATIN SMALL LETTER I WITH DIAERESIS}" % (
             requester.name)
         self.assertPathTranslationError(requester, path)

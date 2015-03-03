@@ -76,11 +76,11 @@ class GitAPI(LaunchpadXMLRPCView):
         if repository is None:
             return None
         try:
-            repository_id = repository.id
+            hosting_path = repository.getInternalPath()
         except Unauthorized:
             raise faults.PermissionDenied()
         writable = check_permission("launchpad.Edit", repository)
-        return {"path": repository.getInternalPath(), "writable": writable}
+        return {"path": hosting_path, "writable": writable}
 
     def _getGitNamespaceExtras(self, path, requester):
         """Get the namespace, repository name, and callback for the path.
