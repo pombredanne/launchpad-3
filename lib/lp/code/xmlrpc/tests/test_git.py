@@ -107,6 +107,20 @@ class TestGitAPI(TestCaseWithFactory):
             path, permission, requester, can_authenticate)
         self.assertEqual(faults.InvalidSourcePackageName(name), fault)
 
+    def assertOopsOccurred(self, requester, path,
+                           permission="read", can_authenticate=False):
+        """Assert that looking at the given path OOPSes."""
+        if requester not in (LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES):
+            requester = requester.id
+        fault = self.git_api.translatePath(
+            path, permission, requester, can_authenticate)
+        self.assertIsInstance(fault, faults.OopsOccurred)
+        prefix = (
+            "An unexpected error has occurred while creating a Git "
+            "repository. Please report a Launchpad bug and quote: ")
+        self.assertStartsWith(fault.faultString, prefix)
+        return fault.faultString[len(prefix):].rstrip(".")
+
     def assertTranslates(self, requester, path, repository, writable,
                          permission="read", can_authenticate=False):
         if requester not in (LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES):
@@ -516,11 +530,16 @@ class TestGitAPI(TestCaseWithFactory):
         self.git_api.hosting_client = BrokenGitHostingClient()
         requester = self.factory.makePerson()
         initial_count = getUtility(IAllGitRepositories).count()
-        # XXX cjwatson 2015-01-03: This exception should in fact be turned
-        # into a fault.
-        self.assertRaises(
-            GitRepositoryCreationFault, self.git_api.translatePath,
-            u"/~%s/+git/random" % requester.name, "write", requester.id, False)
+        oops_id = self.assertOopsOccurred(
+            requester, u"/~%s/+git/random" % requester.name,
+            permission="write")
         login(ANONYMOUS)
         self.assertEqual(
             initial_count, getUtility(IAllGitRepositories).count())
+        # The error report OOPS ID should match the fault, and the traceback
+        # text should show the underlying exception.
+        self.assertEqual(1, len(self.oopses))
+        self.assertEqual(oops_id, self.oopses[0]["id"])
+        self.assertIn(
+            "GitRepositoryCreationFault: nothing here",
+            self.oopses[0]["tb_text"])

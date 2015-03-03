@@ -8,9 +8,12 @@ __all__ = [
     'GitAPI',
     ]
 
+import sys
+
 from storm.store import Store
 import transaction
 from zope.component import getUtility
+from zope.error.interfaces import IErrorReportingUtility
 from zope.interface import implements
 from zope.security.interfaces import Unauthorized
 
@@ -19,6 +22,7 @@ from lp.app.validators import LaunchpadValidationError
 from lp.code.errors import (
     GitRepositoryCreationException,
     GitRepositoryCreationForbidden,
+    GitRepositoryCreationFault,
     InvalidNamespace,
     )
 from lp.code.githosting import GitHostingClient
@@ -47,6 +51,7 @@ from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.services.config import config
 from lp.services.webapp import LaunchpadXMLRPCView
 from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.errorlog import ScriptRequest
 from lp.xmlrpc import faults
 from lp.xmlrpc.helpers import return_fault
 
@@ -170,8 +175,19 @@ class GitAPI(LaunchpadXMLRPCView):
             Store.of(repository).flush()
             assert repository.id is not None
 
-            # XXX cjwatson 2015-02-27: Turn any exceptions into proper faults.
-            self.hosting_client.create(repository.getInternalPath())
+            hosting_path = repository.getInternalPath()
+            try:
+                self.hosting_client.create(hosting_path)
+            except GitRepositoryCreationFault as e:
+                request = ScriptRequest([
+                    ('path', path),
+                    ('hosting_path', hosting_path),
+                    ('error-explanation', unicode(e)),
+                    ])
+                getUtility(IErrorReportingUtility).raising(
+                    sys.exc_info(), request)
+                raise faults.OopsOccurred(
+                    "creating a Git repository", request.oopsid)
         except Exception:
             # We don't want to keep the repository we created.
             transaction.abort()
