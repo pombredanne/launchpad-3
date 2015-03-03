@@ -133,7 +133,7 @@ class GitAPI(LaunchpadXMLRPCView):
         try:
             namespace, repository_name, default_func = (
                 self._getGitNamespaceExtras(path, requester))
-        except (ValueError, InvalidNamespace):
+        except InvalidNamespace:
             raise faults.PermissionDenied(
                 "Cannot create Git repository at '%s'" % path)
         except NoSuchPerson as e:
