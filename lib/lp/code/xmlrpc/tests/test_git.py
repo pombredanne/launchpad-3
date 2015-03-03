@@ -476,8 +476,7 @@ class TestGitAPI(TestGitAPIMixin, TestCaseWithFactory):
             "Invalid Git repository name '%s'. %s" %
             (invalid_name, GIT_REPOSITORY_NAME_VALIDATION_ERROR_MESSAGE))
         self.assertPermissionDenied(
-            requester, path, message=message.encode("UTF-8"),
-            permission="write")
+            requester, path, message=message, permission="write")
 
     def test_translatePath_create_project_default(self):
         # A repository can be created and immediately set as the default for

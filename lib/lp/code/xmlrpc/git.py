@@ -167,10 +167,7 @@ class GitAPI(LaunchpadXMLRPCView):
             repository = namespace.createRepository(
                 requester, repository_name)
         except LaunchpadValidationError as e:
-            msg = e.args[0]
-            if isinstance(msg, unicode):
-                msg = msg.encode('utf-8')
-            raise faults.PermissionDenied(msg)
+            raise faults.PermissionDenied(e.args[0])
         except GitRepositoryExists as e:
             # We should never get here, as we just tried to translate the
             # path and found nothing (not even an inaccessible private
