@@ -23,6 +23,7 @@ from lp.code.errors import (
     GitRepositoryCreationException,
     GitRepositoryCreationForbidden,
     GitRepositoryCreationFault,
+    GitRepositoryExists,
     InvalidNamespace,
     )
 from lp.code.githosting import GitHostingClient
@@ -129,6 +130,17 @@ class GitAPI(LaunchpadXMLRPCView):
         else:
             return namespace, repository_name, None
 
+    def _reportError(self, path, exception, hosting_path=None):
+        properties = [
+            ("path", path),
+            ("error-explanation", unicode(exception)),
+            ]
+        if hosting_path is not None:
+            properties.append(("hosting_path", hosting_path))
+        request = ScriptRequest(properties)
+        getUtility(IErrorReportingUtility).raising(sys.exc_info(), request)
+        raise faults.OopsOccurred("creating a Git repository", request.oopsid)
+
     def _createRepository(self, requester, path):
         try:
             namespace, repository_name, default_func = (
@@ -159,6 +171,11 @@ class GitAPI(LaunchpadXMLRPCView):
             if isinstance(msg, unicode):
                 msg = msg.encode('utf-8')
             raise faults.PermissionDenied(msg)
+        except GitRepositoryExists as e:
+            # We should never get here, as we just tried to translate the
+            # path and found nothing (not even an inaccessible private
+            # repository).  Log an OOPS for investigation.
+            self._reportError(path, e)
         except GitRepositoryCreationException as e:
             raise faults.PermissionDenied(str(e))
 
@@ -179,15 +196,8 @@ class GitAPI(LaunchpadXMLRPCView):
             try:
                 self.hosting_client.create(hosting_path)
             except GitRepositoryCreationFault as e:
-                request = ScriptRequest([
-                    ('path', path),
-                    ('hosting_path', hosting_path),
-                    ('error-explanation', unicode(e)),
-                    ])
-                getUtility(IErrorReportingUtility).raising(
-                    sys.exc_info(), request)
-                raise faults.OopsOccurred(
-                    "creating a Git repository", request.oopsid)
+                # The hosting service failed.  Log an OOPS for investigation.
+                self._reportError(path, e, hosting_path=hosting_path)
         except Exception:
             # We don't want to keep the repository we created.
             transaction.abort()

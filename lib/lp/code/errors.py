@@ -367,7 +367,7 @@ class GitRepositoryCreatorNotOwner(GitRepositoryCreationException):
     """
 
 
-class GitRepositoryCreationFault(GitRepositoryCreationException):
+class GitRepositoryCreationFault(Exception):
     """Raised when there is a hosting fault creating a Git repository."""
 
 
