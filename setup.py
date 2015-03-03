@@ -79,6 +79,7 @@ setup(
         'python-openid',
         'pytz',
         'rabbitfixture',
+        'requests',
         's4',
         'setproctitle',
         'setuptools',
