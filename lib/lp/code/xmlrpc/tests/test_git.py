@@ -108,6 +108,15 @@ class TestGitAPIMixin:
             path, permission, requester, can_authenticate)
         self.assertEqual(faults.InvalidSourcePackageName(name), fault)
 
+    def assertInvalidBranchName(self, requester, path, message,
+                                permission="read", can_authenticate=False):
+        """Assert that looking at the given path returns InvalidBranchName."""
+        if requester not in (LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES):
+            requester = requester.id
+        fault = self.git_api.translatePath(
+            path, permission, requester, can_authenticate)
+        self.assertEqual(faults.InvalidBranchName(Exception(message)), fault)
+
     def assertOopsOccurred(self, requester, path,
                            permission="read", can_authenticate=False):
         """Assert that looking at the given path OOPSes."""
@@ -460,8 +469,8 @@ class TestGitAPI(TestGitAPIMixin, TestCaseWithFactory):
         message = html_escape(
             "Invalid Git repository name '%s'. %s" %
             (invalid_name, GIT_REPOSITORY_NAME_VALIDATION_ERROR_MESSAGE))
-        self.assertPermissionDenied(
-            requester, path, message=message, permission="write")
+        self.assertInvalidBranchName(
+            requester, path, message, permission="write")
 
     def test_translatePath_create_unicode_name(self):
         # Creating a repository with a non-ASCII invalid name fails.
@@ -475,8 +484,8 @@ class TestGitAPI(TestGitAPIMixin, TestCaseWithFactory):
         message = html_escape(
             "Invalid Git repository name '%s'. %s" %
             (invalid_name, GIT_REPOSITORY_NAME_VALIDATION_ERROR_MESSAGE))
-        self.assertPermissionDenied(
-            requester, path, message=message, permission="write")
+        self.assertInvalidBranchName(
+            requester, path, message, permission="write")
 
     def test_translatePath_create_project_default(self):
         # A repository can be created and immediately set as the default for
