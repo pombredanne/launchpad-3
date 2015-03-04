@@ -31,11 +31,10 @@ class IGitAPI(Interface):
         """Translate 'path' so that the Git pack frontend can access it.
 
         If the repository does not exist and write permission was requested,
-        register a new repostory if possible.
+        register a new repository if possible.
 
-        :param path: The path being translated.  This should be a
-            URL-escaped string representing an absolute path to a Git
-            repository.
+        :param path: The path being translated.  This should be a string
+            representing an absolute path to a Git repository.
         :param permission: "read" or "write".
         :param requester_id: The database ID of the person requesting the
             path translation, or None for an anonymous request.
