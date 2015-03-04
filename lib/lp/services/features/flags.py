@@ -229,7 +229,7 @@ flag_info = sorted([
      ''),
     ('code.git.enabled',
      'boolean',
-     'If true, Git repository support is enabled.',
+     'If true, support for creating Git repositories is enabled.',
      'disabled',
      '',
      ''),

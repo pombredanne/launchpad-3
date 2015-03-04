@@ -331,7 +331,7 @@ class GitFeatureDisabled(GitRepositoryCreationException):
     """Only certain users can create new Git repositories."""
 
     def __init__(self):
-        message = "You do not have permission to create new Git repositories."
+        message = "You do not have permission to create Git repositories."
         GitRepositoryCreationException.__init__(self, message)
 
 

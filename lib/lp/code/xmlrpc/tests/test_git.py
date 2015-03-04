@@ -65,7 +65,7 @@ class TestGitAPIFeatureFlag(TestCaseWithFactory):
     def test_feature_flag_disabled(self):
         # Without a feature flag, attempts to create a new Git repository fail.
         requester = self.factory.makePerson()
-        message = "You do not have permission to create new Git repositories."
+        message = "You do not have permission to create Git repositories."
         fault = self.git_api.translatePath(
             u"/~%s/+git/random" % requester.name, "write", requester.id, True)
         self.assertEqual(faults.PermissionDenied(message), fault)
@@ -92,7 +92,7 @@ class TestGitAPIFeatureFlag(TestCaseWithFactory):
             {"path": repository.getInternalPath(), "writable": True},
             translation)
         # But we cannot create another one without the feature flag.
-        message = "You do not have permission to create new Git repositories."
+        message = "You do not have permission to create Git repositories."
         fault = self.git_api.translatePath(
             u"/~%s/+git/another" % requester.name, "write", requester.id, True)
         self.assertEqual(faults.PermissionDenied(message), fault)
