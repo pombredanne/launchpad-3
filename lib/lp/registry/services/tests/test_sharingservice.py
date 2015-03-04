@@ -23,7 +23,10 @@ from lp.code.enums import (
     CodeReviewNotificationLevel,
     )
 from lp.code.interfaces.branch import IBranch
-from lp.code.interfaces.gitrepository import IGitRepository
+from lp.code.interfaces.gitrepository import (
+    GIT_FEATURE_FLAG,
+    IGitRepository,
+    )
 from lp.registry.enums import (
     BranchSharingPolicy,
     BugSharingPolicy,
@@ -73,6 +76,7 @@ class TestSharingService(TestCaseWithFactory):
         self.service = getUtility(IService, 'sharing')
         self.useFixture(FeatureFixture({
             'jobs.celery.enabled_classes': 'RemoveArtifactSubscriptionsJob',
+            GIT_FEATURE_FLAG: 'on',
         }))
 
     def _makeGranteeData(self, grantee, policy_permissions,

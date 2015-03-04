@@ -21,6 +21,7 @@ from lp.app.enums import (
     )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.code.errors import (
+    GitFeatureDisabled,
     GitRepositoryCreatorNotMemberOfOwnerTeam,
     GitRepositoryCreatorNotOwner,
     GitTargetError,
@@ -31,6 +32,7 @@ from lp.code.interfaces.gitnamespace import (
     IGitNamespaceSet,
     )
 from lp.code.interfaces.gitrepository import (
+    GIT_FEATURE_FLAG,
     IGitRepository,
     IGitRepositorySet,
     )
@@ -50,6 +52,7 @@ from lp.registry.interfaces.persondistributionsourcepackage import (
 from lp.registry.interfaces.personproduct import IPersonProductFactory
 from lp.registry.tests.test_accesspolicy import get_policies_for_artifact
 from lp.services.database.constants import UTC_NOW
+from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.authorization import check_permission
 from lp.testing import (
     admin_logged_in,
@@ -58,13 +61,29 @@ from lp.testing import (
     TestCaseWithFactory,
     verifyObject,
     )
-from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    ZopelessDatabaseLayer,
+    )
+
+
+class TestGitRepositoryFeatureFlag(TestCaseWithFactory):
+
+    layer = ZopelessDatabaseLayer
+
+    def test_feature_flag_disabled(self):
+        # Without a feature flag, we will not create new Git repositories.
+        self.assertRaises(GitFeatureDisabled, self.factory.makeGitRepository)
 
 
 class TestGitRepository(TestCaseWithFactory):
     """Test basic properties about Launchpad database Git repositories."""
 
     layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestGitRepository, self).setUp()
+        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
 
     def test_implements_IGitRepository(self):
         repository = self.factory.makeGitRepository()
@@ -117,6 +136,7 @@ class TestGitIdentityMixin(TestCaseWithFactory):
 
     def setUp(self):
         super(TestGitIdentityMixin, self).setUp()
+        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
         self.repository_set = getUtility(IGitRepositorySet)
 
     def assertGitIdentity(self, repository, identity_path):
@@ -253,6 +273,10 @@ class TestGitRepositoryDateLastModified(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def setUp(self):
+        super(TestGitRepositoryDateLastModified, self).setUp()
+        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
+
     def test_initial_value(self):
         # The initial value of date_last_modified is date_created.
         repository = self.factory.makeGitRepository()
@@ -279,6 +303,10 @@ class TestCodebrowse(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def setUp(self):
+        super(TestCodebrowse, self).setUp()
+        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
+
     def test_simple(self):
         # The basic codebrowse URL for a repository is an 'https' URL.
         repository = self.factory.makeGitRepository()
@@ -291,6 +319,10 @@ class TestGitRepositoryNamespace(TestCaseWithFactory):
     """Test `IGitRepository.namespace`."""
 
     layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestGitRepositoryNamespace, self).setUp()
+        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
 
     def test_namespace_personal(self):
         # The namespace attribute of a personal repository points to the
@@ -329,6 +361,7 @@ class TestGitRepositoryPrivacy(TestCaseWithFactory):
     def setUp(self):
         # Use an admin user as we aren't checking edit permissions here.
         super(TestGitRepositoryPrivacy, self).setUp("admin@canonical.com")
+        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
 
     def test_personal_repositories_for_private_teams_are_private(self):
         team = self.factory.makeTeam(
@@ -377,6 +410,10 @@ class TestGitRepositoryGetAllowedInformationTypes(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def setUp(self):
+        super(TestGitRepositoryGetAllowedInformationTypes, self).setUp()
+        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
+
     def test_normal_user_sees_namespace_types(self):
         # An unprivileged user sees the types allowed by the namespace.
         repository = self.factory.makeGitRepository()
@@ -411,6 +448,10 @@ class TestGitRepositoryModerate(TestCaseWithFactory):
     repositories."""
 
     layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestGitRepositoryModerate, self).setUp()
+        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
 
     def test_moderate_permission(self):
         # Test the ModerateGitRepository security checker.
@@ -448,6 +489,10 @@ class TestGitRepositorySetOwner(TestCaseWithFactory):
     """Test `IGitRepository.setOwner`."""
 
     layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestGitRepositorySetOwner, self).setUp()
+        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
 
     def test_owner_sets_team(self):
         # The owner of the repository can set the owner of the repository to
@@ -497,6 +542,10 @@ class TestGitRepositorySetTarget(TestCaseWithFactory):
     """Test `IGitRepository.setTarget`."""
 
     layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestGitRepositorySetTarget, self).setUp()
+        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
 
     def test_personal_to_project(self):
         # A personal repository can be moved to a project.
@@ -628,6 +677,7 @@ class TestGitRepositorySet(TestCaseWithFactory):
 
     def setUp(self):
         super(TestGitRepositorySet, self).setUp()
+        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
         self.repository_set = getUtility(IGitRepositorySet)
 
     def test_provides_IGitRepositorySet(self):
@@ -686,6 +736,7 @@ class TestGitRepositorySetDefaultsMixin:
 
     def setUp(self):
         super(TestGitRepositorySetDefaultsMixin, self).setUp()
+        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
         self.repository_set = getUtility(IGitRepositorySet)
         self.get_method = self.repository_set.getDefaultRepository
         self.set_method = self.repository_set.setDefaultRepository

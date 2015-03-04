@@ -38,6 +38,7 @@ from lp.app.interfaces.launchpad import IPrivacy
 from lp.app.interfaces.services import IService
 from lp.code.errors import (
     GitDefaultConflict,
+    GitFeatureDisabled,
     GitTargetError,
     )
 from lp.code.interfaces.gitcollection import IAllGitRepositories
@@ -47,6 +48,7 @@ from lp.code.interfaces.gitnamespace import (
     IGitNamespacePolicy,
     )
 from lp.code.interfaces.gitrepository import (
+    GIT_FEATURE_FLAG,
     GitIdentityMixin,
     IGitRepository,
     IGitRepositorySet,
@@ -85,6 +87,7 @@ from lp.services.database.stormexpr import (
     ArrayAgg,
     ArrayIntersects,
     )
+from lp.services.features import getFeatureFlag
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp.authorization import available_with_permission
 
@@ -135,6 +138,8 @@ class GitRepository(StormBase, GitIdentityMixin):
 
     def __init__(self, registrant, owner, target, name, information_type,
                  date_created):
+        if not getFeatureFlag(GIT_FEATURE_FLAG):
+            raise GitFeatureDisabled
         super(GitRepository, self).__init__()
         self.registrant = registrant
         self.owner = owner

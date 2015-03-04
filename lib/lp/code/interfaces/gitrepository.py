@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'GIT_FEATURE_FLAG',
     'GitIdentityMixin',
     'GIT_REPOSITORY_NAME_VALIDATION_ERROR_MESSAGE',
     'git_repository_name_validator',
@@ -49,6 +50,9 @@ from lp.services.fields import (
     PersonChoice,
     PublicPersonChoice,
     )
+
+
+GIT_FEATURE_FLAG = u"code.git.enabled"
 
 
 GIT_REPOSITORY_NAME_VALIDATION_ERROR_MESSAGE = _(

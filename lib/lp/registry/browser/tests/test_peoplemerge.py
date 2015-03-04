@@ -8,12 +8,14 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import InformationType
+from lp.code.interfaces.gitrepository import GIT_FEATURE_FLAG
 from lp.registry.enums import TeamMembershipPolicy
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.persontransferjob import IPersonMergeJobSource
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.services.identity.model.emailaddress import EmailAddressSet
 from lp.services.mail import stub
+from lp.services.features.testing import FeatureFixture
 from lp.services.verification.tests.logintoken import get_token_url_from_email
 from lp.services.webapp import canonical_url
 from lp.services.webapp.escaping import html_escape
@@ -299,6 +301,7 @@ class TestValidatingMergeView(TestCaseWithFactory):
 
     def test_cannot_merge_person_with_private_git_repositories(self):
         # A team or user with a private Git repository cannot be merged.
+        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
         self.factory.makeGitRepository(
             owner=self.dupe, information_type=InformationType.USERDATA)
         login_celebrity('registry_experts')

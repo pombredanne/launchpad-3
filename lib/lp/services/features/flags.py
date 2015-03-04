@@ -227,6 +227,12 @@ flag_info = sorted([
      'disabled',
      'PPA Separate Long Descriptions',
      ''),
+    ('code.git.enabled',
+     'boolean',
+     'If true, Git repository support is enabled.',
+     'disabled',
+     '',
+     ''),
     ])
 
 # The set of all flag names that are documented.
