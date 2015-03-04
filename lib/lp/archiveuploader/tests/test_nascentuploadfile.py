@@ -13,6 +13,12 @@ from debian.deb822 import (
     Changes,
     Dsc,
     )
+from testtools.matchers import (
+    Contains,
+    Equals,
+    MatchesAny,
+    MatchesListwise,
+    )
 
 from lp.archiveuploader.changesfile import ChangesFile
 from lp.archiveuploader.dscfile import DSCFile
@@ -411,9 +417,11 @@ class DebBinaryUploadFileTests(PackageUploadFileTestCase):
         uploadfile = self.createDebBinaryUploadFile(
             "empty_0.1_all.deb", "main/admin", "extra", "empty", "0.1", None,
             members=[])
-        self.assertEqual(
-            ["No debian archive, missing control.tar.gz"],
-            ["".join(error.args) for error in uploadfile.verifyDebTimestamp()])
+        self.assertThat(
+            ["".join(error.args) for error in uploadfile.verifyDebTimestamp()],
+            MatchesListwise([MatchesAny(
+                Equals("No debian archive, missing control.tar.gz"),
+                Contains("could not locate member control.tar."))]))
 
     def test_storeInDatabase(self):
         # storeInDatabase creates a BinaryPackageRelease.
