@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementations of the XML-RPC APIs for codehosting."""
@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'CodehostingAPI',
     'datetime_from_tuple',
+    'run_with_login',
     ]
 
 
