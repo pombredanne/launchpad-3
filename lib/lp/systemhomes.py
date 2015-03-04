@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Content classes for the 'home pages' of the subsystems of Launchpad."""
@@ -47,6 +47,7 @@ from lp.code.interfaces.codehosting import (
 from lp.code.interfaces.codeimportscheduler import (
     ICodeImportSchedulerApplication,
     )
+from lp.code.interfaces.gitapi import IGitApplication
 from lp.hardwaredb.interfaces.hwdb import (
     IHWDBApplication,
     IHWDeviceSet,
@@ -90,6 +91,12 @@ class CodeImportSchedulerApplication:
     implements(ICodeImportSchedulerApplication)
 
     title = "Code Import Scheduler"
+
+
+class GitApplication:
+    implements(IGitApplication)
+
+    title = "Git API"
 
 
 class PrivateMaloneApplication:

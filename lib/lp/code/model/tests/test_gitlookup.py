@@ -117,6 +117,12 @@ class TestGetByPath(TestCaseWithFactory):
         project = self.factory.makeProduct()
         self.assertIsNone(self.lookup.getByPath(project.name))
 
+    def test_bare_person(self):
+        # If `getByPath` is given a path to a person but nothing further, it
+        # returns None even if the person exists.
+        owner = self.factory.makePerson()
+        self.assertIsNone(self.lookup.getByPath("~%s" % owner.name))
+
 
 class TestGetByUrl(TestCaseWithFactory):
     """Test `IGitLookup.getByUrl`."""

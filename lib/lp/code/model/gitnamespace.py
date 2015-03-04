@@ -190,6 +190,9 @@ class PersonalGitNamespace(_BaseGitNamespace):
 
     implements(IGitNamespace, IGitNamespacePolicy)
 
+    has_defaults = False
+    allow_push_to_set_default = False
+
     def __init__(self, person):
         self.owner = person
 
@@ -246,6 +249,9 @@ class ProjectGitNamespace(_BaseGitNamespace):
     """
 
     implements(IGitNamespace, IGitNamespacePolicy)
+
+    has_defaults = True
+    allow_push_to_set_default = True
 
     def __init__(self, person, project):
         self.owner = person
@@ -306,6 +312,9 @@ class PackageGitNamespace(_BaseGitNamespace):
     """
 
     implements(IGitNamespace, IGitNamespacePolicy)
+
+    has_defaults = True
+    allow_push_to_set_default = False
 
     def __init__(self, person, distro_source_package):
         self.owner = person
