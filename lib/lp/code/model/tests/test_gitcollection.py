@@ -27,6 +27,7 @@ from lp.registry.model.persondistributionsourcepackage import (
     )
 from lp.registry.model.personproduct import PersonProduct
 from lp.services.database.interfaces import IStore
+from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
     person_logged_in,
     StormStatementRecorder,
@@ -519,6 +520,11 @@ class TestSearch(TestCaseWithFactory):
         lp_name = 'lp:' + repository.unique_name
         search_results = self.collection.search(lp_name)
         self.assertEqual([repository], list(search_results))
+
+    def test_exact_match_full_url(self):
+        repository = self.factory.makeGitRepository()
+        url = canonical_url(repository)
+        self.assertEqual([repository], list(self.collection.search(url)))
 
     def test_exact_match_bad_url(self):
         search_results = self.collection.search('http:hahafail')

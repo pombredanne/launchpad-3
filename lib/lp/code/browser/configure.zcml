@@ -760,6 +760,36 @@
         name="+count-summary"
         template="../templates/branch-count-summary.pt"/>
 
+    <browser:defaultView
+        for="lp.code.interfaces.gitrepository.IGitRepository"
+        name="+index"/>
+    <browser:url
+        for="lp.code.interfaces.gitrepository.IGitRepository"
+        urldata="lp.code.browser.gitrepository.GitRepositoryURL"/>
+    <browser:menus
+        module="lp.code.browser.gitrepository"
+        classes="
+            GitRepositoryContextMenu"/>
+    <browser:pages
+        for="lp.code.interfaces.gitrepository.IGitRepository"
+        class="lp.code.browser.gitrepository.GitRepositoryView"
+        permission="launchpad.View">
+        <browser:page
+            name="+index"
+            template="../templates/gitrepository-index.pt"/>
+        <browser:page
+            name="++repository-information"
+            template="../templates/gitrepository-information.pt"/>
+        <browser:page
+            name="++repository-management"
+            template="../templates/gitrepository-management.pt"/>
+    </browser:pages>
+    <adapter
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
+        for="lp.code.interfaces.gitrepository.IGitRepository"
+        factory="lp.code.browser.gitrepository.GitRepositoryBreadcrumb"
+        permission="zope.Public"/>
+
     <browser:menus
         classes="ProductBranchesMenu"
         module="lp.code.browser.branchlisting"/>

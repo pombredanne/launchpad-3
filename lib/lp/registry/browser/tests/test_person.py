@@ -144,6 +144,28 @@ class TestPersonNavigation(TestCaseWithFactory):
         self.assertRedirect('/api/devel' + in_suf, '/api/devel' + out_suf)
         self.assertRedirect('/api/1.0' + in_suf, '/api/1.0' + out_suf)
 
+    def test_traverse_git_repository_project(self):
+        project = self.factory.makeProduct()
+        repository = self.factory.makeGitRepository(target=project)
+        url = "/~%s/%s/+git/%s" % (
+            repository.owner.name, project.name, repository.name)
+        self.assertEqual(repository, test_traverse(url)[0])
+
+    def test_traverse_git_repository_package(self):
+        dsp = self.factory.makeDistributionSourcePackage()
+        repository = self.factory.makeGitRepository(target=dsp)
+        url = "/~%s/%s/+source/%s/+git/%s" % (
+            repository.owner.name, dsp.distribution.name,
+            dsp.sourcepackagename.name, repository.name)
+        self.assertEqual(repository, test_traverse(url)[0])
+
+    def test_traverse_git_repository_personal(self):
+        person = self.factory.makePerson()
+        repository = self.factory.makeGitRepository(
+            owner=person, target=person)
+        url = "/~%s/+git/%s" % (person.name, repository.name)
+        self.assertEqual(repository, test_traverse(url)[0])
+
 
 class PersonViewOpenidIdentityUrlTestCase(TestCaseWithFactory):
     """Tests for the public OpenID identifier shown on the profile page."""

@@ -143,6 +143,7 @@ from lp.buildmaster.enums import BuildStatus
 from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
 from lp.code.errors import InvalidNamespace
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
+from lp.code.interfaces.gitlookup import IGitTraverser
 from lp.registry.browser import BaseRdfView
 from lp.registry.browser.branding import BrandingChangeView
 from lp.registry.browser.menu import (
@@ -155,6 +156,9 @@ from lp.registry.enums import PersonVisibility
 from lp.registry.errors import VoucherAlreadyRedeemed
 from lp.registry.interfaces.codeofconduct import ISignedCodeOfConductSet
 from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage,
+    )
 from lp.registry.interfaces.gpg import IGPGKeySet
 from lp.registry.interfaces.irc import IIrcIDSet
 from lp.registry.interfaces.jabber import (
@@ -361,6 +365,40 @@ class BranchTraversalMixin:
         raise NotFoundError
 
     def traverse(self, pillar_name):
+        try:
+            # Look for a Git repository.  We must be careful not to consume
+            # the traversal stack immediately, as if we fail to find a Git
+            # repository we will need to look for a Bazaar branch instead.
+            segments = (
+                ["~%s" % self.context.name, pillar_name] +
+                list(reversed(self.request.getTraversalStack())))
+            num_segments = len(segments)
+            iter_segments = iter(segments)
+            traverser = getUtility(IGitTraverser)
+            _, target, repository = traverser.traverse(iter_segments)
+            if repository is None:
+                raise NotFoundError
+            for i in range(num_segments - len(list(iter_segments))):
+                self.request.stepstogo.consume()
+
+            if IProduct.providedBy(target):
+                if target.name != pillar_name:
+                    # This repository was accessed through one of its
+                    # project's aliases, so we must redirect to its
+                    # canonical URL.
+                    return self.redirectSubTree(canonical_url(repository))
+
+            if IDistributionSourcePackage.providedBy(target):
+                if target.distribution.name != pillar_name:
+                    # This branch or repository was accessed through one of its
+                    # distribution's aliases, so we must redirect to its
+                    # canonical URL.
+                    return self.redirectSubTree(canonical_url(repository))
+
+            return repository
+        except (NotFoundError, InvalidNamespace):
+            pass
+
         # If the pillar is a product, then return the PersonProduct; if it
         # is a distribution and further segments provide a source package,
         # then return the PersonDistributionSourcePackage.
@@ -409,13 +447,13 @@ class BranchTraversalMixin:
 
         if branch.product is not None:
             if branch.product.name != pillar_name:
-                # This branch was accessed through one of its product's
+                # This branch was accessed through one of its project's
                 # aliases, so we must redirect to its canonical URL.
                 return self.redirectSubTree(canonical_url(branch))
 
         if branch.distribution is not None:
             if branch.distribution.name != pillar_name:
-                # This branch was accessed through one of its product's
+                # This branch was accessed through one of its distribution's
                 # aliases, so we must redirect to its canonical URL.
                 return self.redirectSubTree(canonical_url(branch))
 
