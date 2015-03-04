@@ -424,8 +424,8 @@ class TestGenericGitCollectionVisibleFilter(TestCaseWithFactory):
             [self.public_repository], list(repositories.getRepositories()))
 
     def test_owner_sees_own_repositories(self):
-        # Users can always see the repositories that they own, as well as public
-        # repositories.
+        # Users can always see the repositories that they own, as well as
+        # public repositories.
         owner = removeSecurityProxy(self.private_repository).owner
         repositories = self.all_repositories.visibleByUser(owner)
         self.assertEqual(
@@ -659,7 +659,8 @@ class TestGetTeamsWithRepositories(TestCaseWithFactory):
         team1 = self.factory.makeTeam(owner=person)
         repository = self.factory.makeGitRepository(owner=team1)
         # Make another team that person is in that owns a repository in a
-        # different namespace to the namespace of the repository owned by team1.
+        # different namespace to the namespace of the repository owned by
+        # team1.
         team2 = self.factory.makeTeam(owner=person)
         self.factory.makeGitRepository(owner=team2)
         collection = self.all_repositories.inProject(repository.target)

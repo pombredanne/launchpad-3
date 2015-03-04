@@ -296,7 +296,7 @@ class TestPersonIndexView(BrowserTestCase):
             implementation_status=SpecificationImplementationStatus.STARTED,
             information_type=InformationType.PUBLIC)
         private_name = 'super-private'
-        private_spec = self.factory.makeSpecification(
+        self.factory.makeSpecification(
             name=private_name, assignee=person,
             implementation_status=SpecificationImplementationStatus.STARTED,
             information_type=InformationType.PROPRIETARY)
