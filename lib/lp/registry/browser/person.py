@@ -373,12 +373,13 @@ class BranchTraversalMixin:
             # the traversal stack immediately, as if we fail to find a Git
             # repository we will need to look for a Bazaar branch instead.
             segments = (
-                ["~%s" % self.context.name, pillar_name] +
+                [pillar_name] +
                 list(reversed(self.request.getTraversalStack())))
             num_segments = len(segments)
             iter_segments = iter(segments)
             traverser = getUtility(IGitTraverser)
-            _, target, repository = traverser.traverse(iter_segments)
+            _, target, repository = traverser.traverse(
+                iter_segments, owner=self.context)
             if repository is None:
                 raise NotFoundError
             for i in range(num_segments - len(list(iter_segments))):
