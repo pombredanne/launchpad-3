@@ -186,7 +186,10 @@ from lp.registry.interfaces.persontransferjob import (
     )
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.poll import IPollSubset
-from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.product import (
+    InvalidProductName,
+    IProduct,
+    )
 from lp.registry.interfaces.ssh import (
     ISSHKeySet,
     SSHKeyAdditionError,
@@ -396,7 +399,7 @@ class BranchTraversalMixin:
                     return self.redirectSubTree(canonical_url(repository))
 
             return repository
-        except (NotFoundError, InvalidNamespace):
+        except (NotFoundError, InvalidNamespace, InvalidProductName):
             pass
 
         # If the pillar is a product, then return the PersonProduct; if it
