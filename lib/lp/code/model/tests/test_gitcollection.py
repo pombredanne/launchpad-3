@@ -17,7 +17,10 @@ from lp.code.interfaces.gitcollection import (
     IAllGitRepositories,
     IGitCollection,
     )
-from lp.code.interfaces.gitrepository import IGitRepositorySet
+from lp.code.interfaces.gitrepository import (
+    GIT_FEATURE_FLAG,
+    IGitRepositorySet,
+    )
 from lp.code.model.gitcollection import GenericGitCollection
 from lp.code.model.gitrepository import GitRepository
 from lp.registry.enums import PersonVisibility
@@ -27,6 +30,7 @@ from lp.registry.model.persondistributionsourcepackage import (
     )
 from lp.registry.model.personproduct import PersonProduct
 from lp.services.database.interfaces import IStore
+from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
     person_logged_in,
@@ -86,6 +90,7 @@ class TestGenericGitCollection(TestCaseWithFactory):
 
     def setUp(self):
         super(TestGenericGitCollection, self).setUp()
+        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
         self.store = IStore(GitRepository)
 
     def test_provides_gitcollection(self):
@@ -169,6 +174,7 @@ class TestGitCollectionFilters(TestCaseWithFactory):
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
+        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
         self.all_repositories = getUtility(IAllGitRepositories)
 
     def test_order_by_repository_name(self):
@@ -389,6 +395,7 @@ class TestGenericGitCollectionVisibleFilter(TestCaseWithFactory):
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
+        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
         self.public_repository = self.factory.makeGitRepository(name=u'public')
         self.private_repository = self.factory.makeGitRepository(
             name=u'private', information_type=InformationType.USERDATA)
@@ -487,6 +494,7 @@ class TestSearch(TestCaseWithFactory):
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
+        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
         self.collection = getUtility(IAllGitRepositories)
 
     def test_exact_match_unique_name(self):
@@ -629,6 +637,7 @@ class TestGetTeamsWithRepositories(TestCaseWithFactory):
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
+        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
         self.all_repositories = getUtility(IAllGitRepositories)
 
     def test_no_teams(self):
@@ -675,6 +684,7 @@ class TestGitCollectionOwnerCounts(TestCaseWithFactory):
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
+        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
         self.all_repositories = getUtility(IAllGitRepositories)
 
     def test_no_repositories(self):
