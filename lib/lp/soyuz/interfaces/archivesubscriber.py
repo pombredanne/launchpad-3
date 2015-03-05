@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """ArchiveSubscriber interface."""
@@ -130,7 +130,8 @@ class IArchiveSubscriber(IArchiveSubscriberView, IArchiveSubscriberEdit):
 class IArchiveSubscriberSet(Interface):
     """An interface for the set of all archive subscribers."""
 
-    def getBySubscriber(subscriber, archive=None, current_only=True):
+    def getBySubscriber(subscriber, archive=None, current_only=True,
+                        need_archive=False):
         """Return all the subscriptions for a person.
 
         :param subscriber: An `IPerson` for whom to return all
@@ -139,6 +140,7 @@ class IArchiveSubscriberSet(Interface):
             the results to that particular archive.
         :param current_only: Whether the result should only include current
             subscriptions (which is the default).
+        :param need_archive: Whether the archive attribute should be cached.
         """
 
     def getBySubscriberWithActiveToken(subscriber, archive=None):

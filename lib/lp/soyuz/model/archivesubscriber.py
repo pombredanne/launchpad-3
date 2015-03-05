@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database class for table ArchiveSubscriber."""
@@ -33,6 +33,7 @@ from zope.interface import implements
 from lp.registry.interfaces.person import validate_person
 from lp.registry.model.person import Person
 from lp.registry.model.teammembership import TeamParticipation
+from lp.services.database.bulk import load_related
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import DBEnum
@@ -147,7 +148,7 @@ class ArchiveSubscriberSet:
     """See `IArchiveSubscriberSet`."""
 
     def _getBySubscriber(self, subscriber, archive, current_only,
-                         with_active_tokens):
+                         with_active_tokens, need_archive=False):
         """Return all the subscriptions for a person.
 
         :param subscriber: An `IPerson` for whom to return all
@@ -159,6 +160,7 @@ class ArchiveSubscriberSet:
         :param with_active_tokens: Indicates whether the tokens for the given
             subscribers subscriptions should be included in the resultset.
             By default the tokens are not included in the resultset.
+        :param need_archive: Whether the archive attribute should be cached.
         """
         # Grab the extra Storm expressions, for this query,
         # depending on the params:
@@ -185,6 +187,12 @@ class ArchiveSubscriberSet:
         else:
             result_row = ArchiveSubscriber
 
+        def eager_load(rows):
+            # Circular import.
+            from lp.soyuz.model.archive import Archive
+            if need_archive:
+                load_related(Archive, rows, ["archive_id"])
+
         # Set the main expression to find all the subscriptions for
         # which the subscriber is a direct subscriber OR is a member
         # of a subscribed team.
@@ -193,14 +201,18 @@ class ArchiveSubscriberSet:
         # showing that each person is a member of the "team" that
         # consists of themselves.
         store = Store.of(subscriber)
-        return store.using(*origin).find(
+        result_set = store.using(*origin).find(
             result_row,
             TeamParticipation.personID == subscriber.id,
             *extra_exprs).order_by(Desc(ArchiveSubscriber.date_created))
+        return DecoratedResultSet(result_set, pre_iter_hook=eager_load)
 
-    def getBySubscriber(self, subscriber, archive=None, current_only=True):
+    def getBySubscriber(self, subscriber, archive=None, current_only=True,
+                        need_archive=False):
         """See `IArchiveSubscriberSet`."""
-        return self._getBySubscriber(subscriber, archive, current_only, False)
+        return self._getBySubscriber(
+            subscriber, archive, current_only, False,
+            need_archive=need_archive)
 
     def getBySubscriberWithActiveToken(self, subscriber, archive=None):
         """See `IArchiveSubscriberSet`."""
