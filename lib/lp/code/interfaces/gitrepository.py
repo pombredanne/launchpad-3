@@ -370,7 +370,7 @@ class IGitRepositorySet(Interface):
         :raises GitTargetError: if `target` is an `IPerson`.
         """
 
-    def getAllRepositories():
+    def empty_list():
         """Return an empty collection of repositories.
 
         This only exists to keep lazr.restful happy.

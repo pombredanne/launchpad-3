@@ -447,7 +447,7 @@ class GitRepositorySet:
             if previous is not None:
                 previous.setOwnerDefault(False)
 
-    def getAllRepositories(self):
+    def empty_list(self):
         """See `IGitRepositorySet`."""
         return []
 
