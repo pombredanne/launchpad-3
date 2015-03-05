@@ -320,6 +320,16 @@ class IGitRepositorySet(Interface):
         Return None if no match was found.
         """
 
+    def getRepositories(user, target):
+        """Get all repositories for a target.
+
+        :param user: An `IPerson`.  Only repositories visible by this user
+            will be returned.
+        :param target: An `IHasGitRepositories`.
+
+        :return: A collection of `IGitRepository` objects.
+        """
+
     def getDefaultRepository(target):
         """Get the default repository for a target.
 
@@ -360,7 +370,7 @@ class IGitRepositorySet(Interface):
         :raises GitTargetError: if `target` is an `IPerson`.
         """
 
-    def getRepositories():
+    def empty_list():
         """Return an empty collection of repositories.
 
         This only exists to keep lazr.restful happy.

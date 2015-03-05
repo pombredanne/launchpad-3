@@ -660,6 +660,37 @@ class TestGitRepositorySet(TestCaseWithFactory):
         self.assertIsNone(
             self.repository_set.getByPath(self.factory.makePerson(), path))
 
+    def test_getRepositories(self):
+        # getRepositories returns a collection of repositories for the given
+        # target.
+        project = self.factory.makeProduct()
+        repositories = [
+            self.factory.makeGitRepository(target=project) for _ in range(5)]
+        self.assertContentEqual(
+            repositories, self.repository_set.getRepositories(None, project))
+
+    def test_getRepositories_inaccessible(self):
+        # getRepositories only returns repositories that the given user can
+        # see.
+        person = self.factory.makePerson()
+        project = self.factory.makeProduct()
+        public_repositories = [
+            self.factory.makeGitRepository(owner=person, target=project)
+            for _ in range(3)]
+        other_person = self.factory.makePerson()
+        private_repository = self.factory.makeGitRepository(
+            owner=other_person, target=project,
+            information_type=InformationType.USERDATA)
+        self.assertContentEqual(
+            public_repositories,
+            self.repository_set.getRepositories(None, project))
+        self.assertContentEqual(
+            public_repositories,
+            self.repository_set.getRepositories(person, project))
+        self.assertContentEqual(
+            public_repositories + [private_repository],
+            self.repository_set.getRepositories(other_person, project))
+
     def test_setDefaultRepository_refuses_person(self):
         # setDefaultRepository refuses if the target is a person.
         person = self.factory.makePerson()
