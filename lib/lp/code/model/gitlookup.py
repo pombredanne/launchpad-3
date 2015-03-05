@@ -252,12 +252,15 @@ class GitTraverser:
 
     implements(IGitTraverser)
 
-    def traverse(self, segments):
+    def traverse(self, segments, owner=None):
         """See `IGitTraverser`."""
-        owner = None
-        target = None
         repository = None
-        traversable = RootGitTraversable()
+        if owner is None:
+            target = None
+            traversable = RootGitTraversable()
+        else:
+            target = owner
+            traversable = adapt(owner, IGitTraversable)
         segments_iter = SegmentIterator(segments)
         while traversable is not None:
             try:
