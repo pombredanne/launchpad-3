@@ -27,6 +27,7 @@ from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.blueprints.enums import SpecificationImplementationStatus
 from lp.buildmaster.enums import BuildStatus
+from lp.code.interfaces.gitrepository import GIT_FEATURE_FLAG
 from lp.registry.browser.person import PersonView
 from lp.registry.browser.team import TeamInvitationView
 from lp.registry.enums import PersonVisibility
@@ -41,6 +42,7 @@ from lp.registry.model.karma import KarmaCategory
 from lp.registry.model.milestone import milestone_sort_key
 from lp.scripts.garbo import PopulateLatestPersonSourcePackageReleaseCache
 from lp.services.config import config
+from lp.services.features.testing import FeatureFixture
 from lp.services.identity.interfaces.account import AccountStatus
 from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
 from lp.services.log.logger import FakeLogger
@@ -145,6 +147,7 @@ class TestPersonNavigation(TestCaseWithFactory):
         self.assertRedirect('/api/1.0' + in_suf, '/api/1.0' + out_suf)
 
     def test_traverse_git_repository_project(self):
+        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
         project = self.factory.makeProduct()
         repository = self.factory.makeGitRepository(target=project)
         url = "/~%s/%s/+git/%s" % (
@@ -152,6 +155,7 @@ class TestPersonNavigation(TestCaseWithFactory):
         self.assertEqual(repository, test_traverse(url)[0])
 
     def test_traverse_git_repository_package(self):
+        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
         dsp = self.factory.makeDistributionSourcePackage()
         repository = self.factory.makeGitRepository(target=dsp)
         url = "/~%s/%s/+source/%s/+git/%s" % (
@@ -160,6 +164,7 @@ class TestPersonNavigation(TestCaseWithFactory):
         self.assertEqual(repository, test_traverse(url)[0])
 
     def test_traverse_git_repository_personal(self):
+        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
         person = self.factory.makePerson()
         repository = self.factory.makeGitRepository(
             owner=person, target=person)

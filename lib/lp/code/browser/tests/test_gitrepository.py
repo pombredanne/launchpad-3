@@ -13,8 +13,10 @@ from zope.publisher.interfaces import NotFound
 
 from lp.app.enums import InformationType
 from lp.app.interfaces.services import IService
+from lp.code.interfaces.gitrepository import GIT_FEATURE_FLAG
 from lp.registry.interfaces.person import PersonVisibility
 from lp.services.config import config
+from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
     admin_logged_in,
@@ -34,6 +36,10 @@ from lp.testing.views import create_initialized_view
 class TestGitRepositoryView(BrowserTestCase):
 
     layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestGitRepositoryView, self).setUp()
+        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
 
     def test_anon_url_for_public(self):
         # Public repositories have an anonymous URL, visible to anyone.
@@ -132,6 +138,10 @@ class TestGitRepositoryViewPrivateArtifacts(BrowserTestCase):
     """
 
     layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestGitRepositoryViewPrivateArtifacts, self).setUp()
+        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
 
     def _getBrowser(self, user=None):
         if user is None:
