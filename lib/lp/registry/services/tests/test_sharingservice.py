@@ -1949,6 +1949,7 @@ class ApiTestMixin:
 
     def setUp(self):
         super(ApiTestMixin, self).setUp()
+        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
         self.owner = self.factory.makePerson(name='thundercat')
         self.pillar = self.factory.makeProduct(
             owner=self.owner, specification_sharing_policy=(
@@ -1963,6 +1964,9 @@ class ApiTestMixin:
         self.branch = self.factory.makeBranch(
             owner=self.owner, product=self.pillar,
             information_type=InformationType.PRIVATESECURITY)
+        self.gitrepository = self.factory.makeGitRepository(
+            owner=self.owner, target=self.pillar,
+            information_type=InformationType.PRIVATESECURITY)
         self.spec = self.factory.makeSpecification(
             product=self.pillar, owner=self.owner,
             information_type=InformationType.PROPRIETARY)
@@ -1971,6 +1975,9 @@ class ApiTestMixin:
         self.branch.subscribe(
             self.grantee, BranchSubscriptionNotificationLevel.NOEMAIL,
             None, CodeReviewNotificationLevel.NOEMAIL, self.owner)
+        # XXX cjwatson 2015-02-05: subscribe to Git repository when implemented
+        getUtility(IService, 'sharing').ensureAccessGrants(
+            [self.grantee], self.grantor, gitrepositories=[self.gitrepository])
         getUtility(IService, 'sharing').ensureAccessGrants(
             [self.grantee], self.grantor, specifications=[self.spec])
         transaction.commit()
@@ -2093,6 +2100,16 @@ class TestLaunchpadlib(ApiTestMixin, TestCaseWithFactory):
             pillar=ws_pillar, person=ws_grantee)
         self.assertEqual(1, len(branches))
         self.assertEqual(branches[0].unique_name, self.branch.unique_name)
+
+    def test_getSharedGitRepositories(self):
+        # Test the exported getSharedGitRepositories() method.
+        ws_pillar = ws_object(self.launchpad, self.pillar)
+        ws_grantee = ws_object(self.launchpad, self.grantee)
+        gitrepositories = self.service.getSharedGitRepositories(
+            pillar=ws_pillar, person=ws_grantee)
+        self.assertEqual(1, len(gitrepositories))
+        self.assertEqual(
+            gitrepositories[0].unique_name, self.gitrepository.unique_name)
 
     def test_getSharedSpecifications(self):
         # Test the exported getSharedSpecifications() method.

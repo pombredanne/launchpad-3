@@ -13,6 +13,11 @@
        path_expression="string:branches"
        parent_utility="lp.services.webapp.interfaces.ILaunchpadRoot"
       />
+    <browser:url
+       for="lp.code.interfaces.gitrepository.IGitRepositorySet"
+       path_expression="string:+git"
+       parent_utility="lp.services.webapp.interfaces.ILaunchpadRoot"
+      />
     <browser:feeds
         module="lp.code.feed.branch"
         classes="BranchFeed PersonBranchFeed ProductBranchFeed ProjectBranchFeed

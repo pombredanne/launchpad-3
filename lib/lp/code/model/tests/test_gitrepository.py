@@ -54,8 +54,11 @@ from lp.registry.tests.test_accesspolicy import get_policies_for_artifact
 from lp.services.database.constants import UTC_NOW
 from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.interfaces import OAuthPermission
 from lp.testing import (
     admin_logged_in,
+    ANONYMOUS,
+    api_url,
     celebrity_logged_in,
     person_logged_in,
     TestCaseWithFactory,
@@ -65,6 +68,7 @@ from lp.testing.layers import (
     DatabaseFunctionalLayer,
     ZopelessDatabaseLayer,
     )
+from lp.testing.pages import webservice_for_person
 
 
 class TestGitRepositoryFeatureFlag(TestCaseWithFactory):
@@ -858,3 +862,64 @@ class TestGitRepositorySetDefaultsOwnerPackage(
     TestGitRepositorySetDefaultsOwnerMixin,
     TestGitRepositorySetDefaultsPackage):
     pass
+
+
+class TestWebservice(TestCaseWithFactory):
+    """Tests for the webservice."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestWebservice, self).setUp()
+        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
+
+    def test_getRepositories_project(self):
+        project_db = self.factory.makeProduct()
+        repository_db = self.factory.makeGitRepository(target=project_db)
+        webservice = webservice_for_person(
+            repository_db.owner, permission=OAuthPermission.WRITE_PUBLIC)
+        webservice.default_api_version = "devel"
+        with person_logged_in(ANONYMOUS):
+            repository_url = api_url(repository_db)
+            owner_url = api_url(repository_db.owner)
+            project_url = api_url(project_db)
+        response = webservice.named_get(
+            "/+git", "getRepositories", user=owner_url, target=project_url)
+        self.assertEqual(200, response.status)
+        self.assertEqual(
+            [webservice.getAbsoluteUrl(repository_url)],
+            [entry["self_link"] for entry in response.jsonBody()["entries"]])
+
+    def test_getRepositories_package(self):
+        dsp_db = self.factory.makeDistributionSourcePackage()
+        repository_db = self.factory.makeGitRepository(target=dsp_db)
+        webservice = webservice_for_person(
+            repository_db.owner, permission=OAuthPermission.WRITE_PUBLIC)
+        webservice.default_api_version = "devel"
+        with person_logged_in(ANONYMOUS):
+            repository_url = api_url(repository_db)
+            owner_url = api_url(repository_db.owner)
+            dsp_url = api_url(dsp_db)
+        response = webservice.named_get(
+            "/+git", "getRepositories", user=owner_url, target=dsp_url)
+        self.assertEqual(200, response.status)
+        self.assertEqual(
+            [webservice.getAbsoluteUrl(repository_url)],
+            [entry["self_link"] for entry in response.jsonBody()["entries"]])
+
+    def test_getRepositories_personal(self):
+        owner_db = self.factory.makePerson()
+        repository_db = self.factory.makeGitRepository(
+            owner=owner_db, target=owner_db)
+        webservice = webservice_for_person(
+            owner_db, permission=OAuthPermission.WRITE_PUBLIC)
+        webservice.default_api_version = "devel"
+        with person_logged_in(ANONYMOUS):
+            repository_url = api_url(repository_db)
+            owner_url = api_url(owner_db)
+        response = webservice.named_get(
+            "/+git", "getRepositories", user=owner_url, target=owner_url)
+        self.assertEqual(200, response.status)
+        self.assertEqual(
+            [webservice.getAbsoluteUrl(repository_url)],
+            [entry["self_link"] for entry in response.jsonBody()["entries"]])
