@@ -124,7 +124,6 @@ from lp.code.model.hasbranches import (
     HasCodeImportsMixin,
     HasMergeProposalsMixin,
     )
-from lp.code.model.hasgitrepositories import HasGitRepositoriesMixin
 from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
 from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
 from lp.registry.enums import (
@@ -362,7 +361,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
               OfficialBugTagTargetMixin, HasBranchesMixin,
               HasCustomLanguageCodesMixin, HasMergeProposalsMixin,
               HasCodeImportsMixin, InformationTypeMixin,
-              TranslationPolicyMixin, HasGitRepositoriesMixin):
+              TranslationPolicyMixin):
     """A Product."""
 
     implements(

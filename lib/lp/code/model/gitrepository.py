@@ -41,7 +41,10 @@ from lp.code.errors import (
     GitFeatureDisabled,
     GitTargetError,
     )
-from lp.code.interfaces.gitcollection import IAllGitRepositories
+from lp.code.interfaces.gitcollection import (
+    IAllGitRepositories,
+    IGitCollection,
+    )
 from lp.code.interfaces.gitlookup import IGitLookup
 from lp.code.interfaces.gitnamespace import (
     get_git_namespace,
@@ -373,6 +376,11 @@ class GitRepositorySet:
             return repository
         return None
 
+    def getRepositories(self, user, target):
+        """See `IGitRepositorySet`."""
+        collection = IGitCollection(target).visibleByUser(user)
+        return collection.getRepositories(eager_load=True)
+
     def getDefaultRepository(self, target):
         """See `IGitRepositorySet`."""
         clauses = [GitRepository.target_default == True]
@@ -444,7 +452,7 @@ class GitRepositorySet:
             if previous is not None:
                 previous.setOwnerDefault(False)
 
-    def getRepositories(self):
+    def empty_list(self):
         """See `IGitRepositorySet`."""
         return []
 

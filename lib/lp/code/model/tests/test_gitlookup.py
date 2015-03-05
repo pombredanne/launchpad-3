@@ -461,3 +461,17 @@ class TestGitTraverser(TestCaseWithFactory):
                 person.name, dsp.distribution.name, dsp.sourcepackagename.name,
                 repository.name),
             person, dsp, repository)
+
+    def test_person_repository_from_person(self):
+        # To save on queries, `traverse` can be given a person as a starting
+        # point for the traversal.
+        person = self.factory.makePerson(name="person")
+        repository = self.factory.makeGitRepository(
+            owner=person, target=person, name=u"repository")
+        segments = ["~person", "+git", "repository"]
+        self.assertEqual(
+            (person, person, repository),
+            self.traverser.traverse(iter(segments)))
+        self.assertEqual(
+            (person, person, repository),
+            self.traverser.traverse(iter(segments[1:]), owner=person))

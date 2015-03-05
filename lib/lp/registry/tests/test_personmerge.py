@@ -13,7 +13,10 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.code.interfaces.gitrepository import GIT_FEATURE_FLAG
+from lp.code.interfaces.gitrepository import (
+    GIT_FEATURE_FLAG,
+    IGitRepositorySet,
+    )
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactGrantSource,
     IAccessPolicyGrantSource,
@@ -281,7 +284,8 @@ class TestMergePeople(TestCaseWithFactory, KarmaTestMixin):
         self._do_premerge(repository.owner, person)
         login_person(person)
         duplicate, person = self._do_merge(duplicate, person)
-        repositories = person.getGitRepositories()
+        repository_set = getUtility(IGitRepositorySet)
+        repositories = repository_set.getRepositories(None, person)
         self.assertEqual(1, repositories.count())
 
     def test_merge_with_duplicated_git_repositories(self):
@@ -298,7 +302,9 @@ class TestMergePeople(TestCaseWithFactory, KarmaTestMixin):
         self._do_premerge(duplicate, mergee)
         login_person(mergee)
         duplicate, mergee = self._do_merge(duplicate, mergee)
-        repositories = [r.name for r in mergee.getGitRepositories()]
+        repository_set = getUtility(IGitRepositorySet)
+        repositories = [
+            r.name for r in repository_set.getRepositories(None, mergee)]
         self.assertEqual(2, len(repositories))
         self.assertContentEqual([u'foo', u'foo-1'], repositories)
 
