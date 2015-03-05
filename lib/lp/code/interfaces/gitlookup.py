@@ -33,9 +33,9 @@ class IGitTraversable(Interface):
 class IGitTraverser(Interface):
     """Utility for traversing to an object that can have a Git repository."""
 
-    def traverse(segments):
+    def traverse(segments, owner=None):
         """Traverse to the object referred to by a prefix of the 'segments'
-        iterable.
+        iterable, starting from 'owner' if given.
 
         :raises InvalidNamespace: If the path cannot be parsed as a
             repository namespace.
