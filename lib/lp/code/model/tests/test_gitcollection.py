@@ -27,6 +27,7 @@ from lp.registry.model.persondistributionsourcepackage import (
     )
 from lp.registry.model.personproduct import PersonProduct
 from lp.services.database.interfaces import IStore
+from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
     person_logged_in,
     StormStatementRecorder,
@@ -423,8 +424,8 @@ class TestGenericGitCollectionVisibleFilter(TestCaseWithFactory):
             [self.public_repository], list(repositories.getRepositories()))
 
     def test_owner_sees_own_repositories(self):
-        # Users can always see the repositories that they own, as well as public
-        # repositories.
+        # Users can always see the repositories that they own, as well as
+        # public repositories.
         owner = removeSecurityProxy(self.private_repository).owner
         repositories = self.all_repositories.visibleByUser(owner)
         self.assertEqual(
@@ -519,6 +520,11 @@ class TestSearch(TestCaseWithFactory):
         lp_name = 'lp:' + repository.unique_name
         search_results = self.collection.search(lp_name)
         self.assertEqual([repository], list(search_results))
+
+    def test_exact_match_full_url(self):
+        repository = self.factory.makeGitRepository()
+        url = canonical_url(repository)
+        self.assertEqual([repository], list(self.collection.search(url)))
 
     def test_exact_match_bad_url(self):
         search_results = self.collection.search('http:hahafail')
@@ -653,7 +659,8 @@ class TestGetTeamsWithRepositories(TestCaseWithFactory):
         team1 = self.factory.makeTeam(owner=person)
         repository = self.factory.makeGitRepository(owner=team1)
         # Make another team that person is in that owns a repository in a
-        # different namespace to the namespace of the repository owned by team1.
+        # different namespace to the namespace of the repository owned by
+        # team1.
         team2 = self.factory.makeTeam(owner=person)
         self.factory.makeGitRepository(owner=team2)
         collection = self.all_repositories.inProject(repository.target)
