@@ -25,6 +25,9 @@ __all__ = [
     'ICodeReviewComment',
     'ICodeReviewVoteReference',
     'IDiff',
+    'IGitRepository',
+    'IGitRepositorySet',
+    'IHasGitRepositories',
     'IPreviewDiff',
     'ISourcePackageRecipe',
     'ISourcePackageRecipeBuild',
@@ -57,6 +60,11 @@ from lp.code.interfaces.diff import (
     IDiff,
     IPreviewDiff,
     )
+from lp.code.interfaces.gitrepository import (
+    IGitRepository,
+    IGitRepositorySet,
+    )
+from lp.code.interfaces.hasgitrepositories import IHasGitRepositories
 from lp.code.interfaces.sourcepackagerecipe import ISourcePackageRecipe
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild,

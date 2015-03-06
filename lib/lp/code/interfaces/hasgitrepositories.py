@@ -9,6 +9,7 @@ __all__ = [
     'IHasGitRepositories',
     ]
 
+from lazr.restful.declarations import export_as_webservice_entry
 from zope.interface import Interface
 
 
@@ -18,3 +19,6 @@ class IHasGitRepositories(Interface):
     A project contains Git repositories, a source package on a distribution
     contains branches, and a person contains "personal" branches.
     """
+
+    export_as_webservice_entry(
+        singular_name="git_target", plural_name="git_targets", as_of="devel")

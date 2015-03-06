@@ -168,6 +168,7 @@
                     <xsl:when test="
                         @id = 'bug_link_target'
                         or @id = 'bug_target'
+                        or @id = 'git_target'
                         or @id = 'has_bugs'
                         or @id = 'has_milestones'
                         or @id = 'object_with_translation_imports'
@@ -308,6 +309,28 @@
                 <var>&lt;person.name&gt;</var>
                 <xsl:text>/+email/</xsl:text>
                 <var>&lt;email&gt;</var>
+            </xsl:when>
+            <xsl:when test="@id = 'git_repository'">
+                <xsl:text>/~</xsl:text>
+                <var>&lt;person.name&gt;</var>
+                <xsl:text>/</xsl:text>
+                <var>&lt;project.name&gt;</var>
+                <xsl:text>/+git/</xsl:text>
+                <var>&lt;repository.name&gt;</var>
+                or
+                <xsl:text>/~</xsl:text>
+                <var>&lt;person.name&gt;</var>
+                <xsl:text>/</xsl:text>
+                <var>&lt;distribution.name&gt;</var>
+                <xsl:text>/+source/</xsl:text>
+                <var>&lt;source_package.name&gt;</var>
+                <xsl:text>/+git/</xsl:text>
+                <var>&lt;repository.name&gt;</var>
+                or
+                <xsl:text>/~</xsl:text>
+                <var>&lt;person.name&gt;</var>
+                <xsl:text>/+git/</xsl:text>
+                <var>&lt;repository.name&gt;</var>
             </xsl:when>
             <xsl:when test="@id = 'gpg_key'">
                 <xsl:text>/</xsl:text>

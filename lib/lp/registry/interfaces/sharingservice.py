@@ -18,6 +18,7 @@ from lazr.restful.declarations import (
     operation_for_version,
     operation_parameters,
     operation_returns_collection_of,
+    rename_parameters_as,
     REQUEST_USER,
     )
 from lazr.restful.fields import Reference
@@ -33,6 +34,7 @@ from lp.app.interfaces.services import IService
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.bugs.interfaces.bug import IBug
 from lp.code.interfaces.branch import IBranch
+from lp.code.interfaces.gitrepository import IGitRepository
 from lp.registry.enums import (
     BranchSharingPolicy,
     BugSharingPolicy,
@@ -148,6 +150,13 @@ class ISharingService(IService):
         :return: a collection of branches
         """
 
+    @export_read_operation()
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        pillar=Reference(IPillar, title=_('Pillar'), required=True),
+        person=Reference(IPerson, title=_('Person'), required=True))
+    @operation_returns_collection_of(IGitRepository)
+    @operation_for_version('devel')
     def getSharedGitRepositories(pillar, person, user):
         """Return the Git repositories shared between the pillar and person.
 
@@ -312,6 +321,7 @@ class ISharingService(IService):
 
     @export_write_operation()
     @call_with(user=REQUEST_USER)
+    @rename_parameters_as(gitrepositories='git_repositories')
     @operation_parameters(
         pillar=Reference(IPillar, title=_('Pillar'), required=True),
         grantee=Reference(IPerson, title=_('Grantee'), required=True),
@@ -319,6 +329,9 @@ class ISharingService(IService):
             Reference(schema=IBug), title=_('Bugs'), required=False),
         branches=List(
             Reference(schema=IBranch), title=_('Branches'), required=False),
+        gitrepositories=List(
+            Reference(schema=IGitRepository),
+            title=_('Git repositories'), required=False),
         specifications=List(
             Reference(schema=ISpecification), title=_('Specifications'),
             required=False))
@@ -338,13 +351,17 @@ class ISharingService(IService):
 
     @export_write_operation()
     @call_with(user=REQUEST_USER)
+    @rename_parameters_as(gitrepositories='git_repositories')
     @operation_parameters(
         grantees=List(
             Reference(IPerson, title=_('Grantee'), required=True)),
         bugs=List(
             Reference(schema=IBug), title=_('Bugs'), required=False),
         branches=List(
-            Reference(schema=IBranch), title=_('Branches'), required=False))
+            Reference(schema=IBranch), title=_('Branches'), required=False),
+        gitrepositories=List(
+            Reference(schema=IGitRepository),
+            title=_('Git repositories'), required=False))
     @operation_for_version('devel')
     def ensureAccessGrants(grantees, user, bugs=None, branches=None,
                            gitrepositories=None, specifications=None):
