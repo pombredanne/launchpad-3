@@ -26,6 +26,7 @@ from lazr.restful.declarations import (
     export_read_operation,
     export_write_operation,
     exported,
+    mutator_for,
     operation_for_version,
     operation_parameters,
     operation_returns_collection_of,
@@ -116,9 +117,6 @@ class IGitRepositoryView(Interface):
 
     date_created = exported(Datetime(
         title=_("Date created"), required=True, readonly=True))
-
-    date_last_modified = exported(Datetime(
-        title=_("Date last modified"), required=True, readonly=True))
 
     registrant = exported(PublicPersonChoice(
         title=_("Registrant"), required=True, readonly=True,
@@ -266,9 +264,18 @@ class IGitRepositoryView(Interface):
         """
 
 
+class IGitRepositoryModerateAttributes(Interface):
+    """IGitRepository attributes that can be edited by more than one community.
+    """
+
+    date_last_modified = exported(Datetime(
+        title=_("Date last modified"), required=True, readonly=True))
+
+
 class IGitRepositoryModerate(Interface):
     """IGitRepository methods that can be called by more than one community."""
 
+    @mutator_for(IGitRepositoryView["information_type"])
     @operation_parameters(
         information_type=copy_field(IGitRepositoryView["information_type"]),
         )
@@ -289,6 +296,7 @@ class IGitRepositoryModerate(Interface):
 class IGitRepositoryEdit(Interface):
     """IGitRepository methods that require launchpad.Edit permission."""
 
+    @mutator_for(IGitRepositoryView["owner"])
     @call_with(user=REQUEST_USER)
     @operation_parameters(
         new_owner=Reference(
@@ -298,6 +306,7 @@ class IGitRepositoryEdit(Interface):
     def setOwner(new_owner, user):
         """Set the owner of the repository to be `new_owner`."""
 
+    @mutator_for(IGitRepositoryView["target"])
     @call_with(user=REQUEST_USER)
     @operation_parameters(
         target=Reference(
@@ -316,8 +325,8 @@ class IGitRepositoryEdit(Interface):
         """Delete the specified repository."""
 
 
-class IGitRepository(IGitRepositoryView, IGitRepositoryModerate,
-                     IGitRepositoryEdit):
+class IGitRepository(IGitRepositoryView, IGitRepositoryModerateAttributes,
+                     IGitRepositoryModerate, IGitRepositoryEdit):
     """A Git repository."""
 
     # Mark repositories as exported entries for the Launchpad API.

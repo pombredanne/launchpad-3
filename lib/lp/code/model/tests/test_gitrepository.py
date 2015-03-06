@@ -7,6 +7,7 @@ __metaclass__ = type
 
 from datetime import datetime
 from functools import partial
+import json
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 import pytz
@@ -856,13 +857,13 @@ class TestGitRepositorySetDefaultsOwnerPackage(
     pass
 
 
-class TestWebservice(TestCaseWithFactory):
+class TestGitRepositoryWebservice(TestCaseWithFactory):
     """Tests for the webservice."""
 
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        super(TestWebservice, self).setUp()
+        super(TestGitRepositoryWebservice, self).setUp()
         self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
 
     def test_getRepositories_project(self):
@@ -915,3 +916,113 @@ class TestWebservice(TestCaseWithFactory):
         self.assertEqual(
             [webservice.getAbsoluteUrl(repository_url)],
             [entry["self_link"] for entry in response.jsonBody()["entries"]])
+
+    def test_set_information_type(self):
+        # The repository owner can change the information type.
+        repository_db = self.factory.makeGitRepository()
+        webservice = webservice_for_person(
+            repository_db.owner, permission=OAuthPermission.WRITE_PUBLIC)
+        webservice.default_api_version = "devel"
+        with person_logged_in(ANONYMOUS):
+            repository_url = api_url(repository_db)
+        response = webservice.patch(
+            repository_url, "application/json",
+            json.dumps({"information_type": "Public Security"}))
+        self.assertEqual(209, response.status)
+        with person_logged_in(ANONYMOUS):
+            self.assertEqual(
+                InformationType.PUBLICSECURITY, repository_db.information_type)
+
+    def test_set_information_type_other_person(self):
+        # An unrelated user cannot change the information type.
+        repository_db = self.factory.makeGitRepository()
+        webservice = webservice_for_person(
+            self.factory.makePerson(), permission=OAuthPermission.WRITE_PUBLIC)
+        webservice.default_api_version = "devel"
+        with person_logged_in(ANONYMOUS):
+            repository_url = api_url(repository_db)
+        response = webservice.patch(
+            repository_url, "application/json",
+            json.dumps({"information_type": "Public Security"}))
+        self.assertEqual(401, response.status)
+        with person_logged_in(ANONYMOUS):
+            self.assertEqual(
+                InformationType.PUBLIC, repository_db.information_type)
+
+    def test_set_target(self):
+        # The repository owner can move the repository to another target;
+        # this redirects to the new location.
+        repository_db = self.factory.makeGitRepository()
+        new_project_db = self.factory.makeProduct()
+        webservice = webservice_for_person(
+            repository_db.owner, permission=OAuthPermission.WRITE_PUBLIC)
+        webservice.default_api_version = "devel"
+        with person_logged_in(ANONYMOUS):
+            repository_url = api_url(repository_db)
+            new_project_url = api_url(new_project_db)
+        response = webservice.patch(
+            repository_url, "application/json",
+            json.dumps({"target_link": new_project_url}))
+        self.assertEqual(301, response.status)
+        with person_logged_in(ANONYMOUS):
+            self.assertEqual(
+                webservice.getAbsoluteUrl(api_url(repository_db)),
+                response.getHeader("Location"))
+            self.assertEqual(new_project_db, repository_db.target)
+
+    def test_set_target_other_person(self):
+        # An unrelated person cannot change the target.
+        project_db = self.factory.makeProduct()
+        repository_db = self.factory.makeGitRepository(target=project_db)
+        new_project_db = self.factory.makeProduct()
+        webservice = webservice_for_person(
+            self.factory.makePerson(), permission=OAuthPermission.WRITE_PUBLIC)
+        webservice.default_api_version = "devel"
+        with person_logged_in(ANONYMOUS):
+            repository_url = api_url(repository_db)
+            new_project_url = api_url(new_project_db)
+        response = webservice.patch(
+            repository_url, "application/json",
+            json.dumps({"target_link": new_project_url}))
+        self.assertEqual(401, response.status)
+        with person_logged_in(ANONYMOUS):
+            self.assertEqual(project_db, repository_db.target)
+
+    def test_set_owner(self):
+        # The repository owner can reassign the repository to a team they're
+        # a member of; this redirects to the new location.
+        repository_db = self.factory.makeGitRepository()
+        new_owner_db = self.factory.makeTeam(members=[repository_db.owner])
+        webservice = webservice_for_person(
+            repository_db.owner, permission=OAuthPermission.WRITE_PUBLIC)
+        webservice.default_api_version = "devel"
+        with person_logged_in(ANONYMOUS):
+            repository_url = api_url(repository_db)
+            new_owner_url = api_url(new_owner_db)
+        response = webservice.patch(
+            repository_url, "application/json",
+            json.dumps({"owner_link": new_owner_url}))
+        self.assertEqual(301, response.status)
+        with person_logged_in(ANONYMOUS):
+            self.assertEqual(
+                webservice.getAbsoluteUrl(api_url(repository_db)),
+                response.getHeader("Location"))
+            self.assertEqual(new_owner_db, repository_db.owner)
+
+    def test_set_owner_other_person(self):
+        # An unrelated person cannot change the owner.
+        owner_db = self.factory.makePerson()
+        repository_db = self.factory.makeGitRepository(owner=owner_db)
+        new_owner_db = self.factory.makeTeam()
+        webservice = webservice_for_person(
+            new_owner_db.teamowner, permission=OAuthPermission.WRITE_PUBLIC)
+        webservice.default_api_version = "devel"
+        with person_logged_in(ANONYMOUS):
+            repository_url = api_url(repository_db)
+            new_owner_url = api_url(new_owner_db)
+        response = webservice.patch(
+            repository_url, "application/json",
+            json.dumps({"owner_link": new_owner_url}))
+        self.assertEqual(401, response.status)
+        with person_logged_in(ANONYMOUS):
+            self.assertEqual(owner_db, repository_db.owner)
