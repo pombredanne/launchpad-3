@@ -480,14 +480,6 @@ class TestGitRepositoryModerate(TestCaseWithFactory):
             self.assertEqual(
                 InformationType.PRIVATESECURITY, repository.information_type)
 
-    def test_attribute_smoketest(self):
-        # Users with launchpad.Moderate can set attributes.
-        project = self.factory.makeProduct()
-        repository = self.factory.makeGitRepository(target=project)
-        with person_logged_in(project.owner):
-            repository.name = u"not-secret"
-        self.assertEqual(u"not-secret", repository.name)
-
 
 class TestGitRepositorySetOwner(TestCaseWithFactory):
     """Test `IGitRepository.setOwner`."""

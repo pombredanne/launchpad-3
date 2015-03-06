@@ -126,7 +126,7 @@ class IGitRepositoryView(Interface):
         description=_("The person who registered this Git repository.")))
 
     owner = exported(PersonChoice(
-        title=_("Owner"), required=True, readonly=False,
+        title=_("Owner"), required=True, readonly=True,
         vocabulary="AllUserTeamsParticipationPlusSelf",
         description=_(
             "The owner of this Git repository. This controls who can modify "
@@ -141,6 +141,15 @@ class IGitRepositoryView(Interface):
 
     namespace = Attribute(
         "The namespace of this repository, as an `IGitNamespace`.")
+
+    # XXX cjwatson 2015-01-29: Add some advice about default repository
+    # naming.
+    name = exported(TextLine(
+        title=_("Name"), required=True, readonly=True,
+        constraint=git_repository_name_validator,
+        description=_(
+            "The repository name. Keep very short, unique, and descriptive, "
+            "because it will be used in URLs.")))
 
     information_type = exported(Choice(
         title=_("Information type"), vocabulary=InformationType,
@@ -257,20 +266,6 @@ class IGitRepositoryView(Interface):
         """
 
 
-class IGitRepositoryModerateAttributes(Interface):
-    """IGitRepository attributes that can be edited by more than one community.
-    """
-
-    # XXX cjwatson 2015-01-29: Add some advice about default repository
-    # naming.
-    name = exported(TextLine(
-        title=_("Name"), required=True,
-        constraint=git_repository_name_validator,
-        description=_(
-            "The repository name. Keep very short, unique, and descriptive, "
-            "because it will be used in URLs.")))
-
-
 class IGitRepositoryModerate(Interface):
     """IGitRepository methods that can be called by more than one community."""
 
@@ -321,8 +316,8 @@ class IGitRepositoryEdit(Interface):
         """Delete the specified repository."""
 
 
-class IGitRepository(IGitRepositoryView, IGitRepositoryModerateAttributes,
-                     IGitRepositoryModerate, IGitRepositoryEdit):
+class IGitRepository(IGitRepositoryView, IGitRepositoryModerate,
+                     IGitRepositoryEdit):
     """A Git repository."""
 
     # Mark repositories as exported entries for the Launchpad API.
