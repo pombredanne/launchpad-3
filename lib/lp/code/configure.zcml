@@ -818,7 +818,8 @@
     <require
         permission="launchpad.Moderate"
         interface="lp.code.interfaces.gitrepository.IGitRepositoryModerate"
-        set_schema="lp.code.interfaces.gitrepository.IGitRepositoryModerateAttributes" />
+        set_schema="lp.code.interfaces.gitrepository.IGitRepositoryModerateAttributes"
+        set_attributes="date_last_modified" />
     <require
         permission="launchpad.Edit"
         interface="lp.code.interfaces.gitrepository.IGitRepositoryEdit" />

@@ -17,7 +17,24 @@ __all__ = [
 
 import re
 
+from lazr.restful.declarations import (
+    call_with,
+    collection_default_content,
+    export_as_webservice_collection,
+    export_as_webservice_entry,
+    export_destructor_operation,
+    export_read_operation,
+    export_write_operation,
+    exported,
+    mutator_for,
+    operation_for_version,
+    operation_parameters,
+    operation_returns_collection_of,
+    operation_returns_entry,
+    REQUEST_USER,
+    )
 from lazr.restful.fields import Reference
+from lazr.restful.interface import copy_field
 from zope.component import getUtility
 from zope.interface import (
     Attribute,
@@ -40,6 +57,7 @@ from lp.code.interfaces.hasgitrepositories import IHasGitRepositories
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
+from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.persondistributionsourcepackage import (
     IPersonDistributionSourcePackageFactory,
     )
@@ -97,68 +115,76 @@ class IGitRepositoryView(Interface):
 
     id = Int(title=_("ID"), readonly=True, required=True)
 
-    date_created = Datetime(
-        title=_("Date created"), required=True, readonly=True)
+    date_created = exported(Datetime(
+        title=_("Date created"), required=True, readonly=True))
 
-    date_last_modified = Datetime(
-        title=_("Date last modified"), required=True, readonly=True)
-
-    registrant = PublicPersonChoice(
+    registrant = exported(PublicPersonChoice(
         title=_("Registrant"), required=True, readonly=True,
         vocabulary="ValidPersonOrTeam",
-        description=_("The person who registered this Git repository."))
+        description=_("The person who registered this Git repository.")))
 
-    owner = PersonChoice(
-        title=_("Owner"), required=True, readonly=False,
+    owner = exported(PersonChoice(
+        title=_("Owner"), required=True, readonly=True,
         vocabulary="AllUserTeamsParticipationPlusSelf",
         description=_(
             "The owner of this Git repository. This controls who can modify "
-            "the repository."))
+            "the repository.")))
 
-    target = Reference(
-        title=_("Target"), required=True, readonly=True,
-        schema=IHasGitRepositories,
-        description=_("The target of the repository."))
+    target = exported(
+        Reference(
+            title=_("Target"), required=True, readonly=True,
+            schema=IHasGitRepositories,
+            description=_("The target of the repository.")),
+        as_of="devel")
 
     namespace = Attribute(
         "The namespace of this repository, as an `IGitNamespace`.")
 
-    information_type = Choice(
+    # XXX cjwatson 2015-01-29: Add some advice about default repository
+    # naming.
+    name = exported(TextLine(
+        title=_("Name"), required=True, readonly=True,
+        constraint=git_repository_name_validator,
+        description=_(
+            "The repository name. Keep very short, unique, and descriptive, "
+            "because it will be used in URLs.")))
+
+    information_type = exported(Choice(
         title=_("Information type"), vocabulary=InformationType,
         required=True, readonly=True, default=InformationType.PUBLIC,
         description=_(
-            "The type of information contained in this repository."))
+            "The type of information contained in this repository.")))
 
-    owner_default = Bool(
+    owner_default = exported(Bool(
         title=_("Owner default"), required=True, readonly=True,
         description=_(
             "Whether this repository is the default for its owner and "
-            "target."))
+            "target.")))
 
-    target_default = Bool(
+    target_default = exported(Bool(
         title=_("Target default"), required=True, readonly=True,
         description=_(
-            "Whether this repository is the default for its target."))
+            "Whether this repository is the default for its target.")))
 
-    unique_name = Text(
+    unique_name = exported(Text(
         title=_("Unique name"), readonly=True,
         description=_(
             "Unique name of the repository, including the owner and project "
-            "names."))
+            "names.")))
 
-    display_name = Text(
+    display_name = exported(Text(
         title=_("Display name"), readonly=True,
-        description=_("Display name of the repository."))
+        description=_("Display name of the repository.")))
 
     shortened_path = Attribute(
         "The shortest reasonable version of the path to this repository.")
 
-    git_identity = Text(
+    git_identity = exported(Text(
         title=_("Git identity"), readonly=True,
         description=_(
             "If this is the default repository for some target, then this is "
             "'lp:' plus a shortcut version of the path via that target.  "
-            "Otherwise it is simply 'lp:' plus the unique name."))
+            "Otherwise it is simply 'lp:' plus the unique name.")))
 
     def setOwnerDefault(value):
         """Set whether this repository is the default for its owner-target.
@@ -242,19 +268,20 @@ class IGitRepositoryModerateAttributes(Interface):
     """IGitRepository attributes that can be edited by more than one community.
     """
 
-    # XXX cjwatson 2015-01-29: Add some advice about default repository
-    # naming.
-    name = TextLine(
-        title=_("Name"), required=True,
-        constraint=git_repository_name_validator,
-        description=_(
-            "The repository name. Keep very short, unique, and descriptive, "
-            "because it will be used in URLs."))
+    date_last_modified = exported(Datetime(
+        title=_("Date last modified"), required=True, readonly=True))
 
 
 class IGitRepositoryModerate(Interface):
     """IGitRepository methods that can be called by more than one community."""
 
+    @mutator_for(IGitRepositoryView["information_type"])
+    @operation_parameters(
+        information_type=copy_field(IGitRepositoryView["information_type"]),
+        )
+    @call_with(user=REQUEST_USER)
+    @export_write_operation()
+    @operation_for_version("devel")
     def transitionToInformationType(information_type, user,
                                     verify_policy=True):
         """Set the information type for this repository.
@@ -269,12 +296,31 @@ class IGitRepositoryModerate(Interface):
 class IGitRepositoryEdit(Interface):
     """IGitRepository methods that require launchpad.Edit permission."""
 
+    @mutator_for(IGitRepositoryView["owner"])
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        new_owner=Reference(
+            title=_("The new owner of the repository."), schema=IPerson))
+    @export_write_operation()
+    @operation_for_version("devel")
     def setOwner(new_owner, user):
         """Set the owner of the repository to be `new_owner`."""
 
+    @mutator_for(IGitRepositoryView["target"])
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        target=Reference(
+            title=_(
+                "The project, distribution source package, or person the "
+                "repository belongs to."),
+            schema=IHasGitRepositories, required=True))
+    @export_write_operation()
+    @operation_for_version("devel")
     def setTarget(target, user):
         """Set the target of the repository."""
 
+    @export_destructor_operation()
+    @operation_for_version("devel")
     def destroySelf():
         """Delete the specified repository."""
 
@@ -283,13 +329,21 @@ class IGitRepository(IGitRepositoryView, IGitRepositoryModerateAttributes,
                      IGitRepositoryModerate, IGitRepositoryEdit):
     """A Git repository."""
 
-    private = Bool(
+    # Mark repositories as exported entries for the Launchpad API.
+    # XXX cjwatson 2015-01-19 bug=760849: "beta" is a lie to get WADL
+    # generation working.  Individual attributes must set their version to
+    # "devel".
+    export_as_webservice_entry(plural_name="git_repositories", as_of="beta")
+
+    private = exported(Bool(
         title=_("Private"), required=False, readonly=True,
-        description=_("This repository is visible only to its subscribers."))
+        description=_("This repository is visible only to its subscribers.")))
 
 
 class IGitRepositorySet(Interface):
     """Interface representing the set of Git repositories."""
+
+    export_as_webservice_collection(IGitRepository)
 
     def new(registrant, owner, target, name, information_type=None,
             date_created=None):
@@ -306,6 +360,12 @@ class IGitRepositorySet(Interface):
         """
 
     # Marker for references to Git URL layouts: ##GITNAMESPACE##
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        path=TextLine(title=_("Repository path"), required=True))
+    @operation_returns_entry(IGitRepository)
+    @export_read_operation()
+    @operation_for_version("devel")
     def getByPath(user, path):
         """Find a repository by its path.
 
@@ -324,6 +384,13 @@ class IGitRepositorySet(Interface):
         Return None if no match was found.
         """
 
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        target=Reference(
+            title=_("Target"), required=True, schema=IHasGitRepositories))
+    @operation_returns_collection_of(IGitRepository)
+    @export_read_operation()
+    @operation_for_version("devel")
     def getRepositories(user, target):
         """Get all repositories for a target.
 
@@ -334,6 +401,12 @@ class IGitRepositorySet(Interface):
         :return: A collection of `IGitRepository` objects.
         """
 
+    @operation_parameters(
+        target=Reference(
+            title=_("Target"), required=True, schema=IHasGitRepositories))
+    @operation_returns_entry(IGitRepository)
+    @export_read_operation()
+    @operation_for_version("devel")
     def getDefaultRepository(target):
         """Get the default repository for a target.
 
@@ -343,6 +416,13 @@ class IGitRepositorySet(Interface):
         :return: An `IGitRepository`, or None.
         """
 
+    @operation_parameters(
+        owner=Reference(title=_("Owner"), required=True, schema=IPerson),
+        target=Reference(
+            title=_("Target"), required=True, schema=IHasGitRepositories))
+    @operation_returns_entry(IGitRepository)
+    @export_read_operation()
+    @operation_for_version("devel")
     def getDefaultRepositoryForOwner(owner, target):
         """Get a person's default repository for a target.
 
@@ -353,6 +433,13 @@ class IGitRepositorySet(Interface):
         :return: An `IGitRepository`, or None.
         """
 
+    @operation_parameters(
+        target=Reference(
+            title=_("Target"), required=True, schema=IHasGitRepositories),
+        repository=Reference(
+            title=_("Git repository"), required=False, schema=IGitRepository))
+    @export_write_operation()
+    @operation_for_version("devel")
     def setDefaultRepository(target, repository):
         """Set the default repository for a target.
 
@@ -363,6 +450,14 @@ class IGitRepositorySet(Interface):
         :raises GitTargetError: if `target` is an `IPerson`.
         """
 
+    @operation_parameters(
+        owner=Reference(title=_("Owner"), required=True, schema=IPerson),
+        target=Reference(
+            title=_("Target"), required=True, schema=IHasGitRepositories),
+        repository=Reference(
+            title=_("Git repository"), required=False, schema=IGitRepository))
+    @export_write_operation()
+    @operation_for_version("devel")
     def setDefaultRepositoryForOwner(owner, target, repository):
         """Set a person's default repository for a target.
 
@@ -374,6 +469,7 @@ class IGitRepositorySet(Interface):
         :raises GitTargetError: if `target` is an `IPerson`.
         """
 
+    @collection_default_content()
     def empty_list():
         """Return an empty collection of repositories.
 
