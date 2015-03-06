@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for distroseries."""
@@ -10,12 +10,14 @@ __all__ = [
     ]
 
 from functools import partial
+import json
 
 from testtools.matchers import Equals
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archivepublisher.indices import (
     build_binary_stanza_fields,
     build_source_stanza_fields,
@@ -24,6 +26,7 @@ from lp.registry.errors import NoSuchDistroSeries
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.database.interfaces import IStore
+from lp.services.webapp.interfaces import OAuthPermission
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
@@ -39,7 +42,9 @@ from lp.soyuz.interfaces.distributionsourcepackagerelease import (
 from lp.soyuz.interfaces.publishing import active_publishing_status
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
+    admin_logged_in,
     ANONYMOUS,
+    api_url,
     login,
     person_logged_in,
     record_two_runs,
@@ -52,6 +57,7 @@ from lp.testing.layers import (
     LaunchpadFunctionalLayer,
     )
 from lp.testing.matchers import HasQueryCount
+from lp.testing.pages import webservice_for_person
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode,
     )
@@ -545,6 +551,42 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
             5, 5)
         self.assertThat(recorder1, HasQueryCount(Equals(15)))
         self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
+
+
+class TestDistroSeriesWebservice(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_language_pack_full_export_requested_not_translations_admin(self):
+        # Somebody with only launchpad.TranslationsAdmin cannot request full
+        # language pack exports.
+        distroseries = self.factory.makeDistroSeries()
+        self.assertFalse(distroseries.language_pack_full_export_requested)
+        group = self.factory.makeTranslationGroup()
+        with admin_logged_in():
+            distroseries.distribution.translationgroup = group
+        webservice = webservice_for_person(
+            group.owner, permission=OAuthPermission.WRITE_PRIVATE)
+        response = webservice.patch(
+            api_url(distroseries), "application/json",
+            json.dumps({"language_pack_full_export_requested": True}))
+        self.assertEqual(401, response.status)
+        self.assertFalse(distroseries.language_pack_full_export_requested)
+
+    def test_language_pack_full_export_requested_langpacks_admin(self):
+        # Somebody with launchpad.LanguagePacksAdmin can request full
+        # language pack exports.
+        distroseries = self.factory.makeDistroSeries()
+        self.assertFalse(distroseries.language_pack_full_export_requested)
+        person = self.factory.makePerson(
+            member_of=[getUtility(ILaunchpadCelebrities).rosetta_experts])
+        webservice = webservice_for_person(
+            person, permission=OAuthPermission.WRITE_PRIVATE)
+        response = webservice.patch(
+            api_url(distroseries), "application/json",
+            json.dumps({"language_pack_full_export_requested": True}))
+        self.assertEqual(209, response.status)
+        self.assertTrue(distroseries.language_pack_full_export_requested)
 
 
 class TestDistroSeriesSet(TestCaseWithFactory):
