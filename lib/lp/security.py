@@ -995,7 +995,7 @@ class PublicOrPrivateTeamsExistence(AuthorizationBase):
             subscriptions = getUtility(
                 IArchiveSubscriberSet).getBySubscriber(user.person)
             subscriber_archive_ids = set(
-                sub.archive.id for sub in subscriptions)
+                sub.archive_id for sub in subscriptions)
             team_ppa_ids = set(
                 ppa.id for ppa in self.obj.ppas if ppa.private)
             if len(subscriber_archive_ids.intersection(team_ppa_ids)) > 0:
