@@ -595,10 +595,9 @@ class PublishFTPMaster(LaunchpadCronScript):
                 has_published = self.publishSecurityUploads(distribution)
             else:
                 self.publishDistroUploads(distribution)
+                self.updateContentsFiles(distribution)
                 # Let's assume the main archive is always modified
                 has_published = True
-
-            self.updateContentsFiles(distribution)
 
             # Swizzle the now-updated backup dists and the current dists
             # around.
