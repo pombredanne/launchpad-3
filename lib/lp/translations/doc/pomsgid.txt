@@ -13,4 +13,3 @@ True
 >>> got = POMsgID.byMsgid("This is a very \t\n\b'?'\\ odd test")
 >>> got == created
 True
-
