@@ -285,9 +285,9 @@ def quote(x):
     >>> quote("hello")
     "E'hello'"
     >>> quote("'hello'")
-    "E'\\'hello\\''"
+    "E'''hello'''"
     >>> quote(r"\'hello")
-    "E'\\\\\\'hello'"
+    "E'\\\\''hello'"
 
     Note that we need to receive a Unicode string back, because our
     query will be a Unicode string (the entire query will be encoded
@@ -393,7 +393,7 @@ def sqlvalues(*values, **kwvalues):
     >>> sqlvalues(1)
     ('1',)
     >>> sqlvalues(1, "bad ' string")
-    ('1', "E'bad \\\\' string'")
+    ('1', "E'bad '' string'")
 
     You can also use it when using dict-style substitution.
 
@@ -464,7 +464,7 @@ def convert_storm_clause_to_string(storm_clause):
     BugTask.importance = 999
 
     >>> print convert_storm_clause_to_string(Bug.title == "foo'bar'")
-    Bug.title = E'foo\\'bar\\''
+    Bug.title = E'foo''bar'''
 
     >>> print convert_storm_clause_to_string(
     ...     Or(BugTask.importance == BugTaskImportance.UNKNOWN,
