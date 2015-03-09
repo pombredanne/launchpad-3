@@ -284,9 +284,6 @@ from lp.soyuz.interfaces.publishing import ISourcePackagePublishingHistory
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 
 
-COMMASPACE = ', '
-
-
 class PersonBreadcrumb(DisplaynameBreadcrumb):
     implements(IHeadingBreadcrumb, IMultiFacetedBreadcrumb)
 
@@ -2045,7 +2042,7 @@ class PersonParticipationView(LaunchpadView):
             # When showing the path, it's unnecessary to show the team in
             # question at the beginning of the path, or the user at the
             # end of the path.
-            via = COMMASPACE.join(
+            via = ", ".join(
                 [via_team.displayname for via_team in via[1:-1]])
 
         if membership is None:
