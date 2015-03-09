@@ -47,6 +47,7 @@ from lp.services.identity.interfaces.account import AccountStatus
 from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
 from lp.services.log.logger import FakeLogger
 from lp.services.mail import stub
+from lp.services.propertycache import clear_property_cache
 from lp.services.verification.interfaces.authtoken import LoginTokenType
 from lp.services.verification.interfaces.logintoken import ILoginTokenSet
 from lp.services.verification.tests.logintoken import get_token_url_from_email
@@ -68,6 +69,7 @@ from lp.testing import (
     login_person,
     monkey_patch,
     person_logged_in,
+    record_two_runs,
     StormStatementRecorder,
     TestCaseWithFactory,
     )
@@ -877,6 +879,26 @@ class TestPersonParticipationView(TestCaseWithFactory):
         participations = self.view.active_participations
         self.assertEqual(1, len(participations))
         self.assertEqual(True, self.view.has_participations)
+
+    def test_mailing_list_subscriptions_query_count(self):
+        # Additional mailing list subscriptions do not add additional queries.
+        def create_subscriptions():
+            direct_team = self.factory.makeTeam(members=[self.user])
+            direct_list = self.factory.makeMailingList(
+                direct_team, direct_team.teamowner)
+            direct_list.subscribe(self.user)
+            indirect_team = self.factory.makeTeam(members=[direct_team])
+            indirect_list = self.factory.makeMailingList(
+                indirect_team, indirect_team.teamowner)
+            indirect_list.subscribe(self.user)
+
+        def get_participations():
+            clear_property_cache(self.view)
+            return list(self.view.active_participations)
+
+        recorder1, recorder2 = record_two_runs(
+            get_participations, create_subscriptions, 5)
+        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
 
 
 class TestPersonRelatedPackagesView(TestCaseWithFactory):

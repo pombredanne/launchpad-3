@@ -37,6 +37,7 @@
                 id
                 team
                 person
+                personID
                 status
                 proposed_by
                 acknowledged_by
