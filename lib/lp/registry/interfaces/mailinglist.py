@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Mailing list interfaces."""
@@ -462,6 +462,17 @@ class IMailingListSet(Interface):
         :return: The `IMailingList` for the named team or None if no mailing
             list is registered for the named team, or the team doesn't exist.
         :raises AssertionError: When `team_name` is not a string.
+        """
+
+    def getSubscriptionsForTeams(person, teams):
+        """Return a person's subscriptions to usable lists for a set of teams.
+
+        :param person: An `IPerson`.
+        :param teams: A list of `ITeam`s.
+        :return: A dictionary mapping team IDs to tuples of `IMailingList`
+            IDs and `IMailingListSubscription` IDs; the second element will
+            be None if a team has a list to which the person is not
+            subscribed.
         """
 
     def getSubscribedAddresses(team_names):

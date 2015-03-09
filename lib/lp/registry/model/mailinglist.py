@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -98,6 +98,13 @@ EMAIL_ADDRESS_STATUSES = (
 MESSAGE_APPROVAL_STATUSES = (
     PostedMessageStatus.APPROVED,
     PostedMessageStatus.APPROVAL_PENDING)
+
+
+USABLE_STATUSES = (
+    MailingListStatus.ACTIVE,
+    MailingListStatus.MODIFIED,
+    MailingListStatus.UPDATING,
+    MailingListStatus.MOD_FAILED)
 
 
 class MessageApproval(SQLBase):
@@ -344,10 +351,7 @@ class MailingList(SQLBase):
     @property
     def is_usable(self):
         """See `IMailingList`."""
-        return self.status in [MailingListStatus.ACTIVE,
-                               MailingListStatus.MODIFIED,
-                               MailingListStatus.UPDATING,
-                               MailingListStatus.MOD_FAILED]
+        return self.status in USABLE_STATUSES
 
     def _get_welcome_message(self):
         return self.welcome_message_
@@ -546,6 +550,24 @@ class MailingListSet:
             AND Person.teamowner IS NOT NULL
             """ % sqlvalues(team_name),
             clauseTables=['Person'])
+
+    def getSubscriptionsForTeams(self, person, teams):
+        """See `IMailingListSet`."""
+        store = IStore(MailingList)
+        team_ids = set(map(operator.attrgetter("id"), teams))
+        lists = dict(store.find(
+            (MailingList.teamID, MailingList.id),
+            MailingList.teamID.is_in(team_ids),
+            MailingList.status.is_in(USABLE_STATUSES)))
+        subscriptions = dict(store.find(
+            (MailingListSubscription.mailing_listID,
+             MailingListSubscription.id),
+            MailingListSubscription.person == person,
+            MailingListSubscription.mailing_listID.is_in(lists.values())))
+        by_team = {}
+        for team, mailing_list in lists.items():
+            by_team[team] = (mailing_list, subscriptions.get(mailing_list))
+        return by_team
 
     def _getTeamIdsAndMailingListIds(self, team_names):
         """Return a tuple of team and mailing list Ids for the team names."""
