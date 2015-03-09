@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Team membership interfaces."""
@@ -131,6 +131,7 @@ class ITeamMembership(Interface):
         Reference(title=_("Member"), required=True, readonly=True,
                   schema=Interface),  # Specified in interfaces/person.py.
         exported_as='member')
+    personID = Int(title=_("Person ID"), required=True, readonly=True)
     proposed_by = Attribute(_('Proponent'))
     reviewed_by = Attribute(
         _("The team admin who approved/rejected the member."))
