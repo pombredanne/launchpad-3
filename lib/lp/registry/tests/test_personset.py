@@ -724,6 +724,6 @@ class TestPersonSetGetOrCreateSoftwareCenterCustomer(TestCaseWithFactory):
                 AccountStatus.DEACTIVATED, None, "Goodbye cruel world.")
         with person_logged_in(self.sca):
             self.assertRaises(
-                AccountSuspendedError,
+                NameAlreadyTaken,
                 getUtility(IPersonSet).getOrCreateSoftwareCenterCustomer,
                 self.sca, u'somebody', 'somebody@example.com', 'Example')

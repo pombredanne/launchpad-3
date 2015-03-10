@@ -3411,7 +3411,8 @@ class PersonSet:
                 # been used, then we don't want to proceed as we might
                 # end up adding a malicious OpenID identifier to an
                 # existing account.
-                raise AccountSuspendedError()
+                raise NameAlreadyTaken(
+                    "The account matching the identifier is inactive.")
             elif person.account.status in [AccountStatus.DEACTIVATED,
                                            AccountStatus.NOACCOUNT]:
                 removeSecurityProxy(person.account).reactivate(comment)
