@@ -3,6 +3,7 @@
 
 __metaclass__ = type
 
+from storm.store import Store
 from testtools.matchers import Equals
 from zope.component import getUtility
 from zope.security.management import endInteraction
@@ -14,6 +15,7 @@ from lp.registry.interfaces.person import (
     )
 from lp.registry.interfaces.teammembership import ITeamMembershipSet
 from lp.services.identity.interfaces.account import AccountStatus
+from lp.services.openid.model.openididentifier import OpenIdIdentifier
 from lp.services.webapp.interfaces import OAuthPermission
 from lp.testing import (
     admin_logged_in,
@@ -282,3 +284,61 @@ class PersonSetWebServiceTests(TestCaseWithFactory):
                 'identifier=http://login1.dev/%%2Bid/%s'
                 % person_openid,
                 api_version='devel').jsonBody()['name'])
+
+    def getOrCreateSoftwareCenterCustomer(self, user):
+        webservice = webservice_for_person(
+            user, permission=OAuthPermission.WRITE_PRIVATE)
+        response = webservice.named_post(
+            '/people', 'getOrCreateSoftwareCenterCustomer',
+            openid_identifier='somebody',
+            email_address='somebody@example.com', display_name='Somebody',
+            api_version='devel')
+        return response
+
+    def test_getOrCreateSoftwareCenterCustomer(self):
+        # Software Center Agent (SCA) can get or create people by OpenID
+        # identifier.
+        with admin_logged_in():
+            sca = getUtility(IPersonSet).getByName('software-center-agent')
+        response = self.getOrCreateSoftwareCenterCustomer(sca)
+        self.assertEqual('Somebody', response.jsonBody()['display_name'])
+        with admin_logged_in():
+            person = getUtility(IPersonSet).getByEmail('somebody@example.com')
+            self.assertEqual('Somebody', person.displayname)
+            self.assertEqual(
+                ['somebody'],
+                [oid.identifier for oid in person.account.openid_identifiers])
+            self.assertEqual(
+                'somebody@example.com', person.preferredemail.email)
+
+    def test_getOrCreateSoftwareCenterCustomer_is_restricted(self):
+        # The method may only be invoked by the ~software-center-agent
+        # celebrity user, as it is security-sensitive.
+        with admin_logged_in():
+            random = self.factory.makePerson()
+        response = self.getOrCreateSoftwareCenterCustomer(random)
+        self.assertEqual(401, response.status)
+
+    def test_getOrCreateSoftwareCenterCustomer_rejects_email_conflicts(self):
+        # An unknown OpenID identifier with a known email address causes
+        # the request to fail with 409 Conflict, as we'd otherwise end
+        # up linking the OpenID identifier to an existing account.
+        with admin_logged_in():
+            self.factory.makePerson(email='somebody@example.com')
+            sca = getUtility(IPersonSet).getByName('software-center-agent')
+        response = self.getOrCreateSoftwareCenterCustomer(sca)
+        self.assertEqual(409, response.status)
+
+    def test_getOrCreateSoftwareCenterCustomer_rejects_suspended(self):
+        # Suspended accounts are not returned.
+        with admin_logged_in():
+            existing = self.factory.makePerson(
+                email='somebody@example.com',
+                account_status=AccountStatus.SUSPENDED)
+            oid = OpenIdIdentifier()
+            oid.account = existing.account
+            oid.identifier = u'somebody'
+            Store.of(existing).add(oid)
+            sca = getUtility(IPersonSet).getByName('software-center-agent')
+        response = self.getOrCreateSoftwareCenterCustomer(sca)
+        self.assertEqual(400, response.status)

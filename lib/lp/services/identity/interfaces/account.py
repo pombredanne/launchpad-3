@@ -18,11 +18,13 @@ __all__ = [
     'INACTIVE_ACCOUNT_STATUSES',
     ]
 
+import httplib
 
 from lazr.enum import (
     DBEnumeratedType,
     DBItem,
     )
+from lazr.restful.declarations import error_status
 from zope.interface import (
     Attribute,
     Interface,
@@ -40,6 +42,7 @@ from lp.app.validators import LaunchpadValidationError
 from lp.services.fields import StrippedTextLine
 
 
+@error_status(httplib.BAD_REQUEST)
 class AccountSuspendedError(Exception):
     """The account being accessed has been suspended."""
 

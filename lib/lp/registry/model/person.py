@@ -3427,13 +3427,13 @@ class PersonSet:
             return person, db_updated
 
     def getOrCreateSoftwareCenterCustomer(self, user, openid_identifier,
-                                          email_address, full_name):
+                                          email_address, display_name):
         """See `IPersonSet`."""
         if user != getUtility(ILaunchpadCelebrities).software_center_agent:
             raise Unauthorized()
         person, _ = getUtility(
             IPersonSet).getOrCreateByOpenIDIdentifier(
-                openid_identifier, email_address, full_name,
+                openid_identifier, email_address, display_name,
                 PersonCreationRationale.SOFTWARE_CENTER_PURCHASE,
                 "when purchasing an application via Software Center.",
                 trust_email=False)

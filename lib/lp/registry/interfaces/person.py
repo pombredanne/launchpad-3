@@ -2173,6 +2173,14 @@ class IPersonSet(Interface):
             identifier has been suspended.
         """
 
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        openid_identifier=TextLine(
+            title=_("OpenID identifier suffix"), required=True),
+        email_address=TextLine(title=_("Email address"), required=True),
+        display_name=TextLine(title=_("Display name"), required=True))
+    @export_write_operation()
+    @operation_for_version("devel")
     def getOrCreateSoftwareCenterCustomer(user, openid_identifier,
                                           email_address, display_name):
         """Restricted person creation API for Software Center Agent.
