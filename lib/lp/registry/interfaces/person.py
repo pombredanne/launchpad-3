@@ -2173,6 +2173,22 @@ class IPersonSet(Interface):
             identifier has been suspended.
         """
 
+    def getOrCreateSoftwareCenterCustomer(user, openid_identifier,
+                                          email_address, display_name):
+        """Restricted person creation API for Software Center Agent.
+
+        This method can only be called by Software Center Agent. It gets
+        a person by OpenID identifier or creates a new Launchpad person
+        from the OpenID identifier, email address and display name.
+
+        :param user: the `IPerson` performing the operation. Only the
+            software-center-agent celebrity is allowed.
+        :param openid_identifier: OpenID identifier suffix for the user.
+            This is *not* the full URL, just the unique suffix portion.
+        :param email_address: the email address of the user.
+        :param full_name: the full name of the user.
+        """
+
     @call_with(teamowner=REQUEST_USER)
     @rename_parameters_as(
         displayname='display_name', teamdescription='team_description',

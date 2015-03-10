@@ -9,6 +9,7 @@ __metaclass__ = type
 from testtools.matchers import LessThan
 import transaction
 from zope.component import getUtility
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from lp.code.tests.helpers import remove_all_sample_data_branches
@@ -590,3 +591,30 @@ class TestPersonSetGetOrCreateByOpenIDIdentifier(TestCaseWithFactory):
             u'other-openid-identifier' in [
                 identifier.identifier for identifier in removeSecurityProxy(
                     person.account).openid_identifiers])
+
+
+class TestPersonSetGetOrCreateSoftwareCenterCustomer(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestPersonSetGetOrCreateSoftwareCenterCustomer, self).setUp()
+        self.sca = getUtility(IPersonSet).getByName('software-center-agent')
+
+    def test_restricted_to_sca(self):
+        # Only the software-center-agent celebrity can invoke this
+        # privileged method.
+        def do_it(user):
+            getUtility(IPersonSet).getOrCreateSoftwareCenterCustomer(
+                user, 'somebody', 'somebody@example.com', 'Example Somebody')
+        random = self.factory.makePerson()
+        admin = self.factory.makePerson(
+            member_of=[getUtility(IPersonSet).getByName('admins')])
+
+        # Anonymous, random or admin users can't invoke the method.
+        self.assertRaises(Unauthorized, do_it, None)
+        self.assertRaises(Unauthorized, do_it, random)
+        self.assertRaises(Unauthorized, do_it, admin)
+
+        person = do_it(self.sca)
+        self.assertIsInstance(person, Person)

@@ -3391,6 +3391,12 @@ class PersonSet:
 
             return person, db_updated
 
+    def getOrCreateSoftwareCenterCustomer(self, user, openid_identifier,
+                                          email_address, full_name):
+        """See `IPersonSet`."""
+        if user != getUtility(ILaunchpadCelebrities).software_center_agent:
+            raise Unauthorized()
+
     def newTeam(self, teamowner, name, displayname, teamdescription=None,
                 membership_policy=TeamMembershipPolicy.MODERATED,
                 defaultmembershipperiod=None, defaultrenewalperiod=None,
