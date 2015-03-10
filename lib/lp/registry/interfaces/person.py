@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Person interfaces."""
@@ -2171,6 +2171,30 @@ class IPersonSet(Interface):
             database was updated.
         :raises AccountSuspendedError: if the account associated with the
             identifier has been suspended.
+        """
+
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        openid_identifier=TextLine(
+            title=_("OpenID identifier suffix"), required=True),
+        email_address=TextLine(title=_("Email address"), required=True),
+        display_name=TextLine(title=_("Display name"), required=True))
+    @export_write_operation()
+    @operation_for_version("devel")
+    def getOrCreateSoftwareCenterCustomer(user, openid_identifier,
+                                          email_address, display_name):
+        """Restricted person creation API for Software Center Agent.
+
+        This method can only be called by Software Center Agent. It gets
+        a person by OpenID identifier or creates a new Launchpad person
+        from the OpenID identifier, email address and display name.
+
+        :param user: the `IPerson` performing the operation. Only the
+            software-center-agent celebrity is allowed.
+        :param openid_identifier: OpenID identifier suffix for the user.
+            This is *not* the full URL, just the unique suffix portion.
+        :param email_address: the email address of the user.
+        :param full_name: the full name of the user.
         """
 
     @call_with(teamowner=REQUEST_USER)
