@@ -268,6 +268,7 @@ from lp.services.identity.interfaces.account import (
     INACTIVE_ACCOUNT_STATUSES,
     )
 from lp.services.identity.interfaces.emailaddress import (
+    EmailAddressAlreadyTaken,
     EmailAddressStatus,
     IEmailAddress,
     IEmailAddressSet,
@@ -3317,8 +3318,26 @@ class PersonSet:
         return IPerson(account)
 
     def getOrCreateByOpenIDIdentifier(self, openid_identifier, email_address,
-                                      full_name, creation_rationale, comment):
+                                      full_name, creation_rationale, comment,
+                                      trust_email=True):
         """See `IPersonSet`."""
+        # trust_email is an internal flag used by
+        # getOrCreateSoftwareCenterCustomer. We don't want SCA to be
+        # able to use the API to associate arbitrary OpenID identifiers
+        # and email addresses when that could compromise existing
+        # accounts.
+        #
+        # To that end, if trust_email is not set then the given
+        # email address will only be used to create an account. It will
+        # never be used to look up an account, nor will it be added to
+        # an existing account. This causes two additional cases to be
+        # rejected: unknown OpenID identifier but known email address,
+        # and deactivated account.
+        #
+        # Exempting account creation and activation from this rule opens
+        # us to a potential account fixation attack, but the risk is
+        # minimal.
+
         assert email_address is not None and full_name is not None, (
             "Both email address and full name are required to create an "
             "account.")
@@ -3341,13 +3360,19 @@ class PersonSet:
                 # We don't know about the OpenID identifier yet, so try
                 # to match a person by email address, or as a last
                 # resort create a new one.
-                if email is not None:
-                    person = email.person
-                else:
+                if email is None:
                     person_set = getUtility(IPersonSet)
                     person, email = person_set.createPersonAndEmail(
                         email_address, creation_rationale, comment=comment,
                         displayname=full_name)
+                elif trust_email:
+                    person = email.person
+                else:
+                    # The email address originated from a source that's
+                    # not completely trustworth (eg. SCA), so we can't
+                    # use it to link the OpenID identifier to an
+                    # existing person.
+                    raise EmailAddressAlreadyTaken()
 
                 # It's possible that the email address is owned by a
                 # team. Reject the login attempt, and wait for the user
@@ -3373,10 +3398,21 @@ class PersonSet:
             person = IPerson(identifier.account, None)
             assert person is not None, ('Received a personless account.')
 
-            if person.account.status == AccountStatus.SUSPENDED:
+            status = person.account.status
+            if status == AccountStatus.ACTIVE:
+                # Account is active, so nothing to do.
+                pass
+            elif status == AccountStatus.SUSPENDED:
                 raise AccountSuspendedError(
                     "The account matching the identifier is suspended.")
-
+            elif not trust_email and status != AccountStatus.NOACCOUNT:
+                # If the email address is not completely trustworthy
+                # (ie. it comes from SCA) and the account has already
+                # been used, then we don't want to proceed as we might
+                # end up adding a malicious OpenID identifier to an
+                # existing account.
+                raise NameAlreadyTaken(
+                    "The account matching the identifier is inactive.")
             elif person.account.status in [AccountStatus.DEACTIVATED,
                                            AccountStatus.NOACCOUNT]:
                 removeSecurityProxy(person.account).reactivate(comment)
@@ -3386,10 +3422,23 @@ class PersonSet:
                 removeSecurityProxy(person).setPreferredEmail(email)
                 db_updated = True
             else:
-                # Account is active, so nothing to do.
-                pass
+                raise AssertionError(
+                    "Unhandled account status: %r" % person.account.status)
 
             return person, db_updated
+
+    def getOrCreateSoftwareCenterCustomer(self, user, openid_identifier,
+                                          email_address, display_name):
+        """See `IPersonSet`."""
+        if user != getUtility(ILaunchpadCelebrities).software_center_agent:
+            raise Unauthorized()
+        person, _ = getUtility(
+            IPersonSet).getOrCreateByOpenIDIdentifier(
+                openid_identifier, email_address, display_name,
+                PersonCreationRationale.SOFTWARE_CENTER_PURCHASE,
+                "when purchasing an application via Software Center.",
+                trust_email=False)
+        return person
 
     def newTeam(self, teamowner, name, displayname, teamdescription=None,
                 membership_policy=TeamMembershipPolicy.MODERATED,
