@@ -216,6 +216,8 @@ cleanable_pool_classes_by_scheme = {
 class CleanablePoolManager(PoolManager):
     """A version of urllib3's PoolManager supporting forced socket cleanup."""
 
+    # XXX cjwatson 2015-03-11: Reimplements PoolManager._new_pool; check
+    # this when upgrading requests.
     def _new_pool(self, scheme, host, port):
         if scheme not in cleanable_pool_classes_by_scheme:
             raise ValueError("Unhandled scheme: %s" % scheme)
@@ -231,6 +233,8 @@ class CleanablePoolManager(PoolManager):
 class CleanableHTTPAdapter(HTTPAdapter):
     """Enhance HTTPAdapter to use CleanablePoolManager."""
 
+    # XXX cjwatson 2015-03-11: Reimplements HTTPAdapter.init_poolmanager;
+    # check this when upgrading requests.
     def init_poolmanager(self, connections, maxsize, block=DEFAULT_POOLBLOCK):
         # save these values for pickling
         self._pool_connections = connections
