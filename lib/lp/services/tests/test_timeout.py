@@ -296,7 +296,7 @@ class TestTimeout(TestCase):
         t.join()
 
     def test_urlfetch_does_not_support_ftp_urls(self):
-        """urlfetch() does not supports ftp urls."""
+        """urlfetch() does not support ftp urls."""
         set_default_timeout_function(lambda: 1)
         self.addCleanup(set_default_timeout_function, None)
         url = 'ftp://localhost/'
