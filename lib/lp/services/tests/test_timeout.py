@@ -6,7 +6,6 @@
 
 __metaclass__ = type
 
-from cStringIO import StringIO
 from SimpleXMLRPCServer import (
     SimpleXMLRPCRequestHandler,
     SimpleXMLRPCServer,
@@ -14,13 +13,13 @@ from SimpleXMLRPCServer import (
 import socket
 from textwrap import dedent
 import threading
-import time
-import urllib2
 import xmlrpclib
 
-from zope.interface import implements
+from requests.exceptions import (
+    ConnectionError,
+    InvalidSchema,
+    )
 
-from lp.services.log.logger import FakeLogger
 from lp.services.timeout import (
     get_default_timeout_function,
     set_default_timeout_function,
@@ -30,7 +29,6 @@ from lp.services.timeout import (
     with_timeout,
     )
 from lp.testing import TestCase
-from lp.testing.layers import BaseLayer
 
 
 @with_timeout()
@@ -190,10 +188,10 @@ class TestTimeout(TestCase):
         self.assertEqual([True], using_default)
 
     def make_test_socket(self):
-        """One common use case for timing out is when making an HTTP request to
-        an external site to fetch content. To this end, the timeout module has
-        a urlfetch() function that retrieve a URL using custom urllib2 handlers
-        that will timeout using the default timeout function and clean-up the
+        """One common use case for timing out is when making an HTTP request
+        to an external site to fetch content. To this end, the timeout
+        module has a urlfetch() function that retrieves a URL in such a way
+        as to timeout using the default timeout function and clean-up the
         socket properly.
         """
         sock = socket.socket()
@@ -206,11 +204,11 @@ class TestTimeout(TestCase):
         http_server_url = 'http://%s:%d/' % sock.getsockname()
         return sock, http_server_url
 
-    def test_urlfetch_raises_urllib2_exceptions(self):
-        """Normal urllib2 exceptions are raised."""
+    def test_urlfetch_raises_requests_exceptions(self):
+        """Normal requests exceptions are raised."""
         sock, http_server_url = self.make_test_socket()
 
-        e = self.assertRaises(urllib2.URLError, urlfetch, http_server_url)
+        e = self.assertRaises(ConnectionError, urlfetch, http_server_url)
         self.assertIn('Connection refused', str(e))
 
     def test_urlfetch_timeout_after_listen(self):
@@ -280,12 +278,14 @@ class TestTimeout(TestCase):
         self.assertEqual('Success.', urlfetch(http_server_url))
         t.join()
 
-    def test_urlfetch_only_supports_http_urls(self):
-        """urlfetch() only supports http urls:"""
+    def test_urlfetch_does_not_support_ftp_urls(self):
+        """urlfetch() does not supports ftp urls."""
         set_default_timeout_function(lambda: 1)
         self.addCleanup(set_default_timeout_function, None)
-        e = self.assertRaises(AssertionError, urlfetch, 'ftp://localhost')
-        self.assertEqual('only http is supported.', str(e))
+        url = 'ftp://localhost/'
+        e = self.assertRaises(InvalidSchema, urlfetch, url)
+        self.assertEqual(
+            "No connection adapters were found for '%s'" % url, str(e))
 
     def test_xmlrpc_transport(self):
         """ Another use case for timeouts is communicating with external
