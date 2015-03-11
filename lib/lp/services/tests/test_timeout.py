@@ -32,7 +32,8 @@ from lp.testing import TestCase
 
 
 @with_timeout()
-def no_default_timeout(): pass
+def no_default_timeout():
+    pass
 
 
 class EchoOrWaitXMLRPCReqHandler(SimpleXMLRPCRequestHandler):
@@ -52,10 +53,12 @@ class EchoOrWaitXMLRPCReqHandler(SimpleXMLRPCRequestHandler):
 class MySimpleXMLRPCServer(SimpleXMLRPCServer):
     """Create a simple XMLRPC server to listen for requests."""
     allow_reuse_address = True
+
     def serve_2_requests(self):
         for i in range(2):
             self.handle_request()
         self.server_close()
+
     def handle_error(self, request, address):
         pass
 
@@ -67,11 +70,13 @@ class TestTimeout(TestCase):
         finishes before the supplied timeout, it should function normally.
         """
         wait_evt = threading.Event()
+
         @with_timeout(timeout=0.5)
         def wait_100ms():
             """Function that waits for a supplied number of seconds."""
             wait_evt.wait(0.1)
             return "Succeeded."
+
         self.assertEqual("Succeeded.", wait_100ms())
 
     def test_timeout_overrun(self):
@@ -85,11 +90,13 @@ class TestTimeout(TestCase):
         # inform us that it is about to exit.
         wait_evt = threading.Event()
         stopping_evt = threading.Event()
+
         @with_timeout(timeout=0.5)
         def wait_for_event():
             """Function that waits for a supplied number of seconds."""
             wait_evt.wait()
             stopping_evt.set()
+
         self.assertRaises(TimeoutError, wait_for_event)
         wait_evt.set()
         stopping_evt.wait()
@@ -113,6 +120,7 @@ class TestTimeout(TestCase):
         socket.setdefaulttimeout(5)
         sockets = socket.socketpair()
         closed = []
+
         def close_socket():
             closed.append(True)
             sockets[0].shutdown(socket.SHUT_RDWR)
@@ -150,16 +158,17 @@ class TestTimeout(TestCase):
         method."""
         def do_definition():
             @with_timeout(cleanup='not_a_method', timeout=0.5)
-            def a_function(): pass
+            def a_function():
+                pass
         self.assertRaises(TypeError, do_definition)
 
     def test_timeout_uses_default(self):
-        """If the timeout parameter isn't provided, it will default to the value
-        returned by the function installed as "default_timeout_function". A
-        function is used because it's useful for the timeout value to be
-        determined dynamically. For example, if you want to limit the
-        overall processing to 30s and you already did 14s, you want that timeout
-        to be 16s.
+        """If the timeout parameter isn't provided, it will default to the
+        value returned by the function installed as
+        "default_timeout_function". A function is used because it's useful
+        for the timeout value to be determined dynamically. For example, if
+        you want to limit the overall processing to 30s and you already did
+        14s, you want that timeout to be 16s.
 
         By default, there is no default_timeout_function.
         """
@@ -175,13 +184,15 @@ class TestTimeout(TestCase):
             str(e))
 
     def test_set_default_timeout(self):
-        """the set_default_timeout_function() takes a function that should return
-        the number of seconds to wait.
+        """The set_default_timeout_function() takes a function that should
+        return the number of seconds to wait.
         """
         using_default = []
+
         def my_default_timeout():
             using_default.append(True)
             return 1
+
         set_default_timeout_function(my_default_timeout)
         self.addCleanup(set_default_timeout_function, None)
         no_default_timeout()
@@ -235,6 +246,7 @@ class TestTimeout(TestCase):
         sock, http_server_url = self.make_test_socket()
         sock.listen(1)
         stop_event = threading.Event()
+
         def slow_reply():
             (client_sock, client_addr) = sock.accept()
             content = 'You are veeeeryyy patient!'
@@ -250,12 +262,15 @@ class TestTimeout(TestCase):
                 if stop_event.wait(0.05):
                     break
             client_sock.close()
+
         slow_thread = threading.Thread(target=slow_reply)
         slow_thread.start()
         saved_threads = set(threading.enumerate())
         self.assertRaises(TimeoutError, urlfetch, http_server_url)
-        # Note that the cleanup also takes care of leaving no worker thread behind.
-        remaining_threads = set(threading.enumerate()).difference(saved_threads)
+        # Note that the cleanup also takes care of leaving no worker thread
+        # behind.
+        remaining_threads = set(
+            threading.enumerate()).difference(saved_threads)
         self.assertEqual(set(), remaining_threads)
         stop_event.set()
         slow_thread.join()
@@ -264,6 +279,7 @@ class TestTimeout(TestCase):
         """When the request succeeds, the result content is returned."""
         sock, http_server_url = self.make_test_socket()
         sock.listen(1)
+
         def success_result():
             (client_sock, client_addr) = sock.accept()
             client_sock.sendall(dedent("""\
@@ -273,6 +289,7 @@ class TestTimeout(TestCase):
 
                 Success."""))
             client_sock.close()
+
         t = threading.Thread(target=success_result)
         t.start()
         self.assertEqual('Success.', urlfetch(http_server_url))
