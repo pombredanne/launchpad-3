@@ -22,8 +22,7 @@ COMMENT ON COLUMN GitRef.committer_date IS 'The committer date of the commit poi
 COMMENT ON COLUMN GitRef.commit_message IS 'The commit message of the commit pointed to by this reference.';
 
 CREATE TABLE GitJob (
-    id serial PRIMARY KEY,
-    job integer NOT NULL REFERENCES job,
+    job integer PRIMARY KEY REFERENCES job ON DELETE CASCADE UNIQUE NOT NULL,
     repository integer NOT NULL REFERENCES gitrepository,
     job_type integer NOT NULL,
     json_data text
