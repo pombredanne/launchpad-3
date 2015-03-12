@@ -24,6 +24,7 @@ from storm.locals import (
     Reference,
     Unicode,
     )
+from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
@@ -36,6 +37,7 @@ from lp.app.enums import (
 from lp.app.interfaces.informationtype import IInformationType
 from lp.app.interfaces.launchpad import IPrivacy
 from lp.app.interfaces.services import IService
+from lp.code.enums import GitObjectType
 from lp.code.errors import (
     GitDefaultConflict,
     GitFeatureDisabled,
@@ -57,6 +59,7 @@ from lp.code.interfaces.gitrepository import (
     IGitRepositorySet,
     user_has_special_git_repository_access,
     )
+from lp.code.model.gitref import GitRef
 from lp.registry.enums import PersonVisibility
 from lp.registry.errors import CannotChangeInformationType
 from lp.registry.interfaces.accesspolicy import (
@@ -78,6 +81,7 @@ from lp.registry.model.accesspolicy import (
     )
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.config import config
+from lp.services.database import bulk
 from lp.services.database.constants import (
     DEFAULT,
     UTC_NOW,
@@ -91,8 +95,19 @@ from lp.services.database.stormexpr import (
     ArrayIntersects,
     )
 from lp.services.features import getFeatureFlag
-from lp.services.propertycache import cachedproperty
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
 from lp.services.webapp.authorization import available_with_permission
+
+
+object_type_map = {
+    "commit": GitObjectType.COMMIT,
+    "tree": GitObjectType.TREE,
+    "blob": GitObjectType.BLOB,
+    "tag": GitObjectType.TAG,
+    }
 
 
 def git_repository_modified(repository, event):
@@ -243,6 +258,7 @@ class GitRepository(StormBase, GitIdentityMixin):
     def getInternalPath(self):
         """See `IGitRepository`."""
         # This may need to change later to improve support for sharding.
+        # See also `IGitLookup.getByHostingPath`.
         return str(self.id)
 
     def getCodebrowseUrl(self):
@@ -277,6 +293,53 @@ class GitRepository(StormBase, GitIdentityMixin):
                 pillars = [self.project]
         reconcile_access_for_artifact(
             self, self.information_type, pillars, wanted_links)
+
+    @cachedproperty
+    def refs(self):
+        """See `IGitRepository`."""
+        return list(Store.of(self).find(
+            GitRef, GitRef.repository_id == self.id).order_by(GitRef.path))
+
+    @staticmethod
+    def convertRefInfo(info):
+        """See `IGitRepository`."""
+        if "object" not in info:
+            raise ValueError('ref info does not contain "object" key')
+        obj = info["object"]
+        if "sha1" not in obj:
+            raise ValueError('ref info object does not contain "sha1" key')
+        if "type" not in obj:
+            raise ValueError('ref info object does not contain "type" key')
+        if not isinstance(obj["sha1"], basestring) or len(obj["sha1"]) != 40:
+            raise ValueError('ref info sha1 is not a 40-character string')
+        if obj["type"] not in object_type_map:
+            raise ValueError('ref info type is not a recognised object type')
+        sha1 = obj["sha1"]
+        if isinstance(sha1, bytes):
+            sha1 = sha1.decode("US-ASCII")
+        return {"sha1": sha1, "type": object_type_map[obj["type"]]}
+
+    def createRefs(self, refs_info):
+        """See `IGitRepository`."""
+        bulk.create(
+            (GitRef.repository, GitRef.path, GitRef.commit_sha1,
+             GitRef.object_type),
+            [(self, path, info["sha1"], info["type"])
+             for path, info in refs_info.items()])
+        del get_property_cache(self).refs
+
+    def removeRefs(self, paths):
+        """See `IGitRepository`."""
+        Store.of(self).find(
+            GitRef,
+            GitRef.repository == self, GitRef.path.is_in(paths)).remove()
+        del get_property_cache(self).refs
+
+    def updateRef(self, ref, info):
+        """See `IGitRepository`."""
+        naked_ref = removeSecurityProxy(ref)
+        naked_ref.commit_sha1 = info["sha1"]
+        naked_ref.object_type = info["type"]
 
     @cachedproperty
     def _known_viewers(self):

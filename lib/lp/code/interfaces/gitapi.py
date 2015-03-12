@@ -49,3 +49,11 @@ class IGitAPI(Interface):
                 "writable", whose value is True if the requester can push to
                 this repository, otherwise False.
         """
+
+    def notify(translated_path):
+        """Notify of a change to the repository at 'translated_path'.
+
+        :param translated_path: The translated path to the repository.  (We
+            use translated paths here in order to avoid problems with
+            repository names etc. being changed during a push.
+        """

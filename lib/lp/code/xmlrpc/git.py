@@ -38,6 +38,7 @@ from lp.code.interfaces.gitnamespace import (
     split_git_unique_name,
     )
 from lp.code.interfaces.gitrepository import IGitRepositorySet
+from lp.code.interfaces.gitjob import IGitRefScanJobSource
 from lp.code.xmlrpc.codehosting import run_with_login
 from lp.registry.errors import (
     InvalidName,
@@ -232,3 +233,10 @@ class GitAPI(LaunchpadXMLRPCView):
         return run_with_login(
             requester_id, self._translatePath,
             path.strip("/"), permission, can_authenticate)
+
+    @return_fault
+    def notify(self, translated_path):
+        """See `IGitAPI`."""
+        repository = getUtility(IGitLookup).getByHostingPath(translated_path)
+        job = getUtility(IGitRefScanJobSource).create(repository)
+        job.celeryRunOnCommit()

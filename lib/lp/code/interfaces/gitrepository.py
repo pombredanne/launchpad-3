@@ -186,6 +186,38 @@ class IGitRepositoryView(Interface):
             "'lp:' plus a shortcut version of the path via that target.  "
             "Otherwise it is simply 'lp:' plus the unique name.")))
 
+    refs = Attribute("The references present in this repository.")
+
+    def convertRefInfo(info):
+        """Validate and canonicalise ref info from the hosting service.
+
+        :param info: A dict of {"object":
+            {"sha1": sha1, "type": "commit"/"tree"/"blob"/"tag"}}.
+
+        :raises ValueError: if the dict is malformed.
+        :return: A dict of {"sha1": sha1, "type": `GitObjectType`}.
+        """
+
+    def createRefs(refs_info):
+        """Create a set of references in this repository.
+
+        :param refs_info: A dict mapping ref paths to
+            {"sha1": sha1, "type": `GitObjectType`}.
+        """
+
+    def removeRefs(paths):
+        """Remove a set of references in this repository.
+
+        :params paths: An iterable of paths.
+        """
+
+    def updateRef(ref, info):
+        """Update a single reference in this repository.
+
+        :param ref: An `IGitRef`.
+        :param info: {"sha1": sha1, "type": `GitObjectType`}
+        """
+
     def setOwnerDefault(value):
         """Set whether this repository is the default for its owner-target.
 

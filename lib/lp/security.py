@@ -84,6 +84,7 @@ from lp.code.interfaces.codereviewcomment import (
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.code.interfaces.diff import IPreviewDiff
 from lp.code.interfaces.gitcollection import IGitCollection
+from lp.code.interfaces.gitref import IGitRef
 from lp.code.interfaces.gitrepository import (
     IGitRepository,
     user_has_special_git_repository_access,
@@ -2258,6 +2259,15 @@ class ModerateGitRepository(EditGitRepository):
 class AdminGitRepository(AdminByAdminsTeam):
     """The admins can administer Git repositories."""
     usedfor = IGitRepository
+
+
+class ViewGitRef(DelegatedAuthorization):
+    """Anyone who can see a Git repository can see references within it."""
+    permission = 'launchpad.View'
+    usedfor = IGitRef
+
+    def __init__(self, obj):
+        super(ViewGitRef, self).__init__(obj, obj.repository)
 
 
 class AdminDistroSeriesTranslations(AuthorizationBase):
