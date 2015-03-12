@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test Archive features."""
@@ -3098,6 +3098,15 @@ class TestArchiveReference(TestCaseWithFactory):
             '~%s/%s/%s' % (
                 archive.owner.name, archive.distribution.name, archive.name),
             archive)
+
+    def test_ppa_alias(self):
+        # ppa:OWNER/DISTRO/ARCHIVE is accepted as a convenience to make it
+        # easier to avoid tilde-expansion in shells.
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        reference = 'ppa:%s/%s/%s' % (
+            archive.owner.name, archive.distribution.name, archive.name)
+        self.assertEqual(
+            archive, getUtility(IArchiveSet).getByReference(reference))
 
 
 class TestArchiveSetGetByReference(TestCaseWithFactory):
