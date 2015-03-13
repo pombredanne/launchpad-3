@@ -14,7 +14,7 @@ __all__ = [
     ]
 
 from datetime import datetime
-from email.Utils import make_msgid
+from email.utils import make_msgid
 import operator
 
 from lazr.enum import (

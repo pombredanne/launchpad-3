@@ -46,7 +46,7 @@ def signed_message_from_string(string):
     return msg
 
 
-class SignedMessage(email.Message.Message):
+class SignedMessage(email.message.Message):
     """Provides easy access to signed content and the signature"""
     implements(ISignedMessage)
 

@@ -8,7 +8,7 @@ __metaclass__ = type
 
 
 import email
-from email.Utils import make_msgid
+from email.utils import make_msgid
 from logging import getLogger
 
 from zope.component import getUtility
