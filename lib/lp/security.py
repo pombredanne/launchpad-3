@@ -2071,6 +2071,14 @@ class EditFAQ(AuthorizationBase):
         return AppendFAQTarget(self.obj.target).checkAuthenticated(user)
 
 
+class DeleteFAQ(AuthorizationBase):
+    permission = 'launchpad.Delete'
+    usedfor = IFAQ
+
+    def checkAuthenticated(self, user):
+        return user.in_registry_experts or user.in_admin
+
+
 def can_edit_team(team, user):
     """Return True if the given user has edit rights for the given team."""
     if user.in_admin:

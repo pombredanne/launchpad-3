@@ -10,8 +10,11 @@ from testtools.matchers import (
     Equals,
     MatchesRegex,
     )
+from zope.component import getUtility
 from zope.event import notify
 
+from lp.registry.interfaces.person import IPersonSet
+from lp.services.webapp.interfaces import OAuthPermission
 from lp.testing import (
     admin_logged_in,
     api_url,
@@ -50,3 +53,16 @@ class TestFAQWebService(TestCaseWithFactory):
                     "target_link": Contains(
                         "/devel/%s" % faq.target.name),
                     }))
+
+    def test_delete(self):
+        with admin_logged_in():
+            faq = self.factory.makeFAQ()
+            faq_url = api_url(faq)
+            expert = self.factory.makePerson(
+                member_of=[getUtility(IPersonSet).getByName('registry')])
+        webservice = webservice_for_person(
+            expert, permission=OAuthPermission.WRITE_PRIVATE)
+        response = webservice.delete(faq_url, api_version='devel')
+        self.assertEqual(200, response.status)
+        response = webservice.get(faq_url, api_version='devel')
+        self.assertEqual(404, response.status)
