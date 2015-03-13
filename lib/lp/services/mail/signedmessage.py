@@ -12,6 +12,7 @@ __all__ = [
     ]
 
 import email
+from email.message import Message
 import re
 
 from zope.interface import implements
@@ -46,7 +47,7 @@ def signed_message_from_string(string):
     return msg
 
 
-class SignedMessage(email.message.Message):
+class SignedMessage(Message):
     """Provides easy access to signed content and the signature"""
     implements(ISignedMessage)
 
