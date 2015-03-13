@@ -188,6 +188,14 @@ class IGitRepositoryView(Interface):
 
     refs = Attribute("The references present in this repository.")
 
+    def getRefByPath(path):
+        """Look up a single reference in this repository by path.
+
+        :param path: A string to look up as a path.
+
+        :return: An `IGitRef`, or None.
+        """
+
     def convertRefInfo(info):
         """Validate and canonicalise ref info from the hosting service.
 
@@ -198,11 +206,15 @@ class IGitRepositoryView(Interface):
         :return: A dict of {"sha1": sha1, "type": `GitObjectType`}.
         """
 
-    def createRefs(refs_info):
+    def createRefs(refs_info, get_objects=False):
         """Create a set of references in this repository.
 
         :param refs_info: A dict mapping ref paths to
             {"sha1": sha1, "type": `GitObjectType`}.
+        :param get_objects: Return the created references.
+
+        :return: A list of the created references if get_objects, otherwise
+            None.
         """
 
     def removeRefs(paths):

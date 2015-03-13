@@ -108,6 +108,7 @@ from lp.code.enums import (
     CodeImportResultStatus,
     CodeImportReviewStatus,
     CodeReviewNotificationLevel,
+    GitObjectType,
     RevisionControlSystems,
     )
 from lp.code.errors import UnknownBranchTypeError
@@ -1699,6 +1700,20 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             naked_repository.transitionToInformationType(
                 information_type, registrant, verify_policy=False)
         return repository
+
+    def makeGitRefs(self, repository=None, paths=None):
+        """Create and return a list of new, arbitrary GitRefs."""
+        if repository is None:
+            repository = self.makeGitRepository()
+        if paths is None:
+            paths = [self.getUniqueString('refs/heads/path').decode('utf-8')]
+        refs_info = dict(
+            (path, {
+                "sha1": unicode(hashlib.sha1(path).hexdigest()),
+                "type": GitObjectType.COMMIT,
+                })
+            for path in paths)
+        return repository.createRefs(refs_info, get_objects=True)
 
     def makeBug(self, target=None, owner=None, bug_watch_url=None,
                 information_type=None, date_closed=None, title=None,

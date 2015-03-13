@@ -468,15 +468,6 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
             ValueError, 'ref info type is not a recognised object type',
             GitRepository.convertRefInfo, info)
 
-    @staticmethod
-    def makeFakeRefs(paths):
-        return dict(
-            (path, {
-                "sha1": unicode(hashlib.sha1(path).hexdigest()),
-                "type": GitObjectType.COMMIT,
-                })
-            for path in paths)
-
     def assertRefsMatch(self, refs, repository, paths):
         matchers = [
             MatchesStructure.byEquality(
@@ -491,13 +482,13 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
         repository = self.factory.makeGitRepository()
         self.assertEqual([], repository.refs)
         paths = (u"refs/heads/master", u"refs/tags/1.0")
-        repository.createRefs(self.makeFakeRefs(paths))
+        self.factory.makeGitRefs(repository=repository, paths=paths)
         self.assertRefsMatch(repository.refs, repository, paths)
 
     def test_removeRefs(self):
         repository = self.factory.makeGitRepository()
         paths = (u"refs/heads/master", u"refs/heads/branch", u"refs/tags/1.0")
-        repository.createRefs(self.makeFakeRefs(paths))
+        self.factory.makeGitRefs(repository=repository, paths=paths)
         self.assertRefsMatch(repository.refs, repository, paths)
         repository.removeRefs([u"refs/heads/branch", u"refs/tags/1.0"])
         self.assertRefsMatch(
@@ -506,10 +497,10 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
     def test_updateRef(self):
         repository = self.factory.makeGitRepository()
         paths = (u"refs/heads/master", u"refs/tags/1.0")
-        repository.createRefs(self.makeFakeRefs(paths))
+        self.factory.makeGitRefs(repository=repository, paths=paths)
         self.assertRefsMatch(repository.refs, repository, paths)
-        [tag_ref] = [
-            ref for ref in repository.refs if ref.path == u"refs/tags/1.0"]
+        tag_ref = repository.getRefByPath(u"refs/tags/1.0")
+        self.assertIsNotNone(tag_ref)
         new_info = {
             "sha1": u"0000000000000000000000000000000000000000",
             "type": GitObjectType.BLOB,

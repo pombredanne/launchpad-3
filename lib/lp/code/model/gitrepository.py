@@ -300,6 +300,12 @@ class GitRepository(StormBase, GitIdentityMixin):
         return list(Store.of(self).find(
             GitRef, GitRef.repository_id == self.id).order_by(GitRef.path))
 
+    def getRefByPath(self, path):
+        return Store.of(self).find(
+            GitRef,
+            GitRef.repository_id == self.id,
+            GitRef.path == path).one()
+
     @staticmethod
     def convertRefInfo(info):
         """See `IGitRepository`."""
@@ -319,14 +325,16 @@ class GitRepository(StormBase, GitIdentityMixin):
             sha1 = sha1.decode("US-ASCII")
         return {"sha1": sha1, "type": object_type_map[obj["type"]]}
 
-    def createRefs(self, refs_info):
+    def createRefs(self, refs_info, get_objects=False):
         """See `IGitRepository`."""
-        bulk.create(
+        refs = bulk.create(
             (GitRef.repository, GitRef.path, GitRef.commit_sha1,
              GitRef.object_type),
             [(self, path, info["sha1"], info["type"])
-             for path, info in refs_info.items()])
+             for path, info in refs_info.items()],
+            get_objects=get_objects)
         del get_property_cache(self).refs
+        return refs
 
     def removeRefs(self, paths):
         """See `IGitRepository`."""
