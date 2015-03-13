@@ -729,6 +729,13 @@
       />
 
   <adapter
+      for="lp.code.interfaces.gitrepository.IGitRepository"
+      provides="zope.traversing.interfaces.IPathAdapter"
+      factory="lp.app.browser.tales.GitRepositoryFormatterAPI"
+      name="fmt"
+      />
+
+  <adapter
       for="lp.bugs.interfaces.bugbranch.IBugBranch"
       provides="zope.traversing.interfaces.IPathAdapter"
       factory="lp.app.browser.tales.BugBranchFormatterAPI"
