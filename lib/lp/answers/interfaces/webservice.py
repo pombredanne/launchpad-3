@@ -19,6 +19,7 @@ from lazr.restful.declarations import LAZR_WEBSERVICE_EXPORTED
 
 from lp.answers.interfaces.question import IQuestion
 from lp.answers.interfaces.questioncollection import (
+    IQuestionCollection,
     IQuestionSet,
     ISearchableByQuestionOwner,
     )
@@ -38,6 +39,8 @@ IQuestionSet.queryTaggedValue(
 patch_entry_return_type(IQuestionSet, 'get', IQuestion)
 patch_collection_return_type(
     IQuestionTarget, 'findSimilarQuestions', IQuestion)
+patch_collection_return_type(
+    IQuestionCollection, 'searchQuestions', IQuestion)
 patch_collection_return_type(
     ISearchableByQuestionOwner, 'searchQuestions', IQuestion)
 patch_reference_property(IQuestionMessage, 'question', IQuestion)

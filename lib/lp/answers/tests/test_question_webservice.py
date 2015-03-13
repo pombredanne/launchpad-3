@@ -8,6 +8,7 @@ __metaclass__ = type
 from BeautifulSoup import BeautifulSoup
 from lazr.restfulclient.errors import HTTPError
 from simplejson import dumps
+from testtools.matchers import Equals
 import transaction
 from zope.security.proxy import removeSecurityProxy
 
@@ -21,10 +22,12 @@ from lp.answers.errors import (
     QuestionTargetError,
     )
 from lp.testing import (
+    admin_logged_in,
     celebrity_logged_in,
     launchpadlib_for,
     logout,
     person_logged_in,
+    record_two_runs,
     TestCase,
     TestCaseWithFactory,
     ws_object,
@@ -34,7 +37,11 @@ from lp.testing.layers import (
     DatabaseFunctionalLayer,
     FunctionalLayer,
     )
-from lp.testing.pages import LaunchpadWebServiceCaller
+from lp.testing.matchers import HasQueryCount
+from lp.testing.pages import (
+    LaunchpadWebServiceCaller,
+    webservice_for_person,
+    )
 from lp.testing.views import create_webservice_error_view
 
 
@@ -243,3 +250,37 @@ class TestQuestionWebServiceSubscription(TestCaseWithFactory):
 
         # Check the results.
         self.assertFalse(db_question.isSubscribed(db_person))
+
+
+class TestQuestionSetWebService(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_searchQuestions(self):
+        created = [self.factory.makeQuestion(title="foo") for i in range(10)]
+        webservice = webservice_for_person(self.factory.makePerson())
+        collection = webservice.named_get(
+            '/questions', 'searchQuestions', search_text='foo',
+            sort='oldest first', api_version='devel').jsonBody()
+        # The first few matching questions are returned.
+        self.assertEqual(
+            [q.id for q in created[:5]],
+            [int(q['self_link'].rsplit('/', 1)[-1])
+             for q in collection['entries']])
+
+    def test_searchQuestions_query_count(self):
+        webservice = webservice_for_person(self.factory.makePerson())
+
+        def create_question():
+            with admin_logged_in():
+                self.factory.makeQuestion(title="foobar")
+
+        def search_questions():
+            webservice.named_get(
+                '/questions', 'searchQuestions', search_text='foobar',
+                api_version='devel').jsonBody()
+
+        search_questions()
+        recorder1, recorder2 = record_two_runs(
+            search_questions, create_question, 2)
+        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
