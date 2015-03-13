@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'GitRepositoryBreadcrumb',
     'GitRepositoryContextMenu',
+    'GitRepositoryNavigation',
     'GitRepositoryURL',
     'GitRepositoryView',
     ]
@@ -16,12 +17,15 @@ from bzrlib import urlutils
 from zope.interface import implements
 
 from lp.app.browser.informationtype import InformationTypePortletMixin
+from lp.app.errors import NotFoundError
 from lp.code.interfaces.gitrepository import IGitRepository
 from lp.services.config import config
 from lp.services.webapp import (
     ContextMenu,
     LaunchpadView,
     Link,
+    Navigation,
+    stepto,
     )
 from lp.services.webapp.authorization import (
     check_permission,
@@ -52,6 +56,24 @@ class GitRepositoryBreadcrumb(NameBreadcrumb):
     @property
     def inside(self):
         return self.context.unique_name.split("/")[-1]
+
+
+class GitRepositoryNavigation(Navigation):
+
+    usedfor = IGitRepository
+
+    @stepto("+ref")
+    def traverse_ref(self):
+        segments = list(self.request.getTraversalStack())
+        ref_segments = []
+        while segments:
+            ref_segments.append(segments.pop())
+            ref = self.context.getRefByPath("/".join(ref_segments))
+            if ref is not None:
+                for _ in range(len(ref_segments)):
+                    self.request.stepstogo.consume()
+                return ref
+        raise NotFoundError
 
 
 class GitRepositoryContextMenu(ContextMenu):
