@@ -10,11 +10,15 @@ __all__ = [
     'IFAQSet',
     ]
 
+from lazr.restful.declarations import (
+    export_as_webservice_entry,
+    exported,
+    )
+from lazr.restful.fields import Reference
 from zope.interface import Attribute
 from zope.schema import (
     Datetime,
     Int,
-    Object,
     Text,
     TextLine,
     )
@@ -36,42 +40,46 @@ class IFAQ(IHasOwner):
     web site and referred to by URL.
     """
 
-    id = Int(
+    export_as_webservice_entry('faq', as_of='beta')
+
+    id = exported(Int(
         title=_('FAQ Number'),
         description=_('The unique number identifying the FAQ in Launchpad.'),
-        required=True, readonly=True)
+        required=True, readonly=True))
 
-    title = Title(
+    title = exported(Title(
         title=_('Title'),
         description=_('The title describing this FAQ, often a question.'),
-        required=True)
+        required=True))
 
-    keywords = TextLine(
+    keywords = exported(TextLine(
         title=_('Keywords'),
         description=_('One or more terms that relate to this FAQ.'),
-        required=False)
+        required=False))
 
-    content = Text(
+    content = exported(Text(
         title=_('Content'),
         description=_(
             'The answer for this FAQ in plain text. You may choose to '
             'include a URL to an external FAQ.'),
-        required=True)
+        required=True))
 
-    date_created = Datetime(title=_('Created'), required=True, readonly=True)
+    date_created = exported(Datetime(
+        title=_('Created'), required=True, readonly=True))
 
-    last_updated_by = PublicPersonChoice(
+    last_updated_by = exported(PublicPersonChoice(
         title=_('Last Updated By'),
         description=_('The last person who modified the document.'),
-        vocabulary='ValidPersonOrTeam', required=False)
+        vocabulary='ValidPersonOrTeam', required=False, readonly=True))
 
-    date_last_updated = Datetime(title=_('Last Updated'), required=False)
+    date_last_updated = exported(Datetime(
+        title=_('Last Updated'), required=False, readonly=True))
 
-    target = Object(
+    target = exported(Reference(
         title=_('Target'),
         description=_('Product or distribution containing this FAQ.'),
         schema=IFAQTarget,
-        required=True)
+        required=True, readonly=True))
 
     related_questions = Attribute(
         _('The set of questions linked to this FAQ.'))

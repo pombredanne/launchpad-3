@@ -10,11 +10,15 @@ __all__ = [
     ]
 
 
+from lazr.restful.declarations import export_as_webservice_entry
+
 from lp.answers.interfaces.faqcollection import IFAQCollection
 
 
 class IFAQTarget(IFAQCollection):
     """An object that can contain a FAQ document."""
+
+    export_as_webservice_entry('faq_target', as_of='beta')
 
     def newFAQ(owner, title, content, keywords=None, date_created=None):
         """Create a new FAQ hosted in this target.
