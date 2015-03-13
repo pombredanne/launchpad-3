@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database class for table Archive."""
@@ -2229,11 +2229,16 @@ class ArchiveSet:
         bits = reference.split(u'/')
         if len(bits) < 1:
             return None
-        if bits[0].startswith(u'~'):
-            # PPA reference (~OWNER/DISTRO/ARCHIVE)
+        if bits[0].startswith(u'~') or bits[0].startswith(u'ppa:'):
+            # PPA reference (~OWNER/DISTRO/ARCHIVE or ppa:OWNER/DISTRO/ARCHIVE)
             if len(bits) != 3:
                 return None
-            person = getUtility(IPersonSet).getByName(bits[0][1:])
+            if bits[0].startswith(u'~'):
+                first_bit = bits[0][1:]
+            else:
+                # ppa:OWNER
+                first_bit = bits[0][4:]
+            person = getUtility(IPersonSet).getByName(first_bit)
             if person is None:
                 return None
             distro = getUtility(IDistributionSet).getByName(bits[1])
