@@ -145,7 +145,7 @@ class IMessageSet(Interface):
             a UnknownSender error if they cannot be found.
         :param filealias: The `LibraryFileAlias` of the raw email if it has
             already been uploaded to the Librarian.
-        :param parsed_message: An email.Message.Message instance. If given,
+        :param parsed_message: An email.message.Message instance. If given,
             it is used internally instead of building one from the raw
             email_message. This is purely an optimization step, significant
             in many places because the emails we are handling may contain huge
@@ -283,7 +283,7 @@ class IDirectEmailAuthorization(Interface):
         """Record that the message was sent.
 
         :param message: The email message that was sent.
-        :type message: `email.Message.Message`
+        :type message: `email.message.Message`
         """
 
 

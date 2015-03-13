@@ -7,7 +7,7 @@ __all__ = [
     'SpecificationMessageSet'
     ]
 
-from email.Utils import make_msgid
+from email.utils import make_msgid
 
 from sqlobject import (
     BoolCol,

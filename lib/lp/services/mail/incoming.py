@@ -412,11 +412,11 @@ def handleMail(trans=transaction, signature_timestamp_checker=None):
                 continue
             try:
                 mail = signed_message_from_string(raw_mail)
-            except email.Errors.MessageError:
+            except email.errors.MessageError:
                 # If we can't parse the message, we can't send a reply back to
                 # the user, but logging an exception will let us investigate.
                 log.exception(
-                    "Couldn't convert email to email.Message: %s" % (
+                    "Couldn't convert email to email.message: %s" % (
                     file_alias_url, ))
                 mailbox.delete(mail_id)
                 continue

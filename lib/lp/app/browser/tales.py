@@ -10,7 +10,7 @@ from datetime import (
     datetime,
     timedelta,
     )
-from email.Utils import formatdate
+from email.utils import formatdate
 import math
 import os.path
 import rfc822
