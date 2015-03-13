@@ -27,7 +27,6 @@ def text_lines_to_set(text):
 valid_imports_not_in_all = {
     'bzrlib.lsprof': set(['BzrProfiler']),
     'cookielib': set(['domain_match']),
-    'email.Utils': set(['mktime_tz']),
     'openid.fetchers': set(['Urllib2Fetcher']),
     'storm.database': set(['STATE_DISCONNECTED']),
     'textwrap': set(['dedent']),

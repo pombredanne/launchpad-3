@@ -31,7 +31,7 @@ __all__ = [
 
 
 from collections import defaultdict
-import email.Header
+import email.header
 import os
 import re
 import signal
@@ -189,10 +189,10 @@ def rfc2047_encode(s):
     try:
         s.decode('utf8')
         #encodings.utf_8.Codec().decode(s)
-        h = email.Header.Header(s, 'utf-8', 998)
+        h = email.header.Header(s, 'utf-8', 998)
         return str(h)
     except UnicodeError:
-        h = email.Header.Header(s, 'iso-8859-1', 998)
+        h = email.header.Header(s, 'iso-8859-1', 998)
         return str(h)
 
 

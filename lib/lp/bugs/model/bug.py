@@ -20,7 +20,7 @@ __all__ = [
 
 
 from cStringIO import StringIO
-from email.Utils import make_msgid
+from email.utils import make_msgid
 from functools import wraps
 from itertools import chain
 import operator

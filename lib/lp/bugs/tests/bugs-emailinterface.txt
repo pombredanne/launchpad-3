@@ -52,10 +52,10 @@ to sign each email, we'll create a class which fakes a signed email:
 
     >>> from lp.testing import sampledata
 
-    >>> import email.Message
-    >>> class MockSignedMessage(email.Message.Message):
+    >>> import email.message
+    >>> class MockSignedMessage(email.message.Message):
     ...     def __init__(self, *args, **kws):
-    ...         email.Message.Message.__init__(self, *args, **kws)
+    ...         email.message.Message.__init__(self, *args, **kws)
     ...         self.signature = 'fake'
     ...     @property
     ...     def signedMessage(self):
@@ -449,7 +449,7 @@ wrong.
 
 The same will happen if we send the same email without signing it:
 
-    >>> class MockUnsignedMessage(email.Message.Message):
+    >>> class MockUnsignedMessage(email.message.Message):
     ...     signedMessage = None
     ...     signature = None
     >>> msg = email.message_from_string(
@@ -1803,8 +1803,8 @@ signing the mail:
 
     >>> from lp.services.mail.signedmessage import signed_message_from_string
     >>> msg = signed_message_from_string(submit_mail)
-    >>> import email.Utils
-    >>> msg['Message-Id'] = email.Utils.make_msgid()
+    >>> import email.utils
+    >>> msg['Message-Id'] = email.utils.make_msgid()
     >>> handler.process(
     ...     msg, msg['To'],
     ...     )

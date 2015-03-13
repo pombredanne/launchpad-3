@@ -15,7 +15,7 @@ __all__ = [
 
 import codecs
 import datetime
-from email.Utils import parseaddr
+from email.utils import parseaddr
 import logging
 import re
 

@@ -49,7 +49,7 @@ class ISignedMessage(Interface):
         """Returns the message header with the given name."""
 
     signedMessage = Attribute("The part that was signed, represented "
-                              "as an email.Message.")
+                              "as an email.message.Message.")
 
     signedContent = ASCII(title=_("Signed Content"),
                           description=_("The text that was signed."))

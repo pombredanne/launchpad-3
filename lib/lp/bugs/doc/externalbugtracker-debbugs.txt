@@ -526,11 +526,11 @@ default to using the Date header again.
     (at 220301) by example.com; 30 May 2008 21:18:12 +0000
 
 DebBugs has a method, _getDateForComment(), which returns the correct
-date for a given email.Message.Message instance. This can be
+date for a given email.message.Message instance. This can be
 demonstrated by instantiating Message with some test data and passing
 the instance to _getDateForComment()
 
-    >>> test_message = email.Message.Message()
+    >>> test_message = email.message.Message()
 
 If the message has no Date or useful Received headers,
 _getDateForComment() will return None.
