@@ -234,7 +234,6 @@ class GitAPI(LaunchpadXMLRPCView):
             requester_id, self._translatePath,
             path.strip("/"), permission, can_authenticate)
 
-    @return_fault
     def notify(self, translated_path):
         """See `IGitAPI`."""
         repository = getUtility(IGitLookup).getByHostingPath(translated_path)
