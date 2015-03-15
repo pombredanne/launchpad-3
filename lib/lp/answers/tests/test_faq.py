@@ -86,9 +86,8 @@ class TestFAQPermissions(TestCaseWithFactory):
         # Answer contacts are broad, and deletion is irreversible, so
         # they cannot do it themselves.
         direct_answer_contact = self.factory.makePerson()
-        login_person(direct_answer_contact)
-        self.addAnswerContact(direct_answer_contact)
         with person_logged_in(direct_answer_contact):
+            self.addAnswerContact(direct_answer_contact)
             self.assertFalse(check_permission('launchpad.Delete', self.faq))
 
     def test_registry_can_delete(self):
