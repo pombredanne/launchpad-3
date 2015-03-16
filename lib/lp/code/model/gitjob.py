@@ -136,6 +136,7 @@ class GitJobDerived(BaseRunnableJob):
         oops_vars.extend([
             ('git_job_id', self.context.job.id),
             ('git_job_type', self.context.job_type.title),
+            ('git_repository_id', self.context.repository.id),
             ('git_repository_name', self.context.repository.unique_name)])
         return oops_vars
 
