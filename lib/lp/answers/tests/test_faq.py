@@ -82,6 +82,13 @@ class TestFAQPermissions(TestCaseWithFactory):
         login_person(nonparticipant)
         self.assertCannotEdit(nonparticipant, self.faq)
 
+    def test_registry_can_edit(self):
+        # A member of ~registry can edit any FAQ.
+        expert = self.factory.makePerson(
+            member_of=[getUtility(IPersonSet).getByName('registry')])
+        login_person(expert)
+        self.assertCanEdit(expert, self.faq)
+
     def test_direct_answer_contact_cannot_delete(self):
         # Answer contacts are broad, and deletion is irreversible, so
         # they cannot do it themselves.

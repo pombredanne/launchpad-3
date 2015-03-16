@@ -2045,7 +2045,8 @@ class AppendFAQTarget(EditByOwnersOrAdmins):
 
     def checkAuthenticated(self, user):
         """Allow people with launchpad.Edit or an answer contact."""
-        if EditByOwnersOrAdmins.checkAuthenticated(self, user):
+        if (EditByOwnersOrAdmins.checkAuthenticated(self, user)
+                or user.in_registry_experts):
             return True
         if IQuestionTarget.providedBy(self.obj):
             # Adapt QuestionTargets to FAQTargets to ensure the correct
