@@ -71,7 +71,9 @@ or one of its answer contacts is authorized to create a new FAQ.
 The returned object provides the IFAQ interface:
 
     >>> from lp.answers.interfaces.faq import IFAQ
-    >>> verifyObject(IFAQ, faq)
+    >>> from lp.testing import admin_logged_in
+    >>> with admin_logged_in():
+    ...     verifyObject(IFAQ, faq)
     True
 
 The newFAQ() requires an owner, title, and content parameter. It also
