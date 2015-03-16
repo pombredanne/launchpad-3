@@ -8,14 +8,23 @@ __all__ = [
     'GitRepositorySet',
     ]
 
+from itertools import chain
+
 from bzrlib import urlutils
 import pytz
+from storm.databases.postgres import Returning
 from storm.expr import (
+    And,
     Coalesce,
+    Insert,
     Join,
     Or,
     Select,
     SQL,
+    )
+from storm.info import (
+    ClassAlias,
+    get_cls_info,
     )
 from storm.locals import (
     Bool,
@@ -93,6 +102,8 @@ from lp.services.database.stormexpr import (
     Array,
     ArrayAgg,
     ArrayIntersects,
+    BulkUpdate,
+    Values,
     )
 from lp.services.features import getFeatureFlag
 from lp.services.propertycache import (
@@ -332,16 +343,64 @@ class GitRepository(StormBase, GitIdentityMixin):
             sha1 = sha1.decode("US-ASCII")
         return {"sha1": sha1, "type": object_type_map[obj["type"]]}
 
-    def createRefs(self, refs_info, get_objects=False):
+    def createOrUpdateRefs(self, refs_info, get_objects=False):
         """See `IGitRepository`."""
-        refs = bulk.create(
-            (GitRef.repository, GitRef.path, GitRef.commit_sha1,
-             GitRef.object_type),
-            [(self, path, info["sha1"], info["type"])
-             for path, info in refs_info.items()],
-            get_objects=get_objects)
+        def dbify_values(values):
+            return [
+                list(chain.from_iterable(
+                    bulk.dbify_value(col, val)
+                    for col, val in zip(columns, value)))
+                for value in values]
+
+        # Flush everything up to here, as we may need to invalidate the
+        # cache after updating.
+        store = Store.of(self)
+        store.flush()
+
+        # Try a bulk update first.
+        column_names = ["repository_id", "path", "commit_sha1", "object_type"]
+        column_types = [
+            ("repository", "integer"),
+            ("path", "text"),
+            ("commit_sha1", "character(40)"),
+            ("object_type", "integer"),
+            ]
+        columns = [getattr(GitRef, name) for name in column_names]
+        values = [
+            (self.id, path, info["sha1"], info["type"])
+            for path, info in refs_info.items()]
+        db_values = dbify_values(values)
+        new_refs_expr = Values("new_refs", column_types, db_values)
+        new_refs = ClassAlias(GitRef, "new_refs")
+        updated_columns = dict([
+            (getattr(GitRef, name), getattr(new_refs, name))
+            for name in column_names if name not in ("repository_id", "path")])
+        update_filter = And(
+            GitRef.repository_id == new_refs.repository_id,
+            GitRef.path == new_refs.path)
+        primary_key = get_cls_info(GitRef).primary_key
+        updated = list(store.execute(Returning(BulkUpdate(
+            updated_columns, table=GitRef, values=new_refs_expr,
+            where=update_filter, primary_columns=primary_key))))
+        if updated:
+            # Some existing GitRef objects may no longer be valid.  Without
+            # knowing which ones we already have, it's safest to just
+            # invalidate everything.
+            store.invalidate()
+
+        # If there are any remaining items, create them.
+        create_db_values = dbify_values([
+            value for value in values if (value[0], value[1]) not in updated])
+        if create_db_values:
+            created = list(store.execute(Returning(Insert(
+                columns, values=create_db_values,
+                primary_columns=primary_key))))
+        else:
+            created = []
+
         del get_property_cache(self).refs
-        return refs
+        if get_objects:
+            return bulk.load(GitRef, updated + created)
 
     def removeRefs(self, paths):
         """See `IGitRepository`."""
@@ -349,12 +408,6 @@ class GitRepository(StormBase, GitIdentityMixin):
             GitRef,
             GitRef.repository == self, GitRef.path.is_in(paths)).remove()
         del get_property_cache(self).refs
-
-    def updateRef(self, ref, info):
-        """See `IGitRepository`."""
-        naked_ref = removeSecurityProxy(ref)
-        naked_ref.commit_sha1 = info["sha1"]
-        naked_ref.object_type = info["type"]
 
     def synchroniseRefs(self, hosting_refs):
         """See `IGitRepository`."""
@@ -365,17 +418,15 @@ class GitRepository(StormBase, GitIdentityMixin):
             except ValueError:
                 pass
         current_refs = dict((ref.path, ref) for ref in self.refs)
-        refs_to_insert = dict(
-            (path, info) for path, info in new_refs.items()
-            if path not in current_refs)
-        self.createRefs(refs_to_insert)
+        refs_to_upsert = {}
+        for path, info in new_refs.items():
+            current_ref = current_refs.get(path)
+            if (current_ref is None or
+                info["sha1"] != current_ref.commit_sha1 or
+                info["type"] != current_ref.object_type):
+                refs_to_upsert[path] = info
+        self.createOrUpdateRefs(refs_to_upsert)
         self.removeRefs(set(current_refs) - set(new_refs))
-        for path in set(new_refs) & set(current_refs):
-            new_ref = new_refs[path]
-            current_ref = current_refs[path]
-            if (new_ref["sha1"] != current_ref.commit_sha1 or
-                new_ref["type"] != current_ref.object_type):
-                self.updateRef(current_ref, new_ref)
 
     @cachedproperty
     def _known_viewers(self):

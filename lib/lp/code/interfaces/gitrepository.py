@@ -196,28 +196,21 @@ class IGitRepositoryView(Interface):
         :return: An `IGitRef`, or None.
         """
 
-    def createRefs(refs_info, get_objects=False):
-        """Create a set of references in this repository.
+    def createOrUpdateRefs(refs_info, get_objects=False):
+        """Create or update a set of references in this repository.
 
         :param refs_info: A dict mapping ref paths to
             {"sha1": sha1, "type": `GitObjectType`}.
-        :param get_objects: Return the created references.
+        :param get_objects: Return the created/updated references.
 
-        :return: A list of the created references if get_objects, otherwise
-            None.
+        :return: A list of the created/updated references if get_objects,
+            otherwise None.
         """
 
     def removeRefs(paths):
         """Remove a set of references in this repository.
 
         :params paths: An iterable of paths.
-        """
-
-    def updateRef(ref, info):
-        """Update a single reference in this repository.
-
-        :param ref: An `IGitRef`.
-        :param info: {"sha1": sha1, "type": `GitObjectType`}
         """
 
     def synchroniseRefs(hosting_refs):

@@ -1709,11 +1709,11 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             paths = [self.getUniqueString('refs/heads/path').decode('utf-8')]
         refs_info = dict(
             (path, {
-                "sha1": unicode(hashlib.sha1(path).hexdigest()),
-                "type": GitObjectType.COMMIT,
+                u"sha1": unicode(hashlib.sha1(path).hexdigest()),
+                u"type": GitObjectType.COMMIT,
                 })
             for path in paths)
-        return repository.createRefs(refs_info, get_objects=True)
+        return repository.createOrUpdateRefs(refs_info, get_objects=True)
 
     def makeBug(self, target=None, owner=None, bug_watch_url=None,
                 information_type=None, date_closed=None, title=None,

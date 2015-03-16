@@ -484,6 +484,25 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
         paths = (u"refs/heads/master", u"refs/tags/1.0")
         self.factory.makeGitRefs(repository=repository, paths=paths)
         self.assertRefsMatch(repository.refs, repository, paths)
+        master_ref = repository.getRefByPath(u"refs/heads/master")
+        new_refs_info = {
+            u"refs/tags/1.1": {
+                u"sha1": master_ref.commit_sha1,
+                u"type": master_ref.object_type,
+                },
+            }
+        repository.createOrUpdateRefs(new_refs_info)
+        self.assertRefsMatch(
+            [ref for ref in repository.refs if ref.path != u"refs/tags/1.1"],
+            repository, paths)
+        self.assertThat(
+            repository.getRefByPath(u"refs/tags/1.1"),
+            MatchesStructure.byEquality(
+                repository=repository,
+                path=u"refs/tags/1.1",
+                commit_sha1=master_ref.commit_sha1,
+                object_type=master_ref.object_type,
+                ))
 
     def test_removeRefs(self):
         repository = self.factory.makeGitRepository()
@@ -499,18 +518,17 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
         paths = (u"refs/heads/master", u"refs/tags/1.0")
         self.factory.makeGitRefs(repository=repository, paths=paths)
         self.assertRefsMatch(repository.refs, repository, paths)
-        tag_ref = repository.getRefByPath(u"refs/tags/1.0")
-        self.assertIsNotNone(tag_ref)
         new_info = {
-            "sha1": u"0000000000000000000000000000000000000000",
-            "type": GitObjectType.BLOB,
+            u"sha1": u"0000000000000000000000000000000000000000",
+            u"type": GitObjectType.BLOB,
             }
-        repository.updateRef(tag_ref, new_info)
+        repository.createOrUpdateRefs({u"refs/tags/1.0": new_info})
         self.assertRefsMatch(
             [ref for ref in repository.refs if ref.path != u"refs/tags/1.0"],
             repository, [u"refs/heads/master"])
         self.assertThat(
-            tag_ref, MatchesStructure.byEquality(
+            repository.getRefByPath(u"refs/tags/1.0"),
+            MatchesStructure.byEquality(
                 repository=repository,
                 path=u"refs/tags/1.0",
                 commit_sha1=u"0000000000000000000000000000000000000000",
