@@ -196,16 +196,6 @@ class IGitRepositoryView(Interface):
         :return: An `IGitRef`, or None.
         """
 
-    def convertRefInfo(info):
-        """Validate and canonicalise ref info from the hosting service.
-
-        :param info: A dict of {"object":
-            {"sha1": sha1, "type": "commit"/"tree"/"blob"/"tag"}}.
-
-        :raises ValueError: if the dict is malformed.
-        :return: A dict of {"sha1": sha1, "type": `GitObjectType`}.
-        """
-
     def createRefs(refs_info, get_objects=False):
         """Create a set of references in this repository.
 
@@ -228,6 +218,13 @@ class IGitRepositoryView(Interface):
 
         :param ref: An `IGitRef`.
         :param info: {"sha1": sha1, "type": `GitObjectType`}
+        """
+
+    def synchroniseRefs(hosting_refs):
+        """Synchronise references with those from the hosting service.
+
+        :param hosting_refs: A dictionary of reference information returned
+            from the hosting service's `/repo/PATH/refs` collection.
         """
 
     def setOwnerDefault(value):

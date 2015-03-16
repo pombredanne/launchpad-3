@@ -307,8 +307,15 @@ class GitRepository(StormBase, GitIdentityMixin):
             GitRef.path == path).one()
 
     @staticmethod
-    def convertRefInfo(info):
-        """See `IGitRepository`."""
+    def _convertRefInfo(info):
+        """Validate and canonicalise ref info from the hosting service.
+
+        :param info: A dict of {"object":
+            {"sha1": sha1, "type": "commit"/"tree"/"blob"/"tag"}}.
+
+        :raises ValueError: if the dict is malformed.
+        :return: A dict of {"sha1": sha1, "type": `GitObjectType`}.
+        """
         if "object" not in info:
             raise ValueError('ref info does not contain "object" key')
         obj = info["object"]
@@ -348,6 +355,27 @@ class GitRepository(StormBase, GitIdentityMixin):
         naked_ref = removeSecurityProxy(ref)
         naked_ref.commit_sha1 = info["sha1"]
         naked_ref.object_type = info["type"]
+
+    def synchroniseRefs(self, hosting_refs):
+        """See `IGitRepository`."""
+        new_refs = {}
+        for path, info in hosting_refs.items():
+            try:
+                new_refs[path] = self._convertRefInfo(info)
+            except ValueError:
+                pass
+        current_refs = dict((ref.path, ref) for ref in self.refs)
+        refs_to_insert = dict(
+            (path, info) for path, info in new_refs.items()
+            if path not in current_refs)
+        self.createRefs(refs_to_insert)
+        self.removeRefs(set(current_refs) - set(new_refs))
+        for path in set(new_refs) & set(current_refs):
+            new_ref = new_refs[path]
+            current_ref = current_refs[path]
+            if (new_ref["sha1"] != current_ref.commit_sha1 or
+                new_ref["type"] != current_ref.object_type):
+                self.updateRef(current_ref, new_ref)
 
     @cachedproperty
     def _known_viewers(self):

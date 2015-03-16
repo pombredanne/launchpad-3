@@ -181,21 +181,5 @@ class GitRefScanJob(GitJobDerived):
                 "Skipping repository %s because it has been deleted." %
                 self._cached_repository_name)
             return
-        new_refs = {}
-        for path, info in self._hosting_client.get_refs(hosting_path).items():
-            try:
-                new_refs[path] = self.repository.convertRefInfo(info)
-            except ValueError:
-                pass
-        current_refs = dict((ref.path, ref) for ref in self.repository.refs)
-        refs_to_insert = dict(
-            (path, info) for path, info in new_refs.items()
-            if path not in current_refs)
-        self.repository.createRefs(refs_to_insert)
-        self.repository.removeRefs(set(current_refs) - set(new_refs))
-        for path in set(new_refs) & set(current_refs):
-            new_ref = new_refs[path]
-            current_ref = current_refs[path]
-            if (new_ref["sha1"] != current_ref.commit_sha1 or
-                new_ref["type"] != current_ref.object_type):
-                self.repository.updateRef(current_ref, new_ref)
+        self.repository.synchroniseRefs(
+            self._hosting_client.get_refs(hosting_path))

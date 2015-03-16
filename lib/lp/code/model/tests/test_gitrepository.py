@@ -426,38 +426,38 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
         super(TestGitRepositoryRefs, self).setUp()
         self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
 
-    def test_convertRefInfo(self):
-        # convertRefInfo converts a valid info dictionary.
+    def test__convertRefInfo(self):
+        # _convertRefInfo converts a valid info dictionary.
         sha1 = unicode(hashlib.sha1("").hexdigest())
         info = {"object": {"sha1": sha1, "type": u"commit"}}
         expected_info = {"sha1": sha1, "type": GitObjectType.COMMIT}
-        self.assertEqual(expected_info, GitRepository.convertRefInfo(info))
+        self.assertEqual(expected_info, GitRepository._convertRefInfo(info))
 
-    def test_convertRefInfo_requires_object(self):
+    def test__convertRefInfo_requires_object(self):
         self.assertRaisesWithContent(
             ValueError, 'ref info does not contain "object" key',
-            GitRepository.convertRefInfo, {})
+            GitRepository._convertRefInfo, {})
 
-    def test_convertRefInfo_requires_object_sha1(self):
+    def test__convertRefInfo_requires_object_sha1(self):
         self.assertRaisesWithContent(
             ValueError, 'ref info object does not contain "sha1" key',
-            GitRepository.convertRefInfo, {"object": {}})
+            GitRepository._convertRefInfo, {"object": {}})
 
-    def test_convertRefInfo_requires_object_type(self):
+    def test__convertRefInfo_requires_object_type(self):
         info = {
             "object": {"sha1": u"0000000000000000000000000000000000000000"},
             }
         self.assertRaisesWithContent(
             ValueError, 'ref info object does not contain "type" key',
-            GitRepository.convertRefInfo, info)
+            GitRepository._convertRefInfo, info)
 
-    def test_convertRefInfo_bad_sha1(self):
+    def test__convertRefInfo_bad_sha1(self):
         info = {"object": {"sha1": "x", "type": "commit"}}
         self.assertRaisesWithContent(
             ValueError, 'ref info sha1 is not a 40-character string',
-            GitRepository.convertRefInfo, info)
+            GitRepository._convertRefInfo, info)
 
-    def test_convertRefInfo_bad_type(self):
+    def test__convertRefInfo_bad_type(self):
         info = {
             "object": {
                 "sha1": u"0000000000000000000000000000000000000000",
@@ -466,7 +466,7 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
             }
         self.assertRaisesWithContent(
             ValueError, 'ref info type is not a recognised object type',
-            GitRepository.convertRefInfo, info)
+            GitRepository._convertRefInfo, info)
 
     def assertRefsMatch(self, refs, repository, paths):
         matchers = [
@@ -516,6 +516,52 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
                 commit_sha1=u"0000000000000000000000000000000000000000",
                 object_type=GitObjectType.BLOB,
                 ))
+
+    def test_synchroniseRefs(self):
+        # synchroniseRefs copes with synchronising a repository where some
+        # refs have been created, some deleted, and some changed.
+        repository = self.factory.makeGitRepository()
+        paths = (u"refs/heads/master", u"refs/heads/foo", u"refs/heads/bar")
+        self.factory.makeGitRefs(repository=repository, paths=paths)
+        self.assertRefsMatch(repository.refs, repository, paths)
+        repository.synchroniseRefs({
+            u"refs/heads/master": {
+                u"object": {
+                    u"sha1": u"1111111111111111111111111111111111111111",
+                    u"type": u"commit",
+                    },
+                },
+            u"refs/heads/foo": {
+                u"object": {
+                    u"sha1": repository.getRefByPath(
+                        u"refs/heads/foo").commit_sha1,
+                    u"type": u"commit",
+                    },
+                },
+            u"refs/tags/1.0": {
+                u"object": {
+                    u"sha1": repository.getRefByPath(
+                        u"refs/heads/master").commit_sha1,
+                    u"type": u"commit",
+                    },
+                },
+            })
+        expected_sha1s = [
+            (u"refs/heads/master",
+             u"1111111111111111111111111111111111111111"),
+            (u"refs/heads/foo",
+             unicode(hashlib.sha1(u"refs/heads/foo").hexdigest())),
+            (u"refs/tags/1.0",
+             unicode(hashlib.sha1(u"refs/heads/master").hexdigest())),
+            ]
+        matchers = [
+            MatchesStructure.byEquality(
+                repository=repository,
+                path=path,
+                commit_sha1=sha1,
+                object_type=GitObjectType.COMMIT,
+                ) for path, sha1 in expected_sha1s]
+        self.assertThat(repository.refs, MatchesSetwise(*matchers))
 
 
 class TestGitRepositoryGetAllowedInformationTypes(TestCaseWithFactory):
