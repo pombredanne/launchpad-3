@@ -630,6 +630,14 @@ class TestGitAPI(TestGitAPIMixin, TestCaseWithFactory):
         [job] = list(job_source.iterReady())
         self.assertEqual(repository, job.repository)
 
+    def test_notify_missing_repository(self):
+        # A notify call on a non-existent repository returns a fault and
+        # does not create a job.
+        fault = self.git_api.notify("10000")
+        self.assertIsInstance(fault, faults.NotFound)
+        job_source = getUtility(IGitRefScanJobSource)
+        self.assertEqual([], list(job_source.iterReady()))
+
 
 class TestGitAPISecurity(TestGitAPIMixin, TestCaseWithFactory):
     """Slow tests for `IGitAPI`.

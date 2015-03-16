@@ -237,5 +237,8 @@ class GitAPI(LaunchpadXMLRPCView):
     def notify(self, translated_path):
         """See `IGitAPI`."""
         repository = getUtility(IGitLookup).getByHostingPath(translated_path)
+        if repository is None:
+            return faults.NotFound(
+                "No repository found for '%s'." % translated_path)
         job = getUtility(IGitRefScanJobSource).create(repository)
         job.celeryRunOnCommit()

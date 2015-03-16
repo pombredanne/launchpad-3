@@ -56,4 +56,7 @@ class IGitAPI(Interface):
         :param translated_path: The translated path to the repository.  (We
             use translated paths here in order to avoid problems with
             repository names etc. being changed during a push.)
+
+        :returns: A `NotFound` fault if no repository can be found for
+            'translated_path'; otherwise None.
         """
