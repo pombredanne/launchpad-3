@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for PersonSet."""
@@ -9,6 +9,7 @@ __metaclass__ = type
 from testtools.matchers import LessThan
 import transaction
 from zope.component import getUtility
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from lp.code.tests.helpers import remove_all_sample_data_branches
@@ -41,13 +42,17 @@ from lp.services.identity.interfaces.account import (
 from lp.services.identity.interfaces.emailaddress import (
     EmailAddressAlreadyTaken,
     EmailAddressStatus,
+    IEmailAddressSet,
     InvalidEmailAddress,
     )
 from lp.services.identity.model.account import Account
 from lp.services.identity.model.emailaddress import EmailAddress
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
+from lp.services.webapp.interfaces import ILaunchBag
 from lp.testing import (
+    admin_logged_in,
     ANONYMOUS,
+    anonymous_logged_in,
     login,
     logout,
     person_logged_in,
@@ -590,3 +595,135 @@ class TestPersonSetGetOrCreateByOpenIDIdentifier(TestCaseWithFactory):
             u'other-openid-identifier' in [
                 identifier.identifier for identifier in removeSecurityProxy(
                     person.account).openid_identifiers])
+
+
+class TestPersonSetGetOrCreateSoftwareCenterCustomer(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestPersonSetGetOrCreateSoftwareCenterCustomer, self).setUp()
+        self.sca = getUtility(IPersonSet).getByName('software-center-agent')
+
+    def makeOpenIdIdentifier(self, account, identifier):
+        openid_identifier = OpenIdIdentifier()
+        openid_identifier.identifier = identifier
+        openid_identifier.account = account
+        return IStore(OpenIdIdentifier).add(openid_identifier)
+
+    def test_restricted_to_sca(self):
+        # Only the software-center-agent celebrity can invoke this
+        # privileged method.
+        def do_it():
+            return getUtility(IPersonSet).getOrCreateSoftwareCenterCustomer(
+                getUtility(ILaunchBag).user, u'somebody',
+                'somebody@example.com', 'Example')
+        random = self.factory.makePerson()
+        admin = self.factory.makePerson(
+            member_of=[getUtility(IPersonSet).getByName('admins')])
+
+        # Anonymous, random or admin users can't invoke the method.
+        with anonymous_logged_in():
+            self.assertRaises(Unauthorized, do_it)
+        with person_logged_in(random):
+            self.assertRaises(Unauthorized, do_it)
+        with person_logged_in(admin):
+            self.assertRaises(Unauthorized, do_it)
+
+        with person_logged_in(self.sca):
+            person = do_it()
+        self.assertIsInstance(person, Person)
+
+    def test_finds_by_openid(self):
+        # A Person with the requested OpenID identifier is returned.
+        somebody = self.factory.makePerson()
+        self.makeOpenIdIdentifier(somebody.account, u'somebody')
+        with person_logged_in(self.sca):
+            got = getUtility(IPersonSet).getOrCreateSoftwareCenterCustomer(
+                self.sca, u'somebody', 'somebody@example.com', 'Example')
+        self.assertEqual(somebody, got)
+
+        # The email address doesn't get linked, as that could change how
+        # future logins work.
+        self.assertIs(
+            None,
+            getUtility(IEmailAddressSet).getByEmail('somebody@example.com'))
+
+    def test_creates_new(self):
+        # If an unknown OpenID identifier and email address are
+        # provided, a new account is created and returned.
+        with person_logged_in(self.sca):
+            made = getUtility(IPersonSet).getOrCreateSoftwareCenterCustomer(
+                self.sca, u'somebody', 'somebody@example.com', 'Example')
+        with admin_logged_in():
+            self.assertEqual('Example', made.displayname)
+            self.assertEqual('somebody@example.com', made.preferredemail.email)
+
+        # The email address is linked, since it can't compromise an
+        # account that is being created just for it.
+        email = getUtility(IEmailAddressSet).getByEmail('somebody@example.com')
+        self.assertEqual(made, email.person)
+
+    def test_activates_unactivated(self):
+        # An unactivated account should be treated just like a new
+        # account -- it gets activated with the given email address.
+        somebody = self.factory.makePerson(
+            email='existing@example.com',
+            account_status=AccountStatus.NOACCOUNT)
+        self.makeOpenIdIdentifier(somebody.account, u'somebody')
+        self.assertEqual(AccountStatus.NOACCOUNT, somebody.account.status)
+        with person_logged_in(self.sca):
+            got = getUtility(IPersonSet).getOrCreateSoftwareCenterCustomer(
+                self.sca, u'somebody', 'somebody@example.com', 'Example')
+        self.assertEqual(somebody, got)
+        with admin_logged_in():
+            self.assertEqual(AccountStatus.ACTIVE, somebody.account.status)
+            self.assertEqual(
+                'somebody@example.com', somebody.preferredemail.email)
+
+    def test_fails_if_email_is_already_registered(self):
+        # Only the OpenID identifier is used to look up an account. If
+        # the OpenID identifier isn't already registered by the email
+        # address is, the request is rejected to avoid potentially
+        # adding an unwanted OpenID identifier to the address' account.
+        #
+        # The user must log into Launchpad directly first to register
+        # their OpenID identifier.
+        other = self.factory.makePerson(email='other@example.com')
+        with person_logged_in(self.sca):
+            self.assertRaises(
+                EmailAddressAlreadyTaken,
+                getUtility(IPersonSet).getOrCreateSoftwareCenterCustomer,
+                self.sca, u'somebody', 'other@example.com', 'Example')
+
+        # The email address stays with the old owner.
+        email = getUtility(IEmailAddressSet).getByEmail('other@example.com')
+        self.assertEqual(other, email.person)
+
+    def test_fails_if_account_is_suspended(self):
+        # Suspended accounts cannot be returned.
+        somebody = self.factory.makePerson()
+        self.makeOpenIdIdentifier(somebody.account, u'somebody')
+        with admin_logged_in():
+            somebody.setAccountStatus(
+                AccountStatus.SUSPENDED, None, "Go away!")
+        with person_logged_in(self.sca):
+            self.assertRaises(
+                AccountSuspendedError,
+                getUtility(IPersonSet).getOrCreateSoftwareCenterCustomer,
+                self.sca, u'somebody', 'somebody@example.com', 'Example')
+
+    def test_fails_if_account_is_deactivated(self):
+        # We don't want to reactivate explicitly deactivated accounts,
+        # nor do we want to potentially compromise them with a bad email
+        # address.
+        somebody = self.factory.makePerson()
+        self.makeOpenIdIdentifier(somebody.account, u'somebody')
+        with admin_logged_in():
+            somebody.setAccountStatus(
+                AccountStatus.DEACTIVATED, None, "Goodbye cruel world.")
+        with person_logged_in(self.sca):
+            self.assertRaises(
+                NameAlreadyTaken,
+                getUtility(IPersonSet).getOrCreateSoftwareCenterCustomer,
+                self.sca, u'somebody', 'somebody@example.com', 'Example')

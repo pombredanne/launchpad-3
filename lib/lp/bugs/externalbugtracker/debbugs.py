@@ -11,7 +11,7 @@ __all__ = [
 
 from datetime import datetime
 import email
-from email.Utils import (
+from email.utils import (
     mktime_tz,
     parseaddr,
     parsedate_tz,
@@ -279,7 +279,7 @@ class DebBugs(ExternalBugTracker):
     def _getDateForComment(self, parsed_comment):
         """Return the correct date for a comment.
 
-        :param parsed_comment: An `email.Message.Message` instance
+        :param parsed_comment: An `email.message.Message` instance
             containing a parsed DebBugs comment.
         :return: The correct date to use for the comment contained in
             `parsed_comment`. If a date is specified in a Received

@@ -10,7 +10,7 @@ __all__ = [
     'is_valid_transition',
     ]
 
-from email.Utils import make_msgid
+from email.utils import make_msgid
 
 from sqlobject import (
     ForeignKey,

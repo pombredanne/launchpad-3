@@ -5,9 +5,9 @@
 
 __metaclass__ = type
 
-from email.Header import Header
-from email.MIMEText import MIMEText
-from email.Utils import (
+from email.header import Header
+from email.mime.text import MIMEText
+from email.utils import (
     formataddr,
     make_msgid,
     )
@@ -320,7 +320,7 @@ def encode(value):
     :param value: The raw email header value.
     :type value: unicode
     :return: The encoded header.
-    :rtype: `email.Header.Header`
+    :rtype: `email.header.Header`
     """
     try:
         value.encode('us-ascii')
@@ -343,7 +343,7 @@ def send_direct_contact_email(
     :param body: The message body.
     :type body: unicode
     :return: The sent message.
-    :rtype: `email.Message.Message`
+    :rtype: `email.message.Message`
     """
     # Craft the email message.  Start by checking whether the subject and
     # message bodies are ASCII or not.

@@ -43,7 +43,7 @@ user in the launch bag:
     >>> from lp.services.webapp.interfaces import ILaunchBag
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> launchbag = getUtility(ILaunchBag)
-    >>> name, addr = email.Utils.parseaddr(msg['From'])
+    >>> name, addr = email.utils.parseaddr(msg['From'])
     >>> from_user = getUtility(IPersonSet).getByEmail(addr)
     >>> launchbag.user == from_user
     True
@@ -57,7 +57,7 @@ message. Inline signatures are supported as well.
     >>> principal = authenticateEmail(msg, accept_any_timestamp)
     >>> principal is not None
     True
-    >>> name, addr = email.Utils.parseaddr(msg['From'])
+    >>> name, addr = email.utils.parseaddr(msg['From'])
     >>> from_user = getUtility(IPersonSet).getByEmail(addr)
     >>> launchbag.user == from_user
     True
@@ -70,7 +70,7 @@ As well as signed multipart messages:
     >>> principal = authenticateEmail(msg, accept_any_timestamp)
     >>> principal is not None
     True
-    >>> name, addr = email.Utils.parseaddr(msg['From'])
+    >>> name, addr = email.utils.parseaddr(msg['From'])
     >>> from_user = getUtility(IPersonSet).getByEmail(addr)
     >>> launchbag.user == from_user
     True
@@ -85,7 +85,7 @@ to deal with it if we receive a dash escaped message.
     >>> principal = authenticateEmail(msg, accept_any_timestamp)
     >>> principal is not None
     True
-    >>> name, addr = email.Utils.parseaddr(msg['From'])
+    >>> name, addr = email.utils.parseaddr(msg['From'])
     >>> from_user = getUtility(IPersonSet).getByEmail(addr)
     >>> launchbag.user == from_user
     True
@@ -96,7 +96,7 @@ If the signature is invalid, that is it won't verify properly,
 InvalidSignature will be raised:
 
     >>> msg = read_test_message('signed_detached_invalid_signature.txt')
-    >>> name, addr = email.Utils.parseaddr(msg['From'])
+    >>> name, addr = email.utils.parseaddr(msg['From'])
     >>> from_user = getUtility(IPersonSet).getByEmail(addr)
     >>> principal = authenticateEmail(msg, accept_any_timestamp)
     Traceback (most recent call last):

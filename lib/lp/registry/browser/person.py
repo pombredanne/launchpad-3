@@ -284,9 +284,6 @@ from lp.soyuz.interfaces.publishing import ISourcePackagePublishingHistory
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 
 
-COMMASPACE = ', '
-
-
 class PersonBreadcrumb(DisplaynameBreadcrumb):
     implements(IHeadingBreadcrumb, IMultiFacetedBreadcrumb)
 
@@ -2028,23 +2025,24 @@ class PersonParticipationView(LaunchpadView):
     def label(self):
         return 'Team participation for ' + self.context.displayname
 
-    def _asParticipation(self, membership=None, team=None, via=None):
+    def _asParticipation(self, team=None, membership=None, via=None,
+                         mailing_list=None, subscription=None):
         """Return a dict of participation information for the membership.
 
-        Method requires membership or team, not both.
+        Method requires membership or via, not both.
         :param via: The team through which the membership in the indirect
         team is established.
         """
-        if ((membership is None and team is None) or
-            (membership is not None and team is not None)):
+        if ((membership is None and via is None) or
+            (membership is not None and via is not None)):
             raise AssertionError(
-                "The membership or team argument must be provided, not both.")
+                "The membership or via argument must be provided, not both.")
 
         if via is not None:
             # When showing the path, it's unnecessary to show the team in
             # question at the beginning of the path, or the user at the
             # end of the path.
-            via = COMMASPACE.join(
+            via = ", ".join(
                 [via_team.displayname for via_team in via[1:-1]])
 
         if membership is None:
@@ -2055,17 +2053,15 @@ class PersonParticipationView(LaunchpadView):
             datejoined = None
         else:
             # The member is a direct member; use the membership data.
-            team = membership.team
             datejoined = membership.datejoined
-            if membership.person == team.teamowner:
+            if membership.personID == team.teamownerID:
                 role = 'Owner'
             elif membership.status == TeamMembershipStatus.ADMIN:
                 role = 'Admin'
             else:
                 role = 'Member'
 
-        if team.mailing_list is not None and team.mailing_list.is_usable:
-            subscription = team.mailing_list.getSubscription(self.context)
+        if mailing_list is not None:
             if subscription is None:
                 subscribed = 'Not subscribed'
             else:
@@ -2082,27 +2078,26 @@ class PersonParticipationView(LaunchpadView):
         """Return the participation information for active memberships."""
         paths, memberships = self.context.getPathsToTeams()
         direct_teams = [membership.team for membership in memberships]
-        indirect_teams = [
-            team for team in paths.keys()
-            if team not in direct_teams]
+        items = []
+        for membership in memberships:
+            items.append(dict(team=membership.team, membership=membership))
+        for team, via in paths.items():
+            if team not in direct_teams:
+                items.append(dict(team=team, via=via))
+        items = [
+            item for item in items
+            if check_permission('launchpad.View', item["team"])]
         participations = []
 
-        # First, create a participation for all direct memberships.
-        for membership in memberships:
-            # Add a participation record for the membership if allowed.
-            if check_permission('launchpad.View', membership.team):
-                participations.append(
-                    self._asParticipation(membership=membership))
+        # Bulk-load mailing list subscriptions.
+        subscriptions = getUtility(IMailingListSet).getSubscriptionsForTeams(
+            self.context, [item["team"] for item in items])
 
-        # Second, create a participation for all indirect memberships,
-        # using the remaining paths.
-        for indirect_team in indirect_teams:
-            if not check_permission('launchpad.View', indirect_team):
-                continue
-            participations.append(
-                self._asParticipation(
-                    via=paths[indirect_team],
-                    team=indirect_team))
+        # Create all the participations.
+        for item in items:
+            item["mailing_list"], item["subscription"] = subscriptions.get(
+                item["team"].id, (None, None))
+            participations.append(self._asParticipation(**item))
         return sorted(participations, key=itemgetter('displayname'))
 
     @cachedproperty
