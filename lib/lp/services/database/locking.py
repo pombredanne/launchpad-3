@@ -34,6 +34,11 @@ class LockType(DBEnumeratedType):
         Branch scan.
         """)
 
+    GIT_REF_SCAN = DBItem(1, """Git repository reference scan.
+
+        Git repository reference scan.
+        """)
+
 
 @contextmanager
 def try_advisory_lock(lock_type, lock_id, store):

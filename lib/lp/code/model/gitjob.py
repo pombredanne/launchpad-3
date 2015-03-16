@@ -18,6 +18,7 @@ from storm.locals import (
     Int,
     JSON,
     Reference,
+    Store,
     )
 from zope.interface import (
     classProvides,
@@ -36,6 +37,11 @@ from lp.services.database.enumcol import EnumCol
 from lp.services.database.interfaces import (
     IMasterStore,
     IStore,
+    )
+from lp.services.database.locking import (
+    AdvisoryLockHeld,
+    LockType,
+    try_advisory_lock,
     )
 from lp.services.database.stormbase import StormBase
 from lp.services.job.model.job import (
@@ -154,6 +160,10 @@ class GitRefScanJob(GitJobDerived):
     classProvides(IGitRefScanJobSource)
     class_job_type = GitJobType.REF_SCAN
 
+    max_retries = 5
+
+    retry_error_types = (AdvisoryLockHeld,)
+
     config = config.IGitRefScanJobSource
 
     @classmethod
@@ -175,11 +185,13 @@ class GitRefScanJob(GitJobDerived):
     def run(self):
         """See `IGitRefScanJob`."""
         try:
-            hosting_path = self.repository.getInternalPath()
+            with try_advisory_lock(
+                LockType.GIT_REF_SCAN, self.repository.id,
+                Store.of(self.repository)):
+                hosting_path = self.repository.getInternalPath()
+                self.repository.synchroniseRefs(
+                    self._hosting_client.get_refs(hosting_path))
         except LostObjectError:
             log.warning(
                 "Skipping repository %s because it has been deleted." %
                 self._cached_repository_name)
-            return
-        self.repository.synchroniseRefs(
-            self._hosting_client.get_refs(hosting_path))
