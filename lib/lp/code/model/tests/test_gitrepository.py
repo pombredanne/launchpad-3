@@ -478,7 +478,7 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
             for path in paths]
         self.assertThat(refs, MatchesSetwise(*matchers))
 
-    def test_createRefs(self):
+    def test_create(self):
         repository = self.factory.makeGitRepository()
         self.assertEqual([], repository.refs)
         paths = (u"refs/heads/master", u"refs/tags/1.0")
@@ -504,7 +504,7 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
                 object_type=master_ref.object_type,
                 ))
 
-    def test_removeRefs(self):
+    def test_remove(self):
         repository = self.factory.makeGitRepository()
         paths = (u"refs/heads/master", u"refs/heads/branch", u"refs/tags/1.0")
         self.factory.makeGitRefs(repository=repository, paths=paths)
@@ -513,7 +513,7 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
         self.assertRefsMatch(
             repository.refs, repository, [u"refs/heads/master"])
 
-    def test_updateRef(self):
+    def test_update(self):
         repository = self.factory.makeGitRepository()
         paths = (u"refs/heads/master", u"refs/tags/1.0")
         self.factory.makeGitRefs(repository=repository, paths=paths)
