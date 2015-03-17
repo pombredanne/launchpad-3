@@ -108,6 +108,19 @@ class TestGitRefScanJob(TestGitRefScanJobMixin, TestCaseWithFactory):
             job.run()
         self.assertRefsMatch(repository.refs, repository, paths)
 
+    def test_logs_bad_ref_info(self):
+        repository = self.factory.makeGitRepository()
+        job = GitRefScanJob.create(repository)
+        job._hosting_client.get_refs = FakeMethod(
+            result={u"refs/heads/master": {}})
+        expected_message = (
+            'Unconvertible ref refs/heads/master {}: '
+            'ref info does not contain "object" key')
+        with self.expectedLog(expected_message):
+            with dbuser("branchscanner"):
+                job.run()
+        self.assertEqual([], repository.refs)
+
 
 # XXX cjwatson 2015-03-12: We should test that the job works via Celery too,
 # but that isn't feasible until we have a proper turnip fixture.

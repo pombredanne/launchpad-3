@@ -213,11 +213,12 @@ class IGitRepositoryView(Interface):
         :params paths: An iterable of paths.
         """
 
-    def synchroniseRefs(hosting_refs):
+    def synchroniseRefs(hosting_refs, logger=None):
         """Synchronise references with those from the hosting service.
 
         :param hosting_refs: A dictionary of reference information returned
             from the hosting service's `/repo/PATH/refs` collection.
+        :param logger: An optional logger.
         """
 
     def setOwnerDefault(value):

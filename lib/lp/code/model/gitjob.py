@@ -190,7 +190,7 @@ class GitRefScanJob(GitJobDerived):
                     Store.of(self.repository)):
                 hosting_path = self.repository.getInternalPath()
                 self.repository.synchroniseRefs(
-                    self._hosting_client.get_refs(hosting_path))
+                    self._hosting_client.get_refs(hosting_path), logger=log)
         except LostObjectError:
             log.info(
                 "Skipping repository %s because it has been deleted." %

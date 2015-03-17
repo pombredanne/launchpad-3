@@ -409,14 +409,14 @@ class GitRepository(StormBase, GitIdentityMixin):
             GitRef.repository == self, GitRef.path.is_in(paths)).remove()
         del get_property_cache(self).refs
 
-    def synchroniseRefs(self, hosting_refs):
+    def synchroniseRefs(self, hosting_refs, logger=None):
         """See `IGitRepository`."""
         new_refs = {}
         for path, info in hosting_refs.items():
             try:
                 new_refs[path] = self._convertRefInfo(info)
-            except ValueError:
-                pass
+            except ValueError as e:
+                logger.warning("Unconvertible ref %s %s: %s" % (path, info, e))
         current_refs = {ref.path: ref for ref in self.refs}
         refs_to_upsert = {}
         for path, info in new_refs.items():
@@ -425,8 +425,11 @@ class GitRepository(StormBase, GitIdentityMixin):
                 info["sha1"] != current_ref.commit_sha1 or
                 info["type"] != current_ref.object_type):
                 refs_to_upsert[path] = info
-        self.createOrUpdateRefs(refs_to_upsert)
-        self.removeRefs(set(current_refs) - set(new_refs))
+        refs_to_remove = set(current_refs) - set(new_refs)
+        if refs_to_upsert:
+            self.createOrUpdateRefs(refs_to_upsert)
+        if refs_to_remove:
+            self.removeRefs(refs_to_remove)
 
     @cachedproperty
     def _known_viewers(self):
