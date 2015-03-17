@@ -192,6 +192,6 @@ class GitRefScanJob(GitJobDerived):
                 self.repository.synchroniseRefs(
                     self._hosting_client.get_refs(hosting_path))
         except LostObjectError:
-            log.warning(
+            log.info(
                 "Skipping repository %s because it has been deleted." %
                 self._cached_repository_name)
