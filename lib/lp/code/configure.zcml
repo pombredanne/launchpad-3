@@ -859,6 +859,14 @@
     <allow interface="lp.code.interfaces.gitnamespace.IGitNamespaceSet" />
   </securedutility>
 
+  <!-- GitRef -->
+
+  <class class="lp.code.model.gitref.GitRef">
+    <require
+        permission="launchpad.View"
+        interface="lp.code.interfaces.gitref.IGitRef" />
+  </class>
+
   <!-- GitCollection -->
 
   <class class="lp.code.model.gitcollection.GenericGitCollection">
@@ -932,6 +940,20 @@
   <adapter factory="lp.code.model.gitlookup.ProjectGitTraversable" />
   <adapter factory="lp.code.model.gitlookup.DistributionGitTraversable" />
   <adapter factory="lp.code.model.gitlookup.DistributionSourcePackageGitTraversable" />
+
+  <!-- Git-related jobs -->
+  <class class="lp.code.model.gitjob.GitJob">
+    <allow interface="lp.code.interfaces.gitjob.IGitJob" />
+  </class>
+  <securedutility
+      component="lp.code.model.gitjob.GitRefScanJob"
+      provides="lp.code.interfaces.gitjob.IGitRefScanJobSource">
+    <allow interface="lp.code.interfaces.gitjob.IGitRefScanJobSource" />
+  </securedutility>
+  <class class="lp.code.model.gitjob.GitRefScanJob">
+    <allow interface="lp.code.interfaces.gitjob.IGitJob" />
+    <allow interface="lp.code.interfaces.gitjob.IGitRefScanJob" />
+  </class>
 
   <lp:help-folder folder="help" name="+help-code" />
 

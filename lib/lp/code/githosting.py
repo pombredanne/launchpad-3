@@ -9,11 +9,14 @@ __all__ = [
     ]
 
 import json
-from urlparse import urljoin
 
+from bzrlib import urlutils
 import requests
 
-from lp.code.errors import GitRepositoryCreationFault
+from lp.code.errors import (
+    GitRepositoryCreationFault,
+    GitRepositoryRefScanFault,
+    )
 
 
 class GitHostingClient:
@@ -40,7 +43,7 @@ class GitHostingClient:
             # should just use post(json=) and drop the explicit Content-Type
             # header.
             response = self._makeSession().post(
-                urljoin(self.endpoint, "repo"),
+                urlutils.join(self.endpoint, "repo"),
                 headers={"Content-Type": "application/json"},
                 data=json.dumps({"repo_path": path, "bare_repo": True}),
                 timeout=self.timeout)
@@ -50,3 +53,20 @@ class GitHostingClient:
         if response.status_code != 200:
             raise GitRepositoryCreationFault(
                 "Failed to create Git repository: %s" % response.text)
+
+    def get_refs(self, path):
+        try:
+            response = self._makeSession().get(
+                urlutils.join(self.endpoint, "repo", path, "refs"),
+                timeout=self.timeout)
+        except Exception as e:
+            raise GitRepositoryRefScanFault(
+                "Failed to get refs from Git repository: %s" % unicode(e))
+        if response.status_code != 200:
+            raise GitRepositoryRefScanFault(
+                "Failed to get refs from Git repository: %s" % response.text)
+        try:
+            return response.json()
+        except ValueError as e:
+            raise GitRepositoryRefScanFault(
+                "Failed to decode ref-scan response: %s" % unicode(e))

@@ -805,6 +805,24 @@ class LaunchpadBrowserResponse(NotificationResponse, BrowserResponse):
     def __init__(self, header_output=None, http_transaction=None):
         super(LaunchpadBrowserResponse, self).__init__()
 
+    def _validateHeader(self, name, value):
+        name = str(name)
+        if '\n' in name or '\r' in name or ':' in name:
+            raise ValueError('CR, LF and colon are illegal in header names.')
+        value = str(value)
+        if '\n' in value or '\r' in value:
+            raise ValueError('CR and LF are illegal in header values.')
+        return name, value
+
+    def setHeader(self, name, value, literal=False):
+        name, value = self._validateHeader(name, value)
+        super(LaunchpadBrowserResponse, self).setHeader(
+            name, value, literal=literal)
+
+    def addHeader(self, name, value):
+        name, value = self._validateHeader(name, value)
+        super(LaunchpadBrowserResponse, self).addHeader(name, value)
+
     def redirect(self, location, status=None, trusted=True,
                  temporary_if_possible=False):
         """Do a redirect.

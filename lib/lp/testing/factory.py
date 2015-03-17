@@ -108,6 +108,7 @@ from lp.code.enums import (
     CodeImportResultStatus,
     CodeImportReviewStatus,
     CodeReviewNotificationLevel,
+    GitObjectType,
     RevisionControlSystems,
     )
 from lp.code.errors import UnknownBranchTypeError
@@ -1700,6 +1701,20 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 information_type, registrant, verify_policy=False)
         return repository
 
+    def makeGitRefs(self, repository=None, paths=None):
+        """Create and return a list of new, arbitrary GitRefs."""
+        if repository is None:
+            repository = self.makeGitRepository()
+        if paths is None:
+            paths = [self.getUniqueString('refs/heads/path').decode('utf-8')]
+        refs_info = {
+            path: {
+                u"sha1": unicode(hashlib.sha1(path).hexdigest()),
+                u"type": GitObjectType.COMMIT,
+                }
+            for path in paths}
+        return repository.createOrUpdateRefs(refs_info, get_objects=True)
+
     def makeBug(self, target=None, owner=None, bug_watch_url=None,
                 information_type=None, date_closed=None, title=None,
                 date_created=None, description=None, comment=None,
@@ -2188,7 +2203,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return work_item
 
     def makeQuestion(self, target=None, title=None,
-                     owner=None, description=None, language=None):
+                     owner=None, description=None, **kwargs):
         """Create and return a new, arbitrary Question.
 
         :param target: The IQuestionTarget to make the question on. If one is
@@ -2198,8 +2213,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         :param owner: The owner of the question. If one is not provided, the
             question target owner will be used.
         :param description: The question description.
-        :param language: The question language. If one is not provided, then
-            English will be used.
         """
         if target is None:
             target = self.makeProduct()
@@ -2211,8 +2224,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             description = self.getUniqueString('description')
         with person_logged_in(owner):
             question = target.newQuestion(
-                owner=owner, title=title, description=description,
-                language=language)
+                owner=owner, title=title, description=description, **kwargs)
         return question
 
     def makeQuestionSubscription(self, question=None, person=None):

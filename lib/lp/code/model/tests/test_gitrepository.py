@@ -7,10 +7,15 @@ __metaclass__ = type
 
 from datetime import datetime
 from functools import partial
+import hashlib
 import json
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 import pytz
+from testtools.matchers import (
+    MatchesSetwise,
+    MatchesStructure,
+    )
 from zope.component import getUtility
 from zope.event import notify
 from zope.security.proxy import removeSecurityProxy
@@ -21,6 +26,7 @@ from lp.app.enums import (
     PUBLIC_INFORMATION_TYPES,
     )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.code.enums import GitObjectType
 from lp.code.errors import (
     GitFeatureDisabled,
     GitRepositoryCreatorNotMemberOfOwnerTeam,
@@ -37,6 +43,7 @@ from lp.code.interfaces.gitrepository import (
     IGitRepository,
     IGitRepositorySet,
     )
+from lp.code.model.gitrepository import GitRepository
 from lp.registry.enums import (
     BranchSharingPolicy,
     PersonVisibility,
@@ -408,6 +415,171 @@ class TestGitRepositoryPrivacy(TestCaseWithFactory):
         self.assertContentEqual(
             getUtility(IAccessPolicySource).findByTeam([team_owner]),
             get_policies_for_artifact(repository))
+
+
+class TestGitRepositoryRefs(TestCaseWithFactory):
+    """Tests for ref handling."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestGitRepositoryRefs, self).setUp()
+        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
+
+    def test__convertRefInfo(self):
+        # _convertRefInfo converts a valid info dictionary.
+        sha1 = unicode(hashlib.sha1("").hexdigest())
+        info = {"object": {"sha1": sha1, "type": u"commit"}}
+        expected_info = {"sha1": sha1, "type": GitObjectType.COMMIT}
+        self.assertEqual(expected_info, GitRepository._convertRefInfo(info))
+
+    def test__convertRefInfo_requires_object(self):
+        self.assertRaisesWithContent(
+            ValueError, 'ref info does not contain "object" key',
+            GitRepository._convertRefInfo, {})
+
+    def test__convertRefInfo_requires_object_sha1(self):
+        self.assertRaisesWithContent(
+            ValueError, 'ref info object does not contain "sha1" key',
+            GitRepository._convertRefInfo, {"object": {}})
+
+    def test__convertRefInfo_requires_object_type(self):
+        info = {
+            "object": {"sha1": u"0000000000000000000000000000000000000000"},
+            }
+        self.assertRaisesWithContent(
+            ValueError, 'ref info object does not contain "type" key',
+            GitRepository._convertRefInfo, info)
+
+    def test__convertRefInfo_bad_sha1(self):
+        info = {"object": {"sha1": "x", "type": "commit"}}
+        self.assertRaisesWithContent(
+            ValueError, 'ref info sha1 is not a 40-character string',
+            GitRepository._convertRefInfo, info)
+
+    def test__convertRefInfo_bad_type(self):
+        info = {
+            "object": {
+                "sha1": u"0000000000000000000000000000000000000000",
+                "type": u"nonsense",
+                },
+            }
+        self.assertRaisesWithContent(
+            ValueError, 'ref info type is not a recognised object type',
+            GitRepository._convertRefInfo, info)
+
+    def assertRefsMatch(self, refs, repository, paths):
+        matchers = [
+            MatchesStructure.byEquality(
+                repository=repository,
+                path=path,
+                commit_sha1=unicode(hashlib.sha1(path).hexdigest()),
+                object_type=GitObjectType.COMMIT)
+            for path in paths]
+        self.assertThat(refs, MatchesSetwise(*matchers))
+
+    def test_create(self):
+        repository = self.factory.makeGitRepository()
+        self.assertEqual([], repository.refs)
+        paths = (u"refs/heads/master", u"refs/tags/1.0")
+        self.factory.makeGitRefs(repository=repository, paths=paths)
+        self.assertRefsMatch(repository.refs, repository, paths)
+        master_ref = repository.getRefByPath(u"refs/heads/master")
+        new_refs_info = {
+            u"refs/tags/1.1": {
+                u"sha1": master_ref.commit_sha1,
+                u"type": master_ref.object_type,
+                },
+            }
+        repository.createOrUpdateRefs(new_refs_info)
+        self.assertRefsMatch(
+            [ref for ref in repository.refs if ref.path != u"refs/tags/1.1"],
+            repository, paths)
+        self.assertThat(
+            repository.getRefByPath(u"refs/tags/1.1"),
+            MatchesStructure.byEquality(
+                repository=repository,
+                path=u"refs/tags/1.1",
+                commit_sha1=master_ref.commit_sha1,
+                object_type=master_ref.object_type,
+                ))
+
+    def test_remove(self):
+        repository = self.factory.makeGitRepository()
+        paths = (u"refs/heads/master", u"refs/heads/branch", u"refs/tags/1.0")
+        self.factory.makeGitRefs(repository=repository, paths=paths)
+        self.assertRefsMatch(repository.refs, repository, paths)
+        repository.removeRefs([u"refs/heads/branch", u"refs/tags/1.0"])
+        self.assertRefsMatch(
+            repository.refs, repository, [u"refs/heads/master"])
+
+    def test_update(self):
+        repository = self.factory.makeGitRepository()
+        paths = (u"refs/heads/master", u"refs/tags/1.0")
+        self.factory.makeGitRefs(repository=repository, paths=paths)
+        self.assertRefsMatch(repository.refs, repository, paths)
+        new_info = {
+            u"sha1": u"0000000000000000000000000000000000000000",
+            u"type": GitObjectType.BLOB,
+            }
+        repository.createOrUpdateRefs({u"refs/tags/1.0": new_info})
+        self.assertRefsMatch(
+            [ref for ref in repository.refs if ref.path != u"refs/tags/1.0"],
+            repository, [u"refs/heads/master"])
+        self.assertThat(
+            repository.getRefByPath(u"refs/tags/1.0"),
+            MatchesStructure.byEquality(
+                repository=repository,
+                path=u"refs/tags/1.0",
+                commit_sha1=u"0000000000000000000000000000000000000000",
+                object_type=GitObjectType.BLOB,
+                ))
+
+    def test_synchroniseRefs(self):
+        # synchroniseRefs copes with synchronising a repository where some
+        # refs have been created, some deleted, and some changed.
+        repository = self.factory.makeGitRepository()
+        paths = (u"refs/heads/master", u"refs/heads/foo", u"refs/heads/bar")
+        self.factory.makeGitRefs(repository=repository, paths=paths)
+        self.assertRefsMatch(repository.refs, repository, paths)
+        repository.synchroniseRefs({
+            u"refs/heads/master": {
+                u"object": {
+                    u"sha1": u"1111111111111111111111111111111111111111",
+                    u"type": u"commit",
+                    },
+                },
+            u"refs/heads/foo": {
+                u"object": {
+                    u"sha1": repository.getRefByPath(
+                        u"refs/heads/foo").commit_sha1,
+                    u"type": u"commit",
+                    },
+                },
+            u"refs/tags/1.0": {
+                u"object": {
+                    u"sha1": repository.getRefByPath(
+                        u"refs/heads/master").commit_sha1,
+                    u"type": u"commit",
+                    },
+                },
+            })
+        expected_sha1s = [
+            (u"refs/heads/master",
+             u"1111111111111111111111111111111111111111"),
+            (u"refs/heads/foo",
+             unicode(hashlib.sha1(u"refs/heads/foo").hexdigest())),
+            (u"refs/tags/1.0",
+             unicode(hashlib.sha1(u"refs/heads/master").hexdigest())),
+            ]
+        matchers = [
+            MatchesStructure.byEquality(
+                repository=repository,
+                path=path,
+                commit_sha1=sha1,
+                object_type=GitObjectType.COMMIT,
+                ) for path, sha1 in expected_sha1s]
+        self.assertThat(repository.refs, MatchesSetwise(*matchers))
 
 
 class TestGitRepositoryGetAllowedInformationTypes(TestCaseWithFactory):

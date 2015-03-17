@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -47,13 +47,14 @@ from storm.info import (
 
 class BulkUpdate(Expr):
     # Perform a bulk table update using literal values.
-    __slots__ = ("map", "where", "table", "values")
+    __slots__ = ("map", "where", "table", "values", "primary_columns")
 
-    def __init__(self, map, table, values, where=Undef):
+    def __init__(self, map, table, values, where=Undef, primary_columns=Undef):
         self.map = map
         self.where = where
         self.table = table
         self.values = values
+        self.primary_columns = primary_columns
 
 
 @compile.when(BulkUpdate)
