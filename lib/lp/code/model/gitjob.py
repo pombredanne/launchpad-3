@@ -186,8 +186,8 @@ class GitRefScanJob(GitJobDerived):
         """See `IGitRefScanJob`."""
         try:
             with try_advisory_lock(
-                LockType.GIT_REF_SCAN, self.repository.id,
-                Store.of(self.repository)):
+                    LockType.GIT_REF_SCAN, self.repository.id,
+                    Store.of(self.repository)):
                 hosting_path = self.repository.getInternalPath()
                 self.repository.synchroniseRefs(
                     self._hosting_client.get_refs(hosting_path))
