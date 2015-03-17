@@ -37,7 +37,6 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
-from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.answers.model.faq import (
     FAQ,
     FAQSearch,
@@ -193,9 +192,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                    HasDriversMixin, TranslationPolicyMixin):
     """A distribution of an operating system, e.g. Debian GNU/Linux."""
     implements(
-        IBugSummaryDimension, IDistribution, IFAQTarget,
-        IHasBugSupervisor, IHasBuildRecords, IHasIcon, IHasLogo,
-        IHasMugshot, IHasOOPSReferences, ILaunchpadUsage, IServiceUsage)
+        IBugSummaryDimension, IDistribution, IHasBugSupervisor,
+        IHasBuildRecords, IHasIcon, IHasLogo, IHasMugshot,
+        IHasOOPSReferences, ILaunchpadUsage, IServiceUsage)
 
     _table = 'Distribution'
     _defaultOrder = 'name'
