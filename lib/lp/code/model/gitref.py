@@ -35,3 +35,7 @@ class GitRef(StormBase):
     commit_sha1 = Unicode(name='commit_sha1', allow_none=False)
 
     object_type = EnumCol(enum=GitObjectType, notNull=True)
+
+    @property
+    def display_name(self):
+        return self.path.split("/", 2)[-1]

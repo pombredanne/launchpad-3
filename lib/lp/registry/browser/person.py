@@ -379,7 +379,8 @@ class BranchTraversalMixin:
                 iter_segments, owner=self.context)
             if repository is None:
                 raise NotFoundError
-            for i in range(num_segments - len(list(iter_segments))):
+            # Subtract one because the pillar has already been traversed.
+            for _ in range(num_segments - len(list(iter_segments)) - 1):
                 self.request.stepstogo.consume()
 
             if IProduct.providedBy(target):

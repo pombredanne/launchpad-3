@@ -41,3 +41,7 @@ class IGitRef(Interface):
     object_type = Choice(
         title=_("Object type"), required=True, readonly=True,
         vocabulary=GitObjectType)
+
+    display_name = TextLine(
+        title=_("Display name"), required=True, readonly=True,
+        description=_("Display name of the reference."))

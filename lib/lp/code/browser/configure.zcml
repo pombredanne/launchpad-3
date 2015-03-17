@@ -771,6 +771,9 @@
     <browser:url
         for="lp.code.interfaces.gitrepository.IGitRepository"
         urldata="lp.code.browser.gitrepository.GitRepositoryURL"/>
+    <browser:navigation
+        module="lp.code.browser.gitrepository"
+        classes="GitRepositoryNavigation"/>
     <browser:menus
         module="lp.code.browser.gitrepository"
         classes="
@@ -794,6 +797,21 @@
         for="lp.code.interfaces.gitrepository.IGitRepository"
         factory="lp.code.browser.gitrepository.GitRepositoryBreadcrumb"
         permission="zope.Public"/>
+
+    <browser:defaultView
+        for="lp.code.interfaces.gitref.IGitRef"
+        name="+index"/>
+    <browser:url
+        for="lp.code.interfaces.gitref.IGitRef"
+        path_expression="string:+ref/${path}"
+        attribute_to_parent="repository"
+        rootsite="code"/>
+    <browser:page
+        for="lp.code.interfaces.gitref.IGitRef"
+        class="lp.code.browser.gitref.GitRefView"
+        permission="launchpad.View"
+        name="+index"
+        template="../templates/gitref-index.pt"/>
 
     <browser:menus
         classes="ProductBranchesMenu"

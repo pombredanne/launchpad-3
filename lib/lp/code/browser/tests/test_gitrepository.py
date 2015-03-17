@@ -24,13 +24,34 @@ from lp.testing import (
     login_person,
     logout,
     person_logged_in,
+    TestCaseWithFactory,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.pages import (
     setupBrowser,
     setupBrowserForUser,
     )
+from lp.testing.publication import test_traverse
 from lp.testing.views import create_initialized_view
+
+
+class TestGitRepositoryNavigation(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestGitRepositoryNavigation, self).setUp()
+        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
+
+    def test_traverse_ref(self):
+        [ref] = self.factory.makeGitRefs()
+        url = "%s/+ref/%s" % (canonical_url(ref.repository), ref.path)
+        self.assertEqual(ref, test_traverse(url)[0])
+
+    def test_traverse_ref_missing(self):
+        repository = self.factory.makeGitRepository()
+        url = "%s/+ref/refs/heads/master" % canonical_url(repository)
+        self.assertRaises(NotFound, test_traverse, url)
 
 
 class TestGitRepositoryView(BrowserTestCase):
