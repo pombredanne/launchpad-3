@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """FAQ document models."""
@@ -23,6 +23,7 @@ from zope.event import notify
 from zope.interface import implements
 
 from lp.answers.interfaces.faq import (
+    CannotDeleteFAQ,
     IFAQ,
     IFAQSet,
     )
@@ -92,6 +93,12 @@ class FAQ(SQLBase):
             return self.product
         else:
             return self.distribution
+
+    def destroySelf(self):
+        if self.related_questions:
+            raise CannotDeleteFAQ(
+               "Cannot delete FAQ: questions must be unlinked first.")
+        super(FAQ, self).destroySelf()
 
     @staticmethod
     def new(owner, title, content, keywords=keywords, date_created=None,
