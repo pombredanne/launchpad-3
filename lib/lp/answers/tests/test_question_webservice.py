@@ -1,12 +1,18 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Webservice unit tests related to Launchpad Questions."""
 
 __metaclass__ = type
 
+from datetime import (
+    datetime,
+    timedelta,
+    )
+
 from BeautifulSoup import BeautifulSoup
 from lazr.restfulclient.errors import HTTPError
+import pytz
 from simplejson import dumps
 from testtools.matchers import Equals
 import transaction
@@ -30,6 +36,7 @@ from lp.testing import (
     record_two_runs,
     TestCase,
     TestCaseWithFactory,
+    time_counter,
     ws_object,
     )
 from lp.testing.layers import (
@@ -257,7 +264,11 @@ class TestQuestionSetWebService(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_searchQuestions(self):
-        created = [self.factory.makeQuestion(title="foo") for i in range(10)]
+        date_gen = time_counter(
+            datetime(2015, 01, 01, tzinfo=pytz.UTC), timedelta(days=1))
+        created = [
+            self.factory.makeQuestion(title="foo", datecreated=next(date_gen))
+            for i in range(10)]
         webservice = webservice_for_person(self.factory.makePerson())
         collection = webservice.named_get(
             '/questions', 'searchQuestions', search_text='foo',
