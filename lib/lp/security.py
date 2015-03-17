@@ -2045,7 +2045,8 @@ class AppendFAQTarget(EditByOwnersOrAdmins):
 
     def checkAuthenticated(self, user):
         """Allow people with launchpad.Edit or an answer contact."""
-        if EditByOwnersOrAdmins.checkAuthenticated(self, user):
+        if (EditByOwnersOrAdmins.checkAuthenticated(self, user)
+                or user.in_registry_experts):
             return True
         if IQuestionTarget.providedBy(self.obj):
             # Adapt QuestionTargets to FAQTargets to ensure the correct
@@ -2069,6 +2070,14 @@ class EditFAQ(AuthorizationBase):
         """Everybody who has launchpad.Append on the FAQ target is allowed.
         """
         return AppendFAQTarget(self.obj.target).checkAuthenticated(user)
+
+
+class DeleteFAQ(AuthorizationBase):
+    permission = 'launchpad.Delete'
+    usedfor = IFAQ
+
+    def checkAuthenticated(self, user):
+        return user.in_registry_experts or user.in_admin
 
 
 def can_edit_team(team, user):

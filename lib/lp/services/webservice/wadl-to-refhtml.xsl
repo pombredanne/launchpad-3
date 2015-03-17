@@ -168,6 +168,7 @@
                     <xsl:when test="
                         @id = 'bug_link_target'
                         or @id = 'bug_target'
+                        or @id = 'faq_target'
                         or @id = 'git_target'
                         or @id = 'has_bugs'
                         or @id = 'has_milestones'
@@ -309,6 +310,12 @@
                 <var>&lt;person.name&gt;</var>
                 <xsl:text>/+email/</xsl:text>
                 <var>&lt;email&gt;</var>
+            </xsl:when>
+            <xsl:when test="@id = 'faq'">
+                <xsl:text>/</xsl:text>
+                <var>&lt;target.name&gt;</var>
+                <xsl:text>/+faq/</xsl:text>
+                <var >&lt;faq.id&gt;</var>
             </xsl:when>
             <xsl:when test="@id = 'git_repository'">
                 <xsl:text>/~</xsl:text>

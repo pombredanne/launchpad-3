@@ -10,6 +10,8 @@ which tells `lazr.restful` that it should look for webservice exports here.
 """
 
 __all__ = [
+    'IFAQ',
+    'IFAQTarget',
     'IQuestion',
     'IQuestionSet',
     'IQuestionSubscription',
@@ -17,6 +19,8 @@ __all__ = [
 
 from lazr.restful.declarations import LAZR_WEBSERVICE_EXPORTED
 
+from lp.answers.interfaces.faq import IFAQ
+from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.answers.interfaces.question import IQuestion
 from lp.answers.interfaces.questioncollection import (
     IQuestionCollection,

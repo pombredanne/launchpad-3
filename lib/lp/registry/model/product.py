@@ -55,7 +55,6 @@ from zope.interface import (
 from zope.security.proxy import removeSecurityProxy
 
 from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
-from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.answers.model.faq import (
     FAQ,
     FAQSearch,
@@ -365,7 +364,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     """A Product."""
 
     implements(
-        IBugSummaryDimension, IFAQTarget, IHasBugSupervisor,
+        IBugSummaryDimension, IHasBugSupervisor,
         IHasCustomLanguageCodes, IHasIcon, IHasLogo, IHasMugshot,
         IHasOOPSReferences, ILaunchpadUsage, IProduct, IServiceUsage)
 
