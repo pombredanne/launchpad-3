@@ -90,6 +90,12 @@ class IGitLookup(Interface):
         Return the default value if there is no such repository.
         """
 
+    def getByHostingPath(path):
+        """Get information about a given path on the hosting backend.
+
+        :return: An `IGitRepository`, or None.
+        """
+
     def getByUniqueName(unique_name):
         """Find a repository by its unique name.
 

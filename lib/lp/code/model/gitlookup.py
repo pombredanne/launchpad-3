@@ -297,6 +297,16 @@ class GitLookup:
             return default
         return repository
 
+    def getByHostingPath(self, path):
+        """See `IGitLookup`."""
+        # This may need to change later to improve support for sharding.
+        # See also `IGitRepository.getInternalPath`.
+        try:
+            repository_id = int(path)
+        except ValueError:
+            return None
+        return self.get(repository_id)
+
     @staticmethod
     def uriToPath(uri):
         """See `IGitLookup`."""

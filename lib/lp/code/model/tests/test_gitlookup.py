@@ -35,6 +35,26 @@ from lp.testing import (
 from lp.testing.layers import DatabaseFunctionalLayer
 
 
+class TestGetByHostingPath(TestCaseWithFactory):
+    """Test `IGitLookup.getByHostingPath`."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestGetByHostingPath, self).setUp()
+        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
+        self.lookup = getUtility(IGitLookup)
+
+    def test_exists(self):
+        repository = self.factory.makeGitRepository()
+        self.assertEqual(
+            repository,
+            self.lookup.getByHostingPath(repository.getInternalPath()))
+
+    def test_missing(self):
+        self.assertIsNone(self.lookup.getByHostingPath("nonexistent"))
+
+
 class TestGetByUniqueName(TestCaseWithFactory):
     """Tests for `IGitLookup.getByUniqueName`."""
 

@@ -186,6 +186,41 @@ class IGitRepositoryView(Interface):
             "'lp:' plus a shortcut version of the path via that target.  "
             "Otherwise it is simply 'lp:' plus the unique name.")))
 
+    refs = Attribute("The references present in this repository.")
+
+    def getRefByPath(path):
+        """Look up a single reference in this repository by path.
+
+        :param path: A string to look up as a path.
+
+        :return: An `IGitRef`, or None.
+        """
+
+    def createOrUpdateRefs(refs_info, get_objects=False):
+        """Create or update a set of references in this repository.
+
+        :param refs_info: A dict mapping ref paths to
+            {"sha1": sha1, "type": `GitObjectType`}.
+        :param get_objects: Return the created/updated references.
+
+        :return: A list of the created/updated references if get_objects,
+            otherwise None.
+        """
+
+    def removeRefs(paths):
+        """Remove a set of references in this repository.
+
+        :params paths: An iterable of paths.
+        """
+
+    def synchroniseRefs(hosting_refs, logger=None):
+        """Synchronise references with those from the hosting service.
+
+        :param hosting_refs: A dictionary of reference information returned
+            from the hosting service's `/repo/PATH/refs` collection.
+        :param logger: An optional logger.
+        """
+
     def setOwnerDefault(value):
         """Set whether this repository is the default for its owner-target.
 
