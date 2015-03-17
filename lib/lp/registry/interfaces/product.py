@@ -72,6 +72,7 @@ from zope.schema import (
 from zope.schema.vocabulary import SimpleVocabulary
 
 from lp import _
+from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.app.errors import NameLookupFailed
 from lp.app.interfaces.informationtype import IInformationType
@@ -888,7 +889,7 @@ class IProductEditRestricted(IOfficialBugTagTargetRestricted):
 class IProduct(
     IBugTarget, IHasBugSupervisor, IHasDrivers, IProductEditRestricted,
     IProductModerateRestricted, IProductDriverRestricted, IProductView,
-    IProductLimitedView, IProductPublic, IQuestionTarget,
+    IProductLimitedView, IProductPublic, IFAQTarget, IQuestionTarget,
     ISpecificationTarget, IStructuralSubscriptionTarget, IInformationType,
     IPillar):
     """A Product.
