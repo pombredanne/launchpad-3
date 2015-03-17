@@ -394,6 +394,7 @@ to a content object.  There are currently links defined for:
 
   * people / teams
   * branches
+  * Git repositories
   * bugs
   * bug subscriptions
   * bug tasks
@@ -518,6 +519,20 @@ The bzr-link formatter uses the bzr identity.
     >>> clear_property_cache(branch)
     >>> print test_tales("branch/fmt:bzr-link", branch=branch)
     <a href=".../~eric/fooix/bar" class="sprite branch">lp://dev/fooix</a>
+
+
+Git repositories
+................
+
+For Git repositories, fmt:link links to the branch page.
+
+    >>> from lp.code.interfaces.gitrepository import GIT_FEATURE_FLAG
+    >>> from lp.services.features.testing import FeatureFixture
+    >>> with FeatureFixture({GIT_FEATURE_FLAG: 'on'}):
+    ...     repository = factory.makeGitRepository(
+    ...         owner=eric, target=fooix, name=u'bar')
+    ...     print test_tales("repository/fmt:link", repository=repository)
+    <a href=".../~eric/fooix/+git/bar">lp:~eric/fooix/+git/bar</a>
 
 
 Bugs
