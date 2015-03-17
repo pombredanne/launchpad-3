@@ -65,12 +65,12 @@ class TestGitRefScanJobMixin:
 
     @staticmethod
     def makeFakeRefs(paths):
-        return dict(
-            (path, {"object": {
+        return {
+            path: {"object": {
                 "sha1": hashlib.sha1(path).hexdigest(),
                 "type": "commit",
-                }})
-            for path in paths)
+                }}
+            for path in paths}
 
     def assertRefsMatch(self, refs, repository, paths):
         matchers = [
