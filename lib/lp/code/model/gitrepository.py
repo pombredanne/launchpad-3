@@ -372,9 +372,9 @@ class GitRepository(StormBase, GitIdentityMixin):
         db_values = dbify_values(values)
         new_refs_expr = Values("new_refs", column_types, db_values)
         new_refs = ClassAlias(GitRef, "new_refs")
-        updated_columns = dict([
-            (getattr(GitRef, name), getattr(new_refs, name))
-            for name in column_names if name not in ("repository_id", "path")])
+        updated_columns = {
+            getattr(GitRef, name): getattr(new_refs, name)
+            for name in column_names if name not in ("repository_id", "path")}
         update_filter = And(
             GitRef.repository_id == new_refs.repository_id,
             GitRef.path == new_refs.path)
@@ -417,7 +417,7 @@ class GitRepository(StormBase, GitIdentityMixin):
                 new_refs[path] = self._convertRefInfo(info)
             except ValueError:
                 pass
-        current_refs = dict((ref.path, ref) for ref in self.refs)
+        current_refs = {ref.path: ref for ref in self.refs}
         refs_to_upsert = {}
         for path, info in new_refs.items():
             current_ref = current_refs.get(path)
