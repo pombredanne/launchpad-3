@@ -161,18 +161,21 @@ class GitRepository(StormBase, GitIdentityMixin):
 
     name = Unicode(name='name', allow_none=False)
 
+    description = Unicode(name='description', allow_none=True)
+
     information_type = EnumCol(enum=InformationType, notNull=True)
     owner_default = Bool(name='owner_default', allow_none=False)
     target_default = Bool(name='target_default', allow_none=False)
 
     def __init__(self, registrant, owner, target, name, information_type,
-                 date_created):
+                 date_created, description=None):
         if not getFeatureFlag(GIT_FEATURE_FLAG):
             raise GitFeatureDisabled
         super(GitRepository, self).__init__()
         self.registrant = registrant
         self.owner = owner
         self.name = name
+        self.description = description
         self.information_type = information_type
         self.date_created = date_created
         self.date_last_modified = date_created
@@ -511,12 +514,12 @@ class GitRepositorySet:
     implements(IGitRepositorySet)
 
     def new(self, registrant, owner, target, name, information_type=None,
-            date_created=DEFAULT):
+            date_created=DEFAULT, description=None):
         """See `IGitRepositorySet`."""
         namespace = get_git_namespace(target, owner)
         return namespace.createRepository(
             registrant, name, information_type=information_type,
-            date_created=date_created)
+            date_created=date_created, description=description)
 
     def getByPath(self, user, path):
         """See `IGitRepositorySet`."""

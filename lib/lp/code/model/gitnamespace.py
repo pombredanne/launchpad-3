@@ -60,7 +60,7 @@ class _BaseGitNamespace:
     """Common code for Git repository namespaces."""
 
     def createRepository(self, registrant, name, information_type=None,
-                         date_created=DEFAULT):
+                         date_created=DEFAULT, description=None):
         """See `IGitNamespace`."""
 
         self.validateRegistrant(registrant)
@@ -73,7 +73,7 @@ class _BaseGitNamespace:
 
         repository = GitRepository(
             registrant, self.owner, self.target, name, information_type,
-            date_created)
+            date_created, description=description)
         repository._reconcileAccess()
 
         notify(ObjectCreatedEvent(repository))
