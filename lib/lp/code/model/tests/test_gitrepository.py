@@ -597,17 +597,21 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
             u"1111111111111111111111111111111111111111", foo_sha1, master_sha1]
         [(_, observed_oids)] = hosting_client.get_commits.extract_args()
         self.assertContentEqual(expected_oids, observed_oids)
+        expected_author_addr = u"%s <%s>" % (author.displayname, author_email)
         [expected_author] = getUtility(IRevisionSet).acquireRevisionAuthors(
-            ["%s <%s>" % (author.displayname, author_email)]).values()
+            [expected_author_addr]).values()
+        expected_committer_addr = u"New Person <new-person@example.org>"
         [expected_committer] = getUtility(IRevisionSet).acquireRevisionAuthors(
-            ["New Person <new-person@example.org>"]).values()
+            [expected_committer_addr]).values()
         expected_upsert = {
             u"refs/heads/master": {
                 u"sha1": u"1111111111111111111111111111111111111111",
                 u"type": GitObjectType.COMMIT,
                 u"author": removeSecurityProxy(expected_author).id,
+                u"author_addr": expected_author_addr,
                 u"author_date": author_date,
                 u"committer": removeSecurityProxy(expected_committer).id,
+                u"committer_addr": expected_committer_addr,
                 u"committer_date": committer_date,
                 u"commit_message": u"tip of master",
                 },

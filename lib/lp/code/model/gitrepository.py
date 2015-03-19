@@ -444,28 +444,26 @@ class GitRepository(StormBase, GitIdentityMixin):
                 info["sha1"] != current_ref.commit_sha1 or
                 info["type"] != current_ref.object_type or
                 current_ref.author_id is None or
-                current_ref.author is None or
+                current_ref.author_date is None or
                 current_ref.committer_id is None or
-                current_ref.committer is None or
+                current_ref.committer_date is None or
                 current_ref.commit_message is None):
                 refs_to_upsert[path] = info
-        oids_to_upsert = {
-            info["sha1"]: path for path, info in refs_to_upsert.items()}
+        oids_to_upsert = sorted(set(
+            info["sha1"] for info in refs_to_upsert.values()))
         refs_to_remove = set(current_refs) - set(new_refs)
 
         # Fetch any required commit information, and fill it into the
         # appropriate info dictionaries.
-        commits = hosting_client.get_commits(
-            hosting_path, list(oids_to_upsert), logger=logger)
-        authors_to_acquire = {}
-        committers_to_acquire = {}
-        for commit in commits:
-            oid = commit["sha1"]
-            if oid in oids_to_upsert:
-                info = refs_to_upsert[oids_to_upsert[oid]]
-            else:
-                # We got a stray commit from the hosting service for some
-                # reason.  Just ignore it.
+        commits = {
+            commit.get("sha1"): commit
+            for commit in hosting_client.get_commits(
+                hosting_path, oids_to_upsert, logger=logger)}
+        authors_to_acquire = []
+        committers_to_acquire = []
+        for info in refs_to_upsert.values():
+            commit = commits.get(info["sha1"])
+            if commit is None:
                 continue
             author = commit.get("author")
             if author is not None:
@@ -475,7 +473,8 @@ class GitRepository(StormBase, GitIdentityMixin):
                 if "name" in author and "email" in author:
                     author_addr = email.utils.formataddr(
                         (author["name"], author["email"]))
-                    authors_to_acquire[author_addr] = info
+                    info["author_addr"] = author_addr
+                    authors_to_acquire.append(author_addr)
             committer = commit.get("committer")
             if committer is not None:
                 if "time" in committer:
@@ -484,21 +483,22 @@ class GitRepository(StormBase, GitIdentityMixin):
                 if "name" in committer and "email" in committer:
                     committer_addr = email.utils.formataddr(
                         (committer["name"], committer["email"]))
-                    committers_to_acquire[committer_addr] = info
+                    info["committer_addr"] = committer_addr
+                    committers_to_acquire.append(committer_addr)
             if "message" in commit:
                 info["commit_message"] = commit["message"]
         revision_authors = getUtility(IRevisionSet).acquireRevisionAuthors(
-            list(authors_to_acquire) + list(committers_to_acquire))
-        for addr, revision_author in revision_authors.items():
+            authors_to_acquire + committers_to_acquire)
+        for info in refs_to_upsert.values():
             # Removing the security proxy here is safe because
             # RevisionAuthors are always public.  We need to do this for the
             # sake of dbify_value later.
-            if addr in authors_to_acquire:
-                authors_to_acquire[addr]["author"] = removeSecurityProxy(
-                    revision_author).id
-            if addr in committers_to_acquire:
-                committers_to_acquire[addr]["committer"] = removeSecurityProxy(
-                    revision_author).id
+            author = revision_authors.get(info.get("author_addr"))
+            if author is not None:
+                info["author"] = removeSecurityProxy(author).id
+            committer = revision_authors.get(info.get("committer_addr"))
+            if committer is not None:
+                info["committer"] = removeSecurityProxy(committer).id
 
         return refs_to_upsert, refs_to_remove
 
