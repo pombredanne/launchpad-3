@@ -8,6 +8,8 @@ __all__ = [
     'GitRepositorySet',
     ]
 
+from datetime import datetime
+import email
 from itertools import chain
 
 from bzrlib import urlutils
@@ -68,6 +70,7 @@ from lp.code.interfaces.gitrepository import (
     IGitRepositorySet,
     user_has_special_git_repository_access,
     )
+from lp.code.interfaces.revision import IRevisionSet
 from lp.code.model.gitref import GitRef
 from lp.registry.enums import PersonVisibility
 from lp.registry.errors import CannotChangeInformationType
@@ -358,16 +361,28 @@ class GitRepository(StormBase, GitIdentityMixin):
         store.flush()
 
         # Try a bulk update first.
-        column_names = ["repository_id", "path", "commit_sha1", "object_type"]
+        column_names = [
+            "repository_id", "path", "commit_sha1", "object_type",
+            "author_id", "author_date", "committer_id", "committer_date",
+            "commit_message",
+            ]
         column_types = [
             ("repository", "integer"),
             ("path", "text"),
             ("commit_sha1", "character(40)"),
             ("object_type", "integer"),
+            ("author", "integer"),
+            ("author_date", "timestamp without time zone"),
+            ("committer", "integer"),
+            ("committer_date", "timestamp without time zone"),
+            ("commit_message", "text"),
             ]
         columns = [getattr(GitRef, name) for name in column_names]
         values = [
-            (self.id, path, info["sha1"], info["type"])
+            (self.id, path, info["sha1"], info["type"],
+             info.get("author"), info.get("author_date"),
+             info.get("committer"), info.get("committer_date"),
+             info.get("commit_message"))
             for path, info in refs_info.items()]
         db_values = dbify_values(values)
         new_refs_expr = Values("new_refs", column_types, db_values)
@@ -409,23 +424,84 @@ class GitRepository(StormBase, GitIdentityMixin):
             GitRef.repository == self, GitRef.path.is_in(paths)).remove()
         del get_property_cache(self).refs
 
-    def synchroniseRefs(self, hosting_refs, logger=None):
+    def planRefChanges(self, hosting_client, hosting_path, logger=None):
         """See `IGitRepository`."""
         new_refs = {}
-        for path, info in hosting_refs.items():
+        for path, info in hosting_client.get_refs(hosting_path).items():
             try:
                 new_refs[path] = self._convertRefInfo(info)
             except ValueError as e:
                 logger.warning("Unconvertible ref %s %s: %s" % (path, info, e))
+
+        # Plan the changes.
         current_refs = {ref.path: ref for ref in self.refs}
         refs_to_upsert = {}
         for path, info in new_refs.items():
             current_ref = current_refs.get(path)
             if (current_ref is None or
                 info["sha1"] != current_ref.commit_sha1 or
-                info["type"] != current_ref.object_type):
+                info["type"] != current_ref.object_type or
+                current_ref.author_id is None or
+                current_ref.author is None or
+                current_ref.committer_id is None or
+                current_ref.committer is None or
+                current_ref.commit_message is None):
                 refs_to_upsert[path] = info
+        oids_to_upsert = {
+            info["sha1"]: path for path, info in refs_to_upsert.items()}
         refs_to_remove = set(current_refs) - set(new_refs)
+
+        # Fetch any required commit information, and fill it into the
+        # appropriate info dictionaries.
+        commits = hosting_client.get_commits(
+            hosting_path, list(oids_to_upsert))
+        authors_to_acquire = {}
+        committers_to_acquire = {}
+        for commit in commits:
+            oid = commit["sha1"]
+            if oid in oids_to_upsert:
+                info = refs_to_upsert[oids_to_upsert[oid]]
+            else:
+                # We got a stray commit from the hosting service for some
+                # reason.  Just ignore it.
+                continue
+            author = commit.get("author")
+            if author is not None:
+                if "time" in author:
+                    info["author_date"] = datetime.fromtimestamp(
+                        author["time"], tz=pytz.UTC)
+                if "name" in author and "email" in author:
+                    author_addr = email.utils.formataddr(
+                        (author["name"], author["email"]))
+                    authors_to_acquire[author_addr] = info
+            committer = commit.get("committer")
+            if committer is not None:
+                if "time" in committer:
+                    info["committer_date"] = datetime.fromtimestamp(
+                        committer["time"], tz=pytz.UTC)
+                if "name" in committer and "email" in committer:
+                    committer_addr = email.utils.formataddr(
+                        (committer["name"], committer["email"]))
+                    committers_to_acquire[committer_addr] = info
+            if "message" in commit:
+                info["commit_message"] = commit["message"]
+        revision_authors = getUtility(IRevisionSet).acquireRevisionAuthors(
+            list(authors_to_acquire) + list(committers_to_acquire))
+        for addr, revision_author in revision_authors.items():
+            # Removing the security proxy here is safe because
+            # RevisionAuthors are always public.  We need to do this for the
+            # sake of dbify_value later.
+            if addr in authors_to_acquire:
+                authors_to_acquire[addr]["author"] = removeSecurityProxy(
+                    revision_author).id
+            if addr in committers_to_acquire:
+                committers_to_acquire[addr]["committer"] = removeSecurityProxy(
+                    revision_author).id
+
+        return refs_to_upsert, refs_to_remove
+
+    def synchroniseRefs(self, refs_to_upsert, refs_to_remove):
+        """See `IGitRepository`."""
         if refs_to_upsert:
             self.createOrUpdateRefs(refs_to_upsert)
         if refs_to_remove:

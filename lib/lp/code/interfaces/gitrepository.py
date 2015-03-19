@@ -213,12 +213,21 @@ class IGitRepositoryView(Interface):
         :params paths: An iterable of paths.
         """
 
-    def synchroniseRefs(hosting_refs, logger=None):
+    def planRefChanges(hosting_client, hosting_path, logger=None):
+        """Plan ref changes based on information from the hosting service.
+
+        :param hosting_client: A `GitHostingClient`.
+        :param hosting_path: A path on the hosting service.
+        :param logger: An optional logger.
+        """
+
+    def synchroniseRefs(refs_to_upsert, refs_to_remove):
         """Synchronise references with those from the hosting service.
 
-        :param hosting_refs: A dictionary of reference information returned
-            from the hosting service's `/repo/PATH/refs` collection.
-        :param logger: An optional logger.
+        :param refs_to_upsert: A dictionary mapping ref paths to
+            dictionaries of their fields; these refs will be created or
+            updated as appropriate.
+        :param refs_to_remove: A set of ref paths to remove.
         """
 
     def setOwnerDefault(value):
