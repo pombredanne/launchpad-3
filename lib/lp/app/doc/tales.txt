@@ -532,7 +532,8 @@ For Git repositories, fmt:link links to the branch page.
     ...     repository = factory.makeGitRepository(
     ...         owner=eric, target=fooix, name=u'bar')
     ...     print test_tales("repository/fmt:link", repository=repository)
-    <a href=".../~eric/fooix/+git/bar">lp:~eric/fooix/+git/bar</a>
+    <a href=".../~eric/fooix/+git/bar"
+      class="sprite git">lp:~eric/fooix/+git/bar</a>
 
 
 Bugs
