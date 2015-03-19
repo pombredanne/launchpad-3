@@ -15,6 +15,8 @@ from zope.interface import (
     )
 from zope.schema import (
     Choice,
+    Datetime,
+    Text,
     TextLine,
     )
 
@@ -41,6 +43,24 @@ class IGitRef(Interface):
     object_type = Choice(
         title=_("Object type"), required=True, readonly=True,
         vocabulary=GitObjectType)
+
+    author = Attribute(
+        "The author of the commit pointed to by this reference.")
+    author_date = Datetime(
+        title=_("The author date of the commit pointed to by this reference."),
+        required=False, readonly=True)
+
+    committer = Attribute(
+        "The committer of the commit pointed to by this reference.")
+    committer_date = Datetime(
+        title=_(
+            "The committer date of the commit pointed to by this reference."),
+        required=False, readonly=True)
+
+    commit_message = Text(
+        title=_(
+            "The commit message of the commit pointed to by this reference."),
+        required=False, readonly=True)
 
     display_name = TextLine(
         title=_("Display name"), required=True, readonly=True,
