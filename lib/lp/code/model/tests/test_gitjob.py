@@ -154,7 +154,7 @@ class TestGitRefScanJob(TestGitRefScanJobMixin, TestCaseWithFactory):
         with self.expectedLog(expected_message):
             with dbuser("branchscanner"):
                 job.run()
-        self.assertEqual([], repository.refs)
+        self.assertEqual([], list(repository.refs))
 
 
 # XXX cjwatson 2015-03-12: We should test that the job works via Celery too,

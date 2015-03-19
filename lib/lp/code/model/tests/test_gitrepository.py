@@ -482,7 +482,7 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
 
     def test_create(self):
         repository = self.factory.makeGitRepository()
-        self.assertEqual([], repository.refs)
+        self.assertEqual([], list(repository.refs))
         paths = (u"refs/heads/master", u"refs/tags/1.0")
         self.factory.makeGitRefs(repository=repository, paths=paths)
         self.assertRefsMatch(repository.refs, repository, paths)

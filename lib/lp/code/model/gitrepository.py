@@ -311,8 +311,16 @@ class GitRepository(StormBase, GitIdentityMixin):
     @cachedproperty
     def refs(self):
         """See `IGitRepository`."""
-        return list(Store.of(self).find(
-            GitRef, GitRef.repository_id == self.id).order_by(GitRef.path))
+        return Store.of(self).find(
+            GitRef, GitRef.repository_id == self.id).order_by(GitRef.path)
+
+    @cachedproperty
+    def branches(self):
+        """See `IGitRepository`."""
+        return Store.of(self).find(
+            GitRef,
+            GitRef.repository_id == self.id,
+            GitRef.path.startswith(u"refs/heads/")).order_by(GitRef.path)
 
     def getRefByPath(self, path):
         return Store.of(self).find(
@@ -414,6 +422,7 @@ class GitRepository(StormBase, GitIdentityMixin):
             created = []
 
         del get_property_cache(self).refs
+        del get_property_cache(self).branches
         if get_objects:
             return bulk.load(GitRef, updated + created)
 
@@ -423,6 +432,7 @@ class GitRepository(StormBase, GitIdentityMixin):
             GitRef,
             GitRef.repository == self, GitRef.path.is_in(paths)).remove()
         del get_property_cache(self).refs
+        del get_property_cache(self).branches
 
     def planRefChanges(self, hosting_client, hosting_path, logger=None):
         """See `IGitRepository`."""
