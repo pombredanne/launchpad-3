@@ -431,7 +431,9 @@ class GitRepository(StormBase, GitIdentityMixin):
             try:
                 new_refs[path] = self._convertRefInfo(info)
             except ValueError as e:
-                logger.warning("Unconvertible ref %s %s: %s" % (path, info, e))
+                if logger is not None:
+                    logger.warning(
+                        "Unconvertible ref %s %s: %s" % (path, info, e))
 
         # Plan the changes.
         current_refs = {ref.path: ref for ref in self.refs}
@@ -454,7 +456,7 @@ class GitRepository(StormBase, GitIdentityMixin):
         # Fetch any required commit information, and fill it into the
         # appropriate info dictionaries.
         commits = hosting_client.get_commits(
-            hosting_path, list(oids_to_upsert))
+            hosting_path, list(oids_to_upsert), logger=logger)
         authors_to_acquire = {}
         committers_to_acquire = {}
         for commit in commits:
