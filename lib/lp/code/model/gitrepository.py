@@ -440,12 +440,16 @@ class GitRepository(StormBase, GitIdentityMixin):
             current_ref = current_refs.get(path)
             if (current_ref is None or
                 info["sha1"] != current_ref.commit_sha1 or
-                info["type"] != current_ref.object_type or
-                current_ref.author_id is None or
-                current_ref.author_date is None or
-                current_ref.committer_id is None or
-                current_ref.committer_date is None or
-                current_ref.commit_message is None):
+                info["type"] != current_ref.object_type):
+                refs_to_upsert[path] = info
+            elif (info["type"] == GitObjectType.COMMIT and
+                  (current_ref.author_id is None or
+                   current_ref.author_date is None or
+                   current_ref.committer_id is None or
+                   current_ref.committer_date is None or
+                   current_ref.commit_message is None)):
+                # Only request detailed commit metadata for refs that point
+                # to commits.
                 refs_to_upsert[path] = info
         refs_to_remove = set(current_refs) - set(new_refs)
         return refs_to_upsert, refs_to_remove

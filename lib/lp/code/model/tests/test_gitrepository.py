@@ -588,6 +588,30 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
         self.assertEqual(expected_upsert, refs_to_upsert)
         self.assertEqual(set([u"refs/heads/bar"]), refs_to_remove)
 
+    def test_planRefChanges_skips_non_commits(self):
+        # planRefChanges does not attempt to update refs that point to
+        # non-commits.
+        repository = self.factory.makeGitRepository()
+        blob_sha1 = unicode(hashlib.sha1(u"refs/heads/blob").hexdigest())
+        refs_info = {
+            u"refs/heads/blob": {
+                u"sha1": blob_sha1,
+                u"type": GitObjectType.BLOB,
+                },
+            }
+        repository.createOrUpdateRefs(refs_info)
+        hosting_client = FakeMethod()
+        hosting_client.getRefs = FakeMethod(result={
+            u"refs/heads/blob": {
+                u"object": {
+                    u"sha1": blob_sha1,
+                    u"type": u"blob",
+                    },
+                },
+            })
+        self.assertEqual(
+            ({}, set()), repository.planRefChanges(hosting_client, "dummy"))
+
     def test_fetchRefCommits(self):
         # fetchRefCommits fetches detailed tip commit metadata for the
         # requested refs.
