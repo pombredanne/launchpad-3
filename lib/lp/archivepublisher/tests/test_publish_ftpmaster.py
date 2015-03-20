@@ -862,11 +862,36 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         os.makedirs(content_suite)
         write_marker_file(
             [content_suite, "%s-staged.gz" % contents_filename], "Contents")
-        script.updateContentsFile(
-            distro.main_archive, distro, distroseries.name, das)
+        self.assertTrue(script.updateContentsFile(
+            distro.main_archive, distro, distroseries.name, das))
         self.assertEqual(
             "Contents",
             read_marker_file([backup_suite, "%s.gz" % contents_filename]))
+
+    def test_updateContentsFiles_updated_suites(self):
+        # updateContentsFiles returns a list of suites for which it updated
+        # Contents files.
+        distro = self.makeDistroWithPublishDirectory()
+        distroseries = self.factory.makeDistroSeries(distribution=distro)
+        das = self.factory.makeDistroArchSeries(distroseries=distroseries)
+        script = self.makeScript(distro)
+        script.setUp()
+        script.setUpDirs()
+        archive_config = getPubConfig(distro.main_archive)
+        contents_filename = "Contents-%s" % das.architecturetag
+        backup_suite = os.path.join(
+            archive_config.archiveroot + "-distscopy", "dists",
+            distroseries.name)
+        os.makedirs(backup_suite)
+        content_suite = os.path.join(
+            archive_config.distroroot, "contents-generation", distro.name,
+            "dists", distroseries.name)
+        os.makedirs(content_suite)
+        write_marker_file(
+            [content_suite, "%s-staged.gz" % contents_filename], "Contents")
+        self.assertEqual(
+            [(distro.main_archive, distroseries.name)],
+            script.updateContentsFiles(distro))
 
     def test_updateContentsFiles_only_primary_archive(self):
         # updateContentsFiles only considers the primary archive.  (This

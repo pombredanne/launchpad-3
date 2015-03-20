@@ -560,7 +560,10 @@ class PublishFTPMaster(LaunchpadCronScript):
                     distribution, archive, updated_suites=updated_suites)
 
     def updateContentsFile(self, archive, distribution, suite, arch):
-        """Update a single Contents file if necessary."""
+        """Update a single Contents file if necessary.
+
+        :return: True if a file was updated, otherwise False.
+        """
         config = self.configs[distribution][archive.purpose]
         backup_dists = get_backup_dists(config)
         content_dists = os.path.join(
@@ -576,6 +579,8 @@ class PublishFTPMaster(LaunchpadCronScript):
                 "Installing new Contents file for %s/%s.", suite,
                 arch.architecturetag)
             shutil.copy2(new_contents, current_contents)
+            return True
+        return False
 
     def updateContentsFiles(self, distribution):
         """Pick up updated Contents files if necessary."""
@@ -586,9 +591,12 @@ class PublishFTPMaster(LaunchpadCronScript):
         for series in distribution.getNonObsoleteSeries():
             for pocket in PackagePublishingPocket.items:
                 suite = series.getSuite(pocket)
+                updated = False
                 for arch in series.enabled_architectures:
-                    self.updateContentsFile(
-                        archive, distribution, suite, arch)
+                    if self.updateContentsFile(
+                            archive, distribution, suite, arch):
+                        updated = True
+                if updated:
                     updated_suites.append((archive, suite))
         return updated_suites
 
