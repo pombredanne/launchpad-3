@@ -6,7 +6,9 @@ __all__ = [
     'GitRef',
     ]
 
+import pytz
 from storm.locals import (
+    DateTime,
     Int,
     Reference,
     Unicode,
@@ -35,6 +37,18 @@ class GitRef(StormBase):
     commit_sha1 = Unicode(name='commit_sha1', allow_none=False)
 
     object_type = EnumCol(enum=GitObjectType, notNull=True)
+
+    author_id = Int(name='author', allow_none=True)
+    author = Reference(author_id, 'RevisionAuthor.id')
+    author_date = DateTime(
+        name='author_date', tzinfo=pytz.UTC, allow_none=True)
+
+    committer_id = Int(name='committer', allow_none=True)
+    committer = Reference(committer_id, 'RevisionAuthor.id')
+    committer_date = DateTime(
+        name='committer_date', tzinfo=pytz.UTC, allow_none=True)
+
+    commit_message = Unicode(name='commit_message', allow_none=True)
 
     @property
     def display_name(self):

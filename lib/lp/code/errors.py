@@ -36,7 +36,7 @@ __all__ = [
     'GitRepositoryCreatorNotMemberOfOwnerTeam',
     'GitRepositoryCreatorNotOwner',
     'GitRepositoryExists',
-    'GitRepositoryRefScanFault',
+    'GitRepositoryScanFault',
     'GitTargetError',
     'InvalidBranchMergeProposal',
     'InvalidMergeQueueConfig',
@@ -382,8 +382,8 @@ class GitRepositoryCreationFault(Exception):
     """Raised when there is a hosting fault creating a Git repository."""
 
 
-class GitRepositoryRefScanFault(Exception):
-    """Raised when there is a fault getting the refs for a repository."""
+class GitRepositoryScanFault(Exception):
+    """Raised when there is a fault scanning a repository."""
 
 
 class GitTargetError(Exception):
