@@ -192,6 +192,9 @@ class GitRefScanJob(GitJobDerived):
                 refs_to_upsert, refs_to_remove = (
                     self.repository.planRefChanges(
                         self._hosting_client, hosting_path, logger=log))
+                self.repository.fetchRefCommits(
+                    self._hosting_client, hosting_path, refs_to_upsert,
+                    logger=log)
                 self.repository.synchroniseRefs(refs_to_upsert, refs_to_remove)
         except LostObjectError:
             log.info(

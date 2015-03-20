@@ -225,6 +225,17 @@ class IGitRepositoryView(Interface):
             paths to remove.
         """
 
+    def fetchRefCommits(hosting_client, hosting_path, refs, logger=None):
+        """Fetch commit information from the hosting service for a set of refs.
+
+        :param hosting_client: A `GitHostingClient`.
+        :param hosting_path: A path on the hosting service.
+        :param refs: A dict mapping ref paths to dictionaries of their
+            fields; the field dictionaries will be updated with any detailed
+            commit information that is available.
+        :param logger: An optional logger.
+        """
+
     def synchroniseRefs(refs_to_upsert, refs_to_remove):
         """Synchronise references with those from the hosting service.
 

@@ -434,8 +434,6 @@ class GitRepository(StormBase, GitIdentityMixin):
                 if logger is not None:
                     logger.warning(
                         "Unconvertible ref %s %s: %s" % (path, info, e))
-
-        # Plan the changes.
         current_refs = {ref.path: ref for ref in self.refs}
         refs_to_upsert = {}
         for path, info in new_refs.items():
@@ -449,19 +447,20 @@ class GitRepository(StormBase, GitIdentityMixin):
                 current_ref.committer_date is None or
                 current_ref.commit_message is None):
                 refs_to_upsert[path] = info
-        oids_to_upsert = sorted(set(
-            info["sha1"] for info in refs_to_upsert.values()))
         refs_to_remove = set(current_refs) - set(new_refs)
+        return refs_to_upsert, refs_to_remove
 
-        # Fetch any required commit information, and fill it into the
-        # appropriate info dictionaries.
+    @staticmethod
+    def fetchRefCommits(hosting_client, hosting_path, refs, logger=None):
+        """See `IGitRepository`."""
+        oids = sorted(set(info["sha1"] for info in refs.values()))
         commits = {
             commit.get("sha1"): commit
             for commit in hosting_client.getCommits(
-                hosting_path, oids_to_upsert, logger=logger)}
+                hosting_path, oids, logger=logger)}
         authors_to_acquire = []
         committers_to_acquire = []
-        for info in refs_to_upsert.values():
+        for info in refs.values():
             commit = commits.get(info["sha1"])
             if commit is None:
                 continue
@@ -489,15 +488,13 @@ class GitRepository(StormBase, GitIdentityMixin):
                 info["commit_message"] = commit["message"]
         revision_authors = getUtility(IRevisionSet).acquireRevisionAuthors(
             authors_to_acquire + committers_to_acquire)
-        for info in refs_to_upsert.values():
+        for info in refs.values():
             author = revision_authors.get(info.get("author_addr"))
             if author is not None:
                 info["author"] = author.id
             committer = revision_authors.get(info.get("committer_addr"))
             if committer is not None:
                 info["committer"] = committer.id
-
-        return refs_to_upsert, refs_to_remove
 
     def synchroniseRefs(self, refs_to_upsert, refs_to_remove):
         """See `IGitRepository`."""
