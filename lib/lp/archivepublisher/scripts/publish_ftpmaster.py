@@ -560,7 +560,10 @@ class PublishFTPMaster(LaunchpadCronScript):
                     distribution, archive, updated_suites=updated_suites)
 
     def updateContentsFile(self, archive, distribution, suite, arch):
-        """Update a single Contents file if necessary."""
+        """Update a single Contents file if necessary.
+
+        :return: True if a file was updated, otherwise False.
+        """
         config = self.configs[distribution][archive.purpose]
         backup_dists = get_backup_dists(config)
         content_dists = os.path.join(
@@ -576,18 +579,25 @@ class PublishFTPMaster(LaunchpadCronScript):
                 "Installing new Contents file for %s/%s.", suite,
                 arch.architecturetag)
             shutil.copy2(new_contents, current_contents)
+            return True
+        return False
 
     def updateContentsFiles(self, distribution):
         """Pick up updated Contents files if necessary."""
         updated_suites = []
-        for archive in get_publishable_archives(distribution):
-            for series in distribution.getNonObsoleteSeries():
-                for pocket in PackagePublishingPocket.items:
-                    suite = series.getSuite(pocket)
-                    for arch in series.enabled_architectures:
-                        self.updateContentsFile(
-                            archive, distribution, suite, arch)
-                        updated_suites.append((archive, suite))
+        # XXX cjwatson 2015-03-20: GenerateContentsFiles currently only
+        # supports the primary archive.
+        archive = distribution.main_archive
+        for series in distribution.getNonObsoleteSeries():
+            for pocket in PackagePublishingPocket.items:
+                suite = series.getSuite(pocket)
+                updated = False
+                for arch in series.enabled_architectures:
+                    if self.updateContentsFile(
+                            archive, distribution, suite, arch):
+                        updated = True
+                if updated:
+                    updated_suites.append((archive, suite))
         return updated_suites
 
     def publish(self, distribution, security_only=False):
