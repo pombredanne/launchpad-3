@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Publisher script class."""
@@ -68,6 +68,11 @@ class PublishDistro(PublisherScript):
         self.parser.add_option(
             '-s', '--suite', metavar='SUITE', dest='suite', action='append',
             type='string', default=[], help='The suite to publish')
+
+        self.parser.add_option(
+            "--dirty-suite", metavar="SUITE", dest="dirty_suites",
+            action="append", default=[],
+            help="Consider this suite dirty regardless of publications.")
 
         self.parser.add_option(
             "-R", "--distsroot", dest="distsroot", metavar="SUFFIX",
@@ -174,19 +179,21 @@ class PublishDistro(PublisherScript):
         """Find the named `suite` in the selected `Distribution`.
 
         :param suite: The suite name to look for.
-        :return: A tuple of distroseries name and pocket.
+        :return: A tuple of distroseries and pocket.
         """
         try:
             series, pocket = distribution.getDistroSeriesAndPocket(suite)
         except NotFoundError as e:
             raise OptionValueError(e)
-        return series.name, pocket
+        return series, pocket
 
     def findAllowedSuites(self, distribution):
         """Find the selected suite(s)."""
-        return set([
-            self.findSuite(distribution, suite)
-            for suite in self.options.suite])
+        suites = set()
+        for suite in self.options.suite:
+            series, pocket = self.findSuite(distribution, suite)
+            suites.add((series.name, pocket))
+        return suites
 
     def getCopyArchives(self, distribution):
         """Find copy archives for the selected distribution."""
@@ -285,6 +292,12 @@ class PublishDistro(PublisherScript):
                 if archive.status == ArchiveStatus.DELETING:
                     work_done = self.deleteArchive(archive, publisher)
                 elif archive.publish:
+                    for suite in self.options.dirty_suites:
+                        distroseries, pocket = self.findSuite(
+                            distribution, suite)
+                        if not publisher.cannotModifySuite(
+                                distroseries, pocket):
+                            publisher.markPocketDirty(distroseries, pocket)
                     self.publishArchive(archive, publisher)
                     work_done = True
                 else:

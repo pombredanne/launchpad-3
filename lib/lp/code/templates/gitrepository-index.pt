@@ -32,6 +32,10 @@
 
 <div metal:fill-slot="main">
 
+  <div id="repository-description" tal:condition="context/description"
+       class="summary"
+       tal:content="structure context/description/fmt:text-to-html" />
+
   <div class="yui-g first">
     <div id="repository-management" class="portlet">
       <tal:repository-management

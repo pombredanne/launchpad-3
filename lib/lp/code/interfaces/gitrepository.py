@@ -221,6 +221,21 @@ class IGitRepositoryView(Interface):
         :param hosting_client: A `GitHostingClient`.
         :param hosting_path: A path on the hosting service.
         :param logger: An optional logger.
+
+        :return: A dict of refs to create or update as appropriate, mapping
+            ref paths to dictionaries of their fields; and a set of ref
+            paths to remove.
+        """
+
+    def fetchRefCommits(hosting_client, hosting_path, refs, logger=None):
+        """Fetch commit information from the hosting service for a set of refs.
+
+        :param hosting_client: A `GitHostingClient`.
+        :param hosting_path: A path on the hosting service.
+        :param refs: A dict mapping ref paths to dictionaries of their
+            fields; the field dictionaries will be updated with any detailed
+            commit information that is available.
+        :param logger: An optional logger.
         """
 
     def synchroniseRefs(refs_to_upsert, refs_to_remove):
@@ -316,6 +331,10 @@ class IGitRepositoryModerateAttributes(Interface):
 
     date_last_modified = exported(Datetime(
         title=_("Date last modified"), required=True, readonly=True))
+
+    description = exported(Text(
+        title=_("Description"), required=False, readonly=False,
+        description=_("A short description of this repository.")))
 
 
 class IGitRepositoryModerate(Interface):

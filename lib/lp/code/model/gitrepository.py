@@ -164,18 +164,21 @@ class GitRepository(StormBase, GitIdentityMixin):
 
     name = Unicode(name='name', allow_none=False)
 
+    description = Unicode(name='description', allow_none=True)
+
     information_type = EnumCol(enum=InformationType, notNull=True)
     owner_default = Bool(name='owner_default', allow_none=False)
     target_default = Bool(name='target_default', allow_none=False)
 
     def __init__(self, registrant, owner, target, name, information_type,
-                 date_created):
+                 date_created, description=None):
         if not getFeatureFlag(GIT_FEATURE_FLAG):
             raise GitFeatureDisabled
         super(GitRepository, self).__init__()
         self.registrant = registrant
         self.owner = owner
         self.name = name
+        self.description = description
         self.information_type = information_type
         self.date_created = date_created
         self.date_last_modified = date_created
@@ -437,41 +440,44 @@ class GitRepository(StormBase, GitIdentityMixin):
     def planRefChanges(self, hosting_client, hosting_path, logger=None):
         """See `IGitRepository`."""
         new_refs = {}
-        for path, info in hosting_client.get_refs(hosting_path).items():
+        for path, info in hosting_client.getRefs(hosting_path).items():
             try:
                 new_refs[path] = self._convertRefInfo(info)
             except ValueError as e:
                 if logger is not None:
                     logger.warning(
                         "Unconvertible ref %s %s: %s" % (path, info, e))
-
-        # Plan the changes.
         current_refs = {ref.path: ref for ref in self.refs}
         refs_to_upsert = {}
         for path, info in new_refs.items():
             current_ref = current_refs.get(path)
             if (current_ref is None or
                 info["sha1"] != current_ref.commit_sha1 or
-                info["type"] != current_ref.object_type or
-                current_ref.author_id is None or
-                current_ref.author_date is None or
-                current_ref.committer_id is None or
-                current_ref.committer_date is None or
-                current_ref.commit_message is None):
+                info["type"] != current_ref.object_type):
                 refs_to_upsert[path] = info
-        oids_to_upsert = sorted(set(
-            info["sha1"] for info in refs_to_upsert.values()))
+            elif (info["type"] == GitObjectType.COMMIT and
+                  (current_ref.author_id is None or
+                   current_ref.author_date is None or
+                   current_ref.committer_id is None or
+                   current_ref.committer_date is None or
+                   current_ref.commit_message is None)):
+                # Only request detailed commit metadata for refs that point
+                # to commits.
+                refs_to_upsert[path] = info
         refs_to_remove = set(current_refs) - set(new_refs)
+        return refs_to_upsert, refs_to_remove
 
-        # Fetch any required commit information, and fill it into the
-        # appropriate info dictionaries.
+    @staticmethod
+    def fetchRefCommits(hosting_client, hosting_path, refs, logger=None):
+        """See `IGitRepository`."""
+        oids = sorted(set(info["sha1"] for info in refs.values()))
         commits = {
             commit.get("sha1"): commit
-            for commit in hosting_client.get_commits(
-                hosting_path, oids_to_upsert, logger=logger)}
+            for commit in hosting_client.getCommits(
+                hosting_path, oids, logger=logger)}
         authors_to_acquire = []
         committers_to_acquire = []
-        for info in refs_to_upsert.values():
+        for info in refs.values():
             commit = commits.get(info["sha1"])
             if commit is None:
                 continue
@@ -499,18 +505,13 @@ class GitRepository(StormBase, GitIdentityMixin):
                 info["commit_message"] = commit["message"]
         revision_authors = getUtility(IRevisionSet).acquireRevisionAuthors(
             authors_to_acquire + committers_to_acquire)
-        for info in refs_to_upsert.values():
-            # Removing the security proxy here is safe because
-            # RevisionAuthors are always public.  We need to do this for the
-            # sake of dbify_value later.
+        for info in refs.values():
             author = revision_authors.get(info.get("author_addr"))
             if author is not None:
-                info["author"] = removeSecurityProxy(author).id
+                info["author"] = author.id
             committer = revision_authors.get(info.get("committer_addr"))
             if committer is not None:
-                info["committer"] = removeSecurityProxy(committer).id
-
-        return refs_to_upsert, refs_to_remove
+                info["committer"] = committer.id
 
     def synchroniseRefs(self, refs_to_upsert, refs_to_remove):
         """See `IGitRepository`."""
@@ -599,12 +600,12 @@ class GitRepositorySet:
     implements(IGitRepositorySet)
 
     def new(self, registrant, owner, target, name, information_type=None,
-            date_created=DEFAULT):
+            date_created=DEFAULT, description=None):
         """See `IGitRepositorySet`."""
         namespace = get_git_namespace(target, owner)
         return namespace.createRepository(
             registrant, name, information_type=information_type,
-            date_created=date_created)
+            date_created=date_created, description=description)
 
     def getByPath(self, user, path):
         """See `IGitRepositorySet`."""

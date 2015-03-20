@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __all__ = [
@@ -808,6 +808,7 @@ class Publisher(object):
             # and pocket, don't!
             return
 
+        suite = distroseries.getSuite(pocket)
         all_components = [
             comp.name for comp in
             self.archive.getComponentsForSeries(distroseries)]
@@ -822,6 +823,12 @@ class Publisher(object):
                     distroseries, pocket, component, architecture, all_files)
             self._writeSuiteI18n(
                 distroseries, pocket, component, all_files)
+        for architecture in all_architectures:
+            for contents_path in get_suffixed_indices(
+                    'Contents-' + architecture):
+                if os.path.exists(os.path.join(
+                        self._config.distsroot, suite, contents_path)):
+                    all_files.add(contents_path)
 
         drsummary = "%s %s " % (self.distro.displayname,
                                 distroseries.displayname)
@@ -830,7 +837,6 @@ class Publisher(object):
         else:
             drsummary += pocket.name.capitalize()
 
-        suite = distroseries.getSuite(pocket)
         release_file = Release()
         release_file["Origin"] = self._getOrigin()
         release_file["Label"] = self._getLabel()

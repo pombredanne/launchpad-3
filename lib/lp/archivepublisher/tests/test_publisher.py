@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for publisher class."""
@@ -1819,6 +1819,33 @@ class TestPublisher(TestPublisherBase):
             content = release_file.read()
             for component in components:
                 self.assertIn(component + '/i18n/Translation-en.bz2', content)
+
+    def testReleaseFileForContents(self):
+        """Test Release file writing for Contents files."""
+        publisher = Publisher(
+            self.logger, self.config, self.disk_pool,
+            self.ubuntutest.main_archive)
+
+        # Put a Contents file in place, and force the publisher to republish
+        # that suite.
+        series_path = os.path.join(self.config.distsroot, 'breezy-autotest')
+        contents_path = os.path.join(series_path, 'Contents-i386.gz')
+        os.makedirs(os.path.dirname(contents_path))
+        with gzip.GzipFile(contents_path, 'wb'):
+            pass
+        publisher.markPocketDirty(
+            self.ubuntutest.getSeries('breezy-autotest'),
+            PackagePublishingPocket.RELEASE)
+
+        publisher.A_publish(False)
+        publisher.C_doFTPArchive(False)
+        publisher.D_writeReleaseFiles(False)
+
+        # The Contents file is listed correctly in Release.
+        release = self.parseRelease(os.path.join(series_path, 'Release'))
+        with open(contents_path, "rb") as contents_file:
+            self.assertReleaseContentsMatch(
+                release, 'Contents-i386.gz', contents_file.read())
 
     def testCreateSeriesAliasesNoAlias(self):
         """createSeriesAliases has nothing to do by default."""

@@ -546,14 +546,8 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
         self.assertRefsMatch(repository.refs, repository, paths)
         master_sha1 = repository.getRefByPath(u"refs/heads/master").commit_sha1
         foo_sha1 = repository.getRefByPath(u"refs/heads/foo").commit_sha1
-        author = self.factory.makePerson()
-        with person_logged_in(author):
-            author_email = author.preferredemail.email
-        epoch = datetime.fromtimestamp(0, tz=pytz.UTC)
-        author_date = datetime(2015, 1, 1, tzinfo=pytz.UTC)
-        committer_date = datetime(2015, 1, 2, tzinfo=pytz.UTC)
         hosting_client = FakeMethod()
-        hosting_client.get_refs = FakeMethod(result={
+        hosting_client.getRefs = FakeMethod(result={
             u"refs/heads/master": {
                 u"object": {
                     u"sha1": u"1111111111111111111111111111111111111111",
@@ -573,9 +567,66 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
                     },
                 },
             })
-        hosting_client.get_commits = FakeMethod(result=[
-            {
+        refs_to_upsert, refs_to_remove = repository.planRefChanges(
+            hosting_client, "dummy")
+
+        expected_upsert = {
+            u"refs/heads/master": {
                 u"sha1": u"1111111111111111111111111111111111111111",
+                u"type": GitObjectType.COMMIT,
+                },
+            u"refs/heads/foo": {
+                u"sha1": unicode(hashlib.sha1(u"refs/heads/foo").hexdigest()),
+                u"type": GitObjectType.COMMIT,
+                },
+            u"refs/tags/1.0": {
+                u"sha1": unicode(
+                    hashlib.sha1(u"refs/heads/master").hexdigest()),
+                u"type": GitObjectType.COMMIT,
+                },
+            }
+        self.assertEqual(expected_upsert, refs_to_upsert)
+        self.assertEqual(set([u"refs/heads/bar"]), refs_to_remove)
+
+    def test_planRefChanges_skips_non_commits(self):
+        # planRefChanges does not attempt to update refs that point to
+        # non-commits.
+        repository = self.factory.makeGitRepository()
+        blob_sha1 = unicode(hashlib.sha1(u"refs/heads/blob").hexdigest())
+        refs_info = {
+            u"refs/heads/blob": {
+                u"sha1": blob_sha1,
+                u"type": GitObjectType.BLOB,
+                },
+            }
+        repository.createOrUpdateRefs(refs_info)
+        hosting_client = FakeMethod()
+        hosting_client.getRefs = FakeMethod(result={
+            u"refs/heads/blob": {
+                u"object": {
+                    u"sha1": blob_sha1,
+                    u"type": u"blob",
+                    },
+                },
+            })
+        self.assertEqual(
+            ({}, set()), repository.planRefChanges(hosting_client, "dummy"))
+
+    def test_fetchRefCommits(self):
+        # fetchRefCommits fetches detailed tip commit metadata for the
+        # requested refs.
+        master_sha1 = unicode(hashlib.sha1(u"refs/heads/master").hexdigest())
+        foo_sha1 = unicode(hashlib.sha1(u"refs/heads/foo").hexdigest())
+        author = self.factory.makePerson()
+        with person_logged_in(author):
+            author_email = author.preferredemail.email
+        epoch = datetime.fromtimestamp(0, tz=pytz.UTC)
+        author_date = datetime(2015, 1, 1, tzinfo=pytz.UTC)
+        committer_date = datetime(2015, 1, 2, tzinfo=pytz.UTC)
+        hosting_client = FakeMethod()
+        hosting_client.getCommits = FakeMethod(result=[
+            {
+                u"sha1": master_sha1,
                 u"message": u"tip of master",
                 u"author": {
                     u"name": author.displayname,
@@ -590,12 +641,20 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
                 u"parents": [],
                 u"tree": unicode(hashlib.sha1("").hexdigest()),
                 }])
-        refs_to_upsert, refs_to_remove = repository.planRefChanges(
-            hosting_client, "dummy")
+        refs = {
+            u"refs/heads/master": {
+                u"sha1": master_sha1,
+                u"type": GitObjectType.COMMIT,
+                },
+            u"refs/heads/foo": {
+                u"sha1": foo_sha1,
+                u"type": GitObjectType.COMMIT,
+                },
+            }
+        GitRepository.fetchRefCommits(hosting_client, "dummy", refs)
 
-        expected_oids = [
-            u"1111111111111111111111111111111111111111", foo_sha1, master_sha1]
-        [(_, observed_oids)] = hosting_client.get_commits.extract_args()
+        expected_oids = [master_sha1, foo_sha1]
+        [(_, observed_oids)] = hosting_client.getCommits.extract_args()
         self.assertContentEqual(expected_oids, observed_oids)
         expected_author_addr = u"%s <%s>" % (author.displayname, author_email)
         [expected_author] = getUtility(IRevisionSet).acquireRevisionAuthors(
@@ -603,30 +662,24 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
         expected_committer_addr = u"New Person <new-person@example.org>"
         [expected_committer] = getUtility(IRevisionSet).acquireRevisionAuthors(
             [expected_committer_addr]).values()
-        expected_upsert = {
+        expected_refs = {
             u"refs/heads/master": {
-                u"sha1": u"1111111111111111111111111111111111111111",
+                u"sha1": master_sha1,
                 u"type": GitObjectType.COMMIT,
-                u"author": removeSecurityProxy(expected_author).id,
+                u"author": expected_author.id,
                 u"author_addr": expected_author_addr,
                 u"author_date": author_date,
-                u"committer": removeSecurityProxy(expected_committer).id,
+                u"committer": expected_committer.id,
                 u"committer_addr": expected_committer_addr,
                 u"committer_date": committer_date,
                 u"commit_message": u"tip of master",
                 },
             u"refs/heads/foo": {
-                u"sha1": unicode(hashlib.sha1(u"refs/heads/foo").hexdigest()),
-                u"type": GitObjectType.COMMIT,
-                },
-            u"refs/tags/1.0": {
-                u"sha1": unicode(
-                    hashlib.sha1(u"refs/heads/master").hexdigest()),
+                u"sha1": foo_sha1,
                 u"type": GitObjectType.COMMIT,
                 },
             }
-        self.assertEqual(expected_upsert, refs_to_upsert)
-        self.assertEqual(set([u"refs/heads/bar"]), refs_to_remove)
+        self.assertEqual(expected_refs, refs)
 
     def test_synchroniseRefs(self):
         # synchroniseRefs copes with synchronising a repository where some
@@ -741,6 +794,14 @@ class TestGitRepositoryModerate(TestCaseWithFactory):
                 InformationType.PRIVATESECURITY, project.owner)
             self.assertEqual(
                 InformationType.PRIVATESECURITY, repository.information_type)
+
+    def test_attribute_smoketest(self):
+        # Users with launchpad.Moderate can set attributes.
+        project = self.factory.makeProduct()
+        repository = self.factory.makeGitRepository(target=project)
+        with person_logged_in(project.owner):
+            repository.description = u"something"
+        self.assertEqual(u"something", repository.description)
 
 
 class TestGitRepositorySetOwner(TestCaseWithFactory):
