@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+import hashlib
 from optparse import OptionValueError
 import os
 
@@ -262,7 +263,8 @@ class TestGenerateContentsFiles(TestCaseWithFactory):
 
     def test_main(self):
         # If run end-to-end, the script generates Contents.gz files, and a
-        # following publisher run will put those files in their final place.
+        # following publisher run will put those files in their final place
+        # and include them in the Release file.
         distro = self.makeDistro()
         distroseries = self.factory.makeDistroSeries(distribution=distro)
         processor = self.factory.makeProcessor()
@@ -287,9 +289,21 @@ class TestGenerateContentsFiles(TestCaseWithFactory):
         publisher_script.txn = self.layer.txn
         publisher_script.logger = DevNullLogger()
         publisher_script.main()
-        self.assertTrue(file_exists(os.path.join(
+        contents_path = os.path.join(
             script.config.distsroot, suite,
-            "Contents-%s.gz" % das.architecturetag)))
+            "Contents-%s.gz" % das.architecturetag)
+        self.assertTrue(file_exists(contents_path))
+        with open(contents_path, "rb") as contents_file:
+            contents_bytes = contents_file.read()
+        release_path = os.path.join(script.config.distsroot, suite, "Release")
+        self.assertTrue(file_exists(release_path))
+        with open(release_path) as release_file:
+            release_lines = release_file.readlines()
+        self.assertIn(
+            " %s %16s Contents-%s.gz\n" % (
+                hashlib.md5(contents_bytes).hexdigest(), len(contents_bytes),
+                das.architecturetag),
+            release_lines)
 
     def test_run_script(self):
         # The script will run stand-alone.

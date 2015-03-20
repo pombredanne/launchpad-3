@@ -862,7 +862,8 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         os.makedirs(content_suite)
         write_marker_file(
             [content_suite, "%s-staged.gz" % contents_filename], "Contents")
-        script.updateContentsFile(distro, distroseries.name, das)
+        script.updateContentsFile(
+            distro.main_archive, distro, distroseries.name, das)
         self.assertEqual(
             "Contents",
             read_marker_file([backup_suite, "%s.gz" % contents_filename]))
