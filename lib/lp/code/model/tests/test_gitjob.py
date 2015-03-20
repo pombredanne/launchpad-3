@@ -5,8 +5,13 @@
 
 __metaclass__ = type
 
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import hashlib
 
+import pytz
 from testtools.matchers import (
     MatchesSetwise,
     MatchesStructure,
@@ -25,7 +30,10 @@ from lp.code.model.gitjob import (
     GitRefScanJob,
     )
 from lp.services.features.testing import FeatureFixture
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    TestCaseWithFactory,
+    time_counter,
+    )
 from lp.testing.dbuser import dbuser
 from lp.testing.fakemethod import FakeMethod
 from lp.testing.layers import (
@@ -72,6 +80,27 @@ class TestGitRefScanJobMixin:
                 }}
             for path in paths}
 
+    @staticmethod
+    def makeFakeCommits(author, author_date_gen, paths):
+        epoch = datetime.fromtimestamp(0, tz=pytz.UTC)
+        dates = {path: next(author_date_gen) for path in paths}
+        return [{
+            "sha1": hashlib.sha1(path).hexdigest(),
+            "message": "tip of %s" % path,
+            "author": {
+                "name": author.displayname,
+                "email": author.preferredemail.email,
+                "time": int((dates[path] - epoch).total_seconds()),
+                },
+            "committer": {
+                "name": author.displayname,
+                "email": author.preferredemail.email,
+                "time": int((dates[path] - epoch).total_seconds()),
+                },
+            "parents": [],
+            "tree": hashlib.sha1("").hexdigest(),
+            } for path in paths]
+
     def assertRefsMatch(self, refs, repository, paths):
         matchers = [
             MatchesStructure.byEquality(
@@ -102,8 +131,13 @@ class TestGitRefScanJob(TestGitRefScanJobMixin, TestCaseWithFactory):
         repository = self.factory.makeGitRepository()
         job = GitRefScanJob.create(repository)
         paths = (u"refs/heads/master", u"refs/tags/1.0")
-        job._hosting_client.get_refs = FakeMethod(
+        job._hosting_client.getRefs = FakeMethod(
             result=self.makeFakeRefs(paths))
+        author = repository.owner
+        author_date_start = datetime(2015, 01, 01, tzinfo=pytz.UTC)
+        author_date_gen = time_counter(author_date_start, timedelta(days=1))
+        job._hosting_client.getCommits = FakeMethod(
+            result=self.makeFakeCommits(author, author_date_gen, paths))
         with dbuser("branchscanner"):
             job.run()
         self.assertRefsMatch(repository.refs, repository, paths)
@@ -111,8 +145,9 @@ class TestGitRefScanJob(TestGitRefScanJobMixin, TestCaseWithFactory):
     def test_logs_bad_ref_info(self):
         repository = self.factory.makeGitRepository()
         job = GitRefScanJob.create(repository)
-        job._hosting_client.get_refs = FakeMethod(
+        job._hosting_client.getRefs = FakeMethod(
             result={u"refs/heads/master": {}})
+        job._hosting_client.getCommits = FakeMethod(result=[])
         expected_message = (
             'Unconvertible ref refs/heads/master {}: '
             'ref info does not contain "object" key')

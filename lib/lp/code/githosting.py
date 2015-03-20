@@ -15,7 +15,7 @@ import requests
 
 from lp.code.errors import (
     GitRepositoryCreationFault,
-    GitRepositoryRefScanFault,
+    GitRepositoryScanFault,
     )
 
 
@@ -54,19 +54,46 @@ class GitHostingClient:
             raise GitRepositoryCreationFault(
                 "Failed to create Git repository: %s" % response.text)
 
-    def get_refs(self, path):
+    def getRefs(self, path):
         try:
             response = self._makeSession().get(
                 urlutils.join(self.endpoint, "repo", path, "refs"),
                 timeout=self.timeout)
         except Exception as e:
-            raise GitRepositoryRefScanFault(
+            raise GitRepositoryScanFault(
                 "Failed to get refs from Git repository: %s" % unicode(e))
         if response.status_code != 200:
-            raise GitRepositoryRefScanFault(
+            raise GitRepositoryScanFault(
                 "Failed to get refs from Git repository: %s" % response.text)
         try:
             return response.json()
         except ValueError as e:
-            raise GitRepositoryRefScanFault(
+            raise GitRepositoryScanFault(
                 "Failed to decode ref-scan response: %s" % unicode(e))
+
+    def getCommits(self, path, commit_oids, logger=None):
+        commit_oids = list(commit_oids)
+        try:
+            # XXX cjwatson 2015-03-01: Once we're on requests >= 2.4.2, we
+            # should just use post(json=) and drop the explicit Content-Type
+            # header.
+            if logger is not None:
+                logger.info("Requesting commit details for %s" % commit_oids)
+            response = self._makeSession().post(
+                urlutils.join(self.endpoint, "repo", path, "commits"),
+                headers={"Content-Type": "application/json"},
+                data=json.dumps({"commits": commit_oids}),
+                timeout=self.timeout)
+        except Exception as e:
+            raise GitRepositoryScanFault(
+                "Failed to get commit details from Git repository: %s" %
+                unicode(e))
+        if response.status_code != 200:
+            raise GitRepositoryScanFault(
+                "Failed to get commit details from Git repository: %s" %
+                response.text)
+        try:
+            return response.json()
+        except ValueError as e:
+            raise GitRepositoryScanFault(
+                "Failed to decode commit-scan response: %s" % unicode(e))
