@@ -131,12 +131,12 @@ class TestGitRefScanJob(TestGitRefScanJobMixin, TestCaseWithFactory):
         repository = self.factory.makeGitRepository()
         job = GitRefScanJob.create(repository)
         paths = (u"refs/heads/master", u"refs/tags/1.0")
-        job._hosting_client.get_refs = FakeMethod(
+        job._hosting_client.getRefs = FakeMethod(
             result=self.makeFakeRefs(paths))
         author = repository.owner
         author_date_start = datetime(2015, 01, 01, tzinfo=pytz.UTC)
         author_date_gen = time_counter(author_date_start, timedelta(days=1))
-        job._hosting_client.get_commits = FakeMethod(
+        job._hosting_client.getCommits = FakeMethod(
             result=self.makeFakeCommits(author, author_date_gen, paths))
         with dbuser("branchscanner"):
             job.run()
@@ -145,9 +145,9 @@ class TestGitRefScanJob(TestGitRefScanJobMixin, TestCaseWithFactory):
     def test_logs_bad_ref_info(self):
         repository = self.factory.makeGitRepository()
         job = GitRefScanJob.create(repository)
-        job._hosting_client.get_refs = FakeMethod(
+        job._hosting_client.getRefs = FakeMethod(
             result={u"refs/heads/master": {}})
-        job._hosting_client.get_commits = FakeMethod(result=[])
+        job._hosting_client.getCommits = FakeMethod(result=[])
         expected_message = (
             'Unconvertible ref refs/heads/master {}: '
             'ref info does not contain "object" key')

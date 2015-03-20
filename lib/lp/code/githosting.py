@@ -54,7 +54,7 @@ class GitHostingClient:
             raise GitRepositoryCreationFault(
                 "Failed to create Git repository: %s" % response.text)
 
-    def get_refs(self, path):
+    def getRefs(self, path):
         try:
             response = self._makeSession().get(
                 urlutils.join(self.endpoint, "repo", path, "refs"),
@@ -71,7 +71,7 @@ class GitHostingClient:
             raise GitRepositoryScanFault(
                 "Failed to decode ref-scan response: %s" % unicode(e))
 
-    def get_commits(self, path, commit_oids, logger=None):
+    def getCommits(self, path, commit_oids, logger=None):
         try:
             # XXX cjwatson 2015-03-01: Once we're on requests >= 2.4.2, we
             # should just use post(json=) and drop the explicit Content-Type

@@ -427,7 +427,7 @@ class GitRepository(StormBase, GitIdentityMixin):
     def planRefChanges(self, hosting_client, hosting_path, logger=None):
         """See `IGitRepository`."""
         new_refs = {}
-        for path, info in hosting_client.get_refs(hosting_path).items():
+        for path, info in hosting_client.getRefs(hosting_path).items():
             try:
                 new_refs[path] = self._convertRefInfo(info)
             except ValueError as e:
@@ -457,7 +457,7 @@ class GitRepository(StormBase, GitIdentityMixin):
         # appropriate info dictionaries.
         commits = {
             commit.get("sha1"): commit
-            for commit in hosting_client.get_commits(
+            for commit in hosting_client.getCommits(
                 hosting_path, oids_to_upsert, logger=logger)}
         authors_to_acquire = []
         committers_to_acquire = []

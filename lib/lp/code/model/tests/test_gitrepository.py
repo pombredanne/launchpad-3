@@ -553,7 +553,7 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
         author_date = datetime(2015, 1, 1, tzinfo=pytz.UTC)
         committer_date = datetime(2015, 1, 2, tzinfo=pytz.UTC)
         hosting_client = FakeMethod()
-        hosting_client.get_refs = FakeMethod(result={
+        hosting_client.getRefs = FakeMethod(result={
             u"refs/heads/master": {
                 u"object": {
                     u"sha1": u"1111111111111111111111111111111111111111",
@@ -573,7 +573,7 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
                     },
                 },
             })
-        hosting_client.get_commits = FakeMethod(result=[
+        hosting_client.getCommits = FakeMethod(result=[
             {
                 u"sha1": u"1111111111111111111111111111111111111111",
                 u"message": u"tip of master",
@@ -595,7 +595,7 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
 
         expected_oids = [
             u"1111111111111111111111111111111111111111", foo_sha1, master_sha1]
-        [(_, observed_oids)] = hosting_client.get_commits.extract_args()
+        [(_, observed_oids)] = hosting_client.getCommits.extract_args()
         self.assertContentEqual(expected_oids, observed_oids)
         expected_author_addr = u"%s <%s>" % (author.displayname, author_email)
         [expected_author] = getUtility(IRevisionSet).acquireRevisionAuthors(
