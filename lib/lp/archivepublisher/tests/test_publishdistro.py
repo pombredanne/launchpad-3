@@ -559,7 +559,7 @@ class TestPublishDistroMethods(TestCaseWithFactory):
         series = self.factory.makeDistroSeries()
         distro = series.distribution
         self.assertEqual(
-            (series.name, PackagePublishingPocket.RELEASE),
+            (series, PackagePublishingPocket.RELEASE),
             self.makeScript(distro).findSuite(distro, series.name))
 
     def test_findSuite_finds_other_pocket(self):
@@ -569,7 +569,7 @@ class TestPublishDistroMethods(TestCaseWithFactory):
         distro = series.distribution
         script = self.makeScript(distro)
         self.assertEqual(
-            (series.name, PackagePublishingPocket.UPDATES),
+            (series, PackagePublishingPocket.UPDATES),
             script.findSuite(distro, series.name + "-updates"))
 
     def test_findSuite_raises_if_not_found(self):
