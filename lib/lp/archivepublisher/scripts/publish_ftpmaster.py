@@ -9,6 +9,7 @@ __all__ = [
     ]
 
 from datetime import datetime
+import math
 import os
 import shutil
 
@@ -579,6 +580,14 @@ class PublishFTPMaster(LaunchpadCronScript):
                 "Installing new Contents file for %s/%s.", suite,
                 arch.architecturetag)
             shutil.copy2(new_contents, current_contents)
+            # Due to http://bugs.python.org/issue12904, shutil.copy2 doesn't
+            # copy timestamps precisely, and unfortunately it rounds down.
+            # If we must lose accuracy, we need to round up instead.  This
+            # can be removed once Launchpad runs on Python >= 3.3.
+            st = os.stat(new_contents)
+            os.utime(
+                current_contents,
+                (math.ceil(st.st_atime), math.ceil(st.st_mtime)))
             return True
         return False
 
