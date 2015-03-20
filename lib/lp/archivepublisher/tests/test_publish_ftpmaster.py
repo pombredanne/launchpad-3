@@ -868,6 +868,27 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
             "Contents",
             read_marker_file([backup_suite, "%s.gz" % contents_filename]))
 
+    def test_updateContentsFiles_only_primary_archive(self):
+        # updateContentsFiles only considers the primary archive.  (This
+        # will need to change if GenerateContentsFiles ever gains support
+        # for other archive purposes.)
+        distro = self.makeDistroWithPublishDirectory()
+        self.factory.makeArchive(
+            distribution=distro, owner=distro.owner,
+            purpose=ArchivePurpose.PARTNER)
+        distroseries = self.factory.makeDistroSeries(distribution=distro)
+        das = self.factory.makeDistroArchSeries(distroseries=distroseries)
+        script = self.makeScript(distro)
+        script.setUp()
+        script.setUpDirs()
+        script.updateContentsFile = FakeMethod()
+        script.updateContentsFiles(distro)
+        expected_args = [
+            (distro.main_archive, distro, distroseries.getSuite(pocket), das)
+            for pocket in PackagePublishingPocket.items]
+        self.assertEqual(
+            expected_args, script.updateContentsFile.extract_args())
+
     def test_publish_always_returns_true_for_primary(self):
         script = self.makeScript()
         script.publishDistroUploads = FakeMethod()

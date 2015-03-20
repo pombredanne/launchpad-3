@@ -580,14 +580,16 @@ class PublishFTPMaster(LaunchpadCronScript):
     def updateContentsFiles(self, distribution):
         """Pick up updated Contents files if necessary."""
         updated_suites = []
-        for archive in get_publishable_archives(distribution):
-            for series in distribution.getNonObsoleteSeries():
-                for pocket in PackagePublishingPocket.items:
-                    suite = series.getSuite(pocket)
-                    for arch in series.enabled_architectures:
-                        self.updateContentsFile(
-                            archive, distribution, suite, arch)
-                        updated_suites.append((archive, suite))
+        # XXX cjwatson 2015-03-20: GenerateContentsFiles currently only
+        # supports the primary archive.
+        archive = distribution.main_archive
+        for series in distribution.getNonObsoleteSeries():
+            for pocket in PackagePublishingPocket.items:
+                suite = series.getSuite(pocket)
+                for arch in series.enabled_architectures:
+                    self.updateContentsFile(
+                        archive, distribution, suite, arch)
+                    updated_suites.append((archive, suite))
         return updated_suites
 
     def publish(self, distribution, security_only=False):
