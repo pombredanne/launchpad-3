@@ -72,6 +72,7 @@ class GitHostingClient:
                 "Failed to decode ref-scan response: %s" % unicode(e))
 
     def getCommits(self, path, commit_oids, logger=None):
+        commit_oids = list(commit_oids)
         try:
             # XXX cjwatson 2015-03-01: Once we're on requests >= 2.4.2, we
             # should just use post(json=) and drop the explicit Content-Type
