@@ -219,6 +219,10 @@ class IGitRepositoryView(Interface):
         :param hosting_client: A `GitHostingClient`.
         :param hosting_path: A path on the hosting service.
         :param logger: An optional logger.
+
+        :return: A dict of refs to create or update as appropriate, mapping
+            ref paths to dictionaries of their fields; and a set of ref
+            paths to remove.
         """
 
     def synchroniseRefs(refs_to_upsert, refs_to_remove):
