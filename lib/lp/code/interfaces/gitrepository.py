@@ -306,6 +306,10 @@ class IGitRepositoryModerateAttributes(Interface):
     date_last_modified = exported(Datetime(
         title=_("Date last modified"), required=True, readonly=True))
 
+    description = exported(Text(
+        title=_("Description"), required=False, readonly=False,
+        description=_("A short description of this repository.")))
+
 
 class IGitRepositoryModerate(Interface):
     """IGitRepository methods that can be called by more than one community."""
