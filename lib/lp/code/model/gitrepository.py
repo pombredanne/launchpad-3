@@ -490,15 +490,12 @@ class GitRepository(StormBase, GitIdentityMixin):
         revision_authors = getUtility(IRevisionSet).acquireRevisionAuthors(
             authors_to_acquire + committers_to_acquire)
         for info in refs_to_upsert.values():
-            # Removing the security proxy here is safe because
-            # RevisionAuthors are always public.  We need to do this for the
-            # sake of dbify_value later.
             author = revision_authors.get(info.get("author_addr"))
             if author is not None:
-                info["author"] = removeSecurityProxy(author).id
+                info["author"] = author.id
             committer = revision_authors.get(info.get("committer_addr"))
             if committer is not None:
-                info["committer"] = removeSecurityProxy(committer).id
+                info["committer"] = committer.id
 
         return refs_to_upsert, refs_to_remove
 
