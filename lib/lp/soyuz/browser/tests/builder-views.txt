@@ -234,11 +234,11 @@ again.
 BuilderSetView offer a way to treat the currently registered builders
 in categories. They are:
 
- * 'Official distribution build machines': a group of builders capable
-   of building 'trusted' sources, ubuntu official packages. The
-   'non-vitualized' build-farm.
+ * 'Non-virtual build machines': a group of builders capable of building
+   'trusted' sources, Ubuntu official packages. The 'non-virtualized'
+   build-farm.
 
- * 'PPA build machines': a group of builders capable of building
+ * 'Virtual build machines': a group of builders capable of building
    'untrusted' sources, PPA packages. The 'virtualized' build-farm.
 
     >>> from lp.buildmaster.interfaces.builder import IBuilderSet
@@ -296,7 +296,7 @@ contains the following attributes:
     <...BuilderCategory ...>
 
     >>> print builder_category.title
-    Official distributions build status
+    Non-virtual build status
 
     >>> print builder_category.virtualized
     False
@@ -346,13 +346,13 @@ Each `BuilderGroup` contains the following attributes:
     >>> print i386_group.duration
     0:00:30
 
-The 'PPA' builder category is also available in BuilderSetView as a
+The 'virtual' builder category is also available in BuilderSetView as a
 `BuilderCategory`.
 
     >>> builder_category = builderset_view.virt_builders
 
     >>> print builder_category.title
-    PPA build status
+    Virtual build status
 
     >>> print builder_category.virtualized
     True
