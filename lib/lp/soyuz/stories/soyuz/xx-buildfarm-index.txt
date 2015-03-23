@@ -8,7 +8,7 @@ this, since the audience of this page is still restricted.
     >>> anon_browser.open('http://launchpad.dev/+builds')
 
 The BuildFarm contains a list of all builders registered in Launchpad
-ordered by build domain ('official' then 'ppa'), then processor and
+ordered by build domain ('nonvirt' then 'virt'), then processor and
 finally by name. A short textual description of their status is listed
 in the 'Status' column. There are also 2 portlets on the right-side
 containing the build queue status summary for each build domain.
@@ -18,13 +18,14 @@ containing the build queue status summary for each build domain.
     1 available build machine, 1 disabled and 1 building of a total of
     2 registered.
     Builders
-    Name  Architectures   Status
-    bob   386            Building i386 build of mozilla-firefox 0.9 ...
-    frog  386            Disabled
-    Official distributions build status
+    Name  Status
+    386
+    bob   Building i386 build of mozilla-firefox 0.9 ...
+    frog  Disabled
+    Non-virtual build status
     Architecture  Builders  Queue
     386           1         1 job (1 minute)
-    PPA build status
+    Virtual build status
     Architecture  Builders  Queue
     386           0         empty
 
@@ -37,26 +38,26 @@ corresponding 'Build' page.
 
 The build status portlets contain the number of builds waiting
 in queue and the sum of their 'estimated_duration' for each
-supported processor on each separated build domain, 'official'
-(PRIMARY and PARTNER) and 'ppa'.
+supported processor on each separated build domain, 'nonvirt'
+(PRIMARY and PARTNER) and 'virt'.
 
     >>> anon_browser.reload()
     >>> print extract_text(
-    ...     find_tag_by_id(anon_browser.contents, 'official-queue-status'))
-    Official distributions build status
+    ...     find_tag_by_id(anon_browser.contents, 'nonvirt-queue-status'))
+    Non-virtual build status
     Architecture  Builders  Queue
     386           1         1 job (1 minute)
 
     >>> print extract_text(
-    ...     find_tag_by_id(anon_browser.contents, 'ppa-queue-status',))
-    PPA build status
+    ...     find_tag_by_id(anon_browser.contents, 'virt-queue-status',))
+    Virtual build status
     Architecture  Builders  Queue
     386           0         empty
 
-When there are pending builds in the PPA domain, they are listed in
+When there are pending builds in the virt domain, they are listed in
 the corresponding portlet with their estimated duration as well.
 
-    # Retry a failed build in the PPA domain and set its
+    # Retry a failed build in the virt domain and set its
     # 'estimated_duration' to a known value.
     >>> import datetime
     >>> from zope.component import getUtility
@@ -75,13 +76,13 @@ the corresponding portlet with their estimated duration as well.
 
     >>> anon_browser.reload()
     >>> print extract_text(
-    ...     find_tag_by_id(anon_browser.contents, 'ppa-queue-status'))
-    PPA build status
+    ...     find_tag_by_id(anon_browser.contents, 'virt-queue-status'))
+    Virtual build status
     Architecture  Builders  Queue
     386           0         1 job (1 minute)
 
 If the archive for the build does not require virtual builders, then
-the pending job will appear in the 'official' queue. Since the build
+the pending job will appear in the 'nonvirt' queue. Since the build
 record already exists, we must manually set it to non-virtualized too.
 
     >>> login('foo.bar@canonical.com')
@@ -91,14 +92,14 @@ record already exists, we must manually set it to non-virtualized too.
 
     >>> anon_browser.reload()
     >>> print extract_text(
-    ...     find_tag_by_id(anon_browser.contents, 'ppa-queue-status'))
-    PPA build status
+    ...     find_tag_by_id(anon_browser.contents, 'virt-queue-status'))
+    Virtual build status
     Architecture  Builders  Queue
     386           0         empty
 
     >>> print extract_text(
-    ...     find_tag_by_id(anon_browser.contents, 'official-queue-status'))
-    Official distributions build status
+    ...     find_tag_by_id(anon_browser.contents, 'nonvirt-queue-status'))
+    Non-virtual build status
     Architecture  Builders  Queue
     386           1         2 jobs (2 minutes)
 

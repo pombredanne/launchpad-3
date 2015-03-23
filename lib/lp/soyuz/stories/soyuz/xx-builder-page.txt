@@ -261,13 +261,14 @@ Farm list. Celso cannot see the link to it.
     1 available build machine, 1 disabled and 0 building of a total
     of 2 registered.
     Builders
-    Name   Architectures Status
-    frog   386           Disabled
-    victim 386           Idle
+    Name   Status
+    386
+    frog   Disabled
+    victim Idle
     Updated on ...
-    Official distributions build status
+    Non-virtual build status
     Architecture Builders Queue
-    PPA build status
+    Virtual build status
     Architecture Builders Queue
     386          1        empty
 
