@@ -109,10 +109,7 @@ from lp.services.database.stormexpr import (
     Values,
     )
 from lp.services.features import getFeatureFlag
-from lp.services.propertycache import (
-    cachedproperty,
-    get_property_cache,
-    )
+from lp.services.propertycache import cachedproperty
 from lp.services.webapp.authorization import available_with_permission
 
 
@@ -311,11 +308,19 @@ class GitRepository(StormBase, GitIdentityMixin):
         reconcile_access_for_artifact(
             self, self.information_type, pillars, wanted_links)
 
-    @cachedproperty
+    @property
     def refs(self):
         """See `IGitRepository`."""
-        return list(Store.of(self).find(
-            GitRef, GitRef.repository_id == self.id).order_by(GitRef.path))
+        return Store.of(self).find(
+            GitRef, GitRef.repository_id == self.id).order_by(GitRef.path)
+
+    @property
+    def branches(self):
+        """See `IGitRepository`."""
+        return Store.of(self).find(
+            GitRef,
+            GitRef.repository_id == self.id,
+            GitRef.path.startswith(u"refs/heads/")).order_by(GitRef.path)
 
     def getRefByPath(self, path):
         return Store.of(self).find(
@@ -416,7 +421,6 @@ class GitRepository(StormBase, GitIdentityMixin):
         else:
             created = []
 
-        del get_property_cache(self).refs
         if get_objects:
             return bulk.load(GitRef, updated + created)
 
@@ -425,7 +429,6 @@ class GitRepository(StormBase, GitIdentityMixin):
         Store.of(self).find(
             GitRef,
             GitRef.repository == self, GitRef.path.is_in(paths)).remove()
-        del get_property_cache(self).refs
 
     def planRefChanges(self, hosting_client, hosting_path, logger=None):
         """See `IGitRepository`."""

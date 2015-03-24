@@ -53,3 +53,7 @@ class GitRef(StormBase):
     @property
     def display_name(self):
         return self.path.split("/", 2)[-1]
+
+    @property
+    def commit_message_first_line(self):
+        return self.commit_message.split("\n", 1)[0]

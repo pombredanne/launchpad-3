@@ -7,6 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'IGitRef',
+    'IGitRefBatchNavigator',
     ]
 
 from zope.interface import (
@@ -22,6 +23,7 @@ from zope.schema import (
 
 from lp import _
 from lp.code.enums import GitObjectType
+from lp.services.webapp.interfaces import ITableBatchNavigator
 
 
 class IGitRef(Interface):
@@ -65,3 +67,11 @@ class IGitRef(Interface):
     display_name = TextLine(
         title=_("Display name"), required=True, readonly=True,
         description=_("Display name of the reference."))
+
+    commit_message_first_line = TextLine(
+        title=_("The first line of the commit message."),
+        required=True, readonly=True)
+
+
+class IGitRefBatchNavigator(ITableBatchNavigator):
+    pass
