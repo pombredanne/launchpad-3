@@ -147,7 +147,7 @@ class BuilderSetView(LaunchpadView):
     def getBuilderSortKey(builder):
         return (
             builder.virtualized,
-            tuple(p.id for p in builder.processors),
+            tuple(p.name for p in builder.processors),
             builder.name)
 
     @cachedproperty
