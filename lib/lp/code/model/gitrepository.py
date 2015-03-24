@@ -311,13 +311,13 @@ class GitRepository(StormBase, GitIdentityMixin):
         reconcile_access_for_artifact(
             self, self.information_type, pillars, wanted_links)
 
-    @cachedproperty
+    @property
     def refs(self):
         """See `IGitRepository`."""
         return Store.of(self).find(
             GitRef, GitRef.repository_id == self.id).order_by(GitRef.path)
 
-    @cachedproperty
+    @property
     def branches(self):
         """See `IGitRepository`."""
         return Store.of(self).find(
@@ -424,8 +424,6 @@ class GitRepository(StormBase, GitIdentityMixin):
         else:
             created = []
 
-        del get_property_cache(self).refs
-        del get_property_cache(self).branches
         if get_objects:
             return bulk.load(GitRef, updated + created)
 
@@ -434,8 +432,6 @@ class GitRepository(StormBase, GitIdentityMixin):
         Store.of(self).find(
             GitRef,
             GitRef.repository == self, GitRef.path.is_in(paths)).remove()
-        del get_property_cache(self).refs
-        del get_property_cache(self).branches
 
     def planRefChanges(self, hosting_client, hosting_path, logger=None):
         """See `IGitRepository`."""
