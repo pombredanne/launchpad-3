@@ -40,7 +40,7 @@ function hide_git_commit(id) {
         </td>
         <tal:no_commit condition="not: ref/committer_date">
           <td colspan="2">
-            <metal:no-commit-message use-macro="context/@@+macros/no-commit-message" />
+            <metal:no-commit-message use-macro="ref/@@+macros/no-commit-message" />
           </td>
         </tal:no_commit>
         <tal:has_commit condition="ref/committer_date">
