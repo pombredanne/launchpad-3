@@ -96,9 +96,9 @@ class GitRefBatchNavigator(TableBatchNavigator):
     """Batch up the branch listings."""
     implements(IGitRefBatchNavigator)
 
-    def __init__(self, view):
+    def __init__(self, view, context):
         super(GitRefBatchNavigator, self).__init__(
-            view.context.branches, view.request,
+            context.branches, view.request,
             size=config.launchpad.branchlisting_batch_size)
         self.view = view
         self.column_count = 3
@@ -155,4 +155,4 @@ class GitRepositoryView(InformationTypePortletMixin, LaunchpadView):
 
     def branches(self):
         """All branches in this repository, sorted for display."""
-        return GitRefBatchNavigator(self)
+        return GitRefBatchNavigator(self, self.context)
