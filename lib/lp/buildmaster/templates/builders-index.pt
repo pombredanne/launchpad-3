@@ -43,7 +43,6 @@
 
        <div class="first yui-u">
          <div id="builders-list" class="portlet">
-           <h2>Builders</h2>
            <table class="listing" id="builders-table">
              <thead>
                <tr>
