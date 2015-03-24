@@ -61,7 +61,6 @@ from lp.blueprints.interfaces.sprint import ISprint
 from lp.bugs.interfaces.bug import IBug
 from lp.buildmaster.enums import BuildStatus
 from lp.code.interfaces.branch import IBranch
-from lp.code.interfaces.gitrepository import IGitRepository
 from lp.layers import LaunchpadLayer
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
@@ -768,8 +767,6 @@ class ObjectImageDisplayAPI:
             sprite_string = 'distribution'
         elif IBranch.providedBy(context):
             sprite_string = 'branch'
-        elif IGitRepository.providedBy(context):
-            sprite_string = 'git'
         elif ISpecification.providedBy(context):
             sprite_string = 'blueprint'
         elif IBinaryAndSourcePackageName.providedBy(context):
