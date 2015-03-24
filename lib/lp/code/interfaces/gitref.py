@@ -7,6 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'IGitRef',
+    'IGitRefBatchNavigator',
     ]
 
 from zope.interface import (
