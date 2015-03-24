@@ -806,12 +806,27 @@
         path_expression="string:+ref/${path}"
         attribute_to_parent="repository"
         rootsite="code"/>
-    <browser:page
+    <browser:pages
         for="lp.code.interfaces.gitref.IGitRef"
         class="lp.code.browser.gitref.GitRefView"
-        permission="launchpad.View"
-        name="+index"
-        template="../templates/gitref-index.pt"/>
+        permission="launchpad.View">
+        <browser:page
+            name="+index"
+            template="../templates/gitref-index.pt"/>
+        <browser:page
+            name="++ref-commits"
+            template="../templates/gitref-commits.pt"/>
+    </browser:pages>
+    <browser:page
+        for="lp.code.interfaces.gitref.IGitRef"
+        name="+macros"
+        permission="zope.Public"
+        template="../templates/gitref-macros.pt"/>
+    <browser:page
+        for="lp.code.interfaces.gitref.IGitRefBatchNavigator"
+        permission="zope.Public"
+        name="+ref-listing"
+        template="../templates/gitref-listing.pt"/>
 
     <browser:menus
         classes="ProductBranchesMenu"

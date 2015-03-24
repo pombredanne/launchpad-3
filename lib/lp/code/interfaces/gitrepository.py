@@ -188,6 +188,8 @@ class IGitRepositoryView(Interface):
 
     refs = Attribute("The references present in this repository.")
 
+    branches = Attribute("The branch references present in this repository.")
+
     def getRefByPath(path):
         """Look up a single reference in this repository by path.
 

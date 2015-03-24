@@ -51,6 +51,14 @@
     </div>
   </div>
 
+  <div class="yui-g">
+    <div id="repository-branches" class="portlet"
+         tal:define="branches view/branches">
+      <h2>Branches</h2>
+      <tal:repository-branches replace="structure branches/@@+ref-listing" />
+    </div>
+  </div>
+
 </div>
 
 </body>
