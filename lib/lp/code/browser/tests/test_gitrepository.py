@@ -5,15 +5,21 @@
 
 __metaclass__ = type
 
+from datetime import datetime
+
 from BeautifulSoup import BeautifulSoup
 from bzrlib import urlutils
 from fixtures import FakeLogger
+import pytz
+from testtools.matchers import Equals
 from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
+from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import InformationType
 from lp.app.interfaces.services import IService
 from lp.code.interfaces.gitrepository import GIT_FEATURE_FLAG
+from lp.code.interfaces.revision import IRevisionSet
 from lp.registry.interfaces.person import PersonVisibility
 from lp.services.config import config
 from lp.services.features.testing import FeatureFixture
@@ -24,9 +30,11 @@ from lp.testing import (
     login_person,
     logout,
     person_logged_in,
+    record_two_runs,
     TestCaseWithFactory,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.matchers import HasQueryCount
 from lp.testing.pages import (
     setupBrowser,
     setupBrowserForUser,
@@ -148,7 +156,7 @@ class TestGitRepositoryView(BrowserTestCase):
 
 
 class TestGitRepositoryViewPrivateArtifacts(BrowserTestCase):
-    """ Tests that Git repositories with private team artifacts can be viewed.
+    """Tests that Git repositories with private team artifacts can be viewed.
 
     A repository may be associated with a private team as follows:
     - the owner is a private team
@@ -198,3 +206,39 @@ class TestGitRepositoryViewPrivateArtifacts(BrowserTestCase):
         url = canonical_url(repository, rootsite="code")
         browser = self._getBrowser()
         self.assertRaises(NotFound, browser.open, url)
+
+
+class TestGitRepositoryBranches(BrowserTestCase):
+    """Test the listing of branches in a Git repository."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestGitRepositoryBranches, self).setUp()
+        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
+
+    def makeRevisionAuthor(self, person=None):
+        if person is None:
+            person = self.factory.makePerson()
+        email = removeSecurityProxy(person).preferredemail.email
+        return getUtility(IRevisionSet).acquireRevisionAuthors([email])[email]
+
+    def test_query_count(self):
+        # The number of queries is constant in the number of refs.
+        person = self.factory.makePerson()
+        repository = self.factory.makeGitRepository(owner=person)
+        now = datetime.now(pytz.UTC)
+
+        def create_ref():
+            with person_logged_in(person):
+                [ref] = self.factory.makeGitRefs(repository=repository)
+                naked_ref = removeSecurityProxy(ref)
+                naked_ref.author = self.makeRevisionAuthor()
+                naked_ref.author_date = now
+                naked_ref.committer = self.makeRevisionAuthor()
+                naked_ref.committer_date = now
+                naked_ref.commit_message = u"something"
+
+        recorder1, recorder2 = record_two_runs(
+            lambda: self.getMainText(repository, "+index"), create_ref, 10)
+        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
