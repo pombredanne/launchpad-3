@@ -260,8 +260,6 @@ Farm list. Celso cannot see the link to it.
     Register a new build machine
     1 available build machine, 1 disabled and 0 building of a total
     of 2 registered.
-    Builders
-    Name   Status
     386
     frog   Disabled
     victim Idle

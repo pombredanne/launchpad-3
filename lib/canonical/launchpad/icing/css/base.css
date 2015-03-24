@@ -427,6 +427,11 @@ table.listing td {
     border-style: dotted none none none;
     }
 
+table.listing tr.category:first-child td {
+    border-top-style: none;
+    padding-top: 0;
+    }
+
 table.listing .section-break td {
     border-width: 1px 0 0 0;
     border-style: solid;
