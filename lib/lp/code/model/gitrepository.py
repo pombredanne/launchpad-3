@@ -109,10 +109,7 @@ from lp.services.database.stormexpr import (
     Values,
     )
 from lp.services.features import getFeatureFlag
-from lp.services.propertycache import (
-    cachedproperty,
-    get_property_cache,
-    )
+from lp.services.propertycache import cachedproperty
 from lp.services.webapp.authorization import available_with_permission
 
 
