@@ -348,23 +348,6 @@ from lp.translations.utilities.sanitize import (
 
 SPACE = ' '
 
-DIFF = """\
-=== zbqvsvrq svyr 'yvo/yc/pbqr/vagresnprf/qvss.cl'
---- yvo/yc/pbqr/vagresnprf/qvss.cl      2009-10-01 13:25:12 +0000
-+++ yvo/yc/pbqr/vagresnprf/qvss.cl      2010-02-02 15:48:56 +0000
-@@ -121,6 +121,10 @@
-                 'Gur pbasyvpgf grkg qrfpevovat nal cngu be grkg pbasyvpgf.'),
-              ernqbayl=Gehr))
-
-+    unf_pbasyvpgf = Obby(
-+        gvgyr=_('Unf pbasyvpgf'), ernqbayl=Gehr,
-+        qrfpevcgvba=_('Gur cerivrjrq zretr cebqhprf pbasyvpgf.'))
-+
-     # Gur fpurzn sbe gur Ersrerapr trgf cngpurq va _fpurzn_pvephyne_vzcbegf.
-     oenapu_zretr_cebcbfny = rkcbegrq(
-         Ersrerapr(
-"""
-
 
 def default_master_store(func):
     """Decorator to temporarily set the default Store to the master.
@@ -1536,13 +1519,17 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             BranchSubscriptionNotificationLevel.NOEMAIL, None,
             CodeReviewNotificationLevel.NOEMAIL, subscribed_by)
 
-    def makeDiff(self, diff_text=DIFF):
-        return ProxyFactory(
-            Diff.fromFile(StringIO(diff_text), len(diff_text)))
+    def makeDiff(self, size='small'):
+        diff_path = os.path.join(os.path.dirname(__file__),
+                                 'data/{}.diff'.format(size))
+        with open (os.path.join(diff_path), 'r') as diff:
+            diff_text = diff.read()
+            return ProxyFactory(
+                Diff.fromFile(StringIO(diff_text), len(diff_text)))
 
     def makePreviewDiff(self, conflicts=u'', merge_proposal=None,
-                        date_created=None):
-        diff = self.makeDiff()
+                        date_created=None, size='small'):
+        diff = self.makeDiff(size)
         if merge_proposal is None:
             merge_proposal = self.makeBranchMergeProposal()
         preview_diff = PreviewDiff()
