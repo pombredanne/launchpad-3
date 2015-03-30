@@ -331,7 +331,10 @@ class GitLookup:
         path = self.uriToPath(uri)
         if path is None:
             return None
-        return self.getByPath(path)
+        path, extra_path = self.getByPath(path)
+        if extra_path:
+            return None
+        return path
 
     def getByUniqueName(self, unique_name):
         """See `IGitLookup`."""
@@ -349,16 +352,18 @@ class GitLookup:
     def getByPath(self, path):
         """See `IGitLookup`."""
         traverser = getUtility(IGitTraverser)
+        segments = iter(path.split("/"))
         try:
-            owner, target, repository = traverser.traverse_path(path)
+            owner, target, repository = traverser.traverse(segments)
         except (InvalidNamespace, InvalidProductName, NameLookupFailed):
-            return None
-        if repository is not None:
-            return repository
-        if IPerson.providedBy(target):
-            return None
-        repository_set = getUtility(IGitRepositorySet)
-        if owner is None:
-            return repository_set.getDefaultRepository(target)
-        else:
-            return repository_set.getDefaultRepositoryForOwner(owner, target)
+            return None, None
+        if repository is None:
+            if IPerson.providedBy(target):
+                return None, None
+            repository_set = getUtility(IGitRepositorySet)
+            if owner is None:
+                repository = repository_set.getDefaultRepository(target)
+            else:
+                repository = repository_set.getDefaultRepositoryForOwner(
+                    owner, target)
+        return repository, "/".join(segments)

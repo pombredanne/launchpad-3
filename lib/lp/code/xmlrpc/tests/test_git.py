@@ -84,13 +84,15 @@ class TestGitAPIFeatureFlag(TestCaseWithFactory):
             requester, path.lstrip("/"))
         self.assertIsNotNone(repository)
         self.assertEqual(
-            {"path": repository.getInternalPath(), "writable": True},
+            {"path": repository.getInternalPath(), "writable": True,
+             "trailing": ""},
             translation)
         translation = self.git_api.translatePath(
             path, "write", requester.id, True)
         login(ANONYMOUS)
         self.assertEqual(
-            {"path": repository.getInternalPath(), "writable": True},
+            {"path": repository.getInternalPath(), "writable": True,
+             "trailing": ""},
             translation)
         # But we cannot create another one without the feature flag.
         message = "You do not have permission to create Git repositories."
@@ -181,14 +183,16 @@ class TestGitAPIMixin:
         return fault.faultString[len(prefix):].rstrip(".")
 
     def assertTranslates(self, requester, path, repository, writable,
-                         permission="read", can_authenticate=False):
+                         permission="read", can_authenticate=False,
+                         trailing=""):
         if requester not in (LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES):
             requester = requester.id
         translation = self.git_api.translatePath(
             path, permission, requester, can_authenticate)
         login(ANONYMOUS)
         self.assertEqual(
-            {"path": repository.getInternalPath(), "writable": writable},
+            {"path": repository.getInternalPath(), "writable": writable,
+             "trailing": trailing},
             translation)
 
     def assertCreates(self, requester, path, can_authenticate=False):
@@ -204,7 +208,8 @@ class TestGitAPIMixin:
         self.assertIsNotNone(repository)
         self.assertEqual(requester, repository.registrant)
         self.assertEqual(
-            {"path": repository.getInternalPath(), "writable": True},
+            {"path": repository.getInternalPath(), "writable": True,
+             "trailing": ""},
             translation)
         self.assertEqual(
             [("create", repository.getInternalPath())],
@@ -355,8 +360,9 @@ class TestGitAPI(TestGitAPIMixin, TestCaseWithFactory):
     def test_translatePath_repository_with_trailing_segments(self):
         requester = self.factory.makePerson()
         repository = self.factory.makeGitRepository()
-        path = u"/%s/junk" % repository.unique_name
-        self.assertPathTranslationError(requester, path)
+        path = u"/%s/foo/bar" % repository.unique_name
+        self.assertTranslates(
+            requester, path, repository, False, trailing="foo/bar")
 
     def test_translatePath_no_such_repository(self):
         requester = self.factory.makePerson()
