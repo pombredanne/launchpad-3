@@ -261,26 +261,34 @@ class GitTraverser:
         else:
             target = owner
             traversable = adapt(owner, IGitTraversable)
+        trailing = None
         segments_iter = SegmentIterator(segments)
         while traversable is not None:
             try:
                 name = next(segments_iter)
             except StopIteration:
                 break
-            owner, target, repository = traversable.traverse(
-                owner, name, segments_iter)
+            try:
+                owner, target, repository = traversable.traverse(
+                    owner, name, segments_iter)
+            except InvalidNamespace:
+                if target is not None or repository is not None:
+                    # We have some information, so the rest may consist of
+                    # trailing path information.
+                    trailing = name
+                    break
             if repository is not None:
                 break
             traversable = adapt(target, IGitTraversable)
         if target is None or not IHasGitRepositories.providedBy(target):
             raise InvalidNamespace("/".join(segments_iter.traversed))
-        return owner, target, repository
+        return owner, target, repository, trailing
 
     def traverse_path(self, path):
         """See `IGitTraverser`."""
         segments = iter(path.split("/"))
-        owner, target, repository = self.traverse(segments)
-        if list(segments):
+        owner, target, repository, trailing = self.traverse(segments)
+        if trailing or list(segments):
             raise InvalidNamespace(path)
         return owner, target, repository
 
@@ -340,9 +348,10 @@ class GitLookup:
         """See `IGitLookup`."""
         try:
             if unique_name.startswith("~"):
+                traverser = getUtility(IGitTraverser)
                 segments = iter(unique_name.split("/"))
-                _, _, repository = getUtility(IGitTraverser).traverse(segments)
-                if repository is None or list(segments):
+                _, _, repository, trailing = traverser.traverse(segments)
+                if repository is None or trailing or list(segments):
                     raise InvalidNamespace(unique_name)
                 return repository
         except (InvalidNamespace, NameLookupFailed):
@@ -354,7 +363,7 @@ class GitLookup:
         traverser = getUtility(IGitTraverser)
         segments = iter(path.split("/"))
         try:
-            owner, target, repository = traverser.traverse(segments)
+            owner, target, repository, trailing = traverser.traverse(segments)
         except (InvalidNamespace, InvalidProductName, NameLookupFailed):
             return None, None
         if repository is None:
@@ -366,4 +375,7 @@ class GitLookup:
             else:
                 repository = repository_set.getDefaultRepositoryForOwner(
                     owner, target)
-        return repository, "/".join(segments)
+        trailing_segments = list(segments)
+        if trailing:
+            trailing_segments.insert(0, trailing)
+        return repository, "/".join(trailing_segments)
