@@ -139,5 +139,8 @@ class IGitLookup(Interface):
                 PROJECT
                 DISTRO/+source/SOURCE
 
-        :return: An `IGitRepository`, or None.
+        :return: A tuple of (`IGitRepository`, extra_path), or (None, None).
+            'extra_path' may be used by applications that need to traverse a
+            leading part of a path as a repository, such as external code
+            browsers.
         """

@@ -69,7 +69,7 @@ class GitAPI(LaunchpadXMLRPCView):
             config.codehosting.internal_git_api_endpoint)
 
     def _performLookup(self, path):
-        repository = getUtility(IGitLookup).getByPath(path)
+        repository, extra_path = getUtility(IGitLookup).getByPath(path)
         if repository is None:
             return None
         try:
@@ -77,7 +77,11 @@ class GitAPI(LaunchpadXMLRPCView):
         except Unauthorized:
             raise faults.PermissionDenied()
         writable = check_permission("launchpad.Edit", repository)
-        return {"path": hosting_path, "writable": writable}
+        return {
+            "path": hosting_path,
+            "writable": writable,
+            "trailing": extra_path,
+            }
 
     def _getGitNamespaceExtras(self, path, requester):
         """Get the namespace, repository name, and callback for the path.
