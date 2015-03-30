@@ -100,7 +100,7 @@ class TestGetByPath(TestCaseWithFactory):
     def test_project(self):
         repository = self.factory.makeGitRepository()
         self.assertEqual(
-            repository, self.lookup.getByPath(repository.unique_name))
+            (repository, ""), self.lookup.getByPath(repository.unique_name))
 
     def test_project_default(self):
         repository = self.factory.makeGitRepository()
@@ -108,13 +108,13 @@ class TestGetByPath(TestCaseWithFactory):
             getUtility(IGitRepositorySet).setDefaultRepository(
                 repository.target, repository)
         self.assertEqual(
-            repository, self.lookup.getByPath(repository.shortened_path))
+            (repository, ""), self.lookup.getByPath(repository.shortened_path))
 
     def test_package(self):
         dsp = self.factory.makeDistributionSourcePackage()
         repository = self.factory.makeGitRepository(target=dsp)
         self.assertEqual(
-            repository, self.lookup.getByPath(repository.unique_name))
+            (repository, ""), self.lookup.getByPath(repository.unique_name))
 
     def test_package_default(self):
         dsp = self.factory.makeDistributionSourcePackage()
@@ -123,31 +123,37 @@ class TestGetByPath(TestCaseWithFactory):
             getUtility(IGitRepositorySet).setDefaultRepository(
                 repository.target, repository)
         self.assertEqual(
-            repository, self.lookup.getByPath(repository.shortened_path))
+            (repository, ""), self.lookup.getByPath(repository.shortened_path))
 
     def test_personal(self):
         owner = self.factory.makePerson()
         repository = self.factory.makeGitRepository(owner=owner, target=owner)
         self.assertEqual(
-            repository, self.lookup.getByPath(repository.unique_name))
+            (repository, ""), self.lookup.getByPath(repository.unique_name))
+
+    def test_extra_path(self):
+        repository = self.factory.makeGitRepository()
+        self.assertEqual(
+            (repository, "foo/bar"),
+            self.lookup.getByPath("%s/foo/bar" % repository.unique_name))
 
     def test_invalid_namespace(self):
         # If `getByPath` is given a path to something with no default Git
-        # repository, such as a distribution, it returns None.
+        # repository, such as a distribution, it returns (None, _).
         distro = self.factory.makeDistribution()
-        self.assertIsNone(self.lookup.getByPath(distro.name))
+        self.assertIsNone(self.lookup.getByPath(distro.name)[0])
 
     def test_no_default_git_repository(self):
         # If `getByPath` is given a path to something that could have a Git
-        # repository but doesn't, it returns None.
+        # repository but doesn't, it returns (None, _).
         project = self.factory.makeProduct()
-        self.assertIsNone(self.lookup.getByPath(project.name))
+        self.assertIsNone(self.lookup.getByPath(project.name)[0])
 
     def test_bare_person(self):
         # If `getByPath` is given a path to a person but nothing further, it
-        # returns None even if the person exists.
+        # returns (None, _) even if the person exists.
         owner = self.factory.makePerson()
-        self.assertIsNone(self.lookup.getByPath("~%s" % owner.name))
+        self.assertIsNone(self.lookup.getByPath("~%s" % owner.name)[0])
 
 
 class TestGetByUrl(TestCaseWithFactory):
@@ -178,6 +184,12 @@ class TestGetByUrl(TestCaseWithFactory):
         repository = self.makeProjectRepository()
         self.assertUrlMatches(
             "git://git.launchpad.dev/~aa/bb/+git/cc/", repository)
+
+    def test_getByUrl_with_trailing_segments(self):
+        # URLs with trailing segments beyond the repository are rejected.
+        self.makeProjectRepository()
+        self.assertIsNone(
+            self.lookup.getByUrl("git://git.launchpad.dev/~aa/bb/+git/cc/foo"))
 
     def test_getByUrl_with_git(self):
         # getByUrl recognises LP repositories for git URLs.

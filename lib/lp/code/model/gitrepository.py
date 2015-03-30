@@ -602,8 +602,8 @@ class GitRepositorySet:
 
     def getByPath(self, user, path):
         """See `IGitRepositorySet`."""
-        repository = getUtility(IGitLookup).getByPath(path)
-        if repository is None:
+        repository, extra_path = getUtility(IGitLookup).getByPath(path)
+        if repository is None or extra_path:
             return None
         # removeSecurityProxy is safe here since we're explicitly performing
         # a permission check.
