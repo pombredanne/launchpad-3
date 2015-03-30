@@ -137,6 +137,15 @@ class TestGetByPath(TestCaseWithFactory):
             (repository, "foo/bar"),
             self.lookup.getByPath("%s/foo/bar" % repository.unique_name))
 
+    def test_default_extra_path(self):
+        repository = self.factory.makeGitRepository()
+        with person_logged_in(repository.target.owner):
+            getUtility(IGitRepositorySet).setDefaultRepository(
+                repository.target, repository)
+        self.assertEqual(
+            (repository, "foo/bar"),
+            self.lookup.getByPath("%s/foo/bar" % repository.shortened_path))
+
     def test_invalid_namespace(self):
         # If `getByPath` is given a path to something with no default Git
         # repository, such as a distribution, it returns (None, _).
@@ -502,8 +511,8 @@ class TestGitTraverser(TestCaseWithFactory):
             owner=person, target=person, name=u"repository")
         segments = ["~person", "+git", "repository"]
         self.assertEqual(
-            (person, person, repository),
+            (person, person, repository, None),
             self.traverser.traverse(iter(segments)))
         self.assertEqual(
-            (person, person, repository),
+            (person, person, repository, None),
             self.traverser.traverse(iter(segments[1:]), owner=person))

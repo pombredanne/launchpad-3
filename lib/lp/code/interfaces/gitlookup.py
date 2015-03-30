@@ -53,7 +53,8 @@ class IGitTraverser(Interface):
         :return: A tuple of::
             * an `IPerson`, or None;
             * an `IHasGitRepositories`;
-            * an `IGitRepository`, or None.
+            * an `IGitRepository`, or None;
+            * a trailing path segment, or None.
         """
 
     def traverse_path(path):
