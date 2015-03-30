@@ -375,12 +375,15 @@ class BranchTraversalMixin:
             num_segments = len(segments)
             iter_segments = iter(segments)
             traverser = getUtility(IGitTraverser)
-            _, target, repository = traverser.traverse(
+            _, target, repository, trailing = traverser.traverse(
                 iter_segments, owner=self.context)
             if repository is None:
                 raise NotFoundError
             # Subtract one because the pillar has already been traversed.
-            for _ in range(num_segments - len(list(iter_segments)) - 1):
+            num_traversed = num_segments - len(list(iter_segments)) - 1
+            if trailing:
+                num_traversed -= 1
+            for _ in range(num_traversed):
                 self.request.stepstogo.consume()
 
             if IProduct.providedBy(target):
