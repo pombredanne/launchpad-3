@@ -217,9 +217,8 @@ class TestGitAPIMixin:
         target_default = removeSecurityProxy(
             self.repository_set.getDefaultRepository(repository.target))
         self.assertIsNotNone(target_default)
-        self.assertEqual(
-              target_default.getInternalPath(),
-            self.git_api.hosting_client.calls[0][2])
+        self.assertEqual(target_default.getInternalPath(),
+                         self.git_api.hosting_client.calls[0][2])
 
     def test_translatePath_private_repository(self):
         requester = self.factory.makePerson()
