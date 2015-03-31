@@ -246,8 +246,7 @@ class GitAPI(LaunchpadXMLRPCView):
         if repository is None:
             return faults.NotFound(
                 "No repository found for '%s'." % translated_path)
-        job = getUtility(IGitRefScanJobSource).create(repository)
-        job.celeryRunOnCommit()
+        getUtility(IGitRefScanJobSource).create(repository)
 
     def authenticateWithPassword(self, username, password):
         """See `IGitAPI`."""
