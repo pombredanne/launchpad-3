@@ -234,6 +234,8 @@ class GitAPI(LaunchpadXMLRPCView):
         """See `IGitAPI`."""
         if requester_id is None:
             requester_id = LAUNCHPAD_ANONYMOUS
+        if isinstance(path, str):
+            path = path.decode('utf-8')
         return run_with_login(
             requester_id, self._translatePath,
             path.strip("/"), permission, can_authenticate)
