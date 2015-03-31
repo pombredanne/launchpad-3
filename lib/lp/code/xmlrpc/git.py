@@ -24,6 +24,7 @@ from lp.code.errors import (
     GitRepositoryCreationForbidden,
     GitRepositoryCreationFault,
     GitRepositoryExists,
+    GitTargetError,
     InvalidNamespace,
     )
 from lp.code.githosting import GitHostingClient
@@ -142,7 +143,7 @@ class GitAPI(LaunchpadXMLRPCView):
         getUtility(IErrorReportingUtility).raising(sys.exc_info(), request)
         raise faults.OopsOccurred("creating a Git repository", request.oopsid)
 
-    def _createRepository(self, requester, path):
+    def _createRepository(self, requester, path, clone_from=None):
         try:
             namespace, repository_name, default_func = (
                 self._getGitNamespaceExtras(path, requester))
@@ -192,9 +193,20 @@ class GitAPI(LaunchpadXMLRPCView):
             Store.of(repository).flush()
             assert repository.id is not None
 
+            # If repository has target_default, clone from default.
+            target_path = None
+            if repository.target_default:
+                try:
+                    repository_set = getUtility(IGitRepositorySet)
+                    target_default = repository_set.getDefaultRepository(
+                        repository.target)
+                    target_path = target_default.getInternalPath()
+                except GitTargetError:
+                    pass # Ignore Personal repositories.
+
             hosting_path = repository.getInternalPath()
             try:
-                self.hosting_client.create(hosting_path)
+                self.hosting_client.create(hosting_path, clone_from=target_path)
             except GitRepositoryCreationFault as e:
                 # The hosting service failed.  Log an OOPS for investigation.
                 self._reportError(path, e, hosting_path=hosting_path)

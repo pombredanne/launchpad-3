@@ -43,14 +43,14 @@ class FakeGitHostingClient:
     def __init__(self):
         self.calls = []
 
-    def create(self, path):
-        self.calls.append(("create", path))
+    def create(self, path, clone_from=None):
+        self.calls.append(("create", path, clone_from))
 
 
 class BrokenGitHostingClient:
     """A GitHostingClient lookalike that pretends the remote end is down."""
 
-    def create(self, path):
+    def create(self, path, clone_from=None):
         raise GitRepositoryCreationFault("nothing here")
 
 
@@ -207,8 +207,8 @@ class TestGitAPIMixin:
             {"path": repository.getInternalPath(), "writable": True},
             translation)
         self.assertEqual(
-            [("create", repository.getInternalPath())],
-            self.git_api.hosting_client.calls)
+            ("create", repository.getInternalPath()),
+            self.git_api.hosting_client.calls[0][0:2])
         return repository
 
     def test_translatePath_private_repository(self):
