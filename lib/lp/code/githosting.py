@@ -37,15 +37,19 @@ class GitHostingClient:
         # over, but is there some more robust way to do this?
         return 5.0
 
-    def create(self, path):
+    def create(self, path, clone_from=None):
         try:
             # XXX cjwatson 2015-03-01: Once we're on requests >= 2.4.2, we
             # should just use post(json=) and drop the explicit Content-Type
             # header.
+            if clone_from:
+                request = {"repo_path": path, "clone_from": clone_from}
+            else:
+                request = {"repo_path": path}
             response = self._makeSession().post(
                 urlutils.join(self.endpoint, "repo"),
                 headers={"Content-Type": "application/json"},
-                data=json.dumps({"repo_path": path, "bare_repo": True}),
+                data=json.dumps(request),
                 timeout=self.timeout)
         except Exception as e:
             raise GitRepositoryCreationFault(
