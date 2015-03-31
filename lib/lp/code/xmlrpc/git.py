@@ -246,3 +246,8 @@ class GitAPI(LaunchpadXMLRPCView):
                 "No repository found for '%s'." % translated_path)
         job = getUtility(IGitRefScanJobSource).create(repository)
         job.celeryRunOnCommit()
+
+    def authenticateWithPassword(self, username, password):
+        """See `IGitAPI`."""
+        # Password authentication isn't supported yet.
+        return faults.Unauthorized()

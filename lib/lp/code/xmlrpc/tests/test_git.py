@@ -644,6 +644,11 @@ class TestGitAPI(TestGitAPIMixin, TestCaseWithFactory):
         job_source = getUtility(IGitRefScanJobSource)
         self.assertEqual([], list(job_source.iterReady()))
 
+    def test_authenticateWithPassword(self):
+        self.assertIsInstance(
+            self.git_api.authenticateWithPassword('foo', 'bar'),
+            faults.Unauthorized)
+
 
 class TestGitAPISecurity(TestGitAPIMixin, TestCaseWithFactory):
     """Slow tests for `IGitAPI`.
