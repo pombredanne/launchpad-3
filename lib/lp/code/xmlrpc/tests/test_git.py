@@ -442,6 +442,14 @@ class TestGitAPI(TestGitAPIMixin, TestCaseWithFactory):
         team = self.factory.makeTeam(members=[requester])
         self.assertCreates(requester, u"/~%s/+git/random" % team.name)
 
+    def test_translatePath_create_bytestring(self):
+        # ASCII strings come in as bytestrings, not Unicode strings. They
+        # work fine too.
+        requester = self.factory.makePerson()
+        project = self.factory.makeProduct()
+        path = u"/~%s/%s/+git/random" % (requester.name, project.name)
+        self.assertCreates(requester, path.encode('ascii'))
+
     def test_translatePath_anonymous_cannot_create(self):
         # Anonymous users cannot create repositories.
         project = self.factory.makeProject()
@@ -643,6 +651,11 @@ class TestGitAPI(TestGitAPIMixin, TestCaseWithFactory):
         self.assertIsInstance(fault, faults.NotFound)
         job_source = getUtility(IGitRefScanJobSource)
         self.assertEqual([], list(job_source.iterReady()))
+
+    def test_authenticateWithPassword(self):
+        self.assertIsInstance(
+            self.git_api.authenticateWithPassword('foo', 'bar'),
+            faults.Unauthorized)
 
 
 class TestGitAPISecurity(TestGitAPIMixin, TestCaseWithFactory):

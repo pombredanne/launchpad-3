@@ -60,3 +60,10 @@ class IGitAPI(Interface):
         :returns: A `NotFound` fault if no repository can be found for
             'translated_path'; otherwise None.
         """
+
+    def authenticateWithPassword(username, password):
+        """Authenticate a user by username and password.
+
+        :returns: An `Unauthorized` fault, as password authentication is
+            not yet supported.
+        """
