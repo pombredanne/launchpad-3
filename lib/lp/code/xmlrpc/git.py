@@ -68,6 +68,7 @@ class GitAPI(LaunchpadXMLRPCView):
         super(GitAPI, self).__init__(*args, **kwargs)
         self.hosting_client = GitHostingClient(
             config.codehosting.internal_git_api_endpoint)
+        self.repository_set = getUtility(IGitRepositorySet)
 
     def _performLookup(self, path):
         repository = getUtility(IGitLookup).getByPath(path)
@@ -119,12 +120,11 @@ class GitAPI(LaunchpadXMLRPCView):
                 "target; push to a named repository instead.")
         if repository_name is None:
             def default_func(new_repository):
-                repository_set = getUtility(IGitRepositorySet)
                 if owner is None:
-                    repository_set.setDefaultRepository(
+                    self.repository_set.setDefaultRepository(
                         target, new_repository)
                 else:
-                    repository_set.setDefaultRepositoryForOwner(
+                    self.repository_set.setDefaultRepositoryForOwner(
                         owner, target, new_repository)
 
             repository_name = namespace.findUnusedName(target.name)
@@ -196,8 +196,7 @@ class GitAPI(LaunchpadXMLRPCView):
             # If repository has target_default, clone from default.
             target_path = None
             try:
-                repository_set = getUtility(IGitRepositorySet)
-                target_default = repository_set.getDefaultRepository(
+                target_default = self.repository_set.getDefaultRepository(
                     repository.target)
                 if target_default and target_default.visibleByUser(requester):
                     target_path = target_default.getInternalPath()
