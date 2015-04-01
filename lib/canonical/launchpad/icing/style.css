@@ -604,6 +604,7 @@ table.diff .line-no {
   color: #999;
   border-right: solid 4px white;
   width: 4em;
+  cursor: pointer;
 }
 table.diff .line-no.active {
   background: url(/@@/add) #f6f6f6 center left no-repeat;
