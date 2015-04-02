@@ -1522,7 +1522,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     def makeDiff(self, size='small'):
         diff_path = os.path.join(os.path.dirname(__file__),
                                  'data/{}.diff'.format(size))
-        with open (os.path.join(diff_path), 'r') as diff:
+        with open(os.path.join(diff_path), 'r') as diff:
             diff_text = diff.read()
             return ProxyFactory(
                 Diff.fromFile(StringIO(diff_text), len(diff_text)))
