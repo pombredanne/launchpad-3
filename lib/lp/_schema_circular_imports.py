@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Update the interface schema values due to circular imports.
@@ -208,6 +208,7 @@ from lp.soyuz.interfaces.processor import IProcessor
 from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory,
     IBinaryPackagePublishingHistoryEdit,
+    IBinaryPackagePublishingHistoryPublic,
     ISourcePackagePublishingHistory,
     ISourcePackagePublishingHistoryEdit,
     ISourcePackagePublishingHistoryPublic,
@@ -359,6 +360,9 @@ patch_collection_return_type(
 patch_collection_return_type(
     ISourcePackagePublishingHistoryPublic, 'getPublishedBinaries',
     IBinaryPackagePublishingHistory)
+patch_entry_return_type(
+    IBinaryPackagePublishingHistoryPublic, 'getPublishedSource',
+    ISourcePackagePublishingHistory)
 patch_reference_property(
     IBinaryPackagePublishingHistory, 'distroarchseries',
     IDistroArchSeries)

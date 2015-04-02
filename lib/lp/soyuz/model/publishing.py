@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -1064,6 +1064,10 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
             return [dict(url=url, size=size, sha1=sha1)
                 for url, (size, sha1) in zip(binary_urls, meta)]
         return binary_urls
+
+    def getPublishedSource(self):
+        """See `IBinaryPackagePublishingHistory`."""
+        return self.binarypackagerelease.build._getLatestPublication()
 
 
 def expand_binary_requests(distroseries, binaries):

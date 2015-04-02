@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Publishing interfaces."""
@@ -865,6 +865,19 @@ class IBinaryPackagePublishingHistoryPublic(IPublishingView):
         :param include_meta: Return a list of dicts with keys url, size
             and sha1 for each url instead of a simple list.
         :return: A collection of URLs for this binary.
+        """
+
+    # Really ISourcePackagePublishingHistory, patched in
+    # _schema_circular_imports.py.
+    @operation_returns_entry(Interface)
+    @export_read_operation()
+    @operation_for_version("devel")
+    def getPublishedSource():
+        """The latest source publication corresponding to this binary.
+
+        :return: An `ISourcePackagePublishingHistory`, or None if no
+            corresponding source publication can be located (which is a bug,
+            but is true for some old production builds).
         """
 
 
