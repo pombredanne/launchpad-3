@@ -597,6 +597,11 @@ table.diff {
    background-color: white;
    margin-bottom: 0.5em;
 }
+table.diff .cursor {
+    float: left;
+    font-weight: bold;
+    margin: 0 0 0 1em;
+}
 table.diff .text { padding-left: 0.5em; }
 table.diff .line-no {
   text-align: right;
