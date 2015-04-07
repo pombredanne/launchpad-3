@@ -597,10 +597,13 @@ table.diff {
    background-color: white;
    margin-bottom: 0.5em;
 }
-table.diff .cursor {
-    float: left;
-    font-weight: bold;
-    margin: 0 0 0 1em;
+
+table.diff .nav-cursor:before {
+   content: "\0025B6";
+   font-weight: bold;
+   display: block;
+   float: left;
+   margin-left: 1.25em;
 }
 table.diff .text { padding-left: 0.5em; }
 table.diff .line-no {
@@ -611,6 +614,7 @@ table.diff .line-no {
   width: 4em;
   cursor: pointer;
 }
+
 table.diff .line-no.active {
   background: url(/@@/add) #f6f6f6 center left no-repeat;
 }
