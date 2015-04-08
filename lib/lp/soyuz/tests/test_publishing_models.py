@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test model and set utilities used for publishing."""
@@ -221,20 +221,3 @@ class TestBinaryPackagePublishingHistory(TestCaseWithFactory):
         bpph = self.factory.makeBinaryPackagePublishingHistory(
             binpackageformat=BinaryPackageFormat.DDEB)
         self.assertTrue(bpph.is_debug)
-
-    def test_getPublishedSource(self):
-        distroseries = self.factory.makeDistroSeries()
-        archive = self.factory.makeArchive(
-            distribution=distroseries.distribution)
-        other_archive = self.factory.makeArchive(
-            distribution=distroseries.distribution)
-        spph = self.factory.makeSourcePackagePublishingHistory(
-            distroseries=distroseries, archive=archive)
-        self.factory.makeSourcePackagePublishingHistory(
-            distroseries=distroseries, archive=other_archive,
-            sourcepackagerelease=spph.sourcepackagerelease)
-        das = self.factory.makeDistroArchSeries(distroseries=distroseries)
-        bpph = self.factory.makeBinaryPackagePublishingHistory(
-            distroarchseries=das, archive=archive,
-            source_package_release=spph.sourcepackagerelease)
-        self.assertEqual(spph, bpph.getPublishedSource())

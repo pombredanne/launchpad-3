@@ -1069,10 +1069,6 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
                 for url, (size, sha1) in zip(binary_urls, meta)]
         return binary_urls
 
-    def getPublishedSource(self):
-        """See `IBinaryPackagePublishingHistory`."""
-        return self.binarypackagerelease.build._getLatestPublication()
-
 
 def expand_binary_requests(distroseries, binaries):
     """Architecture-expand a dict of binary publication requests.

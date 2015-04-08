@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -215,7 +215,7 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
     source_package_name = Reference(
         source_package_name_id, 'SourcePackageName.id')
 
-    def _getLatestPublication(self):
+    def getLatestSourcePublication(self):
         from lp.soyuz.model.publishing import SourcePackagePublishingHistory
         store = Store.of(self)
         results = store.find(
@@ -230,7 +230,7 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
     @property
     def current_component(self):
         """See `IBuild`."""
-        latest_publication = self._getLatestPublication()
+        latest_publication = self.getLatestSourcePublication()
         # Production has some buggy builds without source publications.
         # They seem to have been created by early versions of gina and
         # the readding of hppa.
@@ -241,7 +241,7 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
     def current_source_publication(self):
         """See `IBuild`."""
         from lp.soyuz.interfaces.publishing import active_publishing_status
-        latest_publication = self._getLatestPublication()
+        latest_publication = self.getLatestSourcePublication()
         if (latest_publication is not None and
             latest_publication.status in active_publishing_status):
             return latest_publication

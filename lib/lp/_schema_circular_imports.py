@@ -208,7 +208,6 @@ from lp.soyuz.interfaces.processor import IProcessor
 from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory,
     IBinaryPackagePublishingHistoryEdit,
-    IBinaryPackagePublishingHistoryPublic,
     ISourcePackagePublishingHistory,
     ISourcePackagePublishingHistoryEdit,
     ISourcePackagePublishingHistoryPublic,
@@ -360,9 +359,6 @@ patch_collection_return_type(
 patch_collection_return_type(
     ISourcePackagePublishingHistoryPublic, 'getPublishedBinaries',
     IBinaryPackagePublishingHistory)
-patch_entry_return_type(
-    IBinaryPackagePublishingHistoryPublic, 'getPublishedSource',
-    ISourcePackagePublishingHistory)
 patch_reference_property(
     IBinaryPackagePublishingHistory, 'distroarchseries',
     IDistroArchSeries)

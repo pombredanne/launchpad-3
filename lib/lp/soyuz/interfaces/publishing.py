@@ -874,19 +874,6 @@ class IBinaryPackagePublishingHistoryPublic(IPublishingView):
         :return: A collection of URLs for this binary.
         """
 
-    # Really ISourcePackagePublishingHistory, patched in
-    # _schema_circular_imports.py.
-    @operation_returns_entry(Interface)
-    @export_read_operation()
-    @operation_for_version("devel")
-    def getPublishedSource():
-        """The latest source publication corresponding to this binary.
-
-        :return: An `ISourcePackagePublishingHistory`, or None if no
-            corresponding source publication can be located (which is a bug,
-            but is true for some old production builds).
-        """
-
 
 class IBinaryPackagePublishingHistoryEdit(IPublishingEdit):
     """A writeable binary package publishing record."""
