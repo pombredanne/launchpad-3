@@ -367,6 +367,8 @@ patch_reference_property(
     IBinaryPackagePublishingHistory, 'distroarchseries',
     IDistroArchSeries)
 patch_reference_property(
+    IBinaryPackagePublishingHistory, 'build', IBinaryPackageBuild)
+patch_reference_property(
     IBinaryPackagePublishingHistory, 'archive', IArchive)
 patch_reference_property(
     ISourcePackagePublishingHistory, 'archive', IArchive)

@@ -792,6 +792,13 @@ class IBinaryPackagePublishingHistoryPublic(IPublishingView):
         TextLine(
             title=_("Binary Package Version"),
             required=False, readonly=True))
+    build = exported(
+        Reference(
+            # Really IBinaryPackageBuild, fixed in _schema_circular_imports.
+            Interface,
+            title=_("Build"),
+            description=_("The build that produced this binary package."),
+            required=True, readonly=True))
     architecture_specific = exported(
         Bool(
             title=_("Architecture Specific"),

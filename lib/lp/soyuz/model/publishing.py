@@ -769,6 +769,10 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         return self.binarypackagerelease.version
 
     @property
+    def build(self):
+        return self.binarypackagerelease.build
+
+    @property
     def architecture_specific(self):
         """See `IBinaryPackagePublishingHistory`"""
         return self.binarypackagerelease.architecturespecific
