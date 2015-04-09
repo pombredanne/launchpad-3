@@ -834,8 +834,7 @@ class Archive(SQLBase):
 
     def getPublishedOnDiskBinaries(self, name=None, version=None, status=None,
                                    distroarchseries=None, pocket=None,
-                                   exact_match=False,
-                                   created_since_date=None):
+                                   exact_match=False):
         """See `IArchive`."""
         # Circular imports.
         from lp.registry.model.distroseries import DistroSeries
@@ -844,7 +843,7 @@ class Archive(SQLBase):
         clauses, order_by = self._getBinaryPublishingBaseClauses(
             name=name, version=version, status=status, pocket=pocket,
             distroarchseries=distroarchseries, exact_match=exact_match,
-            created_since_date=created_since_date, need_bpr=True)
+            need_bpr=True)
 
         clauses.extend([
             BinaryPackagePublishingHistory.distroarchseriesID ==
