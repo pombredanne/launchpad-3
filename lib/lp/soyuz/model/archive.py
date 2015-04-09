@@ -747,21 +747,33 @@ class Archive(SQLBase):
     def _getBinaryPublishingBaseClauses(
         self, name=None, version=None, status=None, distroarchseries=None,
         pocket=None, exact_match=False, created_since_date=None,
-        ordered=True, include_removed=True):
+        ordered=True, include_removed=True, need_bpr=False):
         """Base clauses and clauseTables for binary publishing queries.
 
         Returns a list of 'clauses' (to be joined in the callsite) and
         a list of clauseTables required according to the given arguments.
         """
         clauses = ["""
-            BinaryPackagePublishingHistory.archive = %s AND
-            BinaryPackagePublishingHistory.binarypackagerelease =
-                BinaryPackageRelease.id AND
-            BinaryPackagePublishingHistory.binarypackagename =
-                BinaryPackageName.id
+            BinaryPackagePublishingHistory.archive = %s
         """ % sqlvalues(self)]
-        clauseTables = ['BinaryPackageRelease', 'BinaryPackageName']
+        clauseTables = []
+
+        if need_bpr or ordered or version is not None:
+            clauses.append("""
+                BinaryPackagePublishingHistory.binarypackagerelease =
+                    BinaryPackageRelease.id
+            """)
+            clauseTables.append('BinaryPackageRelease')
+
+        if ordered or name is not None:
+            clauses.append("""
+                BinaryPackagePublishingHistory.binarypackagename =
+                    BinaryPackageName.id
+            """)
+            clauseTables.append('BinaryPackageName')
+
         if ordered:
+            assert 'BinaryPackageName' in clauseTables
             orderBy = ['BinaryPackageName.name',
                        '-BinaryPackagePublishingHistory.id']
         else:
@@ -771,6 +783,7 @@ class Archive(SQLBase):
             orderBy = ['-BinaryPackagePublishingHistory.id']
 
         if name is not None:
+            assert 'BinaryPackageName' in clauseTables
             if exact_match:
                 clauses.append("""
                     BinaryPackageName.name=%s
@@ -786,10 +799,12 @@ class Archive(SQLBase):
                     "The 'version' parameter can be used only together with"
                     " the 'name' parameter.")
 
+            assert 'BinaryPackageRelease' in clauseTables
             clauses.append("""
                 BinaryPackageRelease.version = %s
             """ % sqlvalues(version))
         elif ordered:
+            assert 'BinaryPackageRelease' in clauseTables
             orderBy.insert(1, Desc(BinaryPackageRelease.version))
 
         if status is not None:
@@ -854,7 +869,7 @@ class Archive(SQLBase):
         clauses, clauseTables, orderBy = self._getBinaryPublishingBaseClauses(
             name=name, version=version, status=status, pocket=pocket,
             distroarchseries=distroarchseries, exact_match=exact_match,
-            created_since_date=created_since_date)
+            created_since_date=created_since_date, need_bpr=True)
 
         clauses.append("""
             BinaryPackagePublishingHistory.distroarchseries =
