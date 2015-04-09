@@ -159,7 +159,7 @@ We can retrieve the total download count for a binary in this archive.
     >>> australia = getUtility(ICountrySet)['AU']
 
     >>> firefox_db = cprov_db.archive.getAllPublishedBinaries(
-    ...     name='mozilla-firefox')[0]
+    ...     name=u'mozilla-firefox')[0]
     >>> firefox_db.archive.updatePackageDownloadCount(
     ...     firefox_db.binarypackagerelease, date(2010, 2, 21), australia, 10)
     >>> firefox_db.archive.updatePackageDownloadCount(

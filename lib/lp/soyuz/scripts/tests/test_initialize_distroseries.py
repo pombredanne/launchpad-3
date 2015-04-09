@@ -1,4 +1,4 @@
-# Copyright 2010-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the initialize_distroseries script machinery."""
@@ -581,9 +581,9 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         self.assertEqual(
             parent_udev_pubs.count(), child_udev_pubs.count())
         parent_arch_udev_pubs = parent.main_archive.getAllPublishedBinaries(
-            distroarchseries=parent[parent_das.architecturetag], name='udev')
+            distroarchseries=parent[parent_das.architecturetag], name=u'udev')
         child_arch_udev_pubs = child.main_archive.getAllPublishedBinaries(
-            distroarchseries=child[parent_das.architecturetag], name='udev')
+            distroarchseries=child[parent_das.architecturetag], name=u'udev')
         self.assertEqual(
             parent_arch_udev_pubs.count(), child_arch_udev_pubs.count())
         # And the binary package, and linked source package look fine too.

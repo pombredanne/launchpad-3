@@ -97,7 +97,6 @@ from lp.services.database.interfaces import (
     )
 from lp.services.database.sqlbase import (
     cursor,
-    quote_like,
     SQLBase,
     sqlvalues,
     )
@@ -748,50 +747,37 @@ class Archive(SQLBase):
         self, name=None, version=None, status=None, distroarchseries=None,
         pocket=None, exact_match=False, created_since_date=None,
         ordered=True, include_removed=True, need_bpr=False):
-        """Base clauses and clauseTables for binary publishing queries.
+        """Base clauses for binary publishing queries.
 
-        Returns a list of 'clauses' (to be joined in the callsite) and
-        a list of clauseTables required according to the given arguments.
+        Returns a list of 'clauses' (to be joined in the callsite).
         """
-        clauses = ["""
-            BinaryPackagePublishingHistory.archive = %s
-        """ % sqlvalues(self)]
-        clauseTables = []
+        clauses = [BinaryPackagePublishingHistory.archiveID == self.id]
 
         if need_bpr or ordered or version is not None:
-            clauses.append("""
-                BinaryPackagePublishingHistory.binarypackagerelease =
-                    BinaryPackageRelease.id
-            """)
-            clauseTables.append('BinaryPackageRelease')
+            clauses.append(
+                BinaryPackagePublishingHistory.binarypackagereleaseID ==
+                    BinaryPackageRelease.id)
 
         if ordered or name is not None:
-            clauses.append("""
-                BinaryPackagePublishingHistory.binarypackagename =
-                    BinaryPackageName.id
-            """)
-            clauseTables.append('BinaryPackageName')
+            clauses.append(
+                BinaryPackagePublishingHistory.binarypackagenameID ==
+                    BinaryPackageName.id)
 
         if ordered:
-            assert 'BinaryPackageName' in clauseTables
-            orderBy = ['BinaryPackageName.name',
-                       '-BinaryPackagePublishingHistory.id']
+            order_by = [
+                BinaryPackageName.name,
+                Desc(BinaryPackagePublishingHistory.id)]
         else:
             # Strictly speaking, this is ordering, but it's an indexed
             # ordering so it will be quick.  It's needed so that we can
             # batch results on the webservice.
-            orderBy = ['-BinaryPackagePublishingHistory.id']
+            order_by = [Desc(BinaryPackagePublishingHistory.id)]
 
         if name is not None:
-            assert 'BinaryPackageName' in clauseTables
             if exact_match:
-                clauses.append("""
-                    BinaryPackageName.name=%s
-                """ % sqlvalues(name))
+                clauses.append(BinaryPackageName.name == name)
             else:
-                clauses.append("""
-                    BinaryPackageName.name LIKE '%%' || %s || '%%'
-                """ % quote_like(name))
+                clauses.append(BinaryPackageName.name.contains_string(name))
 
         if version is not None:
             if name is None:
@@ -799,117 +785,105 @@ class Archive(SQLBase):
                     "The 'version' parameter can be used only together with"
                     " the 'name' parameter.")
 
-            assert 'BinaryPackageRelease' in clauseTables
-            clauses.append("""
-                BinaryPackageRelease.version = %s
-            """ % sqlvalues(version))
+            clauses.append(BinaryPackageRelease.version == version)
         elif ordered:
-            assert 'BinaryPackageRelease' in clauseTables
-            orderBy.insert(1, Desc(BinaryPackageRelease.version))
+            order_by.insert(1, Desc(BinaryPackageRelease.version))
 
         if status is not None:
             try:
                 status = tuple(status)
             except TypeError:
                 status = (status, )
-            clauses.append("""
-                BinaryPackagePublishingHistory.status IN %s
-            """ % sqlvalues(status))
+            clauses.append(BinaryPackagePublishingHistory.status.is_in(status))
 
         if distroarchseries is not None:
             try:
                 distroarchseries = tuple(distroarchseries)
             except TypeError:
                 distroarchseries = (distroarchseries, )
-            # XXX cprov 20071016: there is no sqlrepr for DistroArchSeries
-            # uhmm, how so ?
-            das_ids = "(%s)" % ", ".join(str(d.id) for d in distroarchseries)
-            clauses.append("""
-                BinaryPackagePublishingHistory.distroarchseries IN %s
-            """ % das_ids)
+            clauses.append(
+                BinaryPackagePublishingHistory.distroarchseriesID.is_in(
+                    [d.id for d in distroarchseries]))
 
         if pocket is not None:
-            clauses.append("""
-                BinaryPackagePublishingHistory.pocket = %s
-            """ % sqlvalues(pocket))
+            clauses.append(BinaryPackagePublishingHistory.pocket == pocket)
 
         if created_since_date is not None:
             clauses.append(
-                "BinaryPackagePublishingHistory.datecreated >= %s"
-                % sqlvalues(created_since_date))
+                BinaryPackagePublishingHistory.datecreated >=
+                    created_since_date)
 
         if not include_removed:
-            clauses.append(
-                "BinaryPackagePublishingHistory.dateremoved IS NULL")
+            clauses.append(BinaryPackagePublishingHistory.dateremoved == None)
 
-        return clauses, clauseTables, orderBy
+        return clauses, order_by
 
     def getAllPublishedBinaries(self, name=None, version=None, status=None,
                                 distroarchseries=None, pocket=None,
                                 exact_match=False, created_since_date=None,
                                 ordered=True, include_removed=True):
         """See `IArchive`."""
-        clauses, clauseTables, orderBy = self._getBinaryPublishingBaseClauses(
+        clauses, order_by = self._getBinaryPublishingBaseClauses(
             name=name, version=version, status=status, pocket=pocket,
             distroarchseries=distroarchseries, exact_match=exact_match,
             created_since_date=created_since_date, ordered=ordered,
             include_removed=include_removed)
 
-        all_binaries = BinaryPackagePublishingHistory.select(
-            ' AND '.join(clauses), clauseTables=clauseTables,
-            orderBy=orderBy)
-
-        return all_binaries
+        return Store.of(self).find(
+            BinaryPackagePublishingHistory, *clauses).order_by(*order_by)
 
     def getPublishedOnDiskBinaries(self, name=None, version=None, status=None,
                                    distroarchseries=None, pocket=None,
                                    exact_match=False,
                                    created_since_date=None):
         """See `IArchive`."""
-        clauses, clauseTables, orderBy = self._getBinaryPublishingBaseClauses(
+        # Circular imports.
+        from lp.registry.model.distroseries import DistroSeries
+        from lp.soyuz.model.distroarchseries import DistroArchSeries
+
+        clauses, order_by = self._getBinaryPublishingBaseClauses(
             name=name, version=version, status=status, pocket=pocket,
             distroarchseries=distroarchseries, exact_match=exact_match,
             created_since_date=created_since_date, need_bpr=True)
 
-        clauses.append("""
-            BinaryPackagePublishingHistory.distroarchseries =
-                DistroArchSeries.id AND
-            DistroArchSeries.distroseries = DistroSeries.id
-        """)
-        clauseTables.extend(['DistroSeries', 'DistroArchSeries'])
+        clauses.extend([
+            BinaryPackagePublishingHistory.distroarchseriesID ==
+                DistroArchSeries.id,
+            DistroArchSeries.distroseriesID == DistroSeries.id,
+            ])
+
+        store = Store.of(self)
 
         # Retrieve only the binaries published for the 'nominated architecture
         # independent' (usually i386) in the distroseries in question.
         # It includes all architecture-independent binaries only once and the
         # architecture-specific built for 'nominatedarchindep'.
-        nominated_arch_independent_clause = ["""
-            DistroSeries.nominatedarchindep =
-                BinaryPackagePublishingHistory.distroarchseries
-        """]
-        nominated_arch_independent_query = ' AND '.join(
-            clauses + nominated_arch_independent_clause)
-        nominated_arch_independents = BinaryPackagePublishingHistory.select(
-            nominated_arch_independent_query, clauseTables=clauseTables)
+        nominated_arch_independent_clauses = clauses + [
+            DistroSeries.nominatedarchindepID ==
+                BinaryPackagePublishingHistory.distroarchseriesID,
+            ]
+        nominated_arch_independents = store.find(
+            BinaryPackagePublishingHistory,
+            *nominated_arch_independent_clauses)
 
         # Retrieve all architecture-specific binary publications except
         # 'nominatedarchindep' (already included in the previous query).
-        no_nominated_arch_independent_clause = ["""
-            DistroSeries.nominatedarchindep !=
-                BinaryPackagePublishingHistory.distroarchseries AND
-            BinaryPackageRelease.architecturespecific = true
-        """]
-        no_nominated_arch_independent_query = ' AND '.join(
-            clauses + no_nominated_arch_independent_clause)
-        no_nominated_arch_independents = (
-            BinaryPackagePublishingHistory.select(
-            no_nominated_arch_independent_query, clauseTables=clauseTables))
+        no_nominated_arch_independent_clauses = clauses + [
+            DistroSeries.nominatedarchindepID !=
+                BinaryPackagePublishingHistory.distroarchseriesID,
+            BinaryPackageRelease.architecturespecific == True,
+            ]
+        no_nominated_arch_independents = store.find(
+            BinaryPackagePublishingHistory,
+            *no_nominated_arch_independent_clauses)
 
         # XXX cprov 20071016: It's not possible to use the same ordering
         # schema returned by self._getBinaryPublishingBaseClauses.
         # It results in:
         # ERROR:  missing FROM-clause entry for table "binarypackagename"
         unique_binary_publications = nominated_arch_independents.union(
-            no_nominated_arch_independents).orderBy("id")
+            no_nominated_arch_independents).order_by(
+                BinaryPackagePublishingHistory.id)
 
         return unique_binary_publications
 

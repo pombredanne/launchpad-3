@@ -407,7 +407,7 @@ class TestPublisherSeries(TestNativePublishingBase):
         for pu_build in pu_i386.builds:
             pu_build.publish()
 
-        publications = archive.getAllPublishedBinaries(name="bin-i386")
+        publications = archive.getAllPublishedBinaries(name=u"bin-i386")
 
         self.assertEqual(1, publications.count())
         self.assertEqual(

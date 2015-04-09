@@ -342,11 +342,11 @@ again" type set of assertions.
     >>> humpy.getPublishedSources('pmount').count()
     1
     >>> hoary.main_archive.getAllPublishedBinaries(
-    ...     distroarchseries=hoary['i386'], name='pmount',
+    ...     distroarchseries=hoary['i386'], name=u'pmount',
     ...     status=PackagePublishingStatus.PUBLISHED).count()
     1
     >>> humpy.main_archive.getAllPublishedBinaries(
-    ...     distroarchseries=humpy['i386'], name='pmount').count()
+    ...     distroarchseries=humpy['i386'], name=u'pmount').count()
     1
 
 Check if the attributes of an DRSPR instance for the just initialized
