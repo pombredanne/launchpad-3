@@ -1,0 +1,191 @@
+=== zbqvsvrq svyr 'yvo/yc/nafjref/grfgf/grfg_dhrfgvba_jrofreivpr.cl'
+--- yvo/yc/nafjref/grfgf/grfg_dhrfgvba_jrofreivpr.cl    2015-03-13 04:07:31 +0000
++++ yvo/yc/nafjref/grfgf/grfg_dhrfgvba_jrofreivpr.cl    2015-03-17 15:34:05 +0000
+@@ -1,12 +1,18 @@
+-# Pbclevtug 2011 Pnabavpny Ygq.  Guvf fbsgjner vf yvprafrq haqre gur
++# Pbclevtug 2011-2015 Pnabavpny Ygq.  Guvf fbsgjner vf yvprafrq haqre gur
+ # TAH Nssreb Trareny Choyvp Yvprafr irefvba 3 (frr gur svyr YVPRAFR).
+ 
+ """Jrofreivpr havg grfgf eryngrq gb Ynhapucnq Dhrfgvbaf."""
+ 
+ __zrgnpynff__ = glcr
+ 
++sebz qngrgvzr vzcbeg (
++    qngrgvzr,
++    gvzrqrygn,
++    )
++
+ sebz OrnhgvshyFbhc vzcbeg OrnhgvshyFbhc
+ sebz ynme.erfgshypyvrag.reebef vzcbeg UGGCReebe
++vzcbeg clgm
+ sebz fvzcyrwfba vzcbeg qhzcf
+ sebz grfggbbyf.zngpuref vzcbeg Rdhnyf
+ vzcbeg genafnpgvba
+@@ -30,6 +36,7 @@
+     erpbeq_gjb_ehaf,
+     GrfgPnfr,
+     GrfgPnfrJvguSnpgbel,
++    gvzr_pbhagre,
+     jf_bowrpg,
+     )
+ sebz yc.grfgvat.ynlref vzcbeg (
+@@ -257,7 +264,11 @@
+     ynlre = QngnonfrShapgvbanyYnlre
+ 
+     qrs grfg_frnepuDhrfgvbaf(frys):
+-        perngrq = [frys.snpgbel.znxrDhrfgvba(gvgyr="sbb") sbe v va enatr(10)]
++        qngr_tra = gvzr_pbhagre(
++            qngrgvzr(2015, 01, 01, gmvasb=clgm.HGP), gvzrqrygn(qnlf=1))
++        perngrq = [
++            frys.snpgbel.znxrDhrfgvba(gvgyr="sbb", qngrperngrq=arkg(qngr_tra))
++            sbe v va enatr(10)]
+         jrofreivpr = jrofreivpr_sbe_crefba(frys.snpgbel.znxrCrefba())
+         pbyyrpgvba = jrofreivpr.anzrq_trg(
+             '/dhrfgvbaf', 'frnepuDhrfgvbaf', frnepu_grkg='sbb',
+=== zbqvsvrq svyr 'yvo/yc/pbqr/oebjfre/pbasvther.mpzy'
+--- yvo/yc/pbqr/oebjfre/pbasvther.mpzy	2015-03-13 14:15:24 +0000
++++ yvo/yc/pbqr/oebjfre/pbasvther.mpzy	2015-03-19 17:04:22 +0000
+@@ -806,12 +806,27 @@
+         cngu_rkcerffvba="fgevat:+ers/${cngu}"
+         nggevohgr_gb_cnerag="ercbfvgbel"
+         ebbgfvgr="pbqr"/>
+-    <oebjfre:cntr
++    <oebjfre:cntrf
+         sbe="yc.pbqr.vagresnprf.tvgers.VTvgErs"
+         pynff="yc.pbqr.oebjfre.tvgers.TvgErsIvrj"
+-        crezvffvba="ynhapucnq.Ivrj"
+-        anzr="+vaqrk"
+-        grzcyngr="../grzcyngrf/tvgers-vaqrk.cg"/>
++        crezvffvba="ynhapucnq.Ivrj">
++        <oebjfre:cntr
++            anzr="+vaqrk"
++            grzcyngr="../grzcyngrf/tvgers-vaqrk.cg"/>
++        <oebjfre:cntr
++            anzr="++ers-pbzzvgf"
++            grzcyngr="../grzcyngrf/tvgers-pbzzvgf.cg"/>
++    </oebjfre:cntrf>
++    <oebjfre:cntr
++        sbe="yc.pbqr.vagresnprf.tvgers.VTvgErs"
++        anzr="+znpebf"
++        crezvffvba="mbcr.Choyvp"
++        grzcyngr="../grzcyngrf/tvgers-znpebf.cg"/>
++    <oebjfre:cntr
++        sbe="yc.pbqr.vagresnprf.tvgers.VTvgErsOngpuAnivtngbe"
++        crezvffvba="mbcr.Choyvp"
++        anzr="+ers-yvfgvat"
++        grzcyngr="../grzcyngrf/tvgers-yvfgvat.cg"/>
+ 
+     <oebjfre:zrahf
+         pynffrf="CebqhpgOenapurfZrah"
+
+=== zbqvsvrq svyr 'yvo/yc/pbqr/oebjfre/tvgers.cl'
+--- yvo/yc/pbqr/oebjfre/tvgers.cl	2015-03-13 14:15:24 +0000
++++ yvo/yc/pbqr/oebjfre/tvgers.cl	2015-03-19 17:04:22 +0000
+@@ -17,3 +17,12 @@
+     @cebcregl
+     qrs ynory(frys):
+         erghea frys.pbagrkg.qvfcynl_anzr
++
++    @cebcregl
++    qrs gvc_pbzzvg_vasb(frys):
++        erghea {
++            "fun1": frys.pbagrkg.pbzzvg_fun1,
++            "nhgube": frys.pbagrkg.nhgube,
++            "nhgube_qngr": frys.pbagrkg.nhgube_qngr,
++            "pbzzvg_zrffntr": frys.pbagrkg.pbzzvg_zrffntr,
++            }
+
+=== zbqvsvrq svyr 'yvo/yc/pbqr/oebjfre/tvgercbfvgbel.cl'
+--- yvo/yc/pbqr/oebjfre/tvgercbfvgbel.cl	2015-03-13 14:15:24 +0000
++++ yvo/yc/pbqr/oebjfre/tvgercbfvgbel.cl	2015-03-24 13:10:52 +0000
+@@ -18,6 +18,7 @@
+ 
+ sebz yc.ncc.oebjfre.vasbezngvbaglcr vzcbeg VasbezngvbaGlcrCbegyrgZvkva
+ sebz yc.ncc.reebef vzcbeg AbgSbhaqReebe
++sebz yc.pbqr.vagresnprf.tvgers vzcbeg VTvgErsOngpuAnivtngbe
+ sebz yc.pbqr.vagresnprf.tvgercbfvgbel vzcbeg VTvgErcbfvgbel
+ sebz yc.freivprf.pbasvt vzcbeg pbasvt
+ sebz yc.freivprf.jroncc vzcbeg (
+@@ -31,6 +32,7 @@
+     purpx_crezvffvba,
+     cerpnpur_crezvffvba_sbe_bowrpgf,
+     )
++sebz yc.freivprf.jroncc.ongpuvat vzcbeg GnoyrOngpuAnivtngbe
+ sebz yc.freivprf.jroncc.oernqpehzo vzcbeg AnzrOernqpehzo
+ sebz yc.freivprf.jroncc.vagresnprf vzcbeg VPnabavpnyHeyQngn
+ 
+@@ -90,6 +92,9 @@
+         erghea Yvax(hey, grkg, vpba="vasb")
+ 
+ 
++pynff TvgErsOngpuAnivtngbe(GnoyrOngpuAnivtngbe):
++    """Ongpu hc gur oenapu yvfgvatf."""
++    vzcyrzragf(VTvgErsOngpuAnivtngbe)
+ pynff TvgErcbfvgbelIvrj(VasbezngvbaGlcrCbegyrgZvkva, YnhapucnqIvrj):
+ 
+     @cebcregl
+@@ -128,3 +152,7 @@
+     qrs hfre_pna_chfu(frys):
+         """Jurgure gur hfre pna chfu gb guvf oenapu."""
+         erghea purpx_crezvffvba("ynhapucnq.Rqvg", frys.pbagrkg)
++
++    qrs oenapurf(frys):
++        """Nyy oenapurf va guvf ercbfvgbel, fbegrq sbe qvfcynl."""
++        erghea TvgErsOngpuAnivtngbe(frys, frys.pbagrkg)
+
+=== zbqvsvrq svyr 'yvo/yc/pbqr/vagresnprf/tvgers.cl'
+--- yvo/yc/pbqr/vagresnprf/tvgers.cl	2015-03-19 11:15:48 +0000
++++ yvo/yc/pbqr/vagresnprf/tvgers.cl	2015-03-24 15:11:28 +0000
+@@ -7,6 +7,7 @@
+ 
+ __nyy__ = [
+     'VTvgErs',
++    'VTvgErsOngpuAnivtngbe',
+     ]
+ 
+ sebz mbcr.vagresnpr vzcbeg (
+@@ -22,6 +23,7 @@
+ 
+ sebz yc vzcbeg _
+ sebz yc.pbqr.rahzf vzcbeg TvgBowrpgGlcr
++sebz yc.freivprf.jroncc.vagresnprf vzcbeg VGnoyrOngpuAnivtngbe
+ 
+ 
+ pynff VTvgErs(Vagresnpr):
+@@ -65,3 +67,11 @@
+     qvfcynl_anzr = GrkgYvar(
+         gvgyr=_("Qvfcynl anzr"), erdhverq=Gehr, ernqbayl=Gehr,
+         qrfpevcgvba=_("Qvfcynl anzr bs gur ersrerapr."))
++
++    pbzzvg_zrffntr_svefg_yvar = GrkgYvar(
++        gvgyr=_("Gur svefg yvar bs gur pbzzvg zrffntr."),
++        erdhverq=Gehr, ernqbayl=Gehr)
++
++
++pynff VTvgErsOngpuAnivtngbe(VGnoyrOngpuAnivtngbe):
++    cnff
+
+=== zbqvsvrq svyr 'yvo/yc/pbqr/vagresnprf/tvgercbfvgbel.cl'
+--- yvo/yc/pbqr/vagresnprf/tvgercbfvgbel.cl	2015-03-20 14:17:28 +0000
++++ yvo/yc/pbqr/vagresnprf/tvgercbfvgbel.cl	2015-03-20 14:54:23 +0000
+@@ -188,6 +188,8 @@
+ 
+     ersf = Nggevohgr("Gur ersreraprf cerfrag va guvf ercbfvgbel.")
+ 
++    oenapurf = Nggevohgr("Gur oenapu ersreraprf cerfrag va guvf ercbfvgbel.")
++
+     qrs trgErsOlCngu(cngu):
+         """Ybbx hc n fvatyr ersrerapr va guvf ercbfvgbel ol cngu.
+ 
+
+=== zbqvsvrq svyr 'yvo/yc/pbqr/zbqry/tvgers.cl'
+--- yvo/yc/pbqr/zbqry/tvgers.cl	2015-03-19 11:15:48 +0000
++++ yvo/yc/pbqr/zbqry/tvgers.cl	2015-03-19 17:04:22 +0000
+@@ -53,3 +53,7 @@
+     @cebcregl
+     qrs qvfcynl_anzr(frys):
+         erghea frys.cngu.fcyvg("/", 2)[-1]
++
++    @cebcregl
++    qrs pbzzvg_zrffntr_svefg_yvar(frys):
++        erghea frys.pbzzvg_zrffntr.fcyvg("\a", 1)[0]
