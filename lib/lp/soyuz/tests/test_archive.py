@@ -2188,12 +2188,9 @@ class TestGetPublishedSources(TestCaseWithFactory):
         self.assertEqual('universe', filtered.component.name)
 
 
-class GetPublishedSourcesWebServiceTests(TestCaseWithFactory):
+class TestGetPublishedSourcesWebService(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
-
-    def setUp(self):
-        super(GetPublishedSourcesWebServiceTests, self).setUp()
 
     def createTestingPPA(self):
         """Creates and populates a PPA for API performance tests.
