@@ -2205,7 +2205,6 @@ class TestGetPublishedSourcesWebService(TestCaseWithFactory):
         # XXX cprov 2014-04-22: currently the target archive owner cannot
         # 'addSource' to a `PackageUpload` ('launchpad.Edit'). It seems
         # too restrive to me.
-        from zope.security.proxy import removeSecurityProxy
         with person_logged_in(ppa.owner):
             for i in range(5):
                 upload = self.factory.makePackageUpload(
