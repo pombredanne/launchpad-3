@@ -2187,6 +2187,19 @@ class TestGetPublishedSources(TestCaseWithFactory):
             component_name='universe')
         self.assertEqual('universe', filtered.component.name)
 
+    def test_order_by_date(self):
+        archive = self.factory.makeArchive()
+        dates = [self.factory.getUniqueDate() for _ in range(5)]
+        # Make sure the ID ordering and date ordering don't match so that we
+        # can spot a date-ordered result.
+        pubs = [
+            self.factory.makeSourcePackagePublishingHistory(
+                archive=archive, date_uploaded=dates[(i + 1) % 5])
+            for i in range(5)]
+        self.assertEqual(
+            [pubs[i] for i in (3, 2, 1, 0, 4)],
+            list(archive.getPublishedSources(order_by_date=True)))
+
 
 class TestGetPublishedSourcesWebService(TestCaseWithFactory):
 
@@ -2809,6 +2822,19 @@ class TestgetAllPublishedBinaries(TestCaseWithFactory):
         self.assertContentEqual(
             publications,
             [first_publication, middle_publication, later_publication])
+
+    def test_order_by_date(self):
+        archive = self.factory.makeArchive()
+        dates = [self.factory.getUniqueDate() for _ in range(5)]
+        # Make sure the ID ordering and date ordering don't match so that we
+        # can spot a date-ordered result.
+        pubs = [
+            self.factory.makeBinaryPackagePublishingHistory(
+                archive=archive, datecreated=dates[(i + 1) % 5])
+            for i in range(5)]
+        self.assertEqual(
+            [pubs[i] for i in (3, 2, 1, 0, 4)],
+            list(archive.getAllPublishedBinaries(order_by_date=True)))
 
 
 class TestRemovingPermissions(TestCaseWithFactory):

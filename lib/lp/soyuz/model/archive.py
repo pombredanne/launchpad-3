@@ -520,13 +520,16 @@ class Archive(SQLBase):
     def api_getPublishedSources(self, name=None, version=None, status=None,
                                 distroseries=None, pocket=None,
                                 exact_match=False, created_since_date=None,
-                                component_name=None):
+                                order_by_date=False, component_name=None):
         """See `IArchive`."""
         # 'eager_load' and 'include_removed' arguments are always True
         # for API calls.
         published_sources = self.getPublishedSources(
-            name, version, status, distroseries, pocket, exact_match,
-            created_since_date, True, component_name, True)
+            name=name, version=version, status=status,
+            distroseries=distroseries, pocket=pocket, exact_match=exact_match,
+            created_since_date=created_since_date, eager_load=True,
+            component_name=component_name, order_by_date=order_by_date,
+            include_removed=True)
 
         def load_api_extra_objects(rows):
             """Load extra related-objects needed by API calls."""
@@ -564,20 +567,26 @@ class Archive(SQLBase):
                             distroseries=None, pocket=None,
                             exact_match=False, created_since_date=None,
                             eager_load=False, component_name=None,
-                            include_removed=True):
+                            order_by_date=False, include_removed=True):
         """See `IArchive`."""
         # clauses contains literal sql expressions for things that don't work
         # easily in storm : this method was migrated from sqlobject but some
         # callers are problematic. (Migrate them and test to see).
-        clauses = [
-            SourcePackagePublishingHistory.archiveID == self.id,
-            SourcePackagePublishingHistory.sourcepackagereleaseID ==
-                SourcePackageRelease.id,
-            SourcePackagePublishingHistory.sourcepackagenameID ==
-                SourcePackageName.id]
-        orderBy = [
-            SourcePackageName.name,
-            Desc(SourcePackagePublishingHistory.id)]
+        clauses = [SourcePackagePublishingHistory.archiveID == self.id]
+
+        if order_by_date:
+            order_by = [
+                Desc(SourcePackagePublishingHistory.datecreated),
+                Desc(SourcePackagePublishingHistory.id)]
+        else:
+            order_by = [
+                SourcePackageName.name,
+                Desc(SourcePackagePublishingHistory.id)]
+
+        if not order_by_date or name is not None:
+            clauses.append(
+                SourcePackagePublishingHistory.sourcepackagenameID ==
+                    SourcePackageName.id)
 
         if name is not None:
             if type(name) in (str, unicode):
@@ -589,14 +598,19 @@ class Archive(SQLBase):
             elif len(name) != 0:
                 clauses.append(SourcePackageName.name.is_in(name))
 
+        if not order_by_date or version is not None:
+            clauses.append(
+                SourcePackagePublishingHistory.sourcepackagereleaseID ==
+                    SourcePackageRelease.id)
+
         if version is not None:
             if name is None:
                 raise VersionRequiresName(
                     "The 'version' parameter can be used only together with"
                     " the 'name' parameter.")
             clauses.append(SourcePackageRelease.version == version)
-        else:
-            orderBy.insert(1, Desc(SourcePackageRelease.version))
+        elif not order_by_date:
+            order_by.insert(1, Desc(SourcePackageRelease.version))
 
         if component_name is not None:
             clauses.extend(
@@ -634,7 +648,7 @@ class Archive(SQLBase):
 
         store = Store.of(self)
         resultset = store.find(
-            SourcePackagePublishingHistory, *clauses).order_by(*orderBy)
+            SourcePackagePublishingHistory, *clauses).order_by(*order_by)
         if not eager_load:
             return resultset
 
@@ -746,24 +760,22 @@ class Archive(SQLBase):
     def _getBinaryPublishingBaseClauses(
         self, name=None, version=None, status=None, distroarchseries=None,
         pocket=None, exact_match=False, created_since_date=None,
-        ordered=True, include_removed=True, need_bpr=False):
+        ordered=True, order_by_date=False, include_removed=True,
+        need_bpr=False):
         """Base clauses for binary publishing queries.
 
         Returns a list of 'clauses' (to be joined in the callsite).
         """
         clauses = [BinaryPackagePublishingHistory.archiveID == self.id]
 
-        if need_bpr or ordered or version is not None:
-            clauses.append(
-                BinaryPackagePublishingHistory.binarypackagereleaseID ==
-                    BinaryPackageRelease.id)
+        if order_by_date:
+            ordered = False
 
-        if ordered or name is not None:
-            clauses.append(
-                BinaryPackagePublishingHistory.binarypackagenameID ==
-                    BinaryPackageName.id)
-
-        if ordered:
+        if order_by_date:
+            order_by = [
+                Desc(BinaryPackagePublishingHistory.datecreated),
+                Desc(BinaryPackagePublishingHistory.id)]
+        elif ordered:
             order_by = [
                 BinaryPackageName.name,
                 Desc(BinaryPackagePublishingHistory.id)]
@@ -773,11 +785,21 @@ class Archive(SQLBase):
             # batch results on the webservice.
             order_by = [Desc(BinaryPackagePublishingHistory.id)]
 
+        if ordered or name is not None:
+            clauses.append(
+                BinaryPackagePublishingHistory.binarypackagenameID ==
+                    BinaryPackageName.id)
+
         if name is not None:
             if exact_match:
                 clauses.append(BinaryPackageName.name == name)
             else:
                 clauses.append(BinaryPackageName.name.contains_string(name))
+
+        if need_bpr or ordered or version is not None:
+            clauses.append(
+                BinaryPackagePublishingHistory.binarypackagereleaseID ==
+                    BinaryPackageRelease.id)
 
         if version is not None:
             if name is None:
@@ -821,13 +843,14 @@ class Archive(SQLBase):
     def getAllPublishedBinaries(self, name=None, version=None, status=None,
                                 distroarchseries=None, pocket=None,
                                 exact_match=False, created_since_date=None,
-                                ordered=True, include_removed=True):
+                                ordered=True, order_by_date=False,
+                                include_removed=True):
         """See `IArchive`."""
         clauses, order_by = self._getBinaryPublishingBaseClauses(
             name=name, version=version, status=status, pocket=pocket,
             distroarchseries=distroarchseries, exact_match=exact_match,
             created_since_date=created_since_date, ordered=ordered,
-            include_removed=include_removed)
+            order_by_date=order_by_date, include_removed=include_removed)
 
         return Store.of(self).find(
             BinaryPackagePublishingHistory, *clauses).order_by(*order_by)
