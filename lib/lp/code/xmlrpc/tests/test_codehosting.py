@@ -52,6 +52,7 @@ from lp.testing import (
     ANONYMOUS,
     login,
     logout,
+    person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.factory import LaunchpadObjectFactory
@@ -99,6 +100,18 @@ class TestRunWithLogin(TestCaseWithFactory):
     def test_loginAsRequesterName(self):
         # run_with_login can take a username as well as user id.
         username = run_with_login(self.person.name, get_logged_in_username)
+        login(ANONYMOUS)
+        self.assertEqual(self.person.name, username)
+        logout()
+
+    def test_loginAsRequesterOpenID(self):
+        # run_with_login can take an OpenID identifier.
+        with person_logged_in(self.person):
+            identifier = (
+                self.person.account.openid_identifiers.one().identifier)
+        username = run_with_login(
+            u'http://testopenid.dev/+id/%s' % identifier,
+            get_logged_in_username)
         login(ANONYMOUS)
         self.assertEqual(self.person.name, username)
         logout()
