@@ -3,7 +3,7 @@
 
 SET client_min_messages=ERROR;
 
-CREATE INDEX binarypackagepublishinghistory__datecreated__id__idx
-    ON binarypackagepublishinghistory (datecreated, id);
+CREATE INDEX binarypackagepublishinghistory__archive__datecreated__id__idx
+    ON binarypackagepublishinghistory (archive, datecreated, id);
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 53, 9);
