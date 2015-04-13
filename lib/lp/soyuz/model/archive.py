@@ -569,9 +569,6 @@ class Archive(SQLBase):
                             eager_load=False, component_name=None,
                             order_by_date=False, include_removed=True):
         """See `IArchive`."""
-        # clauses contains literal sql expressions for things that don't work
-        # easily in storm : this method was migrated from sqlobject but some
-        # callers are problematic. (Migrate them and test to see).
         clauses = [SourcePackagePublishingHistory.archiveID == self.id]
 
         if order_by_date:
