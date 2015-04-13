@@ -317,6 +317,34 @@
                 <xsl:text>/+faq/</xsl:text>
                 <var >&lt;faq.id&gt;</var>
             </xsl:when>
+            <xsl:when test="@id = 'git_ref'">
+                <xsl:text>/~</xsl:text>
+                <var>&lt;person.name&gt;</var>
+                <xsl:text>/</xsl:text>
+                <var>&lt;project.name&gt;</var>
+                <xsl:text>/+git/</xsl:text>
+                <var>&lt;repository.name&gt;</var>
+                <xsl:text>/+ref/</xsl:text>
+                <var>&lt;path&gt;</var>
+                or
+                <xsl:text>/~</xsl:text>
+                <var>&lt;person.name&gt;</var>
+                <xsl:text>/</xsl:text>
+                <var>&lt;distribution.name&gt;</var>
+                <xsl:text>/+source/</xsl:text>
+                <var>&lt;source_package.name&gt;</var>
+                <xsl:text>/+git/</xsl:text>
+                <var>&lt;repository.name&gt;</var>
+                <xsl:text>/+ref/</xsl:text>
+                <var>&lt;path&gt;</var>
+                or
+                <xsl:text>/~</xsl:text>
+                <var>&lt;person.name&gt;</var>
+                <xsl:text>/+git/</xsl:text>
+                <var>&lt;repository.name&gt;</var>
+                <xsl:text>/+ref/</xsl:text>
+                <var>&lt;path&gt;</var>
+            </xsl:when>
             <xsl:when test="@id = 'git_repository'">
                 <xsl:text>/~</xsl:text>
                 <var>&lt;person.name&gt;</var>

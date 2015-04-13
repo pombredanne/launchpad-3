@@ -33,7 +33,10 @@ from lazr.restful.declarations import (
     operation_returns_entry,
     REQUEST_USER,
     )
-from lazr.restful.fields import Reference
+from lazr.restful.fields import (
+    CollectionField,
+    Reference,
+    )
 from lazr.restful.interface import copy_field
 from zope.component import getUtility
 from zope.interface import (
@@ -186,9 +189,17 @@ class IGitRepositoryView(Interface):
             "'lp:' plus a shortcut version of the path via that target.  "
             "Otherwise it is simply 'lp:' plus the unique name.")))
 
-    refs = Attribute("The references present in this repository.")
+    refs = exported(CollectionField(
+        title=_("The references present in this repository."),
+        readonly=True,
+        # Really IGitRef, patched in _schema_circular_imports.py.
+        value_type=Reference(Interface)))
 
-    branches = Attribute("The branch references present in this repository.")
+    branches = exported(CollectionField(
+        title=_("The branch references present in this repository."),
+        readonly=True,
+        # Really IGitRef, patched in _schema_circular_imports.py.
+        value_type=Reference(Interface)))
 
     def getRefByPath(path):
         """Look up a single reference in this repository by path.
