@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Archive interfaces."""
@@ -449,6 +449,12 @@ class IArchiveSubscriberView(Interface):
                           "than or equal to this date."),
             required=False),
         component_name=TextLine(title=_("Component name"), required=False),
+        order_by_date=Bool(
+            title=_("Order by creation date"),
+            description=_("Return newest results first. This is recommended "
+                          "for applications that need to catch up with "
+                          "publications since their last run."),
+            required=False),
         )
     # Really returns ISourcePackagePublishingHistory, see below for
     # patch to avoid circular import.
@@ -457,7 +463,7 @@ class IArchiveSubscriberView(Interface):
     def api_getPublishedSources(name=None, version=None, status=None,
                                 distroseries=None, pocket=None,
                                 exact_match=False, created_since_date=None,
-                                component_name=None):
+                                component_name=None, order_by_date=False):
         """All `ISourcePackagePublishingHistory` target to this archive."""
         # It loads additional related objects only needed in the API call
         # context (i.e. security checks and entries marshalling).
@@ -465,7 +471,8 @@ class IArchiveSubscriberView(Interface):
     def getPublishedSources(name=None, version=None, status=None,
                             distroseries=None, pocket=None,
                             exact_match=False, created_since_date=None,
-                            eager_load=False, component_name=None):
+                            eager_load=False, component_name=None,
+                            order_by_date=False):
         """All `ISourcePackagePublishingHistory` target to this archive.
 
         :param name: source name filter (exact match or SQL LIKE controlled
@@ -482,6 +489,9 @@ class IArchiveSubscriberView(Interface):
             is greater than or equal to this date.
         :param component_name: component filter. Only return source packages
             that are in this component.
+        :param order_by_date: Order publications by descending creation date
+            and then by descending ID.  This is suitable for applications
+            that need to catch up with publications since their last run.
 
         :return: SelectResults containing `ISourcePackagePublishingHistory`,
             ordered by name. If there are multiple results for the same
@@ -1110,6 +1120,12 @@ class IArchiveView(IHasBuildRecords):
             description=_("Return ordered results by default, but specifying "
                           "False will return results more quickly."),
             required=False, readonly=True),
+        order_by_date=Bool(
+            title=_("Order by creation date"),
+            description=_("Return newest results first. This is recommended "
+                          "for applications that need to catch up with "
+                          "publications since their last run."),
+            required=False),
         )
     # Really returns ISourcePackagePublishingHistory, see below for
     # patch to avoid circular import.
@@ -1119,7 +1135,7 @@ class IArchiveView(IHasBuildRecords):
     def getAllPublishedBinaries(name=None, version=None, status=None,
                                 distroarchseries=None, pocket=None,
                                 exact_match=False, created_since_date=None,
-                                ordered=True):
+                                ordered=True, order_by_date=False):
         """All `IBinaryPackagePublishingHistory` target to this archive.
 
         :param name: binary name filter (exact match or SQL LIKE controlled
@@ -1137,6 +1153,9 @@ class IArchiveView(IHasBuildRecords):
             False then the results will be unordered.  This will make the
             operation much quicker to return results if you don't care about
             ordering.
+        :param order_by_date: Order publications by descending creation date
+            and then by descending ID.  This is suitable for applications
+            that need to catch up with publications since their last run.
 
         :return: A collection containing `BinaryPackagePublishingHistory`.
         """
