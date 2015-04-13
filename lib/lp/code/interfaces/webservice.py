@@ -25,6 +25,7 @@ __all__ = [
     'ICodeReviewComment',
     'ICodeReviewVoteReference',
     'IDiff',
+    'IGitRef',
     'IGitRepository',
     'IGitRepositorySet',
     'IHasGitRepositories',
@@ -60,6 +61,7 @@ from lp.code.interfaces.diff import (
     IDiff,
     IPreviewDiff,
     )
+from lp.code.interfaces.gitref import IGitRef
 from lp.code.interfaces.gitrepository import (
     IGitRepository,
     IGitRepositorySet,

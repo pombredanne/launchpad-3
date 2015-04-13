@@ -10,6 +10,11 @@ __all__ = [
     'IGitRefBatchNavigator',
     ]
 
+from lazr.restful.declarations import (
+    export_as_webservice_entry,
+    exported,
+    )
+from lazr.restful.fields import ReferenceChoice
 from zope.interface import (
     Attribute,
     Interface,
@@ -29,18 +34,28 @@ from lp.services.webapp.interfaces import ITableBatchNavigator
 class IGitRef(Interface):
     """A reference in a Git repository."""
 
-    repository = Attribute("The Git repository containing this reference.")
+    # XXX cjwatson 2015-01-19 bug=760849: "beta" is a lie to get WADL
+    # generation working.  Individual attributes must set their version to
+    # "devel".
+    export_as_webservice_entry(as_of="beta")
 
-    path = TextLine(
+    repository = exported(ReferenceChoice(
+        title=_("Repository"), required=True, readonly=True,
+        vocabulary="GitRepository",
+        # Really IGitRepository, patched in _schema_circular_imports.py.
+        schema=Interface,
+        description=_("The Git repository containing this reference.")))
+
+    path = exported(TextLine(
         title=_("Path"), required=True, readonly=True,
         description=_(
-            "The full path of this reference, e.g. refs/heads/master."))
+            "The full path of this reference, e.g. refs/heads/master.")))
 
-    commit_sha1 = TextLine(
+    commit_sha1 = exported(TextLine(
         title=_("Commit SHA-1"), required=True, readonly=True,
         description=_(
             "The full SHA-1 object name of the commit object referenced by "
-            "this reference."))
+            "this reference.")))
 
     object_type = Choice(
         title=_("Object type"), required=True, readonly=True,
