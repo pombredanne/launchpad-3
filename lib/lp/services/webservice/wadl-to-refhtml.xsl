@@ -1011,7 +1011,7 @@
     </xsl:template>
 
     <!-- Documentation for the response of custom methods returning
-        and entry or a collection.
+        an entry or a collection.
     -->
     <xsl:template match="wadl:response/wadl:representation[@href]">
         <xsl:variable name="id" select="substring-after(@href, '#')" />
@@ -1024,9 +1024,7 @@
             representation of a
             <a href="#{$resource_type}"><xsl:value-of
                 select="$resource_type"
-            /></a><xsl:if test="contains($id, '-page')">
-                    collection
-                </xsl:if>.
+            /></a><xsl:if test="contains($id, '-page')">collection</xsl:if>.
         </p>
     </xsl:template>
 
