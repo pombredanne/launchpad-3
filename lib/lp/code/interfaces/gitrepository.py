@@ -190,7 +190,7 @@ class IGitRepositoryView(Interface):
             title=_("A person for which the reviewer status is in question."),
             schema=IPerson))
     @export_read_operation()
-    @operation_for_version('beta')
+    @operation_for_version('devel')
     def isPersonTrustedReviewer(reviewer):
         """Return true if the `reviewer` is a trusted reviewer.
 

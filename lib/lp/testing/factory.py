@@ -1129,8 +1129,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             naked_branch.branchChanged(
                 removeSecurityProxy(stacked_on).unique_name, 'rev1', None,
                 None, None)
-        if reviewer is not None:
-            naked_branch.reviewer = reviewer
         return branch
 
     def makePackagingLink(self, productseries=None, sourcepackagename=None,
