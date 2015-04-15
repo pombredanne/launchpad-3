@@ -12,6 +12,11 @@ from zope.security.proxy import removeSecurityProxy
 from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.interfaces.services import IService
+from lp.code.enums import (
+    BranchSubscriptionDiffSize,
+    BranchSubscriptionNotificationLevel,
+    CodeReviewNotificationLevel,
+    )
 from lp.code.interfaces.codehosting import LAUNCHPAD_SERVICES
 from lp.code.interfaces.gitcollection import (
     IAllGitRepositories,
@@ -388,6 +393,19 @@ class TestGitCollectionFilters(TestCaseWithFactory):
         collection = self.all_repositories.registeredBy(registrant)
         self.assertEqual([repository], list(collection.getRepositories()))
 
+    def test_subscribedBy(self):
+        # 'subscribedBy' returns a new collection that only has repositories
+        # that the given user is subscribed to.
+        repository = self.factory.makeGitRepository()
+        subscriber = self.factory.makePerson()
+        repository.subscribe(
+            subscriber, BranchSubscriptionNotificationLevel.NOEMAIL,
+            BranchSubscriptionDiffSize.NODIFF,
+            CodeReviewNotificationLevel.NOEMAIL,
+            subscriber)
+        collection = self.all_repositories.subscribedBy(subscriber)
+        self.assertEqual([repository], list(collection.getRepositories()))
+
 
 class TestGenericGitCollectionVisibleFilter(TestCaseWithFactory):
 
@@ -457,6 +475,40 @@ class TestGenericGitCollectionVisibleFilter(TestCaseWithFactory):
             sorted(self.all_repositories.getRepositories()),
             sorted(repositories.getRepositories()))
 
+    def test_subscribers_can_see_repositories(self):
+        # A person subscribed to a repository can see it, even if it's
+        # private.
+        subscriber = self.factory.makePerson()
+        removeSecurityProxy(self.private_repository).subscribe(
+            subscriber, BranchSubscriptionNotificationLevel.NOEMAIL,
+            BranchSubscriptionDiffSize.NODIFF,
+            CodeReviewNotificationLevel.NOEMAIL,
+            subscriber)
+        repositories = self.all_repositories.visibleByUser(subscriber)
+        self.assertEqual(
+            sorted([self.public_repository, self.private_repository]),
+            sorted(repositories.getRepositories()))
+
+    def test_subscribed_team_members_can_see_repositories(self):
+        # A person in a team that is subscribed to a repository can see that
+        # repository, even if it's private.
+        team_owner = self.factory.makePerson()
+        team = self.factory.makeTeam(
+            membership_policy=TeamMembershipPolicy.MODERATED,
+            owner=team_owner)
+        # Subscribe the team.
+        removeSecurityProxy(self.private_repository).subscribe(
+            team, BranchSubscriptionNotificationLevel.NOEMAIL,
+            BranchSubscriptionDiffSize.NODIFF,
+            CodeReviewNotificationLevel.NOEMAIL,
+            team_owner)
+        # Members of the team can see the private repository that the team
+        # is subscribed to.
+        repositories = self.all_repositories.visibleByUser(team_owner)
+        self.assertEqual(
+            sorted([self.public_repository, self.private_repository]),
+            sorted(repositories.getRepositories()))
+
     def test_private_teams_see_own_private_personal_repositories(self):
         # Private teams are given an access grant to see their private
         # personal repositories.
@@ -473,9 +525,7 @@ class TestGenericGitCollectionVisibleFilter(TestCaseWithFactory):
             # they are the owner.  We want to unsubscribe them so that they
             # lose access conferred via subscription and rely instead on the
             # APG.
-            # XXX cjwatson 2015-02-05: Uncomment this once
-            # GitRepositorySubscriptions exist.
-            #personal_repository.unsubscribe(team, team_owner, True)
+            personal_repository.unsubscribe(team, team_owner, True)
             # Make another personal repository the team can't see.
             other_person = self.factory.makePerson()
             self.factory.makeGitRepository(

@@ -208,6 +208,24 @@ def _mergeBranchSubscription(cur, from_id, to_id):
         ''' % vars())
 
 
+def _mergeGitSubscription(cur, from_id, to_id):
+    # Update only the GitSubscription that will not conflict.
+    cur.execute('''
+        UPDATE GitSubscription
+        SET person=%(to_id)d
+        WHERE person=%(from_id)d AND repository NOT IN
+            (
+            SELECT repository
+            FROM GitSubscription
+            WHERE person = %(to_id)d
+            )
+        ''' % vars())
+    # and delete those left over.
+    cur.execute('''
+        DELETE FROM GitSubscription WHERE person=%(from_id)d
+        ''' % vars())
+
+
 def _mergeBugAffectsPerson(cur, from_id, to_id):
     # Update only the BugAffectsPerson that will not conflict
     cur.execute('''
@@ -762,6 +780,9 @@ def merge_people(from_person, to_person, reviewer, delete=False):
 
     _mergeBranchSubscription(cur, from_id, to_id)
     skip.append(('branchsubscription', 'person'))
+
+    _mergeGitSubscription(cur, from_id, to_id)
+    skip.append(('gitsubscription', 'person'))
 
     _mergeBugAffectsPerson(cur, from_id, to_id)
     skip.append(('bugaffectsperson', 'person'))

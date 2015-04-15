@@ -1688,6 +1688,19 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 information_type, registrant, verify_policy=False)
         return repository
 
+    def makeGitSubscription(self, repository=None, person=None,
+                            subscribed_by=None):
+        """Create a GitSubscription."""
+        if repository is None:
+            repository = self.makeGitRepository()
+        if person is None:
+            person = self.makePerson()
+        if subscribed_by is None:
+            subscribed_by = person
+        return repository.subscribe(removeSecurityProxy(person),
+            BranchSubscriptionNotificationLevel.NOEMAIL, None,
+            CodeReviewNotificationLevel.NOEMAIL, subscribed_by)
+
     def makeGitRefs(self, repository=None, paths=None):
         """Create and return a list of new, arbitrary GitRefs."""
         if repository is None:

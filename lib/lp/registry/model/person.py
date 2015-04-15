@@ -2275,6 +2275,7 @@ class Person(
         # Nuke all subscriptions of this person.
         removals = [
             ('BranchSubscription', 'person'),
+            ('GitSubscription', 'person'),
             ('BugSubscription', 'person'),
             ('QuestionSubscription', 'person'),
             ('SpecificationSubscription', 'person'),
@@ -2343,6 +2344,8 @@ class Person(
             ('bugsummary', 'viewed_by'),
             ('bugtask', 'assignee'),
             ('emailaddress', 'person'),
+            ('gitrepository', 'owner'),
+            ('gitsubscription', 'person'),
             ('gpgkey', 'owner'),
             ('ircid', 'person'),
             ('jabberid', 'person'),

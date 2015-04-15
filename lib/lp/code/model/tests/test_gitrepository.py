@@ -970,7 +970,7 @@ class TestGitRepositorySetTarget(TestCaseWithFactory):
         owner = self.factory.makeTeam(visibility=PersonVisibility.PRIVATE)
         with person_logged_in(owner):
             repository = self.factory.makeGitRepository(
-                owner=owner, target=owner,
+                owner=owner,
                 information_type=InformationType.USERDATA)
             repository.setTarget(target=owner, user=owner)
         self.assertEqual(

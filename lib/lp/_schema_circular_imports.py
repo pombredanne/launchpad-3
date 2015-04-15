@@ -71,6 +71,7 @@ from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.code.interfaces.diff import IPreviewDiff
 from lp.code.interfaces.gitref import IGitRef
 from lp.code.interfaces.gitrepository import IGitRepository
+from lp.code.interfaces.gitsubscription import IGitSubscription
 from lp.code.interfaces.hasbranches import (
     IHasBranches,
     IHasCodeImports,
@@ -567,6 +568,9 @@ patch_reference_property(IGitRef, 'repository', IGitRepository)
 # IGitRepository
 patch_collection_property(IGitRepository, 'branches', IGitRef)
 patch_collection_property(IGitRepository, 'refs', IGitRef)
+patch_collection_property(IGitRepository, 'subscriptions', IGitSubscription)
+patch_entry_return_type(IGitRepository, 'subscribe', IGitSubscription)
+patch_entry_return_type(IGitRepository, 'getSubscription', IGitSubscription)
 
 # ILiveFSFile
 patch_reference_property(ILiveFSFile, 'livefsbuild', ILiveFSBuild)

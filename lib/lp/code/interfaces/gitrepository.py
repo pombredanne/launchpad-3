@@ -55,6 +55,11 @@ from zope.schema import (
 from lp import _
 from lp.app.enums import InformationType
 from lp.app.validators import LaunchpadValidationError
+from lp.code.enums import (
+    BranchSubscriptionDiffSize,
+    BranchSubscriptionNotificationLevel,
+    CodeReviewNotificationLevel,
+    )
 from lp.code.interfaces.defaultgit import ICanHasDefaultGitRepository
 from lp.code.interfaces.hasgitrepositories import IHasGitRepositories
 from lp.registry.interfaces.distributionsourcepackage import (
@@ -201,6 +206,16 @@ class IGitRepositoryView(Interface):
         # Really IGitRef, patched in _schema_circular_imports.py.
         value_type=Reference(Interface)))
 
+    subscriptions = exported(CollectionField(
+        title=_("GitSubscriptions associated with this repository."),
+        readonly=True,
+        # Really IGitSubscription, patched in _schema_circular_imports.py.
+        value_type=Reference(Interface)))
+
+    subscribers = exported(CollectionField(
+        title=_("Persons subscribed to this repository."),
+        readonly=True, value_type=Reference(IPerson)))
+
     def getRefByPath(path):
         """Look up a single reference in this repository by path.
 
@@ -333,6 +348,73 @@ class IGitRepositoryView(Interface):
               ~fooix-owner and fooix
           ~fooix-owner/fooix/+git/fooix - the unique name of the repository
               where the context object is the repository itself.
+        """
+
+    def userCanBeSubscribed(person):
+        """Return True if the `IPerson` can be subscribed to the repository."""
+
+    @operation_parameters(
+        person=Reference(title=_("The person to subscribe."), schema=IPerson),
+        notification_level=Choice(
+            title=_("The level of notification to subscribe to."),
+            vocabulary=BranchSubscriptionNotificationLevel),
+        max_diff_lines=Choice(
+            title=_("The max number of lines for diff email."),
+            vocabulary=BranchSubscriptionDiffSize),
+        code_review_level=Choice(
+            title=_("The level of code review notification emails."),
+            vocabulary=CodeReviewNotificationLevel))
+    # Really IGitSubscription, patched in _schema_circular_imports.py.
+    @operation_returns_entry(Interface)
+    @call_with(subscribed_by=REQUEST_USER)
+    @export_write_operation()
+    @operation_for_version("devel")
+    def subscribe(person, notification_level, max_diff_lines,
+                  code_review_level, subscribed_by):
+        """Subscribe this person to the repository.
+
+        :param person: The `Person` to subscribe.
+        :param notification_level: The kinds of repository changes that
+            cause notification.
+        :param max_diff_lines: The maximum number of lines of diff that may
+            appear in a notification.
+        :param code_review_level: The kinds of code review activity that
+            cause notification.
+        :param subscribed_by: The person who is subscribing the subscriber.
+            Most often the subscriber themselves.
+        :return: A new or existing `GitSubscription`.
+        """
+
+    @operation_parameters(
+        person=Reference(title=_("The person to unsubscribe"), schema=IPerson))
+    # Really IGitSubscription, patched in _schema_circular_imports.py.
+    @operation_returns_entry(Interface)
+    @export_read_operation()
+    @operation_for_version("devel")
+    def getSubscription(person):
+        """Return the `GitSubscription` for this person."""
+
+    def hasSubscription(person):
+        """Is this person subscribed to the repository?"""
+
+    @operation_parameters(
+        person=Reference(title=_("The person to unsubscribe"), schema=IPerson))
+    @call_with(unsubscribed_by=REQUEST_USER)
+    @export_write_operation()
+    @operation_for_version("devel")
+    def unsubscribe(person, unsubscribed_by):
+        """Remove the person's subscription to this repository.
+
+        :param person: The person or team to unsubscribe from the repository.
+        :param unsubscribed_by: The person doing the unsubscribing.
+        """
+
+    def getSubscriptionsByLevel(notification_levels):
+        """Return the subscriptions that are at the given notification levels.
+
+        :param notification_levels: An iterable of
+            `BranchSubscriptionNotificationLevel`s.
+        :return: A `ResultSet`.
         """
 
 

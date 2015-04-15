@@ -839,6 +839,15 @@
     <allow interface="lp.code.interfaces.gitrepository.IGitRepositorySet" />
   </securedutility>
 
+  <!-- GitSubscription -->
+
+  <class class="lp.code.model.gitsubscription.GitSubscription">
+    <allow interface="lp.code.interfaces.gitsubscription.IGitSubscription"/>
+    <require
+        permission="zope.Public"
+        set_schema="lp.code.interfaces.gitsubscription.IGitSubscription"/>
+  </class>
+
   <!-- GitNamespace -->
 
   <class class="lp.code.model.gitnamespace.PackageGitNamespace">
