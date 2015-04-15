@@ -17,7 +17,6 @@ from sqlobject import (
 from zope.interface import implements
 
 from lp.code.enums import CodeReviewVote
-from lp.code.interfaces.branch import IBranchNavigationMenu
 from lp.code.interfaces.branchtarget import IHasBranchTarget
 from lp.code.interfaces.codereviewcomment import (
     ICodeReviewComment,
@@ -64,7 +63,6 @@ class CodeReviewComment(SQLBase):
     """A table linking branch merge proposals and messages."""
 
     implements(
-        IBranchNavigationMenu,
         ICodeReviewComment,
         ICodeReviewCommentDeletion,
         IHasBranchTarget,
