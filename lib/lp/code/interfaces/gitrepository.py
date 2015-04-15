@@ -180,7 +180,7 @@ class IGitRepositoryView(Interface):
         description=_("Display name of the repository.")))
 
     code_reviewer = Attribute(
-        "The reviewer if set, otherwise the owner of the branch.")
+        "The reviewer if set, otherwise the owner of the repository.")
 
     shortened_path = Attribute(
         "The shortest reasonable version of the path to this repository.")
