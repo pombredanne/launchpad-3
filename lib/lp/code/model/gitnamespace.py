@@ -59,8 +59,9 @@ from lp.services.propertycache import get_property_cache
 class _BaseGitNamespace:
     """Common code for Git repository namespaces."""
 
-    def createRepository(self, registrant, name, information_type=None,
-                         date_created=DEFAULT, description=None):
+    def createRepository(self, registrant, name, reviewer=None,
+                         information_type=None, date_created=DEFAULT,
+                         description=None):
         """See `IGitNamespace`."""
 
         self.validateRegistrant(registrant)
@@ -73,7 +74,7 @@ class _BaseGitNamespace:
 
         repository = GitRepository(
             registrant, self.owner, self.target, name, information_type,
-            date_created, description=description)
+            date_created, reviewer=reviewer, description=description)
         repository._reconcileAccess()
 
         notify(ObjectCreatedEvent(repository))

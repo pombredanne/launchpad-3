@@ -179,8 +179,25 @@ class IGitRepositoryView(Interface):
         title=_("Display name"), readonly=True,
         description=_("Display name of the repository.")))
 
+    code_reviewer = Attribute(
+        "The reviewer if set, otherwise the owner of the branch.")
+
     shortened_path = Attribute(
         "The shortest reasonable version of the path to this repository.")
+
+    @operation_parameters(
+        reviewer=Reference(
+            title=_("A person for which the reviewer status is in question."),
+            schema=IPerson))
+    @export_read_operation()
+    @operation_for_version('beta')
+    def isPersonTrustedReviewer(reviewer):
+        """Return true if the `reviewer` is a trusted reviewer.
+
+        The reviewer is trusted if they are either own the branch, or are in
+        the team that owns the branch, or they are in the review team for the
+        branch.
+        """
 
     git_identity = exported(Text(
         title=_("Git identity"), readonly=True,
@@ -342,6 +359,13 @@ class IGitRepositoryModerateAttributes(Interface):
 
     date_last_modified = exported(Datetime(
         title=_("Date last modified"), required=True, readonly=True))
+
+    reviewer = exported(PublicPersonChoice(
+        title=_("Review Team"), required=False, readonly=False,
+        vocabulary="ValidBranchReviewer",
+        description=_("The reviewer of a branch is the person or "
+                      "exclusive team that is responsible for reviewing "
+                      "proposals and merging into this branch.")))
 
     description = exported(Text(
         title=_("Description"), required=False, readonly=False,

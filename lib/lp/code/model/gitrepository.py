@@ -46,7 +46,10 @@ from lp.app.enums import (
     PUBLIC_INFORMATION_TYPES,
     )
 from lp.app.interfaces.informationtype import IInformationType
-from lp.app.interfaces.launchpad import IPrivacy
+from lp.app.interfaces.launchpad import (
+    ILaunchpadCelebrities,
+    IPrivacy,
+    )
 from lp.app.interfaces.services import IService
 from lp.code.enums import GitObjectType
 from lp.code.errors import (
@@ -150,6 +153,9 @@ class GitRepository(StormBase, GitIdentityMixin):
     owner_id = Int(name='owner', allow_none=False)
     owner = Reference(owner_id, 'Person.id')
 
+    reviewer_id = Int(name='reviewer', allow_none=True)
+    reviewer = Reference(reviewer_id, 'Person.id')
+
     project_id = Int(name='project', allow_none=True)
     project = Reference(project_id, 'Product.id')
 
@@ -168,12 +174,13 @@ class GitRepository(StormBase, GitIdentityMixin):
     target_default = Bool(name='target_default', allow_none=False)
 
     def __init__(self, registrant, owner, target, name, information_type,
-                 date_created, description=None):
+                 date_created, reviewer=None, description=None):
         if not getFeatureFlag(GIT_FEATURE_FLAG):
             raise GitFeatureDisabled
         super(GitRepository, self).__init__()
         self.registrant = registrant
         self.owner = owner
+        self.reviewer = reviewer
         self.name = name
         self.description = description
         self.information_type = information_type
@@ -268,6 +275,28 @@ class GitRepository(StormBase, GitIdentityMixin):
     @property
     def display_name(self):
         return self.git_identity
+
+    @property
+    def code_reviewer(self):
+        """See `IGitRepository`."""
+        if self.reviewer:
+            return self.reviewer
+        else:
+            return self.owner
+
+    def isPersonTrustedReviewer(self, reviewer):
+        """See `IGitRepository`."""
+        if reviewer is None:
+            return False
+        # We trust Launchpad admins.
+        lp_admins = getUtility(ILaunchpadCelebrities).admin
+        # Both the branch owner and the review team are checked.
+        owner = self.owner
+        review_team = self.code_reviewer
+        return (
+            reviewer.inTeam(owner) or
+            reviewer.inTeam(review_team) or
+            reviewer.inTeam(lp_admins))
 
     def getInternalPath(self):
         """See `IGitRepository`."""

@@ -1657,7 +1657,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             revision_date=revision_date)
         return branch.createBranchRevision(sequence, revision)
 
-    def makeGitRepository(self, owner=None, target=_DEFAULT, registrant=None,
+    def makeGitRepository(self, owner=None, reviewer=None, target=_DEFAULT, registrant=None,
                           name=None, information_type=None,
                           **optional_repository_args):
         """Create and return a new, arbitrary GitRepository.
@@ -1681,7 +1681,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         namespace = get_git_namespace(target, owner)
         repository = namespace.createRepository(
-            registrant=registrant, name=name, **optional_repository_args)
+            registrant=registrant, name=name, reviewer=reviewer,
+            **optional_repository_args)
         naked_repository = removeSecurityProxy(repository)
         if information_type is not None:
             naked_repository.transitionToInformationType(
