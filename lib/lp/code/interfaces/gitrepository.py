@@ -194,9 +194,9 @@ class IGitRepositoryView(Interface):
     def isPersonTrustedReviewer(reviewer):
         """Return true if the `reviewer` is a trusted reviewer.
 
-        The reviewer is trusted if they are either own the branch, or are in
-        the team that owns the branch, or they are in the review team for the
-        branch.
+        The reviewer is trusted if they either own the repository, or are in the
+        team that owns the repository, or they are in the review team for the
+        repository.
         """
 
     git_identity = exported(Text(
@@ -363,9 +363,9 @@ class IGitRepositoryModerateAttributes(Interface):
     reviewer = exported(PublicPersonChoice(
         title=_("Review Team"), required=False, readonly=False,
         vocabulary="ValidBranchReviewer",
-        description=_("The reviewer of a branch is the person or "
+        description=_("The reviewer of a repository is the person or "
                       "exclusive team that is responsible for reviewing "
-                      "proposals and merging into this branch.")))
+                      "proposals and merging into this repository.")))
 
     description = exported(Text(
         title=_("Description"), required=False, readonly=False,
