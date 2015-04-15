@@ -108,7 +108,6 @@ from lp.code.interfaces.branch import (
     BzrIdentityMixin,
     DEFAULT_BRANCH_STATUS_IN_LISTING,
     IBranch,
-    IBranchNavigationMenu,
     IBranchSet,
     user_has_special_branch_access,
     WrongNumberOfReviewTypeArguments,
@@ -191,7 +190,7 @@ from lp.services.webapp.authorization import check_permission
 class Branch(SQLBase, BzrIdentityMixin):
     """A sequence of ordered revisions in Bazaar."""
 
-    implements(IBranch, IBranchNavigationMenu, IPrivacy, IInformationType)
+    implements(IBranch, IPrivacy, IInformationType)
     _table = 'Branch'
 
     branch_type = EnumCol(enum=BranchType, notNull=True)

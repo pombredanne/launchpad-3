@@ -55,7 +55,6 @@ from lp.code.event.branchmergeproposal import (
     NewCodeReviewCommentEvent,
     ReviewerNominatedEvent,
     )
-from lp.code.interfaces.branch import IBranchNavigationMenu
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchmergeproposal import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES as FINAL_STATES,
@@ -168,7 +167,7 @@ def is_valid_transition(proposal, from_state, next_state, user=None):
 class BranchMergeProposal(SQLBase):
     """A relationship between a person and a branch."""
 
-    implements(IBranchMergeProposal, IBranchNavigationMenu, IHasBranchTarget)
+    implements(IBranchMergeProposal, IHasBranchTarget)
 
     _table = 'BranchMergeProposal'
     _defaultOrder = ['-date_created', 'id']
