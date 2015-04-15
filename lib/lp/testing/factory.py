@@ -1657,8 +1657,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             revision_date=revision_date)
         return branch.createBranchRevision(sequence, revision)
 
-    def makeGitRepository(self, owner=None, reviewer=None, target=_DEFAULT, registrant=None,
-                          name=None, information_type=None,
+    def makeGitRepository(self, owner=None, reviewer=None, target=_DEFAULT,
+                          registrant=None, name=None, information_type=None,
                           **optional_repository_args):
         """Create and return a new, arbitrary GitRepository.
 
@@ -1687,6 +1687,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if information_type is not None:
             naked_repository.transitionToInformationType(
                 information_type, registrant, verify_policy=False)
+        if reviewer is not None:
+            naked_repository.reviewer = reviewer
         return repository
 
     def makeGitRefs(self, repository=None, paths=None):
