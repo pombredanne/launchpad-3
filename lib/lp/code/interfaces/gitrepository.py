@@ -11,6 +11,7 @@ __all__ = [
     'GIT_REPOSITORY_NAME_VALIDATION_ERROR_MESSAGE',
     'git_repository_name_validator',
     'IGitRepository',
+    'IGitRepositoryDelta',
     'IGitRepositorySet',
     'user_has_special_git_repository_access',
     ]
@@ -644,6 +645,19 @@ class IGitRepositorySet(Interface):
 
         This only exists to keep lazr.restful happy.
         """
+
+
+class IGitRepositoryDelta(Interface):
+    """The quantitative changes made to a Git repository that was edited or
+    altered.
+    """
+
+    repository = Attribute("The IGitRepository, after it's been edited.")
+    user = Attribute("The IPerson that did the editing.")
+
+    # fields on the repository itself, we provide just the new changed value
+    name = Attribute("Old and new names or None.")
+    identity = Attribute("Old and new identities or None.")
 
 
 class GitIdentityMixin:

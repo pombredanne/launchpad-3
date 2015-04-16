@@ -8,6 +8,7 @@ __metaclass__ = type
 from zope.security.proxy import removeSecurityProxy
 
 from lp.code.adapters.branch import BranchDelta
+from lp.code.adapters.gitrepository import GitRepositoryDelta
 from lp.code.enums import (
     BranchSubscriptionDiffSize,
     BranchSubscriptionNotificationLevel,
@@ -31,6 +32,17 @@ def send_branch_modified_notifications(branch, event):
     if branch_delta is None:
         return
     mailer = BranchMailer.forBranchModified(branch, user, branch_delta)
+    mailer.sendAll()
+
+
+def send_git_repository_modified_notifications(repository, event):
+    """Notify the related people that a Git repository has been modifed."""
+    user = IPerson(event.user)
+    repository_delta = GitRepositoryDelta.construct(
+        event.object_before_modification, repository, user)
+    if repository_delta is None:
+        return
+    mailer = BranchMailer.forBranchModified(repository, user, repository_delta)
     mailer.sendAll()
 
 

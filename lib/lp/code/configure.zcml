@@ -839,6 +839,12 @@
     <allow interface="lp.code.interfaces.gitrepository.IGitRepositorySet" />
   </securedutility>
 
+  <!-- GitRepositoryDelta -->
+
+  <class class="lp.code.adapters.gitrepository.GitRepositoryDelta">
+    <allow interface="lp.code.interfaces.gitrepository.IGitRepositoryDelta"/>
+  </class>
+
   <!-- GitSubscription -->
 
   <class class="lp.code.model.gitsubscription.GitSubscription">

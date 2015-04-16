@@ -304,7 +304,7 @@ class TestGitRepositoryDateLastModified(TestCaseWithFactory):
             date_created=datetime(2015, 02, 04, 17, 42, 0, tzinfo=pytz.UTC))
         notify(ObjectModifiedEvent(
             removeSecurityProxy(repository), repository,
-            [IGitRepository["name"]]))
+            [IGitRepository["name"]], user=repository.owner))
         self.assertSqlAttributeEqualsDate(
             repository, "date_last_modified", UTC_NOW)
 
