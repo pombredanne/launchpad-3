@@ -237,7 +237,8 @@ class TestBranchMailerHeadersMixin:
         branch.getSubscription(bob).notification_level = (
             BranchSubscriptionNotificationLevel.FULL)
         mailer = BranchMailer.forRevision(
-            branch, 1, 'from@example.com', contents='', diff=None, subject='')
+            branch, 'from@example.com', contents='', diff=None, subject='',
+            revno=1)
         mailer.message_id = '<foobar-example-com>'
         ctrl = mailer.generateEmail('bob@example.com', branch.owner)
         self.assertEqual(
@@ -291,7 +292,8 @@ class TestBranchMailerDiffMixin:
         subscription.notification_level = (
             BranchSubscriptionNotificationLevel.FULL)
         mailer = BranchMailer.forRevision(
-            branch, 1, 'from@example.com', contents='', diff=diff, subject='')
+            branch, 'from@example.com', contents='', diff=diff, subject='',
+            revno=1)
         return mailer.generateEmail('bob@example.com', branch.owner)
 
     def test_generateEmail_with_no_diff(self):
@@ -359,8 +361,8 @@ class TestBranchMailerSubjectMixin:
         branch.getSubscription(branch.owner).notification_level = (
             BranchSubscriptionNotificationLevel.FULL)
         mailer = BranchMailer.forRevision(
-            branch, 1, 'test@example.com', 'content', 'diff',
-            'Testing %j foo')
+            branch, 'test@example.com', 'content', 'diff', 'Testing %j foo',
+            revno=1)
         branch_owner_email = removeSecurityProxy(
             branch.owner).preferredemail.email
         self.assertEqual('Testing %j foo', mailer._getSubject(

@@ -150,7 +150,8 @@ class BranchMailer(BaseMailer):
 
     def __init__(self, subject, template_name, recipients, from_address,
                  delta=None, contents=None, diff=None, message_id=None,
-                 revno=None, notification_type=None, **kwargs):
+                 revno=None, revision_id=None, notification_type=None,
+                 **kwargs):
         BaseMailer.__init__(self, subject, template_name, recipients,
                             from_address, delta, message_id,
                             notification_type)
@@ -161,6 +162,7 @@ class BranchMailer(BaseMailer):
         else:
             self.diff_size = self.diff.count('\n') + 1
         self.revno = revno
+        self.revision_id = revision_id
         self.extra_template_params = kwargs
 
     @classmethod
@@ -202,8 +204,8 @@ class BranchMailer(BaseMailer):
             notification_type='branch-updated')
 
     @classmethod
-    def forRevision(cls, db_branch, revno, from_address, contents, diff,
-                    subject):
+    def forRevision(cls, db_branch, from_address, contents, diff, subject,
+                    revno=None, revision_id=None):
         """Construct a BranchMailer for mail about branch revisions.
 
         :param branch: The db_branch that was modified.
@@ -227,6 +229,7 @@ class BranchMailer(BaseMailer):
                 recipient_dict[recipient] = subscriber_reason
         return cls('%(full_subject)s', 'branch-modified.txt', recipient_dict,
             from_address, contents=contents, diff=diff, revno=revno,
+            revision_id=revision_id,
             notification_type='branch-revision', full_subject=subject)
 
     def _getHeaders(self, email):
@@ -241,6 +244,8 @@ class BranchMailer(BaseMailer):
                 headers['X-Launchpad-Project'] = reason.branch.product.name
         if self.revno is not None:
             headers['X-Launchpad-Branch-Revision-Number'] = str(self.revno)
+        if self.revision_id is not None:
+            headers['X-Launchpad-Branch-Revision-ID'] = self.revision_id
         return headers
 
     def _getTemplateParams(self, email, recipient):
