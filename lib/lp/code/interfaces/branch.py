@@ -17,7 +17,6 @@ __all__ = [
     'IBranchCloud',
     'IBranchDelta',
     'IBranchListingQueryOptimiser',
-    'IBranchNavigationMenu',
     'IBranchSet',
     'user_has_special_branch_access',
     'WrongNumberOfReviewTypeArguments',
@@ -238,10 +237,6 @@ def branch_name_validator(name):
 
 class IBranchBatchNavigator(ITableBatchNavigator):
     """A marker interface for registering the appropriate branch listings."""
-
-
-class IBranchNavigationMenu(Interface):
-    """A marker interface to indicate the need to show the branch menu."""
 
 
 class IBranchPublic(Interface):
