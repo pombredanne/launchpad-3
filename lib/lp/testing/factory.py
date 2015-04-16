@@ -1129,6 +1129,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             naked_branch.branchChanged(
                 removeSecurityProxy(stacked_on).unique_name, 'rev1', None,
                 None, None)
+        if reviewer is not None:
+            naked_branch.reviewer = reviewer
         return branch
 
     def makePackagingLink(self, productseries=None, sourcepackagename=None,
@@ -1685,8 +1687,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if information_type is not None:
             naked_repository.transitionToInformationType(
                 information_type, registrant, verify_policy=False)
-        if reviewer is not None:
-            naked_repository.reviewer = reviewer
         return repository
 
     def makeGitRefs(self, repository=None, paths=None):
