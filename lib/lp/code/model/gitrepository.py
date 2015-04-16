@@ -116,6 +116,7 @@ from lp.services.database.stormexpr import (
     Values,
     )
 from lp.services.features import getFeatureFlag
+from lp.services.mail.notificationrecipientset import NotificationRecipientSet
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp.authorization import available_with_permission
 
@@ -680,6 +681,17 @@ class GitRepository(StormBase, GitIdentityMixin):
         getUtility(IAccessArtifactGrantSource).revokeByArtifact(
             artifact, [person])
         store.flush()
+
+    def getNotificationRecipients(self):
+        """See `IGitRepository`."""
+        recipients = NotificationRecipientSet()
+        for subscription in self.subscriptions:
+            if subscription.person.is_team:
+                rationale = 'Subscriber @%s' % subscription.person.name
+            else:
+                rationale = 'Subscriber'
+            recipients.add(subscription.person, subscription, rationale)
+        return recipients
 
     def destroySelf(self):
         raise NotImplementedError

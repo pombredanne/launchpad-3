@@ -194,6 +194,10 @@ class IGitRepositoryView(Interface):
             "'lp:' plus a shortcut version of the path via that target.  "
             "Otherwise it is simply 'lp:' plus the unique name.")))
 
+    identity = Attribute(
+        "The identity of this repository: a VCS-independent synonym for "
+        "git_identity.")
+
     refs = exported(CollectionField(
         title=_("The references present in this repository."),
         readonly=True,
@@ -415,6 +419,13 @@ class IGitRepositoryView(Interface):
         :param notification_levels: An iterable of
             `BranchSubscriptionNotificationLevel`s.
         :return: A `ResultSet`.
+        """
+
+    def getNotificationRecipients():
+        """Return a complete INotificationRecipientSet instance.
+
+        The INotificationRecipientSet instance contains the subscribers
+        and their subscriptions.
         """
 
 
@@ -653,6 +664,8 @@ class GitIdentityMixin:
     def git_identity(self):
         """See `IGitRepository`."""
         return "lp:" + self.shortened_path
+
+    identity = git_identity
 
     def getRepositoryDefaults(self):
         """See `IGitRepository`."""

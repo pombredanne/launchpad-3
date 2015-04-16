@@ -139,8 +139,8 @@ class BMPMailer(BranchMailer):
         proposal = self.merge_proposal
         params = {
             'proposal_registrant': proposal.registrant.displayname,
-            'source_branch': proposal.source_branch.bzr_identity,
-            'target_branch': proposal.target_branch.bzr_identity,
+            'source_branch': proposal.merge_source.identity,
+            'target_branch': proposal.merge_target.identity,
             'prerequisite': '',
             'proposal_title': proposal.title,
             'proposal_url': canonical_url(proposal),
@@ -154,8 +154,8 @@ class BMPMailer(BranchMailer):
         if self.delta_text is not None:
             params['delta'] = self.delta_text
 
-        if proposal.prerequisite_branch is not None:
-            prereq_url = proposal.prerequisite_branch.bzr_identity
+        if proposal.merge_prerequisite is not None:
+            prereq_url = proposal.merge_prerequisite.identity
             params['prerequisite'] = ' with %s as a prerequisite' % prereq_url
 
         requested_reviews = []

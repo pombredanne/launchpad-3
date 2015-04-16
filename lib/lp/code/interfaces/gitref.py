@@ -87,6 +87,51 @@ class IGitRef(Interface):
         title=_("The first line of the commit message."),
         required=True, readonly=True)
 
+    identity = Attribute(
+        "The identity of this reference.  This will be the shortened path to "
+        "the containing repository, plus a colon, plus the reference path "
+        "with any leading refs/heads/ removed; for example, launchpad:master.")
+
+    unique_name = Attribute(
+        "The unique name of this reference.  This will be the unique name of "
+        "the containing repository, plus a colon, plus the reference path "
+        "with any leading refs/heads/ removed; for example, "
+        "~launchpad-pqm/launchpad:master.")
+
+    owner = Attribute("The owner of the repository containing this reference.")
+
+    target = Attribute(
+        "The target of the repository containing this reference.")
+
+    subscribers = Attribute(
+        "Persons subscribed to the repository containing this reference.")
+
+    def subscribe(person, notification_level, max_diff_lines,
+                  code_review_level, subscribed_by):
+        """Subscribe this person to the repository containing this reference.
+
+        :param person: The `Person` to subscribe.
+        :param notification_level: The kinds of repository changes that
+            cause notification.
+        :param max_diff_lines: The maximum number of lines of diff that may
+            appear in a notification.
+        :param code_review_level: The kinds of code review activity that
+            cause notification.
+        :param subscribed_by: The person who is subscribing the subscriber.
+            Most often the subscriber themselves.
+        :return: A new or existing `GitSubscription`.
+        """
+
+    def getSubscription(person):
+        """Return the `GitSubscription` for this person."""
+
+    def getNotificationRecipients():
+        """Return a complete INotificationRecipientSet instance.
+
+        The INotificationRecipientSet instance contains the subscribers
+        and their subscriptions.
+        """
+
 
 class IGitRefBatchNavigator(ITableBatchNavigator):
     pass
