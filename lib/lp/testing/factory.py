@@ -1129,8 +1129,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             naked_branch.branchChanged(
                 removeSecurityProxy(stacked_on).unique_name, 'rev1', None,
                 None, None)
-        if reviewer is not None:
-            naked_branch.reviewer = reviewer
         return branch
 
     def makePackagingLink(self, productseries=None, sourcepackagename=None,
@@ -1657,8 +1655,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             revision_date=revision_date)
         return branch.createBranchRevision(sequence, revision)
 
-    def makeGitRepository(self, owner=None, target=_DEFAULT, registrant=None,
-                          name=None, information_type=None,
+    def makeGitRepository(self, owner=None, reviewer=None, target=_DEFAULT,
+                          registrant=None, name=None, information_type=None,
                           **optional_repository_args):
         """Create and return a new, arbitrary GitRepository.
 
@@ -1681,11 +1679,14 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         namespace = get_git_namespace(target, owner)
         repository = namespace.createRepository(
-            registrant=registrant, name=name, **optional_repository_args)
+            registrant=registrant, name=name, reviewer=reviewer,
+            **optional_repository_args)
         naked_repository = removeSecurityProxy(repository)
         if information_type is not None:
             naked_repository.transitionToInformationType(
                 information_type, registrant, verify_policy=False)
+        if reviewer is not None:
+            naked_repository.reviewer = reviewer
         return repository
 
     def makeGitSubscription(self, repository=None, person=None,
