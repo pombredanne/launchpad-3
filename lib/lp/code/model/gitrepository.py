@@ -567,7 +567,8 @@ class GitRepository(StormBase, GitIdentityMixin):
             raise CannotChangeInformationType("Forbidden by project policy.")
         self.information_type = information_type
         self._reconcileAccess()
-        if information_type in PRIVATE_INFORMATION_TYPES and self.subscribers:
+        if (information_type in PRIVATE_INFORMATION_TYPES and
+                not self.subscribers.is_empty()):
             # Grant the subscriber access if they can't see the repository.
             service = getUtility(IService, "sharing")
             blind_subscribers = service.getPeopleWithoutAccess(
