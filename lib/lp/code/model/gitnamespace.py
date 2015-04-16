@@ -81,7 +81,7 @@ class _BaseGitNamespace:
             date_created, description=description)
 
         # The owner of the repository should also be automatically subscribed
-        # in order for them to get code review notifications.  The implicit
+        # in order for them to get code review notifications.  The default
         # owner subscription does not cause email to be sent about attribute
         # changes, just merge proposals and code review comments.
         repository.subscribe(
