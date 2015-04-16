@@ -113,6 +113,10 @@ class IGitCollection(Interface):
         :return: A `ResultSet` of repositories that matched.
         """
 
+    def subscribedBy(person):
+        """Restrict the collection to repositories subscribed to by
+        'person'."""
+
     def visibleByUser(person):
         """Restrict the collection to repositories that person is allowed to
         see."""

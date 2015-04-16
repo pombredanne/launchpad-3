@@ -1165,9 +1165,7 @@ class TestSharingService(TestCaseWithFactory):
         self._assert_revokeTeamAccessGrants(
             product, None, [branch], None, None)
 
-    # XXX cjwatson 2015-02-05: Enable this once GitRepositorySubscription is
-    # implemented.
-    def disabled_test_revokeTeamAccessGrantsGitRepositories(self):
+    def test_revokeTeamAccessGrantsGitRepositories(self):
         # Users with launchpad.Edit can delete all access for a grantee.
         owner = self.factory.makePerson()
         product = self.factory.makeProduct(owner=owner)

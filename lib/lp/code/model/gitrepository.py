@@ -45,6 +45,10 @@ from lp.app.enums import (
     PRIVATE_INFORMATION_TYPES,
     PUBLIC_INFORMATION_TYPES,
     )
+from lp.app.errors import (
+    SubscriptionPrivacyViolation,
+    UserCannotUnsubscribePerson,
+    )
 from lp.app.interfaces.informationtype import IInformationType
 from lp.app.interfaces.launchpad import (
     ILaunchpadCelebrities,
@@ -75,9 +79,11 @@ from lp.code.interfaces.gitrepository import (
     )
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.model.gitref import GitRef
+from lp.code.model.gitsubscription import GitSubscription
 from lp.registry.enums import PersonVisibility
 from lp.registry.errors import CannotChangeInformationType
 from lp.registry.interfaces.accesspolicy import (
+    IAccessArtifactGrantSource,
     IAccessArtifactSource,
     IAccessPolicySource,
     )
@@ -94,6 +100,7 @@ from lp.registry.model.accesspolicy import (
     AccessPolicyGrant,
     reconcile_access_for_artifact,
     )
+from lp.registry.model.person import Person
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.config import config
 from lp.services.database import bulk
@@ -589,15 +596,12 @@ class GitRepository(StormBase, GitIdentityMixin):
             raise CannotChangeInformationType("Forbidden by project policy.")
         self.information_type = information_type
         self._reconcileAccess()
-        # XXX cjwatson 2015-02-05: Once we have repository subscribers, we
-        # need to grant them access if necessary.  For now, treat the owner
-        # as always subscribed, which is just about enough to make the
-        # GitCollection tests pass.
-        if information_type in PRIVATE_INFORMATION_TYPES:
+        if (information_type in PRIVATE_INFORMATION_TYPES and
+                not self.subscribers.is_empty()):
             # Grant the subscriber access if they can't see the repository.
             service = getUtility(IService, "sharing")
             blind_subscribers = service.getPeopleWithoutAccess(
-                self, [self.owner])
+                self, self.subscribers)
             if len(blind_subscribers):
                 service.ensureAccessGrants(
                     blind_subscribers, user, gitrepositories=[self],
@@ -611,6 +615,101 @@ class GitRepository(StormBase, GitIdentityMixin):
         """See `IGitRepository`."""
         new_namespace = get_git_namespace(self.target, new_owner)
         new_namespace.moveRepository(self, user, rename_if_necessary=True)
+
+    @property
+    def subscriptions(self):
+        return Store.of(self).find(
+            GitSubscription,
+            GitSubscription.repository == self)
+
+    @property
+    def subscribers(self):
+        return Store.of(self).find(
+            Person,
+            GitSubscription.person_id == Person.id,
+            GitSubscription.repository == self)
+
+    def userCanBeSubscribed(self, person):
+        """See `IGitRepository`."""
+        return not (
+            person.is_team and
+            self.information_type in PRIVATE_INFORMATION_TYPES and
+            person.anyone_can_join())
+
+    def subscribe(self, person, notification_level, max_diff_lines,
+                  code_review_level, subscribed_by):
+        """See `IGitRepository`."""
+        if not self.userCanBeSubscribed(person):
+            raise SubscriptionPrivacyViolation(
+                "Open and delegated teams cannot be subscribed to private "
+                "repositories.")
+        # If the person is already subscribed, update the subscription with
+        # the specified notification details.
+        subscription = self.getSubscription(person)
+        if subscription is None:
+            subscription = GitSubscription(
+                person=person, repository=self,
+                notification_level=notification_level,
+                max_diff_lines=max_diff_lines, review_level=code_review_level,
+                subscribed_by=subscribed_by)
+            Store.of(subscription).flush()
+        else:
+            subscription.notification_level = notification_level
+            subscription.max_diff_lines = max_diff_lines
+            subscription.review_level = code_review_level
+        # Grant the subscriber access if they can't see the repository.
+        service = getUtility(IService, "sharing")
+        _, _, repositories, _ = service.getVisibleArtifacts(
+            person, gitrepositories=[self], ignore_permissions=True)
+        if not repositories:
+            service.ensureAccessGrants(
+                [person], subscribed_by, gitrepositories=[self],
+                ignore_permissions=True)
+        return subscription
+
+    def getSubscription(self, person):
+        """See `IGitRepository`."""
+        if person is None:
+            return None
+        return Store.of(self).find(
+            GitSubscription,
+            GitSubscription.person == person,
+            GitSubscription.repository == self).one()
+
+    def getSubscriptionsByLevel(self, notification_levels):
+        """See `IGitRepository`."""
+        # XXX: JonathanLange 2009-05-07 bug=373026: This is only used by real
+        # code to determine whether there are any subscribers at the given
+        # notification levels. The only code that cares about the actual
+        # object is in a test:
+        # test_only_nodiff_subscribers_means_no_diff_generated.
+        return Store.of(self).find(
+            GitSubscription,
+            GitSubscription.repository == self,
+            GitSubscription.notification_level.is_in(notification_levels))
+
+    def hasSubscription(self, person):
+        """See `IGitRepository`."""
+        return self.getSubscription(person) is not None
+
+    def unsubscribe(self, person, unsubscribed_by, ignore_permissions=False):
+        """See `IGitRepository`."""
+        subscription = self.getSubscription(person)
+        if subscription is None:
+            # Silent success seems order of the day (like bugs).
+            return
+        if (not ignore_permissions
+            and not subscription.canBeUnsubscribedByUser(unsubscribed_by)):
+            raise UserCannotUnsubscribePerson(
+                '%s does not have permission to unsubscribe %s.' % (
+                    unsubscribed_by.displayname,
+                    person.displayname))
+        store = Store.of(subscription)
+        store.remove(subscription)
+        artifact = getUtility(IAccessArtifactSource).find([self])
+        getUtility(IAccessArtifactGrantSource).revokeByArtifact(
+            artifact, [person])
+        store.flush()
 
     def destroySelf(self):
         raise NotImplementedError

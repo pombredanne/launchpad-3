@@ -25,6 +25,11 @@ from lp.app.enums import (
     PUBLIC_INFORMATION_TYPES,
     )
 from lp.app.interfaces.services import IService
+from lp.code.enums import (
+    BranchSubscriptionDiffSize,
+    BranchSubscriptionNotificationLevel,
+    CodeReviewNotificationLevel,
+    )
 from lp.code.errors import (
     GitRepositoryCreationForbidden,
     GitRepositoryCreatorNotMemberOfOwnerTeam,
@@ -75,6 +80,18 @@ class _BaseGitNamespace:
         repository = GitRepository(
             registrant, self.owner, self.target, name, information_type,
             date_created, reviewer=reviewer, description=description)
+
+        # The owner of the repository should also be automatically subscribed
+        # in order for them to get code review notifications.  The default
+        # owner subscription does not cause email to be sent about attribute
+        # changes, just merge proposals and code review comments.
+        repository.subscribe(
+            self.owner,
+            BranchSubscriptionNotificationLevel.NOEMAIL,
+            BranchSubscriptionDiffSize.NODIFF,
+            CodeReviewNotificationLevel.FULL,
+            registrant)
+
         repository._reconcileAccess()
 
         notify(ObjectCreatedEvent(repository))
