@@ -829,7 +829,7 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
 
     @operation_parameters(
         person=Reference(
-            title=_("The person to unsubscribe"),
+            title=_("The person to search for"),
             schema=IPerson))
     @operation_returns_entry(Interface)  # Really IBranchSubscription
     @export_read_operation()

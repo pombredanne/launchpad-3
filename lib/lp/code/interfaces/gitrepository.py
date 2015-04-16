@@ -386,7 +386,7 @@ class IGitRepositoryView(Interface):
         """
 
     @operation_parameters(
-        person=Reference(title=_("The person to unsubscribe"), schema=IPerson))
+        person=Reference(title=_("The person to search for"), schema=IPerson))
     # Really IGitSubscription, patched in _schema_circular_imports.py.
     @operation_returns_entry(Interface)
     @export_read_operation()
