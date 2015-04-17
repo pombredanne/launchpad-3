@@ -35,6 +35,7 @@ from lp.code.model.gitrepository import (
     GitRepository,
     get_git_repository_privacy_filter,
     )
+from lp.code.model.gitsubscription import GitSubscription
 from lp.registry.enums import EXCLUSIVE_TEAM_POLICY
 from lp.registry.model.person import Person
 from lp.registry.model.product import Product
@@ -266,6 +267,14 @@ class GenericGitCollection:
                 [field.lower().contains_string(term.lower())])
         return collection.getRepositories(eager_load=False).order_by(
             GitRepository.name, GitRepository.id)
+
+    def subscribedBy(self, person):
+        """See `IGitCollection`."""
+        return self._filterBy(
+            [GitSubscription.person == person],
+            table=GitSubscription,
+            join=Join(GitSubscription,
+                      GitSubscription.repository == GitRepository.id))
 
     def visibleByUser(self, person):
         """See `IGitCollection`."""

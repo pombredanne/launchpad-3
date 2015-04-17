@@ -463,8 +463,8 @@ class RevisionMailJob(BranchJobDerived):
     def getMailer(self):
         """Return a BranchMailer for this job."""
         return BranchMailer.forRevision(
-            self.branch, self.revno, self.from_address, self.body,
-            None, self.subject)
+            self.branch, self.from_address, self.body, None, self.subject,
+            revno=self.revno)
 
     def run(self):
         """See `IRevisionMailJob`."""
@@ -601,8 +601,8 @@ class RevisionsAddedJob(BranchJobDerived):
         else:
             diff_text = None
         return BranchMailer.forRevision(
-            self.branch, revno, self.from_address, message, diff_text,
-            subject)
+            self.branch, self.from_address, message, diff_text, subject,
+            revno=revno)
 
     def getMergedRevisionIDs(self, revision_id, graph):
         """Determine which revisions were merged by this revision.

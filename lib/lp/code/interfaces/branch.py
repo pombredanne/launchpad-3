@@ -701,6 +701,10 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
                 'lp:product/series.  Otherwise the result is '
                 'lp:~user/product/branch-name.')))
 
+    identity = Attribute(
+        "The identity of this branch: a VCS-independent synonym for "
+        "bzr_identity.")
+
     def addToLaunchBag(launchbag):
         """Add information about this branch to `launchbag'.
 
@@ -824,7 +828,7 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
 
     @operation_parameters(
         person=Reference(
-            title=_("The person to unsubscribe"),
+            title=_("The person to search for"),
             schema=IPerson))
     @operation_returns_entry(Interface)  # Really IBranchSubscription
     @export_read_operation()
@@ -1512,6 +1516,8 @@ class BzrIdentityMixin:
         """See `IBranch`."""
         identity, context = self.branchIdentities()[0]
         return identity
+
+    identity = bzr_identity
 
     def branchIdentities(self):
         """See `IBranch`."""

@@ -158,10 +158,10 @@ class _BaseBranchNamespace:
             control_format=control_format, distroseries=distroseries,
             sourcepackagename=sourcepackagename)
 
-        # The registrant of the branch should also be automatically subscribed
-        # in order for them to get code review notifications.  The implicit
-        # registrant subscription does not cause email to be sent about
-        # attribute changes, just merge proposals and code review comments.
+        # The owner of the branch should also be automatically subscribed in
+        # order for them to get code review notifications.  The default
+        # owner subscription does not cause email to be sent about attribute
+        # changes, just merge proposals and code review comments.
         branch.subscribe(
             self.owner,
             BranchSubscriptionNotificationLevel.NOEMAIL,

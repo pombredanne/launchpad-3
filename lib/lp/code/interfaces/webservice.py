@@ -28,6 +28,7 @@ __all__ = [
     'IGitRef',
     'IGitRepository',
     'IGitRepositorySet',
+    'IGitSubscription',
     'IHasGitRepositories',
     'IPreviewDiff',
     'ISourcePackageRecipe',
@@ -66,6 +67,7 @@ from lp.code.interfaces.gitrepository import (
     IGitRepository,
     IGitRepositorySet,
     )
+from lp.code.interfaces.gitsubscription import IGitSubscription
 from lp.code.interfaces.hasgitrepositories import IHasGitRepositories
 from lp.code.interfaces.sourcepackagerecipe import ISourcePackageRecipe
 from lp.code.interfaces.sourcepackagerecipebuild import (

@@ -304,7 +304,7 @@ class TestGitRepositoryDateLastModified(TestCaseWithFactory):
             date_created=datetime(2015, 02, 04, 17, 42, 0, tzinfo=pytz.UTC))
         notify(ObjectModifiedEvent(
             removeSecurityProxy(repository), repository,
-            [IGitRepository["name"]]))
+            [IGitRepository["name"]], user=repository.owner))
         self.assertSqlAttributeEqualsDate(
             repository, "date_last_modified", UTC_NOW)
 
@@ -801,7 +801,82 @@ class TestGitRepositoryModerate(TestCaseWithFactory):
         repository = self.factory.makeGitRepository(target=project)
         with person_logged_in(project.owner):
             repository.description = u"something"
+            repository.reviewer = project.owner
         self.assertEqual(u"something", repository.description)
+        self.assertEqual(project.owner, repository.reviewer)
+
+
+class TestGitRepositoryIsPersonTrustedReviewer(TestCaseWithFactory):
+    """Test the `IGitRepository.isPersonTrustedReviewer` method."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestGitRepositoryIsPersonTrustedReviewer, self).setUp()
+        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
+
+    def assertTrustedReviewer(self, repository, person):
+        """Assert that `person` is a trusted reviewer for the `repository`."""
+        self.assertTrue(repository.isPersonTrustedReviewer(person))
+
+    def assertNotTrustedReviewer(self, repository, person):
+        """Assert that `person` is not a trusted reviewer for the
+        `repository`.
+        """
+        self.assertFalse(repository.isPersonTrustedReviewer(person))
+
+    def test_none_is_not_trusted(self):
+        # If None is passed in as the person, the method returns false.
+        repository = self.factory.makeGitRepository()
+        self.assertNotTrustedReviewer(repository, None)
+
+    def test_repository_owner_is_trusted(self):
+        # The repository owner is a trusted reviewer.
+        repository = self.factory.makeGitRepository()
+        self.assertTrustedReviewer(repository, repository.owner)
+
+    def test_non_repository_owner_is_not_trusted(self):
+        # Someone other than the repository owner is not a trusted reviewer.
+        repository = self.factory.makeGitRepository()
+        reviewer = self.factory.makePerson()
+        self.assertNotTrustedReviewer(repository, reviewer)
+
+    def test_lp_admins_always_trusted(self):
+        # Launchpad admins are special, and as such, are trusted.
+        repository = self.factory.makeGitRepository()
+        admins = getUtility(ILaunchpadCelebrities).admin
+        # Grab a random admin, the teamowner is good enough here.
+        self.assertTrustedReviewer(repository, admins.teamowner)
+
+    def test_member_of_team_owned_repository(self):
+        # If the repository is owned by a team, any team member is a trusted
+        # reviewer.
+        team = self.factory.makeTeam()
+        repository = self.factory.makeGitRepository(owner=team)
+        self.assertTrustedReviewer(repository, team.teamowner)
+
+    def test_review_team_member_is_trusted(self):
+        # If the reviewer is a member of the review team, but not the owner
+        # they are still trusted.
+        team = self.factory.makeTeam()
+        repository = self.factory.makeGitRepository(reviewer=team)
+        self.assertTrustedReviewer(repository, team.teamowner)
+
+    def test_repository_owner_not_review_team_member_is_trusted(self):
+        # If the owner of the repository is not in the review team,
+        #they are still trusted.
+        team = self.factory.makeTeam()
+        repository = self.factory.makeGitRepository(reviewer=team)
+        self.assertFalse(repository.owner.inTeam(team))
+        self.assertTrustedReviewer(repository, repository.owner)
+
+    def test_community_reviewer(self):
+        # If the reviewer is not a member of the owner, or the review team,
+        # they are not trusted reviewers.
+        team = self.factory.makeTeam()
+        repository = self.factory.makeGitRepository(reviewer=team)
+        reviewer = self.factory.makePerson()
+        self.assertNotTrustedReviewer(repository, reviewer)
 
 
 class TestGitRepositorySetOwner(TestCaseWithFactory):
@@ -970,7 +1045,7 @@ class TestGitRepositorySetTarget(TestCaseWithFactory):
         owner = self.factory.makeTeam(visibility=PersonVisibility.PRIVATE)
         with person_logged_in(owner):
             repository = self.factory.makeGitRepository(
-                owner=owner, target=owner,
+                owner=owner,
                 information_type=InformationType.USERDATA)
             repository.setTarget(target=owner, user=owner)
         self.assertEqual(

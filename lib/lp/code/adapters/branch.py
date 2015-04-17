@@ -53,17 +53,16 @@ class BranchDelta:
         self.whiteboard = whiteboard
         self.lifecycle_status = lifecycle_status
 
-    @staticmethod
-    def construct(old_branch, new_branch, user):
+    @classmethod
+    def construct(klass, old_branch, new_branch, user):
         """Return a BranchDelta instance that encapsulates the changes.
 
         This method is primarily used by event subscription code to
         determine what has changed during an ObjectModifiedEvent.
         """
         delta = ObjectDelta(old_branch, new_branch)
-        delta.recordNewValues(("summary", "whiteboard"))
-        delta.recordNewAndOld(("name", "lifecycle_status",
-                               "title", "url"))
+        delta.recordNewValues(klass.new_values)
+        delta.recordNewAndOld(klass.delta_values)
         # delta.record_list_added_and_removed()
         # XXX thumper 2006-12-21: Add in bugs and specs.
         if delta.changes:
