@@ -136,6 +136,16 @@ class IBranchMergeProposalPublic(IPrivacy):
                 "If this branch is the same as the target branch, then "
                 "leave this field blank.")))
 
+    merge_source = Attribute(
+        "The branch that has code to land (VCS-agnostic).")
+
+    merge_target = Attribute(
+        "The branch that the source branch will be merged into "
+        "(VCS-agnostic).")
+
+    merge_prerequisite = Attribute(
+        "The branch that the source branch branched from (VCS-agnostic).")
+
 
 class IBranchMergeProposalView(Interface):
 

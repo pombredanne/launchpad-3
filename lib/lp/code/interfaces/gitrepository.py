@@ -11,6 +11,7 @@ __all__ = [
     'GIT_REPOSITORY_NAME_VALIDATION_ERROR_MESSAGE',
     'git_repository_name_validator',
     'IGitRepository',
+    'IGitRepositoryDelta',
     'IGitRepositorySet',
     'user_has_special_git_repository_access',
     ]
@@ -210,6 +211,10 @@ class IGitRepositoryView(Interface):
             "If this is the default repository for some target, then this is "
             "'lp:' plus a shortcut version of the path via that target.  "
             "Otherwise it is simply 'lp:' plus the unique name.")))
+
+    identity = Attribute(
+        "The identity of this repository: a VCS-independent synonym for "
+        "git_identity.")
 
     refs = exported(CollectionField(
         title=_("The references present in this repository."),
@@ -432,6 +437,13 @@ class IGitRepositoryView(Interface):
         :param notification_levels: An iterable of
             `BranchSubscriptionNotificationLevel`s.
         :return: A `ResultSet`.
+        """
+
+    def getNotificationRecipients():
+        """Return a complete INotificationRecipientSet instance.
+
+        The INotificationRecipientSet instance contains the subscribers
+        and their subscriptions.
         """
 
 
@@ -659,6 +671,19 @@ class IGitRepositorySet(Interface):
         """
 
 
+class IGitRepositoryDelta(Interface):
+    """The quantitative changes made to a Git repository that was edited or
+    altered.
+    """
+
+    repository = Attribute("The IGitRepository, after it's been edited.")
+    user = Attribute("The IPerson that did the editing.")
+
+    # fields on the repository itself, we provide just the new changed value
+    name = Attribute("Old and new names or None.")
+    identity = Attribute("Old and new identities or None.")
+
+
 class GitIdentityMixin:
     """This mixin class determines Git repository paths.
 
@@ -677,6 +702,8 @@ class GitIdentityMixin:
     def git_identity(self):
         """See `IGitRepository`."""
         return "lp:" + self.shortened_path
+
+    identity = git_identity
 
     def getRepositoryDefaults(self):
         """See `IGitRepository`."""

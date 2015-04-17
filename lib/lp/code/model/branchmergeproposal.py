@@ -185,6 +185,18 @@ class BranchMergeProposal(SQLBase):
     prerequisite_branch = ForeignKey(
         dbName='dependent_branch', foreignKey='Branch', notNull=False)
 
+    @property
+    def merge_source(self):
+        return self.source_branch
+
+    @property
+    def merge_target(self):
+        return self.target_branch
+
+    @property
+    def merge_prerequisite(self):
+        return self.prerequisite_branch
+
     description = StringCol(default=None)
 
     whiteboard = StringCol(default=None)
@@ -352,7 +364,7 @@ class BranchMergeProposal(SQLBase):
                 if (subscription.review_level < min_level):
                     continue
                 recipients[recipient] = RecipientReason.forBranchSubscriber(
-                    subscription, recipient, rationale, self,
+                    subscription, branch, recipient, rationale, self,
                     branch_identity_cache=branch_identity_cache)
         # Add in all the individuals that have been asked for a review,
         # or who have reviewed.  These people get added to the recipients

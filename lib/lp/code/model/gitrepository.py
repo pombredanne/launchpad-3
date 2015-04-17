@@ -78,6 +78,7 @@ from lp.code.interfaces.gitrepository import (
     user_has_special_git_repository_access,
     )
 from lp.code.interfaces.revision import IRevisionSet
+from lp.code.mail.branch import send_git_repository_modified_notifications
 from lp.code.model.gitref import GitRef
 from lp.code.model.gitsubscription import GitSubscription
 from lp.registry.enums import PersonVisibility
@@ -119,6 +120,7 @@ from lp.services.database.stormexpr import (
     Values,
     )
 from lp.services.features import getFeatureFlag
+from lp.services.mail.notificationrecipientset import NotificationRecipientSet
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp.authorization import available_with_permission
 
@@ -138,6 +140,7 @@ def git_repository_modified(repository, event):
     events on Git repositories.
     """
     repository.date_last_modified = UTC_NOW
+    send_git_repository_modified_notifications(repository, event)
 
 
 class GitRepository(StormBase, GitIdentityMixin):
@@ -710,6 +713,17 @@ class GitRepository(StormBase, GitIdentityMixin):
         getUtility(IAccessArtifactGrantSource).revokeByArtifact(
             artifact, [person])
         store.flush()
+
+    def getNotificationRecipients(self):
+        """See `IGitRepository`."""
+        recipients = NotificationRecipientSet()
+        for subscription in self.subscriptions:
+            if subscription.person.is_team:
+                rationale = 'Subscriber @%s' % subscription.person.name
+            else:
+                rationale = 'Subscriber'
+            recipients.add(subscription.person, subscription, rationale)
+        return recipients
 
     def destroySelf(self):
         raise NotImplementedError
