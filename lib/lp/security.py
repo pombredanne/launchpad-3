@@ -70,7 +70,6 @@ from lp.code.interfaces.branchcollection import (
     IBranchCollection,
     )
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
-from lp.code.interfaces.branchmergequeue import IBranchMergeQueue
 from lp.code.interfaces.codeimport import ICodeImport
 from lp.code.interfaces.codeimportjob import (
     ICodeImportJobSet,
@@ -1520,18 +1519,6 @@ class AdminSourcePackageRecipeBuilds(AuthorizationBase):
 
     def checkAuthenticated(self, user):
         return user.in_buildd_admin
-
-
-class EditBranchMergeQueue(AuthorizationBase):
-    """Control who can edit a BranchMergeQueue.
-
-    Access is granted only to the owner of the queue.
-    """
-    permission = 'launchpad.Edit'
-    usedfor = IBranchMergeQueue
-
-    def checkAuthenticated(self, user):
-        return user.isOwner(self.obj)
 
 
 class AdminDistributionTranslations(AuthorizationBase):

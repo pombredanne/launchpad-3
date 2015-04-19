@@ -1085,22 +1085,9 @@ class TestBranchMergeProposalChangeStatusOptions(TestCaseWithFactory):
             self.proposal.target_branch.owner, 'some-revision')
         self.assertAllStatusesAvailable(
             user=self.proposal.source_branch.owner,
-            except_for=['CODE_APPROVED', 'QUEUED'])
+            except_for=['CODE_APPROVED'])
         self.assertAllStatusesAvailable(user=self.proposal.registrant,
-            except_for=['CODE_APPROVED', 'QUEUED'])
-        self.assertAllStatusesAvailable(
-            user=self.proposal.target_branch.owner)
-
-    def test_createStatusVocabulary_queued(self):
-        # Queued proposals can go to any status, but only reviewers can set
-        # them to REJECTED.
-        self.proposal.enqueue(
-            self.proposal.target_branch.owner, 'some-revision')
-
-        self.assertAllStatusesAvailable(
-            user=self.proposal.source_branch.owner, except_for=['REJECTED'])
-        self.assertAllStatusesAvailable(user=self.proposal.registrant,
-                                        except_for=['REJECTED'])
+            except_for=['CODE_APPROVED'])
         self.assertAllStatusesAvailable(
             user=self.proposal.target_branch.owner)
 

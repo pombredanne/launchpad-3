@@ -63,7 +63,6 @@ from lp.code.interfaces.branch import (
     IBranchSet,
     )
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
-from lp.code.interfaces.branchmergequeue import IBranchMergeQueue
 from lp.code.interfaces.branchsubscription import IBranchSubscription
 from lp.code.interfaces.codeimport import ICodeImport
 from lp.code.interfaces.codereviewcomment import ICodeReviewComment
@@ -791,11 +790,6 @@ patch_entry_explicit_version(IBranchMergeProposal, 'beta')
 patch_operations_explicit_version(
     IBranchMergeProposal, 'beta', "createComment", "getComment",
     "nominateReviewer", "setStatus")
-
-# IBranchMergeQueue
-patch_entry_explicit_version(IBranchMergeQueue, 'beta')
-patch_operations_explicit_version(
-    IBranchMergeQueue, 'beta', "setMergeQueueConfig")
 
 # IBranchSubscription
 patch_entry_explicit_version(IBranchSubscription, 'beta')

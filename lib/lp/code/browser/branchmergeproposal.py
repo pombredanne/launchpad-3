@@ -12,13 +12,9 @@ __all__ = [
     'BranchMergeProposalCommitMessageEditView',
     'BranchMergeProposalContextMenu',
     'BranchMergeProposalDeleteView',
-    'BranchMergeProposalDequeueView',
     'BranchMergeProposalDescriptionEditView',
     'BranchMergeProposalEditMenu',
     'BranchMergeProposalEditView',
-    'BranchMergeProposalEnqueueView',
-    'BranchMergeProposalInlineDequeueView',
-    'BranchMergeProposalJumpQueueView',
     'BranchMergeProposalNavigation',
     'BranchMergeProposalMergedView',
     'BranchMergeProposalRequestReviewView',
@@ -104,10 +100,7 @@ from lp.services.comments.interfaces.conversation import (
     )
 from lp.services.config import config
 from lp.services.features import getFeatureFlag
-from lp.services.fields import (
-    Summary,
-    Whiteboard,
-    )
+from lp.services.fields import Whiteboard
 from lp.services.librarian.interfaces.client import LibrarianServerError
 from lp.services.messages.interfaces.message import IMessageSet
 from lp.services.propertycache import (
@@ -287,20 +280,6 @@ class BranchMergeProposalMenuMixin:
         return Link('+merged', text)
 
     @enabled_with_permission('launchpad.Edit')
-    def enqueue(self):
-        text = 'Queue for merging'
-        enabled = self._enabledForStatus(
-            BranchMergeProposalStatus.QUEUED)
-        return Link('+enqueue', text, enabled=enabled)
-
-    @enabled_with_permission('launchpad.Edit')
-    def dequeue(self):
-        text = 'Remove from queue'
-        enabled = (self.context.queue_status ==
-                   BranchMergeProposalStatus.QUEUED)
-        return Link('+dequeue', text, enabled=enabled)
-
-    @enabled_with_permission('launchpad.Edit')
     def resubmit(self):
         text = 'Resubmit proposal'
         enabled = self._enabledForStatus(
@@ -329,11 +308,9 @@ class BranchMergeProposalContextMenu(ContextMenu,
     usedfor = IBranchMergeProposal
     links = [
         'add_comment',
-        'dequeue',
         'set_commit_message',
         'set_description',
         'edit_status',
-        'enqueue',
         'merge',
         'request_review',
         'resubmit',
@@ -416,12 +393,6 @@ class BranchMergeProposalRevisionIdMixin:
         return self._getRevisionNumberForRevisionId(
             self.context.reviewed_revision_id)
 
-    @cachedproperty
-    def queued_revision_number(self):
-        """Return the number of the queued revision."""
-        return self._getRevisionNumberForRevisionId(
-            self.context.queued_revision_id)
-
 
 class BranchMergeProposalNavigation(Navigation):
     """Navigation from BranchMergeProposal to CodeReviewComment views."""
@@ -501,7 +472,6 @@ class BranchMergeProposalStatusMixin:
             BranchMergeProposalStatus.NEEDS_REVIEW,
             BranchMergeProposalStatus.CODE_APPROVED,
             BranchMergeProposalStatus.REJECTED,
-            # BranchMergeProposalStatus.QUEUED,
             BranchMergeProposalStatus.MERGED,
             )
         terms = []
@@ -1199,160 +1169,6 @@ class BranchMergeProposalMergedView(LaunchpadEditFormView):
                 self.setFieldError(
                     'merged_revno',
                     'Revision numbers must be positive integers.')
-
-
-class EnqueueForm(Interface):
-    """A simple interface to populate the form to enqueue a proposal."""
-
-    revision_number = Int(
-        title=_("Queue Revision"), required=True,
-        description=_("The revision number of the source branch "
-                      "which is to be merged into the target branch."))
-
-    commit_message = Summary(
-        title=_("Commit Message"), required=True,
-        description=_("The commit message to be used when merging "
-                      "the source branch."))
-
-    whiteboard = Whiteboard(
-        title=_('Whiteboard'), required=False,
-        description=_('Notes about the merge.'))
-
-
-class BranchMergeProposalEnqueueView(MergeProposalEditView,
-                                     UnmergedRevisionsMixin):
-    """The view to submit a merge proposal for merging."""
-
-    schema = EnqueueForm
-    page_title = label = "Queue branch for merging"
-
-    @property
-    def initial_values(self):
-        # If the user is a valid reviewer, then default the revision
-        # number to be the tip.
-        if self.context.target_branch.isPersonTrustedReviewer(self.user):
-            revision_number = self.context.source_branch.revision_count
-        else:
-            revision_number = self._getRevisionNumberForRevisionId(
-                self.context.reviewed_revision_id)
-
-        return {'revision_number': revision_number}
-
-    @property
-    def adapters(self):
-        """See `LaunchpadFormView`"""
-        return {EnqueueForm: self.context}
-
-    def setUpFields(self):
-        super(BranchMergeProposalEnqueueView, self).setUpFields()
-        # If the user is not a valid reviewer for the target branch,
-        # then the revision number should be read only, so an
-        # untrusted user cannot land changes that have not bee reviewed.
-        if not self.context.target_branch.isPersonTrustedReviewer(self.user):
-            self.form_fields['revision_number'].for_display = True
-
-    @action('Enqueue', name='enqueue')
-    @update_and_notify
-    def enqueue_action(self, action, data):
-        """Update the whiteboard and enqueue the merge proposal."""
-        if self.context.target_branch.isPersonTrustedReviewer(self.user):
-            revision_id = self._getRevisionId(data)
-        else:
-            revision_id = self.context.reviewed_revision_id
-        self.context.enqueue(self.user, revision_id)
-
-    def validate(self, data):
-        """Make sure that the proposal has been reviewed.
-
-        Or that the logged in user is able to review the branch as well.
-        """
-        if not self.context.isValidTransition(
-            BranchMergeProposalStatus.QUEUED, self.user):
-            self.addError(
-                "The merge proposal is cannot be queued as it has not "
-                "been reviewed.")
-
-        self._validateRevisionNumber(data, 'enqueued')
-
-
-class BranchMergeProposalDequeueView(LaunchpadEditFormView):
-    """The view to remove a merge proposal from the merge queue."""
-
-    schema = IBranchMergeProposal
-    field_names = ["whiteboard"]
-    page_title = label = "Dequeue branch"
-
-    @property
-    def next_url(self):
-        return canonical_url(self.context)
-
-    cancel_url = next_url
-
-    @action('Dequeue', name='dequeue')
-    @update_and_notify
-    def dequeue_action(self, action, data):
-        """Update the whiteboard and remove the proposal from the queue."""
-        self.context.dequeue()
-
-    def validate(self, data):
-        """Make sure the proposal is queued before removing."""
-        if self.context.queue_status != BranchMergeProposalStatus.QUEUED:
-            self.addError("The merge proposal is not queued.")
-
-
-class BranchMergeProposalInlineDequeueView(LaunchpadEditFormView):
-    """The view to provide a 'dequeue' button to the queue view."""
-
-    schema = IBranchMergeProposal
-    field_names = []
-
-    @property
-    def next_url(self):
-        return canonical_url(self.context.target_branch) + '/+merge-queue'
-
-    cancel_url = next_url
-
-    @action('Dequeue', name='dequeue')
-    @notify
-    def dequeue_action(self, action, data):
-        """Remove the proposal from the queue if queued."""
-        if self.context.queue_status == BranchMergeProposalStatus.QUEUED:
-            self.context.dequeue()
-
-    @property
-    def prefix(self):
-        return "field%s" % self.context.id
-
-    @property
-    def action_url(self):
-        return "%s/+dequeue-inline" % canonical_url(self.context)
-
-
-class BranchMergeProposalJumpQueueView(LaunchpadEditFormView):
-    """The view to provide a move the proposal to the front of the queue."""
-
-    schema = IBranchMergeProposal
-    field_names = []
-
-    @property
-    def next_url(self):
-        return canonical_url(self.context.target_branch) + '/+merge-queue'
-
-    @action('Move to front', name='move')
-    @notify
-    def move_action(self, action, data):
-        """Move the proposal to the front of the queue (if queued)."""
-        if (self.context.queue_status == BranchMergeProposalStatus.QUEUED and
-            check_permission('launchpad.Edit', self.context.target_branch)):
-            self.context.moveToFrontOfQueue()
-
-    @property
-    def prefix(self):
-        return "field%s" % self.context.id
-
-    @property
-    def action_url(self):
-        return "%s/+jump-queue" % canonical_url(self.context)
 
 
 class BranchMergeProposalSubscribersView(LaunchpadView):

@@ -6,6 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'BRANCH_MERGE_PROPOSAL_FINAL_STATES',
+    'BRANCH_MERGE_PROPOSAL_OBSOLETE_STATES',
     'IBranchMergeProposal',
     'IBranchMergeProposalGetter',
     'IBranchMergeProposalJob',
@@ -92,6 +93,12 @@ BRANCH_MERGE_PROPOSAL_FINAL_STATES = (
     BranchMergeProposalStatus.REJECTED,
     BranchMergeProposalStatus.MERGED,
     BranchMergeProposalStatus.SUPERSEDED,
+    )
+
+
+BRANCH_MERGE_PROPOSAL_OBSOLETE_STATES = (
+    BranchMergeProposalStatus.MERGE_FAILED,
+    BranchMergeProposalStatus.QUEUED,
     )
 
 
@@ -210,25 +217,6 @@ class IBranchMergeProposalView(Interface):
                           "merging the source branch."),
             strip_text=True))
 
-    queue_position = exported(
-        Int(
-            title=_("Queue Position"), required=False, readonly=True,
-            description=_("The position in the queue.")))
-
-    queuer = exported(
-        PublicPersonChoice(
-            title=_('Queuer'), vocabulary='ValidPerson',
-            required=False, readonly=True,
-            description=_("The person that queued up the branch.")))
-
-    queued_revision_id = exported(
-        Text(
-            title=_("Queued Revision ID"), readonly=True,
-            required=False,
-            description=_("The revision id that has been queued for "
-                          "landing.")),
-        exported_as='queued_revid')
-
     merged_revno = exported(
         Int(
             title=_("Merged Revision Number"), required=False,
@@ -276,9 +264,6 @@ class IBranchMergeProposalView(Interface):
     date_reviewed = exported(
         Datetime(
             title=_('Date Reviewed'), required=False, readonly=True))
-    date_queued = exported(
-        Datetime(
-            title=_('Date Queued'), required=False, readonly=True))
     root_message_id = Text(
         title=_('The email message id from the first message'),
         required=False)
@@ -536,27 +521,6 @@ class IBranchMergeProposalEdit(Interface):
         :param description: The description for the new proposal (defaults to
             the current description).
         """
-
-    def enqueue(queuer, revision_id):
-        """Put the proposal into the merge queue for the target branch.
-
-        If the proposal is not in the Approved state before this method
-        is called, approveBranch is called with the reviewer and revision_id
-        specified.
-
-        If None is supplied as the revision_id, the proposals
-        reviewed_revision_id is used.
-        """
-
-    def dequeue():
-        """Take the proposal out of the merge queue of the target branch.
-
-        :raises: BadStateTransition if the proposal is not in the queued
-                 state.
-        """
-
-    def moveToFrontOfQueue():
-        """Move the queue proposal to the front of the queue."""
 
     @operation_parameters(
         reviewer=Reference(

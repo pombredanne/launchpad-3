@@ -2964,13 +2964,6 @@ class Person(
             SourcePackageRecipe, SourcePackageRecipe.owner == self,
             SourcePackageRecipe.name == name).one()
 
-    def getMergeQueue(self, name):
-        from lp.code.model.branchmergequeue import BranchMergeQueue
-        return Store.of(self).find(
-            BranchMergeQueue,
-            BranchMergeQueue.owner == self,
-            BranchMergeQueue.name == unicode(name)).one()
-
     @cachedproperty
     def is_ubuntu_coc_signer(self):
         """See `IPerson`."""
