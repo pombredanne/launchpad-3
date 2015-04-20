@@ -36,8 +36,6 @@ __all__ = [
     'IPackageUpload',
     'IPackageset',
     'IPackagesetSet',
-    'IProcessor',
-    'IProcessorSet',
     'ISourcePackagePublishingHistory',
     'IncompatibleArguments',
     'InsufficientUploadRights',
@@ -56,10 +54,6 @@ __all__ = [
 # XXX: JonathanLange 2010-11-09 bug=673083: Legacy work-around for circular
 # import bugs.  Break this up into a per-package thing.
 from lp import _schema_circular_imports
-from lp.buildmaster.interfaces.processor import (
-    IProcessor,
-    IProcessorSet,
-    )
 from lp.soyuz.interfaces.archive import (
     AlreadySubscribed,
     ArchiveDisabled,

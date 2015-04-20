@@ -14,7 +14,6 @@
         package=".browser"/>
     <include
         file="vocabularies.zcml"/>
-    <authorizations module=".security" />
 
     <lp:help-folder folder="help" name="+help-soyuz" />
 
@@ -353,20 +352,6 @@
         <allow
             interface="lp.soyuz.interfaces.distroarchseriesbinarypackagerelease.IDistroArchSeriesBinaryPackageRelease"/>
     </class>
-    <class
-        class="lp.buildmaster.model.processor.Processor">
-        <allow
-            interface="lp.buildmaster.interfaces.processor.IProcessor"/>
-        <require
-            permission="zope.Public"
-            set_schema="lp.buildmaster.interfaces.processor.IProcessor"/>
-    </class>
-    <securedutility
-        class="lp.buildmaster.model.processor.ProcessorSet"
-        provides="lp.buildmaster.interfaces.processor.IProcessorSet">
-        <allow
-            interface="lp.buildmaster.interfaces.processor.IProcessorSet"/>
-    </securedutility>
     <adapter
         for="lp.soyuz.interfaces.distroarchseriesbinarypackagerelease.IDistroArchSeriesBinaryPackageRelease"
         provides="lp.services.webapp.interfaces.IBreadcrumb"
