@@ -28,6 +28,7 @@ from storm.store import EmptyResultSet
 from zope.component import getUtility
 from zope.interface import implements
 
+from lp.buildmaster.model.processor import Processor
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.database.constants import DEFAULT
@@ -58,7 +59,6 @@ from lp.soyuz.interfaces.distroarchseries import (
 from lp.soyuz.interfaces.publishing import active_publishing_status
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
-from lp.soyuz.model.processor import Processor
 
 
 class DistroArchSeries(SQLBase):

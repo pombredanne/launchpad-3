@@ -11,6 +11,7 @@ from testtools.matchers import (
 from zope.component import getUtility
 
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
+from lp.buildmaster.interfaces.processor import IProcessorSet
 from lp.registry.browser.distribution import DistributionPublisherConfigView
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.distributionmirror import (
@@ -19,7 +20,6 @@ from lp.registry.interfaces.distributionmirror import (
     )
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.services.worlddata.interfaces.country import ICountrySet
-from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.testing import (
     login,
     login_celebrity,

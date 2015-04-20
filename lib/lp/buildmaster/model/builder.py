@@ -54,6 +54,7 @@ from lp.buildmaster.model.buildqueue import (
     BuildQueue,
     specific_build_farm_job_sources,
     )
+from lp.buildmaster.model.processor import Processor
 from lp.registry.interfaces.person import validate_public_person
 from lp.services.database.bulk import (
     load,
@@ -84,7 +85,6 @@ from lp.soyuz.interfaces.buildrecords import (
     IHasBuildRecords,
     IncompatibleArguments,
     )
-from lp.soyuz.model.processor import Processor
 
 
 class Builder(SQLBase):

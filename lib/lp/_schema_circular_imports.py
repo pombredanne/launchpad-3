@@ -58,6 +58,7 @@ from lp.buildmaster.interfaces.builder import (
     )
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
+from lp.buildmaster.interfaces.processor import IProcessor
 from lp.code.interfaces.branch import (
     IBranch,
     IBranchSet,
@@ -207,7 +208,6 @@ from lp.soyuz.interfaces.packageset import (
     IPackageset,
     IPackagesetSet,
     )
-from lp.soyuz.interfaces.processor import IProcessor
 from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory,
     IBinaryPackagePublishingHistoryEdit,

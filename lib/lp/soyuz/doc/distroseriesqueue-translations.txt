@@ -6,7 +6,7 @@ uploaded into the system.
 
     >>> from lp.registry.model.gpgkey import GPGKey
     >>> from lp.soyuz.model.component import Component
-    >>> from lp.soyuz.interfaces.processor import IProcessorSet
+    >>> from lp.buildmaster.interfaces.processor import IProcessorSet
     >>> from lp.soyuz.model.section import Section
     >>> from lp.soyuz.model.publishing import (
     ...     SourcePackagePublishingHistory)

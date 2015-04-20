@@ -77,6 +77,7 @@ from lp.bugs.browser.structuralsubscription import (
     StructuralSubscriptionMenuMixin,
     StructuralSubscriptionTargetTraversalMixin,
     )
+from lp.buildmaster.interfaces.processor import IProcessorSet
 from lp.registry.browser import (
     add_subscribe_link,
     RegistryEditFormView,
@@ -132,7 +133,6 @@ from lp.soyuz.browser.archive import EnableRestrictedProcessorsMixin
 from lp.soyuz.browser.packagesearch import PackageSearchViewBase
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.archive import IArchiveSet
-from lp.soyuz.interfaces.processor import IProcessorSet
 
 
 class DistributionNavigation(

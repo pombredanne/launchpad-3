@@ -28,7 +28,7 @@ Get the current counts of stuff in the database:
 Create a distribution series and an arch series for dapper:
 
     >>> from lp.soyuz.model.distroarchseries import DistroArchSeries
-    >>> from lp.soyuz.interfaces.processor import IProcessorSet
+    >>> from lp.buildmaster.interfaces.processor import IProcessorSet
     >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> celebs = getUtility(ILaunchpadCelebrities)
     >>> ubuntu = celebs.ubuntu

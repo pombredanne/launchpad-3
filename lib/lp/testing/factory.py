@@ -96,10 +96,11 @@ from lp.bugs.interfaces.cve import (
     )
 from lp.bugs.model.bug import FileBugData
 from lp.buildmaster.enums import (
-    BuildStatus,
     BuilderResetProtocol,
+    BuildStatus,
     )
 from lp.buildmaster.interfaces.builder import IBuilderSet
+from lp.buildmaster.interfaces.processor import IProcessorSet
 from lp.code.enums import (
     BranchMergeProposalStatus,
     BranchSubscriptionNotificationLevel,
@@ -291,7 +292,6 @@ from lp.soyuz.interfaces.livefs import ILiveFSSet
 from lp.soyuz.interfaces.livefsbuild import ILiveFSBuildSet
 from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
 from lp.soyuz.interfaces.packageset import IPackagesetSet
-from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.soyuz.interfaces.publishing import IPublishingSet
 from lp.soyuz.interfaces.queue import IPackageUploadSet
 from lp.soyuz.interfaces.section import ISectionSet

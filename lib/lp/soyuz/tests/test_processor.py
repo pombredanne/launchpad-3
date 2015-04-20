@@ -5,13 +5,13 @@
 
 from zope.component import getUtility
 
-from lp.services.database.interfaces import IStore
-from lp.soyuz.interfaces.processor import (
+from lp.buildmaster.interfaces.processor import (
     IProcessor,
     IProcessorSet,
     ProcessorNotFound,
     )
-from lp.soyuz.model.processor import Processor
+from lp.buildmaster.model.processor import Processor
+from lp.services.database.interfaces import IStore
 from lp.testing import (
     ExpectedException,
     logout,

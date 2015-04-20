@@ -18,12 +18,12 @@ from storm.locals import (
     )
 from zope.interface import implements
 
+from lp.buildmaster.model.processor import Processor
 from lp.services.database.interfaces import IStore
 from lp.soyuz.interfaces.archivearch import (
     IArchiveArch,
     IArchiveArchSet,
     )
-from lp.soyuz.model.processor import Processor
 
 
 class ArchiveArch(Storm):
