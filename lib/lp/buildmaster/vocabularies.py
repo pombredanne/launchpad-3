@@ -9,6 +9,7 @@ __all__ = [
     'ProcessorVocabulary',
     ]
 
+from lp.buildmaster.model.processor import Processor
 from lp.services.webapp.vocabulary import NamedSQLObjectVocabulary
 
 

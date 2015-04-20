@@ -6,13 +6,13 @@
 
   <securedutility
     name="Processor"
-    component="lp.soyuz.vocabularies.ProcessorVocabulary"
+    component="lp.buildmaster.vocabularies.ProcessorVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
     >
     <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
   </securedutility>
 
-  <class class="lp.soyuz.vocabularies.ProcessorVocabulary">
+  <class class="lp.buildmaster.vocabularies.ProcessorVocabulary">
     <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
