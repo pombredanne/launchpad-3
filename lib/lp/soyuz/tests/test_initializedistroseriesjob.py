@@ -232,7 +232,7 @@ class InitializeDistroSeriesJobTests(TestCaseWithFactory):
 
 
 def create_child(factory):
-    processor = factory.makeProcessor()
+    processor = factory.makeProcessor(supports_virtualized=True)
     parent = factory.makeDistroSeries()
     parent_das = factory.makeDistroArchSeries(
         distroseries=parent, processor=processor)
@@ -241,7 +241,6 @@ def create_child(factory):
     transaction.commit()
     parent_das.addOrUpdateChroot(lf)
     with celebrity_logged_in('admin'):
-        parent_das.supports_virtualized = True
         parent.nominatedarchindep = parent_das
         publisher = SoyuzTestPublisher()
         publisher.prepareBreezyAutotest()
@@ -279,12 +278,12 @@ class InitializeDistroSeriesJobTestsWithPackages(TestCaseWithFactory):
             processor = getUtility(IProcessorSet).getByName(processor_name)
         except ProcessorNotFound:
             processor = self.factory.makeProcessor(name=processor_name)
+        processor.supports_virtualized = True
         parent_das = self.factory.makeDistroArchSeries(
             distroseries=parent, processor=processor, architecturetag=arch_tag)
         lf = self.factory.makeLibraryFileAlias()
         transaction.commit()
         parent_das.addOrUpdateChroot(lf)
-        parent_das.supports_virtualized = True
         return parent_das
 
     def test_job(self):

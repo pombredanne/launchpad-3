@@ -2678,8 +2678,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeDistroArchSeries(self, distroseries=None,
                              architecturetag=None, processor=None,
-                             official=True, owner=None,
-                             supports_virtualized=False, enabled=True):
+                             official=True, owner=None, enabled=True):
         """Create a new distroarchseries"""
 
         if distroseries is None:
@@ -2694,8 +2693,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if architecturetag is None:
             architecturetag = self.getUniqueString('arch')
         return distroseries.newArch(
-            architecturetag, processor, official, owner,
-            supports_virtualized, enabled)
+            architecturetag, processor, official, owner, enabled)
 
     def makeComponent(self, name=None):
         """Make a new `IComponent`."""

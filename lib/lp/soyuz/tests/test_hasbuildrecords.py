@@ -79,16 +79,16 @@ class TestDistributionHasBuildRecords(TestCaseWithFactory):
         self.admin = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)
         # Create the machinery we need to create builds, such as
         # DistroArchSeries and builders.
-        self.processor_one = self.factory.makeProcessor()
-        self.processor_two = self.factory.makeProcessor()
+        self.processor_one = self.factory.makeProcessor(
+            supports_virtualized=True)
+        self.processor_two = self.factory.makeProcessor(
+            supports_virtualized=True)
         self.distroseries = self.factory.makeDistroSeries()
         self.distribution = self.distroseries.distribution
         self.das_one = self.factory.makeDistroArchSeries(
-            distroseries=self.distroseries, processor=self.processor_one,
-            supports_virtualized=True)
+            distroseries=self.distroseries, processor=self.processor_one)
         self.das_two = self.factory.makeDistroArchSeries(
-            distroseries=self.distroseries, processor=self.processor_two,
-            supports_virtualized=True)
+            distroseries=self.distroseries, processor=self.processor_two)
         self.archive = self.factory.makeArchive(
             distribution=self.distroseries.distribution,
             purpose=ArchivePurpose.PRIMARY)

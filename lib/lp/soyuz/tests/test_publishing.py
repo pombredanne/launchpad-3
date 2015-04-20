@@ -120,7 +120,7 @@ class SoyuzTestPublisher:
         except NotFoundError:
             self.breezy_autotest_i386 = self.breezy_autotest.newArch(
                 'i386', getUtility(IProcessorSet).getByName('386'), False,
-                self.person, supports_virtualized=True)
+                self.person)
         try:
             self.breezy_autotest_hppa = self.breezy_autotest['hppa']
         except NotFoundError:
