@@ -28,6 +28,9 @@ class Processor(SQLBase):
     title = StringCol(dbName='title', notNull=True)
     description = StringCol(dbName='description', notNull=True)
     restricted = Bool(allow_none=False, default=False)
+    build_by_default = Bool(allow_none=False, default=False)
+    supports_virtualized = Bool(allow_none=False, default=False)
+    supports_nonvirtualized = Bool(allow_none=False, default=True)
 
     def __repr__(self):
         return "<Processor %r>" % self.title
