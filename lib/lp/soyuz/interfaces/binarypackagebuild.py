@@ -46,7 +46,7 @@ from lp import _
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import ISpecificBuildFarmJobSource
 from lp.buildmaster.interfaces.packagebuild import IPackageBuild
-from lp.soyuz.interfaces.processor import IProcessor
+from lp.buildmaster.interfaces.processor import IProcessor
 from lp.soyuz.interfaces.publishing import ISourcePackagePublishingHistory
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 

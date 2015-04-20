@@ -14,6 +14,10 @@ from zope.component import getUtility
 
 from lp.app.errors import NotFoundError
 from lp.app.validators.name import valid_name
+from lp.buildmaster.interfaces.processor import (
+    IProcessorSet,
+    ProcessorNotFound,
+    )
 from lp.registry.interfaces.person import IPersonSet
 from lp.soyuz.adapters.packagelocation import build_package_location
 from lp.soyuz.enums import ArchivePurpose
@@ -22,10 +26,6 @@ from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packagecloner import IPackageCloner
 from lp.soyuz.interfaces.packagecopyrequest import IPackageCopyRequestSet
-from lp.soyuz.interfaces.processor import (
-    IProcessorSet,
-    ProcessorNotFound,
-    )
 from lp.soyuz.scripts.ftpmasterbase import (
     SoyuzScript,
     SoyuzScriptError,

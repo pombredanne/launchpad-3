@@ -29,6 +29,7 @@ from lp.buildmaster.enums import (
     BuildQueueStatus,
     BuildStatus,
     )
+from lp.buildmaster.interfaces.processor import IProcessorSet
 from lp.registry.enums import (
     PersonVisibility,
     TeamMembershipPolicy,
@@ -81,7 +82,6 @@ from lp.soyuz.interfaces.binarypackagebuild import BuildSetStatus
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
-from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.soyuz.model.archive import (
     Archive,
     validate_ppa,

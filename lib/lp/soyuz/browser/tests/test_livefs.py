@@ -19,6 +19,7 @@ from zope.security.interfaces import Unauthorized
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.interfaces.processor import IProcessorSet
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.database.constants import UTC_NOW
 from lp.services.features.testing import FeatureFixture
@@ -33,7 +34,6 @@ from lp.soyuz.interfaces.livefs import (
     LIVEFS_FEATURE_FLAG,
     LiveFSFeatureDisabled,
     )
-from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.testing import (
     BrowserTestCase,
     login,

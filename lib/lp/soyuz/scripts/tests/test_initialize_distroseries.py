@@ -10,6 +10,10 @@ from zope.component import getUtility
 
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.interfaces.processor import (
+    IProcessorSet,
+    ProcessorNotFound,
+    )
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifferenceSource,
     )
@@ -27,10 +31,6 @@ from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packageset import (
     IPackagesetSet,
     NoSuchPackageSet,
-    )
-from lp.soyuz.interfaces.processor import (
-    IProcessorSet,
-    ProcessorNotFound,
     )
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.interfaces.sourcepackageformat import (

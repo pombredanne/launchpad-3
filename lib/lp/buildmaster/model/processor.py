@@ -11,13 +11,13 @@ from sqlobject import StringCol
 from storm.locals import Bool
 from zope.interface import implements
 
-from lp.services.database.interfaces import IStore
-from lp.services.database.sqlbase import SQLBase
-from lp.soyuz.interfaces.processor import (
+from lp.buildmaster.interfaces.processor import (
     IProcessor,
     IProcessorSet,
     ProcessorNotFound,
     )
+from lp.services.database.interfaces import IStore
+from lp.services.database.sqlbase import SQLBase
 
 
 class Processor(SQLBase):
