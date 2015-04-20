@@ -1393,7 +1393,7 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
                     not das.processor.restricted
                     or das.processor in archive.enabled_restricted_processors)
                 and (
-                    das.supports_virtualized
+                    das.processor.supports_virtualized
                     or not archive.require_virtualized))]
 
     def createForSource(self, sourcepackagerelease, archive, distroseries,

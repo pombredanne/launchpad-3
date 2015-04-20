@@ -103,7 +103,9 @@ class IProcessorSet(Interface):
     def getRestricted():
         """Return all restricted `IProcessor`s."""
 
-    def new(name, title, description, restricted):
+    def new(name, title, description, restricted=False,
+            build_by_default=False, supports_virtualized=False,
+            supports_nonvirtualized=True):
         """Create a new processor.
 
         :param name: Name of the processor.

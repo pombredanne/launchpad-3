@@ -45,16 +45,16 @@ class TestBuildSet(TestCaseWithFactory):
     def setUp(self):
         super(TestBuildSet, self).setUp()
         self.admin = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)
-        self.processor_one = self.factory.makeProcessor()
-        self.processor_two = self.factory.makeProcessor()
+        self.processor_one = self.factory.makeProcessor(
+            supports_virtualized=True)
+        self.processor_two = self.factory.makeProcessor(
+            supports_virtualized=True)
         self.distroseries = self.factory.makeDistroSeries()
         self.distribution = self.distroseries.distribution
         self.das_one = self.factory.makeDistroArchSeries(
-            distroseries=self.distroseries, processor=self.processor_one,
-            supports_virtualized=True)
+            distroseries=self.distroseries, processor=self.processor_one)
         self.das_two = self.factory.makeDistroArchSeries(
-            distroseries=self.distroseries, processor=self.processor_two,
-            supports_virtualized=True)
+            distroseries=self.distroseries, processor=self.processor_two)
         self.archive = self.factory.makeArchive(
             distribution=self.distroseries.distribution,
             purpose=ArchivePurpose.PRIMARY)
@@ -243,13 +243,15 @@ class TestGetAllowedArchitectures(TestCaseWithFactory):
 
     def setUp(self):
         super(TestGetAllowedArchitectures, self).setUp()
-        self.avr = self.factory.makeProcessor(name="avr2001")
-        self.sparc = self.factory.makeProcessor(name="sparc64")
+        self.avr = self.factory.makeProcessor(
+            name="avr2001", supports_virtualized=True)
+        self.sparc = self.factory.makeProcessor(
+            name="sparc64", supports_virtualized=True)
         self.distroseries = self.factory.makeDistroSeries()
         for name, arch in (('avr', self.avr), ('sparc', self.sparc)):
             self.factory.makeDistroArchSeries(
                 architecturetag=name, processor=arch,
-                distroseries=self.distroseries, supports_virtualized=True)
+                distroseries=self.distroseries)
         self.archive = self.factory.makeArchive(
             distribution=self.distroseries.distribution)
 
@@ -287,7 +289,7 @@ class TestGetAllowedArchitectures(TestCaseWithFactory):
     def test_virt_archives_have_only_virt_archs(self):
         # For archives which must build on virtual builders, only
         # virtual archs are returned.
-        self.distroseries['sparc'].supports_virtualized = False
+        self.sparc.supports_virtualized = False
         self.assertContentEqual(
             [self.distroseries['avr']],
             BinaryPackageBuildSet()._getAllowedArchitectures(
@@ -295,7 +297,7 @@ class TestGetAllowedArchitectures(TestCaseWithFactory):
 
     def test_nonvirt_archives_have_only_all_archs(self):
         # Non-virtual archives can build on all unrestricted architectures.
-        self.distroseries['sparc'].supports_virtualized = False
+        self.sparc.supports_virtualized = False
         self.archive.require_virtualized = False
         self.assertContentEqual(
             [self.distroseries['sparc'], self.distroseries['avr']],
@@ -310,16 +312,19 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         super(BuildRecordCreationTests, self).setUp()
         self.distro = self.factory.makeDistribution()
         self.archive = self.factory.makeArchive(distribution=self.distro)
-        self.avr = self.factory.makeProcessor(name="avr2001")
-        self.sparc = self.factory.makeProcessor(name="sparc64")
-        self.x32 = self.factory.makeProcessor(name="x32")
+        self.avr = self.factory.makeProcessor(
+            name="avr2001", supports_virtualized=True)
+        self.sparc = self.factory.makeProcessor(
+            name="sparc64", supports_virtualized=True)
+        self.x32 = self.factory.makeProcessor(
+            name="x32", supports_virtualized=True)
 
         self.distroseries = self.factory.makeDistroSeries(
             distribution=self.distro, name="crazy")
         for name, arch in (('avr', self.avr), ('sparc', self.sparc)):
             self.factory.makeDistroArchSeries(
                 architecturetag=name, processor=arch,
-                distroseries=self.distroseries, supports_virtualized=True)
+                distroseries=self.distroseries)
         self.distroseries.nominatedarchindep = self.distroseries['sparc']
         self.addFakeChroots(self.distroseries)
 
@@ -329,7 +334,7 @@ class BuildRecordCreationTests(TestNativePublishingBase):
                            ('x32', self.x32)):
             self.factory.makeDistroArchSeries(
                 architecturetag=name, processor=arch,
-                distroseries=self.distroseries2, supports_virtualized=True)
+                distroseries=self.distroseries2)
         self.distroseries2.nominatedarchindep = self.distroseries2['x32']
         self.addFakeChroots(self.distroseries2)
 
@@ -607,7 +612,8 @@ class TestFindBuiltOrPublishedBySourceAndArchive(TestCaseWithFactory):
             sourcepackagerelease=spr, archive=parent_archive,
             distroseries=dsp.parent_series)
         das = self.factory.makeDistroArchSeries(
-            distroseries=dsp.parent_series, supports_virtualized=True)
+            distroseries=dsp.parent_series,
+            processor=self.factory.makeProcessor(supports_virtualized=True))
         orig_build = getUtility(IBinaryPackageBuildSet).new(
             spr, parent_archive, das, PackagePublishingPocket.RELEASE,
             status=BuildStatus.FULLYBUILT)
@@ -620,7 +626,7 @@ class TestFindBuiltOrPublishedBySourceAndArchive(TestCaseWithFactory):
         # archtag as the parent.
         das_derived = self.factory.makeDistroArchSeries(
             dsp.derived_series, architecturetag=das.architecturetag,
-            processor=das.processor, supports_virtualized=True)
+            processor=das.processor)
         # Now copy the package to the derived series, with binary.
         derived_archive = dsp.derived_series.main_archive
         getUtility(ISourcePackageFormatSelectionSet).add(

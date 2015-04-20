@@ -871,7 +871,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                       name=name, active=active, dateexpected=dateexpected))
 
     def makeProcessor(self, name=None, title=None, description=None,
-                      restricted=False):
+                      restricted=False, build_by_default=False,
+                      supports_virtualized=False,
+                      supports_nonvirtualized=True):
         """Create a new processor.
 
         :param name: Name of the processor
@@ -887,7 +889,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if description is None:
             description = "The %s processor and compatible processors" % name
         return getUtility(IProcessorSet).new(
-            name, title, description, restricted)
+            name, title, description, restricted=restricted,
+            build_by_default=build_by_default,
+            supports_virtualized=supports_virtualized,
+            supports_nonvirtualized=supports_nonvirtualized)
 
     def makeProductRelease(self, milestone=None, product=None,
                            productseries=None):

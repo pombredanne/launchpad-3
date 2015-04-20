@@ -76,7 +76,6 @@ class DistroArchSeries(SQLBase):
         dbName='owner', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
     package_count = IntCol(notNull=True, default=DEFAULT)
-    supports_virtualized = BoolCol(notNull=False, default=False)
     enabled = BoolCol(notNull=False, default=True)
 
     packages = SQLRelatedJoin('BinaryPackageRelease',
@@ -99,6 +98,10 @@ class DistroArchSeries(SQLBase):
         return '%s %s %s' % (
             self.distroseries.distribution.displayname,
             self.distroseries.displayname, self.architecturetag)
+
+    @property
+    def supports_virtualized(self):
+        return self.processor.supports_virtualized
 
     def updatePackageCount(self):
         """See `IDistroArchSeries`."""
