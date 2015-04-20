@@ -18,6 +18,7 @@ from lp.buildmaster.interactor import BuilderInteractor
 from lp.buildmaster.interfaces.buildfarmjobbehaviour import (
     IBuildFarmJobBehaviour,
     )
+from lp.buildmaster.interfaces.processor import IProcessorSet
 from lp.buildmaster.tests.mock_slaves import (
     MockBuilder,
     OkSlave,
@@ -38,7 +39,6 @@ from lp.soyuz.adapters.archivedependencies import (
     get_sources_list_for_building,
     )
 from lp.soyuz.enums import ArchivePurpose
-from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
     person_logged_in,

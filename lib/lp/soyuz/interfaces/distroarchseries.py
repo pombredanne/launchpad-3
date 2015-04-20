@@ -39,11 +39,11 @@ from zope.schema import (
 
 from lp import _
 from lp.app.validators.name import name_validator
+from lp.buildmaster.interfaces.processor import IProcessor
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.role import IHasOwner
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
-from lp.soyuz.interfaces.processor import IProcessor
 
 
 @error_status(httplib.BAD_REQUEST)

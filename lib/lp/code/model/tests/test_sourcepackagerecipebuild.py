@@ -21,6 +21,7 @@ from lp.app.enums import InformationType
 from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
+from lp.buildmaster.interfaces.processor import IProcessorSet
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild,
@@ -36,7 +37,6 @@ from lp.services.database.interfaces import IStore
 from lp.services.log.logger import BufferLogger
 from lp.services.mail.sendmail import format_address
 from lp.services.webapp.authorization import check_permission
-from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.testing import (
     ANONYMOUS,
     login,

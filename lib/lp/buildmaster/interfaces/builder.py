@@ -59,13 +59,13 @@ from lp.buildmaster.enums import (
     BuilderCleanStatus,
     BuilderResetProtocol,
     )
+from lp.buildmaster.interfaces.processor import IProcessor
 from lp.registry.interfaces.role import IHasOwner
 from lp.services.fields import (
     PersonChoice,
     Title,
     )
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
-from lp.soyuz.interfaces.processor import IProcessor
 
 
 class BuildDaemonError(Exception):

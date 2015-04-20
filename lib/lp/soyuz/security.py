@@ -9,7 +9,7 @@ __all__ = [
     ]
 
 from lp.app.security import AnonymousAuthorization
-from lp.soyuz.interfaces.processor import IProcessor
+from lp.buildmaster.interfaces.processor import IProcessor
 
 
 class ViewProcessor(AnonymousAuthorization):

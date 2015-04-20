@@ -22,6 +22,7 @@ from zope.interface import implements
 from zope.schema.vocabulary import SimpleTerm
 from zope.security.interfaces import Unauthorized
 
+from lp.buildmaster.model.processor import Processor
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.person import Person
 from lp.services.database.interfaces import IStore
@@ -40,7 +41,6 @@ from lp.soyuz.model.archive import (
     )
 from lp.soyuz.model.component import Component
 from lp.soyuz.model.distroarchseries import DistroArchSeries
-from lp.soyuz.model.processor import Processor
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 

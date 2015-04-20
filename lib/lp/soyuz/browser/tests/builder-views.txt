@@ -254,7 +254,7 @@ architectures.
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
 
-    >>> from lp.soyuz.model.processor import Processor
+    >>> from lp.buildmaster.model.processor import Processor
     >>> i386 = Processor.selectOneBy(name='386')
     >>> amd64 = Processor.selectOneBy(name='amd64')
     >>> hppa = Processor.selectOneBy(name='hppa')

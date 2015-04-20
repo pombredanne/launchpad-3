@@ -10,8 +10,8 @@ __all__ = [
     ]
 
 
+from lp.buildmaster.interfaces.processor import IProcessorSet
 from lp.services.webapp import Navigation
-from lp.soyuz.interfaces.processor import IProcessorSet
 
 
 class ProcessorSetNavigation(Navigation):

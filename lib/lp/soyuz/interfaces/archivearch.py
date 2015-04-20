@@ -15,8 +15,8 @@ from zope.interface import Interface
 from zope.schema import Int
 
 from lp import _
+from lp.buildmaster.interfaces.processor import IProcessor
 from lp.soyuz.interfaces.archive import IArchive
-from lp.soyuz.interfaces.processor import IProcessor
 
 
 class IArchiveArch(Interface):

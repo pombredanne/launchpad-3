@@ -13,6 +13,7 @@ from lp.archiveuploader.tests.test_uploadprocessor import (
     TestUploadProcessorBase,
     )
 from lp.archiveuploader.uploadprocessor import UploadHandler
+from lp.buildmaster.interfaces.processor import IProcessorSet
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.database.constants import UTC_NOW
@@ -21,7 +22,6 @@ from lp.soyuz.enums import (
     PackageUploadStatus,
     )
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
-from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.soyuz.interfaces.publishing import IPublishingSet
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.testing.gpgkeys import import_public_test_keys

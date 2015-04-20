@@ -354,18 +354,18 @@
             interface="lp.soyuz.interfaces.distroarchseriesbinarypackagerelease.IDistroArchSeriesBinaryPackageRelease"/>
     </class>
     <class
-        class="lp.soyuz.model.processor.Processor">
+        class="lp.buildmaster.model.processor.Processor">
         <allow
-            interface="lp.soyuz.interfaces.processor.IProcessor"/>
+            interface="lp.buildmaster.interfaces.processor.IProcessor"/>
         <require
             permission="zope.Public"
-            set_schema="lp.soyuz.interfaces.processor.IProcessor"/>
+            set_schema="lp.buildmaster.interfaces.processor.IProcessor"/>
     </class>
     <securedutility
-        class="lp.soyuz.model.processor.ProcessorSet"
-        provides="lp.soyuz.interfaces.processor.IProcessorSet">
+        class="lp.buildmaster.model.processor.ProcessorSet"
+        provides="lp.buildmaster.interfaces.processor.IProcessorSet">
         <allow
-            interface="lp.soyuz.interfaces.processor.IProcessorSet"/>
+            interface="lp.buildmaster.interfaces.processor.IProcessorSet"/>
     </securedutility>
     <adapter
         for="lp.soyuz.interfaces.distroarchseriesbinarypackagerelease.IDistroArchSeriesBinaryPackageRelease"
