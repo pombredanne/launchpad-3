@@ -174,7 +174,7 @@
         module="lp.soyuz.browser.archive"
         classes="ArchiveNavigation" />
     <browser:navigation
-        module="lp.soyuz.browser.processor"
+        module="lp.buildmaster.browser.processor"
         classes="ProcessorSetNavigation" />
     <browser:url
         for="lp.soyuz.interfaces.archive.IPPA"
