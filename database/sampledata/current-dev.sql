@@ -972,9 +972,9 @@ ALTER TABLE bugtracker ENABLE TRIGGER ALL;
 
 ALTER TABLE processor DISABLE TRIGGER ALL;
 
-INSERT INTO processor (id, name, title, description, restricted) VALUES (1, '386', 'Intel 386', 'Intel 386 and its many derivatives and clones, the basic 32-bit chip in the x86 family', false);
-INSERT INTO processor (id, name, title, description, restricted) VALUES (2, 'amd64', 'AMD 64bit', 'AMD 64bit', false);
-INSERT INTO processor (id, name, title, description, restricted) VALUES (3, 'hppa', 'HPPA Processor', 'HPPA Processor', false);
+INSERT INTO processor (id, name, title, description, restricted, build_by_default, supports_nonvirtualized, supports_virtualized) VALUES (1, '386', 'Intel 386', 'Intel 386 and its many derivatives and clones, the basic 32-bit chip in the x86 family', false, true, true, true);
+INSERT INTO processor (id, name, title, description, restricted, build_by_default, supports_nonvirtualized, supports_virtualized) VALUES (2, 'amd64', 'AMD 64bit', 'AMD 64bit', false, true, true, true);
+INSERT INTO processor (id, name, title, description, restricted, build_by_default, supports_nonvirtualized, supports_virtualized) VALUES (3, 'hppa', 'HPPA Processor', 'HPPA Processor', false, false, true, false);
 
 
 ALTER TABLE processor ENABLE TRIGGER ALL;
