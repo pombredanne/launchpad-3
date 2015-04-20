@@ -10,7 +10,6 @@ __all__ = [
     'FilteredDistroArchSeriesVocabulary',
     'PackageReleaseVocabulary',
     'PPAVocabulary',
-    'ProcessorVocabulary',
     ]
 
 from storm.locals import (
@@ -22,7 +21,6 @@ from zope.interface import implements
 from zope.schema.vocabulary import SimpleTerm
 from zope.security.interfaces import Unauthorized
 
-from lp.buildmaster.model.processor import Processor
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.person import Person
 from lp.services.database.interfaces import IStore
@@ -30,7 +28,6 @@ from lp.services.database.stormexpr import fti_search
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.vocabulary import (
     IHugeVocabulary,
-    NamedSQLObjectVocabulary,
     SQLObjectVocabularyBase,
     )
 from lp.soyuz.enums import ArchivePurpose
@@ -152,10 +149,3 @@ class PPAVocabulary(SQLObjectVocabularyBase):
             search_clause)
         return self._table.select(
             clause, orderBy=self._orderBy, clauseTables=self._clauseTables)
-
-
-class ProcessorVocabulary(NamedSQLObjectVocabulary):
-
-    displayname = 'Select a processor'
-    _table = Processor
-    _orderBy = 'name'
