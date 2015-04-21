@@ -30,8 +30,9 @@ class TestGitRef(TestCaseWithFactory):
         self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
         [master, personal] = self.factory.makeGitRefs(
             paths=[u"refs/heads/master", u"refs/heads/people/foo/bar"])
+        repo_path = master.repository.shortened_path
         self.assertEqual(
-            ["master", "people/foo/bar"],
+            [u"%s:master" % repo_path, "%s:people/foo/bar" % repo_path],
             [ref.display_name for ref in (master, personal)])
 
 
