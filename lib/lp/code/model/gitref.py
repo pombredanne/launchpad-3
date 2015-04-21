@@ -12,7 +12,6 @@ from storm.locals import (
     DateTime,
     Int,
     Reference,
-    Store,
     Unicode,
     )
 from zope.interface import implements
@@ -123,6 +122,7 @@ class GitRefFrozen(GitRefMixin):
     implements(IGitRef)
 
     def __init__(self, repository, path, commit_sha1):
+        self.repository_id = repository.id
         self.repository = repository
         self.path = path
         self.commit_sha1 = commit_sha1
@@ -130,7 +130,7 @@ class GitRefFrozen(GitRefMixin):
     @property
     def _self_in_database(self):
         """Return the equivalent database-backed record of self."""
-        ref = Store.of(GitRef).get(GitRef, (self.repository, self.path))
+        ref = IStore(GitRef).get(GitRef, (self.repository_id, self.path))
         if ref is None:
             raise NotFoundError(
                 "Repository '%s' does not currently contain a reference named "
@@ -141,4 +141,16 @@ class GitRefFrozen(GitRefMixin):
         return getattr(self._self_in_database, name)
 
     def __setattr__(self, name, value):
-        return setattr(self._self_in_database, name, value)
+        if name in ("repository_id", "repository", "path", "commit_sha1"):
+            self.__dict__[name] = value
+        else:
+            setattr(self._self_in_database, name, value)
+
+    def __eq__(self, other):
+        return (
+            self.repository == other.repository and
+            self.path == other.path and
+            self.commit_sha1 == other.commit_sha1)
+
+    def __ne__(self, other):
+        return not self == other
