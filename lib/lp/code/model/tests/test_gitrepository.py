@@ -19,6 +19,7 @@ from testtools.matchers import (
     )
 from zope.component import getUtility
 from zope.event import notify
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import (
@@ -37,6 +38,7 @@ from lp.code.errors import (
     GitFeatureDisabled,
     GitRepositoryCreatorNotMemberOfOwnerTeam,
     GitRepositoryCreatorNotOwner,
+    GitRepositoryExists,
     GitTargetError,
     )
 from lp.code.interfaces.defaultgit import ICanHasDefaultGitRepository
@@ -890,6 +892,39 @@ class TestGitRepositoryIsPersonTrustedReviewer(TestCaseWithFactory):
         repository = self.factory.makeGitRepository(reviewer=team)
         reviewer = self.factory.makePerson()
         self.assertNotTrustedReviewer(repository, reviewer)
+
+
+class TestGitRepositorySetName(TestCaseWithFactory):
+    """Test `IGitRepository.setName`."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestGitRepositorySetName, self).setUp()
+        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
+
+    def test_not_owner(self):
+        # A non-owner non-admin user cannot rename a repository.
+        repository = self.factory.makeGitRepository()
+        with person_logged_in(self.factory.makePerson()):
+            self.assertRaises(Unauthorized, getattr, repository, "setName")
+
+    def test_name_clash(self):
+        # Name clashes are refused.
+        repository = self.factory.makeGitRepository(name=u"foo")
+        self.factory.makeGitRepository(
+            owner=repository.owner, target=repository.target, name=u"bar")
+        with person_logged_in(repository.owner):
+            self.assertRaises(
+                GitRepositoryExists, repository.setName,
+                u"bar", repository.owner)
+
+    def test_rename(self):
+        # A non-clashing rename request works.
+        repository = self.factory.makeGitRepository(name=u"foo")
+        with person_logged_in(repository.owner):
+            repository.setName(u"bar", repository.owner)
+        self.assertEqual(u"bar", repository.name)
 
 
 class TestGitRepositorySetOwner(TestCaseWithFactory):
