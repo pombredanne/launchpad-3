@@ -200,9 +200,9 @@ class IGitRepositoryView(Interface):
     def isPersonTrustedReviewer(reviewer):
         """Return true if the `reviewer` is a trusted reviewer.
 
-        The reviewer is trusted if they either own the repository, or are in the
-        team that owns the repository, or they are in the review team for the
-        repository.
+        The reviewer is trusted if they either own the repository, or are in
+        the team that owns the repository, or they are in the review team
+        for the repository.
         """
 
     git_identity = exported(Text(
