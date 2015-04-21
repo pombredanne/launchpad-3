@@ -23,6 +23,7 @@ from lp.code.interfaces.gitrepository import IGitRepository
 from lp.services.config import config
 from lp.services.webapp import (
     ContextMenu,
+    enabled_with_permission,
     LaunchpadView,
     Link,
     Navigation,
@@ -83,7 +84,24 @@ class GitRepositoryContextMenu(ContextMenu):
 
     usedfor = IGitRepository
     facet = "branches"
-    links = ["source"]
+    links = ["add_subscriber", "source", "subscription"]
+
+    @enabled_with_permission("launchpad.AnyPerson")
+    def subscription(self):
+        if self.context.hasSubscription(self.user):
+            url = "+edit-subscription"
+            text = "Edit your subscription"
+            icon = "edit"
+        else:
+            url = "+subscribe"
+            text = "Subscribe yourself"
+            icon = "add"
+        return Link(url, text, icon=icon)
+
+    @enabled_with_permission("launchpad.AnyPerson")
+    def add_subscriber(self):
+        text = "Subscribe someone else"
+        return Link("+addsubscriber", text, icon="add")
 
     def source(self):
         """Return a link to the branch's browsing interface."""
