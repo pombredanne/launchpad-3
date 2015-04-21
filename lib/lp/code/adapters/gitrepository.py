@@ -24,6 +24,8 @@ class GitRepositoryDelta:
 
     delta_values = ('name', 'git_identity')
 
+    new_values = ()
+
     interface = IGitRepository
 
     def __init__(self, repository, user, name=None, git_identity=None):
