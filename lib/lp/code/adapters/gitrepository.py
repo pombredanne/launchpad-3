@@ -22,16 +22,16 @@ class GitRepositoryDelta:
 
     implements(IGitRepositoryDelta)
 
-    delta_values = ('name', 'identity')
+    delta_values = ('name', 'git_identity')
 
     interface = IGitRepository
 
-    def __init__(self, repository, user, name=None, identity=None):
+    def __init__(self, repository, user, name=None, git_identity=None):
         self.repository = repository
         self.user = user
 
         self.name = name
-        self.identity = identity
+        self.git_identity = git_identity
 
     @classmethod
     def construct(klass, old_repository, new_repository, user):
