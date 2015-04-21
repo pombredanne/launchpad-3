@@ -132,7 +132,7 @@ def latest_proposals_for_each_branch(proposals):
         # Don't show the proposal if the user can't see it.
         if not check_permission('launchpad.View', proposal):
             continue
-        # Only show the must recent proposal for any given target.
+        # Only show the most recent proposal for any given target.
         date_created = proposal.date_created
         target_id = proposal.target_branch.id
 
