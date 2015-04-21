@@ -356,7 +356,7 @@ class ChangesFile(SignableTagFile):
         }}}
         """
         changes_author = (
-            '\n -- %s   %s' %
+            '\n\n -- %s  %s' %
             (self.changed_by['rfc822'], self.date))
         return self.changes_comment + changes_author
 

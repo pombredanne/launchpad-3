@@ -263,8 +263,8 @@ class ChangesFileTests(TestCase):
             "mypkg_0.1_i386.changes", contents)
         self.assertEquals([], list(changes.processAddresses()))
         self.assertEquals(
-            "Something changed\n"
-            " -- Somebody <somebody@ubuntu.com>   "
+            "Something changed\n\n"
+            " -- Somebody <somebody@ubuntu.com>  "
             "Fri, 25 Jun 2010 11:20:22 -0600",
             changes.simulated_changelog)
 

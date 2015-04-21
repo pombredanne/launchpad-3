@@ -331,9 +331,13 @@ Retrive the just-inserted SourcePackageRelease correspondent to 'ed'
 Check if we have rebuid the change's author line properly (as
 mentioned in bug # 30621)
 
-    >>> print ed_spr.changelog_entry
+    >>> print ed_spr.changelog_entry #doctest: -NORMALIZE_WHITESPACE
     ed (0.2-20) unstable; urgency=low
+    <BLANKLINE>
+      * Move to dpatch; existing non-debian/ changes split into
     ...
+        Closes: #130327
+    <BLANKLINE>
      -- James Troup <james@nocrew.org>  Wed,  2 Apr 2003 17:19:47 +0100
 
 Some new fields required for NoMoreAptFtparchive implementation are
