@@ -768,6 +768,35 @@
             name="++repository-management"
             template="../templates/gitrepository-management.pt"/>
     </browser:pages>
+    <browser:page
+        for="lp.code.interfaces.gitrepository.IGitRepository"
+        permission="launchpad.View"
+        name="+portlet-subscribers"
+        template="../templates/gitrepository-portlet-subscribers.pt"/>
+    <browser:page
+        for="lp.code.interfaces.gitrepository.IGitRepository"
+        class="lp.code.browser.gitsubscription.GitRepositoryPortletSubscribersContent"
+        permission="launchpad.View"
+        name="+repository-portlet-subscriber-content"
+        template="../templates/gitrepository-portlet-subscribers-content.pt"/>
+    <browser:page
+        for="lp.code.interfaces.gitrepository.IGitRepository"
+        class="lp.code.browser.gitsubscription.GitSubscriptionAddView"
+        permission="launchpad.AnyPerson"
+        name="+subscribe"
+        template="../../app/templates/generic-edit.pt"/>
+    <browser:page
+        for="lp.code.interfaces.gitrepository.IGitRepository"
+        class="lp.code.browser.gitsubscription.GitSubscriptionAddOtherView"
+        permission="launchpad.AnyPerson"
+        name="+addsubscriber"
+        template="../../app/templates/generic-edit.pt"/>
+    <browser:page
+        for="lp.code.interfaces.gitrepository.IGitRepository"
+        class="lp.code.browser.gitsubscription.GitSubscriptionEditOwnView"
+        permission="launchpad.AnyPerson"
+        name="+edit-subscription"
+        template="../templates/gitrepository-edit-subscription.pt"/>
     <adapter
         provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.code.interfaces.gitrepository.IGitRepository"
@@ -803,6 +832,21 @@
         permission="zope.Public"
         name="+ref-listing"
         template="../templates/gitref-listing.pt"/>
+
+    <browser:defaultView
+        for="lp.code.interfaces.gitsubscription.IGitSubscription"
+        name="+index"/>
+    <browser:page
+        for="lp.code.interfaces.gitsubscription.IGitSubscription"
+        class="lp.code.browser.gitsubscription.GitSubscriptionEditView"
+        permission="launchpad.Edit"
+        name="+index"
+        template="../templates/gitsubscription-edit.pt"/>
+    <browser:url
+        for="lp.code.interfaces.gitsubscription.IGitSubscription"
+        path_expression="string:+subscription/${person/name}"
+        attribute_to_parent="repository"
+        rootsite="code"/>
 
     <browser:menus
         classes="ProductBranchesMenu"

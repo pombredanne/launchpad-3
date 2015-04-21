@@ -19,6 +19,7 @@
 
 <metal:side fill-slot="side">
   <div tal:replace="structure context/@@+global-actions" />
+  <tal:subscribers replace="structure context/@@+portlet-subscribers" />
 </metal:side>
 
 <tal:registering metal:fill-slot="registering">

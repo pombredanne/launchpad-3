@@ -139,8 +139,9 @@ def git_repository_modified(repository, event):
     This method is registered as a subscriber to `IObjectModifiedEvent`
     events on Git repositories.
     """
-    repository.date_last_modified = UTC_NOW
-    send_git_repository_modified_notifications(repository, event)
+    if event.edited_fields:
+        repository.date_last_modified = UTC_NOW
+        send_git_repository_modified_notifications(repository, event)
 
 
 class GitRepository(StormBase, GitIdentityMixin):
