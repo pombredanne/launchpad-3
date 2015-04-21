@@ -1683,6 +1683,15 @@ class GitRepositoryFormatterAPI(CustomizableFormatter):
         return {'display_name': self._context.display_name}
 
 
+class GitRefFormatterAPI(CustomizableFormatter):
+    """Adapter for IGitRef objects to a formatted string."""
+
+    _link_summary_template = '%(display_name)s'
+
+    def _link_summary_values(self):
+        return {'display_name': self._context.display_name}
+
+
 class BugBranchFormatterAPI(CustomizableFormatter):
     """Adapter providing fmt support for BugBranch objects"""
 

@@ -13,6 +13,7 @@ import json
 from lazr.lifecycle.event import ObjectModifiedEvent
 import pytz
 from testtools.matchers import (
+    EndsWith,
     MatchesSetwise,
     MatchesStructure,
     )
@@ -26,7 +27,12 @@ from lp.app.enums import (
     PUBLIC_INFORMATION_TYPES,
     )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.code.enums import GitObjectType
+from lp.code.enums import (
+    BranchSubscriptionDiffSize,
+    BranchSubscriptionNotificationLevel,
+    CodeReviewNotificationLevel,
+    GitObjectType,
+    )
 from lp.code.errors import (
     GitFeatureDisabled,
     GitRepositoryCreatorNotMemberOfOwnerTeam,
@@ -536,6 +542,13 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
                 commit_sha1=u"0000000000000000000000000000000000000000",
                 object_type=GitObjectType.BLOB,
                 ))
+
+    def test_getRefByPath_without_leading_refs_heads(self):
+        [ref] = self.factory.makeGitRefs(paths=[u"refs/heads/master"])
+        self.assertEqual(
+            ref, ref.repository.getRefByPath(u"refs/heads/master"))
+        self.assertEqual(ref, ref.repository.getRefByPath(u"master"))
+        self.assertIsNone(ref.repository.getRefByPath(u"other"))
 
     def test_planRefChanges(self):
         # planRefChanges copes with planning changes to refs in a repository
@@ -1423,3 +1436,107 @@ class TestGitRepositoryWebservice(TestCaseWithFactory):
         self.assertEqual(401, response.status)
         with person_logged_in(ANONYMOUS):
             self.assertEqual(owner_db, repository_db.owner)
+
+    def test_subscribe(self):
+        # A user can subscribe to a repository.
+        repository_db = self.factory.makeGitRepository()
+        subscriber_db = self.factory.makePerson()
+        webservice = webservice_for_person(
+            subscriber_db, permission=OAuthPermission.WRITE_PUBLIC)
+        webservice.default_api_version = "devel"
+        with person_logged_in(ANONYMOUS):
+            repository_url = api_url(repository_db)
+            subscriber_url = api_url(subscriber_db)
+        response = webservice.named_post(
+            repository_url, "subscribe", person=subscriber_url,
+            notification_level=u"Branch attribute notifications only",
+            max_diff_lines=u"Don't send diffs", code_review_level=u"No email")
+        self.assertEqual(200, response.status)
+        with person_logged_in(ANONYMOUS):
+            subscription_db = repository_db.getSubscription(subscriber_db)
+            self.assertIsNotNone(subscription_db)
+            self.assertThat(
+                response.jsonBody()["self_link"],
+                EndsWith(api_url(subscription_db)))
+
+    def _makeSubscription(self, repository, subscriber):
+        with person_logged_in(subscriber):
+            return repository.subscribe(
+                person=subscriber,
+                notification_level=(
+                    BranchSubscriptionNotificationLevel.ATTRIBUTEONLY),
+                max_diff_lines=BranchSubscriptionDiffSize.NODIFF,
+                code_review_level=CodeReviewNotificationLevel.NOEMAIL,
+                subscribed_by=subscriber)
+
+    def test_getSubscription(self):
+        # It is possible to get a single subscription via the webservice.
+        repository_db = self.factory.makeGitRepository()
+        subscriber_db = self.factory.makePerson()
+        subscription_db = self._makeSubscription(repository_db, subscriber_db)
+        with person_logged_in(subscriber_db):
+            repository_url = api_url(repository_db)
+            subscriber_url = api_url(subscriber_db)
+            subscription_url = api_url(subscription_db)
+        webservice = webservice_for_person(
+            subscriber_db, permission=OAuthPermission.WRITE_PUBLIC)
+        webservice.default_api_version = "devel"
+        response = webservice.named_get(
+            repository_url, "getSubscription", person=subscriber_url)
+        self.assertEqual(200, response.status)
+        self.assertThat(
+            response.jsonBody()["self_link"], EndsWith(subscription_url))
+
+    def test_edit_subscription(self):
+        # An existing subscription can be edited via the webservice, by
+        # subscribing the same person again with different details.
+        repository_db = self.factory.makeGitRepository()
+        subscriber_db = self.factory.makePerson()
+        self._makeSubscription(repository_db, subscriber_db)
+        with person_logged_in(subscriber_db):
+            repository_url = api_url(repository_db)
+            subscriber_url = api_url(subscriber_db)
+        webservice = webservice_for_person(
+            subscriber_db, permission=OAuthPermission.WRITE_PUBLIC)
+        webservice.default_api_version = "devel"
+        response = webservice.named_post(
+            repository_url, "subscribe", person=subscriber_url,
+            notification_level=u"No email",
+            max_diff_lines=u"Send entire diff",
+            code_review_level=u"Status changes only")
+        self.assertEqual(200, response.status)
+        with person_logged_in(subscriber_db):
+            self.assertThat(
+                repository_db.getSubscription(subscriber_db),
+                MatchesStructure.byEquality(
+                    person=subscriber_db,
+                    notification_level=(
+                        BranchSubscriptionNotificationLevel.NOEMAIL),
+                    max_diff_lines=BranchSubscriptionDiffSize.WHOLEDIFF,
+                    review_level=CodeReviewNotificationLevel.STATUS,
+                    ))
+        repository = webservice.get(repository_url).jsonBody()
+        subscribers = webservice.get(
+            repository["subscribers_collection_link"]).jsonBody()
+        self.assertEqual(2, len(subscribers["entries"]))
+        with person_logged_in(subscriber_db):
+            self.assertContentEqual(
+                [repository_db.owner.name, subscriber_db.name],
+                [subscriber["name"] for subscriber in subscribers["entries"]])
+
+    def test_unsubscribe(self):
+        # It is possible to unsubscribe via the webservice.
+        repository_db = self.factory.makeGitRepository()
+        subscriber_db = self.factory.makePerson()
+        self._makeSubscription(repository_db, subscriber_db)
+        with person_logged_in(subscriber_db):
+            repository_url = api_url(repository_db)
+            subscriber_url = api_url(subscriber_db)
+        webservice = webservice_for_person(
+            subscriber_db, permission=OAuthPermission.WRITE_PUBLIC)
+        webservice.default_api_version = "devel"
+        response = webservice.named_post(
+            repository_url, "unsubscribe", person=subscriber_url)
+        self.assertEqual(200, response.status)
+        with person_logged_in(subscriber_db):
+            self.assertNotIn(subscriber_db, repository_db.subscribers)
