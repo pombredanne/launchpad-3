@@ -69,7 +69,6 @@ from lp.blueprints.interfaces.specificationbranch import (
 from lp.bugs.interfaces.bugbranch import IBugBranchSet
 from lp.code.browser.branch import BranchMirrorMixin
 from lp.code.browser.branchmergeproposallisting import ActiveReviewsView
-from lp.code.browser.branchmergequeuelisting import HasMergeQueuesMenuMixin
 from lp.code.browser.summary import BranchCountSummaryView
 from lp.code.enums import (
     BranchLifecycleStatus,
@@ -853,13 +852,11 @@ class RecentlyChangedBranchesView(NoContextBranchListingView):
                 .scanned())
 
 
-class PersonBranchesMenu(ApplicationMenu, HasMergeQueuesMenuMixin):
+class PersonBranchesMenu(ApplicationMenu):
 
     usedfor = IPerson
     facet = 'branches'
-    links = [
-        'branches', 'active_reviews', 'mergequeues', 'source_package_recipes']
-    extra_attributes = ['mergequeue_count']
+    links = ['branches', 'active_reviews', 'source_package_recipes']
 
     @property
     def person(self):

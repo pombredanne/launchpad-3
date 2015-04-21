@@ -50,7 +50,6 @@ Branch merge proposals can be created through the API.
     commit_message: u'It was merged!\n'
     date_created: u'...'
     date_merged: None
-    date_queued: None
     date_review_requested: u'...'
     date_reviewed: None
     description: u'Merge\nit!'
@@ -60,10 +59,7 @@ Branch merge proposals can be created through the API.
     preview_diff_link: None
     preview_diffs_collection_link: u'http://.../preview_diffs'
     private: False
-    queue_position: None
     queue_status: u'Needs review'
-    queued_revid: None
-    queuer_link: None
     registrant_link: u'http://api.launchpad.dev/devel/~person-name...'
     resource_type_link:
         u'http://api.launchpad.dev/devel/#branch_merge_proposal'
@@ -149,7 +145,6 @@ We use the webservice as an unrelated, unprivileged user.
     commit_message: None
     date_created: ...
     date_merged: None
-    date_queued: None
     date_review_requested: None
     date_reviewed: None
     description: None
@@ -159,10 +154,7 @@ We use the webservice as an unrelated, unprivileged user.
     preview_diff_link: None
     preview_diffs_collection_link: u'http://.../preview_diffs'
     private: False
-    queue_position: None
     queue_status: u'Work in progress'
-    queued_revid: None
-    queuer_link: None
     registrant_link: u'http://.../~person-name...'
     resource_type_link: u'http://.../#branch_merge_proposal'
     reviewed_revid: None
