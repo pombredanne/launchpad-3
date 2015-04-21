@@ -26,6 +26,6 @@ ALTER TABLE BranchMergeProposal
 ALTER TABLE BranchMergeProposal ALTER COLUMN source_branch DROP NOT NULL;
 ALTER TABLE BranchMergeProposal ALTER COLUMN target_branch DROP NOT NULL;
 ALTER TABLE BranchMergeProposal
-    ADD CONSTRAINT one_vcs CHECK ((source_branch IS NOT NULL OR target_branch IS NOT NULL OR dependent_branch IS NOT NULL) != (source_git_repository IS NOT NULL OR target_git_repository IS NOT NULL OR dependent_git_repository IS NOT NULL));
+    ADD CONSTRAINT one_vcs CHECK (((source_branch IS NOT NULL AND target_branch IS NOT NULL) != (source_git_repository IS NOT NULL AND target_git_repository IS NOT NULL)) AND (dependent_branch IS NULL OR source_branch IS NOT NULL) AND (dependent_git_repository IS NULL OR source_git_repository IS NOT NULL));
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 61, 5);
