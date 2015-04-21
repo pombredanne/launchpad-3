@@ -794,13 +794,13 @@
     </browser:pages>
     <browser:page
         for="lp.code.interfaces.gitrepository.IGitRepository"
-        permission="zope.Public"
+        permission="launchpad.View"
         name="+portlet-subscribers"
         template="../templates/gitrepository-portlet-subscribers.pt"/>
     <browser:page
         for="lp.code.interfaces.gitrepository.IGitRepository"
         class="lp.code.browser.gitsubscription.GitRepositoryPortletSubscribersContent"
-        permission="zope.Public"
+        permission="launchpad.View"
         name="+repository-portlet-subscriber-content"
         template="../templates/gitrepository-portlet-subscribers-content.pt"/>
     <browser:page
