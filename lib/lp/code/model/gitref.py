@@ -32,10 +32,12 @@ class GitRefMixin:
 
     @property
     def display_name(self):
-        return self.path.split("/", 2)[-1]
+        """See `IGitRef`."""
+        return self.identity
 
     @property
-    def _branch_name(self):
+    def name(self):
+        """See `IGitRef`."""
         if self.path.startswith("refs/heads/"):
             return self.path[len("refs/heads/"):]
         else:
@@ -43,34 +45,42 @@ class GitRefMixin:
 
     @property
     def identity(self):
-        return "%s:%s" % (self.repository.shortened_path, self._branch_name)
+        """See `IGitRef`."""
+        return "%s:%s" % (self.repository.shortened_path, self.name)
 
     @property
     def unique_name(self):
-        return "%s:%s" % (self.repository.unique_name, self._branch_name)
+        """See `IGitRef`."""
+        return "%s:%s" % (self.repository.unique_name, self.name)
 
     @property
     def owner(self):
+        """See `IGitRef`."""
         return self.repository.owner
 
     @property
     def target(self):
+        """See `IGitRef`."""
         return self.repository.target
 
     @property
     def subscribers(self):
+        """See `IGitRef`."""
         return self.repository.subscribers
 
     def subscribe(self, person, notification_level, max_diff_lines,
                   code_review_level, subscribed_by):
+        """See `IGitRef`."""
         return self.repository.subscribe(
             person, notification_level, max_diff_lines, code_review_level,
             subscribed_by)
 
     def getSubscription(self, person):
+        """See `IGitRef`."""
         return self.repository.getSubscription(person)
 
     def getNotificationRecipients(self):
+        """See `IGitRef`."""
         return self.repository.getNotificationRecipients()
 
 

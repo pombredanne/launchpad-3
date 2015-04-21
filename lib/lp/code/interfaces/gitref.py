@@ -51,6 +51,10 @@ class IGitRef(Interface):
         description=_(
             "The full path of this reference, e.g. refs/heads/master.")))
 
+    name = Attribute(
+        "A shortened version of the full path to this reference, with any "
+        "leading refs/heads/ removed.")
+
     commit_sha1 = exported(TextLine(
         title=_("Commit SHA-1"), required=True, readonly=True,
         description=_(

@@ -537,6 +537,13 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
                 object_type=GitObjectType.BLOB,
                 ))
 
+    def test_getRefByPath_without_leading_refs_heads(self):
+        [ref] = self.factory.makeGitRefs(paths=[u"refs/heads/master"])
+        self.assertEqual(
+            ref, ref.repository.getRefByPath(u"refs/heads/master"))
+        self.assertEqual(ref, ref.repository.getRefByPath(u"master"))
+        self.assertIsNone(ref.repository.getRefByPath(u"other"))
+
     def test_planRefChanges(self):
         # planRefChanges copes with planning changes to refs in a repository
         # where some refs have been created, some deleted, and some changed.
