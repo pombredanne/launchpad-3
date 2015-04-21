@@ -82,7 +82,6 @@ from lp.code.enums import (
     CodeReviewNotificationLevel,
     )
 from lp.code.interfaces.branchlookup import IBranchLookup
-from lp.code.interfaces.branchmergequeue import IBranchMergeQueue
 from lp.code.interfaces.branchtarget import IHasBranchTarget
 from lp.code.interfaces.hasbranches import IHasMergeProposals
 from lp.code.interfaces.hasrecipes import IHasRecipes
@@ -1183,56 +1182,9 @@ class IBranchEdit(Interface):
         """
 
 
-class IMergeQueueable(Interface):
-    """An interface for branches that can be queued."""
-
-    merge_queue = exported(
-        Reference(
-            title=_('Branch Merge Queue'),
-            schema=IBranchMergeQueue, required=False, readonly=True,
-            description=_(
-                "The branch merge queue that manages merges for this "
-                "branch.")))
-
-    merge_queue_config = exported(
-        TextLine(
-            title=_('Name'), required=True, readonly=True,
-            description=_(
-                "A JSON string of configuration values to send to a "
-                "branch merge robot.")))
-
-    @mutator_for(merge_queue)
-    @operation_parameters(
-        queue=Reference(title=_('Branch Merge Queue'),
-              schema=IBranchMergeQueue))
-    @export_write_operation()
-    @operation_for_version('beta')
-    def addToQueue(queue):
-        """Add this branch to a specified queue.
-
-        A branch's merges can be managed by a queue.
-
-        :param queue: The branch merge queue that will manage the branch.
-        """
-
-    @mutator_for(merge_queue_config)
-    @operation_parameters(
-        config=TextLine(title=_("A JSON string of config values.")))
-    @export_write_operation()
-    @operation_for_version('beta')
-    def setMergeQueueConfig(config):
-        """Set the merge_queue_config property.
-
-        A branch can store a JSON string of configuration data for a merge
-        robot to retrieve.
-
-        :param config: A JSON string of data.
-        """
-
-
 class IBranch(IBranchPublic, IBranchView, IBranchEdit,
               IBranchEditableAttributes, IBranchModerate,
-              IBranchModerateAttributes, IBranchAnyone, IMergeQueueable):
+              IBranchModerateAttributes, IBranchAnyone):
     """A Bazaar branch."""
 
     # Mark branches as exported entries for the Launchpad API.

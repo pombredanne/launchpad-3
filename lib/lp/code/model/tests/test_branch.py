@@ -64,7 +64,6 @@ from lp.code.errors import (
     CannotDeleteBranch,
     CannotUpgradeNonHosted,
     InvalidBranchMergeProposal,
-    InvalidMergeQueueConfig,
     UpgradePending,
     )
 from lp.code.interfaces.branch import (
@@ -3267,45 +3266,6 @@ class TestGetBzrBranch(TestCaseWithFactory):
         self.assertRaises(BadUrl, db_stacked.getBzrBranch)
 
 
-class TestMergeQueue(TestCaseWithFactory):
-    """Tests for branch merge queue functionality in branches."""
-
-    layer = DatabaseFunctionalLayer
-
-    def test_addToQueue(self):
-        """Test Branch.addToQueue."""
-        branch = self.factory.makeBranch()
-        queue = self.factory.makeBranchMergeQueue()
-        with person_logged_in(branch.owner):
-            branch.addToQueue(queue)
-
-        self.assertEqual(branch.merge_queue, queue)
-
-    def test_setMergeQueueConfig(self):
-        """Test Branch.setMergeQueueConfig."""
-        branch = self.factory.makeBranch()
-        config = json.dumps({
-            'path': '/',
-            'test': 'make test',
-            })
-
-        with person_logged_in(branch.owner):
-            branch.setMergeQueueConfig(config)
-
-        self.assertEqual(branch.merge_queue_config, config)
-
-    def test_setMergeQueueConfig_invalid(self):
-        """Test that invalid JSON strings aren't added to the database."""
-        branch = self.factory.makeBranch()
-        config = 'abc'
-
-        with person_logged_in(branch.owner):
-            self.assertRaises(
-                InvalidMergeQueueConfig,
-                branch.setMergeQueueConfig,
-                config)
-
-
 class TestBranchUnscan(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
@@ -3376,24 +3336,6 @@ class TestWebservice(TestCaseWithFactory):
         self.branch_url = api_url(self.branch_db)
         self.webservice = webservice_for_person(
             self.branch_db.owner, permission=OAuthPermission.WRITE_PUBLIC)
-
-    def test_set_merge_queue(self):
-        """Test that the merge queue and config can be set properly."""
-        with person_logged_in(ANONYMOUS):
-            queue_db = self.factory.makeBranchMergeQueue()
-            queue_url = api_url(queue_db)
-
-        config = json.dumps({'test': 'make check'})
-        self.webservice.patch(
-            self.branch_url, "application/json",
-            json.dumps({
-                "merge_queue_link": queue_url,
-                "merge_queue_config": config,
-                }),
-            api_version='devel')
-        with person_logged_in(ANONYMOUS):
-            self.assertEqual(self.branch_db.merge_queue, queue_db)
-            self.assertEqual(self.branch_db.merge_queue_config, config)
 
     def test_transitionToInformationType(self):
         """Test transitionToInformationType() API arguments."""

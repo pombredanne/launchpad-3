@@ -50,7 +50,6 @@ from bzrlib.revision import Revision as BzrRevision
 from lazr.jobrunner.jobrunner import SuspendJobException
 import pytz
 from pytz import UTC
-import simplejson
 from twisted.python.util import mergeFunctionMetadata
 from zope.component import (
     ComponentLookupError,
@@ -113,7 +112,6 @@ from lp.code.enums import (
     RevisionControlSystems,
     )
 from lp.code.errors import UnknownBranchTypeError
-from lp.code.interfaces.branchmergequeue import IBranchMergeQueueSource
 from lp.code.interfaces.branchnamespace import get_branch_namespace
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codeimport import ICodeImportSet
@@ -1227,26 +1225,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         namespace = target.getNamespace(owner)
         return namespace.createBranch(branch_type, name, creator)
 
-    def makeBranchMergeQueue(self, registrant=None, owner=None, name=None,
-                             description=None, configuration=None,
-                             branches=None):
-        """Create a BranchMergeQueue."""
-        if name is None:
-            name = unicode(self.getUniqueString('queue'))
-        if owner is None:
-            owner = self.makePerson()
-        if registrant is None:
-            registrant = self.makePerson()
-        if description is None:
-            description = unicode(self.getUniqueString('queue-description'))
-        if configuration is None:
-            configuration = unicode(simplejson.dumps({
-                self.getUniqueString('key'): self.getUniqueString('value')}))
-
-        queue = getUtility(IBranchMergeQueueSource).new(
-            name, owner, registrant, description, configuration, branches)
-        return queue
-
     def makeRelatedBranchesForSourcePackage(self, sourcepackage=None,
                                             **kwargs):
         """Create some branches associated with a sourcepackage."""
@@ -1492,13 +1470,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 proposal.target_branch.owner, 'some_revision')
         elif set_state == BranchMergeProposalStatus.MERGED:
             unsafe_proposal.markAsMerged()
-        elif set_state == BranchMergeProposalStatus.MERGE_FAILED:
-            unsafe_proposal.setStatus(set_state, proposal.target_branch.owner)
-        elif set_state == BranchMergeProposalStatus.QUEUED:
-            unsafe_proposal.commit_message = self.getUniqueString(
-                'commit message')
-            unsafe_proposal.enqueue(
-                proposal.target_branch.owner, 'some_revision')
         elif set_state == BranchMergeProposalStatus.SUPERSEDED:
             unsafe_proposal.resubmit(proposal.registrant)
         else:

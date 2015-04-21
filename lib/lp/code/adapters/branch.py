@@ -84,7 +84,6 @@ class BranchMergeProposalDelta:
         'target_branch',
         'prerequisite_branch',
         'queue_status',
-        'queue_position',
         )
     new_values = (
         'commit_message',

@@ -221,30 +221,6 @@
         permission="launchpad.Edit"
         template="../templates/branchmergeproposal-resubmit.pt"/>
     <browser:page
-        name="+enqueue"
-        for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
-        class="lp.code.browser.branchmergeproposal.BranchMergeProposalEnqueueView"
-        permission="launchpad.Edit"
-        template="../templates/branchmergeproposal-enqueue.pt"/>
-    <browser:page
-        name="+dequeue"
-        for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
-        class="lp.code.browser.branchmergeproposal.BranchMergeProposalDequeueView"
-        permission="launchpad.Edit"
-        template="../../app/templates/generic-edit.pt"/>
-    <browser:page
-        name="+dequeue-inline"
-        for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
-        class="lp.code.browser.branchmergeproposal.BranchMergeProposalInlineDequeueView"
-        permission="launchpad.Edit"
-        template="../templates/inline-form-only-buttons.pt"/>
-    <browser:page
-        name="+jump-queue"
-        for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
-        class="lp.code.browser.branchmergeproposal.BranchMergeProposalJumpQueueView"
-        permission="launchpad.Edit"
-        template="../templates/inline-form-only-buttons.pt"/>
-    <browser:page
         name="+merged"
         for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
         class="lp.code.browser.branchmergeproposal.BranchMergeProposalMergedView"
@@ -1093,47 +1069,6 @@
             for="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"
             factory="lp.code.browser.sourcepackagerecipe.SourcePackageRecipeBreadcrumb"
             permission="zope.Public"/>
-
-        <browser:page
-            for="lp.registry.interfaces.person.IPerson"
-            class="lp.code.browser.branchmergequeuelisting.PersonMergeQueueListingView"
-            permission="zope.Public"
-            name="+merge-queues"
-            template="../templates/branchmergequeue-listing.pt"/>
-
-        <browser:page
-            for="*"
-            name="+bmq-macros"
-            permission="zope.Public"
-            template="../templates/branchmergequeue-macros.pt"
-            class="lp.app.browser.launchpad.Macro"/>
-
-
-    <browser:url
-        for="lp.code.interfaces.branchmergequeue.IBranchMergeQueue"
-        attribute_to_parent="owner"
-        path_expression="string:+merge-queues/${name}"
-        rootsite="code" />
-
-    <browser:menus
-        classes="BranchMergeQueueContextMenu"
-        module="lp.code.browser.branchmergequeue"/>
-
-        <browser:defaultView
-            for="lp.code.interfaces.branchmergequeue.IBranchMergeQueue"
-            name="+index" />
-        <browser:page
-            for="lp.code.interfaces.branchmergequeue.IBranchMergeQueue"
-            class="lp.code.browser.branchmergequeue.BranchMergeQueueView"
-            name="+index"
-            template="../templates/branchmergequeue-index.pt"
-            permission="zope.Public" />
-        <browser:page
-            for="lp.code.interfaces.branch.IBranch"
-            class="lp.code.browser.branchmergequeue.BranchMergeQueueAddView"
-            name="+create-queue"
-            template="../../app/templates/generic-edit.pt"
-            permission="launchpad.Edit" />
 
     </facet>
 

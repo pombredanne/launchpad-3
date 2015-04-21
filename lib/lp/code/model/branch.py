@@ -14,7 +14,6 @@ import operator
 from bzrlib import urlutils
 from bzrlib.revision import NULL_REVISION
 import pytz
-import simplejson
 from sqlobject import (
     ForeignKey,
     IntCol,
@@ -35,11 +34,7 @@ from storm.expr import (
     Select,
     SQL,
     )
-from storm.locals import (
-    AutoReload,
-    Int,
-    Reference,
-    )
+from storm.locals import AutoReload
 from storm.store import Store
 from zope.component import getUtility
 from zope.event import notify
@@ -97,7 +92,6 @@ from lp.code.errors import (
     CannotUpgradeBranch,
     CannotUpgradeNonHosted,
     InvalidBranchMergeProposal,
-    InvalidMergeQueueConfig,
     UpgradePending,
     )
 from lp.code.event.branchmergeproposal import (
@@ -1421,23 +1415,6 @@ class Branch(SQLBase, BzrIdentityMixin):
         from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
         hook = SourcePackageRecipe.preLoadDataForSourcePackageRecipes
         return DecoratedResultSet(self._recipes, pre_iter_hook=hook)
-
-    merge_queue_id = Int(name='merge_queue', allow_none=True)
-    merge_queue = Reference(merge_queue_id, 'BranchMergeQueue.id')
-
-    merge_queue_config = StringCol(dbName='merge_queue_config')
-
-    def addToQueue(self, queue):
-        """See `IBranchEdit`."""
-        self.merge_queue = queue
-
-    def setMergeQueueConfig(self, config):
-        """See `IBranchEdit`."""
-        try:
-            simplejson.loads(config)
-            self.merge_queue_config = config
-        except ValueError:  # The json string is invalid
-            raise InvalidMergeQueueConfig
 
 
 class DeletionOperation:

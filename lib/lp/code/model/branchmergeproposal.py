@@ -137,24 +137,22 @@ def is_valid_transition(proposal, from_state, next_state, user=None):
         superseded,
     ] = BranchMergeProposalStatus.items
 
-    # Transitioning to code approved, rejected, failed or queued from
-    # work in progress, needs review or merge failed needs the
-    # user to be a valid reviewer, other states are fine.
+    # Transitioning to code approved, rejected, or failed from work in
+    # progress or needs review needs the user to be a valid reviewer, other
+    # states are fine.
     valid_reviewer = proposal.target_branch.isPersonTrustedReviewer(user)
-    reviewed_ok_states = (code_approved, queued, merge_failed)
+    reviewed_ok_states = (code_approved, )
+    obsolete_states = (merge_failed, queued)
     if not valid_reviewer:
-        # Non reviewers cannot reject proposals [XXX: what about their own?]
+        # We cannot transition to obsolete states, and we no longer know how
+        # to transition away from them either.
+        if next_state in obsolete_states or from_state in obsolete_states:
+            return False
+        # Non-reviewers cannot reject proposals [XXX: what about their own?]
         if next_state == rejected:
             return False
-        # Non-reviewers can toggle within the reviewed ok states
-        # (approved/queued/failed): they can dequeue something they spot an
-        # environmental issue with (queued or failed to approved). Retry
-        # things that had an environmental issue (failed or approved to
-        # queued) and note things as failing (approved and queued to failed).
-        # This is perhaps more generous than needed, but its not clearly wrong
-        # - a key concern is to prevent non reviewers putting things in the
-        # queue that haven't been approved (and thus moved to approved or one
-        # of the workflow states that approved leads to).
+        # Non-reviewers cannot approve proposals, but can otherwise move
+        # things around relatively freely.
         elif (next_state in reviewed_ok_states and
               from_state not in reviewed_ok_states):
             return False
@@ -245,13 +243,6 @@ class BranchMergeProposal(SQLBase):
 
     commit_message = StringCol(default=None)
 
-    queue_position = IntCol(default=None)
-
-    queuer = ForeignKey(
-        dbName='queuer', foreignKey='Person', notNull=False,
-        default=None)
-    queued_revision_id = StringCol(default=None)
-
     date_merged = UtcDateTimeCol(default=None)
     merged_revno = IntCol(default=None)
 
@@ -335,8 +326,6 @@ class BranchMergeProposal(SQLBase):
     @cachedproperty
     def preview_diff(self):
         return self._preview_diffs.last()
-
-    date_queued = UtcDateTimeCol(notNull=False, default=None)
 
     votes = SQLMultipleJoin(
         'CodeReviewVoteReference', joinColumn='branch_merge_proposal')
@@ -422,9 +411,6 @@ class BranchMergeProposal(SQLBase):
         # XXX - rockstar - 9 Oct 2008 - jml suggested in a review that this
         # would be better as a dict mapping.
         # See bug #281060.
-        if (self.queue_status == BranchMergeProposalStatus.QUEUED and
-            status != BranchMergeProposalStatus.QUEUED):
-            self.dequeue()
         if status == BranchMergeProposalStatus.WORK_IN_PROGRESS:
             self.setAsWorkInProgress()
         elif status == BranchMergeProposalStatus.NEEDS_REVIEW:
@@ -433,12 +419,8 @@ class BranchMergeProposal(SQLBase):
             self.approveBranch(user, revision_id)
         elif status == BranchMergeProposalStatus.REJECTED:
             self.rejectBranch(user, revision_id)
-        elif status == BranchMergeProposalStatus.QUEUED:
-            self.enqueue(user, revision_id)
         elif status == BranchMergeProposalStatus.MERGED:
             self.markAsMerged(merge_reporter=user)
-        elif status == BranchMergeProposalStatus.MERGE_FAILED:
-            self._transitionToState(status, user=user)
         else:
             raise AssertionError('Unexpected queue status: %s' % status)
 
@@ -471,10 +453,8 @@ class BranchMergeProposal(SQLBase):
         if self.queue_status != BranchMergeProposalStatus.NEEDS_REVIEW:
             self._transitionToState(BranchMergeProposalStatus.NEEDS_REVIEW)
             self.date_review_requested = _date_requested
-            # Clear out any reviewed or queued values.
+            # Clear out any reviewed values.
             self._mark_unreviewed()
-            self.queuer = None
-            self.queued_revision_id = None
 
     def isMergable(self):
         """See `IBranchMergeProposal`."""
@@ -513,63 +493,6 @@ class BranchMergeProposal(SQLBase):
             reviewer, BranchMergeProposalStatus.REJECTED, revision_id,
             _date_reviewed)
 
-    def enqueue(self, queuer, revision_id):
-        """See `IBranchMergeProposal`."""
-        if self.queue_status != BranchMergeProposalStatus.CODE_APPROVED:
-            self.approveBranch(queuer, revision_id)
-
-        last_entry = BranchMergeProposal.selectOne("""
-            BranchMergeProposal.queue_position = (
-                SELECT coalesce(MAX(queue_position), 0)
-                FROM BranchMergeProposal)
-            """)
-
-        # The queue_position will wrap if we ever get to
-        # two billion queue entries where the queue has
-        # never become empty.  Perhaps sometime in the future
-        # we may want to (maybe) consider keeping track of
-        # the maximum value here.  I doubt that it'll ever be
-        # a problem -- thumper.
-        if last_entry is None:
-            position = 1
-        else:
-            position = last_entry.queue_position + 1
-
-        self.queue_status = BranchMergeProposalStatus.QUEUED
-        self.queue_position = position
-        self.queuer = queuer
-        self.queued_revision_id = revision_id or self.reviewed_revision_id
-        self.date_queued = UTC_NOW
-        self.syncUpdate()
-
-    def dequeue(self):
-        """See `IBranchMergeProposal`."""
-        if self.queue_status != BranchMergeProposalStatus.QUEUED:
-            raise BadStateTransition(
-                'Invalid state transition for merge proposal: %s -> %s'
-                % (self.queue_state.title,
-                   BranchMergeProposalStatus.QUEUED.title))
-        self.queue_status = BranchMergeProposalStatus.CODE_APPROVED
-        # Clear out the queued values.
-        self.queuer = None
-        self.queued_revision_id = None
-        self.date_queued = None
-        # Remove from the queue.
-        self.queue_position = None
-
-    def moveToFrontOfQueue(self):
-        """See `IBranchMergeProposal`."""
-        if self.queue_status != BranchMergeProposalStatus.QUEUED:
-            return
-        first_entry = BranchMergeProposal.selectOne("""
-            BranchMergeProposal.queue_position = (
-                SELECT MIN(queue_position)
-                FROM BranchMergeProposal)
-            """)
-
-        self.queue_position = first_entry.queue_position - 1
-        self.syncUpdate()
-
     def markAsMerged(self, merged_revno=None, date_merged=None,
                      merge_reporter=None):
         """See `IBranchMergeProposal`."""
@@ -578,8 +501,6 @@ class BranchMergeProposal(SQLBase):
             BranchMergeProposalStatus.MERGED, merge_reporter)
         self.merged_revno = merged_revno
         self.merge_reporter = merge_reporter
-        # Remove from the queue.
-        self.queue_position = None
 
         # The reviewer of a merged proposal is assumed to have approved, if
         # they rejected it remove the review metadata to avoid confusion.

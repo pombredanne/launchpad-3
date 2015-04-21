@@ -39,7 +39,6 @@ __all__ = [
     'GitRepositoryScanFault',
     'GitTargetError',
     'InvalidBranchMergeProposal',
-    'InvalidMergeQueueConfig',
     'InvalidNamespace',
     'NoLinkedBranch',
     'NoSuchBranch',
@@ -485,15 +484,6 @@ class BuildNotAllowedForDistro(RecipeBuildException):
         RecipeBuildException.__init__(
             self, recipe, distroseries,
             'A build against this distro is not allowed.')
-
-
-@error_status(httplib.BAD_REQUEST)
-class InvalidMergeQueueConfig(Exception):
-    """The config specified is not a valid JSON string."""
-
-    def __init__(self):
-        message = ('The configuration specified is not a valid JSON string.')
-        Exception.__init__(self, message)
 
 
 @error_status(httplib.BAD_REQUEST)

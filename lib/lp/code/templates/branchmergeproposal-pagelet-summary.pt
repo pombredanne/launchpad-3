@@ -77,24 +77,6 @@
         </tr>
       </tal:reviewed>
     </tal:not-superseded>
-    <tal:queued condition="context/queue_status/enumvalue:QUEUED">
-      <tr id="summary-row-4-queued-by">
-        <th>Queued by:</th>
-        <td tal:content="structure context/queuer/fmt:link">Some User</td>
-      </tr>
-      <tr id="summary-row-5-queued-revision">
-        <th>Queued revision:</th>
-        <td>
-          <tal:not-available condition="not: context/queued_revision_id">
-            not available
-          </tal:not-available>
-          <tal:revision condition="context/queued_revision_id"
-                        content="view/queued_revision_number">
-            1234
-          </tal:revision>
-        </td>
-      </tr>
-    </tal:queued>
     <tal:merged condition="context/queue_status/enumvalue:MERGED">
       <tr id="summary-row-6-merge-reporter"
           tal:condition="context/merge_reporter">

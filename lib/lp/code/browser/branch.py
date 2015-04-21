@@ -14,7 +14,6 @@ __all__ = [
     'BranchEditWhiteboardView',
     'BranchRequestImportView',
     'BranchReviewerEditView',
-    'BranchMergeQueueView',
     'BranchMirrorStatusView',
     'BranchMirrorMixin',
     'BranchNameValidationMixin',
@@ -279,7 +278,7 @@ class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
         'add_subscriber', 'browse_revisions', 'create_recipe', 'link_bug',
         'link_blueprint', 'register_merge', 'source', 'subscription',
         'edit_status', 'edit_import', 'upgrade_branch', 'view_recipes',
-        'create_queue', 'visibility']
+        'visibility']
 
     @enabled_with_permission('launchpad.Edit')
     def edit_status(self):
@@ -366,10 +365,6 @@ class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
         enabled = not self.context.private
         text = 'Create packaging recipe'
         return Link('+new-recipe', text, enabled=enabled, icon='add')
-
-    @enabled_with_permission('launchpad.Edit')
-    def create_queue(self):
-        return Link('+create-queue', 'Create a new queue', icon='add')
 
 
 class BranchMirrorMixin:
@@ -1169,23 +1164,6 @@ class BranchReviewerEditView(BranchEditFormView):
     @property
     def initial_values(self):
         return {'reviewer': self.context.code_reviewer}
-
-
-class BranchMergeQueueView(LaunchpadView):
-    """The view used to render the merge queue for a branch."""
-
-    @cachedproperty
-    def merge_queue(self):
-        """Get the merge queue and check visibility."""
-        result = []
-        for proposal in self.context.getMergeQueue():
-            # If the logged in user cannot view the proposal then we
-            # show a "place holder" in the queue position.
-            if check_permission('launchpad.View', proposal):
-                result.append(proposal)
-            else:
-                result.append(None)
-        return result
 
 
 class RegisterProposalStatus(EnumeratedType):
