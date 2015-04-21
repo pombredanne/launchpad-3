@@ -43,7 +43,7 @@ class IGitSubscription(Interface):
     export_as_webservice_entry(as_of="beta")
 
     id = Int(title=_("ID"), readonly=True, required=True)
-    personID = Int(title=_("Person ID"), required=True, readonly=True)
+    person_id = Int(title=_("Person ID"), required=True, readonly=True)
     person = exported(
         PersonChoice(
             title=_("Person"), required=True, vocabulary="ValidPersonOrTeam",
