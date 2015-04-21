@@ -363,10 +363,17 @@ class GitRepository(StormBase, GitIdentityMixin):
             GitRef.path.startswith(u"refs/heads/")).order_by(GitRef.path)
 
     def getRefByPath(self, path):
-        return Store.of(self).find(
-            GitRef,
-            GitRef.repository_id == self.id,
-            GitRef.path == path).one()
+        paths = [path]
+        if not path.startswith(u"refs/heads/"):
+            paths.append(u"refs/heads/%s" % path)
+        for try_path in paths:
+            ref = Store.of(self).find(
+                GitRef,
+                GitRef.repository_id == self.id,
+                GitRef.path == try_path).one()
+            if ref is not None:
+                return ref
+        return None
 
     @staticmethod
     def _convertRefInfo(info):
