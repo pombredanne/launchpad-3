@@ -100,7 +100,6 @@ from lp.services.comments.interfaces.conversation import (
     )
 from lp.services.config import config
 from lp.services.features import getFeatureFlag
-from lp.services.fields import Whiteboard
 from lp.services.librarian.interfaces.client import LibrarianServerError
 from lp.services.messages.interfaces.message import IMessageSet
 from lp.services.propertycache import (
@@ -938,19 +937,6 @@ class BranchMergeProposalRequestReviewView(LaunchpadEditFormView):
                           "mark as 'Needs review'.")
 
 
-class ReviewForm(Interface):
-    """A simple interface to define the revision number field."""
-
-    revision_number = Int(
-        title=_("Reviewed Revision"), required=True,
-        description=_("The revision number on the source branch which "
-                      "has been reviewed."))
-
-    whiteboard = Whiteboard(
-        title=_('Whiteboard'), required=False,
-        description=_('Notes about the merge.'))
-
-
 class MergeProposalEditView(LaunchpadEditFormView,
                             BranchMergeProposalRevisionIdMixin):
     """A base class for merge proposal edit views."""
@@ -960,48 +946,6 @@ class MergeProposalEditView(LaunchpadEditFormView,
         self.next_url = canonical_url(self.context)
         self.cancel_url = self.next_url
         super(MergeProposalEditView, self).initialize()
-
-    def _getRevisionId(self, data):
-        """Translate the revision number that was entered into a revision id.
-
-        If the branch is REMOTE we won't have any scanned revisions to compare
-        against, so store the raw integer revision number as the revision id.
-        """
-        source_branch = self.context.source_branch
-        # Get the revision number out of the data.
-        if source_branch.branch_type == BranchType.REMOTE:
-            return str(data.pop('revision_number'))
-        else:
-            branch_revision = source_branch.getBranchRevision(
-                sequence=data.pop('revision_number'))
-            return branch_revision.revision.revision_id
-
-    def _validateRevisionNumber(self, data, revision_name):
-        """Check to make sure that the revision number entered is valid."""
-        rev_no = data.get('revision_number')
-        if rev_no is not None:
-            try:
-                rev_no = int(rev_no)
-            except ValueError:
-                self.setFieldError(
-                    'revision_number',
-                    'The %s revision must be a positive number.'
-                    % revision_name)
-            else:
-                if rev_no < 1:
-                    self.setFieldError(
-                        'revision_number',
-                        'The %s revision must be a positive number.'
-                        % revision_name)
-                # Accept any positive integer for a REMOTE branch.
-                source_branch = self.context.source_branch
-                if (source_branch.branch_type != BranchType.REMOTE and
-                    rev_no > source_branch.revision_count):
-                    self.setFieldError(
-                        'revision_number',
-                        'The %s revision cannot be larger than the '
-                        'tip revision of the source branch.'
-                        % revision_name)
 
 
 class ResubmitSchema(IBranchMergeProposal):
