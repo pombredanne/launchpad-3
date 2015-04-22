@@ -375,7 +375,7 @@ class BranchMergeProposal(SQLBase):
             recipients[self.registrant] = RecipientReason.forRegistrant(
                 self, branch_identity_cache=branch_identity_cache)
         # If the owner of the source branch is getting emails, override the
-        # rationale to say they are the owner of the souce branch.
+        # rationale to say they are the owner of the source branch.
         source_owner = self.source_branch.owner
         if source_owner in recipients:
             reason = RecipientReason.forSourceOwner(

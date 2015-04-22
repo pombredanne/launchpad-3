@@ -153,7 +153,7 @@ class TestTargetBranchWidget(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def makeBranchAndOldMergeProposal(self, timedelta):
-        """Make an old  merge proposal and a branch with the same target."""
+        """Make an old merge proposal and a branch with the same target."""
         bmp = self.factory.makeBranchMergeProposal(
             date_created=datetime.now(utc) - timedelta)
         login_person(bmp.registrant)
