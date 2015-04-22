@@ -200,9 +200,9 @@ class IGitRepositoryView(Interface):
     def isPersonTrustedReviewer(reviewer):
         """Return true if the `reviewer` is a trusted reviewer.
 
-        The reviewer is trusted if they either own the repository, or are in the
-        team that owns the repository, or they are in the review team for the
-        repository.
+        The reviewer is trusted if they either own the repository, or are in
+        the team that owns the repository, or they are in the review team
+        for the repository.
         """
 
     git_identity = exported(Text(
@@ -489,6 +489,15 @@ class IGitRepositoryModerate(Interface):
 
 class IGitRepositoryEdit(Interface):
     """IGitRepository methods that require launchpad.Edit permission."""
+
+    @mutator_for(IGitRepositoryView["name"])
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        new_name=TextLine(title=_("The new name of the repository.")))
+    @export_write_operation()
+    @operation_for_version("devel")
+    def setName(new_name, user):
+        """Set the name of the repository to be `new_name`."""
 
     @mutator_for(IGitRepositoryView["owner"])
     @call_with(user=REQUEST_USER)

@@ -152,9 +152,10 @@ class _BaseGitNamespace:
     def moveRepository(self, repository, mover, new_name=None,
                        rename_if_necessary=False):
         """See `IGitNamespace`."""
-        # Check to see if the repository is already in this namespace.
+        # Check to see if the repository is already in this namespace with
+        # this name.
         old_namespace = repository.namespace
-        if self.name == old_namespace.name:
+        if self.name == old_namespace.name and new_name is None:
             return
         if new_name is None:
             new_name = repository.name
@@ -164,10 +165,13 @@ class _BaseGitNamespace:
         # Remove the security proxy of the repository as the owner and
         # target attributes are read-only through the interface.
         naked_repository = removeSecurityProxy(repository)
-        naked_repository.owner = self.owner
-        self._retargetRepository(naked_repository)
-        del get_property_cache(naked_repository).target
-        naked_repository.name = new_name
+        if self.owner != repository.owner:
+            naked_repository.owner = self.owner
+        if self.target != repository.target:
+            self._retargetRepository(naked_repository)
+            del get_property_cache(naked_repository).target
+        if new_name != repository.name:
+            naked_repository.name = new_name
 
     def getRepositories(self):
         """See `IGitNamespace`."""
