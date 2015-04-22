@@ -568,7 +568,7 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
             value_type=Reference(Interface)))
 
     def isBranchMergeable(other_branch):
-        """Is the other branch mergeable into this branch (or vice versa)."""
+        """Is the other branch mergeable into this branch (or vice versa)?"""
 
     @export_operation_as('createMergeProposal')
     # Rename back to Bazaar-specific names for API compatibility.
