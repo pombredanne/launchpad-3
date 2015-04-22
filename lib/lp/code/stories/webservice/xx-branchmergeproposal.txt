@@ -54,8 +54,11 @@ Branch merge proposals can be created through the API.
     date_reviewed: None
     description: u'Merge\nit!'
     merge_reporter_link: None
+    merged_revision_id: None
     merged_revno: None
     prerequisite_branch_link: u'http://api.launchpad.dev/devel/~...'
+    prerequisite_git_path: None
+    prerequisite_git_repository_link: None
     preview_diff_link: None
     preview_diffs_collection_link: u'http://.../preview_diffs'
     private: False
@@ -67,9 +70,13 @@ Branch merge proposals can be created through the API.
     reviewer_link: None
     self_link: u'http://api.launchpad.dev/devel/~.../+merge/...'
     source_branch_link: u'http://api.launchpad.dev/devel/~...'
+    source_git_path: None
+    source_git_repository_link: None
     superseded_by_link: None
     supersedes_link: None
     target_branch_link: u'http://api.launchpad.dev/devel/~...'
+    target_git_path: None
+    target_git_repository_link: None
     votes_collection_link:
         u'http://api.launchpad.dev/devel/~.../+merge/.../votes'
     web_link: u'http://code.../~.../+merge/...'
@@ -149,8 +156,11 @@ We use the webservice as an unrelated, unprivileged user.
     date_reviewed: None
     description: None
     merge_reporter_link: None
+    merged_revision_id: None
     merged_revno: None
     prerequisite_branch_link: None
+    prerequisite_git_path: None
+    prerequisite_git_repository_link: None
     preview_diff_link: None
     preview_diffs_collection_link: u'http://.../preview_diffs'
     private: False
@@ -161,9 +171,13 @@ We use the webservice as an unrelated, unprivileged user.
     reviewer_link: None
     self_link: u'http://.../~source/fooix/fix-it/+merge/...'
     source_branch_link: u'http://.../~source/fooix/fix-it'
+    source_git_path: None
+    source_git_repository_link: None
     superseded_by_link: None
     supersedes_link: None
     target_branch_link: u'http://.../~target/fooix/trunk'
+    target_git_path: None
+    target_git_repository_link: None
     votes_collection_link: u'http://.../~source/fooix/fix-it/+merge/.../votes'
     web_link: u'http://code.../~source/fooix/fix-it/+merge/...'
 

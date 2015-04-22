@@ -852,6 +852,11 @@
         permission="launchpad.View"
         interface="lp.code.interfaces.gitref.IGitRef" />
   </class>
+  <class class="lp.code.model.gitref.GitRefFrozen">
+    <require
+        permission="launchpad.View"
+        interface="lp.code.interfaces.gitref.IGitRef" />
+  </class>
 
   <!-- GitCollection -->
 

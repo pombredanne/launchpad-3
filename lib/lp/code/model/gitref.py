@@ -7,19 +7,28 @@ __all__ = [
     'GitRefFrozen',
     ]
 
+from urllib import quote_plus
+
 import pytz
 from storm.locals import (
     DateTime,
     Int,
+    Not,
     Reference,
+    Store,
     Unicode,
     )
 from zope.interface import implements
 
 from lp.app.errors import NotFoundError
 from lp.code.enums import GitObjectType
+from lp.code.interfaces.branchmergeproposal import (
+    BRANCH_MERGE_PROPOSAL_FINAL_STATES,
+    )
 from lp.code.interfaces.gitref import IGitRef
+from lp.code.model.branchmergeproposal import BranchMergeProposal
 from lp.services.database.enumcol import EnumCol
+from lp.services.database.interfaces import IStore
 from lp.services.database.stormbase import StormBase
 
 
@@ -64,6 +73,50 @@ class GitRefMixin:
         return self.repository.target
 
     @property
+    def namespace(self):
+        """See `IGitRef`."""
+        return self.repository.namespace
+
+    def getCodebrowseUrl(self):
+        """See `IGitRef`."""
+        return "%s?h=%s" % (
+            self.repository.getCodebrowseUrl(), quote_plus(self.name))
+
+    @property
+    def information_type(self):
+        """See `IGitRef`."""
+        return self.repository.information_type
+
+    def visibleByUser(self, user):
+        """See `IGitRef`."""
+        return self.repository.visibleByUser(user)
+
+    @property
+    def reviewer(self):
+        """See `IGitRef`."""
+        # XXX cjwatson 2015-04-17: We should have ref-pattern-specific
+        # reviewers.
+        return self.repository.reviewer
+
+    @property
+    def code_reviewer(self):
+        """See `IGitRef`."""
+        # XXX cjwatson 2015-04-17: We should have ref-pattern-specific
+        # reviewers.
+        return self.repository.code_reviewer
+
+    def isPersonTrustedReviewer(self, reviewer):
+        """See `IGitRef`."""
+        # XXX cjwatson 2015-04-17: We should have ref-pattern-specific
+        # reviewers.
+        return self.repository.isPersonTrustedReviewer(reviewer)
+
+    @property
+    def subscriptions(self):
+        """See `IGitRef`."""
+        return self.repository.subscriptions
+
+    @property
     def subscribers(self):
         """See `IGitRef`."""
         return self.repository.subscribers
@@ -82,6 +135,34 @@ class GitRefMixin:
     def getNotificationRecipients(self):
         """See `IGitRef`."""
         return self.repository.getNotificationRecipients()
+
+    @property
+    def landing_targets(self):
+        """See `IGitRef`."""
+        return Store.of(self).find(
+            BranchMergeProposal,
+            BranchMergeProposal.source_git_repository == self.repository,
+            BranchMergeProposal.source_git_path == self.path)
+
+    @property
+    def landing_candidates(self):
+        """See `IGitRef`."""
+        return Store.of(self).find(
+            BranchMergeProposal,
+            BranchMergeProposal.target_git_repository == self.repository,
+            BranchMergeProposal.target_git_path == self.path,
+            Not(BranchMergeProposal.queue_status.is_in(
+                BRANCH_MERGE_PROPOSAL_FINAL_STATES)))
+
+    @property
+    def dependent_landings(self):
+        """See `IGitRef`."""
+        return Store.of(self).find(
+            BranchMergeProposal,
+            BranchMergeProposal.prerequisite_git_repository == self.repository,
+            BranchMergeProposal.prerequisite_git_path == self.path,
+            Not(BranchMergeProposal.queue_status.is_in(
+                BRANCH_MERGE_PROPOSAL_FINAL_STATES)))
 
 
 class GitRef(StormBase, GitRefMixin):
