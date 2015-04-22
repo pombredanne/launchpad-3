@@ -133,10 +133,10 @@ def latest_proposals_for_each_branch(proposals):
             continue
         # Only show the most recent proposal for any given target.
         date_created = proposal.date_created
-        target_id = proposal.target_branch.id
+        target = proposal.merge_target
 
-        if target_id not in targets or date_created > targets[target_id][1]:
-            targets[target_id] = (proposal, date_created)
+        if target not in targets or date_created > targets[target][1]:
+            targets[target] = (proposal, date_created)
 
     return sorted(
         [proposal for proposal, date_created in targets.itervalues()],
@@ -148,7 +148,7 @@ class BranchMergeProposalBreadcrumb(Breadcrumb):
 
     @property
     def text(self):
-        return 'Merge into %s' % self.context.target_branch.name
+        return 'Merge into %s' % self.context.merge_target.name
 
 
 def notify(func):
@@ -680,8 +680,8 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
     @property
     def label(self):
         return "Merge %s into %s" % (
-            self.context.source_branch.bzr_identity,
-            self.context.target_branch.bzr_identity)
+            self.context.merge_source.identity,
+            self.context.merge_target.identity)
 
     @property
     def pending_diff(self):
@@ -796,7 +796,7 @@ class DecoratedCodeReviewVoteReference:
     def trusted(self):
         """ Is the person a trusted reviewer."""
         proposal = self.context.branch_merge_proposal
-        return proposal.target_branch.isPersonTrustedReviewer(
+        return proposal.merge_target.isPersonTrustedReviewer(
             self.context.reviewer)
 
     @property
@@ -1057,7 +1057,7 @@ class BranchMergeProposalDeleteView(MergeProposalEditView):
         # Store the source branch for `next_url` to make sure that
         # it is available in the situation where the merge proposal
         # is deleted.
-        self.source_branch = self.context.source_branch
+        self.merge_source = self.context.merge_source
         super(BranchMergeProposalDeleteView, self).initialize()
 
     @action('Delete proposal', name='delete')
@@ -1065,7 +1065,7 @@ class BranchMergeProposalDeleteView(MergeProposalEditView):
         """Delete the merge proposal and go back to the source branch."""
         self.context.deleteProposal()
         # Override the next url to be the source branch.
-        self.next_url = canonical_url(self.source_branch)
+        self.next_url = canonical_url(self.merge_source)
 
 
 class BranchMergeProposalMergedView(LaunchpadEditFormView):
@@ -1124,8 +1124,8 @@ class BranchMergeProposalSubscribersView(LaunchpadView):
         self._full_subscribers = set()
         self._status_subscribers = set()
         # Add subscribers from the source and target branches.
-        self._add_subscribers_for_branch(self.context.source_branch)
-        self._add_subscribers_for_branch(self.context.target_branch)
+        self._add_subscribers_for_branch(self.context.merge_source)
+        self._add_subscribers_for_branch(self.context.merge_target)
         # Remove all the people from the comment_subscribers from the
         # status_and_vote_subscribers as they recipients will get the email
         # only once, and for the most detailed subscription from the source
@@ -1271,7 +1271,7 @@ class BranchMergeProposalAddVoteView(LaunchpadFormView):
     def label(self):
         """The pagetitle and heading."""
         return "Review merge proposal for %s" % (
-            self.context.source_branch.bzr_identity)
+            self.context.merge_source.identity)
     page_title = label
 
     @action('Save Review', name='vote')

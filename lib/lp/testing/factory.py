@@ -1451,7 +1451,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             review_requests.append((reviewer, None))
         proposal = source_branch.addLandingTarget(
             registrant, target_branch, review_requests=review_requests,
-            prerequisite_branch=prerequisite_branch, description=description,
+            merge_prerequisite=prerequisite_branch, description=description,
             date_created=date_created)
 
         unsafe_proposal = removeSecurityProxy(proposal)
@@ -1464,10 +1464,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             unsafe_proposal.requestReview()
         elif set_state == BranchMergeProposalStatus.CODE_APPROVED:
             unsafe_proposal.approveBranch(
-                proposal.target_branch.owner, 'some_revision')
+                proposal.merge_target.owner, 'some_revision')
         elif set_state == BranchMergeProposalStatus.REJECTED:
             unsafe_proposal.rejectBranch(
-                proposal.target_branch.owner, 'some_revision')
+                proposal.merge_target.owner, 'some_revision')
         elif set_state == BranchMergeProposalStatus.MERGED:
             unsafe_proposal.markAsMerged()
         elif set_state == BranchMergeProposalStatus.SUPERSEDED:

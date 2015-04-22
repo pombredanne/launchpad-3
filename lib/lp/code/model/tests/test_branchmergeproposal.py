@@ -1025,8 +1025,8 @@ class TestBranchMergeProposalGetterGetProposals(TestCaseWithFactory):
             registrant = owner
         bmp = branch.addLandingTarget(
             registrant=registrant,
-            target_branch=self.factory.makeProductBranch(product=product,
-            owner=owner))
+            merge_target=self.factory.makeProductBranch(
+                product=product, owner=owner))
         if needs_review:
             bmp.requestReview()
         return bmp

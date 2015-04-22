@@ -1279,8 +1279,8 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
 
         try:
             proposal = source_branch.addLandingTarget(
-                registrant=registrant, target_branch=target_branch,
-                prerequisite_branch=prerequisite_branch,
+                registrant=registrant, merge_target=target_branch,
+                merge_prerequisite=prerequisite_branch,
                 needs_review=data['needs_review'],
                 description=data.get('comment'),
                 review_requests=review_requests,

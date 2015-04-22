@@ -261,9 +261,9 @@ patch_plain_parameter_type(
 
 patch_entry_return_type(IBranch, '_createMergeProposal', IBranchMergeProposal)
 patch_plain_parameter_type(
-    IBranch, '_createMergeProposal', 'target_branch', IBranch)
+    IBranch, '_createMergeProposal', 'merge_target', IBranch)
 patch_plain_parameter_type(
-    IBranch, '_createMergeProposal', 'prerequisite_branch', IBranch)
+    IBranch, '_createMergeProposal', 'merge_prerequisite', IBranch)
 patch_collection_return_type(
     IBranch, 'getMergeProposals', IBranchMergeProposal)
 

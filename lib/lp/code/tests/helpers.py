@@ -107,7 +107,7 @@ def make_erics_fooix_project(factory):
     proposed = factory.makeProductBranch(
         owner=fred, product=fooix, name='proposed')
     bmp = proposed.addLandingTarget(
-        registrant=fred, target_branch=trunk, needs_review=True,
+        registrant=fred, merge_target=trunk, needs_review=True,
         review_requests=[(eric, 'code')])
     # And fake a diff.
     naked_bmp = removeSecurityProxy(bmp)
