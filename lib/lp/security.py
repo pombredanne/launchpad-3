@@ -2392,16 +2392,15 @@ class BranchMergeProposalEdit(AuthorizationBase):
 
         The user is able to edit if they are:
           * the registrant of the merge proposal
-          * the owner of the source_branch
-          * the owner of the target_branch
-          * the reviewer for the target_branch
+          * the owner of the merge_source
+          * the owner of the merge_target
+          * the reviewer for the merge_target
           * an administrator
         """
         return (user.inTeam(self.obj.registrant) or
-                user.inTeam(self.obj.source_branch.owner) or
-                self.forwardCheckAuthenticated(
-                    user, self.obj.target_branch) or
-                user.inTeam(self.obj.target_branch.reviewer))
+                user.inTeam(self.obj.merge_source.owner) or
+                self.forwardCheckAuthenticated(user, self.obj.merge_target) or
+                user.inTeam(self.obj.merge_target.reviewer))
 
 
 class AdminDistroSeriesLanguagePacks(

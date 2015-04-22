@@ -502,8 +502,8 @@ class IBranchMergeProposalEdit(Interface):
         :type merge_reporter: ``Person``
         """
 
-    def resubmit(registrant, source_branch=None, target_branch=None,
-                 prerequisite_branch=DEFAULT):
+    def resubmit(registrant, merge_source=None, merge_target=None,
+                 merge_prerequisite=DEFAULT):
         """Mark the branch merge proposal as superseded and return a new one.
 
         The new proposal is created as work-in-progress, and copies across
@@ -512,12 +512,12 @@ class IBranchMergeProposalEdit(Interface):
         to review the new proposal.
 
         :param registrant: The person registering the new proposal.
-        :param source_branch: The source_branch for the new proposal (defaults
-            to the current source_branch).
-        :param target_branch: The target_branch for the new proposal (defaults
-            to the current target_branch).
-        :param prerequisite_branch: The prerequisite_branch for the new
-            proposal (defaults to the current prerequisite_branch).
+        :param merge_source: The merge_source for the new proposal (defaults
+            to the current merge_source).
+        :param merge_target: The merge_target for the new proposal (defaults
+            to the current merge_target).
+        :param merge_prerequisite: The merge_prerequisite for the new
+            proposal (defaults to the current merge_prerequisite).
         :param description: The description for the new proposal (defaults to
             the current description).
         """

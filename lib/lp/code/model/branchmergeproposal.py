@@ -122,7 +122,7 @@ def is_valid_transition(proposal, from_state, next_state, user=None):
         return True
     if from_state in FINAL_STATES and next_state not in FINAL_STATES:
         dupes = BranchMergeProposalGetter.activeProposalsForBranches(
-            proposal.source_branch, proposal.target_branch)
+            proposal.merge_source, proposal.merge_target)
         if not dupes.is_empty():
             return False
 
@@ -140,7 +140,7 @@ def is_valid_transition(proposal, from_state, next_state, user=None):
     # Transitioning to code approved, rejected, or failed from work in
     # progress or needs review needs the user to be a valid reviewer, other
     # states are fine.
-    valid_reviewer = proposal.target_branch.isPersonTrustedReviewer(user)
+    valid_reviewer = proposal.merge_target.isPersonTrustedReviewer(user)
     reviewed_ok_states = (code_approved, )
     obsolete_states = (merge_failed, queued)
     if not valid_reviewer:
@@ -205,14 +205,15 @@ class BranchMergeProposal(SQLBase):
 
     @property
     def private(self):
-        return (
-            (self.source_branch.information_type
-             in PRIVATE_INFORMATION_TYPES) or
-            (self.target_branch.information_type
-             in PRIVATE_INFORMATION_TYPES) or
-            (self.prerequisite_branch is not None and
-             (self.prerequisite_branch.information_type in
-              PRIVATE_INFORMATION_TYPES)))
+        objects = [
+            self.merge_source,
+            self.merge_target,
+            self.merge_prerequisite,
+            ]
+        return any(
+            obj is not None and
+            obj.information_type in PRIVATE_INFORMATION_TYPES
+            for obj in objects)
 
     reviewer = ForeignKey(
         dbName='reviewer', foreignKey='Person',
@@ -278,7 +279,9 @@ class BranchMergeProposal(SQLBase):
     @property
     def target(self):
         """See `IHasBranchTarget`."""
-        return self.source_branch.target
+        # XXX cjwatson 2015-04-12: This is not an IBranchTarget for Git,
+        # although it has similar semantics.
+        return self.merge_source.target
 
     root_message_id = StringCol(default=None)
 
@@ -286,8 +289,9 @@ class BranchMergeProposal(SQLBase):
     def title(self):
         """See `IBranchMergeProposal`."""
         return "[Merge] %(source)s into %(target)s" % {
-            'source': self.source_branch.bzr_identity,
-            'target': self.target_branch.bzr_identity}
+            'source': self.merge_source.identity,
+            'target': self.merge_target.identity,
+            }
 
     @property
     def all_comments(self):
@@ -334,19 +338,19 @@ class BranchMergeProposal(SQLBase):
         """See IBranchMergeProposal.getNotificationRecipients"""
         recipients = {}
         branch_identity_cache = {
-            self.source_branch: self.source_branch.bzr_identity,
-            self.target_branch: self.target_branch.bzr_identity,
+            self.merge_source: self.merge_source.identity,
+            self.merge_target: self.merge_target.identity,
             }
-        branches = [self.source_branch, self.target_branch]
-        if self.prerequisite_branch is not None:
-            branches.append(self.prerequisite_branch)
+        branches = [self.merge_source, self.merge_target]
+        if self.merge_prerequisite is not None:
+            branches.append(self.merge_prerequisite)
         for branch in branches:
             branch_recipients = branch.getNotificationRecipients()
             for recipient in branch_recipients:
                 # If the recipient cannot see either of the branches, skip
                 # them.
-                if (not self.source_branch.visibleByUser(recipient) or
-                    not self.target_branch.visibleByUser(recipient)):
+                if (not self.merge_source.visibleByUser(recipient) or
+                    not self.merge_target.visibleByUser(recipient)):
                     continue
                 subscription, rationale = branch_recipients.getReason(
                     recipient)
@@ -376,7 +380,7 @@ class BranchMergeProposal(SQLBase):
                 self, branch_identity_cache=branch_identity_cache)
         # If the owner of the source branch is getting emails, override the
         # rationale to say they are the owner of the source branch.
-        source_owner = self.source_branch.owner
+        source_owner = self.merge_source.owner
         if source_owner in recipients:
             reason = RecipientReason.forSourceOwner(
                 self, branch_identity_cache=branch_identity_cache)
@@ -467,7 +471,7 @@ class BranchMergeProposal(SQLBase):
         """Set the proposal to next_state."""
         # Check the reviewer can review the code for the target branch.
         old_state = self.queue_status
-        if not self.target_branch.isPersonTrustedReviewer(reviewer):
+        if not self.merge_target.isPersonTrustedReviewer(reviewer):
             raise UserNotBranchReviewer
         # Check the current state of the proposal.
         self._transitionToState(next_state, reviewer)
@@ -519,22 +523,22 @@ class BranchMergeProposal(SQLBase):
             date_merged = UTC_NOW
         self.date_merged = date_merged
 
-    def resubmit(self, registrant, source_branch=None, target_branch=None,
-                 prerequisite_branch=DEFAULT, description=None,
+    def resubmit(self, registrant, merge_source=None, merge_target=None,
+                 merge_prerequisite=DEFAULT, description=None,
                  break_link=False):
         """See `IBranchMergeProposal`."""
-        if source_branch is None:
-            source_branch = self.source_branch
-        if target_branch is None:
-            target_branch = self.target_branch
+        if merge_source is None:
+            merge_source = self.merge_source
+        if merge_target is None:
+            merge_target = self.merge_target
         # DEFAULT instead of None, because None is a valid value.
         proposals = BranchMergeProposalGetter.activeProposalsForBranches(
-            source_branch, target_branch)
+            merge_source, merge_target)
         for proposal in proposals:
             if proposal is not self:
                 raise BranchMergeProposalExists(proposal)
-        if prerequisite_branch is DEFAULT:
-            prerequisite_branch = self.prerequisite_branch
+        if merge_prerequisite is DEFAULT:
+            merge_prerequisite = self.merge_prerequisite
         if description is None:
             description = self.description
         # You can transition from REJECTED to SUPERSEDED, but
@@ -547,10 +551,10 @@ class BranchMergeProposal(SQLBase):
         self.syncUpdate()
         review_requests = list(set(
             (vote.reviewer, vote.review_type) for vote in self.votes))
-        proposal = source_branch.addLandingTarget(
+        proposal = merge_source.addLandingTarget(
             registrant=registrant,
-            target_branch=target_branch,
-            prerequisite_branch=prerequisite_branch,
+            merge_target=merge_target,
+            merge_prerequisite=merge_prerequisite,
             description=description,
             needs_review=True, review_requests=review_requests)
         if not break_link:

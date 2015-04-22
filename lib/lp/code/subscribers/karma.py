@@ -29,7 +29,7 @@ def code_review_comment_added(code_review_comment, event):
     # If the user is commenting on their own proposal, then they don't
     # count as a reviewer for that proposal.
     user = code_review_comment.message.owner
-    reviewer = user.inTeam(proposal.target_branch.code_reviewer)
+    reviewer = user.inTeam(proposal.merge_target.code_reviewer)
     if reviewer and user != proposal.registrant:
         target.assignKarma(user, 'codereviewreviewercomment')
     else:

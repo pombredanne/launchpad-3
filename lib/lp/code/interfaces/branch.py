@@ -42,6 +42,7 @@ from lazr.restful.declarations import (
     operation_parameters,
     operation_returns_collection_of,
     operation_returns_entry,
+    rename_parameters_as,
     REQUEST_USER,
     )
 from lazr.restful.fields import (
@@ -570,9 +571,13 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
         """Is the other branch mergeable into this branch (or vice versa)?"""
 
     @export_operation_as('createMergeProposal')
+    # Rename back to Bazaar-specific names for API compatibility.
+    @rename_parameters_as(
+        merge_target='target_branch',
+        merge_prerequisite='prerequisite_branch')
     @operation_parameters(
-        target_branch=Reference(schema=Interface),
-        prerequisite_branch=Reference(schema=Interface),
+        merge_target=Reference(schema=Interface),
+        merge_prerequisite=Reference(schema=Interface),
         needs_review=Bool(title=_('Needs review'),
             description=_('If True the proposal needs review.'
             'Otherwise, it will be work in progress.')),
@@ -584,14 +589,14 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
             description=_('Message to use when committing this merge.')),
         reviewers=List(value_type=Reference(schema=IPerson)),
         review_types=List(value_type=TextLine()))
-    # target_branch and prerequisite_branch are actually IBranch, patched in
+    # merge_target and merge_prerequisite are actually IBranch, patched in
     # _schema_circular_imports.
     @call_with(registrant=REQUEST_USER)
     # IBranchMergeProposal supplied as Interface to avoid circular imports.
     @export_factory_operation(Interface, [])
     @operation_for_version('beta')
     def _createMergeProposal(
-        registrant, target_branch, prerequisite_branch=None,
+        registrant, merge_target, merge_prerequisite=None,
         needs_review=True, initial_comment=None, commit_message=None,
         reviewers=None, review_types=None):
         """Create a new BranchMergeProposal with this branch as the source.
@@ -603,22 +608,22 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
         targets.
         """
 
-    def addLandingTarget(registrant, target_branch, prerequisite_branch=None,
+    def addLandingTarget(registrant, merge_target, merge_prerequisite=None,
                          date_created=None, needs_review=False,
                          description=None, review_requests=None,
                          commit_message=None):
         """Create a new BranchMergeProposal with this branch as the source.
 
-        Both the target_branch and the prerequisite_branch, if it is there,
+        Both the merge_target and the merge_prerequisite, if it is there,
         must be branches with the same target as the source branch.
 
         Personal branches (a.k.a. junk branches) cannot specify landing
         targets.
 
         :param registrant: The person who is adding the landing target.
-        :param target_branch: Must be another branch, and different to self.
-        :param prerequisite_branch: Optional but if it is not None, it must be
-            another branch.
+        :param merge_target: Must be another branch, and different to self.
+        :param merge_prerequisite: Optional but if it is not None, it must
+            be another branch.
         :param date_created: Used to specify the date_created value of the
             merge request.
         :param needs_review: Used to specify the proposal is ready for
