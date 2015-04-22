@@ -295,7 +295,7 @@ class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
         """Return a link to the branch's revisions on codebrowse."""
         text = 'All revisions'
         enabled = self.context.code_is_browseable
-        url = self.context.codebrowse_url('changes')
+        url = self.context.getCodebrowseUrl('changes')
         return Link(url, text, enabled=enabled)
 
     @enabled_with_permission('launchpad.AnyPerson')
@@ -344,7 +344,7 @@ class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
         """Return a link to the branch's file listing on codebrowse."""
         text = 'Browse the code'
         enabled = self.context.code_is_browseable
-        url = self.context.codebrowse_url('files')
+        url = self.context.getCodebrowseUrl('files')
         return Link(url, text, icon='info', enabled=enabled)
 
     def edit_import(self):
@@ -466,7 +466,7 @@ class BranchView(InformationTypePortletMixin, FeedsMixin, BranchMirrorMixin,
     @property
     def codebrowse_url(self):
         """Return the link to codebrowse for this branch."""
-        return self.context.codebrowse_url()
+        return self.context.getCodebrowseUrl()
 
     @property
     def pending_writes(self):
