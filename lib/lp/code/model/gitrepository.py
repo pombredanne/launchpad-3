@@ -622,6 +622,10 @@ class GitRepository(StormBase, GitIdentityMixin):
         # subscriptions.
         getUtility(IRemoveArtifactSubscriptionsJobSource).create(user, [self])
 
+    def setName(self, new_name, user):
+        """See `IGitRepository`."""
+        self.namespace.moveRepository(self, user, new_name=new_name)
+
     def setOwner(self, new_owner, user):
         """See `IGitRepository`."""
         new_namespace = get_git_namespace(self.target, new_owner)

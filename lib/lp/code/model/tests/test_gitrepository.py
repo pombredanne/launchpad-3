@@ -6,11 +6,14 @@
 __metaclass__ = type
 
 from datetime import datetime
+import email
 from functools import partial
 import hashlib
 import json
 
 from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.lifecycle.snapshot import Snapshot
+import transaction
 import pytz
 from testtools.matchers import (
     EndsWith,
@@ -19,6 +22,8 @@ from testtools.matchers import (
     )
 from zope.component import getUtility
 from zope.event import notify
+from zope.interface import providedBy
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import (
@@ -37,6 +42,7 @@ from lp.code.errors import (
     GitFeatureDisabled,
     GitRepositoryCreatorNotMemberOfOwnerTeam,
     GitRepositoryCreatorNotOwner,
+    GitRepositoryExists,
     GitTargetError,
     )
 from lp.code.interfaces.defaultgit import ICanHasDefaultGitRepository
@@ -68,6 +74,7 @@ from lp.registry.interfaces.personproduct import IPersonProductFactory
 from lp.registry.tests.test_accesspolicy import get_policies_for_artifact
 from lp.services.database.constants import UTC_NOW
 from lp.services.features.testing import FeatureFixture
+from lp.services.mail import stub
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.interfaces import OAuthPermission
 from lp.testing import (
@@ -288,16 +295,16 @@ class TestGitIdentityMixin(TestCaseWithFactory):
             repository.getRepositoryIdentities())
 
 
-class TestGitRepositoryDateLastModified(TestCaseWithFactory):
-    """Exercise the situations where date_last_modified is updated."""
+class TestGitRepositoryModifications(TestCaseWithFactory):
+    """Tests for Git repository modification notifications."""
 
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        super(TestGitRepositoryDateLastModified, self).setUp()
+        super(TestGitRepositoryModifications, self).setUp()
         self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
 
-    def test_initial_value(self):
+    def test_date_last_modified_initial_value(self):
         # The initial value of date_last_modified is date_created.
         repository = self.factory.makeGitRepository()
         self.assertEqual(
@@ -313,6 +320,34 @@ class TestGitRepositoryDateLastModified(TestCaseWithFactory):
             [IGitRepository["name"]], user=repository.owner))
         self.assertSqlAttributeEqualsDate(
             repository, "date_last_modified", UTC_NOW)
+
+    def test_sends_notifications(self):
+        # Attribute modifications send mail to subscribers.
+        self.assertEqual(0, len(stub.test_emails))
+        repository = self.factory.makeGitRepository(name=u"foo")
+        repository_before_modification = Snapshot(
+            repository, providing=providedBy(repository))
+        with person_logged_in(repository.owner):
+            repository.subscribe(
+                repository.owner,
+                BranchSubscriptionNotificationLevel.ATTRIBUTEONLY,
+                BranchSubscriptionDiffSize.NODIFF,
+                CodeReviewNotificationLevel.NOEMAIL,
+                repository.owner)
+            repository.setName(u"bar", repository.owner)
+            notify(ObjectModifiedEvent(
+                repository, repository_before_modification, ["name"],
+                user=repository.owner))
+        transaction.commit()
+        self.assertEqual(1, len(stub.test_emails))
+        message = email.message_from_string(stub.test_emails[0][2])
+        body = message.get_payload(decode=True)
+        self.assertIn("Name: foo => bar\n", body)
+        self.assertIn(
+            "Git identity: lp:~{person}/{project}/+git/foo => "
+            "lp:~{person}/{project}/+git/bar\n".format(
+                person=repository.owner.name, project=repository.target.name),
+            body)
 
     # XXX cjwatson 2015-02-04: This will need to be expanded once Launchpad
     # actually notices any interesting kind of repository modifications.
@@ -890,6 +925,39 @@ class TestGitRepositoryIsPersonTrustedReviewer(TestCaseWithFactory):
         repository = self.factory.makeGitRepository(reviewer=team)
         reviewer = self.factory.makePerson()
         self.assertNotTrustedReviewer(repository, reviewer)
+
+
+class TestGitRepositorySetName(TestCaseWithFactory):
+    """Test `IGitRepository.setName`."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestGitRepositorySetName, self).setUp()
+        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
+
+    def test_not_owner(self):
+        # A non-owner non-admin user cannot rename a repository.
+        repository = self.factory.makeGitRepository()
+        with person_logged_in(self.factory.makePerson()):
+            self.assertRaises(Unauthorized, getattr, repository, "setName")
+
+    def test_name_clash(self):
+        # Name clashes are refused.
+        repository = self.factory.makeGitRepository(name=u"foo")
+        self.factory.makeGitRepository(
+            owner=repository.owner, target=repository.target, name=u"bar")
+        with person_logged_in(repository.owner):
+            self.assertRaises(
+                GitRepositoryExists, repository.setName,
+                u"bar", repository.owner)
+
+    def test_rename(self):
+        # A non-clashing rename request works.
+        repository = self.factory.makeGitRepository(name=u"foo")
+        with person_logged_in(repository.owner):
+            repository.setName(u"bar", repository.owner)
+        self.assertEqual(u"bar", repository.name)
 
 
 class TestGitRepositorySetOwner(TestCaseWithFactory):
