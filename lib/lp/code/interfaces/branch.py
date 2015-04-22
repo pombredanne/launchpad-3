@@ -678,7 +678,7 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
     code_is_browseable = Attribute(
         "Is the code in this branch accessable through codebrowse?")
 
-    def codebrowse_url(*extras):
+    def getCodebrowseUrl(*extras):
         """Construct a URL for this branch in codebrowse.
 
         :param extras: Zero or more path segments that will be joined onto the
