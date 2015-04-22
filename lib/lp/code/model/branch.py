@@ -646,7 +646,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         """See `IBranch`."""
         return (self.revision_count > 0 or self.last_mirrored != None)
 
-    def codebrowse_url(self, *extras):
+    def getCodebrowseUrl(self, *extras):
         """See `IBranch`."""
         if self.private:
             root = config.codehosting.secure_codebrowse_root
@@ -656,7 +656,7 @@ class Branch(SQLBase, BzrIdentityMixin):
 
     @property
     def browse_source_url(self):
-        return self.codebrowse_url('files')
+        return self.getCodebrowseUrl('files')
 
     def composePublicURL(self, scheme='http'):
         """See `IBranch`."""

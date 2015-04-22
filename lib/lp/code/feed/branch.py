@@ -445,7 +445,7 @@ class BranchFeed(BranchFeedBase):
     def itemToFeedEntry(self, rev):
         """See `IFeed`."""
         title = FeedTypedData("Revision %d" % rev.sequence)
-        url = self.context.codebrowse_url('revision', str(rev.sequence))
+        url = self.context.getCodebrowseUrl('revision', str(rev.sequence))
         content_view = BranchFeedContentView(rev, self.request, self,
                                              'templates/branch-revision.pt')
         content = FeedTypedData(content=content_view.render(),
