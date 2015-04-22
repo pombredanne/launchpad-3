@@ -121,7 +121,11 @@
         <div tal:replace="structure context/@@++diff-stats" />
       </td>
     </tr>
-    <tr id="summary-row-merge-instruction">
+    <tal:comment condition="nothing">
+      <!-- XXX cjwatson 2015-04-18: Add merge instructions for Git. -->
+    </tal:comment>
+    <tr id="summary-row-merge-instruction"
+        tal:condition="context/source_branch">
       <th>To merge this branch:</th>
       <td>bzr merge <span class="branch-url" tal:content="context/source_branch/bzr_identity" /></td>
     </tr>

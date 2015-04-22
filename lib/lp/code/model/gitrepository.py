@@ -737,6 +737,10 @@ class GitRepository(StormBase, GitIdentityMixin):
             recipients.add(subscription.person, subscription, rationale)
         return recipients
 
+    def isRepositoryMergeable(self, other):
+        """See `IGitRepository`."""
+        return self.namespace.areRepositoriesMergeable(other.namespace)
+
     def destroySelf(self):
         raise NotImplementedError
 

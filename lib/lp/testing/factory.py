@@ -1477,6 +1477,68 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         return proposal
 
+    def makeBranchMergeProposalForGit(self, target_ref=None, registrant=None,
+                                      set_state=None, prerequisite_ref=None,
+                                      target=_DEFAULT, initial_comment=None,
+                                      source_ref=None, date_created=None,
+                                      description=None, reviewer=None,
+                                      merged_revision_id=None):
+        """Create a proposal to merge based on anonymous branches."""
+        if target is not _DEFAULT:
+            pass
+        elif target_ref is not None:
+            target = target_ref.target
+        elif source_ref is not None:
+            target = source_ref.target
+        elif prerequisite_ref is not None:
+            target = prerequisite_ref.target
+        else:
+            # Create a reference for a repository on the target, and use
+            # that target.
+            [target_ref] = self.makeGitRefs(target=target)
+            target = target_ref.target
+
+        # Fall back to initial_comment for description.
+        if description is None:
+            description = initial_comment
+
+        if target_ref is None:
+            [target_ref] = self.makeGitRefs(target=target)
+        if source_ref is None:
+            [source_ref] = self.makeGitRefs(target=target)
+        if registrant is None:
+            registrant = self.makePerson()
+        review_requests = []
+        if reviewer is not None:
+            review_requests.append((reviewer, None))
+        proposal = source_ref.addLandingTarget(
+            registrant, target_ref, review_requests=review_requests,
+            merge_prerequisite=prerequisite_ref, description=description,
+            date_created=date_created)
+
+        unsafe_proposal = removeSecurityProxy(proposal)
+        unsafe_proposal.merged_revision_id = merged_revision_id
+        if (set_state is None or
+            set_state == BranchMergeProposalStatus.WORK_IN_PROGRESS):
+            # The initial state is work in progress, so do nothing.
+            pass
+        elif set_state == BranchMergeProposalStatus.NEEDS_REVIEW:
+            unsafe_proposal.requestReview()
+        elif set_state == BranchMergeProposalStatus.CODE_APPROVED:
+            unsafe_proposal.approveBranch(
+                proposal.merge_target.owner, 'some_revision')
+        elif set_state == BranchMergeProposalStatus.REJECTED:
+            unsafe_proposal.rejectBranch(
+                proposal.merge_target.owner, 'some_revision')
+        elif set_state == BranchMergeProposalStatus.MERGED:
+            unsafe_proposal.markAsMerged()
+        elif set_state == BranchMergeProposalStatus.SUPERSEDED:
+            unsafe_proposal.resubmit(proposal.registrant)
+        else:
+            raise AssertionError('Unknown status: %s' % set_state)
+
+        return proposal
+
     def makeBranchSubscription(self, branch=None, person=None,
                                subscribed_by=None):
         """Create a BranchSubscription."""
@@ -1673,10 +1735,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             BranchSubscriptionNotificationLevel.NOEMAIL, None,
             CodeReviewNotificationLevel.NOEMAIL, subscribed_by)
 
-    def makeGitRefs(self, repository=None, paths=None):
+    def makeGitRefs(self, repository=None, paths=None, **repository_kwargs):
         """Create and return a list of new, arbitrary GitRefs."""
         if repository is None:
-            repository = self.makeGitRepository()
+            repository = self.makeGitRepository(**repository_kwargs)
         if paths is None:
             paths = [self.getUniqueString('refs/heads/path').decode('utf-8')]
         refs_info = {
