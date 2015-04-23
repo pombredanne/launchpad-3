@@ -23,12 +23,19 @@ from storm.expr import (
     Desc,
     Join,
     LeftJoin,
+    Not,
     Or,
     Select,
     SQL,
     )
-from storm.locals import Reference
-from storm.store import Store
+from storm.locals import (
+    Int,
+    Reference,
+    )
+from storm.store import (
+    EmptyResultSet,
+    Store,
+    )
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
@@ -66,6 +73,7 @@ from lp.code.interfaces.branchtarget import IHasBranchTarget
 from lp.code.interfaces.codereviewinlinecomment import (
     ICodeReviewInlineCommentSet,
     )
+from lp.code.interfaces.gitref import IGitRef
 from lp.code.mail.branch import RecipientReason
 from lp.code.model.branchrevision import BranchRevision
 from lp.code.model.codereviewcomment import CodeReviewComment
@@ -98,7 +106,6 @@ from lp.services.database.interfaces import (
 from lp.services.database.sqlbase import (
     quote,
     SQLBase,
-    sqlvalues,
     )
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
@@ -175,25 +182,103 @@ class BranchMergeProposal(SQLBase):
         storm_validator=validate_public_person, notNull=True)
 
     source_branch = ForeignKey(
-        dbName='source_branch', foreignKey='Branch', notNull=True)
+        dbName='source_branch', foreignKey='Branch', notNull=False)
+    source_git_repositoryID = Int(
+        name='source_git_repository', allow_none=True)
+    source_git_repository = Reference(
+        source_git_repositoryID, 'GitRepository.id')
+    source_git_path = StringCol(
+        dbName='source_git_path', default=None, notNull=False)
+    source_git_commit_sha1 = StringCol(
+        dbName='source_git_commit_sha1', default=None, notNull=False)
 
     target_branch = ForeignKey(
-        dbName='target_branch', foreignKey='Branch', notNull=True)
+        dbName='target_branch', foreignKey='Branch', notNull=False)
+    target_git_repositoryID = Int(
+        name='target_git_repository', allow_none=True)
+    target_git_repository = Reference(
+        target_git_repositoryID, 'GitRepository.id')
+    target_git_path = StringCol(
+        dbName='target_git_path', default=None, notNull=False)
+    target_git_commit_sha1 = StringCol(
+        dbName='target_git_commit_sha1', default=None, notNull=False)
 
     prerequisite_branch = ForeignKey(
         dbName='dependent_branch', foreignKey='Branch', notNull=False)
+    prerequisite_git_repositoryID = Int(
+        name='dependent_git_repository', allow_none=True)
+    prerequisite_git_repository = Reference(
+        prerequisite_git_repositoryID, 'GitRepository.id')
+    prerequisite_git_path = StringCol(
+        dbName='dependent_git_path', default=None, notNull=False)
+    prerequisite_git_commit_sha1 = StringCol(
+        dbName='dependent_git_commit_sha1', default=None, notNull=False)
+
+    @property
+    def source_git_ref(self):
+        from lp.code.model.gitref import GitRefFrozen
+        if self.source_git_repository is None:
+            return None
+        return GitRefFrozen(
+            self.source_git_repository, self.source_git_path,
+            self.source_git_commit_sha1)
+
+    @source_git_ref.setter
+    def source_git_ref(self, value):
+        self.source_git_repository = value.repository
+        self.source_git_path = value.path
+        self.source_git_commit_sha1 = value.commit_sha1
+
+    @property
+    def target_git_ref(self):
+        from lp.code.model.gitref import GitRefFrozen
+        if self.target_git_repository is None:
+            return None
+        return GitRefFrozen(
+            self.target_git_repository, self.target_git_path,
+            self.target_git_commit_sha1)
+
+    @target_git_ref.setter
+    def target_git_ref(self, value):
+        self.target_git_repository = value.repository
+        self.target_git_path = value.path
+        self.target_git_commit_sha1 = value.commit_sha1
+
+    @property
+    def prerequisite_git_ref(self):
+        from lp.code.model.gitref import GitRefFrozen
+        if self.prerequisite_git_repository is None:
+            return None
+        return GitRefFrozen(
+            self.prerequisite_git_repository, self.prerequisite_git_path,
+            self.prerequisite_git_commit_sha1)
+
+    @prerequisite_git_ref.setter
+    def prerequisite_git_ref(self, value):
+        self.prerequisite_git_repository = value.repository
+        self.prerequisite_git_path = value.path
+        self.prerequisite_git_commit_sha1 = value.commit_sha1
 
     @property
     def merge_source(self):
-        return self.source_branch
+        if self.source_branch is not None:
+            return self.source_branch
+        else:
+            return self.source_git_ref
 
     @property
     def merge_target(self):
-        return self.target_branch
+        if self.target_branch is not None:
+            return self.target_branch
+        else:
+            return self.target_git_ref
 
     @property
     def merge_prerequisite(self):
-        return self.prerequisite_branch
+        if self.prerequisite_branch is not None:
+            return self.prerequisite_branch
+        else:
+            return self.prerequisite_git_ref
 
     description = StringCol(default=None)
 
@@ -246,6 +331,7 @@ class BranchMergeProposal(SQLBase):
 
     date_merged = UtcDateTimeCol(default=None)
     merged_revno = IntCol(default=None)
+    merged_revision_id = StringCol(default=None)
 
     merge_reporter = ForeignKey(
         dbName='merge_reporter', foreignKey='Person',
@@ -257,6 +343,10 @@ class BranchMergeProposal(SQLBase):
 
         Implies that these would be fixed, in the target, by the merge.
         """
+        if self.source_branch is None:
+            # XXX cjwatson 2015-04-16: Implement once Git refs have linked
+            # bug tasks.
+            return []
         source_tasks = self.source_branch.getLinkedBugTasks(user)
         target_tasks = self.target_branch.getLinkedBugTasks(user)
         return [bugtask
@@ -497,13 +587,14 @@ class BranchMergeProposal(SQLBase):
             reviewer, BranchMergeProposalStatus.REJECTED, revision_id,
             _date_reviewed)
 
-    def markAsMerged(self, merged_revno=None, date_merged=None,
-                     merge_reporter=None):
+    def markAsMerged(self, merged_revno=None, merged_revision_id=None,
+                     date_merged=None, merge_reporter=None):
         """See `IBranchMergeProposal`."""
         old_state = self.queue_status
         self._transitionToState(
             BranchMergeProposalStatus.MERGED, merge_reporter)
         self.merged_revno = merged_revno
+        self.merged_revision_id = merged_revision_id
         self.merge_reporter = merge_reporter
 
         # The reviewer of a merged proposal is assumed to have approved, if
@@ -511,13 +602,14 @@ class BranchMergeProposal(SQLBase):
         if old_state == BranchMergeProposalStatus.REJECTED:
             self._mark_unreviewed()
 
-        if merged_revno is not None:
+        if self.target_branch is not None and merged_revno is not None:
             branch_revision = Store.of(self).find(
                 BranchRevision,
                 BranchRevision.branch == self.target_branch,
                 BranchRevision.sequence == merged_revno).one()
             if branch_revision is not None:
                 date_merged = branch_revision.revision.revision_date
+        # XXX cjwatson 2015-04-12: Handle the Git case.
 
         if date_merged is None:
             date_merged = UTC_NOW
@@ -613,6 +705,9 @@ class BranchMergeProposal(SQLBase):
         the reviewer if the branch is private and the reviewer is an open
         team.
         """
+        if self.source_branch is None:
+            # This only applies to Bazaar, which has stacked branches.
+            return
         source = self.source_branch
         if (not source.visibleByUser(reviewer) and
             self._acceptable_to_give_visibility(source, reviewer)):
@@ -670,6 +765,10 @@ class BranchMergeProposal(SQLBase):
 
     def getUnlandedSourceBranchRevisions(self):
         """See `IBranchMergeProposal`."""
+        if self.source_branch is None:
+            # XXX cjwatson 2015-04-16: Implement for Git somehow, perhaps by
+            # calling turnip via memcached.
+            return []
         store = Store.of(self)
         source = SQL("""source AS (SELECT BranchRevision.branch,
             BranchRevision.revision, Branchrevision.sequence FROM
@@ -867,6 +966,9 @@ class BranchMergeProposal(SQLBase):
 
     def generateIncrementalDiff(self, old_revision, new_revision, diff=None):
         """See `IBranchMergeProposal`."""
+        if self.source_branch is None:
+            # XXX cjwatson 2015-04-16: Implement for Git.
+            return
         if diff is None:
             source_branch = self.source_branch.getBzrBranch()
             ignore_branches = [self.target_branch.getBzrBranch()]
@@ -910,6 +1012,9 @@ class BranchMergeProposal(SQLBase):
         return None
 
     def _getNewerRevisions(self):
+        if self.source_branch is None:
+            # XXX cjwatson 2015-04-16: Implement for Git.
+            return EmptyResultSet()
         start_date = self.date_review_requested
         if start_date is None:
             start_date = self.date_created
@@ -955,7 +1060,10 @@ class BranchMergeProposal(SQLBase):
         person_ids = set()
         for mp in branch_merge_proposals:
             ids.add(mp.id)
-            source_branch_ids.add(mp.source_branchID)
+            if mp.source_branchID is not None:
+                source_branch_ids.add(mp.source_branchID)
+            # XXX cjwatson 2015-04-22: Implement for Git once GitCollection
+            # supports MPs.
             person_ids.add(mp.registrantID)
             person_ids.add(mp.merge_reporterID)
 
@@ -1107,9 +1215,18 @@ class BranchMergeProposalGetter:
         return result
 
     @staticmethod
-    def activeProposalsForBranches(source_branch, target_branch):
-        return BranchMergeProposal.select("""
-            BranchMergeProposal.source_branch = %s AND
-            BranchMergeProposal.target_branch = %s AND
-            BranchMergeProposal.queue_status NOT IN %s
-                """ % sqlvalues(source_branch, target_branch, FINAL_STATES))
+    def activeProposalsForBranches(source, target):
+        clauses = [Not(BranchMergeProposal.queue_status.is_in(FINAL_STATES))]
+        if IGitRef.providedBy(source):
+            clauses.extend([
+                BranchMergeProposal.source_git_repository == source.repository,
+                BranchMergeProposal.source_git_path == source.path,
+                BranchMergeProposal.target_git_repository == target.repository,
+                BranchMergeProposal.target_git_path == target.path,
+                ])
+        else:
+            clauses.extend([
+                BranchMergeProposal.source_branch == source,
+                BranchMergeProposal.target_branch == target,
+                ])
+        return IStore(BranchMergeProposal).find(BranchMergeProposal, *clauses)

@@ -107,6 +107,41 @@ class IGitRef(Interface):
     target = Attribute(
         "The target of the repository containing this reference.")
 
+    namespace = Attribute(
+        "The namespace of the repository containing this reference, as an "
+        "`IGitNamespace`.")
+
+    def getCodebrowseUrl():
+        """Construct a browsing URL for this Git reference."""
+
+    information_type = Attribute(
+        "The type of information contained in the repository containing this "
+        "reference.")
+
+    def visibleByUser(user):
+        """Can the specified user see the repository containing this
+        reference?"""
+
+    reviewer = Attribute(
+        "The person or exclusive team that is responsible for reviewing "
+        "proposals and merging into this reference.")
+
+    code_reviewer = Attribute(
+        "The reviewer if set, otherwise the owner of the repository "
+        "containing this reference.")
+
+    def isPersonTrustedReviewer(reviewer):
+        """Return true if the `reviewer` is a trusted reviewer.
+
+        The reviewer is trusted if they either own the repository containing
+        this reference, or are in the team that owns the repository, or they
+        are in the review team for the repository.
+        """
+
+    subscriptions = Attribute(
+        "GitSubscriptions associated with the repository containing this "
+        "reference.")
+
     subscribers = Attribute(
         "Persons subscribed to the repository containing this reference.")
 
@@ -135,6 +170,18 @@ class IGitRef(Interface):
         The INotificationRecipientSet instance contains the subscribers
         and their subscriptions.
         """
+
+    # XXX cjwatson 2015-04-16: These names are too awful to set in stone by
+    # exporting them on the webservice; find better names before exporting.
+    landing_targets = Attribute(
+        "A collection of the merge proposals where this reference is the "
+        "source.")
+    landing_candidates = Attribute(
+        "A collection of the merge proposals where this reference is the "
+        "target.")
+    dependent_landings = Attribute(
+        "A collection of the merge proposals that are dependent on this "
+        "reference.")
 
 
 class IGitRefBatchNavigator(ITableBatchNavigator):

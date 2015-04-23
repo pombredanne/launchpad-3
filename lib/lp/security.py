@@ -2313,24 +2313,42 @@ class BranchMergeProposalView(AuthorizationBase):
             required.append(self.obj.prerequisite_branch)
         return required
 
+    @property
+    def git_repositories(self):
+        required = [
+            self.obj.source_git_repository, self.obj.target_git_repository]
+        if self.obj.prerequisite_git_repository:
+            required.append(self.obj.prerequisite_git_repository)
+        return required
+
     def checkAuthenticated(self, user):
         """Is the user able to view the branch merge proposal?
 
         The user can see a merge proposal if they can see the source, target
         and prerequisite branches.
         """
-        return all(map(
-            lambda b: AccessBranch(b).checkAuthenticated(user),
-            self.branches))
+        if self.obj.source_git_repository is not None:
+            return all(map(
+                lambda r: ViewGitRepository(r).checkAuthenticated(user),
+                self.git_repositories))
+        else:
+            return all(map(
+                lambda b: AccessBranch(b).checkAuthenticated(user),
+                self.branches))
 
     def checkUnauthenticated(self):
         """Is anyone able to view the branch merge proposal?
 
         Anyone can see a merge proposal between two public branches.
         """
-        return all(map(
-            lambda b: AccessBranch(b).checkUnauthenticated(),
-            self.branches))
+        if self.obj.source_git_repository is not None:
+            return all(map(
+                lambda r: ViewGitRepository(r).checkUnauthenticated(),
+                self.git_repositories))
+        else:
+            return all(map(
+                lambda b: AccessBranch(b).checkUnauthenticated(),
+                self.branches))
 
 
 class PreviewDiffView(DelegatedAuthorization):
