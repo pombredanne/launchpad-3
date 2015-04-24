@@ -568,6 +568,8 @@ patch_plain_parameter_type(
 patch_plain_parameter_type(
     IGitRef, 'createMergeProposal', 'merge_prerequisite', IGitRef)
 patch_entry_return_type(IGitRef, 'createMergeProposal', IBranchMergeProposal)
+patch_collection_return_type(
+    IGitRef, 'getMergeProposals', IBranchMergeProposal)
 
 # IGitRepository
 patch_collection_property(IGitRepository, 'branches', IGitRef)

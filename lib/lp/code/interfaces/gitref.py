@@ -14,9 +14,11 @@ from lazr.restful.declarations import (
     call_with,
     export_as_webservice_entry,
     export_factory_operation,
+    export_read_operation,
     exported,
     operation_for_version,
     operation_parameters,
+    operation_returns_collection_of,
     REQUEST_USER,
     )
 from lazr.restful.fields import (
@@ -37,7 +39,10 @@ from zope.schema import (
     )
 
 from lp import _
-from lp.code.enums import GitObjectType
+from lp.code.enums import (
+    BranchMergeProposalStatus,
+    GitObjectType,
+    )
 from lp.registry.interfaces.person import IPerson
 from lp.services.webapp.interfaces import ITableBatchNavigator
 
@@ -255,6 +260,21 @@ class IGitRef(Interface):
 
         References in personal repositories cannot specify merge proposals.
         """
+
+    @operation_parameters(
+        status=List(
+            title=_("A list of merge proposal statuses to filter by."),
+            value_type=Choice(vocabulary=BranchMergeProposalStatus)),
+        merged_revision_ids=List(TextLine(
+            title=_('The target revision ID of the merge.'))))
+    @call_with(visible_by_user=REQUEST_USER)
+    # Really IBranchMergeProposal, patched in _schema_circular_imports.py.
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
+    @operation_for_version("devel")
+    def getMergeProposals(status=None, visible_by_user=None,
+                          merged_revision_ids=None, eager_load=False):
+        """Return matching BranchMergeProposals."""
 
 
 class IGitRefBatchNavigator(ITableBatchNavigator):
