@@ -6,10 +6,33 @@
 __metaclass__ = type
 
 __all__ = [
+    'GitRefNavigation',
     'GitRefView',
     ]
 
-from lp.services.webapp import LaunchpadView
+from lp.code.interfaces.gitref import IGitRef
+from lp.services.webapp import (
+    LaunchpadView,
+    Navigation,
+    stepthrough,
+    )
+
+
+class GitRefNavigation(Navigation):
+
+    usedfor = IGitRef
+
+    @stepthrough("+merge")
+    def traverse_merge_proposal(self, id):
+        """Traverse to an `IBranchMergeProposal`."""
+        try:
+            id = int(id)
+        except ValueError:
+            # Not a number.
+            return None
+        for proposal in self.context.landing_targets:
+            if proposal.id == id:
+                return proposal
 
 
 class GitRefView(LaunchpadView):

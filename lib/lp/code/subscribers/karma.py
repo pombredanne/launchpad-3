@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Assign karma for code domain activity."""
@@ -17,15 +17,21 @@ def branch_created(branch, event):
 @block_implicit_flushes
 def branch_merge_proposed(proposal, event):
     """Assign karma to the user who proposed the merge."""
-    proposal.source_branch.target.assignKarma(
-        proposal.registrant, 'branchmergeproposed')
+    if proposal.source_git_repository is not None:
+        target = proposal.source_git_repository.namespace
+    else:
+        target = proposal.source_branch.target
+    target.assignKarma(proposal.registrant, 'branchmergeproposed')
 
 
 @block_implicit_flushes
 def code_review_comment_added(code_review_comment, event):
     """Assign karma to the user who commented on the review."""
     proposal = code_review_comment.branch_merge_proposal
-    target = proposal.source_branch.target
+    if proposal.source_git_repository is not None:
+        target = proposal.source_git_repository.namespace
+    else:
+        target = proposal.source_branch.target
     # If the user is commenting on their own proposal, then they don't
     # count as a reviewer for that proposal.
     user = code_review_comment.message.owner
@@ -39,7 +45,10 @@ def code_review_comment_added(code_review_comment, event):
 @block_implicit_flushes
 def branch_merge_status_changed(proposal, event):
     """Assign karma to the user who approved the merge."""
-    target = proposal.source_branch.target
+    if proposal.source_git_repository is not None:
+        target = proposal.source_git_repository.namespace
+    else:
+        target = proposal.source_branch.target
     user = IPerson(event.user)
 
     in_progress_states = (
