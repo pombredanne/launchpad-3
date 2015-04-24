@@ -446,6 +446,9 @@ class IGitRepositoryView(Interface):
         and their subscriptions.
         """
 
+    def isRepositoryMergeable(other):
+        """Is the other repository mergeable into this one (or vice versa)?"""
+
 
 class IGitRepositoryModerateAttributes(Interface):
     """IGitRepository attributes that can be edited by more than one community.

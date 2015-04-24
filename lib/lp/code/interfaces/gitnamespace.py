@@ -93,6 +93,9 @@ class IGitNamespacePolicy(Interface):
         "True iff this namespace permits automatically setting a default "
         "repository on push.")
 
+    supports_merge_proposals = Attribute(
+        "Does this namespace support merge proposals at all?")
+
     def getAllowedInformationTypes(who):
         """Get the information types that a repository in this namespace can
         have.
@@ -147,6 +150,14 @@ class IGitNamespacePolicy(Interface):
         :raises GitRepositoryExists: if a repository with the new name
             already exists in the namespace.
         """
+
+    def areRepositoriesMergeable(other_namespace):
+        """Are repositories from other_namespace mergeable into this one?"""
+
+    collection = Attribute("An `IGitCollection` for this namespace.")
+
+    def assignKarma(person, action_name, date_created=None):
+        """Assign karma to the person on the appropriate target."""
 
 
 class IGitNamespaceSet(Interface):

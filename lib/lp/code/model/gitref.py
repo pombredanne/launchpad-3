@@ -18,15 +18,32 @@ from storm.locals import (
     Store,
     Unicode,
     )
+from zope.event import notify
 from zope.interface import implements
 
 from lp.app.errors import NotFoundError
-from lp.code.enums import GitObjectType
+from lp.code.enums import (
+    BranchMergeProposalStatus,
+    GitObjectType,
+    )
+from lp.code.errors import (
+    BranchMergeProposalExists,
+    InvalidBranchMergeProposal,
+    )
+from lp.code.event.branchmergeproposal import (
+    BranchMergeProposalNeedsReviewEvent,
+    NewBranchMergeProposalEvent,
+    )
+from lp.code.interfaces.branch import WrongNumberOfReviewTypeArguments
 from lp.code.interfaces.branchmergeproposal import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES,
     )
 from lp.code.interfaces.gitref import IGitRef
-from lp.code.model.branchmergeproposal import BranchMergeProposal
+from lp.code.model.branchmergeproposal import (
+    BranchMergeProposal,
+    BranchMergeProposalGetter,
+    )
+from lp.services.database.constants import UTC_NOW
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.interfaces import IStore
 from lp.services.database.stormbase import StormBase
@@ -197,6 +214,103 @@ class GitRef(StormBase, GitRefMixin):
     @property
     def commit_message_first_line(self):
         return self.commit_message.split("\n", 1)[0]
+
+    def addLandingTarget(self, registrant, merge_target,
+                         merge_prerequisite=None, whiteboard=None,
+                         date_created=None, needs_review=None,
+                         description=None, review_requests=None,
+                         commit_message=None):
+        """See `IGitRef`."""
+        if not self.namespace.supports_merge_proposals:
+            raise InvalidBranchMergeProposal(
+                "%s repositories do not support merge proposals." %
+                self.namespace.name)
+        if self == merge_target:
+            raise InvalidBranchMergeProposal(
+                "Source and target references must be different.")
+        if not merge_target.repository.isRepositoryMergeable(self.repository):
+            raise InvalidBranchMergeProposal(
+                "%s is not mergeable into %s" % (
+                    self.identity, merge_target.identity))
+        if merge_prerequisite is not None:
+            if not merge_target.repository.isRepositoryMergeable(
+                    merge_prerequisite.repository):
+                raise InvalidBranchMergeProposal(
+                    "%s is not mergeable into %s" % (
+                        merge_prerequisite.identity, self.identity))
+            if self == merge_prerequisite:
+                raise InvalidBranchMergeProposal(
+                    "Source and prerequisite references must be different.")
+            if merge_target == merge_prerequisite:
+                raise InvalidBranchMergeProposal(
+                    "Target and prerequisite references must be different.")
+
+        getter = BranchMergeProposalGetter
+        for existing_proposal in getter.activeProposalsForBranches(
+                self, merge_target):
+            raise BranchMergeProposalExists(existing_proposal)
+
+        if date_created is None:
+            date_created = UTC_NOW
+
+        if needs_review:
+            queue_status = BranchMergeProposalStatus.NEEDS_REVIEW
+            date_review_requested = date_created
+        else:
+            queue_status = BranchMergeProposalStatus.WORK_IN_PROGRESS
+            date_review_requested = None
+
+        if review_requests is None:
+            review_requests = []
+
+        # If no reviewer is specified, use the default for the branch.
+        if len(review_requests) == 0:
+            review_requests.append((merge_target.code_reviewer, None))
+
+        kwargs = {}
+        for prefix, obj in (
+                ("source", self),
+                ("target", merge_target),
+                ("prerequisite", merge_prerequisite)):
+            if obj is not None:
+                kwargs["%s_git_repository" % prefix] = obj.repository
+                kwargs["%s_git_path" % prefix] = obj.path
+                kwargs["%s_git_commit_sha1" % prefix] = obj.commit_sha1
+
+        bmp = BranchMergeProposal(
+            registrant=registrant, whiteboard=whiteboard,
+            date_created=date_created,
+            date_review_requested=date_review_requested,
+            queue_status=queue_status, commit_message=commit_message,
+            description=description, **kwargs)
+
+        for reviewer, review_type in review_requests:
+            bmp.nominateReviewer(
+                reviewer, registrant, review_type, _notify_listeners=False)
+
+        notify(NewBranchMergeProposalEvent(bmp))
+        if needs_review:
+            notify(BranchMergeProposalNeedsReviewEvent(bmp))
+
+        return bmp
+
+    def createMergeProposal(self, registrant, merge_target,
+                            merge_prerequisite=None, needs_review=True,
+                            initial_comment=None, commit_message=None,
+                            reviewers=None, review_types=None):
+        """See `IGitRef`."""
+        if reviewers is None:
+            reviewers = []
+        if review_types is None:
+            review_types = []
+        if len(reviewers) != len(review_types):
+            raise WrongNumberOfReviewTypeArguments(
+                'reviewers and review_types must be equal length.')
+        review_requests = zip(reviewers, review_types)
+        return self.addLandingTarget(
+            registrant, merge_target, merge_prerequisite,
+            needs_review=needs_review, description=initial_comment,
+            commit_message=commit_message, review_requests=review_requests)
 
 
 class GitRefFrozen(GitRefMixin):

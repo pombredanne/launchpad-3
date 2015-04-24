@@ -2266,6 +2266,15 @@ class ViewGitRef(DelegatedAuthorization):
         super(ViewGitRef, self).__init__(obj, obj.repository)
 
 
+class EditGitRef(DelegatedAuthorization):
+    """Anyone who can edit a Git repository can edit references within it."""
+    permission = 'launchpad.Edit'
+    usedfor = IGitRef
+
+    def __init__(self, obj):
+        super(EditGitRef, self).__init__(obj, obj.repository)
+
+
 class AdminDistroSeriesTranslations(AuthorizationBase):
     permission = 'launchpad.TranslationsAdmin'
     usedfor = IDistroSeries

@@ -11,23 +11,34 @@ __all__ = [
     ]
 
 from lazr.restful.declarations import (
+    call_with,
     export_as_webservice_entry,
+    export_factory_operation,
     exported,
+    operation_for_version,
+    operation_parameters,
+    REQUEST_USER,
     )
-from lazr.restful.fields import ReferenceChoice
+from lazr.restful.fields import (
+    Reference,
+    ReferenceChoice,
+    )
 from zope.interface import (
     Attribute,
     Interface,
     )
 from zope.schema import (
+    Bool,
     Choice,
     Datetime,
+    List,
     Text,
     TextLine,
     )
 
 from lp import _
 from lp.code.enums import GitObjectType
+from lp.registry.interfaces.person import IPerson
 from lp.services.webapp.interfaces import ITableBatchNavigator
 
 
@@ -182,6 +193,68 @@ class IGitRef(Interface):
     dependent_landings = Attribute(
         "A collection of the merge proposals that are dependent on this "
         "reference.")
+
+    # XXX cjwatson 2015-04-16: Rename in line with landing_targets above
+    # once we have a better name.
+    def addLandingTarget(registrant, merge_target, merge_prerequisite=None,
+                         date_created=None, needs_review=None,
+                         description=None, review_requests=None,
+                         commit_message=None):
+        """Create a new BranchMergeProposal with this reference as the source.
+
+        Both the target and the prerequisite, if it is there, must be
+        references whose repositories have the same target as the source.
+
+        References in personal repositories cannot specify merge proposals.
+
+        :param registrant: The person who is adding the landing target.
+        :param merge_target: Must be another reference, and different to
+            self.
+        :param merge_prerequisite: Optional, but if it is not None it must
+            be another reference.
+        :param date_created: Used to specify the date_created value of the
+            merge request.
+        :param needs_review: Used to specify the proposal is ready for
+            review right now.
+        :param description: A description of the bugs fixed, features added,
+            or refactorings.
+        :param review_requests: An optional list of (`Person`, review_type).
+        """
+
+    @operation_parameters(
+        # merge_target and merge_prerequisite are actually IGitRef, patched
+        # in _schema_circular_imports.
+        merge_target=Reference(schema=Interface),
+        merge_prerequisite=Reference(schema=Interface),
+        needs_review=Bool(
+            title=_("Needs review"),
+            description=_(
+                "If True, the proposal needs review.  Otherwise, it will be "
+                "work in progress.")),
+        initial_comment=Text(
+            title=_("Initial comment"),
+            description=_("Registrant's initial description of proposal.")),
+        commit_message=Text(
+            title=_("Commit message"),
+            description=_("Message to use when committing this merge.")),
+        reviewers=List(value_type=Reference(schema=IPerson)),
+        review_types=List(value_type=TextLine()))
+    @call_with(registrant=REQUEST_USER)
+    # Really IBranchMergeProposal, patched in _schema_circular_imports.py.
+    @export_factory_operation(Interface, [])
+    @operation_for_version("devel")
+    def createMergeProposal(registrant, merge_target, merge_prerequisite=None,
+                            needs_review=None, initial_comment=None,
+                            commit_message=None, reviewers=None,
+                            review_types=None):
+        """Create a new BranchMergeProposal with this reference as the source.
+
+        Both the merge_target and the merge_prerequisite, if it is there,
+        must be references whose repositories have the same target as the
+        source.
+
+        References in personal repositories cannot specify merge proposals.
+        """
 
 
 class IGitRefBatchNavigator(ITableBatchNavigator):

@@ -563,6 +563,11 @@ patch_reference_property(IDistroArchSeries, 'main_archive', IArchive)
 
 # IGitRef
 patch_reference_property(IGitRef, 'repository', IGitRepository)
+patch_plain_parameter_type(
+    IGitRef, 'createMergeProposal', 'merge_target', IGitRef)
+patch_plain_parameter_type(
+    IGitRef, 'createMergeProposal', 'merge_prerequisite', IGitRef)
+patch_entry_return_type(IGitRef, 'createMergeProposal', IBranchMergeProposal)
 
 # IGitRepository
 patch_collection_property(IGitRepository, 'branches', IGitRef)
