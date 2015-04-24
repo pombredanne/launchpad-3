@@ -208,7 +208,7 @@ class BranchListingItem(BzrIdentityMixin, BranchBadges):
 
     @property
     def revision_codebrowse_link(self):
-        return self.context.codebrowse_url(
+        return self.context.getCodebrowseUrl(
             'revision', str(self.context.revision_count))
 
     def __repr__(self):

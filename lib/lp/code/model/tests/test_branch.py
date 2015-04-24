@@ -2223,7 +2223,7 @@ class TestCodebrowse(TestCaseWithFactory):
         branch = self.factory.makeAnyBranch()
         self.assertEqual(
             'http://bazaar.launchpad.dev/' + branch.unique_name,
-            branch.codebrowse_url())
+            branch.getCodebrowseUrl())
 
     def test_private(self):
         # The codebrowse URL for a private branch is a 'https' url.
@@ -2233,21 +2233,21 @@ class TestCodebrowse(TestCaseWithFactory):
         login_person(owner)
         self.assertEqual(
             'https://bazaar.launchpad.dev/' + branch.unique_name,
-            branch.codebrowse_url())
+            branch.getCodebrowseUrl())
 
     def test_extra_args(self):
-        # Any arguments to codebrowse_url are appended to the URL.
+        # Any arguments to getCodebrowseUrl are appended to the URL.
         branch = self.factory.makeAnyBranch()
         self.assertEqual(
             'http://bazaar.launchpad.dev/' + branch.unique_name + '/a/b',
-            branch.codebrowse_url('a', 'b'))
+            branch.getCodebrowseUrl('a', 'b'))
 
     def test_source_code_url(self):
         # The source code URL points to the codebrowse URL where you can
         # actually browse the source code.
         branch = self.factory.makeAnyBranch()
         self.assertEqual(
-            branch.browse_source_url, branch.codebrowse_url('files'))
+            branch.browse_source_url, branch.getCodebrowseUrl('files'))
 
     def test_no_revisions_not_browseable(self):
         # A branch with no revisions is not browseable.
