@@ -26,14 +26,22 @@ class TestGitRef(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_display_name(self):
+    def setUp(self):
+        super(TestGitRef, self).setUp()
         self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
+
+    def test_display_name(self):
         [master, personal] = self.factory.makeGitRefs(
             paths=[u"refs/heads/master", u"refs/heads/people/foo/bar"])
         repo_path = master.repository.shortened_path
         self.assertEqual(
             [u"%s:master" % repo_path, "%s:people/foo/bar" % repo_path],
             [ref.display_name for ref in (master, personal)])
+
+    def test_getMergeProposals(self):
+        [target_ref] = self.factory.makeGitRefs()
+        bmp = self.factory.makeBranchMergeProposalForGit(target_ref=target_ref)
+        self.assertEqual([bmp], list(target_ref.getMergeProposals()))
 
 
 class TestGitRefWebservice(TestCaseWithFactory):
