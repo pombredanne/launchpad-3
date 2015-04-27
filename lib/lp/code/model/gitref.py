@@ -18,6 +18,7 @@ from storm.locals import (
     Store,
     Unicode,
     )
+from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
 
@@ -38,6 +39,7 @@ from lp.code.interfaces.branch import WrongNumberOfReviewTypeArguments
 from lp.code.interfaces.branchmergeproposal import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES,
     )
+from lp.code.interfaces.gitcollection import IAllGitRepositories
 from lp.code.interfaces.gitref import IGitRef
 from lp.code.model.branchmergeproposal import (
     BranchMergeProposal,
@@ -180,6 +182,21 @@ class GitRefMixin:
             BranchMergeProposal.prerequisite_git_path == self.path,
             Not(BranchMergeProposal.queue_status.is_in(
                 BRANCH_MERGE_PROPOSAL_FINAL_STATES)))
+
+    def getMergeProposals(self, status=None, visible_by_user=None,
+                          merged_revision_ids=None, eager_load=False):
+        """See `IGitRef`."""
+        if not status:
+            status = (
+                BranchMergeProposalStatus.CODE_APPROVED,
+                BranchMergeProposalStatus.NEEDS_REVIEW,
+                BranchMergeProposalStatus.WORK_IN_PROGRESS)
+
+        collection = getUtility(IAllGitRepositories).visibleByUser(
+            visible_by_user)
+        return collection.getMergeProposals(
+            status, target_repository=self.repository, target_path=self.path,
+            merged_revision_ids=merged_revision_ids, eager_load=eager_load)
 
 
 class GitRef(StormBase, GitRefMixin):
