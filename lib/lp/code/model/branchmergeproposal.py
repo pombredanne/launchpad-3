@@ -1054,16 +1054,19 @@ class BranchMergeProposal(SQLBase):
         # Circular imports.
         from lp.code.model.branch import Branch
         from lp.code.model.branchcollection import GenericBranchCollection
+        from lp.code.model.gitcollection import GenericGitCollection
+        from lp.code.model.gitrepository import GitRepository
 
         ids = set()
         source_branch_ids = set()
+        source_git_repository_ids = set()
         person_ids = set()
         for mp in branch_merge_proposals:
             ids.add(mp.id)
             if mp.source_branchID is not None:
                 source_branch_ids.add(mp.source_branchID)
-            # XXX cjwatson 2015-04-22: Implement for Git once GitCollection
-            # supports MPs.
+            if mp.source_git_repositoryID is not None:
+                source_git_repository_ids.add(mp.source_git_repositoryID)
             person_ids.add(mp.registrantID)
             person_ids.add(mp.merge_reporterID)
 
@@ -1071,11 +1074,15 @@ class BranchMergeProposal(SQLBase):
             Branch, branch_merge_proposals, (
                 "target_branchID", "prerequisite_branchID",
                 "source_branchID"))
+        repositories = load_related(
+            GitRepository, branch_merge_proposals, (
+                "target_git_repositoryID", "prerequisite_git_repositoryID",
+                "source_git_repositoryID"))
         # The stacked on branches are used to check branch visibility.
         GenericBranchCollection.preloadVisibleStackedOnBranches(
             branches, user)
 
-        if len(branches) == 0:
+        if len(branches) == 0 and len(repositories) == 0:
             return
 
         # Pre-load PreviewDiffs and Diffs.
@@ -1090,17 +1097,22 @@ class BranchMergeProposal(SQLBase):
             cache = get_property_cache(previewdiff.branch_merge_proposal)
             cache.preview_diff = previewdiff
 
-        # Add source branch owners' to the list of pre-loaded persons.
+        # Add source branch/repository owners' to the list of pre-loaded
+        # persons.
         person_ids.update(
             branch.ownerID for branch in branches
             if branch.id in source_branch_ids)
+        person_ids.update(
+            repository.owner_id for repository in repositories
+            if repository.id in source_git_repository_ids)
 
         # Pre-load Person and ValidPersonCache.
         list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
             person_ids, need_validity=True))
 
-        # Pre-load branches' data.
+        # Pre-load branches'/repositories' data.
         GenericBranchCollection.preloadDataForBranches(branches)
+        GenericGitCollection.preloadDataForRepositories(repositories)
 
 
 class BranchMergeProposalGetter:

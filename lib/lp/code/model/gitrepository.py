@@ -850,8 +850,8 @@ class GitRepositorySet:
         return []
 
 
-def get_git_repository_privacy_filter(user):
-    public_filter = GitRepository.information_type.is_in(
+def get_git_repository_privacy_filter(user, repository_class=GitRepository):
+    public_filter = repository_class.information_type.is_in(
         PUBLIC_INFORMATION_TYPES)
 
     if user is None:
@@ -859,7 +859,7 @@ def get_git_repository_privacy_filter(user):
 
     artifact_grant_query = Coalesce(
         ArrayIntersects(
-            SQL("GitRepository.access_grants"),
+            SQL("%s.access_grants" % repository_class.__storm_table__),
             Select(
                 ArrayAgg(TeamParticipation.teamID),
                 tables=TeamParticipation,
@@ -868,7 +868,7 @@ def get_git_repository_privacy_filter(user):
 
     policy_grant_query = Coalesce(
         ArrayIntersects(
-            Array(SQL("GitRepository.access_policy")),
+            Array(SQL("%s.access_policy" % repository_class.__storm_table__)),
             Select(
                 ArrayAgg(AccessPolicyGrant.policy_id),
                 tables=(AccessPolicyGrant,
