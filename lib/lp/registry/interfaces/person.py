@@ -2176,6 +2176,7 @@ class IPersonSet(Interface):
             title=_("OpenID identifier suffix"), required=True),
         email_address=TextLine(title=_("Email address"), required=True),
         display_name=TextLine(title=_("Display name"), required=True))
+    @operation_returns_entry(IPerson)
     @export_write_operation()
     @operation_for_version("devel")
     def getOrCreateSoftwareCenterCustomer(user, openid_identifier,
