@@ -197,15 +197,18 @@ class GitAPI(LaunchpadXMLRPCView):
             target_path = None
             try:
                 target_default = self.repository_set.getDefaultRepository(
-                    repository.target)
+                    repository.target) or (
+                        self.repository_set.getDefaultRepository(
+                    repository.owner))
                 if target_default and target_default.visibleByUser(requester):
                     target_path = target_default.getInternalPath()
             except GitTargetError:
-                pass # Ignore Personal repositories.
+                pass  # Ignore Personal repositories.
 
             hosting_path = repository.getInternalPath()
             try:
-                self.hosting_client.create(hosting_path, clone_from=target_path)
+                self.hosting_client.create(hosting_path,
+                                           clone_from=target_path)
             except GitRepositoryCreationFault as e:
                 # The hosting service failed.  Log an OOPS for investigation.
                 self._reportError(path, e, hosting_path=hosting_path)
