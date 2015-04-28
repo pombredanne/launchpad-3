@@ -43,14 +43,14 @@ class FakeGitHostingClient:
     def __init__(self):
         self.calls = []
 
-    def create(self, path):
-        self.calls.append(("create", path))
+    def create(self, path, clone_from=None):
+        self.calls.append(("create", path, clone_from))
 
 
 class BrokenGitHostingClient:
     """A GitHostingClient lookalike that pretends the remote end is down."""
 
-    def create(self, path):
+    def create(self, path, clone_from=None):
         raise GitRepositoryCreationFault("nothing here")
 
 
@@ -109,6 +109,7 @@ class TestGitAPIMixin:
         self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
         self.git_api = GitAPI(None, None)
         self.git_api.hosting_client = FakeGitHostingClient()
+        self.repository_set = getUtility(IGitRepositorySet)
 
     def assertPathTranslationError(self, requester, path, permission="read",
                                    can_authenticate=False):
@@ -212,9 +213,17 @@ class TestGitAPIMixin:
              "trailing": ""},
             translation)
         self.assertEqual(
-            [("create", repository.getInternalPath())],
-            self.git_api.hosting_client.calls)
+            ("create", repository.getInternalPath()),
+            self.git_api.hosting_client.calls[0][0:2])
         return repository
+
+    def assertCreatesFromClone(self, requester, path, can_authenticate=False):
+        repository = self.assertCreates(requester, path, can_authenticate)
+        target_default = removeSecurityProxy(
+            self.repository_set.getDefaultRepository(repository.target))
+        self.assertIsNotNone(target_default)
+        self.assertEqual(target_default.getInternalPath(),
+                         self.git_api.hosting_client.calls[0][2])
 
     def test_translatePath_private_repository(self):
         requester = self.factory.makePerson()
@@ -417,6 +426,18 @@ class TestGitAPI(TestGitAPIMixin, TestCaseWithFactory):
         project = self.factory.makeProduct()
         self.assertCreates(
             requester, u"/~%s/%s/+git/random" % (requester.name, project.name))
+
+    def test_translatePath_create_project_with_default_target(self):
+        # translatePath creates a project repository cloned from the
+        # target default if it exists.
+        target = self.factory.makeProduct()
+        repository = self.factory.makeGitRepository(
+            owner=target.owner, target=target)
+        with person_logged_in(target.owner):
+            self.repository_set.setDefaultRepository(target, repository)
+            self.assertCreatesFromClone(
+                target.owner, u"/~%s/%s/+git/random" % (target.owner.name,
+                                                        target.name))
 
     def test_translatePath_create_package(self):
         # translatePath creates a package repository that doesn't exist, if

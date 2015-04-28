@@ -24,6 +24,7 @@ from lp.code.errors import (
     GitRepositoryCreationForbidden,
     GitRepositoryCreationFault,
     GitRepositoryExists,
+    GitTargetError,
     InvalidNamespace,
     )
 from lp.code.githosting import GitHostingClient
@@ -67,6 +68,7 @@ class GitAPI(LaunchpadXMLRPCView):
         super(GitAPI, self).__init__(*args, **kwargs)
         self.hosting_client = GitHostingClient(
             config.codehosting.internal_git_api_endpoint)
+        self.repository_set = getUtility(IGitRepositorySet)
 
     def _performLookup(self, path):
         repository, extra_path = getUtility(IGitLookup).getByPath(path)
@@ -122,12 +124,11 @@ class GitAPI(LaunchpadXMLRPCView):
                 "target; push to a named repository instead.")
         if repository_name is None:
             def default_func(new_repository):
-                repository_set = getUtility(IGitRepositorySet)
                 if owner is None:
-                    repository_set.setDefaultRepository(
+                    self.repository_set.setDefaultRepository(
                         target, new_repository)
                 else:
-                    repository_set.setDefaultRepositoryForOwner(
+                    self.repository_set.setDefaultRepositoryForOwner(
                         owner, target, new_repository)
 
             repository_name = namespace.findUnusedName(target.name)
@@ -146,7 +147,7 @@ class GitAPI(LaunchpadXMLRPCView):
         getUtility(IErrorReportingUtility).raising(sys.exc_info(), request)
         raise faults.OopsOccurred("creating a Git repository", request.oopsid)
 
-    def _createRepository(self, requester, path):
+    def _createRepository(self, requester, path, clone_from=None):
         try:
             namespace, repository_name, default_func = (
                 self._getGitNamespaceExtras(path, requester))
@@ -196,9 +197,22 @@ class GitAPI(LaunchpadXMLRPCView):
             Store.of(repository).flush()
             assert repository.id is not None
 
+            # If repository has target_default, clone from default.
+            target_path = None
+            try:
+                target_default = self.repository_set.getDefaultRepository(
+                    repository.target) or (
+                        self.repository_set.getDefaultRepository(
+                    repository.owner))
+                if target_default and target_default.visibleByUser(requester):
+                    target_path = target_default.getInternalPath()
+            except GitTargetError:
+                pass  # Ignore Personal repositories.
+
             hosting_path = repository.getInternalPath()
             try:
-                self.hosting_client.create(hosting_path)
+                self.hosting_client.create(hosting_path,
+                                           clone_from=target_path)
             except GitRepositoryCreationFault as e:
                 # The hosting service failed.  Log an OOPS for investigation.
                 self._reportError(path, e, hosting_path=hosting_path)
