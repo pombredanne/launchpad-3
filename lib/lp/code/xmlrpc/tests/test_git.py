@@ -578,7 +578,7 @@ class TestGitAPI(TestGitAPIMixin, TestCaseWithFactory):
         project = self.factory.makeProduct(owner=requester)
         repository = self.assertCreates(requester, u"/%s" % project.name)
         self.assertTrue(repository.target_default)
-        self.assertFalse(repository.owner_default)
+        self.assertTrue(repository.owner_default)
 
     def test_translatePath_create_package_default_denied(self):
         # A repository cannot (yet) be created and immediately set as the
