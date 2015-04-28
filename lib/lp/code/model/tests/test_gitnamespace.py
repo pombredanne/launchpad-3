@@ -3,8 +3,17 @@
 
 """Tests for `IGitNamespace` implementations."""
 
-from lp.code.errors import GitRepositoryExists
-from lp.code.interfaces.gitrepository import GIT_FEATURE_FLAG
+from zope.component import getUtility
+
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.code.errors import (
+    GitDefaultConflict,
+    GitRepositoryExists,
+    )
+from lp.code.interfaces.gitrepository import (
+    GIT_FEATURE_FLAG,
+    IGitRepositorySet,
+    )
 from lp.code.model.gitnamespace import ProjectGitNamespace
 from lp.services.features.testing import FeatureFixture
 from lp.testing import TestCaseWithFactory
@@ -79,3 +88,58 @@ class TestGitNamespaceMoveRepository(TestCaseWithFactory):
         self.assertEqual(team, repository.owner)
         # And for paranoia.
         self.assertNamespacesEqual(namespace, repository.namespace)
+
+    def test_target_default_clash_raises(self):
+        # A clash between target_default repositories will raise an exception.
+        repository = self.factory.makeGitRepository()
+        repository.setTargetDefault(True)
+        another = self.factory.makeGitRepository()
+        another.setTargetDefault(True)
+        self.assertRaisesWithContent(
+            GitDefaultConflict,
+            "The default repository for '%s' is already set to %s." % (
+                another.target.displayname, another.unique_name),
+            another.namespace.moveRepository,
+            repository, getUtility(ILaunchpadCelebrities).admin.teamowner)
+
+    def test_owner_default_clash_raises(self):
+        # A clash between owner_default repositories will raise an exception.
+        repository = self.factory.makeGitRepository()
+        repository.setOwnerDefault(True)
+        another = self.factory.makeGitRepository()
+        another.setOwnerDefault(True)
+        self.assertRaisesWithContent(
+            GitDefaultConflict,
+            "%s's default repository for '%s' is already set to %s." % (
+                another.owner.displayname, another.target.displayname,
+                another.unique_name),
+            another.namespace.moveRepository,
+            repository, getUtility(ILaunchpadCelebrities).admin.teamowner)
+
+    def test_preserves_target_default(self):
+        # If there is no clash, target_default is preserved.
+        repository = self.factory.makeGitRepository()
+        repository.setTargetDefault(True)
+        another = self.factory.makeGitRepository()
+        namespace = another.namespace
+        namespace.moveRepository(
+            repository, getUtility(ILaunchpadCelebrities).admin.teamowner)
+        self.assertNamespacesEqual(namespace, repository.namespace)
+        repository_set = getUtility(IGitRepositorySet)
+        self.assertEqual(
+            repository, repository_set.getDefaultRepository(another.target))
+
+    def test_preserves_owner_default(self):
+        # If there is no clash, owner_default is preserved.
+        repository = self.factory.makeGitRepository()
+        repository.setOwnerDefault(True)
+        another = self.factory.makeGitRepository()
+        namespace = another.namespace
+        namespace.moveRepository(
+            repository, getUtility(ILaunchpadCelebrities).admin.teamowner)
+        self.assertNamespacesEqual(namespace, repository.namespace)
+        repository_set = getUtility(IGitRepositorySet)
+        self.assertEqual(
+            repository,
+            repository_set.getDefaultRepositoryForOwner(
+                another.owner, another.target))

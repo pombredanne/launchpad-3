@@ -34,6 +34,7 @@ from lp.code.enums import (
     CodeReviewNotificationLevel,
     )
 from lp.code.errors import (
+    GitDefaultConflict,
     GitRepositoryCreationForbidden,
     GitRepositoryCreatorNotMemberOfOwnerTeam,
     GitRepositoryCreatorNotOwner,
@@ -47,6 +48,7 @@ from lp.code.interfaces.gitnamespace import (
     )
 from lp.code.interfaces.gitrepository import (
     IGitRepository,
+    IGitRepositorySet,
     user_has_special_git_repository_access,
     )
 from lp.code.interfaces.hasgitrepositories import IHasGitRepositories
@@ -146,12 +148,29 @@ class _BaseGitNamespace:
         # "gitrepository" violates check constraint "valid_name"...'.
         IGitRepository['name'].validate(unicode(name))
 
+    def validateDefaultFlags(self, repository):
+        """See `IGitNamespace`."""
+        repository_set = getUtility(IGitRepositorySet)
+        if repository.target_default and self.target != repository.target:
+            existing = repository_set.getDefaultRepository(self.target)
+            if existing is not None:
+                raise GitDefaultConflict(existing, self.target)
+        if (repository.owner_default and
+            (self.owner != repository.owner or
+             self.target != repository.target)):
+            existing = repository_set.getDefaultRepositoryForOwner(
+                self.owner, self.target)
+            if existing is not None:
+                raise GitDefaultConflict(
+                    existing, self.target, owner=self.owner)
+
     def validateMove(self, repository, mover, name=None):
         """See `IGitNamespace`."""
         if name is None:
             name = repository.name
         self.validateRepositoryName(name)
         self.validateRegistrant(mover)
+        self.validateDefaultFlags(repository)
 
     def moveRepository(self, repository, mover, new_name=None,
                        rename_if_necessary=False):
