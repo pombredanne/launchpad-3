@@ -49,6 +49,7 @@ from zope.schema import (
     Choice,
     Datetime,
     Int,
+    List,
     Text,
     TextLine,
     )
@@ -605,6 +606,39 @@ class IGitRepositorySet(Interface):
         :param target: An `IHasGitRepositories`.
 
         :return: A collection of `IGitRepository` objects.
+        """
+
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        person=Reference(
+            title=_("The person whose repository visibility is being "
+                    "checked."),
+            schema=IPerson),
+        repository_names=List(value_type=Text(),
+            title=_('List of repository unique names'), required=True),
+    )
+    @export_read_operation()
+    @operation_for_version("devel")
+    def getRepositoryVisibilityInfo(user, person, repository_names):
+        """Return the named repositories visible to both user and person.
+
+        Anonymous requesters don't get any information.
+
+        :param user: The user requesting the information. If the user is
+            None then we return an empty dict.
+        :param person: The person whose repository visibility we wish to
+            check.
+        :param repository_names: The unique names of the repositories to
+            check.
+
+        Return a dict with the following values:
+        person_name: the displayname of the person.
+        visible_repositories: a list of the unique names of the repositories
+        which the requester and specified person can both see.
+
+        This API call is provided for use by the client Javascript.  It is
+        not designed to efficiently scale to handle requests for large
+        numbers of repositories.
         """
 
     @operation_parameters(

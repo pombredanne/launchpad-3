@@ -86,6 +86,7 @@ from lp.code.errors import (
     InvalidBranchMergeProposal,
     WrongBranchMergeProposal,
     )
+from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.codereviewcomment import ICodeReviewComment
 from lp.code.interfaces.codereviewinlinecomment import (
@@ -355,7 +356,7 @@ class UnmergedRevisionsMixin:
     @property
     def codebrowse_url(self):
         """Return the link to codebrowse for this branch."""
-        return self.context.source_branch.getCodebrowseUrl()
+        return self.context.merge_source.getCodebrowseUrl()
 
 
 class BranchMergeProposalRevisionIdMixin:
@@ -373,6 +374,9 @@ class BranchMergeProposalRevisionIdMixin:
             return None
         # If the source branch is REMOTE, then there won't be any ids.
         source_branch = self.context.source_branch
+        if source_branch is None:
+            # Git doesn't have revision numbers.  Just use the ids.
+            return revision_id
         if source_branch.branch_type == BranchType.REMOTE:
             return revision_id
         else:
@@ -586,12 +590,18 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
     def initialize(self):
         super(BranchMergeProposalView, self).initialize()
         cache = IJSONRequestCache(self.request)
-        cache.objects.update({
-            'branch_diff_link':
-                'https://%s/+loggerhead/%s/diff/' % (
-                    config.launchpad.code_domain,
-                    self.context.source_branch.unique_name),
-            })
+        if IBranch.providedBy(self.context.merge_source):
+            cache.objects.update({
+                'branch_diff_link':
+                    'https://%s/+loggerhead/%s/diff/' % (
+                        config.launchpad.code_domain,
+                        self.context.source_branch.unique_name),
+                })
+        else:
+            cache.objects.update({
+                'repository_diff_link':
+                    '%s/diff/' % self.context.merge_source.getCodebrowseUrl(),
+                })
         if getFeatureFlag("longpoll.merge_proposals.enabled"):
             cache.objects['merge_proposal_event_key'] = subscribe(
                 self.context).event_key
@@ -618,7 +628,9 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
         # Sort the comments by date order.
         merge_proposal = self.context
         groups = list(merge_proposal.getRevisionsSinceReviewStart())
-        source = DecoratedBranch(merge_proposal.source_branch)
+        source = merge_proposal.merge_source
+        if IBranch.providedBy(source):
+            source = DecoratedBranch(source)
         comments = []
         if getFeatureFlag('code.incremental_diffs.enabled'):
             ranges = [
@@ -685,6 +697,8 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
 
     @property
     def pending_diff(self):
+        if self.context.source_branch is None:
+            return False
         return (
             self.context.next_preview_diff_job is not None or
             self.context.source_branch.pending_writes)
@@ -705,6 +719,10 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
 
     @property
     def spec_links(self):
+        if self.context.source_branch is None:
+            # XXX cjwatson 2015-04-16: Implement once Git refs have linked
+            # blueprints.
+            return []
         return list(
             self.context.source_branch.getSpecificationLinks(self.user))
 
@@ -748,12 +766,16 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
     @property
     def status_config(self):
         """The config to configure the ChoiceSource JS widget."""
+        if IBranch.providedBy(self.context.merge_source):
+            source_revid = self.context.merge_source.last_scanned_id
+        else:
+            source_revid = self.context.merge_source.commit_sha1
         return simplejson.dumps({
             'status_widget_items': vocabulary_to_choice_edit_items(
                 self._createStatusVocabulary(),
                 css_class_prefix='mergestatus'),
             'status_value': self.context.queue_status.title,
-            'source_revid': self.context.source_branch.last_scanned_id,
+            'source_revid': source_revid,
             'user_can_edit_status': check_permission(
                 'launchpad.Edit', self.context),
             })
@@ -965,17 +987,33 @@ class BranchMergeProposalResubmitView(LaunchpadFormView,
     schema = ResubmitSchema
     for_input = True
     page_title = label = "Resubmit proposal to merge"
-    field_names = [
-        'source_branch',
-        'target_branch',
-        'prerequisite_branch',
-        'description',
-        'break_link',
-        ]
 
     def initialize(self):
         self.cancel_url = canonical_url(self.context)
         super(BranchMergeProposalResubmitView, self).initialize()
+
+    @property
+    def field_names(self):
+        if IBranch.providedBy(self.context.merge_source):
+            field_names = [
+                'source_branch',
+                'target_branch',
+                'prerequisite_branch',
+                ]
+        else:
+            field_names = [
+                'source_git_repository',
+                'source_git_path',
+                'target_git_repository',
+                'target_git_path',
+                'prerequisite_git_repository',
+                'prerequisite_git_path',
+                ]
+        field_names.extend([
+            'description',
+            'break_link',
+            ])
+        return field_names
 
     @property
     def initial_values(self):
@@ -988,10 +1026,24 @@ class BranchMergeProposalResubmitView(LaunchpadFormView,
     def resubmit_action(self, action, data):
         """Resubmit this proposal."""
         try:
+            if IBranch.providedBy(self.context.merge_source):
+                merge_source = data['source_branch']
+                merge_target = data['target_branch']
+                merge_prerequisite = data['prerequisite_branch']
+            else:
+                merge_source = data['source_git_repository'].getRefByPath(
+                    data['source_git_path'])
+                merge_target = data['target_git_repository'].getRefByPath(
+                    data['target_git_path'])
+                if data['prerequisite_git_repository']:
+                    merge_prerequisite = (
+                        data['prerequisite_git_repository'].getRefByPath(
+                            data['prerequisite_git_path']))
+                else:
+                    merge_prerequisite = None
             proposal = self.context.resubmit(
-                self.user, data['source_branch'], data['target_branch'],
-                data['prerequisite_branch'], data['description'],
-                data['break_link'])
+                self.user, merge_source, merge_target, merge_prerequisite,
+                data['description'], data['break_link'])
         except BranchMergeProposalExists as e:
             message = structured(
                 'Cannot resubmit because <a href="%(url)s">a similar merge'
@@ -1072,18 +1124,31 @@ class BranchMergeProposalMergedView(LaunchpadEditFormView):
     """The view to mark a merge proposal as merged."""
     schema = IBranchMergeProposal
     page_title = label = "Edit branch merge proposal"
-    field_names = ["merged_revno"]
     for_input = True
+
+    @property
+    def field_names(self):
+        if IBranch.providedBy(self.context.merge_target):
+            return ["merged_revno"]
+        else:
+            return ["merged_revision_id"]
 
     @property
     def initial_values(self):
         # Default to the tip of the target branch, on the assumption that the
         # source branch has just been merged into it.
-        if self.context.merged_revno is not None:
-            revno = self.context.merged_revno
+        if IBranch.providedBy(self.context.merge_target):
+            if self.context.merged_revno is not None:
+                revno = self.context.merged_revno
+            else:
+                revno = self.context.merge_target.revision_count
+            return {'merged_revno': revno}
         else:
-            revno = self.context.target_branch.revision_count
-        return {'merged_revno': revno}
+            if self.context.merged_revision_id is not None:
+                revision_id = self.context.merged_revision_id
+            else:
+                revision_id = self.context.merge_target.commit_sha1
+            return {'merged_revision_id': revision_id}
 
     @property
     def next_url(self):
@@ -1095,13 +1160,16 @@ class BranchMergeProposalMergedView(LaunchpadEditFormView):
     @notify
     def mark_merged_action(self, action, data):
         """Update the whiteboard and go back to the source branch."""
-        revno = data['merged_revno']
+        if IBranch.providedBy(self.context.merge_target):
+            kwargs = {'merged_revno': data['merged_revno']}
+        else:
+            kwargs = {'merged_revision_id': data['merged_revision_id']}
         if self.context.queue_status == BranchMergeProposalStatus.MERGED:
-            self.context.markAsMerged(merged_revno=revno)
+            self.context.markAsMerged(**kwargs)
             self.request.response.addNotification(
                 'The proposal\'s merged revision has been updated.')
         else:
-            self.context.markAsMerged(revno, merge_reporter=self.user)
+            self.context.markAsMerged(merge_reporter=self.user, **kwargs)
             self.request.response.addNotification(
                 'The proposal has now been marked as merged.')
 

@@ -824,6 +824,9 @@
         <browser:page
             name="++ref-commits"
             template="../templates/gitref-commits.pt"/>
+        <browser:page
+            name="++ref-pending-merges"
+            template="../templates/gitref-pending-merges.pt"/>
     </browser:pages>
     <browser:page
         for="lp.code.interfaces.gitref.IGitRef"

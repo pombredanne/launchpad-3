@@ -38,6 +38,7 @@ from storm.locals import (
 from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import (
@@ -773,6 +774,27 @@ class GitRepositorySet:
         """See `IGitRepositorySet`."""
         collection = IGitCollection(target).visibleByUser(user)
         return collection.getRepositories(eager_load=True)
+
+    def getRepositoryVisibilityInfo(self, user, person, repository_names):
+        """See `IGitRepositorySet`."""
+        if user is None:
+            return dict()
+        lookup = getUtility(IGitLookup)
+        visible_repositories = []
+        for name in repository_names:
+            repository = lookup.getByUniqueName(name)
+            try:
+                if (repository is not None
+                        and repository.visibleByUser(user)
+                        and repository.visibleByUser(person)):
+                    visible_repositories.append(repository.unique_name)
+            except Unauthorized:
+                # We don't include repositories user cannot see.
+                pass
+        return {
+            'person_name': person.displayname,
+            'visible_repositories': visible_repositories,
+            }
 
     def getDefaultRepository(self, target):
         """See `IGitRepositorySet`."""
