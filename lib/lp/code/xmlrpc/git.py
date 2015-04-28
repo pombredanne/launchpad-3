@@ -127,9 +127,11 @@ class GitAPI(LaunchpadXMLRPCView):
                 if owner is None:
                     self.repository_set.setDefaultRepository(
                         target, new_repository)
-                else:
+                if (owner is not None or
+                    self.repository_set.getDefaultRepositoryForOwner(
+                        repository_owner, target) is None):
                     self.repository_set.setDefaultRepositoryForOwner(
-                        owner, target, new_repository)
+                        repository_owner, target, new_repository)
 
             repository_name = namespace.findUnusedName(target.name)
             return namespace, repository_name, default_func
