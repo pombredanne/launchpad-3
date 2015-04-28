@@ -200,12 +200,15 @@ class GitAPI(LaunchpadXMLRPCView):
             # If repository has target_default, clone from default.
             target_path = None
             try:
-                target_default = self.repository_set.getDefaultRepository(
-                    repository.target) or (
-                        self.repository_set.getDefaultRepository(
-                    repository.owner))
-                if target_default and target_default.visibleByUser(requester):
-                    target_path = target_default.getInternalPath()
+                default = self.repository_set.getDefaultRepository(
+                    repository.target)
+                if default is not None and default.visibleByUser(requester):
+                    target_path = default.getInternalPath()
+                else:
+                    default = self.repository_set.getDefaultRepositoryForOwner(
+                        repository.owner, repository.target)
+                    if default is not None and default.visibleByUser(requester):
+                        target_path = default.getInternalPath()
             except GitTargetError:
                 pass  # Ignore Personal repositories.
 

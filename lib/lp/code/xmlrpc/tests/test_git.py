@@ -217,13 +217,12 @@ class TestGitAPIMixin:
             self.git_api.hosting_client.calls[0][0:2])
         return repository
 
-    def assertCreatesFromClone(self, requester, path, can_authenticate=False):
-        repository = self.assertCreates(requester, path, can_authenticate)
-        target_default = removeSecurityProxy(
-            self.repository_set.getDefaultRepository(repository.target))
-        self.assertIsNotNone(target_default)
-        self.assertEqual(target_default.getInternalPath(),
-                         self.git_api.hosting_client.calls[0][2])
+    def assertCreatesFromClone(self, requester, path, cloned_from,
+                               can_authenticate=False):
+        self.assertCreates(requester, path, can_authenticate)
+        self.assertEqual(
+            cloned_from.getInternalPath(),
+            self.git_api.hosting_client.calls[0][2])
 
     def test_translatePath_private_repository(self):
         requester = self.factory.makePerson()
@@ -427,17 +426,32 @@ class TestGitAPI(TestGitAPIMixin, TestCaseWithFactory):
         self.assertCreates(
             requester, u"/~%s/%s/+git/random" % (requester.name, project.name))
 
-    def test_translatePath_create_project_with_default_target(self):
-        # translatePath creates a project repository cloned from the
-        # target default if it exists.
+    def test_translatePath_create_project_clone_from_target_default(self):
+        # translatePath creates a project repository cloned from the target
+        # default if it exists.
         target = self.factory.makeProduct()
         repository = self.factory.makeGitRepository(
             owner=target.owner, target=target)
         with person_logged_in(target.owner):
             self.repository_set.setDefaultRepository(target, repository)
             self.assertCreatesFromClone(
-                target.owner, u"/~%s/%s/+git/random" % (target.owner.name,
-                                                        target.name))
+                target.owner,
+                u"/~%s/%s/+git/random" % (target.owner.name, target.name),
+                repository)
+
+    def test_translatePath_create_project_clone_from_owner_default(self):
+        # translatePath creates a project repository cloned from the owner
+        # default if it exists and the target default does not.
+        target = self.factory.makeProduct()
+        repository = self.factory.makeGitRepository(
+            owner=target.owner, target=target)
+        with person_logged_in(target.owner):
+            self.repository_set.setDefaultRepositoryForOwner(
+                target.owner, target, repository)
+            self.assertCreatesFromClone(
+                target.owner,
+                u"/~%s/%s/+git/random" % (target.owner.name, target.name),
+                repository)
 
     def test_translatePath_create_package(self):
         # translatePath creates a package repository that doesn't exist, if
