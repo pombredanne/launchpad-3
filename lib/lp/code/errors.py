@@ -404,15 +404,15 @@ class GitDefaultConflict(Exception):
         params = {
             "unique_name": existing_repository.unique_name,
             "target": target.displayname,
-            "owner": owner.displayname,
             }
         if owner is None:
             message = (
                 "The default repository for '%(target)s' is already set to "
                 "%(unique_name)s." % params)
         else:
+            params["owner"] = owner.displayname
             message = (
-                "%(owner)'s default repository for '%(target)s' is already "
+                "%(owner)s's default repository for '%(target)s' is already "
                 "set to %(unique_name)s." % params)
         self.existing_repository = existing_repository
         self.target = target
