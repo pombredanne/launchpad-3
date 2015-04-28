@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -24,7 +24,10 @@ from zope.schema.vocabulary import (
 from lp.app.widgets.suggestion import (
     SuggestionWidget,
     TargetBranchWidget,
+    TargetGitRepositoryWidget,
     )
+from lp.code.interfaces.gitrepository import GIT_FEATURE_FLAG
+from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.services.webapp.vocabulary import (
     FilteredVocabularyBase,
@@ -172,4 +175,44 @@ class TestTargetBranchWidget(TestCaseWithFactory):
         target, source = self.makeBranchAndOldMergeProposal(
             timedelta(days=91))
         widget = make_target_branch_widget(source)
+        self.assertNotIn(target, widget.suggestion_vocab)
+
+
+def make_target_git_repository_widget(repository):
+    """Given a Git repository, return a widget for selecting where to land
+    it."""
+    choice = Choice(vocabulary='GitRepository').bind(repository)
+    request = LaunchpadTestRequest()
+    return TargetGitRepositoryWidget(choice, None, request)
+
+
+class TestTargetGitRepositoryWidget(TestCaseWithFactory):
+    """Test the TargetGitRepositoryWidget class."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestTargetGitRepositoryWidget, self).setUp()
+        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
+
+    def makeRepositoryAndOldMergeProposal(self, timedelta):
+        """Make an old merge proposal and a repository with the same target."""
+        bmp = self.factory.makeBranchMergeProposalForGit(
+            date_created=datetime.now(utc) - timedelta)
+        login_person(bmp.registrant)
+        target = bmp.target_git_repository
+        return target, self.factory.makeGitRepository(target=target.target)
+
+    def test_recent_target(self):
+        """Targets for proposals newer than 90 days are included."""
+        target, source = self.makeRepositoryAndOldMergeProposal(
+            timedelta(days=89))
+        widget = make_target_git_repository_widget(source)
+        self.assertIn(target, widget.suggestion_vocab)
+
+    def test_stale_target(self):
+        """Targets for proposals older than 90 days are not considered."""
+        target, source = self.makeRepositoryAndOldMergeProposal(
+            timedelta(days=91))
+        widget = make_target_git_repository_widget(source)
         self.assertNotIn(target, widget.suggestion_vocab)
