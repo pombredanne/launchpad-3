@@ -1493,22 +1493,6 @@ class TestPublishBinaries(TestCaseWithFactory):
         args['pocket'] = PackagePublishingPocket.RELEASE
         [another_bpph] = getUtility(IPublishingSet).publishBinaries(**args)
 
-    def test_primary_ddebs_need_ddebs_enabled(self):
-        debug = self.factory.makeBinaryPackageRelease(
-            binpackageformat=BinaryPackageFormat.DDEB)
-        args = self.makeArgs(
-            [debug], debug.build.distro_arch_series.distroseries)
-
-        # ddebs are rejected with build_debug_symbols unset
-        self.assertRaises(
-            QueueInconsistentStateError,
-            getUtility(IPublishingSet).publishBinaries, **args)
-
-        # But accepted with build_debug_symbols set
-        archive = debug.build.distro_arch_series.distroseries.main_archive
-        archive.build_debug_symbols = True
-        getUtility(IPublishingSet).publishBinaries(**args)
-
 
 class TestChangeOverride(TestNativePublishingBase):
     """Test that changing overrides works."""

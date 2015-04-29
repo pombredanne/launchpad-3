@@ -1125,15 +1125,6 @@ class PublishingSet:
             # an unsupported architecture.
             return []
 
-        if (archive.purpose == ArchivePurpose.PRIMARY
-            and not archive.build_debug_symbols
-            and any(
-                1 for _, bpr, _ in expanded
-                if bpr.binpackageformat == BinaryPackageFormat.DDEB)):
-            raise QueueInconsistentStateError(
-                "Won't publish ddebs to a primary archive that doesn't want "
-                "them.")
-
         # Find existing publications.
         # We should really be able to just compare BPR.id, but
         # CopyChecker doesn't seem to ensure that there are no
