@@ -231,11 +231,18 @@ class BranchMergeProposalExists(InvalidBranchMergeProposal):
     """Raised if there is already a matching BranchMergeProposal."""
 
     def __init__(self, existing_proposal):
+        # Circular import.
+        from lp.code.interfaces.branch import IBranch
+        # display_name is the newer style, but IBranch uses the older style.
+        if IBranch.providedBy(existing_proposal.merge_source):
+            display_name = "displayname"
+        else:
+            display_name = "display_name"
         super(BranchMergeProposalExists, self).__init__(
                 'There is already a branch merge proposal registered for '
                 'branch %s to land on %s that is still active.' %
-                (existing_proposal.source_branch.displayname,
-                 existing_proposal.target_branch.displayname))
+                (getattr(existing_proposal.merge_source, display_name),
+                 getattr(existing_proposal.merge_target, display_name)))
         self.existing_proposal = existing_proposal
 
 

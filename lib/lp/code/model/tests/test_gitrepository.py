@@ -1216,6 +1216,80 @@ class TestGitRepositorySet(TestCaseWithFactory):
             public_repositories + [private_repository],
             self.repository_set.getRepositories(other_person, project))
 
+    def test_getRepositoryVisibilityInfo_empty_repository_names(self):
+        # If repository_names is empty, getRepositoryVisibilityInfo returns
+        # an empty visible_repositories list.
+        person = self.factory.makePerson(name="fred")
+        info = self.repository_set.getRepositoryVisibilityInfo(
+            person, person, repository_names=[])
+        self.assertEqual("Fred", info["person_name"])
+        self.assertEqual([], info["visible_repositories"])
+
+    def test_getRepositoryVisibilityInfo(self):
+        person = self.factory.makePerson(name="fred")
+        owner = self.factory.makePerson()
+        visible_repository = self.factory.makeGitRepository()
+        invisible_repository = self.factory.makeGitRepository(
+            owner=owner, information_type=InformationType.USERDATA)
+        invisible_name = removeSecurityProxy(invisible_repository).unique_name
+        repositories = [visible_repository.unique_name, invisible_name]
+
+        with person_logged_in(owner):
+            info = self.repository_set.getRepositoryVisibilityInfo(
+                owner, person, repository_names=repositories)
+        self.assertEqual("Fred", info["person_name"])
+        self.assertEqual(
+            [visible_repository.unique_name], info["visible_repositories"])
+
+    def test_getRepositoryVisibilityInfo_unauthorised_user(self):
+        # If the user making the API request cannot see one of the
+        # repositories, that repository is not included in the results.
+        person = self.factory.makePerson(name="fred")
+        owner = self.factory.makePerson()
+        visible_repository = self.factory.makeGitRepository()
+        invisible_repository = self.factory.makeGitRepository(
+            owner=owner, information_type=InformationType.USERDATA)
+        invisible_name = removeSecurityProxy(invisible_repository).unique_name
+        repositories = [visible_repository.unique_name, invisible_name]
+
+        someone = self.factory.makePerson()
+        with person_logged_in(someone):
+            info = self.repository_set.getRepositoryVisibilityInfo(
+                someone, person, repository_names=repositories)
+        self.assertEqual("Fred", info["person_name"])
+        self.assertEqual(
+            [visible_repository.unique_name], info["visible_repositories"])
+
+    def test_getRepositoryVisibilityInfo_anonymous(self):
+        # Anonymous users are not allowed to see any repository visibility
+        # information, even if the repository they are querying about is
+        # public.
+        person = self.factory.makePerson(name="fred")
+        owner = self.factory.makePerson()
+        visible_repository = self.factory.makeGitRepository(owner=owner)
+        repositories = [visible_repository.unique_name]
+
+        with person_logged_in(owner):
+            info = self.repository_set.getRepositoryVisibilityInfo(
+                None, person, repository_names=repositories)
+        self.assertEqual({}, info)
+
+    def test_getRepositoryVisibilityInfo_invalid_repository_name(self):
+        # If an invalid repository name is specified, it is not included.
+        person = self.factory.makePerson(name="fred")
+        owner = self.factory.makePerson()
+        visible_repository = self.factory.makeGitRepository(owner=owner)
+        repositories = [
+            visible_repository.unique_name,
+            "invalid_repository_name"]
+
+        with person_logged_in(owner):
+            info = self.repository_set.getRepositoryVisibilityInfo(
+                owner, person, repository_names=repositories)
+        self.assertEqual("Fred", info["person_name"])
+        self.assertEqual(
+            [visible_repository.unique_name], info["visible_repositories"])
+
     def test_setDefaultRepository_refuses_person(self):
         # setDefaultRepository refuses if the target is a person.
         person = self.factory.makePerson()

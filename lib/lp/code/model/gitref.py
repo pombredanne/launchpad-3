@@ -376,3 +376,6 @@ class GitRefFrozen(GitRefMixin):
 
     def __ne__(self, other):
         return not self == other
+
+    def __hash__(self):
+        return hash(self.repository) ^ hash(self.path) ^ hash(self.commit_sha1)
