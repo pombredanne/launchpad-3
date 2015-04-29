@@ -134,6 +134,16 @@ class IGitNamespacePolicy(Interface):
             validation constraints on IGitRepository.name.
         """
 
+    def validateDefaultFlags(repository):
+        """Check that any default flags on 'repository' fit this namespace.
+
+        :param repository: An `IGitRepository` to check.
+        :raises GitDefaultConflict: If the repository has the target_default
+            flag set but this namespace already has a target default, or if
+            the repository has the owner_default flag set but this namespace
+            already has an owner-target default.
+        """
+
     def validateMove(repository, mover, name=None):
         """Check that 'mover' can move 'repository' into this namespace.
 
