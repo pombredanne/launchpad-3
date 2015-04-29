@@ -101,3 +101,35 @@ class GitHostingClient:
         except ValueError as e:
             raise GitRepositoryScanFault(
                 "Failed to decode commit-scan response: %s" % unicode(e))
+
+    def getMergeDiff(self, path, base, head, logger=None):
+        """Get the merge preview diff between two commits.
+
+        :return: A dict mapping 'commits' to a list of commits between
+            'base' and 'head' (formatted as with `getCommits`), 'patch' to
+            the text of the diff between 'base' and 'head', and 'conflicts'
+            to a list of conflicted paths.
+        """
+        try:
+            if logger is not None:
+                logger.info(
+                    "Requesting merge diff for %s from %s to %s" % (
+                        path, base, head))
+            response = self._makeSession().get(
+                urlutils.join(
+                    self.endpoint, "repo", path, "compare-merge",
+                    "%s:%s" % (base, head)),
+                timeout=self.timeout)
+        except Exception as e:
+            raise GitRepositoryScanFault(
+                "Failed to get merge diff from Git repository: %s" %
+                unicode(e))
+        if response.status_code != 200:
+            raise GitRepositoryScanFault(
+                "Failed to get merge diff from Git repository: %s" %
+                unicode(e))
+        try:
+            return response.json()
+        except ValueError as e:
+            raise GitRepositoryScanFault(
+                "Failed to decode merge-diff response: %s" % unicode(e))
