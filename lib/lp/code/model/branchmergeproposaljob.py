@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Job classes related to BranchMergeProposals are in here.
@@ -39,7 +39,6 @@ from storm.expr import (
     Desc,
     Or,
     )
-from storm.info import ClassAlias
 from storm.locals import (
     Int,
     Reference,
@@ -101,6 +100,7 @@ from lp.services.job.runner import (
     )
 from lp.services.mail.sendmail import format_address_for_person
 from lp.services.webapp import canonical_url
+
 
 class BranchMergeProposalJobType(DBEnumeratedType):
     """Values that ICodeImportJob.state can take."""
@@ -655,22 +655,16 @@ class BranchMergeProposalJobSource(BaseRunnableJobSource):
 
     @staticmethod
     def iterReady(job_type=None):
-        from lp.code.model.branch import Branch
-        SourceBranch = ClassAlias(Branch)
-        TargetBranch = ClassAlias(Branch)
         clauses = [
             BranchMergeProposalJob.job == Job.id,
             Job._status.is_in([JobStatus.WAITING, JobStatus.RUNNING]),
             BranchMergeProposalJob.branch_merge_proposal ==
-            BranchMergeProposal.id, BranchMergeProposal.source_branch ==
-            SourceBranch.id, BranchMergeProposal.target_branch ==
-            TargetBranch.id,
+            BranchMergeProposal.id,
             ]
         if job_type is not None:
             clauses.append(BranchMergeProposalJob.job_type == job_type)
-        jobs = IMasterStore(Branch).find(
-            (BranchMergeProposalJob, Job, BranchMergeProposal,
-             SourceBranch, TargetBranch), And(*clauses))
+        jobs = IMasterStore(BranchMergeProposalJob).find(
+            (BranchMergeProposalJob, Job, BranchMergeProposal), And(*clauses))
         # Order by the job status first (to get running before waiting), then
         # the date_created, then job type.  This should give us all creation
         # jobs before comment jobs.
@@ -680,7 +674,7 @@ class BranchMergeProposalJobSource(BaseRunnableJobSource):
         # Now only return one job for any given merge proposal.
         ready_jobs = []
         seen_merge_proposals = set()
-        for bmp_job, job, bmp, source, target in jobs:
+        for bmp_job, job, bmp in jobs:
             # If we've seen this merge proposal already, skip this job.
             if bmp.id in seen_merge_proposals:
                 continue
