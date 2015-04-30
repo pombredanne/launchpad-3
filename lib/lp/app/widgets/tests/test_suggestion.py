@@ -12,7 +12,10 @@ import doctest
 
 from pytz import utc
 from testtools.matchers import DocTestMatches
-from zope.component import provideUtility
+from zope.component import (
+    getUtility,
+    provideUtility,
+    )
 from zope.interface import implements
 from zope.schema import Choice
 from zope.schema.interfaces import IVocabularyFactory
@@ -26,7 +29,10 @@ from lp.app.widgets.suggestion import (
     TargetBranchWidget,
     TargetGitRepositoryWidget,
     )
-from lp.code.interfaces.gitrepository import GIT_FEATURE_FLAG
+from lp.code.interfaces.gitrepository import (
+    GIT_FEATURE_FLAG,
+    IGitRepositorySet,
+    )
 from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.services.webapp.vocabulary import (
@@ -100,23 +106,23 @@ class TestSuggestionWidget(TestCaseWithFactory):
 
     def test__renderLabel_unsafe_content(self):
         # Render label escapes unsafe markup.
-        strutured_string = self.widget._renderLabel(self.UNSAFE_TERM.title, 2)
+        structured_string = self.widget._renderLabel(self.UNSAFE_TERM.title, 2)
         expected_item_0 = (
             """<label for="field.test_field.2"
             ...>&lt;unsafe&gt; &amp;nbsp; title</label>""")
         self.assertThat(
-            strutured_string.escapedtext,
+            structured_string.escapedtext,
             DocTestMatches(expected_item_0, self.doctest_opts))
 
     def test__renderSuggestionLabel_unsafe_content(self):
         # Render sugestion label escapes unsafe markup.
-        strutured_string = self.widget._renderSuggestionLabel(
+        structured_string = self.widget._renderSuggestionLabel(
             self.UNSAFE_OBJECT, 2)
         expected_item_0 = (
             """<label for="field.test_field.2"
             ...>&lt;unsafe&gt; &amp;nbsp; title</label>""")
         self.assertThat(
-            strutured_string.escapedtext,
+            structured_string.escapedtext,
             DocTestMatches(expected_item_0, self.doctest_opts))
 
     def test_renderItems(self):
@@ -145,7 +151,7 @@ class TestSuggestionWidget(TestCaseWithFactory):
 
 def make_target_branch_widget(branch):
     """Given a branch, return a widget for selecting where to land it."""
-    choice = Choice(vocabulary='Branch').bind(branch)
+    choice = Choice(__name__='test_field', vocabulary='Branch').bind(branch)
     request = LaunchpadTestRequest()
     return TargetBranchWidget(choice, None, request)
 
@@ -154,6 +160,9 @@ class TestTargetBranchWidget(TestCaseWithFactory):
     """Test the TargetBranchWidget class."""
 
     layer = DatabaseFunctionalLayer
+    doctest_opts = (
+        doctest.NORMALIZE_WHITESPACE | doctest.REPORT_NDIFF |
+        doctest.ELLIPSIS)
 
     def makeBranchAndOldMergeProposal(self, timedelta):
         """Make an old merge proposal and a branch with the same target."""
@@ -177,11 +186,28 @@ class TestTargetBranchWidget(TestCaseWithFactory):
         widget = make_target_branch_widget(source)
         self.assertNotIn(target, widget.suggestion_vocab)
 
+    def test__renderSuggestionLabel(self):
+        """Branches have a reasonable suggestion label."""
+        target, source = self.makeBranchAndOldMergeProposal(
+            timedelta(days=1))
+        login_person(target.product.owner)
+        target.product.development_focus.branch = target
+        widget = make_target_branch_widget(source)
+        expected = (
+            """<label for="field.test_field.2"
+            ...>... (<a href="...">branch details</a>)&ndash;
+            <em>development focus</em></label>""")
+        structured_string = widget._renderSuggestionLabel(target, 2)
+        self.assertThat(
+            structured_string.escapedtext,
+            DocTestMatches(expected, self.doctest_opts))
+
 
 def make_target_git_repository_widget(repository):
     """Given a Git repository, return a widget for selecting where to land
     it."""
-    choice = Choice(vocabulary='GitRepository').bind(repository)
+    choice = Choice(__name__='test_field', vocabulary='GitRepository')
+    choice = choice.bind(repository)
     request = LaunchpadTestRequest()
     return TargetGitRepositoryWidget(choice, None, request)
 
@@ -190,6 +216,9 @@ class TestTargetGitRepositoryWidget(TestCaseWithFactory):
     """Test the TargetGitRepositoryWidget class."""
 
     layer = DatabaseFunctionalLayer
+    doctest_opts = (
+        doctest.NORMALIZE_WHITESPACE | doctest.REPORT_NDIFF |
+        doctest.ELLIPSIS)
 
     def setUp(self):
         super(TestTargetGitRepositoryWidget, self).setUp()
@@ -216,3 +245,20 @@ class TestTargetGitRepositoryWidget(TestCaseWithFactory):
             timedelta(days=91))
         widget = make_target_git_repository_widget(source)
         self.assertNotIn(target, widget.suggestion_vocab)
+
+    def test__renderSuggestionLabel(self):
+        """Git repositories have a reasonable suggestion label."""
+        target, source = self.makeRepositoryAndOldMergeProposal(
+            timedelta(days=1))
+        login_person(target.target.owner)
+        getUtility(IGitRepositorySet).setDefaultRepository(
+            target.target, target)
+        widget = make_target_git_repository_widget(source)
+        expected = (
+            """<label for="field.test_field.2"
+            ...>... (<a href="...">repository details</a>)&ndash;
+            <em>default repository</em></label>""")
+        structured_string = widget._renderSuggestionLabel(target, 2)
+        self.assertThat(
+            structured_string.escapedtext,
+            DocTestMatches(expected, self.doctest_opts))

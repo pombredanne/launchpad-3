@@ -262,15 +262,16 @@ class TargetBranchWidget(SuggestionWidget):
         # radio buttons that is not a hyperlink in order to select the radio
         # button.  It was decided not to have the entire text as a link, but
         # instead to have a separate link to the branch details.
-        text = '%s (<a href="%s">branch details</a>)' % (
-            html_escape(branch.displayname),
-            html_escape(canonical_url(branch)))
+        text = u'%s (<a href="%s">branch details</a>)'
         # If the branch is the development focus, say so.
         if branch == self.context.context.target.default_merge_target:
-            text = text + "&ndash; <em>development focus</em>"
-        label = u'<label for="%s" style="font-weight: normal">%s</label>' % (
-            self._optionId(index), text)
-        return structured(label)
+            text += u"&ndash; <em>development focus</em>"
+        label = (
+            u'<label for="%s" style="font-weight: normal">' + text +
+            u'</label>')
+        return structured(
+            label, self._optionId(index), branch.displayname,
+            canonical_url(branch))
 
     def _autoselectOther(self):
         """Select "other" on keypress."""
@@ -331,17 +332,18 @@ class TargetGitRepositoryWidget(SuggestionWidget):
         # radio buttons that is not a hyperlink in order to select the radio
         # button.  It was decided not to have the entire text as a link, but
         # instead to have a separate link to the repository details.
-        text = '%s (<a href="%s">repository details</a>)' % (
-            html_escape(repository.display_name),
-            html_escape(canonical_url(repository)))
+        text = u'%s (<a href="%s">repository details</a>)'
         # If the repository is the default for the target, say so.
         default_target = getUtility(IGitRepositorySet).getDefaultRepository(
             repository.target)
         if repository == default_target:
-            text += "&ndash; <em>default repository</em>"
-        label = u'<label for="%s" style="font-weight: normal">%s</label>' % (
-            self._optionId(index), text)
-        return structured(label)
+            text += u"&ndash; <em>default repository</em>"
+        label = (
+            u'<label for="%s" style="font-weight: normal">' + text +
+            u'</label>')
+        return structured(
+            label, self._optionId(index), repository.display_name,
+            canonical_url(repository))
 
     def _autoselectOther(self):
         """Select "other" on keypress."""
