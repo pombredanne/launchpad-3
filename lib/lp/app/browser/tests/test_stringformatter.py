@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for the string TALES formatter."""
@@ -165,7 +165,7 @@ class TestLinkifyingBugs(TestCase):
 
 
 class TestLinkifyingProtocols(TestCaseWithFactory):
-    
+
     layer = DatabaseFunctionalLayer
 
     def test_normal_set(self):
@@ -355,6 +355,40 @@ class TestDiffFormatter(TestCase):
              'diff-added text',
              'diff-comment text',
              'diff-comment text'],
+            [str(tag['class']) for tag in text])
+
+    def test_cssClasses_git(self):
+        # Git diffs look slightly different, so check that they also end up
+        # with the correct CSS classes.
+        diff = dedent('''\
+            diff --git a/tales.py b/tales.py
+            index aaaaaaa..bbbbbbb 100644
+            --- a/tales.py
+            +++ b/tales.py
+            @@ -2435,6 +2435,8 @@
+                 def format_diff(self):
+            -        removed this line
+            +        added this line
+            -------- a sql style comment
+            ++++++++ a line of pluses
+            ''')
+        html = FormattersAPI(diff).format_diff()
+        line_numbers = find_tags_by_class(html, 'line-no')
+        self.assertEqual(
+            ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'],
+            [tag.renderContents() for tag in line_numbers])
+        text = find_tags_by_class(html, 'text')
+        self.assertEqual(
+            ['diff-file text',
+             'diff-file text',
+             'diff-header text',
+             'diff-header text',
+             'diff-chunk text',
+             'text',
+             'diff-removed text',
+             'diff-added text',
+             'diff-removed text',
+             'diff-added text'],
             [str(tag['class']) for tag in text])
 
     def test_config_value_limits_line_count(self):
