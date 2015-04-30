@@ -457,6 +457,8 @@ class PreviewDiff(Storm):
                 path = "%s:%s" % (
                     target_repository.getInternalPath(),
                     source_repository.getInternalPath())
+            # XXX cjwatson 2015-04-30: Add prerequisite handling once turnip
+            # supports it.
             response = hosting_client.getMergeDiff(
                 path, bmp.source_git_ref.commit_sha1,
                 bmp.target_git_ref.commit_sha1)
