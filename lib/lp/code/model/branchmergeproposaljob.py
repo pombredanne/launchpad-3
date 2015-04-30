@@ -295,8 +295,8 @@ class BranchMergeProposalJobDerived(BaseRunnableJob):
         vars.extend([
             ('branchmergeproposal_job_id', self.context.id),
             ('branchmergeproposal_job_type', self.context.job_type.title),
-            ('source_branch', bmp.merge_source.unique_name),
-            ('target_branch', bmp.merge_target.unique_name)])
+            ('merge_source', bmp.merge_source.unique_name),
+            ('merge_target', bmp.merge_target.unique_name)])
         return vars
 
 
