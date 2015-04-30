@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 
@@ -42,6 +42,7 @@ from lp.code.browser.branchmergeproposal import (
     latest_proposals_for_each_branch,
     )
 from lp.code.browser.codereviewcomment import CodeReviewDisplayComment
+from lp.code.browser.gitref import GitRefRegisterMergeProposalView
 from lp.code.enums import (
     BranchMergeProposalStatus,
     CodeReviewVote,
@@ -402,41 +403,28 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
         view.render()
 
 
-class TestRegisterBranchMergeProposalView(BrowserTestCase):
+class TestRegisterBranchMergeProposalViewMixin:
     """Test the merge proposal registration view."""
 
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
-        TestCaseWithFactory.setUp(self)
-        self.source_branch = self.factory.makeProductBranch()
+        super(TestRegisterBranchMergeProposalViewMixin, self).setUp()
+        self.source_branch = self._makeBranch()
         self.user = self.factory.makePerson()
         login_person(self.user)
 
-    def _makeTargetBranch(self, **kwargs):
-        return self.factory.makeProductBranch(
-            product=self.source_branch.product, **kwargs)
-
     def _makeTargetBranchWithReviewer(self):
         albert = self.factory.makePerson(name='albert')
-        target_branch = self.factory.makeProductBranch(
-            reviewer=albert, product=self.source_branch.product)
+        target_branch = self._makeTargetBranch(reviewer=albert)
         return target_branch, albert
-
-    def _createView(self, request=None):
-        # Construct the view and initialize it.
-        if not request:
-            request = LaunchpadTestRequest()
-        view = RegisterBranchMergeProposalView(self.source_branch, request)
-        view.initialize()
-        return view
 
     def _getSourceProposal(self, target_branch):
         # There will only be one proposal.
         landing_targets = list(self.source_branch.landing_targets)
         self.assertEqual(1, len(landing_targets))
         proposal = landing_targets[0]
-        self.assertEqual(target_branch, proposal.target_branch)
+        self.assertEqual(target_branch, proposal.merge_target)
         return proposal
 
     def assertOnePendingReview(self, proposal, reviewer, review_type=None):
@@ -458,12 +446,210 @@ class TestRegisterBranchMergeProposalView(BrowserTestCase):
         # therefore be set to the branch owner.
         target_branch = self._makeTargetBranch()
         view = self._createView()
-        view.register_action.success(
-            {'target_branch': target_branch,
-             'needs_review': True})
+        view.register_action.success(self._getFormValues(
+            target_branch, {'needs_review': True}))
         proposal = self._getSourceProposal(target_branch)
         self.assertOnePendingReview(proposal, target_branch.owner)
         self.assertIs(None, proposal.description)
+
+    def test_register_ajax_request_with_no_confirmation(self):
+        # Ajax submits where there is no confirmation required return a 201
+        # with the new location.
+        owner = self.factory.makePerson()
+        target_branch = self._makeTargetBranch()
+        reviewer = self.factory.makePerson()
+        extra = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
+        request = LaunchpadTestRequest(
+            method='POST', principal=owner, **extra)
+        view = self._createView(request=request)
+        with person_logged_in(owner):
+            result_data = view.register_action.success(self._getFormValues(
+                target_branch, {
+                    'reviewer': reviewer,
+                    'needs_review': True,
+                    }))
+        self.assertEqual(None, result_data)
+        self.assertEqual(201, view.request.response.getStatus())
+        mp = target_branch.getMergeProposals()[0]
+        self.assertEqual(
+            canonical_url(mp), view.request.response.getHeader('Location'))
+
+    def test_register_work_in_progress(self):
+        # The needs review checkbox can be unchecked to create a work in
+        # progress proposal.
+        target_branch = self._makeTargetBranch()
+        view = self._createView()
+        view.register_action.success(self._getFormValues(
+            target_branch, {'needs_review': False}))
+        proposal = self._getSourceProposal(target_branch)
+        self.assertEqual(
+            BranchMergeProposalStatus.WORK_IN_PROGRESS,
+            proposal.queue_status)
+
+    def test_register_with_commit_message(self):
+        # A commit message can also be set during the register process.
+        target_branch = self._makeTargetBranch()
+        view = self._createView()
+        view.register_action.success(self._getFormValues(
+            target_branch, {
+                'needs_review': True,
+                'commit_message': 'Fixed the bug!',
+                }))
+        proposal = self._getSourceProposal(target_branch)
+        self.assertEqual('Fixed the bug!', proposal.commit_message)
+
+    def test_register_initial_comment(self):
+        # If the user specifies a description, this is recorded on the
+        # proposal.
+        target_branch = self._makeTargetBranch()
+        view = self._createView()
+        view.register_action.success(self._getFormValues(
+            target_branch, {
+                'comment': "This is the description.",
+                'needs_review': True,
+                }))
+
+        proposal = self._getSourceProposal(target_branch)
+        self.assertOnePendingReview(proposal, target_branch.owner)
+        self.assertEqual(proposal.description, "This is the description.")
+
+    def test_register_request_reviewer(self):
+        # If the user requests a reviewer, then a pending vote is added to the
+        # proposal.
+        target_branch = self._makeTargetBranch()
+        reviewer = self.factory.makePerson()
+        view = self._createView()
+        view.register_action.success(self._getFormValues(
+            target_branch, {
+                'reviewer': reviewer,
+                'needs_review': True,
+                }))
+
+        proposal = self._getSourceProposal(target_branch)
+        self.assertOnePendingReview(proposal, reviewer)
+        self.assertIs(None, proposal.description)
+
+    def test_register_request_review_type(self):
+        # We can request a specific review type of the reviewer.  If we do, it
+        # is recorded along with the pending review.
+        target_branch = self._makeTargetBranch()
+        reviewer = self.factory.makePerson()
+        view = self._createView()
+        view.register_action.success(self._getFormValues(
+            target_branch, {
+                'reviewer': reviewer,
+                'review_type': 'god-like',
+                'needs_review': True,
+                }))
+
+        proposal = self._getSourceProposal(target_branch)
+        self.assertOnePendingReview(proposal, reviewer, 'god-like')
+        self.assertIs(None, proposal.description)
+
+    def test_register_comment_and_review(self):
+        # The user can give a description and request a review from
+        # someone.
+        target_branch = self._makeTargetBranch()
+        reviewer = self.factory.makePerson()
+        view = self._createView()
+        view.register_action.success(self._getFormValues(
+            target_branch, {
+                'reviewer': reviewer,
+                'review_type': 'god-like',
+                'comment': "This is the description.",
+                'needs_review': True,
+                }))
+
+        proposal = self._getSourceProposal(target_branch)
+        self.assertOnePendingReview(proposal, reviewer, 'god-like')
+        self.assertEqual(proposal.description, "This is the description.")
+
+    def test_register_for_target_with_default_reviewer(self):
+        # A simple case is where the user only specifies the target
+        # branch, and not an initial comment or reviewer. The target branch
+        # has a reviewer so that reviewer should be used
+        target_branch, reviewer = self._makeTargetBranchWithReviewer()
+        view = self._createView()
+        view.register_action.success(self._getFormValues(
+            target_branch, {'needs_review': True}))
+        proposal = self._getSourceProposal(target_branch)
+        self.assertOnePendingReview(proposal, reviewer)
+        self.assertIs(None, proposal.description)
+
+    def test_register_request_review_type_branch_reviewer(self):
+        # We can ask for a specific review type. The target branch has a
+        # reviewer so that reviewer should be used.
+        target_branch, reviewer = self._makeTargetBranchWithReviewer()
+        view = self._createView()
+        view.register_action.success(self._getFormValues(
+            target_branch, {
+                'review_type': 'god-like',
+                'needs_review': True,
+                }))
+        proposal = self._getSourceProposal(target_branch)
+        self.assertOnePendingReview(proposal, reviewer, 'god-like')
+        self.assertIs(None, proposal.description)
+
+    def test_register_reviewer_not_hidden(self):
+        branch = self._makeBranch()
+        browser = self.getViewBrowser(branch, '+register-merge')
+        extra = Tag(
+            'extra', 'fieldset', attrs={'id': 'mergeproposal-extra-options'})
+        reviewer = Tag('reviewer', 'input', attrs={'id': 'field.reviewer'})
+        matcher = Not(HTMLContains(reviewer.within(extra)))
+        self.assertThat(browser.contents, matcher)
+
+    def test_branch_visibility_notification(self):
+        # If the reviewer cannot see the source and/or target branches, a
+        # notification message is displayed.
+        owner = self.factory.makePerson()
+        target_branch = self._makeTargetBranch(
+            owner=owner, information_type=InformationType.USERDATA)
+        reviewer = self.factory.makePerson()
+        with person_logged_in(owner):
+            view = self._createView()
+            view.register_action.success(self._getFormValues(
+                target_branch, {
+                    'reviewer': reviewer,
+                    'needs_review': True,
+                    }))
+
+        (notification,) = view.request.response.notifications
+        self.assertThat(
+            notification.message, MatchesRegex(
+                'To ensure visibility, .* is now subscribed to:.*'))
+        self.assertEqual(BrowserNotificationLevel.INFO, notification.level)
+
+
+class TestRegisterBranchMergeProposalViewBzr(
+    TestRegisterBranchMergeProposalViewMixin, BrowserTestCase):
+    """Test the merge proposal registration view for Bazaar."""
+
+    def _makeBranch(self):
+        return self.factory.makeProductBranch()
+
+    def _makeTargetBranch(self, **kwargs):
+        return self.factory.makeProductBranch(
+            product=self.source_branch.product, **kwargs)
+
+    def _makeTargetBranchWithReviewer(self):
+        albert = self.factory.makePerson(name='albert')
+        target_branch = self._makeTargetBranch(reviewer=albert)
+        return target_branch, albert
+
+    def _createView(self, request=None):
+        # Construct the view and initialize it.
+        if not request:
+            request = LaunchpadTestRequest()
+        view = RegisterBranchMergeProposalView(self.source_branch, request)
+        view.initialize()
+        return view
+
+    @staticmethod
+    def _getFormValues(target_branch, extras):
+        values = {'target_branch': target_branch}
+        values.update(extras)
+        return values
 
     def test_register_ajax_request_with_confirmation(self):
         # Ajax submits return json data containing info about what the visible
@@ -485,10 +671,11 @@ class TestRegisterBranchMergeProposalView(BrowserTestCase):
                 'person_name': reviewer.displayname,
                 'branches_to_check': branches_to_check,
                 'visible_branches': [self.source_branch.unique_name]}
-            result_data = view.register_action.success(
-                {'target_branch': target_branch,
-                 'reviewer': reviewer,
-                 'needs_review': True})
+            result_data = view.register_action.success(self._getFormValues(
+                target_branch, {
+                    'reviewer': reviewer,
+                    'needs_review': True,
+                    }))
         self.assertEqual(
             '400 Branch Visibility',
             view.request.response.getStatusString())
@@ -524,167 +711,102 @@ class TestRegisterBranchMergeProposalView(BrowserTestCase):
             'form_wide_errors': []},
             simplejson.loads(view.form_result))
 
-    def test_register_ajax_request_with_no_confirmation(self):
-        # Ajax submits where there is no confirmation required return a 201
-        # with the new location.
+
+class TestRegisterBranchMergeProposalViewGit(
+    TestRegisterBranchMergeProposalViewMixin, BrowserTestCase):
+    """Test the merge proposal registration view for Git."""
+
+    def setUp(self):
+        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
+        super(TestRegisterBranchMergeProposalViewGit, self).setUp()
+
+    def _makeBranch(self):
+        return self.factory.makeGitRefs()[0]
+
+    def _makeTargetBranch(self, **kwargs):
+        return self.factory.makeGitRefs(
+            target=self.source_branch.target, **kwargs)[0]
+
+    def _createView(self, request=None):
+        # Construct the view and initialize it.
+        if not request:
+            request = LaunchpadTestRequest()
+        view = GitRefRegisterMergeProposalView(self.source_branch, request)
+        view.initialize()
+        return view
+
+    @staticmethod
+    def _getFormValues(target_branch, extras):
+        values = {
+            'target_git_repository': target_branch.repository,
+            'target_git_path': target_branch.path,
+            }
+        values.update(extras)
+        return values
+
+    def test_register_ajax_request_with_confirmation(self):
+        # Ajax submits return json data containing info about what the visible
+        # repositories are if they are not all visible to the reviewer.
+
+        # Make a branch the reviewer cannot see.
         owner = self.factory.makePerson()
-        target_branch = self._makeTargetBranch()
+        target_branch = self._makeTargetBranch(
+            owner=owner, information_type=InformationType.USERDATA)
         reviewer = self.factory.makePerson()
         extra = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
         request = LaunchpadTestRequest(
             method='POST', principal=owner, **extra)
         view = self._createView(request=request)
         with person_logged_in(owner):
-            result_data = view.register_action.success(
-                {'target_branch': target_branch,
-                 'reviewer': reviewer,
-                 'needs_review': True})
-        self.assertEqual(None, result_data)
-        self.assertEqual(201, view.request.response.getStatus())
-        mp = target_branch.getMergeProposals()[0]
+            repositories_to_check = [
+                self.source_branch.repository.unique_name,
+                target_branch.repository.unique_name]
+            expected_data = {
+                'person_name': reviewer.displayname,
+                'repositories_to_check': repositories_to_check,
+                'visible_repositories':
+                    [self.source_branch.repository.unique_name]}
+            result_data = view.register_action.success(self._getFormValues(
+                target_branch, {
+                    'reviewer': reviewer,
+                    'needs_review': True,
+                    }))
         self.assertEqual(
-            canonical_url(mp), view.request.response.getHeader('Location'))
+            '400 Repository Visibility',
+            view.request.response.getStatusString())
+        self.assertEqual(expected_data, simplejson.loads(result_data))
 
-    def test_register_work_in_progress(self):
-        # The needs review checkbox can be unchecked to create a work in
-        # progress proposal.
-        target_branch = self._makeTargetBranch()
-        view = self._createView()
-        view.register_action.success(
-            {'target_branch': target_branch,
-             'needs_review': False})
-        proposal = self._getSourceProposal(target_branch)
-        self.assertEqual(
-            BranchMergeProposalStatus.WORK_IN_PROGRESS,
-            proposal.queue_status)
-
-    def test_register_with_commit_message(self):
-        # A commit message can also be set during the register process.
-        target_branch = self._makeTargetBranch()
-        view = self._createView()
-        view.register_action.success(
-            {'target_branch': target_branch,
-             'needs_review': True,
-             'commit_message': 'Fixed the bug!'})
-        proposal = self._getSourceProposal(target_branch)
-        self.assertEqual('Fixed the bug!', proposal.commit_message)
-
-    def test_register_initial_comment(self):
-        # If the user specifies a description, this is recorded on the
-        # proposal.
-        target_branch = self._makeTargetBranch()
-        view = self._createView()
-        view.register_action.success(
-            {'target_branch': target_branch,
-             'comment': "This is the description.",
-             'needs_review': True})
-
-        proposal = self._getSourceProposal(target_branch)
-        self.assertOnePendingReview(proposal, target_branch.owner)
-        self.assertEqual(proposal.description, "This is the description.")
-
-    def test_register_request_reviewer(self):
-        # If the user requests a reviewer, then a pending vote is added to the
-        # proposal.
-        target_branch = self._makeTargetBranch()
-        reviewer = self.factory.makePerson()
-        view = self._createView()
-        view.register_action.success(
-            {'target_branch': target_branch,
-             'reviewer': reviewer,
-             'needs_review': True})
-
-        proposal = self._getSourceProposal(target_branch)
-        self.assertOnePendingReview(proposal, reviewer)
-        self.assertIs(None, proposal.description)
-
-    def test_register_request_review_type(self):
-        # We can request a specific review type of the reviewer.  If we do, it
-        # is recorded along with the pending review.
-        target_branch = self._makeTargetBranch()
-        reviewer = self.factory.makePerson()
-        view = self._createView()
-        view.register_action.success(
-            {'target_branch': target_branch,
-             'reviewer': reviewer,
-             'review_type': 'god-like',
-             'needs_review': True})
-
-        proposal = self._getSourceProposal(target_branch)
-        self.assertOnePendingReview(proposal, reviewer, 'god-like')
-        self.assertIs(None, proposal.description)
-
-    def test_register_comment_and_review(self):
-        # The user can give a description and request a review from
-        # someone.
-        target_branch = self._makeTargetBranch()
-        reviewer = self.factory.makePerson()
-        view = self._createView()
-        view.register_action.success(
-            {'target_branch': target_branch,
-             'reviewer': reviewer,
-             'review_type': 'god-like',
-             'comment': "This is the description.",
-             'needs_review': True})
-
-        proposal = self._getSourceProposal(target_branch)
-        self.assertOnePendingReview(proposal, reviewer, 'god-like')
-        self.assertEqual(proposal.description, "This is the description.")
-
-    def test_register_for_target_with_default_reviewer(self):
-        # A simple case is where the user only specifies the target
-        # branch, and not an initial comment or reviewer. The target branch
-        # has a reviewer so that reviewer should be used
-        target_branch, reviewer = self._makeTargetBranchWithReviewer()
-        view = self._createView()
-        view.register_action.success(
-            {'target_branch': target_branch,
-             'needs_review': True})
-        proposal = self._getSourceProposal(target_branch)
-        self.assertOnePendingReview(proposal, reviewer)
-        self.assertIs(None, proposal.description)
-
-    def test_register_request_review_type_branch_reviewer(self):
-        # We can ask for a specific review type. The target branch has a
-        # reviewer so that reviewer should be used.
-        target_branch, reviewer = self._makeTargetBranchWithReviewer()
-        view = self._createView()
-        view.register_action.success(
-            {'target_branch': target_branch,
-             'review_type': 'god-like',
-             'needs_review': True})
-        proposal = self._getSourceProposal(target_branch)
-        self.assertOnePendingReview(proposal, reviewer, 'god-like')
-        self.assertIs(None, proposal.description)
-
-    def test_register_reviewer_not_hidden(self):
-        branch = self.factory.makeBranch()
-        browser = self.getViewBrowser(branch, '+register-merge')
-        extra = Tag(
-            'extra', 'fieldset', attrs={'id': 'mergeproposal-extra-options'})
-        reviewer = Tag('reviewer', 'input', attrs={'id': 'field.reviewer'})
-        matcher = Not(HTMLContains(reviewer.within(extra)))
-        self.assertThat(browser.contents, matcher)
-
-    def test_branch_visibility_notification(self):
-        # If the reviewer cannot see the source and/or target branches, a
-        # notification message is displayed.
+    def test_register_ajax_request_with_validation_errors(self):
+        # Ajax submits where there is a validation error in the submitted data
+        # return the expected json response containing the error info.
         owner = self.factory.makePerson()
         target_branch = self._makeTargetBranch(
             owner=owner, information_type=InformationType.USERDATA)
-        reviewer = self.factory.makePerson()
+        extra = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
         with person_logged_in(owner):
-            view = self._createView()
-            view.register_action.success(
-                {'target_branch': target_branch,
-                 'reviewer': reviewer,
-                 'needs_review': True})
-
-        (notification,) = view.request.response.notifications
-        self.assertThat(
-            notification.message, MatchesRegex(
-                'To ensure visibility, .* is now subscribed to:.*'))
-        self.assertEqual(BrowserNotificationLevel.INFO, notification.level)
+            request = LaunchpadTestRequest(
+                method='POST', principal=owner,
+                form={
+                    'field.actions.register': 'Propose Merge',
+                    'field.target_git_repository.target_git_repository':
+                        target_branch.repository.unique_name,
+                    'field.target_git_path': target_branch.path,
+                    },
+                **extra)
+            view = create_initialized_view(
+                target_branch,
+                name='+register-merge',
+                request=request)
+        self.assertEqual(
+            '400 Validation', view.request.response.getStatusString())
+        self.assertEqual(
+            {'error_summary': 'There is 1 error.',
+            'errors': {
+                'field.target_git_path':
+                    ('The target repository and path together cannot be the '
+                     'same as the source repository and path.')},
+            'form_wide_errors': []},
+            simplejson.loads(view.form_result))
 
 
 class TestBranchMergeProposalResubmitViewMixin:

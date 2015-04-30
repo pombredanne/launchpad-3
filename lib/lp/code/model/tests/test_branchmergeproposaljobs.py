@@ -1,4 +1,4 @@
-# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for branch merge proposal jobs."""
@@ -38,6 +38,7 @@ from lp.code.interfaces.branchmergeproposal import (
     IUpdatePreviewDiffJob,
     IUpdatePreviewDiffJobSource,
     )
+from lp.code.interfaces.gitrepository import GIT_FEATURE_FLAG
 from lp.code.model.branchmergeproposaljob import (
     BranchMergeProposalJob,
     BranchMergeProposalJobDerived,
@@ -218,6 +219,14 @@ class TestUpdatePreviewDiffJob(DiffTestCase):
         with dbuser("merge-proposal-jobs"):
             JobRunner([job]).runAll()
         self.checkExampleMerge(bmp.preview_diff.text)
+
+    def test_run_git(self):
+        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
+        bmp, _, _, patch = self.createExampleGitMerge()
+        job = UpdatePreviewDiffJob.create(bmp)
+        with dbuser("merge-proposal-jobs"):
+            JobRunner([job]).runAll()
+        self.assertEqual(patch, bmp.preview_diff.text)
 
     def test_run_object_events(self):
         # While the job runs a single IObjectModifiedEvent is issued when the
@@ -513,6 +522,16 @@ class TestBranchMergeProposalJobSource(TestCaseWithFactory):
         [job] = self.job_source.iterReady()
         self.assertEqual(job.branch_merge_proposal, bmp)
         self.assertIsInstance(job, MergeProposalUpdatedEmailJob)
+
+    def test_iterReady_supports_git(self):
+        # iterReady supports merge proposals based on Git.  (These are
+        # currently considered ready regardless of scanning, since the hard
+        # work is done by the backend.)
+        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
+        bmp = self.factory.makeBranchMergeProposalForGit()
+        [job] = self.job_source.iterReady()
+        self.assertEqual(bmp, job.branch_merge_proposal)
+        self.assertIsInstance(job, UpdatePreviewDiffJob)
 
 
 class TestCodeReviewCommentEmailJob(TestCaseWithFactory):
