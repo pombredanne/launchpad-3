@@ -371,6 +371,28 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
         self.assertEqual(
             'bug-notification-level-field', widget_class)
 
+    def test_unsubscribe_from_dupes(self):
+        master = self.factory.makeBug()
+        dupe = self.factory.makeBug()
+        person = self.factory.makePerson()
+
+        with person_logged_in(person):
+            dupe.markAsDuplicate(master)
+            master.subscribe(person, person)
+            dupe.subscribe(person, person)
+            import transaction
+            transaction.commit()
+
+            v = create_initialized_view(
+                master.default_bugtask, name="+subscribe",
+                form={
+                    "field.subscription": "0",
+                    "field.actions.continue": "Continue"})
+            self.assertStartsWith(
+                v._getUnsubscribeNotification(person, [dupe]),
+                "You have been unsubscribed from bug %d and 1 duplicate"
+                % master.id)
+
 
 class BugSubscriptionsListViewTestCase(TestCaseWithFactory):
     """Tests for the BugSubscriptionsListView."""
