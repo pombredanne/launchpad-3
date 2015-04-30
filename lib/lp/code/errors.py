@@ -46,7 +46,6 @@ __all__ = [
     'PrivateBranchRecipe',
     'ReviewNotPending',
     'StaleLastMirrored',
-    'TooManyBuilds',
     'TooNewRecipeFormat',
     'UnknownBranchTypeError',
     'UpdatePreviewDiffNotReady',
@@ -463,16 +462,6 @@ class RecipeBuildException(Exception):
         self.distroseries = distroseries
         msg = template % {'recipe': recipe, 'distroseries': distroseries}
         Exception.__init__(self, msg)
-
-
-class TooManyBuilds(RecipeBuildException):
-    """A build was requested that exceeded the quota."""
-
-    def __init__(self, recipe, distroseries):
-        RecipeBuildException.__init__(
-            self, recipe, distroseries,
-            'You have exceeded your quota for recipe %(recipe)s for'
-            ' distroseries %(distroseries)s')
 
 
 class BuildAlreadyPending(RecipeBuildException):

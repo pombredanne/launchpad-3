@@ -36,7 +36,7 @@ function hide_git_commit(id) {
       <tr tal:repeat="ref context/currentBatch">
         <td>
           <a tal:attributes="href ref/fmt:url"
-             tal:content="structure ref/display_name/fmt:break-long-words" />
+             tal:content="structure ref/name/fmt:break-long-words" />
         </td>
         <tal:no_commit condition="not: ref/committer_date">
           <td colspan="2">

@@ -29,7 +29,7 @@
       <div class="two-column-list">
         <dl id="name">
           <dt>Name:</dt>
-          <dd tal:content="context/display_name" />
+          <dd tal:content="context/name" />
         </dl>
 
         <dl id="repository">
