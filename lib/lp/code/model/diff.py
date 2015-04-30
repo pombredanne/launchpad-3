@@ -471,8 +471,9 @@ class PreviewDiff(Storm):
             conflicts = u"".join(
                 u"Conflict in %s\n" % path for path in response['conflicts'])
             preview = cls.create(
-                bmp, response['patch'], source_revision_id, target_revision_id,
-                prerequisite_revision_id, conflicts, strip_prefix_segments=1)
+                bmp, response['patch'].encode('utf-8'), source_revision_id,
+                target_revision_id, prerequisite_revision_id, conflicts,
+                strip_prefix_segments=1)
         del get_property_cache(bmp).preview_diffs
         del get_property_cache(bmp).preview_diff
         return preview
