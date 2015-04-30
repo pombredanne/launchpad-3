@@ -40,7 +40,6 @@ from lp.buildmaster.enums import BuildStatus
 from lp.code.errors import (
     BuildAlreadyPending,
     BuildNotAllowedForDistro,
-    TooManyBuilds,
     )
 from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe,
@@ -254,11 +253,6 @@ class SourcePackageRecipe(Storm):
         store.remove(self._recipe_data)
         store.remove(self)
 
-    def isOverQuota(self, requester, distroseries):
-        """See `ISourcePackageRecipe`."""
-        return SourcePackageRecipeBuild.getRecentBuilds(
-            requester, self, distroseries).count() >= 5
-
     def containsUnbuildableSeries(self, archive):
         buildable_distros = set(
             BuildableDistroSeries.findSeries(archive.owner))
@@ -280,8 +274,6 @@ class SourcePackageRecipe(Storm):
             pocket)
         if reject_reason is not None:
             raise reject_reason
-        if self.isOverQuota(requester, distroseries):
-            raise TooManyBuilds(self, distroseries)
         pending = IStore(self).find(SourcePackageRecipeBuild,
             SourcePackageRecipeBuild.recipe_id == self.id,
             SourcePackageRecipeBuild.distroseries_id == distroseries.id,
