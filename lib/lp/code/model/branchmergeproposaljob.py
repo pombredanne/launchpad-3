@@ -362,13 +362,6 @@ class UpdatePreviewDiffJob(BranchMergeProposalJobDerived):
             if bmp.source_branch.pending_writes:
                 raise BranchHasPendingWrites(
                     'The source branch of %s has pending writes.' % url)
-        else:
-            if bmp.source_git_ref.commit_sha1 is None:
-                raise UpdatePreviewDiffNotReady(
-                    'The source branch of %s has not been scanned.' % url)
-            if bmp.target_git_ref.commit_sha1 is None:
-                raise UpdatePreviewDiffNotReady(
-                    'The source branch of %s has not been scanned.' % url)
 
     def acquireLease(self, duration=600):
         return self.job.acquireLease(duration)
