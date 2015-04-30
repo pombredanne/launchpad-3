@@ -675,9 +675,11 @@ class Branch(SQLBase, BzrIdentityMixin):
         return safe_open('lp-internal', self.getInternalBzrUrl())
 
     @property
-    def displayname(self):
+    def display_name(self):
         """See `IBranch`."""
         return self.bzr_identity
+
+    displayname = display_name
 
     @property
     def code_reviewer(self):
