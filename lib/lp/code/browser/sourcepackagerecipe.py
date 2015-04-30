@@ -89,7 +89,6 @@ from lp.code.errors import (
     BuildAlreadyPending,
     NoSuchBranch,
     PrivateBranchRecipe,
-    TooManyBuilds,
     TooNewRecipeFormat,
     )
 from lp.code.interfaces.branchtarget import IBranchTarget
@@ -390,15 +389,6 @@ class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
                 "You need to specify at least one distro series for which "
                 "to build.")
             return
-        over_quota_distroseries = []
-        for distroseries in data['distroseries']:
-            if self.context.isOverQuota(self.user, distroseries):
-                over_quota_distroseries.append(str(distroseries))
-        if len(over_quota_distroseries) > 0:
-            self.setFieldError(
-                'distroseries',
-                "You have exceeded today's quota for %s." %
-                ', '.join(over_quota_distroseries))
 
     def requestBuild(self, data):
         """User action for requesting a number of builds.
@@ -527,7 +517,7 @@ class SourcePackageRecipeRequestDailyBuildView(LaunchpadFormView):
         recipe = self.context
         try:
             builds = recipe.performDailyBuild()
-        except (TooManyBuilds, ArchiveDisabled) as e:
+        except ArchiveDisabled as e:
             self.request.response.addErrorNotification(str(e))
             self.next_url = canonical_url(recipe)
             return

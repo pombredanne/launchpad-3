@@ -135,13 +135,6 @@ class ISourcePackageRecipeView(Interface):
             title=_("The the most recent build of this recipe."),
             readonly=True))
 
-    def isOverQuota(requester, distroseries):
-        """True if the recipe/requester/distroseries combo is >= quota.
-
-        :param requester: The Person requesting a build.
-        :param distroseries: The distroseries to build for.
-        """
-
     @call_with(requester=REQUEST_USER)
     @operation_parameters(
         archive=Reference(schema=IArchive),

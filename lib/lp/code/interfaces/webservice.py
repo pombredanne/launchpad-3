@@ -33,7 +33,6 @@ __all__ = [
     'IPreviewDiff',
     'ISourcePackageRecipe',
     'ISourcePackageRecipeBuild',
-    'TooManyBuilds',
     ]
 
 # The exceptions are imported so that they can produce the special
@@ -46,7 +45,6 @@ from lp.code.errors import (
     BuildAlreadyPending,
     CodeImportAlreadyRunning,
     CodeImportNotInReviewedState,
-    TooManyBuilds,
     )
 from lp.code.interfaces.branch import (
     IBranch,
