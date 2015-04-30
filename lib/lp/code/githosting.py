@@ -9,8 +9,8 @@ __all__ = [
     ]
 
 import json
+from urlparse import urljoin
 
-from bzrlib import urlutils
 import requests
 
 from lp.code.errors import (
@@ -47,7 +47,7 @@ class GitHostingClient:
             else:
                 request = {"repo_path": path}
             response = self._makeSession().post(
-                urlutils.join(self.endpoint, "repo"),
+                urljoin(self.endpoint, "/repo"),
                 headers={"Content-Type": "application/json"},
                 data=json.dumps(request),
                 timeout=self.timeout)
@@ -61,7 +61,7 @@ class GitHostingClient:
     def getRefs(self, path):
         try:
             response = self._makeSession().get(
-                urlutils.join(self.endpoint, "repo", path, "refs"),
+                urljoin(self.endpoint, "/repo/%s/refs" % path),
                 timeout=self.timeout)
         except Exception as e:
             raise GitRepositoryScanFault(
@@ -84,7 +84,7 @@ class GitHostingClient:
             if logger is not None:
                 logger.info("Requesting commit details for %s" % commit_oids)
             response = self._makeSession().post(
-                urlutils.join(self.endpoint, "repo", path, "commits"),
+                urljoin(self.endpoint, "/repo/%s/commits" % path),
                 headers={"Content-Type": "application/json"},
                 data=json.dumps({"commits": commit_oids}),
                 timeout=self.timeout)
@@ -116,9 +116,9 @@ class GitHostingClient:
                     "Requesting merge diff for %s from %s to %s" % (
                         path, base, head))
             response = self._makeSession().get(
-                urlutils.join(
-                    self.endpoint, "repo", path, "compare-merge",
-                    "%s:%s" % (base, head)),
+                urljoin(
+                    self.endpoint,
+                    "/repo/%s/compare-merge/%s:%s" % (path, base, head)),
                 timeout=self.timeout)
         except Exception as e:
             raise GitRepositoryScanFault(
