@@ -234,7 +234,8 @@ class Diff(SQLBase):
         return cls.fromFile(diff_content, size, filename)
 
     @classmethod
-    def fromFile(cls, diff_content, size, filename=None, strip_slashes=0):
+    def fromFile(cls, diff_content, size, filename=None,
+                 strip_prefix_segments=0):
         """Create a Diff from a textual diff.
 
         :diff_content: The diff text
@@ -256,7 +257,8 @@ class Diff(SQLBase):
             diff_lines_count = len(diff_content_bytes.strip().split('\n'))
         try:
             diffstat = cls.generateDiffstat(
-                diff_content_bytes, strip_slashes=strip_slashes)
+                diff_content_bytes,
+                strip_prefix_segments=strip_prefix_segments)
         except Exception:
             getUtility(IErrorReportingUtility).raising(sys.exc_info())
             # Set the diffstat to be empty.
@@ -274,13 +276,13 @@ class Diff(SQLBase):
                    removed_lines_count=removed_lines_count)
 
     @staticmethod
-    def generateDiffstat(diff_bytes, strip_slashes=0):
+    def generateDiffstat(diff_bytes, strip_prefix_segments=0):
         """Generate statistics about the provided diff.
 
         :param diff_bytes: A unified diff, as bytes.
-        :param strip_slashes: Strip the smallest prefix containing this many
-            leading slashes from each file name found in the patch file, as
-            with "patch -p".
+        :param strip_prefix_segments: Strip the smallest prefix containing
+            this many leading slashes from each file name found in the patch
+            file, as with "patch -p".
         :return: A map of {filename: (added_line_count, removed_line_count)}
         """
         file_stats = {}
@@ -290,8 +292,8 @@ class Diff(SQLBase):
             if not isinstance(patch, Patch):
                 continue
             path = patch.newname.split('\t')[0]
-            if strip_slashes:
-                path = path.split('/', strip_slashes)[-1]
+            if strip_prefix_segments:
+                path = path.split('/', strip_prefix_segments)[-1]
             file_stats[path] = tuple(patch.stats_values()[:2])
         return file_stats
 
@@ -468,14 +470,14 @@ class PreviewDiff(Storm):
                 u"Conflict in %s\n" % path for path in response['conflicts'])
             preview = cls.create(
                 bmp, response['patch'], source_revision_id, target_revision_id,
-                prerequisite_revision_id, conflicts, strip_slashes=1)
+                prerequisite_revision_id, conflicts, strip_prefix_segments=1)
         del get_property_cache(bmp).preview_diffs
         del get_property_cache(bmp).preview_diff
         return preview
 
     @classmethod
     def create(cls, bmp, diff_content, source_revision_id, target_revision_id,
-               prerequisite_revision_id, conflicts, strip_slashes=0):
+               prerequisite_revision_id, conflicts, strip_prefix_segments=0):
         """Create a PreviewDiff with specified values.
 
         :param bmp: The `BranchMergeProposal` this diff references.
@@ -491,7 +493,7 @@ class PreviewDiff(Storm):
         size = len(diff_content)
         diff = Diff.fromFile(
             StringIO(diff_content), size, filename,
-            strip_slashes=strip_slashes)
+            strip_prefix_segments=strip_prefix_segments)
 
         preview = cls()
         preview.branch_merge_proposal = bmp
