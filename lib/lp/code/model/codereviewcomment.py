@@ -95,8 +95,8 @@ class CodeReviewComment(SQLBase):
     @property
     def title(self):
         return ('Comment on proposed merge of %(source)s into %(target)s' %
-            {'source': self.branch_merge_proposal.source_branch.displayname,
-             'target': self.branch_merge_proposal.target_branch.displayname,
+            {'source': self.branch_merge_proposal.merge_source.display_name,
+             'target': self.branch_merge_proposal.merge_source.display_name,
             })
 
     @property
