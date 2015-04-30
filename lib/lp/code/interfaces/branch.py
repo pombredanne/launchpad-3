@@ -358,11 +358,12 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
              description=_("Unique name of the branch, including the "
                            "owner and project names.")))
 
-    displayname = exported(
+    display_name = exported(
         Text(title=_('Display name'), readonly=True,
              description=_(
-                "The branch unique_name.")),
-        exported_as='display_name')
+                "The branch unique_name.")))
+
+    displayname = Attribute("Display name (deprecated)")
 
     code_reviewer = Attribute(
         "The reviewer if set, otherwise the owner of the branch.")

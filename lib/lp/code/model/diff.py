@@ -12,6 +12,7 @@ __all__ = [
 
 from contextlib import nested
 from cStringIO import StringIO
+from operator import attrgetter
 import sys
 from uuid import uuid1
 
@@ -471,8 +472,9 @@ class PreviewDiff(Storm):
             conflicts = u"".join(
                 u"Conflict in %s\n" % path for path in response['conflicts'])
             preview = cls.create(
-                bmp, response['patch'], source_revision_id, target_revision_id,
-                prerequisite_revision_id, conflicts, strip_prefix_segments=1)
+                bmp, response['patch'].encode('utf-8'), source_revision_id,
+                target_revision_id, prerequisite_revision_id, conflicts,
+                strip_prefix_segments=1)
         del get_property_cache(bmp).preview_diffs
         del get_property_cache(bmp).preview_diff
         return preview
@@ -513,18 +515,14 @@ class PreviewDiff(Storm):
         # A preview diff is stale if the revision ids used to make the diff
         # are different from the tips of the source or target branches.
         bmp = self.branch_merge_proposal
-        if (self.source_revision_id != bmp.source_branch.last_scanned_id or
-            self.target_revision_id != bmp.target_branch.last_scanned_id):
-            # This is the simple frequent case.
+        get_id = attrgetter(
+            'last_scanned_id' if bmp.source_branch else 'commit_sha1')
+        if (self.source_revision_id != get_id(bmp.merge_source) or
+            self.target_revision_id != get_id(bmp.merge_target)):
             return True
-
-        # More complex involves the prerequisite branch too.
-        if (bmp.prerequisite_branch is not None and
-            (self.prerequisite_revision_id !=
-             bmp.prerequisite_branch.last_scanned_id)):
-            return True
-        else:
-            return False
+        return (
+            bmp.merge_prerequisite is not None and
+            self.prerequisite_revision_id != get_id(bmp.merge_prerequisite))
 
     def getFileByName(self, filename):
         """See `IPreviewDiff`."""
