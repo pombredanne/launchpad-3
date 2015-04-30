@@ -460,8 +460,8 @@ class PreviewDiff(Storm):
             # XXX cjwatson 2015-04-30: Add prerequisite handling once turnip
             # supports it.
             response = hosting_client.getMergeDiff(
-                path, bmp.source_git_ref.commit_sha1,
-                bmp.target_git_ref.commit_sha1)
+                path, bmp.target_git_ref.commit_sha1,
+                bmp.source_git_ref.commit_sha1)
             source_revision_id = bmp.source_git_ref.commit_sha1
             target_revision_id = bmp.target_git_ref.commit_sha1
             if bmp.prerequisite_git_ref is not None:
