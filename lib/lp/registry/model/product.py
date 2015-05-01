@@ -116,6 +116,7 @@ from lp.bugs.model.structuralsubscription import (
     )
 from lp.code.enums import BranchType
 from lp.code.interfaces.branch import DEFAULT_BRANCH_STATUS_IN_LISTING
+from lp.code.interfaces.gitrepository import IGitRepositorySet
 from lp.code.model.branch import Branch
 from lp.code.model.branchnamespace import BRANCH_POLICY_ALLOWED_TYPES
 from lp.code.model.hasbranches import (
@@ -581,7 +582,10 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     @property
     def official_codehosting(self):
-        return self.development_focus.branch is not None
+        repository = getUtility(IGitRepositorySet).getDefaultRepository(self)
+        return (
+            self.development_focus.branch is not None or
+            repository is not None)
 
     @property
     def official_anything(self):
@@ -613,9 +617,11 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     @property
     def codehosting_usage(self):
-        if self.development_focus.branch is None:
+        repository = getUtility(IGitRepositorySet).getDefaultRepository(self)
+        if self.development_focus.branch is None and repository is None:
             return ServiceUsage.UNKNOWN
-        elif self.development_focus.branch.branch_type == BranchType.HOSTED:
+        elif (repository is not None or
+              self.development_focus.branch.branch_type == BranchType.HOSTED):
             return ServiceUsage.LAUNCHPAD
         elif self.development_focus.branch.branch_type in (
             BranchType.MIRRORED,

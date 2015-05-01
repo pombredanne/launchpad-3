@@ -3,8 +3,15 @@
 
 __metaclass__ = type
 
+from zope.component import getUtility
+
 from lp.app.enums import ServiceUsage
 from lp.code.enums import BranchType
+from lp.code.interfaces.gitrepository import (
+    GIT_FEATURE_FLAG,
+    IGitRepositorySet,
+    )
+from lp.services.features.testing import FeatureFixture
 from lp.testing import (
     login_person,
     TestCaseWithFactory,
@@ -192,11 +199,22 @@ class TestProductUsageEnums(TestCaseWithFactory, UsageEnumsMixin):
             self.target.codehosting_usage)
 
     def test_codehosting_hosted_branch(self):
-        # A branch on Launchpad is HOSTED.
+        # A branch on Launchpad has LAUNCHPAD usage.
         login_person(self.target.owner)
         self.target.development_focus.branch = self.factory.makeProductBranch(
             product=self.target,
             branch_type=BranchType.HOSTED)
+        self.assertEqual(
+            ServiceUsage.LAUNCHPAD,
+            self.target.codehosting_usage)
+
+    def test_codehosting_default_git_repository(self):
+        # A default Git repository on Launchpad has LAUNCHPAD usage.
+        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
+        login_person(self.target.owner)
+        repository = self.factory.makeGitRepository(target=self.target)
+        getUtility(IGitRepositorySet).setDefaultRepository(
+            self.target, repository)
         self.assertEqual(
             ServiceUsage.LAUNCHPAD,
             self.target.codehosting_usage)
