@@ -24,7 +24,7 @@ function hide_git_commit(id) {
     </div>
   </tal:needs-batch>
 
-  <table tal:attributes="class context/table_class" id="branchtable">
+  <table tal:attributes="class context/table_class" id="gitreftable">
     <thead>
       <tr>
         <th>Name</th>

@@ -14,7 +14,6 @@ __all__ = [
     'GitRepositoryView',
     ]
 
-from bzrlib import urlutils
 from storm.expr import Desc
 from zope.interface import implements
 
@@ -157,22 +156,6 @@ class GitRepositoryView(InformationTypePortletMixin, LaunchpadView):
         if self.user is not None:
             precache_permission_for_objects(
                 self.request, "launchpad.LimitedView", authorised_people)
-
-    @property
-    def anon_url(self):
-        if self.context.visibleByUser(None):
-            return urlutils.join(
-                config.codehosting.git_anon_root, self.context.shortened_path)
-        else:
-            return None
-
-    @property
-    def ssh_url(self):
-        if self.user is not None:
-            return urlutils.join(
-                config.codehosting.git_ssh_root, self.context.shortened_path)
-        else:
-            return None
 
     @property
     def user_can_push(self):

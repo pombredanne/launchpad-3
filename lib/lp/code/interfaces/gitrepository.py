@@ -217,6 +217,12 @@ class IGitRepositoryView(Interface):
         "The identity of this repository: a VCS-independent synonym for "
         "git_identity.")
 
+    anon_url = Attribute(
+        "An anonymous (git://) URL for this repository, or None in the case "
+        "of private repositories.")
+
+    ssh_url = Attribute("A git+ssh:// URL for this repository.")
+
     refs = exported(CollectionField(
         title=_("The references present in this repository."),
         readonly=True,

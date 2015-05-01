@@ -7,15 +7,15 @@
   <dl id="clone-url">
     <dt>Get this repository:</dt>
     <dd>
-      <tal:anonymous condition="view/anon_url">
+      <tal:anonymous condition="context/anon_url">
         <tt class="command">
-          git clone <span class="anon-url" tal:content="view/anon_url" />
+          git clone <span class="anon-url" tal:content="context/anon_url" />
         </tt>
         <br />
       </tal:anonymous>
-      <tal:ssh condition="view/ssh_url">
+      <tal:ssh condition="view/user">
         <tt class="command">
-          git clone <span class="ssh-url" tal:content="view/ssh_url" />
+          git clone <span class="ssh-url" tal:content="context/ssh_url" />
         </tt>
       </tal:ssh>
     </dd>
