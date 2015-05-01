@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'GitRefBatchNavigator',
     'GitRepositoryBreadcrumb',
     'GitRepositoryContextMenu',
     'GitRepositoryNavigation',
@@ -14,6 +15,7 @@ __all__ = [
     ]
 
 from bzrlib import urlutils
+from storm.expr import Desc
 from zope.interface import implements
 
 from lp.app.browser.informationtype import InformationTypePortletMixin
@@ -115,11 +117,17 @@ class GitRefBatchNavigator(TableBatchNavigator):
     implements(IGitRefBatchNavigator)
 
     def __init__(self, view, context):
+        self.context = context
         super(GitRefBatchNavigator, self).__init__(
-            context.branches, view.request,
+            self._branches, view.request,
             size=config.launchpad.branchlisting_batch_size)
         self.view = view
         self.column_count = 3
+
+    @property
+    def _branches(self):
+        from lp.code.model.gitref import GitRef
+        return self.context.branches.order_by(Desc(GitRef.committer_date))
 
     @property
     def table_class(self):
