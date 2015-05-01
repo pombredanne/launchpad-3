@@ -93,7 +93,7 @@
     </tal:logged-in>
     <tal:not-logged-in condition="not: view/user">
       <tal:git-anon-url replace="repository/anon_url"/>
-    </tal:not-logged-in>
+    </tal:not-logged-in></tt>
   </div>
 
   <tal:has-branches condition="view/branch_count">
