@@ -296,7 +296,16 @@ class GitRefRegisterMergeProposalView(LaunchpadFormView):
     def validate(self, data):
         source_ref = self.context
         target_repository = data['target_git_repository']
-        target_ref = target_repository.getRefByPath(data['target_git_path'])
+        if not target_repository.isRepositoryMergeable(self.context):
+            self.setFieldError(
+                'target_git_repository',
+                "This repository is not mergeable into %s." %
+                target_repository.identity)
+        target_path = data.get('target_git_path')
+        if target_path:
+            target_ref = target_repository.getRefByPath(target_path)
+        else:
+            target_ref = None
         if target_ref is None:
             self.setFieldError(
                 'target_git_path',
@@ -307,24 +316,22 @@ class GitRefRegisterMergeProposalView(LaunchpadFormView):
                 'target_git_path',
                 "The target repository and path together cannot be the same "
                 "as the source repository and path.")
-        elif not target_repository.isRepositoryMergeable(self.context):
-            self.setFieldError(
-                'target_git_repository',
-                "This repository is not mergeable into %s." %
-                target_repository.identity)
-        elif (data.get('prerequisite_git_repository') is not None and
-                data.get('prerequisite_git_path') is not None):
+        if data.get('prerequisite_git_repository') is not None:
             prerequisite_repository = data['prerequisite_git_repository']
-            prerequisite_ref = prerequisite_repository.getRefByPath(
-                data['prerequisite_git_path'])
-            if prerequisite_ref is None:
-                self.setFieldError(
-                    'prerequisite_git_path',
-                    "The prerequisite path must be the path of a reference in "
-                    "the prerequisite repository.")
-            elif not target_repository.isRepositoryMergeable(
+            if not target_repository.isRepositoryMergeable(
                     prerequisite_repository):
                 self.setFieldError(
                     'prerequisite_git_repository',
                     "This repository is not mergeable into %s." %
                     target_repository.identity)
+            prerequisite_path = data.get('prerequisite_git_path')
+            if prerequisite_path:
+                prerequisite_ref = prerequisite_repository.getRefByPath(
+                    prerequisite_path)
+            else:
+                prerequisite_ref = None
+            if prerequisite_ref is None:
+                self.setFieldError(
+                    'prerequisite_git_path',
+                    "The prerequisite path must be the path of a reference in "
+                    "the prerequisite repository.")
