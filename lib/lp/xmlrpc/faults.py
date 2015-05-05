@@ -9,7 +9,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'AccountSuspended',
     'BadStatus',
     'BranchAlreadyRegistered',
     'BranchCreationForbidden',
@@ -46,7 +45,6 @@ __all__ = [
     'PathTranslationError',
     'PermissionDenied',
     'RequiredParameterMissing',
-    'TeamEmailAddress',
     'Unauthorized',
     'UnexpectedStatusReport',
     ]
@@ -463,18 +461,6 @@ class NoSuchCodeImportJob(LaunchpadFault):
         LaunchpadFault.__init__(self, job_id=job_id)
 
 
-class AccountSuspended(LaunchpadFault):
-    """Raised by `ISoftwareCenterAgentAPI` when an account is suspended."""
-
-    error_code = 370
-    msg_template = (
-        'The openid_identifier \'%(openid_identifier)s\''
-        ' is linked to a suspended account.')
-
-    def __init__(self, openid_identifier):
-        LaunchpadFault.__init__(self, openid_identifier=openid_identifier)
-
-
 class OopsOccurred(LaunchpadFault):
     """An oops has occurred performing the requested operation."""
 
@@ -496,20 +482,6 @@ class InvalidSourcePackageName(LaunchpadFault):
     def __init__(self, name):
         self.name = name
         LaunchpadFault.__init__(self, name=name)
-
-
-class TeamEmailAddress(LaunchpadFault):
-    """Raised by `ISoftwareCenterAgentAPI` when an email address is a team."""
-
-    error_code = 400
-    msg_template = (
-        'The email address \'%(email)s\' '
-        '(openid_identifier \'%(openid_identifier)s\') '
-        'is linked to a Launchpad team.')
-
-    def __init__(self, email, openid_identifier):
-        LaunchpadFault.__init__(
-            self, email=email, openid_identifier=openid_identifier)
 
 
 # American English spelling to line up with httplib etc.
