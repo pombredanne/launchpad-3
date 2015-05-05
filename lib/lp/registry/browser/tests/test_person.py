@@ -760,13 +760,13 @@ class TestPersonParticipationView(TestCaseWithFactory):
         self.user = self.factory.makePerson()
         self.view = create_view(self.user, name='+participation')
 
-    def test__asParticpation_owner(self):
+    def test__asParticipation_owner(self):
         # Team owners have the role of 'Owner'.
         self.factory.makeTeam(owner=self.user)
         [participation] = self.view.active_participations
         self.assertEqual('Owner', participation['role'])
 
-    def test__asParticpation_admin(self):
+    def test__asParticipation_admin(self):
         # Team admins have the role of 'Admin'.
         team = self.factory.makeTeam()
         login_person(team.teamowner)
@@ -777,7 +777,7 @@ class TestPersonParticipationView(TestCaseWithFactory):
         [participation] = self.view.active_participations
         self.assertEqual('Admin', participation['role'])
 
-    def test__asParticpation_member(self):
+    def test__asParticipation_member(self):
         # The default team role is 'Member'.
         team = self.factory.makeTeam()
         login_person(team.teamowner)
@@ -785,7 +785,7 @@ class TestPersonParticipationView(TestCaseWithFactory):
         [participation] = self.view.active_participations
         self.assertEqual('Member', participation['role'])
 
-    def test__asParticpation_without_mailing_list(self):
+    def test__asParticipation_without_mailing_list(self):
         # The default team role is 'Member'.
         team = self.factory.makeTeam()
         login_person(team.teamowner)
@@ -793,7 +793,7 @@ class TestPersonParticipationView(TestCaseWithFactory):
         [participation] = self.view.active_participations
         self.assertEqual('&mdash;', participation['subscribed'])
 
-    def test__asParticpation_unsubscribed_to_mailing_list(self):
+    def test__asParticipation_unsubscribed_to_mailing_list(self):
         # The default team role is 'Member'.
         team = self.factory.makeTeam()
         self.factory.makeMailingList(team, team.teamowner)
@@ -802,7 +802,7 @@ class TestPersonParticipationView(TestCaseWithFactory):
         [participation] = self.view.active_participations
         self.assertEqual('Not subscribed', participation['subscribed'])
 
-    def test__asParticpation_subscribed_to_mailing_list(self):
+    def test__asParticipation_subscribed_to_mailing_list(self):
         # The default team role is 'Member'.
         team = self.factory.makeTeam()
         mailing_list = self.factory.makeMailingList(team, team.teamowner)
