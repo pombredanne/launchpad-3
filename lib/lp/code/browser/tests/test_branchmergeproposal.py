@@ -1586,9 +1586,20 @@ class TestBranchMergeProposalDeleteViewMixin:
             canonical_url(bmp.merge_target),
             find_tag_by_id(content, "target-link").find("a")["href"])
 
+    def test_deletion_works(self):
+        registrant = self.factory.makePerson()
+        bmp = self._makeBranchMergeProposal(registrant=registrant)
+        target = bmp.merge_target
+        with person_logged_in(registrant):
+            self.assertEqual([bmp], list(target.landing_candidates))
+        browser = self.getViewBrowser(bmp, "+delete", user=bmp.registrant)
+        browser.getControl("Delete proposal").click()
+        with person_logged_in(registrant):
+            self.assertEqual([], list(target.landing_candidates))
+
 
 class TestBranchMergeProposalDeleteViewBzr(
-    TestBranchMergeProposalDeleteViewMixin, TestCaseWithFactory):
+    TestBranchMergeProposalDeleteViewMixin, BrowserTestCase):
     """Test the BranchMergeProposal deletion view for Bazaar."""
 
     def _makeBranchMergeProposal(self, **kwargs):
@@ -1596,7 +1607,7 @@ class TestBranchMergeProposalDeleteViewBzr(
 
 
 class TestBranchMergeProposalDeleteViewGit(
-    TestBranchMergeProposalDeleteViewMixin, TestCaseWithFactory):
+    TestBranchMergeProposalDeleteViewMixin, BrowserTestCase):
     """Test the BranchMergeProposal deletion view for Git."""
 
     def setUp(self):
