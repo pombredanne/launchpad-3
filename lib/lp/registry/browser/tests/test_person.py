@@ -869,6 +869,33 @@ class TestPersonParticipationView(TestCaseWithFactory):
         self.assertEqual('A', participations[1]['via'])
         self.assertEqual('B, A', participations[2]['via'])
 
+    def test_active_participations_public_via_private_team(self):
+        # Private teams that grant a user access to public teams are listed,
+        # but redacted if the requesting user does not have access to them.
+        owner = self.factory.makePerson()
+        direct_team = self.factory.makeTeam(
+            owner=owner, name='a', visibility=PersonVisibility.PRIVATE)
+        indirect_team = self.factory.makeTeam(owner=owner, name='b')
+        login_person(owner)
+        direct_team.addMember(self.user, owner)
+        indirect_team.addMember(direct_team, owner)
+        # The private team is included in active_participations and via.
+        login_person(self.user)
+        view = create_view(
+            self.user, name='+participation', principal=self.user)
+        participations = view.active_participations
+        self.assertEqual(2, len(participations))
+        self.assertIsNone(participations[0]['via'])
+        self.assertEqual('A', participations[1]['via'])
+        # The private team is not included in active_participations and via.
+        observer = self.factory.makePerson()
+        login_person(observer)
+        view = create_view(
+            self.user, name='+participation', principal=observer)
+        participations = view.active_participations
+        self.assertEqual(1, len(participations))
+        self.assertEqual('[private team]', participations[0]['via'])
+
     def test_has_participations_false(self):
         participations = self.view.active_participations
         self.assertEqual(0, len(participations))
