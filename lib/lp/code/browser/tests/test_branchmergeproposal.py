@@ -808,6 +808,72 @@ class TestRegisterBranchMergeProposalViewGit(
             'form_wide_errors': []},
             simplejson.loads(view.form_result))
 
+    def test_register_ajax_request_with_missing_target_git_path(self):
+        # A missing target_git_path is a validation error.
+        owner = self.factory.makePerson()
+        target_branch = self._makeTargetBranch(
+            owner=owner, information_type=InformationType.USERDATA)
+        extra = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
+        with person_logged_in(owner):
+            request = LaunchpadTestRequest(
+                method='POST', principal=owner,
+                form={
+                    'field.actions.register': 'Propose Merge',
+                    'field.target_git_repository.target_git_repository':
+                        target_branch.repository.unique_name,
+                    },
+                **extra)
+            view = create_initialized_view(
+                self.source_branch,
+                name='+register-merge',
+                request=request)
+        self.assertEqual(
+            '400 Validation', view.request.response.getStatusString())
+        self.assertEqual(
+            {'error_summary': 'There is 1 error.',
+            'errors': {
+                'field.target_git_path':
+                    ('The target path must be the path of a reference in the '
+                     'target repository.')},
+            'form_wide_errors': []},
+            simplejson.loads(view.form_result))
+
+    def test_register_ajax_request_with_missing_prerequisite_git_path(self):
+        # A missing prerequisite_git_path is a validation error if
+        # prerequisite_git_repository is present.
+        owner = self.factory.makePerson()
+        target_branch = self._makeTargetBranch(
+            owner=owner, information_type=InformationType.USERDATA)
+        prerequisite_branch = self._makeTargetBranch(
+            owner=owner, information_type=InformationType.USERDATA)
+        extra = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
+        with person_logged_in(owner):
+            request = LaunchpadTestRequest(
+                method='POST', principal=owner,
+                form={
+                    'field.actions.register': 'Propose Merge',
+                    'field.target_git_repository.target_git_repository':
+                        target_branch.repository.unique_name,
+                    'field.target_git_path': target_branch.path,
+                    'field.prerequisite_git_repository':
+                        prerequisite_branch.repository.unique_name,
+                    },
+                **extra)
+            view = create_initialized_view(
+                self.source_branch,
+                name='+register-merge',
+                request=request)
+        self.assertEqual(
+            '400 Validation', view.request.response.getStatusString())
+        self.assertEqual(
+            {'error_summary': 'There is 1 error.',
+            'errors': {
+                'field.prerequisite_git_path':
+                    ('The prerequisite path must be the path of a reference '
+                     'in the prerequisite repository.')},
+            'form_wide_errors': []},
+            simplejson.loads(view.form_result))
+
 
 class TestBranchMergeProposalResubmitViewMixin:
     """Test BranchMergeProposalResubmitView."""
