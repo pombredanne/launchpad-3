@@ -80,6 +80,7 @@ from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )
+from lp.testing.pages import find_tag_by_id
 from lp.testing.views import create_initialized_view
 
 
@@ -1632,3 +1633,52 @@ class TestLatestProposalsForEachBranchGit(
     def _setBranchInvisible(branch):
         removeSecurityProxy(branch.repository).transitionToInformationType(
             InformationType.USERDATA, branch.owner, verify_policy=False)
+
+
+class TestBranchMergeProposalDeleteViewMixin:
+    """Test the BranchMergeProposal deletion view."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_links(self):
+        bmp = self._makeBranchMergeProposal()
+        view = create_initialized_view(
+            bmp, "+delete", principal=bmp.registrant)
+        content = view()
+        self.assertEqual(
+            canonical_url(bmp.merge_source),
+            find_tag_by_id(content, "source-link").find("a")["href"])
+        self.assertEqual(
+            canonical_url(bmp.merge_target),
+            find_tag_by_id(content, "target-link").find("a")["href"])
+
+    def test_deletion_works(self):
+        registrant = self.factory.makePerson()
+        bmp = self._makeBranchMergeProposal(registrant=registrant)
+        target = bmp.merge_target
+        with person_logged_in(registrant):
+            self.assertEqual([bmp], list(target.landing_candidates))
+        browser = self.getViewBrowser(bmp, "+delete", user=bmp.registrant)
+        browser.getControl("Delete proposal").click()
+        with person_logged_in(registrant):
+            self.assertEqual([], list(target.landing_candidates))
+
+
+class TestBranchMergeProposalDeleteViewBzr(
+    TestBranchMergeProposalDeleteViewMixin, BrowserTestCase):
+    """Test the BranchMergeProposal deletion view for Bazaar."""
+
+    def _makeBranchMergeProposal(self, **kwargs):
+        return self.factory.makeBranchMergeProposal(**kwargs)
+
+
+class TestBranchMergeProposalDeleteViewGit(
+    TestBranchMergeProposalDeleteViewMixin, BrowserTestCase):
+    """Test the BranchMergeProposal deletion view for Git."""
+
+    def setUp(self):
+        super(TestBranchMergeProposalDeleteViewGit, self).setUp()
+        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
+
+    def _makeBranchMergeProposal(self, **kwargs):
+        return self.factory.makeBranchMergeProposalForGit(**kwargs)
