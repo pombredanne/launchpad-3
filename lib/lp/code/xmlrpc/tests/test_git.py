@@ -25,6 +25,7 @@ from lp.code.xmlrpc.git import GitAPI
 from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.escaping import html_escape
 from lp.testing import (
+    admin_logged_in,
     ANONYMOUS,
     login,
     person_logged_in,
@@ -686,6 +687,17 @@ class TestGitAPI(TestGitAPIMixin, TestCaseWithFactory):
         self.assertIsInstance(fault, faults.NotFound)
         job_source = getUtility(IGitRefScanJobSource)
         self.assertEqual([], list(job_source.iterReady()))
+
+    def test_notify_private(self):
+        # notify works on private repos.
+        with admin_logged_in():
+            repository = self.factory.makeGitRepository(
+                information_type=InformationType.PRIVATESECURITY)
+            path = repository.getInternalPath()
+        self.assertIsNone(self.git_api.notify(path))
+        job_source = getUtility(IGitRefScanJobSource)
+        [job] = list(job_source.iterReady())
+        self.assertEqual(repository, job.repository)
 
     def test_authenticateWithPassword(self):
         self.assertIsInstance(
