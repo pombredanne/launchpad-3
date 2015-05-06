@@ -16,6 +16,7 @@ from zope.component import getUtility
 from zope.error.interfaces import IErrorReportingUtility
 from zope.interface import implements
 from zope.security.interfaces import Unauthorized
+from zope.security.proxy import removeSecurityProxy
 
 from lp.app.errors import NameLookupFailed
 from lp.app.validators import LaunchpadValidationError
@@ -265,7 +266,8 @@ class GitAPI(LaunchpadXMLRPCView):
         if repository is None:
             return faults.NotFound(
                 "No repository found for '%s'." % translated_path)
-        getUtility(IGitRefScanJobSource).create(repository)
+        getUtility(IGitRefScanJobSource).create(
+            removeSecurityProxy(repository))
 
     def authenticateWithPassword(self, username, password):
         """See `IGitAPI`."""
