@@ -2041,8 +2041,13 @@ class PersonParticipationView(LaunchpadView):
             # When showing the path, it's unnecessary to show the team in
             # question at the beginning of the path, or the user at the
             # end of the path.
-            via = ", ".join(
-                [via_team.displayname for via_team in via[1:-1]])
+            via_names = []
+            for via_team in via[1:-1]:
+                if check_permission('launchpad.LimitedView', via_team):
+                    via_names.append(via_team.displayname)
+                else:
+                    via_names.append('[private team]')
+            via = ", ".join(via_names)
 
         if membership is None:
             # Membership is via an indirect team so sane defaults exist.
