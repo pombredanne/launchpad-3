@@ -690,6 +690,7 @@ class IGitRepositorySet(Interface):
         :raises GitTargetError: if `target` is an `IPerson`.
         """
 
+    @call_with(user=REQUEST_USER)
     @operation_parameters(
         owner=Reference(title=_("Owner"), required=True, schema=IPerson),
         target=Reference(
@@ -698,13 +699,14 @@ class IGitRepositorySet(Interface):
             title=_("Git repository"), required=False, schema=IGitRepository))
     @export_write_operation()
     @operation_for_version("devel")
-    def setDefaultRepositoryForOwner(owner, target, repository):
+    def setDefaultRepositoryForOwner(owner, target, repository, user):
         """Set a person's default repository for a target.
 
         :param owner: An `IPerson`.
         :param target: An `IHasGitRepositories`.
         :param repository: An `IGitRepository`, or None to unset the default
             repository.
+        :param user: The `IPerson` who is making the change.
 
         :raises GitTargetError: if `target` is an `IPerson`.
         """

@@ -112,16 +112,16 @@ class GitAPI(LaunchpadXMLRPCView):
         # split_git_unique_name should have left us without a repository name.
         assert repository is None
         if owner is None:
-            repository_owner = requester
+            if not get_git_namespace(target, None).allow_push_to_set_default:
+                raise GitRepositoryCreationForbidden(
+                    "Cannot automatically set the default repository for this "
+                    "target; push to a named repository instead.")
+            repository_owner = target.owner
         else:
             repository_owner = owner
         namespace = get_git_namespace(target, repository_owner)
         if repository_name is None and not namespace.has_defaults:
             raise InvalidNamespace(path)
-        if owner is None and not namespace.allow_push_to_set_default:
-            raise GitRepositoryCreationForbidden(
-                "Cannot automatically set the default repository for this "
-                "target; push to a named repository instead.")
         if repository_name is None:
             def default_func(new_repository):
                 if owner is None:
@@ -131,7 +131,7 @@ class GitAPI(LaunchpadXMLRPCView):
                     self.repository_set.getDefaultRepositoryForOwner(
                         repository_owner, target) is None):
                     self.repository_set.setDefaultRepositoryForOwner(
-                        repository_owner, target, new_repository)
+                        repository_owner, target, new_repository, requester)
 
             repository_name = namespace.findUnusedName(target.name)
             return namespace, repository_name, default_func
