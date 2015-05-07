@@ -622,6 +622,9 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             return ServiceUsage.UNKNOWN
         elif (repository is not None or
               self.development_focus.branch.branch_type == BranchType.HOSTED):
+            # XXX cjwatson 2015-07-07: Fix this when we have
+            # GitRepositoryType; an imported default repository should imply
+            # ServiceUsage.EXTERNAL.
             return ServiceUsage.LAUNCHPAD
         elif self.development_focus.branch.branch_type in (
             BranchType.MIRRORED,
