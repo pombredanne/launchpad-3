@@ -724,6 +724,13 @@ class IGitRepositorySet(Interface):
         This only exists to keep lazr.restful happy.
         """
 
+    def preloadDefaultRepositoriesForProjects(projects):
+        """Get preloaded default repositories for a list of projects.
+
+        :return: A dict mapping project IDs to their default repositories.
+            Projects that do not have default repositories are omitted.
+        """
+
 
 class IGitRepositoryDelta(Interface):
     """The quantitative changes made to a Git repository that was edited or
