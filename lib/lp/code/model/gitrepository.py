@@ -122,7 +122,10 @@ from lp.services.database.stormexpr import (
     )
 from lp.services.features import getFeatureFlag
 from lp.services.mail.notificationrecipientset import NotificationRecipientSet
-from lp.services.propertycache import cachedproperty
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
 from lp.services.webapp.authorization import available_with_permission
 
 
@@ -283,6 +286,9 @@ class GitRepository(StormBase, GitIdentityMixin):
             if existing is not None:
                 raise GitDefaultConflict(existing, self.target)
         self.target_default = value
+        if IProduct.providedBy(self.target):
+            get_property_cache(self.target)._default_git_repository = (
+                self if value else None)
 
     @property
     def display_name(self):
@@ -893,6 +899,14 @@ class GitRepositorySet:
     def empty_list(self):
         """See `IGitRepositorySet`."""
         return []
+
+    @staticmethod
+    def preloadDefaultRepositoriesForProjects(projects):
+        repositories = bulk.load_referencing(
+            GitRepository, projects, ["project_id"],
+            extra_conditions=[GitRepository.target_default == True])
+        return {
+            repository.project_id: repository for repository in repositories}
 
 
 def get_git_repository_privacy_filter(user, repository_class=GitRepository):
