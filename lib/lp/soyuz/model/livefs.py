@@ -1,4 +1,4 @@
-# Copyright 2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2014-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -52,6 +52,7 @@ from lp.services.features import getFeatureFlag
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.soyuz.interfaces.archive import ArchiveDisabled
 from lp.soyuz.interfaces.livefs import (
+    CannotDeleteLiveFS,
     DuplicateLiveFSName,
     ILiveFS,
     ILiveFSSet,
@@ -209,6 +210,13 @@ class LiveFS(Storm):
         # by id (since id increases monotonically) and is less expensive.
         order_by = Desc(LiveFSBuild.id)
         return self._getBuilds(filter_term, order_by)
+
+    def destroySelf(self):
+        """See `ILiveFS`."""
+        if not self.builds.is_empty():
+            raise CannotDeleteLiveFS(
+                "Cannot delete a live filesystem with builds.")
+        IStore(LiveFS).remove(self)
 
 
 class LiveFSSet:
