@@ -8,7 +8,6 @@ __metaclass__ = type
 from datetime import datetime
 
 from BeautifulSoup import BeautifulSoup
-from bzrlib import urlutils
 from fixtures import FakeLogger
 import pytz
 from testtools.matchers import Equals
@@ -21,7 +20,6 @@ from lp.app.interfaces.services import IService
 from lp.code.interfaces.gitrepository import GIT_FEATURE_FLAG
 from lp.code.interfaces.revision import IRevisionSet
 from lp.registry.interfaces.person import PersonVisibility
-from lp.services.config import config
 from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
@@ -69,49 +67,6 @@ class TestGitRepositoryView(BrowserTestCase):
     def setUp(self):
         super(TestGitRepositoryView, self).setUp()
         self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
-
-    def test_anon_url_for_public(self):
-        # Public repositories have an anonymous URL, visible to anyone.
-        repository = self.factory.makeGitRepository()
-        view = create_initialized_view(repository, "+index")
-        expected_url = urlutils.join(
-            config.codehosting.git_anon_root, repository.shortened_path)
-        self.assertEqual(expected_url, view.anon_url)
-
-    def test_anon_url_not_for_private(self):
-        # Private repositories do not have an anonymous URL.
-        owner = self.factory.makePerson()
-        repository = self.factory.makeGitRepository(
-            owner=owner, information_type=InformationType.USERDATA)
-        with person_logged_in(owner):
-            view = create_initialized_view(repository, "+index")
-            self.assertIsNone(view.anon_url)
-
-    def test_ssh_url_for_public_logged_in(self):
-        # Public repositories have an SSH URL, visible if logged in.
-        repository = self.factory.makeGitRepository()
-        with person_logged_in(repository.owner):
-            view = create_initialized_view(repository, "+index")
-            expected_url = urlutils.join(
-                config.codehosting.git_ssh_root, repository.shortened_path)
-            self.assertEqual(expected_url, view.ssh_url)
-
-    def test_ssh_url_for_public_not_anonymous(self):
-        # Public repositories do not have an SSH URL if not logged in.
-        repository = self.factory.makeGitRepository()
-        view = create_initialized_view(repository, "+index")
-        self.assertIsNone(view.ssh_url)
-
-    def test_ssh_url_for_private(self):
-        # Private repositories have an SSH URL.
-        owner = self.factory.makePerson()
-        repository = self.factory.makeGitRepository(
-            owner=owner, information_type=InformationType.USERDATA)
-        with person_logged_in(owner):
-            view = create_initialized_view(repository, "+index")
-            expected_url = urlutils.join(
-                config.codehosting.git_ssh_root, repository.shortened_path)
-            self.assertEqual(expected_url, view.ssh_url)
 
     def test_user_can_push(self):
         # A user can push if they have edit permissions.

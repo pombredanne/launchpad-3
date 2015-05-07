@@ -322,6 +322,21 @@ class GitRepository(StormBase, GitIdentityMixin):
             config.codehosting.git_browse_root, self.unique_name)
 
     @property
+    def anon_url(self):
+        """See `IGitRepository`."""
+        if self.visibleByUser(None):
+            return urlutils.join(
+                config.codehosting.git_anon_root, self.shortened_path)
+        else:
+            return None
+
+    @property
+    def ssh_url(self):
+        """See `IGitRepository`."""
+        return urlutils.join(
+            config.codehosting.git_ssh_root, self.shortened_path)
+
+    @property
     def private(self):
         return self.information_type in PRIVATE_INFORMATION_TYPES
 
