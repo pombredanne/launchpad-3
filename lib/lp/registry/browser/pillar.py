@@ -425,6 +425,8 @@ class PillarPersonSharingView(LaunchpadView):
         cache = IJSONRequestCache(self.request)
         request = get_current_web_service_request()
         branch_data = self._build_branch_template_data(self.branches, request)
+        gitrepository_data = self._build_gitrepository_template_data(
+            self.gitrepositories, request)
         bug_data = self._build_bug_template_data(self.bugtasks, request)
         spec_data = self._build_specification_template_data(
             self.specifications, request)
@@ -439,6 +441,7 @@ class PillarPersonSharingView(LaunchpadView):
         cache.objects['pillar'] = pillar_data
         cache.objects['bugs'] = bug_data
         cache.objects['branches'] = branch_data
+        cache.objects['gitrepositories'] = gitrepository_data
         cache.objects['specifications'] = spec_data
 
     def _loadSharedArtifacts(self):
@@ -475,6 +478,17 @@ class PillarPersonSharingView(LaunchpadView):
                 branch_id=branch.id,
                 information_type=branch.information_type.title))
         return branch_data
+
+    def _build_gitrepository_template_data(self, repositories, request):
+        repository_data = []
+        for repository in repositories:
+            repository_data.append(dict(
+                self_link=absoluteURL(repository, request),
+                web_link=canonical_url(repository, path_only_if_possible=True),
+                repository_name=repository.unique_name,
+                repository_id=repository.id,
+                information_type=repository.information_type.title))
+        return repository_data
 
     def _build_bug_template_data(self, bugtasks, request):
         bug_data = []
