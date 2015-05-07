@@ -173,7 +173,7 @@ class PillarSharingDetailsMixin:
             pillarperson.pillar.name, pillarperson.person.name)
         browser = self.getUserBrowser(user=self.owner, url=url)
         self.assertIn(
-            'There are no shared bugs, branches, Git repositories, or '
+            'There are no shared bugs, Bazaar branches, Git repositories, or '
             'blueprints.', normalize_whitespace(browser.contents))
 
     def test_init_works(self):

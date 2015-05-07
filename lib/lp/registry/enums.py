@@ -56,46 +56,47 @@ class BranchSharingPolicy(DBEnumeratedType):
     PUBLIC = DBItem(1, """
         Public
 
-        Branches and Git repositories are public unless they contain
+        Bazaar branches and Git repositories are public unless they contain
         sensitive security information.
         """)
 
     PUBLIC_OR_PROPRIETARY = DBItem(2, """
         Public, can be proprietary
 
-        New branches and Git repositories are public, but can be made
+        New Bazaar branches and Git repositories are public, but can be made
         proprietary later.
         """)
 
     PROPRIETARY_OR_PUBLIC = DBItem(3, """
         Proprietary, can be public
 
-        New branches and Git repositories are proprietary, but can be made
-        public later. Only people who can see the project's proprietary
-        information can create new branches or Git repositories.
+        New Bazaar branches and Git repositories are proprietary, but can be
+        made public later. Only people who can see the project's proprietary
+        information can create new Bazaar branches or Git repositories.
         """)
 
     PROPRIETARY = DBItem(4, """
         Proprietary
 
-        Branches and Git repositories are always proprietary. Only people
-        who can see the project's proprietary information can create new
-        branches or Git repositories.
+        Bazaar branches and Git repositories are always proprietary. Only
+        people who can see the project's proprietary information can create
+        new Bazaar branches or Git repositories.
         """)
 
     EMBARGOED_OR_PROPRIETARY = DBItem(5, """
         Embargoed, can be proprietary
 
-        New branches and Git repositories are embargoed, but can be made
-        proprietary later. Only people who can see the project's proprietary
-        information can create new branches or Git repositories.
+        New Bazaar branches and Git repositories are embargoed, but can be
+        made proprietary later. Only people who can see the project's
+        proprietary information can create new Bazaar branches or Git
+        repositories.
         """)
 
     FORBIDDEN = DBItem(6, """
         Forbidden
 
-        No new branches or Git repositories may be created, but existing
-        branches and Git repositories may still be updated.
+        No new Bazaar branches or Git repositories may be created, but
+        existing Bazaar branches and Git repositories may still be updated.
         """)
 
 
