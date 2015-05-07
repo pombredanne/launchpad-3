@@ -845,9 +845,17 @@ class GitRepositorySet:
             if previous is not None:
                 previous.setTargetDefault(False)
 
-    @available_with_permission('launchpad.Edit', 'owner')
-    def setDefaultRepositoryForOwner(self, owner, target, repository):
+    def setDefaultRepositoryForOwner(self, owner, target, repository, user):
         """See `IGitRepositorySet`."""
+        if not user.inTeam(owner):
+            if owner.is_team:
+                raise Unauthorized(
+                    "%s is not a member of %s" %
+                    (user.displayname, owner.displayname))
+            else:
+                raise Unauthorized(
+                    "%s cannot set a default Git repository for %s" %
+                    (user.displayname, owner.displayname))
         if IPerson.providedBy(target):
             raise GitTargetError(
                 "Cannot set a default Git repository for a person, only "

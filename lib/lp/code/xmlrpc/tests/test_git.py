@@ -22,6 +22,7 @@ from lp.code.interfaces.gitrepository import (
     IGitRepositorySet,
     )
 from lp.code.xmlrpc.git import GitAPI
+from lp.registry.enums import TeamMembershipPolicy
 from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.escaping import html_escape
 from lp.testing import (
@@ -288,45 +289,8 @@ class TestGitAPIMixin:
         requester = self.factory.makePerson()
         project = self.factory.makeProduct()
         path = u"/%s" % project.name
-        message = "You cannot set the default Git repository for '%s'." % (
-            path.strip("/"))
-        initial_count = getUtility(IAllGitRepositories).count()
-        self.assertPermissionDenied(
-            requester, path, message=message, permission="write")
-        # No repository was created.
-        login(ANONYMOUS)
-        self.assertEqual(
-            initial_count, getUtility(IAllGitRepositories).count())
-
-    def test_translatePath_create_project_not_team_owner_default(self):
-        # A non-owner member of a team cannot immediately set a
-        # newly-created team-owned repository as that team's default for a
-        # project.
-        requester = self.factory.makePerson()
-        team = self.factory.makeTeam(members=[requester])
-        project = self.factory.makeProduct()
-        path = u"/~%s/%s" % (team.name, project.name)
-        message = "You cannot set the default Git repository for '%s'." % (
-            path.strip("/"))
-        initial_count = getUtility(IAllGitRepositories).count()
-        self.assertPermissionDenied(
-            requester, path, message=message, permission="write")
-        # No repository was created.
-        login(ANONYMOUS)
-        self.assertEqual(
-            initial_count, getUtility(IAllGitRepositories).count())
-
-    def test_translatePath_create_package_not_team_owner_default(self):
-        # A non-owner member of a team cannot immediately set a
-        # newly-created team-owned repository as that team's default for a
-        # package.
-        requester = self.factory.makePerson()
-        team = self.factory.makeTeam(members=[requester])
-        dsp = self.factory.makeDistributionSourcePackage()
-        path = u"/~%s/%s/+source/%s" % (
-            team.name, dsp.distribution.name, dsp.sourcepackagename.name)
-        message = "You cannot set the default Git repository for '%s'." % (
-            path.strip("/"))
+        message = "%s cannot create Git repositories owned by %s" % (
+            requester.displayname, project.owner.displayname)
         initial_count = getUtility(IAllGitRepositories).count()
         self.assertPermissionDenied(
             requester, path, message=message, permission="write")
@@ -446,9 +410,9 @@ class TestGitAPI(TestGitAPIMixin, TestCaseWithFactory):
         target = self.factory.makeProduct()
         repository = self.factory.makeGitRepository(
             owner=target.owner, target=target)
-        with person_logged_in(target.owner):
+        with person_logged_in(target.owner) as user:
             self.repository_set.setDefaultRepositoryForOwner(
-                target.owner, target, repository)
+                target.owner, target, repository, user)
             self.assertCreatesFromClone(
                 target.owner,
                 u"/~%s/%s/+git/random" % (target.owner.name, target.name),
@@ -590,10 +554,14 @@ class TestGitAPI(TestGitAPIMixin, TestCaseWithFactory):
         # A repository can be created and immediately set as the default for
         # a project.
         requester = self.factory.makePerson()
-        project = self.factory.makeProduct(owner=requester)
+        owner = self.factory.makeTeam(
+            membership_policy=TeamMembershipPolicy.RESTRICTED,
+            members=[requester])
+        project = self.factory.makeProduct(owner=owner)
         repository = self.assertCreates(requester, u"/%s" % project.name)
         self.assertTrue(repository.target_default)
         self.assertTrue(repository.owner_default)
+        self.assertEqual(owner, repository.owner)
 
     def test_translatePath_create_package_default_denied(self):
         # A repository cannot (yet) be created and immediately set as the
@@ -617,6 +585,7 @@ class TestGitAPI(TestGitAPIMixin, TestCaseWithFactory):
             requester, u"/~%s/%s" % (requester.name, project.name))
         self.assertFalse(repository.target_default)
         self.assertTrue(repository.owner_default)
+        self.assertEqual(requester, repository.owner)
 
     def test_translatePath_create_project_team_owner_default(self):
         # The owner of a team can create a team-owned repository and
@@ -628,6 +597,19 @@ class TestGitAPI(TestGitAPIMixin, TestCaseWithFactory):
             requester, u"/~%s/%s" % (team.name, project.name))
         self.assertFalse(repository.target_default)
         self.assertTrue(repository.owner_default)
+        self.assertEqual(team, repository.owner)
+
+    def test_translatePath_create_project_team_member_default(self):
+        # A non-owner member of a team can create a team-owned repository
+        # and immediately set it as that team's default for a project.
+        requester = self.factory.makePerson()
+        team = self.factory.makeTeam(members=[requester])
+        project = self.factory.makeProduct()
+        repository = self.assertCreates(
+            requester, u"/~%s/%s" % (team.name, project.name))
+        self.assertFalse(repository.target_default)
+        self.assertTrue(repository.owner_default)
+        self.assertEqual(team, repository.owner)
 
     def test_translatePath_create_package_owner_default(self):
         # A repository can be created and immediately set as its owner's
@@ -639,6 +621,7 @@ class TestGitAPI(TestGitAPIMixin, TestCaseWithFactory):
         repository = self.assertCreates(requester, path)
         self.assertFalse(repository.target_default)
         self.assertTrue(repository.owner_default)
+        self.assertEqual(requester, repository.owner)
 
     def test_translatePath_create_package_team_owner_default(self):
         # The owner of a team can create a team-owned repository and
@@ -651,6 +634,20 @@ class TestGitAPI(TestGitAPIMixin, TestCaseWithFactory):
         repository = self.assertCreates(requester, path)
         self.assertFalse(repository.target_default)
         self.assertTrue(repository.owner_default)
+        self.assertEqual(team, repository.owner)
+
+    def test_translatePath_create_package_team_member_default(self):
+        # A non-owner member of a team can create a team-owned repository
+        # and immediately set it as that team's default for a package.
+        requester = self.factory.makePerson()
+        team = self.factory.makeTeam(members=[requester])
+        dsp = self.factory.makeDistributionSourcePackage()
+        path = u"/~%s/%s/+source/%s" % (
+            team.name, dsp.distribution.name, dsp.sourcepackagename.name)
+        repository = self.assertCreates(requester, path)
+        self.assertFalse(repository.target_default)
+        self.assertTrue(repository.owner_default)
+        self.assertEqual(team, repository.owner)
 
     def test_translatePath_create_broken_hosting_service(self):
         # If the hosting service is down, trying to create a repository
