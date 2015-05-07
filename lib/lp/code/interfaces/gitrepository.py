@@ -217,6 +217,12 @@ class IGitRepositoryView(Interface):
         "The identity of this repository: a VCS-independent synonym for "
         "git_identity.")
 
+    anon_url = Attribute(
+        "An anonymous (git://) URL for this repository, or None in the case "
+        "of private repositories.")
+
+    ssh_url = Attribute("A git+ssh:// URL for this repository.")
+
     refs = exported(CollectionField(
         title=_("The references present in this repository."),
         readonly=True,
@@ -716,6 +722,13 @@ class IGitRepositorySet(Interface):
         """Return an empty collection of repositories.
 
         This only exists to keep lazr.restful happy.
+        """
+
+    def preloadDefaultRepositoriesForProjects(projects):
+        """Get preloaded default repositories for a list of projects.
+
+        :return: A dict mapping project IDs to their default repositories.
+            Projects that do not have default repositories are omitted.
         """
 
 

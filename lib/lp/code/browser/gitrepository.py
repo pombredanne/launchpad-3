@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'GitRefBatchNavigator',
     'GitRepositoryBreadcrumb',
     'GitRepositoryContextMenu',
     'GitRepositoryNavigation',
@@ -13,7 +14,7 @@ __all__ = [
     'GitRepositoryView',
     ]
 
-from bzrlib import urlutils
+from storm.expr import Desc
 from zope.interface import implements
 
 from lp.app.browser.informationtype import InformationTypePortletMixin
@@ -115,11 +116,17 @@ class GitRefBatchNavigator(TableBatchNavigator):
     implements(IGitRefBatchNavigator)
 
     def __init__(self, view, context):
+        self.context = context
         super(GitRefBatchNavigator, self).__init__(
-            context.branches, view.request,
+            self._branches, view.request,
             size=config.launchpad.branchlisting_batch_size)
         self.view = view
         self.column_count = 3
+
+    @property
+    def _branches(self):
+        from lp.code.model.gitref import GitRef
+        return self.context.branches.order_by(Desc(GitRef.committer_date))
 
     @property
     def table_class(self):
@@ -149,22 +156,6 @@ class GitRepositoryView(InformationTypePortletMixin, LaunchpadView):
         if self.user is not None:
             precache_permission_for_objects(
                 self.request, "launchpad.LimitedView", authorised_people)
-
-    @property
-    def anon_url(self):
-        if self.context.visibleByUser(None):
-            return urlutils.join(
-                config.codehosting.git_anon_root, self.context.shortened_path)
-        else:
-            return None
-
-    @property
-    def ssh_url(self):
-        if self.user is not None:
-            return urlutils.join(
-                config.codehosting.git_ssh_root, self.context.shortened_path)
-        else:
-            return None
 
     @property
     def user_can_push(self):

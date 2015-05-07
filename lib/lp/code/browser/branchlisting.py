@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Base class view for branch listings."""
@@ -69,6 +69,7 @@ from lp.blueprints.interfaces.specificationbranch import (
 from lp.bugs.interfaces.bugbranch import IBugBranchSet
 from lp.code.browser.branch import BranchMirrorMixin
 from lp.code.browser.branchmergeproposallisting import ActiveReviewsView
+from lp.code.browser.gitrepository import GitRefBatchNavigator
 from lp.code.browser.summary import BranchCountSummaryView
 from lp.code.enums import (
     BranchLifecycleStatus,
@@ -85,6 +86,7 @@ from lp.code.interfaces.branch import (
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
 from lp.code.interfaces.branchtarget import IBranchTarget
+from lp.code.interfaces.gitrepository import IGitRepositorySet
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.interfaces.revisioncache import IRevisionCache
 from lp.code.interfaces.seriessourcepackagebranch import (
@@ -525,6 +527,7 @@ class BranchListingView(LaunchpadFormView, FeedsMixin):
     field_names = ['lifecycle', 'sort_by']
     development_focus_branch = None
     show_set_development_focus = False
+    default_git_repository = None
     custom_widget('lifecycle', LaunchpadDropdownWidget)
     custom_widget('sort_by', LaunchpadDropdownWidget)
     # Showing the series links is only really useful on product listing
@@ -1095,6 +1098,26 @@ class ProductBranchListingView(BranchListingView):
             return dev_focus_branch
         else:
             return None
+
+    @cachedproperty
+    def default_git_repository(self):
+        repository = getUtility(IGitRepositorySet).getDefaultRepository(
+            self.context)
+        if repository is None:
+            return None
+        elif check_permission('launchpad.View', repository):
+            return repository
+        else:
+            return None
+
+    def default_git_repository_branches(self):
+        """All branches in the default Git repository, sorted for display."""
+        return GitRefBatchNavigator(self, self.default_git_repository)
+
+    @property
+    def has_default_git_repository(self):
+        """Is there a default Git repository?"""
+        return self.default_git_repository is not None
 
     @property
     def no_branch_message(self):

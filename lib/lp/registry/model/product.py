@@ -116,6 +116,7 @@ from lp.bugs.model.structuralsubscription import (
     )
 from lp.code.enums import BranchType
 from lp.code.interfaces.branch import DEFAULT_BRANCH_STATUS_IN_LISTING
+from lp.code.interfaces.gitrepository import IGitRepositorySet
 from lp.code.model.branch import Branch
 from lp.code.model.branchnamespace import BRANCH_POLICY_ALLOWED_TYPES
 from lp.code.model.hasbranches import (
@@ -579,9 +580,16 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IPillar`."""
         return "Project"
 
+    @cachedproperty
+    def _default_git_repository(self):
+        return getUtility(IGitRepositorySet).getDefaultRepository(self)
+
     @property
     def official_codehosting(self):
-        return self.development_focus.branch is not None
+        repository = self._default_git_repository
+        return (
+            self.development_focus.branch is not None or
+            repository is not None)
 
     @property
     def official_anything(self):
@@ -613,9 +621,14 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     @property
     def codehosting_usage(self):
-        if self.development_focus.branch is None:
+        repository = self._default_git_repository
+        if self.development_focus.branch is None and repository is None:
             return ServiceUsage.UNKNOWN
-        elif self.development_focus.branch.branch_type == BranchType.HOSTED:
+        elif (repository is not None or
+              self.development_focus.branch.branch_type == BranchType.HOSTED):
+            # XXX cjwatson 2015-07-07: Fix this when we have
+            # GitRepositoryType; an imported default repository should imply
+            # ServiceUsage.EXTERNAL.
             return ServiceUsage.LAUNCHPAD
         elif self.development_focus.branch.branch_type in (
             BranchType.MIRRORED,
@@ -1573,7 +1586,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 def get_precached_products(products, need_licences=False,
                            need_projectgroups=False, need_series=False,
                            need_releases=False, role_names=None,
-                           need_role_validity=False):
+                           need_role_validity=False,
+                           need_codehosting_usage=False):
     """Load and cache product information.
 
     :param products: the products for which to pre-cache information
@@ -1583,10 +1597,13 @@ def get_precached_products(products, need_licences=False,
     :param need_releases: whether to cache release information
     :param role_names: the role names to cache eg bug_supervisor
     :param need_role_validity: whether to cache validity information
+    :param need_codehosting_usage: whether to cache codehosting usage
+        information
     :return: a list of products
     """
 
-    # Circular import.
+    # Circular imports.
+    from lp.code.interfaces.gitrepository import IGitRepositorySet
     from lp.registry.model.projectgroup import ProjectGroup
 
     product_ids = set(obj.id for obj in products)
@@ -1675,6 +1692,13 @@ def get_precached_products(products, need_licences=False,
         person_ids.discard(None)
         list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
             person_ids, need_validity=need_role_validity))
+    if need_codehosting_usage:
+        repository_set = getUtility(IGitRepositorySet)
+        repository_map = repository_set.preloadDefaultRepositoriesForProjects(
+            products)
+        for product_id in product_ids:
+            caches[product_id]._default_git_repository = repository_map.get(
+                product_id)
     return products
 
 
@@ -1992,7 +2016,8 @@ class ProductSet:
             return get_precached_products(
                 products, role_names=['_owner', 'registrant'],
                 need_role_validity=True, need_licences=True,
-                need_series=True, need_releases=True)
+                need_series=True, need_releases=True,
+                need_codehosting_usage=True)
 
         return DecoratedResultSet(result, pre_iter_hook=eager_load)
 

@@ -521,6 +521,31 @@ Only active products are returned.
     landscape
 
 
+Products with Git repositories
+------------------------------
+
+Products are considered to officially support Launchpad as a location for
+their code if they have a default Git repository.
+
+    >>> from lp.code.interfaces.gitrepository import (
+    ...     GIT_FEATURE_FLAG,
+    ...     IGitRepositorySet,
+    ...     )
+    >>> from lp.services.features.testing import FeatureFixture
+    >>> firefox.development_focus.branch = None
+    >>> print firefox.official_codehosting
+    False
+    >>> print firefox.codehosting_usage.name
+    UNKNOWN
+    >>> with FeatureFixture({GIT_FEATURE_FLAG: 'on'}):
+    ...     getUtility(IGitRepositorySet).setDefaultRepository(
+    ...         firefox, factory.makeGitRepository(target=firefox))
+    >>> print firefox.official_codehosting
+    True
+    >>> print firefox.codehosting_usage.name
+    LAUNCHPAD
+
+
 Primary translatable
 --------------------
 

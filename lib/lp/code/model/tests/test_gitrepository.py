@@ -11,6 +11,7 @@ from functools import partial
 import hashlib
 import json
 
+from bzrlib import urlutils
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 import transaction
@@ -72,6 +73,7 @@ from lp.registry.interfaces.persondistributionsourcepackage import (
     )
 from lp.registry.interfaces.personproduct import IPersonProductFactory
 from lp.registry.tests.test_accesspolicy import get_policies_for_artifact
+from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.features.testing import FeatureFixture
 from lp.services.mail import stub
@@ -353,21 +355,53 @@ class TestGitRepositoryModifications(TestCaseWithFactory):
     # actually notices any interesting kind of repository modifications.
 
 
-class TestCodebrowse(TestCaseWithFactory):
-    """Tests for Git repository codebrowse support."""
+class TestGitRepositoryURLs(TestCaseWithFactory):
+    """Tests for Git repository URLs."""
 
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        super(TestCodebrowse, self).setUp()
+        super(TestGitRepositoryURLs, self).setUp()
         self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
 
-    def test_simple(self):
+    def test_codebrowse_url(self):
         # The basic codebrowse URL for a repository is an 'https' URL.
         repository = self.factory.makeGitRepository()
-        self.assertEqual(
-            "https://git.launchpad.dev/" + repository.unique_name,
-            repository.getCodebrowseUrl())
+        expected_url = urlutils.join(
+            config.codehosting.git_browse_root, repository.unique_name)
+        self.assertEqual(expected_url, repository.getCodebrowseUrl())
+
+    def test_anon_url_for_public(self):
+        # Public repositories have an anonymous URL, visible to anyone.
+        repository = self.factory.makeGitRepository()
+        expected_url = urlutils.join(
+            config.codehosting.git_anon_root, repository.shortened_path)
+        self.assertEqual(expected_url, repository.anon_url)
+
+    def test_anon_url_not_for_private(self):
+        # Private repositories do not have an anonymous URL.
+        owner = self.factory.makePerson()
+        repository = self.factory.makeGitRepository(
+            owner=owner, information_type=InformationType.USERDATA)
+        with person_logged_in(owner):
+            self.assertIsNone(repository.anon_url)
+
+    def test_ssh_url_for_public(self):
+        # Public repositories have an SSH URL.
+        repository = self.factory.makeGitRepository()
+        expected_url = urlutils.join(
+            config.codehosting.git_ssh_root, repository.shortened_path)
+        self.assertEqual(expected_url, repository.ssh_url)
+
+    def test_ssh_url_for_private(self):
+        # Private repositories have an SSH URL.
+        owner = self.factory.makePerson()
+        repository = self.factory.makeGitRepository(
+            owner=owner, information_type=InformationType.USERDATA)
+        with person_logged_in(owner):
+            expected_url = urlutils.join(
+                config.codehosting.git_ssh_root, repository.shortened_path)
+            self.assertEqual(expected_url, repository.ssh_url)
 
 
 class TestGitRepositoryNamespace(TestCaseWithFactory):
