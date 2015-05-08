@@ -389,11 +389,11 @@ class ProductVCSType(DBEnumeratedType):
     BZR = DBItem(0, """
         Bazaar
 
-        The Bazaar DVCS is used for the default project vcs.
+        The Bazaar DVCS is used as the default project VCS.
         """)
 
     GIT = DBItem(1, """
         Git
 
-        The Git DVCS is used for the default project vcs.
+        The Git DVCS is used as the default project VCS.
         """)
