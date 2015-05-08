@@ -970,7 +970,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 projectgroup=projectgroup,
                 registrant=registrant,
                 icon=icon,
-                information_type=information_type)
+                information_type=information_type,
+                vcs_default=vcs_default)
         naked_product = removeSecurityProxy(product)
         if official_malone is not None:
             naked_product.official_malone = official_malone
