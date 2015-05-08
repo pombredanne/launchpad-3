@@ -754,7 +754,7 @@ class IProductView(
             ('devel', dict(exported=False)), as_of='1.0')
 
     vcs_default = Attribute("""
-        Whether the default cvs is BZR, or GIT.""")
+        Whether the default VCS is BZR, or GIT.""")
 
     def getAllowedBugInformationTypes():
         """Get the information types that a bug in this project can have.
