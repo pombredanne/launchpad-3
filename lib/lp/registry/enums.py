@@ -14,7 +14,7 @@ __all__ = [
     'PersonTransferJobType',
     'PersonVisibility',
     'ProductJobType',
-    'ProductVCSDefault',
+    'ProductVCSType',
     'SharingPermission',
     'SpecificationSharingPolicy',
     'TeamMembershipPolicy',
@@ -383,7 +383,7 @@ class ProductJobType(DBEnumeratedType):
         """)
 
 
-class ProductVCSDefault(DBEnumeratedType):
+class ProductVCSType(DBEnumeratedType):
     """Values that IProduct.vcs_default can take."""
 
     BZR = DBItem(0, """

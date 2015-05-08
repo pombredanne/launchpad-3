@@ -130,7 +130,7 @@ from lp.registry.enums import (
     BugSharingPolicy,
     INCLUSIVE_TEAM_POLICY,
     SpecificationSharingPolicy,
-    ProductVCSDefault,
+    ProductVCSType,
     )
 from lp.registry.errors import (
     CannotChangeInformationType,
@@ -434,7 +434,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         dbName='official_malone', notNull=True, default=False)
     remote_product = Unicode(
         name='remote_product', allow_none=True, default=None)
-    vcs_default = EnumCol(enum=ProductVCSDefault, notNull=False)
+    vcs_default = EnumCol(enum=ProductVCSType, notNull=False)
 
     @property
     def date_next_suggest_packaging(self):
