@@ -151,6 +151,7 @@ from lp.translations.interfaces.hastranslationimports import (
     )
 from lp.translations.interfaces.translationpolicy import ITranslationPolicy
 
+
 # This is based on the definition of <label> in RFC 1035, section
 # 2.3.1, which is what SourceForge project names are based on.
 re_valid_rfc1035_label = re.compile(
@@ -751,6 +752,9 @@ class IProductView(
             title=_('Security contact'), required=False, readonly=True,
             description=_('Security contact (obsolete; always None)')),
             ('devel', dict(exported=False)), as_of='1.0')
+
+    vcs_default = Attribute("""
+        Whether the default cvs is BZR, or GIT.""")
 
     def getAllowedBugInformationTypes():
         """Get the information types that a bug in this project can have.

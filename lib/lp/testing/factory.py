@@ -929,7 +929,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         translations_usage=None, bug_supervisor=None, driver=None, icon=None,
         bug_sharing_policy=None, branch_sharing_policy=None,
         specification_sharing_policy=None, information_type=None,
-        answers_usage=None):
+        answers_usage=None, vcs_default=None):
         """Create and return a new, arbitrary Product."""
         if owner is None:
             owner = self.makePerson()
