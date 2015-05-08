@@ -1,4 +1,4 @@
-# Copyright 2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2014-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test live filesystems."""
@@ -32,6 +32,7 @@ from lp.services.database.constants import UTC_NOW
 from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.interfaces import OAuthPermission
 from lp.soyuz.interfaces.livefs import (
+    CannotDeleteLiveFS,
     ILiveFS,
     ILiveFSSet,
     ILiveFSView,
@@ -83,7 +84,8 @@ class TestLiveFS(TestCaseWithFactory):
     def test_implements_interfaces(self):
         # LiveFS implements ILiveFS.
         livefs = self.factory.makeLiveFS()
-        self.assertProvides(livefs, ILiveFS)
+        with person_logged_in(livefs.owner):
+            self.assertProvides(livefs, ILiveFS)
 
     def test_avoids_problematic_snapshots(self):
         self.assertThat(
@@ -244,6 +246,35 @@ class TestLiveFS(TestCaseWithFactory):
             self.assertEqual([build], list(livefs.pending_builds))
         self.assertEqual([], list(livefs.builds))
         self.assertEqual([], list(livefs.pending_builds))
+
+    def test_delete_without_builds(self):
+        # A live filesystem with no builds can be deleted.
+        owner = self.factory.makePerson()
+        distroseries = self.factory.makeDistroSeries()
+        livefs = self.factory.makeLiveFS(
+            registrant=owner, owner=owner, distroseries=distroseries,
+            name=u"condemned")
+        self.assertTrue(
+            getUtility(ILiveFSSet).exists(owner, distroseries, u"condemned"))
+        with person_logged_in(livefs.owner):
+            livefs.destroySelf()
+        self.assertFalse(
+            getUtility(ILiveFSSet).exists(owner, distroseries, u"condemned"))
+
+    def test_delete_with_builds(self):
+        # A live filesystem with builds cannot be deleted.
+        owner = self.factory.makePerson()
+        distroseries = self.factory.makeDistroSeries()
+        livefs = self.factory.makeLiveFS(
+            registrant=owner, owner=owner, distroseries=distroseries,
+            name=u"condemned")
+        self.factory.makeLiveFSBuild(livefs=livefs)
+        self.assertTrue(
+            getUtility(ILiveFSSet).exists(owner, distroseries, u"condemned"))
+        with person_logged_in(livefs.owner):
+            self.assertRaises(CannotDeleteLiveFS, livefs.destroySelf)
+        self.assertTrue(
+            getUtility(ILiveFSSet).exists(owner, distroseries, u"condemned"))
 
 
 class TestLiveFSSet(TestCaseWithFactory):
