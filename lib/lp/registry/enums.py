@@ -384,7 +384,7 @@ class ProductJobType(DBEnumeratedType):
 
 
 class ProductVCSType(DBEnumeratedType):
-    """Values that IProduct.vcs_default can take."""
+    """Values that IProduct.vcs can take."""
 
     BZR = DBItem(0, """
         Bazaar

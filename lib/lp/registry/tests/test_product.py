@@ -891,7 +891,7 @@ class TestProduct(TestCaseWithFactory):
             'translationpermission', 'translations_usage', 'ubuntu_packages',
             'userCanAlterBugSubscription', 'userCanAlterSubscription',
             'userCanEdit', 'userHasBugSubscriptions', 'uses_launchpad',
-            'vcs_default', 'wikiurl')),
+            'vcs', 'wikiurl')),
         'launchpad.AnyAllowedPerson': set((
             'addAnswerContact', 'addBugSubscription',
             'addBugSubscriptionFilter', 'addSubscription',

@@ -752,7 +752,7 @@ class IProductView(
             description=_('Security contact (obsolete; always None)')),
             ('devel', dict(exported=False)), as_of='1.0')
 
-    vcs_default = Attribute("""
+    vcs = Attribute("""
         Whether the default VCS is BZR, or GIT.""")
 
     def getAllowedBugInformationTypes():
