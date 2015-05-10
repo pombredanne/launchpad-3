@@ -4,8 +4,13 @@
 SET client_min_messages=ERROR;
 
 ALTER TABLE product
-    ADD COLUMN vcs_default integer;
+    ADD COLUMN vcs integer;
 
-COMMENT ON COLUMN product.vcs_default IS 'An enumeration specifying the default version control system for this product/project.';
+ALTER TABLE distribution
+    ADD COLUMN vcs integer;
+
+COMMENT ON COLUMN product.vcs IS 'An enumeration specifying the default version control system for this product/project.';
+
+COMMENT ON COLUMN distribution.vcs IS 'An enumeration specifying the default version control system for this distribution.';
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 65, 0);
