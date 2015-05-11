@@ -33,7 +33,7 @@ class LibrarianUtils(unittest.TestCase):
         encoding, mimetype = guess_librarian_encoding(
             'foo.txt.gz', 'will_be_overridden')
         self.assertEqual(encoding, 'gzip')
-        self.assertEqual(mimetype, 'text/plain')
+        self.assertEqual(mimetype, 'text/plain; charset=utf-8')
 
         encoding, mimetype = guess_librarian_encoding(
             'foo.diff.gz', 'will_be_overridden')
