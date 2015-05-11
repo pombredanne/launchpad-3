@@ -914,14 +914,14 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
             # Really IArchive, see archive.py
             schema=Interface))
 
-    ppas = exported(
+    ppas = exported(doNotSnapshot(
         CollectionField(
             title=_("PPAs for this person."),
             description=_(
                 "PPAs owned by the context person ordered by name."),
             readonly=True, required=False,
             # Really IArchive, see archive.py
-            value_type=Reference(schema=Interface)))
+            value_type=Reference(schema=Interface))))
 
     structural_subscriptions = Attribute(
         "The structural subscriptions for this person.")
