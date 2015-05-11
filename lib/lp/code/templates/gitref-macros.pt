@@ -18,7 +18,9 @@
         sha1 python:commit_info['sha1'];
         author python:commit_info['author'];
         author_date python:commit_info['author_date']">
-    <tal:sha1 replace="sha1/fmt:shorten/10" />
+   <a tal:attributes="href string:${context/repository/getCodebrowseUrl}/commit/?id=${sha1}">
+     <tal:sha1 replace="sha1/fmt:shorten/10" />
+   </a>
     by
     <tal:known-person condition="author/person">
       <tal:person-link replace="structure author/person/fmt:link" />
