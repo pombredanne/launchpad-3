@@ -80,6 +80,7 @@ from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )
+from lp.testing.pages import find_tag_by_id
 from lp.testing.views import create_initialized_view
 
 
@@ -805,6 +806,72 @@ class TestRegisterBranchMergeProposalViewGit(
                 'field.target_git_path':
                     ('The target repository and path together cannot be the '
                      'same as the source repository and path.')},
+            'form_wide_errors': []},
+            simplejson.loads(view.form_result))
+
+    def test_register_ajax_request_with_missing_target_git_path(self):
+        # A missing target_git_path is a validation error.
+        owner = self.factory.makePerson()
+        target_branch = self._makeTargetBranch(
+            owner=owner, information_type=InformationType.USERDATA)
+        extra = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
+        with person_logged_in(owner):
+            request = LaunchpadTestRequest(
+                method='POST', principal=owner,
+                form={
+                    'field.actions.register': 'Propose Merge',
+                    'field.target_git_repository.target_git_repository':
+                        target_branch.repository.unique_name,
+                    },
+                **extra)
+            view = create_initialized_view(
+                self.source_branch,
+                name='+register-merge',
+                request=request)
+        self.assertEqual(
+            '400 Validation', view.request.response.getStatusString())
+        self.assertEqual(
+            {'error_summary': 'There is 1 error.',
+            'errors': {
+                'field.target_git_path':
+                    ('The target path must be the path of a reference in the '
+                     'target repository.')},
+            'form_wide_errors': []},
+            simplejson.loads(view.form_result))
+
+    def test_register_ajax_request_with_missing_prerequisite_git_path(self):
+        # A missing prerequisite_git_path is a validation error if
+        # prerequisite_git_repository is present.
+        owner = self.factory.makePerson()
+        target_branch = self._makeTargetBranch(
+            owner=owner, information_type=InformationType.USERDATA)
+        prerequisite_branch = self._makeTargetBranch(
+            owner=owner, information_type=InformationType.USERDATA)
+        extra = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
+        with person_logged_in(owner):
+            request = LaunchpadTestRequest(
+                method='POST', principal=owner,
+                form={
+                    'field.actions.register': 'Propose Merge',
+                    'field.target_git_repository.target_git_repository':
+                        target_branch.repository.unique_name,
+                    'field.target_git_path': target_branch.path,
+                    'field.prerequisite_git_repository':
+                        prerequisite_branch.repository.unique_name,
+                    },
+                **extra)
+            view = create_initialized_view(
+                self.source_branch,
+                name='+register-merge',
+                request=request)
+        self.assertEqual(
+            '400 Validation', view.request.response.getStatusString())
+        self.assertEqual(
+            {'error_summary': 'There is 1 error.',
+            'errors': {
+                'field.prerequisite_git_path':
+                    ('The prerequisite path must be the path of a reference '
+                     'in the prerequisite repository.')},
             'form_wide_errors': []},
             simplejson.loads(view.form_result))
 
@@ -1566,3 +1633,52 @@ class TestLatestProposalsForEachBranchGit(
     def _setBranchInvisible(branch):
         removeSecurityProxy(branch.repository).transitionToInformationType(
             InformationType.USERDATA, branch.owner, verify_policy=False)
+
+
+class TestBranchMergeProposalDeleteViewMixin:
+    """Test the BranchMergeProposal deletion view."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_links(self):
+        bmp = self._makeBranchMergeProposal()
+        view = create_initialized_view(
+            bmp, "+delete", principal=bmp.registrant)
+        content = view()
+        self.assertEqual(
+            canonical_url(bmp.merge_source),
+            find_tag_by_id(content, "source-link").find("a")["href"])
+        self.assertEqual(
+            canonical_url(bmp.merge_target),
+            find_tag_by_id(content, "target-link").find("a")["href"])
+
+    def test_deletion_works(self):
+        registrant = self.factory.makePerson()
+        bmp = self._makeBranchMergeProposal(registrant=registrant)
+        target = bmp.merge_target
+        with person_logged_in(registrant):
+            self.assertEqual([bmp], list(target.landing_candidates))
+        browser = self.getViewBrowser(bmp, "+delete", user=bmp.registrant)
+        browser.getControl("Delete proposal").click()
+        with person_logged_in(registrant):
+            self.assertEqual([], list(target.landing_candidates))
+
+
+class TestBranchMergeProposalDeleteViewBzr(
+    TestBranchMergeProposalDeleteViewMixin, BrowserTestCase):
+    """Test the BranchMergeProposal deletion view for Bazaar."""
+
+    def _makeBranchMergeProposal(self, **kwargs):
+        return self.factory.makeBranchMergeProposal(**kwargs)
+
+
+class TestBranchMergeProposalDeleteViewGit(
+    TestBranchMergeProposalDeleteViewMixin, BrowserTestCase):
+    """Test the BranchMergeProposal deletion view for Git."""
+
+    def setUp(self):
+        super(TestBranchMergeProposalDeleteViewGit, self).setUp()
+        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
+
+    def _makeBranchMergeProposal(self, **kwargs):
+        return self.factory.makeBranchMergeProposalForGit(**kwargs)

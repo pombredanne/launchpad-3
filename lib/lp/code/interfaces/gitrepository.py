@@ -217,6 +217,12 @@ class IGitRepositoryView(Interface):
         "The identity of this repository: a VCS-independent synonym for "
         "git_identity.")
 
+    anon_url = Attribute(
+        "An anonymous (git://) URL for this repository, or None in the case "
+        "of private repositories.")
+
+    ssh_url = Attribute("A git+ssh:// URL for this repository.")
+
     refs = exported(CollectionField(
         title=_("The references present in this repository."),
         readonly=True,
@@ -690,6 +696,7 @@ class IGitRepositorySet(Interface):
         :raises GitTargetError: if `target` is an `IPerson`.
         """
 
+    @call_with(user=REQUEST_USER)
     @operation_parameters(
         owner=Reference(title=_("Owner"), required=True, schema=IPerson),
         target=Reference(
@@ -698,13 +705,14 @@ class IGitRepositorySet(Interface):
             title=_("Git repository"), required=False, schema=IGitRepository))
     @export_write_operation()
     @operation_for_version("devel")
-    def setDefaultRepositoryForOwner(owner, target, repository):
+    def setDefaultRepositoryForOwner(owner, target, repository, user):
         """Set a person's default repository for a target.
 
         :param owner: An `IPerson`.
         :param target: An `IHasGitRepositories`.
         :param repository: An `IGitRepository`, or None to unset the default
             repository.
+        :param user: The `IPerson` who is making the change.
 
         :raises GitTargetError: if `target` is an `IPerson`.
         """
@@ -714,6 +722,13 @@ class IGitRepositorySet(Interface):
         """Return an empty collection of repositories.
 
         This only exists to keep lazr.restful happy.
+        """
+
+    def preloadDefaultRepositoriesForProjects(projects):
+        """Get preloaded default repositories for a list of projects.
+
+        :return: A dict mapping project IDs to their default repositories.
+            Projects that do not have default repositories are omitted.
         """
 
 

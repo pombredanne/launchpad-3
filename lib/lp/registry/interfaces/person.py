@@ -21,8 +21,6 @@ __all__ = [
     'IPersonLimitedView',
     'IPersonViewRestricted',
     'IRequestPeopleMerge',
-    'ISoftwareCenterAgentAPI',
-    'ISoftwareCenterAgentApplication',
     'ITeam',
     'ITeamContactAddressForm',
     'ITeamReassignment',
@@ -2497,36 +2495,15 @@ class ITeamContactAddressForm(Interface):
         required=True, vocabulary=TeamContactMethod)
 
 
-class ISoftwareCenterAgentAPI(Interface):
-    """XMLRPC API used by the software center agent."""
-
-    def getOrCreateSoftwareCenterCustomer(openid_identifier, email,
-                                          full_name):
-        """Get or create an LP person based on a given identifier.
-
-        See the method of the same name on `IPersonSet`. This XMLRPC version
-        doesn't require the creation rationale and comment.
-
-        This is added as a private XMLRPC method instead of exposing via the
-        API as it should not be needed long-term. Long term we should allow
-        the software center to create subscriptions to private PPAs without
-        requiring a Launchpad account.
-        """
-
-
 class ICanonicalSSOApplication(ILaunchpadApplication):
     """XMLRPC application root for ICanonicalSSOAPI."""
 
 
 class ICanonicalSSOAPI(Interface):
-    """XMLRPC API used by the software center agent."""
+    """XMLRPC API used by Canonical SSO."""
 
     def getPersonDetailsByOpenIDIdentifier(openid_identifier):
         """Get the details of an LP person based on an OpenID identifier."""
-
-
-class ISoftwareCenterAgentApplication(ILaunchpadApplication):
-    """XMLRPC application root for ISoftwareCenterAgentAPI."""
 
 
 @error_status(httplib.FORBIDDEN)

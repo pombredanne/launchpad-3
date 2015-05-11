@@ -224,16 +224,18 @@ def create_sample_series(original_series, log):
         ('Intrepid Ibex', SeriesStatus.OBSOLETE, '8.10'),
         ('Jaunty Jackalope', SeriesStatus.OBSOLETE, '9.04'),
         ('Karmic Koala', SeriesStatus.OBSOLETE, '9.10'),
-        ('Lucid Lynx', SeriesStatus.SUPPORTED, '10.04'),
+        ('Lucid Lynx', SeriesStatus.OBSOLETE, '10.04'),
         ('Maverick Meerkat', SeriesStatus.OBSOLETE, '10.10'),
         ('Natty Narwhal', SeriesStatus.OBSOLETE, '11.04'),
         ('Oneiric Ocelot', SeriesStatus.OBSOLETE, '11.10'),
         ('Precise Pangolin', SeriesStatus.SUPPORTED, '12.04'),
-        ('Quantal Quetzal', SeriesStatus.SUPPORTED, '12.10'),
+        ('Quantal Quetzal', SeriesStatus.OBSOLETE, '12.10'),
         ('Raring Ringtail', SeriesStatus.OBSOLETE, '13.04'),
-        ('Saucy Salamander', SeriesStatus.SUPPORTED, '13.10'),
-        ('Trusty Tahr', SeriesStatus.CURRENT, '14.04'),
-        ('Utopic Unicorn', SeriesStatus.DEVELOPMENT, '14.10'),
+        ('Saucy Salamander', SeriesStatus.OBSOLETE, '13.10'),
+        ('Trusty Tahr', SeriesStatus.SUPPORTED, '14.04'),
+        ('Utopic Unicorn', SeriesStatus.SUPPORTED, '14.10'),
+        ('Vivid Vervet', SeriesStatus.CURRENT, '15.04'),
+        ('Wily Werewolf', SeriesStatus.DEVELOPMENT, '15.10'),
         ]
 
     parent = original_series

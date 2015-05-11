@@ -122,7 +122,10 @@ from lp.services.database.stormexpr import (
     )
 from lp.services.features import getFeatureFlag
 from lp.services.mail.notificationrecipientset import NotificationRecipientSet
-from lp.services.propertycache import cachedproperty
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
 from lp.services.webapp.authorization import available_with_permission
 
 
@@ -283,6 +286,9 @@ class GitRepository(StormBase, GitIdentityMixin):
             if existing is not None:
                 raise GitDefaultConflict(existing, self.target)
         self.target_default = value
+        if IProduct.providedBy(self.target):
+            get_property_cache(self.target)._default_git_repository = (
+                self if value else None)
 
     @property
     def display_name(self):
@@ -320,6 +326,21 @@ class GitRepository(StormBase, GitIdentityMixin):
         """See `IGitRepository`."""
         return urlutils.join(
             config.codehosting.git_browse_root, self.unique_name)
+
+    @property
+    def anon_url(self):
+        """See `IGitRepository`."""
+        if self.visibleByUser(None):
+            return urlutils.join(
+                config.codehosting.git_anon_root, self.shortened_path)
+        else:
+            return None
+
+    @property
+    def ssh_url(self):
+        """See `IGitRepository`."""
+        return urlutils.join(
+            config.codehosting.git_ssh_root, self.shortened_path)
 
     @property
     def private(self):
@@ -845,9 +866,17 @@ class GitRepositorySet:
             if previous is not None:
                 previous.setTargetDefault(False)
 
-    @available_with_permission('launchpad.Edit', 'owner')
-    def setDefaultRepositoryForOwner(self, owner, target, repository):
+    def setDefaultRepositoryForOwner(self, owner, target, repository, user):
         """See `IGitRepositorySet`."""
+        if not user.inTeam(owner):
+            if owner.is_team:
+                raise Unauthorized(
+                    "%s is not a member of %s" %
+                    (user.displayname, owner.displayname))
+            else:
+                raise Unauthorized(
+                    "%s cannot set a default Git repository for %s" %
+                    (user.displayname, owner.displayname))
         if IPerson.providedBy(target):
             raise GitTargetError(
                 "Cannot set a default Git repository for a person, only "
@@ -870,6 +899,14 @@ class GitRepositorySet:
     def empty_list(self):
         """See `IGitRepositorySet`."""
         return []
+
+    @staticmethod
+    def preloadDefaultRepositoriesForProjects(projects):
+        repositories = bulk.load_referencing(
+            GitRepository, projects, ["project_id"],
+            extra_conditions=[GitRepository.target_default == True])
+        return {
+            repository.project_id: repository for repository in repositories}
 
 
 def get_git_repository_privacy_filter(user, repository_class=GitRepository):
