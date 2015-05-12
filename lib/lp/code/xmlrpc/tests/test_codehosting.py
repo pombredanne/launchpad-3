@@ -110,7 +110,8 @@ class TestRunWithLogin(TestCaseWithFactory):
             identifier = (
                 self.person.account.openid_identifiers.one().identifier)
         username = run_with_login(
-            u'http://testopenid.dev/+id/%s' % identifier,
+            # Deliberately not Unicode, since XML-RPC gives us a byte string.
+            (u'http://testopenid.dev/+id/%s' % identifier).encode("UTF-8"),
             get_logged_in_username)
         login(ANONYMOUS)
         self.assertEqual(self.person.name, username)

@@ -112,6 +112,8 @@ def run_with_login(login_id, function, *args, **kwargs):
     if isinstance(login_id, basestring):
         # OpenID identifiers must contain a slash, while names must not.
         if "/" in login_id:
+            if isinstance(login_id, bytes):
+                login_id = login_id.decode("UTF-8")
             requester = getUtility(IPersonSet).getByOpenIDIdentifier(login_id)
         else:
             requester = getUtility(IPersonSet).getByName(login_id)
