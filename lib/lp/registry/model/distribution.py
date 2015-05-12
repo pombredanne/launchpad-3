@@ -86,7 +86,7 @@ from lp.code.interfaces.seriessourcepackagebranch import (
 from lp.registry.enums import (
     BranchSharingPolicy,
     BugSharingPolicy,
-    ProductVCSType,
+    VCSType,
     SpecificationSharingPolicy,
     )
 from lp.registry.errors import NoSuchDistroSeries
@@ -248,7 +248,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     package_derivatives_email = StringCol(notNull=False, default=None)
     redirect_release_uploads = BoolCol(notNull=True, default=False)
     development_series_alias = StringCol(notNull=False, default=None)
-    vcs = EnumCol(enum=ProductVCSType, notNull=False)
+    vcs = EnumCol(enum=VCSType, notNull=False)
 
     def __repr__(self):
         displayname = self.displayname.encode('ASCII', 'backslashreplace')

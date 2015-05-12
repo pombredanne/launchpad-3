@@ -72,6 +72,7 @@ from lp.bugs.interfaces.bugtarget import (
 from lp.bugs.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget,
     )
+from lp.registry.enums import VCSType
 from lp.registry.interfaces.announcement import IMakesAnnouncements
 from lp.registry.interfaces.distributionmirror import IDistributionMirror
 from lp.registry.interfaces.distroseries import DistroSeriesNameField
@@ -375,8 +376,13 @@ class IDistributionPublic(
             "distribution."),
         constraint=name_validator, readonly=False, required=False))
 
-    vcs = Attribute("""
-        Whether the default VCS is BZR, or GIT.""")
+    vcs = exported(
+        Choice(
+            title=_("VCS"),
+            required=False,
+            vocabulary=VCSType,
+            description=_(
+                "Version control system for this distribution's code.""")))
 
     def getArchiveIDList(archive=None):
         """Return a list of archive IDs suitable for sqlvalues() or quote().

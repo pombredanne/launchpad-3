@@ -14,7 +14,7 @@ __all__ = [
     'PersonTransferJobType',
     'PersonVisibility',
     'ProductJobType',
-    'ProductVCSType',
+    'VCSType',
     'SharingPermission',
     'SpecificationSharingPolicy',
     'TeamMembershipPolicy',
@@ -383,17 +383,17 @@ class ProductJobType(DBEnumeratedType):
         """)
 
 
-class ProductVCSType(DBEnumeratedType):
-    """Values that IProduct.vcs can take."""
+class VCSType(DBEnumeratedType):
+    """Values that IProduct.vcs and IDistribution.vcs can take."""
 
     BZR = DBItem(0, """
         Bazaar
 
-        The Bazaar DVCS is used as the default project VCS.
+        The Bazaar DVCS is used as the default project or distribution VCS.
         """)
 
     GIT = DBItem(1, """
         Git
 
-        The Git DVCS is used as the default project VCS.
+        The Git DVCS is used as the default project or distribution VCS.
         """)

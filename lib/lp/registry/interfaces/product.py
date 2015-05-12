@@ -109,6 +109,7 @@ from lp.registry.enums import (
     BranchSharingPolicy,
     BugSharingPolicy,
     SpecificationSharingPolicy,
+    VCSType,
     )
 from lp.registry.interfaces.announcement import IMakesAnnouncements
 from lp.registry.interfaces.commercialsubscription import (
@@ -752,8 +753,13 @@ class IProductView(
             description=_('Security contact (obsolete; always None)')),
             ('devel', dict(exported=False)), as_of='1.0')
 
-    vcs = Attribute("""
-        Whether the default VCS is BZR, or GIT.""")
+    vcs = exported(
+        Choice(
+            title=_("VCS"),
+            required=False,
+            vocabulary=VCSType,
+            description=_(
+                "Version control system for this project's code.""")))
 
     def getAllowedBugInformationTypes():
         """Get the information types that a bug in this project can have.
