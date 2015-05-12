@@ -92,7 +92,10 @@ from lp.registry.interfaces.person import (
 from lp.registry.interfaces.product import IProduct
 from lp.registry.model.person import Person
 from lp.services.config import config
-from lp.services.database.bulk import load_related
+from lp.services.database.bulk import (
+    load,
+    load_related,
+    )
 from lp.services.database.constants import (
     DEFAULT,
     UTC_NOW,
@@ -1055,18 +1058,29 @@ class BranchMergeProposal(SQLBase):
         from lp.code.model.branch import Branch
         from lp.code.model.branchcollection import GenericBranchCollection
         from lp.code.model.gitcollection import GenericGitCollection
+        from lp.code.model.gitref import GitRef
         from lp.code.model.gitrepository import GitRepository
 
         ids = set()
         source_branch_ids = set()
-        source_git_repository_ids = set()
+        git_repository_ids = set()
         person_ids = set()
+        git_ref_keys = set()
         for mp in branch_merge_proposals:
             ids.add(mp.id)
             if mp.source_branchID is not None:
                 source_branch_ids.add(mp.source_branchID)
             if mp.source_git_repositoryID is not None:
-                source_git_repository_ids.add(mp.source_git_repositoryID)
+                git_repository_ids.add(mp.source_git_repositoryID)
+                git_repository_ids.add(mp.target_git_repositoryID)
+                git_ref_keys.add(
+                    (mp.source_git_repositoryID, mp.source_git_path))
+                git_ref_keys.add(
+                    (mp.target_git_repositoryID, mp.target_git_path))
+                if mp.prerequisite_git_repositoryID is not None:
+                    git_ref_keys.add(
+                        (mp.prerequisite_git_repositoryID,
+                         mp.prerequisite_git_path))
             person_ids.add(mp.registrantID)
             person_ids.add(mp.merge_reporterID)
 
@@ -1078,9 +1092,11 @@ class BranchMergeProposal(SQLBase):
             GitRepository, branch_merge_proposals, (
                 "target_git_repositoryID", "prerequisite_git_repositoryID",
                 "source_git_repositoryID"))
+        load(GitRef, git_ref_keys)
         # The stacked on branches are used to check branch visibility.
         GenericBranchCollection.preloadVisibleStackedOnBranches(
             branches, user)
+        GenericGitCollection.preloadVisibleRepositories(repositories, user)
 
         if len(branches) == 0 and len(repositories) == 0:
             return
@@ -1098,21 +1114,24 @@ class BranchMergeProposal(SQLBase):
             cache.preview_diff = previewdiff
 
         # Add source branch/repository owners' to the list of pre-loaded
-        # persons.
+        # persons.  We need the target repository owner as well; unlike
+        # branches, repository unique names aren't trigger-maintained.
         person_ids.update(
             branch.ownerID for branch in branches
             if branch.id in source_branch_ids)
         person_ids.update(
             repository.owner_id for repository in repositories
-            if repository.id in source_git_repository_ids)
+            if repository.id in git_repository_ids)
 
         # Pre-load Person and ValidPersonCache.
         list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
             person_ids, need_validity=True))
 
         # Pre-load branches'/repositories' data.
-        GenericBranchCollection.preloadDataForBranches(branches)
-        GenericGitCollection.preloadDataForRepositories(repositories)
+        if branches:
+            GenericBranchCollection.preloadDataForBranches(branches)
+        if repositories:
+            GenericGitCollection.preloadDataForRepositories(repositories)
 
 
 class BranchMergeProposalGetter:
