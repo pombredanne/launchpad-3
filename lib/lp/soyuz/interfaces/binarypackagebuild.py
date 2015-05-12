@@ -98,6 +98,10 @@ class IBinaryPackageBuildView(IPackageBuild):
             schema=ISourcePackagePublishingHistory,
             required=False, readonly=True,
             description=_("The current source publication for this build.")))
+    api_source_package_name = exported(
+        TextLine(
+            title=_("Source package name"), required=False, readonly=True),
+        exported_as="source_package_name")
 
     distro_series = Attribute("Direct parent needed by CanonicalURL")
     arch_tag = exported(
