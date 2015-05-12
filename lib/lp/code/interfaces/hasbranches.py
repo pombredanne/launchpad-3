@@ -130,6 +130,21 @@ class IHasRequestedReviews(Interface):
         :returns: A list of `IBranchMergeProposal`.
         """
 
+    def getOwnedAndRequestedReviews(status=None, visible_by_user=None,
+                                    project=None):
+        """Returns merge proposals for branches owned by a person, or where
+        that person was asked to review.
+
+        This does not include merge proposals that were requested from
+        teams that the person is part of. If status is not passed then
+        it will return proposals that are in the "Needs Review" state.
+
+        :param status: A list of statuses to filter with.
+        :param visible_by_user: Normally the user who is asking.
+        :param project: Limit results to branches for this `IProduct`.
+        :returns: A list of `IBranchMergeProposal`.
+        """
+
 
 class IHasCodeImports(Interface):
     """Some things can have code imports that target them.

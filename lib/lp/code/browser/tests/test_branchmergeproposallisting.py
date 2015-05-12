@@ -12,6 +12,7 @@ from testtools.content import Content
 from testtools.content_type import UTF8_TEXT
 from testtools.matchers import Equals
 import transaction
+from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import InformationType
@@ -23,8 +24,14 @@ from lp.code.enums import (
     BranchMergeProposalStatus,
     CodeReviewVote,
     )
+from lp.code.interfaces.gitref import IGitRef
+from lp.code.interfaces.gitrepository import (
+    GIT_FEATURE_FLAG,
+    IGitRepositorySet,
+    )
 from lp.registry.model.personproduct import PersonProduct
 from lp.services.database.sqlbase import flush_database_caches
+from lp.services.features.testing import FeatureFixture
 from lp.testing import (
     ANONYMOUS,
     BrowserTestCase,
@@ -45,7 +52,55 @@ from lp.testing.views import create_initialized_view
 _default = object()
 
 
-class TestProposalVoteSummary(TestCaseWithFactory):
+class BzrMixin:
+    """Mixin for Bazaar-based tests."""
+
+    def _makeBranch(self, target=None, **kwargs):
+        if target is not None:
+            # This only handles projects at the moment.
+            kwargs["product"] = target
+        return self.factory.makeBranch(**kwargs)
+
+    def _makePackageBranch(self, **kwargs):
+        return self.factory.makePackageBranch(**kwargs)
+
+    def _makeStackedOnBranchChain(self, target=None, **kwargs):
+        if target is not None:
+            # This only handles projects at the moment.
+            kwargs["product"] = target
+        return self.factory.makeStackedOnBranchChain(**kwargs)
+
+    def _makeBranchMergeProposal(self, target=None, merge_target=None,
+                                 **kwargs):
+        # This only handles projects at the moment.
+        return self.factory.makeBranchMergeProposal(
+            product=target, target_branch=merge_target, **kwargs)
+
+
+class GitMixin:
+    """Mixin for Git-based tests."""
+
+    def setUp(self, user=ANONYMOUS):
+        super(GitMixin, self).setUp(user=user)
+        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
+
+    def _makeBranch(self, **kwargs):
+        return self.factory.makeGitRefs(**kwargs)[0]
+
+    def _makePackageBranch(self, **kwargs):
+        dsp = self.factory.makeDistributionSourcePackage()
+        return self.factory.makeGitRefs(target=dsp, **kwargs)[0]
+
+    def _makeStackedOnBranchChain(self, depth=None, **kwargs):
+        # Git doesn't have stacked branches.  Just make an ordinary reference.
+        return self._makeBranch(**kwargs)
+
+    def _makeBranchMergeProposal(self, merge_target=None, **kwargs):
+        return self.factory.makeBranchMergeProposalForGit(
+            target_ref=merge_target, **kwargs)
+
+
+class TestProposalVoteSummaryMixin:
     """The vote summary shows a summary of the current votes."""
 
     layer = DatabaseFunctionalLayer
@@ -53,7 +108,8 @@ class TestProposalVoteSummary(TestCaseWithFactory):
     def setUp(self):
         # Use an admin so we don't have to worry about launchpad.Edit
         # permissions on the merge proposals for adding comments.
-        TestCaseWithFactory.setUp(self, user="admin@canonical.com")
+        super(TestProposalVoteSummaryMixin, self).setUp(
+            user="admin@canonical.com")
 
     def _createComment(self, proposal, reviewer=None, vote=None,
                        comment=_default):
@@ -69,7 +125,7 @@ class TestProposalVoteSummary(TestCaseWithFactory):
     def _get_vote_summary(self, proposal):
         """Return the vote summary string for the proposal."""
         view = create_initialized_view(
-            proposal.source_branch.owner, '+merges', rootsite='code')
+            proposal.merge_source.owner, '+merges', rootsite='code')
         batch_navigator = view.proposals
         # There will only be one item in the list of proposals.
         [listing_item] = batch_navigator.proposals
@@ -78,14 +134,14 @@ class TestProposalVoteSummary(TestCaseWithFactory):
 
     def test_no_votes_or_comments(self):
         # If there are no votes or comments, then we show that.
-        proposal = self.factory.makeBranchMergeProposal()
+        proposal = self._makeBranchMergeProposal()
         summary, comment_count = self._get_vote_summary(proposal)
         self.assertEqual([], summary)
         self.assertEqual(0, comment_count)
 
     def test_no_votes_with_comments(self):
         # The comment count is shown.
-        proposal = self.factory.makeBranchMergeProposal()
+        proposal = self._makeBranchMergeProposal()
         self._createComment(proposal)
         summary, comment_count = self._get_vote_summary(proposal)
         self.assertEqual([], summary)
@@ -93,7 +149,7 @@ class TestProposalVoteSummary(TestCaseWithFactory):
 
     def test_vote_without_comment(self):
         # If there are no comments we don't show a count.
-        proposal = self.factory.makeBranchMergeProposal()
+        proposal = self._makeBranchMergeProposal()
         self._createComment(
             proposal, vote=CodeReviewVote.APPROVE, comment=None)
         summary, comment_count = self._get_vote_summary(proposal)
@@ -104,7 +160,7 @@ class TestProposalVoteSummary(TestCaseWithFactory):
 
     def test_vote_with_comment(self):
         # A vote with a comment counts as a vote and a comment.
-        proposal = self.factory.makeBranchMergeProposal()
+        proposal = self._makeBranchMergeProposal()
         self._createComment(proposal, vote=CodeReviewVote.APPROVE)
         summary, comment_count = self._get_vote_summary(proposal)
         self.assertEqual(
@@ -114,7 +170,7 @@ class TestProposalVoteSummary(TestCaseWithFactory):
 
     def test_disapproval(self):
         # Shown as Disapprove: <count>.
-        proposal = self.factory.makeBranchMergeProposal()
+        proposal = self._makeBranchMergeProposal()
         self._createComment(proposal, vote=CodeReviewVote.DISAPPROVE)
         summary, comment_count = self._get_vote_summary(proposal)
         self.assertEqual(
@@ -124,7 +180,7 @@ class TestProposalVoteSummary(TestCaseWithFactory):
 
     def test_abstain(self):
         # Shown as Abstain: <count>.
-        proposal = self.factory.makeBranchMergeProposal()
+        proposal = self._makeBranchMergeProposal()
         transaction.commit()
         self._createComment(proposal, vote=CodeReviewVote.ABSTAIN)
         summary, comment_count = self._get_vote_summary(proposal)
@@ -135,7 +191,7 @@ class TestProposalVoteSummary(TestCaseWithFactory):
 
     def test_vote_ranking(self):
         # Votes go from best to worst.
-        proposal = self.factory.makeBranchMergeProposal()
+        proposal = self._makeBranchMergeProposal()
         self._createComment(proposal, vote=CodeReviewVote.DISAPPROVE)
         self._createComment(proposal, vote=CodeReviewVote.APPROVE)
         summary, comment_count = self._get_vote_summary(proposal)
@@ -158,7 +214,7 @@ class TestProposalVoteSummary(TestCaseWithFactory):
 
     def test_multiple_votes_for_type(self):
         # Multiple votes of a type are aggregated in the summary.
-        proposal = self.factory.makeBranchMergeProposal()
+        proposal = self._makeBranchMergeProposal()
         self._createComment(proposal, vote=CodeReviewVote.DISAPPROVE)
         self._createComment(proposal, vote=CodeReviewVote.APPROVE)
         self._createComment(proposal, vote=CodeReviewVote.DISAPPROVE)
@@ -178,6 +234,16 @@ class TestProposalVoteSummary(TestCaseWithFactory):
         self.assertEqual(4, comment_count)
 
 
+class TestProposalVoteSummaryBzr(
+    TestProposalVoteSummaryMixin, BzrMixin, TestCaseWithFactory):
+    """Test the vote summary for Bazaar."""
+
+
+class TestProposalVoteSummaryGit(
+    TestProposalVoteSummaryMixin, GitMixin, TestCaseWithFactory):
+    """Test the vote summary for Git."""
+
+
 class TestMerges(BrowserTestCase):
 
     layer = DatabaseFunctionalLayer
@@ -193,7 +259,7 @@ class TestMerges(BrowserTestCase):
         package = self.factory.makeDistributionSourcePackage()
         self.getViewBrowser(package, '+merges', rootsite='code')
 
-    def test_query_count(self):
+    def test_query_count_bzr(self):
         product = self.factory.makeProduct()
         target = self.factory.makeBranch(
             product=product, information_type=InformationType.USERDATA)
@@ -209,24 +275,51 @@ class TestMerges(BrowserTestCase):
                 product, '+merges', rootsite='code', user=product.owner)
         self.assertThat(recorder, HasQueryCount(Equals(41)))
 
-    def test_productseries(self):
+    def test_query_count_git(self):
+        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
+        product = self.factory.makeProduct()
+        [target] = self.factory.makeGitRefs(
+            target=product, information_type=InformationType.USERDATA)
+        for i in range(7):
+            [source] = self.factory.makeGitRefs(
+                target=product, information_type=InformationType.USERDATA)
+            self.factory.makeBranchMergeProposalForGit(
+                source_ref=source, target_ref=target)
+        flush_database_caches()
+        with StormStatementRecorder() as recorder:
+            self.getViewBrowser(
+                product, '+merges', rootsite='code', user=product.owner)
+        self.assertThat(recorder, HasQueryCount(Equals(38)))
+
+    def test_productseries_bzr(self):
         target = self.factory.makeBranch()
-        unique_name = target.unique_name
         with person_logged_in(target.product.owner):
             target.product.development_focus.branch = target
+            identity = target.identity
         self.factory.makeBranchMergeProposal(target_branch=target)
         view = self.getViewBrowser(target, '+merges', rootsite='code')
-        self.assertIn(unique_name, view.contents)
+        self.assertIn(identity, view.contents)
+
+    def test_product_git(self):
+        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
+        [target] = self.factory.makeGitRefs()
+        with person_logged_in(target.target.owner):
+            getUtility(IGitRepositorySet).setDefaultRepository(
+                target.target, target.repository)
+            identity = target.identity
+        self.factory.makeBranchMergeProposalForGit(target_ref=target)
+        view = self.getViewBrowser(target, '+merges', rootsite='code')
+        self.assertIn(identity, view.contents)
 
 
-class ActiveReviewGroupsTest(TestCaseWithFactory):
-    """Tests for groupings used in for active reviews."""
+class ActiveReviewGroupsTestMixin:
+    """Tests for groupings used for active reviews."""
 
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        super(ActiveReviewGroupsTest, self).setUp()
-        self.bmp = self.factory.makeBranchMergeProposal(
+        super(ActiveReviewGroupsTestMixin, self).setUp()
+        self.bmp = self._makeBranchMergeProposal(
             set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
 
     def assertReviewGroupForReviewer(self, reviewer, group):
@@ -247,21 +340,21 @@ class ActiveReviewGroupsTest(TestCaseWithFactory):
 
     def test_approved(self):
         # If the proposal is approved, then the group is approved.
-        self.bmp = self.factory.makeBranchMergeProposal(
+        self.bmp = self._makeBranchMergeProposal(
             set_state=BranchMergeProposalStatus.CODE_APPROVED)
         self.assertReviewGroupForReviewer(None, ActiveReviewsView.APPROVED)
 
     def test_work_in_progress(self):
         # If the proposal is in progress, then the group is wip.
-        self.bmp = self.factory.makeBranchMergeProposal(
+        self.bmp = self._makeBranchMergeProposal(
             set_state=BranchMergeProposalStatus.WORK_IN_PROGRESS)
         self.assertReviewGroupForReviewer(None, ActiveReviewsView.WIP)
 
-    def test_source_branch_owner(self):
-        # If the reviewer is the owner of the source branch, then the review
+    def test_merge_source_owner(self):
+        # If the reviewer is the owner of the merge source, then the review
         # is MINE.  This occurs whether or not the user is the logged in or
         # not.
-        reviewer = self.bmp.source_branch.owner
+        reviewer = self.bmp.merge_source.owner
         self.assertReviewGroupForReviewer(reviewer, ActiveReviewsView.MINE)
 
     def test_proposal_registrant(self):
@@ -271,13 +364,17 @@ class ActiveReviewGroupsTest(TestCaseWithFactory):
         self.assertReviewGroupForReviewer(reviewer, ActiveReviewsView.OTHER)
 
         team = self.factory.makeTeam(self.bmp.registrant)
-        removeSecurityProxy(self.bmp.source_branch).owner = team
+        naked_merge_source = removeSecurityProxy(self.bmp.merge_source)
+        if IGitRef.providedBy(naked_merge_source):
+            naked_merge_source.repository.owner = team
+        else:
+            naked_merge_source.owner = team
         self.assertReviewGroupForReviewer(reviewer, ActiveReviewsView.MINE)
 
-    def test_target_branch_owner(self):
-        # For the target branch owner, it is to_do since they are the default
+    def test_merge_target_owner(self):
+        # For the merge target owner, it is to_do since they are the default
         # reviewer.
-        reviewer = self.bmp.target_branch.owner
+        reviewer = self.bmp.merge_target.owner
         self.assertReviewGroupForReviewer(reviewer, ActiveReviewsView.TO_DO)
 
     def test_group_pending_review(self):
@@ -299,7 +396,7 @@ class ActiveReviewGroupsTest(TestCaseWithFactory):
     def test_review_done(self):
         # If the logged in user has a completed review, then the review is
         # ARE_DOING.
-        reviewer = self.bmp.target_branch.owner
+        reviewer = self.bmp.merge_target.owner
         login_person(reviewer)
         self.bmp.createComment(
             reviewer, 'subject', vote=CodeReviewVote.APPROVE)
@@ -307,7 +404,17 @@ class ActiveReviewGroupsTest(TestCaseWithFactory):
             reviewer, ActiveReviewsView.ARE_DOING)
 
 
-class TestBranchMergeProposalListingItem(TestCaseWithFactory):
+class ActiveReviewGroupsTestBzr(
+    ActiveReviewGroupsTestMixin, BzrMixin, TestCaseWithFactory):
+    """Tests for groupings used for active reviews for Bazaar."""
+
+
+class ActiveReviewGroupsTestGit(
+    ActiveReviewGroupsTestMixin, GitMixin, TestCaseWithFactory):
+    """Tests for groupings used for active reviews for Git."""
+
+
+class TestBranchMergeProposalListingItemMixin:
     """Tests specifically relating to the BranchMergeProposalListingItem."""
 
     layer = DatabaseFunctionalLayer
@@ -358,7 +465,17 @@ class TestBranchMergeProposalListingItem(TestCaseWithFactory):
         self.assertEqual(bmp.date_created, item.sort_key)
 
 
-class ActiveReviewSortingTest(TestCaseWithFactory):
+class TestBranchMergeProposalListingItemBzr(
+    TestBranchMergeProposalListingItemMixin, BzrMixin, TestCaseWithFactory):
+    """Test BranchMergeProposalListingItem for Bazaar."""
+
+
+class TestBranchMergeProposalListingItemGit(
+    TestBranchMergeProposalListingItemMixin, GitMixin, TestCaseWithFactory):
+    """Test BranchMergeProposalListingItem for Git."""
+
+
+class ActiveReviewSortingTestMixin:
     """Test the sorting of the active review groups."""
 
     layer = DatabaseFunctionalLayer
@@ -366,14 +483,14 @@ class ActiveReviewSortingTest(TestCaseWithFactory):
     def test_oldest_first(self):
         # The oldest requested reviews should be first.
         product = self.factory.makeProduct()
-        bmp1 = self.factory.makeBranchMergeProposal(product=product)
-        login_person(bmp1.source_branch.owner)
+        bmp1 = self._makeBranchMergeProposal(target=product)
+        login_person(bmp1.merge_source.owner)
         bmp1.requestReview(datetime(2009, 6, 1, tzinfo=pytz.UTC))
-        bmp2 = self.factory.makeBranchMergeProposal(product=product)
-        login_person(bmp2.source_branch.owner)
+        bmp2 = self._makeBranchMergeProposal(target=product)
+        login_person(bmp2.merge_source.owner)
         bmp2.requestReview(datetime(2009, 3, 1, tzinfo=pytz.UTC))
-        bmp3 = self.factory.makeBranchMergeProposal(product=product)
-        login_person(bmp3.source_branch.owner)
+        bmp3 = self._makeBranchMergeProposal(target=product)
+        login_person(bmp3.merge_source.owner)
         bmp3.requestReview(datetime(2009, 1, 1, tzinfo=pytz.UTC))
         login(ANONYMOUS)
         view = create_initialized_view(
@@ -383,8 +500,18 @@ class ActiveReviewSortingTest(TestCaseWithFactory):
             [item.context for item in view.review_groups[view.OTHER]])
 
 
-class ActiveReviewsWithPrivateBranches(TestCaseWithFactory):
-    """Test the sorting of the active review groups."""
+class ActiveReviewSortingTestBzr(
+    ActiveReviewSortingTestMixin, BzrMixin, TestCaseWithFactory):
+    """Test the sorting of the active review groups for Bazaar."""
+
+
+class ActiveReviewSortingTestGit(
+    ActiveReviewSortingTestMixin, GitMixin, TestCaseWithFactory):
+    """Test the sorting of the active review groups for Git."""
+
+
+class ActiveReviewsWithPrivateBranchesMixin:
+    """Test reviews of private branches."""
 
     layer = DatabaseFunctionalLayer
 
@@ -392,32 +519,42 @@ class ActiveReviewsWithPrivateBranches(TestCaseWithFactory):
         # Merge proposals against private branches are visible to
         # the branch owner.
         product = self.factory.makeProduct()
-        branch = self.factory.makeBranch(
-            product=product, information_type=InformationType.USERDATA)
+        branch = self._makeBranch(
+            target=product, information_type=InformationType.USERDATA)
         with person_logged_in(removeSecurityProxy(branch).owner):
-            mp = self.factory.makeBranchMergeProposal(target_branch=branch)
+            mp = self._makeBranchMergeProposal(merge_target=branch)
             view = create_initialized_view(
                 branch, name='+activereviews', rootsite='code')
             self.assertEqual([mp], list(view.getProposals()))
 
 
-class PersonActiveReviewsPerformance(TestCaseWithFactory):
+class ActiveReviewsWithPrivateBranchesBzr(
+    ActiveReviewsWithPrivateBranchesMixin, BzrMixin, TestCaseWithFactory):
+    """Test reviews of private Bazaar branches."""
+
+
+class ActiveReviewsWithPrivateBranchesGit(
+    ActiveReviewsWithPrivateBranchesMixin, GitMixin, TestCaseWithFactory):
+    """Test reviews of references in private Git repositories."""
+
+
+class PersonActiveReviewsPerformanceMixin:
     """Test the performance of the person's active reviews page."""
 
     layer = LaunchpadFunctionalLayer
 
     def setupBMP(self, bmp):
         self.factory.makePreviewDiff(merge_proposal=bmp)
-        login_person(bmp.source_branch.owner)
+        login_person(bmp.merge_source.owner)
         bmp.requestReview()
 
-    def createUserBMP(self, reviewer=None, target_branch_owner=None):
-        target_branch = None
-        if target_branch_owner is not None:
-            target_branch = self.factory.makePackageBranch(
-                owner=target_branch_owner)
-        bmp = self.factory.makeBranchMergeProposal(
-            reviewer=reviewer, target_branch=target_branch)
+    def createUserBMP(self, reviewer=None, merge_target_owner=None):
+        merge_target = None
+        if merge_target_owner is not None:
+            merge_target = self._makePackageBranch(
+                owner=merge_target_owner)
+        bmp = self._makeBranchMergeProposal(
+            reviewer=reviewer, merge_target=merge_target)
         self.setupBMP(bmp)
         return bmp
 
@@ -431,10 +568,9 @@ class PersonActiveReviewsPerformance(TestCaseWithFactory):
             # Create one of the two types of BMP which will be displayed
             # on a person's +activereviews page:
             # - A BMP for which the person is the reviewer.
-            # - A BMP for which the person is the owner of the target
-            # branch.
+            # - A BMP for which the person is the owner of the merge target.
             if i % 2 == 0:
-                self.createUserBMP(target_branch_owner=user)
+                self.createUserBMP(merge_target_owner=user)
             else:
                 self.createUserBMP(reviewer=user)
         login_person(user)
@@ -457,9 +593,9 @@ class PersonActiveReviewsPerformance(TestCaseWithFactory):
         self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
 
     def createProductBMP(self, product):
-        target_branch = self.factory.makeStackedOnBranchChain(product=product)
-        bmp = self.factory.makeBranchMergeProposal(
-            product=product, target_branch=target_branch)
+        merge_target = self._makeStackedOnBranchChain(target=product)
+        bmp = self._makeBranchMergeProposal(
+            target=product, merge_target=merge_target)
         self.setupBMP(bmp)
         return bmp
 
@@ -491,3 +627,13 @@ class PersonActiveReviewsPerformance(TestCaseWithFactory):
             base_bmps + added_bmps)
         self.assertEqual(base_bmps + added_bmps, view2.proposal_count)
         self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
+
+
+class PersonActiveReviewsPerformanceBzr(
+    PersonActiveReviewsPerformanceMixin, BzrMixin, TestCaseWithFactory):
+    """Test the performance of the person's active reviews page for Bazaar."""
+
+
+class PersonActiveReviewsPerformanceGit(
+    PersonActiveReviewsPerformanceMixin, GitMixin, TestCaseWithFactory):
+    """Test the performance of the person's active reviews page for Git."""
