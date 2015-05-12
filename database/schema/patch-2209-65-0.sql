@@ -9,7 +9,7 @@ ALTER TABLE product
 ALTER TABLE distribution
     ADD COLUMN vcs integer;
 
-COMMENT ON COLUMN product.vcs IS 'An enumeration specifying the default version control system for this product/project.';
+COMMENT ON COLUMN product.vcs IS 'An enumeration specifying the default version control system for this project.';
 
 COMMENT ON COLUMN distribution.vcs IS 'An enumeration specifying the default version control system for this distribution.';
 
