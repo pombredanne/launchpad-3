@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Base class view for branch merge proposal listings."""
@@ -40,19 +40,11 @@ from lp.code.enums import (
     BranchMergeProposalStatus,
     CodeReviewVote,
     )
-from lp.code.interfaces.branchcollection import (
-    IAllBranches,
-    IBranchCollection,
-    )
 from lp.code.interfaces.branchmergeproposal import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES,
     IBranchMergeProposal,
     IBranchMergeProposalGetter,
     IBranchMergeProposalListingBatchNavigator,
-    )
-from lp.code.interfaces.gitcollection import (
-    IAllGitRepositories,
-    IGitCollection,
     )
 from lp.code.interfaces.hasbranches import IHasMergeProposals
 from lp.services.config import config
