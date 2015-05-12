@@ -301,8 +301,7 @@ class Archive(SQLBase):
     permit_obsolete_series_uploads = BoolCol(
         dbName='permit_obsolete_series_uploads', default=False)
 
-    authorized_size = IntCol(
-        dbName='authorized_size', notNull=False, default=2048)
+    authorized_size = IntCol(dbName='authorized_size', notNull=False)
 
     sources_cached = IntCol(
         dbName='sources_cached', notNull=False, default=0)
@@ -2424,6 +2423,10 @@ class ArchiveSet:
             new_archive.private = True
         else:
             new_archive.private = private
+
+        if new_archive.is_ppa:
+            new_archive.authorized_size = (
+                20480 if new_archive.private else 2048)
 
         new_archive.suppress_subscription_notifications = (
             suppress_subscription_notifications)
