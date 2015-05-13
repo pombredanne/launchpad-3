@@ -96,6 +96,7 @@ class GitJob(StormBase):
         self.repository = repository
         self.job_type = job_type
         self.metadata = metadata
+        self.metadata["repository_name"] = repository.unique_name
 
     def makeDerived(self):
         return GitJobDerived.makeSubclass(self)
@@ -109,6 +110,12 @@ class GitJobDerived(BaseRunnableJob):
 
     def __init__(self, git_job):
         self.context = git_job
+        self._cached_repository_name = self.metadata["repository_name"]
+
+    def __repr__(self):
+        """Returns an informative representation of the job."""
+        return "<%s for %s>" % (
+            self.__class__.__name__, self._cached_repository_name)
 
     @classmethod
     def get(cls, job_id):
@@ -169,23 +176,15 @@ class GitRefScanJob(GitJobDerived):
     @classmethod
     def create(cls, repository):
         """See `IGitRefScanJobSource`."""
-        git_job = GitJob(
-            repository, cls.class_job_type,
-            {"repository_name": repository.unique_name})
+        git_job = GitJob(repository, cls.class_job_type, {})
         job = cls(git_job)
         job.celeryRunOnCommit()
         return job
 
     def __init__(self, git_job):
         super(GitRefScanJob, self).__init__(git_job)
-        self._cached_repository_name = self.metadata["repository_name"]
         self._hosting_client = GitHostingClient(
             config.codehosting.internal_git_api_endpoint)
-
-    def __repr__(self):
-        """Returns an informative representation of the job."""
-        return "<%s to scan refs in %s>" % (
-            self.__class__.__name__, self._cached_repository_name)
 
     def run(self):
         """See `IGitRefScanJob`."""

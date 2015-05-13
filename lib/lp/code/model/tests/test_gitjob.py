@@ -131,8 +131,7 @@ class TestGitRefScanJob(TestGitRefScanJobMixin, TestCaseWithFactory):
         repository = self.factory.makeGitRepository()
         job = GitRefScanJob.create(repository)
         self.assertEqual(
-            "<GitRefScanJob to scan refs in %s>" % repository.unique_name,
-            repr(job))
+            "<GitRefScanJob for %s>" % repository.unique_name, repr(job))
 
     def test_run(self):
         # Ensure the job scans the repository.
