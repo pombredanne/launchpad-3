@@ -182,6 +182,11 @@ class GitRefScanJob(GitJobDerived):
         self._hosting_client = GitHostingClient(
             config.codehosting.internal_git_api_endpoint)
 
+    def __repr__(self):
+        """Returns an informative representation of the job."""
+        return "<%s to scan refs in %s>" % (
+            self.__class__.__name__, self._cached_repository_name)
+
     def run(self):
         """See `IGitRefScanJob`."""
         try:
