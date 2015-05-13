@@ -99,7 +99,9 @@ class TestRunWithLogin(TestCaseWithFactory):
 
     def test_loginAsRequesterName(self):
         # run_with_login can take a username as well as user id.
-        username = run_with_login(self.person.name, get_logged_in_username)
+        # Deliberately not Unicode, since XML-RPC gives us a byte string.
+        username = run_with_login(
+            self.person.name.encode("UTF-8"), get_logged_in_username)
         login(ANONYMOUS)
         self.assertEqual(self.person.name, username)
         logout()
