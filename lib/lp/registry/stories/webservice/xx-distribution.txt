@@ -56,6 +56,7 @@ And for every distribution we publish most of its attributes.
     supports_mirrors: True
     supports_ppas: True
     title: u'Ubuntu Linux'
+    vcs: None
     web_link: u'http://launchpad.../ubuntu'
 
 

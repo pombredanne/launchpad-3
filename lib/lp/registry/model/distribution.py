@@ -86,6 +86,7 @@ from lp.code.interfaces.seriessourcepackagebranch import (
 from lp.registry.enums import (
     BranchSharingPolicy,
     BugSharingPolicy,
+    VCSType,
     SpecificationSharingPolicy,
     )
 from lp.registry.errors import NoSuchDistroSeries
@@ -247,6 +248,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     package_derivatives_email = StringCol(notNull=False, default=None)
     redirect_release_uploads = BoolCol(notNull=True, default=False)
     development_series_alias = StringCol(notNull=False, default=None)
+    vcs = EnumCol(enum=VCSType, notNull=False)
 
     def __repr__(self):
         displayname = self.displayname.encode('ASCII', 'backslashreplace')
@@ -1445,7 +1447,8 @@ class DistributionSet:
         return pillar
 
     def new(self, name, displayname, title, description, summary, domainname,
-            members, owner, registrant, mugshot=None, logo=None, icon=None):
+            members, owner, registrant, mugshot=None, logo=None, icon=None,
+            vcs=None):
         """See `IDistributionSet`."""
         distro = Distribution(
             name=name,
@@ -1460,7 +1463,8 @@ class DistributionSet:
             registrant=registrant,
             mugshot=mugshot,
             logo=logo,
-            icon=icon)
+            icon=icon,
+            vcs=vcs)
         getUtility(IArchiveSet).new(distribution=distro,
             owner=owner, purpose=ArchivePurpose.PRIMARY)
         policies = itertools.product(

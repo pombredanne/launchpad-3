@@ -891,7 +891,7 @@ class TestProduct(TestCaseWithFactory):
             'translationpermission', 'translations_usage', 'ubuntu_packages',
             'userCanAlterBugSubscription', 'userCanAlterSubscription',
             'userCanEdit', 'userHasBugSubscriptions', 'uses_launchpad',
-            'wikiurl')),
+            'vcs', 'wikiurl')),
         'launchpad.AnyAllowedPerson': set((
             'addAnswerContact', 'addBugSubscription',
             'addBugSubscriptionFilter', 'addSubscription',
@@ -932,7 +932,7 @@ class TestProduct(TestCaseWithFactory):
                 'official_codehosting', 'owner', 'private',
                 'programminglang', 'projectgroup', 'redeemSubscriptionVoucher',
                 'releaseroot', 'screenshotsurl', 'sourceforgeproject',
-                'summary', 'title', 'uses_launchpad', 'wikiurl')),
+                'summary', 'title', 'uses_launchpad', 'wikiurl', 'vcs')),
             'launchpad.Moderate': set((
                 'active', 'autoupdate', 'license_approved', 'name',
                 'project_reviewed', 'registrant', 'reviewer_whiteboard')),
