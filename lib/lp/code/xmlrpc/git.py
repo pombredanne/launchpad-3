@@ -16,6 +16,7 @@ from zope.component import getUtility
 from zope.error.interfaces import IErrorReportingUtility
 from zope.interface import implements
 from zope.security.interfaces import Unauthorized
+from zope.security.proxy import removeSecurityProxy
 
 from lp.app.errors import NameLookupFailed
 from lp.app.validators import LaunchpadValidationError
@@ -24,6 +25,7 @@ from lp.code.errors import (
     GitRepositoryCreationForbidden,
     GitRepositoryCreationFault,
     GitRepositoryExists,
+    GitTargetError,
     InvalidNamespace,
     )
 from lp.code.githosting import GitHostingClient
@@ -67,6 +69,7 @@ class GitAPI(LaunchpadXMLRPCView):
         super(GitAPI, self).__init__(*args, **kwargs)
         self.hosting_client = GitHostingClient(
             config.codehosting.internal_git_api_endpoint)
+        self.repository_set = getUtility(IGitRepositorySet)
 
     def _performLookup(self, path):
         repository, extra_path = getUtility(IGitLookup).getByPath(path)
@@ -110,25 +113,26 @@ class GitAPI(LaunchpadXMLRPCView):
         # split_git_unique_name should have left us without a repository name.
         assert repository is None
         if owner is None:
-            repository_owner = requester
+            if not get_git_namespace(target, None).allow_push_to_set_default:
+                raise GitRepositoryCreationForbidden(
+                    "Cannot automatically set the default repository for this "
+                    "target; push to a named repository instead.")
+            repository_owner = target.owner
         else:
             repository_owner = owner
         namespace = get_git_namespace(target, repository_owner)
         if repository_name is None and not namespace.has_defaults:
             raise InvalidNamespace(path)
-        if owner is None and not namespace.allow_push_to_set_default:
-            raise GitRepositoryCreationForbidden(
-                "Cannot automatically set the default repository for this "
-                "target; push to a named repository instead.")
         if repository_name is None:
             def default_func(new_repository):
-                repository_set = getUtility(IGitRepositorySet)
                 if owner is None:
-                    repository_set.setDefaultRepository(
+                    self.repository_set.setDefaultRepository(
                         target, new_repository)
-                else:
-                    repository_set.setDefaultRepositoryForOwner(
-                        owner, target, new_repository)
+                if (owner is not None or
+                    self.repository_set.getDefaultRepositoryForOwner(
+                        repository_owner, target) is None):
+                    self.repository_set.setDefaultRepositoryForOwner(
+                        repository_owner, target, new_repository, requester)
 
             repository_name = namespace.findUnusedName(target.name)
             return namespace, repository_name, default_func
@@ -146,7 +150,7 @@ class GitAPI(LaunchpadXMLRPCView):
         getUtility(IErrorReportingUtility).raising(sys.exc_info(), request)
         raise faults.OopsOccurred("creating a Git repository", request.oopsid)
 
-    def _createRepository(self, requester, path):
+    def _createRepository(self, requester, path, clone_from=None):
         try:
             namespace, repository_name, default_func = (
                 self._getGitNamespaceExtras(path, requester))
@@ -196,9 +200,25 @@ class GitAPI(LaunchpadXMLRPCView):
             Store.of(repository).flush()
             assert repository.id is not None
 
+            # If repository has target_default, clone from default.
+            target_path = None
+            try:
+                default = self.repository_set.getDefaultRepository(
+                    repository.target)
+                if default is not None and default.visibleByUser(requester):
+                    target_path = default.getInternalPath()
+                else:
+                    default = self.repository_set.getDefaultRepositoryForOwner(
+                        repository.owner, repository.target)
+                    if default is not None and default.visibleByUser(requester):
+                        target_path = default.getInternalPath()
+            except GitTargetError:
+                pass  # Ignore Personal repositories.
+
             hosting_path = repository.getInternalPath()
             try:
-                self.hosting_client.create(hosting_path)
+                self.hosting_client.create(hosting_path,
+                                           clone_from=target_path)
             except GitRepositoryCreationFault as e:
                 # The hosting service failed.  Log an OOPS for investigation.
                 self._reportError(path, e, hosting_path=hosting_path)
@@ -246,7 +266,8 @@ class GitAPI(LaunchpadXMLRPCView):
         if repository is None:
             return faults.NotFound(
                 "No repository found for '%s'." % translated_path)
-        getUtility(IGitRefScanJobSource).create(repository)
+        getUtility(IGitRefScanJobSource).create(
+            removeSecurityProxy(repository))
 
     def authenticateWithPassword(self, username, password):
         """See `IGitAPI`."""

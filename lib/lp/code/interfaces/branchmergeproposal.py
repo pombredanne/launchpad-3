@@ -6,6 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'BRANCH_MERGE_PROPOSAL_FINAL_STATES',
+    'BRANCH_MERGE_PROPOSAL_OBSOLETE_STATES',
     'IBranchMergeProposal',
     'IBranchMergeProposalGetter',
     'IBranchMergeProposalJob',
@@ -71,6 +72,8 @@ from lp.code.enums import (
     )
 from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.diff import IPreviewDiff
+from lp.code.interfaces.gitref import IGitRef
+from lp.code.interfaces.gitrepository import IGitRepository
 from lp.registry.interfaces.person import IPerson
 from lp.services.database.constants import DEFAULT
 from lp.services.fields import (
@@ -95,15 +98,26 @@ BRANCH_MERGE_PROPOSAL_FINAL_STATES = (
     )
 
 
+BRANCH_MERGE_PROPOSAL_OBSOLETE_STATES = (
+    BranchMergeProposalStatus.MERGE_FAILED,
+    BranchMergeProposalStatus.QUEUED,
+    )
+
+
 class IBranchMergeProposalPublic(IPrivacy):
 
     id = Int(
         title=_('DB ID'), required=True, readonly=True,
         description=_("The tracking number for this merge proposal."))
     source_branchID = Int(
-        title=_('Source branch ID'), required=True, readonly=True)
+        title=_('Source branch ID'), required=False, readonly=True)
+    source_git_repositoryID = Int(
+        title=_('Source Git repository ID'), required=False, readonly=True)
     prerequisite_branchID = Int(
-        title=_('Prerequisite branch ID'), required=True, readonly=True)
+        title=_('Prerequisite branch ID'), required=False, readonly=True)
+    prerequisite_git_repositoryID = Int(
+        title=_('Prerequisite Git repository ID'),
+        required=False, readonly=True)
 
     # This is redefined from IPrivacy.private because the attribute is
     # read-only. The value is determined by the involved branches.
@@ -117,15 +131,48 @@ class IBranchMergeProposalPublic(IPrivacy):
     source_branch = exported(
         ReferenceChoice(
             title=_('Source Branch'), schema=IBranch, vocabulary='Branch',
-            required=True, readonly=True,
+            required=False, readonly=True,
             description=_("The branch that has code to land.")))
+    source_git_repository = exported(
+        ReferenceChoice(
+            title=_('Source Git Repository'), schema=IGitRepository,
+            vocabulary='GitRepository', required=False, readonly=True,
+            description=_("The Git repository that has code to land.")))
+    source_git_path = exported(
+        TextLine(
+            title=_('Source Git branch path'), required=False, readonly=True,
+            description=_(
+                "The path of the Git branch that has code to land.")))
+    source_git_commit_sha1 = TextLine(
+        title=_('Source Git commit SHA-1'), required=False, readonly=True)
+    source_git_ref = Reference(
+        title=_('Source Git reference'),
+        schema=IGitRef, required=False, readonly=True)
 
     target_branch = exported(
         ReferenceChoice(
             title=_('Target Branch'),
-            schema=IBranch, vocabulary='Branch', required=True, readonly=True,
+            schema=IBranch, vocabulary='Branch', required=False, readonly=True,
             description=_(
                 "The branch that the source branch will be merged into.")))
+    target_git_repository = exported(
+        ReferenceChoice(
+            title=_('Target Git Repository'), schema=IGitRepository,
+            vocabulary='GitRepository', required=False, readonly=True,
+            description=_(
+                "The Git repository that the source branch will be merged "
+                "into.")))
+    target_git_path = exported(
+        TextLine(
+            title=_('Target Git branch path'), required=False, readonly=True,
+            description=_(
+                "The path of the Git branch that the source branch will be "
+                "merged into.")))
+    target_git_commit_sha1 = TextLine(
+        title=_('Target Git commit SHA-1'), required=False, readonly=True)
+    target_git_ref = Reference(
+        title=_('Target Git reference'),
+        schema=IGitRef, required=False, readonly=True)
 
     prerequisite_branch = exported(
         ReferenceChoice(
@@ -135,6 +182,28 @@ class IBranchMergeProposalPublic(IPrivacy):
                 "The branch that the source branch branched from. "
                 "If this branch is the same as the target branch, then "
                 "leave this field blank.")))
+    prerequisite_git_repository = exported(
+        ReferenceChoice(
+            title=_('Prerequisite Git Repository'), schema=IGitRepository,
+            vocabulary='GitRepository', required=False, readonly=True,
+            description=_(
+                "The Git repository containing the branch that the source "
+                "branch branched from. If this branch is the same as the "
+                "target branch, then leave this field blank.")))
+    prerequisite_git_path = exported(
+        TextLine(
+            title=_('Prerequisite Git branch path'),
+            required=False, readonly=True,
+            description=_(
+                "The path of the Git branch that the source branch branched "
+                "from. If this branch is the same as the target branch, then "
+                "leave this field blank.")))
+    prerequisite_git_commit_sha1 = TextLine(
+        title=_('Prerequisite Git commit SHA-1'),
+        required=False, readonly=True)
+    prerequisite_git_ref = Reference(
+        title=_('Prerequisite Git reference'),
+        schema=IGitRef, required=False, readonly=True)
 
     merge_source = Attribute(
         "The branch that has code to land (VCS-agnostic).")
@@ -210,31 +279,20 @@ class IBranchMergeProposalView(Interface):
                           "merging the source branch."),
             strip_text=True))
 
-    queue_position = exported(
-        Int(
-            title=_("Queue Position"), required=False, readonly=True,
-            description=_("The position in the queue.")))
-
-    queuer = exported(
-        PublicPersonChoice(
-            title=_('Queuer'), vocabulary='ValidPerson',
-            required=False, readonly=True,
-            description=_("The person that queued up the branch.")))
-
-    queued_revision_id = exported(
-        Text(
-            title=_("Queued Revision ID"), readonly=True,
-            required=False,
-            description=_("The revision id that has been queued for "
-                          "landing.")),
-        exported_as='queued_revid')
-
     merged_revno = exported(
         Int(
             title=_("Merged Revision Number"), required=False,
             readonly=True,
-            description=_("The revision number on the target branch which "
-                          "contains the merge from the source branch.")))
+            description=_(
+                "The revision number on the target branch which contains the "
+                "merge from the source branch (Bazaar only).")))
+
+    merged_revision_id = exported(
+        Text(
+            title=_("Merged Revision ID"), required=False, readonly=True,
+            description=_(
+                "The revision ID on the target branch which contains the "
+                "merge from the source branch (currently Git only).")))
 
     date_merged = exported(
         Datetime(
@@ -276,9 +334,6 @@ class IBranchMergeProposalView(Interface):
     date_reviewed = exported(
         Datetime(
             title=_('Date Reviewed'), required=False, readonly=True))
-    date_queued = exported(
-        Datetime(
-            title=_('Date Queued'), required=False, readonly=True))
     root_message_id = Text(
         title=_('The email message id from the first message'),
         required=False)
@@ -517,8 +572,8 @@ class IBranchMergeProposalEdit(Interface):
         :type merge_reporter: ``Person``
         """
 
-    def resubmit(registrant, source_branch=None, target_branch=None,
-                 prerequisite_branch=DEFAULT):
+    def resubmit(registrant, merge_source=None, merge_target=None,
+                 merge_prerequisite=DEFAULT):
         """Mark the branch merge proposal as superseded and return a new one.
 
         The new proposal is created as work-in-progress, and copies across
@@ -527,36 +582,15 @@ class IBranchMergeProposalEdit(Interface):
         to review the new proposal.
 
         :param registrant: The person registering the new proposal.
-        :param source_branch: The source_branch for the new proposal (defaults
-            to the current source_branch).
-        :param target_branch: The target_branch for the new proposal (defaults
-            to the current target_branch).
-        :param prerequisite_branch: The prerequisite_branch for the new
-            proposal (defaults to the current prerequisite_branch).
+        :param merge_source: The merge_source for the new proposal (defaults
+            to the current merge_source).
+        :param merge_target: The merge_target for the new proposal (defaults
+            to the current merge_target).
+        :param merge_prerequisite: The merge_prerequisite for the new
+            proposal (defaults to the current merge_prerequisite).
         :param description: The description for the new proposal (defaults to
             the current description).
         """
-
-    def enqueue(queuer, revision_id):
-        """Put the proposal into the merge queue for the target branch.
-
-        If the proposal is not in the Approved state before this method
-        is called, approveBranch is called with the reviewer and revision_id
-        specified.
-
-        If None is supplied as the revision_id, the proposals
-        reviewed_revision_id is used.
-        """
-
-    def dequeue():
-        """Take the proposal out of the merge queue of the target branch.
-
-        :raises: BadStateTransition if the proposal is not in the queued
-                 state.
-        """
-
-    def moveToFrontOfQueue():
-        """Move the queue proposal to the front of the queue."""
 
     @operation_parameters(
         reviewer=Reference(

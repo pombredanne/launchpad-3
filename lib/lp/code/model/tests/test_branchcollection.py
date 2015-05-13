@@ -1165,7 +1165,7 @@ class TestSearch(TestCaseWithFactory):
         # branch with that URL, then you get a single result with that branch.
         branch = self.factory.makeAnyBranch()
         self.factory.makeAnyBranch()
-        search_results = self.collection.search(branch.codebrowse_url())
+        search_results = self.collection.search(branch.getCodebrowseUrl())
         self.assertEqual([branch], list(search_results))
 
     def test_exact_match_with_lp_colon_url(self):
@@ -1224,7 +1224,8 @@ class TestSearch(TestCaseWithFactory):
         # queries. Rather bravely, we refuse to explode in this case.
         branch = self.factory.makeAnyBranch()
         self.factory.makeAnyBranch()
-        search_results = self.collection.search(branch.codebrowse_url() + '/')
+        search_results = self.collection.search(
+            branch.getCodebrowseUrl() + '/')
         self.assertEqual([branch], list(search_results))
 
     def test_match_exact_branch_name(self):

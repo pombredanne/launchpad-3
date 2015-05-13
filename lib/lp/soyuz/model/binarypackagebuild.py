@@ -248,6 +248,11 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
         return None
 
     @property
+    def api_source_package_name(self):
+        """See `IBuild`."""
+        return self.source_package_release.name
+
+    @property
     def upload_changesfile(self):
         """See `IBuild`"""
         package_upload = self.package_upload

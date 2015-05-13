@@ -50,7 +50,6 @@ from bzrlib.revision import Revision as BzrRevision
 from lazr.jobrunner.jobrunner import SuspendJobException
 import pytz
 from pytz import UTC
-import simplejson
 from twisted.python.util import mergeFunctionMetadata
 from zope.component import (
     ComponentLookupError,
@@ -113,7 +112,6 @@ from lp.code.enums import (
     RevisionControlSystems,
     )
 from lp.code.errors import UnknownBranchTypeError
-from lp.code.interfaces.branchmergequeue import IBranchMergeQueueSource
 from lp.code.interfaces.branchnamespace import get_branch_namespace
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codeimport import ICodeImportSet
@@ -936,7 +934,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         translations_usage=None, bug_supervisor=None, driver=None, icon=None,
         bug_sharing_policy=None, branch_sharing_policy=None,
         specification_sharing_policy=None, information_type=None,
-        answers_usage=None):
+        answers_usage=None, vcs=None):
         """Create and return a new, arbitrary Product."""
         if owner is None:
             owner = self.makePerson()
@@ -977,7 +975,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 projectgroup=projectgroup,
                 registrant=registrant,
                 icon=icon,
-                information_type=information_type)
+                information_type=information_type,
+                vcs=vcs)
         naked_product = removeSecurityProxy(product)
         if official_malone is not None:
             naked_product.official_malone = official_malone
@@ -1232,26 +1231,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         namespace = target.getNamespace(owner)
         return namespace.createBranch(branch_type, name, creator)
 
-    def makeBranchMergeQueue(self, registrant=None, owner=None, name=None,
-                             description=None, configuration=None,
-                             branches=None):
-        """Create a BranchMergeQueue."""
-        if name is None:
-            name = unicode(self.getUniqueString('queue'))
-        if owner is None:
-            owner = self.makePerson()
-        if registrant is None:
-            registrant = self.makePerson()
-        if description is None:
-            description = unicode(self.getUniqueString('queue-description'))
-        if configuration is None:
-            configuration = unicode(simplejson.dumps({
-                self.getUniqueString('key'): self.getUniqueString('value')}))
-
-        queue = getUtility(IBranchMergeQueueSource).new(
-            name, owner, registrant, description, configuration, branches)
-        return queue
-
     def makeRelatedBranchesForSourcePackage(self, sourcepackage=None,
                                             **kwargs):
         """Create some branches associated with a sourcepackage."""
@@ -1478,7 +1457,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             review_requests.append((reviewer, None))
         proposal = source_branch.addLandingTarget(
             registrant, target_branch, review_requests=review_requests,
-            prerequisite_branch=prerequisite_branch, description=description,
+            merge_prerequisite=prerequisite_branch, description=description,
             date_created=date_created)
 
         unsafe_proposal = removeSecurityProxy(proposal)
@@ -1491,19 +1470,74 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             unsafe_proposal.requestReview()
         elif set_state == BranchMergeProposalStatus.CODE_APPROVED:
             unsafe_proposal.approveBranch(
-                proposal.target_branch.owner, 'some_revision')
+                proposal.merge_target.owner, 'some_revision')
         elif set_state == BranchMergeProposalStatus.REJECTED:
             unsafe_proposal.rejectBranch(
-                proposal.target_branch.owner, 'some_revision')
+                proposal.merge_target.owner, 'some_revision')
         elif set_state == BranchMergeProposalStatus.MERGED:
             unsafe_proposal.markAsMerged()
-        elif set_state == BranchMergeProposalStatus.MERGE_FAILED:
-            unsafe_proposal.setStatus(set_state, proposal.target_branch.owner)
-        elif set_state == BranchMergeProposalStatus.QUEUED:
-            unsafe_proposal.commit_message = self.getUniqueString(
-                'commit message')
-            unsafe_proposal.enqueue(
-                proposal.target_branch.owner, 'some_revision')
+        elif set_state == BranchMergeProposalStatus.SUPERSEDED:
+            unsafe_proposal.resubmit(proposal.registrant)
+        else:
+            raise AssertionError('Unknown status: %s' % set_state)
+
+        return proposal
+
+    def makeBranchMergeProposalForGit(self, target_ref=None, registrant=None,
+                                      set_state=None, prerequisite_ref=None,
+                                      target=_DEFAULT, initial_comment=None,
+                                      source_ref=None, date_created=None,
+                                      description=None, reviewer=None,
+                                      merged_revision_id=None):
+        """Create a proposal to merge based on anonymous branches."""
+        if target is not _DEFAULT:
+            pass
+        elif target_ref is not None:
+            target = target_ref.target
+        elif source_ref is not None:
+            target = source_ref.target
+        elif prerequisite_ref is not None:
+            target = prerequisite_ref.target
+        else:
+            # Create a reference for a repository on the target, and use
+            # that target.
+            [target_ref] = self.makeGitRefs(target=target)
+            target = target_ref.target
+
+        # Fall back to initial_comment for description.
+        if description is None:
+            description = initial_comment
+
+        if target_ref is None:
+            [target_ref] = self.makeGitRefs(target=target)
+        if source_ref is None:
+            [source_ref] = self.makeGitRefs(target=target)
+        if registrant is None:
+            registrant = self.makePerson()
+        review_requests = []
+        if reviewer is not None:
+            review_requests.append((reviewer, None))
+        proposal = source_ref.addLandingTarget(
+            registrant, target_ref, review_requests=review_requests,
+            merge_prerequisite=prerequisite_ref, description=description,
+            date_created=date_created)
+
+        unsafe_proposal = removeSecurityProxy(proposal)
+        unsafe_proposal.merged_revision_id = merged_revision_id
+        if (set_state is None or
+            set_state == BranchMergeProposalStatus.WORK_IN_PROGRESS):
+            # The initial state is work in progress, so do nothing.
+            pass
+        elif set_state == BranchMergeProposalStatus.NEEDS_REVIEW:
+            unsafe_proposal.requestReview()
+        elif set_state == BranchMergeProposalStatus.CODE_APPROVED:
+            unsafe_proposal.approveBranch(
+                proposal.merge_target.owner, 'some_revision')
+        elif set_state == BranchMergeProposalStatus.REJECTED:
+            unsafe_proposal.rejectBranch(
+                proposal.merge_target.owner, 'some_revision')
+        elif set_state == BranchMergeProposalStatus.MERGED:
+            unsafe_proposal.markAsMerged()
         elif set_state == BranchMergeProposalStatus.SUPERSEDED:
             unsafe_proposal.resubmit(proposal.registrant)
         else:
@@ -1707,10 +1741,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             BranchSubscriptionNotificationLevel.NOEMAIL, None,
             CodeReviewNotificationLevel.NOEMAIL, subscribed_by)
 
-    def makeGitRefs(self, repository=None, paths=None):
+    def makeGitRefs(self, repository=None, paths=None, **repository_kwargs):
         """Create and return a list of new, arbitrary GitRefs."""
         if repository is None:
-            repository = self.makeGitRepository()
+            repository = self.makeGitRepository(**repository_kwargs)
         if paths is None:
             paths = [self.getUniqueString('refs/heads/path').decode('utf-8')]
         refs_info = {
@@ -1719,7 +1753,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 u"type": GitObjectType.COMMIT,
                 }
             for path in paths}
-        return repository.createOrUpdateRefs(refs_info, get_objects=True)
+        return removeSecurityProxy(repository).createOrUpdateRefs(
+            refs_info, get_objects=True)
 
     def makeBug(self, target=None, owner=None, bug_watch_url=None,
                 information_type=None, date_closed=None, title=None,
@@ -2498,7 +2533,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                          aliases=None, bug_supervisor=None, driver=None,
                          publish_root_dir=None, publish_base_url=None,
                          publish_copy_base_url=None, no_pubconf=False,
-                         icon=None, summary=None):
+                         icon=None, summary=None, vcs=None):
         """Make a new distribution."""
         if name is None:
             name = self.getUniqueString(prefix="distribution")
@@ -2518,7 +2553,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             members = self.makeTeam(owner)
         distro = getUtility(IDistributionSet).new(
             name, displayname, title, description, summary, domainname,
-            members, owner, registrant, icon=icon)
+            members, owner, registrant, icon=icon, vcs=vcs)
         naked_distro = removeSecurityProxy(distro)
         if aliases is not None:
             naked_distro.setAliases(aliases)

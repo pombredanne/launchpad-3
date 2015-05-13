@@ -49,6 +49,7 @@ from zope.schema import (
     Choice,
     Datetime,
     Int,
+    List,
     Text,
     TextLine,
     )
@@ -200,9 +201,9 @@ class IGitRepositoryView(Interface):
     def isPersonTrustedReviewer(reviewer):
         """Return true if the `reviewer` is a trusted reviewer.
 
-        The reviewer is trusted if they either own the repository, or are in the
-        team that owns the repository, or they are in the review team for the
-        repository.
+        The reviewer is trusted if they either own the repository, or are in
+        the team that owns the repository, or they are in the review team
+        for the repository.
         """
 
     git_identity = exported(Text(
@@ -215,6 +216,12 @@ class IGitRepositoryView(Interface):
     identity = Attribute(
         "The identity of this repository: a VCS-independent synonym for "
         "git_identity.")
+
+    anon_url = Attribute(
+        "An anonymous (git://) URL for this repository, or None in the case "
+        "of private repositories.")
+
+    ssh_url = Attribute("A git+ssh:// URL for this repository.")
 
     refs = exported(CollectionField(
         title=_("The references present in this repository."),
@@ -446,6 +453,9 @@ class IGitRepositoryView(Interface):
         and their subscriptions.
         """
 
+    def isRepositoryMergeable(other):
+        """Is the other repository mergeable into this one (or vice versa)?"""
+
 
 class IGitRepositoryModerateAttributes(Interface):
     """IGitRepository attributes that can be edited by more than one community.
@@ -489,6 +499,15 @@ class IGitRepositoryModerate(Interface):
 
 class IGitRepositoryEdit(Interface):
     """IGitRepository methods that require launchpad.Edit permission."""
+
+    @mutator_for(IGitRepositoryView["name"])
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        new_name=TextLine(title=_("The new name of the repository.")))
+    @export_write_operation()
+    @operation_for_version("devel")
+    def setName(new_name, user):
+        """Set the name of the repository to be `new_name`."""
 
     @mutator_for(IGitRepositoryView["owner"])
     @call_with(user=REQUEST_USER)
@@ -595,6 +614,39 @@ class IGitRepositorySet(Interface):
         :return: A collection of `IGitRepository` objects.
         """
 
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        person=Reference(
+            title=_("The person whose repository visibility is being "
+                    "checked."),
+            schema=IPerson),
+        repository_names=List(value_type=Text(),
+            title=_('List of repository unique names'), required=True),
+    )
+    @export_read_operation()
+    @operation_for_version("devel")
+    def getRepositoryVisibilityInfo(user, person, repository_names):
+        """Return the named repositories visible to both user and person.
+
+        Anonymous requesters don't get any information.
+
+        :param user: The user requesting the information. If the user is
+            None then we return an empty dict.
+        :param person: The person whose repository visibility we wish to
+            check.
+        :param repository_names: The unique names of the repositories to
+            check.
+
+        Return a dict with the following values:
+        person_name: the displayname of the person.
+        visible_repositories: a list of the unique names of the repositories
+        which the requester and specified person can both see.
+
+        This API call is provided for use by the client Javascript.  It is
+        not designed to efficiently scale to handle requests for large
+        numbers of repositories.
+        """
+
     @operation_parameters(
         target=Reference(
             title=_("Target"), required=True, schema=IHasGitRepositories))
@@ -644,6 +696,7 @@ class IGitRepositorySet(Interface):
         :raises GitTargetError: if `target` is an `IPerson`.
         """
 
+    @call_with(user=REQUEST_USER)
     @operation_parameters(
         owner=Reference(title=_("Owner"), required=True, schema=IPerson),
         target=Reference(
@@ -652,13 +705,14 @@ class IGitRepositorySet(Interface):
             title=_("Git repository"), required=False, schema=IGitRepository))
     @export_write_operation()
     @operation_for_version("devel")
-    def setDefaultRepositoryForOwner(owner, target, repository):
+    def setDefaultRepositoryForOwner(owner, target, repository, user):
         """Set a person's default repository for a target.
 
         :param owner: An `IPerson`.
         :param target: An `IHasGitRepositories`.
         :param repository: An `IGitRepository`, or None to unset the default
             repository.
+        :param user: The `IPerson` who is making the change.
 
         :raises GitTargetError: if `target` is an `IPerson`.
         """
@@ -668,6 +722,13 @@ class IGitRepositorySet(Interface):
         """Return an empty collection of repositories.
 
         This only exists to keep lazr.restful happy.
+        """
+
+    def preloadDefaultRepositoriesForProjects(projects):
+        """Get preloaded default repositories for a list of projects.
+
+        :return: A dict mapping project IDs to their default repositories.
+            Projects that do not have default repositories are omitted.
         """
 
 

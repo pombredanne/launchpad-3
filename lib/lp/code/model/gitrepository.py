@@ -38,6 +38,7 @@ from storm.locals import (
 from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import (
@@ -121,7 +122,10 @@ from lp.services.database.stormexpr import (
     )
 from lp.services.features import getFeatureFlag
 from lp.services.mail.notificationrecipientset import NotificationRecipientSet
-from lp.services.propertycache import cachedproperty
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
 from lp.services.webapp.authorization import available_with_permission
 
 
@@ -139,8 +143,9 @@ def git_repository_modified(repository, event):
     This method is registered as a subscriber to `IObjectModifiedEvent`
     events on Git repositories.
     """
-    repository.date_last_modified = UTC_NOW
-    send_git_repository_modified_notifications(repository, event)
+    if event.edited_fields:
+        repository.date_last_modified = UTC_NOW
+        send_git_repository_modified_notifications(repository, event)
 
 
 class GitRepository(StormBase, GitIdentityMixin):
@@ -281,6 +286,9 @@ class GitRepository(StormBase, GitIdentityMixin):
             if existing is not None:
                 raise GitDefaultConflict(existing, self.target)
         self.target_default = value
+        if IProduct.providedBy(self.target):
+            get_property_cache(self.target)._default_git_repository = (
+                self if value else None)
 
     @property
     def display_name(self):
@@ -318,6 +326,21 @@ class GitRepository(StormBase, GitIdentityMixin):
         """See `IGitRepository`."""
         return urlutils.join(
             config.codehosting.git_browse_root, self.unique_name)
+
+    @property
+    def anon_url(self):
+        """See `IGitRepository`."""
+        if self.visibleByUser(None):
+            return urlutils.join(
+                config.codehosting.git_anon_root, self.shortened_path)
+        else:
+            return None
+
+    @property
+    def ssh_url(self):
+        """See `IGitRepository`."""
+        return urlutils.join(
+            config.codehosting.git_ssh_root, self.shortened_path)
 
     @property
     def private(self):
@@ -362,10 +385,17 @@ class GitRepository(StormBase, GitIdentityMixin):
             GitRef.path.startswith(u"refs/heads/")).order_by(GitRef.path)
 
     def getRefByPath(self, path):
-        return Store.of(self).find(
-            GitRef,
-            GitRef.repository_id == self.id,
-            GitRef.path == path).one()
+        paths = [path]
+        if not path.startswith(u"refs/heads/"):
+            paths.append(u"refs/heads/%s" % path)
+        for try_path in paths:
+            ref = Store.of(self).find(
+                GitRef,
+                GitRef.repository_id == self.id,
+                GitRef.path == try_path).one()
+            if ref is not None:
+                return ref
+        return None
 
     @staticmethod
     def _convertRefInfo(info):
@@ -614,6 +644,10 @@ class GitRepository(StormBase, GitIdentityMixin):
         # subscriptions.
         getUtility(IRemoveArtifactSubscriptionsJobSource).create(user, [self])
 
+    def setName(self, new_name, user):
+        """See `IGitRepository`."""
+        self.namespace.moveRepository(self, user, new_name=new_name)
+
     def setOwner(self, new_owner, user):
         """See `IGitRepository`."""
         new_namespace = get_git_namespace(self.target, new_owner)
@@ -725,6 +759,10 @@ class GitRepository(StormBase, GitIdentityMixin):
             recipients.add(subscription.person, subscription, rationale)
         return recipients
 
+    def isRepositoryMergeable(self, other):
+        """See `IGitRepository`."""
+        return self.namespace.areRepositoriesMergeable(other.namespace)
+
     def destroySelf(self):
         raise NotImplementedError
 
@@ -757,6 +795,27 @@ class GitRepositorySet:
         """See `IGitRepositorySet`."""
         collection = IGitCollection(target).visibleByUser(user)
         return collection.getRepositories(eager_load=True)
+
+    def getRepositoryVisibilityInfo(self, user, person, repository_names):
+        """See `IGitRepositorySet`."""
+        if user is None:
+            return dict()
+        lookup = getUtility(IGitLookup)
+        visible_repositories = []
+        for name in repository_names:
+            repository = lookup.getByUniqueName(name)
+            try:
+                if (repository is not None
+                        and repository.visibleByUser(user)
+                        and repository.visibleByUser(person)):
+                    visible_repositories.append(repository.unique_name)
+            except Unauthorized:
+                # We don't include repositories user cannot see.
+                pass
+        return {
+            'person_name': person.displayname,
+            'visible_repositories': visible_repositories,
+            }
 
     def getDefaultRepository(self, target):
         """See `IGitRepositorySet`."""
@@ -807,9 +866,17 @@ class GitRepositorySet:
             if previous is not None:
                 previous.setTargetDefault(False)
 
-    @available_with_permission('launchpad.Edit', 'owner')
-    def setDefaultRepositoryForOwner(self, owner, target, repository):
+    def setDefaultRepositoryForOwner(self, owner, target, repository, user):
         """See `IGitRepositorySet`."""
+        if not user.inTeam(owner):
+            if owner.is_team:
+                raise Unauthorized(
+                    "%s is not a member of %s" %
+                    (user.displayname, owner.displayname))
+            else:
+                raise Unauthorized(
+                    "%s cannot set a default Git repository for %s" %
+                    (user.displayname, owner.displayname))
         if IPerson.providedBy(target):
             raise GitTargetError(
                 "Cannot set a default Git repository for a person, only "
@@ -833,9 +900,17 @@ class GitRepositorySet:
         """See `IGitRepositorySet`."""
         return []
 
+    @staticmethod
+    def preloadDefaultRepositoriesForProjects(projects):
+        repositories = bulk.load_referencing(
+            GitRepository, projects, ["project_id"],
+            extra_conditions=[GitRepository.target_default == True])
+        return {
+            repository.project_id: repository for repository in repositories}
 
-def get_git_repository_privacy_filter(user):
-    public_filter = GitRepository.information_type.is_in(
+
+def get_git_repository_privacy_filter(user, repository_class=GitRepository):
+    public_filter = repository_class.information_type.is_in(
         PUBLIC_INFORMATION_TYPES)
 
     if user is None:
@@ -843,7 +918,7 @@ def get_git_repository_privacy_filter(user):
 
     artifact_grant_query = Coalesce(
         ArrayIntersects(
-            SQL("GitRepository.access_grants"),
+            SQL("%s.access_grants" % repository_class.__storm_table__),
             Select(
                 ArrayAgg(TeamParticipation.teamID),
                 tables=TeamParticipation,
@@ -852,7 +927,7 @@ def get_git_repository_privacy_filter(user):
 
     policy_grant_query = Coalesce(
         ArrayIntersects(
-            Array(SQL("GitRepository.access_policy")),
+            Array(SQL("%s.access_policy" % repository_class.__storm_table__)),
             Select(
                 ArrayAgg(AccessPolicyGrant.policy_id),
                 tables=(AccessPolicyGrant,

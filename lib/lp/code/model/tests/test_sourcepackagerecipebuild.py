@@ -405,40 +405,6 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
             "DEBUG  - cannot build against Warty (4.10).",
             logger.getLogBuffer())
 
-    def test_getRecentBuilds(self):
-        """Recent builds match the same person, series and receipe.
-
-        Builds do not match if they are older than 24 hours, or have a
-        different requester, series or recipe.
-        """
-        requester = self.factory.makePerson()
-        recipe = self.factory.makeSourcePackageRecipe()
-        series = self.factory.makeDistroSeries()
-        removeSecurityProxy(series).nominatedarchindep = (
-            self.factory.makeDistroArchSeries(distroseries=series))
-        now = self.factory.getUniqueDate()
-        build = self.factory.makeSourcePackageRecipeBuild(recipe=recipe,
-            requester=requester)
-        self.factory.makeSourcePackageRecipeBuild(
-            recipe=recipe, distroseries=series)
-        self.factory.makeSourcePackageRecipeBuild(
-            requester=requester, distroseries=series)
-
-        def get_recent():
-            Store.of(build).flush()
-            return SourcePackageRecipeBuild.getRecentBuilds(
-                requester, recipe, series, _now=now)
-        self.assertContentEqual([], get_recent())
-        yesterday = now - timedelta(days=1)
-        self.factory.makeSourcePackageRecipeBuild(
-            recipe=recipe, distroseries=series, requester=requester,
-            date_created=yesterday)
-        self.assertContentEqual([], get_recent())
-        more_recent_build = self.factory.makeSourcePackageRecipeBuild(
-            recipe=recipe, distroseries=series, requester=requester,
-            date_created=yesterday + timedelta(seconds=1))
-        self.assertContentEqual([more_recent_build], get_recent())
-
     def test_destroySelf(self):
         # ISourcePackageRecipeBuild should make sure to remove jobs and build
         # queue entries and then invalidate itself.

@@ -26,23 +26,6 @@
       provides="lp.services.webapp.interfaces.IFacet"
       name="branches" />
 
-  <!-- Branch Merge Queues -->
-  <securedutility
-     component="lp.code.model.branchmergequeue.BranchMergeQueue"
-     provides="lp.code.interfaces.branchmergequeue.IBranchMergeQueueSource">
-    <allow interface="lp.code.interfaces.branchmergequeue.IBranchMergeQueueSource"/>
-
-  </securedutility>
-
-  <class class="lp.code.model.branchmergequeue.BranchMergeQueue">
-    <require permission="zope.Public"
-             attributes="registrant owner name description configuration
-                         date_created branches" />
-    <require permission="launchpad.Edit"
-             attributes="setMergeQueueConfig"
-             set_attributes="owner name description configuration" />
-  </class>
-
   <class class="lp.code.model.codereviewvote.CodeReviewVoteReference">
     <allow interface="lp.code.interfaces.codereviewvote.ICodeReviewVoteReferencePublic"/>
     <require
@@ -97,12 +80,6 @@
   <class class="lp.code.browser.branchref.StaticContentView">
     <allow attributes="browserDefault
                        __call__"/>
-  </class>
-  <class class="lp.code.model.branchmergequeuecollection.GenericBranchMergeQueueCollection">
-    <allow interface="lp.code.interfaces.branchmergequeuecollection.IBranchMergeQueueCollection"/>
-  </class>
-  <class class="lp.code.model.branchmergequeuecollection.VisibleBranchMergeQueueCollection">
-    <allow interface="lp.code.interfaces.branchmergequeuecollection.IBranchMergeQueueCollection"/>
   </class>
   <class class="lp.code.model.branchcollection.GenericBranchCollection">
     <allow interface="lp.code.interfaces.branchcollection.IBranchCollection"/>
@@ -161,11 +138,6 @@
       class="lp.code.model.revisioncache.GenericRevisionCollection"
       provides="lp.code.interfaces.revisioncache.IRevisionCache">
     <allow interface="lp.code.interfaces.revisioncache.IRevisionCache"/>
-  </securedutility>
-  <securedutility
-      class="lp.code.model.branchmergequeuecollection.GenericBranchMergeQueueCollection"
-      provides="lp.code.interfaces.branchmergequeuecollection.IAllBranchMergeQueues">
-    <allow interface="lp.code.interfaces.branchmergequeuecollection.IAllBranchMergeQueues"/>
   </securedutility>
   <adapter
       for="lp.registry.interfaces.person.IPerson"
@@ -392,8 +364,7 @@
                    lp.code.interfaces.branch.IBranchModerateAttributes
                    lp.code.interfaces.branch.IBranchEditableAttributes
                    lp.code.interfaces.branch.IBranchPublic
-                   lp.code.interfaces.branch.IBranchView"
-        attributes="merge_queue merge_queue_config"/>
+                   lp.code.interfaces.branch.IBranchView"/>
     <require
         permission="launchpad.Moderate"
         interface="lp.code.interfaces.branch.IBranchModerate"
@@ -402,7 +373,7 @@
         permission="launchpad.Edit"
         interface="lp.code.interfaces.branch.IBranchEdit"
         set_schema="lp.code.interfaces.branch.IBranchEditableAttributes"
-        attributes="setPrivate addToQueue setMergeQueueConfig"
+        attributes="setPrivate"
         set_attributes="branch_format control_format repository_format
                         branch_type
                         last_scanned last_scanned_id
@@ -877,6 +848,11 @@
   <!-- GitRef -->
 
   <class class="lp.code.model.gitref.GitRef">
+    <require
+        permission="launchpad.View"
+        interface="lp.code.interfaces.gitref.IGitRef" />
+  </class>
+  <class class="lp.code.model.gitref.GitRefFrozen">
     <require
         permission="launchpad.View"
         interface="lp.code.interfaces.gitref.IGitRef" />

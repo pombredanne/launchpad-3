@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the product view classes and templates."""
@@ -19,8 +19,13 @@ from lp.app.enums import (
     ServiceUsage,
     )
 from lp.code.enums import BranchType
+from lp.code.interfaces.gitrepository import (
+    GIT_FEATURE_FLAG,
+    IGitRepositorySet,
+    )
 from lp.code.interfaces.revision import IRevisionSet
 from lp.registry.enums import BranchSharingPolicy
+from lp.services.features.testing import FeatureFixture
 from lp.services.webapp import canonical_url
 from lp.testing import (
     ANONYMOUS,
@@ -206,6 +211,39 @@ class TestProductCodeIndexView(ProductTestBase):
             html = view()
         expected = 'There are no branches for %s' % product.displayname
         self.assertIn(expected, html)
+
+    def test_no_default_git_repository(self):
+        # If there is no default Git repository, Product:+branches does not
+        # try to render one.
+        product = self.factory.makeProduct()
+        view = create_initialized_view(
+            product, '+branches', rootsite='code', principal=product.owner)
+        self.assertIsNone(view.default_git_repository)
+        self.assertFalse(view.has_default_git_repository)
+        content = view()
+        self.assertNotIn('git clone', content)
+
+    def test_default_git_repository(self):
+        # If there is a default Git repository, Product:+branches shows a
+        # summary of its branches.
+        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
+        product = self.factory.makeProduct()
+        repository = self.factory.makeGitRepository(target=product)
+        self.factory.makeGitRefs(
+            repository=repository,
+            paths=[u"refs/heads/master", u"refs/heads/another-branch"])
+        with person_logged_in(product.owner):
+            getUtility(IGitRepositorySet).setDefaultRepository(
+                product, repository)
+        view = create_initialized_view(
+            product, '+branches', rootsite='code', principal=product.owner)
+        self.assertEqual(repository, view.default_git_repository)
+        self.assertTrue(view.has_default_git_repository)
+        content = view()
+        self.assertIn('git clone', content)
+        # XXX cjwatson 2015-04-30: These tests are not very precise.
+        self.assertIn('master', content)
+        self.assertIn('another-branch', content)
 
 
 class TestProductCodeIndexServiceUsages(ProductTestBase, BrowserTestCase):

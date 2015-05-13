@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 
@@ -42,10 +42,12 @@ from lp.code.browser.branchmergeproposal import (
     latest_proposals_for_each_branch,
     )
 from lp.code.browser.codereviewcomment import CodeReviewDisplayComment
+from lp.code.browser.gitref import GitRefRegisterMergeProposalView
 from lp.code.enums import (
     BranchMergeProposalStatus,
     CodeReviewVote,
     )
+from lp.code.interfaces.gitrepository import GIT_FEATURE_FLAG
 from lp.code.model.diff import PreviewDiff
 from lp.code.tests.helpers import (
     add_revision_to_branch,
@@ -55,6 +57,7 @@ from lp.registry.enums import (
     PersonVisibility,
     TeamMembershipPolicy,
     )
+from lp.services.features.testing import FeatureFixture
 from lp.services.librarian.interfaces.client import LibrarianServerError
 from lp.services.messages.model.message import MessageSet
 from lp.services.webapp import canonical_url
@@ -77,6 +80,7 @@ from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )
+from lp.testing.pages import find_tag_by_id
 from lp.testing.views import create_initialized_view
 
 
@@ -107,8 +111,8 @@ class TestDecoratedCodeReviewVoteReference(TestCaseWithFactory):
         self.assertTrue(d.can_change_review)
 
 
-class TestBranchMergeProposalMergedView(TestCaseWithFactory):
-    """Tests for `BranchMergeProposalMergedView`."""
+class TestBranchMergeProposalMergedViewBzr(TestCaseWithFactory):
+    """Tests for `BranchMergeProposalMergedView` for Bazaar."""
 
     layer = DatabaseFunctionalLayer
 
@@ -126,6 +130,30 @@ class TestBranchMergeProposalMergedView(TestCaseWithFactory):
         self.bmp.target_branch.revision_count = 2
         self.assertEqual(
             {'merged_revno': self.bmp.target_branch.revision_count},
+            view.initial_values)
+
+
+class TestBranchMergeProposalMergedViewGit(TestCaseWithFactory):
+    """Tests for `BranchMergeProposalMergedView` for Git."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        # Use an admin so we don't have to worry about launchpad.Edit
+        # permissions on the merge proposals for adding comments, or
+        # nominating reviewers.
+        TestCaseWithFactory.setUp(self, user="admin@canonical.com")
+        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
+        self.bmp = self.factory.makeBranchMergeProposalForGit()
+
+    def test_initial_values(self):
+        # The default merged_revision_id is the head commit SHA-1 of the
+        # target ref.
+        view = BranchMergeProposalMergedView(self.bmp, LaunchpadTestRequest())
+        removeSecurityProxy(self.bmp.source_git_ref).commit_sha1 = "0" * 40
+        removeSecurityProxy(self.bmp.target_git_ref).commit_sha1 = "1" * 40
+        self.assertEqual(
+            {'merged_revision_id': self.bmp.target_git_ref.commit_sha1},
             view.initial_values)
 
 
@@ -376,41 +404,28 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
         view.render()
 
 
-class TestRegisterBranchMergeProposalView(BrowserTestCase):
+class TestRegisterBranchMergeProposalViewMixin:
     """Test the merge proposal registration view."""
 
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
-        TestCaseWithFactory.setUp(self)
-        self.source_branch = self.factory.makeProductBranch()
+        super(TestRegisterBranchMergeProposalViewMixin, self).setUp()
+        self.source_branch = self._makeBranch()
         self.user = self.factory.makePerson()
         login_person(self.user)
 
-    def _makeTargetBranch(self, **kwargs):
-        return self.factory.makeProductBranch(
-            product=self.source_branch.product, **kwargs)
-
     def _makeTargetBranchWithReviewer(self):
         albert = self.factory.makePerson(name='albert')
-        target_branch = self.factory.makeProductBranch(
-            reviewer=albert, product=self.source_branch.product)
+        target_branch = self._makeTargetBranch(reviewer=albert)
         return target_branch, albert
-
-    def _createView(self, request=None):
-        # Construct the view and initialize it.
-        if not request:
-            request = LaunchpadTestRequest()
-        view = RegisterBranchMergeProposalView(self.source_branch, request)
-        view.initialize()
-        return view
 
     def _getSourceProposal(self, target_branch):
         # There will only be one proposal.
         landing_targets = list(self.source_branch.landing_targets)
         self.assertEqual(1, len(landing_targets))
         proposal = landing_targets[0]
-        self.assertEqual(target_branch, proposal.target_branch)
+        self.assertEqual(target_branch, proposal.merge_target)
         return proposal
 
     def assertOnePendingReview(self, proposal, reviewer, review_type=None):
@@ -432,12 +447,210 @@ class TestRegisterBranchMergeProposalView(BrowserTestCase):
         # therefore be set to the branch owner.
         target_branch = self._makeTargetBranch()
         view = self._createView()
-        view.register_action.success(
-            {'target_branch': target_branch,
-             'needs_review': True})
+        view.register_action.success(self._getFormValues(
+            target_branch, {'needs_review': True}))
         proposal = self._getSourceProposal(target_branch)
         self.assertOnePendingReview(proposal, target_branch.owner)
         self.assertIs(None, proposal.description)
+
+    def test_register_ajax_request_with_no_confirmation(self):
+        # Ajax submits where there is no confirmation required return a 201
+        # with the new location.
+        owner = self.factory.makePerson()
+        target_branch = self._makeTargetBranch()
+        reviewer = self.factory.makePerson()
+        extra = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
+        request = LaunchpadTestRequest(
+            method='POST', principal=owner, **extra)
+        view = self._createView(request=request)
+        with person_logged_in(owner):
+            result_data = view.register_action.success(self._getFormValues(
+                target_branch, {
+                    'reviewer': reviewer,
+                    'needs_review': True,
+                    }))
+        self.assertEqual(None, result_data)
+        self.assertEqual(201, view.request.response.getStatus())
+        mp = target_branch.getMergeProposals()[0]
+        self.assertEqual(
+            canonical_url(mp), view.request.response.getHeader('Location'))
+
+    def test_register_work_in_progress(self):
+        # The needs review checkbox can be unchecked to create a work in
+        # progress proposal.
+        target_branch = self._makeTargetBranch()
+        view = self._createView()
+        view.register_action.success(self._getFormValues(
+            target_branch, {'needs_review': False}))
+        proposal = self._getSourceProposal(target_branch)
+        self.assertEqual(
+            BranchMergeProposalStatus.WORK_IN_PROGRESS,
+            proposal.queue_status)
+
+    def test_register_with_commit_message(self):
+        # A commit message can also be set during the register process.
+        target_branch = self._makeTargetBranch()
+        view = self._createView()
+        view.register_action.success(self._getFormValues(
+            target_branch, {
+                'needs_review': True,
+                'commit_message': 'Fixed the bug!',
+                }))
+        proposal = self._getSourceProposal(target_branch)
+        self.assertEqual('Fixed the bug!', proposal.commit_message)
+
+    def test_register_initial_comment(self):
+        # If the user specifies a description, this is recorded on the
+        # proposal.
+        target_branch = self._makeTargetBranch()
+        view = self._createView()
+        view.register_action.success(self._getFormValues(
+            target_branch, {
+                'comment': "This is the description.",
+                'needs_review': True,
+                }))
+
+        proposal = self._getSourceProposal(target_branch)
+        self.assertOnePendingReview(proposal, target_branch.owner)
+        self.assertEqual(proposal.description, "This is the description.")
+
+    def test_register_request_reviewer(self):
+        # If the user requests a reviewer, then a pending vote is added to the
+        # proposal.
+        target_branch = self._makeTargetBranch()
+        reviewer = self.factory.makePerson()
+        view = self._createView()
+        view.register_action.success(self._getFormValues(
+            target_branch, {
+                'reviewer': reviewer,
+                'needs_review': True,
+                }))
+
+        proposal = self._getSourceProposal(target_branch)
+        self.assertOnePendingReview(proposal, reviewer)
+        self.assertIs(None, proposal.description)
+
+    def test_register_request_review_type(self):
+        # We can request a specific review type of the reviewer.  If we do, it
+        # is recorded along with the pending review.
+        target_branch = self._makeTargetBranch()
+        reviewer = self.factory.makePerson()
+        view = self._createView()
+        view.register_action.success(self._getFormValues(
+            target_branch, {
+                'reviewer': reviewer,
+                'review_type': 'god-like',
+                'needs_review': True,
+                }))
+
+        proposal = self._getSourceProposal(target_branch)
+        self.assertOnePendingReview(proposal, reviewer, 'god-like')
+        self.assertIs(None, proposal.description)
+
+    def test_register_comment_and_review(self):
+        # The user can give a description and request a review from
+        # someone.
+        target_branch = self._makeTargetBranch()
+        reviewer = self.factory.makePerson()
+        view = self._createView()
+        view.register_action.success(self._getFormValues(
+            target_branch, {
+                'reviewer': reviewer,
+                'review_type': 'god-like',
+                'comment': "This is the description.",
+                'needs_review': True,
+                }))
+
+        proposal = self._getSourceProposal(target_branch)
+        self.assertOnePendingReview(proposal, reviewer, 'god-like')
+        self.assertEqual(proposal.description, "This is the description.")
+
+    def test_register_for_target_with_default_reviewer(self):
+        # A simple case is where the user only specifies the target
+        # branch, and not an initial comment or reviewer. The target branch
+        # has a reviewer so that reviewer should be used
+        target_branch, reviewer = self._makeTargetBranchWithReviewer()
+        view = self._createView()
+        view.register_action.success(self._getFormValues(
+            target_branch, {'needs_review': True}))
+        proposal = self._getSourceProposal(target_branch)
+        self.assertOnePendingReview(proposal, reviewer)
+        self.assertIs(None, proposal.description)
+
+    def test_register_request_review_type_branch_reviewer(self):
+        # We can ask for a specific review type. The target branch has a
+        # reviewer so that reviewer should be used.
+        target_branch, reviewer = self._makeTargetBranchWithReviewer()
+        view = self._createView()
+        view.register_action.success(self._getFormValues(
+            target_branch, {
+                'review_type': 'god-like',
+                'needs_review': True,
+                }))
+        proposal = self._getSourceProposal(target_branch)
+        self.assertOnePendingReview(proposal, reviewer, 'god-like')
+        self.assertIs(None, proposal.description)
+
+    def test_register_reviewer_not_hidden(self):
+        branch = self._makeBranch()
+        browser = self.getViewBrowser(branch, '+register-merge')
+        extra = Tag(
+            'extra', 'fieldset', attrs={'id': 'mergeproposal-extra-options'})
+        reviewer = Tag('reviewer', 'input', attrs={'id': 'field.reviewer'})
+        matcher = Not(HTMLContains(reviewer.within(extra)))
+        self.assertThat(browser.contents, matcher)
+
+    def test_branch_visibility_notification(self):
+        # If the reviewer cannot see the source and/or target branches, a
+        # notification message is displayed.
+        owner = self.factory.makePerson()
+        target_branch = self._makeTargetBranch(
+            owner=owner, information_type=InformationType.USERDATA)
+        reviewer = self.factory.makePerson()
+        with person_logged_in(owner):
+            view = self._createView()
+            view.register_action.success(self._getFormValues(
+                target_branch, {
+                    'reviewer': reviewer,
+                    'needs_review': True,
+                    }))
+
+        (notification,) = view.request.response.notifications
+        self.assertThat(
+            notification.message, MatchesRegex(
+                'To ensure visibility, .* is now subscribed to:.*'))
+        self.assertEqual(BrowserNotificationLevel.INFO, notification.level)
+
+
+class TestRegisterBranchMergeProposalViewBzr(
+    TestRegisterBranchMergeProposalViewMixin, BrowserTestCase):
+    """Test the merge proposal registration view for Bazaar."""
+
+    def _makeBranch(self):
+        return self.factory.makeProductBranch()
+
+    def _makeTargetBranch(self, **kwargs):
+        return self.factory.makeProductBranch(
+            product=self.source_branch.product, **kwargs)
+
+    def _makeTargetBranchWithReviewer(self):
+        albert = self.factory.makePerson(name='albert')
+        target_branch = self._makeTargetBranch(reviewer=albert)
+        return target_branch, albert
+
+    def _createView(self, request=None):
+        # Construct the view and initialize it.
+        if not request:
+            request = LaunchpadTestRequest()
+        view = RegisterBranchMergeProposalView(self.source_branch, request)
+        view.initialize()
+        return view
+
+    @staticmethod
+    def _getFormValues(target_branch, extras):
+        values = {'target_branch': target_branch}
+        values.update(extras)
+        return values
 
     def test_register_ajax_request_with_confirmation(self):
         # Ajax submits return json data containing info about what the visible
@@ -459,10 +672,11 @@ class TestRegisterBranchMergeProposalView(BrowserTestCase):
                 'person_name': reviewer.displayname,
                 'branches_to_check': branches_to_check,
                 'visible_branches': [self.source_branch.unique_name]}
-            result_data = view.register_action.success(
-                {'target_branch': target_branch,
-                 'reviewer': reviewer,
-                 'needs_review': True})
+            result_data = view.register_action.success(self._getFormValues(
+                target_branch, {
+                    'reviewer': reviewer,
+                    'needs_review': True,
+                    }))
         self.assertEqual(
             '400 Branch Visibility',
             view.request.response.getStatusString())
@@ -498,177 +712,178 @@ class TestRegisterBranchMergeProposalView(BrowserTestCase):
             'form_wide_errors': []},
             simplejson.loads(view.form_result))
 
-    def test_register_ajax_request_with_no_confirmation(self):
-        # Ajax submits where there is no confirmation required return a 201
-        # with the new location.
+
+class TestRegisterBranchMergeProposalViewGit(
+    TestRegisterBranchMergeProposalViewMixin, BrowserTestCase):
+    """Test the merge proposal registration view for Git."""
+
+    def setUp(self):
+        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
+        super(TestRegisterBranchMergeProposalViewGit, self).setUp()
+
+    def _makeBranch(self):
+        return self.factory.makeGitRefs()[0]
+
+    def _makeTargetBranch(self, **kwargs):
+        return self.factory.makeGitRefs(
+            target=self.source_branch.target, **kwargs)[0]
+
+    def _createView(self, request=None):
+        # Construct the view and initialize it.
+        if not request:
+            request = LaunchpadTestRequest()
+        view = GitRefRegisterMergeProposalView(self.source_branch, request)
+        view.initialize()
+        return view
+
+    @staticmethod
+    def _getFormValues(target_branch, extras):
+        values = {
+            'target_git_repository': target_branch.repository,
+            'target_git_path': target_branch.path,
+            }
+        values.update(extras)
+        return values
+
+    def test_register_ajax_request_with_confirmation(self):
+        # Ajax submits return json data containing info about what the visible
+        # repositories are if they are not all visible to the reviewer.
+
+        # Make a branch the reviewer cannot see.
         owner = self.factory.makePerson()
-        target_branch = self._makeTargetBranch()
+        target_branch = self._makeTargetBranch(
+            owner=owner, information_type=InformationType.USERDATA)
         reviewer = self.factory.makePerson()
         extra = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
         request = LaunchpadTestRequest(
             method='POST', principal=owner, **extra)
         view = self._createView(request=request)
         with person_logged_in(owner):
-            result_data = view.register_action.success(
-                {'target_branch': target_branch,
-                 'reviewer': reviewer,
-                 'needs_review': True})
-        self.assertEqual(None, result_data)
-        self.assertEqual(201, view.request.response.getStatus())
-        mp = target_branch.getMergeProposals()[0]
+            repositories_to_check = [
+                self.source_branch.repository.unique_name,
+                target_branch.repository.unique_name]
+            expected_data = {
+                'person_name': reviewer.displayname,
+                'repositories_to_check': repositories_to_check,
+                'visible_repositories':
+                    [self.source_branch.repository.unique_name]}
+            result_data = view.register_action.success(self._getFormValues(
+                target_branch, {
+                    'reviewer': reviewer,
+                    'needs_review': True,
+                    }))
         self.assertEqual(
-            canonical_url(mp), view.request.response.getHeader('Location'))
+            '400 Repository Visibility',
+            view.request.response.getStatusString())
+        self.assertEqual(expected_data, simplejson.loads(result_data))
 
-    def test_register_work_in_progress(self):
-        # The needs review checkbox can be unchecked to create a work in
-        # progress proposal.
-        target_branch = self._makeTargetBranch()
-        view = self._createView()
-        view.register_action.success(
-            {'target_branch': target_branch,
-             'needs_review': False})
-        proposal = self._getSourceProposal(target_branch)
-        self.assertEqual(
-            BranchMergeProposalStatus.WORK_IN_PROGRESS,
-            proposal.queue_status)
-
-    def test_register_with_commit_message(self):
-        # A commit message can also be set during the register process.
-        target_branch = self._makeTargetBranch()
-        view = self._createView()
-        view.register_action.success(
-            {'target_branch': target_branch,
-             'needs_review': True,
-             'commit_message': 'Fixed the bug!'})
-        proposal = self._getSourceProposal(target_branch)
-        self.assertEqual('Fixed the bug!', proposal.commit_message)
-
-    def test_register_initial_comment(self):
-        # If the user specifies a description, this is recorded on the
-        # proposal.
-        target_branch = self._makeTargetBranch()
-        view = self._createView()
-        view.register_action.success(
-            {'target_branch': target_branch,
-             'comment': "This is the description.",
-             'needs_review': True})
-
-        proposal = self._getSourceProposal(target_branch)
-        self.assertOnePendingReview(proposal, target_branch.owner)
-        self.assertEqual(proposal.description, "This is the description.")
-
-    def test_register_request_reviewer(self):
-        # If the user requests a reviewer, then a pending vote is added to the
-        # proposal.
-        target_branch = self._makeTargetBranch()
-        reviewer = self.factory.makePerson()
-        view = self._createView()
-        view.register_action.success(
-            {'target_branch': target_branch,
-             'reviewer': reviewer,
-             'needs_review': True})
-
-        proposal = self._getSourceProposal(target_branch)
-        self.assertOnePendingReview(proposal, reviewer)
-        self.assertIs(None, proposal.description)
-
-    def test_register_request_review_type(self):
-        # We can request a specific review type of the reviewer.  If we do, it
-        # is recorded along with the pending review.
-        target_branch = self._makeTargetBranch()
-        reviewer = self.factory.makePerson()
-        view = self._createView()
-        view.register_action.success(
-            {'target_branch': target_branch,
-             'reviewer': reviewer,
-             'review_type': 'god-like',
-             'needs_review': True})
-
-        proposal = self._getSourceProposal(target_branch)
-        self.assertOnePendingReview(proposal, reviewer, 'god-like')
-        self.assertIs(None, proposal.description)
-
-    def test_register_comment_and_review(self):
-        # The user can give a description and request a review from
-        # someone.
-        target_branch = self._makeTargetBranch()
-        reviewer = self.factory.makePerson()
-        view = self._createView()
-        view.register_action.success(
-            {'target_branch': target_branch,
-             'reviewer': reviewer,
-             'review_type': 'god-like',
-             'comment': "This is the description.",
-             'needs_review': True})
-
-        proposal = self._getSourceProposal(target_branch)
-        self.assertOnePendingReview(proposal, reviewer, 'god-like')
-        self.assertEqual(proposal.description, "This is the description.")
-
-    def test_register_for_target_with_default_reviewer(self):
-        # A simple case is where the user only specifies the target
-        # branch, and not an initial comment or reviewer. The target branch
-        # has a reviewer so that reviewer should be used
-        target_branch, reviewer = self._makeTargetBranchWithReviewer()
-        view = self._createView()
-        view.register_action.success(
-            {'target_branch': target_branch,
-             'needs_review': True})
-        proposal = self._getSourceProposal(target_branch)
-        self.assertOnePendingReview(proposal, reviewer)
-        self.assertIs(None, proposal.description)
-
-    def test_register_request_review_type_branch_reviewer(self):
-        # We can ask for a specific review type. The target branch has a
-        # reviewer so that reviewer should be used.
-        target_branch, reviewer = self._makeTargetBranchWithReviewer()
-        view = self._createView()
-        view.register_action.success(
-            {'target_branch': target_branch,
-             'review_type': 'god-like',
-             'needs_review': True})
-        proposal = self._getSourceProposal(target_branch)
-        self.assertOnePendingReview(proposal, reviewer, 'god-like')
-        self.assertIs(None, proposal.description)
-
-    def test_register_reviewer_not_hidden(self):
-        branch = self.factory.makeBranch()
-        browser = self.getViewBrowser(branch, '+register-merge')
-        extra = Tag(
-            'extra', 'fieldset', attrs={'id': 'mergeproposal-extra-options'})
-        reviewer = Tag('reviewer', 'input', attrs={'id': 'field.reviewer'})
-        matcher = Not(HTMLContains(reviewer.within(extra)))
-        self.assertThat(browser.contents, matcher)
-
-    def test_branch_visibility_notification(self):
-        # If the reviewer cannot see the source and/or target branches, a
-        # notification message is displayed.
+    def test_register_ajax_request_with_validation_errors(self):
+        # Ajax submits where there is a validation error in the submitted data
+        # return the expected json response containing the error info.
         owner = self.factory.makePerson()
         target_branch = self._makeTargetBranch(
             owner=owner, information_type=InformationType.USERDATA)
-        reviewer = self.factory.makePerson()
+        extra = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
         with person_logged_in(owner):
-            view = self._createView()
-            view.register_action.success(
-                {'target_branch': target_branch,
-                 'reviewer': reviewer,
-                 'needs_review': True})
+            request = LaunchpadTestRequest(
+                method='POST', principal=owner,
+                form={
+                    'field.actions.register': 'Propose Merge',
+                    'field.target_git_repository.target_git_repository':
+                        target_branch.repository.unique_name,
+                    'field.target_git_path': target_branch.path,
+                    },
+                **extra)
+            view = create_initialized_view(
+                target_branch,
+                name='+register-merge',
+                request=request)
+        self.assertEqual(
+            '400 Validation', view.request.response.getStatusString())
+        self.assertEqual(
+            {'error_summary': 'There is 1 error.',
+            'errors': {
+                'field.target_git_path':
+                    ('The target repository and path together cannot be the '
+                     'same as the source repository and path.')},
+            'form_wide_errors': []},
+            simplejson.loads(view.form_result))
 
-        (notification,) = view.request.response.notifications
-        self.assertThat(
-            notification.message, MatchesRegex(
-                'To ensure visibility, .* is now subscribed to:.*'))
-        self.assertEqual(BrowserNotificationLevel.INFO, notification.level)
+    def test_register_ajax_request_with_missing_target_git_path(self):
+        # A missing target_git_path is a validation error.
+        owner = self.factory.makePerson()
+        target_branch = self._makeTargetBranch(
+            owner=owner, information_type=InformationType.USERDATA)
+        extra = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
+        with person_logged_in(owner):
+            request = LaunchpadTestRequest(
+                method='POST', principal=owner,
+                form={
+                    'field.actions.register': 'Propose Merge',
+                    'field.target_git_repository.target_git_repository':
+                        target_branch.repository.unique_name,
+                    },
+                **extra)
+            view = create_initialized_view(
+                self.source_branch,
+                name='+register-merge',
+                request=request)
+        self.assertEqual(
+            '400 Validation', view.request.response.getStatusString())
+        self.assertEqual(
+            {'error_summary': 'There is 1 error.',
+            'errors': {
+                'field.target_git_path':
+                    ('The target path must be the path of a reference in the '
+                     'target repository.')},
+            'form_wide_errors': []},
+            simplejson.loads(view.form_result))
+
+    def test_register_ajax_request_with_missing_prerequisite_git_path(self):
+        # A missing prerequisite_git_path is a validation error if
+        # prerequisite_git_repository is present.
+        owner = self.factory.makePerson()
+        target_branch = self._makeTargetBranch(
+            owner=owner, information_type=InformationType.USERDATA)
+        prerequisite_branch = self._makeTargetBranch(
+            owner=owner, information_type=InformationType.USERDATA)
+        extra = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
+        with person_logged_in(owner):
+            request = LaunchpadTestRequest(
+                method='POST', principal=owner,
+                form={
+                    'field.actions.register': 'Propose Merge',
+                    'field.target_git_repository.target_git_repository':
+                        target_branch.repository.unique_name,
+                    'field.target_git_path': target_branch.path,
+                    'field.prerequisite_git_repository':
+                        prerequisite_branch.repository.unique_name,
+                    },
+                **extra)
+            view = create_initialized_view(
+                self.source_branch,
+                name='+register-merge',
+                request=request)
+        self.assertEqual(
+            '400 Validation', view.request.response.getStatusString())
+        self.assertEqual(
+            {'error_summary': 'There is 1 error.',
+            'errors': {
+                'field.prerequisite_git_path':
+                    ('The prerequisite path must be the path of a reference '
+                     'in the prerequisite repository.')},
+            'form_wide_errors': []},
+            simplejson.loads(view.form_result))
 
 
-class TestBranchMergeProposalResubmitView(TestCaseWithFactory):
+class TestBranchMergeProposalResubmitViewMixin:
     """Test BranchMergeProposalResubmitView."""
 
     layer = DatabaseFunctionalLayer
 
     def createView(self):
         """Create the required view."""
-        context = self.factory.makeBranchMergeProposal()
+        context = self._makeBranchMergeProposal()
         self.useContext(person_logged_in(context.registrant))
         view = BranchMergeProposalResubmitView(
             context, LaunchpadTestRequest())
@@ -679,36 +894,34 @@ class TestBranchMergeProposalResubmitView(TestCaseWithFactory):
         """resubmit_action resubmits the proposal."""
         view = self.createView()
         context = view.context
-        new_proposal = view.resubmit_action.success(
-            {'source_branch': context.source_branch,
-             'target_branch': context.target_branch,
-             'prerequisite_branch': context.prerequisite_branch,
-             'description': None,
-             'break_link': False,
-            })
+        new_proposal = view.resubmit_action.success(self._getFormValues(
+            context.merge_source, context.merge_target,
+            context.merge_prerequisite, {
+                'description': None,
+                'break_link': False,
+                }))
         self.assertEqual(new_proposal.supersedes, context)
-        self.assertEqual(new_proposal.source_branch, context.source_branch)
-        self.assertEqual(new_proposal.target_branch, context.target_branch)
+        self.assertEqual(new_proposal.merge_source, context.merge_source)
+        self.assertEqual(new_proposal.merge_target, context.merge_target)
         self.assertEqual(
-            new_proposal.prerequisite_branch, context.prerequisite_branch)
+            new_proposal.merge_prerequisite, context.merge_prerequisite)
 
     def test_resubmit_action_change_branches(self):
         """Changing the branches changes the branches in the new proposal."""
         view = self.createView()
-        target = view.context.source_branch.target
-        new_source = self.factory.makeBranchTargetBranch(target)
-        new_target = self.factory.makeBranchTargetBranch(target)
-        new_prerequisite = self.factory.makeBranchTargetBranch(target)
-        new_proposal = view.resubmit_action.success(
-            {'source_branch': new_source, 'target_branch': new_target,
-             'prerequisite_branch': new_prerequisite,
-             'description': 'description',
-             'break_link': False,
-             })
+        new_source = self._makeBranchWithSameTarget(view.context.merge_source)
+        new_target = self._makeBranchWithSameTarget(view.context.merge_source)
+        new_prerequisite = self._makeBranchWithSameTarget(
+            view.context.merge_source)
+        new_proposal = view.resubmit_action.success(self._getFormValues(
+            new_source, new_target, new_prerequisite, {
+                'description': 'description',
+                'break_link': False,
+                }))
         self.assertEqual(new_proposal.supersedes, view.context)
-        self.assertEqual(new_proposal.source_branch, new_source)
-        self.assertEqual(new_proposal.target_branch, new_target)
-        self.assertEqual(new_proposal.prerequisite_branch, new_prerequisite)
+        self.assertEqual(new_proposal.merge_source, new_source)
+        self.assertEqual(new_proposal.merge_target, new_target)
+        self.assertEqual(new_proposal.merge_prerequisite, new_prerequisite)
 
     def test_resubmit_action_break_link(self):
         """Enabling break_link prevents linking the old and new proposals."""
@@ -716,24 +929,22 @@ class TestBranchMergeProposalResubmitView(TestCaseWithFactory):
         new_proposal = self.resubmitDefault(view, break_link=True)
         self.assertIs(None, new_proposal.supersedes)
 
-    @staticmethod
-    def resubmitDefault(view, break_link=False, prerequisite_branch=None):
+    @classmethod
+    def resubmitDefault(cls, view, break_link=False, merge_prerequisite=None):
         context = view.context
-        if prerequisite_branch is None:
-            prerequisite_branch = context.prerequisite_branch
-        return view.resubmit_action.success(
-            {'source_branch': context.source_branch,
-             'target_branch': context.target_branch,
-             'prerequisite_branch': prerequisite_branch,
-             'description': None,
-             'break_link': break_link,
-            })
+        if merge_prerequisite is None:
+            merge_prerequisite = context.merge_prerequisite
+        return view.resubmit_action.success(cls._getFormValues(
+            context.merge_source, context.merge_target, merge_prerequisite, {
+                'description': None,
+                'break_link': break_link,
+                }))
 
     def test_resubmit_existing(self):
         """Resubmitting a proposal when another is active is a user error."""
         view = self.createView()
         first_bmp = view.context
-        with person_logged_in(first_bmp.target_branch.owner):
+        with person_logged_in(first_bmp.merge_target.owner):
             first_bmp.resubmit(first_bmp.registrant)
         self.resubmitDefault(view)
         (notification,) = view.request.response.notifications
@@ -742,19 +953,86 @@ class TestBranchMergeProposalResubmitView(TestCaseWithFactory):
             ' <a href=.*>a similar merge proposal</a> is already active.'))
         self.assertEqual(BrowserNotificationLevel.ERROR, notification.level)
 
+
+class TestBranchMergeProposalResubmitViewBzr(
+    TestBranchMergeProposalResubmitViewMixin, TestCaseWithFactory):
+    """Test BranchMergeProposalResubmitView for Bazaar."""
+
+    def _makeBranchMergeProposal(self):
+        return self.factory.makeBranchMergeProposal()
+
+    @staticmethod
+    def _getFormValues(source_branch, target_branch, prerequisite_branch,
+                       extras):
+        values = {
+            'source_branch': source_branch,
+            'target_branch': target_branch,
+            'prerequisite_branch': prerequisite_branch,
+            }
+        values.update(extras)
+        return values
+
+    def _makeBranchWithSameTarget(self, branch):
+        return self.factory.makeBranchTargetBranch(branch.target)
+
     def test_resubmit_same_target_prerequisite(self):
         """User error if same branch is target and prerequisite."""
         view = self.createView()
         first_bmp = view.context
-        self.resubmitDefault(
-            view, prerequisite_branch=first_bmp.target_branch)
+        self.resubmitDefault(view, merge_prerequisite=first_bmp.merge_target)
         self.assertEqual(
             view.errors,
             ['Target and prerequisite branches must be different.'])
 
 
-class TestResubmitBrowser(BrowserTestCase):
-    """Browser tests for resubmitting branch merge proposals."""
+class TestBranchMergeProposalResubmitViewGit(
+    TestBranchMergeProposalResubmitViewMixin, TestCaseWithFactory):
+    """Test BranchMergeProposalResubmitView for Git."""
+
+    def setUp(self):
+        super(TestBranchMergeProposalResubmitViewGit, self).setUp()
+        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
+
+    def _makeBranchMergeProposal(self):
+        return self.factory.makeBranchMergeProposalForGit()
+
+    @staticmethod
+    def _getFormValues(source_branch, target_branch, prerequisite_branch,
+                       extras):
+        values = {
+            'source_git_repository': source_branch.repository,
+            'source_git_path': source_branch.path,
+            'target_git_repository': target_branch.repository,
+            'target_git_path': target_branch.path,
+            }
+        if prerequisite_branch is not None:
+            values.update({
+                'prerequisite_git_repository': prerequisite_branch.repository,
+                'prerequisite_git_path': prerequisite_branch.path,
+                })
+        else:
+            values.update({
+                'prerequisite_git_repository': None,
+                'prerequisite_git_path': '',
+                })
+        values.update(extras)
+        return values
+
+    def _makeBranchWithSameTarget(self, branch):
+        return self.factory.makeGitRefs(target=branch.target)[0]
+
+    def test_resubmit_same_target_prerequisite(self):
+        """User error if same branch is target and prerequisite."""
+        view = self.createView()
+        first_bmp = view.context
+        self.resubmitDefault(view, merge_prerequisite=first_bmp.merge_target)
+        self.assertEqual(
+            view.errors,
+            ['Target and prerequisite references must be different.'])
+
+
+class TestResubmitBrowserBzr(BrowserTestCase):
+    """Browser tests for resubmitting branch merge proposals for Bazaar."""
 
     layer = DatabaseFunctionalLayer
 
@@ -774,6 +1052,41 @@ class TestResubmitBrowser(BrowserTestCase):
     def test_resubmit_controls(self):
         """Proposals can be resubmitted using the browser."""
         bmp = self.factory.makeBranchMergeProposal(registrant=self.user)
+        browser = self.getViewBrowser(bmp, '+resubmit')
+        browser.getControl('Description').value = 'flibble'
+        browser.getControl('Resubmit').click()
+        with person_logged_in(self.user):
+            self.assertEqual('flibble', bmp.superseded_by.description)
+
+
+class TestResubmitBrowserGit(BrowserTestCase):
+    """Browser tests for resubmitting branch merge proposals for Git."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestResubmitBrowserGit, self).setUp()
+        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
+
+    def test_resubmit_text(self):
+        """The text of the resubmit page is as expected."""
+        bmp = self.factory.makeBranchMergeProposalForGit(registrant=self.user)
+        text = self.getMainText(bmp, '+resubmit')
+        expected = (
+            'Resubmit proposal to merge.*'
+            'Source Git Repository:.*'
+            'Source Git branch path:.*'
+            'Target Git Repository:.*'
+            'Target Git branch path:.*'
+            'Prerequisite Git Repository:.*'
+            'Prerequisite Git branch path:.*'
+            'Description.*'
+            'Start afresh.*')
+        self.assertTextMatchesExpressionIgnoreWhitespace(expected, text)
+
+    def test_resubmit_controls(self):
+        """Proposals can be resubmitted using the browser."""
+        bmp = self.factory.makeBranchMergeProposalForGit(registrant=self.user)
         browser = self.getViewBrowser(bmp, '+resubmit')
         browser.getControl('Description').value = 'flibble'
         browser.getControl('Resubmit').click()
@@ -1085,22 +1398,9 @@ class TestBranchMergeProposalChangeStatusOptions(TestCaseWithFactory):
             self.proposal.target_branch.owner, 'some-revision')
         self.assertAllStatusesAvailable(
             user=self.proposal.source_branch.owner,
-            except_for=['CODE_APPROVED', 'QUEUED'])
+            except_for=['CODE_APPROVED'])
         self.assertAllStatusesAvailable(user=self.proposal.registrant,
-            except_for=['CODE_APPROVED', 'QUEUED'])
-        self.assertAllStatusesAvailable(
-            user=self.proposal.target_branch.owner)
-
-    def test_createStatusVocabulary_queued(self):
-        # Queued proposals can go to any status, but only reviewers can set
-        # them to REJECTED.
-        self.proposal.enqueue(
-            self.proposal.target_branch.owner, 'some-revision')
-
-        self.assertAllStatusesAvailable(
-            user=self.proposal.source_branch.owner, except_for=['REJECTED'])
-        self.assertAllStatusesAvailable(user=self.proposal.registrant,
-                                        except_for=['REJECTED'])
+            except_for=['CODE_APPROVED'])
         self.assertAllStatusesAvailable(
             user=self.proposal.target_branch.owner)
 
@@ -1261,17 +1561,17 @@ class TestBranchMergeProposal(BrowserTestCase):
         self.assertEqual(mp_url, browser.url)
 
 
-class TestLatestProposalsForEachBranch(TestCaseWithFactory):
+class TestLatestProposalsForEachBranchMixin:
     """Confirm that the latest branch is returned."""
 
     layer = DatabaseFunctionalLayer
 
     def test_newest_first(self):
         # If each proposal targets a different branch, each will be returned.
-        bmp1 = self.factory.makeBranchMergeProposal(
+        bmp1 = self._makeBranchMergeProposal(
             date_created=(
                 datetime(year=2008, month=9, day=10, tzinfo=pytz.UTC)))
-        bmp2 = self.factory.makeBranchMergeProposal(
+        bmp2 = self._makeBranchMergeProposal(
             date_created=(
                 datetime(year=2008, month=10, day=10, tzinfo=pytz.UTC)))
         self.assertEqual(
@@ -1279,27 +1579,106 @@ class TestLatestProposalsForEachBranch(TestCaseWithFactory):
 
     def test_visible_filtered_out(self):
         # If the proposal is not visible to the user, they are not returned.
-        bmp1 = self.factory.makeBranchMergeProposal(
+        bmp1 = self._makeBranchMergeProposal(
             date_created=(
                 datetime(year=2008, month=9, day=10, tzinfo=pytz.UTC)))
-        bmp2 = self.factory.makeBranchMergeProposal(
+        bmp2 = self._makeBranchMergeProposal(
             date_created=(
                 datetime(year=2008, month=10, day=10, tzinfo=pytz.UTC)))
-        removeSecurityProxy(bmp2.source_branch).transitionToInformationType(
-            InformationType.USERDATA, bmp2.source_branch.owner,
-            verify_policy=False)
+        self._setBranchInvisible(bmp2.merge_source)
         self.assertEqual(
             [bmp1], latest_proposals_for_each_branch([bmp1, bmp2]))
 
     def test_same_target(self):
         # If the proposals target the same branch, then the most recent is
         # returned.
-        bmp1 = self.factory.makeBranchMergeProposal(
+        bmp1 = self._makeBranchMergeProposal(
             date_created=(
                 datetime(year=2008, month=9, day=10, tzinfo=pytz.UTC)))
-        bmp2 = self.factory.makeBranchMergeProposal(
-            target_branch=bmp1.target_branch,
+        bmp2 = self._makeBranchMergeProposal(
+            merge_target=bmp1.merge_target,
             date_created=(
                 datetime(year=2008, month=10, day=10, tzinfo=pytz.UTC)))
         self.assertEqual(
             [bmp2], latest_proposals_for_each_branch([bmp1, bmp2]))
+
+
+class TestLatestProposalsForEachBranchBzr(
+    TestLatestProposalsForEachBranchMixin, TestCaseWithFactory):
+    """Confirm that the latest branch is returned for Bazaar."""
+
+    def _makeBranchMergeProposal(self, merge_target=None, **kwargs):
+        return self.factory.makeBranchMergeProposal(
+            target_branch=merge_target, **kwargs)
+
+    @staticmethod
+    def _setBranchInvisible(branch):
+        removeSecurityProxy(branch).transitionToInformationType(
+            InformationType.USERDATA, branch.owner, verify_policy=False)
+
+
+class TestLatestProposalsForEachBranchGit(
+    TestLatestProposalsForEachBranchMixin, TestCaseWithFactory):
+    """Confirm that the latest branch is returned for Bazaar."""
+
+    def setUp(self):
+        super(TestLatestProposalsForEachBranchGit, self).setUp()
+        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
+
+    def _makeBranchMergeProposal(self, merge_target=None, **kwargs):
+        return self.factory.makeBranchMergeProposalForGit(
+            target_ref=merge_target, **kwargs)
+
+    @staticmethod
+    def _setBranchInvisible(branch):
+        removeSecurityProxy(branch.repository).transitionToInformationType(
+            InformationType.USERDATA, branch.owner, verify_policy=False)
+
+
+class TestBranchMergeProposalDeleteViewMixin:
+    """Test the BranchMergeProposal deletion view."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_links(self):
+        bmp = self._makeBranchMergeProposal()
+        view = create_initialized_view(
+            bmp, "+delete", principal=bmp.registrant)
+        content = view()
+        self.assertEqual(
+            canonical_url(bmp.merge_source),
+            find_tag_by_id(content, "source-link").find("a")["href"])
+        self.assertEqual(
+            canonical_url(bmp.merge_target),
+            find_tag_by_id(content, "target-link").find("a")["href"])
+
+    def test_deletion_works(self):
+        registrant = self.factory.makePerson()
+        bmp = self._makeBranchMergeProposal(registrant=registrant)
+        target = bmp.merge_target
+        with person_logged_in(registrant):
+            self.assertEqual([bmp], list(target.landing_candidates))
+        browser = self.getViewBrowser(bmp, "+delete", user=bmp.registrant)
+        browser.getControl("Delete proposal").click()
+        with person_logged_in(registrant):
+            self.assertEqual([], list(target.landing_candidates))
+
+
+class TestBranchMergeProposalDeleteViewBzr(
+    TestBranchMergeProposalDeleteViewMixin, BrowserTestCase):
+    """Test the BranchMergeProposal deletion view for Bazaar."""
+
+    def _makeBranchMergeProposal(self, **kwargs):
+        return self.factory.makeBranchMergeProposal(**kwargs)
+
+
+class TestBranchMergeProposalDeleteViewGit(
+    TestBranchMergeProposalDeleteViewMixin, BrowserTestCase):
+    """Test the BranchMergeProposal deletion view for Git."""
+
+    def setUp(self):
+        super(TestBranchMergeProposalDeleteViewGit, self).setUp()
+        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
+
+    def _makeBranchMergeProposal(self, **kwargs):
+        return self.factory.makeBranchMergeProposalForGit(**kwargs)

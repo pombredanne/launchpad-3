@@ -9,8 +9,8 @@ __all__ = [
     ]
 
 import json
+from urlparse import urljoin
 
-from bzrlib import urlutils
 import requests
 
 from lp.code.errors import (
@@ -37,15 +37,19 @@ class GitHostingClient:
         # over, but is there some more robust way to do this?
         return 5.0
 
-    def create(self, path):
+    def create(self, path, clone_from=None):
         try:
             # XXX cjwatson 2015-03-01: Once we're on requests >= 2.4.2, we
             # should just use post(json=) and drop the explicit Content-Type
             # header.
+            if clone_from:
+                request = {"repo_path": path, "clone_from": clone_from}
+            else:
+                request = {"repo_path": path}
             response = self._makeSession().post(
-                urlutils.join(self.endpoint, "repo"),
+                urljoin(self.endpoint, "/repo"),
                 headers={"Content-Type": "application/json"},
-                data=json.dumps({"repo_path": path, "bare_repo": True}),
+                data=json.dumps(request),
                 timeout=self.timeout)
         except Exception as e:
             raise GitRepositoryCreationFault(
@@ -57,7 +61,7 @@ class GitHostingClient:
     def getRefs(self, path):
         try:
             response = self._makeSession().get(
-                urlutils.join(self.endpoint, "repo", path, "refs"),
+                urljoin(self.endpoint, "/repo/%s/refs" % path),
                 timeout=self.timeout)
         except Exception as e:
             raise GitRepositoryScanFault(
@@ -80,7 +84,7 @@ class GitHostingClient:
             if logger is not None:
                 logger.info("Requesting commit details for %s" % commit_oids)
             response = self._makeSession().post(
-                urlutils.join(self.endpoint, "repo", path, "commits"),
+                urljoin(self.endpoint, "/repo/%s/commits" % path),
                 headers={"Content-Type": "application/json"},
                 data=json.dumps({"commits": commit_oids}),
                 timeout=self.timeout)
@@ -97,3 +101,35 @@ class GitHostingClient:
         except ValueError as e:
             raise GitRepositoryScanFault(
                 "Failed to decode commit-scan response: %s" % unicode(e))
+
+    def getMergeDiff(self, path, base, head, logger=None):
+        """Get the merge preview diff between two commits.
+
+        :return: A dict mapping 'commits' to a list of commits between
+            'base' and 'head' (formatted as with `getCommits`), 'patch' to
+            the text of the diff between 'base' and 'head', and 'conflicts'
+            to a list of conflicted paths.
+        """
+        try:
+            if logger is not None:
+                logger.info(
+                    "Requesting merge diff for %s from %s to %s" % (
+                        path, base, head))
+            response = self._makeSession().get(
+                urljoin(
+                    self.endpoint,
+                    "/repo/%s/compare-merge/%s:%s" % (path, base, head)),
+                timeout=self.timeout)
+        except Exception as e:
+            raise GitRepositoryScanFault(
+                "Failed to get merge diff from Git repository: %s" %
+                unicode(e))
+        if response.status_code != 200:
+            raise GitRepositoryScanFault(
+                "Failed to get merge diff from Git repository: %s" %
+                unicode(e))
+        try:
+            return response.json()
+        except ValueError as e:
+            raise GitRepositoryScanFault(
+                "Failed to decode merge-diff response: %s" % unicode(e))

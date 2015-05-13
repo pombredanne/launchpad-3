@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -962,7 +962,7 @@ class TestPersonStates(TestCaseWithFactory):
             'api_all_members', 'approvedmembers',
             'deactivatedmembers', 'expiredmembers', 'inactivemembers',
             'invited_members', 'member_memberships', 'pendingmembers',
-            'proposedmembers', 'time_zone',
+            'ppas', 'proposedmembers', 'time_zone',
             )
         snap = Snapshot(self.myteam, providing=providedBy(self.myteam))
         for name in omitted:

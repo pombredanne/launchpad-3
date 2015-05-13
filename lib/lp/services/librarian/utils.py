@@ -69,7 +69,7 @@ def guess_librarian_encoding(filename, mimetype):
     """
     if filename.endswith('txt.gz'):
         encoding = 'gzip'
-        mimetype = 'text/plain'
+        mimetype = 'text/plain; charset=utf-8'
     elif filename.endswith('diff.gz'):
         encoding = 'gzip'
         mimetype = 'text/plain'

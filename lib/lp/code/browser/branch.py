@@ -14,7 +14,6 @@ __all__ = [
     'BranchEditWhiteboardView',
     'BranchRequestImportView',
     'BranchReviewerEditView',
-    'BranchMergeQueueView',
     'BranchMirrorStatusView',
     'BranchMirrorMixin',
     'BranchNameValidationMixin',
@@ -279,7 +278,7 @@ class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
         'add_subscriber', 'browse_revisions', 'create_recipe', 'link_bug',
         'link_blueprint', 'register_merge', 'source', 'subscription',
         'edit_status', 'edit_import', 'upgrade_branch', 'view_recipes',
-        'create_queue', 'visibility']
+        'visibility']
 
     @enabled_with_permission('launchpad.Edit')
     def edit_status(self):
@@ -296,7 +295,7 @@ class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
         """Return a link to the branch's revisions on codebrowse."""
         text = 'All revisions'
         enabled = self.context.code_is_browseable
-        url = self.context.codebrowse_url('changes')
+        url = self.context.getCodebrowseUrl('changes')
         return Link(url, text, enabled=enabled)
 
     @enabled_with_permission('launchpad.AnyPerson')
@@ -345,7 +344,7 @@ class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
         """Return a link to the branch's file listing on codebrowse."""
         text = 'Browse the code'
         enabled = self.context.code_is_browseable
-        url = self.context.codebrowse_url('files')
+        url = self.context.getCodebrowseUrl('files')
         return Link(url, text, icon='info', enabled=enabled)
 
     def edit_import(self):
@@ -366,10 +365,6 @@ class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
         enabled = not self.context.private
         text = 'Create packaging recipe'
         return Link('+new-recipe', text, enabled=enabled, icon='add')
-
-    @enabled_with_permission('launchpad.Edit')
-    def create_queue(self):
-        return Link('+create-queue', 'Create a new queue', icon='add')
 
 
 class BranchMirrorMixin:
@@ -471,7 +466,7 @@ class BranchView(InformationTypePortletMixin, FeedsMixin, BranchMirrorMixin,
     @property
     def codebrowse_url(self):
         """Return the link to codebrowse for this branch."""
-        return self.context.codebrowse_url()
+        return self.context.getCodebrowseUrl()
 
     @property
     def pending_writes(self):
@@ -1171,23 +1166,6 @@ class BranchReviewerEditView(BranchEditFormView):
         return {'reviewer': self.context.code_reviewer}
 
 
-class BranchMergeQueueView(LaunchpadView):
-    """The view used to render the merge queue for a branch."""
-
-    @cachedproperty
-    def merge_queue(self):
-        """Get the merge queue and check visibility."""
-        result = []
-        for proposal in self.context.getMergeQueue():
-            # If the logged in user cannot view the proposal then we
-            # show a "place holder" in the queue position.
-            if check_permission('launchpad.View', proposal):
-                result.append(proposal)
-            else:
-                result.append(None)
-        return result
-
-
 class RegisterProposalStatus(EnumeratedType):
     """A restricted status enum for the register proposal form."""
 
@@ -1301,8 +1279,8 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
 
         try:
             proposal = source_branch.addLandingTarget(
-                registrant=registrant, target_branch=target_branch,
-                prerequisite_branch=prerequisite_branch,
+                registrant=registrant, merge_target=target_branch,
+                merge_prerequisite=prerequisite_branch,
                 needs_review=data['needs_review'],
                 description=data.get('comment'),
                 review_requests=review_requests,

@@ -41,6 +41,7 @@ For "devel" additional attributes are available.
     ...     "/~cprov/+archive/ubuntu/ppa", api_version='devel').jsonBody()
     >>> pprint_entry(cprov_archive_devel)
     authorized_size: 1024
+    build_debug_symbols: False
     dependencies_collection_link: u'http://.../~cprov/+archive/ubuntu/ppa/dependencies'
     description: u'packages to help my friends.'
     displayname: u'PPA for Celso Providelo'
@@ -49,7 +50,9 @@ For "devel" additional attributes are available.
     external_dependencies: None
     name: u'ppa'
     owner_link: u'http://.../~cprov'
+    permit_obsolete_series_uploads: False
     private: False
+    publish_debug_symbols: False
     reference: u'~cprov/ubuntu/ppa'
     relative_build_score: 0
     require_virtualized: True

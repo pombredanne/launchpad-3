@@ -521,18 +521,22 @@ class IArchiveView(IHasBuildRecords):
             readonly=False, description=_(
                 "Only build the archive's packages on virtual builders.")))
 
-    build_debug_symbols = Bool(
-        title=_("Build debug symbols"), required=False,
+    build_debug_symbols = exported(Bool(
+        title=_("Build debug symbols"), required=False, readonly=False,
         description=_(
-            "Create debug symbol packages for builds in the archive."))
-    publish_debug_symbols = Bool(
-        title=_("Publish debug symbols"), required=False,
+            "Create debug symbol packages for builds in the archive.")),
+        as_of='devel')
+    publish_debug_symbols = exported(Bool(
+        title=_("Publish debug symbols"), required=False, readonly=False,
         description=_(
-            "Publish debug symbol packages in the apt repository."))
+            "Publish debug symbol packages in the apt repository.")),
+        as_of='devel')
 
-    permit_obsolete_series_uploads = Bool(
+    permit_obsolete_series_uploads = exported(Bool(
         title=_("Permit uploads to obsolete series"), required=False,
-        description=_("Allow uploads targeted to obsolete series."))
+        readonly=False,
+        description=_("Allow uploads targeted to obsolete series.")),
+        as_of='devel')
 
     authorized_size = exported(
         Int(

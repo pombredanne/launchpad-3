@@ -11,23 +11,39 @@ __all__ = [
     ]
 
 from lazr.restful.declarations import (
+    call_with,
     export_as_webservice_entry,
+    export_factory_operation,
+    export_read_operation,
     exported,
+    operation_for_version,
+    operation_parameters,
+    operation_returns_collection_of,
+    REQUEST_USER,
     )
-from lazr.restful.fields import ReferenceChoice
+from lazr.restful.fields import (
+    Reference,
+    ReferenceChoice,
+    )
 from zope.interface import (
     Attribute,
     Interface,
     )
 from zope.schema import (
+    Bool,
     Choice,
     Datetime,
+    List,
     Text,
     TextLine,
     )
 
 from lp import _
-from lp.code.enums import GitObjectType
+from lp.code.enums import (
+    BranchMergeProposalStatus,
+    GitObjectType,
+    )
+from lp.registry.interfaces.person import IPerson
 from lp.services.webapp.interfaces import ITableBatchNavigator
 
 
@@ -50,6 +66,10 @@ class IGitRef(Interface):
         title=_("Path"), required=True, readonly=True,
         description=_(
             "The full path of this reference, e.g. refs/heads/master.")))
+
+    name = Attribute(
+        "A shortened version of the full path to this reference, with any "
+        "leading refs/heads/ removed.")
 
     commit_sha1 = exported(TextLine(
         title=_("Commit SHA-1"), required=True, readonly=True,
@@ -103,6 +123,41 @@ class IGitRef(Interface):
     target = Attribute(
         "The target of the repository containing this reference.")
 
+    namespace = Attribute(
+        "The namespace of the repository containing this reference, as an "
+        "`IGitNamespace`.")
+
+    def getCodebrowseUrl():
+        """Construct a browsing URL for this Git reference."""
+
+    information_type = Attribute(
+        "The type of information contained in the repository containing this "
+        "reference.")
+
+    def visibleByUser(user):
+        """Can the specified user see the repository containing this
+        reference?"""
+
+    reviewer = Attribute(
+        "The person or exclusive team that is responsible for reviewing "
+        "proposals and merging into this reference.")
+
+    code_reviewer = Attribute(
+        "The reviewer if set, otherwise the owner of the repository "
+        "containing this reference.")
+
+    def isPersonTrustedReviewer(reviewer):
+        """Return true if the `reviewer` is a trusted reviewer.
+
+        The reviewer is trusted if they either own the repository containing
+        this reference, or are in the team that owns the repository, or they
+        are in the review team for the repository.
+        """
+
+    subscriptions = Attribute(
+        "GitSubscriptions associated with the repository containing this "
+        "reference.")
+
     subscribers = Attribute(
         "Persons subscribed to the repository containing this reference.")
 
@@ -131,6 +186,95 @@ class IGitRef(Interface):
         The INotificationRecipientSet instance contains the subscribers
         and their subscriptions.
         """
+
+    # XXX cjwatson 2015-04-16: These names are too awful to set in stone by
+    # exporting them on the webservice; find better names before exporting.
+    landing_targets = Attribute(
+        "A collection of the merge proposals where this reference is the "
+        "source.")
+    landing_candidates = Attribute(
+        "A collection of the merge proposals where this reference is the "
+        "target.")
+    dependent_landings = Attribute(
+        "A collection of the merge proposals that are dependent on this "
+        "reference.")
+
+    # XXX cjwatson 2015-04-16: Rename in line with landing_targets above
+    # once we have a better name.
+    def addLandingTarget(registrant, merge_target, merge_prerequisite=None,
+                         date_created=None, needs_review=None,
+                         description=None, review_requests=None,
+                         commit_message=None):
+        """Create a new BranchMergeProposal with this reference as the source.
+
+        Both the target and the prerequisite, if it is there, must be
+        references whose repositories have the same target as the source.
+
+        References in personal repositories cannot specify merge proposals.
+
+        :param registrant: The person who is adding the landing target.
+        :param merge_target: Must be another reference, and different to
+            self.
+        :param merge_prerequisite: Optional, but if it is not None it must
+            be another reference.
+        :param date_created: Used to specify the date_created value of the
+            merge request.
+        :param needs_review: Used to specify the proposal is ready for
+            review right now.
+        :param description: A description of the bugs fixed, features added,
+            or refactorings.
+        :param review_requests: An optional list of (`Person`, review_type).
+        """
+
+    @operation_parameters(
+        # merge_target and merge_prerequisite are actually IGitRef, patched
+        # in _schema_circular_imports.
+        merge_target=Reference(schema=Interface),
+        merge_prerequisite=Reference(schema=Interface),
+        needs_review=Bool(
+            title=_("Needs review"),
+            description=_(
+                "If True, the proposal needs review.  Otherwise, it will be "
+                "work in progress.")),
+        initial_comment=Text(
+            title=_("Initial comment"),
+            description=_("Registrant's initial description of proposal.")),
+        commit_message=Text(
+            title=_("Commit message"),
+            description=_("Message to use when committing this merge.")),
+        reviewers=List(value_type=Reference(schema=IPerson)),
+        review_types=List(value_type=TextLine()))
+    @call_with(registrant=REQUEST_USER)
+    # Really IBranchMergeProposal, patched in _schema_circular_imports.py.
+    @export_factory_operation(Interface, [])
+    @operation_for_version("devel")
+    def createMergeProposal(registrant, merge_target, merge_prerequisite=None,
+                            needs_review=None, initial_comment=None,
+                            commit_message=None, reviewers=None,
+                            review_types=None):
+        """Create a new BranchMergeProposal with this reference as the source.
+
+        Both the merge_target and the merge_prerequisite, if it is there,
+        must be references whose repositories have the same target as the
+        source.
+
+        References in personal repositories cannot specify merge proposals.
+        """
+
+    @operation_parameters(
+        status=List(
+            title=_("A list of merge proposal statuses to filter by."),
+            value_type=Choice(vocabulary=BranchMergeProposalStatus)),
+        merged_revision_ids=List(TextLine(
+            title=_('The target revision ID of the merge.'))))
+    @call_with(visible_by_user=REQUEST_USER)
+    # Really IBranchMergeProposal, patched in _schema_circular_imports.py.
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
+    @operation_for_version("devel")
+    def getMergeProposals(status=None, visible_by_user=None,
+                          merged_revision_ids=None, eager_load=False):
+        """Return matching BranchMergeProposals."""
 
 
 class IGitRefBatchNavigator(ITableBatchNavigator):

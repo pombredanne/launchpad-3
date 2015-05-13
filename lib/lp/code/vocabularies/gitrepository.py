@@ -19,17 +19,17 @@ from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.vocabulary import (
     CountableIterator,
     IHugeVocabulary,
-    SQLObjectVocabularyBase,
+    StormVocabularyBase,
     )
 
 
-class GitRepositoryVocabulary(SQLObjectVocabularyBase):
+class GitRepositoryVocabulary(StormVocabularyBase):
     """A vocabulary for searching Git repositories."""
 
     implements(IHugeVocabulary)
 
     _table = GitRepository
-    _orderBy = ['name', 'id']
+    _order_by = ['name', 'id']
     displayname = 'Select a Git repository'
     step_title = 'Search'
 

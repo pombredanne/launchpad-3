@@ -17,12 +17,19 @@
 <div metal:fill-slot="main">
 
   <div class="yui-g">
+    <div id="ref-relations" class="portlet">
+      <tal:ref-pending-merges
+           replace="structure context/@@++ref-pending-merges" />
+    </div>
+  </div>
+
+  <div class="yui-g">
     <div id="ref-info" class="portlet">
       <h2>Branch information</h2>
       <div class="two-column-list">
         <dl id="name">
           <dt>Name:</dt>
-          <dd tal:content="context/display_name" />
+          <dd tal:content="context/name" />
         </dl>
 
         <dl id="repository">

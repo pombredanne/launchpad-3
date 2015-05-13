@@ -501,6 +501,13 @@ class TestBinaryPackageBuildWebservice(TestCaseWithFactory):
         entry = self.webservice.get(build_url, api_version='devel').jsonBody()
         self.assertEndsWith(entry['builder_link'], builder_url)
 
+    def test_source_package_name(self):
+        name = self.build.source_package_release.name
+        build_url = api_url(self.build)
+        logout()
+        entry = self.webservice.get(build_url, api_version='devel').jsonBody()
+        self.assertEqual(name, entry['source_package_name'])
+
 
 class TestPostprocessCandidate(TestCaseWithFactory):
 

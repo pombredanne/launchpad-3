@@ -147,12 +147,6 @@ def _mergeBranches(from_person, to_person):
         removeSecurityProxy(branch).setOwner(to_person, to_person)
 
 
-def _mergeBranchMergeQueues(cur, from_id, to_id):
-    cur.execute('''
-        UPDATE BranchMergeQueue SET owner = %(to_id)s WHERE owner =
-        %(from_id)s''', dict(to_id=to_id, from_id=from_id))
-
-
 def _mergeGitRepositories(from_person, to_person):
     # This shouldn't use removeSecurityProxy.
     repositories = getUtility(IGitCollection).ownedBy(from_person)
@@ -717,6 +711,8 @@ def merge_people(from_person, to_person, reviewer, delete=False):
         ('bugsummaryjournal', 'viewed_by'),
         ('latestpersonsourcepackagereleasecache', 'creator'),
         ('latestpersonsourcepackagereleasecache', 'maintainer'),
+        # Obsolete table.
+        ('branchmergequeue', 'owner'),
         ]
 
     references = list(postgresql.listReferences(cur, 'person', 'id'))
@@ -763,9 +759,6 @@ def merge_people(from_person, to_person, reviewer, delete=False):
     # ones that *do* conflict.
     _mergeBranches(from_person, to_person)
     skip.append(('branch', 'owner'))
-
-    _mergeBranchMergeQueues(cur, from_id, to_id)
-    skip.append(('branchmergequeue', 'owner'))
 
     # Update the GitRepositories that will not conflict, and fudge the names
     # of ones that *do* conflict.

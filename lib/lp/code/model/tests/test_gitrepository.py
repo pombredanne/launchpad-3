@@ -6,18 +6,25 @@
 __metaclass__ = type
 
 from datetime import datetime
+import email
 from functools import partial
 import hashlib
 import json
 
+from bzrlib import urlutils
 from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.lifecycle.snapshot import Snapshot
+import transaction
 import pytz
 from testtools.matchers import (
+    EndsWith,
     MatchesSetwise,
     MatchesStructure,
     )
 from zope.component import getUtility
 from zope.event import notify
+from zope.interface import providedBy
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import (
@@ -26,11 +33,17 @@ from lp.app.enums import (
     PUBLIC_INFORMATION_TYPES,
     )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.code.enums import GitObjectType
+from lp.code.enums import (
+    BranchSubscriptionDiffSize,
+    BranchSubscriptionNotificationLevel,
+    CodeReviewNotificationLevel,
+    GitObjectType,
+    )
 from lp.code.errors import (
     GitFeatureDisabled,
     GitRepositoryCreatorNotMemberOfOwnerTeam,
     GitRepositoryCreatorNotOwner,
+    GitRepositoryExists,
     GitTargetError,
     )
 from lp.code.interfaces.defaultgit import ICanHasDefaultGitRepository
@@ -60,8 +73,10 @@ from lp.registry.interfaces.persondistributionsourcepackage import (
     )
 from lp.registry.interfaces.personproduct import IPersonProductFactory
 from lp.registry.tests.test_accesspolicy import get_policies_for_artifact
+from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.features.testing import FeatureFixture
+from lp.services.mail import stub
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.interfaces import OAuthPermission
 from lp.testing import (
@@ -204,9 +219,9 @@ class TestGitIdentityMixin(TestCaseWithFactory):
         # identity is a combination of the person and project names.
         project = self.factory.makeProduct()
         repository = self.factory.makeGitRepository(target=project)
-        with person_logged_in(repository.owner):
+        with person_logged_in(repository.owner) as user:
             self.repository_set.setDefaultRepositoryForOwner(
-                repository.owner, project, repository)
+                repository.owner, project, repository, user)
         self.assertGitIdentity(
             repository, "~%s/%s" % (repository.owner.name, project.name))
 
@@ -215,9 +230,9 @@ class TestGitIdentityMixin(TestCaseWithFactory):
         # identity is a combination of the person name and the package path.
         dsp = self.factory.makeDistributionSourcePackage()
         repository = self.factory.makeGitRepository(target=dsp)
-        with person_logged_in(repository.owner):
+        with person_logged_in(repository.owner) as user:
             self.repository_set.setDefaultRepositoryForOwner(
-                repository.owner, dsp, repository)
+                repository.owner, dsp, repository, user)
         self.assertGitIdentity(
             repository,
             "~%s/%s/+source/%s" % (
@@ -240,9 +255,9 @@ class TestGitIdentityMixin(TestCaseWithFactory):
         fooix = self.factory.makeProduct(name="fooix", owner=eric)
         repository = self.factory.makeGitRepository(
             owner=eric, target=fooix, name=u"fooix-repo")
-        with person_logged_in(fooix.owner):
+        with person_logged_in(fooix.owner) as user:
             self.repository_set.setDefaultRepositoryForOwner(
-                repository.owner, fooix, repository)
+                repository.owner, fooix, repository, user)
             self.repository_set.setDefaultRepository(fooix, repository)
         eric_fooix = getUtility(IPersonProductFactory).create(eric, fooix)
         self.assertEqual(
@@ -267,7 +282,7 @@ class TestGitIdentityMixin(TestCaseWithFactory):
         dsp = repository.target
         with admin_logged_in():
             self.repository_set.setDefaultRepositoryForOwner(
-                repository.owner, dsp, repository)
+                repository.owner, dsp, repository, repository.owner)
             self.repository_set.setDefaultRepository(dsp, repository)
         eric_dsp = getUtility(IPersonDistributionSourcePackageFactory).create(
             eric, dsp)
@@ -282,16 +297,16 @@ class TestGitIdentityMixin(TestCaseWithFactory):
             repository.getRepositoryIdentities())
 
 
-class TestGitRepositoryDateLastModified(TestCaseWithFactory):
-    """Exercise the situations where date_last_modified is updated."""
+class TestGitRepositoryModifications(TestCaseWithFactory):
+    """Tests for Git repository modification notifications."""
 
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        super(TestGitRepositoryDateLastModified, self).setUp()
+        super(TestGitRepositoryModifications, self).setUp()
         self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
 
-    def test_initial_value(self):
+    def test_date_last_modified_initial_value(self):
         # The initial value of date_last_modified is date_created.
         repository = self.factory.makeGitRepository()
         self.assertEqual(
@@ -308,25 +323,85 @@ class TestGitRepositoryDateLastModified(TestCaseWithFactory):
         self.assertSqlAttributeEqualsDate(
             repository, "date_last_modified", UTC_NOW)
 
+    def test_sends_notifications(self):
+        # Attribute modifications send mail to subscribers.
+        self.assertEqual(0, len(stub.test_emails))
+        repository = self.factory.makeGitRepository(name=u"foo")
+        repository_before_modification = Snapshot(
+            repository, providing=providedBy(repository))
+        with person_logged_in(repository.owner):
+            repository.subscribe(
+                repository.owner,
+                BranchSubscriptionNotificationLevel.ATTRIBUTEONLY,
+                BranchSubscriptionDiffSize.NODIFF,
+                CodeReviewNotificationLevel.NOEMAIL,
+                repository.owner)
+            repository.setName(u"bar", repository.owner)
+            notify(ObjectModifiedEvent(
+                repository, repository_before_modification, ["name"],
+                user=repository.owner))
+        transaction.commit()
+        self.assertEqual(1, len(stub.test_emails))
+        message = email.message_from_string(stub.test_emails[0][2])
+        body = message.get_payload(decode=True)
+        self.assertIn("Name: foo => bar\n", body)
+        self.assertIn(
+            "Git identity: lp:~{person}/{project}/+git/foo => "
+            "lp:~{person}/{project}/+git/bar\n".format(
+                person=repository.owner.name, project=repository.target.name),
+            body)
+
     # XXX cjwatson 2015-02-04: This will need to be expanded once Launchpad
     # actually notices any interesting kind of repository modifications.
 
 
-class TestCodebrowse(TestCaseWithFactory):
-    """Tests for Git repository codebrowse support."""
+class TestGitRepositoryURLs(TestCaseWithFactory):
+    """Tests for Git repository URLs."""
 
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        super(TestCodebrowse, self).setUp()
+        super(TestGitRepositoryURLs, self).setUp()
         self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
 
-    def test_simple(self):
+    def test_codebrowse_url(self):
         # The basic codebrowse URL for a repository is an 'https' URL.
         repository = self.factory.makeGitRepository()
-        self.assertEqual(
-            "https://git.launchpad.dev/" + repository.unique_name,
-            repository.getCodebrowseUrl())
+        expected_url = urlutils.join(
+            config.codehosting.git_browse_root, repository.unique_name)
+        self.assertEqual(expected_url, repository.getCodebrowseUrl())
+
+    def test_anon_url_for_public(self):
+        # Public repositories have an anonymous URL, visible to anyone.
+        repository = self.factory.makeGitRepository()
+        expected_url = urlutils.join(
+            config.codehosting.git_anon_root, repository.shortened_path)
+        self.assertEqual(expected_url, repository.anon_url)
+
+    def test_anon_url_not_for_private(self):
+        # Private repositories do not have an anonymous URL.
+        owner = self.factory.makePerson()
+        repository = self.factory.makeGitRepository(
+            owner=owner, information_type=InformationType.USERDATA)
+        with person_logged_in(owner):
+            self.assertIsNone(repository.anon_url)
+
+    def test_ssh_url_for_public(self):
+        # Public repositories have an SSH URL.
+        repository = self.factory.makeGitRepository()
+        expected_url = urlutils.join(
+            config.codehosting.git_ssh_root, repository.shortened_path)
+        self.assertEqual(expected_url, repository.ssh_url)
+
+    def test_ssh_url_for_private(self):
+        # Private repositories have an SSH URL.
+        owner = self.factory.makePerson()
+        repository = self.factory.makeGitRepository(
+            owner=owner, information_type=InformationType.USERDATA)
+        with person_logged_in(owner):
+            expected_url = urlutils.join(
+                config.codehosting.git_ssh_root, repository.shortened_path)
+            self.assertEqual(expected_url, repository.ssh_url)
 
 
 class TestGitRepositoryNamespace(TestCaseWithFactory):
@@ -536,6 +611,13 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
                 commit_sha1=u"0000000000000000000000000000000000000000",
                 object_type=GitObjectType.BLOB,
                 ))
+
+    def test_getRefByPath_without_leading_refs_heads(self):
+        [ref] = self.factory.makeGitRefs(paths=[u"refs/heads/master"])
+        self.assertEqual(
+            ref, ref.repository.getRefByPath(u"refs/heads/master"))
+        self.assertEqual(ref, ref.repository.getRefByPath(u"master"))
+        self.assertIsNone(ref.repository.getRefByPath(u"other"))
 
     def test_planRefChanges(self):
         # planRefChanges copes with planning changes to refs in a repository
@@ -879,6 +961,39 @@ class TestGitRepositoryIsPersonTrustedReviewer(TestCaseWithFactory):
         self.assertNotTrustedReviewer(repository, reviewer)
 
 
+class TestGitRepositorySetName(TestCaseWithFactory):
+    """Test `IGitRepository.setName`."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestGitRepositorySetName, self).setUp()
+        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
+
+    def test_not_owner(self):
+        # A non-owner non-admin user cannot rename a repository.
+        repository = self.factory.makeGitRepository()
+        with person_logged_in(self.factory.makePerson()):
+            self.assertRaises(Unauthorized, getattr, repository, "setName")
+
+    def test_name_clash(self):
+        # Name clashes are refused.
+        repository = self.factory.makeGitRepository(name=u"foo")
+        self.factory.makeGitRepository(
+            owner=repository.owner, target=repository.target, name=u"bar")
+        with person_logged_in(repository.owner):
+            self.assertRaises(
+                GitRepositoryExists, repository.setName,
+                u"bar", repository.owner)
+
+    def test_rename(self):
+        # A non-clashing rename request works.
+        repository = self.factory.makeGitRepository(name=u"foo")
+        with person_logged_in(repository.owner):
+            repository.setName(u"bar", repository.owner)
+        self.assertEqual(u"bar", repository.name)
+
+
 class TestGitRepositorySetOwner(TestCaseWithFactory):
     """Test `IGitRepository.setOwner`."""
 
@@ -1135,6 +1250,80 @@ class TestGitRepositorySet(TestCaseWithFactory):
             public_repositories + [private_repository],
             self.repository_set.getRepositories(other_person, project))
 
+    def test_getRepositoryVisibilityInfo_empty_repository_names(self):
+        # If repository_names is empty, getRepositoryVisibilityInfo returns
+        # an empty visible_repositories list.
+        person = self.factory.makePerson(name="fred")
+        info = self.repository_set.getRepositoryVisibilityInfo(
+            person, person, repository_names=[])
+        self.assertEqual("Fred", info["person_name"])
+        self.assertEqual([], info["visible_repositories"])
+
+    def test_getRepositoryVisibilityInfo(self):
+        person = self.factory.makePerson(name="fred")
+        owner = self.factory.makePerson()
+        visible_repository = self.factory.makeGitRepository()
+        invisible_repository = self.factory.makeGitRepository(
+            owner=owner, information_type=InformationType.USERDATA)
+        invisible_name = removeSecurityProxy(invisible_repository).unique_name
+        repositories = [visible_repository.unique_name, invisible_name]
+
+        with person_logged_in(owner):
+            info = self.repository_set.getRepositoryVisibilityInfo(
+                owner, person, repository_names=repositories)
+        self.assertEqual("Fred", info["person_name"])
+        self.assertEqual(
+            [visible_repository.unique_name], info["visible_repositories"])
+
+    def test_getRepositoryVisibilityInfo_unauthorised_user(self):
+        # If the user making the API request cannot see one of the
+        # repositories, that repository is not included in the results.
+        person = self.factory.makePerson(name="fred")
+        owner = self.factory.makePerson()
+        visible_repository = self.factory.makeGitRepository()
+        invisible_repository = self.factory.makeGitRepository(
+            owner=owner, information_type=InformationType.USERDATA)
+        invisible_name = removeSecurityProxy(invisible_repository).unique_name
+        repositories = [visible_repository.unique_name, invisible_name]
+
+        someone = self.factory.makePerson()
+        with person_logged_in(someone):
+            info = self.repository_set.getRepositoryVisibilityInfo(
+                someone, person, repository_names=repositories)
+        self.assertEqual("Fred", info["person_name"])
+        self.assertEqual(
+            [visible_repository.unique_name], info["visible_repositories"])
+
+    def test_getRepositoryVisibilityInfo_anonymous(self):
+        # Anonymous users are not allowed to see any repository visibility
+        # information, even if the repository they are querying about is
+        # public.
+        person = self.factory.makePerson(name="fred")
+        owner = self.factory.makePerson()
+        visible_repository = self.factory.makeGitRepository(owner=owner)
+        repositories = [visible_repository.unique_name]
+
+        with person_logged_in(owner):
+            info = self.repository_set.getRepositoryVisibilityInfo(
+                None, person, repository_names=repositories)
+        self.assertEqual({}, info)
+
+    def test_getRepositoryVisibilityInfo_invalid_repository_name(self):
+        # If an invalid repository name is specified, it is not included.
+        person = self.factory.makePerson(name="fred")
+        owner = self.factory.makePerson()
+        visible_repository = self.factory.makeGitRepository(owner=owner)
+        repositories = [
+            visible_repository.unique_name,
+            "invalid_repository_name"]
+
+        with person_logged_in(owner):
+            info = self.repository_set.getRepositoryVisibilityInfo(
+                owner, person, repository_names=repositories)
+        self.assertEqual("Fred", info["person_name"])
+        self.assertEqual(
+            [visible_repository.unique_name], info["visible_repositories"])
+
     def test_setDefaultRepository_refuses_person(self):
         # setDefaultRepository refuses if the target is a person.
         person = self.factory.makePerson()
@@ -1148,11 +1337,11 @@ class TestGitRepositorySet(TestCaseWithFactory):
         # setDefaultRepositoryForOwner refuses if the target is a person.
         person = self.factory.makePerson()
         repository = self.factory.makeGitRepository(owner=person)
-        with person_logged_in(person):
+        with person_logged_in(person) as user:
             self.assertRaises(
                 GitTargetError,
                 self.repository_set.setDefaultRepositoryForOwner,
-                person, person, repository)
+                person, person, repository, user)
 
 
 class TestGitRepositorySetDefaultsMixin:
@@ -1164,7 +1353,8 @@ class TestGitRepositorySetDefaultsMixin:
         self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
         self.repository_set = getUtility(IGitRepositorySet)
         self.get_method = self.repository_set.getDefaultRepository
-        self.set_method = self.repository_set.setDefaultRepository
+        self.set_method = (lambda target, repository, user:
+            self.repository_set.setDefaultRepository(target, repository))
 
     def makeGitRepository(self, target):
         return self.factory.makeGitRepository(target=target)
@@ -1175,17 +1365,17 @@ class TestGitRepositorySetDefaultsMixin:
         target = self.makeTarget()
         repository = self.makeGitRepository(target)
         self.assertIsNone(self.get_method(target))
-        with person_logged_in(self.getPersonForLogin(target)):
-            self.set_method(target, repository)
+        with person_logged_in(self.getPersonForLogin(target)) as user:
+            self.set_method(target, repository, user)
         self.assertEqual(repository, self.get_method(target))
 
     def test_set_default_repository_None(self):
         # setDefaultRepository*(target, None) clears the default.
         target = self.makeTarget()
         repository = self.makeGitRepository(target)
-        with person_logged_in(self.getPersonForLogin(target)):
-            self.set_method(target, repository)
-            self.set_method(target, None)
+        with person_logged_in(self.getPersonForLogin(target)) as user:
+            self.set_method(target, repository, user)
+            self.set_method(target, None, user)
         self.assertIsNone(self.get_method(target))
 
     def test_set_default_repository_different_target(self):
@@ -1194,9 +1384,9 @@ class TestGitRepositorySetDefaultsMixin:
         target = self.makeTarget()
         other_target = self.makeTarget(template=target)
         repository = self.makeGitRepository(other_target)
-        with person_logged_in(self.getPersonForLogin(target)):
+        with person_logged_in(self.getPersonForLogin(target)) as user:
             self.assertRaises(
-                GitTargetError, self.set_method, target, repository)
+                GitTargetError, self.set_method, target, repository, user)
 
 
 class TestGitRepositorySetDefaultsProject(
@@ -1240,6 +1430,33 @@ class TestGitRepositorySetDefaultsOwnerMixin(
 
     def getPersonForLogin(self, target):
         return self.person
+
+    def test_set_default_repository_for_owner_team_member(self):
+        # A member of the owner team can use setDefaultRepositoryForOwner.
+        target = self.makeTarget()
+        team = self.factory.makeTeam(members=[self.person])
+        repository = self.factory.makeGitRepository(owner=team, target=target)
+        self.assertIsNone(
+            self.repository_set.getDefaultRepositoryForOwner(team, target))
+        with person_logged_in(self.person) as user:
+            self.repository_set.setDefaultRepositoryForOwner(
+                team, target, repository, user)
+        self.assertEqual(
+            repository,
+            self.repository_set.getDefaultRepositoryForOwner(team, target))
+
+    def test_set_default_repository_for_owner_not_team_member(self):
+        # A non-member of the owner team cannot use
+        # setDefaultRepositoryForOwner.
+        target = self.makeTarget()
+        team = self.factory.makeTeam()
+        repository = self.factory.makeGitRepository(owner=team, target=target)
+        self.assertIsNone(
+            self.repository_set.getDefaultRepositoryForOwner(team, target))
+        with person_logged_in(self.person) as user:
+            self.assertRaises(
+                Unauthorized, self.repository_set.setDefaultRepositoryForOwner,
+                team, target, repository, user)
 
 
 class TestGitRepositorySetDefaultsOwnerProject(
@@ -1423,3 +1640,107 @@ class TestGitRepositoryWebservice(TestCaseWithFactory):
         self.assertEqual(401, response.status)
         with person_logged_in(ANONYMOUS):
             self.assertEqual(owner_db, repository_db.owner)
+
+    def test_subscribe(self):
+        # A user can subscribe to a repository.
+        repository_db = self.factory.makeGitRepository()
+        subscriber_db = self.factory.makePerson()
+        webservice = webservice_for_person(
+            subscriber_db, permission=OAuthPermission.WRITE_PUBLIC)
+        webservice.default_api_version = "devel"
+        with person_logged_in(ANONYMOUS):
+            repository_url = api_url(repository_db)
+            subscriber_url = api_url(subscriber_db)
+        response = webservice.named_post(
+            repository_url, "subscribe", person=subscriber_url,
+            notification_level=u"Branch attribute notifications only",
+            max_diff_lines=u"Don't send diffs", code_review_level=u"No email")
+        self.assertEqual(200, response.status)
+        with person_logged_in(ANONYMOUS):
+            subscription_db = repository_db.getSubscription(subscriber_db)
+            self.assertIsNotNone(subscription_db)
+            self.assertThat(
+                response.jsonBody()["self_link"],
+                EndsWith(api_url(subscription_db)))
+
+    def _makeSubscription(self, repository, subscriber):
+        with person_logged_in(subscriber):
+            return repository.subscribe(
+                person=subscriber,
+                notification_level=(
+                    BranchSubscriptionNotificationLevel.ATTRIBUTEONLY),
+                max_diff_lines=BranchSubscriptionDiffSize.NODIFF,
+                code_review_level=CodeReviewNotificationLevel.NOEMAIL,
+                subscribed_by=subscriber)
+
+    def test_getSubscription(self):
+        # It is possible to get a single subscription via the webservice.
+        repository_db = self.factory.makeGitRepository()
+        subscriber_db = self.factory.makePerson()
+        subscription_db = self._makeSubscription(repository_db, subscriber_db)
+        with person_logged_in(subscriber_db):
+            repository_url = api_url(repository_db)
+            subscriber_url = api_url(subscriber_db)
+            subscription_url = api_url(subscription_db)
+        webservice = webservice_for_person(
+            subscriber_db, permission=OAuthPermission.WRITE_PUBLIC)
+        webservice.default_api_version = "devel"
+        response = webservice.named_get(
+            repository_url, "getSubscription", person=subscriber_url)
+        self.assertEqual(200, response.status)
+        self.assertThat(
+            response.jsonBody()["self_link"], EndsWith(subscription_url))
+
+    def test_edit_subscription(self):
+        # An existing subscription can be edited via the webservice, by
+        # subscribing the same person again with different details.
+        repository_db = self.factory.makeGitRepository()
+        subscriber_db = self.factory.makePerson()
+        self._makeSubscription(repository_db, subscriber_db)
+        with person_logged_in(subscriber_db):
+            repository_url = api_url(repository_db)
+            subscriber_url = api_url(subscriber_db)
+        webservice = webservice_for_person(
+            subscriber_db, permission=OAuthPermission.WRITE_PUBLIC)
+        webservice.default_api_version = "devel"
+        response = webservice.named_post(
+            repository_url, "subscribe", person=subscriber_url,
+            notification_level=u"No email",
+            max_diff_lines=u"Send entire diff",
+            code_review_level=u"Status changes only")
+        self.assertEqual(200, response.status)
+        with person_logged_in(subscriber_db):
+            self.assertThat(
+                repository_db.getSubscription(subscriber_db),
+                MatchesStructure.byEquality(
+                    person=subscriber_db,
+                    notification_level=(
+                        BranchSubscriptionNotificationLevel.NOEMAIL),
+                    max_diff_lines=BranchSubscriptionDiffSize.WHOLEDIFF,
+                    review_level=CodeReviewNotificationLevel.STATUS,
+                    ))
+        repository = webservice.get(repository_url).jsonBody()
+        subscribers = webservice.get(
+            repository["subscribers_collection_link"]).jsonBody()
+        self.assertEqual(2, len(subscribers["entries"]))
+        with person_logged_in(subscriber_db):
+            self.assertContentEqual(
+                [repository_db.owner.name, subscriber_db.name],
+                [subscriber["name"] for subscriber in subscribers["entries"]])
+
+    def test_unsubscribe(self):
+        # It is possible to unsubscribe via the webservice.
+        repository_db = self.factory.makeGitRepository()
+        subscriber_db = self.factory.makePerson()
+        self._makeSubscription(repository_db, subscriber_db)
+        with person_logged_in(subscriber_db):
+            repository_url = api_url(repository_db)
+            subscriber_url = api_url(subscriber_db)
+        webservice = webservice_for_person(
+            subscriber_db, permission=OAuthPermission.WRITE_PUBLIC)
+        webservice.default_api_version = "devel"
+        response = webservice.named_post(
+            repository_url, "unsubscribe", person=subscriber_url)
+        self.assertEqual(200, response.status)
+        with person_logged_in(subscriber_db):
+            self.assertNotIn(subscriber_db, repository_db.subscribers)

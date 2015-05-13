@@ -64,7 +64,6 @@ from lp.code.interfaces.branch import (
     IBranchSet,
     )
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
-from lp.code.interfaces.branchmergequeue import IBranchMergeQueue
 from lp.code.interfaces.branchsubscription import IBranchSubscription
 from lp.code.interfaces.codeimport import ICodeImport
 from lp.code.interfaces.codereviewcomment import ICodeReviewComment
@@ -262,9 +261,9 @@ patch_plain_parameter_type(
 
 patch_entry_return_type(IBranch, '_createMergeProposal', IBranchMergeProposal)
 patch_plain_parameter_type(
-    IBranch, '_createMergeProposal', 'target_branch', IBranch)
+    IBranch, '_createMergeProposal', 'merge_target', IBranch)
 patch_plain_parameter_type(
-    IBranch, '_createMergeProposal', 'prerequisite_branch', IBranch)
+    IBranch, '_createMergeProposal', 'merge_prerequisite', IBranch)
 patch_collection_return_type(
     IBranch, 'getMergeProposals', IBranchMergeProposal)
 
@@ -564,6 +563,13 @@ patch_reference_property(IDistroArchSeries, 'main_archive', IArchive)
 
 # IGitRef
 patch_reference_property(IGitRef, 'repository', IGitRepository)
+patch_plain_parameter_type(
+    IGitRef, 'createMergeProposal', 'merge_target', IGitRef)
+patch_plain_parameter_type(
+    IGitRef, 'createMergeProposal', 'merge_prerequisite', IGitRef)
+patch_entry_return_type(IGitRef, 'createMergeProposal', IBranchMergeProposal)
+patch_collection_return_type(
+    IGitRef, 'getMergeProposals', IBranchMergeProposal)
 
 # IGitRepository
 patch_collection_property(IGitRepository, 'branches', IGitRef)
@@ -791,11 +797,6 @@ patch_entry_explicit_version(IBranchMergeProposal, 'beta')
 patch_operations_explicit_version(
     IBranchMergeProposal, 'beta', "createComment", "getComment",
     "nominateReviewer", "setStatus")
-
-# IBranchMergeQueue
-patch_entry_explicit_version(IBranchMergeQueue, 'beta')
-patch_operations_explicit_version(
-    IBranchMergeQueue, 'beta', "setMergeQueueConfig")
 
 # IBranchSubscription
 patch_entry_explicit_version(IBranchSubscription, 'beta')

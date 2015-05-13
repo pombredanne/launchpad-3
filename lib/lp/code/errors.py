@@ -39,7 +39,6 @@ __all__ = [
     'GitRepositoryScanFault',
     'GitTargetError',
     'InvalidBranchMergeProposal',
-    'InvalidMergeQueueConfig',
     'InvalidNamespace',
     'NoLinkedBranch',
     'NoSuchBranch',
@@ -47,7 +46,6 @@ __all__ = [
     'PrivateBranchRecipe',
     'ReviewNotPending',
     'StaleLastMirrored',
-    'TooManyBuilds',
     'TooNewRecipeFormat',
     'UnknownBranchTypeError',
     'UpdatePreviewDiffNotReady',
@@ -232,11 +230,18 @@ class BranchMergeProposalExists(InvalidBranchMergeProposal):
     """Raised if there is already a matching BranchMergeProposal."""
 
     def __init__(self, existing_proposal):
+        # Circular import.
+        from lp.code.interfaces.branch import IBranch
+        # display_name is the newer style, but IBranch uses the older style.
+        if IBranch.providedBy(existing_proposal.merge_source):
+            display_name = "displayname"
+        else:
+            display_name = "display_name"
         super(BranchMergeProposalExists, self).__init__(
                 'There is already a branch merge proposal registered for '
                 'branch %s to land on %s that is still active.' %
-                (existing_proposal.source_branch.displayname,
-                 existing_proposal.target_branch.displayname))
+                (getattr(existing_proposal.merge_source, display_name),
+                 getattr(existing_proposal.merge_target, display_name)))
         self.existing_proposal = existing_proposal
 
 
@@ -405,15 +410,15 @@ class GitDefaultConflict(Exception):
         params = {
             "unique_name": existing_repository.unique_name,
             "target": target.displayname,
-            "owner": owner.displayname,
             }
         if owner is None:
             message = (
                 "The default repository for '%(target)s' is already set to "
                 "%(unique_name)s." % params)
         else:
+            params["owner"] = owner.displayname
             message = (
-                "%(owner)'s default repository for '%(target)s' is already "
+                "%(owner)s's default repository for '%(target)s' is already "
                 "set to %(unique_name)s." % params)
         self.existing_repository = existing_repository
         self.target = target
@@ -459,16 +464,6 @@ class RecipeBuildException(Exception):
         Exception.__init__(self, msg)
 
 
-class TooManyBuilds(RecipeBuildException):
-    """A build was requested that exceeded the quota."""
-
-    def __init__(self, recipe, distroseries):
-        RecipeBuildException.__init__(
-            self, recipe, distroseries,
-            'You have exceeded your quota for recipe %(recipe)s for'
-            ' distroseries %(distroseries)s')
-
-
 class BuildAlreadyPending(RecipeBuildException):
     """A build was requested when an identical build was already pending."""
 
@@ -485,15 +480,6 @@ class BuildNotAllowedForDistro(RecipeBuildException):
         RecipeBuildException.__init__(
             self, recipe, distroseries,
             'A build against this distro is not allowed.')
-
-
-@error_status(httplib.BAD_REQUEST)
-class InvalidMergeQueueConfig(Exception):
-    """The config specified is not a valid JSON string."""
-
-    def __init__(self):
-        message = ('The configuration specified is not a valid JSON string.')
-        Exception.__init__(self, message)
 
 
 @error_status(httplib.BAD_REQUEST)

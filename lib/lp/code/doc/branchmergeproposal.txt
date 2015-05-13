@@ -43,7 +43,7 @@ All merge proposals are created from the source branch using a method called
     >>> target_branch = factory.makeProductBranch(product=fooix)
     >>> merge_proposal = source_branch.addLandingTarget(
     ...     registrant=source_branch.owner,
-    ...     target_branch=target_branch)
+    ...     merge_target=target_branch)
 
 The bare minimum that needs to be specified is the person that is proposing
 the merge, the ``registrant``, and the branch that the registrant wants the
@@ -85,16 +85,3 @@ Merged
 Superseded
   The intent of superseded proposals has changed somewhat over time, and needs
   some rework (bugs 383352, 397444, 400030, 488544)
-
-
-There are also some other states that are not yet in general use:
-
-Queued
-  The merge proposal is queued for merging.  The proposal will be part of some
-  merge queue which a person or script (like tarmac) will process and do the
-  merges.
-
-Merge Failed
-  A script tried to merge the branch but it either failed to merge cleanly
-  (had conflicts) or failed some tests as defined by the script.  There is the
-  facility to add a log file containing the failures here.

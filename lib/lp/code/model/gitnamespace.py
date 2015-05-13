@@ -16,7 +16,10 @@ from storm.locals import And
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
-from zope.security.proxy import removeSecurityProxy
+from zope.security.proxy import (
+    isinstance as zope_isinstance,
+    removeSecurityProxy,
+    )
 
 from lp.app.enums import (
     FREE_INFORMATION_TYPES,
@@ -31,11 +34,13 @@ from lp.code.enums import (
     CodeReviewNotificationLevel,
     )
 from lp.code.errors import (
+    GitDefaultConflict,
     GitRepositoryCreationForbidden,
     GitRepositoryCreatorNotMemberOfOwnerTeam,
     GitRepositoryCreatorNotOwner,
     GitRepositoryExists,
     )
+from lp.code.interfaces.gitcollection import IAllGitRepositories
 from lp.code.interfaces.gitnamespace import (
     IGitNamespace,
     IGitNamespacePolicy,
@@ -43,6 +48,7 @@ from lp.code.interfaces.gitnamespace import (
     )
 from lp.code.interfaces.gitrepository import (
     IGitRepository,
+    IGitRepositorySet,
     user_has_special_git_repository_access,
     )
 from lp.code.interfaces.hasgitrepositories import IHasGitRepositories
@@ -142,19 +148,37 @@ class _BaseGitNamespace:
         # "gitrepository" violates check constraint "valid_name"...'.
         IGitRepository['name'].validate(unicode(name))
 
+    def validateDefaultFlags(self, repository):
+        """See `IGitNamespace`."""
+        repository_set = getUtility(IGitRepositorySet)
+        if repository.target_default and self.target != repository.target:
+            existing = repository_set.getDefaultRepository(self.target)
+            if existing is not None:
+                raise GitDefaultConflict(existing, self.target)
+        if (repository.owner_default and
+            (self.owner != repository.owner or
+             self.target != repository.target)):
+            existing = repository_set.getDefaultRepositoryForOwner(
+                self.owner, self.target)
+            if existing is not None:
+                raise GitDefaultConflict(
+                    existing, self.target, owner=self.owner)
+
     def validateMove(self, repository, mover, name=None):
         """See `IGitNamespace`."""
         if name is None:
             name = repository.name
         self.validateRepositoryName(name)
         self.validateRegistrant(mover)
+        self.validateDefaultFlags(repository)
 
     def moveRepository(self, repository, mover, new_name=None,
                        rename_if_necessary=False):
         """See `IGitNamespace`."""
-        # Check to see if the repository is already in this namespace.
+        # Check to see if the repository is already in this namespace with
+        # this name.
         old_namespace = repository.namespace
-        if self.name == old_namespace.name:
+        if self.name == old_namespace.name and new_name is None:
             return
         if new_name is None:
             new_name = repository.name
@@ -164,10 +188,13 @@ class _BaseGitNamespace:
         # Remove the security proxy of the repository as the owner and
         # target attributes are read-only through the interface.
         naked_repository = removeSecurityProxy(repository)
-        naked_repository.owner = self.owner
-        self._retargetRepository(naked_repository)
-        del get_property_cache(naked_repository).target
-        naked_repository.name = new_name
+        if self.owner != repository.owner:
+            naked_repository.owner = self.owner
+        if self.target != repository.target:
+            self._retargetRepository(naked_repository)
+            del get_property_cache(naked_repository).target
+        if new_name != repository.name:
+            naked_repository.name = new_name
 
     def getRepositories(self):
         """See `IGitNamespace`."""
@@ -210,6 +237,7 @@ class PersonalGitNamespace(_BaseGitNamespace):
 
     has_defaults = False
     allow_push_to_set_default = False
+    supports_merge_proposals = False
 
     def __init__(self, person):
         self.owner = person
@@ -258,6 +286,21 @@ class PersonalGitNamespace(_BaseGitNamespace):
         else:
             return InformationType.PUBLIC
 
+    def areRepositoriesMergeable(self, other_namespace):
+        """See `IGitNamespacePolicy`."""
+        return False
+
+    @property
+    def collection(self):
+        """See `IGitNamespacePolicy`."""
+        return getUtility(IAllGitRepositories).ownedBy(
+            self.person).isPersonal()
+
+    def assignKarma(self, person, action_name, date_created=None):
+        """See `IGitNamespacePolicy`."""
+        # Does nothing.  No karma for personal repositories.
+        return None
+
 
 class ProjectGitNamespace(_BaseGitNamespace):
     """A namespace for project repositories.
@@ -270,6 +313,7 @@ class ProjectGitNamespace(_BaseGitNamespace):
 
     has_defaults = True
     allow_push_to_set_default = True
+    supports_merge_proposals = True
 
     def __init__(self, person, project):
         self.owner = person
@@ -321,6 +365,27 @@ class ProjectGitNamespace(_BaseGitNamespace):
             return None
         return default_type
 
+    def areRepositoriesMergeable(self, other_namespace):
+        """See `IGitNamespacePolicy`."""
+        # Repositories are mergeable into a project repository if the
+        # project is the same.
+        # XXX cjwatson 2015-04-18: Allow merging from a package repository
+        # if any (active?) series is linked to this project.
+        if zope_isinstance(other_namespace, ProjectGitNamespace):
+            return self.target == other_namespace.target
+        else:
+            return False
+
+    @property
+    def collection(self):
+        """See `IGitNamespacePolicy`."""
+        return getUtility(IAllGitRepositories).inProject(self.project)
+
+    def assignKarma(self, person, action_name, date_created=None):
+        """See `IGitNamespacePolicy`."""
+        return person.assignKarma(
+            action_name, product=self.project, datecreated=date_created)
+
 
 class PackageGitNamespace(_BaseGitNamespace):
     """A namespace for distribution source package repositories.
@@ -333,6 +398,7 @@ class PackageGitNamespace(_BaseGitNamespace):
 
     has_defaults = True
     allow_push_to_set_default = False
+    supports_merge_proposals = True
 
     def __init__(self, person, distro_source_package):
         self.owner = person
@@ -371,6 +437,30 @@ class PackageGitNamespace(_BaseGitNamespace):
     def getDefaultInformationType(self, who=None):
         """See `IGitNamespace`."""
         return InformationType.PUBLIC
+
+    def areRepositoriesMergeable(self, other_namespace):
+        """See `IGitNamespacePolicy`."""
+        # Repositories are mergeable into a package repository if the
+        # package is the same.
+        # XXX cjwatson 2015-04-18: Allow merging from a project repository
+        # if any (active?) series links this package to that project.
+        if zope_isinstance(other_namespace, PackageGitNamespace):
+            return self.target == other_namespace.target
+        else:
+            return False
+
+    @property
+    def collection(self):
+        """See `IGitNamespacePolicy`."""
+        return getUtility(IAllGitRepositories).inDistributionSourcePackage(
+            self.distro_source_package)
+
+    def assignKarma(self, person, action_name, date_created=None):
+        """See `IGitNamespacePolicy`."""
+        dsp = self.distro_source_package
+        return person.assignKarma(
+            action_name, distribution=dsp.distribution,
+            sourcepackagename=dsp.sourcepackagename, datecreated=date_created)
 
     def __eq__(self, other):
         """See `IGitNamespace`."""

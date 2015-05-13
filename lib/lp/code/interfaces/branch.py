@@ -42,6 +42,7 @@ from lazr.restful.declarations import (
     operation_parameters,
     operation_returns_collection_of,
     operation_returns_entry,
+    rename_parameters_as,
     REQUEST_USER,
     )
 from lazr.restful.fields import (
@@ -82,7 +83,6 @@ from lp.code.enums import (
     CodeReviewNotificationLevel,
     )
 from lp.code.interfaces.branchlookup import IBranchLookup
-from lp.code.interfaces.branchmergequeue import IBranchMergeQueue
 from lp.code.interfaces.branchtarget import IHasBranchTarget
 from lp.code.interfaces.hasbranches import IHasMergeProposals
 from lp.code.interfaces.hasrecipes import IHasRecipes
@@ -358,11 +358,12 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
              description=_("Unique name of the branch, including the "
                            "owner and project names.")))
 
-    displayname = exported(
+    display_name = exported(
         Text(title=_('Display name'), readonly=True,
              description=_(
-                "The branch unique_name.")),
-        exported_as='display_name')
+                "The branch unique_name.")))
+
+    displayname = Attribute("Display name (deprecated)")
 
     code_reviewer = Attribute(
         "The reviewer if set, otherwise the owner of the branch.")
@@ -568,12 +569,16 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
             value_type=Reference(Interface)))
 
     def isBranchMergeable(other_branch):
-        """Is the other branch mergeable into this branch (or vice versa)."""
+        """Is the other branch mergeable into this branch (or vice versa)?"""
 
     @export_operation_as('createMergeProposal')
+    # Rename back to Bazaar-specific names for API compatibility.
+    @rename_parameters_as(
+        merge_target='target_branch',
+        merge_prerequisite='prerequisite_branch')
     @operation_parameters(
-        target_branch=Reference(schema=Interface),
-        prerequisite_branch=Reference(schema=Interface),
+        merge_target=Reference(schema=Interface),
+        merge_prerequisite=Reference(schema=Interface),
         needs_review=Bool(title=_('Needs review'),
             description=_('If True the proposal needs review.'
             'Otherwise, it will be work in progress.')),
@@ -585,14 +590,14 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
             description=_('Message to use when committing this merge.')),
         reviewers=List(value_type=Reference(schema=IPerson)),
         review_types=List(value_type=TextLine()))
-    # target_branch and prerequisite_branch are actually IBranch, patched in
+    # merge_target and merge_prerequisite are actually IBranch, patched in
     # _schema_circular_imports.
     @call_with(registrant=REQUEST_USER)
     # IBranchMergeProposal supplied as Interface to avoid circular imports.
     @export_factory_operation(Interface, [])
     @operation_for_version('beta')
     def _createMergeProposal(
-        registrant, target_branch, prerequisite_branch=None,
+        registrant, merge_target, merge_prerequisite=None,
         needs_review=True, initial_comment=None, commit_message=None,
         reviewers=None, review_types=None):
         """Create a new BranchMergeProposal with this branch as the source.
@@ -604,22 +609,22 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
         targets.
         """
 
-    def addLandingTarget(registrant, target_branch, prerequisite_branch=None,
+    def addLandingTarget(registrant, merge_target, merge_prerequisite=None,
                          date_created=None, needs_review=False,
                          description=None, review_requests=None,
                          commit_message=None):
         """Create a new BranchMergeProposal with this branch as the source.
 
-        Both the target_branch and the prerequisite_branch, if it is there,
+        Both the merge_target and the merge_prerequisite, if it is there,
         must be branches with the same target as the source branch.
 
         Personal branches (a.k.a. junk branches) cannot specify landing
         targets.
 
         :param registrant: The person who is adding the landing target.
-        :param target_branch: Must be another branch, and different to self.
-        :param prerequisite_branch: Optional but if it is not None, it must be
-            another branch.
+        :param merge_target: Must be another branch, and different to self.
+        :param merge_prerequisite: Optional but if it is not None, it must
+            be another branch.
         :param date_created: Used to specify the date_created value of the
             merge request.
         :param needs_review: Used to specify the proposal is ready for
@@ -674,7 +679,7 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
     code_is_browseable = Attribute(
         "Is the code in this branch accessable through codebrowse?")
 
-    def codebrowse_url(*extras):
+    def getCodebrowseUrl(*extras):
         """Construct a URL for this branch in codebrowse.
 
         :param extras: Zero or more path segments that will be joined onto the
@@ -1183,56 +1188,9 @@ class IBranchEdit(Interface):
         """
 
 
-class IMergeQueueable(Interface):
-    """An interface for branches that can be queued."""
-
-    merge_queue = exported(
-        Reference(
-            title=_('Branch Merge Queue'),
-            schema=IBranchMergeQueue, required=False, readonly=True,
-            description=_(
-                "The branch merge queue that manages merges for this "
-                "branch.")))
-
-    merge_queue_config = exported(
-        TextLine(
-            title=_('Name'), required=True, readonly=True,
-            description=_(
-                "A JSON string of configuration values to send to a "
-                "branch merge robot.")))
-
-    @mutator_for(merge_queue)
-    @operation_parameters(
-        queue=Reference(title=_('Branch Merge Queue'),
-              schema=IBranchMergeQueue))
-    @export_write_operation()
-    @operation_for_version('beta')
-    def addToQueue(queue):
-        """Add this branch to a specified queue.
-
-        A branch's merges can be managed by a queue.
-
-        :param queue: The branch merge queue that will manage the branch.
-        """
-
-    @mutator_for(merge_queue_config)
-    @operation_parameters(
-        config=TextLine(title=_("A JSON string of config values.")))
-    @export_write_operation()
-    @operation_for_version('beta')
-    def setMergeQueueConfig(config):
-        """Set the merge_queue_config property.
-
-        A branch can store a JSON string of configuration data for a merge
-        robot to retrieve.
-
-        :param config: A JSON string of data.
-        """
-
-
 class IBranch(IBranchPublic, IBranchView, IBranchEdit,
               IBranchEditableAttributes, IBranchModerate,
-              IBranchModerateAttributes, IBranchAnyone, IMergeQueueable):
+              IBranchModerateAttributes, IBranchAnyone):
     """A Bazaar branch."""
 
     # Mark branches as exported entries for the Launchpad API.

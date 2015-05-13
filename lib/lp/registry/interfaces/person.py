@@ -21,8 +21,6 @@ __all__ = [
     'IPersonLimitedView',
     'IPersonViewRestricted',
     'IRequestPeopleMerge',
-    'ISoftwareCenterAgentAPI',
-    'ISoftwareCenterAgentApplication',
     'ITeam',
     'ITeamContactAddressForm',
     'ITeamReassignment',
@@ -916,14 +914,14 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
             # Really IArchive, see archive.py
             schema=Interface))
 
-    ppas = exported(
+    ppas = exported(doNotSnapshot(
         CollectionField(
             title=_("PPAs for this person."),
             description=_(
                 "PPAs owned by the context person ordered by name."),
             readonly=True, required=False,
             # Really IArchive, see archive.py
-            value_type=Reference(schema=Interface)))
+            value_type=Reference(schema=Interface))))
 
     structural_subscriptions = Attribute(
         "The structural subscriptions for this person.")
@@ -1030,9 +1028,6 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
     @operation_for_version("beta")
     def getRecipe(name):
         """Return the person's recipe with the given name."""
-
-    def getMergeQueue(name):
-        """Return the person's merge queue with the given name."""
 
     @call_with(requester=REQUEST_USER)
     @export_read_operation()
@@ -2179,6 +2174,7 @@ class IPersonSet(Interface):
             title=_("OpenID identifier suffix"), required=True),
         email_address=TextLine(title=_("Email address"), required=True),
         display_name=TextLine(title=_("Display name"), required=True))
+    @operation_returns_entry(IPerson)
     @export_write_operation()
     @operation_for_version("devel")
     def getOrCreateSoftwareCenterCustomer(user, openid_identifier,
@@ -2499,36 +2495,15 @@ class ITeamContactAddressForm(Interface):
         required=True, vocabulary=TeamContactMethod)
 
 
-class ISoftwareCenterAgentAPI(Interface):
-    """XMLRPC API used by the software center agent."""
-
-    def getOrCreateSoftwareCenterCustomer(openid_identifier, email,
-                                          full_name):
-        """Get or create an LP person based on a given identifier.
-
-        See the method of the same name on `IPersonSet`. This XMLRPC version
-        doesn't require the creation rationale and comment.
-
-        This is added as a private XMLRPC method instead of exposing via the
-        API as it should not be needed long-term. Long term we should allow
-        the software center to create subscriptions to private PPAs without
-        requiring a Launchpad account.
-        """
-
-
 class ICanonicalSSOApplication(ILaunchpadApplication):
     """XMLRPC application root for ICanonicalSSOAPI."""
 
 
 class ICanonicalSSOAPI(Interface):
-    """XMLRPC API used by the software center agent."""
+    """XMLRPC API used by Canonical SSO."""
 
     def getPersonDetailsByOpenIDIdentifier(openid_identifier):
         """Get the details of an LP person based on an OpenID identifier."""
-
-
-class ISoftwareCenterAgentApplication(ILaunchpadApplication):
-    """XMLRPC application root for ISoftwareCenterAgentAPI."""
 
 
 @error_status(httplib.FORBIDDEN)
