@@ -1063,16 +1063,13 @@ class BranchMergeProposal(SQLBase):
 
         ids = set()
         source_branch_ids = set()
-        git_repository_ids = set()
-        person_ids = set()
         git_ref_keys = set()
+        person_ids = set()
         for mp in branch_merge_proposals:
             ids.add(mp.id)
             if mp.source_branchID is not None:
                 source_branch_ids.add(mp.source_branchID)
             if mp.source_git_repositoryID is not None:
-                git_repository_ids.add(mp.source_git_repositoryID)
-                git_repository_ids.add(mp.target_git_repositoryID)
                 git_ref_keys.add(
                     (mp.source_git_repositoryID, mp.source_git_path))
                 git_ref_keys.add(
@@ -1083,6 +1080,8 @@ class BranchMergeProposal(SQLBase):
                          mp.prerequisite_git_path))
             person_ids.add(mp.registrantID)
             person_ids.add(mp.merge_reporterID)
+        git_repository_ids = set(
+            repository_id for repository_id, _ in git_ref_keys)
 
         branches = load_related(
             Branch, branch_merge_proposals, (
