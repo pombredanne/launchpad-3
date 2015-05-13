@@ -131,6 +131,7 @@ from lp.registry.enums import (
     BugSharingPolicy,
     INCLUSIVE_TEAM_POLICY,
     SpecificationSharingPolicy,
+    VCSType,
     )
 from lp.registry.errors import (
     CannotChangeInformationType,
@@ -434,6 +435,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         dbName='official_malone', notNull=True, default=False)
     remote_product = Unicode(
         name='remote_product', allow_none=True, default=None)
+    vcs = EnumCol(enum=VCSType, notNull=False)
 
     @property
     def date_next_suggest_packaging(self):
@@ -1847,7 +1849,7 @@ class ProductSet:
                       project_reviewed=False, mugshot=None, logo=None,
                       icon=None, licenses=None, license_info=None,
                       registrant=None, bug_supervisor=None, driver=None,
-                      information_type=None):
+                      information_type=None, vcs=None):
         """See `IProductSet`."""
         if registrant is None:
             registrant = owner
@@ -1875,7 +1877,7 @@ class ProductSet:
             project_reviewed=project_reviewed,
             icon=icon, logo=logo, mugshot=mugshot, license_info=license_info,
             bug_supervisor=bug_supervisor, driver=driver,
-            information_type=information_type)
+            information_type=information_type, vcs=vcs)
 
         # Set up the product licence.
         if len(licenses) > 0:

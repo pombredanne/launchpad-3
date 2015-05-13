@@ -1323,7 +1323,9 @@
                 sourceforgeproject
                 summary
                 title
-                wikiurl"/>
+                vcs
+                wikiurl"
+            />
         <require
             permission="launchpad.BugSupervisor"
             set_attributes="
@@ -1734,7 +1736,9 @@
                 package_derivatives_email
                 redirect_release_uploads
                 summary
-                title"/>
+                title
+                vcs
+                "/>
         <require
             permission="launchpad.Admin"
             set_attributes="

@@ -14,6 +14,7 @@ __all__ = [
     'PersonTransferJobType',
     'PersonVisibility',
     'ProductJobType',
+    'VCSType',
     'SharingPermission',
     'SpecificationSharingPolicy',
     'TeamMembershipPolicy',
@@ -382,4 +383,20 @@ class ProductJobType(DBEnumeratedType):
 
         A notification stating that the project's commercial subscription
         expired.
+        """)
+
+
+class VCSType(DBEnumeratedType):
+    """Values that IProduct.vcs and IDistribution.vcs can take."""
+
+    BZR = DBItem(0, """
+        Bazaar
+
+        The Bazaar DVCS is used as the default project or distribution VCS.
+        """)
+
+    GIT = DBItem(1, """
+        Git
+
+        The Git DVCS is used as the default project or distribution VCS.
         """)
