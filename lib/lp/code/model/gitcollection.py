@@ -9,6 +9,7 @@ __all__ = [
     ]
 
 from functools import partial
+from operator import attrgetter
 
 from lazr.uri import (
     InvalidURIError,
@@ -176,6 +177,20 @@ class GenericGitCollection:
     def _getRepositoryVisibilityExpression(self, repository_class=None):
         """Return the where clauses for visibility."""
         return []
+
+    @staticmethod
+    def preloadVisibleRepositories(repositories, user=None):
+        """Preload visibility for the given list of repositories."""
+        if len(repositories) == 0:
+            return
+        expressions = [
+            GitRepository.id.is_in(map(attrgetter("id"), repositories))]
+        if user is None:
+            collection = AnonymousGitCollection(filter_expressions=expressions)
+        else:
+            collection = VisibleGitCollection(
+                user=user, filter_expressions=expressions)
+        return list(collection.getRepositories())
 
     @staticmethod
     def preloadDataForRepositories(repositories):

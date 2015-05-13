@@ -35,10 +35,10 @@
         <td>
           <a tal:attributes="href proposal/fmt:url">
             <strong>
-              <tal:source-branch replace="proposal/source_branch/bzr_identity"/>
+              <tal:merge-source replace="proposal/merge_source/identity"/>
             </strong>
             &rArr;
-            <tal:source-branch replace="proposal/target_branch/bzr_identity"/>
+            <tal:merge-target replace="proposal/merge_target/identity"/>
           </a>
         </td>
         <td tal:attributes="class string:mergestatus${proposal/queue_status/name}"
