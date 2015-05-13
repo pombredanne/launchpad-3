@@ -376,7 +376,7 @@ class IDistributionPublic(
         constraint=name_validator, readonly=False, required=False))
 
     vcs = Attribute("""
-        Whether the default VCS is BZR, or GIT.""")
+    Version control system for this distribution's code.""")
 
     def getArchiveIDList(archive=None):
         """Return a list of archive IDs suitable for sqlvalues() or quote().

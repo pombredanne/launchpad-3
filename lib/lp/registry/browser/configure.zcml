@@ -1752,6 +1752,13 @@
         template="../templates/product-review-license.pt"
         />
     <browser:page
+        name="+setbranch-project"
+        for="lp.registry.interfaces.product.IProduct"
+        class="lp.registry.browser.product.ProductSetBranchView"
+        permission="launchpad.Edit"
+        template="../templates/project-setbranch.pt"
+        />
+    <browser:page
         name="+edit"
         for="lp.registry.interfaces.nameblacklist.INameBlacklist"
         class="lp.registry.browser.nameblacklist.NameBlacklistEditView"
