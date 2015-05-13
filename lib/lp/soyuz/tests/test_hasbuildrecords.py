@@ -305,11 +305,10 @@ class TestSourcePackageHasBuildRecords(TestHasBuildRecordsInterface):
         # Set up a distroseries and related bits, so we can create builds.
         source_name = self.factory.getUniqueString()
         spn = self.factory.makeSourcePackageName(name=source_name)
-        processor = self.factory.makeProcessor()
+        processor = self.factory.makeProcessor(supports_virtualized=True)
         distroseries = self.factory.makeDistroSeries()
         das = self.factory.makeDistroArchSeries(
-            distroseries=distroseries, processor=processor,
-            supports_virtualized=True)
+            distroseries=distroseries, processor=processor)
         with person_logged_in(admin):
             publisher = SoyuzTestPublisher()
             publisher.prepareBreezyAutotest()
