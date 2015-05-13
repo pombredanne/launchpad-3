@@ -456,6 +456,10 @@ class IGitRepositoryView(Interface):
     def isRepositoryMergeable(other):
         """Is the other repository mergeable into this one (or vice versa)?"""
 
+    pending_writes = Attribute(
+        "Whether there are recent changes in this repository that have not "
+        "yet been scanned.")
+
 
 class IGitRepositoryModerateAttributes(Interface):
     """IGitRepository attributes that can be edited by more than one community.

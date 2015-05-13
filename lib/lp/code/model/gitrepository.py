@@ -121,6 +121,8 @@ from lp.services.database.stormexpr import (
     Values,
     )
 from lp.services.features import getFeatureFlag
+from lp.services.job.interfaces.job import JobStatus
+from lp.services.job.model.job import Job
 from lp.services.mail.notificationrecipientset import NotificationRecipientSet
 from lp.services.propertycache import (
     cachedproperty,
@@ -762,6 +764,21 @@ class GitRepository(StormBase, GitIdentityMixin):
     def isRepositoryMergeable(self, other):
         """See `IGitRepository`."""
         return self.namespace.areRepositoriesMergeable(other.namespace)
+
+    @property
+    def pending_writes(self):
+        """See `IGitRepository`."""
+        from lp.code.model.gitjob import (
+            GitJob,
+            GitJobType,
+            )
+        jobs = Store.of(self).find(
+            GitJob,
+            GitJob.repository == self,
+            GitJob.job_type == GitJobType.REF_SCAN,
+            GitJob.job == Job.id,
+            Job._status.is_in([JobStatus.WAITING, JobStatus.RUNNING]))
+        return not jobs.is_empty()
 
     def destroySelf(self):
         raise NotImplementedError
