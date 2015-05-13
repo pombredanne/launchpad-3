@@ -759,7 +759,7 @@ class IProductView(
             required=False,
             vocabulary=VCSType,
             description=_(
-                "Version control system for this project's code.""")))
+                "Version control system for this project's code.")))
 
     def getAllowedBugInformationTypes():
         """Get the information types that a bug in this project can have.

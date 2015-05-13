@@ -382,7 +382,7 @@ class IDistributionPublic(
             required=False,
             vocabulary=VCSType,
             description=_(
-                "Version control system for this distribution's code.""")))
+                "Version control system for this distribution's code.")))
 
     def getArchiveIDList(archive=None):
         """Return a list of archive IDs suitable for sqlvalues() or quote().
