@@ -1840,7 +1840,7 @@ class ProductSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
     @property
     def target(self):
         """The branch target for the context."""
-        return IBranchTarget(self.context.product)
+        return IBranchTarget(self.context)
 
     @action(_('Update'), name='update')
     def update_action(self, action, data):
