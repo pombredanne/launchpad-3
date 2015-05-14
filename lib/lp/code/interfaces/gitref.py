@@ -277,6 +277,10 @@ class IGitRef(IHasMergeProposals):
                           merged_revision_ids=None, eager_load=False):
         """Return matching BranchMergeProposals."""
 
+    pending_writes = Attribute(
+        "Whether there are recent changes in this repository that have not "
+        "yet been scanned.")
+
 
 class IGitRefBatchNavigator(ITableBatchNavigator):
     pass
