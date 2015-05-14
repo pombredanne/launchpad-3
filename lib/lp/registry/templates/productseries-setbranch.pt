@@ -56,6 +56,14 @@
               Import a branch hosted somewhere else
             </label>
             <table class="subordinate">
+              
+              <tal:widget define="widget nocall:view/widgets/branch_name">
+                <metal:block use-macro="context/@@launchpad_form/widget_row" />
+              </tal:widget>
+              <tal:widget define="widget nocall:view/widgets/branch_owner">
+                <metal:block use-macro="context/@@launchpad_form/widget_row" />
+              </tal:widget>
+
               <tal:widget define="widget nocall:view/widgets/repo_url">
                 <metal:block use-macro="context/@@launchpad_form/widget_row" />
               </tal:widget>
@@ -100,13 +108,6 @@
             </table>
           </td>
         </tr>
-
-        <tal:widget define="widget nocall:view/widgets/branch_name">
-          <metal:block use-macro="context/@@launchpad_form/widget_row" />
-        </tal:widget>
-        <tal:widget define="widget nocall:view/widgets/branch_owner">
-          <metal:block use-macro="context/@@launchpad_form/widget_row" />
-        </tal:widget>
 
       </table>
       <input tal:replace="structure view/rcs_type_emptymarker" />
