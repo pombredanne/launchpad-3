@@ -150,6 +150,7 @@ class RootApp:
                   "logged in as the right user, or log into Launchpad and try "
                   "again.")
                 raise exc
+            environ[self.session_var]['identity_url'] = response.identity_url
             environ[self.session_var]['user'] = sreg_info['nickname']
             raise HTTPMovedPermanently(query['back_to'])
         elif response.status == FAILURE:
@@ -195,15 +196,18 @@ class RootApp:
             return self._logout(environ, start_response)
         path = environ['PATH_INFO']
         trailingSlashCount = len(path) - len(path.rstrip('/'))
+        identity_url = environ[self.session_var].get(
+            'identity_url', LAUNCHPAD_ANONYMOUS)
         user = environ[self.session_var].get('user', LAUNCHPAD_ANONYMOUS)
-        lp_server = get_lp_server(user, branch_transport=self.get_transport())
+        lp_server = get_lp_server(
+            identity_url, branch_transport=self.get_transport())
         lp_server.start_server()
         try:
 
             try:
                 branchfs = self.get_branchfs()
                 transport_type, info, trail = branchfs.translatePath(
-                    user, urlutils.escape(path))
+                    identity_url, urlutils.escape(path))
             except xmlrpclib.Fault as f:
                 if check_fault(f, faults.PathTranslationError):
                     raise HTTPNotFound()

@@ -126,6 +126,13 @@ class TestGitRefScanJob(TestGitRefScanJobMixin, TestCaseWithFactory):
         repository = self.factory.makeGitRepository()
         self.assertProvides(GitRefScanJob.create(repository), IGitRefScanJob)
 
+    def test___repr__(self):
+        # `GitRefScanJob` objects have an informative __repr__.
+        repository = self.factory.makeGitRepository()
+        job = GitRefScanJob.create(repository)
+        self.assertEqual(
+            "<GitRefScanJob for %s>" % repository.unique_name, repr(job))
+
     def test_run(self):
         # Ensure the job scans the repository.
         repository = self.factory.makeGitRepository()

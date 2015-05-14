@@ -844,6 +844,12 @@
         name="+register-merge"
         permission="launchpad.AnyPerson"
         template="../templates/gitref-register-merge.pt"/>
+    <browser:page
+        for="lp.code.interfaces.gitref.IGitRef"
+        class="lp.code.browser.branchmergeproposallisting.BranchActiveReviewsView"
+        permission="zope.Public"
+        name="+activereviews"
+        template="../templates/active-reviews.pt"/>
     <browser:menus
         classes="GitRefContextMenu"
         module="lp.code.browser.gitref"/>

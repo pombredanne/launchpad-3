@@ -43,11 +43,12 @@ from lp.code.enums import (
     BranchMergeProposalStatus,
     GitObjectType,
     )
+from lp.code.interfaces.hasbranches import IHasMergeProposals
 from lp.registry.interfaces.person import IPerson
 from lp.services.webapp.interfaces import ITableBatchNavigator
 
 
-class IGitRef(Interface):
+class IGitRef(IHasMergeProposals):
     """A reference in a Git repository."""
 
     # XXX cjwatson 2015-01-19 bug=760849: "beta" is a lie to get WADL
