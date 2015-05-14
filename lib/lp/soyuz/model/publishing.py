@@ -75,7 +75,6 @@ from lp.services.webapp.errorlog import (
     )
 from lp.services.worlddata.model.country import Country
 from lp.soyuz.enums import (
-    ArchivePurpose,
     BinaryPackageFormat,
     PackagePublishingPriority,
     PackagePublishingStatus,
@@ -101,7 +100,6 @@ from lp.soyuz.interfaces.publishing import (
     OverrideError,
     PoolFileOverwriteError,
     )
-from lp.soyuz.interfaces.queue import QueueInconsistentStateError
 from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.binarypackagename import BinaryPackageName
@@ -1058,13 +1056,18 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
     def binaryFileUrls(self, include_meta=False):
         """See `IBinaryPackagePublishingHistory`."""
+        binaries = Store.of(self).find(
+            (LibraryFileAlias, LibraryFileContent),
+            LibraryFileContent.id == LibraryFileAlias.contentID,
+            LibraryFileAlias.id == BinaryPackageFile.libraryfileID,
+            BinaryPackageFile.binarypackagerelease ==
+                BinaryPackageRelease.id,
+            BinaryPackageRelease.id == self.binarypackagereleaseID)
         binary_urls = proxied_urls(
-            [f.libraryfilealias for f in self.files], self.archive)
+            [binary for binary, _ in binaries], self.archive)
         if include_meta:
-            meta = [(
-                f.libraryfilealias.content.filesize,
-                f.libraryfilealias.content.sha1,
-            ) for f in self.files]
+            meta = [
+                (content.filesize, content.sha1) for _, content in binaries]
             return [dict(url=url, size=size, sha1=sha1)
                 for url, (size, sha1) in zip(binary_urls, meta)]
         return binary_urls
