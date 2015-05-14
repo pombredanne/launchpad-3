@@ -1752,7 +1752,7 @@
         template="../templates/product-review-license.pt"
         />
     <browser:page
-        name="+setbranch-project"
+        name="+setbranch"
         for="lp.registry.interfaces.product.IProduct"
         class="lp.registry.browser.product.ProductSetBranchView"
         permission="launchpad.Edit"
