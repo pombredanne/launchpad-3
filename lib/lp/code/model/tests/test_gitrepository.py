@@ -47,6 +47,7 @@ from lp.code.errors import (
     GitTargetError,
     )
 from lp.code.interfaces.defaultgit import ICanHasDefaultGitRepository
+from lp.code.interfaces.gitjob import IGitRefScanJobSource
 from lp.code.interfaces.gitnamespace import (
     IGitNamespacePolicy,
     IGitNamespaceSet,
@@ -58,6 +59,7 @@ from lp.code.interfaces.gitrepository import (
     )
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.model.gitrepository import GitRepository
+from lp.code.xmlrpc.git import GitAPI
 from lp.registry.enums import (
     BranchSharingPolicy,
     PersonVisibility,
@@ -76,6 +78,7 @@ from lp.registry.tests.test_accesspolicy import get_policies_for_artifact
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.features.testing import FeatureFixture
+from lp.services.job.runner import JobRunner
 from lp.services.mail import stub
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.interfaces import OAuthPermission
@@ -88,9 +91,11 @@ from lp.testing import (
     TestCaseWithFactory,
     verifyObject,
     )
+from lp.testing.dbuser import dbuser
 from lp.testing.fakemethod import FakeMethod
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
     ZopelessDatabaseLayer,
     )
 from lp.testing.pages import webservice_for_person
@@ -440,6 +445,34 @@ class TestGitRepositoryNamespace(TestCaseWithFactory):
             person=repository.owner, distribution=dsp.distribution,
             sourcepackagename=dsp.sourcepackagename)
         self.assertEqual(namespace, repository.namespace)
+
+
+class TestGitRepositoryPendingWrites(TestCaseWithFactory):
+    """Are there changes to this repository not reflected in the database?"""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(TestGitRepositoryPendingWrites, self).setUp()
+        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
+
+    def test_new_repository_no_writes(self):
+        # New repositories have no pending writes.
+        repository = self.factory.makeGitRepository()
+        self.assertFalse(repository.pending_writes)
+
+    def test_notify(self):
+        # If the hosting service has just sent us a change notification,
+        # then there are pending writes, but running the ref-scanning job
+        # clears that flag.
+        git_api = GitAPI(None, None)
+        repository = self.factory.makeGitRepository()
+        self.assertIsNone(git_api.notify(repository.getInternalPath()))
+        self.assertTrue(repository.pending_writes)
+        [job] = list(getUtility(IGitRefScanJobSource).iterReady())
+        with dbuser("branchscanner"):
+            JobRunner([job]).runAll()
+        self.assertFalse(repository.pending_writes)
 
 
 class TestGitRepositoryPrivacy(TestCaseWithFactory):

@@ -53,6 +53,7 @@ from lp.code.tests.helpers import (
     add_revision_to_branch,
     make_merge_proposal_without_reviewers,
     )
+from lp.code.xmlrpc.git import GitAPI
 from lp.registry.enums import (
     PersonVisibility,
     TeamMembershipPolicy,
@@ -1277,6 +1278,18 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         self.assertFalse(view.pending_diff)
         with person_logged_in(bmp.source_branch.owner):
             bmp.source_branch.branchChanged(None, 'rev-1', None, None, None)
+        self.assertTrue(view.pending_diff)
+
+    def test_pending_diff_with_pending_git_repository(self):
+        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
+        bmp = self.factory.makeBranchMergeProposalForGit()
+        bmp.next_preview_diff_job.start()
+        bmp.next_preview_diff_job.fail()
+        view = create_initialized_view(bmp, '+index')
+        self.assertFalse(view.pending_diff)
+        git_api = GitAPI(None, None)
+        self.assertIsNone(
+            git_api.notify(bmp.source_git_repository.getInternalPath()))
         self.assertTrue(view.pending_diff)
 
     def test_subscribe_to_merge_proposal_events_flag_disabled(self):

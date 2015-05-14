@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Views, navigation and actions for BranchMergeProposals."""
@@ -697,11 +697,9 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
 
     @property
     def pending_diff(self):
-        if self.context.source_branch is None:
-            return False
         return (
             self.context.next_preview_diff_job is not None or
-            self.context.source_branch.pending_writes)
+            self.context.merge_source.pending_writes)
 
     @cachedproperty
     def preview_diff(self):
