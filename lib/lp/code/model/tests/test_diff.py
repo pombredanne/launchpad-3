@@ -26,13 +26,11 @@ from lp.code.interfaces.diff import (
     IIncrementalDiff,
     IPreviewDiff,
     )
-from lp.code.interfaces.gitrepository import GIT_FEATURE_FLAG
 from lp.code.model.diff import (
     Diff,
     PreviewDiff,
     )
 from lp.code.model.directbranchcommit import DirectBranchCommit
-from lp.services.features.testing import FeatureFixture
 from lp.services.librarian.interfaces.client import (
     LIBRARIAN_SERVER_DEFAULT_TIMEOUT,
     )
@@ -375,10 +373,6 @@ class TestPreviewDiff(DiffTestCase):
     """Test that PreviewDiff objects work."""
 
     layer = LaunchpadFunctionalLayer
-
-    def setUp(self):
-        super(TestPreviewDiff, self).setUp()
-        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
 
     def _createProposalWithPreviewDiff(self, prerequisite_branch=None,
                                        content=None):

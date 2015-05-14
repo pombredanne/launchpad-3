@@ -19,13 +19,9 @@ from lp.app.enums import (
     ServiceUsage,
     )
 from lp.code.enums import BranchType
-from lp.code.interfaces.gitrepository import (
-    GIT_FEATURE_FLAG,
-    IGitRepositorySet,
-    )
+from lp.code.interfaces.gitrepository import IGitRepositorySet
 from lp.code.interfaces.revision import IRevisionSet
 from lp.registry.enums import BranchSharingPolicy
-from lp.services.features.testing import FeatureFixture
 from lp.services.webapp import canonical_url
 from lp.testing import (
     ANONYMOUS,
@@ -226,7 +222,6 @@ class TestProductCodeIndexView(ProductTestBase):
     def test_default_git_repository(self):
         # If there is a default Git repository, Product:+branches shows a
         # summary of its branches.
-        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
         product = self.factory.makeProduct()
         repository = self.factory.makeGitRepository(target=product)
         self.factory.makeGitRefs(

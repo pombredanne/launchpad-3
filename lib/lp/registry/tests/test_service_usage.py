@@ -7,11 +7,7 @@ from zope.component import getUtility
 
 from lp.app.enums import ServiceUsage
 from lp.code.enums import BranchType
-from lp.code.interfaces.gitrepository import (
-    GIT_FEATURE_FLAG,
-    IGitRepositorySet,
-    )
-from lp.services.features.testing import FeatureFixture
+from lp.code.interfaces.gitrepository import IGitRepositorySet
 from lp.testing import (
     login_person,
     TestCaseWithFactory,
@@ -210,7 +206,6 @@ class TestProductUsageEnums(TestCaseWithFactory, UsageEnumsMixin):
 
     def test_codehosting_default_git_repository(self):
         # A default Git repository on Launchpad has LAUNCHPAD usage.
-        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
         login_person(self.target.owner)
         repository = self.factory.makeGitRepository(target=self.target)
         getUtility(IGitRepositorySet).setDefaultRepository(

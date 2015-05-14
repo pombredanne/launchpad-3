@@ -21,7 +21,6 @@ from zope.traversing.browser.absoluteurl import absoluteURL
 
 from lp.app.enums import InformationType
 from lp.app.interfaces.services import IService
-from lp.code.interfaces.gitrepository import GIT_FEATURE_FLAG
 from lp.registry.enums import (
     BranchSharingPolicy,
     BugSharingPolicy,
@@ -30,7 +29,6 @@ from lp.registry.interfaces.accesspolicy import IAccessPolicyGrantFlatSource
 from lp.registry.model.pillar import PillarPerson
 from lp.services.config import config
 from lp.services.database.interfaces import IStore
-from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.interfaces import StormRangeFactoryError
 from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
@@ -58,7 +56,6 @@ class SharingBaseTestCase(TestCaseWithFactory):
 
     def setUp(self):
         super(SharingBaseTestCase, self).setUp()
-        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
         self.driver = self.factory.makePerson()
         self.owner = self.factory.makePerson()
         if self.pillar_type == 'distribution':

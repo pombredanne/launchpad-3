@@ -5,9 +5,7 @@
 
 __metaclass__ = type
 
-from lp.code.interfaces.gitrepository import GIT_FEATURE_FLAG
 from lp.code.vocabularies.gitrepository import GitRepositoryVocabulary
-from lp.services.features.testing import FeatureFixture
 from lp.testing import TestCaseWithFactory
 from lp.testing.layers import DatabaseFunctionalLayer
 
@@ -19,7 +17,6 @@ class TestGitRepositoryVocabulary(TestCaseWithFactory):
 
     def setUp(self):
         super(TestGitRepositoryVocabulary, self).setUp()
-        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
         self._createRepositories()
         self.vocab = GitRepositoryVocabulary(context=None)
 
