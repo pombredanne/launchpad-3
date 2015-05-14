@@ -297,11 +297,6 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
         return DecoratedResultSet(results, itemgetter(0)).one()
 
     @property
-    def can_be_nonvirtualized(self):
-        """See `IBuild`"""
-        return not self.archive.require_virtualized
-
-    @property
     def title(self):
         """See `IBuild`"""
         return '%s build of %s %s in %s %s %s' % (
