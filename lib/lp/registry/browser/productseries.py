@@ -71,6 +71,7 @@ from lp.bugs.browser.structuralsubscription import (
     )
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.code.browser.branchref import BranchRef
+from lp.code.enums import RevisionControlSystems
 from lp.registry.browser import (
     add_subscribe_link,
     BaseRdfView,
@@ -732,11 +733,8 @@ class ProductSeriesSetBranchView(ProductSetBranchView, ProductSeriesView):
     """The view to set a branch for the ProductSeries."""
 
     @property
-    def initial_values(self):
-        return dict(
-            rcs_type=RevisionControlSystems.BZR,
-            branch_type=LINK_LP_BZR,
-            branch_location=self.context.branch)
+    def series(self):
+        return self.context
 
 
 class ProductSeriesReviewView(LaunchpadEditFormView):

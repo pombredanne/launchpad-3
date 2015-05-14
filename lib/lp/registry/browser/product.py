@@ -1685,11 +1685,15 @@ class ProductSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
     errors_in_action = False
 
     @property
+    def series(self):
+        return self.context.development_focus
+
+    @property
     def initial_values(self):
         return dict(
             rcs_type=RevisionControlSystems.BZR,
             branch_type=LINK_LP_BZR,
-            branch_location=self.context.development_focus.branch)
+            branch_location=self.series.branch)
 
     @property
     def next_url(self):
@@ -1796,7 +1800,7 @@ class ProductSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
 
     def validate_widgets(self, data, names=None):
         """See `LaunchpadFormView`."""
-        names = ['branch_type', 'rcs_type']
+        names = ['branch_type', 'rcs_type', 'default_vcs']
         super(ProductSetBranchView, self).validate_widgets(data, names)
         branch_type = data.get('branch_type')
         if branch_type == LINK_LP_BZR:
@@ -1841,15 +1845,17 @@ class ProductSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
     @action(_('Update'), name='update')
     def update_action(self, action, data):
         branch_type = data.get('branch_type')
+        default_vcs = data.get('default_vcs')
+
         if branch_type == LINK_LP_BZR:
             branch_location = data.get('branch_location')
-            if branch_location != self.context.branch:
-                self.context.branch = branch_location
+            if branch_location != self.series.branch:
+                self.series.branch = branch_location
                 # Request an initial upload of translation files.
                 getUtility(IRosettaUploadJobSource).create(
-                    self.context.branch, NULL_REVISION)
+                    self.branch, NULL_REVISION)
             else:
-                self.context.branch = branch_location
+                self.series.branch = branch_location
             self.request.response.addInfoNotification(
                 'Series code location updated.')
         else:
@@ -1885,7 +1891,7 @@ class ProductSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
                     # the success handler.
                     self._abort()
                     return
-                self.context.branch = code_import.branch
+                self.series.branch = code_import.branch
                 self.request.response.addInfoNotification(
                     'Code import created and branch linked to the series.')
             else:
