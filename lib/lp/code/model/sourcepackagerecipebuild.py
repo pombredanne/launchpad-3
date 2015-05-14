@@ -118,8 +118,6 @@ class SourcePackageRecipeBuild(SpecificBuildFarmJobSourceMixin,
         """See `IPackageBuild`."""
         return self.distroseries.distribution
 
-    is_virtualized = True
-
     recipe_id = Int(name='recipe')
     recipe = Reference(recipe_id, 'SourcePackageRecipe.id')
 
