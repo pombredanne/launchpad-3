@@ -1056,14 +1056,18 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
     def binaryFileUrls(self, include_meta=False):
         """See `IBinaryPackagePublishingHistory`."""
+        binaries = Store.of(self).find(
+            (LibraryFileAlias, LibraryFileContent),
+            LibraryFileContent.id == LibraryFileAlias.contentID,
+            LibraryFileAlias.id == BinaryPackageFile.libraryfileID,
+            BinaryPackageFile.binarypackagerelease ==
+                BinaryPackageRelease.id,
+            BinaryPackageRelease.id == self.binarypackagereleaseID)
         binary_urls = proxied_urls(
-            [f.libraryfile for f in self.binarypackagerelease.files],
-            self.archive)
+            [binary for binary, _ in binaries], self.archive)
         if include_meta:
-            meta = [(
-                f.libraryfile.content.filesize,
-                f.libraryfile.content.sha1,
-            ) for f in self.binarypackagerelease.files]
+            meta = [
+                (content.filesize, content.sha1) for _, content in binaries]
             return [dict(url=url, size=size, sha1=sha1)
                 for url, (size, sha1) in zip(binary_urls, meta)]
         return binary_urls
