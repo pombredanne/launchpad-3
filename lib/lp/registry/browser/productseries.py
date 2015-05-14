@@ -731,6 +731,13 @@ class ProductSeriesDeleteView(RegistryDeleteViewMixin, LaunchpadEditFormView):
 class ProductSeriesSetBranchView(ProductSetBranchView, ProductSeriesView):
     """The view to set a branch for the ProductSeries."""
 
+    @property
+    def initial_values(self):
+        return dict(
+            rcs_type=RevisionControlSystems.BZR,
+            branch_type=LINK_LP_BZR,
+            branch_location=self.context.branch)
+
 
 class ProductSeriesReviewView(LaunchpadEditFormView):
     """A view to review and change the series `IProduct` and name."""

@@ -1689,7 +1689,7 @@ class ProductSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
         return dict(
             rcs_type=RevisionControlSystems.BZR,
             branch_type=LINK_LP_BZR,
-            branch_location=self.context.branch)
+            branch_location=self.context.development_focus.branch)
 
     @property
     def next_url(self):
