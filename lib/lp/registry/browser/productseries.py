@@ -742,7 +742,6 @@ class ProductSeriesSetBranchView(ProductSetBranchView, ProductSeriesView):
         return IBranchTarget(self.context.product)
 
 
-
 class ProductSeriesReviewView(LaunchpadEditFormView):
     """A view to review and change the series `IProduct` and name."""
     schema = IProductSeries

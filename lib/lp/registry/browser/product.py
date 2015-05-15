@@ -175,6 +175,7 @@ from lp.registry.browser.pillar import (
     PillarNavigationMixin,
     PillarViewMixin,
     )
+from lp.registry.enums import VCSType
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import (
     IProduct,
@@ -1637,6 +1638,10 @@ class SetBranchForm(Interface):
 
     use_template(ICodeImport, ['cvs_module'])
 
+    default_vcs = Choice(title=_("Project VCS"),
+        required=True, vocabulary=VCSType,
+        description=_("The default version control system for this project."))
+
     rcs_type = Choice(title=_("Type of RCS"),
         required=False, vocabulary=RevisionControlSystems,
         description=_(
@@ -1681,6 +1686,7 @@ class ProductSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
 
     custom_widget('rcs_type', LaunchpadRadioWidget)
     custom_widget('branch_type', LaunchpadRadioWidget)
+    custom_widget('default_vcs', LaunchpadRadioWidget)
 
     errors_in_action = False
 
@@ -1692,6 +1698,7 @@ class ProductSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
     def initial_values(self):
         return dict(
             rcs_type=RevisionControlSystems.BZR,
+            default_vcs=VCSType.GIT,
             branch_type=LINK_LP_BZR,
             branch_location=self.series.branch)
 
@@ -1730,6 +1737,14 @@ class ProductSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
          self.branch_type_import) = [
             render_radio_widget_part(widget, value, current_value)
             for value in (LINK_LP_BZR, IMPORT_EXTERNAL)]
+
+        widget = self.widgets['default_vcs']
+        vocab = widget.vocabulary
+        current_value = widget._getFormValue()
+        self.default_vcs_git = render_radio_widget_part(
+            widget, vocab.GIT, current_value, 'Git')
+        self.default_vcs_bzr = render_radio_widget_part(
+            widget, vocab.BZR, current_value, 'Bazaar')
 
     def _validateLinkLpBzr(self, data):
         """Validate data for link-lp-bzr case."""
@@ -1847,6 +1862,8 @@ class ProductSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
         branch_type = data.get('branch_type')
         default_vcs = data.get('default_vcs')
 
+        if default_vcs:
+            self.context.vcs = default_vcs
         if branch_type == LINK_LP_BZR:
             branch_location = data.get('branch_location')
             if branch_location != self.series.branch:
