@@ -6,8 +6,6 @@
 __metaclass__ = type
 
 from lp.app.enums import InformationType
-from lp.code.interfaces.gitrepository import GIT_FEATURE_FLAG
-from lp.services.features.testing import FeatureFixture
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
@@ -19,10 +17,6 @@ from lp.testing.views import create_initialized_view
 class TestGitSubscriptionAddOtherView(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        super(TestGitSubscriptionAddOtherView, self).setUp()
-        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
 
     def test_cannot_subscribe_open_team_to_private_repository(self):
         owner = self.factory.makePerson()

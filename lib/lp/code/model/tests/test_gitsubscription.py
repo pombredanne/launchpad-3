@@ -15,8 +15,6 @@ from lp.code.enums import (
     BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel,
     )
-from lp.code.interfaces.gitrepository import GIT_FEATURE_FLAG
-from lp.services.features.testing import FeatureFixture
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
@@ -28,10 +26,6 @@ class TestGitSubscriptions(TestCaseWithFactory):
     """Tests relating to Git repository subscriptions in general."""
 
     layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        super(TestGitSubscriptions, self).setUp()
-        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
 
     def test_owner_subscribed(self):
         # The owner of a repository is subscribed to the repository.
@@ -121,10 +115,6 @@ class TestGitSubscriptionCanBeUnsubscribedbyUser(TestCaseWithFactory):
     """Tests for GitSubscription.canBeUnsubscribedByUser."""
 
     layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        super(TestGitSubscriptionCanBeUnsubscribedbyUser, self).setUp()
-        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
 
     def test_none(self):
         # None for a user always returns False.

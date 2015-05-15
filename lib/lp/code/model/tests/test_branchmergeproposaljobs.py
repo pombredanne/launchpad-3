@@ -38,7 +38,6 @@ from lp.code.interfaces.branchmergeproposal import (
     IUpdatePreviewDiffJob,
     IUpdatePreviewDiffJobSource,
     )
-from lp.code.interfaces.gitrepository import GIT_FEATURE_FLAG
 from lp.code.model.branchmergeproposaljob import (
     BranchMergeProposalJob,
     BranchMergeProposalJobDerived,
@@ -221,7 +220,6 @@ class TestUpdatePreviewDiffJob(DiffTestCase):
         self.checkExampleMerge(bmp.preview_diff.text)
 
     def test_run_git(self):
-        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
         bmp, _, _, patch = self.createExampleGitMerge()
         job = UpdatePreviewDiffJob.create(bmp)
         with dbuser("merge-proposal-jobs"):
@@ -527,7 +525,6 @@ class TestBranchMergeProposalJobSource(TestCaseWithFactory):
         # iterReady supports merge proposals based on Git.  (These are
         # currently considered ready regardless of scanning, since the hard
         # work is done by the backend.)
-        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
         bmp = self.factory.makeBranchMergeProposalForGit()
         [job] = self.job_source.iterReady()
         self.assertEqual(bmp, job.branch_merge_proposal)

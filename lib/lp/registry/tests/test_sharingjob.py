@@ -17,7 +17,6 @@ from lp.code.enums import (
     BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel,
     )
-from lp.code.interfaces.gitrepository import GIT_FEATURE_FLAG
 from lp.registry.enums import SpecificationSharingPolicy
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactGrantSource,
@@ -120,7 +119,6 @@ class SharingJobDerivedTestCase(TestCaseWithFactory):
             % (branch.id, requestor.name), repr(job))
 
     def test_repr_gitrepositories(self):
-        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
         requestor = self.factory.makePerson()
         gitrepository = self.factory.makeGitRepository()
         job = getUtility(IRemoveArtifactSubscriptionsJobSource).create(
@@ -246,7 +244,6 @@ class RemoveArtifactSubscriptionsJobTestCase(TestCaseWithFactory):
     def setUp(self):
         self.useFixture(FeatureFixture({
             'jobs.celery.enabled_classes': 'RemoveArtifactSubscriptionsJob',
-            GIT_FEATURE_FLAG: 'on',
         }))
         super(RemoveArtifactSubscriptionsJobTestCase, self).setUp()
 

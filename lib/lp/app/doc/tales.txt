@@ -527,12 +527,9 @@ Git repositories
 
 For Git repositories, fmt:link links to the repository page.
 
-    >>> from lp.code.interfaces.gitrepository import GIT_FEATURE_FLAG
-    >>> from lp.services.features.testing import FeatureFixture
-    >>> with FeatureFixture({GIT_FEATURE_FLAG: 'on'}):
-    ...     repository = factory.makeGitRepository(
-    ...         owner=eric, target=fooix, name=u'bar')
-    ...     print test_tales("repository/fmt:link", repository=repository)
+    >>> repository = factory.makeGitRepository(
+    ...     owner=eric, target=fooix, name=u'bar')
+    >>> print test_tales("repository/fmt:link", repository=repository)
     <a href=".../~eric/fooix/+git/bar">lp:~eric/fooix/+git/bar</a>
 
 
@@ -541,10 +538,8 @@ Git references
 
 For Git references, fmt:link links to the reference page.
 
-    >>> with FeatureFixture({GIT_FEATURE_FLAG: 'on'}):
-    ...     [ref] = factory.makeGitRefs(
-    ...         repository=repository, paths=[u"master"])
-    ...     print test_tales("ref/fmt:link", ref=ref)
+    >>> [ref] = factory.makeGitRefs(repository=repository, paths=[u"master"])
+    >>> print test_tales("ref/fmt:link", ref=ref)
     <a href=".../~eric/fooix/+git/bar/+ref/master">~eric/fooix/+git/bar:master</a>
 
 

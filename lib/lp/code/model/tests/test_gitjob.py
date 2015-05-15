@@ -22,14 +22,12 @@ from lp.code.interfaces.gitjob import (
     IGitJob,
     IGitRefScanJob,
     )
-from lp.code.interfaces.gitrepository import GIT_FEATURE_FLAG
 from lp.code.model.gitjob import (
     GitJob,
     GitJobDerived,
     GitJobType,
     GitRefScanJob,
     )
-from lp.services.features.testing import FeatureFixture
 from lp.testing import (
     TestCaseWithFactory,
     time_counter,
@@ -49,7 +47,6 @@ class TestGitJob(TestCaseWithFactory):
 
     def test_provides_interface(self):
         # `GitJob` objects provide `IGitJob`.
-        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
         repository = self.factory.makeGitRepository()
         self.assertProvides(
             GitJob(repository, GitJobType.REF_SCAN, {}), IGitJob)
@@ -62,7 +59,6 @@ class TestGitJobDerived(TestCaseWithFactory):
 
     def test_getOopsMailController(self):
         """By default, no mail is sent about failed BranchJobs."""
-        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
         repository = self.factory.makeGitRepository()
         job = GitJob(repository, GitJobType.REF_SCAN, {})
         derived = GitJobDerived(job)
@@ -116,10 +112,6 @@ class TestGitRefScanJob(TestGitRefScanJobMixin, TestCaseWithFactory):
     """Tests for `GitRefScanJob`."""
 
     layer = LaunchpadZopelessLayer
-
-    def setUp(self):
-        super(TestGitRefScanJob, self).setUp()
-        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
 
     def test_provides_interface(self):
         # `GitRefScanJob` objects provide `IGitRefScanJob`.

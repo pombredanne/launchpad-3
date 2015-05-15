@@ -47,7 +47,6 @@ from lp.code.enums import (
     BranchMergeProposalStatus,
     CodeReviewVote,
     )
-from lp.code.interfaces.gitrepository import GIT_FEATURE_FLAG
 from lp.code.model.diff import PreviewDiff
 from lp.code.tests.helpers import (
     add_revision_to_branch,
@@ -58,7 +57,6 @@ from lp.registry.enums import (
     PersonVisibility,
     TeamMembershipPolicy,
     )
-from lp.services.features.testing import FeatureFixture
 from lp.services.librarian.interfaces.client import LibrarianServerError
 from lp.services.messages.model.message import MessageSet
 from lp.services.webapp import canonical_url
@@ -144,7 +142,6 @@ class TestBranchMergeProposalMergedViewGit(TestCaseWithFactory):
         # permissions on the merge proposals for adding comments, or
         # nominating reviewers.
         TestCaseWithFactory.setUp(self, user="admin@canonical.com")
-        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
         self.bmp = self.factory.makeBranchMergeProposalForGit()
 
     def test_initial_values(self):
@@ -718,10 +715,6 @@ class TestRegisterBranchMergeProposalViewGit(
     TestRegisterBranchMergeProposalViewMixin, BrowserTestCase):
     """Test the merge proposal registration view for Git."""
 
-    def setUp(self):
-        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
-        super(TestRegisterBranchMergeProposalViewGit, self).setUp()
-
     def _makeBranch(self):
         return self.factory.makeGitRefs()[0]
 
@@ -990,10 +983,6 @@ class TestBranchMergeProposalResubmitViewGit(
     TestBranchMergeProposalResubmitViewMixin, TestCaseWithFactory):
     """Test BranchMergeProposalResubmitView for Git."""
 
-    def setUp(self):
-        super(TestBranchMergeProposalResubmitViewGit, self).setUp()
-        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
-
     def _makeBranchMergeProposal(self):
         return self.factory.makeBranchMergeProposalForGit()
 
@@ -1064,10 +1053,6 @@ class TestResubmitBrowserGit(BrowserTestCase):
     """Browser tests for resubmitting branch merge proposals for Git."""
 
     layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        super(TestResubmitBrowserGit, self).setUp()
-        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
 
     def test_resubmit_text(self):
         """The text of the resubmit page is as expected."""
@@ -1281,7 +1266,6 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         self.assertTrue(view.pending_diff)
 
     def test_pending_diff_with_pending_git_repository(self):
-        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
         bmp = self.factory.makeBranchMergeProposalForGit()
         bmp.next_preview_diff_job.start()
         bmp.next_preview_diff_job.fail()
@@ -1634,10 +1618,6 @@ class TestLatestProposalsForEachBranchGit(
     TestLatestProposalsForEachBranchMixin, TestCaseWithFactory):
     """Confirm that the latest branch is returned for Bazaar."""
 
-    def setUp(self):
-        super(TestLatestProposalsForEachBranchGit, self).setUp()
-        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
-
     def _makeBranchMergeProposal(self, merge_target=None, **kwargs):
         return self.factory.makeBranchMergeProposalForGit(
             target_ref=merge_target, **kwargs)
@@ -1688,10 +1668,6 @@ class TestBranchMergeProposalDeleteViewBzr(
 class TestBranchMergeProposalDeleteViewGit(
     TestBranchMergeProposalDeleteViewMixin, BrowserTestCase):
     """Test the BranchMergeProposal deletion view for Git."""
-
-    def setUp(self):
-        super(TestBranchMergeProposalDeleteViewGit, self).setUp()
-        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
 
     def _makeBranchMergeProposal(self, **kwargs):
         return self.factory.makeBranchMergeProposalForGit(**kwargs)

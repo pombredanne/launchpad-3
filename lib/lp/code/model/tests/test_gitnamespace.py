@@ -10,12 +10,8 @@ from lp.code.errors import (
     GitDefaultConflict,
     GitRepositoryExists,
     )
-from lp.code.interfaces.gitrepository import (
-    GIT_FEATURE_FLAG,
-    IGitRepositorySet,
-    )
+from lp.code.interfaces.gitrepository import IGitRepositorySet
 from lp.code.model.gitnamespace import ProjectGitNamespace
-from lp.services.features.testing import FeatureFixture
 from lp.testing import TestCaseWithFactory
 from lp.testing.layers import DatabaseFunctionalLayer
 
@@ -24,10 +20,6 @@ class TestGitNamespaceMoveRepository(TestCaseWithFactory):
     """Test the IGitNamespace.moveRepository method."""
 
     layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        super(TestGitNamespaceMoveRepository, self).setUp()
-        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
 
     def assertNamespacesEqual(self, expected, result):
         """Assert that the namespaces refer to the same thing.

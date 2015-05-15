@@ -29,7 +29,6 @@ __all__ = [
     'ClaimReviewFailed',
     'DiffNotFound',
     'GitDefaultConflict',
-    'GitFeatureDisabled',
     'GitRepositoryCreationException',
     'GitRepositoryCreationFault',
     'GitRepositoryCreationForbidden',
@@ -330,15 +329,6 @@ class UnknownBranchTypeError(Exception):
 
 class GitRepositoryCreationException(Exception):
     """Base class for Git repository creation exceptions."""
-
-
-@error_status(httplib.UNAUTHORIZED)
-class GitFeatureDisabled(GitRepositoryCreationException):
-    """Only certain users can create new Git repositories."""
-
-    def __init__(self):
-        message = "You do not have permission to create Git repositories."
-        GitRepositoryCreationException.__init__(self, message)
 
 
 @error_status(httplib.CONFLICT)

@@ -13,10 +13,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.code.interfaces.gitrepository import (
-    GIT_FEATURE_FLAG,
-    IGitRepositorySet,
-    )
+from lp.code.interfaces.gitrepository import IGitRepositorySet
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactGrantSource,
     IAccessPolicyGrantSource,
@@ -277,7 +274,6 @@ class TestMergePeople(TestCaseWithFactory, KarmaTestMixin):
     def test_merge_moves_git_repositories(self):
         # When person/teams are merged, Git repositories owned by the from
         # person are moved.
-        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
         person = self.factory.makePerson()
         repository = self.factory.makeGitRepository()
         duplicate = repository.owner
@@ -291,7 +287,6 @@ class TestMergePeople(TestCaseWithFactory, KarmaTestMixin):
     def test_merge_with_duplicated_git_repositories(self):
         # If both the from and to people have Git repositories with the same
         # name, merging renames the duplicate from the from person's side.
-        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
         project = self.factory.makeProduct()
         from_repository = self.factory.makeGitRepository(
             target=project, name=u'foo')

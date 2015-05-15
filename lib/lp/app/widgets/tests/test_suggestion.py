@@ -29,11 +29,7 @@ from lp.app.widgets.suggestion import (
     TargetBranchWidget,
     TargetGitRepositoryWidget,
     )
-from lp.code.interfaces.gitrepository import (
-    GIT_FEATURE_FLAG,
-    IGitRepositorySet,
-    )
-from lp.services.features.testing import FeatureFixture
+from lp.code.interfaces.gitrepository import IGitRepositorySet
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.services.webapp.vocabulary import (
     FilteredVocabularyBase,
@@ -219,10 +215,6 @@ class TestTargetGitRepositoryWidget(TestCaseWithFactory):
     doctest_opts = (
         doctest.NORMALIZE_WHITESPACE | doctest.REPORT_NDIFF |
         doctest.ELLIPSIS)
-
-    def setUp(self):
-        super(TestTargetGitRepositoryWidget, self).setUp()
-        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
 
     def makeRepositoryAndOldMergeProposal(self, timedelta):
         """Make an old merge proposal and a repository with the same target."""

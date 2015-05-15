@@ -10,14 +10,12 @@ from lp.code.enums import (
     BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel,
     )
-from lp.code.interfaces.gitrepository import GIT_FEATURE_FLAG
 from lp.code.mail.branch import (
     BranchMailer,
     RecipientReason,
     )
 from lp.code.model.branch import Branch
 from lp.code.model.gitref import GitRef
-from lp.services.features.testing import FeatureFixture
 from lp.testing import (
     login_person,
     TestCaseWithFactory,
@@ -165,10 +163,6 @@ class TestRecipientReasonBzr(TestRecipientReasonMixin, TestCaseWithFactory):
 class TestRecipientReasonGit(TestRecipientReasonMixin):
     """Test RecipientReason for Git references."""
 
-    def setUp(self):
-        super(TestRecipientReasonGit, self).setUp()
-        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
-
     def makeProposalWithSubscription(self, subscriber=None):
         """Test fixture."""
         if subscriber is None:
@@ -266,10 +260,6 @@ class TestBranchMailerHeadersGit(
     TestBranchMailerHeadersMixin, TestCaseWithFactory):
     """Check the headers are correct for GitRef email."""
 
-    def setUp(self):
-        super(TestBranchMailerHeadersGit, self).setUp()
-        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
-
     def makeBranch(self, owner):
         repository = self.factory.makeGitRepository(owner=owner)
         return self.factory.makeGitRefs(repository=repository)[0]
@@ -340,10 +330,6 @@ class TestBranchMailerDiffBzr(TestBranchMailerDiffMixin, TestCaseWithFactory):
 class TestBranchMailerDiffGit(TestBranchMailerDiffMixin, TestCaseWithFactory):
     """Check the diff is an attachment for GitRef email."""
 
-    def setUp(self):
-        super(TestBranchMailerDiffGit, self).setUp()
-        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
-
     def makeBranch(self, owner):
         repository = self.factory.makeGitRepository(owner=owner)
         return self.factory.makeGitRefs(repository=repository)[0]
@@ -380,10 +366,6 @@ class TestBranchMailerSubjectBzr(
 class TestBranchMailerSubjectGit(
     TestBranchMailerSubjectMixin, TestCaseWithFactory):
     """The subject for a BranchMailer is returned verbatim for GitRef."""
-
-    def setUp(self):
-        super(TestBranchMailerSubjectGit, self).setUp()
-        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
 
     def makeBranch(self):
         return self.factory.makeGitRefs()[0]

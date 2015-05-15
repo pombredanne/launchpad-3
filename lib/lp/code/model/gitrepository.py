@@ -59,7 +59,6 @@ from lp.app.interfaces.services import IService
 from lp.code.enums import GitObjectType
 from lp.code.errors import (
     GitDefaultConflict,
-    GitFeatureDisabled,
     GitTargetError,
     )
 from lp.code.interfaces.gitcollection import (
@@ -72,7 +71,6 @@ from lp.code.interfaces.gitnamespace import (
     IGitNamespacePolicy,
     )
 from lp.code.interfaces.gitrepository import (
-    GIT_FEATURE_FLAG,
     GitIdentityMixin,
     IGitRepository,
     IGitRepositorySet,
@@ -120,7 +118,6 @@ from lp.services.database.stormexpr import (
     BulkUpdate,
     Values,
     )
-from lp.services.features import getFeatureFlag
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.mail.notificationrecipientset import NotificationRecipientSet
@@ -192,8 +189,6 @@ class GitRepository(StormBase, GitIdentityMixin):
 
     def __init__(self, registrant, owner, target, name, information_type,
                  date_created, reviewer=None, description=None):
-        if not getFeatureFlag(GIT_FEATURE_FLAG):
-            raise GitFeatureDisabled
         super(GitRepository, self).__init__()
         self.registrant = registrant
         self.owner = owner
