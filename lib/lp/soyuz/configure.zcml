@@ -392,7 +392,7 @@
             interface="lp.soyuz.interfaces.archive.IArchiveAdmin"
             set_attributes="authorized_size build_debug_symbols
                             buildd_secret enabled_restricted_processors
-                            external_dependencies name
+                            processors external_dependencies name
                             permit_obsolete_series_uploads
                             private publish_debug_symbols
                             require_virtualized"/>

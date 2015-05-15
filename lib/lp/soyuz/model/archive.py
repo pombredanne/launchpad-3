@@ -2060,35 +2060,41 @@ class Archive(SQLBase):
 
     def _getEnabledRestrictedProcessors(self):
         """Retrieve the restricted architectures this archive can build on."""
-        processors = getUtility(IArchiveArchSet).getRestrictedProcessors(self)
-        return [
-            processor for (processor, archive_arch) in processors
-            if archive_arch is not None]
+        return [proc for proc in self.processors if proc.restricted]
 
     def _setEnabledRestrictedProcessors(self, value):
         """Set the restricted architectures this archive can build on."""
-        archive_arch_set = getUtility(IArchiveArchSet)
-        restricted_processors = archive_arch_set.getRestrictedProcessors(self)
-        for (processor, archive_arch) in restricted_processors:
-            if processor in value and archive_arch is None:
-                archive_arch_set.new(self, processor)
-            if processor not in value and archive_arch is not None:
-                Store.of(self).remove(archive_arch)
+        self.processors = (
+            [proc for proc in self.processors if not proc.restricted]
+            + list(value))
 
     enabled_restricted_processors = property(
         _getEnabledRestrictedProcessors, _setEnabledRestrictedProcessors)
 
     def enableRestrictedProcessor(self, processor):
         """See `IArchive`."""
-        self.enabled_restricted_processors = set(
-            self.enabled_restricted_processors + [processor])
+        self.processors = set(self.processors + [processor])
 
-    @property
-    def processors(self):
+    def _getProcessors(self):
+        enabled = [
+            proc for (proc, archivearch)
+            in getUtility(IArchiveArchSet).getRestrictedProcessors(self)
+            if archivearch is not None]
         return [
             proc for proc in getUtility(IProcessorSet).getAll()
-            if (not proc.restricted
-                or proc in self.enabled_restricted_processors)]
+            if not proc.restricted or proc in enabled]
+
+    def _setProcessors(self, new_procs):
+        enablements = dict(
+            getUtility(IArchiveArchSet).getRestrictedProcessors(self))
+        for proc in self.processors:
+            if proc not in new_procs and proc in enablements:
+                Store.of(self).remove(enablements[proc])
+        for proc in new_procs:
+            if proc not in self.processors:
+                getUtility(IArchiveArchSet).new(self, proc)
+
+    processors = property(_getProcessors, _setProcessors)
 
     def getPockets(self):
         """See `IArchive`."""

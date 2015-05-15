@@ -1002,7 +1002,7 @@ class TestUpdatePackageDownloadCount(TestCaseWithFactory):
         self.assertEqual(3, self.archive.getPackageDownloadTotal(self.bpr_2))
 
 
-class TestEnabledRestrictedBuilds(TestCaseWithFactory):
+class TestProcessors(TestCaseWithFactory):
     """Ensure that restricted architectures builds can be allowed and
     disallowed correctly."""
 
@@ -1010,7 +1010,7 @@ class TestEnabledRestrictedBuilds(TestCaseWithFactory):
 
     def setUp(self):
         """Setup an archive with relevant publications."""
-        super(TestEnabledRestrictedBuilds, self).setUp()
+        super(TestProcessors, self).setUp()
         self.publisher = SoyuzTestPublisher()
         self.publisher.prepareBreezyAutotest()
         self.archive = self.factory.makeArchive()
@@ -1052,7 +1052,29 @@ class TestEnabledRestrictedBuilds(TestCaseWithFactory):
         self.assertContentEqual([], self.archive.enabled_restricted_processors)
 
     def test_set(self):
-        """The property remembers its value correctly and sets ArchiveArch."""
+        """The property remembers its value correctly and sets ArchiveArch.
+
+        It's not yet possible to remove the default processors from the set.
+        """
+        self.archive.processors = [self.arm]
+        allowed_restricted_processors = self.archive_arch_set.getByArchive(
+            self.archive, self.arm)
+        self.assertEqual(1, allowed_restricted_processors.count())
+        self.assertEqual(
+            self.arm, allowed_restricted_processors[0].processor)
+        self.assertContentEqual(
+            [self.arm] + self.default_procs, self.archive.processors)
+        self.archive.processors = []
+        self.assertEqual(
+            0,
+            self.archive_arch_set.getByArchive(self.archive, self.arm).count())
+        self.assertContentEqual(self.default_procs, self.archive.processors)
+
+    def test_set_enabled_restricted_processors(self):
+        """The deprecated enabled_restricted_processors property still works.
+
+        It's like processors, but only including those that are restricted.
+        """
         self.archive.enabled_restricted_processors = [self.arm]
         allowed_restricted_processors = self.archive_arch_set.getByArchive(
             self.archive, self.arm)
