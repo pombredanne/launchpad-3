@@ -1392,9 +1392,7 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
             das for das in available_archs
             if (
                 das.enabled
-                and (
-                    not das.processor.restricted
-                    or das.processor in archive.enabled_restricted_processors)
+                and das.processor in archive.processors
                 and (
                     das.processor.supports_virtualized
                     or not archive.require_virtualized))]
