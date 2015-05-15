@@ -106,7 +106,7 @@ class TestCaseForRecipe(BrowserTestCase):
         naked_squirrel = removeSecurityProxy(self.squirrel)
         naked_squirrel.nominatedarchindep = self.squirrel.newArch(
             'i386', getUtility(IProcessorSet).getByName('386'), False,
-            self.chef, supports_virtualized=True)
+            self.chef)
 
     def makeRecipe(self):
         """Create and return a specific recipe."""
@@ -1488,7 +1488,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
             distribution=self.ppa.distribution)
         removeSecurityProxy(woody).nominatedarchindep = woody.newArch(
             'i386', getUtility(IProcessorSet).getByName('386'), False,
-            self.factory.makePerson(), supports_virtualized=True)
+            self.factory.makePerson())
         return woody
 
     def test_request_builds_rejects_duplicate(self):

@@ -99,7 +99,7 @@ class IDistroArchSeriesPublic(IHasBuildRecords, IHasOwner):
             title=_("PPA support available"),
             description=_("Indicate whether or not this port has support "
                           "for building PPA packages."),
-            required=False))
+            readonly=True, required=False))
     enabled = exported(
         Bool(
             title=_("Enabled"),

@@ -45,11 +45,10 @@ class TestBuild(TestCaseWithFactory):
     def setUp(self):
         super(TestBuild, self).setUp()
         self.admin = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)
-        self.processor = self.factory.makeProcessor()
+        self.processor = self.factory.makeProcessor(supports_virtualized=True)
         self.distroseries = self.factory.makeDistroSeries()
         self.das = self.factory.makeDistroArchSeries(
-            distroseries=self.distroseries, processor=self.processor,
-            supports_virtualized=True)
+            distroseries=self.distroseries, processor=self.processor)
         with person_logged_in(self.admin):
             self.publisher = SoyuzTestPublisher()
             self.publisher.prepareBreezyAutotest()
@@ -166,8 +165,7 @@ class TestBuild(TestCaseWithFactory):
         # Builds can not be retried for released distroseries
         distroseries = self.factory.makeDistroSeries()
         das = self.factory.makeDistroArchSeries(
-            distroseries=distroseries, processor=self.processor,
-            supports_virtualized=True)
+            distroseries=distroseries, processor=self.processor)
         with person_logged_in(self.admin):
             distroseries.nominatedarchindep = das
             distroseries.status = SeriesStatus.OBSOLETE
@@ -184,8 +182,7 @@ class TestBuild(TestCaseWithFactory):
         # released.
         distroseries = self.factory.makeDistroSeries()
         das = self.factory.makeDistroArchSeries(
-            distroseries=distroseries, processor=self.processor,
-            supports_virtualized=True)
+            distroseries=distroseries, processor=self.processor)
         archive = self.factory.makeArchive(
             purpose=ArchivePurpose.PARTNER,
             distribution=distroseries.distribution)

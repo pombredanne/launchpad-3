@@ -28,6 +28,9 @@ class Processor(SQLBase):
     title = StringCol(dbName='title', notNull=True)
     description = StringCol(dbName='description', notNull=True)
     restricted = Bool(allow_none=False, default=False)
+    build_by_default = Bool(allow_none=False, default=False)
+    supports_virtualized = Bool(allow_none=False, default=False)
+    supports_nonvirtualized = Bool(allow_none=False, default=True)
 
     def __repr__(self):
         return "<Processor %r>" % self.title
@@ -53,8 +56,12 @@ class ProcessorSet:
         """See `IProcessorSet`."""
         return IStore(Processor).find(Processor, Processor.restricted == True)
 
-    def new(self, name, title, description, restricted=False):
+    def new(self, name, title, description, restricted=False,
+            build_by_default=False, supports_virtualized=False,
+            supports_nonvirtualized=True):
         """See `IProcessorSet`."""
         return Processor(
             name=name, title=title, description=description,
-            restricted=restricted)
+            restricted=restricted, build_by_default=build_by_default,
+            supports_virtualized=supports_virtualized,
+            supports_nonvirtualized=supports_nonvirtualized)

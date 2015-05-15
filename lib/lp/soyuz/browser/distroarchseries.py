@@ -98,8 +98,7 @@ class DistroArchSeriesAddSchema(IDistroArchSeries):
 class DistroArchSeriesAddView(LaunchpadFormView):
 
     schema = DistroArchSeriesAddSchema
-    field_names = [
-        'architecturetag', 'processor', 'official', 'supports_virtualized']
+    field_names = ['architecturetag', 'processor', 'official']
 
     @property
     def label(self):
@@ -120,8 +119,8 @@ class DistroArchSeriesAddView(LaunchpadFormView):
     def create_action(self, action, data):
         """Create a new Port."""
         distroarchseries = self.context.newArch(
-            data['architecturetag'], data['processor'],
-            data['official'], self.user, data['supports_virtualized'])
+            data['architecturetag'], data['processor'], data['official'],
+            self.user)
         self.next_url = canonical_url(distroarchseries)
 
 
@@ -130,10 +129,7 @@ class DistroArchSeriesAdminView(LaunchpadEditFormView):
 
     schema = IDistroArchSeries
 
-    field_names = [
-        'architecturetag', 'official', 'supports_virtualized',
-        'enabled',
-        ]
+    field_names = ['architecturetag', 'official', 'enabled']
 
     @action(_('Change'), name='update')
     def change_details(self, action, data):

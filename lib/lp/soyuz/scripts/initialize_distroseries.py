@@ -384,10 +384,8 @@ class InitializeDistroSeries:
                 sqlvalues(self.arches))
         self._store.execute("""
             INSERT INTO DistroArchSeries
-            (distroseries, processor, architecturetag, owner, official,
-             supports_virtualized)
-            SELECT %s, processor, architecturetag, %s,
-                bool_and(official), bool_or(supports_virtualized)
+            (distroseries, processor, architecturetag, owner, official)
+            SELECT %s, processor, architecturetag, %s, bool_and(official)
             FROM DistroArchSeries WHERE enabled = TRUE %s
             GROUP BY processor, architecturetag
             """ % (sqlvalues(self.distroseries, self.distroseries.owner)
