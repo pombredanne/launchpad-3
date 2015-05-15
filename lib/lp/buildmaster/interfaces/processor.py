@@ -66,6 +66,26 @@ class IProcessor(Interface):
     restricted = exported(
         Bool(title=_("Whether this processor is restricted.")),
         as_of='devel', readonly=True)
+    build_by_default = exported(
+        Bool(title=_(
+            "Whether this processor is enabled on archives by default.")),
+        as_of='devel', readonly=True)
+    supports_virtualized = exported(
+        Bool(
+            title=_("Supports virtualized builds"),
+            description=_(
+                "Whether the processor has virtualized builders. If not, "
+                "archives that require virtualized builds won't build on "
+                "this processor.")),
+        as_of='devel', readonly=True)
+    supports_nonvirtualized = exported(
+        Bool(
+            title=_("Supports non-virtualized builds"),
+            description=_(
+                "Whether the processor has non-virtualized builders. If not, "
+                "all builds for this processor will build on virtualized "
+                "builders, even for non-virtualized archives.")),
+        as_of='devel', readonly=True)
 
 
 class IProcessorSet(Interface):
@@ -92,7 +112,9 @@ class IProcessorSet(Interface):
     def getRestricted():
         """Return all restricted `IProcessor`s."""
 
-    def new(name, title, description, restricted):
+    def new(name, title, description, restricted=False,
+            build_by_default=False, supports_virtualized=False,
+            supports_nonvirtualized=True):
         """Create a new processor.
 
         :param name: Name of the processor.

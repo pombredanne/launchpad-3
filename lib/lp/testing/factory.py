@@ -869,7 +869,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                       name=name, active=active, dateexpected=dateexpected))
 
     def makeProcessor(self, name=None, title=None, description=None,
-                      restricted=False):
+                      restricted=False, build_by_default=False,
+                      supports_virtualized=False,
+                      supports_nonvirtualized=True):
         """Create a new processor.
 
         :param name: Name of the processor
@@ -885,7 +887,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if description is None:
             description = "The %s processor and compatible processors" % name
         return getUtility(IProcessorSet).new(
-            name, title, description, restricted)
+            name, title, description, restricted=restricted,
+            build_by_default=build_by_default,
+            supports_virtualized=supports_virtualized,
+            supports_nonvirtualized=supports_nonvirtualized)
 
     def makeProductRelease(self, milestone=None, product=None,
                            productseries=None):
@@ -2708,8 +2713,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeDistroArchSeries(self, distroseries=None,
                              architecturetag=None, processor=None,
-                             official=True, owner=None,
-                             supports_virtualized=False, enabled=True):
+                             official=True, owner=None, enabled=True):
         """Create a new distroarchseries"""
 
         if distroseries is None:
@@ -2724,8 +2728,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if architecturetag is None:
             architecturetag = self.getUniqueString('arch')
         return distroseries.newArch(
-            architecturetag, processor, official, owner,
-            supports_virtualized, enabled)
+            architecturetag, processor, official, owner, enabled)
 
     def makeComponent(self, name=None):
         """Make a new `IComponent`."""

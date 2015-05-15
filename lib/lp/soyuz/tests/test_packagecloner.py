@@ -78,8 +78,7 @@ class PackageClonerTests(TestCaseWithFactory):
             distribution=distro, name=distroseries_name)
         das = self.factory.makeDistroArchSeries(
             distroseries=distroseries, architecturetag="i386",
-            processor=getUtility(IProcessorSet).getByName('386'),
-            supports_virtualized=True)
+            processor=getUtility(IProcessorSet).getByName('386'))
         distroseries.nominatedarchindep = das
         return distroseries
 
@@ -365,11 +364,10 @@ class PackageClonerTests(TestCaseWithFactory):
         package_info = PackageInfo(
             "bzr", "2.1", status=PackagePublishingStatus.PUBLISHED)
         distroseries = self.createSourceDistribution([package_info])
-        # Create a DAS for a second processor. 
+        # Create a DAS for a second processor.
         self.factory.makeDistroArchSeries(
             distroseries=distroseries, architecturetag="amd64",
-            processor=getUtility(IProcessorSet).getByName('amd64'),
-            supports_virtualized=True)
+            processor=getUtility(IProcessorSet).getByName('amd64'))
         # The request builds for only one of the processors, so we
         # expect just one build for each source.
         processors = [getUtility(IProcessorSet).getByName('386')]
@@ -387,7 +385,7 @@ class PackageClonerTests(TestCaseWithFactory):
         amd64 = getUtility(IProcessorSet).getByName('amd64')
         self.factory.makeDistroArchSeries(
             distroseries=distroseries, architecturetag="amd64",
-            processor=amd64, supports_virtualized=True)
+            processor=amd64)
         # The request builds for both processors, so we expect two builds
         # per source.
         processors = [getUtility(IProcessorSet).getByName('386'), amd64]
@@ -648,7 +646,7 @@ class PackageClonerTests(TestCaseWithFactory):
         amd64 = getUtility(IProcessorSet).getByName('amd64')
         self.factory.makeDistroArchSeries(
             distroseries=distroseries, architecturetag="amd64",
-            processor=amd64, supports_virtualized=True)
+            processor=amd64)
         # The request builds for both processors, so we expect two builds
         # per source.
         processors = [getUtility(IProcessorSet).getByName('386'), amd64]

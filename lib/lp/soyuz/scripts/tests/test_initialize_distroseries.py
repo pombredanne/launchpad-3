@@ -58,12 +58,12 @@ class InitializationHelperTestCase(TestCaseWithFactory):
             processor = getUtility(IProcessorSet).getByName(processor_name)
         except ProcessorNotFound:
             processor = self.factory.makeProcessor(name=processor_name)
+        processor.supports_virtualized = True
         parent_das = self.factory.makeDistroArchSeries(
             distroseries=parent, processor=processor, architecturetag=arch_tag)
         lf = self.factory.makeLibraryFileAlias()
         transaction.commit()
         parent_das.addOrUpdateChroot(lf)
-        parent_das.supports_virtualized = True
         return parent_das
 
     def setupParent(self, parent=None, packages=None, format_selection=None,

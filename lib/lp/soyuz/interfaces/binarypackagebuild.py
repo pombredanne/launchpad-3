@@ -134,9 +134,6 @@ class IBinaryPackageBuildView(IPackageBuild):
             description=_(
                 "Whether or not this build record can be cancelled.")))
 
-    is_virtualized = Attribute(
-        "Whether or not this build requires a virtual build host or not.")
-
     upload_changesfile = Attribute(
         "The `LibraryFileAlias` object containing the changes file which "
         "was originally uploaded with the results of this build. It's "

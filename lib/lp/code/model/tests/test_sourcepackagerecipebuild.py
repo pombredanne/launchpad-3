@@ -61,8 +61,7 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         person = self.factory.makePerson()
         distroseries = self.factory.makeDistroSeries()
         distroseries_i386 = distroseries.newArch(
-            'i386', getUtility(IProcessorSet).getByName('386'), False, person,
-            supports_virtualized=True)
+            'i386', getUtility(IProcessorSet).getByName('386'), False, person)
         removeSecurityProxy(distroseries).nominatedarchindep = (
             distroseries_i386)
         if archive is None:
