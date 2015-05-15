@@ -62,6 +62,7 @@ from lp.buildmaster.enums import (
     BuildStatus,
     )
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSet
+from lp.buildmaster.interfaces.processor import IProcessorSet
 from lp.registry.enums import (
     INCLUSIVE_TEAM_POLICY,
     PersonVisibility,
@@ -2081,6 +2082,13 @@ class Archive(SQLBase):
         """See `IArchive`."""
         self.enabled_restricted_processors = set(
             self.enabled_restricted_processors + [processor])
+
+    @property
+    def processors(self):
+        return [
+            proc for proc in getUtility(IProcessorSet).getAll()
+            if (not proc.restricted
+                or proc in self.enabled_restricted_processors)]
 
     def getPockets(self):
         """See `IArchive`."""

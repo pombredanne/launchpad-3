@@ -633,6 +633,8 @@ class IArchiveView(IHasBuildRecords):
             readonly=True),
         as_of='devel')
 
+    processors = Attribute("The architectures on which the archive can build.")
+
     def getSourcesForDeletion(name=None, status=None, distroseries=None):
         """All `ISourcePackagePublishingHistory` available for deletion.
 
