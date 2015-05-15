@@ -37,9 +37,10 @@
 
       <table class="form">
         <tr>
+          <td><h3>Version Control System</h3></td>
+        </tr>
+        <tr>
           <td>
-            <h3>Default Project VCS</h3>
-            <p>Select a default project version control system:</p>
             <label tal:replace="structure view/default_vcs_git">
               Git
             </label>
