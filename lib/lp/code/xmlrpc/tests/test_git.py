@@ -17,13 +17,11 @@ from lp.code.interfaces.codehosting import (
 from lp.code.interfaces.gitcollection import IAllGitRepositories
 from lp.code.interfaces.gitjob import IGitRefScanJobSource
 from lp.code.interfaces.gitrepository import (
-    GIT_FEATURE_FLAG,
     GIT_REPOSITORY_NAME_VALIDATION_ERROR_MESSAGE,
     IGitRepositorySet,
     )
 from lp.code.xmlrpc.git import GitAPI
 from lp.registry.enums import TeamMembershipPolicy
-from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.escaping import html_escape
 from lp.testing import (
     admin_logged_in,
@@ -56,59 +54,11 @@ class BrokenGitHostingClient:
         raise GitRepositoryCreationFault("nothing here")
 
 
-class TestGitAPIFeatureFlag(TestCaseWithFactory):
-
-    layer = LaunchpadFunctionalLayer
-
-    def setUp(self):
-        super(TestGitAPIFeatureFlag, self).setUp()
-        self.git_api = GitAPI(None, None)
-        self.git_api.hosting_client = FakeGitHostingClient()
-
-    def test_feature_flag_disabled(self):
-        # Without a feature flag, attempts to create a new Git repository fail.
-        requester = self.factory.makePerson()
-        message = "You do not have permission to create Git repositories."
-        fault = self.git_api.translatePath(
-            u"/~%s/+git/random" % requester.name, "write", requester.id, True)
-        self.assertEqual(faults.PermissionDenied(message), fault)
-
-    def test_feature_flag_disabled_existing(self):
-        # Even without a feature flag, it is possible to operate on Git
-        # repositories that already exist.
-        requester = self.factory.makePerson()
-        path = u"/~%s/+git/random" % requester.name
-        with FeatureFixture({GIT_FEATURE_FLAG: u"on"}):
-            translation = self.git_api.translatePath(
-                path, "write", requester.id, True)
-        login(ANONYMOUS)
-        repository = getUtility(IGitRepositorySet).getByPath(
-            requester, path.lstrip("/"))
-        self.assertIsNotNone(repository)
-        self.assertEqual(
-            {"path": repository.getInternalPath(), "writable": True,
-             "trailing": ""},
-            translation)
-        translation = self.git_api.translatePath(
-            path, "write", requester.id, True)
-        login(ANONYMOUS)
-        self.assertEqual(
-            {"path": repository.getInternalPath(), "writable": True,
-             "trailing": ""},
-            translation)
-        # But we cannot create another one without the feature flag.
-        message = "You do not have permission to create Git repositories."
-        fault = self.git_api.translatePath(
-            u"/~%s/+git/another" % requester.name, "write", requester.id, True)
-        self.assertEqual(faults.PermissionDenied(message), fault)
-
-
 class TestGitAPIMixin:
     """Helper methods for `IGitAPI` tests, and security-relevant tests."""
 
     def setUp(self):
         super(TestGitAPIMixin, self).setUp()
-        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
         self.git_api = GitAPI(None, None)
         self.git_api.hosting_client = FakeGitHostingClient()
         self.repository_set = getUtility(IGitRepositorySet)

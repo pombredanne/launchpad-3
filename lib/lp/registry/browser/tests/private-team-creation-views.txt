@@ -230,8 +230,6 @@ of known-OK relationships.
 Public teams can be made private if the only artifacts they have are
 those permitted by private teams.
 
-    >>> from lp.code.interfaces.gitrepository import GIT_FEATURE_FLAG
-    >>> from lp.services.features.testing import FeatureFixture
     >>> def createTeamArtifacts(team, team_owner):
     ...     # A bug subscription.
     ...     bug = factory.makeBug()
@@ -250,8 +248,7 @@ those permitted by private teams.
     ...         BranchSubscriptionDiffSize.WHOLEDIFF,
     ...         CodeReviewNotificationLevel.STATUS, team_owner)
     ...     # A Git repository subscription.
-    ...     with FeatureFixture({GIT_FEATURE_FLAG: 'on'}):
-    ...         repository = factory.makeGitRepository()
+    ...     repository = factory.makeGitRepository()
     ...     repository.subscribe(
     ...         team,
     ...         BranchSubscriptionNotificationLevel.DIFFSONLY,

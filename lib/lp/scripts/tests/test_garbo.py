@@ -49,7 +49,6 @@ from lp.code.bzr import (
     )
 from lp.code.enums import CodeImportResultStatus
 from lp.code.interfaces.codeimportevent import ICodeImportEventSet
-from lp.code.interfaces.gitrepository import GIT_FEATURE_FLAG
 from lp.code.model.branchjob import (
     BranchJob,
     BranchUpgradeJob,
@@ -937,7 +936,6 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
 
     def test_GitJobPruner(self):
         # Garbo should remove jobs completed over 30 days ago.
-        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u'on'}))
         switch_dbuser('testadmin')
         store = IMasterStore(Job)
 
@@ -960,7 +958,6 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
     def test_GitJobPruner_doesnt_prune_recent_jobs(self):
         # Check to make sure the garbo doesn't remove jobs that aren't more
         # than thirty days old.
-        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u'on'}))
         switch_dbuser('testadmin')
         store = IMasterStore(Job)
 

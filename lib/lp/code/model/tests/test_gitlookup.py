@@ -16,10 +16,7 @@ from lp.code.interfaces.gitlookup import (
     IGitLookup,
     IGitTraverser,
     )
-from lp.code.interfaces.gitrepository import (
-    GIT_FEATURE_FLAG,
-    IGitRepositorySet,
-    )
+from lp.code.interfaces.gitrepository import IGitRepositorySet
 from lp.registry.errors import NoSuchSourcePackageName
 from lp.registry.interfaces.person import NoSuchPerson
 from lp.registry.interfaces.product import (
@@ -27,7 +24,6 @@ from lp.registry.interfaces.product import (
     NoSuchProduct,
     )
 from lp.services.config import config
-from lp.services.features.testing import FeatureFixture
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
@@ -42,7 +38,6 @@ class TestGetByHostingPath(TestCaseWithFactory):
 
     def setUp(self):
         super(TestGetByHostingPath, self).setUp()
-        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
         self.lookup = getUtility(IGitLookup)
 
     def test_exists(self):
@@ -62,7 +57,6 @@ class TestGetByUniqueName(TestCaseWithFactory):
 
     def setUp(self):
         super(TestGetByUniqueName, self).setUp()
-        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
         self.lookup = getUtility(IGitLookup)
 
     def test_not_found(self):
@@ -94,7 +88,6 @@ class TestGetByPath(TestCaseWithFactory):
 
     def setUp(self):
         super(TestGetByPath, self).setUp()
-        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
         self.lookup = getUtility(IGitLookup)
 
     def test_project(self):
@@ -172,7 +165,6 @@ class TestGetByUrl(TestCaseWithFactory):
 
     def setUp(self):
         super(TestGetByUrl, self).setUp()
-        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
         self.lookup = getUtility(IGitLookup)
 
     def makeProjectRepository(self):
@@ -269,7 +261,6 @@ class TestGitTraverser(TestCaseWithFactory):
 
     def setUp(self):
         super(TestGitTraverser, self).setUp()
-        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
         self.traverser = getUtility(IGitTraverser)
 
     def assertTraverses(self, path, owner, target, repository=None):

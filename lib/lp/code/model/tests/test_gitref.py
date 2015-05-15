@@ -9,8 +9,6 @@ import hashlib
 
 from testtools.matchers import EndsWith
 
-from lp.code.interfaces.gitrepository import GIT_FEATURE_FLAG
-from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.interfaces import OAuthPermission
 from lp.testing import (
     ANONYMOUS,
@@ -25,10 +23,6 @@ from lp.testing.pages import webservice_for_person
 class TestGitRef(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        super(TestGitRef, self).setUp()
-        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
 
     def test_display_name(self):
         [master, personal] = self.factory.makeGitRefs(
@@ -50,7 +44,6 @@ class TestGitRefWebservice(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_attributes(self):
-        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
         [master] = self.factory.makeGitRefs(paths=[u"refs/heads/master"])
         webservice = webservice_for_person(
             master.repository.owner, permission=OAuthPermission.READ_PUBLIC)
