@@ -94,6 +94,7 @@ from lp import _
 from lp.app.errors import NameLookupFailed
 from lp.app.interfaces.launchpad import IPrivacy
 from lp.app.validators.name import name_validator
+from lp.buildmaster.interfaces.processor import IProcessor
 from lp.registry.interfaces.gpg import IGPGKey
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.role import IHasOwner
@@ -622,18 +623,21 @@ class IArchiveView(IHasBuildRecords):
             "context build.\n"
             "NOTE: This is for migration of OEM PPAs only!")))
 
-    enabled_restricted_processors = exported(
+    processors = exported(
         CollectionField(
-            title=_("Enabled restricted processors"),
-            description=_(
-                "The restricted architectures on which the archive "
-                "can build."),
-            value_type=Reference(schema=Interface),
-            # Really IProcessor.
+            title=_("Processors"),
+            description=_("The architectures on which the archive can build."),
+            value_type=Reference(schema=IProcessor),
             readonly=True),
         as_of='devel')
 
-    processors = Attribute("The architectures on which the archive can build.")
+    enabled_restricted_processors = exported(
+        CollectionField(
+            title=_("Enabled restricted processors"),
+            description=_("DEPRECATED. Use processors instead."),
+            value_type=Reference(schema=IProcessor),
+            readonly=True),
+        as_of='devel')
 
     def getSourcesForDeletion(name=None, status=None, distroseries=None):
         """All `ISourcePackagePublishingHistory` available for deletion.
@@ -2032,8 +2036,7 @@ class IArchiveAdmin(Interface):
     """Archive interface for operations restricted by commercial."""
 
     @operation_parameters(
-        processor=Reference(schema=Interface, required=True),
-        # Really IProcessor.
+        processor=Reference(schema=IProcessor, required=True),
     )
     @export_write_operation()
     @operation_for_version('devel')
