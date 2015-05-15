@@ -297,11 +297,6 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
         return DecoratedResultSet(results, itemgetter(0)).one()
 
     @property
-    def is_virtualized(self):
-        """See `IBuild`"""
-        return self.archive.require_virtualized
-
-    @property
     def title(self):
         """See `IBuild`"""
         return '%s build of %s %s in %s %s %s' % (
@@ -918,14 +913,17 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
         build_farm_job = getUtility(IBuildFarmJobSource).new(
             BinaryPackageBuild.job_type, status, date_created, builder,
             archive)
+        processor = distro_arch_series.processor
+        virtualized = (
+            archive.require_virtualized
+            or not processor.supports_nonvirtualized)
         return BinaryPackageBuild(
             build_farm_job=build_farm_job,
             distro_arch_series=distro_arch_series,
             source_package_release=source_package_release,
             archive=archive, pocket=pocket, arch_indep=arch_indep,
-            status=status, processor=distro_arch_series.processor,
-            virtualized=archive.require_virtualized, builder=builder,
-            is_distro_archive=archive.is_main,
+            status=status, processor=processor, virtualized=virtualized,
+            builder=builder, is_distro_archive=archive.is_main,
             distribution=distro_arch_series.distroseries.distribution,
             distro_series=distro_arch_series.distroseries,
             source_package_name=source_package_release.sourcepackagename,

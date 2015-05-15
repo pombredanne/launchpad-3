@@ -193,15 +193,21 @@ class TestLiveFS(TestCaseWithFactory):
             PackagePublishingPocket.RELEASE)
 
     def test_requestBuild_virtualization(self):
-        # New builds are virtualized if either the livefs or the archive
-        # requires it.
-        distroarchseries = self.factory.makeDistroArchSeries()
-        for livefs_virt, archive_virt, build_virt in (
-                (False, False, False),
-                (False, True, True),
-                (True, False, True),
-                (True, True, True),
+        # New builds are virtualized if any of the processor, livefs or
+        # archive require it.
+        for proc_nonvirt, livefs_virt, archive_virt, build_virt in (
+                (True, False, False, False),
+                (True, False, True, True),
+                (True, True, False, True),
+                (True, True, True, True),
+                (False, False, False, True),
+                (False, False, True, True),
+                (False, True, False, True),
+                (False, True, True, True),
                 ):
+            distroarchseries = self.factory.makeDistroArchSeries(
+                processor=self.factory.makeProcessor(
+                    supports_nonvirtualized=proc_nonvirt))
             livefs = self.factory.makeLiveFS(
                 distroseries=distroarchseries.distroseries,
                 require_virtualized=livefs_virt)

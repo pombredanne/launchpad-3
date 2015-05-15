@@ -92,6 +92,36 @@ class TestBuildSet(TestCaseWithFactory):
                     b.buildqueue_record.destroySelf()
             self.builds += builds
 
+    def test_new_virtualization(self):
+        # Builds are virtualized unless Processor.support_nonvirtualized
+        # and not Archive.require_virtualized.
+
+        def make(proc_virt, proc_nonvirt, archive_virt):
+            proc = self.factory.makeProcessor(
+                supports_nonvirtualized=proc_nonvirt,
+                supports_virtualized=proc_virt)
+            das = self.factory.makeDistroArchSeries(processor=proc)
+            archive = self.factory.makeArchive(
+                distribution=das.distroseries.distribution,
+                virtualized=archive_virt)
+            bpb = getUtility(IBinaryPackageBuildSet).new(
+                self.factory.makeSourcePackageRelease(),
+                archive, das, PackagePublishingPocket.RELEASE)
+            self.assertEqual(proc, bpb.processor)
+            return bpb
+
+        vvvbpb = make(proc_virt=True, proc_nonvirt=True, archive_virt=True)
+        self.assertTrue(vvvbpb.virtualized)
+
+        vvnbpb = make(proc_virt=True, proc_nonvirt=True, archive_virt=False)
+        self.assertFalse(vvnbpb.virtualized)
+
+        vnvbpb = make(proc_virt=True, proc_nonvirt=False, archive_virt=True)
+        self.assertTrue(vnvbpb.virtualized)
+
+        vnvbpb = make(proc_virt=True, proc_nonvirt=False, archive_virt=False)
+        self.assertTrue(vnvbpb.virtualized)
+
     def test_get_for_distro_distribution(self):
         # Test fetching builds for a distro's main archives
         self.setUpBuilds()

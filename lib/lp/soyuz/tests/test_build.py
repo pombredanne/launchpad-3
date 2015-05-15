@@ -87,7 +87,7 @@ class TestBuild(TestCaseWithFactory):
         self.assertEquals(self.das, build.distro_arch_series)
         self.assertEquals(PackagePublishingPocket.RELEASE, build.pocket)
         self.assertEquals(self.das.architecturetag, build.arch_tag)
-        self.assertTrue(build.is_virtualized)
+        self.assertTrue(build.virtualized)
         self.assertEquals(
             '%s - %s' % (spph.source_package_name,
                 spph.source_package_version),

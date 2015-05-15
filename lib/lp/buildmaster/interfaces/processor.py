@@ -71,11 +71,20 @@ class IProcessor(Interface):
             "Whether this processor is enabled on archives by default.")),
         as_of='devel', readonly=True)
     supports_virtualized = exported(
-        Bool(title=_("Whether this processor supports virtualized builds.")),
+        Bool(
+            title=_("Supports virtualized builds"),
+            description=_(
+                "Whether the processor has virtualized builders. If not, "
+                "archives that require virtualized builds won't build on "
+                "this processor.")),
         as_of='devel', readonly=True)
     supports_nonvirtualized = exported(
-        Bool(title=_(
-            "Whether this processor supports non-virtualized builds.")),
+        Bool(
+            title=_("Supports non-virtualized builds"),
+            description=_(
+                "Whether the processor has non-virtualized builders. If not, "
+                "all builds for this processor will build on virtualized "
+                "builders, even for non-virtualized archives.")),
         as_of='devel', readonly=True)
 
 
