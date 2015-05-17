@@ -153,12 +153,14 @@ from lp.code.errors import (
     BranchExists,
     )
 from lp.code.interfaces.branch import IBranch
+from lp.code.interfaces.branchcollection import IBranchCollection
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codeimport import (
     ICodeImport,
     ICodeImportSet,
     )
+from lp.code.interfaces.gitcollection import IGitCollection
 from lp.registry.browser import (
     add_subscribe_link,
     BaseRdfView,
@@ -963,6 +965,30 @@ class ProductView(PillarViewMixin, HasAnnouncementsView, SortSeriesMixin,
     @property
     def show_license_status(self):
         return self.context.license_status != LicenseStatus.OPEN_SOURCE
+
+    @property
+    def show_vcs(self):
+        """Should VCS be displayed?
+
+        Infer a project VCS for this view if a git or bzr branch
+        exist, otherwise check if vcs attribute has been set.
+        """
+        if (not IBranchCollection(self.context).is_empty() or
+            not IGitCollection(self.context).is_empty()):
+            return True
+        return bool(self.context.vcs)
+
+    @property
+    def vcs(self):
+        """Default project VCS type."""
+        vcs = None
+        if self.context.vcs:
+            vcs = self.context.vcs
+        if not IBranchCollection(self.context).is_empty():
+            vcs = VCSType.BZR
+        if not IGitCollection(self.context).is_empty():
+            vcs = VCSType.GIT
+        return vcs
 
     @property
     def sourceforge_url(self):

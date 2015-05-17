@@ -129,6 +129,11 @@
                 <dd tal:content="structure view/languages_edit_widget" />
               </dl>
 
+              <dl id="product-vcs" tal:condition="view/show_vcs">
+                <dt>Version Control System:</dt>
+                <dd tal:content="view/vcs/title">Git</dd>
+              </dl>
+
               <dl id="licences">
                 <dt>Licences:</dt>
                 <dd>
