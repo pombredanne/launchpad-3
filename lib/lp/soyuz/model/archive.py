@@ -2084,17 +2084,17 @@ class Archive(SQLBase):
             proc for proc in getUtility(IProcessorSet).getAll()
             if not proc.restricted or proc in enabled]
 
-    def _setProcessors(self, new_procs):
+    def setProcessors(self, processors):
         enablements = dict(
             getUtility(IArchiveArchSet).getRestrictedProcessors(self))
         for proc in self.processors:
-            if proc not in new_procs and proc in enablements:
+            if proc not in processors and proc in enablements:
                 Store.of(self).remove(enablements[proc])
-        for proc in new_procs:
+        for proc in processors:
             if proc not in self.processors:
                 getUtility(IArchiveArchSet).new(self, proc)
 
-    processors = property(_getProcessors, _setProcessors)
+    processors = property(_getProcessors, setProcessors)
 
     def getPockets(self):
         """See `IArchive`."""

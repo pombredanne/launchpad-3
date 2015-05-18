@@ -2036,6 +2036,15 @@ class IArchiveAdmin(Interface):
     """Archive interface for operations restricted by commercial."""
 
     @operation_parameters(
+        processors=List(
+            value_type=Reference(schema=IProcessor), required=True),
+    )
+    @export_write_operation()
+    @operation_for_version('devel')
+    def setProcessors(processors):
+        """Set the architectures on which the archive can build."""
+
+    @operation_parameters(
         processor=Reference(schema=IProcessor, required=True),
     )
     @export_write_operation()
