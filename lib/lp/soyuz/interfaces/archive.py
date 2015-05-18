@@ -2052,6 +2052,8 @@ class IArchiveAdmin(Interface):
     def enableRestrictedProcessor(processor):
         """Add the processor to the set of enabled restricted processors.
 
+        DEPRECATED. Use setProcessors instead.
+
         :param processor: is an `IProcessor` object.
         """
 
