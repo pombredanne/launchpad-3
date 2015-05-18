@@ -72,6 +72,7 @@ from lp.bugs.browser.structuralsubscription import (
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.code.browser.branchref import BranchRef
 from lp.code.enums import RevisionControlSystems
+from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.registry.browser import (
     add_subscribe_link,
     BaseRdfView,
