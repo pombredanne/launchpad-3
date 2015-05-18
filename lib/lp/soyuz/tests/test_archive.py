@@ -1022,7 +1022,7 @@ class TestProcessors(TestCaseWithFactory):
             self.default_procs + [getUtility(IProcessorSet).getByName("hppa")])
         self.arm = self.factory.makeProcessor(name='arm', restricted=True)
 
-    def test_default_on_creation(self):
+    def test_new_default_processors(self):
         # ArchiveSet.new creates an ArchiveArch for each Processor with
         # build_by_default set.
         archive = getUtility(IArchiveSet).new(
@@ -1030,6 +1030,17 @@ class TestProcessors(TestCaseWithFactory):
             distribution=self.factory.makeDistribution(), name='ppa')
         self.assertContentEqual(
             ['386', 'amd64'],
+            [aa.processor.name for aa in
+             self.archive_arch_set.getByArchive(archive)])
+
+    def test_new_override_processors(self):
+        # ArchiveSet.new can be given a custom set of processors.
+        archive = getUtility(IArchiveSet).new(
+            owner=self.factory.makePerson(), purpose=ArchivePurpose.PPA,
+            distribution=self.factory.makeDistribution(), name='ppa',
+            processors=[self.arm])
+        self.assertContentEqual(
+            ['arm'],
             [aa.processor.name for aa in
              self.archive_arch_set.getByArchive(archive)])
 

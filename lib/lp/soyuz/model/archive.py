@@ -2373,7 +2373,7 @@ class ArchiveSet:
     def new(self, purpose, owner, name=None, displayname=None,
             distribution=None, description=None, enabled=True,
             require_virtualized=True, private=False,
-            suppress_subscription_notifications=False):
+            suppress_subscription_notifications=False, processors=None):
         """See `IArchiveSet`."""
         if distribution is None:
             distribution = getUtility(ILaunchpadCelebrities).ubuntu
@@ -2452,13 +2452,12 @@ class ArchiveSet:
         new_archive.suppress_subscription_notifications = (
             suppress_subscription_notifications)
 
-        # Enable default processors.
-        # XXX wgrant 2015-05-18: packagecloner and populate-archive
-        # handle ArchiveArch specially, so don't touch copy archives yet.
-        if new_archive.purpose != ArchivePurpose.COPY:
-            for processor in getUtility(IProcessorSet).getAll():
-                if processor.build_by_default:
-                    getUtility(IArchiveArchSet).new(new_archive, processor)
+        if processors is None:
+            processors = [
+                p for p in getUtility(IProcessorSet).getAll()
+                if p.build_by_default]
+        for processor in processors:
+            getUtility(IArchiveArchSet).new(new_archive, processor)
 
         return new_archive
 

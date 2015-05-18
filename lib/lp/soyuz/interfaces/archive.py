@@ -2103,7 +2103,8 @@ class IArchiveSet(Interface):
 
     def new(purpose, owner, name=None, displayname=None, distribution=None,
             description=None, enabled=True, require_virtualized=True,
-            private=False, suppress_subscription_notifications=False):
+            private=False, suppress_subscription_notifications=False,
+            processors=None):
         """Create a new archive.
 
         On named-ppa creation, the signing key for the default PPA for the
@@ -2128,6 +2129,8 @@ class IArchiveSet(Interface):
         :param private: whether or not to make the PPA private
         :param suppress_subscription_notifications: whether to suppress
             emails to subscribers about new subscriptions.
+        :param processors: list of `IProcessors` for which the archive should
+            build. If omitted, processors with `build_by_default` will be used.
 
         :return: an `IArchive` object.
         :raises AssertionError if name is already taken within distribution.
