@@ -2036,12 +2036,23 @@ class IArchiveAdmin(Interface):
     """Archive interface for operations restricted by commercial."""
 
     @operation_parameters(
+        processors=List(
+            value_type=Reference(schema=IProcessor), required=True),
+    )
+    @export_write_operation()
+    @operation_for_version('devel')
+    def setProcessors(processors):
+        """Set the architectures on which the archive can build."""
+
+    @operation_parameters(
         processor=Reference(schema=IProcessor, required=True),
     )
     @export_write_operation()
     @operation_for_version('devel')
     def enableRestrictedProcessor(processor):
         """Add the processor to the set of enabled restricted processors.
+
+        DEPRECATED. Use setProcessors instead.
 
         :param processor: is an `IProcessor` object.
         """
@@ -2092,7 +2103,8 @@ class IArchiveSet(Interface):
 
     def new(purpose, owner, name=None, displayname=None, distribution=None,
             description=None, enabled=True, require_virtualized=True,
-            private=False, suppress_subscription_notifications=False):
+            private=False, suppress_subscription_notifications=False,
+            processors=None):
         """Create a new archive.
 
         On named-ppa creation, the signing key for the default PPA for the
@@ -2117,6 +2129,8 @@ class IArchiveSet(Interface):
         :param private: whether or not to make the PPA private
         :param suppress_subscription_notifications: whether to suppress
             emails to subscribers about new subscriptions.
+        :param processors: list of `IProcessors` for which the archive should
+            build. If omitted, processors with `build_by_default` will be used.
 
         :return: an `IArchive` object.
         :raises AssertionError if name is already taken within distribution.

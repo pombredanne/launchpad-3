@@ -18,6 +18,7 @@ from zope.component import getUtility
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.webapp.interfaces import OAuthPermission
 from lp.soyuz.enums import (
     ArchivePermissionType,
     ArchivePurpose,
@@ -28,6 +29,7 @@ from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
 from lp.soyuz.model.archivepermission import ArchivePermission
 from lp.testing import (
     admin_logged_in,
+    api_url,
     launchpadlib_for,
     person_logged_in,
     record_two_runs,
@@ -264,6 +266,48 @@ class TestProcessors(WebServiceTestCase):
         self.assertEqual('new-arm', ws_proc.name)
         self.assertEqual('New ARM Title', ws_proc.title)
         self.assertEqual('New ARM Description', ws_proc.description)
+
+    def test_setProcessors(self):
+        """A new processor can be added to the enabled restricted set."""
+        commercial = getUtility(ILaunchpadCelebrities).commercial_admin
+        commercial_admin = self.factory.makePerson(member_of=[commercial])
+        self.factory.makeProcessor(
+            'arm', 'ARM', 'ARM', restricted=True, build_by_default=False)
+        ppa_url = api_url(self.factory.makeArchive(purpose=ArchivePurpose.PPA))
+
+        body = webservice_for_person(commercial_admin).get(
+            ppa_url + '/processors', api_version='devel').jsonBody()
+        self.assertContentEqual(
+            ['386', 'hppa', 'amd64'],
+            [entry['name'] for entry in body['entries']])
+
+        response = webservice_for_person(
+                commercial_admin,
+                permission=OAuthPermission.WRITE_PUBLIC).named_post(
+            ppa_url, 'setProcessors',
+            processors=['/+processors/386', '/+processors/arm'],
+            api_version='devel')
+        self.assertEqual(200, response.status)
+
+        body = webservice_for_person(commercial_admin).get(
+            ppa_url + '/processors', api_version='devel').jsonBody()
+        self.assertContentEqual(
+            ['386', 'hppa', 'amd64', 'arm'],
+            [entry['name'] for entry in body['entries']])
+
+    def test_setProcessors_owner_forbidden(self):
+        """Only commercial admins can call setProcessors."""
+        self.factory.makeProcessor(
+            'arm', 'ARM', 'ARM', restricted=True, build_by_default=False)
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        ppa_url = api_url(archive)
+        owner = archive.owner
+
+        response = webservice_for_person(owner).named_post(
+            ppa_url, 'setProcessors',
+            processors=['/+processors/386', '/+processors/arm'],
+            api_version='devel')
+        self.assertEqual(401, response.status)
 
     def test_enableRestrictedProcessor(self):
         """A new processor can be added to the enabled restricted set."""

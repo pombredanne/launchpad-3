@@ -2076,25 +2076,32 @@ class Archive(SQLBase):
         self.processors = set(self.processors + [processor])
 
     def _getProcessors(self):
+        # To match existing behaviour we always include non-restricted
+        # processors during the transition.
         enabled = [
-            proc for (proc, archivearch)
-            in getUtility(IArchiveArchSet).getRestrictedProcessors(self)
-            if archivearch is not None]
+            aa.processor for aa in
+            getUtility(IArchiveArchSet).getByArchive(self)]
         return [
             proc for proc in getUtility(IProcessorSet).getAll()
             if not proc.restricted or proc in enabled]
 
-    def _setProcessors(self, new_procs):
-        enablements = dict(
-            getUtility(IArchiveArchSet).getRestrictedProcessors(self))
-        for proc in self.processors:
-            if proc not in new_procs and proc in enablements:
+    def setProcessors(self, processors):
+        """See `IArchive`."""
+        enablements = {
+            aa.processor: aa for aa in
+            getUtility(IArchiveArchSet).getByArchive(self)}
+        # Remove any enabled restricted processors that aren't in the
+        # new set. _getProcessors currently always includes
+        # non-restricted processors, but this'll change later.
+        for proc in enablements:
+            if proc.restricted and proc not in processors:
                 Store.of(self).remove(enablements[proc])
-        for proc in new_procs:
+        # Add any new processors regardless of restrictedness.
+        for proc in processors:
             if proc not in self.processors:
                 getUtility(IArchiveArchSet).new(self, proc)
 
-    processors = property(_getProcessors, _setProcessors)
+    processors = property(_getProcessors, setProcessors)
 
     def getPockets(self):
         """See `IArchive`."""
@@ -2366,7 +2373,7 @@ class ArchiveSet:
     def new(self, purpose, owner, name=None, displayname=None,
             distribution=None, description=None, enabled=True,
             require_virtualized=True, private=False,
-            suppress_subscription_notifications=False):
+            suppress_subscription_notifications=False, processors=None):
         """See `IArchiveSet`."""
         if distribution is None:
             distribution = getUtility(ILaunchpadCelebrities).ubuntu
@@ -2444,6 +2451,13 @@ class ArchiveSet:
 
         new_archive.suppress_subscription_notifications = (
             suppress_subscription_notifications)
+
+        if processors is None:
+            processors = [
+                p for p in getUtility(IProcessorSet).getAll()
+                if p.build_by_default]
+        for processor in processors:
+            getUtility(IArchiveArchSet).new(new_archive, processor)
 
         return new_archive
 

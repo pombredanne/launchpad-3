@@ -31,33 +31,6 @@ class TestArchiveArch(TestCaseWithFactory):
             'omap', 'Multimedia applications processor',
             'Does all your sound & video', True)
 
-    def test_getRestrictedProcessors_no_restricted_associations(self):
-        # Our archive is not associated with any restricted processors yet.
-        result_set = list(
-            self.archive_arch_set.getRestrictedProcessors(self.ppa))
-        archivearches = [row[1] for row in result_set]
-        self.assertTrue(all(aa is None for aa in archivearches))
-
-    def test_getRestrictedProcessors_single_restricted_association(self):
-        # Our archive is now associated with one of the restricted processors.
-        self.archive_arch_set.new(self.ppa, self.cell_proc)
-        result_set = list(
-            self.archive_arch_set.getRestrictedProcessors(self.ppa))
-        results = dict(
-            (row[0].name, row[1] is not None) for row in result_set)
-        self.assertEqual({'cell-proc': True, 'omap': False}, results)
-
-    def test_getRestrictedProcessors_archive_only(self):
-        # Test that only the associated archs for the archive itself are
-        # returned.
-        self.archive_arch_set.new(self.ppa, self.cell_proc)
-        self.archive_arch_set.new(self.ubuntu_archive, self.omap)
-        result_set = list(
-            self.archive_arch_set.getRestrictedProcessors(self.ppa))
-        results = dict(
-            (row[0].name, row[1] is not None) for row in result_set)
-        self.assertEqual({'cell-proc': True, 'omap': False}, results)
-
     def test_getByArchive_no_other_archives(self):
         # Test ArchiveArchSet.getByArchive returns no other archives.
         self.archive_arch_set.new(self.ppa, self.cell_proc)
