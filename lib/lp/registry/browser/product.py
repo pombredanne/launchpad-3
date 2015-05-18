@@ -376,7 +376,6 @@ class ProductInvolvementView(PillarInvolvementView):
         'configured' -- a boolean representing the configuration status.
         """
         overview_menu = MenuAPI(self.context).overview
-        series_menu = MenuAPI(self.context.development_focus).overview
         configuration_names = [
             'configure_bugtracker',
             'configure_translations',
@@ -392,7 +391,7 @@ class ProductInvolvementView(PillarInvolvementView):
                                     configured=config_statuses[key]))
 
         # Add the branch configuration in separately.
-        set_branch = series_menu['set_branch']
+        set_branch = overview_menu['set_branch']
         set_branch.text = 'Code'
         set_branch.summary = "Specify the location of this project's code."
         config_list.insert(0,
@@ -535,6 +534,7 @@ class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin,
         'packages',
         'series',
         'series_add',
+        'set_branch',
         'milestones',
         'downloads',
         'announce',
@@ -587,6 +587,19 @@ class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin,
             '<abbr title="Resource Description Framework">'
             'RDF</abbr> metadata')
         return Link('+rdf', text, icon='download')
+
+    @enabled_with_permission('launchpad.Edit')
+    def set_branch(self):
+        """Return a link to set the branch or repo for this project."""
+        if self.context.development_focus.branch is None:
+            text = 'Link to branch'
+            icon = 'add'
+            summary = 'Set the branch for this project'
+        else:
+            text = "Change branch"
+            icon = 'edit'
+            summary = 'Change the branch for this project'
+        return Link('+setbranch', text, summary, icon=icon)
 
     def downloads(self):
         text = 'Downloads'
@@ -983,7 +996,7 @@ class ProductView(PillarViewMixin, HasAnnouncementsView, SortSeriesMixin,
         """Default project VCS type."""
         vcs = None
         if self.context.vcs:
-            vcs = self.context.vcs
+            return self.context.vcs
         if not IBranchCollection(self.context).is_empty():
             vcs = VCSType.BZR
         if not IGitCollection(self.context).is_empty():
