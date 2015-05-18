@@ -1909,7 +1909,7 @@ class ProductSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
                 self.series.branch = branch_location
                 # Request an initial upload of translation files.
                 getUtility(IRosettaUploadJobSource).create(
-                    self.branch, NULL_REVISION)
+                    self.series.branch, NULL_REVISION)
             else:
                 self.series.branch = branch_location
             self.request.response.addInfoNotification(
