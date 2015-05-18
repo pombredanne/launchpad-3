@@ -1070,6 +1070,33 @@ class TestProcessors(TestCaseWithFactory):
             self.archive_arch_set.getByArchive(self.archive, self.arm).count())
         self.assertContentEqual(self.default_procs, self.archive.processors)
 
+    def test_set_doesnt_remove_default(self):
+        """During the data migration the property must not remove defaults.
+
+        _getProcessors doesn't yet rely on ArchiveArches for
+        non-restricted processors, since the rows don't exist on
+        production yet, but if they do exist then they won't be removed
+        on set. We'll backfill them while this version of the code is
+        running.
+        """
+        i386 = getUtility(IProcessorSet).getByName("386")
+        self.archive.processors = [i386, self.arm]
+        self.assertContentEqual(
+            [self.arm],
+            [aa.processor for aa in
+             self.archive_arch_set.getByArchive(self.archive)])
+        self.archive_arch_set.new(self.archive, i386)
+        self.assertContentEqual(
+            [i386, self.arm],
+            [aa.processor for aa in
+             self.archive_arch_set.getByArchive(self.archive)])
+        self.archive.processors = []
+        self.assertContentEqual(
+            [i386],
+            [aa.processor for aa in
+             self.archive_arch_set.getByArchive(self.archive)])
+        self.assertContentEqual(self.default_procs, self.archive.processors)
+
     def test_set_enabled_restricted_processors(self):
         """The deprecated enabled_restricted_processors property still works.
 
