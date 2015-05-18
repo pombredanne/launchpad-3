@@ -7,10 +7,6 @@ __all__ = [
     'ArchiveArchSet'
     ]
 
-from storm.expr import (
-    And,
-    LeftJoin,
-    )
 from storm.locals import (
     Int,
     Reference,
@@ -58,15 +54,3 @@ class ArchiveArchSet:
 
         return IStore(ArchiveArch).find(ArchiveArch, *clauses).order_by(
             ArchiveArch.id)
-
-    def getRestrictedProcessors(self, archive):
-        """See `IArchiveArchSet`."""
-        origin = (
-            Processor,
-            LeftJoin(
-                ArchiveArch,
-                And(ArchiveArch.archive == archive.id,
-                    ArchiveArch.processor == Processor.id)))
-        return IStore(ArchiveArch).using(*origin).find(
-            (Processor, ArchiveArch),
-            Processor.restricted == True).order_by(Processor.name)
