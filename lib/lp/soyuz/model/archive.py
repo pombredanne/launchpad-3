@@ -2445,6 +2445,14 @@ class ArchiveSet:
         new_archive.suppress_subscription_notifications = (
             suppress_subscription_notifications)
 
+        # Enable default processors.
+        # XXX wgrant 2015-05-18: packagecloner and populate-archive
+        # handle ArchiveArch specially, so don't touch copy archives yet.
+        if new_archive.purpose != ArchivePurpose.COPY:
+            for processor in getUtility(IProcessorSet).getAll():
+                if processor.build_by_default:
+                    getUtility(IArchiveArchSet).new(new_archive, processor)
+
         return new_archive
 
     def __iter__(self):
