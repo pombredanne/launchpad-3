@@ -643,7 +643,8 @@ class PackageClonerTests(TestCaseWithFactory):
         # The request builds for both processors, so we expect two builds
         # per source.
         processors = [getUtility(IProcessorSet).getByName('386'), amd64]
-        copy_archive = self.getTargetArchive(distroseries.distribution)
+        copy_archive = self.getTargetArchive(
+            distroseries.distribution, processors=processors)
         self.copyArchive(
             copy_archive, distroseries, processors=processors)
         package_infos2 = [
