@@ -74,13 +74,13 @@ portlet.
      (http://launchpad.dev/fooix/+edit)
     >>> print_involvement_portlet(owner_browser)
     Code
-    http://launchpad.dev/fooix/trunk/+setbranch
+    http://launchpad.dev/fooix/+setbranch
     Bugs
     http://launchpad.dev/fooix/+configure-bugtracker
-    Answers
-    http://launchpad.dev/fooix/+configure-answers
     Translations
     http://launchpad.dev/fooix/+configure-translations
+    Answers
+    http://launchpad.dev/fooix/+configure-answers
 
 The owner can specify the development focus branch from the overview page.
 

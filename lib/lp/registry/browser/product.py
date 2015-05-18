@@ -1933,7 +1933,7 @@ class ProductSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
                     code_import = getUtility(ICodeImportSet).new(
                         owner=branch_owner,
                         registrant=self.user,
-                        target=IBranchTarget(self.context.product),
+                        target=IBranchTarget(self.target),
                         branch_name=branch_name,
                         rcs_type=rcs_item,
                         url=url,
