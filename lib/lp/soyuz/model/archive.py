@@ -33,7 +33,10 @@ from storm.expr import (
     )
 from storm.locals import (
     Count,
+    Int,
     Join,
+    Reference,
+    Storm,
     )
 from storm.store import Store
 from zope.component import (
@@ -63,6 +66,7 @@ from lp.buildmaster.enums import (
     )
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSet
 from lp.buildmaster.interfaces.processor import IProcessorSet
+from lp.buildmaster.model.processor import Processor
 from lp.registry.enums import (
     INCLUSIVE_TEAM_POLICY,
     PersonVisibility,
@@ -158,7 +162,6 @@ from lp.soyuz.interfaces.archive import (
     validate_external_dependencies,
     VersionRequiresName,
     )
-from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.archivesubscriber import (
@@ -2076,21 +2079,26 @@ class Archive(SQLBase):
         self.processors = set(self.processors + [processor])
 
     def _getProcessors(self):
-        return [
-            aa.processor for aa in
-            getUtility(IArchiveArchSet).getByArchive(self)]
+        return list(Store.of(self).find(
+            Processor,
+            Processor.id == ArchiveArch.processor_id,
+            ArchiveArch.archive == self))
 
     def setProcessors(self, processors):
         """See `IArchive`."""
-        enablements = {
-            aa.processor: aa for aa in
-            getUtility(IArchiveArchSet).getByArchive(self)}
+        enablements = dict(Store.of(self).find(
+            (Processor, ArchiveArch),
+            Processor.id == ArchiveArch.processor_id,
+            ArchiveArch.archive == self))
         for proc in enablements:
             if proc not in processors:
                 Store.of(self).remove(enablements[proc])
         for proc in processors:
             if proc not in self.processors:
-                getUtility(IArchiveArchSet).new(self, proc)
+                archivearch = ArchiveArch()
+                archivearch.archive = self
+                archivearch.processor = proc
+                Store.of(self).add(archivearch)
 
     processors = property(_getProcessors, setProcessors)
 
@@ -2447,8 +2455,7 @@ class ArchiveSet:
             processors = [
                 p for p in getUtility(IProcessorSet).getAll()
                 if p.build_by_default]
-        for processor in processors:
-            getUtility(IArchiveArchSet).new(new_archive, processor)
+        new_archive.setProcessors(processors)
 
         return new_archive
 
@@ -2658,6 +2665,17 @@ class ArchiveSet:
     def empty_list(self):
         """See `IArchiveSet."""
         return []
+
+
+class ArchiveArch(Storm):
+    """Link table to back Archive.processors."""
+    __storm_table__ = 'ArchiveArch'
+    id = Int(primary=True)
+
+    archive_id = Int(name='archive', allow_none=False)
+    archive = Reference(archive_id, 'Archive.id')
+    processor_id = Int(name='processor', allow_none=False)
+    processor = Reference(processor_id, Processor.id)
 
 
 def get_archive_privacy_filter(user):
