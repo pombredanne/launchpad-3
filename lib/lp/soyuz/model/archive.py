@@ -2076,27 +2076,18 @@ class Archive(SQLBase):
         self.processors = set(self.processors + [processor])
 
     def _getProcessors(self):
-        # To match existing behaviour we always include non-restricted
-        # processors during the transition.
-        enabled = [
+        return [
             aa.processor for aa in
             getUtility(IArchiveArchSet).getByArchive(self)]
-        return [
-            proc for proc in getUtility(IProcessorSet).getAll()
-            if not proc.restricted or proc in enabled]
 
     def setProcessors(self, processors):
         """See `IArchive`."""
         enablements = {
             aa.processor: aa for aa in
             getUtility(IArchiveArchSet).getByArchive(self)}
-        # Remove any enabled restricted processors that aren't in the
-        # new set. _getProcessors currently always includes
-        # non-restricted processors, but this'll change later.
         for proc in enablements:
-            if proc.restricted and proc not in processors:
+            if proc not in processors:
                 Store.of(self).remove(enablements[proc])
-        # Add any new processors regardless of restrictedness.
         for proc in processors:
             if proc not in self.processors:
                 getUtility(IArchiveArchSet).new(self, proc)
