@@ -24,7 +24,8 @@ details.
 Create a restricted processor.
 
     >>> login('admin@canonical.com')
-    >>> ign = factory.makeProcessor(name='arm', restricted=True)
+    >>> ign = factory.makeProcessor(
+    ...     name='arm', restricted=True, build_by_default=False)
     >>> logout()
 
 The distribution's registrant can access the page and change the usage.
