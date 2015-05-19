@@ -1734,10 +1734,14 @@ class ProductSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
         return self.context.development_focus
 
     @property
+    def vcs(self):
+        return self.context.vcs
+
+    @property
     def initial_values(self):
         return dict(
             rcs_type=RevisionControlSystems.BZR,
-            default_vcs=(self.context.vcs or VCSType.GIT),
+            default_vcs=(self.vcs or VCSType.GIT),
             branch_type=LINK_LP_BZR,
             branch_location=self.series.branch)
 

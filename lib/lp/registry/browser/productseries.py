@@ -742,6 +742,11 @@ class ProductSeriesSetBranchView(ProductSetBranchView, ProductSeriesView):
         """The branch target for the context."""
         return IBranchTarget(self.context.product)
 
+    @property
+    def vcs(self):
+        """The default vcs for the product."""
+        return self.context.product.vcs
+
 
 class ProductSeriesReviewView(LaunchpadEditFormView):
     """A view to review and change the series `IProduct` and name."""
