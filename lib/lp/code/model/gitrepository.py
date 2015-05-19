@@ -20,6 +20,7 @@ from storm.expr import (
     Coalesce,
     Insert,
     Join,
+    Not,
     Or,
     Select,
     SQL,
@@ -39,8 +40,12 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
 from zope.security.interfaces import Unauthorized
-from zope.security.proxy import removeSecurityProxy
+from zope.security.proxy import (
+    ProxyFactory,
+    removeSecurityProxy,
+    )
 
+from lp import _ as msg
 from lp.app.enums import (
     InformationType,
     PRIVATE_INFORMATION_TYPES,
@@ -58,8 +63,12 @@ from lp.app.interfaces.launchpad import (
 from lp.app.interfaces.services import IService
 from lp.code.enums import GitObjectType
 from lp.code.errors import (
+    CannotDeleteGitRepository,
     GitDefaultConflict,
     GitTargetError,
+    )
+from lp.code.interfaces.branchmergeproposal import (
+    BRANCH_MERGE_PROPOSAL_FINAL_STATES,
     )
 from lp.code.interfaces.gitcollection import (
     IAllGitRepositories,
@@ -78,6 +87,7 @@ from lp.code.interfaces.gitrepository import (
     )
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.mail.branch import send_git_repository_modified_notifications
+from lp.code.model.branchmergeproposal import BranchMergeProposal
 from lp.code.model.gitref import GitRef
 from lp.code.model.gitsubscription import GitSubscription
 from lp.registry.enums import PersonVisibility
@@ -756,6 +766,31 @@ class GitRepository(StormBase, GitIdentityMixin):
             recipients.add(subscription.person, subscription, rationale)
         return recipients
 
+    @property
+    def landing_targets(self):
+        """See `IGitRepository`."""
+        return Store.of(self).find(
+            BranchMergeProposal,
+            BranchMergeProposal.source_git_repository == self)
+
+    @property
+    def landing_candidates(self):
+        """See `IGitRepository`."""
+        return Store.of(self).find(
+            BranchMergeProposal,
+            BranchMergeProposal.target_git_repository == self,
+            Not(BranchMergeProposal.queue_status.is_in(
+                BRANCH_MERGE_PROPOSAL_FINAL_STATES)))
+
+    @property
+    def dependent_landings(self):
+        """See `IGitRepository`."""
+        return Store.of(self).find(
+            BranchMergeProposal,
+            BranchMergeProposal.prerequisite_git_repository,
+            Not(BranchMergeProposal.queue_status.is_in(
+                BRANCH_MERGE_PROPOSAL_FINAL_STATES)))
+
     def isRepositoryMergeable(self, other):
         """See `IGitRepository`."""
         return self.namespace.areRepositoriesMergeable(other.namespace)
@@ -775,8 +810,164 @@ class GitRepository(StormBase, GitIdentityMixin):
             Job._status.is_in([JobStatus.WAITING, JobStatus.RUNNING]))
         return not jobs.is_empty()
 
-    def destroySelf(self):
-        raise NotImplementedError
+    def canBeDeleted(self):
+        """See `IGitRepository`."""
+        # Can't delete if the repository is associated with anything.
+        return len(self.getDeletionRequirements()) == 0
+
+    def _getDeletionRequirements(self):
+        """Determine what operations must be performed to delete this branch.
+
+        Two dictionaries are returned, one for items that must be deleted,
+        one for items that must be altered.  The item in question is the
+        key, and the value is a user-facing string explaining why the item
+        is affected.
+
+        As well as the dictionaries, this method returns two list of callables
+        that may be called to perform the alterations and deletions needed.
+        """
+        alteration_operations = []
+        deletion_operations = []
+        # Merge proposals require their source and target repositories to
+        # exist.
+        for merge_proposal in self.landing_targets:
+            deletion_operations.append(
+                DeletionCallable(
+                    merge_proposal,
+                    msg("This repository is the source repository of this "
+                        "merge proposal."),
+                    merge_proposal.deleteProposal))
+        # Cannot use self.landing_candidates, because it ignores merged
+        # merge proposals.
+        for merge_proposal in BranchMergeProposal.selectBy(
+            target_git_repository=self):
+            deletion_operations.append(
+                DeletionCallable(
+                    merge_proposal,
+                    msg("This repository is the target repository of this "
+                        "merge proposal."),
+                    merge_proposal.deleteProposal))
+        for merge_proposal in BranchMergeProposal.selectBy(
+            prerequisite_git_repository=self):
+            alteration_operations.append(
+                ClearPrerequisiteRepository(merge_proposal))
+
+        return (alteration_operations, deletion_operations)
+
+    def getDeletionRequirements(self):
+        """See `IGitRepository`."""
+        alteration_operations, deletion_operations = (
+            self._getDeletionRequirements())
+        result = {
+            operation.affected_object: ("alter", operation.rationale)
+            for operation in alteration_operations}
+        # Deletion entries should overwrite alteration entries.
+        result.update({
+            operation.affected_object: ("delete", operation.rationale)
+            for operation in deletion_operations})
+        return result
+
+    def _breakReferences(self):
+        """Break all external references to this repository.
+
+        NULLable references will be NULLed.  References which are not NULLable
+        will cause the item holding the reference to be deleted.
+
+        This function is guaranteed to perform the operations predicted by
+        getDeletionRequirements, because it uses the same backing function.
+        """
+        alteration_operations, deletion_operations = (
+            self._getDeletionRequirements())
+        for operation in alteration_operations:
+            operation()
+        for operation in deletion_operations:
+            operation()
+        Store.of(self).flush()
+
+    def _deleteRepositorySubscriptions(self):
+        """Delete subscriptions for this repository prior to deleting it."""
+        subscriptions = Store.of(self).find(
+            GitSubscription, GitSubscription.repository == self)
+        subscriptions.remove()
+
+    def _deleteJobs(self):
+        """Delete jobs for this repository prior to deleting it.
+
+        This deletion includes `GitJob`s associated with the branch.
+        """
+        # Circular import.
+        from lp.code.model.gitjob import GitJob
+
+        # Remove GitJobs.
+        affected_jobs = Select(
+            [GitJob.job_id],
+            And(GitJob.job == Job.id, GitJob.repository == self))
+        Store.of(self).find(Job, Job.id.is_in(affected_jobs)).remove()
+
+    def destroySelf(self, break_references=False):
+        """See `IGitRepository`."""
+        # Circular import.
+        from lp.code.interfaces.gitjob import (
+            IReclaimGitRepositorySpaceJobSource,
+            )
+
+        if break_references:
+            self._breakReferences()
+        if not self.canBeDeleted():
+            raise CannotDeleteGitRepository(
+                "Cannot delete Git repository: %s" % self.unique_name)
+
+        self.refs.remove()
+        self._deleteRepositorySubscriptions()
+        self._deleteJobs()
+
+        # Now destroy the repository.
+        repository_name = self.unique_name
+        repository_path = self.getInternalPath()
+        Store.of(self).remove(self)
+        # And now create a job to remove the repository from storage when
+        # it's done.
+        getUtility(IReclaimGitRepositorySpaceJobSource).create(
+            repository_name, repository_path)
+
+
+class DeletionOperation:
+    """Represent an operation to perform as part of branch deletion."""
+
+    def __init__(self, affected_object, rationale):
+        self.affected_object = ProxyFactory(affected_object)
+        self.rationale = rationale
+
+    def __call__(self):
+        """Perform the deletion operation."""
+        raise NotImplementedError(DeletionOperation.__call__)
+
+
+class DeletionCallable(DeletionOperation):
+    """Deletion operation that invokes a callable."""
+
+    def __init__(self, affected_object, rationale, func):
+        super(DeletionCallable, self).__init__(affected_object, rationale)
+        self.func = func
+
+    def __call__(self):
+        self.func()
+
+
+class ClearPrerequisiteRepository(DeletionOperation):
+    """Delete operation that clears a merge proposal's prerequisite
+    repository."""
+
+    def __init__(self, merge_proposal):
+        DeletionOperation.__init__(
+            self, merge_proposal,
+            msg("This repository is the prerequisite repository of this merge "
+                "proposal."))
+
+    def __call__(self):
+        self.affected_object.prerequisite_git_repository = None
+        self.affected_object.prerequisite_git_path = None
+        self.affected_object.prerequisite_git_commit_sha1 = None
 
 
 class GitRepositorySet:
