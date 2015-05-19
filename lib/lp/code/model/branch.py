@@ -1250,10 +1250,6 @@ class Branch(SQLBase, BzrIdentityMixin):
                 datetime.now(pytz.timezone('UTC'))
                 + increment * 2 ** (self.mirror_failures - 1))
 
-    def destroySelfBreakReferences(self):
-        """See `IBranch`."""
-        return self.destroySelf(break_references=True)
-
     def _deleteBranchSubscriptions(self):
         """Delete subscriptions for this branch prior to deleting branch."""
         subscriptions = Store.of(self).find(
