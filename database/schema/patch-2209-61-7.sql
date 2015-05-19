@@ -5,4 +5,6 @@ SET client_min_messages=ERROR;
 
 ALTER TABLE GitRepository ADD COLUMN default_branch text;
 
+COMMENT ON COLUMN GitRepository.default_branch IS 'The reference path of this repository''s default branch, or "HEAD".';
+
 INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 61, 7);
