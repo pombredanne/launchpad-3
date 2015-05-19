@@ -33,6 +33,7 @@ from datetime import (
     datetime,
     timedelta,
     )
+from operator import attrgetter
 
 from lazr.restful.utils import smartquote
 import pytz
@@ -2029,7 +2030,8 @@ class EnableProcessorsMixin:
     def createEnabledProcessors(self, description=None):
         """Creates the 'processors' field."""
         terms = []
-        for processor in getUtility(IProcessorSet).getAll():
+        for processor in sorted(
+                getUtility(IProcessorSet).getAll(), key=attrgetter('name')):
             terms.append(SimpleTerm(
                 processor, token=processor.name, title=processor.title))
         old_field = IArchive['processors']
