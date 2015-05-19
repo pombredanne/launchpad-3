@@ -26,10 +26,11 @@ class TestArchiveArch(TestCaseWithFactory):
         self.ubuntu_archive = ubuntu.main_archive
         self.cell_proc = self.factory.makeProcessor(
             'cell-proc', 'PS cell processor', 'Screamingly faaaaaaaaaaaast',
-            True)
+            restricted=True, build_by_default=False)
         self.omap = self.factory.makeProcessor(
             'omap', 'Multimedia applications processor',
-            'Does all your sound & video', True)
+            'Does all your sound & video', restricted=True,
+            build_by_default=False)
 
     def test_getByArchive_no_other_archives(self):
         # Test ArchiveArchSet.getByArchive returns no other archives.

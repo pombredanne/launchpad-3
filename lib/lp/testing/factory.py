@@ -869,7 +869,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                       name=name, active=active, dateexpected=dateexpected))
 
     def makeProcessor(self, name=None, title=None, description=None,
-                      restricted=False, build_by_default=False,
+                      restricted=False, build_by_default=True,
                       supports_virtualized=False,
                       supports_nonvirtualized=True):
         """Create a new processor.

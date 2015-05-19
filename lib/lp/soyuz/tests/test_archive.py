@@ -1020,7 +1020,8 @@ class TestProcessors(TestCaseWithFactory):
             getUtility(IProcessorSet).getByName("amd64")]
         self.unrestricted_procs = (
             self.default_procs + [getUtility(IProcessorSet).getByName("hppa")])
-        self.arm = self.factory.makeProcessor(name='arm', restricted=True)
+        self.arm = self.factory.makeProcessor(
+            name='arm', restricted=True, build_by_default=False)
 
     def test_new_default_processors(self):
         # ArchiveSet.new creates an ArchiveArch for each Processor with

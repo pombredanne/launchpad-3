@@ -313,7 +313,8 @@ class TestProcessors(WebServiceTestCase):
         """A new processor can be added to the enabled restricted set."""
         self.ws_version = 'devel'
         archive = self.factory.makeArchive()
-        self.factory.makeProcessor(name='arm', restricted=True)
+        self.factory.makeProcessor(
+            name='arm', restricted=True, build_by_default=False)
         commercial = getUtility(ILaunchpadCelebrities).commercial_admin
         commercial_admin = self.factory.makePerson(member_of=[commercial])
         transaction.commit()
@@ -331,7 +332,8 @@ class TestProcessors(WebServiceTestCase):
         """
         self.ws_version = 'devel'
         archive = self.factory.makeArchive()
-        self.factory.makeProcessor(name='arm', restricted=True)
+        self.factory.makeProcessor(
+            name='arm', restricted=True, build_by_default=False)
         transaction.commit()
         ws_arm = self.service.processors.getByName(name='arm')
         ws_archive = self.wsObject(archive, user=archive.owner)
@@ -348,7 +350,8 @@ class TestProcessors(WebServiceTestCase):
         """
         self.ws_version = 'devel'
         archive = self.factory.makeArchive()
-        self.factory.makeProcessor(name='arm', restricted=True)
+        self.factory.makeProcessor(
+            name='arm', restricted=True, build_by_default=False)
         just_some_guy = self.factory.makePerson()
         transaction.commit()
         ws_arm = self.service.processors.getByName(name='arm')
