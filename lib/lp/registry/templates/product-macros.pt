@@ -4,7 +4,7 @@
     xmlns:i18n="http://xml.zope.org/namespaces/i18n"
     omit-tag="">
 
-  <div metal:define-macro="push-instructions" id="push-instructions" class="yui3-skin-sam">
+  <div metal:define-macro="push-instructions" id="product-push-instructions" class="yui3-skin-sam">
     <div id="push-instructions-tab" class="yui3-tabview">
       <ul>
         <li><a href="#push-instructions-git"><i class="sprite gitbranch"></i>git</a></li>
