@@ -62,10 +62,6 @@ class ProcessorSet:
         """See `IProcessorSet`."""
         return IStore(Processor).find(Processor)
 
-    def getRestricted(self):
-        """See `IProcessorSet`."""
-        return IStore(Processor).find(Processor, Processor.restricted == True)
-
     def new(self, name, title, description, restricted=False,
             build_by_default=False, supports_virtualized=False,
             supports_nonvirtualized=True):
