@@ -1759,6 +1759,13 @@
         template="../templates/project-setbranch.pt"
         />
     <browser:page
+        name="+product-macros"
+        for="*"
+        class="lp.app.browser.launchpad.Macro"
+        permission="zope.Public"
+        template="../templates/product-macros.pt"
+        />
+    <browser:page
         name="+edit"
         for="lp.registry.interfaces.nameblacklist.INameBlacklist"
         class="lp.registry.browser.nameblacklist.NameBlacklistEditView"

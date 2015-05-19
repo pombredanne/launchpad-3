@@ -18,43 +18,33 @@
 
 <div metal:fill-slot="main">
 
-  <p id="push-instructions">
-    You can push a Bazaar branch directly to Launchpad with the command:<br />
-    <tt class="command">
-      bzr push lp:~<tal:user replace="view/user/name"/>/<tal:project replace="context/name"/>/<tal:series replace="context/name"/>
-    </tt>
-    <tal:no-keys condition="not:view/user/sshkeys">
-      <br/>To authenticate with the Launchpad branch upload service,
-      you need to
-      <a tal:attributes="href string:${view/user/fmt:url}/+editsshkeys">
-        register a SSH key</a>.
-    </tal:no-keys>
-  </p>
-
   <div metal:use-macro="context/@@launchpad_form/form">
 
     <metal:formbody fill-slot="widgets">
 
+      <div class="push-instructions">
+        <h3>Push Instructions</h3>
+        <div metal:use-macro="context/@@+product-macros/push-instructions"></div>
+      </div>
       <table class="form">
         <tr>
-          <td><h3>Version Control System</h3></td>
-        </tr>
-        <tr>
           <td>
-            <label tal:replace="structure view/default_vcs_git">
-              Git
-            </label>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <label tal:replace="structure view/default_vcs_bzr">
-              Bazaar
-            </label>
-          </td>
-        </tr>
-        <tr><td><p><span class="formHelp">Note: Your
-            project may still have both git repositories and bazaar branches.</span></p>
+            <h3>Version Control System</h3>
+            <p>Please select a default vcs for your project:</p>
+            <ul>
+              <li>
+                <label tal:replace="structure view/default_vcs_git">
+                  Git
+                </label>
+              </li>
+              <li>
+                <label tal:replace="structure view/default_vcs_bzr">
+                  Bazaar
+                </label>
+              </li>
+            </ul>
+            <p><span class="formHelp">Your project may still have both
+            git repositories and bazaar branches.</span></p>
           </td>
         </tr>
         <tr>

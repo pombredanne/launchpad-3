@@ -537,6 +537,33 @@ div.ppa-packaging-tmp-actions .portlet {
 
 
 /* --- Code --- */
+code.command {
+    background-color: #FFF;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    box-sizing: border-box;
+    color: #626262;
+    padding: 4px;
+    font-family: "DejaVu Sans Mono", "Courier New", monospace;
+    font-size: 1.05em;
+}
+code.command-block {
+    display: block;
+    margin-bottom: 1em;
+    padding: 6px;
+}
+div.scm-tip {
+    margin-bottom: 1em;
+    box-sizing: border-box;
+    overflow: hidden;
+    padding: 5px;
+}
+div.scm-tip:after {
+    clear: left;
+}
+div#push-instructions-tab {
+    width: 750px;
+}
 
 table.code {
     margin-bottom: 1em;
