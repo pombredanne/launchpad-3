@@ -1026,11 +1026,13 @@ class TestProcessors(TestCaseWithFactory):
     def test_new_default_processors(self):
         # ArchiveSet.new creates an ArchiveArch for each Processor with
         # build_by_default set.
+        self.factory.makeProcessor(name='default', build_by_default=True)
+        self.factory.makeProcessor(name='nondefault', build_by_default=False)
         archive = getUtility(IArchiveSet).new(
             owner=self.factory.makePerson(), purpose=ArchivePurpose.PPA,
             distribution=self.factory.makeDistribution(), name='ppa')
         self.assertContentEqual(
-            ['386', 'amd64'],
+            ['386', 'amd64', 'hppa', 'default'],
             [aa.processor.name for aa in
              self.archive_arch_set.getByArchive(archive)])
 
@@ -1081,47 +1083,14 @@ class TestProcessors(TestCaseWithFactory):
         self.assertContentEqual([], self.archive.enabled_restricted_processors)
 
     def test_set(self):
-        """The property remembers its value correctly and sets ArchiveArch.
-
-        It's not yet possible to remove the default processors from the set.
-        """
-        self.archive.processors = [self.arm]
-        allowed_restricted_processors = self.archive_arch_set.getByArchive(
-            self.archive, self.arm)
-        self.assertEqual(1, allowed_restricted_processors.count())
-        self.assertEqual(
-            self.arm, allowed_restricted_processors[0].processor)
+        """The property remembers its value correctly."""
+        self.archive.setProcessors([self.arm])
+        self.assertContentEqual([self.arm], self.archive.processors)
+        self.archive.setProcessors(self.unrestricted_procs + [self.arm])
         self.assertContentEqual(
-            [self.arm] + self.unrestricted_procs, self.archive.processors)
+            self.unrestricted_procs + [self.arm], self.archive.processors)
         self.archive.processors = []
-        self.assertEqual(
-            0,
-            self.archive_arch_set.getByArchive(self.archive, self.arm).count())
-        self.assertContentEqual(
-            self.unrestricted_procs, self.archive.processors)
-
-    def test_set_doesnt_remove_default(self):
-        """During the data migration the property must not remove defaults.
-
-        _getProcessors doesn't yet rely on ArchiveArches for
-        non-restricted processors, since the rows don't exist on
-        production yet, but if they do exist then they won't be removed
-        on set. We'll backfill them while this version of the code is
-        running.
-        """
-        i386 = getUtility(IProcessorSet).getByName("386")
-        self.archive.processors = [i386, self.arm]
-        self.assertContentEqual(
-            self.default_procs + [self.arm],
-            [aa.processor for aa in
-             self.archive_arch_set.getByArchive(self.archive)])
-        self.archive.processors = []
-        self.assertContentEqual(
-            self.default_procs,
-            [aa.processor for aa in
-             self.archive_arch_set.getByArchive(self.archive)])
-        self.assertContentEqual(
-            self.unrestricted_procs, self.archive.processors)
+        self.assertContentEqual([], self.archive.processors)
 
     def test_set_enabled_restricted_processors(self):
         """The deprecated enabled_restricted_processors property still works.

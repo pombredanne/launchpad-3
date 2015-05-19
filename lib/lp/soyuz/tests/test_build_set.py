@@ -348,7 +348,6 @@ class BuildRecordCreationTests(TestNativePublishingBase):
     def setUp(self):
         super(BuildRecordCreationTests, self).setUp()
         self.distro = self.factory.makeDistribution()
-        self.archive = self.factory.makeArchive(distribution=self.distro)
         self.avr = self.factory.makeProcessor(
             name="avr2001", supports_virtualized=True)
         self.sparc = self.factory.makeProcessor(
@@ -375,6 +374,10 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         self.distroseries2.nominatedarchindep = self.distroseries2['x32']
         self.addFakeChroots(self.distroseries2)
 
+        # Initialised by the first createBuilds in case the test needs
+        # to tweak arch settings.
+        self.archive = None
+
     def getPubSource(self, architecturehintlist):
         """Return a mock source package publishing record for the archive
         and architecture used in this testcase.
@@ -383,10 +386,12 @@ class BuildRecordCreationTests(TestNativePublishingBase):
             (e.g. "i386 amd64")
         """
         return super(BuildRecordCreationTests, self).getPubSource(
-            archive=self.archive, distroseries=self.distroseries,
+            archive=self.factory.makeArchive(), distroseries=self.distroseries,
             architecturehintlist=architecturehintlist)
 
     def createBuilds(self, spr, distroseries):
+        if self.archive is None:
+            self.archive = self.factory.makeArchive(distribution=self.distro)
         self.factory.makeSourcePackagePublishingHistory(
             sourcepackagerelease=spr, archive=self.archive,
             distroseries=distroseries, pocket=PackagePublishingPocket.RELEASE)
@@ -450,6 +455,7 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         """
         self.avr.build_by_default = False
         self.avr.restricted = True
+        self.archive = self.factory.makeArchive(distribution=self.distro)
         getUtility(IArchiveArchSet).new(self.archive, self.avr)
         spr = self.factory.makeSourcePackageRelease(architecturehintlist='any')
         builds = self.createBuilds(spr, self.distroseries)
