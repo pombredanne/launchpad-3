@@ -13,7 +13,6 @@ from lp.soyuz.enums import (
     ArchivePurpose,
     SourcePackageFormat,
     )
-from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.binarypackagebuild import (
     BuildSetStatus,
     IBinaryPackageBuildSet,
@@ -306,7 +305,11 @@ class TestGetAllowedArchitectures(TestCaseWithFactory):
         self.avr.build_by_default = False
         self.avr.restricted = True
         archive = self.factory.makeArchive(distribution=self.distro)
-        getUtility(IArchiveArchSet).new(archive, self.avr)
+        self.assertContentEqual(
+            [self.distroseries['sparc']],
+            BinaryPackageBuildSet()._getAllowedArchitectures(
+                archive, self.distroseries.architectures))
+        archive.setProcessors(archive.processors + [self.avr])
         self.assertContentEqual(
             [self.distroseries['sparc'], self.distroseries['avr']],
             BinaryPackageBuildSet()._getAllowedArchitectures(
@@ -456,7 +459,7 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         self.avr.build_by_default = False
         self.avr.restricted = True
         self.archive = self.factory.makeArchive(distribution=self.distro)
-        getUtility(IArchiveArchSet).new(self.archive, self.avr)
+        self.archive.setProcessors(self.archive.processors + [self.avr])
         spr = self.factory.makeSourcePackageRelease(architecturehintlist='any')
         builds = self.createBuilds(spr, self.distroseries)
         self.assertBuildsMatch({'sparc': True, 'avr': False}, builds)
