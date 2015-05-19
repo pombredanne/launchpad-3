@@ -25,13 +25,9 @@ from lp.code.enums import (
     CodeReviewVote,
     )
 from lp.code.interfaces.gitref import IGitRef
-from lp.code.interfaces.gitrepository import (
-    GIT_FEATURE_FLAG,
-    IGitRepositorySet,
-    )
+from lp.code.interfaces.gitrepository import IGitRepositorySet
 from lp.registry.model.personproduct import PersonProduct
 from lp.services.database.sqlbase import flush_database_caches
-from lp.services.features.testing import FeatureFixture
 from lp.testing import (
     ANONYMOUS,
     BrowserTestCase,
@@ -79,10 +75,6 @@ class BzrMixin:
 
 class GitMixin:
     """Mixin for Git-based tests."""
-
-    def setUp(self, user=ANONYMOUS):
-        super(GitMixin, self).setUp(user=user)
-        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
 
     def _makeBranch(self, **kwargs):
         return self.factory.makeGitRefs(**kwargs)[0]
@@ -276,7 +268,6 @@ class TestMerges(BrowserTestCase):
         self.assertThat(recorder, HasQueryCount(Equals(41)))
 
     def test_query_count_git(self):
-        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
         product = self.factory.makeProduct()
         [target] = self.factory.makeGitRefs(
             target=product, information_type=InformationType.USERDATA)
@@ -301,7 +292,6 @@ class TestMerges(BrowserTestCase):
         self.assertIn(identity, view.contents)
 
     def test_product_git(self):
-        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
         [target] = self.factory.makeGitRefs()
         with person_logged_in(target.target.owner):
             getUtility(IGitRepositorySet).setDefaultRepository(

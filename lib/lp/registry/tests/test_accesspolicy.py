@@ -8,7 +8,6 @@ from testtools.matchers import AllMatch
 from zope.component import getUtility
 
 from lp.app.enums import InformationType
-from lp.code.interfaces.gitrepository import GIT_FEATURE_FLAG
 from lp.registry.enums import SharingPermission
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifact,
@@ -26,7 +25,6 @@ from lp.registry.interfaces.accesspolicy import (
 from lp.registry.model.accesspolicy import reconcile_access_for_artifact
 from lp.registry.model.person import Person
 from lp.services.database.interfaces import IStore
-from lp.services.features.testing import FeatureFixture
 from lp.testing import TestCaseWithFactory
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import Provides
@@ -284,10 +282,6 @@ class TestAccessArtifactBranch(BaseAccessArtifactTests,
 
 class TestAccessArtifactGitRepository(BaseAccessArtifactTests,
                                       TestCaseWithFactory):
-
-    def setUp(self):
-        super(TestAccessArtifactGitRepository, self).setUp()
-        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
 
     def getConcreteArtifact(self):
         return self.factory.makeGitRepository()

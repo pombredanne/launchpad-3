@@ -52,6 +52,7 @@ For "devel" additional attributes are available.
     owner_link: u'http://.../~cprov'
     permit_obsolete_series_uploads: False
     private: False
+    processors_collection_link: u'http://.../~cprov/+archive/ubuntu/ppa/processors'
     publish_debug_symbols: False
     reference: u'~cprov/ubuntu/ppa'
     relative_build_score: 0

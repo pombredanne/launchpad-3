@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'GIT_FEATURE_FLAG',
     'GitIdentityMixin',
     'GIT_REPOSITORY_NAME_VALIDATION_ERROR_MESSAGE',
     'git_repository_name_validator',
@@ -78,9 +77,6 @@ from lp.services.fields import (
     PersonChoice,
     PublicPersonChoice,
     )
-
-
-GIT_FEATURE_FLAG = u"code.git.enabled"
 
 
 GIT_REPOSITORY_NAME_VALIDATION_ERROR_MESSAGE = _(
@@ -455,6 +451,10 @@ class IGitRepositoryView(Interface):
 
     def isRepositoryMergeable(other):
         """Is the other repository mergeable into this one (or vice versa)?"""
+
+    pending_writes = Attribute(
+        "Whether there are recent changes in this repository that have not "
+        "yet been scanned.")
 
 
 class IGitRepositoryModerateAttributes(Interface):

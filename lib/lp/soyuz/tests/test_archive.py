@@ -1002,7 +1002,7 @@ class TestUpdatePackageDownloadCount(TestCaseWithFactory):
         self.assertEqual(3, self.archive.getPackageDownloadTotal(self.bpr_2))
 
 
-class TestEnabledRestrictedBuilds(TestCaseWithFactory):
+class TestProcessors(TestCaseWithFactory):
     """Ensure that restricted architectures builds can be allowed and
     disallowed correctly."""
 
@@ -1010,39 +1010,124 @@ class TestEnabledRestrictedBuilds(TestCaseWithFactory):
 
     def setUp(self):
         """Setup an archive with relevant publications."""
-        super(TestEnabledRestrictedBuilds, self).setUp()
+        super(TestProcessors, self).setUp()
         self.publisher = SoyuzTestPublisher()
         self.publisher.prepareBreezyAutotest()
         self.archive = self.factory.makeArchive()
         self.archive_arch_set = getUtility(IArchiveArchSet)
-        self.arm = self.factory.makeProcessor(name='arm', restricted=True)
+        self.default_procs = [
+            getUtility(IProcessorSet).getByName("386"),
+            getUtility(IProcessorSet).getByName("amd64")]
+        self.unrestricted_procs = (
+            self.default_procs + [getUtility(IProcessorSet).getByName("hppa")])
+        self.arm = self.factory.makeProcessor(
+            name='arm', restricted=True, build_by_default=False)
+
+    def test_new_default_processors(self):
+        # ArchiveSet.new creates an ArchiveArch for each Processor with
+        # build_by_default set.
+        archive = getUtility(IArchiveSet).new(
+            owner=self.factory.makePerson(), purpose=ArchivePurpose.PPA,
+            distribution=self.factory.makeDistribution(), name='ppa')
+        self.assertContentEqual(
+            ['386', 'amd64'],
+            [aa.processor.name for aa in
+             self.archive_arch_set.getByArchive(archive)])
+
+    def test_new_override_processors(self):
+        # ArchiveSet.new can be given a custom set of processors.
+        archive = getUtility(IArchiveSet).new(
+            owner=self.factory.makePerson(), purpose=ArchivePurpose.PPA,
+            distribution=self.factory.makeDistribution(), name='ppa',
+            processors=[self.arm])
+        self.assertContentEqual(
+            ['arm'],
+            [aa.processor.name for aa in
+             self.archive_arch_set.getByArchive(archive)])
 
     def test_default(self):
         """By default, ARM builds are not allowed as ARM is restricted."""
         self.assertEqual(0,
             self.archive_arch_set.getByArchive(
                 self.archive, self.arm).count())
+        self.assertContentEqual(
+            self.unrestricted_procs, self.archive.processors)
         self.assertContentEqual([], self.archive.enabled_restricted_processors)
 
     def test_get_uses_archivearch(self):
         """Adding an entry to ArchiveArch for ARM and an archive will
         enable enabled_restricted_processors for arm for that archive."""
+        self.assertContentEqual(
+            self.unrestricted_procs, self.archive.processors)
         self.assertContentEqual([], self.archive.enabled_restricted_processors)
         self.archive_arch_set.new(self.archive, self.arm)
-        self.assertEqual(
-            [self.arm], list(self.archive.enabled_restricted_processors))
+        self.assertContentEqual(
+            [self.arm] + self.unrestricted_procs, self.archive.processors)
+        self.assertContentEqual(
+            [self.arm], self.archive.enabled_restricted_processors)
 
     def test_get_returns_restricted_only(self):
         """Adding an entry to ArchiveArch for something that is not
         restricted does not make it show up in enabled_restricted_processors.
         """
+        self.assertContentEqual(
+            self.unrestricted_procs, self.archive.processors)
         self.assertContentEqual([], self.archive.enabled_restricted_processors)
-        self.archive_arch_set.new(
-            self.archive, getUtility(IProcessorSet).getByName('amd64'))
+        new_proc = self.factory.makeProcessor(
+            restricted=False, build_by_default=True)
+        self.archive_arch_set.new(self.archive, new_proc)
+        self.assertContentEqual(
+            self.unrestricted_procs + [new_proc], self.archive.processors)
         self.assertContentEqual([], self.archive.enabled_restricted_processors)
 
     def test_set(self):
-        """The property remembers its value correctly and sets ArchiveArch."""
+        """The property remembers its value correctly and sets ArchiveArch.
+
+        It's not yet possible to remove the default processors from the set.
+        """
+        self.archive.processors = [self.arm]
+        allowed_restricted_processors = self.archive_arch_set.getByArchive(
+            self.archive, self.arm)
+        self.assertEqual(1, allowed_restricted_processors.count())
+        self.assertEqual(
+            self.arm, allowed_restricted_processors[0].processor)
+        self.assertContentEqual(
+            [self.arm] + self.unrestricted_procs, self.archive.processors)
+        self.archive.processors = []
+        self.assertEqual(
+            0,
+            self.archive_arch_set.getByArchive(self.archive, self.arm).count())
+        self.assertContentEqual(
+            self.unrestricted_procs, self.archive.processors)
+
+    def test_set_doesnt_remove_default(self):
+        """During the data migration the property must not remove defaults.
+
+        _getProcessors doesn't yet rely on ArchiveArches for
+        non-restricted processors, since the rows don't exist on
+        production yet, but if they do exist then they won't be removed
+        on set. We'll backfill them while this version of the code is
+        running.
+        """
+        i386 = getUtility(IProcessorSet).getByName("386")
+        self.archive.processors = [i386, self.arm]
+        self.assertContentEqual(
+            self.default_procs + [self.arm],
+            [aa.processor for aa in
+             self.archive_arch_set.getByArchive(self.archive)])
+        self.archive.processors = []
+        self.assertContentEqual(
+            self.default_procs,
+            [aa.processor for aa in
+             self.archive_arch_set.getByArchive(self.archive)])
+        self.assertContentEqual(
+            self.unrestricted_procs, self.archive.processors)
+
+    def test_set_enabled_restricted_processors(self):
+        """The deprecated enabled_restricted_processors property still works.
+
+        It's like processors, but only including those that are restricted.
+        """
         self.archive.enabled_restricted_processors = [self.arm]
         allowed_restricted_processors = self.archive_arch_set.getByArchive(
             self.archive, self.arm)
@@ -1055,6 +1140,8 @@ class TestEnabledRestrictedBuilds(TestCaseWithFactory):
         self.assertEqual(
             0,
             self.archive_arch_set.getByArchive(self.archive, self.arm).count())
+        self.assertContentEqual(
+            self.unrestricted_procs, self.archive.processors)
         self.assertContentEqual([], self.archive.enabled_restricted_processors)
 
 

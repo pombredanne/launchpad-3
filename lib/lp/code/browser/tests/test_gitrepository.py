@@ -17,10 +17,8 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import InformationType
 from lp.app.interfaces.services import IService
-from lp.code.interfaces.gitrepository import GIT_FEATURE_FLAG
 from lp.code.interfaces.revision import IRevisionSet
 from lp.registry.interfaces.person import PersonVisibility
-from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
     admin_logged_in,
@@ -45,10 +43,6 @@ class TestGitRepositoryNavigation(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def setUp(self):
-        super(TestGitRepositoryNavigation, self).setUp()
-        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
-
     def test_traverse_ref(self):
         [ref] = self.factory.makeGitRefs()
         url = "%s/+ref/%s" % (canonical_url(ref.repository), ref.path)
@@ -63,10 +57,6 @@ class TestGitRepositoryNavigation(TestCaseWithFactory):
 class TestGitRepositoryView(BrowserTestCase):
 
     layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        super(TestGitRepositoryView, self).setUp()
-        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
 
     def test_user_can_push(self):
         # A user can push if they have edit permissions.
@@ -123,10 +113,6 @@ class TestGitRepositoryViewPrivateArtifacts(BrowserTestCase):
 
     layer = DatabaseFunctionalLayer
 
-    def setUp(self):
-        super(TestGitRepositoryViewPrivateArtifacts, self).setUp()
-        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
-
     def _getBrowser(self, user=None):
         if user is None:
             browser = setupBrowser()
@@ -167,10 +153,6 @@ class TestGitRepositoryBranches(BrowserTestCase):
     """Test the listing of branches in a Git repository."""
 
     layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        super(TestGitRepositoryBranches, self).setUp()
-        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
 
     def makeRevisionAuthor(self, person=None):
         if person is None:

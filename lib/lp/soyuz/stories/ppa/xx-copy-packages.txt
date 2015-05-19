@@ -128,8 +128,7 @@ for packages. This is certainly not part of the doctest story.
     >>> cprov = person_set.getByName('cprov')
     >>> grumpy = ubuntu.getSeries('grumpy')
     >>> grumpy_i386 = grumpy.newArch(
-    ...     'i386', getUtility(IProcessorSet).getByName('386'), False, cprov,
-    ...     supports_virtualized=True)
+    ...     'i386', getUtility(IProcessorSet).getByName('386'), False, cprov)
     >>> grumpy.nominatedarchindep = grumpy_i386
     >>> trash = grumpy_i386.addOrUpdateChroot(fake_chroot)
 

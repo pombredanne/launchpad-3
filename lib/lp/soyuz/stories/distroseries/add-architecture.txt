@@ -22,7 +22,6 @@ and/or has PPA support.
     >>> admin_browser.getControl('Architecture Tag').value = 'ia64'
     >>> admin_browser.getControl('Processor:').value = ['amd64']
     >>> admin_browser.getControl('Official Support').selected = True
-    >>> admin_browser.getControl('PPA support available').selected = True
     >>> admin_browser.getControl('Continue').click()
     >>> print admin_browser.title
     ia64 : Hoary (5.04) : Ubuntu

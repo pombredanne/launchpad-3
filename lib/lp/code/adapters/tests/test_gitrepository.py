@@ -6,8 +6,6 @@ from testtools.matchers import MatchesStructure
 from zope.interface import providedBy
 
 from lp.code.adapters.gitrepository import GitRepositoryDelta
-from lp.code.interfaces.gitrepository import GIT_FEATURE_FLAG
-from lp.services.features.testing import FeatureFixture
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
@@ -18,10 +16,6 @@ from lp.testing.layers import LaunchpadFunctionalLayer
 class TestGitRepositoryDelta(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
-
-    def setUp(self):
-        super(TestGitRepositoryDelta, self).setUp()
-        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
 
     def test_no_modification(self):
         # If there are no modifications, no delta is returned.

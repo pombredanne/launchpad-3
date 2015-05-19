@@ -198,6 +198,11 @@ class GitRefMixin:
             status, target_repository=self.repository, target_path=self.path,
             merged_revision_ids=merged_revision_ids, eager_load=eager_load)
 
+    @property
+    def pending_writes(self):
+        """See `IGitRef`."""
+        return self.repository.pending_writes
+
 
 class GitRef(StormBase, GitRefMixin):
     """See `IGitRef`."""

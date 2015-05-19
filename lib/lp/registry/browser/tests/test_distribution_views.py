@@ -117,7 +117,7 @@ class TestDistroAddView(TestCaseWithFactory):
         self.simple_user = self.factory.makePerson()
         self.admin = login_celebrity('admin')
         self.distributionset = getUtility(IDistributionSet)
-        self.restricted_processors = getUtility(IProcessorSet).getRestricted()
+        self.all_processors = getUtility(IProcessorSet).getAll()
 
     def getDefaultAddDict(self):
         return {
@@ -129,8 +129,7 @@ class TestDistroAddView(TestCaseWithFactory):
             'field.domainname': 'newbuntu',
             'field.members': self.simple_user.name,
             'field.require_virtualized': '',
-            'field.enabled_restricted_processors': [processor.name
-                for processor in self.restricted_processors],
+            'field.processors': [proc.name for proc in self.all_processors],
             'field.actions.save': 'Save',
             }
 
@@ -153,17 +152,15 @@ class TestDistroAddView(TestCaseWithFactory):
         widget = view.widgets['require_virtualized']
         self.assertEqual(False, widget._getCurrentValue())
 
-    def test_add_distro_init_value_enabled_restricted_processors(self):
+    def test_add_distro_init_value_processors(self):
         view = create_initialized_view(
             self.distributionset, '+add', principal=self.admin,
             method='GET')
 
-        widget = view.widgets['enabled_restricted_processors']
+        widget = view.widgets['processors']
+        self.assertContentEqual(self.all_processors, widget._getCurrentValue())
         self.assertContentEqual(
-            self.restricted_processors, widget._getCurrentValue())
-        self.assertContentEqual(
-            self.restricted_processors,
-            [item.value for item in widget.vocabulary])
+            self.all_processors, [item.value for item in widget.vocabulary])
 
     def test_add_distro_require_virtualized(self):
         creation_form = self.getDefaultAddDict()
@@ -177,16 +174,18 @@ class TestDistroAddView(TestCaseWithFactory):
             False,
             distribution.main_archive.require_virtualized)
 
-    def test_add_distro_enabled_restricted_processors(self):
+    def test_add_distro_processors(self):
         creation_form = self.getDefaultAddDict()
-        creation_form['field.enabled_restricted_processors'] = []
+        creation_form['field.processors'] = []
         create_initialized_view(
             self.distributionset, '+add', principal=self.admin,
             method='POST', form=creation_form)
 
         distribution = self.distributionset.getByName('newbuntu')
+        # XXX wgrant 2015-05-15: Default processors are currently implicit.
         self.assertContentEqual(
-            [], distribution.main_archive.enabled_restricted_processors)
+            [proc for proc in self.all_processors if not proc.restricted],
+            distribution.main_archive.processors)
 
 
 class TestDistroEditView(TestCaseWithFactory):
@@ -198,7 +197,7 @@ class TestDistroEditView(TestCaseWithFactory):
         super(TestDistroEditView, self).setUp()
         self.admin = login_celebrity('admin')
         self.distribution = self.factory.makeDistribution()
-        self.restricted_processors = getUtility(IProcessorSet).getRestricted()
+        self.all_processors = getUtility(IProcessorSet).getAll()
 
     def test_edit_distro_init_value_require_virtualized(self):
         view = create_initialized_view(
@@ -210,19 +209,16 @@ class TestDistroEditView(TestCaseWithFactory):
             self.distribution.main_archive.require_virtualized,
             widget._getCurrentValue())
 
-    def test_edit_distro_init_value_enabled_restricted_processors(self):
-        self.distribution.main_archive.enabled_restricted_processors = (
-            self.restricted_processors)
+    def test_edit_distro_init_value_processors(self):
+        self.distribution.main_archive.processors = self.all_processors
         view = create_initialized_view(
             self.distribution, '+edit', principal=self.admin,
             method='GET')
 
-        widget = view.widgets['enabled_restricted_processors']
+        widget = view.widgets['processors']
+        self.assertContentEqual(self.all_processors, widget._getCurrentValue())
         self.assertContentEqual(
-            self.restricted_processors, widget._getCurrentValue())
-        self.assertContentEqual(
-            self.restricted_processors,
-            [item.value for item in widget.vocabulary])
+            self.all_processors, [item.value for item in widget.vocabulary])
 
     def getDefaultEditDict(self):
         return {
@@ -231,8 +227,7 @@ class TestDistroEditView(TestCaseWithFactory):
             'field.summary': 'newbuntu',
             'field.description': 'newbuntu',
             'field.require_virtualized.used': u'',
-            'field.enabled_restricted_processors': [processor.name
-                for processor in self.restricted_processors],
+            'field.processors': [proc.name for proc in self.all_processors],
             'field.actions.change': 'Change',
             }
 
@@ -248,18 +243,19 @@ class TestDistroEditView(TestCaseWithFactory):
             True,
             self.distribution.main_archive.require_virtualized)
 
-    def test_change_enabled_restricted_processors(self):
+    def test_change_processors(self):
         edit_form = self.getDefaultEditDict()
-        edit_form['field.enabled_restricted_processors'] = []
+        edit_form['field.processors'] = []
 
-        self.distribution.main_archive.enabled_restricted_processors = (
-            self.restricted_processors)
+        self.distribution.main_archive.processors = self.all_processors
         create_initialized_view(
             self.distribution, '+edit', principal=self.admin,
             method='POST', form=edit_form)
 
+        # XXX wgrant 2015-05-15: Default processors are currently implicit.
         self.assertContentEqual(
-            [], self.distribution.main_archive.enabled_restricted_processors)
+            [proc for proc in self.all_processors if not proc.restricted],
+            self.distribution.main_archive.processors)
 
     def test_package_derivatives_email(self):
         # Test that the edit form allows changing package_derivatives_email

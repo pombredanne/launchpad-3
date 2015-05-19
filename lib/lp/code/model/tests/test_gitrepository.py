@@ -40,24 +40,24 @@ from lp.code.enums import (
     GitObjectType,
     )
 from lp.code.errors import (
-    GitFeatureDisabled,
     GitRepositoryCreatorNotMemberOfOwnerTeam,
     GitRepositoryCreatorNotOwner,
     GitRepositoryExists,
     GitTargetError,
     )
 from lp.code.interfaces.defaultgit import ICanHasDefaultGitRepository
+from lp.code.interfaces.gitjob import IGitRefScanJobSource
 from lp.code.interfaces.gitnamespace import (
     IGitNamespacePolicy,
     IGitNamespaceSet,
     )
 from lp.code.interfaces.gitrepository import (
-    GIT_FEATURE_FLAG,
     IGitRepository,
     IGitRepositorySet,
     )
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.model.gitrepository import GitRepository
+from lp.code.xmlrpc.git import GitAPI
 from lp.registry.enums import (
     BranchSharingPolicy,
     PersonVisibility,
@@ -75,7 +75,7 @@ from lp.registry.interfaces.personproduct import IPersonProductFactory
 from lp.registry.tests.test_accesspolicy import get_policies_for_artifact
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
-from lp.services.features.testing import FeatureFixture
+from lp.services.job.runner import JobRunner
 from lp.services.mail import stub
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.interfaces import OAuthPermission
@@ -88,31 +88,19 @@ from lp.testing import (
     TestCaseWithFactory,
     verifyObject,
     )
+from lp.testing.dbuser import dbuser
 from lp.testing.fakemethod import FakeMethod
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
-    ZopelessDatabaseLayer,
+    LaunchpadFunctionalLayer,
     )
 from lp.testing.pages import webservice_for_person
-
-
-class TestGitRepositoryFeatureFlag(TestCaseWithFactory):
-
-    layer = ZopelessDatabaseLayer
-
-    def test_feature_flag_disabled(self):
-        # Without a feature flag, we will not create new Git repositories.
-        self.assertRaises(GitFeatureDisabled, self.factory.makeGitRepository)
 
 
 class TestGitRepository(TestCaseWithFactory):
     """Test basic properties about Launchpad database Git repositories."""
 
     layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        super(TestGitRepository, self).setUp()
-        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
 
     def test_implements_IGitRepository(self):
         repository = self.factory.makeGitRepository()
@@ -165,7 +153,6 @@ class TestGitIdentityMixin(TestCaseWithFactory):
 
     def setUp(self):
         super(TestGitIdentityMixin, self).setUp()
-        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
         self.repository_set = getUtility(IGitRepositorySet)
 
     def assertGitIdentity(self, repository, identity_path):
@@ -302,10 +289,6 @@ class TestGitRepositoryModifications(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def setUp(self):
-        super(TestGitRepositoryModifications, self).setUp()
-        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
-
     def test_date_last_modified_initial_value(self):
         # The initial value of date_last_modified is date_created.
         repository = self.factory.makeGitRepository()
@@ -360,10 +343,6 @@ class TestGitRepositoryURLs(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def setUp(self):
-        super(TestGitRepositoryURLs, self).setUp()
-        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
-
     def test_codebrowse_url(self):
         # The basic codebrowse URL for a repository is an 'https' URL.
         repository = self.factory.makeGitRepository()
@@ -409,10 +388,6 @@ class TestGitRepositoryNamespace(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def setUp(self):
-        super(TestGitRepositoryNamespace, self).setUp()
-        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
-
     def test_namespace_personal(self):
         # The namespace attribute of a personal repository points to the
         # namespace that corresponds to ~owner.
@@ -442,6 +417,30 @@ class TestGitRepositoryNamespace(TestCaseWithFactory):
         self.assertEqual(namespace, repository.namespace)
 
 
+class TestGitRepositoryPendingWrites(TestCaseWithFactory):
+    """Are there changes to this repository not reflected in the database?"""
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_new_repository_no_writes(self):
+        # New repositories have no pending writes.
+        repository = self.factory.makeGitRepository()
+        self.assertFalse(repository.pending_writes)
+
+    def test_notify(self):
+        # If the hosting service has just sent us a change notification,
+        # then there are pending writes, but running the ref-scanning job
+        # clears that flag.
+        git_api = GitAPI(None, None)
+        repository = self.factory.makeGitRepository()
+        self.assertIsNone(git_api.notify(repository.getInternalPath()))
+        self.assertTrue(repository.pending_writes)
+        [job] = list(getUtility(IGitRefScanJobSource).iterReady())
+        with dbuser("branchscanner"):
+            JobRunner([job]).runAll()
+        self.assertFalse(repository.pending_writes)
+
+
 class TestGitRepositoryPrivacy(TestCaseWithFactory):
     """Tests for Git repository privacy."""
 
@@ -450,7 +449,6 @@ class TestGitRepositoryPrivacy(TestCaseWithFactory):
     def setUp(self):
         # Use an admin user as we aren't checking edit permissions here.
         super(TestGitRepositoryPrivacy, self).setUp("admin@canonical.com")
-        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
 
     def test_personal_repositories_for_private_teams_are_private(self):
         team = self.factory.makeTeam(
@@ -498,10 +496,6 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
     """Tests for ref handling."""
 
     layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        super(TestGitRepositoryRefs, self).setUp()
-        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
 
     def test__convertRefInfo(self):
         # _convertRefInfo converts a valid info dictionary.
@@ -811,10 +805,6 @@ class TestGitRepositoryGetAllowedInformationTypes(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def setUp(self):
-        super(TestGitRepositoryGetAllowedInformationTypes, self).setUp()
-        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
-
     def test_normal_user_sees_namespace_types(self):
         # An unprivileged user sees the types allowed by the namespace.
         repository = self.factory.makeGitRepository()
@@ -849,10 +839,6 @@ class TestGitRepositoryModerate(TestCaseWithFactory):
     repositories."""
 
     layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        super(TestGitRepositoryModerate, self).setUp()
-        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
 
     def test_moderate_permission(self):
         # Test the ModerateGitRepository security checker.
@@ -892,10 +878,6 @@ class TestGitRepositoryIsPersonTrustedReviewer(TestCaseWithFactory):
     """Test the `IGitRepository.isPersonTrustedReviewer` method."""
 
     layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        super(TestGitRepositoryIsPersonTrustedReviewer, self).setUp()
-        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
 
     def assertTrustedReviewer(self, repository, person):
         """Assert that `person` is a trusted reviewer for the `repository`."""
@@ -966,10 +948,6 @@ class TestGitRepositorySetName(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def setUp(self):
-        super(TestGitRepositorySetName, self).setUp()
-        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
-
     def test_not_owner(self):
         # A non-owner non-admin user cannot rename a repository.
         repository = self.factory.makeGitRepository()
@@ -998,10 +976,6 @@ class TestGitRepositorySetOwner(TestCaseWithFactory):
     """Test `IGitRepository.setOwner`."""
 
     layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        super(TestGitRepositorySetOwner, self).setUp()
-        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
 
     def test_owner_sets_team(self):
         # The owner of the repository can set the owner of the repository to
@@ -1051,10 +1025,6 @@ class TestGitRepositorySetTarget(TestCaseWithFactory):
     """Test `IGitRepository.setTarget`."""
 
     layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        super(TestGitRepositorySetTarget, self).setUp()
-        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
 
     def test_personal_to_project(self):
         # A personal repository can be moved to a project.
@@ -1186,7 +1156,6 @@ class TestGitRepositorySet(TestCaseWithFactory):
 
     def setUp(self):
         super(TestGitRepositorySet, self).setUp()
-        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
         self.repository_set = getUtility(IGitRepositorySet)
 
     def test_provides_IGitRepositorySet(self):
@@ -1350,7 +1319,6 @@ class TestGitRepositorySetDefaultsMixin:
 
     def setUp(self):
         super(TestGitRepositorySetDefaultsMixin, self).setUp()
-        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
         self.repository_set = getUtility(IGitRepositorySet)
         self.get_method = self.repository_set.getDefaultRepository
         self.set_method = (lambda target, repository, user:
@@ -1475,10 +1443,6 @@ class TestGitRepositoryWebservice(TestCaseWithFactory):
     """Tests for the webservice."""
 
     layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        super(TestGitRepositoryWebservice, self).setUp()
-        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
 
     def test_getRepositories_project(self):
         project_db = self.factory.makeProduct()

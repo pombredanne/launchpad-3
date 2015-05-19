@@ -92,10 +92,7 @@ Git repository ownership
 
 Private teams can be assigned as the owner of a Git repository.
 
-    >>> from lp.code.interfaces.gitrepository import GIT_FEATURE_FLAG
-    >>> from lp.services.features.testing import FeatureFixture
-    >>> with FeatureFixture({GIT_FEATURE_FLAG: 'on'}):
-    ...     repository = factory.makeGitRepository()
+    >>> repository = factory.makeGitRepository()
     >>> repository.setOwner(priv_team, user=admin_user)
 
 Git repository subscriptions
@@ -103,8 +100,7 @@ Git repository subscriptions
 
 Private teams can subscribe to Git repositories.
 
-    >>> with FeatureFixture({GIT_FEATURE_FLAG: 'on'}):
-    ...     repository = factory.makeGitRepository()
+    >>> repository = factory.makeGitRepository()
     >>> subscription = repository.subscribe(
     ...     priv_team,
     ...     BranchSubscriptionNotificationLevel.DIFFSONLY,

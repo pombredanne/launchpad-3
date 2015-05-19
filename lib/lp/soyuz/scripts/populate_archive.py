@@ -22,7 +22,6 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.soyuz.adapters.packagelocation import build_package_location
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.archive import IArchiveSet
-from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packagecloner import IPackageCloner
 from lp.soyuz.interfaces.packagecopyrequest import IPackageCopyRequestSet
@@ -103,12 +102,6 @@ class ArchivePopulator(SoyuzScript):
                     raise SoyuzScriptError(
                         "Invalid architecture tag: '%s'" % name)
             return processors
-
-        def set_archive_architectures(archive, processors):
-            """Associate the archive with the processors."""
-            aa_set = getUtility(IArchiveArchSet)
-            for processor in processors:
-                aa_set.new(archive, processor)
 
         def build_location(distro, suite, component, packageset_names=None):
             """Build and return package location."""
@@ -213,11 +206,8 @@ class ArchivePopulator(SoyuzScript):
                 ArchivePurpose.COPY, registrant, name=to_archive,
                 distribution=the_destination.distribution,
                 description=reason, enabled=False,
-                require_virtualized=virtual)
+                require_virtualized=virtual, processors=processors)
             the_destination.archive = copy_archive
-            # Associate the newly created copy archive with the processors
-            # specified by the user.
-            set_archive_architectures(copy_archive, processors)
         else:
             # Archive name clash! Creation requested for existing archive with
             # the same name and distribution.
