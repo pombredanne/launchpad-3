@@ -62,6 +62,7 @@ from lp.buildmaster.enums import (
     BuildStatus,
     )
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSet
+from lp.buildmaster.interfaces.processor import IProcessorSet
 from lp.registry.enums import (
     INCLUSIVE_TEAM_POLICY,
     PersonVisibility,
@@ -2059,28 +2060,48 @@ class Archive(SQLBase):
 
     def _getEnabledRestrictedProcessors(self):
         """Retrieve the restricted architectures this archive can build on."""
-        processors = getUtility(IArchiveArchSet).getRestrictedProcessors(self)
-        return [
-            processor for (processor, archive_arch) in processors
-            if archive_arch is not None]
+        return [proc for proc in self.processors if proc.restricted]
 
     def _setEnabledRestrictedProcessors(self, value):
         """Set the restricted architectures this archive can build on."""
-        archive_arch_set = getUtility(IArchiveArchSet)
-        restricted_processors = archive_arch_set.getRestrictedProcessors(self)
-        for (processor, archive_arch) in restricted_processors:
-            if processor in value and archive_arch is None:
-                archive_arch_set.new(self, processor)
-            if processor not in value and archive_arch is not None:
-                Store.of(self).remove(archive_arch)
+        self.processors = (
+            [proc for proc in self.processors if not proc.restricted]
+            + list(value))
 
     enabled_restricted_processors = property(
         _getEnabledRestrictedProcessors, _setEnabledRestrictedProcessors)
 
     def enableRestrictedProcessor(self, processor):
         """See `IArchive`."""
-        self.enabled_restricted_processors = set(
-            self.enabled_restricted_processors + [processor])
+        self.processors = set(self.processors + [processor])
+
+    def _getProcessors(self):
+        # To match existing behaviour we always include non-restricted
+        # processors during the transition.
+        enabled = [
+            aa.processor for aa in
+            getUtility(IArchiveArchSet).getByArchive(self)]
+        return [
+            proc for proc in getUtility(IProcessorSet).getAll()
+            if not proc.restricted or proc in enabled]
+
+    def setProcessors(self, processors):
+        """See `IArchive`."""
+        enablements = {
+            aa.processor: aa for aa in
+            getUtility(IArchiveArchSet).getByArchive(self)}
+        # Remove any enabled restricted processors that aren't in the
+        # new set. _getProcessors currently always includes
+        # non-restricted processors, but this'll change later.
+        for proc in enablements:
+            if proc.restricted and proc not in processors:
+                Store.of(self).remove(enablements[proc])
+        # Add any new processors regardless of restrictedness.
+        for proc in processors:
+            if proc not in self.processors:
+                getUtility(IArchiveArchSet).new(self, proc)
+
+    processors = property(_getProcessors, setProcessors)
 
     def getPockets(self):
         """See `IArchive`."""
@@ -2352,7 +2373,7 @@ class ArchiveSet:
     def new(self, purpose, owner, name=None, displayname=None,
             distribution=None, description=None, enabled=True,
             require_virtualized=True, private=False,
-            suppress_subscription_notifications=False):
+            suppress_subscription_notifications=False, processors=None):
         """See `IArchiveSet`."""
         if distribution is None:
             distribution = getUtility(ILaunchpadCelebrities).ubuntu
@@ -2430,6 +2451,13 @@ class ArchiveSet:
 
         new_archive.suppress_subscription_notifications = (
             suppress_subscription_notifications)
+
+        if processors is None:
+            processors = [
+                p for p in getUtility(IProcessorSet).getAll()
+                if p.build_by_default]
+        for processor in processors:
+            getUtility(IArchiveArchSet).new(new_archive, processor)
 
         return new_archive
 
