@@ -58,7 +58,6 @@ from lp.buildmaster.interfaces.builder import (
     )
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
-from lp.buildmaster.interfaces.processor import IProcessor
 from lp.code.interfaces.branch import (
     IBranch,
     IBranchSet,
@@ -385,8 +384,6 @@ patch_entry_return_type(
 # IArchive apocalypse.
 patch_reference_property(IArchive, 'distribution', IDistribution)
 patch_collection_property(IArchive, 'dependencies', IArchiveDependency)
-patch_collection_property(
-    IArchive, 'enabled_restricted_processors', IProcessor)
 patch_collection_return_type(IArchive, 'getAllPermissions', IArchivePermission)
 patch_collection_return_type(
     IArchive, 'getPermissionsForPerson', IArchivePermission)
@@ -484,8 +481,6 @@ patch_choice_parameter_type(
     IArchive, '_addArchiveDependency', 'pocket', PackagePublishingPocket)
 patch_entry_return_type(
     IArchive, '_addArchiveDependency', IArchiveDependency)
-patch_plain_parameter_type(
-    IArchive, 'enableRestrictedProcessor', 'processor', IProcessor)
 
 # IBuildFarmJob
 patch_choice_property(IBuildFarmJob, 'status', BuildStatus)

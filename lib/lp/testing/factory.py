@@ -869,7 +869,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                       name=name, active=active, dateexpected=dateexpected))
 
     def makeProcessor(self, name=None, title=None, description=None,
-                      restricted=False, build_by_default=False,
+                      restricted=False, build_by_default=True,
                       supports_virtualized=False,
                       supports_nonvirtualized=True):
         """Create a new processor.
@@ -2756,7 +2756,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     def makeArchive(self, distribution=None, owner=None, name=None,
                     purpose=None, enabled=True, private=False,
                     virtualized=True, description=None, displayname=None,
-                    suppress_subscription_notifications=False):
+                    suppress_subscription_notifications=False,
+                    processors=None):
         """Create and return a new arbitrary archive.
 
         :param distribution: Supply IDistribution, defaults to a new one
@@ -2803,7 +2804,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 owner=owner, purpose=purpose,
                 distribution=distribution, name=name, displayname=displayname,
                 enabled=enabled, require_virtualized=virtualized,
-                description=description)
+                description=description, processors=processors)
 
         if private:
             naked_archive = removeSecurityProxy(archive)

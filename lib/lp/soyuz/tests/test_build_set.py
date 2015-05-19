@@ -278,35 +278,39 @@ class TestGetAllowedArchitectures(TestCaseWithFactory):
         self.sparc = self.factory.makeProcessor(
             name="sparc64", supports_virtualized=True)
         self.distroseries = self.factory.makeDistroSeries()
+        self.distro = self.distroseries.distribution
         for name, arch in (('avr', self.avr), ('sparc', self.sparc)):
             self.factory.makeDistroArchSeries(
                 architecturetag=name, processor=arch,
                 distroseries=self.distroseries)
-        self.archive = self.factory.makeArchive(
-            distribution=self.distroseries.distribution)
 
     def test_normal(self):
         self.assertContentEqual(
             [self.distroseries['sparc'], self.distroseries['avr']],
             BinaryPackageBuildSet()._getAllowedArchitectures(
-                self.archive, self.distroseries.architectures))
+                self.factory.makeArchive(distribution=self.distro),
+                self.distroseries.architectures))
 
     def test_restricted(self):
         # Restricted architectures aren't returned by default.
+        self.avr.build_by_default = False
         self.avr.restricted = True
         self.assertContentEqual(
             [self.distroseries['sparc']],
             BinaryPackageBuildSet()._getAllowedArchitectures(
-                self.archive, self.distroseries.architectures))
+                self.factory.makeArchive(distribution=self.distro),
+                self.distroseries.architectures))
 
     def test_restricted_override(self):
         # Restricted architectures are returned if allowed by the archive.
+        self.avr.build_by_default = False
         self.avr.restricted = True
-        getUtility(IArchiveArchSet).new(self.archive, self.avr)
+        archive = self.factory.makeArchive(distribution=self.distro)
+        getUtility(IArchiveArchSet).new(archive, self.avr)
         self.assertContentEqual(
             [self.distroseries['sparc'], self.distroseries['avr']],
             BinaryPackageBuildSet()._getAllowedArchitectures(
-                self.archive, self.distroseries.architectures))
+                archive, self.distroseries.architectures))
 
     def test_disabled_architectures_omitted(self):
         # Disabled architectures are not buildable, so are excluded.
@@ -314,7 +318,8 @@ class TestGetAllowedArchitectures(TestCaseWithFactory):
         self.assertContentEqual(
             [self.distroseries['avr']],
             BinaryPackageBuildSet()._getAllowedArchitectures(
-                self.archive, self.distroseries.architectures))
+                self.factory.makeArchive(distribution=self.distro),
+                self.distroseries.architectures))
 
     def test_virt_archives_have_only_virt_archs(self):
         # For archives which must build on virtual builders, only
@@ -323,16 +328,18 @@ class TestGetAllowedArchitectures(TestCaseWithFactory):
         self.assertContentEqual(
             [self.distroseries['avr']],
             BinaryPackageBuildSet()._getAllowedArchitectures(
-                self.archive, self.distroseries.architectures))
+                self.factory.makeArchive(distribution=self.distro),
+                self.distroseries.architectures))
 
     def test_nonvirt_archives_have_only_all_archs(self):
         # Non-virtual archives can build on all unrestricted architectures.
         self.sparc.supports_virtualized = False
-        self.archive.require_virtualized = False
         self.assertContentEqual(
             [self.distroseries['sparc'], self.distroseries['avr']],
             BinaryPackageBuildSet()._getAllowedArchitectures(
-                self.archive, self.distroseries.architectures))
+                self.factory.makeArchive(
+                    distribution=self.distro, virtualized=False),
+                self.distroseries.architectures))
 
 
 class BuildRecordCreationTests(TestNativePublishingBase):
@@ -408,6 +415,7 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         """createForSource() should limit builds targeted at 'any'
         architecture to those allowed for the archive.
         """
+        self.avr.build_by_default = False
         self.avr.restricted = True
         spr = self.factory.makeSourcePackageRelease(architecturehintlist='any')
         builds = self.createBuilds(spr, self.distroseries)
@@ -417,6 +425,7 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         """createForSource() limits builds targeted at a variety of
         architectures architecture to those allowed for the archive.
         """
+        self.avr.build_by_default = False
         self.avr.restricted = True
         spr = self.factory.makeSourcePackageRelease(
             architecturehintlist='sparc i386 avr')
@@ -428,6 +437,7 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         architectures to the nominated independent architecture,
         if that is allowed for the archive.
         """
+        self.avr.build_by_default = False
         self.avr.restricted = True
         spr = self.factory.makeSourcePackageRelease(architecturehintlist='all')
         builds = self.createBuilds(spr, self.distroseries)
@@ -438,6 +448,7 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         architecture to architectures that are unrestricted or
         explicitly associated with the archive.
         """
+        self.avr.build_by_default = False
         self.avr.restricted = True
         getUtility(IArchiveArchSet).new(self.archive, self.avr)
         spr = self.factory.makeSourcePackageRelease(architecturehintlist='any')

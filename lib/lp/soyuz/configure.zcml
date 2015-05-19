@@ -394,7 +394,7 @@
                             buildd_secret enabled_restricted_processors
                             external_dependencies name
                             permit_obsolete_series_uploads
-                            private publish_debug_symbols
+                            private processors publish_debug_symbols
                             require_virtualized"/>
         <require
             permission="launchpad.Moderate"
