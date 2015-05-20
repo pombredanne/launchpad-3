@@ -734,6 +734,13 @@ class ProductSeriesSetBranchView(ProductSetBranchView, ProductSeriesView):
     """The view to set a branch for the ProductSeries."""
 
     @property
+    def initial_values(self):
+        return dict(
+            rcs_type=RevisionControlSystems.BZR,
+            branch_type='link-lp-bzr',
+            branch_location=self.series.branch)
+
+    @property
     def series(self):
         return self.context
 
@@ -741,11 +748,6 @@ class ProductSeriesSetBranchView(ProductSetBranchView, ProductSeriesView):
     def target(self):
         """The branch target for the context."""
         return IBranchTarget(self.context.product)
-
-    @property
-    def vcs(self):
-        """The default vcs for the product."""
-        return self.context.product.vcs
 
 
 class ProductSeriesReviewView(LaunchpadEditFormView):
