@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Package information classes.
@@ -31,6 +31,8 @@ import tempfile
 from lp.app.validators.version import valid_debian_version
 from lp.archivepublisher.diskpool import poolify
 from lp.archiveuploader.changesfile import ChangesFile
+from lp.archiveuploader.dscfile import DSCFile
+from lp.archiveuploader.nascentuploadfile import BaseBinaryUploadFile
 from lp.archiveuploader.utils import (
     DpkgSourceError,
     extract_dpkg_source,
@@ -210,6 +212,7 @@ class AbstractPackageData:
     archive_root = None
     package = None
     _required = None
+    _user_defined = None
     version = None
 
     # Component is something of a special case. It is set up in
@@ -251,6 +254,20 @@ class AbstractPackageData:
         self.date_uploaded = UTC_NOW
         return True
 
+    def set_field(self, key, value):
+        """Record an arbitrary control field."""
+        lowkey = key.lower()
+        # _known_fields contains the fields that archiveuploader recognises
+        # from a raw .dsc or .*deb; _required contains a few extra fields
+        # that are added to Sources and Packages index files.  If a field is
+        # in neither, it counts as user-defined.
+        if lowkey in self._known_fields or lowkey in self._required:
+            setattr(self, lowkey.replace("-", "_"), value)
+        else:
+            if self._user_defined is None:
+                self._user_defined = []
+            self._user_defined.append([key, value])
+
     def do_package(self, distro_name, archive_root):
         """To be provided by derived class."""
         raise NotImplementedError
@@ -286,6 +303,8 @@ class SourcePackageData(AbstractPackageData):
         'component',
         ]
 
+    _known_fields = set(k.lower() for k in DSCFile.known_fields)
+
     def __init__(self, **args):
         for k, v in args.items():
             if k == 'Binary':
@@ -318,7 +337,7 @@ class SourcePackageData(AbstractPackageData):
                 for f in files:
                     self.files.append(stripseq(f.split(" ")))
             else:
-                setattr(self, k.lower().replace("-", "_"), v)
+                self.set_field(k, v)
 
         if self.section is None:
             self.section = 'misc'
@@ -405,6 +424,8 @@ class BinaryPackageData(AbstractPackageData):
         'priority',
         ]
 
+    _known_fields = set(k.lower() for k in BaseBinaryUploadFile.known_fields)
+
     # Set in __init__
     source = None
     source_version = None
@@ -452,7 +473,7 @@ class BinaryPackageData(AbstractPackageData):
                     raise MissingRequiredArguments("Installed-Size is "
                         "not a valid integer: %r" % v)
             else:
-                setattr(self, k.lower().replace("-", "_"), v)
+                self.set_field(k, v)
 
         if self.source:
             # We need to handle cases like "Source: myspell
