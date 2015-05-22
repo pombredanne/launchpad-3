@@ -14,6 +14,8 @@ import json
 from bzrlib import urlutils
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
+from sqlobject import SQLObjectNotFound
+from storm.store import Store
 import transaction
 import pytz
 from testtools.matchers import (
@@ -27,6 +29,7 @@ from zope.interface import providedBy
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
+from lp import _
 from lp.app.enums import (
     InformationType,
     PRIVATE_INFORMATION_TYPES,
@@ -40,6 +43,7 @@ from lp.code.enums import (
     GitObjectType,
     )
 from lp.code.errors import (
+    CannotDeleteGitRepository,
     GitRepositoryCreatorNotMemberOfOwnerTeam,
     GitRepositoryCreatorNotOwner,
     GitRepositoryExists,
@@ -47,6 +51,7 @@ from lp.code.errors import (
     )
 from lp.code.interfaces.defaultgit import ICanHasDefaultGitRepository
 from lp.code.interfaces.gitjob import IGitRefScanJobSource
+from lp.code.interfaces.gitlookup import IGitLookup
 from lp.code.interfaces.gitnamespace import (
     IGitNamespacePolicy,
     IGitNamespaceSet,
@@ -56,7 +61,19 @@ from lp.code.interfaces.gitrepository import (
     IGitRepositorySet,
     )
 from lp.code.interfaces.revision import IRevisionSet
-from lp.code.model.gitrepository import GitRepository
+from lp.code.model.branchmergeproposal import BranchMergeProposal
+from lp.code.model.codereviewcomment import CodeReviewComment
+from lp.code.model.gitjob import (
+    GitJob,
+    GitJobType,
+    ReclaimGitRepositorySpaceJob,
+    )
+from lp.code.model.gitrepository import (
+    ClearPrerequisiteRepository,
+    DeletionCallable,
+    DeletionOperation,
+    GitRepository,
+    )
 from lp.code.xmlrpc.git import GitAPI
 from lp.registry.enums import (
     BranchSharingPolicy,
@@ -84,6 +101,7 @@ from lp.testing import (
     ANONYMOUS,
     api_url,
     celebrity_logged_in,
+    login_person,
     person_logged_in,
     TestCaseWithFactory,
     verifyObject,
@@ -93,6 +111,7 @@ from lp.testing.fakemethod import FakeMethod
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
     )
 from lp.testing.pages import webservice_for_person
 
@@ -282,6 +301,305 @@ class TestGitIdentityMixin(TestCaseWithFactory):
              ("~eric/mint/+source/choc", eric_dsp),
              ("~eric/mint/+source/choc/+git/choc-repo", repository)],
             repository.getRepositoryIdentities())
+
+
+class TestGitRepositoryDeletion(TestCaseWithFactory):
+    """Test the different cases that make a repository deletable or not."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestGitRepositoryDeletion, self).setUp()
+        self.user = self.factory.makePerson()
+        self.project = self.factory.makeProduct(owner=self.user)
+        self.repository = self.factory.makeGitRepository(
+            name=u"to-delete", owner=self.user, target=self.project)
+        [self.ref] = self.factory.makeGitRefs(repository=self.repository)
+        # The owner of the repository is subscribed to the repository when
+        # it is created.  The tests here assume no initial connections, so
+        # unsubscribe the repository owner here.
+        self.repository.unsubscribe(
+            self.repository.owner, self.repository.owner)
+        # Make sure that the tests all flush the database changes.
+        self.addCleanup(Store.of(self.repository).flush)
+        login_person(self.user)
+
+    def test_deletable(self):
+        # A newly created repository can be deleted without any problems.
+        self.assertTrue(
+            self.repository.canBeDeleted(),
+            "A newly created repository should be able to be deleted.")
+        repository_id = self.repository.id
+        self.repository.destroySelf()
+        self.assertIsNone(
+            getUtility(IGitLookup).get(repository_id),
+            "The repository has not been deleted.")
+
+    def test_subscription_does_not_disable_deletion(self):
+        # A repository that has a subscription can be deleted.
+        self.repository.subscribe(
+            self.user, BranchSubscriptionNotificationLevel.NOEMAIL, None,
+            CodeReviewNotificationLevel.NOEMAIL, self.user)
+        self.assertTrue(self.repository.canBeDeleted())
+
+    def test_landing_target_disables_deletion(self):
+        # A repository with a landing target cannot be deleted.
+        [merge_target] = self.factory.makeGitRefs(
+            name=u"landing-target", owner=self.user, target=self.project)
+        self.ref.addLandingTarget(self.user, merge_target)
+        self.assertFalse(
+            self.repository.canBeDeleted(),
+            "A repository with a landing target is not deletable.")
+        self.assertRaises(
+            CannotDeleteGitRepository, self.repository.destroySelf)
+
+    def test_landing_candidate_disables_deletion(self):
+        # A repository with a landing candidate cannot be deleted.
+        [merge_source] = self.factory.makeGitRefs(
+            name=u"landing-candidate", owner=self.user, target=self.project)
+        merge_source.addLandingTarget(self.user, self.ref)
+        self.assertFalse(
+            self.repository.canBeDeleted(),
+             "A repository with a landing candidate is not deletable.")
+        self.assertRaises(
+            CannotDeleteGitRepository, self.repository.destroySelf)
+
+    def test_prerequisite_repository_disables_deletion(self):
+        # A repository that is a prerequisite repository cannot be deleted.
+        [merge_source] = self.factory.makeGitRefs(
+            name=u"landing-candidate", owner=self.user, target=self.project)
+        [merge_target] = self.factory.makeGitRefs(
+            name=u"landing-target", owner=self.user, target=self.project)
+        merge_source.addLandingTarget(self.user, merge_target, self.ref)
+        self.assertFalse(
+            self.repository.canBeDeleted(),
+            "A repository with a prerequisite target is not deletable.")
+        self.assertRaises(
+            CannotDeleteGitRepository, self.repository.destroySelf)
+
+    def test_related_GitJobs_deleted(self):
+        # A repository with an associated job will delete those jobs.
+        repository = self.factory.makeGitRepository()
+        GitAPI(None, None).notify(repository.getInternalPath())
+        store = Store.of(repository)
+        repository.destroySelf()
+        # Need to commit the transaction to fire off the constraint checks.
+        transaction.commit()
+        jobs = store.find(GitJob, GitJob.job_type == GitJobType.REF_SCAN)
+        self.assertEqual([], list(jobs))
+
+    def test_creates_job_to_reclaim_space(self):
+        # When a repository is deleted from the database, a job is created
+        # to remove the repository from disk as well.
+        repository = self.factory.makeGitRepository()
+        repository_path = repository.getInternalPath()
+        store = Store.of(repository)
+        repository.destroySelf()
+        jobs = store.find(
+            GitJob,
+            GitJob.job_type == GitJobType.RECLAIM_REPOSITORY_SPACE)
+        self.assertEqual(
+            [repository_path],
+            [ReclaimGitRepositorySpaceJob(job).repository_path
+             for job in jobs])
+
+    def test_destroySelf_with_inline_comments_draft(self):
+        # Draft inline comments related to a deleted repository (source or
+        # target MP repository) also get removed.
+        merge_proposal = self.factory.makeBranchMergeProposalForGit(
+            registrant=self.user, target_ref=self.ref)
+        preview_diff = self.factory.makePreviewDiff(
+            merge_proposal=merge_proposal)
+        transaction.commit()
+        merge_proposal.saveDraftInlineComment(
+            previewdiff_id=preview_diff.id,
+            person=self.user,
+            comments={"1": "Should vanish."})
+        self.repository.destroySelf(break_references=True)
+
+    def test_destroySelf_with_inline_comments_published(self):
+        # Published inline comments related to a deleted repository (source
+        # or target MP repository) also get removed.
+        merge_proposal = self.factory.makeBranchMergeProposalForGit(
+            registrant=self.user, target_ref=self.ref)
+        preview_diff = self.factory.makePreviewDiff(
+            merge_proposal=merge_proposal)
+        transaction.commit()
+        merge_proposal.createComment(
+            owner=self.user,
+            subject="Delete me!",
+            previewdiff_id=preview_diff.id,
+            inline_comments={"1": "Must disappear."},
+        )
+        self.repository.destroySelf(break_references=True)
+
+
+class TestGitRepositoryDeletionConsequences(TestCaseWithFactory):
+    """Test determination and application of repository deletion
+    consequences."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestGitRepositoryDeletionConsequences, self).setUp(
+            user="test@canonical.com")
+        self.repository = self.factory.makeGitRepository()
+        [self.ref] = self.factory.makeGitRefs(repository=self.repository)
+        # The owner of the repository is subscribed to the repository when
+        # it is created.  The tests here assume no initial connections, so
+        # unsubscribe the repository owner here.
+        self.repository.unsubscribe(
+            self.repository.owner, self.repository.owner)
+
+    def test_plain_repository(self):
+        # A fresh repository has no deletion requirements.
+        self.assertEqual({}, self.repository.getDeletionRequirements())
+
+    def makeMergeProposals(self):
+        # Produce a merge proposal for testing purposes.
+        [merge_target] = self.factory.makeGitRefs(target=self.ref.target)
+        [merge_prerequisite] = self.factory.makeGitRefs(target=self.ref.target)
+        # Remove the implicit subscriptions.
+        merge_target.repository.unsubscribe(
+            merge_target.owner, merge_target.owner)
+        merge_prerequisite.repository.unsubscribe(
+            merge_prerequisite.owner, merge_prerequisite.owner)
+        merge_proposal1 = self.ref.addLandingTarget(
+            self.ref.owner, merge_target, merge_prerequisite)
+        # Disable this merge proposal, to allow creating a new identical one.
+        lp_admins = getUtility(ILaunchpadCelebrities).admin
+        merge_proposal1.rejectBranch(lp_admins, "null:")
+        merge_proposal2 = self.ref.addLandingTarget(
+            self.ref.owner, merge_target, merge_prerequisite)
+        return merge_proposal1, merge_proposal2
+
+    def test_repository_with_merge_proposal(self):
+        # Ensure that deletion requirements with a merge proposal are right.
+        #
+        # Each repository related to the merge proposal is tested to ensure
+        # it produces a unique, correct result.
+        merge_proposal1, merge_proposal2 = self.makeMergeProposals()
+        self.assertEqual(
+            {
+                merge_proposal1:
+                ("delete",
+                 _("This repository is the source repository of this merge "
+                   "proposal.")),
+                merge_proposal2:
+                ("delete",
+                 _("This repository is the source repository of this merge "
+                   "proposal.")),
+                },
+            self.repository.getDeletionRequirements())
+        target = merge_proposal1.target_git_repository
+        self.assertEqual(
+            {
+                merge_proposal1:
+                ("delete",
+                 _("This repository is the target repository of this merge "
+                   "proposal.")),
+                merge_proposal2:
+                ("delete",
+                 _("This repository is the target repository of this merge "
+                   "proposal.")),
+                },
+            target.getDeletionRequirements())
+        prerequisite = merge_proposal1.prerequisite_git_repository
+        self.assertEqual(
+            {
+                merge_proposal1:
+                ("alter",
+                 _("This repository is the prerequisite repository of this "
+                   "merge proposal.")),
+                merge_proposal2:
+                ("alter",
+                 _("This repository is the prerequisite repository of this "
+                   "merge proposal.")),
+                },
+            prerequisite.getDeletionRequirements())
+
+    def test_delete_merge_proposal_source(self):
+        # Merge proposal source repositories can be deleted with
+        # break_references.
+        merge_proposal1, merge_proposal2 = self.makeMergeProposals()
+        merge_proposal1_id = merge_proposal1.id
+        BranchMergeProposal.get(merge_proposal1_id)
+        self.repository.destroySelf(break_references=True)
+        self.assertRaises(
+            SQLObjectNotFound, BranchMergeProposal.get, merge_proposal1_id)
+
+    def test_delete_merge_proposal_target(self):
+        # Merge proposal target repositories can be deleted with
+        # break_references.
+        merge_proposal1, merge_proposal2 = self.makeMergeProposals()
+        merge_proposal1_id = merge_proposal1.id
+        BranchMergeProposal.get(merge_proposal1_id)
+        merge_proposal1.target_git_repository.destroySelf(
+            break_references=True)
+        self.assertRaises(SQLObjectNotFound,
+            BranchMergeProposal.get, merge_proposal1_id)
+
+    def test_delete_merge_proposal_prerequisite(self):
+        # Merge proposal prerequisite repositories can be deleted with
+        # break_references.
+        merge_proposal1, merge_proposal2 = self.makeMergeProposals()
+        merge_proposal1.prerequisite_git_repository.destroySelf(
+            break_references=True)
+        self.assertIsNone(merge_proposal1.prerequisite_git_repository)
+
+    def test_delete_source_CodeReviewComment(self):
+        # Deletion of source repositories that have CodeReviewComments works.
+        comment = self.factory.makeCodeReviewComment(git=True)
+        comment_id = comment.id
+        repository = comment.branch_merge_proposal.source_git_repository
+        repository.destroySelf(break_references=True)
+        self.assertRaises(
+            SQLObjectNotFound, CodeReviewComment.get, comment_id)
+
+    def test_delete_target_CodeReviewComment(self):
+        # Deletion of target repositories that have CodeReviewComments works.
+        comment = self.factory.makeCodeReviewComment(git=True)
+        comment_id = comment.id
+        repository = comment.branch_merge_proposal.target_git_repository
+        repository.destroySelf(break_references=True)
+        self.assertRaises(
+            SQLObjectNotFound, CodeReviewComment.get, comment_id)
+
+    def test_sourceBranchWithCodeReviewVoteReference(self):
+        # break_references handles CodeReviewVoteReference source repository.
+        merge_proposal = self.factory.makeBranchMergeProposalForGit()
+        merge_proposal.nominateReviewer(
+            self.factory.makePerson(), self.factory.makePerson())
+        merge_proposal.source_git_repository.destroySelf(break_references=True)
+
+    def test_targetBranchWithCodeReviewVoteReference(self):
+        # break_references handles CodeReviewVoteReference target repository.
+        merge_proposal = self.factory.makeBranchMergeProposalForGit()
+        merge_proposal.nominateReviewer(
+            self.factory.makePerson(), self.factory.makePerson())
+        merge_proposal.target_git_repository.destroySelf(break_references=True)
+
+    def test_ClearPrerequisiteRepository(self):
+        # ClearPrerequisiteRepository.__call__ must clear the prerequisite
+        # repository.
+        merge_proposal = removeSecurityProxy(self.makeMergeProposals()[0])
+        with person_logged_in(
+                merge_proposal.prerequisite_git_repository.owner):
+            ClearPrerequisiteRepository(merge_proposal)()
+        self.assertIsNone(merge_proposal.prerequisite_git_repository)
+
+    def test_DeletionOperation(self):
+        # DeletionOperation.__call__ is not implemented.
+        self.assertRaises(NotImplementedError, DeletionOperation("a", "b"))
+
+    def test_DeletionCallable(self):
+        # DeletionCallable must invoke the callable.
+        merge_proposal = self.factory.makeBranchMergeProposalForGit()
+        merge_proposal_id = merge_proposal.id
+        DeletionCallable(
+            merge_proposal, "blah", merge_proposal.deleteProposal)()
+        self.assertRaises(
+            SQLObjectNotFound, BranchMergeProposal.get, merge_proposal_id)
 
 
 class TestGitRepositoryModifications(TestCaseWithFactory):

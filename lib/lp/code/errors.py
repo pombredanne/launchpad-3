@@ -20,6 +20,7 @@ __all__ = [
     'BuildNotAllowedForDistro',
     'BranchMergeProposalExists',
     'CannotDeleteBranch',
+    'CannotDeleteGitRepository',
     'CannotHaveLinkedBranch',
     'CannotUpgradeBranch',
     'CannotUpgradeNonHosted',
@@ -34,6 +35,7 @@ __all__ = [
     'GitRepositoryCreationForbidden',
     'GitRepositoryCreatorNotMemberOfOwnerTeam',
     'GitRepositoryCreatorNotOwner',
+    'GitRepositoryDeletionFault',
     'GitRepositoryExists',
     'GitRepositoryScanFault',
     'GitTargetError',
@@ -347,6 +349,11 @@ class GitRepositoryExists(GitRepositoryCreationException):
         GitRepositoryCreationException.__init__(self, message)
 
 
+@error_status(httplib.BAD_REQUEST)
+class CannotDeleteGitRepository(Exception):
+    """The Git repository cannot be deleted at this time."""
+
+
 class GitRepositoryCreationForbidden(GitRepositoryCreationException):
     """A visibility policy forbids Git repository creation.
 
@@ -379,6 +386,10 @@ class GitRepositoryCreationFault(Exception):
 
 class GitRepositoryScanFault(Exception):
     """Raised when there is a fault scanning a repository."""
+
+
+class GitRepositoryDeletionFault(Exception):
+    """Raised when there is a fault deleting a repository."""
 
 
 class GitTargetError(Exception):
