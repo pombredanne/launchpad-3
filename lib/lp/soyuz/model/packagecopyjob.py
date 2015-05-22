@@ -660,7 +660,8 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             send_email=send_email, announce_from_person=self.requester,
             sponsored=self.sponsored, packageupload=pu,
             unembargo=self.unembargo,
-            phased_update_percentage=self.phased_update_percentage)
+            phased_update_percentage=self.phased_update_percentage,
+            logger=self.logger)
 
         # Add a PackageDiff for this new upload if it has ancestry.
         if copied_publications and not ancestry.is_empty():
