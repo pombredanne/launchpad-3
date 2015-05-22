@@ -7,6 +7,7 @@ __all__ = [
     'GitJob',
     'GitJobType',
     'GitRefScanJob',
+    'ReclaimGitRepositorySpaceJob',
     ]
 
 from lazr.delegates import delegates
@@ -19,6 +20,7 @@ from storm.locals import (
     Int,
     JSON,
     Reference,
+    SQL,
     Store,
     )
 from zope.interface import (
@@ -32,6 +34,8 @@ from lp.code.interfaces.gitjob import (
     IGitJob,
     IGitRefScanJob,
     IGitRefScanJobSource,
+    IReclaimGitRepositorySpaceJob,
+    IReclaimGitRepositorySpaceJobSource,
     )
 from lp.services.config import config
 from lp.services.database.enumcol import EnumCol
@@ -63,6 +67,13 @@ class GitJobType(DBEnumeratedType):
         This job scans a repository for its current list of references.
         """)
 
+    RECLAIM_REPOSITORY_SPACE = DBItem(1, """
+        Reclaim repository space
+
+        This job removes a repository that has been deleted from the
+        database from storage.
+        """)
+
 
 class GitJob(StormBase):
     """See `IGitJob`."""
@@ -74,7 +85,7 @@ class GitJob(StormBase):
     job_id = Int(name='job', primary=True, allow_none=False)
     job = Reference(job_id, 'Job.id')
 
-    repository_id = Int(name='repository', allow_none=False)
+    repository_id = Int(name='repository', allow_none=True)
     repository = Reference(repository_id, 'GitRepository.id')
 
     job_type = EnumCol(enum=GitJobType, notNull=True)
@@ -97,7 +108,8 @@ class GitJob(StormBase):
         self.repository = repository
         self.job_type = job_type
         self.metadata = metadata
-        self.metadata["repository_name"] = repository.unique_name
+        if repository is not None:
+            self.metadata["repository_name"] = repository.unique_name
 
     def makeDerived(self):
         return GitJobDerived.makeSubclass(self)
@@ -205,3 +217,43 @@ class GitRefScanJob(GitJobDerived):
             log.info(
                 "Skipping repository %s because it has been deleted." %
                 self._cached_repository_name)
+
+
+class ReclaimGitRepositorySpaceJob(GitJobDerived):
+    """A Job that deletes a repository from storage after it has been
+    deleted from the database."""
+
+    implements(IReclaimGitRepositorySpaceJob)
+
+    classProvides(IReclaimGitRepositorySpaceJobSource)
+    class_job_type = GitJobType.RECLAIM_REPOSITORY_SPACE
+
+    config = config.IReclaimGitRepositorySpaceJobSource
+
+    @classmethod
+    def create(cls, repository_name, repository_path):
+        "See `IReclaimGitRepositorySpaceJobSource`."""
+        metadata = {
+            "repository_name": repository_name,
+            "repository_path": repository_path,
+            }
+        # The GitJob has a repository of None, as there is no repository
+        # left in the database to refer to.
+        start = SQL("CURRENT_TIMESTAMP AT TIME ZONE 'UTC' + '7 days'")
+        git_job = GitJob(
+            None, cls.class_job_type, metadata, scheduled_start=start)
+        job = cls(git_job)
+        job.celeryRunOnCommit()
+        return job
+
+    def __init__(self, git_job):
+        super(ReclaimGitRepositorySpaceJob, self).__init__(git_job)
+        self._hosting_client = GitHostingClient(
+            config.codehosting.internal_git_api_endpoint)
+
+    @property
+    def repository_path(self):
+        return self.metadata["repository_path"]
+
+    def run(self):
+        self._hosting_client.delete(self.repository_path, logger=log)

@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Branch interfaces."""
@@ -1167,15 +1167,9 @@ class IBranchEdit(Interface):
             branch.
         """
 
+    @call_with(break_references=True)
     @export_destructor_operation()
     @operation_for_version('beta')
-    def destroySelfBreakReferences():
-        """Delete the specified branch.
-
-        BranchRevisions associated with this branch will also be deleted as
-        well as any items with mandatory references.
-        """
-
     def destroySelf(break_references=False):
         """Delete the specified branch.
 
