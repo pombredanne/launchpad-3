@@ -106,6 +106,11 @@ class GitRefMixin:
         """See `IGitRef`."""
         return self.repository.information_type
 
+    @property
+    def private(self):
+        """See `IGitRef`."""
+        return self.repository.private
+
     def visibleByUser(self, user):
         """See `IGitRef`."""
         return self.repository.visibleByUser(user)

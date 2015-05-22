@@ -9,12 +9,16 @@ import hashlib
 
 from testtools.matchers import EndsWith
 
+from lp.app.enums import InformationType
+from lp.app.interfaces.informationtype import IInformationType
+from lp.app.interfaces.launchpad import IPrivacy
 from lp.services.webapp.interfaces import OAuthPermission
 from lp.testing import (
     ANONYMOUS,
     api_url,
     person_logged_in,
     TestCaseWithFactory,
+    verifyObject,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.pages import webservice_for_person
@@ -36,6 +40,20 @@ class TestGitRef(TestCaseWithFactory):
         [target_ref] = self.factory.makeGitRefs()
         bmp = self.factory.makeBranchMergeProposalForGit(target_ref=target_ref)
         self.assertEqual([bmp], list(target_ref.getMergeProposals()))
+
+    def test_implements_IInformationType(self):
+        [ref] = self.factory.makeGitRefs()
+        verifyObject(IInformationType, ref)
+
+    def test_implements_IPrivacy(self):
+        [ref] = self.factory.makeGitRefs()
+        verifyObject(IPrivacy, ref)
+
+    def test_refs_in_private_repositories_are_private(self):
+        [ref] = self.factory.makeGitRefs(
+            information_type=InformationType.USERDATA)
+        self.assertTrue(ref.private)
+        self.assertEqual(InformationType.USERDATA, ref.information_type)
 
 
 class TestGitRefWebservice(TestCaseWithFactory):
