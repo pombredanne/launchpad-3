@@ -6,11 +6,15 @@
 __metaclass__ = type
 
 from datetime import datetime
+import doctest
 
 from BeautifulSoup import BeautifulSoup
 from fixtures import FakeLogger
 import pytz
-from testtools.matchers import Equals
+from testtools.matchers import (
+    DocTestMatches,
+    Equals,
+    )
 from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
 from zope.security.proxy import removeSecurityProxy
@@ -32,6 +36,7 @@ from lp.testing import (
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import HasQueryCount
 from lp.testing.pages import (
+    get_feedback_messages,
     setupBrowser,
     setupBrowserForUser,
     )
@@ -179,3 +184,62 @@ class TestGitRepositoryBranches(BrowserTestCase):
         recorder1, recorder2 = record_two_runs(
             lambda: self.getMainText(repository, "+index"), create_ref, 10)
         self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
+
+
+class TestGitRepositoryDeletionView(BrowserTestCase):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_repository_has_delete_link(self):
+        # A newly-created repository has a "Delete repository" link.
+        repository = self.factory.makeGitRepository()
+        delete_url = canonical_url(
+            repository, view_name="+delete", rootsite="code")
+        browser = self.getViewBrowser(
+            repository, "+index", rootsite="code", user=repository.owner)
+        delete_link = browser.getLink("Delete repository")
+        self.assertEqual(delete_url, delete_link.url)
+
+    def test_warning_message(self):
+        # The deletion view informs the user what will happen if they delete
+        # the repository.
+        repository = self.factory.makeGitRepository()
+        name = repository.display_name
+        text = self.getMainText(
+            repository, "+delete", rootsite="code", user=repository.owner)
+        self.assertThat(
+            text, DocTestMatches(
+                "Delete repository %s ...\n"
+                "Repository deletion is permanent.\n"
+                "or Cancel" % name,
+                flags=(doctest.NORMALIZE_WHITESPACE | doctest.ELLIPSIS)))
+
+    def test_next_url(self):
+        # Deleting a repository takes the user back to the code listing for
+        # the target, and shows a notification message.
+        project = self.factory.makeProduct()
+        project_url = canonical_url(project, rootsite="code")
+        repository = self.factory.makeGitRepository(target=project)
+        name = repository.unique_name
+        browser = self.getViewBrowser(
+            repository, "+delete", rootsite="code", user=repository.owner)
+        browser.getControl("Delete").click()
+        self.assertEqual(project_url, browser.url)
+        self.assertEqual(
+            ["Repository %s deleted." % name],
+            get_feedback_messages(browser.contents))
+
+    def test_next_url_personal(self):
+        # Deleting a personal repository takes the user back to the code
+        # listing for the owner, and shows a notification message.
+        owner = self.factory.makePerson()
+        owner_url = canonical_url(owner, rootsite="code")
+        repository = self.factory.makeGitRepository(owner=owner, target=owner)
+        name = repository.unique_name
+        browser = self.getViewBrowser(
+            repository, "+delete", rootsite="code", user=repository.owner)
+        browser.getControl("Delete").click()
+        self.assertEqual(owner_url, browser.url)
+        self.assertEqual(
+            ["Repository %s deleted." % name],
+            get_feedback_messages(browser.contents))
