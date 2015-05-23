@@ -753,7 +753,8 @@
     <browser:menus
         module="lp.code.browser.gitrepository"
         classes="
-            GitRepositoryContextMenu"/>
+            GitRepositoryContextMenu
+            GitRepositoryEditMenu"/>
     <browser:pages
         for="lp.code.interfaces.gitrepository.IGitRepository"
         class="lp.code.browser.gitrepository.GitRepositoryView"
@@ -779,6 +780,12 @@
         permission="launchpad.View"
         name="+repository-portlet-subscriber-content"
         template="../templates/gitrepository-portlet-subscribers-content.pt"/>
+    <browser:page
+        for="lp.code.interfaces.gitrepository.IGitRepository"
+        class="lp.code.browser.gitrepository.GitRepositoryDeletionView"
+        permission="launchpad.Edit"
+        name="+delete"
+        template="../templates/gitrepository-delete.pt"/>
     <browser:page
         for="lp.code.interfaces.gitrepository.IGitRepository"
         class="lp.code.browser.gitsubscription.GitSubscriptionAddView"
