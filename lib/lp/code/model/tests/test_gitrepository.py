@@ -341,6 +341,26 @@ class TestGitRepositoryDeletion(TestCaseWithFactory):
             self.user, BranchSubscriptionNotificationLevel.NOEMAIL, None,
             CodeReviewNotificationLevel.NOEMAIL, self.user)
         self.assertTrue(self.repository.canBeDeleted())
+        repository_id = self.repository.id
+        self.repository.destroySelf()
+        self.assertIsNone(
+            getUtility(IGitLookup).get(repository_id),
+            "The repository has not been deleted.")
+
+    def test_private_subscription_does_not_disable_deletion(self):
+        # A private repository that has a subscription can be deleted.
+        self.repository.transitionToInformationType(
+            InformationType.USERDATA, self.repository.owner,
+            verify_policy=False)
+        self.repository.subscribe(
+            self.user, BranchSubscriptionNotificationLevel.NOEMAIL, None,
+            CodeReviewNotificationLevel.NOEMAIL, self.user)
+        self.assertTrue(self.repository.canBeDeleted())
+        repository_id = self.repository.id
+        self.repository.destroySelf()
+        self.assertIsNone(
+            getUtility(IGitLookup).get(repository_id),
+            "The repository has not been deleted.")
 
     def test_landing_target_disables_deletion(self):
         # A repository with a landing target cannot be deleted.
