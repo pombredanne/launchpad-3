@@ -884,6 +884,10 @@ class GitRepository(StormBase, GitIdentityMixin):
             operation()
         Store.of(self).flush()
 
+    def _deleteRepositoryAccessGrants(self):
+        """Delete access grants for this repository prior to deleting it."""
+        getUtility(IAccessArtifactSource).delete([self])
+
     def _deleteRepositorySubscriptions(self):
         """Delete subscriptions for this repository prior to deleting it."""
         subscriptions = Store.of(self).find(
@@ -918,6 +922,7 @@ class GitRepository(StormBase, GitIdentityMixin):
                 "Cannot delete Git repository: %s" % self.unique_name)
 
         self.refs.remove()
+        self._deleteRepositoryAccessGrants()
         self._deleteRepositorySubscriptions()
         self._deleteJobs()
 
