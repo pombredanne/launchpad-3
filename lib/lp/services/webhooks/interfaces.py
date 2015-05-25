@@ -7,11 +7,17 @@ __metaclass__ = type
 
 __all__ = [
     'IWebhook',
+    'IWebhookEventJob',
+    'IWebhookEventJobSource',
+    'IWebhookJob',
     ]
 
 from lazr.restful.declarations import exported
 from lazr.restful.fields import Reference
-from zope.interface import Interface
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
 from zope.schema import (
     Bool,
     Datetime,
@@ -21,6 +27,11 @@ from zope.schema import (
 
 from lp import _
 from lp.registry.interfaces.person import IPerson
+from lp.services.job.interfaces.job import (
+    IJob,
+    IJobSource,
+    IRunnableJob,
+    )
 
 
 class IWebhook(Interface):
@@ -59,3 +70,30 @@ class IWebhookSource(Interface):
 
     def findByTarget(target):
         """Find all webhooks for the given target."""
+
+
+class IWebhookJob(Interface):
+    """A job related to a webhook."""
+
+    job = Reference(
+        title=_("The common Job attributes."), schema=IJob,
+        required=True, readonly=True)
+
+    webhook = Reference(
+        title=_("The webhook that this job is for."),
+        schema=IWebhook, required=True, readonly=True)
+
+    json_data = Attribute(_("A dict of data about the job."))
+
+
+class IWebhookEventJob(IRunnableJob):
+    """A Job that sends an event to a webhook consumer."""
+
+
+class IWebhookEventJobSource(IJobSource):
+
+    def create(webhook):
+        """Send an event to a webhook consumer.
+
+        :param webhook: The webhook to send to.
+        """

@@ -5,10 +5,16 @@ __metaclass__ = type
 
 __all__ = [
     'Webhook',
-    'WebhookSource',
+    'WebhookJob',
+    'WebhookJobType',
     ]
 
 
+from lazr.delegates import delegates
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
 import pytz
 from storm.properties import (
     Bool,
@@ -19,9 +25,25 @@ from storm.properties import (
     )
 from storm.references import Reference
 from storm.store import Store
+from zope.interface import (
+    classProvides,
+    implements,
+    )
 
+from lp.services.config import config
+from lp.services.database.enumcol import EnumCol
 from lp.services.database.interfaces import IStore
 from lp.services.database.stormbase import StormBase
+from lp.services.job.model.job import (
+    EnumeratedSubclass,
+    Job,
+    )
+from lp.services.job.runner import BaseRunnableJob
+from lp.services.webhooks.interfaces import (
+    IWebhookEventJob,
+    IWebhookEventJobSource,
+    IWebhookJob,
+    )
 
 
 class Webhook(StormBase):
@@ -85,3 +107,79 @@ class WebhookSource:
         else:
             raise AssertionError("Unsupported target: %r" % (target,))
         return IStore(Webhook).find(Webhook, target_filter)
+
+
+class WebhookJobType(DBEnumeratedType):
+    """Values that `IWebhookJob.job_type` can take."""
+
+    EVENT = DBItem(0, """
+        Event
+
+        This job forwards an event to the target of a webhook.
+        """)
+
+
+class WebhookJob(StormBase):
+    """See `IWebhookJob`."""
+
+    __storm_table__ = 'WebhookJob'
+
+    implements(IWebhookJob)
+
+    job_id = Int(name='job', primary=True)
+    job = Reference(job_id, 'Job.id')
+
+    webhook_id = Int(name='webhook', allow_none=False)
+    webhook = Reference(webhook_id, 'Webhook.id')
+
+    job_type = EnumCol(enum=WebhookJobType, notNull=True)
+
+    json_data = JSON('json_data')
+
+    def __init__(self, webhook, job_type, json_data, **job_args):
+        """Constructor.
+
+        Extra keyword arguments are used to construct the underlying Job
+        object.
+
+        :param webhook: The `IWebhook` this job relates to.
+        :param job_type: The `WebhookJobType` of this job.
+        :param json_data: The type-specific variables, as a JSON-compatible
+            dict.
+        """
+        super(WebhookJob, self).__init__()
+        self.job = Job(**job_args)
+        self.webhook = webhook
+        self.job_type = job_type
+        self.json_data = json_data
+
+
+class WebhookJobDerived(BaseRunnableJob):
+
+    __metaclass__ = EnumeratedSubclass
+
+    delegates(IWebhookJob)
+
+    def __init__(self, webhook_job):
+        self.context = webhook_job
+
+
+class WebhookEventJob(WebhookJobDerived):
+    """A job that send an event to a webhook consumer."""
+
+    implements(IWebhookEventJob)
+
+    classProvides(IWebhookEventJobSource)
+    class_job_type = WebhookJobType.EVENT
+
+    config = config.IWebhookEventJobSource
+
+    @classmethod
+    def create(cls, webhook):
+        webhook_job = WebhookJob(webhook, cls.class_job_type, {})
+        job = cls(webhook_job)
+        job.celeryRunOnCommit()
+        return job
+
+    def run(self):
+        return
