@@ -261,6 +261,7 @@ from lp.services.temporaryblobstorage.model import TemporaryBlobStorage
 from lp.services.utils import AutoDecorate
 from lp.services.webapp.interfaces import OAuthPermission
 from lp.services.webapp.sorting import sorted_version_numbers
+from lp.services.webhooks.interfaces import IWebhookSource
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.soyuz.adapters.overrides import SourceOverride
@@ -4493,6 +4494,15 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             libraryfile = self.makeLibraryFileAlias()
         return ProxyFactory(
             LiveFSFile(livefsbuild=livefsbuild, libraryfile=libraryfile))
+
+    def makeWebhook(self, target=None, endpoint_url=None):
+        if target is None:
+            target = self.makeGitRepository()
+        if endpoint_url is None:
+            endpoint_url = self.getUniqueURL()
+        return getUtility(IWebhookSource).new(
+            target, self.makePerson(), endpoint_url, True,
+            self.getUniqueUnicode())
 
 
 # Some factory methods return simple Python types. We don't add

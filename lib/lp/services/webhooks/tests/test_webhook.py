@@ -32,31 +32,28 @@ class TestWebhookSource(TestCaseWithFactory):
         target2 = self.factory.makeGitRepository()
         for target, name in ((target1, 'one'), (target2, 'two')):
             for i in range(3):
-                getUtility(IWebhookSource).new(
-                    target, self.factory.makePerson(),
-                    u'http://path/%s/%d' % (name, i), True, u'sekrit')
+                self.factory.makeWebhook(
+                    target, u'http://path/%s/%d' % (name, i))
         self.assertContentEqual(
-            ['http://path/one/0', 'http://path/one/1', 'http://path/one/2'],
+            [u'http://path/one/0', u'http://path/one/1', u'http://path/one/2'],
             [hook.endpoint_url for hook in
              getUtility(IWebhookSource).findByTarget(target1)])
         self.assertContentEqual(
-            ['http://path/two/0', 'http://path/two/1', 'http://path/two/2'],
+            [u'http://path/two/0', u'http://path/two/1', u'http://path/two/2'],
             [hook.endpoint_url for hook in
              getUtility(IWebhookSource).findByTarget(target2)])
 
     def test_delete(self):
         target = self.factory.makeGitRepository()
         hooks = [
-            getUtility(IWebhookSource).new(
-                target, self.factory.makePerson(), u'http://path/to/%d' % i,
-                True, u'sekrit')
+            self.factory.makeWebhook(target, u'http://path/to/%d' % i)
             for i in range(3)]
         self.assertContentEqual(
-            ['http://path/to/0', 'http://path/to/1', 'http://path/to/2'],
+            [u'http://path/to/0', u'http://path/to/1', u'http://path/to/2'],
             [hook.endpoint_url for hook in
              getUtility(IWebhookSource).findByTarget(target)])
         getUtility(IWebhookSource).delete(hooks[:2])
         self.assertContentEqual(
-            ['http://path/to/2'],
+            [u'http://path/to/2'],
             [hook.endpoint_url for hook in
              getUtility(IWebhookSource).findByTarget(target)])
