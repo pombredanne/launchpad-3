@@ -50,3 +50,6 @@ class IWebhookSource(Interface):
 
     def new(target, registrant, endpoint_url, active, secret):
         """Create a new webhook."""
+
+    def findByTarget(target):
+        """Find all webhooks for the given target."""

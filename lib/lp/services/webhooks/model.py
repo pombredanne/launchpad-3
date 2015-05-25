@@ -69,3 +69,11 @@ class WebhookSource:
         hook.json_data = {}
         IStore(Webhook).add(hook)
         return hook
+
+    def findByTarget(self, target):
+        from lp.code.interfaces.gitrepository import IGitRepository
+        if IGitRepository.providedBy(target):
+            target_filter = Webhook.git_repository == target
+        else:
+            raise AssertionError("Unsupported target: %r" % (target,))
+        return IStore(Webhook).find(Webhook, target_filter)

@@ -26,3 +26,20 @@ class TestWebhook(TestCaseWithFactory):
         self.assertEqual(u'http://path/to/something', hook.endpoint_url)
         self.assertEqual(True, hook.active)
         self.assertEqual(u'sekrit', hook.secret)
+
+    def test_findByTarget(self):
+        target1 = self.factory.makeGitRepository()
+        target2 = self.factory.makeGitRepository()
+        for target, name in ((target1, 'one'), (target2, 'two')):
+            for i in range(3):
+                getUtility(IWebhookSource).new(
+                    target, self.factory.makePerson(),
+                    u'http://path/%s/%d' % (name, i), True, u'sekrit')
+        self.assertContentEqual(
+            ['http://path/one/0', 'http://path/one/1', 'http://path/one/2'],
+            [hook.endpoint_url for hook in
+             getUtility(IWebhookSource).findByTarget(target1)])
+        self.assertContentEqual(
+            ['http://path/two/0', 'http://path/two/1', 'http://path/two/2'],
+            [hook.endpoint_url for hook in
+             getUtility(IWebhookSource).findByTarget(target2)])
