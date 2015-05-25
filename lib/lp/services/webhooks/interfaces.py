@@ -54,5 +54,8 @@ class IWebhookSource(Interface):
     def delete(hooks):
         """Delete a collection of webhooks."""
 
+    def getByID(id):
+        """Get a webhook by its ID."""
+
     def findByTarget(target):
         """Find all webhooks for the given target."""

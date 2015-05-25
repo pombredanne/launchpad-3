@@ -27,6 +27,13 @@ class TestWebhookSource(TestCaseWithFactory):
         self.assertEqual(True, hook.active)
         self.assertEqual(u'sekrit', hook.secret)
 
+    def test_getByID(self):
+        hook1 = self.factory.makeWebhook()
+        hook2 = self.factory.makeWebhook()
+        self.assertEqual(hook1, getUtility(IWebhookSource).getByID(hook1.id))
+        self.assertEqual(hook2, getUtility(IWebhookSource).getByID(hook2.id))
+        self.assertIs(None, getUtility(IWebhookSource).getByID(1234))
+
     def test_findByTarget(self):
         target1 = self.factory.makeGitRepository()
         target2 = self.factory.makeGitRepository()

@@ -75,6 +75,9 @@ class WebhookSource:
         for hook in hooks:
             Store.of(hook).remove(hook)
 
+    def getByID(self, id):
+        return IStore(Webhook).get(Webhook, id)
+
     def findByTarget(self, target):
         from lp.code.interfaces.gitrepository import IGitRepository
         if IGitRepository.providedBy(target):

@@ -4499,7 +4499,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if target is None:
             target = self.makeGitRepository()
         if endpoint_url is None:
-            endpoint_url = self.getUniqueURL()
+            endpoint_url = self.getUniqueURL().decode('utf-8')
         return getUtility(IWebhookSource).new(
             target, self.makePerson(), endpoint_url, True,
             self.getUniqueUnicode())
