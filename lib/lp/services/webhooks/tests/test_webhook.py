@@ -9,7 +9,7 @@ from lp.testing import TestCaseWithFactory
 from lp.testing.layers import DatabaseFunctionalLayer
 
 
-class TestWebhook(TestCaseWithFactory):
+class TestWebhookSource(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
@@ -43,3 +43,20 @@ class TestWebhook(TestCaseWithFactory):
             ['http://path/two/0', 'http://path/two/1', 'http://path/two/2'],
             [hook.endpoint_url for hook in
              getUtility(IWebhookSource).findByTarget(target2)])
+
+    def test_delete(self):
+        target = self.factory.makeGitRepository()
+        hooks = [
+            getUtility(IWebhookSource).new(
+                target, self.factory.makePerson(), u'http://path/to/%d' % i,
+                True, u'sekrit')
+            for i in range(3)]
+        self.assertContentEqual(
+            ['http://path/to/0', 'http://path/to/1', 'http://path/to/2'],
+            [hook.endpoint_url for hook in
+             getUtility(IWebhookSource).findByTarget(target)])
+        getUtility(IWebhookSource).delete(hooks[:2])
+        self.assertContentEqual(
+            ['http://path/to/2'],
+            [hook.endpoint_url for hook in
+             getUtility(IWebhookSource).findByTarget(target)])

@@ -51,5 +51,8 @@ class IWebhookSource(Interface):
     def new(target, registrant, endpoint_url, active, secret):
         """Create a new webhook."""
 
+    def delete(hooks):
+        """Delete a collection of webhooks."""
+
     def findByTarget(target):
         """Find all webhooks for the given target."""

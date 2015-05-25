@@ -18,6 +18,7 @@ from storm.properties import (
     Unicode,
     )
 from storm.references import Reference
+from storm.store import Store
 
 from lp.services.database.interfaces import IStore
 from lp.services.database.stormbase import StormBase
@@ -69,6 +70,10 @@ class WebhookSource:
         hook.json_data = {}
         IStore(Webhook).add(hook)
         return hook
+
+    def delete(self, hooks):
+        for hook in hooks:
+            Store.of(hook).remove(hook)
 
     def findByTarget(self, target):
         from lp.code.interfaces.gitrepository import IGitRepository
