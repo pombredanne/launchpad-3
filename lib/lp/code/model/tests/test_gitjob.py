@@ -211,7 +211,7 @@ class TestReclaimGitRepositorySpaceJob(TestCaseWithFactory):
         job = ReclaimGitRepositorySpaceJob.create(name, path)
         self.makeJobReady(job)
         [job] = list(ReclaimGitRepositorySpaceJob.iterReady())
-        with dbuser("reclaim-branch-space"):
+        with dbuser("branchscanner"):
             job._hosting_client.delete = FakeMethod()
             JobRunner([job]).runAll()
         self.assertEqual([(path,)], job._hosting_client.delete.extract_args())
