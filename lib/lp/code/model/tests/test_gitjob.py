@@ -32,6 +32,7 @@ from lp.code.model.gitjob import (
     ReclaimGitRepositorySpaceJob,
     )
 from lp.services.database.constants import UTC_NOW
+from lp.services.job.runner import JobRunner
 from lp.testing import (
     TestCaseWithFactory,
     time_counter,
@@ -139,7 +140,7 @@ class TestGitRefScanJob(TestCaseWithFactory):
         job._hosting_client.getCommits = FakeMethod(
             result=self.makeFakeCommits(author, author_date_gen, paths))
         with dbuser("branchscanner"):
-            job.run()
+            JobRunner([job]).runAll()
         self.assertRefsMatch(repository.refs, repository, paths)
 
     def test_logs_bad_ref_info(self):
@@ -153,7 +154,7 @@ class TestGitRefScanJob(TestCaseWithFactory):
             'ref info does not contain "object" key')
         with self.expectedLog(expected_message):
             with dbuser("branchscanner"):
-                job.run()
+                JobRunner([job]).runAll()
         self.assertEqual([], list(repository.refs))
 
 
@@ -210,9 +211,9 @@ class TestReclaimGitRepositorySpaceJob(TestCaseWithFactory):
         job = ReclaimGitRepositorySpaceJob.create(name, path)
         self.makeJobReady(job)
         [job] = list(ReclaimGitRepositorySpaceJob.iterReady())
-        with dbuser("reclaim-branch-space"):
+        with dbuser("branchscanner"):
             job._hosting_client.delete = FakeMethod()
-            job.run()
+            JobRunner([job]).runAll()
         self.assertEqual([(path,)], job._hosting_client.delete.extract_args())
 
 
