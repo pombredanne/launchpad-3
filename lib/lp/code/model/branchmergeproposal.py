@@ -283,6 +283,13 @@ class BranchMergeProposal(SQLBase):
         else:
             return self.prerequisite_git_ref
 
+    @property
+    def parent(self):
+        if self.source_branch is not None:
+            return self.source_branch
+        else:
+            return self.source_git_repository
+
     description = StringCol(default=None)
 
     whiteboard = StringCol(default=None)
