@@ -253,7 +253,7 @@
     <browser:url
         for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
         path_expression="string:+merge/${id}"
-        attribute_to_parent="merge_source"
+        attribute_to_parent="parent"
         rootsite="code"/>
     <browser:page
         for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposalListingBatchNavigator"
