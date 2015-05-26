@@ -162,9 +162,12 @@ class GitJobDerived(BaseRunnableJob):
         oops_vars.extend([
             ('git_job_id', self.context.job.id),
             ('git_job_type', self.context.job_type.title),
-            ('git_repository_name', self.metadata["repository_name"])])
+            ])
         if self.context.repository is not None:
             oops_vars.append(('git_repository_id', self.context.repository.id))
+        if "repository_name" in self.metadata:
+            oops_vars.append(
+                ('git_repository_name', self.metadata["repository_name"]))
         return oops_vars
 
     def getErrorRecipients(self):
