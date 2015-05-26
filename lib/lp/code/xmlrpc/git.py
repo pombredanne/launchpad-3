@@ -84,6 +84,7 @@ class GitAPI(LaunchpadXMLRPCView):
             "path": hosting_path,
             "writable": writable,
             "trailing": extra_path,
+            "private": repository.private,
             }
 
     def _getGitNamespaceExtras(self, path, requester):

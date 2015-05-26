@@ -316,7 +316,7 @@ class CodehostingAPI(LaunchpadXMLRPCView):
             writable = self._canWriteToBranch(requester, branch)
         return (
             BRANCH_TRANSPORT,
-            {'id': branch_id, 'writable': writable},
+            {'id': branch_id, 'writable': writable, 'private': branch.private},
             trailing_path)
 
     def _serializeControlDirectory(self, requester, lookup):

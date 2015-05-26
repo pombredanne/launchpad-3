@@ -240,6 +240,10 @@ class FakeBranch(FakeDatabaseObject):
         self.sourcepackagename = sourcepackagename
 
     @property
+    def private(self):
+        return self.information_type in PRIVATE_INFORMATION_TYPES
+
+    @property
     def unique_name(self):
         if self.product is None:
             if self.distroseries is None:
@@ -834,7 +838,7 @@ class FakeCodehosting:
             writable = self._canWrite(requester_id, branch)
         return (
             BRANCH_TRANSPORT,
-            {'id': branch.id, 'writable': writable},
+            {'id': branch.id, 'writable': writable, 'private': branch.private},
             trailing_path)
 
     def performLookup(self, requester_id, lookup, branch_name_only=False):
