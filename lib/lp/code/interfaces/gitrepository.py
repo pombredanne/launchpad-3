@@ -461,6 +461,9 @@ class IGitRepositoryView(Interface):
         "A collection of the merge proposals that are dependent on this "
         "repository.")
 
+    def getMergeProposalByID(id):
+        """Return this repository's merge proposal with this id, or None."""
+
     def isRepositoryMergeable(other):
         """Is the other repository mergeable into this one (or vice versa)?"""
 

@@ -649,6 +649,9 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
                           merged_revnos=None, eager_load=False):
         """Return matching BranchMergeProposals."""
 
+    def getMergeProposalByID(id):
+        """Return this branch's merge proposal with this id, or None."""
+
     def scheduleDiffUpdates():
         """Create UpdatePreviewDiffJobs for this branch's targets."""
 

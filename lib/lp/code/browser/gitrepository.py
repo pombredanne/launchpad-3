@@ -97,9 +97,7 @@ class GitRepositoryNavigation(Navigation):
         except ValueError:
             # Not a number.
             return None
-        for proposal in self.context.landing_targets:
-            if proposal.id == id:
-                return proposal
+        return self.context.getMergeProposalByID(id)
 
 
 class GitRepositoryEditMenu(NavigationMenu):

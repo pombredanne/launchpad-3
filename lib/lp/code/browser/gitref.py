@@ -70,9 +70,9 @@ class GitRefNavigation(Navigation):
         except ValueError:
             # Not a number.
             return None
-        for proposal in self.context.landing_targets:
-            if proposal.id == id:
-                return self.redirectSubTree(canonical_url(proposal))
+        proposal = self.context.getMergeProposalByID(id)
+        if proposal is not None:
+            return self.redirectSubTree(canonical_url(proposal))
 
 
 class GitRefContextMenu(ContextMenu):

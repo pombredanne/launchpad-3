@@ -285,6 +285,9 @@ class IGitRef(IHasMergeProposals, IPrivacy, IInformationType):
                           merged_revision_ids=None, eager_load=False):
         """Return matching BranchMergeProposals."""
 
+    def getMergeProposalByID(id):
+        """Return this reference's merge proposal with this id, or None."""
+
     pending_writes = Attribute(
         "Whether there are recent changes in this repository that have not "
         "yet been scanned.")
