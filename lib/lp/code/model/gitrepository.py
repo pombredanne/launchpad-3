@@ -791,6 +791,10 @@ class GitRepository(StormBase, GitIdentityMixin):
             Not(BranchMergeProposal.queue_status.is_in(
                 BRANCH_MERGE_PROPOSAL_FINAL_STATES)))
 
+    def getMergeProposalByID(self, id):
+        """See `IGitRepository`."""
+        return self.landing_targets.find(BranchMergeProposal.id == id).one()
+
     def isRepositoryMergeable(self, other):
         """See `IGitRepository`."""
         return self.namespace.areRepositoriesMergeable(other.namespace)

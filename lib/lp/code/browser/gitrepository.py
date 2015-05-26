@@ -37,6 +37,7 @@ from lp.services.webapp import (
     Link,
     Navigation,
     NavigationMenu,
+    stepthrough,
     stepto,
     )
 from lp.services.webapp.authorization import (
@@ -87,6 +88,16 @@ class GitRepositoryNavigation(Navigation):
                     self.request.stepstogo.consume()
                 return ref
         raise NotFoundError
+
+    @stepthrough("+merge")
+    def traverse_merge_proposal(self, id):
+        """Traverse to an `IBranchMergeProposal`."""
+        try:
+            id = int(id)
+        except ValueError:
+            # Not a number.
+            return None
+        return self.context.getMergeProposalByID(id)
 
 
 class GitRepositoryEditMenu(NavigationMenu):
