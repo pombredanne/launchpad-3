@@ -56,7 +56,8 @@ class TestBranchFileSystemClient(TestCase):
         deferred = client.translatePath('/' + branch.unique_name)
         deferred.addCallback(
             self.assertEqual,
-            (BRANCH_TRANSPORT, dict(id=branch.id, writable=False), ''))
+            (BRANCH_TRANSPORT,
+             dict(id=branch.id, writable=False, private=False), ''))
         return deferred
 
     def test_get_matched_part(self):
