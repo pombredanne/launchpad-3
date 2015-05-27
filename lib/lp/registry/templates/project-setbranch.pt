@@ -30,7 +30,7 @@
         <tr>
           <td>
             <h3>Version Control System</h3>
-            <p>Please select a default vcs for your project:</p>
+            <p>Please select a vcs for your project:</p>
             <ul>
               <li>
                 <label tal:replace="structure view/default_vcs_git">

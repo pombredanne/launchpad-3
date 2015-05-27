@@ -1,7 +1,7 @@
 Setting the branch for a product
 =======================================
 
-A product should have a branch and default vcs set for it.  The branch can be
+A product should have a branch and vcs set for it.  The branch can be
 hosted on Launchpad or somewhere else.  Foreign branches can be in
 Bazaar, Git, Subversion, or CVS.  Though internally Launchpad treats those
 scenarios differently we provide a single page to the user to set up the
@@ -44,7 +44,7 @@ A user can choose to link to an existing branch on Launchpad.
     http://launchpad.dev/firefox
 
 
-Setting a default vcstype
+Setting a project vcstype
 -------------------------
 
 A user can select a vcs type for the project.

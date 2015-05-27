@@ -993,7 +993,7 @@ class ProductView(PillarViewMixin, HasAnnouncementsView, SortSeriesMixin,
 
     @property
     def vcs(self):
-        """Default project VCS type."""
+        """Project VCS type."""
         vcs = None
         if self.context.vcs:
             return self.context.vcs
@@ -1679,7 +1679,7 @@ class SetBranchForm(Interface):
 
     default_vcs = Choice(title=_("Project VCS"),
         required=True, vocabulary=VCSType,
-        description=_("The default version control system for this project."))
+        description=_("The version control system for this project."))
 
     rcs_type = Choice(title=_("Type of RCS"),
         required=False, vocabulary=RevisionControlSystems,
