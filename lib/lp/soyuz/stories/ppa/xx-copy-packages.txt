@@ -257,6 +257,8 @@ is presented.
     Requested sync of 1 package to PPA for James Blackwell.
     Please allow some time for this to be processed.
     >>> run_copy_jobs()
+    DEBUG Created i386 build of pmount 0.1-1 in ubuntu hoary RELEASE [...]
+    in PPA for James Blackwell (...)
     DEBUG Packages copied to PPA for James Blackwell:
     DEBUG pmount 0.1-1 in hoary
 
@@ -872,6 +874,8 @@ conflicts and cannot be allowed.
     Requested sync of 3 packages to PPA for James Blackwell Sandbox.
     Please allow some time for these to be processed.
     >>> run_copy_jobs()
+    DEBUG Created i386 build of pmount 0.1-1 in ubuntu warty RELEASE [...]
+    in PPA for James Blackwell Sandbox (...)
     DEBUG Packages copied to PPA for James Blackwell Sandbox:
     DEBUG pmount 0.1-1 in warty
     INFO ... raised CannotCopy: pmount 0.1-1 in grumpy

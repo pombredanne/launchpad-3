@@ -137,7 +137,7 @@ class TestGitAPIMixin:
 
     def assertTranslates(self, requester, path, repository, writable,
                          permission="read", can_authenticate=False,
-                         trailing=""):
+                         trailing="", private=False):
         if requester not in (LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES):
             requester = requester.id
         translation = self.git_api.translatePath(
@@ -145,10 +145,11 @@ class TestGitAPIMixin:
         login(ANONYMOUS)
         self.assertEqual(
             {"path": repository.getInternalPath(), "writable": writable,
-             "trailing": trailing},
+             "trailing": trailing, "private": private},
             translation)
 
-    def assertCreates(self, requester, path, can_authenticate=False):
+    def assertCreates(self, requester, path, can_authenticate=False,
+                      private=False):
         if requester in (LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES):
             requester_id = requester
         else:
@@ -162,7 +163,7 @@ class TestGitAPIMixin:
         self.assertEqual(requester, repository.registrant)
         self.assertEqual(
             {"path": repository.getInternalPath(), "writable": True,
-             "trailing": ""},
+             "trailing": "", "private": private},
             translation)
         self.assertEqual(
             ("create", repository.getInternalPath()),
@@ -182,7 +183,7 @@ class TestGitAPIMixin:
             self.factory.makeGitRepository(
                 owner=requester, information_type=InformationType.USERDATA))
         path = u"/%s" % repository.unique_name
-        self.assertTranslates(requester, path, repository, True)
+        self.assertTranslates(requester, path, repository, True, private=True)
 
     def test_translatePath_cannot_see_private_repository(self):
         requester = self.factory.makePerson()

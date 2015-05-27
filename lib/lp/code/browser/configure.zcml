@@ -253,7 +253,7 @@
     <browser:url
         for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
         path_expression="string:+merge/${id}"
-        attribute_to_parent="merge_source"
+        attribute_to_parent="parent"
         rootsite="code"/>
     <browser:page
         for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposalListingBatchNavigator"
@@ -753,7 +753,8 @@
     <browser:menus
         module="lp.code.browser.gitrepository"
         classes="
-            GitRepositoryContextMenu"/>
+            GitRepositoryContextMenu
+            GitRepositoryEditMenu"/>
     <browser:pages
         for="lp.code.interfaces.gitrepository.IGitRepository"
         class="lp.code.browser.gitrepository.GitRepositoryView"
@@ -779,6 +780,12 @@
         permission="launchpad.View"
         name="+repository-portlet-subscriber-content"
         template="../templates/gitrepository-portlet-subscribers-content.pt"/>
+    <browser:page
+        for="lp.code.interfaces.gitrepository.IGitRepository"
+        class="lp.code.browser.gitrepository.GitRepositoryDeletionView"
+        permission="launchpad.Edit"
+        name="+delete"
+        template="../templates/gitrepository-delete.pt"/>
     <browser:page
         for="lp.code.interfaces.gitrepository.IGitRepository"
         class="lp.code.browser.gitsubscription.GitSubscriptionAddView"

@@ -449,6 +449,21 @@ class IGitRepositoryView(Interface):
         and their subscriptions.
         """
 
+    # XXX cjwatson 2015-04-16: These names are too awful to set in stone by
+    # exporting them on the webservice; find better names before exporting.
+    landing_targets = Attribute(
+        "A collection of the merge proposals where this repository is the "
+        "source.")
+    landing_candidates = Attribute(
+        "A collection of the merge proposals where this repository is the "
+        "target.")
+    dependent_landings = Attribute(
+        "A collection of the merge proposals that are dependent on this "
+        "repository.")
+
+    def getMergeProposalByID(id):
+        """Return this repository's merge proposal with this id, or None."""
+
     def isRepositoryMergeable(other):
         """Is the other repository mergeable into this one (or vice versa)?"""
 
@@ -532,10 +547,35 @@ class IGitRepositoryEdit(Interface):
     def setTarget(target, user):
         """Set the target of the repository."""
 
+    @export_read_operation()
+    @operation_for_version("devel")
+    def canBeDeleted():
+        """Can this repository be deleted in its current state?
+
+        A repository is considered deletable if it is not linked to any
+        merge proposals.
+        """
+
+    def getDeletionRequirements():
+        """Determine what is required to delete this branch.
+
+        :return: a dict of {object: (operation, reason)}, where object is the
+            object that must be deleted or altered, operation is either
+            "delete" or "alter", and reason is a string explaining why the
+            object needs to be touched.
+        """
+
+    @call_with(break_references=True)
     @export_destructor_operation()
     @operation_for_version("devel")
-    def destroySelf():
-        """Delete the specified repository."""
+    def destroySelf(break_references=False):
+        """Delete the specified repository.
+
+        :param break_references: If supplied, break any references to this
+            repository by deleting items with mandatory references and
+            NULLing other references.
+        :raise: CannotDeleteGitRepository if the repository cannot be deleted.
+        """
 
 
 class IGitRepository(IGitRepositoryView, IGitRepositoryModerateAttributes,

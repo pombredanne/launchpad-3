@@ -204,7 +204,9 @@
         permission="launchpad.Edit"
         interface="lp.code.interfaces.branchmergeproposal.IBranchMergeProposalEdit"
         set_attributes="description whiteboard merged_revno commit_message
-                        root_message_id prerequisite_branch"/>
+                        root_message_id prerequisite_branch
+                        prerequisite_git_repository prerequisite_git_path
+                        prerequisite_git_commit_sha1"/>
     <require
         permission="launchpad.AnyAllowedPerson"
         interface="lp.code.interfaces.branchmergeproposal.IBranchMergeProposalAnyAllowedPerson"/>
@@ -941,9 +943,18 @@
       provides="lp.code.interfaces.gitjob.IGitRefScanJobSource">
     <allow interface="lp.code.interfaces.gitjob.IGitRefScanJobSource" />
   </securedutility>
+  <securedutility
+      component="lp.code.model.gitjob.ReclaimGitRepositorySpaceJob"
+      provides="lp.code.interfaces.gitjob.IReclaimGitRepositorySpaceJobSource">
+    <allow interface="lp.code.interfaces.gitjob.IReclaimGitRepositorySpaceJobSource" />
+  </securedutility>
   <class class="lp.code.model.gitjob.GitRefScanJob">
     <allow interface="lp.code.interfaces.gitjob.IGitJob" />
     <allow interface="lp.code.interfaces.gitjob.IGitRefScanJob" />
+  </class>
+  <class class="lp.code.model.gitjob.ReclaimGitRepositorySpaceJob">
+    <allow interface="lp.code.interfaces.gitjob.IGitJob" />
+    <allow interface="lp.code.interfaces.gitjob.IReclaimGitRepositorySpaceJob" />
   </class>
 
   <lp:help-folder folder="help" name="+help-code" />

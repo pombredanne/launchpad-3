@@ -215,6 +215,10 @@ class IBranchMergeProposalPublic(IPrivacy):
     merge_prerequisite = Attribute(
         "The branch that the source branch branched from (VCS-agnostic).")
 
+    parent = Attribute(
+        "The parent object for use in navigation: source branch for Bazaar, "
+        "or source repository for Git.")
+
 
 class IBranchMergeProposalView(Interface):
 
