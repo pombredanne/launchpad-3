@@ -182,10 +182,7 @@ class TestDistroAddView(TestCaseWithFactory):
             method='POST', form=creation_form)
 
         distribution = self.distributionset.getByName('newbuntu')
-        # XXX wgrant 2015-05-15: Default processors are currently implicit.
-        self.assertContentEqual(
-            [proc for proc in self.all_processors if not proc.restricted],
-            distribution.main_archive.processors)
+        self.assertContentEqual([], distribution.main_archive.processors)
 
 
 class TestDistroEditView(TestCaseWithFactory):
@@ -252,10 +249,7 @@ class TestDistroEditView(TestCaseWithFactory):
             self.distribution, '+edit', principal=self.admin,
             method='POST', form=edit_form)
 
-        # XXX wgrant 2015-05-15: Default processors are currently implicit.
-        self.assertContentEqual(
-            [proc for proc in self.all_processors if not proc.restricted],
-            self.distribution.main_archive.processors)
+        self.assertContentEqual([], self.distribution.main_archive.processors)
 
     def test_package_derivatives_email(self):
         # Test that the edit form allows changing package_derivatives_email
