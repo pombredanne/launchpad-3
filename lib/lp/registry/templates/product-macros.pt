@@ -14,7 +14,7 @@
         <div id="push-instructions-git" class="scm-tip">
           <p>You can add a remote for your git branch with the command:</p>
           <code class="command command-block">
-            git remote add origin git+ssh://<tal:user replace="view/user/name"/>@git.launchpad.net/~<tal:user replace="view/user/name"/>/<tal:project replace="context/name"/>/master<br />
+            git remote add origin git+ssh://<tal:user replace="view/user/name"/>@git.launchpad.net/<tal:project replace="context/name"/><br />
           </code>
           <p>&hellip; and push the git branch to Launchpad with:</p>
           <code class="command command-block">
@@ -25,7 +25,7 @@
           <p>You can push a Bazaar branch directly to Launchpad with the command:</p>
           <p>
             <code class="command command-block">
-              bzr push lp:~<tal:user replace="view/user/name"/>/<tal:project replace="context/name"/>/<tal:series replace="context/development_focus/name"/>
+              bzr push lp:<tal:project replace="context/name"/>
             </code>
           </p>
         </div>
