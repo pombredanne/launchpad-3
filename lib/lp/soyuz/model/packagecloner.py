@@ -14,7 +14,6 @@ __all__ = [
 import transaction
 from zope.component import getUtility
 from zope.interface import implements
-from zope.security.proxy import removeSecurityProxy
 
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.interfaces import IStore
@@ -23,7 +22,6 @@ from lp.services.database.sqlbase import (
     sqlvalues,
     )
 from lp.soyuz.enums import PackagePublishingStatus
-from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.packagecloner import IPackageCloner
 from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
 
@@ -248,13 +246,9 @@ class PackageCloner:
             """ % sqlvalues(
                 PackagePublishingStatus.SUPERSEDED, UTC_NOW))
 
-        processors = [
-            removeSecurityProxy(archivearch).processor for archivearch
-            in getUtility(IArchiveArchSet).getByArchive(destination.archive)]
-
         self._create_missing_builds(
             destination.distroseries, destination.archive, (),
-            processors)
+            destination.archive.processors)
 
     def _compute_packageset_delta(self, origin):
         """Given a source/target archive find obsolete or missing packages.

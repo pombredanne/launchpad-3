@@ -974,7 +974,7 @@ ALTER TABLE processor DISABLE TRIGGER ALL;
 
 INSERT INTO processor (id, name, title, description, restricted, build_by_default, supports_nonvirtualized, supports_virtualized) VALUES (1, '386', 'Intel 386', 'Intel 386 and its many derivatives and clones, the basic 32-bit chip in the x86 family', false, true, true, true);
 INSERT INTO processor (id, name, title, description, restricted, build_by_default, supports_nonvirtualized, supports_virtualized) VALUES (2, 'amd64', 'AMD 64bit', 'AMD 64bit', false, true, true, true);
-INSERT INTO processor (id, name, title, description, restricted, build_by_default, supports_nonvirtualized, supports_virtualized) VALUES (3, 'hppa', 'HPPA Processor', 'HPPA Processor', false, false, true, false);
+INSERT INTO processor (id, name, title, description, restricted, build_by_default, supports_nonvirtualized, supports_virtualized) VALUES (3, 'hppa', 'HPPA Processor', 'HPPA Processor', false, true, true, false);
 
 
 ALTER TABLE processor ENABLE TRIGGER ALL;
