@@ -22,28 +22,28 @@
 
     <metal:formbody fill-slot="widgets">
       <h3>Version Control System</h3>
-      <p>Please select a vcs for your project:</p>
-      <ul>
-        <li>
-          <label tal:replace="structure view/default_vcs_git">
-            Git
-          </label>
-        </li>
-        <li>
-          <label tal:replace="structure view/default_vcs_bzr">
-            Bazaar
-          </label>
-        </li>
-      </ul>
-      <p><span class="formHelp">Your project may still have both
-      git repositories and bazaar branches.</span></p>
-      
+      <div id="default_vcs">
+        <p>Please select a vcs for your project:</p>
+        <ul>
+          <li>
+            <label tal:replace="structure view/default_vcs_git">
+              Git
+            </label>
+          </li>
+          <li>
+            <label tal:replace="structure view/default_vcs_bzr">
+              Bazaar
+            </label>
+          </li>
+        </ul>
+        <p><span class="formHelp">Your project may still have both
+        git repositories and bazaar branches.</span></p>
+      </div>
       <div class="push-instructions">
-        <h3>Push Instructions</h3>
         <div metal:use-macro="context/@@+product-macros/push-instructions"></div>
       </div>
       
-      <table class="form">
+      <table id="form_bzr" class="form">
         <tr>
           <td>
             <h3>Branch Link/Import</h3>
@@ -58,7 +58,7 @@
           </td>
         </tr>
 
-        <tr>
+        <tr id="branch_mirror">
           <td>
             <label tal:replace="structure view/branch_type_import">
               Import a branch hosted somewhere else
@@ -117,6 +117,11 @@
           </td>
         </tr>
 
+      </table>
+      <table id="form_git" class="form">
+        <tr>
+          <td>&nbsp;</td>
+        </tr>
       </table>
       <input tal:replace="structure view/rcs_type_emptymarker" />
 

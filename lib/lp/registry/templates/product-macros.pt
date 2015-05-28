@@ -4,39 +4,34 @@
     xmlns:i18n="http://xml.zope.org/namespaces/i18n"
     omit-tag="">
 
-  <div metal:define-macro="push-instructions" id="product-push-instructions" class="yui3-skin-sam">
-    <div id="push-instructions-tabview" class="yui3-tabview">
-      <ul class="push-instructions-tabs">
-        <li><a href="#push-instructions-git"><i class="sprite gitbranch"></i>git</a></li>
-        <li><a href="#push-instructions-bzr"><i class="sprite branch"></i>bzr</a></li>
-      </ul>
-      <div>
-        <div id="push-instructions-git" class="scm-tip">
-          <p>You can add a remote for your git branch with the command:</p>
-          <code class="command command-block">
-            git remote add origin git+ssh://<tal:user replace="view/user/name"/>@git.launchpad.net/<tal:project replace="context/name"/><br />
-          </code>
-          <p>&hellip; and push the git branch to Launchpad with:</p>
-          <code class="command command-block">
-            git push origin master
-          </code>
-        </div>
-        <div id="#push-instructions-bzr" class="scm-tip">
-          <p>You can push a Bazaar branch directly to Launchpad with the command:</p>
-          <p>
-            <code class="command command-block">
-              bzr push lp:<tal:project replace="context/name"/>
-            </code>
-          </p>
-        </div>
-      </div>
-
-      <tal:no-keys condition="not:view/user/sshkeys">
-        <p>To authenticate with the Launchpad branch upload service,
-        you need to
-        <a tal:attributes="href string:${view/user/fmt:url}/+editsshkeys">
-        register a SSH key</a>.</p>
-      </tal:no-keys>
+  <div metal:define-macro="push-instructions" id="product-push-instructions">
+    <div id="push-instructions-git" class="scm-tip">
+      <h3><i class="sprite gitbranch"></i>Git Push Instructions</h3>
+      <p>You can add a remote for your git branch with the command:</p>
+      <code class="command command-block">
+        git remote add origin git+ssh://<tal:user replace="view/user/name"/>@git.launchpad.net/<tal:project replace="context/name"/><br />
+      </code>
+      <p>&hellip; and push the git branch to Launchpad with:</p>
+      <code class="command command-block">
+        git push origin master
+      </code>
+    </div>
+    <div id="push-instructions-bzr" class="scm-tip">
+      <h3><i class="sprite branch"></i>Bazaar Push Instructions</h3>
+      <p>You can push a Bazaar branch directly to Launchpad with the command:</p>
+      <p>
+        <code class="command command-block">
+          bzr push lp:<tal:project replace="context/name"/>
+        </code>
+      </p>
     </div>
   </div>
+
+  <tal:no-keys condition="not:view/user/sshkeys">
+    <p>To authenticate with the Launchpad branch upload service,
+    you need to
+    <a tal:attributes="href string:${view/user/fmt:url}/+editsshkeys">
+    register a SSH key</a>.</p>
+  </tal:no-keys>
+
 </tal:root>

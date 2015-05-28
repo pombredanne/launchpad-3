@@ -559,11 +559,8 @@ div.scm-tip {
     overflow: hidden;
     padding: 5px;
 }
-div#push-instructions-tabview {
+div#product-push-instructions {
     width: 50em;
-}
-ul.push-instructions-tabs {
-    display: none;
 }
 table.code {
     margin-bottom: 1em;
