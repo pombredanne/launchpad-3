@@ -622,7 +622,7 @@ Create merge proposal with a preview diff, and go to its index page.
 The text of the review diff is in the page.
 
     >>> print repr(extract_text(get_review_diff()))
-    u'Preview Diff\n[J/K] Next/Prev File, [N/P] Next/Prev Hunk\nDownload diff\n1\n---\n2\n+++\n3\n@@ -0,0 +1 @@\n4\n+Fake Diff\u1010'
+    u'Preview Diff\n[H/L] Next/Prev Comment, [J/K] Next/Prev File, [N/P] Next/Prev Hunk\nDownload diff\n1\n---\n2\n+++\n3\n@@ -0,0 +1 @@\n4\n+Fake Diff\u1010'
 
 There is also a link to the diff URL, which is the preview diff URL plus
 "+files/preview.diff". It redirects logged in users to the file in the
