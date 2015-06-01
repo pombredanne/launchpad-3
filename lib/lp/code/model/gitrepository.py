@@ -497,6 +497,7 @@ class GitRepository(StormBase, GitIdentityMixin):
         else:
             created = []
 
+        self.date_last_modified = UTC_NOW
         if get_objects:
             return bulk.load(GitRef, updated + created)
 
@@ -505,6 +506,7 @@ class GitRepository(StormBase, GitIdentityMixin):
         Store.of(self).find(
             GitRef,
             GitRef.repository == self, GitRef.path.is_in(paths)).remove()
+        self.date_last_modified = UTC_NOW
 
     def planRefChanges(self, hosting_client, hosting_path, logger=None):
         """See `IGitRepository`."""
