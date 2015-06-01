@@ -1141,6 +1141,17 @@ class ProductBranchListingView(BranchListingView):
         """Whether or not the user can configure branches."""
         return check_permission("launchpad.Edit", self.context)
 
+    @property
+    def configure_codehosting(self):
+        """Get the menu link for configuring code hosting."""
+        if not check_permission(
+            'launchpad.Edit', self.context.development_focus):
+            return None
+        series_menu = MenuAPI(self.context.development_focus).overview
+        set_branch = series_menu['set_branch']
+        set_branch.text = 'Configure code hosting'
+        return set_branch
+
 
 class ProductBranchStatisticsView(BranchCountSummaryView,
                                   ProductBranchListingView):
@@ -1313,17 +1324,6 @@ class ProductBranchesView(ProductBranchListingView, SortSeriesMixin,
     def has_development_focus_branch(self):
         """Is there a branch assigned as development focus?"""
         return self.development_focus_branch is not None
-
-    @property
-    def configure_codehosting(self):
-        """Get the menu link for configuring code hosting."""
-        if not check_permission(
-            'launchpad.Edit', self.context.development_focus):
-            return None
-        series_menu = MenuAPI(self.context.development_focus).overview
-        set_branch = series_menu['set_branch']
-        set_branch.text = 'Configure code hosting'
-        return set_branch
 
 
 class ProductAllBranchesView(ProductBranchListingView):
