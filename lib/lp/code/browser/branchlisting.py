@@ -16,10 +16,10 @@ __all__ = [
     'PersonBranchesView',
     'PersonCodeSummaryView',
     'PersonTeamBranchesView',
+    'ProductAllBranchesView',
     'ProductBranchListingView',
     'ProductBranchesMenu',
     'ProductBranchesView',
-    'ProductCodeIndexView',
     'ProjectBranchesView',
     'RecentlyChangedBranchesView',
     'RecentlyImportedBranchesView',
@@ -1157,11 +1157,8 @@ class ProductBranchStatisticsView(BranchCountSummaryView,
         return text.capitalize()
 
 
-class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
-                           ProductDownloadFileMixin, BranchMirrorMixin):
-    """Initial view for products on the code virtual host."""
-
-    show_set_development_focus = True
+class ProductBranchSummaryView(ProductBranchListingView, SortSeriesMixin,
+                               ProductDownloadFileMixin, BranchMirrorMixin):
 
     def initialize(self):
         ProductBranchListingView.initialize(self)
@@ -1171,17 +1168,6 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
     @property
     def branch(self):
         return self.development_focus_branch
-
-    @property
-    def form_action(self):
-        return "+all-branches"
-
-    @property
-    def initial_values(self):
-        return {
-            'lifecycle': BranchLifecycleStatusFilter.CURRENT,
-            'sort_by': BranchListingSort.DEFAULT,
-            }
 
     @cachedproperty
     def commit_count(self):
@@ -1212,6 +1198,56 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
         """The number of teams who own branches."""
         return len([person for person in self._branch_owners
                     if person.is_team])
+
+    @property
+    def has_development_focus_branch(self):
+        """Is there a branch assigned as development focus?"""
+        return self.development_focus_branch is not None
+
+    @property
+    def branch_text(self):
+        return get_plural_text(self.branch_count, _('branch'), _('branches'))
+
+    @property
+    def person_text(self):
+        return get_plural_text(
+            self.person_owner_count, _('person'), _('people'))
+
+    @property
+    def team_text(self):
+        return get_plural_text(self.team_owner_count, _('team'), _('teams'))
+
+    @property
+    def commit_text(self):
+        return get_plural_text(self.commit_count, _('commit'), _('commits'))
+
+    @property
+    def committer_text(self):
+        return get_plural_text(self.committer_count, _('person'), _('people'))
+
+    @property
+    def external_visible(self):
+        return (
+            self.context.codehosting_usage == ServiceUsage.EXTERNAL
+            and self.branch)
+
+
+class ProductBranchesView(ProductBranchListingView, SortSeriesMixin,
+                          ProductDownloadFileMixin, BranchMirrorMixin):
+    """Initial view for products on the code virtual host."""
+
+    show_set_development_focus = True
+
+    @property
+    def form_action(self):
+        return "+all-branches"
+
+    @property
+    def initial_values(self):
+        return {
+            'lifecycle': BranchLifecycleStatusFilter.CURRENT,
+            'sort_by': BranchListingSort.DEFAULT,
+            }
 
     def _getSeriesBranches(self):
         """Get the series branches for the product, dev focus first."""
@@ -1248,7 +1284,7 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
     def initial_branches(self):
         """Return the series branches, followed by most recently changed."""
         series_branches = self._getSeriesBranches()
-        branch_query = super(ProductCodeIndexView, self)._branches(
+        branch_query = super(ProductBranchesView, self)._branches(
             self.selected_lifecycle_status)
         branch_query.order_by(self._listingSortToOrderBy(
             BranchListingSort.MOST_RECENTLY_CHANGED_FIRST))
@@ -1269,11 +1305,6 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
         # The params are ignored, and only used by the listing view.
         return self.initial_branches
 
-    @property
-    def unseen_branch_count(self):
-        """How many branches are not shown."""
-        return self.branch_count - len(self.initial_branches)
-
     def hasAnyBranchesVisibleByUser(self):
         """See `BranchListingView`."""
         return self.branch_count > 0
@@ -1282,27 +1313,6 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
     def has_development_focus_branch(self):
         """Is there a branch assigned as development focus?"""
         return self.development_focus_branch is not None
-
-    @property
-    def branch_text(self):
-        return get_plural_text(self.branch_count, _('branch'), _('branches'))
-
-    @property
-    def person_text(self):
-        return get_plural_text(
-            self.person_owner_count, _('person'), _('people'))
-
-    @property
-    def team_text(self):
-        return get_plural_text(self.team_owner_count, _('team'), _('teams'))
-
-    @property
-    def commit_text(self):
-        return get_plural_text(self.commit_count, _('commit'), _('commits'))
-
-    @property
-    def committer_text(self):
-        return get_plural_text(self.committer_count, _('person'), _('people'))
 
     @property
     def configure_codehosting(self):
@@ -1315,14 +1325,8 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
         set_branch.text = 'Configure code hosting'
         return set_branch
 
-    @property
-    def external_visible(self):
-        return (
-            self.context.codehosting_usage == ServiceUsage.EXTERNAL
-            and self.branch)
 
-
-class ProductBranchesView(ProductBranchListingView):
+class ProductAllBranchesView(ProductBranchListingView):
     """View for branch listing for a product."""
 
     def initialize(self):

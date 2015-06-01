@@ -254,7 +254,7 @@ shows correct singular and plural forms.
     >>> def get_stats_portlet(browser):
     ...     return find_tag_by_id(
     ...         browser.contents,
-    ...         'portlet-product-codestatistics')
+    ...         'portlet-product-branchstatistics')
     >>> def print_portlet(product):
     ...     browser.open('http://code.launchpad.dev/%s' % product)
     ...     portlet = get_stats_portlet(browser)
