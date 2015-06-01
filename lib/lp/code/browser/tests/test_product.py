@@ -331,7 +331,7 @@ class TestProductBranchSummaryView(ProductTestBase):
         self.assertEqual(view.committer_count, 1)
 
         view = create_initialized_view(
-            product, '+portlet-product-codestatistics', rootsite='code',
+            product, '+portlet-product-branchstatistics', rootsite='code',
             principal=fsm)
         commit_section = find_tag_by_id(view.render(), 'commits')
         self.assertIsNot(None, commit_section)
@@ -359,7 +359,7 @@ class TestProductBranchSummaryView(ProductTestBase):
         self.assertEqual(view.committer_count, 1)
 
         view = create_initialized_view(
-            product, '+portlet-product-codestatistics', rootsite='code',
+            product, '+portlet-product-branchstatistics', rootsite='code',
             principal=observer)
         commit_section = find_tag_by_id(view.render(), 'commits')
         self.assertIs(None, commit_section)
@@ -378,7 +378,7 @@ class TestProductBranchesViewPortlets(ProductTestBase, BrowserTestCase):
         self.assertIs(None, find_tag_by_id(contents, 'privacy'))
         self.assertIs(None, find_tag_by_id(contents, 'involvement'))
         self.assertIs(None, find_tag_by_id(
-            contents, 'portlet-product-codestatistics'))
+            contents, 'portlet-product-branchstatistics'))
 
     def test_portlets_shown_for_HOSTED(self):
         # If the BranchUsage is HOSTED then the portlets are shown.
@@ -390,7 +390,7 @@ class TestProductBranchesViewPortlets(ProductTestBase, BrowserTestCase):
         self.assertIsNot(None, find_tag_by_id(contents, 'privacy'))
         self.assertIsNot(None, find_tag_by_id(contents, 'involvement'))
         self.assertIsNot(None, find_tag_by_id(
-            contents, 'portlet-product-codestatistics'))
+            contents, 'portlet-product-branchstatistics'))
 
     def test_portlets_shown_for_EXTERNAL(self):
         # If the BranchUsage is EXTERNAL then the portlets are shown.
@@ -403,7 +403,7 @@ class TestProductBranchesViewPortlets(ProductTestBase, BrowserTestCase):
         self.assertIsNot(None, find_tag_by_id(contents, 'privacy'))
         self.assertIsNot(None, find_tag_by_id(contents, 'involvement'))
         self.assertIsNot(None, find_tag_by_id(
-            contents, 'portlet-product-codestatistics'))
+            contents, 'portlet-product-branchstatistics'))
 
     def test_is_private(self):
         product = self.factory.makeProduct(
