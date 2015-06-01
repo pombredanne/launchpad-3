@@ -16,9 +16,9 @@ __all__ = [
     'PersonBranchesView',
     'PersonCodeSummaryView',
     'PersonTeamBranchesView',
+    'ProductAllBranchesView',
     'ProductBranchListingView',
     'ProductBranchesMenu',
-    'ProductBranchesView',
     'ProductCodeIndexView',
     'ProjectBranchesView',
     'RecentlyChangedBranchesView',
@@ -1305,11 +1305,6 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
         # The params are ignored, and only used by the listing view.
         return self.initial_branches
 
-    @property
-    def unseen_branch_count(self):
-        """How many branches are not shown."""
-        return self.branch_count - len(self.initial_branches)
-
     def hasAnyBranchesVisibleByUser(self):
         """See `BranchListingView`."""
         return self.branch_count > 0
@@ -1331,7 +1326,7 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
         return set_branch
 
 
-class ProductBranchesView(ProductBranchListingView):
+class ProductAllBranchesView(ProductBranchListingView):
     """View for branch listing for a product."""
 
     def initialize(self):

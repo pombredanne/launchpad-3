@@ -712,7 +712,7 @@
 
     <browser:page
         for="lp.registry.interfaces.product.IProduct"
-        class="lp.code.browser.branchlisting.ProductBranchesView"
+        class="lp.code.browser.branchlisting.ProductAllBranchesView"
         permission="zope.Public"
         name="+all-branches"
         template="../templates/product-branches.pt"/>
