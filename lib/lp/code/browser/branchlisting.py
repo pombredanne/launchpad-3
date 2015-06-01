@@ -19,7 +19,7 @@ __all__ = [
     'ProductAllBranchesView',
     'ProductBranchListingView',
     'ProductBranchesMenu',
-    'ProductCodeIndexView',
+    'ProductBranchesView',
     'ProjectBranchesView',
     'RecentlyChangedBranchesView',
     'RecentlyImportedBranchesView',
@@ -1232,8 +1232,8 @@ class ProductBranchSummaryView(ProductBranchListingView, SortSeriesMixin,
             and self.branch)
 
 
-class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
-                           ProductDownloadFileMixin, BranchMirrorMixin):
+class ProductBranchesView(ProductBranchListingView, SortSeriesMixin,
+                          ProductDownloadFileMixin, BranchMirrorMixin):
     """Initial view for products on the code virtual host."""
 
     show_set_development_focus = True
@@ -1284,7 +1284,7 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
     def initial_branches(self):
         """Return the series branches, followed by most recently changed."""
         series_branches = self._getSeriesBranches()
-        branch_query = super(ProductCodeIndexView, self)._branches(
+        branch_query = super(ProductBranchesView, self)._branches(
             self.selected_lifecycle_status)
         branch_query.order_by(self._listingSortToOrderBy(
             BranchListingSort.MOST_RECENTLY_CHANGED_FIRST))

@@ -61,7 +61,7 @@ class ProductTestBase(TestCaseWithFactory):
         return product, branch
 
 
-class TestProductCodeIndexView(ProductTestBase):
+class TestProductBranchesView(ProductTestBase):
     """Tests for the product code home page."""
 
     def getBranchSummaryBrowseLinkForProduct(self, product):
@@ -179,7 +179,7 @@ class TestProductCodeIndexView(ProductTestBase):
         self.assertIn('another-branch', content)
 
 
-class TestProductCodeIndexServiceUsages(ProductTestBase, BrowserTestCase):
+class TestProductBranchesServiceUsages(ProductTestBase, BrowserTestCase):
     """Tests for the product code page, especially the usage messasges."""
 
     def test_external_imported(self):

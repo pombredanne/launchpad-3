@@ -718,7 +718,7 @@
         template="../templates/product-branches.pt"/>
     <browser:page
         for="lp.registry.interfaces.product.IProduct"
-        class="lp.code.browser.branchlisting.ProductCodeIndexView"
+        class="lp.code.browser.branchlisting.ProductBranchesView"
         permission="zope.Public"
         name="+branches"
         template="../templates/product-branches.pt"/>
