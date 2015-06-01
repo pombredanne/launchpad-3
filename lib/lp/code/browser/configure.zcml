@@ -730,7 +730,7 @@
       template="../templates/product-portlet-codestatistics.pt"/>
     <browser:page
         for="lp.registry.interfaces.product.IProduct"
-        class="lp.code.browser.branchlisting.ProductCodeIndexView"
+        class="lp.code.browser.branchlisting.ProductBranchSummaryView"
         permission="zope.Public"
         name="+branch-summary"
         template="../templates/product-branch-summary.pt"/>
