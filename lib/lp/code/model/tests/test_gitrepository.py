@@ -649,6 +649,20 @@ class TestGitRepositoryModifications(TestCaseWithFactory):
             date_created=datetime(2015, 06, 01, tzinfo=pytz.UTC))
         [ref] = self.factory.makeGitRefs(repository=repository)
         new_refs_info = {
+            ref.path: {
+                u"sha1": u"0000000000000000000000000000000000000000",
+                u"type": ref.object_type,
+                },
+            }
+        repository.createOrUpdateRefs(new_refs_info)
+        self.assertSqlAttributeEqualsDate(
+            repository, "date_last_modified", UTC_NOW)
+
+    def test_update_ref_sets_date_last_modified(self):
+        repository = self.factory.makeGitRepository(
+            date_created=datetime(2015, 06, 01, tzinfo=pytz.UTC))
+        [ref] = self.factory.makeGitRefs(repository=repository)
+        new_refs_info = {
             u"refs/heads/new": {
                 u"sha1": ref.commit_sha1,
                 u"type": ref.object_type,
