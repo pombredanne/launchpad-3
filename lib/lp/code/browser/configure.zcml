@@ -712,16 +712,15 @@
 
     <browser:page
         for="lp.registry.interfaces.product.IProduct"
-        class="lp.code.browser.branchlisting.ProductAllBranchesView"
-        permission="zope.Public"
-        name="+all-branches"
-        template="../templates/product-branches.pt"/>
-    <browser:page
-        for="lp.registry.interfaces.product.IProduct"
         class="lp.code.browser.branchlisting.ProductBranchesView"
         permission="zope.Public"
         name="+branches"
         template="../templates/product-branches.pt"/>
+    <browser:renamed-page
+        for="lp.registry.interfaces.product.IProduct"
+        name="+all-branches"
+        new_name="+branches"
+        rootsite="code"/>
    <browser:page
       for="lp.registry.interfaces.product.IProduct"
       class="lp.code.browser.branchlisting.ProductBranchStatisticsView"
