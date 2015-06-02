@@ -58,7 +58,7 @@
 
     <tal:code-statistics
       condition="not: view/context/codehosting_usage/enumvalue:UNKNOWN"
-      replace="structure context/@@+portlet-product-codestatistics" />
+      replace="structure context/@@+portlet-product-branchstatistics" />
 
     <tal:has-default-git-repository condition="view/has_default_git_repository">
       <div id="default-repository-branches" class="portlet"
