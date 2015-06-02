@@ -30,7 +30,7 @@ class SessionHandler(object):
         """
         self.application = application
         self.cookie_handler = AuthCookieHandler(
-            self._process, scanlist=[session_var])
+            self._process, scanlist=[session_var], secret=secret)
         self.session_var = session_var
 
     def __call__(self, environ, start_response):
