@@ -16,7 +16,6 @@ __all__ = [
     'PersonBranchesView',
     'PersonCodeSummaryView',
     'PersonTeamBranchesView',
-    'ProductAllBranchesView',
     'ProductBranchListingView',
     'ProductBranchesMenu',
     'ProductBranchesView',

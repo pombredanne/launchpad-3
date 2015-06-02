@@ -225,7 +225,7 @@ We display badges for associated bugs.
 
     >>> browser.open(
     ...     'http://code.launchpad.dev/firefox/+branches'
-    ...     '?field.sort_by=LIFECYCLE')
+    ...     '?field.sort_by=by+status')
     >>> branchSummary(browser)
     /~mark/firefox/release--0.9.1
     /~mark/firefox/release-0.8
