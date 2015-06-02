@@ -1250,10 +1250,6 @@ class ProductBranchesView(ProductBranchListingView, SortSeriesMixin,
     show_set_development_focus = True
 
     @property
-    def form_action(self):
-        return "+all-branches"
-
-    @property
     def initial_values(self):
         return {
             'lifecycle': BranchLifecycleStatusFilter.CURRENT,
@@ -1314,42 +1310,14 @@ class ProductBranchesView(ProductBranchListingView, SortSeriesMixin,
     def _branches(self, lifecycle_status):
         """Return the series branches, followed by most recently changed."""
         # The params are ignored, and only used by the listing view.
-        return self.initial_branches
-
-    def hasAnyBranchesVisibleByUser(self):
-        """See `BranchListingView`."""
-        return self.branch_count > 0
+        if self.sort_by == BranchListingSort.DEFAULT:
+            return self.initial_branches
+        return super(ProductBranchesView, self)._branches(lifecycle_status)
 
     @property
     def has_development_focus_branch(self):
         """Is there a branch assigned as development focus?"""
         return self.development_focus_branch is not None
-
-
-class ProductAllBranchesView(ProductBranchListingView):
-    """View for branch listing for a product."""
-
-    def initialize(self):
-        """Conditionally redirect to the default view.
-
-        If the branch listing requests the default listing, redirect to the
-        default view for the product.
-        """
-        ProductBranchListingView.initialize(self)
-        if self.sort_by == BranchListingSort.DEFAULT:
-            redirect_url = canonical_url(self.context)
-            widget = self.widgets['lifecycle']
-            if widget.hasValidInput():
-                redirect_url += (
-                    '?field.lifecycle=' + widget.getInputValue().name)
-            self.request.response.redirect(redirect_url)
-
-    @property
-    def initial_values(self):
-        return {
-            'lifecycle': BranchLifecycleStatusFilter.CURRENT,
-            'sort_by': BranchListingSort.LIFECYCLE,
-            }
 
 
 class ProjectBranchesView(BranchListingView):
