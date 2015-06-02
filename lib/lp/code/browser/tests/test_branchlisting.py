@@ -688,7 +688,7 @@ class TestPersonBranchesPage(BrowserTestCase):
     def test_branch_listing_last_modified(self):
         branch = self.factory.makeProductBranch()
         view = create_initialized_view(
-            branch.product, name="+all-branches", rootsite='code')
+            branch.product, name="+branches", rootsite='code')
         self.assertIn('a moment ago', view())
 
     def test_no_branch_message_escaped(self):
@@ -740,7 +740,7 @@ class TestProjectGroupBranches(TestCaseWithFactory,
         # A search request with a 'batch_request' query parameter causes the
         # view to just render the next batch of results.
         product = self.factory.makeProduct(projectgroup=self.projectgroup)
-        self._test_search_batch_request(product, view_name='+all-branches')
+        self._test_search_batch_request(product, view_name='+branches')
 
     def test_ajax_batch_navigation_feature_flag(self):
         # The Javascript to wire up the ajax batch navigation behaviour is
@@ -749,7 +749,7 @@ class TestProjectGroupBranches(TestCaseWithFactory,
         for i in range(10):
             self.factory.makeProductBranch(product=product)
         self._test_ajax_batch_navigation_feature_flag(
-            product, view_name='+all-branches')
+            product, view_name='+branches')
 
     def test_non_batch_template(self):
         # The correct template is used for non batch requests.
