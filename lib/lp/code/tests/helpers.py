@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Helper functions for code testing live here."""
@@ -117,7 +117,7 @@ def make_erics_fooix_project(factory):
     naked_bmp.target_branch.last_scanned_id = preview.target_revision_id
     preview.diff_lines_count = 47
     preview.added_lines_count = 7
-    preview.remvoed_lines_count = 13
+    preview.removed_lines_count = 13
     preview.diffstat = {'file1': (3, 8), 'file2': (4, 5)}
     return {
         'eric': eric, 'fooix': fooix, 'trunk': trunk, 'feature': feature,

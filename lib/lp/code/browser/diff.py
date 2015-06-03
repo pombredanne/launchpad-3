@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Display classes relating to diff objects of one sort or another."""
@@ -64,9 +64,15 @@ class DiffFormatterAPI(ObjectFormatterAPI):
         diffstat = diff.diffstat
         if diffstat is not None:
             file_count = len(diffstat)
-            file_text = get_plural_text(
-                file_count, _(' %d file modified'), _(' %d files modified'))
-            file_text = file_text % file_count
+            basic_file_text = get_plural_text(
+                file_count, _('%d file modified'), _('%d files modified'))
+            basic_file_text = basic_file_text % file_count
+            diffstat_text = '<br/>'.join(
+                '%s (+%d/-%d)' % (path, added, removed)
+                for path, (added, removed) in sorted(diffstat.items()))
+            file_text = (
+                '<div class="collapsible"><span>%s</span><div>%s</div></div>' %
+                (basic_file_text, diffstat_text))
 
         args = {
             'line_count': _('%s lines') % diff.diff_lines_count,
@@ -84,8 +90,8 @@ class DiffFormatterAPI(ObjectFormatterAPI):
         else:
             return (
                 '<a href="%(url)s" class="diff-link">'
-                '%(line_count)s%(count_text)s%(file_text)s%(conflict_text)s'
-                '</a>' % args)
+                '%(line_count)s%(count_text)s%(conflict_text)s'
+                '</a>%(file_text)s' % args)
 
 
 class PreviewDiffFormatterAPI(DiffFormatterAPI):

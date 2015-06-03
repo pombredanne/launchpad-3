@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the tales formatters."""
@@ -110,7 +110,11 @@ class TestPreviewDiffFormatter(TestCaseWithFactory):
                 'file2': (3, 0)})
         self.assertEqual(
             '<a href="%s/+files/preview.diff" class="diff-link">'
-            '10 lines (+4/-0) 2 files modified</a>'
+            '10 lines (+4/-0)</a>'
+            '<div class="collapsible">'
+            '<span>2 files modified</span>'
+            '<div>file1 (+1/-0)<br/>file2 (+3/-0)</div>'
+            '</div>'
             % canonical_url(preview),
             test_tales('preview/fmt:link', preview=preview))
 
@@ -121,7 +125,11 @@ class TestPreviewDiffFormatter(TestCaseWithFactory):
                 'file': (3, 0)})
         self.assertEqual(
             '<a href="%s/+files/preview.diff" class="diff-link">'
-            '10 lines (+4/-0) 1 file modified</a>'
+            '10 lines (+4/-0)</a>'
+            '<div class="collapsible">'
+            '<span>1 file modified</span>'
+            '<div>file (+3/-0)</div>'
+            '</div>'
             % canonical_url(preview),
             test_tales('preview/fmt:link', preview=preview))
 
@@ -147,10 +155,16 @@ class TestPreviewDiffFormatter(TestCaseWithFactory):
             (self.factory.getUniqueString(), (2, 3)) for x in range(23))
         preview = self._createStalePreviewDiff(
             500, 89, 340, diffstat=diffstat)
+        expected_diffstat = '<br/>'.join(
+            '%s (+2/-3)' % path for path in sorted(diffstat))
         self.assertEqual(
             '<a href="%s/+files/preview.diff" class="diff-link">'
-            '500 lines (+89/-340) 23 files modified</a>'
-            % canonical_url(preview),
+            '500 lines (+89/-340)</a>'
+            '<div class="collapsible">'
+            '<span>23 files modified</span>'
+            '<div>%s</div>'
+            '</div>'
+            % (canonical_url(preview), expected_diffstat),
             test_tales('preview/fmt:link', preview=preview))
 
     def test_fmt_stale_non_empty_diff_with_conflicts(self):
@@ -159,10 +173,16 @@ class TestPreviewDiffFormatter(TestCaseWithFactory):
             (self.factory.getUniqueString(), (2, 3)) for x in range(23))
         preview = self._createStalePreviewDiff(
             500, 89, 340, u'conflicts', diffstat=diffstat)
+        expected_diffstat = '<br/>'.join(
+            '%s (+2/-3)' % path for path in sorted(diffstat))
         self.assertEqual(
             '<a href="%s/+files/preview.diff" class="diff-link">'
-            '500 lines (+89/-340) 23 files modified (has conflicts)</a>'
-            % canonical_url(preview),
+            '500 lines (+89/-340) (has conflicts)</a>'
+            '<div class="collapsible">'
+            '<span>23 files modified</span>'
+            '<div>%s</div>'
+            '</div>'
+            % (canonical_url(preview), expected_diffstat),
             test_tales('preview/fmt:link', preview=preview))
 
 

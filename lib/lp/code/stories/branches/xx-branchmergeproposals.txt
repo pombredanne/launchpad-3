@@ -713,7 +713,10 @@ access.
     >>> print_tag_with_id(nopriv_browser.contents, 'landing-targets')
     Ready for review for merging into lp://dev/fooix
       Eric the Viking: Pending (code) requested ... ago
-      Diff: 47 lines (+7/-0) 2 files modified                api
+      Diff: 47 lines (+7/-13) 2 files modified
+      file1 (+3/-8)
+      file2 (+4/-5)
+      api
 
 
 Merge proposal details shown on the bug page
@@ -734,4 +737,7 @@ details are shown on the bug page under the branch link.
     lp://dev/~fred/fooix/proposed
       Ready for review for merging into lp://dev/fooix
         Eric the Viking: Pending (code) requested ... ago
-        Diff: 47 lines (+7/-0) 2 files modified              api
+        Diff: 47 lines (+7/-13) 2 files modified
+        file1 (+3/-8)
+        file2 (+4/-5)
+	api
