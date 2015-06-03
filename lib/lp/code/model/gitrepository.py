@@ -251,14 +251,16 @@ class GitRepository(StormBase, GitIdentityMixin):
     def setTarget(self, target, user):
         """See `IGitRepository`."""
         if IPerson.providedBy(target):
-            owner = IPerson(target)
+            new_owner = IPerson(target)
             if (self.information_type in PRIVATE_INFORMATION_TYPES and
-                (not owner.is_team or
-                 owner.visibility != PersonVisibility.PRIVATE)):
+                (not new_owner.is_team or
+                 new_owner.visibility != PersonVisibility.PRIVATE)):
                 raise GitTargetError(
                     "Only private teams may have personal private "
                     "repositories.")
-        namespace = get_git_namespace(target, self.owner)
+        else:
+            new_owner = self.owner
+        namespace = get_git_namespace(target, new_owner)
         if (self.information_type not in
             namespace.getAllowedInformationTypes(user)):
             raise GitTargetError(
@@ -659,7 +661,17 @@ class GitRepository(StormBase, GitIdentityMixin):
 
     def setOwner(self, new_owner, user):
         """See `IGitRepository`."""
-        new_namespace = get_git_namespace(self.target, new_owner)
+        if self.owner == self.target:
+            if (self.information_type in PRIVATE_INFORMATION_TYPES and
+                (not new_owner.is_team or
+                 new_owner.visibility != PersonVisibility.PRIVATE)):
+                raise GitTargetError(
+                    "Only private teams may have personal private "
+                    "repositories.")
+            new_target = new_owner
+        else:
+            new_target = self.target
+        new_namespace = get_git_namespace(new_target, new_owner)
         new_namespace.moveRepository(self, user, rename_if_necessary=True)
 
     @property

@@ -1394,11 +1394,53 @@ class TestGitRepositorySetOwner(TestCaseWithFactory):
             repository.setOwner(person, admin)
             self.assertEqual(person, repository.owner)
 
+    def test_private_personal_forbidden_for_public_teams(self):
+        # Only private teams can have private personal repositories.
+        person = self.factory.makePerson()
+        private_team = self.factory.makeTeam(
+            owner=person, membership_policy=TeamMembershipPolicy.MODERATED,
+            visibility=PersonVisibility.PRIVATE)
+        public_team = self.factory.makeTeam(owner=person)
+        with person_logged_in(person):
+            repository = self.factory.makeGitRepository(
+                owner=private_team, target=private_team,
+                information_type=InformationType.USERDATA)
+            self.assertRaises(
+                GitTargetError, repository.setOwner, public_team, person)
+
+    def test_private_personal_allowed_for_private_teams(self):
+        # Only private teams can have private personal repositories.
+        person = self.factory.makePerson()
+        private_team_1 = self.factory.makeTeam(
+            owner=person, membership_policy=TeamMembershipPolicy.MODERATED,
+            visibility=PersonVisibility.PRIVATE)
+        private_team_2 = self.factory.makeTeam(
+            owner=person, membership_policy=TeamMembershipPolicy.MODERATED,
+            visibility=PersonVisibility.PRIVATE)
+        with person_logged_in(person):
+            repository = self.factory.makeGitRepository(
+                owner=private_team_1, target=private_team_1,
+                information_type=InformationType.USERDATA)
+            repository.setOwner(private_team_2, person)
+            self.assertEqual(private_team_2, repository.owner)
+            self.assertEqual(private_team_2, repository.target)
+
 
 class TestGitRepositorySetTarget(TestCaseWithFactory):
     """Test `IGitRepository.setTarget`."""
 
     layer = DatabaseFunctionalLayer
+
+    def test_personal_to_other_personal(self):
+        # A personal repository can be moved to a different owner.
+        person = self.factory.makePerson()
+        team = self.factory.makeTeam(owner=person)
+        repository = self.factory.makeGitRepository(
+            owner=person, target=person)
+        with person_logged_in(person):
+            repository.setTarget(target=team, user=repository.owner)
+        self.assertEqual(team, repository.owner)
+        self.assertEqual(team, repository.target)
 
     def test_personal_to_project(self):
         # A personal repository can be moved to a project.
