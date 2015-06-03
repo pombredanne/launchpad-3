@@ -71,6 +71,7 @@ from zope.lifecycleevent import ObjectCreatedEvent
 from zope.schema import (
     Bool,
     Choice,
+    TextLine,
     )
 from zope.schema.vocabulary import (
     SimpleTerm,
@@ -161,6 +162,7 @@ from lp.code.interfaces.codeimport import (
     ICodeImportSet,
     )
 from lp.code.interfaces.gitcollection import IGitCollection
+from lp.code.interfaces.gitrepository import IGitRepositorySet
 from lp.registry.browser import (
     add_subscribe_link,
     BaseRdfView,
@@ -1671,7 +1673,6 @@ BRANCH_TYPE_VOCABULARY = SimpleVocabulary((
                _("Import a branch hosted somewhere else")),
     ))
 
-
 class SetBranchForm(Interface):
     """The fields presented on the form for setting a branch."""
 
@@ -1698,6 +1699,12 @@ class SetBranchForm(Interface):
         title=_('Branch'),
         description=_(
             "The Bazaar branch for this series in Launchpad, "
+            "if one exists."))
+
+    git_repository_location = TextLine(
+        title=_('Git Repository'),
+        description=_(
+            "The Git repository for this project in Launchpad, "
             "if one exists."))
 
     branch_type = Choice(
@@ -1902,11 +1909,17 @@ class ProductSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
 
     @action(_('Update'), name='update')
     def update_action(self, action, data):
+        print(data)
         branch_type = data.get('branch_type')
         default_vcs = data.get('default_vcs')
 
         if default_vcs:
             self.context.vcs = default_vcs
+            if default_vcs == VCSType.GIT:
+                repo_location = data.get('git_repository_location')
+                print('repo location: %s' % repo_location)
+                getUtility(IGitRepositorySet).setDefaultRepository(
+                    self.target, repo_location)
         if branch_type == LINK_LP_BZR:
             branch_location = data.get('branch_location')
             if branch_location != self.series.branch:

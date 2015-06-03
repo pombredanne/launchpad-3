@@ -64,6 +64,10 @@ dd .whiteboard {
     padding-left: 1em;
 }
 
+form label {
+    font-weight: bold;
+}
+
 form.primary.search {
     margin-bottom: 2em;
 }
