@@ -13,7 +13,6 @@ In order to test notifications, we need a subscriber for the branch.
     ...     BranchMergeProposalStatus,
     ...     BranchSubscriptionNotificationLevel,
     ...     CodeReviewNotificationLevel)
-    ...     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
     >>> from lp.code.interfaces.branchlookup import IBranchLookup
     >>> from lp.code.tests.helpers import (
     ...     make_merge_proposal_without_reviewers)
@@ -638,7 +637,7 @@ restricted librarian.
     >>> from lazr.uri import URI
     >>> print http(r"""
     ... GET %s HTTP/1.1
-    ... Authorization: Basic no-priv@canonical.com:test        
+    ... Authorization: Basic no-priv@canonical.com:test
     ... """ % URI(link['href']).path)
     HTTP/1.1 303 See Other
     ...
@@ -667,7 +666,8 @@ If the review diff is empty, then we say it is empty.
 Preview diff generation status
 ------------------------------
 
-    >>> update = find_tag_by_id(nopriv_browser.contents, 'diff-pending-update')
+    >>> update = find_tag_by_id(
+    ...     nopriv_browser.contents, 'diff-pending-update')
     >>> print extract_text(update)
     Updating diff...
     An updated diff will be available in a few minutes.  Reload to see the
