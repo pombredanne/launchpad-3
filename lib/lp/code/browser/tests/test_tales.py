@@ -133,6 +133,21 @@ class TestPreviewDiffFormatter(TestCaseWithFactory):
             % canonical_url(preview),
             test_tales('preview/fmt:link', preview=preview))
 
+    def test_fmt_lines_escapes_file_name(self):
+        # File names that include HTML metacharacters are escaped.
+        preview = self._createPreviewDiff(
+            10, added=4, removed=0, diffstat={
+                'file<name>': (3, 0)})
+        self.assertEqual(
+            '<a href="%s/+files/preview.diff" class="diff-link">'
+            '10 lines (+4/-0)</a>'
+            '<div class="collapsible">'
+            '<span>1 file modified</span>'
+            '<div>file&lt;name&gt; (+3/-0)</div>'
+            '</div>'
+            % canonical_url(preview),
+            test_tales('preview/fmt:link', preview=preview))
+
     def test_fmt_simple_conflicts(self):
         # Conflicts are indicated using text in the link.
         preview = self._createPreviewDiff(10, 2, 3, u'conflicts')

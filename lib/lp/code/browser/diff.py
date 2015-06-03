@@ -15,6 +15,7 @@ from lp.code.interfaces.diff import IPreviewDiff
 from lp.services.browser_helpers import get_plural_text
 from lp.services.librarian.browser import FileNavigationMixin
 from lp.services.webapp import Navigation
+from lp.services.webapp.escaping import structured
 from lp.services.webapp.publisher import canonical_url
 
 
@@ -68,7 +69,7 @@ class DiffFormatterAPI(ObjectFormatterAPI):
                 file_count, _('%d file modified'), _('%d files modified'))
             basic_file_text = basic_file_text % file_count
             diffstat_text = '<br/>'.join(
-                '%s (+%d/-%d)' % (path, added, removed)
+                structured('%s (+%s/-%s)', path, added, removed).escapedtext
                 for path, (added, removed) in sorted(diffstat.items()))
             file_text = (
                 '<div class="collapsible"><span>%s</span><div>%s</div></div>' %
@@ -76,7 +77,6 @@ class DiffFormatterAPI(ObjectFormatterAPI):
 
         args = {
             'line_count': _('%s lines') % diff.diff_lines_count,
-            'file_text': file_text,
             'conflict_text': conflict_text,
             'count_text': count_text,
             'url': self.url(view_name),
@@ -84,14 +84,14 @@ class DiffFormatterAPI(ObjectFormatterAPI):
         # Under normal circumstances, there will be an associated file,
         # however if the diff is empty, then there is no alias to link to.
         if args['url'] is None:
-            return (
+            return structured(
                 '<span class="empty-diff">'
-                '%(line_count)s</span>' % args)
+                '%(line_count)s</span>', **args).escapedtext
         else:
-            return (
+            return structured(
                 '<a href="%(url)s" class="diff-link">'
                 '%(line_count)s%(count_text)s%(conflict_text)s'
-                '</a>%(file_text)s' % args)
+                '</a>', **args).escapedtext + file_text
 
 
 class PreviewDiffFormatterAPI(DiffFormatterAPI):
