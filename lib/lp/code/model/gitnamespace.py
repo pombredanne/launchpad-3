@@ -151,11 +151,12 @@ class _BaseGitNamespace:
     def validateDefaultFlags(self, repository):
         """See `IGitNamespace`."""
         repository_set = getUtility(IGitRepositorySet)
-        if repository.target_default and self.target != repository.target:
+        if (repository.target_default and self.has_defaults and
+                self.target != repository.target):
             existing = repository_set.getDefaultRepository(self.target)
             if existing is not None:
                 raise GitDefaultConflict(existing, self.target)
-        if (repository.owner_default and
+        if (repository.owner_default and self.has_defaults and
             (self.owner != repository.owner or
              self.target != repository.target)):
             existing = repository_set.getDefaultRepositoryForOwner(
@@ -264,6 +265,8 @@ class PersonalGitNamespace(_BaseGitNamespace):
         repository.project = None
         repository.distribution = None
         repository.sourcepackagename = None
+        repository.target_default = False
+        repository.owner_default = False
 
     @property
     def _is_private_team(self):
