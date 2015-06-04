@@ -875,6 +875,24 @@
         attribute_to_parent="repository"
         rootsite="code"/>
 
+    <browser:page
+        for="lp.registry.interfaces.product.IProduct"
+        class="lp.code.browser.gitlisting.TargetGitListingView"
+        permission="zope.Public"
+        name="+git"
+        template="../templates/gitlisting.pt"/>
+    <browser:page
+        for="lp.registry.interfaces.personproduct.IPersonProduct"
+        class="lp.code.browser.gitlisting.PersonTargetGitListingView"
+        permission="zope.Public"
+        name="+git"
+        template="../templates/gitlisting.pt"/>
+    <browser:page
+        for="lp.code.browser.gitlisting.IGitRepositoryBatchNavigator"
+        name="+gitrepository-listing"
+        template="../templates/gitrepository-listing.pt"
+        permission="zope.Public"/>
+
     <browser:menus
         classes="ProductBranchesMenu"
         module="lp.code.browser.branchlisting"/>
