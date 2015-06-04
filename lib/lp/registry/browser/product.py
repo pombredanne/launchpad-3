@@ -152,6 +152,7 @@ from lp.code.enums import (
 from lp.code.errors import (
     BranchCreationForbidden,
     BranchExists,
+    GitTargetError,
     )
 from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchcollection import IBranchCollection
@@ -1702,11 +1703,13 @@ class SetBranchForm(Interface):
             "if one exists."))
 
     git_repository_location = TextLine(
-        title=_('Git Repository'),
+        title=_(
+            'Git Repository'),
         required=False,
         description=_(
             "The Git repository for this project in Launchpad, "
-            "if one exists."))
+            "if one exists, in the form: "
+            "`~user/project-name/+git/repo-name`"))
 
     branch_type = Choice(
         title=_('Import type'), vocabulary=BRANCH_TYPE_VOCABULARY,
@@ -1934,8 +1937,16 @@ class ProductSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
             if git_repository_location:
                 repo = getUtility(IGitRepositorySet).getByPath(self.user,
                     git_repository_location)
-                getUtility(IGitRepositorySet).setDefaultRepository(
-                    self.context, repo)
+                try:
+                    getUtility(IGitRepositorySet).setDefaultRepository(
+                        self.context, repo)
+                except GitTargetError:
+                    self.setFieldError(
+                        'git_repository_location',
+                        'Repository already attached to another target.')
+                    self.errors_in_action = True
+                    self._abort()
+                    return
         elif branch_type == LINK_LP_BZR:
             branch_location = data.get('branch_location')
             if branch_location != self.series.branch:
