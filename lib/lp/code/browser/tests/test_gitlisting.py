@@ -291,7 +291,7 @@ class TestPersonTargetGitListingView(TestCaseWithFactory):
         view = create_initialized_view(pp, '+git')
         self.assertNotIn('View Bazaar branches', view())
 
-        # But it appears once we create a branch for the target.
-        self.factory.makeBranch(product=product)
+        # But it appears once we create a branch.
+        self.factory.makeBranch(owner=owner, product=product)
         view = create_initialized_view(pp, '+git')
         self.assertIn('View Bazaar branches', view())

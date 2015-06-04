@@ -68,6 +68,10 @@ class BaseGitListingView(LaunchpadView):
     def repo_collection(self):
         raise NotImplementedError()
 
+    @property
+    def show_bzr_link(self):
+        raise NotImplementedError()
+
     def default_git_repository_branches(self):
         """All branches in the default Git repository, sorted for display."""
         return GitRefBatchNavigator(self, self.default_git_repository)
@@ -98,11 +102,6 @@ class BaseGitListingView(LaunchpadView):
     def repos(self):
         return GitRepositoryBatchNavigator(self, self.repo_collection)
 
-    @property
-    def show_bzr_link(self):
-        collection = IBranchCollection(self.target).visibleByUser(self.user)
-        return not collection.is_empty()
-
 
 class TargetGitListingView(BaseGitListingView):
 
@@ -127,6 +126,11 @@ class TargetGitListingView(BaseGitListingView):
     def repo_collection(self):
         return IGitCollection(self.target).visibleByUser(self.user)
 
+    @property
+    def show_bzr_link(self):
+        collection = IBranchCollection(self.target)
+        return not collection.visibleByUser(self.user).is_empty()
+
 
 class PersonTargetGitListingView(BaseGitListingView):
 
@@ -140,6 +144,13 @@ class PersonTargetGitListingView(BaseGitListingView):
     def target(self):
         if IPersonProduct.providedBy(self.context):
             return self.context.product
+        else:
+            raise Exception("Unknown context: %r" % self.context)
+
+    @property
+    def owner(self):
+        if IPersonProduct.providedBy(self.context):
+            return self.context.person
         else:
             raise Exception("Unknown context: %r" % self.context)
 
@@ -158,3 +169,8 @@ class PersonTargetGitListingView(BaseGitListingView):
     def repo_collection(self):
         return IGitCollection(self.target).ownedBy(
             self.context.person).visibleByUser(self.user)
+
+    @property
+    def show_bzr_link(self):
+        collection = IBranchCollection(self.target).ownedBy(self.owner)
+        return not collection.visibleByUser(self.user).is_empty()
