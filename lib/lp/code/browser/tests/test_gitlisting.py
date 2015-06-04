@@ -105,7 +105,7 @@ class TestTargetGitListingView(TestCaseWithFactory):
                 owner=other_repo.owner, target=product, repository=other_repo,
                 user=other_repo.owner)
 
-        self.assertThat(product, BrowsesWithQueryLimit(31, owner, '+git'))
+        self.assertThat(product, BrowsesWithQueryLimit(32, owner, '+git'))
 
     def test_copes_with_no_default(self):
         owner = self.factory.makePerson(name=u"foowner")

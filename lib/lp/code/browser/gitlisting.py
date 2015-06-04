@@ -66,11 +66,12 @@ class BaseGitListingView(LaunchpadView):
 
     @property
     def repo_collection(self):
-        raise NotImplementedError()
+        return IGitCollection(self.context).visibleByUser(self.user)
 
     @property
     def show_bzr_link(self):
-        raise NotImplementedError()
+        collection = IBranchCollection(self.context)
+        return not collection.visibleByUser(self.user).is_empty()
 
     def default_git_repository_branches(self):
         """All branches in the default Git repository, sorted for display."""
@@ -122,15 +123,6 @@ class TargetGitListingView(BaseGitListingView):
         else:
             return None
 
-    @property
-    def repo_collection(self):
-        return IGitCollection(self.target).visibleByUser(self.user)
-
-    @property
-    def show_bzr_link(self):
-        collection = IBranchCollection(self.target)
-        return not collection.visibleByUser(self.user).is_empty()
-
 
 class PersonTargetGitListingView(BaseGitListingView):
 
@@ -147,13 +139,6 @@ class PersonTargetGitListingView(BaseGitListingView):
         else:
             raise Exception("Unknown context: %r" % self.context)
 
-    @property
-    def owner(self):
-        if IPersonProduct.providedBy(self.context):
-            return self.context.person
-        else:
-            raise Exception("Unknown context: %r" % self.context)
-
     @cachedproperty
     def default_git_repository(self):
         repo = getUtility(IGitRepositorySet).getDefaultRepositoryForOwner(
@@ -164,12 +149,3 @@ class PersonTargetGitListingView(BaseGitListingView):
             return repo
         else:
             return None
-
-    @property
-    def repo_collection(self):
-        return IGitCollection(self.context).visibleByUser(self.user)
-
-    @property
-    def show_bzr_link(self):
-        collection = IBranchCollection(self.target).ownedBy(self.owner)
-        return not collection.visibleByUser(self.user).is_empty()

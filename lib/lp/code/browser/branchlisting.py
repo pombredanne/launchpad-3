@@ -992,7 +992,7 @@ class PersonProductBranchesView(PersonBranchesView):
 
     @property
     def show_git_link(self):
-        c = IGitCollection(self.context.product).ownedBy(self.context.person)
+        c = IGitCollection(self.context)
         return not c.visibleByUser(self.user).is_empty()
 
 
