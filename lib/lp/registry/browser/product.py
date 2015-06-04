@@ -1925,6 +1925,16 @@ class ProductSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
         """The branch target for the context."""
         return IBranchTarget(self.context)
 
+    def abort_update():
+        """Abort transaction.
+
+        This is normally handled by LaunchpadFormView, but this can be called
+        from the success handler."""
+
+        self.errors_in_action = True
+        self._abort()
+        return
+
     @action(_('Update'), name='update')
     def update_action(self, action, data):
         branch_type = data.get('branch_type')
@@ -1944,9 +1954,8 @@ class ProductSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
                     self.setFieldError(
                         'git_repository_location',
                         'Repository already attached to another target.')
-                    self.errors_in_action = True
-                    self._abort()
-                    return
+                    abort_update()
+
         elif branch_type == LINK_LP_BZR:
             branch_location = data.get('branch_location')
             if branch_location != self.series.branch:
@@ -1985,12 +1994,7 @@ class ProductSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
                         cvs_module=cvs_module)
                 except BranchExists as e:
                     self._setBranchExists(e.existing_branch, 'branch_name')
-                    self.errors_in_action = True
-                    # Abort transaction. This is normally handled
-                    # by LaunchpadFormView, but we are already in
-                    # the success handler.
-                    self._abort()
-                    return
+                    abort_update()
                 self.series.branch = code_import.branch
                 self.request.response.addInfoNotification(
                     'Code import created and branch linked to the series.')
