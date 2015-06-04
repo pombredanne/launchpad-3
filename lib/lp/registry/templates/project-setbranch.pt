@@ -124,9 +124,7 @@
           <metal:block use-macro="context/@@launchpad_form/widget_row" />
         </tal:widget>
       </div>
-      
       <input tal:replace="structure view/rcs_type_emptymarker" />
-
     </metal:formbody>
   </div>
 

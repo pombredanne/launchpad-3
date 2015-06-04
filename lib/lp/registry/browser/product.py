@@ -1663,6 +1663,7 @@ class ProductSeriesSetView(ProductView):
 
 
 LINK_LP_BZR = 'link-lp-bzr'
+LINK_LP_GIT = 'link-lp-git'
 IMPORT_EXTERNAL = 'import-external'
 
 
@@ -1703,6 +1704,7 @@ class SetBranchForm(Interface):
 
     git_repository_location = TextLine(
         title=_('Git Repository'),
+        required=False,
         description=_(
             "The Git repository for this project in Launchpad, "
             "if one exists."))
@@ -1802,6 +1804,15 @@ class ProductSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
             self.setFieldError(
                 'branch_location', 'The branch location must be set.')
 
+    def _validateLinkLpGit(self, data):
+        """Validate data for link-lp-git case."""
+        if data.get('git_repository_location'):
+            repo = getUtility(IGitRepositorySet).getByPath(
+                self.user, data.get('git_repository_location'))
+            if not repo:
+                self.setFieldError(
+                    'git_repository_location', 'The respository does not exist.')
+
     def _validateImportExternal(self, data):
         """Validate data for import external case."""
         rcs_type = data.get('rcs_type')
@@ -1868,7 +1879,9 @@ class ProductSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
         names = ['branch_type', 'rcs_type', 'default_vcs']
         super(ProductSetBranchView, self).validate_widgets(data, names)
         branch_type = data.get('branch_type')
-        if branch_type == LINK_LP_BZR:
+        if data.get('default_vcs') == VCSType.GIT:
+            pass
+        elif branch_type == LINK_LP_BZR:
             # Mark other widgets as non-required.
             self._setRequired(['rcs_type', 'repo_url', 'cvs_module',
                                'branch_name', 'branch_owner'], False)
@@ -1894,8 +1907,10 @@ class ProductSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
         # continue as we'd likely just override the errors reported there.
         if len(self.errors) > 0:
             return
-        branch_type = data['branch_type']
-        if branch_type == IMPORT_EXTERNAL:
+        branch_type = data.get('branch_type')
+        if data.get('default_vcs') == VCSType.GIT:
+            self._validateLinkLpGit(data)
+        elif branch_type == IMPORT_EXTERNAL:
             self._validateImportExternal(data)
         elif branch_type == LINK_LP_BZR:
             self._validateLinkLpBzr(data)
@@ -1915,12 +1930,14 @@ class ProductSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
 
         if default_vcs:
             self.context.vcs = default_vcs
-            if default_vcs == VCSType.GIT:
-                repo_location = data.get('git_repository_location')
-                print('repo location: %s' % repo_location)
+        if default_vcs == VCSType.GIT:
+            git_repository_location = data.get('git_repository_location')
+            if git_repository_location:
+                repo = getUtility(IGitRepositorySet).getByPath(self.user,
+                    git_repository_location)
                 getUtility(IGitRepositorySet).setDefaultRepository(
-                    self.target, repo_location)
-        if branch_type == LINK_LP_BZR:
+                    self.context, repo)
+        elif branch_type == LINK_LP_BZR:
             branch_location = data.get('branch_location')
             if branch_location != self.series.branch:
                 self.series.branch = branch_location
