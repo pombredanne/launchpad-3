@@ -146,6 +146,18 @@ class TestTargetGitListingView(TestCaseWithFactory):
                 [invisible_repo, other_repo],
                 owner_view.repo_collection.getRepositories())
 
+    def test_bzr_link(self):
+        product = self.factory.makeProduct()
+
+        # With a fresh product there's no Bazaar link.
+        view = create_initialized_view(product, '+git')
+        self.assertNotIn('View Bazaar branches', view())
+
+        # But it appears once we create a branch.
+        self.factory.makeBranch(product=product)
+        view = create_initialized_view(product, '+git')
+        self.assertIn('View Bazaar branches', view())
+
 
 class TestPersonTargetGitListingView(TestCaseWithFactory):
 
@@ -269,3 +281,17 @@ class TestPersonTargetGitListingView(TestCaseWithFactory):
             self.assertContentEqual(
                 [invisible_repo, other_repo],
                 owner_view.repo_collection.getRepositories())
+
+    def test_bzr_link(self):
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        pp = PersonProduct(owner, product)
+
+        # With a fresh product there's no Bazaar link.
+        view = create_initialized_view(pp, '+git')
+        self.assertNotIn('View Bazaar branches', view())
+
+        # But it appears once we create a branch for the target.
+        self.factory.makeBranch(product=product)
+        view = create_initialized_view(pp, '+git')
+        self.assertIn('View Bazaar branches', view())

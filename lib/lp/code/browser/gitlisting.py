@@ -19,6 +19,7 @@ from zope.interface import (
 
 from lp.app.enums import PRIVATE_INFORMATION_TYPES
 from lp.code.browser.gitrepository import GitRefBatchNavigator
+from lp.code.interfaces.branchcollection import IBranchCollection
 from lp.code.interfaces.gitcollection import IGitCollection
 from lp.code.interfaces.gitnamespace import (
     get_git_namespace,
@@ -96,6 +97,11 @@ class BaseGitListingView(LaunchpadView):
     @property
     def repos(self):
         return GitRepositoryBatchNavigator(self, self.repo_collection)
+
+    @property
+    def show_bzr_link(self):
+        collection = IBranchCollection(self.target).visibleByUser(self.user)
+        return not collection.is_empty()
 
 
 class TargetGitListingView(BaseGitListingView):
