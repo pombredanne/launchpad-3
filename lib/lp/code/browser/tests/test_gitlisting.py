@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-import re
-
 from BeautifulSoup import BeautifulSoup
 from zope.component import getUtility
 
@@ -58,13 +56,12 @@ class TestTargetGitListingView(TestCaseWithFactory):
         soup = BeautifulSoup(content)
 
         # Clone instructions for the default repo are present.
-        self.assertIsNot(
-            None,
-            soup.find(
-                text=re.compile(r'git\s+clone\s+git://git.launchpad.dev/foo')))
+        self.assertEqual(
+            'git://git.launchpad.dev/foo',
+            soup.find(attrs={'class': 'anon-url'}).find(text=True))
         self.assertEqual(
             'https://git.launchpad.dev/~foowner/foo/+git/foo',
-            soup.find(text='browse the source code').parent['href'])
+            soup.find(text='Browse the code').parent['href'])
 
         # The default repo's branches are shown, but not its tags.
         table = soup.find(
@@ -106,7 +103,7 @@ class TestTargetGitListingView(TestCaseWithFactory):
         # No details about the non-existent default repo are shown.
         # XXX: This should show instructions to create one.
         self.assertNotIn('Branches', content)
-        self.assertNotIn('browse the source code', content)
+        self.assertNotIn('Browse the code', content)
         self.assertNotIn('git clone', content)
 
         # Other repos are listed.
@@ -179,14 +176,12 @@ class TestPersonTargetGitListingView(TestCaseWithFactory):
         soup = BeautifulSoup(content)
 
         # Clone instructions for the default repo are present.
-        self.assertIsNot(
-            None,
-            soup.find(
-                text=re.compile(
-                    r'git\s+clone\s+git://git.launchpad.dev/~dev/foo')))
+        self.assertEqual(
+            'git://git.launchpad.dev/~dev/foo',
+            soup.find(attrs={'class': 'anon-url'}).find(text=True))
         self.assertEqual(
             'https://git.launchpad.dev/~dev/foo/+git/foo',
-            soup.find(text='browse the source code').parent['href'])
+            soup.find(text='Browse the code').parent['href'])
 
         # The default repo's branches are shown.
         table = soup.find(
@@ -227,7 +222,7 @@ class TestPersonTargetGitListingView(TestCaseWithFactory):
         # No details about the non-existent default repo are shown.
         # XXX: This should show instructions to create one.
         self.assertNotIn('Branches', content)
-        self.assertNotIn('browse the source code', content)
+        self.assertNotIn('Browse the code', content)
         self.assertNotIn('git clone', content)
 
         # Other repos are listed.
