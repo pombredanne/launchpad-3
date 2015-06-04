@@ -62,10 +62,8 @@
 
     <tal:has-branches condition="view/branch_count"
                       define="branches view/branches">
-      <div class="portlet">
-        <h2>Bazaar branches</h2>
-        <tal:branchlisting content="structure branches/@@+branch-listing" />
-      </div>
+      <h2>Bazaar branches</h2>
+      <tal:branchlisting content="structure branches/@@+branch-listing" />
     </tal:has-branches>
 
   </tal:main>

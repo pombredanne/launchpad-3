@@ -150,5 +150,4 @@ class PersonTargetGitListingView(BaseGitListingView):
 
     @property
     def repo_collection(self):
-        return IGitCollection(self.target).ownedBy(
-            self.context.person).visibleByUser(self.user)
+        return IGitCollection(self.context).visibleByUser(self.user)
