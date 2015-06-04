@@ -1663,7 +1663,6 @@ class ProductSeriesSetView(ProductView):
 
 
 LINK_LP_BZR = 'link-lp-bzr'
-LINK_LP_GIT = 'link-lp-git'
 IMPORT_EXTERNAL = 'import-external'
 
 
@@ -1811,7 +1810,8 @@ class ProductSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
                 self.user, data.get('git_repository_location'))
             if not repo:
                 self.setFieldError(
-                    'git_repository_location', 'The respository does not exist.')
+                    'git_repository_location',
+                    'The respository does not exist.')
 
     def _validateImportExternal(self, data):
         """Validate data for import external case."""
@@ -1924,7 +1924,6 @@ class ProductSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
 
     @action(_('Update'), name='update')
     def update_action(self, action, data):
-        print(data)
         branch_type = data.get('branch_type')
         default_vcs = data.get('default_vcs')
 
