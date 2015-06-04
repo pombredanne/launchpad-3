@@ -20,10 +20,14 @@ from zope.publisher.interfaces import NotFound
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import InformationType
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.interfaces.services import IService
 from lp.code.interfaces.revision import IRevisionSet
+from lp.registry.enums import BranchSharingPolicy
 from lp.registry.interfaces.person import PersonVisibility
+from lp.services.database.constants import UTC_NOW
 from lp.services.webapp.publisher import canonical_url
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
     admin_logged_in,
     BrowserTestCase,
@@ -41,7 +45,10 @@ from lp.testing.pages import (
     setupBrowserForUser,
     )
 from lp.testing.publication import test_traverse
-from lp.testing.views import create_initialized_view
+from lp.testing.views import (
+    create_initialized_view,
+    create_view,
+    )
 
 
 class TestGitRepositoryNavigation(TestCaseWithFactory):
@@ -184,6 +191,185 @@ class TestGitRepositoryBranches(BrowserTestCase):
         recorder1, recorder2 = record_two_runs(
             lambda: self.getMainText(repository, "+index"), create_ref, 10)
         self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
+
+
+class TestGitRepositoryEditReviewerView(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_initial_reviewer_not_set(self):
+        # If the reviewer is not set, the field is populated with the owner
+        # of the repository.
+        repository = self.factory.makeGitRepository()
+        self.assertIsNone(repository.reviewer)
+        view = create_view(repository, "+reviewer")
+        self.assertEqual(repository.owner, view.initial_values["reviewer"])
+
+    def test_initial_reviewer_set(self):
+        # If the reviewer has been set, it is shown as the initial value.
+        repository = self.factory.makeGitRepository()
+        login_person(repository.owner)
+        repository.reviewer = self.factory.makePerson()
+        view = create_view(repository, "+reviewer")
+        self.assertEqual(repository.reviewer, view.initial_values["reviewer"])
+
+    def test_set_reviewer(self):
+        # Test setting the reviewer.
+        repository = self.factory.makeGitRepository()
+        reviewer = self.factory.makePerson()
+        login_person(repository.owner)
+        view = create_initialized_view(repository, "+reviewer")
+        view.change_action.success({"reviewer": reviewer})
+        self.assertEqual(reviewer, repository.reviewer)
+        # Last modified has been updated.
+        self.assertSqlAttributeEqualsDate(
+            repository, "date_last_modified", UTC_NOW)
+
+    def test_set_reviewer_as_owner_clears_reviewer(self):
+        # If the reviewer is set to be the repository owner, the review
+        # field is cleared in the database.
+        repository = self.factory.makeGitRepository()
+        login_person(repository.owner)
+        repository.reviewer = self.factory.makePerson()
+        view = create_initialized_view(repository, "+reviewer")
+        view.change_action.success({"reviewer": repository.owner})
+        self.assertIsNone(repository.reviewer)
+        # Last modified has been updated.
+        self.assertSqlAttributeEqualsDate(
+            repository, "date_last_modified", UTC_NOW)
+
+    def test_set_reviewer_to_same_does_not_update_last_modified(self):
+        # If the user has set the reviewer to be same and clicked on save,
+        # then the underlying object hasn't really been changed, so the last
+        # modified is not updated.
+        modified_date = datetime(2007, 1, 1, tzinfo=pytz.UTC)
+        repository = self.factory.makeGitRepository(date_created=modified_date)
+        view = create_initialized_view(repository, "+reviewer")
+        view.change_action.success({"reviewer": repository.owner})
+        self.assertIsNone(repository.reviewer)
+        # Last modified has not been updated.
+        self.assertEqual(modified_date, repository.date_last_modified)
+
+
+class TestGitRepositoryEditView(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_rename(self):
+        # The name of a repository can be changed via the UI by an
+        # authorised user.
+        person = self.factory.makePerson()
+        repository = self.factory.makeGitRepository(owner=person, name=u"foo")
+        browser = self.getUserBrowser(
+            canonical_url(repository) + "/+edit", user=person)
+        browser.getControl(name="field.name").value = u"bar"
+        browser.getControl("Change Git Repository").click()
+        with person_logged_in(person):
+            self.assertEqual(u"bar", repository.name)
+
+    def test_information_type_in_ui(self):
+        # The information_type of a repository can be changed via the UI by
+        # an authorised user.
+        person = self.factory.makePerson()
+        repository = self.factory.makeGitRepository(owner=person)
+        admin = getUtility(ILaunchpadCelebrities).admin.teamowner
+        browser = self.getUserBrowser(
+            canonical_url(repository) + "/+edit", user=admin)
+        browser.getControl("Private", index=1).click()
+        browser.getControl("Change Git Repository").click()
+        with person_logged_in(person):
+            self.assertEqual(
+                InformationType.USERDATA, repository.information_type)
+
+    def test_edit_view_ajax_render(self):
+        # An information type change request is processed as expected when
+        # an XHR request is made to the view.
+        person = self.factory.makePerson()
+        repository = self.factory.makeGitRepository(owner=person)
+
+        extra = {"HTTP_X_REQUESTED_WITH": "XMLHttpRequest"}
+        request = LaunchpadTestRequest(
+            method="POST", form={
+                "field.actions.change": "Change Git Repository",
+                "field.information_type": "PUBLICSECURITY"},
+            **extra)
+        with person_logged_in(person):
+            view = create_initialized_view(
+                repository, name="+edit-information-type",
+                request=request, principal=person)
+            request.traversed_objects = [
+                person, repository.target, repository, view]
+            result = view.render()
+            self.assertEqual("", result)
+            self.assertEqual(
+                repository.information_type, InformationType.PUBLICSECURITY)
+
+
+class TestGitRepositoryEditViewInformationTypes(TestCaseWithFactory):
+    """Tests for GitRepositoryEditView.getInformationTypesToShow."""
+
+    layer = DatabaseFunctionalLayer
+
+    def assertShownTypes(self, types, repository, user=None):
+        if user is None:
+            user = removeSecurityProxy(repository).owner
+        with person_logged_in(user):
+            view = create_initialized_view(repository, "+edit", user=user)
+            self.assertContentEqual(types, view.getInformationTypesToShow())
+
+    def test_public_repository(self):
+        # A normal public repository on a public project can be any
+        # information type except embargoed and proprietary.
+        # The model doesn't enforce this, so it's just a UI thing.
+        repository = self.factory.makeGitRepository(
+            information_type=InformationType.PUBLIC)
+        self.assertShownTypes(
+            [InformationType.PUBLIC, InformationType.PUBLICSECURITY,
+             InformationType.PRIVATESECURITY, InformationType.USERDATA],
+            repository)
+
+    def test_repository_with_disallowed_type(self):
+        # We don't force repositories with a disallowed type (e.g.
+        # Proprietary on a non-commercial project) to change, so the current
+        # type is shown.
+        project = self.factory.makeProduct()
+        self.factory.makeAccessPolicy(pillar=project)
+        repository = self.factory.makeGitRepository(
+            target=project, information_type=InformationType.PROPRIETARY)
+        self.assertShownTypes(
+            [InformationType.PUBLIC, InformationType.PUBLICSECURITY,
+             InformationType.PRIVATESECURITY, InformationType.USERDATA,
+             InformationType.PROPRIETARY], repository)
+
+    def test_repository_for_project_with_embargoed_and_proprietary(self):
+        # Repositories for commercial projects which have a policy of
+        # embargoed or proprietary allow only embargoed and proprietary
+        # types.
+        owner = self.factory.makePerson()
+        project = self.factory.makeProduct(owner=owner)
+        self.factory.makeCommercialSubscription(product=project)
+        with person_logged_in(owner):
+            project.setBranchSharingPolicy(
+                BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY)
+            repository = self.factory.makeGitRepository(
+                owner=owner, target=project,
+                information_type=InformationType.PROPRIETARY)
+        self.assertShownTypes(
+            [InformationType.EMBARGOED, InformationType.PROPRIETARY],
+            repository)
+
+    def test_repository_for_project_with_proprietary(self):
+        # Repositories for commercial projects which have a policy of
+        # proprietary allow only the proprietary type.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=owner)
+        self.factory.makeCommercialSubscription(product=product)
+        with person_logged_in(owner):
+            product.setBranchSharingPolicy(BranchSharingPolicy.PROPRIETARY)
+            repository = self.factory.makeGitRepository(
+                owner=owner, target=product,
+                information_type=InformationType.PROPRIETARY)
+        self.assertShownTypes([InformationType.PROPRIETARY], repository)
 
 
 class TestGitRepositoryDeletionView(BrowserTestCase):
