@@ -46,7 +46,7 @@ class GitRepositoryBatchNavigator(TableBatchNavigator):
 
     def __init__(self, view, repo_collection):
         super(GitRepositoryBatchNavigator, self).__init__(
-            repo_collection.getRepositories().order_by(
+            repo_collection.getRepositories(eager_load=True).order_by(
                 Desc(GitRepository.date_last_modified)),
             view.request, size=config.launchpad.branchlisting_batch_size)
         self.view = view
