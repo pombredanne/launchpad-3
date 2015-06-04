@@ -163,6 +163,17 @@ class TestCodeHandler(TestCaseWithFactory):
             '<my-id>', [comment.message.rfc822msgid
                         for comment in bmp.all_comments])
 
+    def test_process_git(self):
+        """Processing an email related to a Git-based merge proposal works."""
+        mail = self.factory.makeSignedMessage('<my-id>')
+        bmp = self.factory.makeBranchMergeProposalForGit()
+        email_addr = bmp.address
+        switch_dbuser(config.processmail.dbuser)
+        self.code_handler.process(mail, email_addr, None)
+        self.assertIn(
+            '<my-id>',
+            [comment.message.rfc822msgid for comment in bmp.all_comments])
+
     def test_processBadAddress(self):
         """When a bad address is supplied, it returns False."""
         mail = self.factory.makeSignedMessage('<my-id>')

@@ -18,6 +18,7 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.matchers import BrowsesWithQueryLimit
 from lp.testing.views import create_initialized_view
 
 
@@ -85,6 +86,26 @@ class TestTargetGitListingView(TestCaseWithFactory):
 
         # But not their branches.
         self.assertNotIn('bug-1234', content)
+
+    def test_query_count(self):
+        owner = self.factory.makePerson(name=u"foowner")
+        product = self.factory.makeProduct(name=u"foo", owner=owner)
+        main_repo = self.factory.makeGitRepository(target=product)
+        for i in range(10):
+            self.factory.makeGitRefs(main_repo)
+
+        for i in range(10):
+            other_repo = self.factory.makeGitRepository(target=product)
+            self.factory.makeGitRefs(other_repo)
+
+        with admin_logged_in():
+            getUtility(IGitRepositorySet).setDefaultRepository(
+                target=product, repository=main_repo)
+            getUtility(IGitRepositorySet).setDefaultRepositoryForOwner(
+                owner=other_repo.owner, target=product, repository=other_repo,
+                user=other_repo.owner)
+
+        self.assertThat(product, BrowsesWithQueryLimit(31, owner, '+git'))
 
     def test_copes_with_no_default(self):
         owner = self.factory.makePerson(name=u"foowner")
