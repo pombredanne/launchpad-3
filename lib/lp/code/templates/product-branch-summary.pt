@@ -57,7 +57,7 @@
   </div>
 
   <tal:no-branches
-      condition="python: not view.branch_count and not view.has_default_git_repository">
+      condition="not: view/branch_count">
     There are no branches for <tal:project-name replace="context/displayname"/>
     in Launchpad.
     <tal:can-configure condition="view/can_configure_branches">
@@ -78,23 +78,6 @@
       </ul>
     </tal:can-configure>
   </tal:no-branches>
-
-  <div tal:condition="view/has_default_git_repository"
-       style="margin: 1em 0"
-       tal:define="repository view/default_git_repository">
-    You can
-    <a tal:attributes="href repository/getCodebrowseUrl">browse the
-      source code</a>
-    for the default Git repository or get a copy of the repository using
-    the command:<br/>
-    <tt class="command">git clone
-    <tal:logged-in condition="view/user">
-      <tal:git-ssh-url replace="repository/ssh_url"/>
-    </tal:logged-in>
-    <tal:not-logged-in condition="not: view/user">
-      <tal:git-anon-url replace="repository/anon_url"/>
-    </tal:not-logged-in></tt>
-  </div>
 
   <tal:has-branches condition="view/branch_count">
     <div tal:condition="view/has_development_focus_branch"

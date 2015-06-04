@@ -1,0 +1,67 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  metal:use-macro="view/macro:page/main_side"
+  i18n:domain="launchpad"
+>
+<head>
+  <tal:head-epilogue metal:fill-slot="head_epilogue">
+    <meta tal:condition="view/target/codehosting_usage/enumvalue:UNKNOWN"
+      name="robots" content="noindex,nofollow" />
+  </tal:head-epilogue>
+</head>
+
+<body>
+  <metal:side fill-slot="side" tal:define="context_menu context/menu:context">
+    <div id="branch-portlet"
+         tal:condition="not: view/target/codehosting_usage/enumvalue:UNKNOWN">
+      <div id="privacy"
+           tal:define="private_class python: 'private' if view.default_information_type_is_private else 'public'"
+           tal:attributes="class string:first portlet ${private_class}">
+        <span tal:condition="not: view/default_information_type"
+           id="privacy-text">
+          You can't create new repositories for
+          <tal:name replace="context/displayname"/>.
+          <tal:sharing-link condition="context/required:launchpad.Edit">
+          <br/>This can be fixed by changing the bug sharing policy on the
+          <a tal:attributes="href string:${view/target/fmt:url:mainsite}/+sharing">sharing page</a>.
+          </tal:sharing-link>
+        </span>
+
+        <span tal:condition="view/default_information_type"
+           tal:attributes="class string:sprite ${private_class}"
+           id="privacy-text">
+          New repositories for <tal:name replace="view/target/displayname"/> are
+          <strong tal:content="view/default_information_type_title" />.
+        </span>
+      </div>
+    </div>
+  </metal:side>
+  <metal:main fill-slot="main">
+    <div tal:condition="view/default_git_repository"
+        tal:define="repository view/default_git_repository">
+      You can
+      <a tal:attributes="href repository/getCodebrowseUrl">browse the source code</a>
+      for the main Git repository or get a copy of it using the command:<br/>
+      <tt class="command">git clone
+      <tal:logged-in condition="view/user">
+        <tal:git-ssh-url replace="repository/ssh_url"/>
+      </tal:logged-in>
+      <tal:not-logged-in condition="not: view/user">
+        <tal:git-anon-url replace="repository/anon_url"/>
+      </tal:not-logged-in></tt>
+      <div id="default-repository-branches" class="portlet"
+           tal:define="repository view/default_git_repository;
+                       branches view/default_git_repository_branches">
+        <h2>Branches</h2>
+        <tal:default-repository-branches
+          replace="structure branches/@@+ref-listing" />
+      </div>
+    </div>
+    <h2>Other repositories</h2>
+    <tal:other-repos content="structure view/repos/@@+gitrepository-listing" />
+  </metal:main>
+</body>
+</html>
