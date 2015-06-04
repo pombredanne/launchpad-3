@@ -416,6 +416,14 @@ class TestSimplifiedPersonProductBranchesView(
                      'in Launchpad today.'))
         self.assertThat(page, empty_message_matcher)
 
+    def test_git_link(self):
+        page = self.get_branch_list_page()
+        self.assertNotIn('View Git repositories', page)
+
+        self.factory.makeGitRepository(owner=self.person, target=self.product)
+        page = self.get_branch_list_page()
+        self.assertIn('View Git repositories', page)
+
 
 class TestSourcePackageBranchesView(TestCaseWithFactory):
 
