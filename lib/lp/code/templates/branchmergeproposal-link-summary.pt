@@ -17,8 +17,8 @@
        tal:content="branch/identity">lp:product/branch-name</a>
   </tal:source-branch>
   <tal:for-merging condition="context/queue_status/enumvalue:MERGED">
-    <tal:have-revno condition="context/merged_revno">
-      at revision <tal:revno replace="context/merged_revno"/>
-    </tal:have-revno>
+    <tal:have-revision condition="view/merged_revision">
+      at revision <tal:revision replace="view/merged_revision"/>
+    </tal:have-revision>
   </tal:for-merging>
 </tal:root>
