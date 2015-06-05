@@ -762,6 +762,9 @@
             name="+index"
             template="../templates/gitrepository-index.pt"/>
         <browser:page
+            name="+portlet-privacy"
+            template="../templates/gitrepository-portlet-privacy.pt"/>
+        <browser:page
             name="++repository-information"
             template="../templates/gitrepository-information.pt"/>
         <browser:page
@@ -779,6 +782,24 @@
         permission="launchpad.View"
         name="+repository-portlet-subscriber-content"
         template="../templates/gitrepository-portlet-subscribers-content.pt"/>
+    <browser:page
+        for="lp.code.interfaces.gitrepository.IGitRepository"
+        class="lp.code.browser.gitrepository.GitRepositoryEditInformationTypeView"
+        permission="launchpad.Edit"
+        name="+edit-information-type"
+        template="../../app/templates/generic-edit.pt"/>
+    <browser:page
+        for="lp.code.interfaces.gitrepository.IGitRepository"
+        class="lp.code.browser.gitrepository.GitRepositoryEditReviewerView"
+        permission="launchpad.Edit"
+        name="+reviewer"
+        template="../../app/templates/generic-edit.pt"/>
+    <browser:page
+        for="lp.code.interfaces.gitrepository.IGitRepository"
+        class="lp.code.browser.gitrepository.GitRepositoryEditView"
+        permission="launchpad.Edit"
+        name="+edit"
+        template="../../app/templates/generic-edit.pt"/>
     <browser:page
         for="lp.code.interfaces.gitrepository.IGitRepository"
         class="lp.code.browser.gitrepository.GitRepositoryDeletionView"
