@@ -9,6 +9,8 @@ __all__ = [
     'GitRefBatchNavigator',
     'GitRepositoryBreadcrumb',
     'GitRepositoryContextMenu',
+    'GitRepositoryDeletionView',
+    'GitRepositoryEditMenu',
     'GitRepositoryNavigation',
     'GitRepositoryURL',
     'GitRepositoryView',
@@ -18,16 +20,24 @@ from storm.expr import Desc
 from zope.interface import implements
 
 from lp.app.browser.informationtype import InformationTypePortletMixin
+from lp.app.browser.launchpadform import (
+    action,
+    LaunchpadFormView,
+    )
 from lp.app.errors import NotFoundError
 from lp.code.interfaces.gitref import IGitRefBatchNavigator
 from lp.code.interfaces.gitrepository import IGitRepository
 from lp.services.config import config
+from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (
+    canonical_url,
     ContextMenu,
     enabled_with_permission,
     LaunchpadView,
     Link,
     Navigation,
+    NavigationMenu,
+    stepthrough,
     stepto,
     )
 from lp.services.webapp.authorization import (
@@ -78,6 +88,30 @@ class GitRepositoryNavigation(Navigation):
                     self.request.stepstogo.consume()
                 return ref
         raise NotFoundError
+
+    @stepthrough("+merge")
+    def traverse_merge_proposal(self, id):
+        """Traverse to an `IBranchMergeProposal`."""
+        try:
+            id = int(id)
+        except ValueError:
+            # Not a number.
+            return None
+        return self.context.getMergeProposalByID(id)
+
+
+class GitRepositoryEditMenu(NavigationMenu):
+    """Edit menu for `IGitRepository`."""
+
+    usedfor = IGitRepository
+    facet = "branches"
+    title = "Edit Git repository"
+    links = ["delete"]
+
+    @enabled_with_permission("launchpad.Edit")
+    def delete(self):
+        text = "Delete repository"
+        return Link("+delete", text, icon="trash-icon")
 
 
 class GitRepositoryContextMenu(ContextMenu):
@@ -165,3 +199,73 @@ class GitRepositoryView(InformationTypePortletMixin, LaunchpadView):
     def branches(self):
         """All branches in this repository, sorted for display."""
         return GitRefBatchNavigator(self, self.context)
+
+
+class GitRepositoryDeletionView(LaunchpadFormView):
+
+    schema = IGitRepository
+    field_names = []
+
+    @property
+    def page_title(self):
+        return "Delete repository %s" % self.context.display_name
+
+    label = page_title
+
+    @cachedproperty
+    def display_deletion_requirements(self):
+        """Normal deletion requirements, indication of permissions.
+
+        :return: A list of tuples of (item, action, reason, allowed)
+        """
+        reqs = []
+        for item, (action, reason) in (
+                self.context.getDeletionRequirements().iteritems()):
+            allowed = check_permission("launchpad.Edit", item)
+            reqs.append((item, action, reason, allowed))
+        return reqs
+
+    def all_permitted(self):
+        """Return True if all deletion requirements are permitted, else False.
+
+        Uses display_deletion_requirements as its source data.
+        """
+        return len([item for item, action, reason, allowed in
+            self.display_deletion_requirements if not allowed]) == 0
+
+    @action("Delete", name="delete_repository",
+            condition=lambda x, _: x.all_permitted())
+    def delete_repository_action(self, action, data):
+        repository = self.context
+        if self.all_permitted():
+            # Since the user is going to delete the repository, we need to
+            # have somewhere valid to send them next.
+            self.next_url = canonical_url(repository.target)
+            message = "Repository %s deleted." % repository.unique_name
+            self.context.destroySelf(break_references=True)
+            self.request.response.addNotification(message)
+        else:
+            self.request.response.addNotification(
+                "This repository cannot be deleted.")
+            self.next_url = canonical_url(repository)
+
+    @property
+    def repository_deletion_actions(self):
+        """Return the repository deletion actions as a ZPT-friendly dict.
+
+        The keys are "delete" and "alter"; the values are dicts of
+        "item", "reason" and "allowed".
+        """
+        row_dict = {"delete": [], "alter": []}
+        for item, action, reason, allowed in (
+            self.display_deletion_requirements):
+            row = {"item": item,
+                   "reason": reason,
+                   "allowed": allowed,
+                  }
+            row_dict[action].append(row)
+        return row_dict
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)

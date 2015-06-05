@@ -1,0 +1,50 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  metal:use-macro="view/macro:page/main_only"
+  i18n:domain="launchpad">
+<body>
+
+  <div metal:fill-slot="main">
+
+  <tal:deletelist condition="view/repository_deletion_actions/delete">
+    The following items must be <em>deleted</em>:
+    <ul id="deletion-items">
+      <tal:actions repeat="row view/repository_deletion_actions/delete">
+        <li>
+          <img src="/@@/no" title="Insufficient privileges"
+               tal:condition="not:row/allowed"/>
+              <tal:item tal:content="structure row/item/fmt:link" />
+              (<tal:reason tal:content="row/reason" />)
+        </li>
+      </tal:actions>
+    </ul>
+  </tal:deletelist>
+  <tal:alterlist condition="view/repository_deletion_actions/alter">
+    <div>The following items will be <em>updated</em>:</div>
+    <ul>
+      <tal:actions repeat="row view/repository_deletion_actions/alter">
+        <li>
+          <img src="/@@/no" title="Insufficient privileges"
+               tal:condition="not:row/allowed"/>
+              <tal:item tal:content="structure row/item/fmt:link" />
+              (<tal:reason tal:content="row/reason" />)
+        </li>
+      </tal:actions>
+    </ul>
+  </tal:alterlist>
+  <p tal:condition="view/all_permitted">
+      Repository deletion is permanent.
+  </p>
+  <p tal:condition="not:view/all_permitted">
+      You do not have permission to make all the changes required to delete
+      this repository.
+  </p>
+
+  <div metal:use-macro="context/@@launchpad_form/form" />
+
+</div>
+</body>
+</html>

@@ -1567,10 +1567,13 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 Diff.fromFile(StringIO(diff_text), len(diff_text)))
 
     def makePreviewDiff(self, conflicts=u'', merge_proposal=None,
-                        date_created=None, size='small'):
+                        date_created=None, size='small', git=False):
         diff = self.makeDiff(size)
         if merge_proposal is None:
-            merge_proposal = self.makeBranchMergeProposal()
+            if git:
+                merge_proposal = self.makeBranchMergeProposalForGit()
+            else:
+                merge_proposal = self.makeBranchMergeProposal()
         preview_diff = PreviewDiff()
         preview_diff.branch_merge_proposal = merge_proposal
         preview_diff.conflicts = conflicts
@@ -2438,7 +2441,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeCodeReviewComment(self, sender=None, subject=None, body=None,
                               vote=None, vote_tag=None, parent=None,
-                              merge_proposal=None, date_created=DEFAULT):
+                              merge_proposal=None, date_created=DEFAULT,
+                              git=False):
         if sender is None:
             sender = self.makePerson()
         if subject is None:
@@ -2448,6 +2452,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if merge_proposal is None:
             if parent:
                 merge_proposal = parent.branch_merge_proposal
+            elif git:
+                merge_proposal = self.makeBranchMergeProposalForGit(
+                    registrant=sender)
             else:
                 merge_proposal = self.makeBranchMergeProposal(
                     registrant=sender)
@@ -2456,8 +2463,11 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 sender, subject, body, vote, vote_tag, parent,
                 _date_created=date_created)
 
-    def makeCodeReviewVoteReference(self):
-        bmp = removeSecurityProxy(self.makeBranchMergeProposal())
+    def makeCodeReviewVoteReference(self, git=False):
+        if git:
+            bmp = removeSecurityProxy(self.makeBranchMergeProposalForGit())
+        else:
+            bmp = removeSecurityProxy(self.makeBranchMergeProposal())
         candidate = self.makePerson()
         return bmp.nominateReviewer(candidate, bmp.registrant)
 

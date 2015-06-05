@@ -106,6 +106,11 @@ class GitRefMixin:
         """See `IGitRef`."""
         return self.repository.information_type
 
+    @property
+    def private(self):
+        """See `IGitRef`."""
+        return self.repository.private
+
     def visibleByUser(self, user):
         """See `IGitRef`."""
         return self.repository.visibleByUser(user)
@@ -197,6 +202,10 @@ class GitRefMixin:
         return collection.getMergeProposals(
             status, target_repository=self.repository, target_path=self.path,
             merged_revision_ids=merged_revision_ids, eager_load=eager_load)
+
+    def getMergeProposalByID(self, id):
+        """See `IGitRef`."""
+        return self.landing_targets.find(BranchMergeProposal.id == id).one()
 
     @property
     def pending_writes(self):

@@ -15,6 +15,7 @@ import requests
 
 from lp.code.errors import (
     GitRepositoryCreationFault,
+    GitRepositoryDeletionFault,
     GitRepositoryScanFault,
     )
 
@@ -127,9 +128,23 @@ class GitHostingClient:
         if response.status_code != 200:
             raise GitRepositoryScanFault(
                 "Failed to get merge diff from Git repository: %s" %
-                unicode(e))
+                response.text)
         try:
             return response.json()
         except ValueError as e:
             raise GitRepositoryScanFault(
                 "Failed to decode merge-diff response: %s" % unicode(e))
+
+    def delete(self, path, logger=None):
+        """Delete a repository."""
+        try:
+            if logger is not None:
+                logger.info("Deleting repository %s" % path)
+            response = self._makeSession().delete(
+                urljoin(self.endpoint, "/repo/%s" % path))
+        except Exception as e:
+            raise GitRepositoryDeletionFault(
+                "Failed to delete Git repository: %s" % unicode(e))
+        if response.status_code != 200:
+            raise GitRepositoryDeletionFault(
+                "Failed to delete Git repository: %s" % response.text)

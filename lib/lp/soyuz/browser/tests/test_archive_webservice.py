@@ -292,8 +292,7 @@ class TestProcessors(WebServiceTestCase):
         body = webservice_for_person(commercial_admin).get(
             ppa_url + '/processors', api_version='devel').jsonBody()
         self.assertContentEqual(
-            ['386', 'hppa', 'amd64', 'arm'],
-            [entry['name'] for entry in body['entries']])
+            ['386', 'arm'], [entry['name'] for entry in body['entries']])
 
     def test_setProcessors_owner_forbidden(self):
         """Only commercial admins can call setProcessors."""

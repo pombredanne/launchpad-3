@@ -16,18 +16,23 @@ from testtools.matchers import (
     MatchesSetwise,
     MatchesStructure,
     )
+from zope.security.proxy import removeSecurityProxy
 
 from lp.code.enums import GitObjectType
 from lp.code.interfaces.gitjob import (
     IGitJob,
     IGitRefScanJob,
+    IReclaimGitRepositorySpaceJob,
     )
 from lp.code.model.gitjob import (
     GitJob,
     GitJobDerived,
     GitJobType,
     GitRefScanJob,
+    ReclaimGitRepositorySpaceJob,
     )
+from lp.services.database.constants import UTC_NOW
+from lp.services.job.runner import JobRunner
 from lp.testing import (
     TestCaseWithFactory,
     time_counter,
@@ -65,7 +70,10 @@ class TestGitJobDerived(TestCaseWithFactory):
         self.assertIsNone(derived.getOopsMailController("x"))
 
 
-class TestGitRefScanJobMixin:
+class TestGitRefScanJob(TestCaseWithFactory):
+    """Tests for `GitRefScanJob`."""
+
+    layer = LaunchpadZopelessLayer
 
     @staticmethod
     def makeFakeRefs(paths):
@@ -107,12 +115,6 @@ class TestGitRefScanJobMixin:
             for path in paths]
         self.assertThat(refs, MatchesSetwise(*matchers))
 
-
-class TestGitRefScanJob(TestGitRefScanJobMixin, TestCaseWithFactory):
-    """Tests for `GitRefScanJob`."""
-
-    layer = LaunchpadZopelessLayer
-
     def test_provides_interface(self):
         # `GitRefScanJob` objects provide `IGitRefScanJob`.
         repository = self.factory.makeGitRepository()
@@ -138,7 +140,7 @@ class TestGitRefScanJob(TestGitRefScanJobMixin, TestCaseWithFactory):
         job._hosting_client.getCommits = FakeMethod(
             result=self.makeFakeCommits(author, author_date_gen, paths))
         with dbuser("branchscanner"):
-            job.run()
+            JobRunner([job]).runAll()
         self.assertRefsMatch(repository.refs, repository, paths)
 
     def test_logs_bad_ref_info(self):
@@ -152,9 +154,68 @@ class TestGitRefScanJob(TestGitRefScanJobMixin, TestCaseWithFactory):
             'ref info does not contain "object" key')
         with self.expectedLog(expected_message):
             with dbuser("branchscanner"):
-                job.run()
+                JobRunner([job]).runAll()
         self.assertEqual([], list(repository.refs))
 
 
-# XXX cjwatson 2015-03-12: We should test that the job works via Celery too,
+class TestReclaimGitRepositorySpaceJob(TestCaseWithFactory):
+    """Tests for `ReclaimGitRepositorySpaceJob`."""
+
+    layer = LaunchpadZopelessLayer
+
+    def test_provides_interface(self):
+        # `ReclaimGitRepositorySpaceJob` objects provide
+        # `IReclaimGitRepositorySpaceJob`.
+        self.assertProvides(
+            ReclaimGitRepositorySpaceJob.create("/~owner/+git/gone", "1"),
+            IReclaimGitRepositorySpaceJob)
+
+    def test___repr__(self):
+        # `ReclaimGitRepositorySpaceJob` objects have an informative
+        # __repr__.
+        name = "/~owner/+git/gone"
+        job = ReclaimGitRepositorySpaceJob.create(name, "1")
+        self.assertEqual(
+            "<ReclaimGitRepositorySpaceJob for %s>" % name, repr(job))
+
+    def test_scheduled_in_future(self):
+        # A freshly created ReclaimGitRepositorySpaceJob is scheduled to run
+        # in a week's time.
+        job = ReclaimGitRepositorySpaceJob.create("/~owner/+git/gone", "1")
+        self.assertEqual(
+            timedelta(days=7), job.job.scheduled_start - job.job.date_created)
+
+    def test_stores_name_and_path(self):
+        # An instance of ReclaimGitRepositorySpaceJob stores the name and
+        # path of the repository that has been deleted.
+        name = "/~owner/+git/gone"
+        path = "1"
+        job = ReclaimGitRepositorySpaceJob.create(name, path)
+        self.assertEqual(name, job._cached_repository_name)
+        self.assertEqual(path, job.repository_path)
+
+    def makeJobReady(self, job):
+        """Force `job` to be scheduled to run now.
+
+        New `ReclaimGitRepositorySpaceJob`s are scheduled to run a week
+        after creation, so to be able to test running the job we have to
+        force them to be scheduled now.
+        """
+        removeSecurityProxy(job).job.scheduled_start = UTC_NOW
+
+    def test_run(self):
+        # Running a job to reclaim space sends a request to the hosting
+        # service.
+        name = "/~owner/+git/gone"
+        path = "1"
+        job = ReclaimGitRepositorySpaceJob.create(name, path)
+        self.makeJobReady(job)
+        [job] = list(ReclaimGitRepositorySpaceJob.iterReady())
+        with dbuser("branchscanner"):
+            job._hosting_client.delete = FakeMethod()
+            JobRunner([job]).runAll()
+        self.assertEqual([(path,)], job._hosting_client.delete.extract_args())
+
+
+# XXX cjwatson 2015-03-12: We should test that the jobs work via Celery too,
 # but that isn't feasible until we have a proper turnip fixture.

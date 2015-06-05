@@ -39,6 +39,8 @@ from zope.schema import (
     )
 
 from lp import _
+from lp.app.interfaces.informationtype import IInformationType
+from lp.app.interfaces.launchpad import IPrivacy
 from lp.code.enums import (
     BranchMergeProposalStatus,
     GitObjectType,
@@ -48,7 +50,7 @@ from lp.registry.interfaces.person import IPerson
 from lp.services.webapp.interfaces import ITableBatchNavigator
 
 
-class IGitRef(IHasMergeProposals):
+class IGitRef(IHasMergeProposals, IPrivacy, IInformationType):
     """A reference in a Git repository."""
 
     # XXX cjwatson 2015-01-19 bug=760849: "beta" is a lie to get WADL
@@ -134,6 +136,12 @@ class IGitRef(IHasMergeProposals):
     information_type = Attribute(
         "The type of information contained in the repository containing this "
         "reference.")
+
+    private = Bool(
+        title=_("Private"), required=False, readonly=True,
+        description=_(
+            "The repository containing this reference is visible only to its "
+            "subscribers."))
 
     def visibleByUser(user):
         """Can the specified user see the repository containing this
@@ -276,6 +284,9 @@ class IGitRef(IHasMergeProposals):
     def getMergeProposals(status=None, visible_by_user=None,
                           merged_revision_ids=None, eager_load=False):
         """Return matching BranchMergeProposals."""
+
+    def getMergeProposalByID(id):
+        """Return this reference's merge proposal with this id, or None."""
 
     pending_writes = Attribute(
         "Whether there are recent changes in this repository that have not "

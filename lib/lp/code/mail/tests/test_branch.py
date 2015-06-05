@@ -158,9 +158,7 @@ class TestRecipientReasonBzr(TestRecipientReasonMixin, TestCaseWithFactory):
             reason.getReason())
 
 
-# XXX cjwatson 2015-04-15: Enable this (by adding TestCaseWithFactory) once
-# BranchMergeProposal supports Git.
-class TestRecipientReasonGit(TestRecipientReasonMixin):
+class TestRecipientReasonGit(TestRecipientReasonMixin, TestCaseWithFactory):
     """Test RecipientReason for Git references."""
 
     def makeProposalWithSubscription(self, subscriber=None):
@@ -168,10 +166,10 @@ class TestRecipientReasonGit(TestRecipientReasonMixin):
         if subscriber is None:
             subscriber = self.factory.makePerson()
         source_repository = self.factory.makeGitRepository()
-        source_ref = self.factory.makeGitRefs(repository=source_repository)
+        [source_ref] = self.factory.makeGitRefs(repository=source_repository)
         target_repository = self.factory.makeGitRepository(
             target=source_repository.target)
-        target_ref = self.factory.makeGitRefs(repository=target_repository)
+        [target_ref] = self.factory.makeGitRefs(repository=target_repository)
         merge_proposal = source_ref.addLandingTarget(
             source_repository.owner, target_ref)
         subscription = merge_proposal.merge_source.subscribe(

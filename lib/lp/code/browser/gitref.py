@@ -56,6 +56,8 @@ from lp.services.webapp import (
 from lp.services.webapp.authorization import check_permission
 
 
+# XXX cjwatson 2015-05-26: We can get rid of this after a short while, since
+# it's just a compatibility redirection.
 class GitRefNavigation(Navigation):
 
     usedfor = IGitRef
@@ -68,9 +70,9 @@ class GitRefNavigation(Navigation):
         except ValueError:
             # Not a number.
             return None
-        for proposal in self.context.landing_targets:
-            if proposal.id == id:
-                return proposal
+        proposal = self.context.getMergeProposalByID(id)
+        if proposal is not None:
+            return self.redirectSubTree(canonical_url(proposal))
 
 
 class GitRefContextMenu(ContextMenu):

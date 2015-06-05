@@ -254,7 +254,7 @@ shows correct singular and plural forms.
     >>> def get_stats_portlet(browser):
     ...     return find_tag_by_id(
     ...         browser.contents,
-    ...         'portlet-product-codestatistics')
+    ...         'portlet-product-branchstatistics')
     >>> def print_portlet(product):
     ...     browser.open('http://code.launchpad.dev/%s' % product)
     ...     portlet = get_stats_portlet(browser)
@@ -320,7 +320,7 @@ If there are branches, but they do not fit with the appropriate filter
 we are given a different message.
 
     >>> browser.open(
-    ...     'http://code.launchpad.dev/firefox/+all-branches'
+    ...     'http://code.launchpad.dev/firefox/+branches'
     ...     '?field.lifecycle=Mature')
     >>> message = find_tag_by_id(browser.contents, 'no-branch-message')
     >>> print extract_text(message)
