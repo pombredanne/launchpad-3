@@ -75,8 +75,8 @@ class PackageDiffJob(PackageDiffJobDerived):
             to_spr=diff.to_source.__repr__())
             ]
         if diff.requester is not None:
-            parts.append(' for {requestor}'.format(
-                requestor=diff.requester.name))
+            parts.append(' for {requester}'.format(
+                requester=diff.requester.name))
         return '<{repr}>'.format(repr=''.join(parts))
 
     @property
