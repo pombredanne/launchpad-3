@@ -64,6 +64,21 @@ class TestPackageDiffJob(TestCaseWithFactory):
         jobs = list(PackageDiffJob.iterReady())
         self.assertEqual(1, len(jobs))
 
+    def test___repr__(self):
+        _, job = self.makeJob()
+        expected_repr = ('<PackageDiffJob '
+                         'from {from_src} (id: {from_id}, version: {from_ver}) '
+                         'to {to_src} (id: {to_id}, version: {to_ver}) '
+                         'for {user}>'.format(
+                             from_src=job.packagediff.from_source.name,
+                             from_id=job.packagediff.from_source.id,
+                             from_ver=job.packagediff.from_source.version,
+                             to_src=job.packagediff.to_source.name,
+                             to_id=job.packagediff.to_source.id,
+                             to_ver=job.packagediff.to_source.version,
+                             user=job.packagediff.requester.name))
+        self.assertEqual(expected_repr, repr(job))
+
     def test_run(self):
         diff, job = self.makeJob()
         method = FakeMethod()
