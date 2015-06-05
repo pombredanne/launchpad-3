@@ -634,7 +634,7 @@ class TestProductConfigureCodehosting(TestCaseWithFactory):
         product = self.factory.makeProduct()
         browser = self.getUserBrowser(
             canonical_url(product, rootsite='code'))
-        self.assertFalse('Configure code hosting' in browser.contents)
+        self.assertFalse('Configure code' in browser.contents)
 
     def test_configure_codehosting_shown(self):
         # If the user has driver permissions, they are shown the configure
@@ -642,7 +642,7 @@ class TestProductConfigureCodehosting(TestCaseWithFactory):
         product = self.factory.makeProduct()
         browser = self.getUserBrowser(
             canonical_url(product, rootsite='code'), user=product.owner)
-        self.assertTrue('Configure code hosting' in browser.contents)
+        self.assertTrue('Configure code' in browser.contents)
 
 
 class TestPersonBranchesPage(BrowserTestCase):
