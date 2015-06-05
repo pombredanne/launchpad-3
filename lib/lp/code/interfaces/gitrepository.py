@@ -449,17 +449,30 @@ class IGitRepositoryView(Interface):
         and their subscriptions.
         """
 
-    # XXX cjwatson 2015-04-16: These names are too awful to set in stone by
-    # exporting them on the webservice; find better names before exporting.
-    landing_targets = Attribute(
-        "A collection of the merge proposals where this repository is the "
-        "source.")
-    landing_candidates = Attribute(
-        "A collection of the merge proposals where this repository is the "
-        "target.")
-    dependent_landings = Attribute(
-        "A collection of the merge proposals that are dependent on this "
-        "repository.")
+    landing_targets = exported(CollectionField(
+        title=_("Landing targets"),
+        description=_(
+            "A collection of the merge proposals where this repository is the "
+            "source."),
+        readonly=True,
+        # Really IBranchMergeProposal, patched in _schema_circular_imports.py.
+        value_type=Reference(Interface)))
+    landing_candidates = exported(CollectionField(
+        title=_("Landing candidates"),
+        description=_(
+            "A collection of the merge proposals where this repository is the "
+            "target."),
+        readonly=True,
+        # Really IBranchMergeProposal, patched in _schema_circular_imports.py.
+        value_type=Reference(Interface)))
+    dependent_landings = exported(CollectionField(
+        title=_("Dependent landings"),
+        description=_(
+            "A collection of the merge proposals that are dependent on this "
+            "repository."),
+        readonly=True,
+        # Really IBranchMergeProposal, patched in _schema_circular_imports.py.
+        value_type=Reference(Interface)))
 
     def getMergeProposalByID(id):
         """Return this repository's merge proposal with this id, or None."""
