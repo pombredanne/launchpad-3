@@ -68,20 +68,12 @@ class PackageDiffJob(PackageDiffJobDerived):
 
     def __repr__(self):
         """Returns an informative representation of a PackageDiff job."""
-        parts = ['{cls}'.format(cls=self.__class__.__name__)]
         diff = self.packagediff
-        if diff.from_source is not None:
-            parts.append((' from {src} '
-                          '(id: {id}, version: {version})'.format(
-                              src=diff.from_source.name,
-                              id=diff.from_source.id,
-                              version=diff.from_source.version)))
-        if diff.to_source is not None:
-            parts.append((' to {src} '
-                          '(id: {id}, version: {version})'.format(
-                              src=diff.to_source.name,
-                              id=diff.to_source.id,
-                              version=diff.to_source.version)))
+        parts = ['{cls} from {from_spr} to {to_spr}'.format(
+            cls=self.__class__.__name__,
+            from_spr=diff.from_source.__repr__(),
+            to_spr=diff.to_source.__repr__())
+            ]
         if diff.requester is not None:
             parts.append(' for {requestor}'.format(
                 requestor=diff.requester.name))
