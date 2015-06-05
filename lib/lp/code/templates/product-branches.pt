@@ -54,6 +54,10 @@
 
   <tal:main metal:fill-slot="main">
 
+    <span class="see-all" tal:condition="view/show_git_link">
+      <a tal:attributes="href context/fmt:url:code/+git">View Git repositories</a>
+    </span>
+
     <tal:branch-summary content="structure context/@@+branch-summary" />
 
     <tal:code-statistics

@@ -145,6 +145,15 @@ class TestProductBranchesView(ProductTestBase):
         expected = 'There are no branches for %s' % product.displayname
         self.assertIn(expected, html)
 
+    def test_git_link(self):
+        product = self.factory.makeProduct()
+        view = create_initialized_view(product, '+branches')
+        self.assertNotIn('View Git repositories', view())
+
+        self.factory.makeGitRepository(target=product)
+        view = create_initialized_view(product, '+branches')
+        self.assertIn('View Git repositories', view())
+
 
 class TestProductBranchesServiceUsages(ProductTestBase, BrowserTestCase):
     """Tests for the product code page, especially the usage messasges."""

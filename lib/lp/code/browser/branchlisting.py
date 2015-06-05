@@ -84,6 +84,7 @@ from lp.code.interfaces.branch import (
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
 from lp.code.interfaces.branchtarget import IBranchTarget
+from lp.code.interfaces.gitcollection import IGitCollection
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.interfaces.revisioncache import IRevisionCache
 from lp.code.interfaces.seriessourcepackagebranch import (
@@ -535,6 +536,10 @@ class BranchListingView(LaunchpadFormView, FeedsMixin):
     # enumeration to not offer in the sort_by widget.
     no_sort_by = ()
 
+    # Many Bazaar branch listings have a closely related Git listing
+    # that they should link to.
+    show_git_link = False
+
     # Set the feed types to be only the various branches feed links.  The
     # `feed_links` property will screen this list and produce only the feeds
     # appropriate to the context.
@@ -985,6 +990,11 @@ class PersonProductBranchesView(PersonBranchesView):
         coll = super(PersonProductBranchesView, self)._getCollection()
         return coll.inProduct(self.context.product)
 
+    @property
+    def show_git_link(self):
+        c = IGitCollection(self.context)
+        return not c.visibleByUser(self.user).is_empty()
+
 
 class PersonTeamBranchesView(LaunchpadView):
     """View for team branches portlet."""
@@ -1294,6 +1304,11 @@ class ProductBranchesView(ProductBranchListingView, SortSeriesMixin,
     def has_development_focus_branch(self):
         """Is there a branch assigned as development focus?"""
         return self.development_focus_branch is not None
+
+    @property
+    def show_git_link(self):
+        c = IGitCollection(self.context)
+        return not c.visibleByUser(self.user).is_empty()
 
 
 class ProjectBranchesView(BranchListingView):
