@@ -4,8 +4,11 @@
 SET client_min_messages=ERROR;
 
 ALTER TABLE branch
+    DROP COLUMN author,
     DROP COLUMN merge_queue,
     DROP COLUMN merge_queue_config;
+ALTER TABLE distribution DROP COLUMN upload_admin;
+ALTER TABLE distroarchseries DROP COLUMN supports_virtualized;
 
 DROP TABLE binarypackagereleasecontents;
 DROP TABLE binarypackagepath;
