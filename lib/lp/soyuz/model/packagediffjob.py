@@ -73,12 +73,14 @@ class PackageDiffJob(PackageDiffJobDerived):
         if diff.from_source is not None:
             parts.append((' from {src} '
                           '(id: {id}, version: {version})'.format(
-                              src=diff.from_source.name, id=diff.from_source.id,
+                              src=diff.from_source.name,
+                              id=diff.from_source.id,
                               version=diff.from_source.version)))
         if diff.to_source is not None:
             parts.append((' to {src} '
                           '(id: {id}, version: {version})'.format(
-                              src=diff.to_source.name, id=diff.to_source.id,
+                              src=diff.to_source.name,
+                              id=diff.to_source.id,
                               version=diff.to_source.version)))
         if diff.requester is not None:
             parts.append(' for {requestor}'.format(
