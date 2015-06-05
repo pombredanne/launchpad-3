@@ -800,7 +800,7 @@ class GitRepository(StormBase, GitIdentityMixin):
         """See `IGitRepository`."""
         return Store.of(self).find(
             BranchMergeProposal,
-            BranchMergeProposal.prerequisite_git_repository,
+            BranchMergeProposal.prerequisite_git_repository == self,
             Not(BranchMergeProposal.queue_status.is_in(
                 BRANCH_MERGE_PROPOSAL_FINAL_STATES)))
 

@@ -22,6 +22,7 @@ from lazr.restful.declarations import (
     REQUEST_USER,
     )
 from lazr.restful.fields import (
+    CollectionField,
     Reference,
     ReferenceChoice,
     )
@@ -196,17 +197,30 @@ class IGitRef(IHasMergeProposals, IPrivacy, IInformationType):
         and their subscriptions.
         """
 
-    # XXX cjwatson 2015-04-16: These names are too awful to set in stone by
-    # exporting them on the webservice; find better names before exporting.
-    landing_targets = Attribute(
-        "A collection of the merge proposals where this reference is the "
-        "source.")
-    landing_candidates = Attribute(
-        "A collection of the merge proposals where this reference is the "
-        "target.")
-    dependent_landings = Attribute(
-        "A collection of the merge proposals that are dependent on this "
-        "reference.")
+    landing_targets = exported(CollectionField(
+        title=_("Landing targets"),
+        description=_(
+            "A collection of the merge proposals where this reference is the "
+            "source."),
+        readonly=True,
+        # Really IBranchMergeProposal, patched in _schema_circular_imports.py.
+        value_type=Reference(Interface)))
+    landing_candidates = exported(CollectionField(
+        title=_("Landing candidates"),
+        description=_(
+            "A collection of the merge proposals where this reference is the "
+            "target."),
+        readonly=True,
+        # Really IBranchMergeProposal, patched in _schema_circular_imports.py.
+        value_type=Reference(Interface)))
+    dependent_landings = exported(CollectionField(
+        title=_("Dependent landings"),
+        description=_(
+            "A collection of the merge proposals that are dependent on this "
+            "reference."),
+        readonly=True,
+        # Really IBranchMergeProposal, patched in _schema_circular_imports.py.
+        value_type=Reference(Interface)))
 
     # XXX cjwatson 2015-04-16: Rename in line with landing_targets above
     # once we have a better name.
