@@ -26,4 +26,17 @@ SELECT job INTO TEMP temp_mergedirectivejob_jobs FROM mergedirectivejob;
 DROP TABLE mergedirectivejob;
 DELETE FROM job WHERE id IN (SELECT job FROM temp_mergedirectivejob_jobs);
 
+-- Drop some big indices that we never use.
+DROP INDEX binarypackagerelease__fti__idx;
+DROP INDEX bug__fti__idx;
+DROP INDEX messagechunk__fti__idx;
+DROP INDEX message__fti__idx;
+DROP INDEX securebinarypackagepublishinghistory_status_idx;
+
+-- __idx was only useful for backfilling the column, so let's get rid of
+-- it and rename the generally applicable one.
+DROP INDEX sourcepackagepublishinghistory__packageupload__idx;
+ALTER INDEX sourcepackagepublishinghistory__packageupload__idx_2
+    RENAME TO sourcepackagepublishinghistory__packageupload__idx;
+
 INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 67, 0);
