@@ -799,7 +799,7 @@
         class="lp.code.browser.gitrepository.GitRepositoryEditView"
         permission="launchpad.Edit"
         name="+edit"
-        template="../../app/templates/generic-edit.pt"/>
+        template="../templates/gitrepository-edit.pt"/>
     <browser:page
         for="lp.code.interfaces.gitrepository.IGitRepository"
         class="lp.code.browser.gitrepository.GitRepositoryDeletionView"

@@ -47,13 +47,18 @@ from lp.app.browser.launchpadform import (
 from lp.app.errors import NotFoundError
 from lp.app.vocabularies import InformationTypeVocabulary
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
+from lp.code.browser.widgets.gitrepositorytarget import (
+    GitRepositoryTargetWidget,
+    )
 from lp.code.errors import (
     GitRepositoryCreationForbidden,
     GitRepositoryExists,
+    GitTargetError,
     )
 from lp.code.interfaces.gitnamespace import get_git_namespace
 from lp.code.interfaces.gitref import IGitRefBatchNavigator
 from lp.code.interfaces.gitrepository import IGitRepository
+from lp.registry.interfaces.person import IPerson
 from lp.registry.vocabularies import UserTeamsParticipationPlusSelfVocabulary
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
@@ -277,7 +282,12 @@ class GitRepositoryEditFormView(LaunchpadEditFormView):
                 vocabulary=InformationTypeVocabulary(types=info_types))
             name = copy_field(IGitRepository["name"], readonly=False)
             owner = copy_field(IGitRepository["owner"], readonly=False)
+            owner_default = copy_field(
+                IGitRepository["owner_default"], readonly=False)
             reviewer = copy_field(IGitRepository["reviewer"], required=True)
+            target = copy_field(IGitRepository["target"], readonly=False)
+            target_default = copy_field(
+                IGitRepository["target_default"], readonly=False)
 
         return GitRepositoryEditSchema
 
@@ -322,6 +332,25 @@ class GitRepositoryEditFormView(LaunchpadEditFormView):
             information_type = data.pop("information_type")
             self.context.transitionToInformationType(
                 information_type, self.user)
+        if "target" in data:
+            target = data.pop("target")
+            if target is None:
+                target = self.context.owner
+            if target != self.context.target:
+                try:
+                    self.context.setTarget(target, self.user)
+                except GitTargetError as e:
+                    self.setFieldError("target", e.message)
+                    return
+                changed = True
+                if IPerson.providedBy(target):
+                    self.request.response.addNotification(
+                        "This repository is now a personal repository for %s "
+                        "(%s)" % (target.displayname, target.name))
+                else:
+                    self.request.response.addNotification(
+                        "The repository target has been changed to %s (%s)" %
+                        (target.displayname, target.name))
         if "reviewer" in data:
             reviewer = data.pop("reviewer")
             if reviewer != self.context.code_reviewer:
@@ -331,6 +360,16 @@ class GitRepositoryEditFormView(LaunchpadEditFormView):
                 else:
                     self.context.reviewer = reviewer
                 changed = True
+        if "target_default" in data:
+            target_default = data.pop("target_default")
+            if (self.context.namespace.has_defaults and
+                    target_default != self.context.target_default):
+                self.context.setTargetDefault(target_default)
+        if "owner_default" in data:
+            owner_default = data.pop("owner_default")
+            if (self.context.namespace.has_defaults and
+                    owner_default != self.context.owner_default):
+                self.context.setOwnerDefault(owner_default)
 
         if self.updateContextFromData(data, notify_modified=False):
             changed = True
@@ -383,9 +422,13 @@ class GitRepositoryEditView(GitRepositoryEditFormView):
     field_names = [
         "owner",
         "name",
+        "target",
         "information_type",
+        "target_default",
+        "owner_default",
         ]
 
+    custom_widget("target", GitRepositoryTargetWidget)
     custom_widget("information_type", LaunchpadRadioWidgetWithDescription)
 
     def setUpFields(self):
@@ -442,14 +485,15 @@ class GitRepositoryEditView(GitRepositoryEditFormView):
         self.setFieldError(field_name, message)
 
     def validate(self, data):
-        if "name" in data and "owner" in data:
+        if "name" in data and "owner" in data and "target" in data:
             name = data["name"]
             owner = data["owner"]
-            if name != self.context.name or owner != self.context.owner:
-                if self.context.owner == self.context.target:
-                    target = owner
-                else:
-                    target = self.context.target
+            target = data["target"]
+            if target is None:
+                target = owner
+            if (name != self.context.name or
+                    owner != self.context.owner or
+                    target != self.context.target):
                 namespace = get_git_namespace(target, owner)
                 try:
                     namespace.validateMove(self.context, self.user, name=name)

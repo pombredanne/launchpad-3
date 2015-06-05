@@ -38,7 +38,10 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
-from lp.testing.matchers import HasQueryCount
+from lp.testing.matchers import (
+    Contains,
+    HasQueryCount,
+    )
 from lp.testing.pages import (
     get_feedback_messages,
     setupBrowser,
@@ -254,6 +257,171 @@ class TestGitRepositoryEditReviewerView(TestCaseWithFactory):
 class TestGitRepositoryEditView(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
+
+    def test_repository_target_widget_renders_personal(self):
+        # The repository target widget renders correctly for a personal
+        # repository.
+        person = self.factory.makePerson()
+        repository = self.factory.makeGitRepository(
+            owner=person, target=person)
+        login_person(person)
+        view = create_initialized_view(repository, name="+edit")
+        self.assertEqual("personal", view.widgets["target"].default_option)
+
+    def test_repository_target_widget_renders_product(self):
+        # The repository target widget renders correctly for a product
+        # repository.
+        person = self.factory.makePerson()
+        project = self.factory.makeProduct()
+        repository = self.factory.makeGitRepository(
+            owner=person, target=project)
+        login_person(person)
+        view = create_initialized_view(repository, name="+edit")
+        self.assertEqual("project", view.widgets["target"].default_option)
+        self.assertEqual(
+            project.name, view.widgets["target"].project_widget.selected_value)
+
+    def test_repository_target_widget_renders_package(self):
+        # The repository target widget renders correctly for a package
+        # repository.
+        person = self.factory.makePerson()
+        dsp = self.factory.makeDistributionSourcePackage()
+        repository = self.factory.makeGitRepository(owner=person, target=dsp)
+        login_person(person)
+        view = create_initialized_view(repository, name="+edit")
+        self.assertEqual("package", view.widgets["target"].default_option)
+        self.assertEqual(
+            dsp.distribution,
+            view.widgets["target"].distribution_widget._getFormValue())
+        self.assertEqual(
+            dsp.sourcepackagename.name,
+            view.widgets["target"].package_widget.selected_value)
+
+    def test_repository_target_widget_saves_personal(self):
+        # The repository target widget can retarget to a personal
+        # repository.
+        person = self.factory.makePerson()
+        repository = self.factory.makeGitRepository(owner=person)
+        login_person(person)
+        form = {
+            "field.target": "personal",
+            "field.actions.change": "Change Git Repository",
+            }
+        view = create_initialized_view(repository, name="+edit", form=form)
+        self.assertEqual(person, repository.target)
+        self.assertEqual(1, len(view.request.response.notifications))
+        self.assertEqual(
+            "This repository is now a personal repository for %s (%s)"
+                % (person.displayname, person.name),
+            view.request.response.notifications[0].message)
+
+    def test_repository_target_widget_saves_personal_different_owner(self):
+        # The repository target widget can retarget to a personal repository
+        # for a different owner.
+        person = self.factory.makePerson()
+        repository = self.factory.makeGitRepository(
+            owner=person, target=person)
+        new_owner = self.factory.makeTeam(name="newowner", members=[person])
+        login_person(person)
+        form = {
+            "field.target": "personal",
+            "field.owner": "newowner",
+            "field.actions.change": "Change Git Repository",
+            }
+        view = create_initialized_view(repository, name="+edit", form=form)
+        self.assertEqual(new_owner, repository.target)
+        self.assertEqual(1, len(view.request.response.notifications))
+        self.assertEqual(
+            "The repository owner has been changed to Newowner (newowner)",
+            view.request.response.notifications[0].message)
+
+    def test_repository_target_widget_saves_personal_clears_defaults(self):
+        # When retargeting to a personal repository, the target and
+        # owner-target default flags are cleared.
+        person = self.factory.makePerson()
+        project = self.factory.makeProduct(owner=person)
+        repository = self.factory.makeGitRepository(
+            owner=person, target=project)
+        login_person(person)
+        repository.setTargetDefault(True)
+        repository.setOwnerDefault(True)
+        form = {
+            "field.target": "personal",
+            "field.actions.change": "Change Git Repository",
+            }
+        view = create_initialized_view(repository, name="+edit", form=form)
+        self.assertEqual([], view.errors)
+        self.assertEqual(person, repository.target)
+        self.assertEqual(1, len(view.request.response.notifications))
+        self.assertEqual(
+            "This repository is now a personal repository for %s (%s)"
+                % (person.displayname, person.name),
+            view.request.response.notifications[0].message)
+
+    def test_repository_target_widget_saves_project(self):
+        # The repository target widget can retarget to a project repository.
+        person = self.factory.makePerson()
+        repository = self.factory.makeGitRepository(
+            owner=person, target=person)
+        project = self.factory.makeProduct()
+        login_person(person)
+        form = {
+            "field.target": "project",
+            "field.target.project": project.name,
+            "field.actions.change": "Change Git Repository",
+            }
+        view = create_initialized_view(repository, name="+edit", form=form)
+        self.assertEqual(project, repository.target)
+        self.assertEqual(
+            "The repository target has been changed to %s (%s)"
+                % (project.displayname, project.name),
+            view.request.response.notifications[0].message)
+
+    def test_repository_target_widget_saves_package(self):
+        # The repository target widget can retarget to a package repository.
+        person = self.factory.makePerson()
+        repository = self.factory.makeGitRepository(
+            owner=person, target=person)
+        dsp = self.factory.makeDistributionSourcePackage()
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=dsp.distribution.currentseries,
+            sourcepackagename=dsp.sourcepackagename,
+            archive=dsp.distribution.main_archive)
+        login_person(person)
+        form = {
+            "field.target": "package",
+            "field.target.distribution": dsp.distribution.name,
+            "field.target.package": dsp.sourcepackagename.name,
+            "field.actions.change": "Change Git Repository",
+            }
+        view = create_initialized_view(repository, name="+edit", form=form)
+        self.assertEqual(dsp, repository.target)
+        self.assertEqual(
+            "The repository target has been changed to %s (%s)"
+                % (dsp.displayname, dsp.name),
+            view.request.response.notifications[0].message)
+
+    def test_forbidden_target_is_error(self):
+        # An error is displayed if a repository is saved with a target that
+        # is not allowed by the sharing policy.
+        owner = self.factory.makePerson()
+        initial_target = self.factory.makeProduct()
+        self.factory.makeProduct(
+            name="commercial", owner=owner,
+            branch_sharing_policy=BranchSharingPolicy.PROPRIETARY)
+        repository = self.factory.makeGitRepository(
+            owner=owner, target=initial_target,
+            information_type=InformationType.PUBLIC)
+        browser = self.getUserBrowser(
+            canonical_url(repository) + "/+edit", user=owner)
+        browser.getControl(name="field.target.project").value = "commercial"
+        browser.getControl("Change Git Repository").click()
+        self.assertThat(
+            browser.contents,
+            Contains(
+                "Public repositories are not allowed for target Commercial."))
+        with person_logged_in(owner):
+            self.assertEqual(initial_target, repository.target)
 
     def test_rename(self):
         # The name of a repository can be changed via the UI by an
