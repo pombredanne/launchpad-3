@@ -2082,3 +2082,50 @@ class TestGitRepositoryWebservice(TestCaseWithFactory):
         self.assertEqual(200, response.status)
         with person_logged_in(subscriber_db):
             self.assertNotIn(subscriber_db, repository_db.subscribers)
+
+    def test_landing_candidates(self):
+        bmp_db = self.factory.makeBranchMergeProposalForGit()
+        with person_logged_in(bmp_db.registrant):
+            bmp_url = api_url(bmp_db)
+            repository_url = api_url(bmp_db.target_git_repository)
+        webservice = webservice_for_person(
+            bmp_db.registrant, permission=OAuthPermission.READ_PUBLIC)
+        webservice.default_api_version = "devel"
+        repository = webservice.get(repository_url).jsonBody()
+        landing_candidates = webservice.get(
+            repository["landing_candidates_collection_link"]).jsonBody()
+        self.assertEqual(1, len(landing_candidates["entries"]))
+        self.assertThat(
+            landing_candidates["entries"][0]["self_link"], EndsWith(bmp_url))
+
+    def test_landing_targets(self):
+        bmp_db = self.factory.makeBranchMergeProposalForGit()
+        with person_logged_in(bmp_db.registrant):
+            bmp_url = api_url(bmp_db)
+            repository_url = api_url(bmp_db.source_git_repository)
+        webservice = webservice_for_person(
+            bmp_db.registrant, permission=OAuthPermission.READ_PUBLIC)
+        webservice.default_api_version = "devel"
+        repository = webservice.get(repository_url).jsonBody()
+        landing_targets = webservice.get(
+            repository["landing_targets_collection_link"]).jsonBody()
+        self.assertEqual(1, len(landing_targets["entries"]))
+        self.assertThat(
+            landing_targets["entries"][0]["self_link"], EndsWith(bmp_url))
+
+    def test_dependent_landings(self):
+        [ref] = self.factory.makeGitRefs()
+        bmp_db = self.factory.makeBranchMergeProposalForGit(
+            prerequisite_ref=ref)
+        with person_logged_in(bmp_db.registrant):
+            bmp_url = api_url(bmp_db)
+            repository_url = api_url(ref.repository)
+        webservice = webservice_for_person(
+            bmp_db.registrant, permission=OAuthPermission.READ_PUBLIC)
+        webservice.default_api_version = "devel"
+        repository = webservice.get(repository_url).jsonBody()
+        dependent_landings = webservice.get(
+            repository["dependent_landings_collection_link"]).jsonBody()
+        self.assertEqual(1, len(dependent_landings["entries"]))
+        self.assertThat(
+            dependent_landings["entries"][0]["self_link"], EndsWith(bmp_url))

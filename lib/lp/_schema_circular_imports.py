@@ -562,6 +562,9 @@ patch_plain_parameter_type(
     IGitRef, 'createMergeProposal', 'merge_target', IGitRef)
 patch_plain_parameter_type(
     IGitRef, 'createMergeProposal', 'merge_prerequisite', IGitRef)
+patch_collection_property(IGitRef, 'landing_targets', IBranchMergeProposal)
+patch_collection_property(IGitRef, 'landing_candidates', IBranchMergeProposal)
+patch_collection_property(IGitRef, 'dependent_landings', IBranchMergeProposal)
 patch_entry_return_type(IGitRef, 'createMergeProposal', IBranchMergeProposal)
 patch_collection_return_type(
     IGitRef, 'getMergeProposals', IBranchMergeProposal)
@@ -572,6 +575,12 @@ patch_collection_property(IGitRepository, 'refs', IGitRef)
 patch_collection_property(IGitRepository, 'subscriptions', IGitSubscription)
 patch_entry_return_type(IGitRepository, 'subscribe', IGitSubscription)
 patch_entry_return_type(IGitRepository, 'getSubscription', IGitSubscription)
+patch_collection_property(
+    IGitRepository, 'landing_targets', IBranchMergeProposal)
+patch_collection_property(
+    IGitRepository, 'landing_candidates', IBranchMergeProposal)
+patch_collection_property(
+    IGitRepository, 'dependent_landings', IBranchMergeProposal)
 
 # ILiveFSFile
 patch_reference_property(ILiveFSFile, 'livefsbuild', ILiveFSBuild)
