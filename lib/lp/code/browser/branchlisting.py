@@ -1310,9 +1310,10 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
         if not check_permission(
             'launchpad.Edit', self.context.development_focus):
             return None
-        series_menu = MenuAPI(self.context.development_focus).overview
+        print(self.context)
+        series_menu = MenuAPI(self.context).overview
         set_branch = series_menu['set_branch']
-        set_branch.text = 'Configure code hosting'
+        set_branch.text = 'Configure code'
         return set_branch
 
     @property

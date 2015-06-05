@@ -1953,7 +1953,7 @@ class ProductSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
                 except GitTargetError:
                     self.setFieldError(
                         'git_repository_location',
-                        'Repository already attached to another target.')
+                        'Repository is in a different project.')
                     abort_update()
 
         elif branch_type == LINK_LP_BZR:
