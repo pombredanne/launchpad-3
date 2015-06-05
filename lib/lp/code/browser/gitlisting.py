@@ -19,6 +19,7 @@ from zope.interface import (
 
 from lp.app.enums import PRIVATE_INFORMATION_TYPES
 from lp.code.browser.gitrepository import GitRefBatchNavigator
+from lp.code.interfaces.branchcollection import IBranchCollection
 from lp.code.interfaces.gitcollection import IGitCollection
 from lp.code.interfaces.gitnamespace import (
     get_git_namespace,
@@ -65,7 +66,12 @@ class BaseGitListingView(LaunchpadView):
 
     @property
     def repo_collection(self):
-        raise NotImplementedError()
+        return IGitCollection(self.context).visibleByUser(self.user)
+
+    @property
+    def show_bzr_link(self):
+        collection = IBranchCollection(self.context)
+        return not collection.visibleByUser(self.user).is_empty()
 
     def default_git_repository_branches(self):
         """All branches in the default Git repository, sorted for display."""
@@ -117,10 +123,6 @@ class TargetGitListingView(BaseGitListingView):
         else:
             return None
 
-    @property
-    def repo_collection(self):
-        return IGitCollection(self.target).visibleByUser(self.user)
-
 
 class PersonTargetGitListingView(BaseGitListingView):
 
@@ -147,7 +149,3 @@ class PersonTargetGitListingView(BaseGitListingView):
             return repo
         else:
             return None
-
-    @property
-    def repo_collection(self):
-        return IGitCollection(self.context).visibleByUser(self.user)
