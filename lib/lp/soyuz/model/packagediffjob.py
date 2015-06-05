@@ -71,8 +71,8 @@ class PackageDiffJob(PackageDiffJobDerived):
         diff = self.packagediff
         parts = ['{cls} from {from_spr} to {to_spr}'.format(
             cls=self.__class__.__name__,
-            from_spr=diff.from_source.__repr__(),
-            to_spr=diff.to_source.__repr__())
+            from_spr=repr(diff.from_source),
+            to_spr=repr(diff.to_source))
             ]
         if diff.requester is not None:
             parts.append(' for {requester}'.format(

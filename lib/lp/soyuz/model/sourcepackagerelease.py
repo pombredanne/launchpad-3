@@ -145,8 +145,9 @@ class SourcePackageRelease(SQLBase):
 
     def __repr__(self):
         """Returns an informative representation of a SourcePackageRelease."""
-        return '<{pkg_name} (id: {id}, version: {version})>'.format(
-            pkg_name=self.name, id=self.id, version=self.version)
+        return '<{cls} {pkg_name} (id: {id}, version: {version})>'.format(
+            cls=self.__class__.__name__, pkg_name=self.name,
+            id=self.id, version=self.version)
 
     @property
     def copyright(self):

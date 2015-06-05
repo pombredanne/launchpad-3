@@ -68,8 +68,8 @@ class TestPackageDiffJob(TestCaseWithFactory):
         _, job = self.makeJob()
         expected_repr = ('<PackageDiffJob from {from_spr}'
                          ' to {to_spr} for {user}>').format(
-                             from_spr=job.packagediff.from_source.__repr__(),
-                             to_spr=job.packagediff.to_source.__repr__(),
+                             from_spr=repr(job.packagediff.from_source),
+                             to_spr=repr(job.packagediff.to_source),
                              user=job.packagediff.requester.name)
         self.assertEqual(expected_repr, repr(job))
 
