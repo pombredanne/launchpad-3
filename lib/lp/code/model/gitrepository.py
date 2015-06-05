@@ -673,6 +673,7 @@ class GitRepository(StormBase, GitIdentityMixin):
             new_target = self.target
         new_namespace = get_git_namespace(new_target, new_owner)
         new_namespace.moveRepository(self, user, rename_if_necessary=True)
+        self._reconcileAccess()
 
     @property
     def subscriptions(self):

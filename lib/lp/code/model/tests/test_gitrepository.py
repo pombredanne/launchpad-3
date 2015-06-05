@@ -1425,6 +1425,20 @@ class TestGitRepositorySetOwner(TestCaseWithFactory):
             self.assertEqual(private_team_2, repository.owner)
             self.assertEqual(private_team_2, repository.target)
 
+    def test_reconciles_access(self):
+        # setOwner calls _reconcileAccess to make the sharing schema correct
+        # when changing the owner of a private personal repository.
+        person = self.factory.makePerson()
+        team = self.factory.makeTeam(
+            owner=person, visibility=PersonVisibility.PRIVATE)
+        with person_logged_in(person):
+            repository = self.factory.makeGitRepository(
+                owner=person, target=person,
+                information_type=InformationType.USERDATA)
+            repository.setOwner(team, person)
+        self.assertEqual(
+            team, get_policies_for_artifact(repository)[0].person)
+
 
 class TestGitRepositorySetTarget(TestCaseWithFactory):
     """Test `IGitRepository.setTarget`."""
