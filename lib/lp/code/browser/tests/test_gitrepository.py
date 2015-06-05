@@ -267,6 +267,45 @@ class TestGitRepositoryEditView(TestCaseWithFactory):
         with person_logged_in(person):
             self.assertEqual(u"bar", repository.name)
 
+    def test_change_owner(self):
+        # An authorised user can change the owner to a team they're a member
+        # of.
+        person = self.factory.makePerson()
+        team = self.factory.makeTeam(name="newowner", members=[person])
+        repository = self.factory.makeGitRepository(owner=person)
+        browser = self.getUserBrowser(
+            canonical_url(repository) + "/+edit", user=person)
+        browser.getControl(name="field.owner").value = ["newowner"]
+        browser.getControl("Change Git Repository").click()
+        with person_logged_in(person):
+            self.assertEqual(team, repository.owner)
+
+    def test_change_owner_personal(self):
+        # An authorised user can change the owner of a personal repository
+        # to a team they're a member of.
+        person = self.factory.makePerson()
+        team = self.factory.makeTeam(name="newowner", members=[person])
+        repository = self.factory.makeGitRepository(
+            owner=person, target=person)
+        browser = self.getUserBrowser(
+            canonical_url(repository) + "/+edit", user=person)
+        browser.getControl(name="field.owner").value = ["newowner"]
+        browser.getControl("Change Git Repository").click()
+        with person_logged_in(person):
+            self.assertEqual(team, repository.owner)
+            self.assertEqual(team, repository.target)
+
+    def test_cannot_change_owner_to_foreign_team(self):
+        # A user cannot change the owner of their repository to a team
+        # they're not a member of.
+        person = self.factory.makePerson()
+        self.factory.makeTeam(name="newowner")
+        repository = self.factory.makeGitRepository(owner=person)
+        browser = self.getUserBrowser(
+            canonical_url(repository) + "/+edit", user=person)
+        self.assertNotIn(
+            "newowner", browser.getControl(name="field.owner").options)
+
     def test_information_type_in_ui(self):
         # The information_type of a repository can be changed via the UI by
         # an authorised user.
