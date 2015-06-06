@@ -484,6 +484,14 @@ class IGitRepositoryView(Interface):
         "Whether there are recent changes in this repository that have not "
         "yet been scanned.")
 
+    def scheduleDiffUpdates(paths):
+        """Create UpdatePreviewDiffJobs for landing targets.
+
+        :param paths: A list of reference paths.  Any merge proposals whose
+            source is this repository and one of these paths will have their
+            diffs updated.
+        """
+
 
 class IGitRepositoryModerateAttributes(Interface):
     """IGitRepository attributes that can be edited by more than one community.
