@@ -10,24 +10,41 @@ __all__ = [
     'GitRepositoryBreadcrumb',
     'GitRepositoryContextMenu',
     'GitRepositoryDeletionView',
+    'GitRepositoryEditInformationTypeView',
     'GitRepositoryEditMenu',
+    'GitRepositoryEditReviewerView',
+    'GitRepositoryEditView',
     'GitRepositoryNavigation',
     'GitRepositoryURL',
     'GitRepositoryView',
     ]
 
+from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.lifecycle.snapshot import Snapshot
+from lazr.restful.interface import copy_field
 from storm.expr import Desc
-from zope.interface import implements
+from zope.event import notify
+from zope.interface import (
+    implements,
+    Interface,
+    providedBy,
+    )
 
 from lp.app.browser.informationtype import InformationTypePortletMixin
 from lp.app.browser.launchpadform import (
     action,
+    custom_widget,
+    LaunchpadEditFormView,
     LaunchpadFormView,
     )
 from lp.app.errors import NotFoundError
+from lp.app.vocabularies import InformationTypeVocabulary
+from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
+from lp.code.errors import GitRepositoryExists
 from lp.code.interfaces.gitref import IGitRefBatchNavigator
 from lp.code.interfaces.gitrepository import IGitRepository
 from lp.services.config import config
+from lp.services.database.constants import UTC_NOW
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (
     canonical_url,
@@ -46,6 +63,7 @@ from lp.services.webapp.authorization import (
     )
 from lp.services.webapp.batching import TableBatchNavigator
 from lp.services.webapp.breadcrumb import NameBreadcrumb
+from lp.services.webapp.escaping import structured
 from lp.services.webapp.interfaces import ICanonicalUrlData
 
 
@@ -106,7 +124,17 @@ class GitRepositoryEditMenu(NavigationMenu):
     usedfor = IGitRepository
     facet = "branches"
     title = "Edit Git repository"
-    links = ["delete"]
+    links = ["edit", "reviewer", "delete"]
+
+    @enabled_with_permission("launchpad.Edit")
+    def edit(self):
+        text = "Change repository details"
+        return Link("+edit", text, icon="edit")
+
+    @enabled_with_permission("launchpad.Edit")
+    def reviewer(self):
+        text = "Set repository reviewer"
+        return Link("+reviewer", text, icon="edit")
 
     @enabled_with_permission("launchpad.Edit")
     def delete(self):
@@ -119,7 +147,7 @@ class GitRepositoryContextMenu(ContextMenu):
 
     usedfor = IGitRepository
     facet = "branches"
-    links = ["add_subscriber", "source", "subscription"]
+    links = ["add_subscriber", "source", "subscription", "visibility"]
 
     @enabled_with_permission("launchpad.AnyPerson")
     def subscription(self):
@@ -143,6 +171,12 @@ class GitRepositoryContextMenu(ContextMenu):
         text = "Browse the code"
         url = self.context.getCodebrowseUrl()
         return Link(url, text, icon="info")
+
+    @enabled_with_permission("launchpad.Edit")
+    def visibility(self):
+        """Return the "Change information type" Link."""
+        text = "Change information type"
+        return Link("+edit-information-type", text)
 
 
 class GitRefBatchNavigator(TableBatchNavigator):
@@ -199,6 +233,160 @@ class GitRepositoryView(InformationTypePortletMixin, LaunchpadView):
     def branches(self):
         """All branches in this repository, sorted for display."""
         return GitRefBatchNavigator(self, self.context)
+
+
+class GitRepositoryEditFormView(LaunchpadEditFormView):
+    """Base class for forms that edit a Git repository."""
+
+    field_names = None
+
+    def getInformationTypesToShow(self):
+        """Get the information types to display on the edit form.
+
+        We display a customised set of information types: anything allowed
+        by the repository's model, plus the current type.
+        """
+        allowed_types = set(self.context.getAllowedInformationTypes(self.user))
+        allowed_types.add(self.context.information_type)
+        return allowed_types
+
+    @cachedproperty
+    def schema(self):
+        info_types = self.getInformationTypesToShow()
+
+        class GitRepositoryEditSchema(Interface):
+            """Defines the fields for the edit form.
+
+            This is necessary to make various fields editable that are not
+            normally editable through the interface.
+            """
+            information_type = copy_field(
+                IGitRepository["information_type"], readonly=False,
+                vocabulary=InformationTypeVocabulary(types=info_types))
+            name = copy_field(IGitRepository["name"], readonly=False)
+            reviewer = copy_field(IGitRepository["reviewer"], required=True)
+
+        return GitRepositoryEditSchema
+
+    @property
+    def page_title(self):
+        return "Edit %s" % self.context.display_name
+
+    @property
+    def label(self):
+        return self.page_title
+
+    @property
+    def adapters(self):
+        """See `LaunchpadFormView`."""
+        return {self.schema: self.context}
+
+    @action("Change Git Repository", name="change",
+            failure=LaunchpadFormView.ajax_failure_handler)
+    def change_action(self, action, data):
+        # If the owner has changed, add an explicit notification.  We take
+        # our own snapshot here to make sure that the snapshot records
+        # changes to the owner, and we notify the listeners explicitly below
+        # rather than the notification that would normally be sent in
+        # updateContextFromData.
+        changed = False
+        repository_before_modification = Snapshot(
+            self.context, providing=providedBy(self.context))
+        if "name" in data:
+            name = data.pop("name")
+            if name != self.context.name:
+                self.context.setName(name, self.user)
+                changed = True
+        if "information_type" in data:
+            information_type = data.pop("information_type")
+            self.context.transitionToInformationType(
+                information_type, self.user)
+        if "reviewer" in data:
+            reviewer = data.pop("reviewer")
+            if reviewer != self.context.code_reviewer:
+                if reviewer == self.context.owner:
+                    # Clear the reviewer if set to the same as the owner.
+                    self.context.reviewer = None
+                else:
+                    self.context.reviewer = reviewer
+                changed = True
+
+        if self.updateContextFromData(data, notify_modified=False):
+            changed = True
+
+        if changed:
+            # Notify that the object has changed with the snapshot that was
+            # taken earlier.
+            field_names = [
+                form_field.__name__ for form_field in self.form_fields]
+            notify(ObjectModifiedEvent(
+                self.context, repository_before_modification, field_names))
+            # Only specify that the context was modified if there
+            # was in fact a change.
+            self.context.date_last_modified = UTC_NOW
+
+        if self.request.is_ajax:
+            return ""
+
+    @property
+    def next_url(self):
+        """Return the next URL to call when this call completes."""
+        if not self.request.is_ajax and not self.errors:
+            return self.cancel_url
+        return None
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
+
+class GitRepositoryEditInformationTypeView(GitRepositoryEditFormView):
+    """A view to set the information type."""
+
+    field_names = ["information_type"]
+
+
+class GitRepositoryEditReviewerView(GitRepositoryEditFormView):
+    """A view to set the review team."""
+
+    field_names = ["reviewer"]
+
+    @property
+    def initial_values(self):
+        return {"reviewer": self.context.code_reviewer}
+
+
+class GitRepositoryEditView(GitRepositoryEditFormView):
+    """The main view for editing repository attributes."""
+
+    field_names = [
+        "name",
+        "information_type",
+        ]
+
+    custom_widget("information_type", LaunchpadRadioWidgetWithDescription)
+
+    def _setRepositoryExists(self, existing_repository, field_name="name"):
+        owner = existing_repository.owner
+        if owner == self.user:
+            prefix = "You already have"
+        else:
+            prefix = "%s already has" % owner.displayname
+        message = structured(
+            "%s a repository for <em>%s</em> called <em>%s</em>.",
+            prefix, existing_repository.target.displayname,
+            existing_repository.name)
+        self.setFieldError(field_name, message)
+
+    def validate(self, data):
+        if "name" in data:
+            name = data["name"]
+            if name != self.context.name:
+                namespace = self.context.namespace
+                try:
+                    namespace.validateMove(self.context, self.user, name=name)
+                except GitRepositoryExists as e:
+                    self._setRepositoryExists(e.existing_repository)
 
 
 class GitRepositoryDeletionView(LaunchpadFormView):

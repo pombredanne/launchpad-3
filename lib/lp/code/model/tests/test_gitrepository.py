@@ -1394,11 +1394,67 @@ class TestGitRepositorySetOwner(TestCaseWithFactory):
             repository.setOwner(person, admin)
             self.assertEqual(person, repository.owner)
 
+    def test_private_personal_forbidden_for_public_teams(self):
+        # Only private teams can have private personal repositories.
+        person = self.factory.makePerson()
+        private_team = self.factory.makeTeam(
+            owner=person, membership_policy=TeamMembershipPolicy.MODERATED,
+            visibility=PersonVisibility.PRIVATE)
+        public_team = self.factory.makeTeam(owner=person)
+        with person_logged_in(person):
+            repository = self.factory.makeGitRepository(
+                owner=private_team, target=private_team,
+                information_type=InformationType.USERDATA)
+            self.assertRaises(
+                GitTargetError, repository.setOwner, public_team, person)
+
+    def test_private_personal_allowed_for_private_teams(self):
+        # Only private teams can have private personal repositories.
+        person = self.factory.makePerson()
+        private_team_1 = self.factory.makeTeam(
+            owner=person, membership_policy=TeamMembershipPolicy.MODERATED,
+            visibility=PersonVisibility.PRIVATE)
+        private_team_2 = self.factory.makeTeam(
+            owner=person, membership_policy=TeamMembershipPolicy.MODERATED,
+            visibility=PersonVisibility.PRIVATE)
+        with person_logged_in(person):
+            repository = self.factory.makeGitRepository(
+                owner=private_team_1, target=private_team_1,
+                information_type=InformationType.USERDATA)
+            repository.setOwner(private_team_2, person)
+            self.assertEqual(private_team_2, repository.owner)
+            self.assertEqual(private_team_2, repository.target)
+
+    def test_reconciles_access(self):
+        # setOwner calls _reconcileAccess to make the sharing schema correct
+        # when changing the owner of a private personal repository.
+        person = self.factory.makePerson()
+        team = self.factory.makeTeam(
+            owner=person, visibility=PersonVisibility.PRIVATE)
+        with person_logged_in(person):
+            repository = self.factory.makeGitRepository(
+                owner=person, target=person,
+                information_type=InformationType.USERDATA)
+            repository.setOwner(team, person)
+        self.assertEqual(
+            team, get_policies_for_artifact(repository)[0].person)
+
 
 class TestGitRepositorySetTarget(TestCaseWithFactory):
     """Test `IGitRepository.setTarget`."""
 
     layer = DatabaseFunctionalLayer
+
+    def test_personal_to_other_personal(self):
+        # A personal repository can be moved to a different owner.
+        person = self.factory.makePerson()
+        team = self.factory.makeTeam(owner=person)
+        repository = self.factory.makeGitRepository(
+            owner=person, target=person)
+        with person_logged_in(person):
+            repository.setTarget(target=team, user=repository.owner)
+        self.assertEqual(team, repository.owner)
+        self.assertEqual(team, repository.target)
 
     def test_personal_to_project(self):
         # A personal repository can be moved to a project.
@@ -2082,3 +2138,50 @@ class TestGitRepositoryWebservice(TestCaseWithFactory):
         self.assertEqual(200, response.status)
         with person_logged_in(subscriber_db):
             self.assertNotIn(subscriber_db, repository_db.subscribers)
+
+    def test_landing_candidates(self):
+        bmp_db = self.factory.makeBranchMergeProposalForGit()
+        with person_logged_in(bmp_db.registrant):
+            bmp_url = api_url(bmp_db)
+            repository_url = api_url(bmp_db.target_git_repository)
+        webservice = webservice_for_person(
+            bmp_db.registrant, permission=OAuthPermission.READ_PUBLIC)
+        webservice.default_api_version = "devel"
+        repository = webservice.get(repository_url).jsonBody()
+        landing_candidates = webservice.get(
+            repository["landing_candidates_collection_link"]).jsonBody()
+        self.assertEqual(1, len(landing_candidates["entries"]))
+        self.assertThat(
+            landing_candidates["entries"][0]["self_link"], EndsWith(bmp_url))
+
+    def test_landing_targets(self):
+        bmp_db = self.factory.makeBranchMergeProposalForGit()
+        with person_logged_in(bmp_db.registrant):
+            bmp_url = api_url(bmp_db)
+            repository_url = api_url(bmp_db.source_git_repository)
+        webservice = webservice_for_person(
+            bmp_db.registrant, permission=OAuthPermission.READ_PUBLIC)
+        webservice.default_api_version = "devel"
+        repository = webservice.get(repository_url).jsonBody()
+        landing_targets = webservice.get(
+            repository["landing_targets_collection_link"]).jsonBody()
+        self.assertEqual(1, len(landing_targets["entries"]))
+        self.assertThat(
+            landing_targets["entries"][0]["self_link"], EndsWith(bmp_url))
+
+    def test_dependent_landings(self):
+        [ref] = self.factory.makeGitRefs()
+        bmp_db = self.factory.makeBranchMergeProposalForGit(
+            prerequisite_ref=ref)
+        with person_logged_in(bmp_db.registrant):
+            bmp_url = api_url(bmp_db)
+            repository_url = api_url(ref.repository)
+        webservice = webservice_for_person(
+            bmp_db.registrant, permission=OAuthPermission.READ_PUBLIC)
+        webservice.default_api_version = "devel"
+        repository = webservice.get(repository_url).jsonBody()
+        dependent_landings = webservice.get(
+            repository["dependent_landings_collection_link"]).jsonBody()
+        self.assertEqual(1, len(dependent_landings["entries"]))
+        self.assertThat(
+            dependent_landings["entries"][0]["self_link"], EndsWith(bmp_url))
