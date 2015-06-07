@@ -1131,11 +1131,11 @@ class ProductBranchListingView(BranchListingView):
     def configure_codehosting(self):
         """Get the menu link for configuring code hosting."""
         if not check_permission(
-            'launchpad.Edit', self.context.development_focus):
+            'launchpad.Edit', self.context):
             return None
-        series_menu = MenuAPI(self.context.development_focus).overview
+        series_menu = MenuAPI(self.context).overview
         set_branch = series_menu['set_branch']
-        set_branch.text = 'Configure code hosting'
+        set_branch.text = 'Configure code'
         return set_branch
 
 
@@ -1296,71 +1296,6 @@ class ProductBranchesView(ProductBranchListingView, SortSeriesMixin,
     def _branches(self, lifecycle_status):
         """Return the series branches, followed by most recently changed."""
         # The params are ignored, and only used by the listing view.
-        return self.initial_branches
-
-    @property
-    def unseen_branch_count(self):
-        """How many branches are not shown."""
-        return self.branch_count - len(self.initial_branches)
-
-    def hasAnyBranchesVisibleByUser(self):
-        """See `BranchListingView`."""
-        return self.branch_count > 0
-
-    @property
-    def has_development_focus_branch(self):
-        """Is there a branch assigned as development focus?"""
-        return self.development_focus_branch is not None
-
-    @property
-    def branch_text(self):
-        return get_plural_text(self.branch_count, _('branch'), _('branches'))
-
-    @property
-    def person_text(self):
-        return get_plural_text(
-            self.person_owner_count, _('person'), _('people'))
-
-    @property
-    def team_text(self):
-        return get_plural_text(self.team_owner_count, _('team'), _('teams'))
-
-    @property
-    def commit_text(self):
-        return get_plural_text(self.commit_count, _('commit'), _('commits'))
-
-    @property
-    def committer_text(self):
-        return get_plural_text(self.committer_count, _('person'), _('people'))
-
-    @property
-    def configure_codehosting(self):
-        """Get the menu link for configuring code hosting."""
-        if not check_permission(
-            'launchpad.Edit', self.context.development_focus):
-            return None
-        series_menu = MenuAPI(self.context).overview
-        set_branch = series_menu['set_branch']
-        set_branch.text = 'Configure code'
-        return set_branch
-
-    @property
-    def external_visible(self):
-        return (
-            self.context.codehosting_usage == ServiceUsage.EXTERNAL
-            and self.branch)
-
-
-class ProductBranchesView(ProductBranchListingView):
-    """View for branch listing for a product."""
-
-    def initialize(self):
-        """Conditionally redirect to the default view.
-
-        If the branch listing requests the default listing, redirect to the
-        default view for the product.
-        """
-        ProductBranchListingView.initialize(self)
         if self.sort_by == BranchListingSort.DEFAULT:
             return self.initial_branches
         return super(ProductBranchesView, self)._branches(lifecycle_status)
