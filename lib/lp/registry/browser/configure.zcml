@@ -1760,7 +1760,7 @@
         />
     <browser:page
         name="+product-macros"
-        for="*"
+        for="lp.registry.interfaces.product.IProduct"
         class="lp.app.browser.launchpad.Macro"
         permission="zope.Public"
         template="../templates/product-macros.pt"
