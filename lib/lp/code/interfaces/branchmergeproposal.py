@@ -298,6 +298,10 @@ class IBranchMergeProposalView(Interface):
                 "The revision ID on the target branch which contains the "
                 "merge from the source branch (currently Git only).")))
 
+    merged_revision = Attribute(
+        "The revision on the target branch which contains the merge from the "
+        "source branch (VCS-agnostic).")
+
     date_merged = exported(
         Datetime(
             title=_('Date Merged'), required=False,

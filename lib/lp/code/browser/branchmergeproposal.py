@@ -276,7 +276,10 @@ class BranchMergeProposalMenuMixin:
 
     @enabled_with_permission('launchpad.Edit')
     def update_merge_revno(self):
-        text = 'Update revision number'
+        if IBranch.providedBy(self.context.merge_target):
+            text = 'Update revision number'
+        else:
+            text = 'Update revision ID'
         return Link('+merged', text)
 
     @enabled_with_permission('launchpad.Edit')
