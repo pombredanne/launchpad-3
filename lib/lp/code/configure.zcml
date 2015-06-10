@@ -800,6 +800,10 @@
   <subscriber
       for="lp.code.interfaces.gitrepository.IGitRepository zope.lifecycleevent.interfaces.IObjectModifiedEvent"
       handler="lp.code.model.gitrepository.git_repository_modified"/>
+  <subscriber
+      for="lp.code.interfaces.gitrepository.IGitRepository
+           lp.code.interfaces.event.IGitRefsUpdatedEvent"
+      handler="lp.code.subscribers.git.refs_updated"/>
 
   <!-- GitRepositorySet -->
 
