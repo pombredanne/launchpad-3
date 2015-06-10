@@ -343,6 +343,14 @@ class BranchMergeProposal(SQLBase):
     merged_revno = IntCol(default=None)
     merged_revision_id = StringCol(default=None)
 
+    @property
+    def merged_revision(self):
+        """Return the merged revision identifier."""
+        if self.target_branch is not None:
+            return self.merged_revno
+        else:
+            return self.merged_revision_id
+
     merge_reporter = ForeignKey(
         dbName='merge_reporter', foreignKey='Person',
         storm_validator=validate_public_person, notNull=False,

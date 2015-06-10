@@ -86,11 +86,11 @@
       <tr id="summary-row-7-merged-revision">
         <th>Merged at revision:</th>
         <td>
-          <tal:not-available condition="not: view/merged_revision">
+          <tal:not-available condition="not: context/merged_revision">
             not available
           </tal:not-available>
-          <tal:revision condition="view/merged_revision"
-                        content="view/merged_revision">
+          <tal:revision condition="context/merged_revision"
+                        content="context/merged_revision">
             1234
           </tal:revision>
           <a tal:define="link context_menu/update_merge_revno"

@@ -207,14 +207,6 @@ class BranchMergeCandidateView(LaunchpadView):
                 formatter.displaydate())
         return result
 
-    @property
-    def merged_revision(self):
-        """Return the merged revision identifier."""
-        if IBranch.providedBy(self.context.merge_target):
-            return self.context.merged_revno
-        else:
-            return self.context.merged_revision_id
-
 
 class BranchMergeProposalMenuMixin:
     """Mixin class for merge proposal menus."""
@@ -406,14 +398,6 @@ class BranchMergeProposalRevisionIdMixin:
         """Return the number of the reviewed revision."""
         return self._getRevisionNumberForRevisionId(
             self.context.reviewed_revision_id)
-
-    @property
-    def merged_revision(self):
-        """Return the merged revision identifier."""
-        if IBranch.providedBy(self.context.merge_target):
-            return self.context.merged_revno
-        else:
-            return self.context.merged_revision_id
 
 
 class BranchMergeProposalNavigation(Navigation):
