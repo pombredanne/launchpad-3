@@ -36,101 +36,122 @@
             </label>
           </li>
         </ul>
-        <p><span class="formHelp">Your project may still have both
-        git repositories and bazaar branches.</span></p>
+        <p>
+          <span class="formHelp">Your project may still have both
+          git repositories and bazaar branches.</span><br/>
+        </p>
       </div>
-      <div class="push-instructions">
-        <div metal:use-macro="context/@@+product-macros/push-instructions"></div>
+
+      <div id="show-hide-git">
+        <a href="#" id="git-expander-icon" class="expander-icon js-action">
+          Configure Git
+        </a>
+        <div id="git-expander-content">
+          <div id="form_git" class="form">
+            <div class="push-instructions">
+              <div metal:use-macro="context/@@+product-macros/push-instructions-git"></div>
+            </div>
+
+            <h3>Link Git Repository</h3>
+            <p>Link to a Git repository already in Launchpad</p>
+            <tal:widget define="widget nocall:view/widgets/git_repository_location">
+              <metal:block use-macro="context/@@launchpad_form/widget_row" />
+            </tal:widget>
+          </div>
+        </div>
       </div>
-      
-      <table id="form_bzr" class="form">
-        <tr>
-          <td>
-            <h3>Branch Link/Import</h3>
-            <label tal:replace="structure view/branch_type_link">
-              Link to a Bazaar branch already in Launchpad
-            </label>
-            <table class="subordinate">
-              <tal:widget define="widget nocall:view/widgets/branch_location">
-                <metal:block use-macro="context/@@launchpad_form/widget_row" />
-              </tal:widget>
-            </table>
-          </td>
-        </tr>
 
-        <tr id="branch_mirror">
-          <td>
-            <label tal:replace="structure view/branch_type_import">
-              Import a branch hosted somewhere else
-            </label>
-            <table class="subordinate">
-              
-              <tal:widget define="widget nocall:view/widgets/branch_name">
-                <metal:block use-macro="context/@@launchpad_form/widget_row" />
-              </tal:widget>
-              <tal:widget define="widget nocall:view/widgets/branch_owner">
-                <metal:block use-macro="context/@@launchpad_form/widget_row" />
-              </tal:widget>
+      <div id="show-hide-bzr">
+        <a href="#" id="bzr-expander-icon" class="expander-icon js-action">
+          Configure Bazaar
+        </a>
+        <div id="bzr-expander-content">
+          <div class="push-instructions">
+            <div metal:use-macro="context/@@+product-macros/push-instructions-bzr"></div>
+          </div>
 
-              <tal:widget define="widget nocall:view/widgets/repo_url">
-                <metal:block use-macro="context/@@launchpad_form/widget_row" />
-              </tal:widget>
-
+            <table id="form_bzr" class="form">
               <tr>
                 <td>
-                  <label tal:replace="structure view/rcs_type_bzr">
-                    Bazaar, hosted externally
-                  </label>
-                </td>
-              </tr>
-
-              <tr>
-                <td>
-                  <label tal:replace="structure view/rcs_type_git">
-                    Git
-                  </label>
-                </td>
-              </tr>
-
-              <tr>
-                <td>
-                  <label tal:replace="structure view/rcs_type_svn">
-                    SVN
-                  </label>
-                </td>
-              </tr>
-
-              <tr>
-                <td>
-                  <label tal:replace="structure view/rcs_type_cvs">
-                    CVS
+                  <h3>Bazaar Branch Link/Import</h3>
+                  <label tal:replace="structure view/branch_type_link">
+                    Link to a Bazaar branch already in Launchpad
                   </label>
                   <table class="subordinate">
-                  <tal:widget define="widget nocall:view/widgets/cvs_module">
-                    <metal:block use-macro="context/@@launchpad_form/widget_row" />
-                  </tal:widget>
+                    <tal:widget define="widget nocall:view/widgets/branch_location">
+                      <metal:block use-macro="context/@@launchpad_form/widget_row" />
+                    </tal:widget>
                   </table>
                 </td>
               </tr>
 
+              <tr id="branch_mirror">
+                <td>
+                  <label tal:replace="structure view/branch_type_import">
+                    Import a branch hosted somewhere else
+                  </label>
+                  <table class="subordinate">
+                    <tal:widget define="widget nocall:view/widgets/branch_name">
+                      <metal:block use-macro="context/@@launchpad_form/widget_row" />
+                    </tal:widget>
+                    <tal:widget define="widget nocall:view/widgets/branch_owner">
+                      <metal:block use-macro="context/@@launchpad_form/widget_row" />
+                    </tal:widget>
+
+                    <tal:widget define="widget nocall:view/widgets/repo_url">
+                      <metal:block use-macro="context/@@launchpad_form/widget_row" />
+                    </tal:widget>
+
+                    <tr>
+                      <td>
+                        <label tal:replace="structure view/rcs_type_bzr">
+                          Bazaar, hosted externally
+                        </label>
+                      </td>
+                    </tr>
+
+                    <tr>
+                      <td>
+                        <label tal:replace="structure view/rcs_type_git">
+                          Git
+                        </label>
+                      </td>
+                    </tr>
+
+                    <tr>
+                      <td>
+                        <label tal:replace="structure view/rcs_type_svn">
+                          SVN
+                        </label>
+                      </td>
+                    </tr>
+
+                    <tr>
+                      <td>
+                        <label tal:replace="structure view/rcs_type_cvs">
+                          CVS
+                        </label>
+                        <table class="subordinate">
+                          <tal:widget define="widget nocall:view/widgets/cvs_module">
+                            <metal:block use-macro="context/@@launchpad_form/widget_row" />
+                          </tal:widget>
+                        </table>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
             </table>
-          </td>
-        </tr>
-      </table>
-      <div id="form_git" class="form">
-        <h3>Link Git Repository</h3>
-        <p>Link to a Git repository already in Launchpad</p>
-        <tal:widget define="widget nocall:view/widgets/git_repository_location">
-          <metal:block use-macro="context/@@launchpad_form/widget_row" />
-        </tal:widget>
+        </div>
       </div>
       <input tal:replace="structure view/rcs_type_emptymarker" />
     </metal:formbody>
+
   </div>
 
   <script type="text/javascript">
     LPJS.use('lp.code.productseries_setbranch', function(Y) {
-      Y.on('domready', Y.lp.code.productseries_setbranch.setup);
+    Y.on('domready', Y.lp.code.productseries_setbranch.setup);
     });
   </script>
 

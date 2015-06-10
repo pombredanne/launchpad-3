@@ -1717,7 +1717,7 @@ class SetBranchForm(Interface):
 
     branch_name = copy_field(
         IBranch['name'], __name__='branch_name', title=_('Branch name'),
-        description=_(''), required=True)
+        description=_(''), required=True, disabled=True)
 
     branch_owner = copy_field(
         IBranch['owner'], __name__='branch_owner', title=_('Branch owner'),
