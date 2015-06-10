@@ -133,6 +133,7 @@ from lp.bugs.browser.structuralsubscription import (
 from lp.bugs.interfaces.bugtask import RESOLVED_BUGTASK_STATUSES
 from lp.code.browser.branchref import BranchRef
 from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
+from lp.code.browser.vcslisting import TargetDefaultVCSNavigationMixin
 from lp.registry.browser import (
     add_subscribe_link,
     BaseRdfView,
@@ -206,7 +207,7 @@ class ProductNavigation(
     Navigation, BugTargetTraversalMixin,
     FAQTargetNavigationMixin, HasCustomLanguageCodesTraversalMixin,
     QuestionTargetTraversalMixin, StructuralSubscriptionTargetTraversalMixin,
-    PillarNavigationMixin):
+    PillarNavigationMixin, TargetDefaultVCSNavigationMixin):
 
     usedfor = IProduct
 
