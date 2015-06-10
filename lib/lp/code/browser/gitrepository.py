@@ -24,16 +24,10 @@ from lazr.lifecycle.snapshot import Snapshot
 from lazr.restful.interface import copy_field
 from storm.expr import Desc
 from zope.event import notify
-from zope.formlib import form
 from zope.interface import (
     implements,
     Interface,
     providedBy,
-    )
-from zope.schema import Choice
-from zope.schema.vocabulary import (
-    SimpleTerm,
-    SimpleVocabulary,
     )
 
 from lp import _
@@ -47,6 +41,7 @@ from lp.app.browser.launchpadform import (
 from lp.app.errors import NotFoundError
 from lp.app.vocabularies import InformationTypeVocabulary
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
+from lp.code.browser.branch import CodeEditOwnerMixin
 from lp.code.errors import (
     GitRepositoryCreationForbidden,
     GitRepositoryExists,
@@ -54,7 +49,6 @@ from lp.code.errors import (
 from lp.code.interfaces.gitnamespace import get_git_namespace
 from lp.code.interfaces.gitref import IGitRefBatchNavigator
 from lp.code.interfaces.gitrepository import IGitRepository
-from lp.registry.vocabularies import UserTeamsParticipationPlusSelfVocabulary
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.propertycache import cachedproperty
@@ -377,7 +371,7 @@ class GitRepositoryEditReviewerView(GitRepositoryEditFormView):
         return {"reviewer": self.context.code_reviewer}
 
 
-class GitRepositoryEditView(GitRepositoryEditFormView):
+class GitRepositoryEditView(CodeEditOwnerMixin, GitRepositoryEditFormView):
     """The main view for editing repository attributes."""
 
     field_names = [
@@ -388,46 +382,9 @@ class GitRepositoryEditView(GitRepositoryEditFormView):
 
     custom_widget("information_type", LaunchpadRadioWidgetWithDescription)
 
-    def setUpFields(self):
-        super(GitRepositoryEditView, self).setUpFields()
-        repository = self.context
-        # If the user can administer repositories, then they should be able
-        # to assign the ownership of the repository to any valid person or
-        # team.
-        if check_permission("launchpad.Admin", repository):
-            owner_field = self.schema["owner"]
-            any_owner_choice = Choice(
-                __name__="owner", title=owner_field.title,
-                description=_(
-                    "As an administrator you are able to assign this "
-                    "repository to any person or team."),
-                required=True, vocabulary="ValidPersonOrTeam")
-            any_owner_field = form.Fields(
-                any_owner_choice, render_context=self.render_context)
-            # Replace the normal owner field with a more permissive vocab.
-            self.form_fields = self.form_fields.omit("owner")
-            self.form_fields = any_owner_field + self.form_fields
-        else:
-            # For normal users, there are some cases (e.g. package
-            # repositories) where the editor may not be in the team of the
-            # repository owner.  In these cases we need to extend the
-            # vocabulary connected to the owner field.
-            if not self.user.inTeam(self.context.owner):
-                vocab = UserTeamsParticipationPlusSelfVocabulary()
-                owner = self.context.owner
-                terms = [SimpleTerm(
-                    owner, owner.name, owner.unique_displayname)]
-                terms.extend([term for term in vocab])
-                owner_field = self.schema["owner"]
-                owner_choice = Choice(
-                    __name__="owner", title=owner_field.title,
-                    description=owner_field.description,
-                    required=True, vocabulary=SimpleVocabulary(terms))
-                new_owner_field = form.Fields(
-                    owner_choice, render_context=self.render_context)
-                # Replace the normal owner field with a more permissive vocab.
-                self.form_fields = self.form_fields.omit("owner")
-                self.form_fields = new_owner_field + self.form_fields
+    any_owner_description = _(
+        "As an administrator you are able to assign this repository to any "
+        "person or team.")
 
     def _setRepositoryExists(self, existing_repository, field_name="name"):
         owner = existing_repository.owner
