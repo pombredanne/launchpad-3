@@ -31,6 +31,30 @@ class GitHostingClient:
         session.trust_env = False
         return session
 
+    def _request(self, method, path, json_data=None, **kwargs):
+        session = self._makeSession()
+        if json_data is not None:
+            # XXX cjwatson 2015-03-01: Once we're on requests >= 2.4.2, we
+            # should just pass json through directly and drop the explicit
+            # Content-Type header.
+            kwargs.setdefault("headers", {})["Content-Type"] = (
+                "application/json")
+            kwargs["data"] = json.dumps(json_data)
+        response = getattr(session, method)(
+            urljoin(self.endpoint, path), **kwargs)
+        if response.status_code != 200:
+            raise Exception(response.text)
+        return response.json()
+
+    def _get(self, path, **kwargs):
+        return self._request("get", path, **kwargs)
+
+    def _post(self, path, **kwargs):
+        return self._request("post", path, **kwargs)
+
+    def _delete(self, path, **kwargs):
+        return self._request("delete", path, **kwargs)
+
     @property
     def timeout(self):
         # XXX cjwatson 2015-03-01: The hardcoded timeout at least means that
@@ -40,68 +64,34 @@ class GitHostingClient:
 
     def create(self, path, clone_from=None):
         try:
-            # XXX cjwatson 2015-03-01: Once we're on requests >= 2.4.2, we
-            # should just use post(json=) and drop the explicit Content-Type
-            # header.
             if clone_from:
                 request = {"repo_path": path, "clone_from": clone_from}
             else:
                 request = {"repo_path": path}
-            response = self._makeSession().post(
-                urljoin(self.endpoint, "/repo"),
-                headers={"Content-Type": "application/json"},
-                data=json.dumps(request),
-                timeout=self.timeout)
+            self._post("/repo", json_data=request, timeout=self.timeout)
         except Exception as e:
             raise GitRepositoryCreationFault(
                 "Failed to create Git repository: %s" % unicode(e))
-        if response.status_code != 200:
-            raise GitRepositoryCreationFault(
-                "Failed to create Git repository: %s" % response.text)
 
     def getRefs(self, path):
         try:
-            response = self._makeSession().get(
-                urljoin(self.endpoint, "/repo/%s/refs" % path),
-                timeout=self.timeout)
+            return self._get("/repo/%s/refs" % path, timeout=self.timeout)
         except Exception as e:
             raise GitRepositoryScanFault(
                 "Failed to get refs from Git repository: %s" % unicode(e))
-        if response.status_code != 200:
-            raise GitRepositoryScanFault(
-                "Failed to get refs from Git repository: %s" % response.text)
-        try:
-            return response.json()
-        except ValueError as e:
-            raise GitRepositoryScanFault(
-                "Failed to decode ref-scan response: %s" % unicode(e))
 
     def getCommits(self, path, commit_oids, logger=None):
         commit_oids = list(commit_oids)
         try:
-            # XXX cjwatson 2015-03-01: Once we're on requests >= 2.4.2, we
-            # should just use post(json=) and drop the explicit Content-Type
-            # header.
             if logger is not None:
                 logger.info("Requesting commit details for %s" % commit_oids)
-            response = self._makeSession().post(
-                urljoin(self.endpoint, "/repo/%s/commits" % path),
-                headers={"Content-Type": "application/json"},
-                data=json.dumps({"commits": commit_oids}),
-                timeout=self.timeout)
+            return self._post(
+                "/repo/%s/commits" % path,
+                json_data={"commits": commit_oids}, timeout=self.timeout)
         except Exception as e:
             raise GitRepositoryScanFault(
                 "Failed to get commit details from Git repository: %s" %
                 unicode(e))
-        if response.status_code != 200:
-            raise GitRepositoryScanFault(
-                "Failed to get commit details from Git repository: %s" %
-                response.text)
-        try:
-            return response.json()
-        except ValueError as e:
-            raise GitRepositoryScanFault(
-                "Failed to decode commit-scan response: %s" % unicode(e))
 
     def getMergeDiff(self, path, base, head, logger=None):
         """Get the merge preview diff between two commits.
@@ -116,35 +106,20 @@ class GitHostingClient:
                 logger.info(
                     "Requesting merge diff for %s from %s to %s" % (
                         path, base, head))
-            response = self._makeSession().get(
-                urljoin(
-                    self.endpoint,
-                    "/repo/%s/compare-merge/%s:%s" % (path, base, head)),
+            return self._get(
+                "/repo/%s/compare-merge/%s:%s" % (path, base, head),
                 timeout=self.timeout)
         except Exception as e:
             raise GitRepositoryScanFault(
                 "Failed to get merge diff from Git repository: %s" %
                 unicode(e))
-        if response.status_code != 200:
-            raise GitRepositoryScanFault(
-                "Failed to get merge diff from Git repository: %s" %
-                response.text)
-        try:
-            return response.json()
-        except ValueError as e:
-            raise GitRepositoryScanFault(
-                "Failed to decode merge-diff response: %s" % unicode(e))
 
     def delete(self, path, logger=None):
         """Delete a repository."""
         try:
             if logger is not None:
                 logger.info("Deleting repository %s" % path)
-            response = self._makeSession().delete(
-                urljoin(self.endpoint, "/repo/%s" % path))
+            return self._delete("/repo/%s" % path)
         except Exception as e:
             raise GitRepositoryDeletionFault(
                 "Failed to delete Git repository: %s" % unicode(e))
-        if response.status_code != 200:
-            raise GitRepositoryDeletionFault(
-                "Failed to delete Git repository: %s" % response.text)
