@@ -598,6 +598,8 @@ class IBranchMergeProposalEdit(Interface):
             proposal (defaults to the current merge_prerequisite).
         :param description: The description for the new proposal (defaults to
             the current description).
+        :param commit_message: The commit message for the new proposal (defaults
+            to the current commit message).
         """
 
     @operation_parameters(
