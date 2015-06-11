@@ -5,9 +5,13 @@
 
 __metaclass__ = type
 
-from zope.component import getMultiAdapter
+from zope.component import queryMultiAdapter
 
 from lp.registry.enums import VCSType
+from lp.registry.interfaces.persondistributionsourcepackage import (
+    IPersonDistributionSourcePackage,
+    )
+from lp.registry.interfaces.personproduct import IPersonProduct
 from lp.services.webapp import stepto
 
 
@@ -21,7 +25,7 @@ class TargetDefaultVCSNavigationMixin:
             view_name = '+git'
         else:
             raise AssertionError("Unknown VCS")
-        return getMultiAdapter(
+        return queryMultiAdapter(
             (self.context, self.request), name=view_name)
 
 
@@ -29,11 +33,17 @@ class PersonTargetDefaultVCSNavigationMixin:
 
     @stepto("+code")
     def traverse_code_view(self):
-        if self.context.product.vcs in (VCSType.BZR, None):
+        if IPersonProduct.providedBy(self.context):
+            target = self.context.product
+        elif IPersonDistributionSourcePackage.providedBy(self.context):
+            target = self.context.distro_source_package
+        else:
+            raise AssertionError("Unknown target: %r" % self.context)
+        if target.pillar.vcs in (VCSType.BZR, None):
             view_name = '+branches'
-        elif self.context.product.vcs == VCSType.GIT:
+        elif target.pillar.vcs == VCSType.GIT:
             view_name = '+git'
         else:
             raise AssertionError("Unknown VCS")
-        return getMultiAdapter(
+        return queryMultiAdapter(
             (self.context, self.request), name=view_name)
