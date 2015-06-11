@@ -49,6 +49,7 @@ from lp.bugs.browser.structuralsubscription import (
     )
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
+from lp.code.browser.vcslisting import TargetDefaultVCSNavigationMixin
 from lp.registry.browser import add_subscribe_link
 from lp.registry.browser.pillar import PillarBugsMenu
 from lp.registry.interfaces.distributionsourcepackage import (
@@ -178,7 +179,7 @@ class DistributionSourcePackageAnswersMenu(QuestionTargetAnswersMenu):
 
 class DistributionSourcePackageNavigation(Navigation,
     BugTargetTraversalMixin, HasCustomLanguageCodesTraversalMixin,
-    QuestionTargetTraversalMixin,
+    QuestionTargetTraversalMixin, TargetDefaultVCSNavigationMixin,
     StructuralSubscriptionTargetTraversalMixin):
 
     usedfor = IDistributionSourcePackage
