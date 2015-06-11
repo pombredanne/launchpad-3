@@ -1079,7 +1079,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     def makeBranch(self, branch_type=None, owner=None,
                    name=None, product=_DEFAULT, url=_DEFAULT, registrant=None,
                    information_type=None, stacked_on=None,
-                   sourcepackage=None, reviewer=None, **optional_branch_args):
+                   sourcepackage=None, reviewer=None, target=None,
+                   **optional_branch_args):
         """Create and return a new, arbitrary Branch of the given type.
 
         Any parameters for `IBranchNamespace.createBranch` can be specified to
@@ -1091,6 +1092,15 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             owner = self.makePerson()
         if name is None:
             name = self.getUniqueString('branch')
+        if target is not None:
+            assert product is _DEFAULT
+            assert sourcepackage is None
+            if IProduct.providedBy(target):
+                product = target
+            elif ISourcePackage.providedBy(target):
+                sourcepackage = target
+            else:
+                raise AssertionError("Unknown target: %r" % target)
 
         if sourcepackage is None:
             if product is _DEFAULT:

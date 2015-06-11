@@ -903,8 +903,20 @@
         name="+git"
         template="../templates/gitlisting.pt"/>
     <browser:page
+        for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
+        class="lp.code.browser.gitlisting.TargetGitListingView"
+        permission="zope.Public"
+        name="+git"
+        template="../templates/gitlisting.pt"/>
+    <browser:page
         for="lp.registry.interfaces.personproduct.IPersonProduct"
         class="lp.code.browser.gitlisting.PersonTargetGitListingView"
+        permission="zope.Public"
+        name="+git"
+        template="../templates/gitlisting.pt"/>
+    <browser:page
+        for="lp.registry.interfaces.persondistributionsourcepackage.IPersonDistributionSourcePackage"
+        class="lp.code.browser.gitlisting.PersonDistributionSourcePackageGitListingView"
         permission="zope.Public"
         name="+git"
         template="../templates/gitlisting.pt"/>
