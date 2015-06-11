@@ -1575,7 +1575,7 @@
         for="lp.registry.interfaces.product.IProduct"
         />
     <browser:defaultView
-        name="+branches"
+        name="+code"
         for="lp.registry.interfaces.product.IProduct"
         layer="lp.code.publisher.CodeLayer"
         />

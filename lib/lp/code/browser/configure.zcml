@@ -962,7 +962,7 @@
     <browser:defaultView
         for="lp.registry.interfaces.personproduct.IPersonProduct"
         layer="lp.code.publisher.CodeLayer"
-        name="+branches" />
+        name="+code" />
 
     <browser:page
         for="lp.registry.interfaces.personproduct.IPersonProduct"
