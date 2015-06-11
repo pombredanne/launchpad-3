@@ -27,21 +27,20 @@ class TestProductDefaultVCSView(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_default_unset(self):
-        product = self.factory.makeProduct()
-        self.assertIs(None, product.vcs)
+    def assertCodeViewClass(self, vcs, cls):
+        product = self.factory.makeProduct(vcs=vcs)
+        self.assertEqual(vcs, product.vcs)
         view = test_traverse('/%s/+code' % product.name)[1]
-        self.assertIsInstance(view, ProductBranchesView)
+        self.assertIsInstance(view, cls)
+
+    def test_default_unset(self):
+        self.assertCodeViewClass(None, ProductBranchesView)
 
     def test_default_bzr(self):
-        product = self.factory.makeProduct(vcs=VCSType.BZR)
-        view = test_traverse('/%s/+code' % product.name)[1]
-        self.assertIsInstance(view, ProductBranchesView)
+        self.assertCodeViewClass(VCSType.BZR, ProductBranchesView)
 
     def test_git(self):
-        product = self.factory.makeProduct(vcs=VCSType.GIT)
-        view = test_traverse('/%s/+code' % product.name)[1]
-        self.assertIsInstance(view, TargetGitListingView)
+        self.assertCodeViewClass(VCSType.GIT, TargetGitListingView)
 
 
 class TestPersonProductDefaultVCSView(TestCaseWithFactory):
