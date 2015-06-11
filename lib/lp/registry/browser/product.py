@@ -1717,7 +1717,7 @@ class SetBranchForm(Interface):
 
     branch_name = copy_field(
         IBranch['name'], __name__='branch_name', title=_('Branch name'),
-        description=_(''), required=True, disabled=True)
+        description=_(''), required=True)
 
     branch_owner = copy_field(
         IBranch['owner'], __name__='branch_owner', title=_('Branch owner'),
@@ -1882,8 +1882,11 @@ class ProductSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
         names = ['branch_type', 'rcs_type', 'default_vcs']
         super(ProductSetBranchView, self).validate_widgets(data, names)
         branch_type = data.get('branch_type')
+
         if data.get('default_vcs') == VCSType.GIT:
-            pass
+            self._setRequired(['rcs_type', 'repo_url', 'cvs_module',
+                               'branch_name', 'branch_type', 'branch_owner'],
+                              False)
         elif branch_type == LINK_LP_BZR:
             # Mark other widgets as non-required.
             self._setRequired(['rcs_type', 'repo_url', 'cvs_module',
@@ -1940,8 +1943,8 @@ class ProductSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
         branch_type = data.get('branch_type')
         default_vcs = data.get('default_vcs')
 
-        if default_vcs:
-            self.context.vcs = default_vcs
+        self.context.vcs = default_vcs
+
         if default_vcs == VCSType.GIT:
             git_repository_location = data.get('git_repository_location')
             if git_repository_location:
