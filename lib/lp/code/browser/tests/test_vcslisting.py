@@ -42,7 +42,7 @@ class TestProductDefaultVCSView(TestCaseWithFactory):
 
 
 class TestPersonProductDefaultVCSView(TestCaseWithFactory):
-    """Tests that Product:+code delegates to +git or +branches."""
+    """Tests that PersonProduct:+code delegates to +git or +branches."""
 
     layer = DatabaseFunctionalLayer
 
