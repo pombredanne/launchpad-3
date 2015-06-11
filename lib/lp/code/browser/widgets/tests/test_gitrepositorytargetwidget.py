@@ -129,12 +129,6 @@ class TestGitRepositoryTargetWidget(TestCaseWithFactory):
         self.widget.setUpSubWidgets()
         self.widget.setUpOptions()
         self.assertEqual(
-            "selectWidget('field.target.option.package', event)",
-            self.widget.package_widget.onKeyPress)
-        self.assertEqual(
-            "selectWidget('field.target.option.project', event)",
-            self.widget.project_widget.onKeyPress)
-        self.assertEqual(
             '<input class="radioType" '
             'id="field.target.option.personal" name="field.target" '
             'type="radio" value="personal" />',

@@ -85,10 +85,6 @@ class GitRepositoryTargetWidget(BrowserWidget, InputWidget):
                      self.name, self.default_option) == option:
                 attributes["checked"] = "checked"
             self.options[option] = renderElement("input", **attributes)
-        self.package_widget.onKeyPress = (
-            "selectWidget('%s.option.package', event)" % self.name)
-        self.project_widget.onKeyPress = (
-            "selectWidget('%s.option.project', event)" % self.name)
 
     def hasInput(self):
         return self.name in self.request.form
