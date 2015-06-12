@@ -8,7 +8,7 @@
 >
 <head>
   <tal:head-epilogue metal:fill-slot="head_epilogue">
-    <meta tal:condition="view/target/codehosting_usage/enumvalue:UNKNOWN"
+    <meta tal:condition="view/target/pillar/codehosting_usage/enumvalue:UNKNOWN"
       name="robots" content="noindex,nofollow" />
   </tal:head-epilogue>
 </head>
@@ -16,7 +16,7 @@
 <body>
   <metal:side fill-slot="side" tal:define="context_menu context/menu:context">
     <div id="branch-portlet"
-         tal:condition="not: view/target/codehosting_usage/enumvalue:UNKNOWN">
+         tal:condition="not: view/target/pillar/codehosting_usage/enumvalue:UNKNOWN">
       <div id="privacy"
            tal:define="private_class python: 'private' if view.default_information_type_is_private else 'public'"
            tal:attributes="class string:first portlet ${private_class}">
