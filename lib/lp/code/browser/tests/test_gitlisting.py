@@ -369,3 +369,79 @@ class TestPersonDistributionSourcePackageGitListingView(
         self.factory.makeBranch(owner=self.owner, target=self.branch_target)
         view = create_initialized_view(self.owner_target, '+git')
         self.assertNotIn('View Bazaar branches', view())
+
+
+class TestPersonGitListingView(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestPersonGitListingView, self).setUp()
+        self.owner = self.factory.makePerson()
+
+    def test_rendering(self):
+        some_repo = self.factory.makeGitRepository(
+            owner=self.owner, name=u"foo")
+        self.factory.makeGitRefs(
+            some_repo,
+            paths=[u"refs/heads/master", u"refs/heads/bug-1234"])
+
+        other_repo = self.factory.makeGitRepository(
+            owner=self.owner, name=u"bar")
+        self.factory.makeGitRefs(other_repo, paths=[u"refs/heads/bug-2468"])
+
+        view = create_initialized_view(self.owner, '+git')
+        self.assertIs(None, view.default_git_repository)
+
+        content = view()
+        soup = BeautifulSoup(content)
+
+        # No details about the default repo are shown, as a person
+        # without a target doesn't have a default repo
+        self.assertNotIn('Branches', content)
+        self.assertNotIn('Browse the code', content)
+        self.assertNotIn('git clone', content)
+        self.assertNotIn('bug-1234', content)
+
+        # All owned repos are listed.
+        table = soup.find(
+            'div', id='gitrepositories-table-listing').find('table')
+        self.assertContentEqual(
+            [some_repo.git_identity, other_repo.git_identity],
+            [link.find(text=True) for link in table.findAll('a')])
+
+    def test_copes_with_private_repos(self):
+        invisible_repo = self.factory.makeGitRepository(
+            owner=self.owner, information_type=InformationType.PRIVATESECURITY)
+        other_repo = self.factory.makeGitRepository(
+            owner=self.owner, information_type=InformationType.PUBLIC)
+
+        # An anonymous user can't see the private branch.
+        with anonymous_logged_in():
+            anon_view = create_initialized_view(self.owner, '+git')
+            self.assertContentEqual(
+                [other_repo], anon_view.repo_collection.getRepositories())
+
+        # Neither can a random unprivileged user.
+        with person_logged_in(self.factory.makePerson()):
+            anon_view = create_initialized_view(self.owner, '+git')
+            self.assertContentEqual(
+                [other_repo], anon_view.repo_collection.getRepositories())
+
+        # But someone who can see the repo gets the full view.
+        with person_logged_in(self.owner):
+            owner_view = create_initialized_view(
+                self.owner, '+git', user=self.owner)
+            self.assertContentEqual(
+                [invisible_repo, other_repo],
+                owner_view.repo_collection.getRepositories())
+
+    def test_bzr_link(self):
+        # With a fresh product there's no Bazaar link.
+        view = create_initialized_view(self.owner, '+git')
+        self.assertNotIn('View Bazaar branches', view())
+
+        # But it appears once we create a branch.
+        self.factory.makeBranch(owner=self.owner)
+        view = create_initialized_view(self.owner, '+git')
+        self.assertIn('View Bazaar branches', view())
