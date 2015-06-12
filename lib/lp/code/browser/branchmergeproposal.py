@@ -1024,7 +1024,6 @@ class BranchMergeProposalResubmitView(LaunchpadFormView,
                   self.field_names if key != 'break_link')
         return dict(item for item in items if item[1] is not UNSET)
 
-
     @action('Resubmit', name='resubmit')
     def resubmit_action(self, action, data):
         """Resubmit this proposal."""
@@ -1046,7 +1045,8 @@ class BranchMergeProposalResubmitView(LaunchpadFormView,
                     merge_prerequisite = None
             proposal = self.context.resubmit(
                 self.user, merge_source, merge_target, merge_prerequisite,
-                data['commit_message'], data['description'], data['break_link'])
+                data['commit_message'], data['description'],
+                data['break_link'])
         except BranchMergeProposalExists as e:
             message = structured(
                 'Cannot resubmit because <a href="%(url)s">a similar merge'
