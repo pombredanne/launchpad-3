@@ -44,6 +44,7 @@ class GitHostingClient:
         return 5.0
 
     def create(self, path, clone_from=None):
+        """See `IGitHostingClient`."""
         try:
             # XXX cjwatson 2015-03-01: Once we're on requests >= 2.4.2, we
             # should just use post(json=) and drop the explicit Content-Type
@@ -65,6 +66,7 @@ class GitHostingClient:
                 "Failed to create Git repository: %s" % response.text)
 
     def getRefs(self, path):
+        """See `IGitHostingClient`."""
         try:
             response = self._makeSession().get(
                 urljoin(self.endpoint, "/repo/%s/refs" % path),
@@ -82,6 +84,7 @@ class GitHostingClient:
                 "Failed to decode ref-scan response: %s" % unicode(e))
 
     def getCommits(self, path, commit_oids, logger=None):
+        """See `IGitHostingClient`."""
         commit_oids = list(commit_oids)
         try:
             # XXX cjwatson 2015-03-01: Once we're on requests >= 2.4.2, we
@@ -109,13 +112,7 @@ class GitHostingClient:
                 "Failed to decode commit-scan response: %s" % unicode(e))
 
     def getMergeDiff(self, path, base, head, logger=None):
-        """Get the merge preview diff between two commits.
-
-        :return: A dict mapping 'commits' to a list of commits between
-            'base' and 'head' (formatted as with `getCommits`), 'patch' to
-            the text of the diff between 'base' and 'head', and 'conflicts'
-            to a list of conflicted paths.
-        """
+        """See `IGitHostingClient`."""
         try:
             if logger is not None:
                 logger.info(
@@ -141,7 +138,7 @@ class GitHostingClient:
                 "Failed to decode merge-diff response: %s" % unicode(e))
 
     def delete(self, path, logger=None):
-        """Delete a repository."""
+        """See `IGitHostingClient`."""
         try:
             if logger is not None:
                 logger.info("Deleting repository %s" % path)
