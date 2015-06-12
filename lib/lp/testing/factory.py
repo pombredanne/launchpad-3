@@ -1425,8 +1425,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                 set_state=None, prerequisite_branch=None,
                                 product=None, initial_comment=None,
                                 source_branch=None, date_created=None,
-                                description=None, reviewer=None,
-                                merged_revno=None):
+                                commit_message=None, description=None,
+                                reviewer=None, merged_revno=None):
         """Create a proposal to merge based on anonymous branches."""
         if target_branch is not None:
             target_branch = removeSecurityProxy(target_branch)
@@ -1442,9 +1442,11 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             target_branch = self.makeProductBranch(product)
             target = target_branch.target
 
-        # Fall back to initial_comment for description.
+        # Fall back to initial_comment for description and commit_message.
         if description is None:
             description = initial_comment
+        if commit_message is None:
+            commit_message = initial_comment
 
         if target_branch is None:
             target_branch = self.makeBranchTargetBranch(target)
@@ -1458,7 +1460,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         proposal = source_branch.addLandingTarget(
             registrant, target_branch, review_requests=review_requests,
             merge_prerequisite=prerequisite_branch, description=description,
-            date_created=date_created)
+            commit_message=commit_message, date_created=date_created)
 
         unsafe_proposal = removeSecurityProxy(proposal)
         unsafe_proposal.merged_revno = merged_revno
@@ -1487,8 +1489,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                       set_state=None, prerequisite_ref=None,
                                       target=_DEFAULT, initial_comment=None,
                                       source_ref=None, date_created=None,
-                                      description=None, reviewer=None,
-                                      merged_revision_id=None):
+                                      commit_message=None, description=None,
+                                      reviewer=None, merged_revision_id=None):
         """Create a proposal to merge based on anonymous branches."""
         if target is not _DEFAULT:
             pass
@@ -1504,9 +1506,11 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             [target_ref] = self.makeGitRefs(target=target)
             target = target_ref.target
 
-        # Fall back to initial_comment for description.
+        # Fall back to initial_comment for description and commit_message.
         if description is None:
             description = initial_comment
+        if commit_message is None:
+            commit_message = initial_comment
 
         if target_ref is None:
             [target_ref] = self.makeGitRefs(target=target)
@@ -1520,7 +1524,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         proposal = source_ref.addLandingTarget(
             registrant, target_ref, review_requests=review_requests,
             merge_prerequisite=prerequisite_ref, description=description,
-            date_created=date_created)
+            commit_message=commit_message, date_created=date_created)
 
         unsafe_proposal = removeSecurityProxy(proposal)
         unsafe_proposal.merged_revision_id = merged_revision_id
