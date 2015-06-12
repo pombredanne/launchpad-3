@@ -538,7 +538,14 @@ class BranchListingView(LaunchpadFormView, FeedsMixin):
 
     # Many Bazaar branch listings have a closely related Git listing
     # that they should link to.
-    show_git_link = False
+    can_have_git_link = False
+
+    @property
+    def show_git_link(self):
+        if not self.can_have_git_link:
+            return False
+        c = IGitCollection(self.context)
+        return not c.visibleByUser(self.user).is_empty()
 
     # Set the feed types to be only the various branches feed links.  The
     # `feed_links` property will screen this list and produce only the feeds
@@ -938,6 +945,7 @@ class PersonBranchesView(PersonBaseBranchListingView):
     custom_widget('category', LaunchpadDropdownWidget)
 
     no_sort_by = (BranchListingSort.DEFAULT, BranchListingSort.OWNER)
+    can_have_git_link = True
 
     @property
     def no_branch_message(self):
@@ -989,11 +997,6 @@ class PersonProductBranchesView(PersonBranchesView):
     def _getCollection(self):
         coll = super(PersonProductBranchesView, self)._getCollection()
         return coll.inProduct(self.context.product)
-
-    @property
-    def show_git_link(self):
-        c = IGitCollection(self.context)
-        return not c.visibleByUser(self.user).is_empty()
 
 
 class PersonTeamBranchesView(LaunchpadView):
@@ -1234,6 +1237,7 @@ class ProductBranchesView(ProductBranchListingView, SortSeriesMixin,
     """Initial view for products on the code virtual host."""
 
     show_set_development_focus = True
+    can_have_git_link = True
 
     @property
     def initial_values(self):
@@ -1305,11 +1309,6 @@ class ProductBranchesView(ProductBranchListingView, SortSeriesMixin,
         """Is there a branch assigned as development focus?"""
         return self.development_focus_branch is not None
 
-    @property
-    def show_git_link(self):
-        c = IGitCollection(self.context)
-        return not c.visibleByUser(self.user).is_empty()
-
 
 class ProjectBranchesView(BranchListingView):
     """View for branch listing for a project."""
@@ -1362,6 +1361,8 @@ class DistributionSourcePackageBranchesView(BaseSourcePackageBranchesView):
 
 class DistributionBranchListingView(BaseSourcePackageBranchesView):
     """A general listing of all branches in the distribution."""
+
+    can_have_git_link = True
 
     def _getCollection(self):
         return getUtility(IAllBranches).inDistribution(self.context)

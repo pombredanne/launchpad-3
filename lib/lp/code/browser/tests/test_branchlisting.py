@@ -463,6 +463,20 @@ class TestSourcePackageBranchesView(TestCaseWithFactory):
             list(view.series_links))
 
 
+class TestDistributionBranchesView(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_git_link(self):
+        dsp = self.factory.makeDistributionSourcePackage()
+        page = create_initialized_view(dsp.distribution, '+branches')()
+        self.assertNotIn('View Git repositories', page)
+
+        self.factory.makeGitRepository(target=dsp)
+        page = create_initialized_view(dsp.distribution, '+branches')()
+        self.assertIn('View Git repositories', page)
+
+
 class TestGroupedDistributionSourcePackageBranchesView(TestCaseWithFactory):
     """Test the groups for the branches of distribution source packages."""
 
@@ -708,6 +722,15 @@ class TestPersonBranchesPage(BrowserTestCase):
         # the content should not appear in tact because it's been escaped
         self.assertTrue(badname not in browser.contents)
         self.assertTrue(escapedname in browser.contents)
+
+    def test_git_link(self):
+        person = self.factory.makePerson()
+        page = create_initialized_view(person, '+branches')()
+        self.assertNotIn('View Git repositories', page)
+
+        self.factory.makeGitRepository(owner=person)
+        page = create_initialized_view(person, '+branches')()
+        self.assertIn('View Git repositories', page)
 
 
 class TestProjectGroupBranches(TestCaseWithFactory,
