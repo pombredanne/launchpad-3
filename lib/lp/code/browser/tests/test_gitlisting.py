@@ -9,7 +9,9 @@ from BeautifulSoup import BeautifulSoup
 from zope.component import getUtility
 
 from lp.app.enums import InformationType
+from lp.app.interfaces.services import IService
 from lp.code.interfaces.gitrepository import IGitRepositorySet
+from lp.registry.enums import SharingPermission
 from lp.registry.model.persondistributionsourcepackage import (
     PersonDistributionSourcePackage,
     )
@@ -371,26 +373,22 @@ class TestPersonDistributionSourcePackageGitListingView(
         self.assertNotIn('View Bazaar branches', view())
 
 
-class TestPersonGitListingView(TestCaseWithFactory):
+class TestPlainGitListingView:
 
     layer = DatabaseFunctionalLayer
 
-    def setUp(self):
-        super(TestPersonGitListingView, self).setUp()
-        self.owner = self.factory.makePerson()
-
     def test_rendering(self):
         some_repo = self.factory.makeGitRepository(
-            owner=self.owner, name=u"foo")
+            owner=self.owner, target=self.target, name=u"foo")
         self.factory.makeGitRefs(
             some_repo,
             paths=[u"refs/heads/master", u"refs/heads/bug-1234"])
 
         other_repo = self.factory.makeGitRepository(
-            owner=self.owner, name=u"bar")
+            owner=self.owner, target=self.target, name=u"bar")
         self.factory.makeGitRefs(other_repo, paths=[u"refs/heads/bug-2468"])
 
-        view = create_initialized_view(self.owner, '+git')
+        view = create_initialized_view(self.context, '+git')
         self.assertIs(None, view.default_git_repository)
 
         content = view()
@@ -411,37 +409,64 @@ class TestPersonGitListingView(TestCaseWithFactory):
             [link.find(text=True) for link in table.findAll('a')])
 
     def test_copes_with_private_repos(self):
+        # XXX wgrant 2015-06-12: owner is self.user instead of
+        # self.owner here so the Distribution tests work.
+        # GitRepository._reconcileAccess doesn't handle distro repos
+        # properly, so an AccessPolicyGrant isn't sufficient.
         invisible_repo = self.factory.makeGitRepository(
-            owner=self.owner, information_type=InformationType.PRIVATESECURITY)
+            owner=self.user, target=self.target,
+            information_type=InformationType.PRIVATESECURITY)
         other_repo = self.factory.makeGitRepository(
-            owner=self.owner, information_type=InformationType.PUBLIC)
+            owner=self.owner, target=self.target,
+            information_type=InformationType.PUBLIC)
 
         # An anonymous user can't see the private branch.
         with anonymous_logged_in():
-            anon_view = create_initialized_view(self.owner, '+git')
+            anon_view = create_initialized_view(self.context, '+git')
             self.assertContentEqual(
                 [other_repo], anon_view.repo_collection.getRepositories())
 
         # Neither can a random unprivileged user.
         with person_logged_in(self.factory.makePerson()):
-            anon_view = create_initialized_view(self.owner, '+git')
+            anon_view = create_initialized_view(self.context, '+git')
             self.assertContentEqual(
                 [other_repo], anon_view.repo_collection.getRepositories())
 
         # But someone who can see the repo gets the full view.
-        with person_logged_in(self.owner):
+        with person_logged_in(self.user):
             owner_view = create_initialized_view(
-                self.owner, '+git', user=self.owner)
+                self.context, '+git', user=self.user)
             self.assertContentEqual(
                 [invisible_repo, other_repo],
                 owner_view.repo_collection.getRepositories())
 
     def test_bzr_link(self):
         # With a fresh product there's no Bazaar link.
-        view = create_initialized_view(self.owner, '+git')
+        view = create_initialized_view(self.context, '+git')
         self.assertNotIn('View Bazaar branches', view())
 
         # But it appears once we create a branch.
-        self.factory.makeBranch(owner=self.owner)
-        view = create_initialized_view(self.owner, '+git')
+        self.factory.makeBranch(owner=self.owner, target=self.branch_target)
+        view = create_initialized_view(self.context, '+git')
         self.assertIn('View Bazaar branches', view())
+
+
+class TestPersonGitListingView(TestPlainGitListingView, TestCaseWithFactory):
+
+    def setUp(self):
+        super(TestPersonGitListingView, self).setUp()
+        self.context = self.user = self.owner = self.factory.makePerson()
+        self.target = self.branch_target = None
+
+
+class TestDistributionGitListingView(TestPlainGitListingView,
+                                     TestCaseWithFactory):
+
+    def setUp(self):
+        super(TestDistributionGitListingView, self).setUp()
+        self.target = self.factory.makeDistributionSourcePackage()
+        self.factory.makeDistroSeries(distribution=self.target.distribution)
+        self.branch_target = self.target.development_version
+        self.context = self.target.distribution
+        self.user = self.target.distribution.owner
+        self.owner = None

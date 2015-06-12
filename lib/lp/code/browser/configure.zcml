@@ -927,6 +927,12 @@
         name="+git"
         template="../templates/gitlisting.pt"/>
     <browser:page
+        for="lp.registry.interfaces.distribution.IDistribution"
+        class="lp.code.browser.gitlisting.PlainGitListingView"
+        permission="zope.Public"
+        name="+git"
+        template="../templates/gitlisting.pt"/>
+    <browser:page
         for="lp.code.browser.gitlisting.IGitRepositoryBatchNavigator"
         name="+gitrepository-listing"
         template="../templates/gitrepository-listing.pt"
