@@ -76,6 +76,7 @@ from lp.code.interfaces.gitcollection import (
     IAllGitRepositories,
     IGitCollection,
     )
+from lp.code.interfaces.githosting import IGitHostingClient
 from lp.code.interfaces.gitlookup import IGitLookup
 from lp.code.interfaces.gitnamespace import (
     get_git_namespace,
@@ -342,16 +343,18 @@ class GitRepository(StormBase, GitIdentityMixin):
             config.codehosting.git_browse_root, self.unique_name)
 
     @property
-    def anon_url(self):
+    def git_https_url(self):
         """See `IGitRepository`."""
+        # XXX wgrant 2015-06-12: This guard should be removed once we
+        # support Git HTTPS auth.
         if self.visibleByUser(None):
             return urlutils.join(
-                config.codehosting.git_anon_root, self.shortened_path)
+                config.codehosting.git_browse_root, self.shortened_path)
         else:
             return None
 
     @property
-    def ssh_url(self):
+    def git_ssh_url(self):
         """See `IGitRepository`."""
         return urlutils.join(
             config.codehosting.git_ssh_root, self.shortened_path)
@@ -517,8 +520,9 @@ class GitRepository(StormBase, GitIdentityMixin):
             GitRef.repository == self, GitRef.path.is_in(paths)).remove()
         self.date_last_modified = UTC_NOW
 
-    def planRefChanges(self, hosting_client, hosting_path, logger=None):
+    def planRefChanges(self, hosting_path, logger=None):
         """See `IGitRepository`."""
+        hosting_client = getUtility(IGitHostingClient)
         new_refs = {}
         for path, info in hosting_client.getRefs(hosting_path).items():
             try:
@@ -548,12 +552,12 @@ class GitRepository(StormBase, GitIdentityMixin):
         return refs_to_upsert, refs_to_remove
 
     @staticmethod
-    def fetchRefCommits(hosting_client, hosting_path, refs, logger=None):
+    def fetchRefCommits(hosting_path, refs, logger=None):
         """See `IGitRepository`."""
         oids = sorted(set(info["sha1"] for info in refs.values()))
         commits = {
             commit.get("sha1"): commit
-            for commit in hosting_client.getCommits(
+            for commit in getUtility(IGitHostingClient).getCommits(
                 hosting_path, oids, logger=logger)}
         authors_to_acquire = []
         committers_to_acquire = []

@@ -16,9 +16,11 @@ from testtools.matchers import (
     MatchesSetwise,
     MatchesStructure,
     )
+from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
 from lp.code.enums import GitObjectType
+from lp.code.interfaces.githosting import IGitHostingClient
 from lp.code.interfaces.gitjob import (
     IGitJob,
     IGitRefScanJob,
@@ -39,10 +41,16 @@ from lp.testing import (
     )
 from lp.testing.dbuser import dbuser
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.fixture import ZopeUtilityFixture
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
     )
+
+
+class FakeGitHostingClient:
+
+    implements(IGitHostingClient)
 
 
 class TestGitJob(TestCaseWithFactory):
@@ -129,26 +137,28 @@ class TestGitRefScanJob(TestCaseWithFactory):
 
     def test_run(self):
         # Ensure the job scans the repository.
+        hosting_client = FakeGitHostingClient()
+        self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
         repository = self.factory.makeGitRepository()
         job = GitRefScanJob.create(repository)
         paths = (u"refs/heads/master", u"refs/tags/1.0")
-        job._hosting_client.getRefs = FakeMethod(
-            result=self.makeFakeRefs(paths))
+        hosting_client.getRefs = FakeMethod(result=self.makeFakeRefs(paths))
         author = repository.owner
         author_date_start = datetime(2015, 01, 01, tzinfo=pytz.UTC)
         author_date_gen = time_counter(author_date_start, timedelta(days=1))
-        job._hosting_client.getCommits = FakeMethod(
+        hosting_client.getCommits = FakeMethod(
             result=self.makeFakeCommits(author, author_date_gen, paths))
         with dbuser("branchscanner"):
             JobRunner([job]).runAll()
         self.assertRefsMatch(repository.refs, repository, paths)
 
     def test_logs_bad_ref_info(self):
+        hosting_client = FakeGitHostingClient()
+        self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
         repository = self.factory.makeGitRepository()
         job = GitRefScanJob.create(repository)
-        job._hosting_client.getRefs = FakeMethod(
-            result={u"refs/heads/master": {}})
-        job._hosting_client.getCommits = FakeMethod(result=[])
+        hosting_client.getRefs = FakeMethod(result={u"refs/heads/master": {}})
+        hosting_client.getCommits = FakeMethod(result=[])
         expected_message = (
             'Unconvertible ref refs/heads/master {}: '
             'ref info does not contain "object" key')
@@ -206,15 +216,17 @@ class TestReclaimGitRepositorySpaceJob(TestCaseWithFactory):
     def test_run(self):
         # Running a job to reclaim space sends a request to the hosting
         # service.
+        hosting_client = FakeGitHostingClient()
+        self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
         name = "/~owner/+git/gone"
         path = "1"
         job = ReclaimGitRepositorySpaceJob.create(name, path)
         self.makeJobReady(job)
         [job] = list(ReclaimGitRepositorySpaceJob.iterReady())
         with dbuser("branchscanner"):
-            job._hosting_client.delete = FakeMethod()
+            hosting_client.delete = FakeMethod()
             JobRunner([job]).runAll()
-        self.assertEqual([(path,)], job._hosting_client.delete.extract_args())
+        self.assertEqual([(path,)], hosting_client.delete.extract_args())
 
 
 # XXX cjwatson 2015-03-12: We should test that the jobs work via Celery too,

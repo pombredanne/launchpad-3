@@ -213,11 +213,11 @@ class IGitRepositoryView(Interface):
         "The identity of this repository: a VCS-independent synonym for "
         "git_identity.")
 
-    anon_url = Attribute(
-        "An anonymous (git://) URL for this repository, or None in the case "
-        "of private repositories.")
+    git_https_url = Attribute(
+        "An HTTPS URL for this repository, or None in the case of private "
+        "repositories.")
 
-    ssh_url = Attribute("A git+ssh:// URL for this repository.")
+    git_ssh_url = Attribute("A git+ssh:// URL for this repository.")
 
     refs = exported(CollectionField(
         title=_("The references present in this repository."),
@@ -266,10 +266,9 @@ class IGitRepositoryView(Interface):
         :params paths: An iterable of paths.
         """
 
-    def planRefChanges(hosting_client, hosting_path, logger=None):
+    def planRefChanges(hosting_path, logger=None):
         """Plan ref changes based on information from the hosting service.
 
-        :param hosting_client: A `GitHostingClient`.
         :param hosting_path: A path on the hosting service.
         :param logger: An optional logger.
 
@@ -278,10 +277,9 @@ class IGitRepositoryView(Interface):
             paths to remove.
         """
 
-    def fetchRefCommits(hosting_client, hosting_path, refs, logger=None):
+    def fetchRefCommits(hosting_path, refs, logger=None):
         """Fetch commit information from the hosting service for a set of refs.
 
-        :param hosting_client: A `GitHostingClient`.
         :param hosting_path: A path on the hosting service.
         :param refs: A dict mapping ref paths to dictionaries of their
             fields; the field dictionaries will be updated with any detailed
