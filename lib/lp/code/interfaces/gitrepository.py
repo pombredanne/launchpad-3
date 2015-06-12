@@ -249,12 +249,13 @@ class IGitRepositoryView(Interface):
         :return: An `IGitRef`, or None.
         """
 
-    def createOrUpdateRefs(refs_info, get_objects=False):
+    def createOrUpdateRefs(refs_info, get_objects=False, logger=None):
         """Create or update a set of references in this repository.
 
         :param refs_info: A dict mapping ref paths to
             {"sha1": sha1, "type": `GitObjectType`}.
         :param get_objects: Return the created/updated references.
+        :param logger: An optional logger.
 
         :return: A list of the created/updated references if get_objects,
             otherwise None.
@@ -287,13 +288,14 @@ class IGitRepositoryView(Interface):
         :param logger: An optional logger.
         """
 
-    def synchroniseRefs(refs_to_upsert, refs_to_remove):
+    def synchroniseRefs(refs_to_upsert, refs_to_remove, logger=None):
         """Synchronise references with those from the hosting service.
 
         :param refs_to_upsert: A dictionary mapping ref paths to
             dictionaries of their fields; these refs will be created or
             updated as appropriate.
         :param refs_to_remove: A set of ref paths to remove.
+        :param logger: An optional logger.
         """
 
     def setOwnerDefault(value):
@@ -482,12 +484,31 @@ class IGitRepositoryView(Interface):
         "Whether there are recent changes in this repository that have not "
         "yet been scanned.")
 
+    def updateMergeCommitIDs(paths):
+        """Update commit SHA1s of merge proposals for this repository.
+
+        The *_git_commit_sha1 columns of merge proposals are stored
+        explicitly in order that merge proposals are still meaningful after
+        associated refs have been deleted.  However, active merge proposals
+        where the refs in question still exist should have these columns
+        kept up to date.
+        """
+
     def scheduleDiffUpdates(paths):
         """Create UpdatePreviewDiffJobs for landing targets.
 
         :param paths: A list of reference paths.  Any merge proposals whose
             source is this repository and one of these paths will have their
             diffs updated.
+        """
+
+    def detectMerges(paths, logger=None):
+        """Detect merges of landing candidates.
+
+        :param paths: A list of reference paths.  Any merge proposals whose
+            target is this repository and one of these paths will be
+            checked.
+        :param logger: An optional logger.
         """
 
 

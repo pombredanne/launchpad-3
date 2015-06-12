@@ -117,6 +117,27 @@ class GitHostingClient:
                 "Failed to get merge diff from Git repository: %s" %
                 unicode(e))
 
+    def detectMerges(self, path, target, sources, logger=None):
+        """Detect merges of any of 'sources' into 'target'.
+
+        :return: A dict mapping merged commit OIDs from 'sources' to the
+            first commit OID in the left-hand (first parent only) history of
+            'target' that is a descendant of the corresponding source
+            commit.  Unmerged commits are omitted.
+        """
+        sources = list(sources)
+        try:
+            if logger is not None:
+                logger.info(
+                    "Detecting merges for %s from %s to %s" % (
+                        path, sources, target))
+            return self._post(
+                "/repo/%s/detect-merges/%s" % (path, target),
+                json_data={"sources": sources})
+        except Exception as e:
+            raise GitRepositoryScanFault(
+                "Failed to detect merges in Git repository: %s" % unicode(e))
+
     def delete(self, path, logger=None):
         """Delete a repository."""
         try:

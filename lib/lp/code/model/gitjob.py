@@ -210,7 +210,8 @@ class GitRefScanJob(GitJobDerived):
                     self.repository.planRefChanges(hosting_path, logger=log))
                 self.repository.fetchRefCommits(
                     hosting_path, refs_to_upsert, logger=log)
-                self.repository.synchroniseRefs(refs_to_upsert, refs_to_remove)
+                self.repository.synchroniseRefs(
+                    refs_to_upsert, refs_to_remove, logger=log)
         except LostObjectError:
             log.info(
                 "Skipping repository %s because it has been deleted." %
