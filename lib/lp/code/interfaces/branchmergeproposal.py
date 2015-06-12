@@ -581,7 +581,8 @@ class IBranchMergeProposalEdit(Interface):
         """
 
     def resubmit(registrant, merge_source=None, merge_target=None,
-                 merge_prerequisite=DEFAULT):
+                 merge_prerequisite=DEFAULT, commit_message=None,
+                 description=None):
         """Mark the branch merge proposal as superseded and return a new one.
 
         The new proposal is created as work-in-progress, and copies across
@@ -596,10 +597,10 @@ class IBranchMergeProposalEdit(Interface):
             to the current merge_target).
         :param merge_prerequisite: The merge_prerequisite for the new
             proposal (defaults to the current merge_prerequisite).
-        :param description: The description for the new proposal (defaults to
-            the current description).
         :param commit_message: The commit message for the new proposal (defaults
             to the current commit message).
+        :param description: The description for the new proposal (defaults to
+            the current description).
         """
 
     @operation_parameters(

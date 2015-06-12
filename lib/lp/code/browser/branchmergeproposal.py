@@ -1011,8 +1011,8 @@ class BranchMergeProposalResubmitView(LaunchpadFormView,
                 'prerequisite_git_path',
                 ]
         field_names.extend([
-            'commit_message',
             'description',
+            'commit_message',
             'break_link',
             ])
         return field_names
