@@ -24,7 +24,7 @@
 </metal:side>
 
 <tal:registering metal:fill-slot="registering">
-  Owned by <tal:owner replace="structure context/owner/fmt:link" />.
+  Owned by <tal:owner replace="structure context/owner/fmt:link" />
 </tal:registering>
 
 <div metal:fill-slot="main">
