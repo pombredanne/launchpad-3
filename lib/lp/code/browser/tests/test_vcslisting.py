@@ -8,12 +8,14 @@ __metaclass__ = type
 from zope.publisher.interfaces import NotFound
 
 from lp.code.browser.branchlisting import (
+    DistributionBranchListingView,
     GroupedDistributionSourcePackageBranchesView,
     PersonProductBranchesView,
     ProductBranchesView,
     )
 from lp.code.browser.gitlisting import (
     PersonTargetGitListingView,
+    PlainGitListingView,
     TargetGitListingView,
     )
 from lp.registry.enums import VCSType
@@ -120,3 +122,24 @@ class TestPersonDistributionSourcePackageDefaultVCSView(TestCaseWithFactory):
 
     def test_git(self):
         self.assertCodeViewClass(VCSType.GIT, PersonTargetGitListingView)
+
+
+class TestDistributionDefaultVCSView(TestCaseWithFactory):
+    """Tests that Distribution:+code delegates to +git or +branches."""
+
+    layer = DatabaseFunctionalLayer
+
+    def assertCodeViewClass(self, vcs, cls):
+        distro = self.factory.makeDistribution(vcs=vcs)
+        self.assertEqual(vcs, distro.vcs)
+        view = test_traverse('/%s/+code' % distro.name)[1]
+        self.assertIsInstance(view, cls)
+
+    def test_default_unset(self):
+        self.assertCodeViewClass(None, DistributionBranchListingView)
+
+    def test_default_bzr(self):
+        self.assertCodeViewClass(VCSType.BZR, DistributionBranchListingView)
+
+    def test_git(self):
+        self.assertCodeViewClass(VCSType.GIT, PlainGitListingView)
