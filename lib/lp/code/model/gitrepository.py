@@ -342,16 +342,18 @@ class GitRepository(StormBase, GitIdentityMixin):
             config.codehosting.git_browse_root, self.unique_name)
 
     @property
-    def anon_url(self):
+    def git_https_url(self):
         """See `IGitRepository`."""
+        # XXX wgrant 2015-06-12: This guard should be removed once we
+        # support Git HTTPS auth.
         if self.visibleByUser(None):
             return urlutils.join(
-                config.codehosting.git_anon_root, self.shortened_path)
+                config.codehosting.git_browse_root, self.shortened_path)
         else:
             return None
 
     @property
-    def ssh_url(self):
+    def git_ssh_url(self):
         """See `IGitRepository`."""
         return urlutils.join(
             config.codehosting.git_ssh_root, self.shortened_path)

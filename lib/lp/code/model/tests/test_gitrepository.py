@@ -734,12 +734,12 @@ class TestGitRepositoryURLs(TestCaseWithFactory):
             config.codehosting.git_browse_root, repository.unique_name)
         self.assertEqual(expected_url, repository.getCodebrowseUrl())
 
-    def test_anon_url_for_public(self):
+    def test_git_https_url_for_public(self):
         # Public repositories have an anonymous URL, visible to anyone.
         repository = self.factory.makeGitRepository()
         expected_url = urlutils.join(
-            config.codehosting.git_anon_root, repository.shortened_path)
-        self.assertEqual(expected_url, repository.anon_url)
+            config.codehosting.git_browse_root, repository.shortened_path)
+        self.assertEqual(expected_url, repository.git_https_url)
 
     def test_anon_url_not_for_private(self):
         # Private repositories do not have an anonymous URL.
@@ -747,14 +747,14 @@ class TestGitRepositoryURLs(TestCaseWithFactory):
         repository = self.factory.makeGitRepository(
             owner=owner, information_type=InformationType.USERDATA)
         with person_logged_in(owner):
-            self.assertIsNone(repository.anon_url)
+            self.assertIsNone(repository.git_https_url)
 
-    def test_ssh_url_for_public(self):
+    def test_git_ssh_url_for_public(self):
         # Public repositories have an SSH URL.
         repository = self.factory.makeGitRepository()
         expected_url = urlutils.join(
             config.codehosting.git_ssh_root, repository.shortened_path)
-        self.assertEqual(expected_url, repository.ssh_url)
+        self.assertEqual(expected_url, repository.git_ssh_url)
 
     def test_ssh_url_for_private(self):
         # Private repositories have an SSH URL.
@@ -764,7 +764,7 @@ class TestGitRepositoryURLs(TestCaseWithFactory):
         with person_logged_in(owner):
             expected_url = urlutils.join(
                 config.codehosting.git_ssh_root, repository.shortened_path)
-            self.assertEqual(expected_url, repository.ssh_url)
+            self.assertEqual(expected_url, repository.git_ssh_url)
 
 
 class TestGitRepositoryNamespace(TestCaseWithFactory):
