@@ -24,12 +24,7 @@
 </metal:side>
 
 <tal:registering metal:fill-slot="registering">
-  Created by
-    <tal:registrant replace="structure context/registrant/fmt:link" />
-  on
-    <tal:created-on replace="structure context/date_created/fmt:date" />
-  and last modified on
-    <tal:last-modified replace="structure context/date_last_modified/fmt:date" />
+  Owned by <tal:owner replace="structure context/owner/fmt:link" />
 </tal:registering>
 
 <div metal:fill-slot="main">
@@ -42,14 +37,6 @@
     <div id="repository-management" class="portlet">
       <tal:repository-management
           replace="structure context/@@++repository-management" />
-    </div>
-  </div>
-
-  <div class="yui-g">
-    <div id="repository-info" class="portlet">
-      <h2>Repository information</h2>
-      <tal:repository-info
-          replace="structure context/@@++repository-information" />
     </div>
   </div>
 

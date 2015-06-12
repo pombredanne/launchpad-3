@@ -93,7 +93,7 @@ class GitRepositoryBreadcrumb(NameBreadcrumb):
 
     @property
     def inside(self):
-        return self.context.unique_name.split("/")[-1]
+        return self.context.target
 
 
 class GitRepositoryNavigation(Navigation):
