@@ -42,12 +42,12 @@ from zope.error.interfaces import IErrorReportingUtility
 from zope.interface import implements
 
 from lp.app.errors import NotFoundError
-from lp.code.githosting import GitHostingClient
 from lp.code.interfaces.diff import (
     IDiff,
     IIncrementalDiff,
     IPreviewDiff,
     )
+from lp.code.interfaces.githosting import IGitHostingClient
 from lp.codehosting.bzrutils import read_locked
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
@@ -417,10 +417,6 @@ class PreviewDiff(Storm):
     def has_conflicts(self):
         return self.conflicts is not None and self.conflicts != ''
 
-    @staticmethod
-    def getGitHostingClient():
-        return GitHostingClient(config.codehosting.internal_git_api_endpoint)
-
     @classmethod
     def fromBranchMergeProposal(cls, bmp):
         """Create a `PreviewDiff` from a `BranchMergeProposal`.
@@ -449,7 +445,6 @@ class PreviewDiff(Storm):
             preview.conflicts = u''.join(
                 unicode(conflict) + '\n' for conflict in conflicts)
         else:
-            hosting_client = cls.getGitHostingClient()
             source_repository = bmp.source_git_repository
             target_repository = bmp.target_git_repository
             if source_repository == target_repository:
@@ -460,7 +455,7 @@ class PreviewDiff(Storm):
                     source_repository.getInternalPath())
             # XXX cjwatson 2015-04-30: Add prerequisite handling once turnip
             # supports it.
-            response = hosting_client.getMergeDiff(
+            response = getUtility(IGitHostingClient).getMergeDiff(
                 path, bmp.target_git_ref.commit_sha1,
                 bmp.source_git_ref.commit_sha1)
             source_revision_id = bmp.source_git_ref.commit_sha1

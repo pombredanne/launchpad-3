@@ -938,6 +938,13 @@
   <adapter factory="lp.code.model.gitlookup.DistributionGitTraversable" />
   <adapter factory="lp.code.model.gitlookup.DistributionSourcePackageGitTraversable" />
 
+  <!-- Git hosting -->
+  <securedutility
+      component="lp.code.model.githosting.GitHostingClient"
+      provides="lp.code.interfaces.githosting.IGitHostingClient">
+    <allow interface="lp.code.interfaces.githosting.IGitHostingClient" />
+  </securedutility>
+
   <!-- Git-related jobs -->
   <class class="lp.code.model.gitjob.GitJob">
     <allow interface="lp.code.interfaces.gitjob.IGitJob" />

@@ -12,19 +12,24 @@ import json
 from urlparse import urljoin
 
 import requests
+from zope.interface import implements
 
 from lp.code.errors import (
     GitRepositoryCreationFault,
     GitRepositoryDeletionFault,
     GitRepositoryScanFault,
     )
+from lp.code.interfaces.githosting import IGitHostingClient
+from lp.services.config import config
 
 
 class GitHostingClient:
     """A client for the internal API provided by the Git hosting system."""
 
-    def __init__(self, endpoint):
-        self.endpoint = endpoint
+    implements(IGitHostingClient)
+
+    def __init__(self):
+        self.endpoint = config.codehosting.internal_git_api_endpoint
 
     def _makeSession(self):
         session = requests.Session()
