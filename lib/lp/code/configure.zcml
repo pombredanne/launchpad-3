@@ -940,7 +940,7 @@
 
   <!-- Git hosting -->
   <securedutility
-      component="lp.code.model.githosting.GitHostingClient"
+      class="lp.code.model.githosting.GitHostingClient"
       provides="lp.code.interfaces.githosting.IGitHostingClient">
     <allow interface="lp.code.interfaces.githosting.IGitHostingClient" />
   </securedutility>
