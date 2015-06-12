@@ -9,9 +9,7 @@ from BeautifulSoup import BeautifulSoup
 from zope.component import getUtility
 
 from lp.app.enums import InformationType
-from lp.app.interfaces.services import IService
 from lp.code.interfaces.gitrepository import IGitRepositorySet
-from lp.registry.enums import SharingPermission
 from lp.registry.model.persondistributionsourcepackage import (
     PersonDistributionSourcePackage,
     )
