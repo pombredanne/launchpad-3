@@ -921,6 +921,18 @@
         name="+git"
         template="../templates/gitlisting.pt"/>
     <browser:page
+        for="lp.registry.interfaces.person.IPerson"
+        class="lp.code.browser.gitlisting.PlainGitListingView"
+        permission="zope.Public"
+        name="+git"
+        template="../templates/gitlisting.pt"/>
+    <browser:page
+        for="lp.registry.interfaces.distribution.IDistribution"
+        class="lp.code.browser.gitlisting.PlainGitListingView"
+        permission="zope.Public"
+        name="+git"
+        template="../templates/gitlisting.pt"/>
+    <browser:page
         for="lp.code.browser.gitlisting.IGitRepositoryBatchNavigator"
         name="+gitrepository-listing"
         template="../templates/gitrepository-listing.pt"
@@ -943,7 +955,7 @@
     <browser:defaultView
         for="lp.registry.interfaces.distribution.IDistribution"
         layer="lp.code.publisher.CodeLayer"
-        name="+branches"/>
+        name="+code"/>
 
     <browser:defaultView
         for="lp.registry.interfaces.distroseries.IDistroSeries"
