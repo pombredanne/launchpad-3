@@ -161,3 +161,10 @@ class PersonDistributionSourcePackageGitListingView(
 
     # PersonDistributionSourcePackage:+branches doesn't exist.
     show_bzr_link = False
+
+
+class PlainGitListingView(BaseGitListingView):
+
+    page_title = 'Git'
+    target = None
+    default_git_repository = None
