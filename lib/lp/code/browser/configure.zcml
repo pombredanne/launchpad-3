@@ -765,9 +765,6 @@
             name="+portlet-privacy"
             template="../templates/gitrepository-portlet-privacy.pt"/>
         <browser:page
-            name="++repository-information"
-            template="../templates/gitrepository-information.pt"/>
-        <browser:page
             name="++repository-management"
             template="../templates/gitrepository-management.pt"/>
     </browser:pages>
