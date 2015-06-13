@@ -787,7 +787,8 @@
         permission="launchpad.View"
         interface="lp.app.interfaces.launchpad.IPrivacy
                    lp.code.interfaces.gitrepository.IGitRepositoryView
-                   lp.code.interfaces.gitrepository.IGitRepositoryModerateAttributes" />
+                   lp.code.interfaces.gitrepository.IGitRepositoryModerateAttributes
+                   lp.code.interfaces.gitrepository.IGitRepositoryEditableAttributes" />
     <require
         permission="launchpad.Moderate"
         interface="lp.code.interfaces.gitrepository.IGitRepositoryModerate"
@@ -795,7 +796,8 @@
         set_attributes="date_last_modified" />
     <require
         permission="launchpad.Edit"
-        interface="lp.code.interfaces.gitrepository.IGitRepositoryEdit" />
+        interface="lp.code.interfaces.gitrepository.IGitRepositoryEdit"
+        set_schema="lp.code.interfaces.gitrepository.IGitRepositoryEditableAttributes" />
   </class>
   <subscriber
       for="lp.code.interfaces.gitrepository.IGitRepository zope.lifecycleevent.interfaces.IObjectModifiedEvent"

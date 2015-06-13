@@ -148,9 +148,12 @@ class TestGitRefScanJob(TestCaseWithFactory):
         author_date_gen = time_counter(author_date_start, timedelta(days=1))
         hosting_client.getCommits = FakeMethod(
             result=self.makeFakeCommits(author, author_date_gen, paths))
+        hosting_client.getProperties = FakeMethod(
+            result={u"default_branch": u"refs/heads/master"})
         with dbuser("branchscanner"):
             JobRunner([job]).runAll()
         self.assertRefsMatch(repository.refs, repository, paths)
+        self.assertEqual(u"refs/heads/master", repository.default_branch)
 
     def test_logs_bad_ref_info(self):
         hosting_client = FakeGitHostingClient()
