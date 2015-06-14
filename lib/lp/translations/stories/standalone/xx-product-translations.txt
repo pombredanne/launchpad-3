@@ -53,7 +53,7 @@ translation, or link the product to a translatable package.
     Launchpad allows communities to translate projects using imports or a
     branch.
     Getting started with translating your project in Launchpad
-    Configure Translations
+    Translations
 
     >>> registrant.getLink(
     ...     url=('/gnomebaker/trunk/'
@@ -64,7 +64,7 @@ The instructions for the registrant link to the translations
 configuration page, where they can configure the project to use
 Launchpad for translations if desired.
 
-    >>> registrant.getLink('Configure Translations').click()
+    >>> registrant.getLink('Translations').click()
     >>> print registrant.url
     http://.../gnomebaker/+configure-translations
 
@@ -230,5 +230,5 @@ Instead a notice is displayed that the product has no translations.
     >>> notice = first_tag_by_class(admin_browser.contents, 'notice')
     >>> print extract_text(notice)
     Getting started with translating your project in Launchpad
-    Configure Translations
+    Translations
     There are no translations for this project.

@@ -346,6 +346,7 @@ class ProductInvolvementView(PillarInvolvementView):
         'link' -- the menu link, and
         'configured' -- a boolean representing the configuration status.
         """
+        overview_menu = MenuAPI(self.context).overview
         series_menu = MenuAPI(self.context.development_focus).overview
         configuration_names = [
             'configure_bugtracker',
@@ -363,7 +364,7 @@ class ProductInvolvementView(PillarInvolvementView):
         set_branch = series_menu['set_branch']
         set_branch.text = 'Code'
         set_branch.summary = "Specify the location of this project's code."
-        config_list.append(
+        config_list.insert(0,
             dict(link=set_branch,
                  configured=config_statuses['configure_codehosting']))
         return config_list
@@ -417,25 +418,25 @@ class ProductEditLinksMixin(StructuralSubscriptionMenuMixin):
 
     @enabled_with_permission('launchpad.BugSupervisor')
     def configure_bugtracker(self):
-        text = 'Configure Bugs'
+        text = 'Bugs'
         summary = 'Specify where bugs are tracked for this project'
         return Link('+configure-bugtracker', text, summary, icon='edit')
 
     @enabled_with_permission('launchpad.TranslationsAdmin')
     def configure_translations(self):
-        text = 'Configure Translations'
+        text = 'Translations'
         summary = 'Allow users to submit translations for this project'
         return Link('+configure-translations', text, summary, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def configure_answers(self):
-        text = 'Configure Answers'
+        text = 'Answers'
         summary = 'Allow users to ask questions on this project'
         return Link('+configure-answers', text, summary, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def configure_blueprints(self):
-        text = 'Configure Blueprints'
+        text = 'Blueprints'
         summary = 'Enable tracking of feature planning.'
         return Link('+configure-blueprints', text, summary, icon='edit')
 
