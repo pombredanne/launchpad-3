@@ -1689,6 +1689,13 @@ class TestBranchMergeProposalResubmit(TestCaseWithFactory):
         revised = original.resubmit(original.registrant, description='foo')
         self.assertEqual('foo', revised.description)
 
+    def test_resubmit_preserves_commit(self):
+        """Resubmit preserves commit message."""
+        original = self.factory.makeBranchMergeProposal()
+        self.useContext(person_logged_in(original.registrant))
+        revised = original.resubmit(original.registrant)
+        self.assertEqual(original.commit_message, revised.commit_message)
+
     def test_resubmit_breaks_link(self):
         """Resubmit breaks link, if specified."""
         original = self.factory.makeBranchMergeProposal()
