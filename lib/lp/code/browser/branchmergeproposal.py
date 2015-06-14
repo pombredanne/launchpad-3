@@ -1012,6 +1012,7 @@ class BranchMergeProposalResubmitView(LaunchpadFormView,
                 ]
         field_names.extend([
             'description',
+            'commit_message',
             'break_link',
             ])
         return field_names
@@ -1044,7 +1045,8 @@ class BranchMergeProposalResubmitView(LaunchpadFormView,
                     merge_prerequisite = None
             proposal = self.context.resubmit(
                 self.user, merge_source, merge_target, merge_prerequisite,
-                data['description'], data['break_link'])
+                data['commit_message'], data['description'],
+                data['break_link'])
         except BranchMergeProposalExists as e:
             message = structured(
                 'Cannot resubmit because <a href="%(url)s">a similar merge'

@@ -634,8 +634,8 @@ class BranchMergeProposal(SQLBase):
         self.date_merged = date_merged
 
     def resubmit(self, registrant, merge_source=None, merge_target=None,
-                 merge_prerequisite=DEFAULT, description=None,
-                 break_link=False):
+                 merge_prerequisite=DEFAULT, commit_message=None,
+                 description=None, break_link=False):
         """See `IBranchMergeProposal`."""
         if merge_source is None:
             merge_source = self.merge_source
@@ -649,6 +649,8 @@ class BranchMergeProposal(SQLBase):
                 raise BranchMergeProposalExists(proposal)
         if merge_prerequisite is DEFAULT:
             merge_prerequisite = self.merge_prerequisite
+        if commit_message is None:
+            commit_message = self.commit_message
         if description is None:
             description = self.description
         # You can transition from REJECTED to SUPERSEDED, but
@@ -665,6 +667,7 @@ class BranchMergeProposal(SQLBase):
             registrant=registrant,
             merge_target=merge_target,
             merge_prerequisite=merge_prerequisite,
+            commit_message=commit_message,
             description=description,
             needs_review=True, review_requests=review_requests)
         if not break_link:

@@ -925,6 +925,7 @@ class TestBranchMergeProposalResubmitViewMixin:
         new_proposal = view.resubmit_action.success(self._getFormValues(
             context.merge_source, context.merge_target,
             context.merge_prerequisite, {
+                'commit_message': None,
                 'description': None,
                 'break_link': False,
                 }))
@@ -943,6 +944,7 @@ class TestBranchMergeProposalResubmitViewMixin:
             view.context.merge_source)
         new_proposal = view.resubmit_action.success(self._getFormValues(
             new_source, new_target, new_prerequisite, {
+                'commit_message': 'a commit',
                 'description': 'description',
                 'break_link': False,
                 }))
@@ -964,6 +966,7 @@ class TestBranchMergeProposalResubmitViewMixin:
             merge_prerequisite = context.merge_prerequisite
         return view.resubmit_action.success(cls._getFormValues(
             context.merge_source, context.merge_target, merge_prerequisite, {
+                'commit_message': None,
                 'description': None,
                 'break_link': break_link,
                 }))
@@ -1108,9 +1111,11 @@ class TestResubmitBrowserGit(BrowserTestCase):
         """Proposals can be resubmitted using the browser."""
         bmp = self.factory.makeBranchMergeProposalForGit(registrant=self.user)
         browser = self.getViewBrowser(bmp, '+resubmit')
+        browser.getControl('Commit Message').value = 'dribble'
         browser.getControl('Description').value = 'flibble'
         browser.getControl('Resubmit').click()
         with person_logged_in(self.user):
+            self.assertEqual('dribble', bmp.superseded_by.commit_message)
             self.assertEqual('flibble', bmp.superseded_by.description)
 
 
