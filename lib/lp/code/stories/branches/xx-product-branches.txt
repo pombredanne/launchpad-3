@@ -216,7 +216,7 @@ hosting configured or if it is not using Launchpad.
     >>> admin_browser.open('http://code.launchpad.dev/firefox')
     >>> print_links(admin_browser)
     Import a branch
-    Configure code hosting
+    Configure code
 
 The owner of the project sees the links for the activities he can
 perform, everything except defining branch visibility.
@@ -225,7 +225,7 @@ perform, everything except defining branch visibility.
     >>> owner_browser.open('http://code.launchpad.dev/firefox')
     >>> print_links(owner_browser)
     Import a branch
-    Configure code hosting
+    Configure code
 
 And a regular user can only register and import branches.
 
