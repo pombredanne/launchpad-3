@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Branch views."""
@@ -22,6 +22,7 @@ __all__ = [
     'BranchUpgradeView',
     'BranchURL',
     'BranchView',
+    'CodeEditOwnerMixin',
     'RegisterBranchMergeProposalView',
     'TryImportAgainView',
     ]
@@ -1056,34 +1057,19 @@ class BranchUpgradeView(LaunchpadFormView):
             self.request.response.addErrorNotification(e)
 
 
-class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
-    """The main branch for editing the branch attributes."""
-
-    @property
-    def field_names(self):
-        field_names = ['owner', 'name']
-        if not self.context.sourcepackagename:
-            field_names.append('target')
-        field_names.extend([
-            'information_type', 'url', 'description',
-            'lifecycle_status'])
-        return field_names
-
-    custom_widget('target', BranchTargetWidget)
-    custom_widget('lifecycle_status', LaunchpadRadioWidgetWithDescription)
-    custom_widget('information_type', LaunchpadRadioWidgetWithDescription)
+class CodeEditOwnerMixin:
+    """A mixin to adjust owner vocabularies for admins."""
 
     def setUpFields(self):
-        super(BranchEditView, self).setUpFields()
-        branch = self.context
-        # If the user can administer branches, then they should be able to
-        # assign the ownership of the branch to any valid person or team.
-        if check_permission('launchpad.Admin', branch):
+        super(CodeEditOwnerMixin, self).setUpFields()
+        # If the user can administer the relevant object type, then they
+        # should be able to assign the ownership of the object to any valid
+        # person or team.
+        if check_permission('launchpad.Admin', self.context):
             owner_field = self.schema['owner']
             any_owner_choice = Choice(
                 __name__='owner', title=owner_field.title,
-                description=_("As an administrator you are able to assign"
-                                " this branch to any person or team."),
+                description=self.any_owner_description,
                 required=True, vocabulary='ValidPersonOrTeam')
             any_owner_field = form.Fields(
                 any_owner_choice, render_context=self.render_context)
@@ -1112,6 +1098,32 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
                 self.form_fields = self.form_fields.omit('owner')
                 self.form_fields = new_owner_field + self.form_fields
 
+
+class BranchEditView(CodeEditOwnerMixin, BranchEditFormView,
+                     BranchNameValidationMixin):
+    """The main branch for editing the branch attributes."""
+
+    @property
+    def field_names(self):
+        field_names = ['owner', 'name']
+        if not self.context.sourcepackagename:
+            field_names.append('target')
+        field_names.extend([
+            'information_type', 'url', 'description',
+            'lifecycle_status'])
+        return field_names
+
+    custom_widget('target', BranchTargetWidget)
+    custom_widget('lifecycle_status', LaunchpadRadioWidgetWithDescription)
+    custom_widget('information_type', LaunchpadRadioWidgetWithDescription)
+
+    any_owner_description = _(
+        "As an administrator you are able to assign this branch to any "
+        "person or team.")
+
+    def setUpFields(self):
+        super(BranchEditView, self).setUpFields()
+        branch = self.context
         if branch.branch_type in (BranchType.HOSTED, BranchType.IMPORTED):
             self.form_fields = self.form_fields.omit('url')
 
@@ -1400,4 +1412,3 @@ class TryImportAgainView(LaunchpadFormView):
     @property
     def prefix(self):
         return "tryagain"
-

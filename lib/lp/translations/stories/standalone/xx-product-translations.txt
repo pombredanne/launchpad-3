@@ -64,7 +64,7 @@ The instructions for the registrant link to the translations
 configuration page, where they can configure the project to use
 Launchpad for translations if desired.
 
-    >>> registrant.getLink('Configure Translations').click()
+    >>> registrant.getLink('Translations').click()
     >>> print registrant.url
     http://.../gnomebaker/+configure-translations
 

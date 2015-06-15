@@ -765,9 +765,6 @@
             name="+portlet-privacy"
             template="../templates/gitrepository-portlet-privacy.pt"/>
         <browser:page
-            name="++repository-information"
-            template="../templates/gitrepository-information.pt"/>
-        <browser:page
             name="++repository-management"
             template="../templates/gitrepository-management.pt"/>
     </browser:pages>
@@ -903,8 +900,32 @@
         name="+git"
         template="../templates/gitlisting.pt"/>
     <browser:page
+        for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
+        class="lp.code.browser.gitlisting.TargetGitListingView"
+        permission="zope.Public"
+        name="+git"
+        template="../templates/gitlisting.pt"/>
+    <browser:page
         for="lp.registry.interfaces.personproduct.IPersonProduct"
         class="lp.code.browser.gitlisting.PersonTargetGitListingView"
+        permission="zope.Public"
+        name="+git"
+        template="../templates/gitlisting.pt"/>
+    <browser:page
+        for="lp.registry.interfaces.persondistributionsourcepackage.IPersonDistributionSourcePackage"
+        class="lp.code.browser.gitlisting.PersonDistributionSourcePackageGitListingView"
+        permission="zope.Public"
+        name="+git"
+        template="../templates/gitlisting.pt"/>
+    <browser:page
+        for="lp.registry.interfaces.person.IPerson"
+        class="lp.code.browser.gitlisting.PlainGitListingView"
+        permission="zope.Public"
+        name="+git"
+        template="../templates/gitlisting.pt"/>
+    <browser:page
+        for="lp.registry.interfaces.distribution.IDistribution"
+        class="lp.code.browser.gitlisting.PlainGitListingView"
         permission="zope.Public"
         name="+git"
         template="../templates/gitlisting.pt"/>
@@ -931,7 +952,7 @@
     <browser:defaultView
         for="lp.registry.interfaces.distribution.IDistribution"
         layer="lp.code.publisher.CodeLayer"
-        name="+branches"/>
+        name="+code"/>
 
     <browser:defaultView
         for="lp.registry.interfaces.distroseries.IDistroSeries"
@@ -962,7 +983,7 @@
     <browser:defaultView
         for="lp.registry.interfaces.personproduct.IPersonProduct"
         layer="lp.code.publisher.CodeLayer"
-        name="+branches" />
+        name="+code" />
 
     <browser:page
         for="lp.registry.interfaces.personproduct.IPersonProduct"

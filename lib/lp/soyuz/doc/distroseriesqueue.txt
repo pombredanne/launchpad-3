@@ -201,7 +201,7 @@ Check the behaviour of @cachedproperty  attributes:
     i386
 
     >>> qitem.sourcepackagerelease
-    <SourcePackageRelease at ...>
+    <SourcePackageRelease mozilla-firefox ...>
 
 
 Let's check the behaviour of @cachedproperty attributes in a custom upload:

@@ -38,6 +38,7 @@ from storm.locals import (
     )
 from storm.store import Store
 from zope.component import getUtility
+from zope.event import notify
 from zope.interface import implements
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import (
@@ -67,6 +68,7 @@ from lp.code.errors import (
     GitDefaultConflict,
     GitTargetError,
     )
+from lp.code.event.git import GitRefsUpdatedEvent
 from lp.code.interfaces.branchmergeproposal import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES,
     )
@@ -340,16 +342,18 @@ class GitRepository(StormBase, GitIdentityMixin):
             config.codehosting.git_browse_root, self.unique_name)
 
     @property
-    def anon_url(self):
+    def git_https_url(self):
         """See `IGitRepository`."""
+        # XXX wgrant 2015-06-12: This guard should be removed once we
+        # support Git HTTPS auth.
         if self.visibleByUser(None):
             return urlutils.join(
-                config.codehosting.git_anon_root, self.shortened_path)
+                config.codehosting.git_browse_root, self.shortened_path)
         else:
             return None
 
     @property
-    def ssh_url(self):
+    def git_ssh_url(self):
         """See `IGitRepository`."""
         return urlutils.join(
             config.codehosting.git_ssh_root, self.shortened_path)
@@ -503,6 +507,8 @@ class GitRepository(StormBase, GitIdentityMixin):
             created = []
 
         self.date_last_modified = UTC_NOW
+        if updated:
+            notify(GitRefsUpdatedEvent(self, [value[1] for value in updated]))
         if get_objects:
             return bulk.load(GitRef, updated + created)
 
@@ -786,6 +792,15 @@ class GitRepository(StormBase, GitIdentityMixin):
             BranchMergeProposal,
             BranchMergeProposal.source_git_repository == self)
 
+    def getActiveLandingTargets(self, paths):
+        """Merge proposals not in final states where these refs are source."""
+        return Store.of(self).find(
+            BranchMergeProposal,
+            BranchMergeProposal.source_git_repository == self,
+            BranchMergeProposal.source_git_path.is_in(paths),
+            Not(BranchMergeProposal.queue_status.is_in(
+                BRANCH_MERGE_PROPOSAL_FINAL_STATES)))
+
     @property
     def landing_candidates(self):
         """See `IGitRepository`."""
@@ -826,6 +841,14 @@ class GitRepository(StormBase, GitIdentityMixin):
             GitJob.job == Job.id,
             Job._status.is_in([JobStatus.WAITING, JobStatus.RUNNING]))
         return not jobs.is_empty()
+
+    def scheduleDiffUpdates(self, paths):
+        """See `IGitRepository`."""
+        from lp.code.model.branchmergeproposaljob import UpdatePreviewDiffJob
+        jobs = []
+        for merge_proposal in self.getActiveLandingTargets(paths):
+            jobs.append(UpdatePreviewDiffJob.create(merge_proposal))
+        return jobs
 
     def canBeDeleted(self):
         """See `IGitRepository`."""

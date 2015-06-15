@@ -164,6 +164,8 @@ from lp.code.interfaces.codeimport import (
     )
 from lp.code.interfaces.gitcollection import IGitCollection
 from lp.code.interfaces.gitrepository import IGitRepositorySet
+from lp.code.browser.vcslisting import TargetDefaultVCSNavigationMixin
+
 from lp.registry.browser import (
     add_subscribe_link,
     BaseRdfView,
@@ -239,7 +241,7 @@ class ProductNavigation(
     Navigation, BugTargetTraversalMixin,
     FAQTargetNavigationMixin, HasCustomLanguageCodesTraversalMixin,
     QuestionTargetTraversalMixin, StructuralSubscriptionTargetTraversalMixin,
-    PillarNavigationMixin):
+    PillarNavigationMixin, TargetDefaultVCSNavigationMixin):
 
     usedfor = IProduct
 

@@ -30,6 +30,7 @@ from zope.interface import (
     providedBy,
     )
 
+from lp import _
 from lp.app.browser.informationtype import InformationTypePortletMixin
 from lp.app.browser.launchpadform import (
     action,
@@ -40,7 +41,12 @@ from lp.app.browser.launchpadform import (
 from lp.app.errors import NotFoundError
 from lp.app.vocabularies import InformationTypeVocabulary
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
-from lp.code.errors import GitRepositoryExists
+from lp.code.browser.branch import CodeEditOwnerMixin
+from lp.code.errors import (
+    GitRepositoryCreationForbidden,
+    GitRepositoryExists,
+    )
+from lp.code.interfaces.gitnamespace import get_git_namespace
 from lp.code.interfaces.gitref import IGitRefBatchNavigator
 from lp.code.interfaces.gitrepository import IGitRepository
 from lp.services.config import config
@@ -87,7 +93,7 @@ class GitRepositoryBreadcrumb(NameBreadcrumb):
 
     @property
     def inside(self):
-        return self.context.unique_name.split("/")[-1]
+        return self.context.target
 
 
 class GitRepositoryNavigation(Navigation):
@@ -102,7 +108,7 @@ class GitRepositoryNavigation(Navigation):
             ref_segments.append(segments.pop())
             ref = self.context.getRefByPath("/".join(ref_segments))
             if ref is not None:
-                for _ in range(len(ref_segments)):
+                for unused in range(len(ref_segments)):
                     self.request.stepstogo.consume()
                 return ref
         raise NotFoundError
@@ -264,6 +270,7 @@ class GitRepositoryEditFormView(LaunchpadEditFormView):
                 IGitRepository["information_type"], readonly=False,
                 vocabulary=InformationTypeVocabulary(types=info_types))
             name = copy_field(IGitRepository["name"], readonly=False)
+            owner = copy_field(IGitRepository["owner"], readonly=False)
             reviewer = copy_field(IGitRepository["reviewer"], required=True)
 
         return GitRepositoryEditSchema
@@ -297,6 +304,14 @@ class GitRepositoryEditFormView(LaunchpadEditFormView):
             if name != self.context.name:
                 self.context.setName(name, self.user)
                 changed = True
+        if "owner" in data:
+            owner = data.pop("owner")
+            if owner != self.context.owner:
+                self.context.setOwner(owner, self.user)
+                changed = True
+                self.request.response.addNotification(
+                    "The repository owner has been changed to %s (%s)" %
+                    (owner.displayname, owner.name))
         if "information_type" in data:
             information_type = data.pop("information_type")
             self.context.transitionToInformationType(
@@ -356,15 +371,20 @@ class GitRepositoryEditReviewerView(GitRepositoryEditFormView):
         return {"reviewer": self.context.code_reviewer}
 
 
-class GitRepositoryEditView(GitRepositoryEditFormView):
+class GitRepositoryEditView(CodeEditOwnerMixin, GitRepositoryEditFormView):
     """The main view for editing repository attributes."""
 
     field_names = [
+        "owner",
         "name",
         "information_type",
         ]
 
     custom_widget("information_type", LaunchpadRadioWidgetWithDescription)
+
+    any_owner_description = _(
+        "As an administrator you are able to assign this repository to any "
+        "person or team.")
 
     def _setRepositoryExists(self, existing_repository, field_name="name"):
         owner = existing_repository.owner
@@ -379,12 +399,21 @@ class GitRepositoryEditView(GitRepositoryEditFormView):
         self.setFieldError(field_name, message)
 
     def validate(self, data):
-        if "name" in data:
+        if "name" in data and "owner" in data:
             name = data["name"]
-            if name != self.context.name:
-                namespace = self.context.namespace
+            owner = data["owner"]
+            if name != self.context.name or owner != self.context.owner:
+                if self.context.owner == self.context.target:
+                    target = owner
+                else:
+                    target = self.context.target
+                namespace = get_git_namespace(target, owner)
                 try:
                     namespace.validateMove(self.context, self.user, name=name)
+                except GitRepositoryCreationForbidden:
+                    self.addError(
+                        "%s is not allowed to own Git repositories in %s." %
+                        (owner.displayname, target.displayname))
                 except GitRepositoryExists as e:
                     self._setRepositoryExists(e.existing_repository)
 

@@ -185,7 +185,7 @@ When the owner now visits the upload page for trunk, there's a notice.
 
 The notice links to the page for configuring translations on the project.
 
-    >>> owner_browser.getLink('Configure Translations').click()
+    >>> owner_browser.getLink('Translations', index=1).click()
     >>> print owner_browser.url
     http://.../bazaar/+configure-translations
 

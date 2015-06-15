@@ -27,12 +27,15 @@ from lp.code.interfaces.gitnamespace import (
     )
 from lp.code.interfaces.gitrepository import IGitRepositorySet
 from lp.code.model.gitrepository import GitRepository
+from lp.registry.interfaces.persondistributionsourcepackage import (
+    IPersonDistributionSourcePackage,
+    )
 from lp.registry.interfaces.personproduct import IPersonProduct
 from lp.services.config import config
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.batching import TableBatchNavigator
 from lp.services.webapp.publisher import LaunchpadView
-from lp.services.webapp.authorization import check_permission
 
 
 class IGitRepositoryBatchNavigator(Interface):
@@ -136,6 +139,8 @@ class PersonTargetGitListingView(BaseGitListingView):
     def target(self):
         if IPersonProduct.providedBy(self.context):
             return self.context.product
+        elif IPersonDistributionSourcePackage.providedBy(self.context):
+            return self.context.distro_source_package
         else:
             raise Exception("Unknown context: %r" % self.context)
 
@@ -149,3 +154,17 @@ class PersonTargetGitListingView(BaseGitListingView):
             return repo
         else:
             return None
+
+
+class PersonDistributionSourcePackageGitListingView(
+        PersonTargetGitListingView):
+
+    # PersonDistributionSourcePackage:+branches doesn't exist.
+    show_bzr_link = False
+
+
+class PlainGitListingView(BaseGitListingView):
+
+    page_title = 'Git'
+    target = None
+    default_git_repository = None
