@@ -14,15 +14,15 @@ import json
 from bzrlib import urlutils
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
+import pytz
 from sqlobject import SQLObjectNotFound
 from storm.store import Store
-import transaction
-import pytz
 from testtools.matchers import (
     EndsWith,
     MatchesSetwise,
     MatchesStructure,
     )
+import transaction
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import providedBy
@@ -53,6 +53,7 @@ from lp.code.interfaces.branchmergeproposal import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES as FINAL_STATES,
     )
 from lp.code.interfaces.defaultgit import ICanHasDefaultGitRepository
+from lp.code.interfaces.githosting import IGitHostingClient
 from lp.code.interfaces.gitjob import IGitRefScanJobSource
 from lp.code.interfaces.gitlookup import IGitLookup
 from lp.code.interfaces.gitnamespace import (
@@ -118,6 +119,7 @@ from lp.testing import (
     )
 from lp.testing.dbuser import dbuser
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.fixture import ZopeUtilityFixture
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
@@ -1052,8 +1054,8 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
                     },
                 },
             })
-        refs_to_upsert, refs_to_remove = repository.planRefChanges(
-            hosting_client, "dummy")
+        self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
+        refs_to_upsert, refs_to_remove = repository.planRefChanges("dummy")
 
         expected_upsert = {
             u"refs/heads/master": {
@@ -1094,8 +1096,8 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
                     },
                 },
             })
-        self.assertEqual(
-            ({}, set()), repository.planRefChanges(hosting_client, "dummy"))
+        self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
+        self.assertEqual(({}, set()), repository.planRefChanges("dummy"))
 
     def test_fetchRefCommits(self):
         # fetchRefCommits fetches detailed tip commit metadata for the
@@ -1126,6 +1128,7 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
                 u"parents": [],
                 u"tree": unicode(hashlib.sha1("").hexdigest()),
                 }])
+        self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
         refs = {
             u"refs/heads/master": {
                 u"sha1": master_sha1,
@@ -1136,7 +1139,7 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
                 u"type": GitObjectType.COMMIT,
                 },
             }
-        GitRepository.fetchRefCommits(hosting_client, "dummy", refs)
+        GitRepository.fetchRefCommits("dummy", refs)
 
         expected_oids = [master_sha1, foo_sha1]
         [(_, observed_oids)] = hosting_client.getCommits.extract_args()

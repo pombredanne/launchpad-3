@@ -23,13 +23,14 @@ from storm.locals import (
     SQL,
     Store,
     )
+from zope.component import getUtility
 from zope.interface import (
     classProvides,
     implements,
     )
 
 from lp.app.errors import NotFoundError
-from lp.code.githosting import GitHostingClient
+from lp.code.interfaces.githosting import IGitHostingClient
 from lp.code.interfaces.gitjob import (
     IGitJob,
     IGitRefScanJob,
@@ -198,11 +199,6 @@ class GitRefScanJob(GitJobDerived):
         job.celeryRunOnCommit()
         return job
 
-    def __init__(self, git_job):
-        super(GitRefScanJob, self).__init__(git_job)
-        self._hosting_client = GitHostingClient(
-            config.codehosting.internal_git_api_endpoint)
-
     def run(self):
         """See `IGitRefScanJob`."""
         try:
@@ -211,11 +207,9 @@ class GitRefScanJob(GitJobDerived):
                     Store.of(self.repository)):
                 hosting_path = self.repository.getInternalPath()
                 refs_to_upsert, refs_to_remove = (
-                    self.repository.planRefChanges(
-                        self._hosting_client, hosting_path, logger=log))
+                    self.repository.planRefChanges(hosting_path, logger=log))
                 self.repository.fetchRefCommits(
-                    self._hosting_client, hosting_path, refs_to_upsert,
-                    logger=log)
+                    hosting_path, refs_to_upsert, logger=log)
                 self.repository.synchroniseRefs(refs_to_upsert, refs_to_remove)
         except LostObjectError:
             log.info(
@@ -250,14 +244,9 @@ class ReclaimGitRepositorySpaceJob(GitJobDerived):
         job.celeryRunOnCommit()
         return job
 
-    def __init__(self, git_job):
-        super(ReclaimGitRepositorySpaceJob, self).__init__(git_job)
-        self._hosting_client = GitHostingClient(
-            config.codehosting.internal_git_api_endpoint)
-
     @property
     def repository_path(self):
         return self.metadata["repository_path"]
 
     def run(self):
-        self._hosting_client.delete(self.repository_path, logger=log)
+        getUtility(IGitHostingClient).delete(self.repository_path, logger=log)
