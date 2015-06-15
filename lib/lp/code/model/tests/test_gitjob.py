@@ -223,7 +223,7 @@ class TestReclaimGitRepositorySpaceJob(TestCaseWithFactory):
     def test_run(self):
         # Running a job to reclaim space sends a request to the hosting
         # service.
-        hosting_client = FakeGitHostingClient()
+        hosting_client = FakeGitHostingClient({}, [])
         self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
         name = "/~owner/+git/gone"
         path = "1"
