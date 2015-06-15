@@ -58,7 +58,7 @@ class GitHostingClient:
             kwargs["data"] = json.dumps(json_data)
         response = getattr(session, method)(
             urljoin(self.endpoint, path), timeout=self.timeout, **kwargs)
-        if response.status_code != 200:
+        if (response.status_code // 100) != 2:
             raise HTTPResponseNotOK(response.text)
         return response.json()
 
