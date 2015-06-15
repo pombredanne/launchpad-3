@@ -52,15 +52,19 @@ class FakeGitHostingClient:
 
     implements(IGitHostingClient)
 
-    def __init__(self, refs, commits):
+    def __init__(self, refs, commits, default_branch=u"refs/heads/master"):
         self._refs = refs
         self._commits = commits
+        self._default_branch = default_branch
 
     def getRefs(self, paths):
         return self._refs
 
     def getCommits(self, path, commit_oids, logger=None):
         return self._commits
+
+    def getProperties(self, path):
+        return {u"default_branch": self._default_branch}
 
 
 class TestGitJob(TestCaseWithFactory):
@@ -160,6 +164,7 @@ class TestGitRefScanJob(TestCaseWithFactory):
         with dbuser("branchscanner"):
             JobRunner([job]).runAll()
         self.assertRefsMatch(repository.refs, repository, paths)
+        self.assertEqual(u"refs/heads/master", repository.default_branch)
 
     def test_logs_bad_ref_info(self):
         repository = self.factory.makeGitRepository()

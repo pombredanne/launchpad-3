@@ -23,6 +23,20 @@ class IGitHostingClient(Interface):
             other physical path.
         """
 
+    def getProperties(path):
+        """Get properties of this repository.
+
+        :param path: Physical path of the repository on the hosting service.
+        :return: A dict of properties.
+        """
+
+    def setProperties(path, **props):
+        """Set properties of this repository.
+
+        :param path: Physical path of the repository on the hosting service.
+        :param props: Properties to set.
+        """
+
     def getRefs(path):
         """Get all refs in this repository.
 

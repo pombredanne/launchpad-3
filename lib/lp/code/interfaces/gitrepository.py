@@ -552,6 +552,19 @@ class IGitRepositoryModerate(Interface):
         """
 
 
+class IGitRepositoryEditableAttributes(Interface):
+    """IGitRepository attributes that can be edited.
+
+    These attributes need launchpad.View to see, and launchpad.Edit to change.
+    """
+
+    default_branch = exported(TextLine(
+        title=_("Default branch"), required=False, readonly=False,
+        description=_(
+            "The full path to the default branch for this repository, e.g. "
+            "refs/heads/master.")))
+
+
 class IGitRepositoryEdit(Interface):
     """IGitRepository methods that require launchpad.Edit permission."""
 
@@ -619,7 +632,8 @@ class IGitRepositoryEdit(Interface):
 
 
 class IGitRepository(IGitRepositoryView, IGitRepositoryModerateAttributes,
-                     IGitRepositoryModerate, IGitRepositoryEdit):
+                     IGitRepositoryModerate, IGitRepositoryEditableAttributes,
+                     IGitRepositoryEdit):
     """A Git repository."""
 
     # Mark repositories as exported entries for the Launchpad API.

@@ -43,6 +43,7 @@ __all__ = [
     'InvalidNamespace',
     'NoLinkedBranch',
     'NoSuchBranch',
+    'NoSuchGitReference',
     'NoSuchGitRepository',
     'PrivateBranchRecipe',
     'ReviewNotPending',
@@ -61,7 +62,10 @@ import httplib
 from bzrlib.plugins.builder.recipe import RecipeParseError
 from lazr.restful.declarations import error_status
 
-from lp.app.errors import NameLookupFailed
+from lp.app.errors import (
+    NameLookupFailed,
+    NotFoundError,
+    )
 
 # Annotate the RecipeParseError's with a 400 webservice status.
 error_status(httplib.BAD_REQUEST)(RecipeParseError)
@@ -400,6 +404,21 @@ class NoSuchGitRepository(NameLookupFailed):
     """Raised when we try to load a Git repository that does not exist."""
 
     _message_prefix = "No such Git repository"
+
+
+class NoSuchGitReference(NotFoundError):
+    """Raised when we try to look up a Git reference that does not exist."""
+
+    def __init__(self, repository, path):
+        self.repository = repository
+        self.path = path
+        self.message = (
+            "The repository at %s does not contain a reference named '%s'." %
+            (repository.display_name, path))
+        NotFoundError.__init__(self, self.message)
+
+    def __str__(self):
+        return self.message
 
 
 @error_status(httplib.CONFLICT)

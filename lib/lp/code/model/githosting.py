@@ -68,6 +68,9 @@ class GitHostingClient:
     def _post(self, path, **kwargs):
         return self._request("post", path, **kwargs)
 
+    def _patch(self, path, **kwargs):
+        return self._request("patch", path, **kwargs)
+
     def _delete(self, path, **kwargs):
         return self._request("delete", path, **kwargs)
 
@@ -82,6 +85,22 @@ class GitHostingClient:
         except Exception as e:
             raise GitRepositoryCreationFault(
                 "Failed to create Git repository: %s" % unicode(e))
+
+    def getProperties(self, path):
+        """See `IGitHostingClient`."""
+        try:
+            return self._get("/repo/%s" % path)
+        except Exception as e:
+            raise GitRepositoryScanFault(
+                "Failed to get properties of Git repository: %s" % unicode(e))
+
+    def setProperties(self, path, **props):
+        """See `IGitHostingClient`."""
+        try:
+            self._patch("/repo/%s" % path, json_data=props)
+        except Exception as e:
+            raise GitRepositoryScanFault(
+                "Failed to set properties of Git repository: %s" % unicode(e))
 
     def getRefs(self, path):
         """See `IGitHostingClient`."""

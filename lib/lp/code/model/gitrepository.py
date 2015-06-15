@@ -72,6 +72,7 @@ from lp.code.errors import (
     CannotDeleteGitRepository,
     GitDefaultConflict,
     GitTargetError,
+    NoSuchGitReference,
     )
 from lp.code.event.git import GitRefsUpdatedEvent
 from lp.code.interfaces.branchmergeproposal import (
@@ -205,6 +206,8 @@ class GitRepository(StormBase, GitIdentityMixin):
     information_type = EnumCol(enum=InformationType, notNull=True)
     owner_default = Bool(name='owner_default', allow_none=False)
     target_default = Bool(name='target_default', allow_none=False)
+
+    _default_branch = Unicode(name='default_branch', allow_none=True)
 
     def __init__(self, registrant, owner, target, name, information_type,
                  date_created, reviewer=None, description=None):
@@ -406,6 +409,22 @@ class GitRepository(StormBase, GitIdentityMixin):
             GitRef,
             GitRef.repository_id == self.id,
             GitRef.path.startswith(u"refs/heads/")).order_by(GitRef.path)
+
+    @property
+    def default_branch(self):
+        """See `IGitRepository`."""
+        return self._default_branch
+
+    @default_branch.setter
+    def default_branch(self, value):
+        """See `IGitRepository`."""
+        ref = self.getRefByPath(value)
+        if ref is None:
+            raise NoSuchGitReference(self, value)
+        if self._default_branch != ref.path:
+            self._default_branch = ref.path
+            getUtility(IGitHostingClient).setProperties(
+                self.getInternalPath(), default_branch=ref.path)
 
     def getRefByPath(self, path):
         paths = [path]

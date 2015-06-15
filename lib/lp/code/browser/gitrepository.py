@@ -21,7 +21,10 @@ __all__ = [
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
-from lazr.restful.interface import copy_field
+from lazr.restful.interface import (
+    copy_field,
+    use_template,
+    )
 from storm.expr import Desc
 from zope.event import notify
 from zope.interface import (
@@ -266,6 +269,7 @@ class GitRepositoryEditFormView(LaunchpadEditFormView):
             This is necessary to make various fields editable that are not
             normally editable through the interface.
             """
+            use_template(IGitRepository, include=["default_branch"])
             information_type = copy_field(
                 IGitRepository["information_type"], readonly=False,
                 vocabulary=InformationTypeVocabulary(types=info_types))
@@ -378,6 +382,7 @@ class GitRepositoryEditView(CodeEditOwnerMixin, GitRepositoryEditFormView):
         "owner",
         "name",
         "information_type",
+        "default_branch",
         ]
 
     custom_widget("information_type", LaunchpadRadioWidgetWithDescription)
@@ -416,6 +421,14 @@ class GitRepositoryEditView(CodeEditOwnerMixin, GitRepositoryEditFormView):
                         (owner.displayname, target.displayname))
                 except GitRepositoryExists as e:
                     self._setRepositoryExists(e.existing_repository)
+        if "default_branch" in data:
+            default_branch = data["default_branch"]
+            if (default_branch is not None and
+                    self.context.getRefByPath(default_branch) is None):
+                self.setFieldError(
+                    "default_branch",
+                    "This repository does not contain a reference named "
+                    "'%s'." % default_branch)
 
 
 class GitRepositoryDeletionView(LaunchpadFormView):
