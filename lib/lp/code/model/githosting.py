@@ -119,13 +119,7 @@ class GitHostingClient:
                 unicode(e))
 
     def detectMerges(self, path, target, sources, logger=None):
-        """Detect merges of any of 'sources' into 'target'.
-
-        :return: A dict mapping merged commit OIDs from 'sources' to the
-            first commit OID in the left-hand (first parent only) history of
-            'target' that is a descendant of the corresponding source
-            commit.  Unmerged commits are omitted.
-        """
+        """See `IGitHostingClient`."""
         sources = list(sources)
         try:
             if logger is not None:
