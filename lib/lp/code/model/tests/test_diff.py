@@ -16,8 +16,8 @@ from bzrlib.patches import (
     parse_patches,
     RemoveLine,
     )
-from fixtures import MonkeyPatch
 import transaction
+from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.errors import NotFoundError
@@ -26,6 +26,7 @@ from lp.code.interfaces.diff import (
     IIncrementalDiff,
     IPreviewDiff,
     )
+from lp.code.interfaces.githosting import IGitHostingClient
 from lp.code.model.diff import (
     Diff,
     PreviewDiff,
@@ -43,6 +44,7 @@ from lp.testing import (
     verifyObject,
     )
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.fixture import ZopeUtilityFixture
 from lp.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
@@ -90,7 +92,8 @@ def create_example_merge(test_case):
 
 
 class FakeGitHostingClient:
-    pass
+
+    implements(IGitHostingClient)
 
 
 class DiffTestCase(TestCaseWithFactory):
@@ -139,9 +142,7 @@ class DiffTestCase(TestCaseWithFactory):
         hosting_client = FakeGitHostingClient()
         hosting_client.getMergeDiff = FakeMethod(
             result=result, failure=failure)
-        self.useFixture(MonkeyPatch(
-            "lp.code.model.diff.PreviewDiff.getGitHostingClient",
-            staticmethod(lambda: hosting_client)))
+        self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
 
     def createExampleGitMerge(self):
         """Create an example Git-based merge scenario.
