@@ -72,6 +72,7 @@ class GitHostingClient:
         return self._request("delete", path, **kwargs)
 
     def create(self, path, clone_from=None):
+        """See `IGitHostingClient`."""
         try:
             if clone_from:
                 request = {"repo_path": path, "clone_from": clone_from}
@@ -83,6 +84,7 @@ class GitHostingClient:
                 "Failed to create Git repository: %s" % unicode(e))
 
     def getRefs(self, path):
+        """See `IGitHostingClient`."""
         try:
             return self._get("/repo/%s/refs" % path)
         except Exception as e:
@@ -90,6 +92,7 @@ class GitHostingClient:
                 "Failed to get refs from Git repository: %s" % unicode(e))
 
     def getCommits(self, path, commit_oids, logger=None):
+        """See `IGitHostingClient`."""
         commit_oids = list(commit_oids)
         try:
             if logger is not None:
@@ -102,13 +105,7 @@ class GitHostingClient:
                 unicode(e))
 
     def getMergeDiff(self, path, base, head, logger=None):
-        """Get the merge preview diff between two commits.
-
-        :return: A dict mapping 'commits' to a list of commits between
-            'base' and 'head' (formatted as with `getCommits`), 'patch' to
-            the text of the diff between 'base' and 'head', and 'conflicts'
-            to a list of conflicted paths.
-        """
+        """See `IGitHostingClient`."""
         try:
             if logger is not None:
                 logger.info(
@@ -143,7 +140,7 @@ class GitHostingClient:
                 "Failed to detect merges in Git repository: %s" % unicode(e))
 
     def delete(self, path, logger=None):
-        """Delete a repository."""
+        """See `IGitHostingClient`."""
         try:
             if logger is not None:
                 logger.info("Deleting repository %s" % path)
