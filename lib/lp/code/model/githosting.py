@@ -23,6 +23,10 @@ from lp.code.interfaces.githosting import IGitHostingClient
 from lp.services.config import config
 
 
+class HTTPResponseNotOK(Exception):
+    pass
+
+
 class GitHostingClient:
     """A client for the internal API provided by the Git hosting system."""
 
@@ -55,7 +59,7 @@ class GitHostingClient:
         response = getattr(session, method)(
             urljoin(self.endpoint, path), timeout=self.timeout, **kwargs)
         if response.status_code != 200:
-            raise Exception(response.text)
+            raise HTTPResponseNotOK(response.text)
         return response.json()
 
     def _get(self, path, **kwargs):
