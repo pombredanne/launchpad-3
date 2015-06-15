@@ -28,6 +28,7 @@ from zope.interface import (
     classProvides,
     implements,
     )
+from zope.security.proxy import removeSecurityProxy
 
 from lp.app.errors import NotFoundError
 from lp.code.interfaces.githosting import IGitHostingClient
@@ -210,7 +211,14 @@ class GitRefScanJob(GitJobDerived):
                     self.repository.planRefChanges(hosting_path, logger=log))
                 self.repository.fetchRefCommits(
                     hosting_path, refs_to_upsert, logger=log)
-                self.repository.synchroniseRefs(refs_to_upsert, refs_to_remove)
+                self.repository.synchroniseRefs(
+                    refs_to_upsert, refs_to_remove, logger=log)
+                props = getUtility(IGitHostingClient).getProperties(
+                    hosting_path)
+                # We don't want ref canonicalisation, nor do we want to send
+                # this change back to the hosting service.
+                removeSecurityProxy(self.repository)._default_branch = (
+                    props["default_branch"])
         except LostObjectError:
             log.info(
                 "Skipping repository %s because it has been deleted." %

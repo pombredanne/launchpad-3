@@ -1770,8 +1770,11 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 u"type": GitObjectType.COMMIT,
                 }
             for path in paths}
-        return removeSecurityProxy(repository).createOrUpdateRefs(
-            refs_info, get_objects=True)
+        refs_by_path = {
+            ref.path: ref
+            for ref in removeSecurityProxy(repository).createOrUpdateRefs(
+                refs_info, get_objects=True)}
+        return [refs_by_path[path] for path in paths]
 
     def makeBug(self, target=None, owner=None, bug_watch_url=None,
                 information_type=None, date_closed=None, title=None,

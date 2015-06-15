@@ -15,6 +15,7 @@ from testtools.matchers import (
     DocTestMatches,
     Equals,
     )
+import transaction
 from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
 from zope.security.proxy import removeSecurityProxy
@@ -22,6 +23,7 @@ from zope.security.proxy import removeSecurityProxy
 from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.interfaces.services import IService
+from lp.code.interfaces.githosting import IGitHostingClient
 from lp.code.interfaces.revision import IRevisionSet
 from lp.registry.enums import BranchSharingPolicy
 from lp.registry.interfaces.person import PersonVisibility
@@ -37,6 +39,8 @@ from lp.testing import (
     record_two_runs,
     TestCaseWithFactory,
     )
+from lp.testing.fakemethod import FakeMethod
+from lp.testing.fixture import ZopeUtilityFixture
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import HasQueryCount
 from lp.testing.pages import (
@@ -342,6 +346,50 @@ class TestGitRepositoryEditView(TestCaseWithFactory):
             self.assertEqual("", result)
             self.assertEqual(
                 repository.information_type, InformationType.PUBLICSECURITY)
+
+    def test_change_default_branch(self):
+        # An authorised user can change the default branch to one that
+        # exists.  They may omit "refs/heads/".
+        hosting_client = FakeMethod()
+        hosting_client.setProperties = FakeMethod()
+        self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
+        person = self.factory.makePerson()
+        repository = self.factory.makeGitRepository(owner=person)
+        master, new = self.factory.makeGitRefs(
+            repository=repository,
+            paths=[u"refs/heads/master", u"refs/heads/new"])
+        removeSecurityProxy(repository)._default_branch = u"refs/heads/master"
+        browser = self.getUserBrowser(
+            canonical_url(repository) + "/+edit", user=person)
+        browser.getControl(name="field.default_branch").value = u"new"
+        browser.getControl("Change Git Repository").click()
+        with person_logged_in(person):
+            self.assertEqual(
+                [((repository.getInternalPath(),),
+                 {u"default_branch": u"refs/heads/new"})],
+                hosting_client.setProperties.calls)
+            self.assertEqual(u"refs/heads/new", repository.default_branch)
+
+    def test_change_default_branch_nonexistent(self):
+        # Trying to change the default branch to one that doesn't exist
+        # displays an error.
+        person = self.factory.makePerson()
+        repository = self.factory.makeGitRepository(owner=person)
+        [master] = self.factory.makeGitRefs(
+            repository=repository, paths=[u"refs/heads/master"])
+        removeSecurityProxy(repository)._default_branch = u"refs/heads/master"
+        form = {
+            "field.default_branch": "refs/heads/new",
+            "field.actions.change": "Change Git Repository",
+            }
+        transaction.commit()
+        with person_logged_in(person):
+            view = create_initialized_view(repository, name="+edit", form=form)
+        self.assertEqual(
+            ["This repository does not contain a reference named "
+             "&#x27;refs/heads/new&#x27;."],
+            view.errors)
+        self.assertEqual(u"refs/heads/master", repository.default_branch)
 
 
 class TestGitRepositoryEditViewInformationTypes(TestCaseWithFactory):
