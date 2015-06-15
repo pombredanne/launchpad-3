@@ -1234,6 +1234,19 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
             hosting_client.setProperties.calls)
         self.assertEqual(u"refs/heads/new", repository.default_branch)
 
+    def test_set_default_branch_unchanged(self):
+        hosting_client = FakeMethod()
+        hosting_client.setProperties = FakeMethod()
+        self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
+        repository = self.factory.makeGitRepository()
+        self.factory.makeGitRefs(
+            repository=repository, paths=[u"refs/heads/master"])
+        removeSecurityProxy(repository)._default_branch = u"refs/heads/master"
+        with person_logged_in(repository.owner):
+            repository.default_branch = u"master"
+        self.assertEqual([], hosting_client.setProperties.calls)
+        self.assertEqual(u"refs/heads/master", repository.default_branch)
+
 
 class TestGitRepositoryGetAllowedInformationTypes(TestCaseWithFactory):
     """Test `IGitRepository.getAllowedInformationTypes`."""

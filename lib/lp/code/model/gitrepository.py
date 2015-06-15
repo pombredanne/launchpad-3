@@ -421,9 +421,10 @@ class GitRepository(StormBase, GitIdentityMixin):
         ref = self.getRefByPath(value)
         if ref is None:
             raise NoSuchGitReference(self, value)
-        self._default_branch = ref.path
-        getUtility(IGitHostingClient).setProperties(
-            self.getInternalPath(), default_branch=ref.path)
+        if self._default_branch != ref.path:
+            self._default_branch = ref.path
+            getUtility(IGitHostingClient).setProperties(
+                self.getInternalPath(), default_branch=ref.path)
 
     def getRefByPath(self, path):
         paths = [path]
