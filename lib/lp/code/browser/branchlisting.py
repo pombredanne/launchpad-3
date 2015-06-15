@@ -1138,7 +1138,7 @@ class ProductBranchListingView(BranchListingView):
             return None
         series_menu = MenuAPI(self.context.development_focus).overview
         set_branch = series_menu['set_branch']
-        set_branch.text = 'Configure code'
+        set_branch.text = 'Configure Code'
         return set_branch
 
 

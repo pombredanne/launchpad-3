@@ -357,6 +357,8 @@ class ProductInvolvementView(PillarInvolvementView):
         config_list = []
         config_statuses = self.configuration_states
         for key in configuration_names:
+            overview_menu[key].text = overview_menu[key].text.replace(
+                'Configure ', '')
             config_list.append(dict(link=overview_menu[key],
                                     configured=config_statuses[key]))
 
@@ -418,25 +420,25 @@ class ProductEditLinksMixin(StructuralSubscriptionMenuMixin):
 
     @enabled_with_permission('launchpad.BugSupervisor')
     def configure_bugtracker(self):
-        text = 'Bugs'
+        text = 'Configure Bugs'
         summary = 'Specify where bugs are tracked for this project'
         return Link('+configure-bugtracker', text, summary, icon='edit')
 
     @enabled_with_permission('launchpad.TranslationsAdmin')
     def configure_translations(self):
-        text = 'Translations'
+        text = 'Configure Translations'
         summary = 'Allow users to submit translations for this project'
         return Link('+configure-translations', text, summary, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def configure_answers(self):
-        text = 'Answers'
+        text = 'Configure Answers'
         summary = 'Allow users to ask questions on this project'
         return Link('+configure-answers', text, summary, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def configure_blueprints(self):
-        text = 'Blueprints'
+        text = 'Configure Blueprints'
         summary = 'Enable tracking of feature planning.'
         return Link('+configure-blueprints', text, summary, icon='edit')
 
