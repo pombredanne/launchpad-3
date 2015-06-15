@@ -52,6 +52,16 @@ class FakeGitHostingClient:
 
     implements(IGitHostingClient)
 
+    def __init__(self, refs, commits):
+        self._refs = refs
+        self._commits = commits
+
+    def getRefs(self, paths):
+        return self._refs
+
+    def getCommits(self, path, commit_oids, logger=None):
+        return self._commits
+
 
 class TestGitJob(TestCaseWithFactory):
     """Tests for `GitJob`."""
@@ -137,28 +147,25 @@ class TestGitRefScanJob(TestCaseWithFactory):
 
     def test_run(self):
         # Ensure the job scans the repository.
-        hosting_client = FakeGitHostingClient()
-        self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
         repository = self.factory.makeGitRepository()
         job = GitRefScanJob.create(repository)
         paths = (u"refs/heads/master", u"refs/tags/1.0")
-        hosting_client.getRefs = FakeMethod(result=self.makeFakeRefs(paths))
         author = repository.owner
         author_date_start = datetime(2015, 01, 01, tzinfo=pytz.UTC)
         author_date_gen = time_counter(author_date_start, timedelta(days=1))
-        hosting_client.getCommits = FakeMethod(
-            result=self.makeFakeCommits(author, author_date_gen, paths))
+        hosting_client = FakeGitHostingClient(
+            self.makeFakeRefs(paths),
+            self.makeFakeCommits(author, author_date_gen, paths))
+        self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
         with dbuser("branchscanner"):
             JobRunner([job]).runAll()
         self.assertRefsMatch(repository.refs, repository, paths)
 
     def test_logs_bad_ref_info(self):
-        hosting_client = FakeGitHostingClient()
-        self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
         repository = self.factory.makeGitRepository()
         job = GitRefScanJob.create(repository)
-        hosting_client.getRefs = FakeMethod(result={u"refs/heads/master": {}})
-        hosting_client.getCommits = FakeMethod(result=[])
+        hosting_client = FakeGitHostingClient({u"refs/heads/master": {}}, [])
+        self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
         expected_message = (
             'Unconvertible ref refs/heads/master {}: '
             'ref info does not contain "object" key')
