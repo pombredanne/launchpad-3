@@ -28,7 +28,7 @@ In the beginning, a project hasn't had blueprints set up:
 
   >>> browser.open("http://blueprints.launchpad.dev/big-project")
   >>> print extract_text(find_main_content(browser.contents))
-  Blueprints...does not know how...Configure blueprints...
+  Blueprints...does not know how...Configure Blueprints...
 
 But it's easy to change that.
   

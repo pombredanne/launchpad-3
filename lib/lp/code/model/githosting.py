@@ -23,6 +23,10 @@ from lp.code.interfaces.githosting import IGitHostingClient
 from lp.services.config import config
 
 
+class HTTPResponseNotOK(Exception):
+    pass
+
+
 class GitHostingClient:
     """A client for the internal API provided by the Git hosting system."""
 
@@ -55,7 +59,7 @@ class GitHostingClient:
         response = getattr(session, method)(
             urljoin(self.endpoint, path), timeout=self.timeout, **kwargs)
         if response.status_code != 200:
-            raise Exception(response.text)
+            raise HTTPResponseNotOK(response.text)
         return response.json()
 
     def _get(self, path, **kwargs):
@@ -71,6 +75,7 @@ class GitHostingClient:
         return self._request("delete", path, **kwargs)
 
     def create(self, path, clone_from=None):
+        """See `IGitHostingClient`."""
         try:
             if clone_from:
                 request = {"repo_path": path, "clone_from": clone_from}
@@ -98,6 +103,7 @@ class GitHostingClient:
                 "Failed to set properties of Git repository: %s" % unicode(e))
 
     def getRefs(self, path):
+        """See `IGitHostingClient`."""
         try:
             return self._get("/repo/%s/refs" % path)
         except Exception as e:
@@ -105,6 +111,7 @@ class GitHostingClient:
                 "Failed to get refs from Git repository: %s" % unicode(e))
 
     def getCommits(self, path, commit_oids, logger=None):
+        """See `IGitHostingClient`."""
         commit_oids = list(commit_oids)
         try:
             if logger is not None:
@@ -117,13 +124,7 @@ class GitHostingClient:
                 unicode(e))
 
     def getMergeDiff(self, path, base, head, logger=None):
-        """Get the merge preview diff between two commits.
-
-        :return: A dict mapping 'commits' to a list of commits between
-            'base' and 'head' (formatted as with `getCommits`), 'patch' to
-            the text of the diff between 'base' and 'head', and 'conflicts'
-            to a list of conflicted paths.
-        """
+        """See `IGitHostingClient`."""
         try:
             if logger is not None:
                 logger.info(
@@ -137,13 +138,7 @@ class GitHostingClient:
                 unicode(e))
 
     def detectMerges(self, path, target, sources, logger=None):
-        """Detect merges of any of 'sources' into 'target'.
-
-        :return: A dict mapping merged commit OIDs from 'sources' to the
-            first commit OID in the left-hand (first parent only) history of
-            'target' that is a descendant of the corresponding source
-            commit.  Unmerged commits are omitted.
-        """
+        """See `IGitHostingClient`."""
         sources = list(sources)
         try:
             if logger is not None:
@@ -158,7 +153,7 @@ class GitHostingClient:
                 "Failed to detect merges in Git repository: %s" % unicode(e))
 
     def delete(self, path, logger=None):
-        """Delete a repository."""
+        """See `IGitHostingClient`."""
         try:
             if logger is not None:
                 logger.info("Deleting repository %s" % path)
