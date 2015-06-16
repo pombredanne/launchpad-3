@@ -440,6 +440,32 @@ class TestGitRepositoryEditView(TestCaseWithFactory):
         with person_logged_in(owner):
             self.assertEqual(initial_target, repository.target)
 
+    def test_default_conflict_is_error(self):
+        # An error is displayed if an owner-default repository is saved with
+        # a new target that already has an owner-default repository.
+        owner = self.factory.makePerson()
+        initial_target = self.factory.makeProduct()
+        new_target = self.factory.makeProduct(name="new", displayname="New")
+        repository = self.factory.makeGitRepository(
+            owner=owner, target=initial_target)
+        existing_default = self.factory.makeGitRepository(
+            owner=owner, target=new_target)
+        login_person(owner)
+        repository.setOwnerDefault(True)
+        existing_default.setOwnerDefault(True)
+        browser = self.getUserBrowser(
+            canonical_url(repository) + "/+edit", user=owner)
+        browser.getControl(name="field.target.project").value = "new"
+        browser.getControl("Change Git Repository").click()
+        with person_logged_in(owner):
+            self.assertThat(
+                browser.contents,
+                Contains(
+                    "%s&#x27;s default repository for &#x27;New&#x27; is "
+                    "already set to %s." %
+                    (owner.displayname, existing_default.unique_name)))
+            self.assertEqual(initial_target, repository.target)
+
     def test_rename(self):
         # The name of a repository can be changed via the UI by an
         # authorised user.

@@ -52,6 +52,7 @@ from lp.code.browser.widgets.gitrepositorytarget import (
     GitRepositoryTargetWidget,
     )
 from lp.code.errors import (
+    GitDefaultConflict,
     GitRepositoryCreationForbidden,
     GitRepositoryExists,
     GitTargetError,
@@ -509,6 +510,8 @@ class GitRepositoryEditView(GitRepositoryEditFormView):
                         (owner.displayname, target.displayname))
                 except GitRepositoryExists as e:
                     self._setRepositoryExists(e.existing_repository)
+                except GitDefaultConflict as e:
+                    self.addError(str(e))
         if (self.context.target_default and "target" in data and
                 data["target"] != self.context.target):
             self.setFieldError(
