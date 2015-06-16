@@ -27,6 +27,7 @@ from lp.app.enums import (
     PROPRIETARY_INFORMATION_TYPES,
     ServiceUsage,
     )
+from lp.code.interfaces.gitrepository import IGitRepositorySet
 from lp.registry.browser.product import (
     ProjectAddStepOne,
     ProjectAddStepTwo,
@@ -293,6 +294,22 @@ class TestProductView(BrowserTestCase):
     def setUp(self):
         super(TestProductView, self).setUp()
         self.product = self.factory.makeProduct(name='fnord')
+
+    def test_golang_meta_renders(self):
+        # ensure golang meta import path is rendered if project has
+        # git default.
+        # See: https://golang.org/cmd/go/#hdr-Remote_import_paths
+        repo = self.factory.makeGitRepository()
+        view = create_initialized_view(repo.target, '+index')
+        with person_logged_in(repo.target.owner):
+            getUtility(IGitRepositorySet).setDefaultRepository(
+                target=repo.target, repository=repo)
+        golang_import = '{base}/{product_name} git {repo_url}'.format(
+            base=config.launchpad.non_restricted_hostname,
+            product_name=repo.target.name,
+            repo_url=repo.git_https_url
+            )
+        self.assertEqual(golang_import, view.golang_import_spec)
 
     def test_show_programming_languages_without_languages(self):
         # show_programming_languages is false when there are no programming

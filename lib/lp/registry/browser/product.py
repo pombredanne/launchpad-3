@@ -134,6 +134,7 @@ from lp.bugs.interfaces.bugtask import RESOLVED_BUGTASK_STATUSES
 from lp.code.browser.branchref import BranchRef
 from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
 from lp.code.browser.vcslisting import TargetDefaultVCSNavigationMixin
+from lp.code.interfaces.gitrepository import IGitRepositorySet
 from lp.registry.browser import (
     add_subscribe_link,
     BaseRdfView,
@@ -187,6 +188,7 @@ from lp.services.webapp import (
     stepto,
     structured,
     )
+from lp.services.config import config
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.batching import BatchNavigator
 from lp.services.webapp.breadcrumb import Breadcrumb
@@ -983,6 +985,20 @@ class ProductView(PillarViewMixin, HasAnnouncementsView, SortSeriesMixin,
 
     def requestCountry(self):
         return ICountry(self.request, None)
+
+    @property
+    def golang_import_spec(self):
+        """Meta string for golang remote import path.
+        See: https://golang.org/cmd/go/#hdr-Remote_import_paths
+        """
+        repo = getUtility(IGitRepositorySet).getDefaultRepository(self.context)
+        if repo:
+            return "{base_url}/{product} git {git_https_url}".format(
+                base_url=config.launchpad.non_restricted_hostname,
+                product=self.context.name,
+                git_https_url=repo.git_https_url)
+        else:
+            return None
 
     def browserLanguages(self):
         return browser_languages(self.request)
