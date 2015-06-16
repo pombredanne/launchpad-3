@@ -48,6 +48,7 @@ from lp.app.errors import NotFoundError
 from lp.app.vocabularies import InformationTypeVocabulary
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 from lp.code.browser.widgets.gitrepositorytarget import (
+    GitRepositoryTargetDisplayWidget,
     GitRepositoryTargetWidget,
     )
 from lp.code.errors import (
@@ -286,8 +287,6 @@ class GitRepositoryEditFormView(LaunchpadEditFormView):
                 IGitRepository["owner_default"], readonly=False)
             reviewer = copy_field(IGitRepository["reviewer"], required=True)
             target = copy_field(IGitRepository["target"], readonly=False)
-            target_default = copy_field(
-                IGitRepository["target_default"], readonly=False)
 
         return GitRepositoryEditSchema
 
@@ -360,11 +359,6 @@ class GitRepositoryEditFormView(LaunchpadEditFormView):
                 else:
                     self.context.reviewer = reviewer
                 changed = True
-        if "target_default" in data:
-            target_default = data.pop("target_default")
-            if (self.context.namespace.has_defaults and
-                    target_default != self.context.target_default):
-                self.context.setTargetDefault(target_default)
         if "owner_default" in data:
             owner_default = data.pop("owner_default")
             if (self.context.namespace.has_defaults and
@@ -424,11 +418,9 @@ class GitRepositoryEditView(GitRepositoryEditFormView):
         "name",
         "target",
         "information_type",
-        "target_default",
         "owner_default",
         ]
 
-    custom_widget("target", GitRepositoryTargetWidget)
     custom_widget("information_type", LaunchpadRadioWidgetWithDescription)
 
     def setUpFields(self):
@@ -471,6 +463,20 @@ class GitRepositoryEditView(GitRepositoryEditFormView):
                 # Replace the normal owner field with a more permissive vocab.
                 self.form_fields = self.form_fields.omit("owner")
                 self.form_fields = new_owner_field + self.form_fields
+        # If this is the target default, then the target is read-only.
+        target_field = self.form_fields.get("target")
+        if self.context.target_default:
+            target_field.for_display = True
+            target_field.custom_widget = GitRepositoryTargetDisplayWidget
+        else:
+            target_field.custom_widget = GitRepositoryTargetWidget
+
+    def setUpWidgets(self, context=None):
+        super(GitRepositoryEditView, self).setUpWidgets(context=context)
+        if self.context.target_default:
+            self.widgets["target"].hint = (
+                "This is the default repository for this target, so it "
+                "cannot be moved to another target.")
 
     def _setRepositoryExists(self, existing_repository, field_name="name"):
         owner = existing_repository.owner
@@ -503,6 +509,12 @@ class GitRepositoryEditView(GitRepositoryEditFormView):
                         (owner.displayname, target.displayname))
                 except GitRepositoryExists as e:
                     self._setRepositoryExists(e.existing_repository)
+        if (self.context.target_default and "target" in data and
+                data["target"] != self.context.target):
+            self.setFieldError(
+                "target",
+                "The default repository for a target cannot be moved to "
+                "another target.")
 
 
 class GitRepositoryDeletionView(LaunchpadFormView):

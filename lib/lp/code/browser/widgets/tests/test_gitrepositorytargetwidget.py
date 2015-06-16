@@ -9,6 +9,7 @@ from BeautifulSoup import BeautifulSoup
 from lazr.restful.fields import Reference
 from zope.formlib.interfaces import (
     IBrowserWidget,
+    IDisplayWidget,
     IInputWidget,
     WidgetInputError,
     )
@@ -19,6 +20,7 @@ from zope.interface import (
 
 from lp.app.validators import LaunchpadValidationError
 from lp.code.browser.widgets.gitrepositorytarget import (
+    GitRepositoryTargetDisplayWidget,
     GitRepositoryTargetWidget,
     )
 from lp.registry.vocabularies import (
@@ -48,22 +50,12 @@ class Thing:
     target = None
 
 
-class TestGitRepositoryTargetWidget(TestCaseWithFactory):
-    """Test the GitRepositoryTargetWidget class."""
+class TestGitRepositoryTargetWidgetBase:
 
     layer = DatabaseFunctionalLayer
 
-    @property
-    def form(self):
-        return {
-            "field.target": "project",
-            "field.target.distribution": "fnord",
-            "field.target.package": "snarf",
-            "field.target.project": "pting",
-            }
-
     def setUp(self):
-        super(TestGitRepositoryTargetWidget, self).setUp()
+        super(TestGitRepositoryTargetWidgetBase, self).setUp()
         self.distribution, self.package = self.factory.makeDSPCache(
             distro_name="fnord", package_name="snarf")
         self.project = self.factory.makeProduct("pting")
@@ -72,11 +64,12 @@ class TestGitRepositoryTargetWidget(TestCaseWithFactory):
         self.context = Thing()
         field = field.bind(self.context)
         request = LaunchpadTestRequest()
-        self.widget = GitRepositoryTargetWidget(field, request)
+        self.widget = self.widget_factory(field, request)
 
     def test_implements(self):
         self.assertTrue(verifyObject(IBrowserWidget, self.widget))
-        self.assertTrue(verifyObject(IInputWidget, self.widget))
+        self.assertTrue(
+            verifyObject(self.expected_widget_interface, self.widget))
 
     def test_template(self):
         # The render template is setup.
@@ -87,18 +80,6 @@ class TestGitRepositoryTargetWidget(TestCaseWithFactory):
     def test_default_option(self):
         # This project field is the default option.
         self.assertEqual("project", self.widget.default_option)
-
-    def test_hasInput_false(self):
-        # hasInput is false when the widget's name is not in the form data.
-        self.widget.request = LaunchpadTestRequest(form={})
-        self.assertEqual("field.target", self.widget.name)
-        self.assertFalse(self.widget.hasInput())
-
-    def test_hasInput_true(self):
-        # hasInput is true is the widget's name in the form data.
-        self.widget.request = LaunchpadTestRequest(form=self.form)
-        self.assertEqual("field.target", self.widget.name)
-        self.assertTrue(self.widget.hasInput())
 
     def test_setUpSubWidgets_first_call(self):
         # The subwidgets are setup and a flag is set.
@@ -129,17 +110,18 @@ class TestGitRepositoryTargetWidget(TestCaseWithFactory):
         self.widget.setUpSubWidgets()
         self.widget.setUpOptions()
         self.assertEqual(
-            '<input class="radioType" '
+            '<input class="radioType" ' + self.expected_disabled_attr +
             'id="field.target.option.personal" name="field.target" '
             'type="radio" value="personal" />',
             self.widget.options["personal"])
         self.assertEqual(
-            '<input class="radioType" '
+            '<input class="radioType" ' + self.expected_disabled_attr +
             'id="field.target.option.package" name="field.target" '
             'type="radio" value="package" />',
             self.widget.options["package"])
         self.assertEqual(
-            '<input class="radioType" checked="checked" '
+            '<input class="radioType" checked="checked" ' +
+            self.expected_disabled_attr +
             'id="field.target.option.project" name="field.target" '
             'type="radio" value="project" />',
             self.widget.options["project"])
@@ -154,17 +136,18 @@ class TestGitRepositoryTargetWidget(TestCaseWithFactory):
         self.widget.setUpSubWidgets()
         self.widget.setUpOptions()
         self.assertEqual(
-            '<input class="radioType" checked="checked" '
+            '<input class="radioType" checked="checked" ' +
+            self.expected_disabled_attr +
             'id="field.target.option.personal" name="field.target" '
             'type="radio" value="personal" />',
             self.widget.options["personal"])
         self.assertEqual(
-            '<input class="radioType" '
+            '<input class="radioType" ' + self.expected_disabled_attr +
             'id="field.target.option.package" name="field.target" '
             'type="radio" value="package" />',
             self.widget.options["package"])
         self.assertEqual(
-            '<input class="radioType" '
+            '<input class="radioType" ' + self.expected_disabled_attr +
             'id="field.target.option.project" name="field.target" '
             'type="radio" value="project" />',
             self.widget.options["project"])
@@ -179,17 +162,18 @@ class TestGitRepositoryTargetWidget(TestCaseWithFactory):
         self.widget.setUpSubWidgets()
         self.widget.setUpOptions()
         self.assertEqual(
-            '<input class="radioType" '
+            '<input class="radioType" ' + self.expected_disabled_attr +
             'id="field.target.option.personal" name="field.target" '
             'type="radio" value="personal" />',
             self.widget.options["personal"])
         self.assertEqual(
-            '<input class="radioType" checked="checked" '
+            '<input class="radioType" checked="checked" ' +
+            self.expected_disabled_attr +
             'id="field.target.option.package" name="field.target" '
             'type="radio" value="package" />',
             self.widget.options["package"])
         self.assertEqual(
-            '<input class="radioType" '
+            '<input class="radioType" ' + self.expected_disabled_attr +
             'id="field.target.option.project" name="field.target" '
             'type="radio" value="project" />',
             self.widget.options["project"])
@@ -204,20 +188,108 @@ class TestGitRepositoryTargetWidget(TestCaseWithFactory):
         self.widget.setUpSubWidgets()
         self.widget.setUpOptions()
         self.assertEqual(
-            '<input class="radioType" '
+            '<input class="radioType" ' + self.expected_disabled_attr +
             'id="field.target.option.personal" name="field.target" '
             'type="radio" value="personal" />',
             self.widget.options["personal"])
         self.assertEqual(
-            '<input class="radioType" '
+            '<input class="radioType" ' + self.expected_disabled_attr +
             'id="field.target.option.package" name="field.target" '
             'type="radio" value="package" />',
             self.widget.options["package"])
         self.assertEqual(
-            '<input class="radioType" checked="checked" '
+            '<input class="radioType" checked="checked" ' +
+            self.expected_disabled_attr +
             'id="field.target.option.project" name="field.target" '
             'type="radio" value="project" />',
             self.widget.options["project"])
+
+    def test_setRenderedValue_personal(self):
+        # Passing a person will set the widget's render state to 'personal'.
+        self.widget.setUpSubWidgets()
+        self.widget.setRenderedValue(self.factory.makePerson())
+        self.assertEqual("personal", self.widget.default_option)
+
+    def test_setRenderedValue_package(self):
+        # Passing a package will set the widget's render state to 'package'.
+        self.widget.setUpSubWidgets()
+        self.widget.setRenderedValue(self.package)
+        self.assertEqual("package", self.widget.default_option)
+        self.assertEqual(
+            self.distribution,
+            self.widget.distribution_widget._getCurrentValue())
+        self.assertEqual(
+            self.package.sourcepackagename,
+            self.widget.package_widget._getCurrentValue())
+
+    def test_setRenderedValue_project(self):
+        # Passing a project will set the widget's render state to 'project'.
+        self.widget.setUpSubWidgets()
+        self.widget.setRenderedValue(self.project)
+        self.assertEqual("project", self.widget.default_option)
+        self.assertEqual(
+            self.project, self.widget.project_widget._getCurrentValue())
+
+    def test_call(self):
+        # The __call__ method sets up the widgets and the options.
+        markup = self.widget()
+        self.assertIsNotNone(self.widget.project_widget)
+        self.assertIn("personal", self.widget.options)
+        self.assertIn("package", self.widget.options)
+        soup = BeautifulSoup(markup)
+        fields = soup.findAll(["input", "select"], {"id": re.compile(".*")})
+        ids = [field["id"] for field in fields]
+        self.assertContentEqual(self.expected_ids, ids)
+
+
+class TestGitRepositoryTargetDisplayWidget(
+    TestGitRepositoryTargetWidgetBase, TestCaseWithFactory):
+    """Test the GitRepositoryTargetDisplayWidget class."""
+
+    widget_factory = GitRepositoryTargetDisplayWidget
+    expected_widget_interface = IDisplayWidget
+    expected_disabled_attr = 'disabled="disabled" '
+    expected_ids = [
+        "field.target.option.project",
+        ]
+
+
+class TestGitRepositoryTargetWidget(
+    TestGitRepositoryTargetWidgetBase, TestCaseWithFactory):
+    """Test the GitRepositoryTargetWidget class."""
+
+    widget_factory = GitRepositoryTargetWidget
+    expected_widget_interface = IInputWidget
+    expected_disabled_attr = ''
+    expected_ids = [
+        "field.target.distribution",
+        "field.target.option.personal",
+        "field.target.option.package",
+        "field.target.option.project",
+        "field.target.package",
+        "field.target.project",
+        ]
+
+    @property
+    def form(self):
+        return {
+            "field.target": "project",
+            "field.target.distribution": "fnord",
+            "field.target.package": "snarf",
+            "field.target.project": "pting",
+            }
+
+    def test_hasInput_false(self):
+        # hasInput is false when the widget's name is not in the form data.
+        self.widget.request = LaunchpadTestRequest(form={})
+        self.assertEqual("field.target", self.widget.name)
+        self.assertFalse(self.widget.hasInput())
+
+    def test_hasInput_true(self):
+        # hasInput is true is the widget's name in the form data.
+        self.widget.request = LaunchpadTestRequest(form=self.form)
+        self.assertEqual("field.target", self.widget.name)
+        self.assertTrue(self.widget.hasInput())
 
     def test_hasValidInput_true(self):
         # The field input is valid when all submitted parts are valid.
@@ -317,48 +389,3 @@ class TestGitRepositoryTargetWidget(TestCaseWithFactory):
         e = self.assertRaises(WidgetInputError, self.widget.getInputValue)
         self.assertEqual(LaunchpadValidationError(message), e.errors)
         self.assertEqual(html_escape(message), self.widget.error())
-
-    def test_setRenderedValue_personal(self):
-        # Passing a person will set the widget's render state to 'personal'.
-        self.widget.setUpSubWidgets()
-        self.widget.setRenderedValue(self.factory.makePerson())
-        self.assertEqual("personal", self.widget.default_option)
-
-    def test_setRenderedValue_package(self):
-        # Passing a package will set the widget's render state to 'package'.
-        self.widget.setUpSubWidgets()
-        self.widget.setRenderedValue(self.package)
-        self.assertEqual("package", self.widget.default_option)
-        self.assertEqual(
-            self.distribution,
-            self.widget.distribution_widget._getCurrentValue())
-        self.assertEqual(
-            self.package.sourcepackagename,
-            self.widget.package_widget._getCurrentValue())
-
-    def test_setRenderedValue_project(self):
-        # Passing a project will set the widget's render state to 'project'.
-        self.widget.setUpSubWidgets()
-        self.widget.setRenderedValue(self.project)
-        self.assertEqual("project", self.widget.default_option)
-        self.assertEqual(
-            self.project, self.widget.project_widget._getCurrentValue())
-
-    def test_call(self):
-        # The __call__ method setups the widgets and the options.
-        markup = self.widget()
-        self.assertIsNotNone(self.widget.project_widget)
-        self.assertIn("personal", self.widget.options)
-        self.assertIn("package", self.widget.options)
-        expected_ids = [
-            "field.target.distribution",
-            "field.target.option.personal",
-            "field.target.option.package",
-            "field.target.option.project",
-            "field.target.package",
-            "field.target.project",
-            ]
-        soup = BeautifulSoup(markup)
-        fields = soup.findAll(["input", "select"], {"id": re.compile(".*")})
-        ids = [field["id"] for field in fields]
-        self.assertContentEqual(expected_ids, ids)

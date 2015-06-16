@@ -16,6 +16,7 @@ from testtools.matchers import (
     Equals,
     )
 from zope.component import getUtility
+from zope.formlib.itemswidgets import ItemDisplayWidget
 from zope.publisher.interfaces import NotFound
 from zope.security.proxy import removeSecurityProxy
 
@@ -258,6 +259,22 @@ class TestGitRepositoryEditView(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def test_repository_target_widget_read_only(self):
+        # The repository target widget is read-only if the repository is the
+        # default for its target.
+        person = self.factory.makePerson()
+        project = self.factory.makeProduct(owner=person)
+        repository = self.factory.makeGitRepository(
+            owner=person, target=project)
+        login_person(person)
+        repository.setTargetDefault(True)
+        view = create_initialized_view(repository, name="+edit")
+        self.assertEqual("project", view.widgets["target"].default_option)
+        self.assertIsInstance(
+            view.widgets["target"].project_widget, ItemDisplayWidget)
+        self.assertEqual(
+            project.title, view.widgets["target"].project_widget())
+
     def test_repository_target_widget_renders_personal(self):
         # The repository target widget renders correctly for a personal
         # repository.
@@ -335,15 +352,14 @@ class TestGitRepositoryEditView(TestCaseWithFactory):
             "The repository owner has been changed to Newowner (newowner)",
             view.request.response.notifications[0].message)
 
-    def test_repository_target_widget_saves_personal_clears_defaults(self):
-        # When retargeting to a personal repository, the target and
-        # owner-target default flags are cleared.
+    def test_repository_target_widget_saves_personal_clears_default(self):
+        # When retargeting to a personal repository, the owner-target
+        # default flag is cleared.
         person = self.factory.makePerson()
         project = self.factory.makeProduct(owner=person)
         repository = self.factory.makeGitRepository(
             owner=person, target=project)
         login_person(person)
-        repository.setTargetDefault(True)
         repository.setOwnerDefault(True)
         form = {
             "field.target": "personal",
@@ -352,6 +368,7 @@ class TestGitRepositoryEditView(TestCaseWithFactory):
         view = create_initialized_view(repository, name="+edit", form=form)
         self.assertEqual([], view.errors)
         self.assertEqual(person, repository.target)
+        self.assertFalse(repository.owner_default)
         self.assertEqual(1, len(view.request.response.notifications))
         self.assertEqual(
             "This repository is now a personal repository for %s (%s)"

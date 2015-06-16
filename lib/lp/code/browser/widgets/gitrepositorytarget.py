@@ -4,6 +4,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'GitRepositoryTargetDisplayWidget',
     'GitRepositoryTargetWidget',
     ]
 
@@ -11,6 +12,7 @@ from z3c.ptcompat import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.formlib.interfaces import (
     ConversionError,
+    IDisplayWidget,
     IInputWidget,
     InputErrors,
     MissingInputError,
@@ -20,6 +22,7 @@ from zope.formlib.utility import setUpWidget
 from zope.formlib.widget import (
     BrowserWidget,
     CustomWidgetFactory,
+    DisplayWidget,
     InputWidget,
     renderElement,
     )
@@ -44,10 +47,9 @@ from lp.services.webapp.interfaces import (
     )
 
 
-class GitRepositoryTargetWidget(BrowserWidget, InputWidget):
-    """Widget for selecting a Git repository target."""
+class GitRepositoryTargetWidgetBase(BrowserWidget):
 
-    implements(IAlwaysSubmittedWidget, IMultiLineWidgetLayout, IInputWidget)
+    implements(IMultiLineWidgetLayout)
 
     template = ViewPageTemplateFile("templates/gitrepository-target.pt")
     default_option = "project"
@@ -68,10 +70,13 @@ class GitRepositoryTargetWidget(BrowserWidget, InputWidget):
                 __name__="package", title=u"Package",
                 required=False, vocabulary="BinaryAndSourcePackageName"),
             ]
-        self.distribution_widget = CustomWidgetFactory(LaunchpadDropdownWidget)
+        if not self._read_only:
+            self.distribution_widget = CustomWidgetFactory(
+                LaunchpadDropdownWidget)
         for field in fields:
             setUpWidget(
-                self, field.__name__, field, IInputWidget, prefix=self.name)
+                self, field.__name__, field, self._sub_widget_interface,
+                prefix=self.name)
         self._widgets_set_up = True
 
     def setUpOptions(self):
@@ -84,7 +89,58 @@ class GitRepositoryTargetWidget(BrowserWidget, InputWidget):
             if self.request.form_ng.getOne(
                      self.name, self.default_option) == option:
                 attributes["checked"] = "checked"
+            if self._read_only:
+                attributes["disabled"] = "disabled"
             self.options[option] = renderElement("input", **attributes)
+
+    @property
+    def show_options(self):
+        return {
+            option: not self._read_only or self.default_option == option
+            for option in ["personal", "package", "project"]}
+
+    def setRenderedValue(self, value):
+        """See `IWidget`."""
+        self.setUpSubWidgets()
+        if value is None or IPerson.providedBy(value):
+            self.default_option = "personal"
+            return
+        elif IProduct.providedBy(value):
+            self.default_option = "project"
+            self.project_widget.setRenderedValue(value)
+            return
+        elif IDistributionSourcePackage.providedBy(value):
+            self.default_option = "package"
+            self.distribution_widget.setRenderedValue(value.distribution)
+            self.package_widget.setRenderedValue(value.sourcepackagename)
+        else:
+            raise AssertionError("Not a valid value: %r" % value)
+
+    def __call__(self):
+        """See `zope.formlib.interfaces.IBrowserWidget`."""
+        self.setUpSubWidgets()
+        self.setUpOptions()
+        return self.template()
+
+
+class GitRepositoryTargetDisplayWidget(
+    GitRepositoryTargetWidgetBase, DisplayWidget):
+    """Widget for displaying a Git repository target."""
+
+    implements(IDisplayWidget)
+
+    _sub_widget_interface = IDisplayWidget
+    _read_only = True
+
+
+class GitRepositoryTargetWidget(GitRepositoryTargetWidgetBase, InputWidget):
+    """Widget for selecting a Git repository target."""
+
+    implements(IAlwaysSubmittedWidget, IInputWidget)
+
+    _sub_widget_interface = IInputWidget
+    _read_only = False
+    _widgets_set_up = False
 
     def hasInput(self):
         return self.name in self.request.form
@@ -157,23 +213,6 @@ class GitRepositoryTargetWidget(BrowserWidget, InputWidget):
         else:
             raise UnexpectedFormData("No valid option was selected.")
 
-    def setRenderedValue(self, value):
-        """See `IWidget`."""
-        self.setUpSubWidgets()
-        if value is None or IPerson.providedBy(value):
-            self.default_option = "personal"
-            return
-        elif IProduct.providedBy(value):
-            self.default_option = "project"
-            self.project_widget.setRenderedValue(value)
-            return
-        elif IDistributionSourcePackage.providedBy(value):
-            self.default_option = "package"
-            self.distribution_widget.setRenderedValue(value.distribution)
-            self.package_widget.setRenderedValue(value.sourcepackagename)
-        else:
-            raise AssertionError("Not a valid value: %r" % value)
-
     def error(self):
         """See `zope.formlib.interfaces.IBrowserWidget`."""
         try:
@@ -182,9 +221,3 @@ class GitRepositoryTargetWidget(BrowserWidget, InputWidget):
         except InputErrors as error:
             self._error = error
         return super(GitRepositoryTargetWidget, self).error()
-
-    def __call__(self):
-        """See `zope.formlib.interfaces.IBrowserWidget`."""
-        self.setUpSubWidgets()
-        self.setUpOptions()
-        return self.template()
