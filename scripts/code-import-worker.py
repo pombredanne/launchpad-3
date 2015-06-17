@@ -1,6 +1,6 @@
 #!/usr/bin/python -S
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Process a code import described by the command line arguments.
@@ -37,8 +37,8 @@ from lp.services.config import config
 
 
 opener_policies = {
-    "anything": AcceptAnythingPolicy(),
-    "default": CodeImportBranchOpenPolicy()
+    "anything": lambda rcstype: AcceptAnythingPolicy(),
+    "default": CodeImportBranchOpenPolicy,
     }
 
 
@@ -82,11 +82,12 @@ class CodeImportWorker:
         else:
             raise AssertionError(
                 'unknown rcstype %r' % source_details.rcstype)
+        opener_policy = opener_policies[self.options.access_policy](
+            source_details.rcstype)
         import_worker = import_worker_cls(
             source_details,
             get_transport(config.codeimport.foreign_tree_store),
-            get_default_bazaar_branch_store(), self.logger,
-            opener_policies[self.options.access_policy])
+            get_default_bazaar_branch_store(), self.logger, opener_policy)
         return import_worker.run()
 
 

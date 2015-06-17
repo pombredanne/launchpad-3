@@ -96,26 +96,41 @@ class TestBranchMergeProposalInterface(TestCaseWithFactory):
         verifyObject(IBranchMergeProposal, bmp)
 
 
-class TestBranchMergeProposalCanonicalUrl(TestCaseWithFactory):
+class TestBranchMergeProposalCanonicalUrlMixin:
     """Tests canonical_url for merge proposals."""
 
     layer = DatabaseFunctionalLayer
 
     def test_BranchMergeProposal_canonical_url_base(self):
-        # The URL for a merge proposal starts with the source branch.
-        bmp = self.factory.makeBranchMergeProposal()
+        # The URL for a merge proposal starts with the parent (source branch
+        # or source Git repository).
+        bmp = self._makeBranchMergeProposal()
         url = canonical_url(bmp)
-        source_branch_url = canonical_url(bmp.source_branch)
-        self.assertTrue(url.startswith(source_branch_url))
+        parent_url = canonical_url(bmp.parent)
+        self.assertTrue(url.startswith(parent_url))
 
     def test_BranchMergeProposal_canonical_url_rest(self):
         # The rest of the URL for a merge proposal is +merge followed by the
         # db id.
-        bmp = self.factory.makeBranchMergeProposal()
+        bmp = self._makeBranchMergeProposal()
         url = canonical_url(bmp)
-        source_branch_url = canonical_url(bmp.source_branch)
-        rest = url[len(source_branch_url):]
+        parent_url = canonical_url(bmp.parent)
+        rest = url[len(parent_url):]
         self.assertEqual('/+merge/%s' % bmp.id, rest)
+
+
+class TestBranchMergeProposalCanonicalUrlBzr(
+    TestBranchMergeProposalCanonicalUrlMixin, TestCaseWithFactory):
+
+    def _makeBranchMergeProposal(self):
+        return self.factory.makeBranchMergeProposal()
+
+
+class TestBranchMergeProposalCanonicalUrlGit(
+    TestBranchMergeProposalCanonicalUrlMixin, TestCaseWithFactory):
+
+    def _makeBranchMergeProposal(self):
+        return self.factory.makeBranchMergeProposalForGit()
 
 
 class TestBranchMergeProposalPrivacy(TestCaseWithFactory):
@@ -1673,6 +1688,13 @@ class TestBranchMergeProposalResubmit(TestCaseWithFactory):
         self.useContext(person_logged_in(original.registrant))
         revised = original.resubmit(original.registrant, description='foo')
         self.assertEqual('foo', revised.description)
+
+    def test_resubmit_preserves_commit(self):
+        """Resubmit preserves commit message."""
+        original = self.factory.makeBranchMergeProposal()
+        self.useContext(person_logged_in(original.registrant))
+        revised = original.resubmit(original.registrant)
+        self.assertEqual(original.commit_message, revised.commit_message)
 
     def test_resubmit_breaks_link(self):
         """Resubmit breaks link, if specified."""

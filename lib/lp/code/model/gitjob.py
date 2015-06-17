@@ -7,6 +7,7 @@ __all__ = [
     'GitJob',
     'GitJobType',
     'GitRefScanJob',
+    'ReclaimGitRepositorySpaceJob',
     ]
 
 from lazr.delegates import delegates
@@ -19,19 +20,24 @@ from storm.locals import (
     Int,
     JSON,
     Reference,
+    SQL,
     Store,
     )
+from zope.component import getUtility
 from zope.interface import (
     classProvides,
     implements,
     )
+from zope.security.proxy import removeSecurityProxy
 
 from lp.app.errors import NotFoundError
-from lp.code.githosting import GitHostingClient
+from lp.code.interfaces.githosting import IGitHostingClient
 from lp.code.interfaces.gitjob import (
     IGitJob,
     IGitRefScanJob,
     IGitRefScanJobSource,
+    IReclaimGitRepositorySpaceJob,
+    IReclaimGitRepositorySpaceJobSource,
     )
 from lp.services.config import config
 from lp.services.database.enumcol import EnumCol
@@ -63,6 +69,13 @@ class GitJobType(DBEnumeratedType):
         This job scans a repository for its current list of references.
         """)
 
+    RECLAIM_REPOSITORY_SPACE = DBItem(1, """
+        Reclaim repository space
+
+        This job removes a repository that has been deleted from the
+        database from storage.
+        """)
+
 
 class GitJob(StormBase):
     """See `IGitJob`."""
@@ -74,7 +87,7 @@ class GitJob(StormBase):
     job_id = Int(name='job', primary=True, allow_none=False)
     job = Reference(job_id, 'Job.id')
 
-    repository_id = Int(name='repository', allow_none=False)
+    repository_id = Int(name='repository', allow_none=True)
     repository = Reference(repository_id, 'GitRepository.id')
 
     job_type = EnumCol(enum=GitJobType, notNull=True)
@@ -97,7 +110,8 @@ class GitJob(StormBase):
         self.repository = repository
         self.job_type = job_type
         self.metadata = metadata
-        self.metadata["repository_name"] = repository.unique_name
+        if repository is not None:
+            self.metadata["repository_name"] = repository.unique_name
 
     def makeDerived(self):
         return GitJobDerived.makeSubclass(self)
@@ -150,8 +164,12 @@ class GitJobDerived(BaseRunnableJob):
         oops_vars.extend([
             ('git_job_id', self.context.job.id),
             ('git_job_type', self.context.job_type.title),
-            ('git_repository_id', self.context.repository.id),
-            ('git_repository_name', self.context.repository.unique_name)])
+            ])
+        if self.context.repository is not None:
+            oops_vars.append(('git_repository_id', self.context.repository.id))
+        if "repository_name" in self.metadata:
+            oops_vars.append(
+                ('git_repository_name', self.metadata["repository_name"]))
         return oops_vars
 
     def getErrorRecipients(self):
@@ -182,11 +200,6 @@ class GitRefScanJob(GitJobDerived):
         job.celeryRunOnCommit()
         return job
 
-    def __init__(self, git_job):
-        super(GitRefScanJob, self).__init__(git_job)
-        self._hosting_client = GitHostingClient(
-            config.codehosting.internal_git_api_endpoint)
-
     def run(self):
         """See `IGitRefScanJob`."""
         try:
@@ -195,13 +208,53 @@ class GitRefScanJob(GitJobDerived):
                     Store.of(self.repository)):
                 hosting_path = self.repository.getInternalPath()
                 refs_to_upsert, refs_to_remove = (
-                    self.repository.planRefChanges(
-                        self._hosting_client, hosting_path, logger=log))
+                    self.repository.planRefChanges(hosting_path, logger=log))
                 self.repository.fetchRefCommits(
-                    self._hosting_client, hosting_path, refs_to_upsert,
-                    logger=log)
-                self.repository.synchroniseRefs(refs_to_upsert, refs_to_remove)
+                    hosting_path, refs_to_upsert, logger=log)
+                self.repository.synchroniseRefs(
+                    refs_to_upsert, refs_to_remove, logger=log)
+                props = getUtility(IGitHostingClient).getProperties(
+                    hosting_path)
+                # We don't want ref canonicalisation, nor do we want to send
+                # this change back to the hosting service.
+                removeSecurityProxy(self.repository)._default_branch = (
+                    props["default_branch"])
         except LostObjectError:
             log.info(
                 "Skipping repository %s because it has been deleted." %
                 self._cached_repository_name)
+
+
+class ReclaimGitRepositorySpaceJob(GitJobDerived):
+    """A Job that deletes a repository from storage after it has been
+    deleted from the database."""
+
+    implements(IReclaimGitRepositorySpaceJob)
+
+    classProvides(IReclaimGitRepositorySpaceJobSource)
+    class_job_type = GitJobType.RECLAIM_REPOSITORY_SPACE
+
+    config = config.IReclaimGitRepositorySpaceJobSource
+
+    @classmethod
+    def create(cls, repository_name, repository_path):
+        "See `IReclaimGitRepositorySpaceJobSource`."""
+        metadata = {
+            "repository_name": repository_name,
+            "repository_path": repository_path,
+            }
+        # The GitJob has a repository of None, as there is no repository
+        # left in the database to refer to.
+        start = SQL("CURRENT_TIMESTAMP AT TIME ZONE 'UTC' + '7 days'")
+        git_job = GitJob(
+            None, cls.class_job_type, metadata, scheduled_start=start)
+        job = cls(git_job)
+        job.celeryRunOnCommit()
+        return job
+
+    @property
+    def repository_path(self):
+        return self.metadata["repository_path"]
+
+    def run(self):
+        getUtility(IGitHostingClient).delete(self.repository_path, logger=log)

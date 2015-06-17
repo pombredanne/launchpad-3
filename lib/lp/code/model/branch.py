@@ -502,6 +502,13 @@ class Branch(SQLBase, BzrIdentityMixin):
             status, target_branch=self, merged_revnos=merged_revnos,
             eager_load=eager_load)
 
+    def getMergeProposalByID(self, id):
+        """See `IBranch`."""
+        return Store.of(self).find(
+            BranchMergeProposal,
+            BranchMergeProposal.id == id,
+            BranchMergeProposal.source_branch == self).one()
+
     def isBranchMergeable(self, target_branch):
         """See `IBranch`."""
         # In some imaginary time we may actually check to see if this branch
@@ -1249,10 +1256,6 @@ class Branch(SQLBase, BzrIdentityMixin):
             self.next_mirror_time = (
                 datetime.now(pytz.timezone('UTC'))
                 + increment * 2 ** (self.mirror_failures - 1))
-
-    def destroySelfBreakReferences(self):
-        """See `IBranch`."""
-        return self.destroySelf(break_references=True)
 
     def _deleteBranchSubscriptions(self):
         """Delete subscriptions for this branch prior to deleting branch."""

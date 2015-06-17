@@ -69,6 +69,7 @@ from lp.testing import (
     feature_flags,
     login_person,
     monkey_patch,
+    normalize_whitespace,
     person_logged_in,
     set_feature_flag,
     TestCaseWithFactory,
@@ -79,7 +80,11 @@ from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )
-from lp.testing.pages import find_tag_by_id
+from lp.testing.pages import (
+    extract_text,
+    find_tag_by_id,
+    get_feedback_messages,
+    )
 from lp.testing.views import create_initialized_view
 
 
@@ -110,49 +115,78 @@ class TestDecoratedCodeReviewVoteReference(TestCaseWithFactory):
         self.assertTrue(d.can_change_review)
 
 
-class TestBranchMergeProposalMergedViewBzr(TestCaseWithFactory):
-    """Tests for `BranchMergeProposalMergedView` for Bazaar."""
+class TestBranchMergeProposalMergedViewMixin:
+    """Tests for `BranchMergeProposalMergedView`."""
 
     layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        # Use an admin so we don't have to worry about launchpad.Edit
-        # permissions on the merge proposals for adding comments, or
-        # nominating reviewers.
-        TestCaseWithFactory.setUp(self, user="admin@canonical.com")
-        self.bmp = self.factory.makeBranchMergeProposal()
 
     def test_initial_values(self):
         # The default merged_revno is the head revno of the target branch.
-        view = BranchMergeProposalMergedView(self.bmp, LaunchpadTestRequest())
-        self.bmp.source_branch.revision_count = 1
-        self.bmp.target_branch.revision_count = 2
+        bmp = self.makeBranchMergeProposal()
+        login_person(bmp.registrant)
+        view = BranchMergeProposalMergedView(bmp, LaunchpadTestRequest())
+        self.setBranchRevision(bmp.merge_source, self.arbitrary_revisions[0])
+        self.setBranchRevision(bmp.merge_target, self.arbitrary_revisions[1])
         self.assertEqual(
-            {'merged_revno': self.bmp.target_branch.revision_count},
+            self.getBranchRevisionValues(bmp.merge_target),
             view.initial_values)
 
+    def test_change_revision(self):
+        bmp = self.makeBranchMergeProposal()
+        login_person(bmp.registrant)
+        target_identity = bmp.merge_target.identity
+        bmp.markAsMerged(merge_reporter=bmp.registrant)
+        browser = self.getViewBrowser(bmp, '+merged', user=bmp.registrant)
+        browser.getControl(self.merged_revision_text).value = str(
+            self.arbitrary_revisions[2])
+        browser.getControl('Mark as Merged').click()
+        self.assertEqual(
+            ["The proposal&#x27;s merged revision has been updated."],
+            get_feedback_messages(browser.contents))
+        self.assertIn(
+            'Status:\nMerged\nMerged at revision:\n%s' % (
+                self.arbitrary_revisions[2]),
+            extract_text(find_tag_by_id(browser.contents, 'proposal-summary')))
+        browser = self.getViewBrowser(bmp.merge_source, '+index')
+        self.assertIn(
+            'Merged into %s at revision %s' % (
+                target_identity, self.arbitrary_revisions[2]),
+            normalize_whitespace(extract_text(find_tag_by_id(
+                browser.contents, 'landing-targets'))))
 
-class TestBranchMergeProposalMergedViewGit(TestCaseWithFactory):
+
+class TestBranchMergeProposalMergedViewBzr(
+    TestBranchMergeProposalMergedViewMixin, BrowserTestCase):
+    """Tests for `BranchMergeProposalMergedView` for Bazaar."""
+
+    arbitrary_revisions = (1, 2, 42)
+    merged_revision_text = 'Merged Revision Number'
+
+    def makeBranchMergeProposal(self):
+        return self.factory.makeBranchMergeProposal()
+
+    def setBranchRevision(self, branch, revision):
+        removeSecurityProxy(branch).revision_count = revision
+
+    def getBranchRevisionValues(self, branch):
+        return {'merged_revno': branch.revision_count}
+
+
+class TestBranchMergeProposalMergedViewGit(
+    TestBranchMergeProposalMergedViewMixin, BrowserTestCase):
     """Tests for `BranchMergeProposalMergedView` for Git."""
 
-    layer = DatabaseFunctionalLayer
+    arbitrary_revisions = ("0" * 40, "1" * 40, "2" * 40)
+    merged_revision_text = 'Merged Revision ID'
 
-    def setUp(self):
-        # Use an admin so we don't have to worry about launchpad.Edit
-        # permissions on the merge proposals for adding comments, or
-        # nominating reviewers.
-        TestCaseWithFactory.setUp(self, user="admin@canonical.com")
-        self.bmp = self.factory.makeBranchMergeProposalForGit()
+    def makeBranchMergeProposal(self):
+        return self.factory.makeBranchMergeProposalForGit()
 
-    def test_initial_values(self):
-        # The default merged_revision_id is the head commit SHA-1 of the
-        # target ref.
-        view = BranchMergeProposalMergedView(self.bmp, LaunchpadTestRequest())
-        removeSecurityProxy(self.bmp.source_git_ref).commit_sha1 = "0" * 40
-        removeSecurityProxy(self.bmp.target_git_ref).commit_sha1 = "1" * 40
-        self.assertEqual(
-            {'merged_revision_id': self.bmp.target_git_ref.commit_sha1},
-            view.initial_values)
+    def setBranchRevision(self, branch, revision):
+        removeSecurityProxy(branch).commit_sha1 = revision
+
+    def getBranchRevisionValues(self, branch):
+        return {'merged_revision_id': branch.commit_sha1}
 
 
 class TestBranchMergeProposalAddVoteView(TestCaseWithFactory):
@@ -891,6 +925,7 @@ class TestBranchMergeProposalResubmitViewMixin:
         new_proposal = view.resubmit_action.success(self._getFormValues(
             context.merge_source, context.merge_target,
             context.merge_prerequisite, {
+                'commit_message': None,
                 'description': None,
                 'break_link': False,
                 }))
@@ -909,6 +944,7 @@ class TestBranchMergeProposalResubmitViewMixin:
             view.context.merge_source)
         new_proposal = view.resubmit_action.success(self._getFormValues(
             new_source, new_target, new_prerequisite, {
+                'commit_message': 'a commit',
                 'description': 'description',
                 'break_link': False,
                 }))
@@ -930,6 +966,7 @@ class TestBranchMergeProposalResubmitViewMixin:
             merge_prerequisite = context.merge_prerequisite
         return view.resubmit_action.success(cls._getFormValues(
             context.merge_source, context.merge_target, merge_prerequisite, {
+                'commit_message': None,
                 'description': None,
                 'break_link': break_link,
                 }))
@@ -1074,9 +1111,11 @@ class TestResubmitBrowserGit(BrowserTestCase):
         """Proposals can be resubmitted using the browser."""
         bmp = self.factory.makeBranchMergeProposalForGit(registrant=self.user)
         browser = self.getViewBrowser(bmp, '+resubmit')
+        browser.getControl('Commit Message').value = 'dribble'
         browser.getControl('Description').value = 'flibble'
         browser.getControl('Resubmit').click()
         with person_logged_in(self.user):
+            self.assertEqual('dribble', bmp.superseded_by.commit_message)
             self.assertEqual('flibble', bmp.superseded_by.description)
 
 

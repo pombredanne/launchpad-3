@@ -6,23 +6,7 @@
 
 import pickle
 
-from paste.auth.cookie import (
-    AuthCookieHandler,
-    AuthCookieSigner,
-    )
-
-
-class MyAuthCookieSigner(AuthCookieSigner):
-    """Fix a bug in AuthCookieSigner."""
-
-    def sign(self, content):
-        # XXX 2008-01-13 Michael Hudson: paste.auth.cookie generates bogus
-        # cookies when the value is long:
-        # http://trac.pythonpaste.org/pythonpaste/ticket/257.  This is fixed
-        # now, so when a new version is released and packaged we can remove
-        # this class.
-        r = AuthCookieSigner.sign(self, content)
-        return r.replace('\n', '')
+from paste.auth.cookie import AuthCookieHandler
 
 
 class SessionHandler(object):
@@ -46,8 +30,7 @@ class SessionHandler(object):
         """
         self.application = application
         self.cookie_handler = AuthCookieHandler(
-            self._process, scanlist=[session_var],
-            signer=MyAuthCookieSigner(secret))
+            self._process, scanlist=[session_var], secret=secret)
         self.session_var = session_var
 
     def __call__(self, environ, start_response):

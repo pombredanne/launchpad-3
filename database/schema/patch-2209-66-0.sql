@@ -12,7 +12,7 @@ CREATE TABLE WebHook (
     active boolean DEFAULT true NOT NULL,
     endpoint_url text NOT NULL,
     secret text,
-    json_data json NOT NULL,
+    json_data text NOT NULL,
     CHECK (git_repository IS NOT NULL) -- To be expanded to other targets later.
     );
 

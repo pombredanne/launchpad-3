@@ -10,7 +10,12 @@ __all__ = [
 
 from datetime import datetime
 import email
-from itertools import chain
+from functools import partial
+from itertools import (
+    chain,
+    groupby,
+    )
+from operator import attrgetter
 
 from bzrlib import urlutils
 import pytz
@@ -20,6 +25,7 @@ from storm.expr import (
     Coalesce,
     Insert,
     Join,
+    Not,
     Or,
     Select,
     SQL,
@@ -37,10 +43,15 @@ from storm.locals import (
     )
 from storm.store import Store
 from zope.component import getUtility
+from zope.event import notify
 from zope.interface import implements
 from zope.security.interfaces import Unauthorized
-from zope.security.proxy import removeSecurityProxy
+from zope.security.proxy import (
+    ProxyFactory,
+    removeSecurityProxy,
+    )
 
+from lp import _ as msg
 from lp.app.enums import (
     InformationType,
     PRIVATE_INFORMATION_TYPES,
@@ -58,13 +69,21 @@ from lp.app.interfaces.launchpad import (
 from lp.app.interfaces.services import IService
 from lp.code.enums import GitObjectType
 from lp.code.errors import (
+    CannotDeleteGitRepository,
     GitDefaultConflict,
     GitTargetError,
+    NoSuchGitReference,
+    )
+from lp.code.event.git import GitRefsUpdatedEvent
+from lp.code.interfaces.branchmergeproposal import (
+    BRANCH_MERGE_PROPOSAL_FINAL_STATES,
+    notify_modified,
     )
 from lp.code.interfaces.gitcollection import (
     IAllGitRepositories,
     IGitCollection,
     )
+from lp.code.interfaces.githosting import IGitHostingClient
 from lp.code.interfaces.gitlookup import IGitLookup
 from lp.code.interfaces.gitnamespace import (
     get_git_namespace,
@@ -78,6 +97,7 @@ from lp.code.interfaces.gitrepository import (
     )
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.mail.branch import send_git_repository_modified_notifications
+from lp.code.model.branchmergeproposal import BranchMergeProposal
 from lp.code.model.gitref import GitRef
 from lp.code.model.gitsubscription import GitSubscription
 from lp.registry.enums import PersonVisibility
@@ -187,6 +207,8 @@ class GitRepository(StormBase, GitIdentityMixin):
     owner_default = Bool(name='owner_default', allow_none=False)
     target_default = Bool(name='target_default', allow_none=False)
 
+    _default_branch = Unicode(name='default_branch', allow_none=True)
+
     def __init__(self, registrant, owner, target, name, information_type,
                  date_created, reviewer=None, description=None):
         super(GitRepository, self).__init__()
@@ -238,17 +260,22 @@ class GitRepository(StormBase, GitIdentityMixin):
         else:
             return self.owner
 
+    def _checkPersonalPrivateOwnership(self, new_owner):
+        if (self.information_type in PRIVATE_INFORMATION_TYPES and
+            (not new_owner.is_team or
+             new_owner.visibility != PersonVisibility.PRIVATE)):
+            raise GitTargetError(
+                "Only private teams may have personal private "
+                "repositories.")
+
     def setTarget(self, target, user):
         """See `IGitRepository`."""
         if IPerson.providedBy(target):
-            owner = IPerson(target)
-            if (self.information_type in PRIVATE_INFORMATION_TYPES and
-                (not owner.is_team or
-                 owner.visibility != PersonVisibility.PRIVATE)):
-                raise GitTargetError(
-                    "Only private teams may have personal private "
-                    "repositories.")
-        namespace = get_git_namespace(target, self.owner)
+            new_owner = IPerson(target)
+            self._checkPersonalPrivateOwnership(new_owner)
+        else:
+            new_owner = self.owner
+        namespace = get_git_namespace(target, new_owner)
         if (self.information_type not in
             namespace.getAllowedInformationTypes(user)):
             raise GitTargetError(
@@ -325,16 +352,18 @@ class GitRepository(StormBase, GitIdentityMixin):
             config.codehosting.git_browse_root, self.unique_name)
 
     @property
-    def anon_url(self):
+    def git_https_url(self):
         """See `IGitRepository`."""
+        # XXX wgrant 2015-06-12: This guard should be removed once we
+        # support Git HTTPS auth.
         if self.visibleByUser(None):
             return urlutils.join(
-                config.codehosting.git_anon_root, self.shortened_path)
+                config.codehosting.git_browse_root, self.shortened_path)
         else:
             return None
 
     @property
-    def ssh_url(self):
+    def git_ssh_url(self):
         """See `IGitRepository`."""
         return urlutils.join(
             config.codehosting.git_ssh_root, self.shortened_path)
@@ -381,6 +410,22 @@ class GitRepository(StormBase, GitIdentityMixin):
             GitRef.repository_id == self.id,
             GitRef.path.startswith(u"refs/heads/")).order_by(GitRef.path)
 
+    @property
+    def default_branch(self):
+        """See `IGitRepository`."""
+        return self._default_branch
+
+    @default_branch.setter
+    def default_branch(self, value):
+        """See `IGitRepository`."""
+        ref = self.getRefByPath(value)
+        if ref is None:
+            raise NoSuchGitReference(self, value)
+        if self._default_branch != ref.path:
+            self._default_branch = ref.path
+            getUtility(IGitHostingClient).setProperties(
+                self.getInternalPath(), default_branch=ref.path)
+
     def getRefByPath(self, path):
         paths = [path]
         if not path.startswith(u"refs/heads/"):
@@ -420,7 +465,7 @@ class GitRepository(StormBase, GitIdentityMixin):
             sha1 = sha1.decode("US-ASCII")
         return {"sha1": sha1, "type": object_type_map[obj["type"]]}
 
-    def createOrUpdateRefs(self, refs_info, get_objects=False):
+    def createOrUpdateRefs(self, refs_info, get_objects=False, logger=None):
         """See `IGitRepository`."""
         def dbify_values(values):
             return [
@@ -487,6 +532,10 @@ class GitRepository(StormBase, GitIdentityMixin):
         else:
             created = []
 
+        self.date_last_modified = UTC_NOW
+        if updated:
+            notify(GitRefsUpdatedEvent(
+                self, [value[1] for value in updated], logger))
         if get_objects:
             return bulk.load(GitRef, updated + created)
 
@@ -495,9 +544,11 @@ class GitRepository(StormBase, GitIdentityMixin):
         Store.of(self).find(
             GitRef,
             GitRef.repository == self, GitRef.path.is_in(paths)).remove()
+        self.date_last_modified = UTC_NOW
 
-    def planRefChanges(self, hosting_client, hosting_path, logger=None):
+    def planRefChanges(self, hosting_path, logger=None):
         """See `IGitRepository`."""
+        hosting_client = getUtility(IGitHostingClient)
         new_refs = {}
         for path, info in hosting_client.getRefs(hosting_path).items():
             try:
@@ -527,12 +578,12 @@ class GitRepository(StormBase, GitIdentityMixin):
         return refs_to_upsert, refs_to_remove
 
     @staticmethod
-    def fetchRefCommits(hosting_client, hosting_path, refs, logger=None):
+    def fetchRefCommits(hosting_path, refs, logger=None):
         """See `IGitRepository`."""
         oids = sorted(set(info["sha1"] for info in refs.values()))
         commits = {
             commit.get("sha1"): commit
-            for commit in hosting_client.getCommits(
+            for commit in getUtility(IGitHostingClient).getCommits(
                 hosting_path, oids, logger=logger)}
         authors_to_acquire = []
         committers_to_acquire = []
@@ -572,10 +623,10 @@ class GitRepository(StormBase, GitIdentityMixin):
             if committer is not None:
                 info["committer"] = committer.id
 
-    def synchroniseRefs(self, refs_to_upsert, refs_to_remove):
+    def synchroniseRefs(self, refs_to_upsert, refs_to_remove, logger=None):
         """See `IGitRepository`."""
         if refs_to_upsert:
-            self.createOrUpdateRefs(refs_to_upsert)
+            self.createOrUpdateRefs(refs_to_upsert, logger=logger)
         if refs_to_remove:
             self.removeRefs(refs_to_remove)
 
@@ -647,8 +698,14 @@ class GitRepository(StormBase, GitIdentityMixin):
 
     def setOwner(self, new_owner, user):
         """See `IGitRepository`."""
-        new_namespace = get_git_namespace(self.target, new_owner)
+        if self.owner == self.target:
+            self._checkPersonalPrivateOwnership(new_owner)
+            new_target = new_owner
+        else:
+            new_target = self.target
+        new_namespace = get_git_namespace(new_target, new_owner)
         new_namespace.moveRepository(self, user, rename_if_necessary=True)
+        self._reconcileAccess()
 
     @property
     def subscriptions(self):
@@ -756,6 +813,53 @@ class GitRepository(StormBase, GitIdentityMixin):
             recipients.add(subscription.person, subscription, rationale)
         return recipients
 
+    @property
+    def landing_targets(self):
+        """See `IGitRepository`."""
+        return Store.of(self).find(
+            BranchMergeProposal,
+            BranchMergeProposal.source_git_repository == self)
+
+    def getActiveLandingTargets(self, paths):
+        """Merge proposals not in final states where these refs are source."""
+        return Store.of(self).find(
+            BranchMergeProposal,
+            BranchMergeProposal.source_git_repository == self,
+            BranchMergeProposal.source_git_path.is_in(paths),
+            Not(BranchMergeProposal.queue_status.is_in(
+                BRANCH_MERGE_PROPOSAL_FINAL_STATES)))
+
+    @property
+    def landing_candidates(self):
+        """See `IGitRepository`."""
+        return Store.of(self).find(
+            BranchMergeProposal,
+            BranchMergeProposal.target_git_repository == self,
+            Not(BranchMergeProposal.queue_status.is_in(
+                BRANCH_MERGE_PROPOSAL_FINAL_STATES)))
+
+    def getActiveLandingCandidates(self, paths):
+        """Merge proposals not in final states where these refs are target."""
+        return Store.of(self).find(
+            BranchMergeProposal,
+            BranchMergeProposal.target_git_repository == self,
+            BranchMergeProposal.target_git_path.is_in(paths),
+            Not(BranchMergeProposal.queue_status.is_in(
+                BRANCH_MERGE_PROPOSAL_FINAL_STATES)))
+
+    @property
+    def dependent_landings(self):
+        """See `IGitRepository`."""
+        return Store.of(self).find(
+            BranchMergeProposal,
+            BranchMergeProposal.prerequisite_git_repository == self,
+            Not(BranchMergeProposal.queue_status.is_in(
+                BRANCH_MERGE_PROPOSAL_FINAL_STATES)))
+
+    def getMergeProposalByID(self, id):
+        """See `IGitRepository`."""
+        return self.landing_targets.find(BranchMergeProposal.id == id).one()
+
     def isRepositoryMergeable(self, other):
         """See `IGitRepository`."""
         return self.namespace.areRepositoriesMergeable(other.namespace)
@@ -775,8 +879,250 @@ class GitRepository(StormBase, GitIdentityMixin):
             Job._status.is_in([JobStatus.WAITING, JobStatus.RUNNING]))
         return not jobs.is_empty()
 
-    def destroySelf(self):
-        raise NotImplementedError
+    def updateMergeCommitIDs(self, paths):
+        """See `IGitRepository`."""
+        store = Store.of(self)
+        refs = {
+            path: commit_sha1 for path, commit_sha1 in store.find(
+                (GitRef.path, GitRef.commit_sha1),
+                GitRef.repository_id == self.id,
+                GitRef.path.is_in(paths))}
+        updated = set()
+        for kind in ("source", "target", "prerequisite"):
+            repository_name = "%s_git_repositoryID" % kind
+            path_name = "%s_git_path" % kind
+            commit_sha1_name = "%s_git_commit_sha1" % kind
+            old_column = partial(getattr, BranchMergeProposal)
+            db_kind = "dependent" if kind == "prerequisite" else kind
+            column_types = [
+                ("%s_git_path" % db_kind, "text"),
+                ("%s_git_commit_sha1" % db_kind, "character(40)"),
+                ]
+            db_values = [(
+                bulk.dbify_value(old_column(path_name), path),
+                bulk.dbify_value(old_column(commit_sha1_name), commit_sha1)
+                ) for path, commit_sha1 in refs.items()]
+            new_proposals_expr = Values(
+                "new_proposals", column_types, db_values)
+            new_proposals = ClassAlias(BranchMergeProposal, "new_proposals")
+            new_column = partial(getattr, new_proposals)
+            updated_columns = {
+                old_column(commit_sha1_name): new_column(commit_sha1_name)}
+            update_filter = And(
+                old_column(repository_name) == self.id,
+                old_column(path_name) == new_column(path_name),
+                Not(BranchMergeProposal.queue_status.is_in(
+                    BRANCH_MERGE_PROPOSAL_FINAL_STATES)))
+            result = store.execute(Returning(BulkUpdate(
+                updated_columns, table=BranchMergeProposal,
+                values=new_proposals_expr, where=update_filter,
+                primary_columns=BranchMergeProposal.id)))
+            updated.update(item[0] for item in result)
+        if updated:
+            # Some existing BranchMergeProposal objects may no longer be
+            # valid.  Without knowing which ones we already have, it's
+            # safest to just invalidate everything.
+            store.invalidate()
+        return updated
+
+    def scheduleDiffUpdates(self, paths):
+        """See `IGitRepository`."""
+        from lp.code.model.branchmergeproposaljob import UpdatePreviewDiffJob
+        jobs = []
+        for merge_proposal in self.getActiveLandingTargets(paths):
+            jobs.append(UpdatePreviewDiffJob.create(merge_proposal))
+        return jobs
+
+    def _markProposalMerged(self, proposal, merged_revision_id, logger=None):
+        if logger is not None:
+            logger.info(
+                "Merge detected: %s => %s",
+                proposal.source_git_ref.identity,
+                proposal.target_git_ref.identity)
+        notify_modified(
+            proposal, proposal.markAsMerged,
+            merged_revision_id=merged_revision_id)
+
+    def detectMerges(self, paths, logger=None):
+        """See `IGitRepository`."""
+        hosting_client = getUtility(IGitHostingClient)
+        all_proposals = self.getActiveLandingCandidates(paths).order_by(
+            BranchMergeProposal.target_git_path)
+        for _, group in groupby(all_proposals, attrgetter("target_git_path")):
+            proposals = list(group)
+            merges = hosting_client.detectMerges(
+                self.getInternalPath(), proposals[0].target_git_commit_sha1,
+                set(proposal.source_git_commit_sha1 for proposal in proposals))
+            for proposal in proposals:
+                merged_revision_id = merges.get(
+                    proposal.source_git_commit_sha1)
+                if merged_revision_id is not None:
+                    self._markProposalMerged(
+                        proposal, merged_revision_id, logger=logger)
+
+    def canBeDeleted(self):
+        """See `IGitRepository`."""
+        # Can't delete if the repository is associated with anything.
+        return len(self.getDeletionRequirements()) == 0
+
+    def _getDeletionRequirements(self):
+        """Determine what operations must be performed to delete this branch.
+
+        Two dictionaries are returned, one for items that must be deleted,
+        one for items that must be altered.  The item in question is the
+        key, and the value is a user-facing string explaining why the item
+        is affected.
+
+        As well as the dictionaries, this method returns two list of callables
+        that may be called to perform the alterations and deletions needed.
+        """
+        alteration_operations = []
+        deletion_operations = []
+        # Merge proposals require their source and target repositories to
+        # exist.
+        for merge_proposal in self.landing_targets:
+            deletion_operations.append(
+                DeletionCallable(
+                    merge_proposal,
+                    msg("This repository is the source repository of this "
+                        "merge proposal."),
+                    merge_proposal.deleteProposal))
+        # Cannot use self.landing_candidates, because it ignores merged
+        # merge proposals.
+        for merge_proposal in BranchMergeProposal.selectBy(
+            target_git_repository=self):
+            deletion_operations.append(
+                DeletionCallable(
+                    merge_proposal,
+                    msg("This repository is the target repository of this "
+                        "merge proposal."),
+                    merge_proposal.deleteProposal))
+        for merge_proposal in BranchMergeProposal.selectBy(
+            prerequisite_git_repository=self):
+            alteration_operations.append(
+                ClearPrerequisiteRepository(merge_proposal))
+
+        return (alteration_operations, deletion_operations)
+
+    def getDeletionRequirements(self):
+        """See `IGitRepository`."""
+        alteration_operations, deletion_operations = (
+            self._getDeletionRequirements())
+        result = {
+            operation.affected_object: ("alter", operation.rationale)
+            for operation in alteration_operations}
+        # Deletion entries should overwrite alteration entries.
+        result.update({
+            operation.affected_object: ("delete", operation.rationale)
+            for operation in deletion_operations})
+        return result
+
+    def _breakReferences(self):
+        """Break all external references to this repository.
+
+        NULLable references will be NULLed.  References which are not NULLable
+        will cause the item holding the reference to be deleted.
+
+        This function is guaranteed to perform the operations predicted by
+        getDeletionRequirements, because it uses the same backing function.
+        """
+        alteration_operations, deletion_operations = (
+            self._getDeletionRequirements())
+        for operation in alteration_operations:
+            operation()
+        for operation in deletion_operations:
+            operation()
+        Store.of(self).flush()
+
+    def _deleteRepositoryAccessGrants(self):
+        """Delete access grants for this repository prior to deleting it."""
+        getUtility(IAccessArtifactSource).delete([self])
+
+    def _deleteRepositorySubscriptions(self):
+        """Delete subscriptions for this repository prior to deleting it."""
+        subscriptions = Store.of(self).find(
+            GitSubscription, GitSubscription.repository == self)
+        subscriptions.remove()
+
+    def _deleteJobs(self):
+        """Delete jobs for this repository prior to deleting it.
+
+        This deletion includes `GitJob`s associated with the branch.
+        """
+        # Circular import.
+        from lp.code.model.gitjob import GitJob
+
+        # Remove GitJobs.
+        affected_jobs = Select(
+            [GitJob.job_id],
+            And(GitJob.job == Job.id, GitJob.repository == self))
+        Store.of(self).find(Job, Job.id.is_in(affected_jobs)).remove()
+
+    def destroySelf(self, break_references=False):
+        """See `IGitRepository`."""
+        # Circular import.
+        from lp.code.interfaces.gitjob import (
+            IReclaimGitRepositorySpaceJobSource,
+            )
+
+        if break_references:
+            self._breakReferences()
+        if not self.canBeDeleted():
+            raise CannotDeleteGitRepository(
+                "Cannot delete Git repository: %s" % self.unique_name)
+
+        self.refs.remove()
+        self._deleteRepositoryAccessGrants()
+        self._deleteRepositorySubscriptions()
+        self._deleteJobs()
+
+        # Now destroy the repository.
+        repository_name = self.unique_name
+        repository_path = self.getInternalPath()
+        Store.of(self).remove(self)
+        # And now create a job to remove the repository from storage when
+        # it's done.
+        getUtility(IReclaimGitRepositorySpaceJobSource).create(
+            repository_name, repository_path)
+
+
+class DeletionOperation:
+    """Represent an operation to perform as part of branch deletion."""
+
+    def __init__(self, affected_object, rationale):
+        self.affected_object = ProxyFactory(affected_object)
+        self.rationale = rationale
+
+    def __call__(self):
+        """Perform the deletion operation."""
+        raise NotImplementedError(DeletionOperation.__call__)
+
+
+class DeletionCallable(DeletionOperation):
+    """Deletion operation that invokes a callable."""
+
+    def __init__(self, affected_object, rationale, func):
+        super(DeletionCallable, self).__init__(affected_object, rationale)
+        self.func = func
+
+    def __call__(self):
+        self.func()
+
+
+class ClearPrerequisiteRepository(DeletionOperation):
+    """Delete operation that clears a merge proposal's prerequisite
+    repository."""
+
+    def __init__(self, merge_proposal):
+        DeletionOperation.__init__(
+            self, merge_proposal,
+            msg("This repository is the prerequisite repository of this merge "
+                "proposal."))
+
+    def __call__(self):
+        self.affected_object.prerequisite_git_repository = None
+        self.affected_object.prerequisite_git_path = None
+        self.affected_object.prerequisite_git_commit_sha1 = None
 
 
 class GitRepositorySet:

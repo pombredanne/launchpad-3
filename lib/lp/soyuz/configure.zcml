@@ -54,21 +54,6 @@
 
         </class>
 
-    <!-- ArchiveArch -->
-    <class
-        class="lp.soyuz.model.archivearch.ArchiveArch">
-        <allow
-            interface="lp.soyuz.interfaces.archivearch.IArchiveArch" />
-    </class>
-
-    <!-- ArchiveArchSet -->
-    <securedutility
-        class="lp.soyuz.model.archivearch.ArchiveArchSet"
-        provides="lp.soyuz.interfaces.archivearch.IArchiveArchSet">
-        <allow
-            interface="lp.soyuz.interfaces.archivearch.IArchiveArchSet"/>
-    </securedutility>
-
     <!-- DistroSeriesPackageCache -->
     <class
         class="lp.soyuz.model.distroseriespackagecache.DistroSeriesPackageCache">

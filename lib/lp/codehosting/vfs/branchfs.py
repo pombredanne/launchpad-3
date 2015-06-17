@@ -304,7 +304,8 @@ class TransportDispatch:
         data['trailing_path'] = trailing_path
         return factory(**data), trailing_path
 
-    def _makeBranchTransport(self, id, writable, trailing_path=''):
+    def _makeBranchTransport(self, id, writable, trailing_path='',
+                             private=False):
         if writable:
             dispatch = self._rw_dispatch
         else:

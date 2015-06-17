@@ -364,6 +364,17 @@ class BranchTraversalMixin:
             return self.redirectSubTree(canonical_url(branch))
         raise NotFoundError
 
+    @stepthrough('+git')
+    def traverse_personal_gitrepo(self, name):
+        # XXX wgrant 2015-06-12: traverse() handles traversal for
+        # non-personal repos, and works for personal repos except that
+        # the +git view is matched first. A stepto would clobber the
+        # view, but stepthroughs match before views and only for
+        # multi-segment paths, so this is a workable hack.
+        _, _, repository, _ = getUtility(IGitTraverser).traverse(
+            iter(['+git', name]), owner=self.context)
+        return repository
+
     def traverse(self, pillar_name):
         try:
             # Look for a Git repository.  We must be careful not to consume
