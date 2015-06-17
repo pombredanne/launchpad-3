@@ -796,3 +796,25 @@ class TestGitNamespaceMoveRepository(TestCaseWithFactory):
             repository,
             repository_set.getDefaultRepositoryForOwner(
                 another.owner, another.target))
+
+    def test_target_default_to_personal(self):
+        # Moving a target_default repository to a personal namespace is
+        # permitted, and the flag is cleared.
+        repository = self.factory.makeGitRepository()
+        repository.setTargetDefault(True)
+        namespace = get_git_namespace(repository.owner, repository.owner)
+        namespace.moveRepository(
+            repository, getUtility(ILaunchpadCelebrities).admin.teamowner)
+        self.assertNamespacesEqual(namespace, repository.namespace)
+        self.assertFalse(repository.target_default)
+
+    def test_owner_default_to_personal(self):
+        # Moving an owner_default repository to a personal namespace is
+        # permitted, and the flag is cleared.
+        repository = self.factory.makeGitRepository()
+        repository.setOwnerDefault(True)
+        namespace = get_git_namespace(repository.owner, repository.owner)
+        namespace.moveRepository(
+            repository, getUtility(ILaunchpadCelebrities).admin.teamowner)
+        self.assertNamespacesEqual(namespace, repository.namespace)
+        self.assertFalse(repository.owner_default)

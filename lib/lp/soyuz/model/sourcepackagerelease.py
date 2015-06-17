@@ -143,6 +143,12 @@ class SourcePackageRelease(SQLBase):
         super(SourcePackageRelease, self).__init__(*args, **kwargs)
         self.copyright = copyright
 
+    def __repr__(self):
+        """Returns an informative representation of a SourcePackageRelease."""
+        return '<{cls} {pkg_name} (id: {id}, version: {version})>'.format(
+            cls=self.__class__.__name__, pkg_name=self.name,
+            id=self.id, version=self.version)
+
     @property
     def copyright(self):
         """See `ISourcePackageRelease`."""

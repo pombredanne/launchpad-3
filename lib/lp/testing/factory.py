@@ -1079,7 +1079,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     def makeBranch(self, branch_type=None, owner=None,
                    name=None, product=_DEFAULT, url=_DEFAULT, registrant=None,
                    information_type=None, stacked_on=None,
-                   sourcepackage=None, reviewer=None, **optional_branch_args):
+                   sourcepackage=None, reviewer=None, target=None,
+                   **optional_branch_args):
         """Create and return a new, arbitrary Branch of the given type.
 
         Any parameters for `IBranchNamespace.createBranch` can be specified to
@@ -1091,6 +1092,15 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             owner = self.makePerson()
         if name is None:
             name = self.getUniqueString('branch')
+        if target is not None:
+            assert product is _DEFAULT
+            assert sourcepackage is None
+            if IProduct.providedBy(target):
+                product = target
+            elif ISourcePackage.providedBy(target):
+                sourcepackage = target
+            else:
+                raise AssertionError("Unknown target: %r" % target)
 
         if sourcepackage is None:
             if product is _DEFAULT:
@@ -1425,8 +1435,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                 set_state=None, prerequisite_branch=None,
                                 product=None, initial_comment=None,
                                 source_branch=None, date_created=None,
-                                description=None, reviewer=None,
-                                merged_revno=None):
+                                commit_message=None, description=None,
+                                reviewer=None, merged_revno=None):
         """Create a proposal to merge based on anonymous branches."""
         if target_branch is not None:
             target_branch = removeSecurityProxy(target_branch)
@@ -1442,9 +1452,11 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             target_branch = self.makeProductBranch(product)
             target = target_branch.target
 
-        # Fall back to initial_comment for description.
+        # Fall back to initial_comment for description and commit_message.
         if description is None:
             description = initial_comment
+        if commit_message is None:
+            commit_message = initial_comment
 
         if target_branch is None:
             target_branch = self.makeBranchTargetBranch(target)
@@ -1458,7 +1470,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         proposal = source_branch.addLandingTarget(
             registrant, target_branch, review_requests=review_requests,
             merge_prerequisite=prerequisite_branch, description=description,
-            date_created=date_created)
+            commit_message=commit_message, date_created=date_created)
 
         unsafe_proposal = removeSecurityProxy(proposal)
         unsafe_proposal.merged_revno = merged_revno
@@ -1487,8 +1499,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                       set_state=None, prerequisite_ref=None,
                                       target=_DEFAULT, initial_comment=None,
                                       source_ref=None, date_created=None,
-                                      description=None, reviewer=None,
-                                      merged_revision_id=None):
+                                      commit_message=None, description=None,
+                                      reviewer=None, merged_revision_id=None):
         """Create a proposal to merge based on anonymous branches."""
         if target is not _DEFAULT:
             pass
@@ -1504,9 +1516,11 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             [target_ref] = self.makeGitRefs(target=target)
             target = target_ref.target
 
-        # Fall back to initial_comment for description.
+        # Fall back to initial_comment for description and commit_message.
         if description is None:
             description = initial_comment
+        if commit_message is None:
+            commit_message = initial_comment
 
         if target_ref is None:
             [target_ref] = self.makeGitRefs(target=target)
@@ -1520,7 +1534,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         proposal = source_ref.addLandingTarget(
             registrant, target_ref, review_requests=review_requests,
             merge_prerequisite=prerequisite_ref, description=description,
-            date_created=date_created)
+            commit_message=commit_message, date_created=date_created)
 
         unsafe_proposal = removeSecurityProxy(proposal)
         unsafe_proposal.merged_revision_id = merged_revision_id
@@ -1567,10 +1581,13 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 Diff.fromFile(StringIO(diff_text), len(diff_text)))
 
     def makePreviewDiff(self, conflicts=u'', merge_proposal=None,
-                        date_created=None, size='small'):
+                        date_created=None, size='small', git=False):
         diff = self.makeDiff(size)
         if merge_proposal is None:
-            merge_proposal = self.makeBranchMergeProposal()
+            if git:
+                merge_proposal = self.makeBranchMergeProposalForGit()
+            else:
+                merge_proposal = self.makeBranchMergeProposal()
         preview_diff = PreviewDiff()
         preview_diff.branch_merge_proposal = merge_proposal
         preview_diff.conflicts = conflicts
@@ -1753,8 +1770,11 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 u"type": GitObjectType.COMMIT,
                 }
             for path in paths}
-        return removeSecurityProxy(repository).createOrUpdateRefs(
-            refs_info, get_objects=True)
+        refs_by_path = {
+            ref.path: ref
+            for ref in removeSecurityProxy(repository).createOrUpdateRefs(
+                refs_info, get_objects=True)}
+        return [refs_by_path[path] for path in paths]
 
     def makeBug(self, target=None, owner=None, bug_watch_url=None,
                 information_type=None, date_closed=None, title=None,
@@ -2438,7 +2458,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeCodeReviewComment(self, sender=None, subject=None, body=None,
                               vote=None, vote_tag=None, parent=None,
-                              merge_proposal=None, date_created=DEFAULT):
+                              merge_proposal=None, date_created=DEFAULT,
+                              git=False):
         if sender is None:
             sender = self.makePerson()
         if subject is None:
@@ -2448,6 +2469,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if merge_proposal is None:
             if parent:
                 merge_proposal = parent.branch_merge_proposal
+            elif git:
+                merge_proposal = self.makeBranchMergeProposalForGit(
+                    registrant=sender)
             else:
                 merge_proposal = self.makeBranchMergeProposal(
                     registrant=sender)
@@ -2456,8 +2480,11 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 sender, subject, body, vote, vote_tag, parent,
                 _date_created=date_created)
 
-    def makeCodeReviewVoteReference(self):
-        bmp = removeSecurityProxy(self.makeBranchMergeProposal())
+    def makeCodeReviewVoteReference(self, git=False):
+        if git:
+            bmp = removeSecurityProxy(self.makeBranchMergeProposalForGit())
+        else:
+            bmp = removeSecurityProxy(self.makeBranchMergeProposal())
         candidate = self.makePerson()
         return bmp.nominateReviewer(candidate, bmp.registrant)
 

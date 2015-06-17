@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 from zope.component import getUtility
+from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import InformationType
@@ -15,6 +16,7 @@ from lp.code.interfaces.codehosting import (
     LAUNCHPAD_SERVICES,
     )
 from lp.code.interfaces.gitcollection import IAllGitRepositories
+from lp.code.interfaces.githosting import IGitHostingClient
 from lp.code.interfaces.gitjob import IGitRefScanJobSource
 from lp.code.interfaces.gitrepository import (
     GIT_REPOSITORY_NAME_VALIDATION_ERROR_MESSAGE,
@@ -30,6 +32,7 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.fixture import ZopeUtilityFixture
 from lp.testing.layers import (
     AppServerLayer,
     LaunchpadFunctionalLayer,
@@ -39,6 +42,8 @@ from lp.xmlrpc import faults
 
 class FakeGitHostingClient:
     """A GitHostingClient lookalike that just logs calls."""
+
+    implements(IGitHostingClient)
 
     def __init__(self):
         self.calls = []
@@ -50,6 +55,8 @@ class FakeGitHostingClient:
 class BrokenGitHostingClient:
     """A GitHostingClient lookalike that pretends the remote end is down."""
 
+    implements(IGitHostingClient)
+
     def create(self, path, clone_from=None):
         raise GitRepositoryCreationFault("nothing here")
 
@@ -60,7 +67,9 @@ class TestGitAPIMixin:
     def setUp(self):
         super(TestGitAPIMixin, self).setUp()
         self.git_api = GitAPI(None, None)
-        self.git_api.hosting_client = FakeGitHostingClient()
+        self.hosting_client = FakeGitHostingClient()
+        self.useFixture(
+            ZopeUtilityFixture(self.hosting_client, IGitHostingClient))
         self.repository_set = getUtility(IGitRepositorySet)
 
     def assertPathTranslationError(self, requester, path, permission="read",
@@ -137,7 +146,7 @@ class TestGitAPIMixin:
 
     def assertTranslates(self, requester, path, repository, writable,
                          permission="read", can_authenticate=False,
-                         trailing=""):
+                         trailing="", private=False):
         if requester not in (LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES):
             requester = requester.id
         translation = self.git_api.translatePath(
@@ -145,10 +154,11 @@ class TestGitAPIMixin:
         login(ANONYMOUS)
         self.assertEqual(
             {"path": repository.getInternalPath(), "writable": writable,
-             "trailing": trailing},
+             "trailing": trailing, "private": private},
             translation)
 
-    def assertCreates(self, requester, path, can_authenticate=False):
+    def assertCreates(self, requester, path, can_authenticate=False,
+                      private=False):
         if requester in (LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES):
             requester_id = requester
         else:
@@ -162,19 +172,18 @@ class TestGitAPIMixin:
         self.assertEqual(requester, repository.registrant)
         self.assertEqual(
             {"path": repository.getInternalPath(), "writable": True,
-             "trailing": ""},
+             "trailing": "", "private": private},
             translation)
         self.assertEqual(
             ("create", repository.getInternalPath()),
-            self.git_api.hosting_client.calls[0][0:2])
+            self.hosting_client.calls[0][0:2])
         return repository
 
     def assertCreatesFromClone(self, requester, path, cloned_from,
                                can_authenticate=False):
         self.assertCreates(requester, path, can_authenticate)
         self.assertEqual(
-            cloned_from.getInternalPath(),
-            self.git_api.hosting_client.calls[0][2])
+            cloned_from.getInternalPath(), self.hosting_client.calls[0][2])
 
     def test_translatePath_private_repository(self):
         requester = self.factory.makePerson()
@@ -182,7 +191,7 @@ class TestGitAPIMixin:
             self.factory.makeGitRepository(
                 owner=requester, information_type=InformationType.USERDATA))
         path = u"/%s" % repository.unique_name
-        self.assertTranslates(requester, path, repository, True)
+        self.assertTranslates(requester, path, repository, True, private=True)
 
     def test_translatePath_cannot_see_private_repository(self):
         requester = self.factory.makePerson()
@@ -602,7 +611,8 @@ class TestGitAPI(TestGitAPIMixin, TestCaseWithFactory):
     def test_translatePath_create_broken_hosting_service(self):
         # If the hosting service is down, trying to create a repository
         # fails and doesn't leave junk around in the Launchpad database.
-        self.git_api.hosting_client = BrokenGitHostingClient()
+        hosting_client = BrokenGitHostingClient()
+        self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
         requester = self.factory.makePerson()
         initial_count = getUtility(IAllGitRepositories).count()
         oops_id = self.assertOopsOccurred(

@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Gina db handlers.
@@ -606,6 +606,9 @@ class SourcePackageHandler:
         sectionID = self.distro_handler.ensureSection(src.section).id
         maintainer_line = "%s <%s>" % (displayname, emailaddress)
         name = self.ensureSourcePackageName(src.package)
+        kwargs = {}
+        if src._user_defined:
+            kwargs["user_defined_fields"] = src._user_defined
         spr = SourcePackageRelease(
             section=sectionID,
             creator=maintainer.id,
@@ -630,7 +633,8 @@ class SourcePackageHandler:
             dsc_maintainer_rfc822=maintainer_line,
             dsc_standards_version=src.standards_version,
             dsc_binaries=", ".join(src.binaries),
-            upload_archive=distroseries.main_archive)
+            upload_archive=distroseries.main_archive,
+            **kwargs)
         log.info('Source Package Release %s (%s) created' %
                  (name.name, src.version))
 
@@ -787,6 +791,9 @@ class BinaryPackageHandler:
         build = self.ensureBuild(bin, srcpkg, distroarchseries, archtag)
 
         # Create the binarypackage entry on lp db.
+        kwargs = {}
+        if bin._user_defined:
+            kwargs["user_defined_fields"] = bin._user_defined
         binpkg = BinaryPackageRelease(
             binarypackagename=bin_name.id,
             component=componentID,
@@ -810,7 +817,7 @@ class BinaryPackageHandler:
             essential=bin.essential,
             installedsize=bin.installed_size,
             architecturespecific=architecturespecific,
-            )
+            **kwargs)
         log.info('Binary Package Release %s (%s) created' %
                  (bin_name.name, bin.version))
 

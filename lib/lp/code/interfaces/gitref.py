@@ -22,6 +22,7 @@ from lazr.restful.declarations import (
     REQUEST_USER,
     )
 from lazr.restful.fields import (
+    CollectionField,
     Reference,
     ReferenceChoice,
     )
@@ -39,6 +40,8 @@ from zope.schema import (
     )
 
 from lp import _
+from lp.app.interfaces.informationtype import IInformationType
+from lp.app.interfaces.launchpad import IPrivacy
 from lp.code.enums import (
     BranchMergeProposalStatus,
     GitObjectType,
@@ -48,7 +51,7 @@ from lp.registry.interfaces.person import IPerson
 from lp.services.webapp.interfaces import ITableBatchNavigator
 
 
-class IGitRef(IHasMergeProposals):
+class IGitRef(IHasMergeProposals, IPrivacy, IInformationType):
     """A reference in a Git repository."""
 
     # XXX cjwatson 2015-01-19 bug=760849: "beta" is a lie to get WADL
@@ -135,6 +138,12 @@ class IGitRef(IHasMergeProposals):
         "The type of information contained in the repository containing this "
         "reference.")
 
+    private = Bool(
+        title=_("Private"), required=False, readonly=True,
+        description=_(
+            "The repository containing this reference is visible only to its "
+            "subscribers."))
+
     def visibleByUser(user):
         """Can the specified user see the repository containing this
         reference?"""
@@ -188,17 +197,30 @@ class IGitRef(IHasMergeProposals):
         and their subscriptions.
         """
 
-    # XXX cjwatson 2015-04-16: These names are too awful to set in stone by
-    # exporting them on the webservice; find better names before exporting.
-    landing_targets = Attribute(
-        "A collection of the merge proposals where this reference is the "
-        "source.")
-    landing_candidates = Attribute(
-        "A collection of the merge proposals where this reference is the "
-        "target.")
-    dependent_landings = Attribute(
-        "A collection of the merge proposals that are dependent on this "
-        "reference.")
+    landing_targets = exported(CollectionField(
+        title=_("Landing targets"),
+        description=_(
+            "A collection of the merge proposals where this reference is the "
+            "source."),
+        readonly=True,
+        # Really IBranchMergeProposal, patched in _schema_circular_imports.py.
+        value_type=Reference(Interface)))
+    landing_candidates = exported(CollectionField(
+        title=_("Landing candidates"),
+        description=_(
+            "A collection of the merge proposals where this reference is the "
+            "target."),
+        readonly=True,
+        # Really IBranchMergeProposal, patched in _schema_circular_imports.py.
+        value_type=Reference(Interface)))
+    dependent_landings = exported(CollectionField(
+        title=_("Dependent landings"),
+        description=_(
+            "A collection of the merge proposals that are dependent on this "
+            "reference."),
+        readonly=True,
+        # Really IBranchMergeProposal, patched in _schema_circular_imports.py.
+        value_type=Reference(Interface)))
 
     # XXX cjwatson 2015-04-16: Rename in line with landing_targets above
     # once we have a better name.
@@ -276,6 +298,9 @@ class IGitRef(IHasMergeProposals):
     def getMergeProposals(status=None, visible_by_user=None,
                           merged_revision_ids=None, eager_load=False):
         """Return matching BranchMergeProposals."""
+
+    def getMergeProposalByID(id):
+        """Return this reference's merge proposal with this id, or None."""
 
     pending_writes = Attribute(
         "Whether there are recent changes in this repository that have not "

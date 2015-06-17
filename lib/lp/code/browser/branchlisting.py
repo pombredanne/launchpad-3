@@ -19,7 +19,6 @@ __all__ = [
     'ProductBranchListingView',
     'ProductBranchesMenu',
     'ProductBranchesView',
-    'ProductCodeIndexView',
     'ProjectBranchesView',
     'RecentlyChangedBranchesView',
     'RecentlyImportedBranchesView',
@@ -69,7 +68,6 @@ from lp.blueprints.interfaces.specificationbranch import (
 from lp.bugs.interfaces.bugbranch import IBugBranchSet
 from lp.code.browser.branch import BranchMirrorMixin
 from lp.code.browser.branchmergeproposallisting import ActiveReviewsView
-from lp.code.browser.gitrepository import GitRefBatchNavigator
 from lp.code.browser.summary import BranchCountSummaryView
 from lp.code.enums import (
     BranchLifecycleStatus,
@@ -86,7 +84,7 @@ from lp.code.interfaces.branch import (
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
 from lp.code.interfaces.branchtarget import IBranchTarget
-from lp.code.interfaces.gitrepository import IGitRepositorySet
+from lp.code.interfaces.gitcollection import IGitCollection
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.interfaces.revisioncache import IRevisionCache
 from lp.code.interfaces.seriessourcepackagebranch import (
@@ -527,7 +525,6 @@ class BranchListingView(LaunchpadFormView, FeedsMixin):
     field_names = ['lifecycle', 'sort_by']
     development_focus_branch = None
     show_set_development_focus = False
-    default_git_repository = None
     custom_widget('lifecycle', LaunchpadDropdownWidget)
     custom_widget('sort_by', LaunchpadDropdownWidget)
     # Showing the series links is only really useful on product listing
@@ -538,6 +535,17 @@ class BranchListingView(LaunchpadFormView, FeedsMixin):
     # no_sort_by is a sequence of items from the BranchListingSort
     # enumeration to not offer in the sort_by widget.
     no_sort_by = ()
+
+    # Many Bazaar branch listings have a closely related Git listing
+    # that they should link to.
+    can_have_git_link = False
+
+    @property
+    def show_git_link(self):
+        if not self.can_have_git_link:
+            return False
+        c = IGitCollection(self.context)
+        return not c.visibleByUser(self.user).is_empty()
 
     # Set the feed types to be only the various branches feed links.  The
     # `feed_links` property will screen this list and produce only the feeds
@@ -937,6 +945,7 @@ class PersonBranchesView(PersonBaseBranchListingView):
     custom_widget('category', LaunchpadDropdownWidget)
 
     no_sort_by = (BranchListingSort.DEFAULT, BranchListingSort.OWNER)
+    can_have_git_link = True
 
     @property
     def no_branch_message(self):
@@ -1099,26 +1108,6 @@ class ProductBranchListingView(BranchListingView):
         else:
             return None
 
-    @cachedproperty
-    def default_git_repository(self):
-        repository = getUtility(IGitRepositorySet).getDefaultRepository(
-            self.context)
-        if repository is None:
-            return None
-        elif check_permission('launchpad.View', repository):
-            return repository
-        else:
-            return None
-
-    def default_git_repository_branches(self):
-        """All branches in the default Git repository, sorted for display."""
-        return GitRefBatchNavigator(self, self.default_git_repository)
-
-    @property
-    def has_default_git_repository(self):
-        """Is there a default Git repository?"""
-        return self.default_git_repository is not None
-
     @property
     def no_branch_message(self):
         if (self.selected_lifecycle_status is not None
@@ -1141,6 +1130,17 @@ class ProductBranchListingView(BranchListingView):
         """Whether or not the user can configure branches."""
         return check_permission("launchpad.Edit", self.context)
 
+    @property
+    def configure_codehosting(self):
+        """Get the menu link for configuring code hosting."""
+        if not check_permission(
+            'launchpad.Edit', self.context.development_focus):
+            return None
+        series_menu = MenuAPI(self.context.development_focus).overview
+        set_branch = series_menu['set_branch']
+        set_branch.text = 'Configure Code'
+        return set_branch
+
 
 class ProductBranchStatisticsView(BranchCountSummaryView,
                                   ProductBranchListingView):
@@ -1157,11 +1157,8 @@ class ProductBranchStatisticsView(BranchCountSummaryView,
         return text.capitalize()
 
 
-class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
-                           ProductDownloadFileMixin, BranchMirrorMixin):
-    """Initial view for products on the code virtual host."""
-
-    show_set_development_focus = True
+class ProductBranchSummaryView(ProductBranchListingView, SortSeriesMixin,
+                               ProductDownloadFileMixin, BranchMirrorMixin):
 
     def initialize(self):
         ProductBranchListingView.initialize(self)
@@ -1171,17 +1168,6 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
     @property
     def branch(self):
         return self.development_focus_branch
-
-    @property
-    def form_action(self):
-        return "+all-branches"
-
-    @property
-    def initial_values(self):
-        return {
-            'lifecycle': BranchLifecycleStatusFilter.CURRENT,
-            'sort_by': BranchListingSort.DEFAULT,
-            }
 
     @cachedproperty
     def commit_count(self):
@@ -1212,6 +1198,53 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
         """The number of teams who own branches."""
         return len([person for person in self._branch_owners
                     if person.is_team])
+
+    @property
+    def has_development_focus_branch(self):
+        """Is there a branch assigned as development focus?"""
+        return self.development_focus_branch is not None
+
+    @property
+    def branch_text(self):
+        return get_plural_text(self.branch_count, _('branch'), _('branches'))
+
+    @property
+    def person_text(self):
+        return get_plural_text(
+            self.person_owner_count, _('person'), _('people'))
+
+    @property
+    def team_text(self):
+        return get_plural_text(self.team_owner_count, _('team'), _('teams'))
+
+    @property
+    def commit_text(self):
+        return get_plural_text(self.commit_count, _('commit'), _('commits'))
+
+    @property
+    def committer_text(self):
+        return get_plural_text(self.committer_count, _('person'), _('people'))
+
+    @property
+    def external_visible(self):
+        return (
+            self.context.codehosting_usage == ServiceUsage.EXTERNAL
+            and self.branch)
+
+
+class ProductBranchesView(ProductBranchListingView, SortSeriesMixin,
+                          ProductDownloadFileMixin, BranchMirrorMixin):
+    """Initial view for products on the code virtual host."""
+
+    show_set_development_focus = True
+    can_have_git_link = True
+
+    @property
+    def initial_values(self):
+        return {
+            'lifecycle': BranchLifecycleStatusFilter.CURRENT,
+            'sort_by': BranchListingSort.DEFAULT,
+            }
 
     def _getSeriesBranches(self):
         """Get the series branches for the product, dev focus first."""
@@ -1248,7 +1281,7 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
     def initial_branches(self):
         """Return the series branches, followed by most recently changed."""
         series_branches = self._getSeriesBranches()
-        branch_query = super(ProductCodeIndexView, self)._branches(
+        branch_query = super(ProductBranchesView, self)._branches(
             self.selected_lifecycle_status)
         branch_query.order_by(self._listingSortToOrderBy(
             BranchListingSort.MOST_RECENTLY_CHANGED_FIRST))
@@ -1267,85 +1300,14 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
     def _branches(self, lifecycle_status):
         """Return the series branches, followed by most recently changed."""
         # The params are ignored, and only used by the listing view.
-        return self.initial_branches
-
-    @property
-    def unseen_branch_count(self):
-        """How many branches are not shown."""
-        return self.branch_count - len(self.initial_branches)
-
-    def hasAnyBranchesVisibleByUser(self):
-        """See `BranchListingView`."""
-        return self.branch_count > 0
+        if self.sort_by == BranchListingSort.DEFAULT:
+            return self.initial_branches
+        return super(ProductBranchesView, self)._branches(lifecycle_status)
 
     @property
     def has_development_focus_branch(self):
         """Is there a branch assigned as development focus?"""
         return self.development_focus_branch is not None
-
-    @property
-    def branch_text(self):
-        return get_plural_text(self.branch_count, _('branch'), _('branches'))
-
-    @property
-    def person_text(self):
-        return get_plural_text(
-            self.person_owner_count, _('person'), _('people'))
-
-    @property
-    def team_text(self):
-        return get_plural_text(self.team_owner_count, _('team'), _('teams'))
-
-    @property
-    def commit_text(self):
-        return get_plural_text(self.commit_count, _('commit'), _('commits'))
-
-    @property
-    def committer_text(self):
-        return get_plural_text(self.committer_count, _('person'), _('people'))
-
-    @property
-    def configure_codehosting(self):
-        """Get the menu link for configuring code hosting."""
-        if not check_permission(
-            'launchpad.Edit', self.context.development_focus):
-            return None
-        series_menu = MenuAPI(self.context.development_focus).overview
-        set_branch = series_menu['set_branch']
-        set_branch.text = 'Configure code hosting'
-        return set_branch
-
-    @property
-    def external_visible(self):
-        return (
-            self.context.codehosting_usage == ServiceUsage.EXTERNAL
-            and self.branch)
-
-
-class ProductBranchesView(ProductBranchListingView):
-    """View for branch listing for a product."""
-
-    def initialize(self):
-        """Conditionally redirect to the default view.
-
-        If the branch listing requests the default listing, redirect to the
-        default view for the product.
-        """
-        ProductBranchListingView.initialize(self)
-        if self.sort_by == BranchListingSort.DEFAULT:
-            redirect_url = canonical_url(self.context)
-            widget = self.widgets['lifecycle']
-            if widget.hasValidInput():
-                redirect_url += (
-                    '?field.lifecycle=' + widget.getInputValue().name)
-            self.request.response.redirect(redirect_url)
-
-    @property
-    def initial_values(self):
-        return {
-            'lifecycle': BranchLifecycleStatusFilter.CURRENT,
-            'sort_by': BranchListingSort.LIFECYCLE,
-            }
 
 
 class ProjectBranchesView(BranchListingView):
@@ -1399,6 +1361,8 @@ class DistributionSourcePackageBranchesView(BaseSourcePackageBranchesView):
 
 class DistributionBranchListingView(BaseSourcePackageBranchesView):
     """A general listing of all branches in the distribution."""
+
+    can_have_git_link = True
 
     def _getCollection(self):
         return getUtility(IAllBranches).inDistribution(self.context)

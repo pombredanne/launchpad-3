@@ -204,7 +204,9 @@
         permission="launchpad.Edit"
         interface="lp.code.interfaces.branchmergeproposal.IBranchMergeProposalEdit"
         set_attributes="description whiteboard merged_revno commit_message
-                        root_message_id prerequisite_branch"/>
+                        root_message_id prerequisite_branch
+                        prerequisite_git_repository prerequisite_git_path
+                        prerequisite_git_commit_sha1"/>
     <require
         permission="launchpad.AnyAllowedPerson"
         interface="lp.code.interfaces.branchmergeproposal.IBranchMergeProposalAnyAllowedPerson"/>
@@ -785,7 +787,8 @@
         permission="launchpad.View"
         interface="lp.app.interfaces.launchpad.IPrivacy
                    lp.code.interfaces.gitrepository.IGitRepositoryView
-                   lp.code.interfaces.gitrepository.IGitRepositoryModerateAttributes" />
+                   lp.code.interfaces.gitrepository.IGitRepositoryModerateAttributes
+                   lp.code.interfaces.gitrepository.IGitRepositoryEditableAttributes" />
     <require
         permission="launchpad.Moderate"
         interface="lp.code.interfaces.gitrepository.IGitRepositoryModerate"
@@ -793,11 +796,16 @@
         set_attributes="date_last_modified" />
     <require
         permission="launchpad.Edit"
-        interface="lp.code.interfaces.gitrepository.IGitRepositoryEdit" />
+        interface="lp.code.interfaces.gitrepository.IGitRepositoryEdit"
+        set_schema="lp.code.interfaces.gitrepository.IGitRepositoryEditableAttributes" />
   </class>
   <subscriber
       for="lp.code.interfaces.gitrepository.IGitRepository zope.lifecycleevent.interfaces.IObjectModifiedEvent"
       handler="lp.code.model.gitrepository.git_repository_modified"/>
+  <subscriber
+      for="lp.code.interfaces.gitrepository.IGitRepository
+           lp.code.interfaces.event.IGitRefsUpdatedEvent"
+      handler="lp.code.subscribers.git.refs_updated"/>
 
   <!-- GitRepositorySet -->
 
@@ -932,6 +940,13 @@
   <adapter factory="lp.code.model.gitlookup.DistributionGitTraversable" />
   <adapter factory="lp.code.model.gitlookup.DistributionSourcePackageGitTraversable" />
 
+  <!-- Git hosting -->
+  <securedutility
+      class="lp.code.model.githosting.GitHostingClient"
+      provides="lp.code.interfaces.githosting.IGitHostingClient">
+    <allow interface="lp.code.interfaces.githosting.IGitHostingClient" />
+  </securedutility>
+
   <!-- Git-related jobs -->
   <class class="lp.code.model.gitjob.GitJob">
     <allow interface="lp.code.interfaces.gitjob.IGitJob" />
@@ -941,9 +956,18 @@
       provides="lp.code.interfaces.gitjob.IGitRefScanJobSource">
     <allow interface="lp.code.interfaces.gitjob.IGitRefScanJobSource" />
   </securedutility>
+  <securedutility
+      component="lp.code.model.gitjob.ReclaimGitRepositorySpaceJob"
+      provides="lp.code.interfaces.gitjob.IReclaimGitRepositorySpaceJobSource">
+    <allow interface="lp.code.interfaces.gitjob.IReclaimGitRepositorySpaceJobSource" />
+  </securedutility>
   <class class="lp.code.model.gitjob.GitRefScanJob">
     <allow interface="lp.code.interfaces.gitjob.IGitJob" />
     <allow interface="lp.code.interfaces.gitjob.IGitRefScanJob" />
+  </class>
+  <class class="lp.code.model.gitjob.ReclaimGitRepositorySpaceJob">
+    <allow interface="lp.code.interfaces.gitjob.IGitJob" />
+    <allow interface="lp.code.interfaces.gitjob.IReclaimGitRepositorySpaceJob" />
   </class>
 
   <lp:help-folder folder="help" name="+help-code" />

@@ -78,6 +78,7 @@ from lp.bugs.browser.structuralsubscription import (
     StructuralSubscriptionTargetTraversalMixin,
     )
 from lp.buildmaster.interfaces.processor import IProcessorSet
+from lp.code.browser.vcslisting import TargetDefaultVCSNavigationMixin
 from lp.registry.browser import (
     add_subscribe_link,
     RegistryEditFormView,
@@ -138,7 +139,7 @@ from lp.soyuz.interfaces.archive import IArchiveSet
 class DistributionNavigation(
     GetitemNavigation, BugTargetTraversalMixin, QuestionTargetTraversalMixin,
     FAQTargetNavigationMixin, StructuralSubscriptionTargetTraversalMixin,
-    PillarNavigationMixin):
+    PillarNavigationMixin, TargetDefaultVCSNavigationMixin):
 
     usedfor = IDistribution
 

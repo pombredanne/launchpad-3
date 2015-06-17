@@ -14,19 +14,22 @@ import json
 from bzrlib import urlutils
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
-import transaction
 import pytz
+from sqlobject import SQLObjectNotFound
+from storm.store import Store
 from testtools.matchers import (
     EndsWith,
     MatchesSetwise,
     MatchesStructure,
     )
+import transaction
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import providedBy
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
+from lp import _
 from lp.app.enums import (
     InformationType,
     PRIVATE_INFORMATION_TYPES,
@@ -34,19 +37,26 @@ from lp.app.enums import (
     )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.code.enums import (
+    BranchMergeProposalStatus,
     BranchSubscriptionDiffSize,
     BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel,
     GitObjectType,
     )
 from lp.code.errors import (
+    CannotDeleteGitRepository,
     GitRepositoryCreatorNotMemberOfOwnerTeam,
     GitRepositoryCreatorNotOwner,
     GitRepositoryExists,
     GitTargetError,
     )
+from lp.code.interfaces.branchmergeproposal import (
+    BRANCH_MERGE_PROPOSAL_FINAL_STATES as FINAL_STATES,
+    )
 from lp.code.interfaces.defaultgit import ICanHasDefaultGitRepository
+from lp.code.interfaces.githosting import IGitHostingClient
 from lp.code.interfaces.gitjob import IGitRefScanJobSource
+from lp.code.interfaces.gitlookup import IGitLookup
 from lp.code.interfaces.gitnamespace import (
     IGitNamespacePolicy,
     IGitNamespaceSet,
@@ -56,7 +66,24 @@ from lp.code.interfaces.gitrepository import (
     IGitRepositorySet,
     )
 from lp.code.interfaces.revision import IRevisionSet
-from lp.code.model.gitrepository import GitRepository
+from lp.code.model.branchmergeproposal import BranchMergeProposal
+from lp.code.model.branchmergeproposaljob import (
+    BranchMergeProposalJob,
+    BranchMergeProposalJobType,
+    UpdatePreviewDiffJob,
+    )
+from lp.code.model.codereviewcomment import CodeReviewComment
+from lp.code.model.gitjob import (
+    GitJob,
+    GitJobType,
+    ReclaimGitRepositorySpaceJob,
+    )
+from lp.code.model.gitrepository import (
+    ClearPrerequisiteRepository,
+    DeletionCallable,
+    DeletionOperation,
+    GitRepository,
+    )
 from lp.code.xmlrpc.git import GitAPI
 from lp.registry.enums import (
     BranchSharingPolicy,
@@ -75,6 +102,9 @@ from lp.registry.interfaces.personproduct import IPersonProductFactory
 from lp.registry.tests.test_accesspolicy import get_policies_for_artifact
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
+from lp.services.database.interfaces import IStore
+from lp.services.job.interfaces.job import JobStatus
+from lp.services.job.model.job import Job
 from lp.services.job.runner import JobRunner
 from lp.services.mail import stub
 from lp.services.webapp.authorization import check_permission
@@ -84,16 +114,20 @@ from lp.testing import (
     ANONYMOUS,
     api_url,
     celebrity_logged_in,
+    login_person,
     person_logged_in,
     TestCaseWithFactory,
     verifyObject,
     )
 from lp.testing.dbuser import dbuser
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.fixture import ZopeUtilityFixture
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
     )
+from lp.testing.mail_helpers import pop_notifications
 from lp.testing.pages import webservice_for_person
 
 
@@ -284,6 +318,325 @@ class TestGitIdentityMixin(TestCaseWithFactory):
             repository.getRepositoryIdentities())
 
 
+class TestGitRepositoryDeletion(TestCaseWithFactory):
+    """Test the different cases that make a repository deletable or not."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestGitRepositoryDeletion, self).setUp()
+        self.user = self.factory.makePerson()
+        self.project = self.factory.makeProduct(owner=self.user)
+        self.repository = self.factory.makeGitRepository(
+            name=u"to-delete", owner=self.user, target=self.project)
+        [self.ref] = self.factory.makeGitRefs(repository=self.repository)
+        # The owner of the repository is subscribed to the repository when
+        # it is created.  The tests here assume no initial connections, so
+        # unsubscribe the repository owner here.
+        self.repository.unsubscribe(
+            self.repository.owner, self.repository.owner)
+        # Make sure that the tests all flush the database changes.
+        self.addCleanup(Store.of(self.repository).flush)
+        login_person(self.user)
+
+    def test_deletable(self):
+        # A newly created repository can be deleted without any problems.
+        self.assertTrue(
+            self.repository.canBeDeleted(),
+            "A newly created repository should be able to be deleted.")
+        repository_id = self.repository.id
+        self.repository.destroySelf()
+        self.assertIsNone(
+            getUtility(IGitLookup).get(repository_id),
+            "The repository has not been deleted.")
+
+    def test_subscription_does_not_disable_deletion(self):
+        # A repository that has a subscription can be deleted.
+        self.repository.subscribe(
+            self.user, BranchSubscriptionNotificationLevel.NOEMAIL, None,
+            CodeReviewNotificationLevel.NOEMAIL, self.user)
+        self.assertTrue(self.repository.canBeDeleted())
+        repository_id = self.repository.id
+        self.repository.destroySelf()
+        self.assertIsNone(
+            getUtility(IGitLookup).get(repository_id),
+            "The repository has not been deleted.")
+
+    def test_private_subscription_does_not_disable_deletion(self):
+        # A private repository that has a subscription can be deleted.
+        self.repository.transitionToInformationType(
+            InformationType.USERDATA, self.repository.owner,
+            verify_policy=False)
+        self.repository.subscribe(
+            self.user, BranchSubscriptionNotificationLevel.NOEMAIL, None,
+            CodeReviewNotificationLevel.NOEMAIL, self.user)
+        self.assertTrue(self.repository.canBeDeleted())
+        repository_id = self.repository.id
+        self.repository.destroySelf()
+        self.assertIsNone(
+            getUtility(IGitLookup).get(repository_id),
+            "The repository has not been deleted.")
+
+    def test_landing_target_disables_deletion(self):
+        # A repository with a landing target cannot be deleted.
+        [merge_target] = self.factory.makeGitRefs(
+            name=u"landing-target", owner=self.user, target=self.project)
+        self.ref.addLandingTarget(self.user, merge_target)
+        self.assertFalse(
+            self.repository.canBeDeleted(),
+            "A repository with a landing target is not deletable.")
+        self.assertRaises(
+            CannotDeleteGitRepository, self.repository.destroySelf)
+
+    def test_landing_candidate_disables_deletion(self):
+        # A repository with a landing candidate cannot be deleted.
+        [merge_source] = self.factory.makeGitRefs(
+            name=u"landing-candidate", owner=self.user, target=self.project)
+        merge_source.addLandingTarget(self.user, self.ref)
+        self.assertFalse(
+            self.repository.canBeDeleted(),
+             "A repository with a landing candidate is not deletable.")
+        self.assertRaises(
+            CannotDeleteGitRepository, self.repository.destroySelf)
+
+    def test_prerequisite_repository_disables_deletion(self):
+        # A repository that is a prerequisite repository cannot be deleted.
+        [merge_source] = self.factory.makeGitRefs(
+            name=u"landing-candidate", owner=self.user, target=self.project)
+        [merge_target] = self.factory.makeGitRefs(
+            name=u"landing-target", owner=self.user, target=self.project)
+        merge_source.addLandingTarget(self.user, merge_target, self.ref)
+        self.assertFalse(
+            self.repository.canBeDeleted(),
+            "A repository with a prerequisite target is not deletable.")
+        self.assertRaises(
+            CannotDeleteGitRepository, self.repository.destroySelf)
+
+    def test_related_GitJobs_deleted(self):
+        # A repository with an associated job will delete those jobs.
+        repository = self.factory.makeGitRepository()
+        GitAPI(None, None).notify(repository.getInternalPath())
+        store = Store.of(repository)
+        repository.destroySelf()
+        # Need to commit the transaction to fire off the constraint checks.
+        transaction.commit()
+        jobs = store.find(GitJob, GitJob.job_type == GitJobType.REF_SCAN)
+        self.assertEqual([], list(jobs))
+
+    def test_creates_job_to_reclaim_space(self):
+        # When a repository is deleted from the database, a job is created
+        # to remove the repository from disk as well.
+        repository = self.factory.makeGitRepository()
+        repository_path = repository.getInternalPath()
+        store = Store.of(repository)
+        repository.destroySelf()
+        jobs = store.find(
+            GitJob,
+            GitJob.job_type == GitJobType.RECLAIM_REPOSITORY_SPACE)
+        self.assertEqual(
+            [repository_path],
+            [ReclaimGitRepositorySpaceJob(job).repository_path
+             for job in jobs])
+
+    def test_destroySelf_with_inline_comments_draft(self):
+        # Draft inline comments related to a deleted repository (source or
+        # target MP repository) also get removed.
+        merge_proposal = self.factory.makeBranchMergeProposalForGit(
+            registrant=self.user, target_ref=self.ref)
+        preview_diff = self.factory.makePreviewDiff(
+            merge_proposal=merge_proposal)
+        transaction.commit()
+        merge_proposal.saveDraftInlineComment(
+            previewdiff_id=preview_diff.id,
+            person=self.user,
+            comments={"1": "Should vanish."})
+        self.repository.destroySelf(break_references=True)
+
+    def test_destroySelf_with_inline_comments_published(self):
+        # Published inline comments related to a deleted repository (source
+        # or target MP repository) also get removed.
+        merge_proposal = self.factory.makeBranchMergeProposalForGit(
+            registrant=self.user, target_ref=self.ref)
+        preview_diff = self.factory.makePreviewDiff(
+            merge_proposal=merge_proposal)
+        transaction.commit()
+        merge_proposal.createComment(
+            owner=self.user,
+            subject="Delete me!",
+            previewdiff_id=preview_diff.id,
+            inline_comments={"1": "Must disappear."},
+        )
+        self.repository.destroySelf(break_references=True)
+
+
+class TestGitRepositoryDeletionConsequences(TestCaseWithFactory):
+    """Test determination and application of repository deletion
+    consequences."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestGitRepositoryDeletionConsequences, self).setUp(
+            user="test@canonical.com")
+        self.repository = self.factory.makeGitRepository()
+        [self.ref] = self.factory.makeGitRefs(repository=self.repository)
+        # The owner of the repository is subscribed to the repository when
+        # it is created.  The tests here assume no initial connections, so
+        # unsubscribe the repository owner here.
+        self.repository.unsubscribe(
+            self.repository.owner, self.repository.owner)
+
+    def test_plain_repository(self):
+        # A fresh repository has no deletion requirements.
+        self.assertEqual({}, self.repository.getDeletionRequirements())
+
+    def makeMergeProposals(self):
+        # Produce a merge proposal for testing purposes.
+        [merge_target] = self.factory.makeGitRefs(target=self.ref.target)
+        [merge_prerequisite] = self.factory.makeGitRefs(target=self.ref.target)
+        # Remove the implicit subscriptions.
+        merge_target.repository.unsubscribe(
+            merge_target.owner, merge_target.owner)
+        merge_prerequisite.repository.unsubscribe(
+            merge_prerequisite.owner, merge_prerequisite.owner)
+        merge_proposal1 = self.ref.addLandingTarget(
+            self.ref.owner, merge_target, merge_prerequisite)
+        # Disable this merge proposal, to allow creating a new identical one.
+        lp_admins = getUtility(ILaunchpadCelebrities).admin
+        merge_proposal1.rejectBranch(lp_admins, "null:")
+        merge_proposal2 = self.ref.addLandingTarget(
+            self.ref.owner, merge_target, merge_prerequisite)
+        return merge_proposal1, merge_proposal2
+
+    def test_repository_with_merge_proposal(self):
+        # Ensure that deletion requirements with a merge proposal are right.
+        #
+        # Each repository related to the merge proposal is tested to ensure
+        # it produces a unique, correct result.
+        merge_proposal1, merge_proposal2 = self.makeMergeProposals()
+        self.assertEqual(
+            {
+                merge_proposal1:
+                ("delete",
+                 _("This repository is the source repository of this merge "
+                   "proposal.")),
+                merge_proposal2:
+                ("delete",
+                 _("This repository is the source repository of this merge "
+                   "proposal.")),
+                },
+            self.repository.getDeletionRequirements())
+        target = merge_proposal1.target_git_repository
+        self.assertEqual(
+            {
+                merge_proposal1:
+                ("delete",
+                 _("This repository is the target repository of this merge "
+                   "proposal.")),
+                merge_proposal2:
+                ("delete",
+                 _("This repository is the target repository of this merge "
+                   "proposal.")),
+                },
+            target.getDeletionRequirements())
+        prerequisite = merge_proposal1.prerequisite_git_repository
+        self.assertEqual(
+            {
+                merge_proposal1:
+                ("alter",
+                 _("This repository is the prerequisite repository of this "
+                   "merge proposal.")),
+                merge_proposal2:
+                ("alter",
+                 _("This repository is the prerequisite repository of this "
+                   "merge proposal.")),
+                },
+            prerequisite.getDeletionRequirements())
+
+    def test_delete_merge_proposal_source(self):
+        # Merge proposal source repositories can be deleted with
+        # break_references.
+        merge_proposal1, merge_proposal2 = self.makeMergeProposals()
+        merge_proposal1_id = merge_proposal1.id
+        BranchMergeProposal.get(merge_proposal1_id)
+        self.repository.destroySelf(break_references=True)
+        self.assertRaises(
+            SQLObjectNotFound, BranchMergeProposal.get, merge_proposal1_id)
+
+    def test_delete_merge_proposal_target(self):
+        # Merge proposal target repositories can be deleted with
+        # break_references.
+        merge_proposal1, merge_proposal2 = self.makeMergeProposals()
+        merge_proposal1_id = merge_proposal1.id
+        BranchMergeProposal.get(merge_proposal1_id)
+        merge_proposal1.target_git_repository.destroySelf(
+            break_references=True)
+        self.assertRaises(SQLObjectNotFound,
+            BranchMergeProposal.get, merge_proposal1_id)
+
+    def test_delete_merge_proposal_prerequisite(self):
+        # Merge proposal prerequisite repositories can be deleted with
+        # break_references.
+        merge_proposal1, merge_proposal2 = self.makeMergeProposals()
+        merge_proposal1.prerequisite_git_repository.destroySelf(
+            break_references=True)
+        self.assertIsNone(merge_proposal1.prerequisite_git_repository)
+
+    def test_delete_source_CodeReviewComment(self):
+        # Deletion of source repositories that have CodeReviewComments works.
+        comment = self.factory.makeCodeReviewComment(git=True)
+        comment_id = comment.id
+        repository = comment.branch_merge_proposal.source_git_repository
+        repository.destroySelf(break_references=True)
+        self.assertRaises(
+            SQLObjectNotFound, CodeReviewComment.get, comment_id)
+
+    def test_delete_target_CodeReviewComment(self):
+        # Deletion of target repositories that have CodeReviewComments works.
+        comment = self.factory.makeCodeReviewComment(git=True)
+        comment_id = comment.id
+        repository = comment.branch_merge_proposal.target_git_repository
+        repository.destroySelf(break_references=True)
+        self.assertRaises(
+            SQLObjectNotFound, CodeReviewComment.get, comment_id)
+
+    def test_sourceBranchWithCodeReviewVoteReference(self):
+        # break_references handles CodeReviewVoteReference source repository.
+        merge_proposal = self.factory.makeBranchMergeProposalForGit()
+        merge_proposal.nominateReviewer(
+            self.factory.makePerson(), self.factory.makePerson())
+        merge_proposal.source_git_repository.destroySelf(break_references=True)
+
+    def test_targetBranchWithCodeReviewVoteReference(self):
+        # break_references handles CodeReviewVoteReference target repository.
+        merge_proposal = self.factory.makeBranchMergeProposalForGit()
+        merge_proposal.nominateReviewer(
+            self.factory.makePerson(), self.factory.makePerson())
+        merge_proposal.target_git_repository.destroySelf(break_references=True)
+
+    def test_ClearPrerequisiteRepository(self):
+        # ClearPrerequisiteRepository.__call__ must clear the prerequisite
+        # repository.
+        merge_proposal = removeSecurityProxy(self.makeMergeProposals()[0])
+        with person_logged_in(
+                merge_proposal.prerequisite_git_repository.owner):
+            ClearPrerequisiteRepository(merge_proposal)()
+        self.assertIsNone(merge_proposal.prerequisite_git_repository)
+
+    def test_DeletionOperation(self):
+        # DeletionOperation.__call__ is not implemented.
+        self.assertRaises(NotImplementedError, DeletionOperation("a", "b"))
+
+    def test_DeletionCallable(self):
+        # DeletionCallable must invoke the callable.
+        merge_proposal = self.factory.makeBranchMergeProposalForGit()
+        merge_proposal_id = merge_proposal.id
+        DeletionCallable(
+            merge_proposal, "blah", merge_proposal.deleteProposal)()
+        self.assertRaises(
+            SQLObjectNotFound, BranchMergeProposal.get, merge_proposal_id)
+
+
 class TestGitRepositoryModifications(TestCaseWithFactory):
     """Tests for Git repository modification notifications."""
 
@@ -303,6 +656,42 @@ class TestGitRepositoryModifications(TestCaseWithFactory):
         notify(ObjectModifiedEvent(
             removeSecurityProxy(repository), repository,
             [IGitRepository["name"]], user=repository.owner))
+        self.assertSqlAttributeEqualsDate(
+            repository, "date_last_modified", UTC_NOW)
+
+    def test_create_ref_sets_date_last_modified(self):
+        repository = self.factory.makeGitRepository(
+            date_created=datetime(2015, 06, 01, tzinfo=pytz.UTC))
+        [ref] = self.factory.makeGitRefs(repository=repository)
+        new_refs_info = {
+            ref.path: {
+                u"sha1": u"0000000000000000000000000000000000000000",
+                u"type": ref.object_type,
+                },
+            }
+        repository.createOrUpdateRefs(new_refs_info)
+        self.assertSqlAttributeEqualsDate(
+            repository, "date_last_modified", UTC_NOW)
+
+    def test_update_ref_sets_date_last_modified(self):
+        repository = self.factory.makeGitRepository(
+            date_created=datetime(2015, 06, 01, tzinfo=pytz.UTC))
+        [ref] = self.factory.makeGitRefs(repository=repository)
+        new_refs_info = {
+            u"refs/heads/new": {
+                u"sha1": ref.commit_sha1,
+                u"type": ref.object_type,
+                },
+            }
+        repository.createOrUpdateRefs(new_refs_info)
+        self.assertSqlAttributeEqualsDate(
+            repository, "date_last_modified", UTC_NOW)
+
+    def test_remove_ref_sets_date_last_modified(self):
+        repository = self.factory.makeGitRepository(
+            date_created=datetime(2015, 06, 01, tzinfo=pytz.UTC))
+        [ref] = self.factory.makeGitRefs(repository=repository)
+        repository.removeRefs(set([ref.path]))
         self.assertSqlAttributeEqualsDate(
             repository, "date_last_modified", UTC_NOW)
 
@@ -350,12 +739,12 @@ class TestGitRepositoryURLs(TestCaseWithFactory):
             config.codehosting.git_browse_root, repository.unique_name)
         self.assertEqual(expected_url, repository.getCodebrowseUrl())
 
-    def test_anon_url_for_public(self):
+    def test_git_https_url_for_public(self):
         # Public repositories have an anonymous URL, visible to anyone.
         repository = self.factory.makeGitRepository()
         expected_url = urlutils.join(
-            config.codehosting.git_anon_root, repository.shortened_path)
-        self.assertEqual(expected_url, repository.anon_url)
+            config.codehosting.git_browse_root, repository.shortened_path)
+        self.assertEqual(expected_url, repository.git_https_url)
 
     def test_anon_url_not_for_private(self):
         # Private repositories do not have an anonymous URL.
@@ -363,14 +752,14 @@ class TestGitRepositoryURLs(TestCaseWithFactory):
         repository = self.factory.makeGitRepository(
             owner=owner, information_type=InformationType.USERDATA)
         with person_logged_in(owner):
-            self.assertIsNone(repository.anon_url)
+            self.assertIsNone(repository.git_https_url)
 
-    def test_ssh_url_for_public(self):
+    def test_git_ssh_url_for_public(self):
         # Public repositories have an SSH URL.
         repository = self.factory.makeGitRepository()
         expected_url = urlutils.join(
             config.codehosting.git_ssh_root, repository.shortened_path)
-        self.assertEqual(expected_url, repository.ssh_url)
+        self.assertEqual(expected_url, repository.git_ssh_url)
 
     def test_ssh_url_for_private(self):
         # Private repositories have an SSH URL.
@@ -380,7 +769,7 @@ class TestGitRepositoryURLs(TestCaseWithFactory):
         with person_logged_in(owner):
             expected_url = urlutils.join(
                 config.codehosting.git_ssh_root, repository.shortened_path)
-            self.assertEqual(expected_url, repository.ssh_url)
+            self.assertEqual(expected_url, repository.git_ssh_url)
 
 
 class TestGitRepositoryNamespace(TestCaseWithFactory):
@@ -606,6 +995,34 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
                 object_type=GitObjectType.BLOB,
                 ))
 
+    def _getWaitingUpdatePreviewDiffJobs(self, repository):
+        jobs = Store.of(repository).find(
+            BranchMergeProposalJob,
+            BranchMergeProposalJob.job_type ==
+                BranchMergeProposalJobType.UPDATE_PREVIEW_DIFF,
+            BranchMergeProposalJob.job == Job.id,
+            Job._status == JobStatus.WAITING)
+        return [UpdatePreviewDiffJob(job) for job in jobs]
+
+    def test_update_schedules_diff_update(self):
+        repository = self.factory.makeGitRepository()
+        [ref] = self.factory.makeGitRefs(repository=repository)
+        self.assertRefsMatch(repository.refs, repository, [ref.path])
+        bmp = self.factory.makeBranchMergeProposalForGit(source_ref=ref)
+        jobs = self._getWaitingUpdatePreviewDiffJobs(repository)
+        self.assertEqual([bmp], [job.branch_merge_proposal for job in jobs])
+        new_info = {
+            u"sha1": u"0000000000000000000000000000000000000000",
+            u"type": GitObjectType.BLOB,
+            }
+        repository.createOrUpdateRefs({ref.path: new_info})
+        jobs = self._getWaitingUpdatePreviewDiffJobs(repository)
+        self.assertEqual(
+            [bmp, bmp], [job.branch_merge_proposal for job in jobs])
+        self.assertEqual(
+            u"0000000000000000000000000000000000000000",
+            bmp.source_git_commit_sha1)
+
     def test_getRefByPath_without_leading_refs_heads(self):
         [ref] = self.factory.makeGitRefs(paths=[u"refs/heads/master"])
         self.assertEqual(
@@ -643,8 +1060,8 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
                     },
                 },
             })
-        refs_to_upsert, refs_to_remove = repository.planRefChanges(
-            hosting_client, "dummy")
+        self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
+        refs_to_upsert, refs_to_remove = repository.planRefChanges("dummy")
 
         expected_upsert = {
             u"refs/heads/master": {
@@ -685,8 +1102,8 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
                     },
                 },
             })
-        self.assertEqual(
-            ({}, set()), repository.planRefChanges(hosting_client, "dummy"))
+        self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
+        self.assertEqual(({}, set()), repository.planRefChanges("dummy"))
 
     def test_fetchRefCommits(self):
         # fetchRefCommits fetches detailed tip commit metadata for the
@@ -717,6 +1134,7 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
                 u"parents": [],
                 u"tree": unicode(hashlib.sha1("").hexdigest()),
                 }])
+        self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
         refs = {
             u"refs/heads/master": {
                 u"sha1": master_sha1,
@@ -727,7 +1145,7 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
                 u"type": GitObjectType.COMMIT,
                 },
             }
-        GitRepository.fetchRefCommits(hosting_client, "dummy", refs)
+        GitRepository.fetchRefCommits("dummy", refs)
 
         expected_oids = [master_sha1, foo_sha1]
         [(_, observed_oids)] = hosting_client.getCommits.extract_args()
@@ -798,6 +1216,36 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
                 object_type=GitObjectType.COMMIT,
                 ) for path, sha1 in expected_sha1s]
         self.assertThat(repository.refs, MatchesSetwise(*matchers))
+
+    def test_set_default_branch(self):
+        hosting_client = FakeMethod()
+        hosting_client.setProperties = FakeMethod()
+        self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
+        repository = self.factory.makeGitRepository()
+        self.factory.makeGitRefs(
+            repository=repository,
+            paths=(u"refs/heads/master", u"refs/heads/new"))
+        removeSecurityProxy(repository)._default_branch = u"refs/heads/master"
+        with person_logged_in(repository.owner):
+            repository.default_branch = u"new"
+        self.assertEqual(
+            [((repository.getInternalPath(),),
+             {u"default_branch": u"refs/heads/new"})],
+            hosting_client.setProperties.calls)
+        self.assertEqual(u"refs/heads/new", repository.default_branch)
+
+    def test_set_default_branch_unchanged(self):
+        hosting_client = FakeMethod()
+        hosting_client.setProperties = FakeMethod()
+        self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
+        repository = self.factory.makeGitRepository()
+        self.factory.makeGitRefs(
+            repository=repository, paths=[u"refs/heads/master"])
+        removeSecurityProxy(repository)._default_branch = u"refs/heads/master"
+        with person_logged_in(repository.owner):
+            repository.default_branch = u"master"
+        self.assertEqual([], hosting_client.setProperties.calls)
+        self.assertEqual(u"refs/heads/master", repository.default_branch)
 
 
 class TestGitRepositoryGetAllowedInformationTypes(TestCaseWithFactory):
@@ -1020,11 +1468,67 @@ class TestGitRepositorySetOwner(TestCaseWithFactory):
             repository.setOwner(person, admin)
             self.assertEqual(person, repository.owner)
 
+    def test_private_personal_forbidden_for_public_teams(self):
+        # Only private teams can have private personal repositories.
+        person = self.factory.makePerson()
+        private_team = self.factory.makeTeam(
+            owner=person, membership_policy=TeamMembershipPolicy.MODERATED,
+            visibility=PersonVisibility.PRIVATE)
+        public_team = self.factory.makeTeam(owner=person)
+        with person_logged_in(person):
+            repository = self.factory.makeGitRepository(
+                owner=private_team, target=private_team,
+                information_type=InformationType.USERDATA)
+            self.assertRaises(
+                GitTargetError, repository.setOwner, public_team, person)
+
+    def test_private_personal_allowed_for_private_teams(self):
+        # Only private teams can have private personal repositories.
+        person = self.factory.makePerson()
+        private_team_1 = self.factory.makeTeam(
+            owner=person, membership_policy=TeamMembershipPolicy.MODERATED,
+            visibility=PersonVisibility.PRIVATE)
+        private_team_2 = self.factory.makeTeam(
+            owner=person, membership_policy=TeamMembershipPolicy.MODERATED,
+            visibility=PersonVisibility.PRIVATE)
+        with person_logged_in(person):
+            repository = self.factory.makeGitRepository(
+                owner=private_team_1, target=private_team_1,
+                information_type=InformationType.USERDATA)
+            repository.setOwner(private_team_2, person)
+            self.assertEqual(private_team_2, repository.owner)
+            self.assertEqual(private_team_2, repository.target)
+
+    def test_reconciles_access(self):
+        # setOwner calls _reconcileAccess to make the sharing schema correct
+        # when changing the owner of a private personal repository.
+        person = self.factory.makePerson()
+        team = self.factory.makeTeam(
+            owner=person, visibility=PersonVisibility.PRIVATE)
+        with person_logged_in(person):
+            repository = self.factory.makeGitRepository(
+                owner=person, target=person,
+                information_type=InformationType.USERDATA)
+            repository.setOwner(team, person)
+        self.assertEqual(
+            team, get_policies_for_artifact(repository)[0].person)
+
 
 class TestGitRepositorySetTarget(TestCaseWithFactory):
     """Test `IGitRepository.setTarget`."""
 
     layer = DatabaseFunctionalLayer
+
+    def test_personal_to_other_personal(self):
+        # A personal repository can be moved to a different owner.
+        person = self.factory.makePerson()
+        team = self.factory.makeTeam(owner=person)
+        repository = self.factory.makeGitRepository(
+            owner=person, target=person)
+        with person_logged_in(person):
+            repository.setTarget(target=team, user=repository.owner)
+        self.assertEqual(team, repository.owner)
+        self.assertEqual(team, repository.target)
 
     def test_personal_to_project(self):
         # A personal repository can be moved to a project.
@@ -1148,6 +1652,176 @@ class TestGitRepositorySetTarget(TestCaseWithFactory):
             self.assertRaises(
                 GitTargetError, repository.setTarget,
                 target=commercial_project, user=owner)
+
+
+class TestGitRepositoryUpdateMergeCommitIDs(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_updates_proposals(self):
+        # `updateMergeCommitIDs` updates proposals for specified refs.
+        repository = self.factory.makeGitRepository()
+        paths = [u"refs/heads/1", u"refs/heads/2", u"refs/heads/3"]
+        [ref1, ref2, ref3] = self.factory.makeGitRefs(
+            repository=repository, paths=paths)
+        bmp1 = self.factory.makeBranchMergeProposalForGit(
+            target_ref=ref1, source_ref=ref2)
+        bmp2 = self.factory.makeBranchMergeProposalForGit(
+            target_ref=ref1, source_ref=ref3, prerequisite_ref=ref2)
+        removeSecurityProxy(ref1).commit_sha1 = u"0" * 40
+        removeSecurityProxy(ref2).commit_sha1 = u"1" * 40
+        removeSecurityProxy(ref3).commit_sha1 = u"2" * 40
+        self.assertNotEqual(ref1, bmp1.target_git_ref)
+        self.assertNotEqual(ref2, bmp1.source_git_ref)
+        self.assertNotEqual(ref1, bmp2.target_git_ref)
+        self.assertNotEqual(ref3, bmp2.source_git_ref)
+        self.assertNotEqual(ref2, bmp2.prerequisite_git_ref)
+        self.assertContentEqual(
+            [bmp1.id, bmp2.id], repository.updateMergeCommitIDs(paths))
+        self.assertEqual(ref1, bmp1.target_git_ref)
+        self.assertEqual(ref2, bmp1.source_git_ref)
+        self.assertEqual(ref1, bmp2.target_git_ref)
+        self.assertIsNone(bmp1.prerequisite_git_ref)
+        self.assertEqual(ref3, bmp2.source_git_ref)
+        self.assertEqual(ref2, bmp2.prerequisite_git_ref)
+
+    def test_skips_unspecified_refs(self):
+        # `updateMergeCommitIDs` skips unspecified refs.
+        repository1 = self.factory.makeGitRepository()
+        paths = [u"refs/heads/1", u"refs/heads/2"]
+        [ref1_1, ref1_2] = self.factory.makeGitRefs(
+            repository=repository1, paths=paths)
+        bmp1 = self.factory.makeBranchMergeProposalForGit(
+            target_ref=ref1_1, source_ref=ref1_2)
+        repository2 = self.factory.makeGitRepository(target=repository1.target)
+        [ref2_1, ref2_2] = self.factory.makeGitRefs(
+            repository=repository2, paths=paths)
+        bmp2 = self.factory.makeBranchMergeProposalForGit(
+            target_ref=ref2_1, source_ref=ref2_2)
+        removeSecurityProxy(ref1_1).commit_sha1 = u"0" * 40
+        removeSecurityProxy(ref1_2).commit_sha1 = u"1" * 40
+        removeSecurityProxy(ref2_1).commit_sha1 = u"2" * 40
+        removeSecurityProxy(ref2_2).commit_sha1 = u"3" * 40
+        self.assertNotEqual(ref1_1, bmp1.target_git_ref)
+        self.assertNotEqual(ref1_2, bmp1.source_git_ref)
+        self.assertNotEqual(ref2_1, bmp2.target_git_ref)
+        self.assertNotEqual(ref2_2, bmp2.source_git_ref)
+        self.assertContentEqual(
+            [bmp1.id], repository1.updateMergeCommitIDs([paths[0]]))
+        self.assertEqual(ref1_1, bmp1.target_git_ref)
+        self.assertNotEqual(ref1_2, bmp1.source_git_ref)
+        self.assertNotEqual(ref2_1, bmp2.target_git_ref)
+        self.assertNotEqual(ref2_2, bmp2.source_git_ref)
+
+
+class TestGitRepositoryScheduleDiffUpdates(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_scheduleDiffUpdates(self):
+        """Create jobs for all merge proposals."""
+        bmp1 = self.factory.makeBranchMergeProposalForGit()
+        bmp2 = self.factory.makeBranchMergeProposalForGit(
+            source_ref=bmp1.source_git_ref)
+        jobs = bmp1.source_git_repository.scheduleDiffUpdates(
+            [bmp1.source_git_path])
+        self.assertEqual(2, len(jobs))
+        bmps_to_update = [
+            removeSecurityProxy(job).branch_merge_proposal for job in jobs]
+        self.assertContentEqual([bmp1, bmp2], bmps_to_update)
+
+    def test_scheduleDiffUpdates_ignores_final(self):
+        """Diffs for proposals in final states aren't updated."""
+        [source_ref] = self.factory.makeGitRefs()
+        for state in FINAL_STATES:
+            bmp = self.factory.makeBranchMergeProposalForGit(
+                source_ref=source_ref, set_state=state)
+        # Creating a superseded proposal has the side effect of creating a
+        # second proposal.  Delete the second proposal.
+        for bmp in source_ref.landing_targets:
+            if bmp.queue_status not in FINAL_STATES:
+                removeSecurityProxy(bmp).deleteProposal()
+        jobs = source_ref.repository.scheduleDiffUpdates([source_ref.path])
+        self.assertEqual(0, len(jobs))
+
+
+class TestGitRepositoryDetectMerges(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def test_markProposalMerged(self):
+        # A merge proposal that is merged is marked as such.
+        proposal = self.factory.makeBranchMergeProposalForGit()
+        self.assertNotEqual(
+            BranchMergeProposalStatus.MERGED, proposal.queue_status)
+        proposal.target_git_repository._markProposalMerged(
+            proposal, proposal.target_git_commit_sha1)
+        self.assertEqual(
+            BranchMergeProposalStatus.MERGED, proposal.queue_status)
+        job = IStore(proposal).find(
+            BranchMergeProposalJob,
+            BranchMergeProposalJob.branch_merge_proposal == proposal,
+            BranchMergeProposalJob.job_type ==
+            BranchMergeProposalJobType.MERGE_PROPOSAL_UPDATED).one()
+        derived_job = job.makeDerived()
+        derived_job.run()
+        notifications = pop_notifications()
+        self.assertIn(
+            "Work in progress => Merged",
+            notifications[0].get_payload(decode=True))
+        self.assertEqual(
+            config.canonical.noreply_from_address, notifications[0]["From"])
+        recipients = set(msg["x-envelope-to"] for msg in notifications)
+        expected = set(
+            [proposal.source_git_repository.registrant.preferredemail.email,
+             proposal.target_git_repository.registrant.preferredemail.email])
+        self.assertEqual(expected, recipients)
+
+    def test_update_detects_merges(self):
+        # Pushing changes to a branch causes a check whether any active
+        # merge proposals with that branch as the target have been merged.
+        repository = self.factory.makeGitRepository()
+        [target_1, target_2, source_1, source_2] = self.factory.makeGitRefs(
+            repository, paths=[
+                u"refs/heads/target-1",
+                u"refs/heads/target-2",
+                u"refs/heads/source-1",
+                u"refs/heads/source-2",
+                ])
+        bmp1 = self.factory.makeBranchMergeProposalForGit(
+            target_ref=target_1, source_ref=source_1)
+        bmp2 = self.factory.makeBranchMergeProposalForGit(
+            target_ref=target_1, source_ref=source_2)
+        bmp3 = self.factory.makeBranchMergeProposalForGit(
+            target_ref=target_2, source_ref=source_1)
+        hosting_client = FakeMethod()
+        hosting_client.detectMerges = FakeMethod(
+            result={source_1.commit_sha1: u"0" * 40})
+        self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
+        repository.createOrUpdateRefs({
+            u"refs/heads/target-1": {
+                u"sha1": u"0" * 40,
+                u"type": GitObjectType.COMMIT,
+                },
+            u"refs/heads/target-2": {
+                u"sha1": u"1" * 40,
+                u"type": GitObjectType.COMMIT,
+                }
+            })
+        expected_args = [
+            (repository.getInternalPath(), target_1.commit_sha1,
+             set([source_1.commit_sha1, source_2.commit_sha1])),
+            (repository.getInternalPath(), target_2.commit_sha1,
+             set([source_1.commit_sha1])),
+            ]
+        self.assertContentEqual(
+            expected_args, hosting_client.detectMerges.extract_args())
+        self.assertEqual(BranchMergeProposalStatus.MERGED, bmp1.queue_status)
+        self.assertEqual(u"0" * 40, bmp1.merged_revision_id)
+        self.assertEqual(
+            BranchMergeProposalStatus.WORK_IN_PROGRESS, bmp2.queue_status)
+        self.assertEqual(BranchMergeProposalStatus.MERGED, bmp3.queue_status)
+        self.assertEqual(u"0" * 40, bmp3.merged_revision_id)
 
 
 class TestGitRepositorySet(TestCaseWithFactory):
@@ -1708,3 +2382,50 @@ class TestGitRepositoryWebservice(TestCaseWithFactory):
         self.assertEqual(200, response.status)
         with person_logged_in(subscriber_db):
             self.assertNotIn(subscriber_db, repository_db.subscribers)
+
+    def test_landing_candidates(self):
+        bmp_db = self.factory.makeBranchMergeProposalForGit()
+        with person_logged_in(bmp_db.registrant):
+            bmp_url = api_url(bmp_db)
+            repository_url = api_url(bmp_db.target_git_repository)
+        webservice = webservice_for_person(
+            bmp_db.registrant, permission=OAuthPermission.READ_PUBLIC)
+        webservice.default_api_version = "devel"
+        repository = webservice.get(repository_url).jsonBody()
+        landing_candidates = webservice.get(
+            repository["landing_candidates_collection_link"]).jsonBody()
+        self.assertEqual(1, len(landing_candidates["entries"]))
+        self.assertThat(
+            landing_candidates["entries"][0]["self_link"], EndsWith(bmp_url))
+
+    def test_landing_targets(self):
+        bmp_db = self.factory.makeBranchMergeProposalForGit()
+        with person_logged_in(bmp_db.registrant):
+            bmp_url = api_url(bmp_db)
+            repository_url = api_url(bmp_db.source_git_repository)
+        webservice = webservice_for_person(
+            bmp_db.registrant, permission=OAuthPermission.READ_PUBLIC)
+        webservice.default_api_version = "devel"
+        repository = webservice.get(repository_url).jsonBody()
+        landing_targets = webservice.get(
+            repository["landing_targets_collection_link"]).jsonBody()
+        self.assertEqual(1, len(landing_targets["entries"]))
+        self.assertThat(
+            landing_targets["entries"][0]["self_link"], EndsWith(bmp_url))
+
+    def test_dependent_landings(self):
+        [ref] = self.factory.makeGitRefs()
+        bmp_db = self.factory.makeBranchMergeProposalForGit(
+            prerequisite_ref=ref)
+        with person_logged_in(bmp_db.registrant):
+            bmp_url = api_url(bmp_db)
+            repository_url = api_url(ref.repository)
+        webservice = webservice_for_person(
+            bmp_db.registrant, permission=OAuthPermission.READ_PUBLIC)
+        webservice.default_api_version = "devel"
+        repository = webservice.get(repository_url).jsonBody()
+        dependent_landings = webservice.get(
+            repository["dependent_landings_collection_link"]).jsonBody()
+        self.assertEqual(1, len(dependent_landings["entries"]))
+        self.assertThat(
+            dependent_landings["entries"][0]["self_link"], EndsWith(bmp_url))
