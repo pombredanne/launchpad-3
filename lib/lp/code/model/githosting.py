@@ -60,7 +60,10 @@ class GitHostingClient:
             urljoin(self.endpoint, path), timeout=self.timeout, **kwargs)
         if (response.status_code // 100) != 2:
             raise HTTPResponseNotOK(response.text)
-        return response.json()
+        elif response.content:
+            return response.json()
+        else:
+            return None
 
     def _get(self, path, **kwargs):
         return self._request("get", path, **kwargs)
