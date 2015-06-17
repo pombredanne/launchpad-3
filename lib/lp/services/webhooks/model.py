@@ -16,6 +16,7 @@ from lazr.enum import (
     DBItem,
     )
 import pytz
+import requests
 from storm.properties import (
     Bool,
     DateTime,
@@ -164,6 +165,28 @@ class WebhookJobDerived(BaseRunnableJob):
         self.context = webhook_job
 
 
+class WebhookFailed(Exception):
+    pass
+
+
+def send_to_webhook(endpoint_url, proxy):
+    # We never want to execute a job if there's no proxy configured, as
+    # we'd then be sending near-arbitrary requests from a trusted
+    # machine.
+    if proxy is None:
+        raise Exception("No webhook proxy configured.")
+    proxies = {'http': proxy, 'https': proxy}
+    if not any(
+            endpoint_url.startswith("%s://" % scheme)
+            for scheme in proxies.keys()):
+        raise Exception("Unproxied scheme!")
+    session = requests.Session()
+    session.trust_env = False
+    resp = session.get(endpoint_url, proxies=proxies)
+    if resp.status_code != 200:
+        raise WebhookFailed("Failed.")
+
+
 class WebhookEventJob(WebhookJobDerived):
     """A job that send an event to a webhook consumer."""
 
@@ -173,6 +196,7 @@ class WebhookEventJob(WebhookJobDerived):
     class_job_type = WebhookJobType.EVENT
 
     config = config.IWebhookEventJobSource
+    user_error_types = (WebhookFailed,)
 
     @classmethod
     def create(cls, webhook):
@@ -182,4 +206,4 @@ class WebhookEventJob(WebhookJobDerived):
         return job
 
     def run(self):
-        return
+        send_to_webhook(self.webhook.endpoint_url, config.webhooks.http_proxy)
