@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """View classes for `IProductSeries`."""
@@ -885,7 +885,7 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
             self.setFieldError(
                 'repo_url', 'You must set the external repository URL.')
         else:
-            reason = validate_import_url(repo_url)
+            reason = validate_import_url(repo_url, rcs_type)
             if reason:
                 self.setFieldError('repo_url', reason)
 

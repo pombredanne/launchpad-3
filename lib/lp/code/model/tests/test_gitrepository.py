@@ -14,15 +14,15 @@ import json
 from bzrlib import urlutils
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
+import pytz
 from sqlobject import SQLObjectNotFound
 from storm.store import Store
-import transaction
-import pytz
 from testtools.matchers import (
     EndsWith,
     MatchesSetwise,
     MatchesStructure,
     )
+import transaction
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import providedBy
@@ -37,6 +37,7 @@ from lp.app.enums import (
     )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.code.enums import (
+    BranchMergeProposalStatus,
     BranchSubscriptionDiffSize,
     BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel,
@@ -49,7 +50,11 @@ from lp.code.errors import (
     GitRepositoryExists,
     GitTargetError,
     )
+from lp.code.interfaces.branchmergeproposal import (
+    BRANCH_MERGE_PROPOSAL_FINAL_STATES as FINAL_STATES,
+    )
 from lp.code.interfaces.defaultgit import ICanHasDefaultGitRepository
+from lp.code.interfaces.githosting import IGitHostingClient
 from lp.code.interfaces.gitjob import IGitRefScanJobSource
 from lp.code.interfaces.gitlookup import IGitLookup
 from lp.code.interfaces.gitnamespace import (
@@ -62,6 +67,11 @@ from lp.code.interfaces.gitrepository import (
     )
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.model.branchmergeproposal import BranchMergeProposal
+from lp.code.model.branchmergeproposaljob import (
+    BranchMergeProposalJob,
+    BranchMergeProposalJobType,
+    UpdatePreviewDiffJob,
+    )
 from lp.code.model.codereviewcomment import CodeReviewComment
 from lp.code.model.gitjob import (
     GitJob,
@@ -92,6 +102,9 @@ from lp.registry.interfaces.personproduct import IPersonProductFactory
 from lp.registry.tests.test_accesspolicy import get_policies_for_artifact
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
+from lp.services.database.interfaces import IStore
+from lp.services.job.interfaces.job import JobStatus
+from lp.services.job.model.job import Job
 from lp.services.job.runner import JobRunner
 from lp.services.mail import stub
 from lp.services.webapp.authorization import check_permission
@@ -108,11 +121,13 @@ from lp.testing import (
     )
 from lp.testing.dbuser import dbuser
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.fixture import ZopeUtilityFixture
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )
+from lp.testing.mail_helpers import pop_notifications
 from lp.testing.pages import webservice_for_person
 
 
@@ -724,12 +739,12 @@ class TestGitRepositoryURLs(TestCaseWithFactory):
             config.codehosting.git_browse_root, repository.unique_name)
         self.assertEqual(expected_url, repository.getCodebrowseUrl())
 
-    def test_anon_url_for_public(self):
+    def test_git_https_url_for_public(self):
         # Public repositories have an anonymous URL, visible to anyone.
         repository = self.factory.makeGitRepository()
         expected_url = urlutils.join(
-            config.codehosting.git_anon_root, repository.shortened_path)
-        self.assertEqual(expected_url, repository.anon_url)
+            config.codehosting.git_browse_root, repository.shortened_path)
+        self.assertEqual(expected_url, repository.git_https_url)
 
     def test_anon_url_not_for_private(self):
         # Private repositories do not have an anonymous URL.
@@ -737,14 +752,14 @@ class TestGitRepositoryURLs(TestCaseWithFactory):
         repository = self.factory.makeGitRepository(
             owner=owner, information_type=InformationType.USERDATA)
         with person_logged_in(owner):
-            self.assertIsNone(repository.anon_url)
+            self.assertIsNone(repository.git_https_url)
 
-    def test_ssh_url_for_public(self):
+    def test_git_ssh_url_for_public(self):
         # Public repositories have an SSH URL.
         repository = self.factory.makeGitRepository()
         expected_url = urlutils.join(
             config.codehosting.git_ssh_root, repository.shortened_path)
-        self.assertEqual(expected_url, repository.ssh_url)
+        self.assertEqual(expected_url, repository.git_ssh_url)
 
     def test_ssh_url_for_private(self):
         # Private repositories have an SSH URL.
@@ -754,7 +769,7 @@ class TestGitRepositoryURLs(TestCaseWithFactory):
         with person_logged_in(owner):
             expected_url = urlutils.join(
                 config.codehosting.git_ssh_root, repository.shortened_path)
-            self.assertEqual(expected_url, repository.ssh_url)
+            self.assertEqual(expected_url, repository.git_ssh_url)
 
 
 class TestGitRepositoryNamespace(TestCaseWithFactory):
@@ -980,6 +995,34 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
                 object_type=GitObjectType.BLOB,
                 ))
 
+    def _getWaitingUpdatePreviewDiffJobs(self, repository):
+        jobs = Store.of(repository).find(
+            BranchMergeProposalJob,
+            BranchMergeProposalJob.job_type ==
+                BranchMergeProposalJobType.UPDATE_PREVIEW_DIFF,
+            BranchMergeProposalJob.job == Job.id,
+            Job._status == JobStatus.WAITING)
+        return [UpdatePreviewDiffJob(job) for job in jobs]
+
+    def test_update_schedules_diff_update(self):
+        repository = self.factory.makeGitRepository()
+        [ref] = self.factory.makeGitRefs(repository=repository)
+        self.assertRefsMatch(repository.refs, repository, [ref.path])
+        bmp = self.factory.makeBranchMergeProposalForGit(source_ref=ref)
+        jobs = self._getWaitingUpdatePreviewDiffJobs(repository)
+        self.assertEqual([bmp], [job.branch_merge_proposal for job in jobs])
+        new_info = {
+            u"sha1": u"0000000000000000000000000000000000000000",
+            u"type": GitObjectType.BLOB,
+            }
+        repository.createOrUpdateRefs({ref.path: new_info})
+        jobs = self._getWaitingUpdatePreviewDiffJobs(repository)
+        self.assertEqual(
+            [bmp, bmp], [job.branch_merge_proposal for job in jobs])
+        self.assertEqual(
+            u"0000000000000000000000000000000000000000",
+            bmp.source_git_commit_sha1)
+
     def test_getRefByPath_without_leading_refs_heads(self):
         [ref] = self.factory.makeGitRefs(paths=[u"refs/heads/master"])
         self.assertEqual(
@@ -1017,8 +1060,8 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
                     },
                 },
             })
-        refs_to_upsert, refs_to_remove = repository.planRefChanges(
-            hosting_client, "dummy")
+        self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
+        refs_to_upsert, refs_to_remove = repository.planRefChanges("dummy")
 
         expected_upsert = {
             u"refs/heads/master": {
@@ -1059,8 +1102,8 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
                     },
                 },
             })
-        self.assertEqual(
-            ({}, set()), repository.planRefChanges(hosting_client, "dummy"))
+        self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
+        self.assertEqual(({}, set()), repository.planRefChanges("dummy"))
 
     def test_fetchRefCommits(self):
         # fetchRefCommits fetches detailed tip commit metadata for the
@@ -1091,6 +1134,7 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
                 u"parents": [],
                 u"tree": unicode(hashlib.sha1("").hexdigest()),
                 }])
+        self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
         refs = {
             u"refs/heads/master": {
                 u"sha1": master_sha1,
@@ -1101,7 +1145,7 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
                 u"type": GitObjectType.COMMIT,
                 },
             }
-        GitRepository.fetchRefCommits(hosting_client, "dummy", refs)
+        GitRepository.fetchRefCommits("dummy", refs)
 
         expected_oids = [master_sha1, foo_sha1]
         [(_, observed_oids)] = hosting_client.getCommits.extract_args()
@@ -1172,6 +1216,36 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
                 object_type=GitObjectType.COMMIT,
                 ) for path, sha1 in expected_sha1s]
         self.assertThat(repository.refs, MatchesSetwise(*matchers))
+
+    def test_set_default_branch(self):
+        hosting_client = FakeMethod()
+        hosting_client.setProperties = FakeMethod()
+        self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
+        repository = self.factory.makeGitRepository()
+        self.factory.makeGitRefs(
+            repository=repository,
+            paths=(u"refs/heads/master", u"refs/heads/new"))
+        removeSecurityProxy(repository)._default_branch = u"refs/heads/master"
+        with person_logged_in(repository.owner):
+            repository.default_branch = u"new"
+        self.assertEqual(
+            [((repository.getInternalPath(),),
+             {u"default_branch": u"refs/heads/new"})],
+            hosting_client.setProperties.calls)
+        self.assertEqual(u"refs/heads/new", repository.default_branch)
+
+    def test_set_default_branch_unchanged(self):
+        hosting_client = FakeMethod()
+        hosting_client.setProperties = FakeMethod()
+        self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
+        repository = self.factory.makeGitRepository()
+        self.factory.makeGitRefs(
+            repository=repository, paths=[u"refs/heads/master"])
+        removeSecurityProxy(repository)._default_branch = u"refs/heads/master"
+        with person_logged_in(repository.owner):
+            repository.default_branch = u"master"
+        self.assertEqual([], hosting_client.setProperties.calls)
+        self.assertEqual(u"refs/heads/master", repository.default_branch)
 
 
 class TestGitRepositoryGetAllowedInformationTypes(TestCaseWithFactory):
@@ -1578,6 +1652,176 @@ class TestGitRepositorySetTarget(TestCaseWithFactory):
             self.assertRaises(
                 GitTargetError, repository.setTarget,
                 target=commercial_project, user=owner)
+
+
+class TestGitRepositoryUpdateMergeCommitIDs(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_updates_proposals(self):
+        # `updateMergeCommitIDs` updates proposals for specified refs.
+        repository = self.factory.makeGitRepository()
+        paths = [u"refs/heads/1", u"refs/heads/2", u"refs/heads/3"]
+        [ref1, ref2, ref3] = self.factory.makeGitRefs(
+            repository=repository, paths=paths)
+        bmp1 = self.factory.makeBranchMergeProposalForGit(
+            target_ref=ref1, source_ref=ref2)
+        bmp2 = self.factory.makeBranchMergeProposalForGit(
+            target_ref=ref1, source_ref=ref3, prerequisite_ref=ref2)
+        removeSecurityProxy(ref1).commit_sha1 = u"0" * 40
+        removeSecurityProxy(ref2).commit_sha1 = u"1" * 40
+        removeSecurityProxy(ref3).commit_sha1 = u"2" * 40
+        self.assertNotEqual(ref1, bmp1.target_git_ref)
+        self.assertNotEqual(ref2, bmp1.source_git_ref)
+        self.assertNotEqual(ref1, bmp2.target_git_ref)
+        self.assertNotEqual(ref3, bmp2.source_git_ref)
+        self.assertNotEqual(ref2, bmp2.prerequisite_git_ref)
+        self.assertContentEqual(
+            [bmp1.id, bmp2.id], repository.updateMergeCommitIDs(paths))
+        self.assertEqual(ref1, bmp1.target_git_ref)
+        self.assertEqual(ref2, bmp1.source_git_ref)
+        self.assertEqual(ref1, bmp2.target_git_ref)
+        self.assertIsNone(bmp1.prerequisite_git_ref)
+        self.assertEqual(ref3, bmp2.source_git_ref)
+        self.assertEqual(ref2, bmp2.prerequisite_git_ref)
+
+    def test_skips_unspecified_refs(self):
+        # `updateMergeCommitIDs` skips unspecified refs.
+        repository1 = self.factory.makeGitRepository()
+        paths = [u"refs/heads/1", u"refs/heads/2"]
+        [ref1_1, ref1_2] = self.factory.makeGitRefs(
+            repository=repository1, paths=paths)
+        bmp1 = self.factory.makeBranchMergeProposalForGit(
+            target_ref=ref1_1, source_ref=ref1_2)
+        repository2 = self.factory.makeGitRepository(target=repository1.target)
+        [ref2_1, ref2_2] = self.factory.makeGitRefs(
+            repository=repository2, paths=paths)
+        bmp2 = self.factory.makeBranchMergeProposalForGit(
+            target_ref=ref2_1, source_ref=ref2_2)
+        removeSecurityProxy(ref1_1).commit_sha1 = u"0" * 40
+        removeSecurityProxy(ref1_2).commit_sha1 = u"1" * 40
+        removeSecurityProxy(ref2_1).commit_sha1 = u"2" * 40
+        removeSecurityProxy(ref2_2).commit_sha1 = u"3" * 40
+        self.assertNotEqual(ref1_1, bmp1.target_git_ref)
+        self.assertNotEqual(ref1_2, bmp1.source_git_ref)
+        self.assertNotEqual(ref2_1, bmp2.target_git_ref)
+        self.assertNotEqual(ref2_2, bmp2.source_git_ref)
+        self.assertContentEqual(
+            [bmp1.id], repository1.updateMergeCommitIDs([paths[0]]))
+        self.assertEqual(ref1_1, bmp1.target_git_ref)
+        self.assertNotEqual(ref1_2, bmp1.source_git_ref)
+        self.assertNotEqual(ref2_1, bmp2.target_git_ref)
+        self.assertNotEqual(ref2_2, bmp2.source_git_ref)
+
+
+class TestGitRepositoryScheduleDiffUpdates(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_scheduleDiffUpdates(self):
+        """Create jobs for all merge proposals."""
+        bmp1 = self.factory.makeBranchMergeProposalForGit()
+        bmp2 = self.factory.makeBranchMergeProposalForGit(
+            source_ref=bmp1.source_git_ref)
+        jobs = bmp1.source_git_repository.scheduleDiffUpdates(
+            [bmp1.source_git_path])
+        self.assertEqual(2, len(jobs))
+        bmps_to_update = [
+            removeSecurityProxy(job).branch_merge_proposal for job in jobs]
+        self.assertContentEqual([bmp1, bmp2], bmps_to_update)
+
+    def test_scheduleDiffUpdates_ignores_final(self):
+        """Diffs for proposals in final states aren't updated."""
+        [source_ref] = self.factory.makeGitRefs()
+        for state in FINAL_STATES:
+            bmp = self.factory.makeBranchMergeProposalForGit(
+                source_ref=source_ref, set_state=state)
+        # Creating a superseded proposal has the side effect of creating a
+        # second proposal.  Delete the second proposal.
+        for bmp in source_ref.landing_targets:
+            if bmp.queue_status not in FINAL_STATES:
+                removeSecurityProxy(bmp).deleteProposal()
+        jobs = source_ref.repository.scheduleDiffUpdates([source_ref.path])
+        self.assertEqual(0, len(jobs))
+
+
+class TestGitRepositoryDetectMerges(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def test_markProposalMerged(self):
+        # A merge proposal that is merged is marked as such.
+        proposal = self.factory.makeBranchMergeProposalForGit()
+        self.assertNotEqual(
+            BranchMergeProposalStatus.MERGED, proposal.queue_status)
+        proposal.target_git_repository._markProposalMerged(
+            proposal, proposal.target_git_commit_sha1)
+        self.assertEqual(
+            BranchMergeProposalStatus.MERGED, proposal.queue_status)
+        job = IStore(proposal).find(
+            BranchMergeProposalJob,
+            BranchMergeProposalJob.branch_merge_proposal == proposal,
+            BranchMergeProposalJob.job_type ==
+            BranchMergeProposalJobType.MERGE_PROPOSAL_UPDATED).one()
+        derived_job = job.makeDerived()
+        derived_job.run()
+        notifications = pop_notifications()
+        self.assertIn(
+            "Work in progress => Merged",
+            notifications[0].get_payload(decode=True))
+        self.assertEqual(
+            config.canonical.noreply_from_address, notifications[0]["From"])
+        recipients = set(msg["x-envelope-to"] for msg in notifications)
+        expected = set(
+            [proposal.source_git_repository.registrant.preferredemail.email,
+             proposal.target_git_repository.registrant.preferredemail.email])
+        self.assertEqual(expected, recipients)
+
+    def test_update_detects_merges(self):
+        # Pushing changes to a branch causes a check whether any active
+        # merge proposals with that branch as the target have been merged.
+        repository = self.factory.makeGitRepository()
+        [target_1, target_2, source_1, source_2] = self.factory.makeGitRefs(
+            repository, paths=[
+                u"refs/heads/target-1",
+                u"refs/heads/target-2",
+                u"refs/heads/source-1",
+                u"refs/heads/source-2",
+                ])
+        bmp1 = self.factory.makeBranchMergeProposalForGit(
+            target_ref=target_1, source_ref=source_1)
+        bmp2 = self.factory.makeBranchMergeProposalForGit(
+            target_ref=target_1, source_ref=source_2)
+        bmp3 = self.factory.makeBranchMergeProposalForGit(
+            target_ref=target_2, source_ref=source_1)
+        hosting_client = FakeMethod()
+        hosting_client.detectMerges = FakeMethod(
+            result={source_1.commit_sha1: u"0" * 40})
+        self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
+        repository.createOrUpdateRefs({
+            u"refs/heads/target-1": {
+                u"sha1": u"0" * 40,
+                u"type": GitObjectType.COMMIT,
+                },
+            u"refs/heads/target-2": {
+                u"sha1": u"1" * 40,
+                u"type": GitObjectType.COMMIT,
+                }
+            })
+        expected_args = [
+            (repository.getInternalPath(), target_1.commit_sha1,
+             set([source_1.commit_sha1, source_2.commit_sha1])),
+            (repository.getInternalPath(), target_2.commit_sha1,
+             set([source_1.commit_sha1])),
+            ]
+        self.assertContentEqual(
+            expected_args, hosting_client.detectMerges.extract_args())
+        self.assertEqual(BranchMergeProposalStatus.MERGED, bmp1.queue_status)
+        self.assertEqual(u"0" * 40, bmp1.merged_revision_id)
+        self.assertEqual(
+            BranchMergeProposalStatus.WORK_IN_PROGRESS, bmp2.queue_status)
+        self.assertEqual(BranchMergeProposalStatus.MERGED, bmp3.queue_status)
+        self.assertEqual(u"0" * 40, bmp3.merged_revision_id)
 
 
 class TestGitRepositorySet(TestCaseWithFactory):
@@ -2138,3 +2382,50 @@ class TestGitRepositoryWebservice(TestCaseWithFactory):
         self.assertEqual(200, response.status)
         with person_logged_in(subscriber_db):
             self.assertNotIn(subscriber_db, repository_db.subscribers)
+
+    def test_landing_candidates(self):
+        bmp_db = self.factory.makeBranchMergeProposalForGit()
+        with person_logged_in(bmp_db.registrant):
+            bmp_url = api_url(bmp_db)
+            repository_url = api_url(bmp_db.target_git_repository)
+        webservice = webservice_for_person(
+            bmp_db.registrant, permission=OAuthPermission.READ_PUBLIC)
+        webservice.default_api_version = "devel"
+        repository = webservice.get(repository_url).jsonBody()
+        landing_candidates = webservice.get(
+            repository["landing_candidates_collection_link"]).jsonBody()
+        self.assertEqual(1, len(landing_candidates["entries"]))
+        self.assertThat(
+            landing_candidates["entries"][0]["self_link"], EndsWith(bmp_url))
+
+    def test_landing_targets(self):
+        bmp_db = self.factory.makeBranchMergeProposalForGit()
+        with person_logged_in(bmp_db.registrant):
+            bmp_url = api_url(bmp_db)
+            repository_url = api_url(bmp_db.source_git_repository)
+        webservice = webservice_for_person(
+            bmp_db.registrant, permission=OAuthPermission.READ_PUBLIC)
+        webservice.default_api_version = "devel"
+        repository = webservice.get(repository_url).jsonBody()
+        landing_targets = webservice.get(
+            repository["landing_targets_collection_link"]).jsonBody()
+        self.assertEqual(1, len(landing_targets["entries"]))
+        self.assertThat(
+            landing_targets["entries"][0]["self_link"], EndsWith(bmp_url))
+
+    def test_dependent_landings(self):
+        [ref] = self.factory.makeGitRefs()
+        bmp_db = self.factory.makeBranchMergeProposalForGit(
+            prerequisite_ref=ref)
+        with person_logged_in(bmp_db.registrant):
+            bmp_url = api_url(bmp_db)
+            repository_url = api_url(ref.repository)
+        webservice = webservice_for_person(
+            bmp_db.registrant, permission=OAuthPermission.READ_PUBLIC)
+        webservice.default_api_version = "devel"
+        repository = webservice.get(repository_url).jsonBody()
+        dependent_landings = webservice.get(
+            repository["dependent_landings_collection_link"]).jsonBody()
+        self.assertEqual(1, len(dependent_landings["entries"]))
+        self.assertThat(
+            dependent_landings["entries"][0]["self_link"], EndsWith(bmp_url))

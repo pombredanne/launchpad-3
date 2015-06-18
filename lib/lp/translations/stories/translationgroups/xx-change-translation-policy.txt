@@ -23,13 +23,13 @@ translations settings page.
 
     >>> re_browser.open(
     ...     'http://translations.launchpad.dev/chestii')
-    >>> re_browser.getLink('Configure translations').click()
+    >>> re_browser.getLink('Configure Translations').click()
     >>> print re_browser.url
     http://translations.launchpad.dev/chestii/+configure-translations
 
     >>> po_browser.open(
     ...     'http://translations.launchpad.dev/chestii')
-    >>> po_browser.getLink('Configure translations').click()
+    >>> po_browser.getLink('Configure Translations').click()
     >>> print po_browser.url
     http://translations.launchpad.dev/chestii/+configure-translations
 
@@ -57,7 +57,7 @@ to translations policy page.
 
     >>> dtc_browser.open(
     ...     'http://translations.launchpad.dev/chestii')
-    >>> dtc_browser.getLink('Configure translations')
+    >>> dtc_browser.getLink('Configure Translations')
     Traceback (most recent call last):
     ...
     LinkNotFoundError...

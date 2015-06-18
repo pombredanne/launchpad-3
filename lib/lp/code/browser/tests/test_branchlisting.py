@@ -463,6 +463,20 @@ class TestSourcePackageBranchesView(TestCaseWithFactory):
             list(view.series_links))
 
 
+class TestDistributionBranchesView(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_git_link(self):
+        dsp = self.factory.makeDistributionSourcePackage()
+        page = create_initialized_view(dsp.distribution, '+branches')()
+        self.assertNotIn('View Git repositories', page)
+
+        self.factory.makeGitRepository(target=dsp)
+        page = create_initialized_view(dsp.distribution, '+branches')()
+        self.assertIn('View Git repositories', page)
+
+
 class TestGroupedDistributionSourcePackageBranchesView(TestCaseWithFactory):
     """Test the groups for the branches of distribution source packages."""
 
@@ -642,7 +656,7 @@ class TestProductConfigureCodehosting(TestCaseWithFactory):
         product = self.factory.makeProduct()
         browser = self.getUserBrowser(
             canonical_url(product, rootsite='code'))
-        self.assertFalse('Configure code hosting' in browser.contents)
+        self.assertFalse('Configure Code' in browser.contents)
 
     def test_configure_codehosting_shown(self):
         # If the user has driver permissions, they are shown the configure
@@ -650,7 +664,7 @@ class TestProductConfigureCodehosting(TestCaseWithFactory):
         product = self.factory.makeProduct()
         browser = self.getUserBrowser(
             canonical_url(product, rootsite='code'), user=product.owner)
-        self.assertTrue('Configure code hosting' in browser.contents)
+        self.assertTrue('Configure Code' in browser.contents)
 
 
 class TestPersonBranchesPage(BrowserTestCase):
@@ -708,6 +722,15 @@ class TestPersonBranchesPage(BrowserTestCase):
         # the content should not appear in tact because it's been escaped
         self.assertTrue(badname not in browser.contents)
         self.assertTrue(escapedname in browser.contents)
+
+    def test_git_link(self):
+        person = self.factory.makePerson()
+        page = create_initialized_view(person, '+branches')()
+        self.assertNotIn('View Git repositories', page)
+
+        self.factory.makeGitRepository(owner=person)
+        page = create_initialized_view(person, '+branches')()
+        self.assertIn('View Git repositories', page)
 
 
 class TestProjectGroupBranches(TestCaseWithFactory,

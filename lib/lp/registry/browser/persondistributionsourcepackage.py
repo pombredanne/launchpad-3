@@ -16,6 +16,7 @@ from zope.interface import implements
 from zope.traversing.interfaces import IPathAdapter
 
 from lp.app.errors import NotFoundError
+from lp.code.browser.vcslisting import PersonTargetDefaultVCSNavigationMixin
 from lp.registry.interfaces.persondistributionsourcepackage import (
     IPersonDistributionSourcePackage,
     )
@@ -28,7 +29,8 @@ from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.services.webapp.interfaces import IMultiFacetedBreadcrumb
 
 
-class PersonDistributionSourcePackageNavigation(Navigation):
+class PersonDistributionSourcePackageNavigation(
+        PersonTargetDefaultVCSNavigationMixin, Navigation):
     usedfor = IPersonDistributionSourcePackage
 
     def traverse(self, branch_name):

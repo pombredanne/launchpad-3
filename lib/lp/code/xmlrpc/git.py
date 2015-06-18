@@ -22,15 +22,16 @@ from lp.app.errors import NameLookupFailed
 from lp.app.validators import LaunchpadValidationError
 from lp.code.errors import (
     GitRepositoryCreationException,
-    GitRepositoryCreationForbidden,
     GitRepositoryCreationFault,
+    GitRepositoryCreationForbidden,
     GitRepositoryExists,
     GitTargetError,
     InvalidNamespace,
     )
-from lp.code.githosting import GitHostingClient
 from lp.code.interfaces.codehosting import LAUNCHPAD_ANONYMOUS
 from lp.code.interfaces.gitapi import IGitAPI
+from lp.code.interfaces.githosting import IGitHostingClient
+from lp.code.interfaces.gitjob import IGitRefScanJobSource
 from lp.code.interfaces.gitlookup import (
     IGitLookup,
     IGitTraverser,
@@ -40,7 +41,6 @@ from lp.code.interfaces.gitnamespace import (
     split_git_unique_name,
     )
 from lp.code.interfaces.gitrepository import IGitRepositorySet
-from lp.code.interfaces.gitjob import IGitRefScanJobSource
 from lp.code.xmlrpc.codehosting import run_with_login
 from lp.registry.errors import (
     InvalidName,
@@ -52,7 +52,6 @@ from lp.registry.interfaces.product import (
     NoSuchProduct,
     )
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
-from lp.services.config import config
 from lp.services.webapp import LaunchpadXMLRPCView
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.errorlog import ScriptRequest
@@ -67,8 +66,6 @@ class GitAPI(LaunchpadXMLRPCView):
 
     def __init__(self, *args, **kwargs):
         super(GitAPI, self).__init__(*args, **kwargs)
-        self.hosting_client = GitHostingClient(
-            config.codehosting.internal_git_api_endpoint)
         self.repository_set = getUtility(IGitRepositorySet)
 
     def _performLookup(self, path):
@@ -211,15 +208,16 @@ class GitAPI(LaunchpadXMLRPCView):
                 else:
                     default = self.repository_set.getDefaultRepositoryForOwner(
                         repository.owner, repository.target)
-                    if default is not None and default.visibleByUser(requester):
+                    if (default is not None and
+                            default.visibleByUser(requester)):
                         target_path = default.getInternalPath()
             except GitTargetError:
                 pass  # Ignore Personal repositories.
 
             hosting_path = repository.getInternalPath()
             try:
-                self.hosting_client.create(hosting_path,
-                                           clone_from=target_path)
+                getUtility(IGitHostingClient).create(
+                    hosting_path, clone_from=target_path)
             except GitRepositoryCreationFault as e:
                 # The hosting service failed.  Log an OOPS for investigation.
                 self._reportError(path, e, hosting_path=hosting_path)

@@ -213,11 +213,11 @@ class IGitRepositoryView(Interface):
         "The identity of this repository: a VCS-independent synonym for "
         "git_identity.")
 
-    anon_url = Attribute(
-        "An anonymous (git://) URL for this repository, or None in the case "
-        "of private repositories.")
+    git_https_url = Attribute(
+        "An HTTPS URL for this repository, or None in the case of private "
+        "repositories.")
 
-    ssh_url = Attribute("A git+ssh:// URL for this repository.")
+    git_ssh_url = Attribute("A git+ssh:// URL for this repository.")
 
     refs = exported(CollectionField(
         title=_("The references present in this repository."),
@@ -249,12 +249,13 @@ class IGitRepositoryView(Interface):
         :return: An `IGitRef`, or None.
         """
 
-    def createOrUpdateRefs(refs_info, get_objects=False):
+    def createOrUpdateRefs(refs_info, get_objects=False, logger=None):
         """Create or update a set of references in this repository.
 
         :param refs_info: A dict mapping ref paths to
             {"sha1": sha1, "type": `GitObjectType`}.
         :param get_objects: Return the created/updated references.
+        :param logger: An optional logger.
 
         :return: A list of the created/updated references if get_objects,
             otherwise None.
@@ -266,10 +267,9 @@ class IGitRepositoryView(Interface):
         :params paths: An iterable of paths.
         """
 
-    def planRefChanges(hosting_client, hosting_path, logger=None):
+    def planRefChanges(hosting_path, logger=None):
         """Plan ref changes based on information from the hosting service.
 
-        :param hosting_client: A `GitHostingClient`.
         :param hosting_path: A path on the hosting service.
         :param logger: An optional logger.
 
@@ -278,10 +278,9 @@ class IGitRepositoryView(Interface):
             paths to remove.
         """
 
-    def fetchRefCommits(hosting_client, hosting_path, refs, logger=None):
+    def fetchRefCommits(hosting_path, refs, logger=None):
         """Fetch commit information from the hosting service for a set of refs.
 
-        :param hosting_client: A `GitHostingClient`.
         :param hosting_path: A path on the hosting service.
         :param refs: A dict mapping ref paths to dictionaries of their
             fields; the field dictionaries will be updated with any detailed
@@ -289,13 +288,14 @@ class IGitRepositoryView(Interface):
         :param logger: An optional logger.
         """
 
-    def synchroniseRefs(refs_to_upsert, refs_to_remove):
+    def synchroniseRefs(refs_to_upsert, refs_to_remove, logger=None):
         """Synchronise references with those from the hosting service.
 
         :param refs_to_upsert: A dictionary mapping ref paths to
             dictionaries of their fields; these refs will be created or
             updated as appropriate.
         :param refs_to_remove: A set of ref paths to remove.
+        :param logger: An optional logger.
         """
 
     def setOwnerDefault(value):
@@ -449,17 +449,30 @@ class IGitRepositoryView(Interface):
         and their subscriptions.
         """
 
-    # XXX cjwatson 2015-04-16: These names are too awful to set in stone by
-    # exporting them on the webservice; find better names before exporting.
-    landing_targets = Attribute(
-        "A collection of the merge proposals where this repository is the "
-        "source.")
-    landing_candidates = Attribute(
-        "A collection of the merge proposals where this repository is the "
-        "target.")
-    dependent_landings = Attribute(
-        "A collection of the merge proposals that are dependent on this "
-        "repository.")
+    landing_targets = exported(CollectionField(
+        title=_("Landing targets"),
+        description=_(
+            "A collection of the merge proposals where this repository is the "
+            "source."),
+        readonly=True,
+        # Really IBranchMergeProposal, patched in _schema_circular_imports.py.
+        value_type=Reference(Interface)))
+    landing_candidates = exported(CollectionField(
+        title=_("Landing candidates"),
+        description=_(
+            "A collection of the merge proposals where this repository is the "
+            "target."),
+        readonly=True,
+        # Really IBranchMergeProposal, patched in _schema_circular_imports.py.
+        value_type=Reference(Interface)))
+    dependent_landings = exported(CollectionField(
+        title=_("Dependent landings"),
+        description=_(
+            "A collection of the merge proposals that are dependent on this "
+            "repository."),
+        readonly=True,
+        # Really IBranchMergeProposal, patched in _schema_circular_imports.py.
+        value_type=Reference(Interface)))
 
     def getMergeProposalByID(id):
         """Return this repository's merge proposal with this id, or None."""
@@ -470,6 +483,33 @@ class IGitRepositoryView(Interface):
     pending_writes = Attribute(
         "Whether there are recent changes in this repository that have not "
         "yet been scanned.")
+
+    def updateMergeCommitIDs(paths):
+        """Update commit SHA1s of merge proposals for this repository.
+
+        The *_git_commit_sha1 columns of merge proposals are stored
+        explicitly in order that merge proposals are still meaningful after
+        associated refs have been deleted.  However, active merge proposals
+        where the refs in question still exist should have these columns
+        kept up to date.
+        """
+
+    def scheduleDiffUpdates(paths):
+        """Create UpdatePreviewDiffJobs for landing targets.
+
+        :param paths: A list of reference paths.  Any merge proposals whose
+            source is this repository and one of these paths will have their
+            diffs updated.
+        """
+
+    def detectMerges(paths, logger=None):
+        """Detect merges of landing candidates.
+
+        :param paths: A list of reference paths.  Any merge proposals whose
+            target is this repository and one of these paths will be
+            checked.
+        :param logger: An optional logger.
+        """
 
 
 class IGitRepositoryModerateAttributes(Interface):
@@ -510,6 +550,19 @@ class IGitRepositoryModerate(Interface):
         :param verify_policy: Check if the new information type complies
             with the `IGitNamespacePolicy`.
         """
+
+
+class IGitRepositoryEditableAttributes(Interface):
+    """IGitRepository attributes that can be edited.
+
+    These attributes need launchpad.View to see, and launchpad.Edit to change.
+    """
+
+    default_branch = exported(TextLine(
+        title=_("Default branch"), required=False, readonly=False,
+        description=_(
+            "The full path to the default branch for this repository, e.g. "
+            "refs/heads/master.")))
 
 
 class IGitRepositoryEdit(Interface):
@@ -579,7 +632,8 @@ class IGitRepositoryEdit(Interface):
 
 
 class IGitRepository(IGitRepositoryView, IGitRepositoryModerateAttributes,
-                     IGitRepositoryModerate, IGitRepositoryEdit):
+                     IGitRepositoryModerate, IGitRepositoryEditableAttributes,
+                     IGitRepositoryEdit):
     """A Git repository."""
 
     # Mark repositories as exported entries for the Launchpad API.

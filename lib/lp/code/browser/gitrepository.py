@@ -21,7 +21,10 @@ __all__ = [
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
-from lazr.restful.interface import copy_field
+from lazr.restful.interface import (
+    copy_field,
+    use_template,
+    )
 from storm.expr import Desc
 from zope.event import notify
 from zope.formlib import form
@@ -47,6 +50,7 @@ from lp.app.browser.launchpadform import (
 from lp.app.errors import NotFoundError
 from lp.app.vocabularies import InformationTypeVocabulary
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
+from lp.code.browser.branch import CodeEditOwnerMixin
 from lp.code.browser.widgets.gitrepositorytarget import (
     GitRepositoryTargetDisplayWidget,
     GitRepositoryTargetWidget,
@@ -106,7 +110,7 @@ class GitRepositoryBreadcrumb(NameBreadcrumb):
 
     @property
     def inside(self):
-        return self.context.unique_name.split("/")[-1]
+        return self.context.target
 
 
 class GitRepositoryNavigation(Navigation):
@@ -279,6 +283,7 @@ class GitRepositoryEditFormView(LaunchpadEditFormView):
             This is necessary to make various fields editable that are not
             normally editable through the interface.
             """
+            use_template(IGitRepository, include=["default_branch"])
             information_type = copy_field(
                 IGitRepository["information_type"], readonly=False,
                 vocabulary=InformationTypeVocabulary(types=info_types))
@@ -411,7 +416,7 @@ class GitRepositoryEditReviewerView(GitRepositoryEditFormView):
         return {"reviewer": self.context.code_reviewer}
 
 
-class GitRepositoryEditView(GitRepositoryEditFormView):
+class GitRepositoryEditView(CodeEditOwnerMixin, GitRepositoryEditFormView):
     """The main view for editing repository attributes."""
 
     field_names = [
@@ -420,9 +425,14 @@ class GitRepositoryEditView(GitRepositoryEditFormView):
         "target",
         "information_type",
         "owner_default",
+        "default_branch",
         ]
 
     custom_widget("information_type", LaunchpadRadioWidgetWithDescription)
+
+    any_owner_description = _(
+        "As an administrator you are able to assign this repository to any "
+        "person or team.")
 
     def setUpFields(self):
         super(GitRepositoryEditView, self).setUpFields()
@@ -518,6 +528,14 @@ class GitRepositoryEditView(GitRepositoryEditFormView):
                 "target",
                 "The default repository for a target cannot be moved to "
                 "another target.")
+        if "default_branch" in data:
+            default_branch = data["default_branch"]
+            if (default_branch is not None and
+                    self.context.getRefByPath(default_branch) is None):
+                self.setFieldError(
+                    "default_branch",
+                    "This repository does not contain a reference named "
+                    "'%s'." % default_branch)
 
 
 class GitRepositoryDeletionView(LaunchpadFormView):

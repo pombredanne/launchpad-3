@@ -66,6 +66,19 @@ class PackageDiffJob(PackageDiffJobDerived):
     implements(IPackageDiffJob)
     classProvides(IPackageDiffJobSource)
 
+    def __repr__(self):
+        """Returns an informative representation of a PackageDiff job."""
+        diff = self.packagediff
+        parts = ['{cls} from {from_spr} to {to_spr}'.format(
+            cls=self.__class__.__name__,
+            from_spr=repr(diff.from_source),
+            to_spr=repr(diff.to_source))
+            ]
+        if diff.requester is not None:
+            parts.append(' for {requester}'.format(
+                requester=diff.requester.name))
+        return '<{repr}>'.format(repr=''.join(parts))
+
     @property
     def packagediff_id(self):
         return simplejson.loads(self.base_json_data)['packagediff']
