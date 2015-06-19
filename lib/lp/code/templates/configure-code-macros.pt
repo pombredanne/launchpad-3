@@ -30,4 +30,10 @@
       </p>
     </div>
 
+    <div metal:define-macro="no-keys" condition="not:view/user/sshkeys">
+      <p class="note">To authenticate with the Launchpad branch upload service, you need to
+      <a tal:attributes="href string:${view/user/fmt:url}/+editsshkeys">
+      register a SSH key</a>.</p>
+    </div>
+
 </tal:root>

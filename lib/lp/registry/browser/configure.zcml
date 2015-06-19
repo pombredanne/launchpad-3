@@ -1752,13 +1752,6 @@
         template="../templates/product-review-license.pt"
         />
     <browser:page
-        name="+product-macros"
-        for="lp.registry.interfaces.product.IProduct"
-        class="lp.app.browser.launchpad.Macro"
-        permission="zope.Public"
-        template="../templates/product-macros.pt"
-        />
-    <browser:page
         name="+edit"
         for="lp.registry.interfaces.nameblacklist.INameBlacklist"
         class="lp.registry.browser.nameblacklist.NameBlacklistEditView"

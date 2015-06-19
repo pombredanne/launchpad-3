@@ -1716,6 +1716,10 @@ class ProductSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
     errors_in_action = False
 
     @property
+    def is_series(self):
+        return False
+
+    @property
     def series(self):
         return self.context.development_focus
 

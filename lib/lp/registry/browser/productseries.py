@@ -734,6 +734,10 @@ class ProductSeriesSetBranchView(ProductSetBranchView, ProductSeriesView):
     """The view to set a branch for the ProductSeries."""
 
     @property
+    def is_series(self):
+        return True
+
+    @property
     def series(self):
         return self.context
 
