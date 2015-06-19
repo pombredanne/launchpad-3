@@ -112,14 +112,15 @@ class TestArchiveAdminView(TestCaseWithFactory):
         ppa = self.factory.makeArchive()
         admin = login_celebrity("admin")
         self.assertEqual(
-            ["386", "amd64"], [processor.name for processor in ppa.processors])
+            ["386", "amd64", "hppa"],
+            [processor.name for processor in ppa.processors])
         browser = self.getUserBrowser(
             canonical_url(ppa) + "/+admin", user=admin)
         processors = browser.getControl(name="field.processors")
-        self.assertContentEqual(["386", "amd64"], processors.value)
-        processors.value = ["386", "amd64", "hppa"]
+        self.assertContentEqual(["386", "amd64", "hppa"], processors.value)
+        processors.value = ["386", "amd64"]
         browser.getControl("Save").click()
         login_celebrity("admin")
         self.assertEqual(
-            ["386", "amd64", "hppa"],
+            ["386", "amd64"],
             [processor.name for processor in ppa.processors])
