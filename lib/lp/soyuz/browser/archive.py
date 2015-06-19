@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for archive."""
@@ -2033,7 +2033,8 @@ class EnableProcessorsMixin:
         for processor in sorted(
                 getUtility(IProcessorSet).getAll(), key=attrgetter('name')):
             terms.append(SimpleTerm(
-                processor, token=processor.name, title=processor.title))
+                processor, token=processor.name,
+                title="%s (%s)" % (processor.title, processor.name)))
         old_field = IArchive['processors']
         return form.Fields(
             List(__name__=old_field.__name__,
