@@ -396,11 +396,11 @@ class ProductInvolvementView(PillarInvolvementView):
                                     configured=config_statuses[key]))
 
         # Add the branch configuration in separately.
-        set_branch = overview_menu['set_branch']
-        set_branch.text = 'Code'
-        set_branch.summary = "Specify the location of this project's code."
+        configure_code = overview_menu['configure_code']
+        configure_code.text = 'Code'
+        configure_code.summary = "Specify the location of this project's code."
         config_list.insert(0,
-            dict(link=set_branch,
+            dict(link=configure_code,
                  configured=config_statuses['configure_codehosting']))
         return config_list
 
@@ -539,7 +539,7 @@ class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin,
         'packages',
         'series',
         'series_add',
-        'set_branch',
+        'configure_code',
         'milestones',
         'downloads',
         'announce',
@@ -594,17 +594,12 @@ class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin,
         return Link('+rdf', text, icon='download')
 
     @enabled_with_permission('launchpad.Edit')
-    def set_branch(self):
-        """Return a link to set the branch or repo for this project."""
-        if self.context.development_focus.branch is None:
-            text = 'Link to branch'
-            icon = 'add'
-            summary = 'Set the branch for this project'
-        else:
-            text = "Change branch"
-            icon = 'edit'
-            summary = 'Change the branch for this project'
-        return Link('+setbranch', text, summary, icon=icon)
+    def configure_code(self):
+        """Return a link to configure code for this project."""
+        text = 'Configure code'
+        icon = 'edit'
+        summary = 'Configure code for this project'
+        return Link('+configure-code', text, summary, icon=icon)
 
     def downloads(self):
         text = 'Downloads'
@@ -983,30 +978,6 @@ class ProductView(PillarViewMixin, HasAnnouncementsView, SortSeriesMixin,
     @property
     def show_license_status(self):
         return self.context.license_status != LicenseStatus.OPEN_SOURCE
-
-    @property
-    def show_vcs(self):
-        """Should VCS be displayed?
-
-        Infer a project VCS for this view if a git or bzr branch
-        exist, otherwise check if vcs attribute has been set.
-        """
-        if (not IBranchCollection(self.context).is_empty() or
-            not IGitCollection(self.context).is_empty()):
-            return True
-        return bool(self.context.vcs)
-
-    @property
-    def vcs(self):
-        """Project VCS type."""
-        vcs = None
-        if self.context.vcs:
-            return self.context.vcs
-        if not IBranchCollection(self.context).is_empty():
-            vcs = VCSType.BZR
-        if not IGitCollection(self.context).is_empty():
-            vcs = VCSType.GIT
-        return vcs
 
     @property
     def sourceforge_url(self):
@@ -1711,7 +1682,7 @@ class SetBranchForm(Interface):
         description=_(
             "The Git repository for this project in Launchpad, "
             "if one exists, in the form: "
-            "`~user/project-name/+git/repo-name`"))
+            "~user/project-name/+git/repo-name"))
 
     branch_type = Choice(
         title=_('Import type'), vocabulary=BRANCH_TYPE_VOCABULARY,
@@ -1731,6 +1702,8 @@ class ProductSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
                            BranchNameValidationMixin):
     """The view to set a branch default for the Product."""
 
+    label = 'Configure code'
+    page_title = label
     schema = SetBranchForm
     # Set for_input to True to ensure fields marked read-only will be editable
     # upon creation.
@@ -1747,14 +1720,10 @@ class ProductSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
         return self.context.development_focus
 
     @property
-    def vcs(self):
-        return self.context.vcs
-
-    @property
     def initial_values(self):
         return dict(
             rcs_type=RevisionControlSystems.BZR,
-            default_vcs=(self.vcs or VCSType.GIT),
+            default_vcs=(self.context.pillar.inferred_vcs or VCSType.BZR),
             branch_type=LINK_LP_BZR,
             branch_location=self.series.branch)
 
@@ -1816,7 +1785,11 @@ class ProductSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
             if not repo:
                 self.setFieldError(
                     'git_repository_location',
-                    'The respository does not exist.')
+                    'The repository does not exist.')
+            if not (self.context == repo.target):
+                self.setFieldError(
+                    'git_repository_location',
+                    'The repository is in a different project.')
 
     def _validateImportExternal(self, data):
         """Validate data for import external case."""
@@ -1885,11 +1858,7 @@ class ProductSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
         super(ProductSetBranchView, self).validate_widgets(data, names)
         branch_type = data.get('branch_type')
 
-        if data.get('default_vcs') == VCSType.GIT:
-            self._setRequired(['rcs_type', 'repo_url', 'cvs_module',
-                               'branch_name', 'branch_type', 'branch_owner'],
-                              False)
-        elif branch_type == LINK_LP_BZR:
+        if branch_type == LINK_LP_BZR:
             # Mark other widgets as non-required.
             self._setRequired(['rcs_type', 'repo_url', 'cvs_module',
                                'branch_name', 'branch_owner'], False)
@@ -1916,9 +1885,8 @@ class ProductSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
         if len(self.errors) > 0:
             return
         branch_type = data.get('branch_type')
-        if data.get('default_vcs') == VCSType.GIT:
-            self._validateLinkLpGit(data)
-        elif branch_type == IMPORT_EXTERNAL:
+        self._validateLinkLpGit(data)
+        if branch_type == IMPORT_EXTERNAL:
             self._validateImportExternal(data)
         elif branch_type == LINK_LP_BZR:
             self._validateLinkLpBzr(data)
@@ -1940,28 +1908,23 @@ class ProductSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
         self._abort()
         return
 
+    def add_update_notification(self):
+        self.request.response.addInfoNotification(
+            'Project code updated.')
+
     @action(_('Update'), name='update')
     def update_action(self, action, data):
         branch_type = data.get('branch_type')
         default_vcs = data.get('default_vcs')
 
-        self.context.vcs = default_vcs
+        if default_vcs:
+            self.context.vcs = default_vcs
 
-        if default_vcs == VCSType.GIT:
-            git_repository_location = data.get('git_repository_location')
-            if git_repository_location:
-                repo = getUtility(IGitRepositorySet).getByPath(self.user,
-                    git_repository_location)
-                try:
-                    getUtility(IGitRepositorySet).setDefaultRepository(
-                        self.context, repo)
-                except GitTargetError:
-                    self.setFieldError(
-                        'git_repository_location',
-                        'Repository is in a different project.')
-                    abort_update()
-
-        elif branch_type == LINK_LP_BZR:
+        git_repository_location = data.get('git_repository_location')
+        if git_repository_location:
+            repo = getUtility(IGitRepositorySet).getByPath(
+                self.user, git_repository_location)
+        if branch_type == LINK_LP_BZR:
             branch_location = data.get('branch_location')
             if branch_location != self.series.branch:
                 self.series.branch = branch_location
@@ -1970,8 +1933,7 @@ class ProductSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
                     self.series.branch, NULL_REVISION)
             else:
                 self.series.branch = branch_location
-            self.request.response.addInfoNotification(
-                'Series code location updated.')
+            self.add_update_notification()
         else:
             branch_name = data.get('branch_name')
             branch_owner = data.get('branch_owner')

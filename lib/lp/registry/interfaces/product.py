@@ -761,6 +761,13 @@ class IProductView(
             description=_(
                 "Version control system for this project's code.")))
 
+    inferred_vcs = exported(
+        TextLine(
+            title=_("Inferred VCS"),
+            readonly=True,
+            description=_(
+                "Inferred version control system for this project's code.")))
+
     def getAllowedBugInformationTypes():
         """Get the information types that a bug in this project can have.
 

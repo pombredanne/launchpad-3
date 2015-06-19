@@ -21,49 +21,30 @@
       <div metal:use-macro="context/@@launchpad_form/form">
 
         <metal:formbody fill-slot="widgets">
-          <h3>Version Control System</h3>
+
+          <h3>Version control system</h3>
           <div id="default_vcs">
-            <p>Please select a vcs for your project:</p>
             <ul>
-              <li>
-                <label tal:replace="structure view/default_vcs_git">
-                  Git
-                </label>
-              </li>
               <li>
                 <label tal:replace="structure view/default_vcs_bzr">
                   Bazaar
                 </label>
               </li>
+              <li>
+                <label tal:replace="structure view/default_vcs_git">
+                  Git
+                </label> (beta)
+              </li>
             </ul>
             <p>
-              <span class="formHelp">Your project may still have both
-              git repositories and bazaar branches.</span><br/>
+              <span class="note">Your project may have both
+              Git repositories and Bazaar branches.</span><br/>
             </p>
-          </div>
-
-          <div id="show-hide-git">
-            <a href="#" id="git-expander-icon" class="expander-icon js-action">
-              Configure Git
-            </a>
-            <div id="git-expander-content">
-              <div id="form_git" class="form">
-                <div class="push-instructions">
-                  <div metal:use-macro="context/@@+product-macros/push-instructions-git"></div>
-                </div>
-
-                <h3>Link Git Repository</h3>
-                <p>Link to a Git repository already in Launchpad</p>
-                <tal:widget define="widget nocall:view/widgets/git_repository_location">
-                  <metal:block use-macro="context/@@launchpad_form/widget_row" />
-                </tal:widget>
-              </div>
-            </div>
           </div>
 
           <div id="show-hide-bzr">
             <a href="#" id="bzr-expander-icon" class="expander-icon js-action">
-              Configure Bazaar
+              <span class="sprite branch">Bazaar settings</span>
             </a>
             <div id="bzr-expander-content">
               <div class="push-instructions">
@@ -73,7 +54,7 @@
               <table id="form_bzr" class="form">
                 <tr>
                   <td>
-                    <h3>Bazaar Branch Link/Import</h3>
+                    <h3>Link or Import an existing branch</h3>
                     <label tal:replace="structure view/branch_type_link">
                       Link to a Bazaar branch already in Launchpad
                     </label>
@@ -146,6 +127,26 @@
             <input tal:replace="structure view/rcs_type_emptymarker" />
           </div>
 
+          <div id="show-hide-git">
+            <a href="#" id="git-expander-icon" class="expander-icon js-action">
+              <span class="sprite gitbranch">Git settings</span>
+            </a>
+            <div id="git-expander-content">
+              <div id="form_git" class="form">
+                <span class="note">Git support is currently in beta.</span>
+                <div class="push-instructions">
+                  <div metal:use-macro="context/@@+product-macros/push-instructions-git"></div>
+                </div>
+
+                <h3>Link an existing repository</h3>
+                <p>Link to an existing Git repository already in Launchpad</p>
+                <tal:widget define="widget nocall:view/widgets/git_repository_location">
+                  <metal:block use-macro="context/@@launchpad_form/widget_row" />
+                </tal:widget>
+              </div>
+            </div>
+          </div>
+          
         </metal:formbody>
       </div>
 

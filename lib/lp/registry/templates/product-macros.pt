@@ -4,24 +4,8 @@
     xmlns:i18n="http://xml.zope.org/namespaces/i18n"
     omit-tag="">
 
-    <div metal:define-macro="push-instructions-git" id="push-instructions-git" class="scm-tip">
-      <h3><i class="sprite gitbranch"></i>Git Push Instructions</h3>
-      <p>You can add a remote for your git branch with the
-      command:</p>
-      <p>
-      <code class="command command-block">
-        git remote add origin git+ssh://<tal:user replace="view/user/name"/>@git.launchpad.net/<tal:project replace="context/name"/><br />
-      </code></p>
-      <p>&hellip; and push the git branch to Launchpad with:</p>
-      <p>
-      <code class="command command-block">
-        git push origin master
-      </code>
-      </p>
-    </div>
-
-    <div metal:define-macro="push-instructions-bzr" id="push-instructions-bzr" class="scm-tip">
-      <h3><i class="sprite branch"></i>Bazaar Push Instructions</h3>
+  <div metal:define-macro="push-instructions-bzr" id="push-instructions-bzr" class="scm-tip">
+      <h3>Push a new branch</h3>
       <p>You can push a Bazaar branch directly to Launchpad with the command:</p>
       <p>
         <code class="command command-block">
@@ -30,12 +14,20 @@
       </p>
     </div>
 
-
-  <tal:no-keys condition="not:view/user/sshkeys">
-    <p>To authenticate with the Launchpad branch upload service,
-    you need to
-    <a tal:attributes="href string:${view/user/fmt:url}/+editsshkeys">
-    register a SSH key</a>.</p>
-  </tal:no-keys>
+    <div metal:define-macro="push-instructions-git" id="push-instructions-git" class="scm-tip">
+      <h3>Push a new repository</h3>
+      <p>You can add a remote for your Git branch with the
+      command:</p>
+      <p>
+      <code class="command command-block">
+        git remote add origin <tal:project replace="modules/lp.services.config/config/codehosting/git_ssh_root"/><tal:project replace="context/name"/><br />
+      </code></p>
+      <p>&hellip; and push the git branch to Launchpad with:</p>
+      <p>
+      <code class="command command-block">
+        git push origin master
+      </code>
+      </p>
+    </div>
 
 </tal:root>

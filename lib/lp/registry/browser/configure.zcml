@@ -1752,13 +1752,6 @@
         template="../templates/product-review-license.pt"
         />
     <browser:page
-        name="+setbranch"
-        for="lp.registry.interfaces.product.IProduct"
-        class="lp.registry.browser.product.ProductSetBranchView"
-        permission="launchpad.Edit"
-        template="../templates/project-setbranch.pt"
-        />
-    <browser:page
         name="+product-macros"
         for="lp.registry.interfaces.product.IProduct"
         class="lp.app.browser.launchpad.Macro"
@@ -2014,13 +2007,6 @@
         class="lp.registry.browser.milestone.MilestoneAddView"
         permission="launchpad.Edit"
         template="../templates/milestone-add.pt"
-        />
-    <browser:page
-        name="+setbranch"
-        for="lp.registry.interfaces.productseries.IProductSeries"
-        class="lp.registry.browser.productseries.ProductSeriesSetBranchView"
-        permission="launchpad.Edit"
-        template="../templates/productseries-setbranch.pt"
         />
     <browser:page
         name="+review"
