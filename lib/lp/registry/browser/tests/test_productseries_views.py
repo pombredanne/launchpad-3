@@ -30,6 +30,22 @@ class TestProductSeries(BrowserTestCase):
 
     layer = DatabaseFunctionalLayer
 
+    def test_golang_meta_renders(self):
+        # ensure golang meta import path is rendered if project series has
+        # git default.
+        # See: https://golang.org/cmd/go/#hdr-Remote_import_paths
+        repo = self.factory.makeGitRepository()
+        view = create_initialized_view(repo.target, '+index')
+        with person_logged_in(repo.target.owner):
+            getUtility(IGitRepositorySet).setDefaultRepository(
+                target=repo.target, repository=repo)
+        golang_import = '{base}/{product_name} git {repo_url}'.format(
+            base=config.launchpad.non_restricted_hostname,
+            product_name=repo.target.name,
+            repo_url=repo.git_https_url
+            )
+        self.assertEqual(golang_import, view.golang_import_spec)
+
     def test_information_type_public(self):
         # A ProductSeries view should include its information_type,
         # which defaults to Public for new projects.
