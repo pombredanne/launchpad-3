@@ -1032,12 +1032,18 @@ class ProductView(PillarViewMixin, HasAnnouncementsView, SortSeriesMixin,
         """Meta string for golang remote import path.
         See: https://golang.org/cmd/go/#hdr-Remote_import_paths
         """
-        repo = getUtility(IGitRepositorySet).getDefaultRepository(self.context)
-        if repo:
+        if self.context.vcs == VCSType.GIT:
+            repo = getUtility(IGitRepositorySet).getDefaultRepository(
+                self.context)
             return "{base_url}/{product} git {git_https_url}".format(
                 base_url=config.launchpad.non_restricted_hostname,
                 product=self.context.name,
                 git_https_url=repo.git_https_url)
+        elif self.context.vcs == VCSType.BZR:
+            return "{base_url}/{product} bzr {codebrowse_root}/{product}".format(
+                base_url=config.launchpad.non_restricted_hostname,
+                product=self.context.name,
+                codebrowse_root=config.codehosting.secure_codebrowse_root)
         else:
             return None
 
