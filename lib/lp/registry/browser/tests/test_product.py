@@ -296,19 +296,37 @@ class TestProductView(BrowserTestCase):
         super(TestProductView, self).setUp()
         self.product = self.factory.makeProduct(name='fnord')
 
-    def test_golang_meta_renders(self):
+    def test_golang_meta_renders_git(self):
         # ensure golang meta import path is rendered if project has
-        # git default.
+        # git default vcs.
         # See: https://golang.org/cmd/go/#hdr-Remote_import_paths
         repo = self.factory.makeGitRepository()
         view = create_initialized_view(repo.target, '+index')
         with person_logged_in(repo.target.owner):
             getUtility(IGitRepositorySet).setDefaultRepository(
                 target=repo.target, repository=repo)
+            repo.target.vcs = VCSType.GIT
+
         golang_import = '{base}/{product_name} git {repo_url}'.format(
             base=config.launchpad.non_restricted_hostname,
             product_name=repo.target.name,
             repo_url=repo.git_https_url
+            )
+        self.assertEqual(golang_import, view.golang_import_spec)
+
+    def test_golang_meta_renders_bzr(self):
+        # ensure golang meta import path is rendered if project has
+        # bzr default vcs.
+        # See: https://golang.org/cmd/go/#hdr-Remote_import_paths
+        branch = self.factory.makeBranch()
+        view = create_initialized_view(branch.product, '+index')
+        with person_logged_in(branch.product.owner):
+            branch.product.vcs = VCSType.BZR
+
+        golang_import = '{base}/{name} bzr {repo_url}{name}'.format(
+            base=config.launchpad.non_restricted_hostname,
+            name=branch.target.name,
+            repo_url=config.codehosting.secure_codebrowse_root
             )
         self.assertEqual(golang_import, view.golang_import_spec)
 
