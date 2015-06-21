@@ -64,8 +64,22 @@ dd .whiteboard {
     padding-left: 1em;
 }
 
+form label {
+    font-weight: bold;
+}
+
 form.primary.search {
     margin-bottom: 2em;
+}
+
+.note {
+    color: #666;
+    display: inline-block;
+    padding: 0.5em 0.5em 0.5em 2em;
+    background: url(/@@/info) 0.5em 0.5em no-repeat;
+    background-color: rgb(249, 249, 249);
+    border: 1px solid #ddd;
+    border-radius: 3px
 }
 
 div#bugs-search-form.dynamic_bug_listing {
@@ -538,17 +552,36 @@ div.ppa-packaging-tmp-actions .portlet {
 
 /* --- Code --- */
 
+code.command {
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    color: #626262;
+    padding: 4px;
+    font-family: "DejaVu Sans Mono", "Courier New", monospace;
+    font-size: 1.05em;
+}
+code.command-block {
+    display: block;
+    margin-bottom: 1em;
+    padding: 6px;
+}
+code.command-block:last-child {
+    margin: 0;
+}
 table.code {
     margin-bottom: 1em;
-    }
+}
 table.code th {
     text-align: left;
     font-weight: bold;
-    }
+}
 table.code th, table.code td {
     padding-right: 3em;
-    }
-
+}
+#git-expander-content {
+    margin-top: 1em;
+}
 .branch-no-dev-focus {
   background: #FFF59C;
   vertical-align: middle;

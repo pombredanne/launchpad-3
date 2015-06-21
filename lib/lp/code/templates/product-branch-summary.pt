@@ -56,8 +56,7 @@
     </p>
   </div>
 
-  <tal:no-branches
-      condition="not: view/branch_count">
+  <tal:no-branches condition="not: view/branch_count">
     There are no branches for <tal:project-name replace="context/displayname"/>
     in Launchpad.
     <tal:can-configure condition="view/can_configure_branches">

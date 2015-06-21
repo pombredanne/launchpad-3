@@ -37,7 +37,34 @@
       template="../templates/code-in-branches.pt"
       permission="zope.Public"
       />
-
+  <browser:page
+      name="+configure-code"
+      for="lp.registry.interfaces.product.IProduct"
+      class="lp.registry.browser.product.ProductSetBranchView"
+      permission="launchpad.Edit"
+      template="../templates/configure-code.pt"
+      />
+  <browser:page
+      name="+setbranch"
+      for="lp.registry.interfaces.productseries.IProductSeries"
+      class="lp.registry.browser.productseries.ProductSeriesSetBranchView"
+      permission="launchpad.Edit"
+      template="../templates/configure-code.pt"
+      />
+  <browser:page
+      name="+configure-code-macros"
+      for="lp.registry.interfaces.productseries.IProductSeries"
+      class="lp.app.browser.launchpad.Macro"
+      permission="zope.Public"
+      template="../templates/configure-code-macros.pt"
+      />
+    <browser:page
+      name="+configure-code-macros"
+      for="lp.registry.interfaces.product.IProduct"
+      class="lp.app.browser.launchpad.Macro"
+      permission="zope.Public"
+      template="../templates/configure-code-macros.pt"
+      />
   <browser:page
       for="lp.services.webapp.interfaces.ILaunchpadApplication"
       name="+project-cloud"

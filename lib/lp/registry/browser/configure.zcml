@@ -2002,13 +2002,6 @@
         template="../templates/milestone-add.pt"
         />
     <browser:page
-        name="+setbranch"
-        for="lp.registry.interfaces.productseries.IProductSeries"
-        class="lp.registry.browser.productseries.ProductSeriesSetBranchView"
-        permission="launchpad.Edit"
-        template="../templates/productseries-setbranch.pt"
-        />
-    <browser:page
         name="+review"
         for="lp.registry.interfaces.productseries.IProductSeries"
         class="lp.registry.browser.productseries.ProductSeriesReviewView"
