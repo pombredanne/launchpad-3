@@ -80,6 +80,7 @@ from lp.registry.browser import (
     RegistryDeleteViewMixin,
     StatusCount,
     )
+from lp.code.interfaces.gitrepository import IGitRepositorySet
 from lp.registry.browser.pillar import (
     InvolvedMenu,
     PillarInvolvementView,
@@ -386,17 +387,7 @@ class ProductSeriesView(
         """Meta string for golang remote import path.
         See: https://golang.org/cmd/go/#hdr-Remote_import_paths
         """
-        if self.context.product.vcs == VCSType.GIT:
-            repo = getUtility(IGitRepositorySet).getDefaultRepository(
-                self.context.product)
-            if repo:
-                return "{base_url}/{product} git {git_https_url}".format(
-                    base_url=config.launchpad.non_restricted_hostname,
-                    product=self.context.product.name,
-                    git_https_url=repo.git_https_url)
-            else:
-                return None
-        elif self.context.product.vcs == VCSType.BZR:
+        if self.context.product.vcs == VCSType.BZR:
             return ("{base_url}/{product}/{series} bzr "
                     "{root}{product}/{series}").format(
                         base_url=config.launchpad.non_restricted_hostname,
