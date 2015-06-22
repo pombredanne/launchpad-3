@@ -2118,6 +2118,24 @@ class TestGitRepositoryWebservice(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def test_urls(self):
+        owner_db = self.factory.makePerson(name="person")
+        project_db = self.factory.makeProduct(name="project")
+        repository_db = self.factory.makeGitRepository(
+            owner=owner_db, target=project_db, name=u"repository")
+        webservice = webservice_for_person(
+            repository_db.owner, permission=OAuthPermission.READ_PUBLIC)
+        webservice.default_api_version = "devel"
+        with person_logged_in(ANONYMOUS):
+            repository_url = api_url(repository_db)
+        repository = webservice.get(repository_url).jsonBody()
+        self.assertEqual(
+            "https://git.launchpad.dev/~person/project/+git/repository",
+            repository["git_https_url"])
+        self.assertEqual(
+            "git+ssh://git.launchpad.dev/~person/project/+git/repository",
+            repository["git_ssh_url"])
+
     def test_getRepositories_project(self):
         project_db = self.factory.makeProduct()
         repository_db = self.factory.makeGitRepository(target=project_db)
