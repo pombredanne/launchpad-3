@@ -8,6 +8,7 @@ __metaclass__ = type
 
 import soupmatchers
 from testtools.matchers import Not
+from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import InformationType
@@ -15,6 +16,9 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     BugTaskStatusSearch,
     )
+from lp.code.interfaces.gitrepository import IGitRepositorySet
+from lp.registry.enums import VCSType
+from lp.services.config import config
 from lp.services.webapp import canonical_url
 from lp.testing import (
     BrowserTestCase,
@@ -31,19 +35,21 @@ class TestProductSeries(BrowserTestCase):
     layer = DatabaseFunctionalLayer
 
     def test_golang_meta_renders(self):
-        # ensure golang meta import path is rendered if project series has
-        # git default.
+        # ensure golang meta import path is rendered if project has
+        # bzr default vcs.
         # See: https://golang.org/cmd/go/#hdr-Remote_import_paths
-        repo = self.factory.makeGitRepository()
-        view = create_initialized_view(repo.target, '+index')
-        with person_logged_in(repo.target.owner):
-            getUtility(IGitRepositorySet).setDefaultRepository(
-                target=repo.target, repository=repo)
-        golang_import = '{base}/{product_name} git {repo_url}'.format(
-            base=config.launchpad.non_restricted_hostname,
-            product_name=repo.target.name,
-            repo_url=repo.git_https_url
-            )
+        branch = self.factory.makeBranch()
+        view = create_initialized_view(branch.product.development_focus,
+                                       '+index')
+        with person_logged_in(branch.product.owner):
+            branch.product.vcs = VCSType.BZR
+
+        golang_import = ("{base}/{name}/{series} bzr "
+                         "{repo_url}{name}/{series}").format(
+                             base=config.launchpad.non_restricted_hostname,
+                             name=branch.product.name,
+                             repo_url=config.codehosting.secure_codebrowse_root,
+                             series=branch.product.development_focus.name)
         self.assertEqual(golang_import, view.golang_import_spec)
 
     def test_information_type_public(self):

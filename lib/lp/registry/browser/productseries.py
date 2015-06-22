@@ -85,6 +85,7 @@ from lp.registry.browser.pillar import (
     PillarInvolvementView,
     )
 from lp.registry.browser.product import ProductSetBranchView
+from lp.registry.enums import VCSType
 from lp.registry.errors import CannotPackageProprietaryProduct
 from lp.registry.interfaces.packaging import (
     IPackaging,
@@ -92,6 +93,7 @@ from lp.registry.interfaces.packaging import (
     )
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.config import config
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (
     ApplicationMenu,
@@ -378,6 +380,31 @@ class ProductSeriesView(
     def requestCountry(self):
         """The country associated with the IP of the request."""
         return ICountry(self.request, None)
+
+    @property
+    def golang_import_spec(self):
+        """Meta string for golang remote import path.
+        See: https://golang.org/cmd/go/#hdr-Remote_import_paths
+        """
+        if self.context.product.vcs == VCSType.GIT:
+            repo = getUtility(IGitRepositorySet).getDefaultRepository(
+                self.context.product)
+            if repo:
+                return "{base_url}/{product} git {git_https_url}".format(
+                    base_url=config.launchpad.non_restricted_hostname,
+                    product=self.context.product.name,
+                    git_https_url=repo.git_https_url)
+            else:
+                return None
+        elif self.context.product.vcs == VCSType.BZR:
+            return ("{base_url}/{product}/{series} bzr "
+                    "{root}{product}/{series}").format(
+                        base_url=config.launchpad.non_restricted_hostname,
+                        product=self.context.product.name,
+                        root=config.codehosting.secure_codebrowse_root,
+                        series=self.context.name)
+        else:
+            return None
 
     def browserLanguages(self):
         """The languages the user's browser requested."""
