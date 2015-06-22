@@ -27,10 +27,16 @@ from lazr.restful.interface import (
     )
 from storm.expr import Desc
 from zope.event import notify
+from zope.formlib import form
 from zope.interface import (
     implements,
     Interface,
     providedBy,
+    )
+from zope.schema import Choice
+from zope.schema.vocabulary import (
+    SimpleTerm,
+    SimpleVocabulary,
     )
 
 from lp import _
@@ -45,13 +51,21 @@ from lp.app.errors import NotFoundError
 from lp.app.vocabularies import InformationTypeVocabulary
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 from lp.code.browser.branch import CodeEditOwnerMixin
+from lp.code.browser.widgets.gitrepositorytarget import (
+    GitRepositoryTargetDisplayWidget,
+    GitRepositoryTargetWidget,
+    )
 from lp.code.errors import (
+    GitDefaultConflict,
     GitRepositoryCreationForbidden,
     GitRepositoryExists,
+    GitTargetError,
     )
 from lp.code.interfaces.gitnamespace import get_git_namespace
 from lp.code.interfaces.gitref import IGitRefBatchNavigator
 from lp.code.interfaces.gitrepository import IGitRepository
+from lp.registry.interfaces.person import IPerson
+from lp.registry.vocabularies import UserTeamsParticipationPlusSelfVocabulary
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.propertycache import cachedproperty
@@ -275,7 +289,10 @@ class GitRepositoryEditFormView(LaunchpadEditFormView):
                 vocabulary=InformationTypeVocabulary(types=info_types))
             name = copy_field(IGitRepository["name"], readonly=False)
             owner = copy_field(IGitRepository["owner"], readonly=False)
+            owner_default = copy_field(
+                IGitRepository["owner_default"], readonly=False)
             reviewer = copy_field(IGitRepository["reviewer"], required=True)
+            target = copy_field(IGitRepository["target"], readonly=False)
 
         return GitRepositoryEditSchema
 
@@ -320,6 +337,25 @@ class GitRepositoryEditFormView(LaunchpadEditFormView):
             information_type = data.pop("information_type")
             self.context.transitionToInformationType(
                 information_type, self.user)
+        if "target" in data:
+            target = data.pop("target")
+            if target is None:
+                target = self.context.owner
+            if target != self.context.target:
+                try:
+                    self.context.setTarget(target, self.user)
+                except GitTargetError as e:
+                    self.setFieldError("target", e.message)
+                    return
+                changed = True
+                if IPerson.providedBy(target):
+                    self.request.response.addNotification(
+                        "This repository is now a personal repository for %s "
+                        "(%s)" % (target.displayname, target.name))
+                else:
+                    self.request.response.addNotification(
+                        "The repository target has been changed to %s (%s)" %
+                        (target.displayname, target.name))
         if "reviewer" in data:
             reviewer = data.pop("reviewer")
             if reviewer != self.context.code_reviewer:
@@ -329,6 +365,11 @@ class GitRepositoryEditFormView(LaunchpadEditFormView):
                 else:
                     self.context.reviewer = reviewer
                 changed = True
+        if "owner_default" in data:
+            owner_default = data.pop("owner_default")
+            if (self.context.namespace.has_defaults and
+                    owner_default != self.context.owner_default):
+                self.context.setOwnerDefault(owner_default)
 
         if self.updateContextFromData(data, notify_modified=False):
             changed = True
@@ -381,7 +422,9 @@ class GitRepositoryEditView(CodeEditOwnerMixin, GitRepositoryEditFormView):
     field_names = [
         "owner",
         "name",
+        "target",
         "information_type",
+        "owner_default",
         "default_branch",
         ]
 
@@ -390,6 +433,61 @@ class GitRepositoryEditView(CodeEditOwnerMixin, GitRepositoryEditFormView):
     any_owner_description = _(
         "As an administrator you are able to assign this repository to any "
         "person or team.")
+
+    def setUpFields(self):
+        super(GitRepositoryEditView, self).setUpFields()
+        repository = self.context
+        # If the user can administer repositories, then they should be able
+        # to assign the ownership of the repository to any valid person or
+        # team.
+        if check_permission("launchpad.Admin", repository):
+            owner_field = self.schema["owner"]
+            any_owner_choice = Choice(
+                __name__="owner", title=owner_field.title,
+                description=_(
+                    "As an administrator you are able to assign this "
+                    "repository to any person or team."),
+                required=True, vocabulary="ValidPersonOrTeam")
+            any_owner_field = form.Fields(
+                any_owner_choice, render_context=self.render_context)
+            # Replace the normal owner field with a more permissive vocab.
+            self.form_fields = self.form_fields.omit("owner")
+            self.form_fields = any_owner_field + self.form_fields
+        else:
+            # For normal users, there are some cases (e.g. package
+            # repositories) where the editor may not be in the team of the
+            # repository owner.  In these cases we need to extend the
+            # vocabulary connected to the owner field.
+            if not self.user.inTeam(self.context.owner):
+                vocab = UserTeamsParticipationPlusSelfVocabulary()
+                owner = self.context.owner
+                terms = [SimpleTerm(
+                    owner, owner.name, owner.unique_displayname)]
+                terms.extend([term for term in vocab])
+                owner_field = self.schema["owner"]
+                owner_choice = Choice(
+                    __name__="owner", title=owner_field.title,
+                    description=owner_field.description,
+                    required=True, vocabulary=SimpleVocabulary(terms))
+                new_owner_field = form.Fields(
+                    owner_choice, render_context=self.render_context)
+                # Replace the normal owner field with a more permissive vocab.
+                self.form_fields = self.form_fields.omit("owner")
+                self.form_fields = new_owner_field + self.form_fields
+        # If this is the target default, then the target is read-only.
+        target_field = self.form_fields.get("target")
+        if self.context.target_default:
+            target_field.for_display = True
+            target_field.custom_widget = GitRepositoryTargetDisplayWidget
+        else:
+            target_field.custom_widget = GitRepositoryTargetWidget
+
+    def setUpWidgets(self, context=None):
+        super(GitRepositoryEditView, self).setUpWidgets(context=context)
+        if self.context.target_default:
+            self.widgets["target"].hint = (
+                "This is the default repository for this target, so it "
+                "cannot be moved to another target.")
 
     def _setRepositoryExists(self, existing_repository, field_name="name"):
         owner = existing_repository.owner
@@ -404,14 +502,15 @@ class GitRepositoryEditView(CodeEditOwnerMixin, GitRepositoryEditFormView):
         self.setFieldError(field_name, message)
 
     def validate(self, data):
-        if "name" in data and "owner" in data:
+        if "name" in data and "owner" in data and "target" in data:
             name = data["name"]
             owner = data["owner"]
-            if name != self.context.name or owner != self.context.owner:
-                if self.context.owner == self.context.target:
-                    target = owner
-                else:
-                    target = self.context.target
+            target = data["target"]
+            if target is None:
+                target = owner
+            if (name != self.context.name or
+                    owner != self.context.owner or
+                    target != self.context.target):
                 namespace = get_git_namespace(target, owner)
                 try:
                     namespace.validateMove(self.context, self.user, name=name)
@@ -421,6 +520,14 @@ class GitRepositoryEditView(CodeEditOwnerMixin, GitRepositoryEditFormView):
                         (owner.displayname, target.displayname))
                 except GitRepositoryExists as e:
                     self._setRepositoryExists(e.existing_repository)
+                except GitDefaultConflict as e:
+                    self.addError(str(e))
+        if (self.context.target_default and "target" in data and
+                data["target"] != self.context.target):
+            self.setFieldError(
+                "target",
+                "The default repository for a target cannot be moved to "
+                "another target.")
         if "default_branch" in data:
             default_branch = data["default_branch"]
             if (default_branch is not None and
