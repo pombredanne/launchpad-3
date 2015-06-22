@@ -308,7 +308,7 @@ class TestProductView(BrowserTestCase):
             repo.target.vcs = VCSType.GIT
 
         golang_import = '{base}/{product_name} git {repo_url}'.format(
-            base=config.launchpad.non_restricted_hostname,
+            base=config.vhost.mainsite.hostname,
             product_name=repo.target.name,
             repo_url=repo.git_https_url
             )
@@ -324,7 +324,7 @@ class TestProductView(BrowserTestCase):
             branch.product.vcs = VCSType.BZR
 
         golang_import = '{base}/{name} bzr {repo_url}{name}'.format(
-            base=config.launchpad.non_restricted_hostname,
+            base=config.vhost.mainsite.hostname,
             name=branch.target.name,
             repo_url=config.codehosting.secure_codebrowse_root
             )

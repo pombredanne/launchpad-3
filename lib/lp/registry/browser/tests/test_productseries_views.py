@@ -46,7 +46,7 @@ class TestProductSeries(BrowserTestCase):
 
         golang_import = ("{base}/{name}/{series} bzr "
                          "{repo_url}{name}/{series}").format(
-                             base=config.launchpad.non_restricted_hostname,
+                             base=config.vhost.mainsite.hostname,
                              name=branch.product.name,
                              repo_url=config.codehosting.secure_codebrowse_root,
                              series=branch.product.development_focus.name)
