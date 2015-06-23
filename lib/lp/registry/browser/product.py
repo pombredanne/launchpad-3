@@ -152,17 +152,14 @@ from lp.code.enums import (
 from lp.code.errors import (
     BranchCreationForbidden,
     BranchExists,
-    GitTargetError,
     )
 from lp.code.interfaces.branch import IBranch
-from lp.code.interfaces.branchcollection import IBranchCollection
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codeimport import (
     ICodeImport,
     ICodeImportSet,
     )
-from lp.code.interfaces.gitcollection import IGitCollection
 from lp.code.interfaces.gitrepository import IGitRepositorySet
 from lp.code.browser.vcslisting import TargetDefaultVCSNavigationMixin
 
@@ -1647,6 +1644,7 @@ BRANCH_TYPE_VOCABULARY = SimpleVocabulary((
                _("Import a branch hosted somewhere else")),
     ))
 
+
 class SetBranchForm(Interface):
     """The fields presented on the form for setting a branch."""
 
@@ -1902,7 +1900,7 @@ class ProductSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
         """The branch target for the context."""
         return IBranchTarget(self.context)
 
-    def abort_update():
+    def abort_update(self):
         """Abort transaction.
 
         This is normally handled by LaunchpadFormView, but this can be called
@@ -1928,6 +1926,8 @@ class ProductSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
         if git_repository_location:
             repo = getUtility(IGitRepositorySet).getByPath(
                 self.user, git_repository_location)
+            getUtility(IGitRepositorySet).setDefaultRepository(
+                self.context, repo)
         if branch_type == LINK_LP_BZR:
             branch_location = data.get('branch_location')
             if branch_location != self.series.branch:
@@ -1965,7 +1965,7 @@ class ProductSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
                         cvs_module=cvs_module)
                 except BranchExists as e:
                     self._setBranchExists(e.existing_branch, 'branch_name')
-                    abort_update()
+                    self.abort_update()
                 self.series.branch = code_import.branch
                 self.request.response.addInfoNotification(
                     'Code import created and branch linked to the series.')
