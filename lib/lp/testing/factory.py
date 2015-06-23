@@ -1222,6 +1222,15 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             product = self.makeProduct()
         return self.makeBranch(product=product, **kwargs)
 
+    def makeProductGitRepository(self, project=None, **kwargs):
+        """Make a git repository on an arbitrary project.
+
+        See `makeGitRepository` for more information on arguments.
+        """
+        if project is None:
+            project = self.makeProduct()
+        return self.makeGitRepository(target=project, **kwargs)
+
     def makeAnyBranch(self, **kwargs):
         """Make a branch without caring about its container.
 

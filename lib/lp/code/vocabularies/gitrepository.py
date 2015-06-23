@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'GitRepositoryRestrictedOnProductVocabulary',
     'GitRepositoryVocabulary',
     ]
 
@@ -62,3 +63,20 @@ class GitRepositoryVocabulary(StormVocabularyBase):
 
     def _getCollection(self):
         return getUtility(IAllGitRepositories)
+
+class GitRepositoryRestrictedOnProductVocabulary(GitRepositoryVocabulary):
+    """A vocabulary for searching git repositories restricted on product."""
+
+    def __init__(self, context=None):
+        super(GitRepositoryRestrictedOnProductVocabulary, self).__init__(
+            context)
+        if IProduct.providedBy(self.context):
+            self.product = self.context
+        else:
+            # An unexpected type.
+            raise AssertionError('Unexpected context type')
+
+    def _getCollection(self):
+        return getUtility(IAllGitRepositories).inProject(
+            self.product).isExclusive()
+

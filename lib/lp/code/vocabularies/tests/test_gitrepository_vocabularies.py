@@ -5,7 +5,10 @@
 
 __metaclass__ = type
 
-from lp.code.vocabularies.gitrepository import GitRepositoryVocabulary
+from lp.code.vocabularies.gitrepository import (
+    GitRepositoryRestrictedOnProductVocabulary,
+    GitRepositoryVocabulary,
+    )
 from lp.testing import TestCaseWithFactory
 from lp.testing.layers import DatabaseFunctionalLayer
 
@@ -50,3 +53,50 @@ class TestGitRepositoryVocabulary(TestCaseWithFactory):
         # If there are more than one search result, a LookupError is still
         # raised.
         self.assertRaises(LookupError, self.vocab.getTermByToken, "fizzbuzz")
+
+
+class TestRestrictedGitRepositoryVocabularyOnProduct(TestCaseWithFactory):
+    """Test the GitRepositoryRestrictedOnProductVocabulary behaves as expected.
+
+    When a GitRepositoryRestrictedOnProductVocabulary is used with a project,
+    the project of the git repository in the vocabulary match the product give
+    as the context.
+    """
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestRestrictedGitRepositoryVocabularyOnProduct, self).setUp()
+        self._createRepositories()
+        self.vocab = GitRepositoryRestrictedOnProductVocabulary(
+            context=self._getVocabRestriction())
+
+    def _getVocabRestriction(self):
+        """Restrict using the widget product."""
+        return getUtility(IProductSet).getByName('widget')
+
+    def _createRepositories(self):
+        test_product = self.factory.makeProduct(name='widget')
+        other_product = self.factory.makeProduct(name='sprocket')
+        person = self.factory.makePerson(name='scotty')
+        self.factory.makeProductGitRepository(
+            owner=person, project=test_product, name='main')
+        self.factory.makeProductGitRepository(
+            owner=person, project=test_product, name='mountain')
+        self.factory.makeProductGitRepository(
+            owner=person, project=other_product, name='main')
+        person = self.factory.makeProductGitRespository(name='spotty')
+        self.factory.makeProductGitRepository(
+            owner=person, project=test_product, name='hill')
+        self.product = test_product
+
+    def test_singleQueryResult(self):
+        # If there is a single search result that matches, use that
+        # as the result.
+        term = self.vocab.getTermByToken('mountain')
+        self.assertEqual('~scotty/widget/mountain', term.value.unique_name)
+
+    def test_multipleQueryResult(self):
+        # If there are more than one search result, a LookupError is still
+        # raised.
+        self.assertRaises(LookupError, self.vocab.getTermByToken, 'scotty')
