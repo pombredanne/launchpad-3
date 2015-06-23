@@ -16,11 +16,15 @@ __all__ = [
     ]
 
 from base64 import urlsafe_b64encode
+from itertools import izip_longest
 import re
+import sys
 
+from bzrlib.patches import hunk_from_header
 from lxml import html
 import markdown
 from zope.component import getUtility
+from zope.error.interfaces import IErrorReportingUtility
 from zope.interface import implements
 from zope.traversing.interfaces import (
     ITraversable,
@@ -877,7 +881,7 @@ class FormattersAPI:
         text = self._stringtoformat.rstrip('\n')
         if len(text) == 0:
             return text
-        result = ['<table class="diff">']
+        result = ['<table class="diff unidiff">']
 
         max_format_lines = config.diff.max_format_lines
         header_next = False
@@ -915,6 +919,127 @@ class FormattersAPI:
                 structured(
                     '<td class="%s">%s</td>', css_class, line).escapedtext)
             result.append('</tr>')
+
+        result.append('</table>')
+        return ''.join(result)
+
+    def _ssdiff_emit_line(self, result, row, cells):
+        result.append('<tr id="diff-line-%s">' % row)
+        # A line-no cell has to be present for the inline comments code to
+        # work, but displaying it would be confusing since there are also
+        # per-file line numbers.
+        result.append(
+            '<td class="line-no" style="display: none">%s</td>' % row)
+        result.extend(cells)
+        result.append('</tr>')
+
+    def _ssdiff_emit_queued_lines(self, result, queue_removed, queue_added):
+        for removed, added in izip_longest(queue_removed, queue_added):
+            if removed:
+                removed_diff_row, removed_row, removed_line = removed
+            else:
+                removed_diff_row, removed_row, removed_line = 0, '', ''
+            if added:
+                added_diff_row, added_row, added_line = added
+            else:
+                added_diff_row, added_row, added_line = 0, '', ''
+            cells = (
+                '<td class="ss-line-no">%s</td>' % removed_row,
+                structured(
+                    '<td class="diff-removed text">%s</td>',
+                    removed_line).escapedtext,
+                '<td class="ss-line-no">%s</td>' % added_row,
+                structured(
+                    '<td class="diff-added text">%s</td>',
+                    added_line).escapedtext,
+                )
+            # Pick a reasonable row of the unified diff to attribute inline
+            # comments to.  Whichever of the removed and added rows is later
+            # will do.
+            self._ssdiff_emit_line(
+                result, max(removed_diff_row, added_diff_row), cells)
+
+    def format_ssdiff(self):
+        """Format the string as a side-by-side diff."""
+        # Trim off trailing carriage returns.
+        text = self._stringtoformat.rstrip('\n')
+        if not text:
+            return text
+        result = ['<table class="diff ssdiff">']
+
+        max_format_lines = config.diff.max_format_lines
+        header_next = False
+        queue_removed = []
+        queue_added = []
+        removed_row = 0
+        added_row = 0
+        for row, line in enumerate(text.splitlines()[:max_format_lines]):
+            row += 1
+            css_class = None
+            if (line.startswith('===') or
+                    line.startswith('diff') or
+                    line.startswith('index')):
+                css_class = 'diff-file text'
+                header_next = True
+            elif (header_next and
+                  (line.startswith('+++') or
+                  line.startswith('---'))):
+                css_class = 'diff-header text'
+            elif line.startswith('@@'):
+                try:
+                    hunk = hunk_from_header(line + '\n')
+                    # The positions indicate the per-file line numbers of
+                    # the next row.
+                    removed_row = hunk.orig_pos
+                    added_row = hunk.mod_pos
+                except Exception:
+                    getUtility(IErrorReportingUtility).raising(sys.exc_info())
+                    removed_row = 1
+                    added_row = 1
+                css_class = 'diff-chunk text'
+                header_next = False
+            elif line.startswith('+'):
+                queue_added.append((row, added_row, line[1:]))
+                added_row += 1
+                continue
+            elif line.startswith('-'):
+                queue_removed.append((row, removed_row, line[1:]))
+                removed_row += 1
+                continue
+            elif line.startswith('#'):
+                # This doesn't occur in normal unified diffs, but does
+                # appear in merge directives, which use text/x-diff or
+                # text/x-patch.
+                css_class = 'diff-comment text'
+                header_next = False
+
+            if css_class is not None:
+                cells = [
+                    structured(
+                        '<td class="%s" colspan="4">%s</td>',
+                        css_class, line).escapedtext,
+                    ]
+            else:
+                if line.startswith(' '):
+                    line = line[1:]
+                cells = [
+                    '<td class="ss-line-no">%s</td>' % removed_row,
+                    structured('<td class="text">%s</td>', line).escapedtext,
+                    '<td class="ss-line-no">%s</td>' % added_row,
+                    structured('<td class="text">%s</td>', line).escapedtext,
+                    ]
+                removed_row += 1
+                added_row += 1
+                header_next = False
+
+            if queue_removed or queue_added:
+                self._ssdiff_emit_queued_lines(
+                    result, queue_removed, queue_added)
+                queue_removed = []
+                queue_added = []
+            self._ssdiff_emit_line(result, row, cells)
+        if queue_removed or queue_added:
+            self._ssdiff_emit_queued_lines(result, queue_removed, queue_added)
 
         result.append('</table>')
         return ''.join(result)
@@ -1030,6 +1155,8 @@ class FormattersAPI:
             return self.ellipsize(maxlength)
         elif name == 'diff':
             return self.format_diff()
+        elif name == 'ssdiff':
+            return self.format_ssdiff()
         elif name == 'css-id':
             if len(furtherPath) > 0:
                 return self.css_id(furtherPath.pop())

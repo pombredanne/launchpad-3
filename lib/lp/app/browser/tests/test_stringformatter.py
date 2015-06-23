@@ -310,14 +310,14 @@ class TestDiffFormatter(TestCase):
     def test_almostEmptyString(self):
         # White space doesn't count as empty, and is formtted.
         self.assertEqual(
-            '<table class="diff"><tr id="diff-line-1">'
+            '<table class="diff unidiff"><tr id="diff-line-1">'
             '<td class="line-no">1</td><td class="text"> </td></tr></table>',
             FormattersAPI(' ').format_diff())
 
     def test_format_unicode(self):
         # Sometimes the strings contain unicode, those should work too.
         self.assertEqual(
-            u'<table class="diff"><tr id="diff-line-1">'
+            u'<table class="diff unidiff"><tr id="diff-line-1">'
             u'<td class="line-no">1</td><td class="text">'
             u'Unicode \u1010</td></tr></table>',
             FormattersAPI(u'Unicode \u1010').format_diff())
@@ -408,6 +408,151 @@ class TestDiffFormatter(TestCase):
         self.pushConfig("diff", max_format_lines=3)
         html = FormattersAPI(diff).format_diff()
         line_count = html.count('<td class="line-no">')
+        self.assertEqual(3, line_count)
+
+
+class TestSideBySideDiffFormatter(TestCase):
+    """Test the string formatter fmt:ssdiff."""
+
+    def test_emptyString(self):
+        # An empty string gives an empty string.
+        self.assertEqual(
+            '', FormattersAPI('').format_ssdiff())
+
+    def test_almostEmptyString(self):
+        # White space doesn't count as empty, and is formtted.
+        self.assertEqual(
+            '<table class="diff ssdiff"><tr id="diff-line-1">'
+            '<td class="line-no" style="display: none">1</td>'
+            '<td class="ss-line-no">0</td>'
+            '<td class="text"></td>'
+            '<td class="ss-line-no">0</td>'
+            '<td class="text"></td>'
+            '</tr></table>',
+            FormattersAPI(' ').format_ssdiff())
+
+    def test_format_unicode(self):
+        # Sometimes the strings contain unicode, those should work too.
+        self.assertEqual(
+            u'<table class="diff ssdiff"><tr id="diff-line-1">'
+            u'<td class="line-no" style="display: none">1</td>'
+            u'<td class="ss-line-no">0</td>'
+            u'<td class="text">Unicode \u1010</td>'
+            u'<td class="ss-line-no">0</td>'
+            u'<td class="text">Unicode \u1010</td>'
+            u'</tr></table>',
+            FormattersAPI(u'Unicode \u1010').format_ssdiff())
+
+    def test_cssClasses(self):
+        # Different parts of the diff have different css classes.
+        diff = dedent('''\
+            === modified file 'tales.py'
+            --- tales.py
+            +++ tales.py
+            @@ -2435,7 +2439,8 @@
+                 def format_ssdiff(self):
+            -        removed this line
+            +        added this line
+            +        added another line
+                     something in between
+            -------- a sql style comment
+            ++++++++ a line of pluses
+            ########
+            # A merge directive comment.
+            ''')
+        html = FormattersAPI(diff).format_ssdiff()
+        line_numbers = find_tags_by_class(html, 'line-no')
+        self.assertEqual(
+            ['1', '2', '3', '4', '5', '7', '8', '9', '11', '12', '13'],
+            [tag.renderContents() for tag in line_numbers])
+        ss_line_numbers = find_tags_by_class(html, 'ss-line-no')
+        self.assertEqual(
+            ['2435', '2439', '2436', '2440', '', '2441', '2437', '2442',
+             '2438', '2443'],
+            [tag.renderContents() for tag in ss_line_numbers])
+        text = find_tags_by_class(html, 'text')
+        self.assertEqual(
+            ['diff-file text',
+             'diff-header text',
+             'diff-header text',
+             'diff-chunk text',
+             'text',
+             'text',
+             'diff-removed text',
+             'diff-added text',
+             'diff-removed text',
+             'diff-added text',
+             'text',
+             'text',
+             'diff-removed text',
+             'diff-added text',
+             'diff-comment text',
+             'diff-comment text'],
+            [str(tag['class']) for tag in text])
+
+    def test_cssClasses_git(self):
+        # Git diffs look slightly different, so check that they also end up
+        # with the correct CSS classes.
+        diff = dedent('''\
+            diff --git a/tales.py b/tales.py
+            index aaaaaaa..bbbbbbb 100644
+            --- a/tales.py
+            +++ b/tales.py
+            @@ -2435,7 +2439,8 @@
+                 def format_ssdiff(self):
+            -        removed this line
+            +        added this line
+            +        added another line
+                     something in between
+            -------- a sql style comment
+            ++++++++ a line of pluses
+            ''')
+        html = FormattersAPI(diff).format_ssdiff()
+        line_numbers = find_tags_by_class(html, 'line-no')
+        self.assertEqual(
+            ['1', '2', '3', '4', '5', '6', '8', '9', '10', '12'],
+            [tag.renderContents() for tag in line_numbers])
+        ss_line_numbers = find_tags_by_class(html, 'ss-line-no')
+        self.assertEqual(
+            ['2435', '2439', '2436', '2440', '', '2441', '2437', '2442',
+             '2438', '2443'],
+            [tag.renderContents() for tag in ss_line_numbers])
+        text = find_tags_by_class(html, 'text')
+        self.assertEqual(
+            ['diff-file text',
+             'diff-file text',
+             'diff-header text',
+             'diff-header text',
+             'diff-chunk text',
+             'text',
+             'text',
+             'diff-removed text',
+             'diff-added text',
+             'diff-removed text',
+             'diff-added text',
+             'text',
+             'text',
+             'diff-removed text',
+             'diff-added text'],
+            [str(tag['class']) for tag in text])
+
+    def test_config_value_limits_line_count(self):
+        # The config.diff.max_line_format contains the maximum number of lines
+        # to format.
+        diff = dedent('''\
+            === modified file 'tales.py'
+            --- tales.py
+            +++ tales.py
+            @@ -2435,6 +2435,8 @@
+                 def format_ssdiff(self):
+            -        removed this line
+            +        added this line
+            ########
+            # A merge directive comment.
+            ''')
+        self.pushConfig("diff", max_format_lines=3)
+        html = FormattersAPI(diff).format_ssdiff()
+        line_count = html.count('<td class="line-no" style="display: none">')
         self.assertEqual(3, line_count)
 
 
