@@ -453,14 +453,12 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
         Bzr take precedence over git, if no project vcs set.
         """
-        vcs = None
         if self.vcs:
             return self.vcs
         if not IBranchCollection(self).is_empty():
-            vcs = VCSType.BZR
+            return VCSType.BZR
         elif not IGitCollection(self).is_empty():
-            vcs = VCSType.GIT
-        return vcs
+            return VCSType.GIT
 
     @date_next_suggest_packaging.setter  # pyflakes:ignore
     def date_next_suggest_packaging(self, value):

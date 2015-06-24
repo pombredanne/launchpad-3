@@ -23,13 +23,14 @@ class TestProductSetBranchView(BrowserTestCase):
         return self.getUserBrowser(url, project.owner)
 
     def test_link_existing_git_repository(self):
-        repo = removeSecurityProxy(self.factory.makeProductGitRepository())
+        repo = removeSecurityProxy(self.factory.makeGitRepository(
+            target=self.factory.makeProduct()))
         browser = self.getBrowser(repo.project, '+configure-code')
         browser.getControl('Git', index=0).click()
-        browser.getControl('Git Repository').value = repo.shortened_path
+        browser.getControl('Git repository').value = repo.shortened_path
         browser.getControl('Update').click()
 
         tag = soupmatchers.Tag(
             'success-div', 'div', attrs={'class': 'informational message'},
-             text='Project code updated.')
+             text='Project settings updated.')
         self.assertThat(browser.contents, soupmatchers.HTMLContains(tag))

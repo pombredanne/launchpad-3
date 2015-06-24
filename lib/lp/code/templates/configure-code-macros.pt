@@ -16,13 +16,13 @@
 
   <div metal:define-macro="push-instructions-git" id="push-instructions-git" class="scm-tip">
     <h3>Push a new repository</h3>
-    <p>You can add a remote for your Git branch with the
+    <p>You can add a remote for your Git repository with the
     command:</p>
     <p>
       <code class="command command-block">
         git remote add origin <tal:project replace="modules/lp.services.config/config/codehosting/git_ssh_root"/><tal:project replace="context/name"/><br />
     </code></p>
-    <p>&hellip; and push the git branch to Launchpad with:</p>
+    <p>&hellip; and push the Git branch to Launchpad with:</p>
     <p>
       <code class="command command-block">
         git push origin master
@@ -33,7 +33,7 @@
   <div metal:define-macro="no-keys" condition="not:view/user/sshkeys">
     <p class="note">To authenticate with the Launchpad branch upload service, you need to
     <a tal:attributes="href string:${view/user/fmt:url}/+editsshkeys">
-    register a SSH key</a>.</p>
+    register an SSH key</a>.</p>
   </div>
 
 </tal:root>

@@ -68,7 +68,7 @@ class GitRepositoryVocabulary(StormVocabularyBase):
 class GitRepositoryRestrictedOnProductVocabulary(GitRepositoryVocabulary):
     """A vocabulary for searching git repositories restricted on product."""
 
-    def __init__(self, context=None):
+    def __init__(self, context):
         super(GitRepositoryRestrictedOnProductVocabulary, self).__init__(
             context)
         if IProduct.providedBy(self.context):
