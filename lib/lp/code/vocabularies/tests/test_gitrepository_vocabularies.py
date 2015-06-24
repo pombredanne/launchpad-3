@@ -5,12 +5,15 @@
 
 __metaclass__ = type
 
+from zope.component import getUtility
+
 from lp.code.vocabularies.gitrepository import (
     GitRepositoryRestrictedOnProductVocabulary,
     GitRepositoryVocabulary,
     )
 from lp.testing import TestCaseWithFactory
 from lp.testing.layers import DatabaseFunctionalLayer
+from lp.registry.interfaces.product import IProductSet
 
 
 class TestGitRepositoryVocabulary(TestCaseWithFactory):
@@ -77,24 +80,16 @@ class TestRestrictedGitRepositoryVocabularyOnProduct(TestCaseWithFactory):
 
     def _createRepositories(self):
         test_product = self.factory.makeProduct(name='widget')
-        other_product = self.factory.makeProduct(name='sprocket')
-        person = self.factory.makePerson(name='scotty')
+        person = self.factory.makePerson(name=u'scotty')
         self.factory.makeProductGitRepository(
-            owner=person, project=test_product, name='main')
-        self.factory.makeProductGitRepository(
-            owner=person, project=test_product, name='mountain')
-        self.factory.makeProductGitRepository(
-            owner=person, project=other_product, name='main')
-        person = self.factory.makeProductGitRespository(name='spotty')
-        self.factory.makeProductGitRepository(
-            owner=person, project=test_product, name='hill')
+            owner=person, project=test_product, name=u'mountain')
         self.product = test_product
 
     def test_singleQueryResult(self):
         # If there is a single search result that matches, use that
         # as the result.
         term = self.vocab.getTermByToken('mountain')
-        self.assertEqual('~scotty/widget/mountain', term.value.unique_name)
+        self.assertEqual(u'~scotty/widget/+git/mountain', term.value.unique_name)
 
     def test_multipleQueryResult(self):
         # If there are more than one search result, a LookupError is still
