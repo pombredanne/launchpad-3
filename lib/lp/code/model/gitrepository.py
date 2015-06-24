@@ -297,7 +297,7 @@ class GitRepository(StormBase, GitIdentityMixin):
             # Check for an existing target default.
             existing = getUtility(IGitRepositorySet).getDefaultRepository(
                 self.target)
-            if existing is not None:
+            if existing is not None and existing != self:
                 raise GitDefaultConflict(existing, self.target)
         self.target_default = value
         if IProduct.providedBy(self.target):

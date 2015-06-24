@@ -1808,6 +1808,17 @@ class TestGitRepositorySet(TestCaseWithFactory):
                 self.repository_set.setDefaultRepositoryForOwner,
                 person, person, repository, user)
 
+    def test_setDefaultRepository_for_same_targetdefault_noops(self):
+        # If a repository is already the target default,
+        # setting the defaultRepository again should no-op.
+        project = self.factory.makeProduct()
+        repository = self.factory.makeGitRepository(target=project)
+        with person_logged_in(project.owner):
+            self.repository_set.setDefaultRepository(project, repository)
+            result = self.repository_set.setDefaultRepository(
+                project, repository)
+        self.assertEqual(None, result)
+
 
 class TestGitRepositorySetDefaultsMixin:
 
