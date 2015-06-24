@@ -1673,10 +1673,11 @@ class SetBranchForm(Interface):
             "The Bazaar branch for this series in Launchpad, "
             "if one exists."))
 
-    git_repository_location = TextLine(
+    git_repository_location = Choice(
         title=_(
             'Git Repository'),
         required=False,
+        vocabulary='GitRepositoryRestrictedOnProduct',
         description=_(
             "The Git repository for this project in Launchpad, "
             "if one exists, in the form: "
@@ -1782,8 +1783,7 @@ class ProductSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
     def _validateLinkLpGit(self, data):
         """Validate data for link-lp-git case."""
         if data.get('git_repository_location'):
-            repo = getUtility(IGitRepositorySet).getByPath(
-                self.user, data.get('git_repository_location'))
+            repo = data.get('git_repository_location')
             if not repo:
                 self.setFieldError(
                     'git_repository_location',
@@ -1922,10 +1922,8 @@ class ProductSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
         if default_vcs:
             self.context.vcs = default_vcs
 
-        git_repository_location = data.get('git_repository_location')
-        if git_repository_location:
-            repo = getUtility(IGitRepositorySet).getByPath(
-                self.user, git_repository_location)
+        repo = data.get('git_repository_location')
+        if repo:
             getUtility(IGitRepositorySet).setDefaultRepository(
                 self.context, repo)
         if branch_type == LINK_LP_BZR:

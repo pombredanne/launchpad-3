@@ -16,6 +16,7 @@ from zope.schema.vocabulary import SimpleTerm
 
 from lp.code.interfaces.gitcollection import IAllGitRepositories
 from lp.code.model.gitrepository import GitRepository
+from lp.registry.interfaces.product import IProduct
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.vocabulary import (
     CountableIterator,
