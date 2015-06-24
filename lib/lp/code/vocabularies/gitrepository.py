@@ -73,8 +73,6 @@ class GitRepositoryRestrictedOnProductVocabulary(GitRepositoryVocabulary):
             context)
         if IProduct.providedBy(self.context):
             self.product = self.context
-        elif IProduct.providedBy(self.context.product):
-            pass  # vocab not relevant for ProductSeries, but must be handled
         else:
             # An unexpected type.
             raise AssertionError('Unexpected context type')

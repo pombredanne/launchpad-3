@@ -1650,10 +1650,6 @@ class SetBranchForm(Interface):
 
     use_template(ICodeImport, ['cvs_module'])
 
-    default_vcs = Choice(title=_("Project VCS"),
-        required=True, vocabulary=VCSType,
-        description=_("The version control system for this project."))
-
     rcs_type = Choice(title=_("Type of RCS"),
         required=False, vocabulary=RevisionControlSystems,
         description=_(
@@ -1673,16 +1669,6 @@ class SetBranchForm(Interface):
             "The Bazaar branch for this series in Launchpad, "
             "if one exists."))
 
-    git_repository_location = Choice(
-        title=_(
-            'Git Repository'),
-        required=False,
-        vocabulary='GitRepositoryRestrictedOnProduct',
-        description=_(
-            "The Git repository for this project in Launchpad, "
-            "if one exists, in the form: "
-            "~user/project-name/+git/repo-name"))
-
     branch_type = Choice(
         title=_('Import type'), vocabulary=BRANCH_TYPE_VOCABULARY,
         description=_("The type of import"), required=True)
@@ -1694,6 +1680,24 @@ class SetBranchForm(Interface):
     branch_owner = copy_field(
         IBranch['owner'], __name__='branch_owner', title=_('Branch owner'),
         description=_(''), required=True)
+
+
+def create_git_fields():
+    return form.Fields(
+        Choice(__name__='default_vcs',
+               title=_("Project VCS"),
+               required=True, vocabulary=VCSType,
+               description=_("The version control system for "
+                             "this project.")),
+        Choice(__name__='git_repository_location',
+               title=_('Git Repository'),
+               required=False,
+               vocabulary='GitRepositoryRestrictedOnProduct',
+               description=_(
+                   "The Git repository for this project in Launchpad, "
+                   "if one exists, in the form: "
+                   "~user/project-name/+git/repo-name"))
+    )
 
 
 class ProductSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
@@ -1741,6 +1745,12 @@ class ProductSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
             return None
         return super(ProductSetBranchView, self).next_url
 
+    def setUpFields(self):
+        """See `LaunchpadFormView`."""
+        super(ProductSetBranchView, self).setUpFields()
+        if not self.is_series:
+            self.form_fields = (self.form_fields + create_git_fields())
+
     def setUpWidgets(self):
         """See `LaunchpadFormView`."""
         super(ProductSetBranchView, self).setUpWidgets()
@@ -1766,13 +1776,14 @@ class ProductSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
             render_radio_widget_part(widget, value, current_value)
             for value in (LINK_LP_BZR, IMPORT_EXTERNAL)]
 
-        widget = self.widgets['default_vcs']
-        vocab = widget.vocabulary
-        current_value = widget._getFormValue()
-        self.default_vcs_git = render_radio_widget_part(
-            widget, vocab.GIT, current_value, 'Git')
-        self.default_vcs_bzr = render_radio_widget_part(
-            widget, vocab.BZR, current_value, 'Bazaar')
+        if not self.is_series:
+            widget = self.widgets['default_vcs']
+            vocab = widget.vocabulary
+            current_value = widget._getFormValue()
+            self.default_vcs_git = render_radio_widget_part(
+                widget, vocab.GIT, current_value, 'Git')
+            self.default_vcs_bzr = render_radio_widget_part(
+                widget, vocab.BZR, current_value, 'Bazaar')
 
     def _validateLinkLpBzr(self, data):
         """Validate data for link-lp-bzr case."""
