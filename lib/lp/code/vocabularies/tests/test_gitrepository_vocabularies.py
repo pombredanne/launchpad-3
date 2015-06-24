@@ -80,10 +80,24 @@ class TestRestrictedGitRepositoryVocabularyOnProduct(TestCaseWithFactory):
 
     def _createRepositories(self):
         test_product = self.factory.makeProduct(name='widget')
+        other_product = self.factory.makeProduct(name='sprocket')
         person = self.factory.makePerson(name=u'scotty')
-        self.factory.makeProductGitRepository(
-            owner=person, project=test_product, name=u'mountain')
+        self.factory.makeGitRepository(
+            owner=person, target=test_product, name=u'mountain')
+        self.factory.makeGitRepository(
+            owner=person, target=other_product, name=u'mountain')
         self.product = test_product
+        self.other_product = test_product
+
+    def test_product_restriction(self):
+        """Look for widget's target default repository.
+
+        The result set should not show ~scotty/sprocket/mountain.
+        """
+        results = self.vocab.searchForTerms('mountain')
+        expected = [u'~scotty/widget/+git/mountain']
+        repo_names = sorted([repo.token for repo in results])
+        self.assertEqual(expected, repo_names)
 
     def test_singleQueryResult(self):
         # If there is a single search result that matches, use that
