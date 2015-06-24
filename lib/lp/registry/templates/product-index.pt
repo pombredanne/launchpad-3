@@ -81,9 +81,9 @@
             <h2>Project information</h2>
 
             <div class="two-column-list">
-              <dl id="partof" tal:condition="context/project">
+              <dl id="partof" tal:condition="context/projectgroup">
                 <dt>Part of:</dt>
-                <dd><a tal:replace="structure context/project/fmt:link" /></dd>
+                <dd><a tal:replace="structure context/projectgroup/fmt:link" /></dd>
               </dl>
 
               <dl id="owner" tal:condition="context/owner">

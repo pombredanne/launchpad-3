@@ -19,8 +19,14 @@ from sqlobject import (
     StringCol,
     )
 from storm.expr import (
+    And,
     Coalesce,
     Count,
+    Desc,
+    Exists,
+    Or,
+    Select,
+    SQL,
     Sum,
     )
 from storm.properties import Int
@@ -43,10 +49,12 @@ from lp.buildmaster.interfaces.builder import (
     )
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSet
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
+from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.buildqueue import (
     BuildQueue,
     specific_build_farm_job_sources,
     )
+from lp.buildmaster.model.processor import Processor
 from lp.registry.interfaces.person import validate_public_person
 from lp.services.database.bulk import (
     load,
@@ -77,7 +85,6 @@ from lp.soyuz.interfaces.buildrecords import (
     IHasBuildRecords,
     IncompatibleArguments,
     )
-from lp.soyuz.model.processor import Processor
 
 
 class Builder(SQLBase):
@@ -134,7 +141,7 @@ class Builder(SQLBase):
         return list(Store.of(self).find(
             Processor,
             BuilderProcessor.processor_id == Processor.id,
-            BuilderProcessor.builder == self).order_by(Processor.id))
+            BuilderProcessor.builder == self).order_by(Processor.name))
 
     def _processors(self):
         return self._processors_cache
@@ -244,45 +251,38 @@ class Builder(SQLBase):
             qualified_query %= sub_query
             return qualified_query
 
-        logger = self._getSlaveScannerLogger()
-        candidate = None
-
-        general_query = """
-            SELECT buildqueue.id FROM buildqueue, buildfarmjob
-            WHERE
-                buildfarmjob.id = buildqueue.build_farm_job
-                AND buildqueue.status = %s
-                AND (
-                    -- The processor values either match or the candidate
-                    -- job is processor-independent.
-                    buildqueue.processor IN (
-                        SELECT processor FROM BuilderProcessor
-                        WHERE builder = %s) OR
-                    buildqueue.processor IS NULL)
-                AND buildqueue.virtualized = %s
-                AND buildqueue.builder IS NULL
-        """ % sqlvalues(
-            BuildQueueStatus.WAITING, self, self.virtualized)
-        order_clause = " ORDER BY buildqueue.lastscore DESC, buildqueue.id"
-
-        extra_queries = []
+        job_type_conditions = []
         job_sources = specific_build_farm_job_sources()
         for job_type, job_source in job_sources.iteritems():
             query = job_source.addCandidateSelectionCriteria(
                 self.processor, self.virtualized)
-            if query == '':
-                # This job class does not need to refine candidate jobs
-                # further.
-                continue
-
-            # The sub-query should only apply to jobs of the right type.
-            extra_queries.append(qualify_subquery(job_type, query))
-        query = ' AND '.join([general_query] + extra_queries) + order_clause
+            if query:
+                job_type_conditions.append(
+                    Or(
+                        BuildFarmJob.job_type != job_type,
+                        Exists(SQL(query))))
 
         store = IStore(self.__class__)
-        candidate_jobs = store.execute(query).get_all()
+        candidate_jobs = store.using(BuildQueue, BuildFarmJob).find(
+            (BuildQueue.id,),
+            BuildFarmJob.id == BuildQueue._build_farm_job_id,
+            BuildQueue.status == BuildQueueStatus.WAITING,
+            Or(
+                BuildQueue.processorID.is_in(Select(
+                    BuilderProcessor.processor_id, tables=[BuilderProcessor],
+                    where=BuilderProcessor.builder == self)),
+                BuildQueue.processor == None),
+            BuildQueue.virtualized == self.virtualized,
+            BuildQueue.builder == None,
+            And(*job_type_conditions)
+            ).order_by(Desc(BuildQueue.lastscore), BuildQueue.id)
 
-        for (candidate_id,) in candidate_jobs:
+        logger = self._getSlaveScannerLogger()
+        # Only try the first handful of jobs. It's much easier on the
+        # database, the chance of a large prefix of the queue being
+        # bad candidates is negligible, and we want reasonably bounded
+        # per-cycle performance even if the prefix is large.
+        for (candidate_id,) in candidate_jobs[:10]:
             candidate = getUtility(IBuildQueueSet).get(candidate_id)
             job_source = job_sources[
                 removeSecurityProxy(candidate)._build_farm_job.job_type]
@@ -344,11 +344,12 @@ class BuilderSet(object):
     def _preloadProcessors(self, rows):
         # Grab (Builder.id, Processor.id) pairs and stuff them into the
         # Builders' processor caches.
-        store = IStore(Builder)
-        pairs = list(store.find(
+        store = IStore(BuilderProcessor)
+        pairs = list(store.using(BuilderProcessor, Processor).find(
             (BuilderProcessor.builder_id, BuilderProcessor.processor_id),
+            BuilderProcessor.processor_id == Processor.id,
             BuilderProcessor.builder_id.is_in([b.id for b in rows])).order_by(
-                BuilderProcessor.builder_id, BuilderProcessor.processor_id))
+                BuilderProcessor.builder_id, Processor.name))
         load(Processor, [pid for bid, pid in pairs])
         for row in rows:
             get_property_cache(row)._processors_cache = []

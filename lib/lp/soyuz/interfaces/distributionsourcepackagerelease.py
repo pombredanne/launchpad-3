@@ -39,6 +39,9 @@ class IDistributionSourcePackageRelease(ISourcePackageRelease):
         "be inherited from a parent distribution, not necessarily built "
         "here, but must be published in a main archive.")
 
+    def getBuildsByArchTag(arch_tag):
+        """Return the builds for this SPR on the given architecture."""
+
     sample_binary_packages = Attribute("A single binary package of each "
         "named package produced from this source package in this "
         "distribution. The are each of form DistroSeriesBinaryPackage.")

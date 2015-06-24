@@ -62,10 +62,11 @@ def combine_permissions(product):
     """Return the effective translation permission for `product`.
 
     This combines the translation permissions for `product` and
-    `product.project`.
+    `product.projectgroup`.
     """
     return max(
-        product.project.translationpermission, product.translationpermission)
+        product.projectgroup.translationpermission,
+        product.translationpermission)
 
 
 class TestTranslationPermission(TestCaseWithFactory):
@@ -73,8 +74,8 @@ class TestTranslationPermission(TestCaseWithFactory):
 
     def makeProductInProjectGroup(self):
         """Create a `Product` that's in a `ProjectGroup`."""
-        project = self.factory.makeProject()
-        return self.factory.makeProduct(project=project)
+        projectgroup = self.factory.makeProject()
+        return self.factory.makeProduct(projectgroup=projectgroup)
 
     def closeTranslations(self, product):
         """Set translation permissions for `product` to Closed.
@@ -87,8 +88,8 @@ class TestTranslationPermission(TestCaseWithFactory):
         closed to the public.
         """
         product.translationpermission = TranslationPermission.CLOSED
-        if product.project is not None:
-            product.project.translationpermission = (
+        if product.projectgroup is not None:
+            product.projectgroup.translationpermission = (
                 TranslationPermission.CLOSED)
 
     def makePOTemplateForProduct(self, product):
@@ -179,7 +180,7 @@ class TestTranslationPermission(TestCaseWithFactory):
         self.closeTranslations(product)
         user = self.factory.makePerson()
         group = self.factory.makeTranslationGroup()
-        product.project.translationgroup = group
+        product.projectgroup.translationgroup = group
         pofile = self.makePOFileForProduct(product)
         getUtility(ITranslatorSet).new(group, pofile.language, user)
 
@@ -194,19 +195,20 @@ class TestTranslationPermission(TestCaseWithFactory):
         self.closeTranslations(product)
         pofile = self.makePOFileForProduct(product)
         product_translator = self.factory.makePerson()
-        project_translator = self.factory.makePerson()
-        product.project.translationgroup = self.factory.makeTranslationGroup()
+        projectgroup_translator = self.factory.makePerson()
+        product.projectgroup.translationgroup = (
+            self.factory.makeTranslationGroup())
         product.translationgroup = self.factory.makeTranslationGroup()
         self.makeTranslationTeam(
-            product.project.translationgroup, pofile.language,
-            [project_translator])
+            product.projectgroup.translationgroup, pofile.language,
+            [projectgroup_translator])
         self.makeTranslationTeam(
             product.translationgroup, pofile.language, [product_translator])
 
         # Both the translator from the project group's translation team
         # and the one from the product's translation team have edit
         # privileges on the translation.
-        self.assertTrue(pofile.canEditTranslations(project_translator))
+        self.assertTrue(pofile.canEditTranslations(projectgroup_translator))
         self.assertTrue(pofile.canEditTranslations(product_translator))
 
     def test_projectgroup_and_product_permissions_combine(self):
@@ -216,8 +218,9 @@ class TestTranslationPermission(TestCaseWithFactory):
         product = self.makeProductInProjectGroup()
         user = self.factory.makePerson()
         pofiles = self.makePOFilesForCoverageLevels(product, user)
-        for project_permission in TranslationPermission.items:
-            product.project.translationpermission = project_permission
+        for projectgroup_permission in TranslationPermission.items:
+            product.projectgroup.translationpermission = (
+                projectgroup_permission)
             for product_permission in TranslationPermission.items:
                 product.translationpermission = product_permission
                 effective_permission = combine_permissions(product)
@@ -272,11 +275,12 @@ class TestTranslationPermission(TestCaseWithFactory):
 
         # The strictest of Open and something else is always the
         # something else.
-        for project_permission in TranslationPermission.items:
-            product.project.translationpermission = project_permission
+        for projectgroup_permission in TranslationPermission.items:
+            product.projectgroup.translationpermission = (
+                projectgroup_permission)
             for product_permission in TranslationPermission.items:
                 product.translationpermission = product_permission
                 expected_permission = (
-                    combinations[project_permission][product_permission])
+                    combinations[projectgroup_permission][product_permission])
                 self.assertEqual(
                     expected_permission, combine_permissions(product))

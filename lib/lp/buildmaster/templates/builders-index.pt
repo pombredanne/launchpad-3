@@ -43,46 +43,34 @@
 
        <div class="first yui-u">
          <div id="builders-list" class="portlet">
-           <h2>Builders</h2>
-           <table class="listing sortable" id="builders-table">
-             <thead>
-               <tr>
-                 <th></th>
-                 <th>Name</th>
-		 <th>Architectures</th>
-                 <th>Status</th>
-               </tr>
-             </thead>
-             <tbody>
-               <tr class="builder-row" tal:repeat="builder view/builders">
+           <table class="listing" id="builders-table">
+             <tal:clump tal:repeat="clump view/builder_clumps">
+               <tr class="category">
                  <td class="icon left">
-                   <span class="sortkey" tal:content="builder/virtualized" />
-                   <img src="/@@/ppa-icon" alt="[ppa]" title="PPA builder"
-                        tal:condition="builder/virtualized" />
-                   <img src="/@@/distribution" alt="[official]"
-                        title="Official builder"
-                        tal:condition="not: builder/virtualized" />
+                   <img src="/@@/ppa-icon" alt="[virtual]"
+                        title="Virtual builder"
+                        tal:condition="clump/virtualized" />
+                   <img src="/@@/distribution" alt="[non-virtual]"
+                        title="Non-virtual builder"
+                        tal:condition="not: clump/virtualized" />
                  </td>
+                 <td colspan="2">
+                   <tal:processor repeat="processor clump/processors"
+                     content="processor/name" />
+                 </td>
+               </tr>
+               <tr class="builder-row" tal:repeat="builder clump/builders">
+                 <td></td>
                  <td style="width: 9em;">
-                   <span class="sortkey" tal:content="builder/name" />
                    <a tal:attributes="href builder/fmt:url"
                       tal:content="builder/name">Bob</a>
-                 </td>
-                 <td style="width: 9em;">
-                   <span class="sortkey">
-                     <tal:processor repeat="processor builder/processors"
-                       content="processor/name">386</tal:processor>
-                   </span>
-                   <tal:repeat repeat="processor builder/processors">
-                   <tal:processor replace="processor/name">386</tal:processor>
-                   </tal:repeat>
                  </td>
                  <td tal:define="job builder/currentjob">
                    <metal:status-summary
                      use-macro="builder/@@+index/status-summary" />
                  </td>
                </tr>
-             </tbody>
+             </tal:clump>
            </table>
            <p tal:condition="view/user">
               Updated on
@@ -92,7 +80,7 @@
        </div><!-- yui-u -->
 
        <div class="yui-u">
-         <div id="official-queue-status" class="portlet">
+         <div id="nonvirt-queue-status" class="portlet">
            <div tal:define="category view/nonvirt_builders">
              <div metal:use-macro="template/macros/builder-category" />
            </div>
@@ -100,7 +88,7 @@
        </div><!-- yui-u -->
 
        <div class="yui-u">
-         <div id="ppa-queue-status" class="portlet">
+         <div id="virt-queue-status" class="portlet">
            <div tal:define="category view/virt_builders">
              <div metal:use-macro="template/macros/builder-category" />
            </div>

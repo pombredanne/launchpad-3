@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for distributions."""
@@ -77,6 +77,8 @@ from lp.bugs.browser.structuralsubscription import (
     StructuralSubscriptionMenuMixin,
     StructuralSubscriptionTargetTraversalMixin,
     )
+from lp.buildmaster.interfaces.processor import IProcessorSet
+from lp.code.browser.vcslisting import TargetDefaultVCSNavigationMixin
 from lp.registry.browser import (
     add_subscribe_link,
     RegistryEditFormView,
@@ -128,17 +130,16 @@ from lp.services.webapp import (
 from lp.services.webapp.batching import BatchNavigator
 from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.services.webapp.interfaces import ILaunchBag
-from lp.soyuz.browser.archive import EnableRestrictedProcessorsMixin
+from lp.soyuz.browser.archive import EnableProcessorsMixin
 from lp.soyuz.browser.packagesearch import PackageSearchViewBase
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.archive import IArchiveSet
-from lp.soyuz.interfaces.processor import IProcessorSet
 
 
 class DistributionNavigation(
     GetitemNavigation, BugTargetTraversalMixin, QuestionTargetTraversalMixin,
     FAQTargetNavigationMixin, StructuralSubscriptionTargetTraversalMixin,
-    PillarNavigationMixin):
+    PillarNavigationMixin, TargetDefaultVCSNavigationMixin):
 
     usedfor = IDistribution
 
@@ -816,7 +817,7 @@ class RequireVirtualizedBuildersMixin:
 
 
 class DistributionAddView(LaunchpadFormView, RequireVirtualizedBuildersMixin,
-                          EnableRestrictedProcessorsMixin):
+                          EnableProcessorsMixin):
 
     schema = IDistribution
     label = "Register a new distribution"
@@ -834,7 +835,7 @@ class DistributionAddView(LaunchpadFormView, RequireVirtualizedBuildersMixin,
         "answers_usage",
         ]
     custom_widget('require_virtualized', CheckBoxWidget)
-    custom_widget('enabled_restricted_processors', LabeledMultiCheckBoxWidget)
+    custom_widget('processors', LabeledMultiCheckBoxWidget)
 
     @property
     def page_title(self):
@@ -843,9 +844,8 @@ class DistributionAddView(LaunchpadFormView, RequireVirtualizedBuildersMixin,
 
     @property
     def initial_values(self):
-        restricted_processors = getUtility(IProcessorSet).getRestricted()
         return {
-            'enabled_restricted_processors': restricted_processors,
+            'processors': getUtility(IProcessorSet).getAll(),
             'require_virtualized': False,
             }
 
@@ -858,9 +858,9 @@ class DistributionAddView(LaunchpadFormView, RequireVirtualizedBuildersMixin,
         """See `LaunchpadFormView`."""
         LaunchpadFormView.setUpFields(self)
         self.form_fields += self.createRequireVirtualized()
-        self.form_fields += self.createEnabledRestrictedProcessors(
-            u"The restricted architectures on which the distribution's main "
-            "archive can build.")
+        self.form_fields += self.createEnabledProcessors(
+            u"The architectures on which the distribution's main archive can "
+            u"build.")
 
     @action("Save", name='save')
     def save_action(self, action, data):
@@ -877,8 +877,7 @@ class DistributionAddView(LaunchpadFormView, RequireVirtualizedBuildersMixin,
             )
         archive = distribution.main_archive
         self.updateRequireVirtualized(data['require_virtualized'], archive)
-        archive.enabled_restricted_processors = data[
-            'enabled_restricted_processors']
+        archive.processors = data['processors']
 
         notify(ObjectCreatedEvent(distribution))
         self.next_url = canonical_url(distribution)
@@ -886,7 +885,7 @@ class DistributionAddView(LaunchpadFormView, RequireVirtualizedBuildersMixin,
 
 class DistributionEditView(RegistryEditFormView,
                            RequireVirtualizedBuildersMixin,
-                           EnableRestrictedProcessorsMixin):
+                           EnableProcessorsMixin):
 
     schema = IDistribution
     field_names = [
@@ -912,7 +911,7 @@ class DistributionEditView(RegistryEditFormView,
     custom_widget('logo', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
     custom_widget('mugshot', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
     custom_widget('require_virtualized', CheckBoxWidget)
-    custom_widget('enabled_restricted_processors', LabeledMultiCheckBoxWidget)
+    custom_widget('processors', LabeledMultiCheckBoxWidget)
 
     @property
     def label(self):
@@ -923,17 +922,16 @@ class DistributionEditView(RegistryEditFormView,
         """See `LaunchpadFormView`."""
         RegistryEditFormView.setUpFields(self)
         self.form_fields += self.createRequireVirtualized()
-        self.form_fields += self.createEnabledRestrictedProcessors(
-            u"The restricted architectures on which the distribution's main "
-            "archive can build.")
+        self.form_fields += self.createEnabledProcessors(
+            u"The architectures on which the distribution's main archive can "
+            u"build.")
 
     @property
     def initial_values(self):
         return {
             'require_virtualized':
                 self.context.main_archive.require_virtualized,
-            'enabled_restricted_processors':
-                self.context.main_archive.enabled_restricted_processors,
+            'processors': self.context.main_archive.processors,
             }
 
     def validate(self, data):
@@ -952,14 +950,12 @@ class DistributionEditView(RegistryEditFormView,
             self.updateRequireVirtualized(
                 new_require_virtualized, self.context.main_archive)
             del(data['require_virtualized'])
-        new_enabled_restricted_processors = data.get(
-            'enabled_restricted_processors')
-        if new_enabled_restricted_processors is not None:
-            if (set(self.context.main_archive.enabled_restricted_processors) !=
-                set(new_enabled_restricted_processors)):
-                self.context.main_archive.enabled_restricted_processors = (
-                    new_enabled_restricted_processors)
-            del(data['enabled_restricted_processors'])
+        new_processors = data.get('processors')
+        if new_processors is not None:
+            if (set(self.context.main_archive.processors) !=
+                    set(new_processors)):
+                self.context.main_archive.processors = new_processors
+            del(data['processors'])
 
     @action("Change", name='change')
     def change_action(self, action, data):
@@ -1104,7 +1100,7 @@ class DistributionMirrorsView(LaunchpadView):
 
     @cachedproperty
     def mirror_count(self):
-        return self.mirrors.count()
+        return len(self.mirrors)
 
     def _sum_throughput(self, mirrors):
         """Given a list of mirrors, calculate the total bandwidth
@@ -1181,10 +1177,6 @@ class DistributionArchiveMirrorsView(DistributionMirrorsView):
     def mirrors(self):
         return self.context.archive_mirrors_by_country
 
-    @cachedproperty
-    def mirror_count(self):
-        return len(self.mirrors)
-
 
 class DistributionSeriesMirrorsView(DistributionMirrorsView):
 
@@ -1196,10 +1188,6 @@ class DistributionSeriesMirrorsView(DistributionMirrorsView):
     @cachedproperty
     def mirrors(self):
         return self.context.cdimage_mirrors_by_country
-
-    @cachedproperty
-    def mirror_count(self):
-        return len(self.mirrors)
 
 
 class DistributionMirrorsRSSBaseView(LaunchpadView):

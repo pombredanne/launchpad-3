@@ -1,4 +1,4 @@
-# Copyright 2010-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for sync package jobs."""
@@ -1392,7 +1392,8 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         copied_sources = target_archive.getPublishedSources(
             name=u"copyme", version="2.8-1")
         self.assertNotEqual(0, copied_sources.count())
-        copied_binaries = target_archive.getAllPublishedBinaries(name="copyme")
+        copied_binaries = target_archive.getAllPublishedBinaries(
+            name=u"copyme")
         self.assertNotEqual(0, copied_binaries.count())
 
         # Check that files were unembargoed.

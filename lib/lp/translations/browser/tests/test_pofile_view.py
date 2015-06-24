@@ -77,11 +77,6 @@ class TestQueryCount(TestCaseWithFactory):
             templateset.wipeSuggestivePOTemplatesCache()
             templateset.populateSuggestivePOTemplatesCache()
 
-            # And ensure that the credits string is empty, as that's
-            # not currently constant.
-            Store.of(pofile).find(POFileTranslator, pofile=pofile).set(
-                pofileID=self.factory.makePOFile().id)
-
         nb_objects = 2
         recorder1, recorder2 = record_two_runs(
             lambda: create_initialized_view(

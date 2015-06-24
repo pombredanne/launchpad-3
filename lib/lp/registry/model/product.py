@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database classes including and related to Product."""
@@ -55,7 +55,6 @@ from zope.interface import (
 from zope.security.proxy import removeSecurityProxy
 
 from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
-from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.answers.model.faq import (
     FAQ,
     FAQSearch,
@@ -117,6 +116,7 @@ from lp.bugs.model.structuralsubscription import (
     )
 from lp.code.enums import BranchType
 from lp.code.interfaces.branch import DEFAULT_BRANCH_STATUS_IN_LISTING
+from lp.code.interfaces.gitrepository import IGitRepositorySet
 from lp.code.model.branch import Branch
 from lp.code.model.branchnamespace import BRANCH_POLICY_ALLOWED_TYPES
 from lp.code.model.hasbranches import (
@@ -131,6 +131,7 @@ from lp.registry.enums import (
     BugSharingPolicy,
     INCLUSIVE_TEAM_POLICY,
     SpecificationSharingPolicy,
+    VCSType,
     )
 from lp.registry.errors import (
     CannotChangeInformationType,
@@ -365,13 +366,13 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     """A Product."""
 
     implements(
-        IBugSummaryDimension, IFAQTarget, IHasBugSupervisor,
+        IBugSummaryDimension, IHasBugSupervisor,
         IHasCustomLanguageCodes, IHasIcon, IHasLogo, IHasMugshot,
         IHasOOPSReferences, ILaunchpadUsage, IProduct, IServiceUsage)
 
     _table = 'Product'
 
-    project = ForeignKey(
+    projectgroup = ForeignKey(
         foreignKey="ProjectGroup", dbName="project", notNull=False,
         default=None)
     _owner = ForeignKey(
@@ -434,6 +435,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         dbName='official_malone', notNull=True, default=False)
     remote_product = Unicode(
         name='remote_product', allow_none=True, default=None)
+    vcs = EnumCol(enum=VCSType, notNull=False)
 
     @property
     def date_next_suggest_packaging(self):
@@ -580,9 +582,16 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IPillar`."""
         return "Project"
 
+    @cachedproperty
+    def _default_git_repository(self):
+        return getUtility(IGitRepositorySet).getDefaultRepository(self)
+
     @property
     def official_codehosting(self):
-        return self.development_focus.branch is not None
+        repository = self._default_git_repository
+        return (
+            self.development_focus.branch is not None or
+            repository is not None)
 
     @property
     def official_anything(self):
@@ -614,9 +623,14 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     @property
     def codehosting_usage(self):
-        if self.development_focus.branch is None:
+        repository = self._default_git_repository
+        if self.development_focus.branch is None and repository is None:
             return ServiceUsage.UNKNOWN
-        elif self.development_focus.branch.branch_type == BranchType.HOSTED:
+        elif (repository is not None or
+              self.development_focus.branch.branch_type == BranchType.HOSTED):
+            # XXX cjwatson 2015-07-07: Fix this when we have
+            # GitRepositoryType; an imported default repository should imply
+            # ServiceUsage.EXTERNAL.
             return ServiceUsage.LAUNCHPAD
         elif self.development_focus.branch.branch_type in (
             BranchType.MIRRORED,
@@ -1113,8 +1127,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             return None
         elif self.bugtracker is not None:
             return self.bugtracker
-        elif self.project is not None:
-            return self.project.bugtracker
+        elif self.projectgroup is not None:
+            return self.projectgroup.bugtracker
         else:
             return None
 
@@ -1177,12 +1191,12 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IProduct`."""
         drivers = set()
         drivers.add(self.driver)
-        if self.project is not None:
-            drivers.add(self.project.driver)
+        if self.projectgroup is not None:
+            drivers.add(self.projectgroup.driver)
         drivers.discard(None)
         if len(drivers) == 0:
-            if self.project is not None:
-                drivers.add(self.project.owner)
+            if self.projectgroup is not None:
+                drivers.add(self.projectgroup.owner)
             else:
                 drivers.add(self.owner)
         return sorted(drivers, key=lambda driver: driver.displayname)
@@ -1404,9 +1418,9 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def getInheritedTranslationPolicy(self):
         """See `ITranslationPolicy`."""
-        # A Product inherits parts of it its effective translation
-        # policy from its ProjectGroup, if any.
-        return self.project
+        # A Product inherits parts of its effective translation policy from
+        # its ProjectGroup, if any.
+        return self.projectgroup
 
     def sharesTranslationsWithOtherSide(self, person, language,
                                         sourcepackage=None,
@@ -1519,12 +1533,14 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     @property
     def recipes(self):
         """See `IHasRecipes`."""
-        return Store.of(self).find(
+        recipes = Store.of(self).find(
             SourcePackageRecipe,
             SourcePackageRecipe.id ==
                 SourcePackageRecipeData.sourcepackage_recipe_id,
             SourcePackageRecipeData.base_branch == Branch.id,
             Branch.product == self)
+        hook = SourcePackageRecipe.preLoadDataForSourcePackageRecipes
+        return DecoratedResultSet(recipes, pre_iter_hook=hook)
 
     def getBugTaskWeightFunction(self):
         """Provide a weight function to determine optimal bug task.
@@ -1569,22 +1585,27 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         return False
 
 
-def get_precached_products(products, need_licences=False, need_projects=False,
-                        need_series=False, need_releases=False,
-                        role_names=None, need_role_validity=False):
+def get_precached_products(products, need_licences=False,
+                           need_projectgroups=False, need_series=False,
+                           need_releases=False, role_names=None,
+                           need_role_validity=False,
+                           need_codehosting_usage=False):
     """Load and cache product information.
 
     :param products: the products for which to pre-cache information
     :param need_licences: whether to cache license information
-    :param need_projects: whether to cache project information
+    :param need_projectgroups: whether to cache project group information
     :param need_series: whether to cache series information
     :param need_releases: whether to cache release information
     :param role_names: the role names to cache eg bug_supervisor
     :param need_role_validity: whether to cache validity information
+    :param need_codehosting_usage: whether to cache codehosting usage
+        information
     :return: a list of products
     """
 
-    # Circular import.
+    # Circular imports.
+    from lp.code.interfaces.gitrepository import IGitRepositorySet
     from lp.registry.model.projectgroup import ProjectGroup
 
     product_ids = set(obj.id for obj in products)
@@ -1659,8 +1680,9 @@ def get_precached_products(products, need_licences=False, need_projects=False,
             cache = caches[license.productID]
             if not license.license in cache._cached_licenses:
                 cache._cached_licenses.append(license.license)
-    if need_projects:
-        bulk.load_related(ProjectGroup, products_by_id.values(), ['projectID'])
+    if need_projectgroups:
+        bulk.load_related(
+            ProjectGroup, products_by_id.values(), ['projectgroupID'])
     bulk.load_related(ProductSeries, products_by_id.values(),
         ['development_focusID'])
     if role_names is not None:
@@ -1672,6 +1694,13 @@ def get_precached_products(products, need_licences=False, need_projects=False,
         person_ids.discard(None)
         list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
             person_ids, need_validity=need_role_validity))
+    if need_codehosting_usage:
+        repository_set = getUtility(IGitRepositorySet)
+        repository_map = repository_set.preloadDefaultRepositoriesForProjects(
+            products)
+        for product_id in product_ids:
+            caches[product_id]._default_git_repository = repository_map.get(
+                product_id)
     return products
 
 
@@ -1813,14 +1842,14 @@ class ProductSet:
         return results
 
     def createProduct(self, owner, name, displayname, title, summary,
-                      description=None, project=None, homepageurl=None,
+                      description=None, projectgroup=None, homepageurl=None,
                       screenshotsurl=None, wikiurl=None,
                       downloadurl=None, freshmeatproject=None,
                       sourceforgeproject=None, programminglang=None,
                       project_reviewed=False, mugshot=None, logo=None,
                       icon=None, licenses=None, license_info=None,
                       registrant=None, bug_supervisor=None, driver=None,
-                      information_type=None):
+                      information_type=None, vcs=None):
         """See `IProductSet`."""
         if registrant is None:
             registrant = owner
@@ -1839,7 +1868,7 @@ class ProductSet:
                     ' Projects.')
         product = Product(
             owner=owner, registrant=registrant, name=name,
-            displayname=displayname, title=title, project=project,
+            displayname=displayname, title=title, projectgroup=projectgroup,
             summary=summary, description=description, homepageurl=homepageurl,
             screenshotsurl=screenshotsurl, wikiurl=wikiurl,
             downloadurl=downloadurl, freshmeatproject=None,
@@ -1848,7 +1877,7 @@ class ProductSet:
             project_reviewed=project_reviewed,
             icon=icon, logo=logo, mugshot=mugshot, license_info=license_info,
             bug_supervisor=bug_supervisor, driver=driver,
-            information_type=information_type)
+            information_type=information_type, vcs=vcs)
 
         # Set up the product licence.
         if len(licenses) > 0:
@@ -1989,7 +2018,8 @@ class ProductSet:
             return get_precached_products(
                 products, role_names=['_owner', 'registrant'],
                 need_role_validity=True, need_licences=True,
-                need_series=True, need_releases=True)
+                need_series=True, need_releases=True,
+                need_codehosting_usage=True)
 
         return DecoratedResultSet(result, pre_iter_hook=eager_load)
 
@@ -2007,7 +2037,7 @@ class ProductSet:
 
         def eager_load(products):
             return get_precached_products(
-                products, need_licences=True, need_projects=True,
+                products, need_licences=True, need_projectgroups=True,
                 role_names=[
                     '_owner', 'registrant', 'bug_supervisor', 'driver'])
 

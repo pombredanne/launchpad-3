@@ -169,7 +169,7 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def getProducts(self, user):
         results = Store.of(self).find(
-            Product, Product.project == self, Product.active == True,
+            Product, Product.projectgroup == self, Product.active == True,
             ProductSet.getProductPrivacyFilter(user))
         return results.order_by(Product.displayname)
 
@@ -178,7 +178,7 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return list(self.getProducts(getUtility(ILaunchBag).user))
 
     def getProduct(self, name):
-        return Product.selectOneBy(project=self, name=name)
+        return Product.selectOneBy(projectgroup=self, name=name)
 
     def getConfigurableProducts(self):
         return [product for product in self.products
@@ -205,7 +205,7 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
             ]
         return store.using(*origin).find(
             Product,
-            Product.project == self.id,
+            Product.projectgroup == self.id,
             Product.translations_usage == ServiceUsage.LAUNCHPAD,
             ).config(distinct=True)
 
@@ -248,7 +248,7 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IHasSpecifications`."""
         base_clauses = [
             Specification.productID == Product.id,
-            Product.projectID == self.id]
+            Product.projectgroupID == self.id]
         tables = [Specification]
         if series:
             base_clauses.append(ProductSeries.name == series)
@@ -262,11 +262,11 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def _customizeSearchParams(self, search_params):
         """Customize `search_params` for this milestone."""
-        search_params.setProject(self)
+        search_params.setProjectGroup(self)
 
     def _getOfficialTagClause(self):
         """See `OfficialBugTagTargetMixin`."""
-        And(ProjectGroup.id == Product.projectID,
+        And(ProjectGroup.id == Product.projectgroupID,
             Product.id == OfficialBugTag.productID)
 
     @property
@@ -276,7 +276,7 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
         result = store.find(
             OfficialBugTag.tag,
             OfficialBugTag.product == Product.id,
-            Product.project == self.id).order_by(OfficialBugTag.tag)
+            Product.projectgroup == self.id).order_by(OfficialBugTag.tag)
         result.config(distinct=True)
         return result
 
@@ -301,7 +301,7 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
             unsupported_target = None
 
         return QuestionTargetSearch(
-            project=self,
+            projectgroup=self,
             search_text=search_text, status=status,
             language=language, sort=sort, owner=owner,
             needs_attention_from=needs_attention_from,
@@ -336,11 +336,11 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IQuestionCollection`."""
         return FAQSearch(
             search_text=search_text, owner=owner, sort=sort,
-            project=self).getResults()
+            projectgroup=self).getResults()
 
     def hasProducts(self):
-        """Returns True if a project has products associated with it, False
-        otherwise.
+        """Returns True if a project group has products associated with it,
+        False otherwise.
 
         If the project group has < 1 product, selected links will be disabled.
         This is to avoid situations where users try to file bugs against
@@ -354,7 +354,7 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
         privacy_filter = ProductSet.getProductPrivacyFilter(user)
         return And(
             Milestone.productID == Product.id,
-            Product.projectID == self.id,
+            Product.projectgroupID == self.id,
             privacy_filter)
 
     def _getMilestones(self, user, only_active):
@@ -375,7 +375,7 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
             )
         privacy_filter = ProductSet.getProductPrivacyFilter(user)
         conditions = And(Milestone.product == Product.id,
-                         Product.project == self,
+                         Product.projectgroup == self,
                          Product.active == True,
                          privacy_filter)
         result = store.find(columns, conditions)
@@ -393,7 +393,7 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
         if result.any() is not None:
             milestone_names = [data[0] for data in result]
             product_conditions = And(
-                Product.project == self,
+                Product.projectgroup == self,
                 Milestone.product == Product.id,
                 Product.active == True,
                 privacy_filter,
@@ -415,7 +415,7 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
         result = store.find(
             Milestone.id,
             And(Milestone.product == Product.id,
-                Product.project == self,
+                Product.projectgroup == self,
                 Product.active == True))
         return result.any() is not None
 
@@ -450,7 +450,7 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
         has_series = ProductSeries.selectFirst(
             AND(ProductSeries.q.productID == Product.q.id,
                 ProductSeries.q.name == series_name,
-                Product.q.projectID == self.id), orderBy='id')
+                Product.q.projectgroupID == self.id), orderBy='id')
 
         if has_series is None:
             return None
@@ -534,10 +534,10 @@ class ProjectGroupSet:
         NotFoundError: -1
         """
         try:
-            project = ProjectGroup.get(projectgroupid)
+            projectgroup = ProjectGroup.get(projectgroupid)
         except SQLObjectNotFound:
             raise NotFoundError(projectgroupid)
-        return project
+        return projectgroup
 
     def getByName(self, name, ignore_inactive=False):
         """See `IProjectGroupSet`."""
@@ -592,8 +592,8 @@ class ProjectGroupSet:
                 product_query = "Product.fti @@ ftq(%s)" % sqlvalues(text)
                 queries.append(product_query)
             else:
-                project_query = "Project.fti @@ ftq(%s)" % sqlvalues(text)
-                queries.append(project_query)
+                projectgroup_query = "Project.fti @@ ftq(%s)" % sqlvalues(text)
+                queries.append(projectgroup_query)
 
         if 'Product' in clauseTables:
             queries.append('Product.project=Project.id')
@@ -613,20 +613,20 @@ class ProjectGroupSeries(HasSpecificationsMixin):
 
     implements(IProjectGroupSeries)
 
-    def __init__(self, project, name):
-        self.project = project
+    def __init__(self, projectgroup, name):
+        self.projectgroup = projectgroup
         self.name = name
 
     def specifications(self, user, sort=None, quantity=None, filter=None,
                        need_people=True, need_branches=True,
                        need_workitems=False):
-        return self.project.specifications(
+        return self.projectgroup.specifications(
             user, sort, quantity, filter, self.name, need_people=need_people,
             need_branches=need_branches, need_workitems=need_workitems)
 
     @property
     def title(self):
-        return "%s Series %s" % (self.project.title, self.name)
+        return "%s Series %s" % (self.projectgroup.title, self.name)
 
     @property
     def displayname(self):

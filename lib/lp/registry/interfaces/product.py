@@ -72,6 +72,7 @@ from zope.schema import (
 from zope.schema.vocabulary import SimpleVocabulary
 
 from lp import _
+from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.app.errors import NameLookupFailed
 from lp.app.interfaces.informationtype import IInformationType
@@ -102,11 +103,13 @@ from lp.code.interfaces.hasbranches import (
     IHasCodeImports,
     IHasMergeProposals,
     )
+from lp.code.interfaces.hasgitrepositories import IHasGitRepositories
 from lp.code.interfaces.hasrecipes import IHasRecipes
 from lp.registry.enums import (
     BranchSharingPolicy,
     BugSharingPolicy,
     SpecificationSharingPolicy,
+    VCSType,
     )
 from lp.registry.interfaces.announcement import IMakesAnnouncements
 from lp.registry.interfaces.commercialsubscription import (
@@ -139,6 +142,10 @@ from lp.services.fields import (
     Summary,
     Title,
     URIField,
+    )
+from lp.services.webservice.apihelpers import (
+    patch_collection_property,
+    patch_reference_property,
     )
 from lp.translations.interfaces.hastranslationimports import (
     IHasTranslationImports,
@@ -442,7 +449,7 @@ class IProductLimitedView(IHasIcon, IHasLogo, IHasOwner, ILaunchpadUsage):
             description=_("The restricted team, moderated team, or person "
                           "who maintains the project information in "
                           "Launchpad.")))
-    project = exported(
+    projectgroup = exported(
         ReferenceChoice(
             title=_('Part of'),
             required=False,
@@ -471,7 +478,7 @@ class IProductView(
     IHasMugshot, IHasSprints, IHasTranslationImports,
     ITranslationPolicy, IKarmaContext, IMakesAnnouncements,
     IOfficialBugTagTargetPublic, IHasOOPSReferences,
-    IHasRecipes, IHasCodeImports, IServiceUsage):
+    IHasRecipes, IHasCodeImports, IServiceUsage, IHasGitRepositories):
     """Public IProduct properties."""
 
     registrant = exported(
@@ -746,6 +753,14 @@ class IProductView(
             description=_('Security contact (obsolete; always None)')),
             ('devel', dict(exported=False)), as_of='1.0')
 
+    vcs = exported(
+        Choice(
+            title=_("VCS"),
+            required=False,
+            vocabulary=VCSType,
+            description=_(
+                "Version control system for this project's code.")))
+
     def getAllowedBugInformationTypes():
         """Get the information types that a bug in this project can have.
 
@@ -883,7 +898,7 @@ class IProductEditRestricted(IOfficialBugTagTargetRestricted):
 class IProduct(
     IBugTarget, IHasBugSupervisor, IHasDrivers, IProductEditRestricted,
     IProductModerateRestricted, IProductDriverRestricted, IProductView,
-    IProductLimitedView, IProductPublic, IQuestionTarget,
+    IProductLimitedView, IProductPublic, IFAQTarget, IQuestionTarget,
     ISpecificationTarget, IStructuralSubscriptionTarget, IInformationType,
     IPillar):
     """A Product.
@@ -903,8 +918,8 @@ class IProduct(
 
 
 # Fix cyclic references.
-IProjectGroup['products'].value_type = Reference(IProduct)
-IProductRelease['product'].schema = IProduct
+patch_collection_property(IProjectGroup, 'products', IProduct)
+patch_reference_property(IProductRelease, 'product', IProduct)
 
 
 class IProductSet(Interface):
@@ -960,7 +975,7 @@ class IProductSet(Interface):
 
     @call_with(owner=REQUEST_USER)
     @rename_parameters_as(
-        displayname='display_name', project='project_group',
+        displayname='display_name', projectgroup='project_group',
         homepageurl='home_page_url', screenshotsurl='screenshots_url',
         freshmeatproject='freshmeat_project', wikiurl='wiki_url',
         downloadurl='download_url',
@@ -968,14 +983,14 @@ class IProductSet(Interface):
         programminglang='programming_lang')
     @export_factory_operation(
         IProduct, ['name', 'displayname', 'title', 'summary', 'description',
-                   'project', 'homepageurl', 'screenshotsurl',
+                   'projectgroup', 'homepageurl', 'screenshotsurl',
                    'downloadurl', 'freshmeatproject', 'wikiurl',
                    'sourceforgeproject', 'programminglang',
                    'project_reviewed', 'licenses', 'license_info',
                    'registrant', 'bug_supervisor', 'driver'])
     @export_operation_as('new_project')
     def createProduct(owner, name, displayname, title, summary,
-                      description=None, project=None, homepageurl=None,
+                      description=None, projectgroup=None, homepageurl=None,
                       screenshotsurl=None, wikiurl=None,
                       downloadurl=None, freshmeatproject=None,
                       sourceforgeproject=None, programminglang=None,
@@ -1171,6 +1186,7 @@ class InvalidProductName(LaunchpadValidationError):
 # Fix circular imports.
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
-IDistributionSourcePackage['upstream_product'].schema = IProduct
+patch_reference_property(
+    IDistributionSourcePackage, 'upstream_product', IProduct)
 
-ICommercialSubscription['product'].schema = IProduct
+patch_reference_property(ICommercialSubscription, 'product', IProduct)

@@ -148,7 +148,7 @@ The COPY archive has no packages.
     >>> print_repository_usage(copy_repository_usage)
     binaries_size:   0
     binary_label:    0 binary packages
-    quota:           2147483648
+    quota:           0
     source_label:    0 source packages
     sources_size:    0
     used:            0
@@ -403,8 +403,10 @@ Let's set some builds appropriately to see the results.
     i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
 
     >>> builds[0].updateStatus(BuildStatus.NEEDSBUILD)
-    >>> builds[1].updateStatus(BuildStatus.BUILDING)
-    >>> builds[2].updateStatus(BuildStatus.BUILDING)
+    >>> builds[1].updateStatus(
+    ...     BuildStatus.BUILDING, force_invalid_transition=True)
+    >>> builds[2].updateStatus(
+    ...     BuildStatus.BUILDING, force_invalid_transition=True)
 
     >>> view.num_pkgs_building
     {'building': 2, 'waiting': 1, 'total': 3}

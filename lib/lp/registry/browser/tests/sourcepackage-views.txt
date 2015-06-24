@@ -321,18 +321,18 @@ If the product has no bug tracker and is in a project group with no
 bug tracker then the property is false.
 
     >>> product.bugtracker = None
-    >>> project = factory.makeProject()
-    >>> print project.bugtracker
+    >>> projectgroup = factory.makeProject()
+    >>> print projectgroup.bugtracker
     None
-    >>> product.project = project
+    >>> product.projectgroup = projectgroup
     >>> print view.has_bugtracker
     False
 
-If the product's project does have a bug tracker then the product
+If the product's project group does have a bug tracker then the product
 inherits it.
 
-    >>> ignored = login_person(project.owner)
-    >>> project.bugtracker = bugtracker
+    >>> ignored = login_person(projectgroup.owner)
+    >>> projectgroup.bugtracker = bugtracker
     >>> print view.has_bugtracker
     True
 

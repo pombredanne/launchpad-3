@@ -23,8 +23,11 @@ class LibrarianFeedSwift(LaunchpadCronScript):
             "-i", "--id", action="append", dest="ids", default=[],
             metavar="CONTENT_ID", help="Migrate a single file")
         self.parser.add_option(
-            "-r", "--remove", action="store_true", default=False,
+            "--remove", action="store_true", default=False,
             help="Remove files from disk after migration (default: False)")
+        self.parser.add_option(
+            "--rename", action="store_true", default=False,
+            help="Rename files on disk after migration (default: False)")
         self.parser.add_option(
             "-s", "--start", action="store", type=int, default=None,
             dest="start", metavar="CONTENT_ID",
@@ -32,29 +35,52 @@ class LibrarianFeedSwift(LaunchpadCronScript):
         self.parser.add_option(
             "--start-since", action="store", dest='start_since',
             default=None, metavar="INTERVAL",
-            help="Migrate files starting from INTERVAL (PostgreSQL syntax)")
+            help="Migrate files older than INTERVAL (PostgreSQL syntax)")
         self.parser.add_option(
             "-e", "--end", action="store", type=int, default=None,
             dest="end", metavar="CONTENT_ID",
             help="Migrate files up to and including CONTENT_ID")
+        self.parser.add_option(
+            "--end-at", action="store", dest='end_at',
+            default=None, metavar="INTERVAL",
+            help="Don't migrate files older than INTERVAL "
+                 "(PostgreSQL syntax)")
 
     def main(self):
+        if self.options.rename and self.options.remove:
+            self.parser.error("Cannot both remove and rename")
+        elif self.options.rename:
+            remove = swift.rename
+        elif self.options.remove:
+            remove = os.unlink
+        else:
+            remove = None
+
         if self.options.start_since:
             self.options.start = ISlaveStore(LibraryFileContent).execute("""
                 SELECT MAX(id) FROM LibraryFileContent
                 WHERE datecreated < current_timestamp at time zone 'UTC'
                     - CAST(%s AS INTERVAL)
                 """, (unicode(self.options.start_since),)).get_one()[0]
+
+        if self.options.end_at:
+            self.options.end = ISlaveStore(LibraryFileContent).execute("""
+                SELECT MAX(id) FROM LibraryFileContent
+                WHERE datecreated < current_timestamp at time zone 'UTC'
+                    - CAST(%s AS INTERVAL)
+                """, (unicode(self.options.end_at),)).get_one()[0]
+
         if self.options.ids and (self.options.start or self.options.end):
             self.parser.error(
                 "Cannot specify both individual file(s) and range")
+
         elif self.options.ids:
             for lfc in self.options.ids:
-                swift.to_swift(self.logger, lfc, lfc, self.options.remove)
+                swift.to_swift(self.logger, lfc, lfc, remove)
+
         else:
-            swift.to_swift(
-                self.logger, self.options.start, self.options.end,
-                self.options.remove)
+            swift.to_swift(self.logger, self.options.start,
+                           self.options.end, remove)
         self.logger.info('Done')
 
 

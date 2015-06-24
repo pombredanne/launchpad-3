@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from doctest import DocTestSuite
@@ -12,9 +12,11 @@ import transaction
 from lp.archiveuploader.tagfiles import parse_tagfile
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.database.constants import UTC_NOW
 from lp.services.features.testing import FeatureFixture
 from lp.services.log.logger import DevNullLogger
 from lp.services.tarfile_helpers import LaunchpadWriteTarFile
+from lp.services.osutils import write_file
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.scripts.gina import ExecutionError
 from lp.soyuz.scripts.gina.archive import (
@@ -24,8 +26,10 @@ from lp.soyuz.scripts.gina.archive import (
 from lp.soyuz.scripts.gina.dominate import dominate_imported_source_packages
 import lp.soyuz.scripts.gina.handlers
 from lp.soyuz.scripts.gina.handlers import (
+    BinaryPackageHandler,
     BinaryPackagePublisher,
     ImporterHandler,
+    SourcePackageHandler,
     SourcePackagePublisher,
     )
 from lp.soyuz.scripts.gina.packages import (
@@ -223,6 +227,49 @@ class TestSourcePackageData(TestCaseWithFactory):
         sp_data.do_package("debian", archive_root)
 
 
+class TestSourcePackageHandler(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def test_user_defined_fields(self):
+        series = self.factory.makeDistroSeries()
+        archive_root = self.useTempDir()
+        sphandler = SourcePackageHandler(
+            series.distribution.name, archive_root,
+            PackagePublishingPocket.RELEASE, None)
+        dsc_contents = {
+            "Format": "3.0 (quilt)",
+            "Source": "foo",
+            "Binary": "foo",
+            "Architecture": "all arm64",
+            "Version": "1.0-1",
+            "Maintainer": "Foo Bar <foo@canonical.com>",
+            "Files": "xxx 000 foo_1.0-1.dsc",
+            "Build-Indep-Architecture": "amd64",
+            "Directory": "pool/main/f/foo",
+            "Package": "foo",
+            "Component": "main",
+            "Section": "misc",
+            }
+        sp_data = SourcePackageData(**dsc_contents)
+        self.assertEqual(
+            [["Build-Indep-Architecture", "amd64"]], sp_data._user_defined)
+        sp_data.archive_root = archive_root
+        sp_data.dsc = ""
+        sp_data.copyright = ""
+        sp_data.urgency = "low"
+        sp_data.changelog = None
+        sp_data.changelog_entry = None
+        sp_data.date_uploaded = UTC_NOW
+        # We don't need a real .dsc here.
+        write_file(
+            os.path.join(archive_root, "pool/main/f/foo/foo_1.0-1.dsc"), "x")
+        spr = sphandler.createSourcePackageRelease(sp_data, series)
+        self.assertIsNotNone(spr)
+        self.assertEqual(
+            [["Build-Indep-Architecture", "amd64"]], spr.user_defined_fields)
+
+
 class TestSourcePackagePublisher(TestCaseWithFactory):
 
     layer = ZopelessDatabaseLayer
@@ -242,6 +289,48 @@ class TestSourcePackagePublisher(TestCaseWithFactory):
 
         [spph] = series.main_archive.getPublishedSources()
         self.assertEqual(PackagePublishingStatus.PUBLISHED, spph.status)
+
+
+class TestBinaryPackageHandler(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def test_user_defined_fields(self):
+        das = self.factory.makeDistroArchSeries()
+        archive_root = self.useTempDir()
+        sphandler = SourcePackageHandler(
+            das.distroseries.distribution.name, archive_root,
+            PackagePublishingPocket.RELEASE, None)
+        bphandler = BinaryPackageHandler(
+            sphandler, archive_root, PackagePublishingPocket.RELEASE)
+        spr = self.factory.makeSourcePackageRelease(
+            distroseries=das.distroseries)
+        deb_contents = {
+            "Package": "foo",
+            "Installed-Size": "0",
+            "Maintainer": "Foo Bar <foo@canonical.com>",
+            "Section": "misc",
+            "Architecture": "amd64",
+            "Version": "1.0-1",
+            "Filename": "pool/main/f/foo/foo_1.0-1_amd64.deb",
+            "Component": "main",
+            "Size": "0",
+            "MD5sum": "0" * 32,
+            "Description": "",
+            "Summary": "",
+            "Priority": "extra",
+            "Python-Version": "2.7",
+            }
+        bp_data = BinaryPackageData(**deb_contents)
+        self.assertEqual([["Python-Version", "2.7"]], bp_data._user_defined)
+        bp_data.archive_root = archive_root
+        # We don't need a real .deb here.
+        write_file(
+            os.path.join(archive_root, "pool/main/f/foo/foo_1.0-1_amd64.deb"),
+            "x")
+        bpr = bphandler.createBinaryPackage(bp_data, spr, das, "amd64")
+        self.assertIsNotNone(bpr)
+        self.assertEqual([["Python-Version", "2.7"]], bpr.user_defined_fields)
 
 
 class TestBinaryPackagePublisher(TestCaseWithFactory):

@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementation of the `SourcePackageRecipe` content type."""
@@ -12,6 +12,7 @@ from datetime import (
     datetime,
     timedelta,
     )
+from operator import attrgetter
 
 from lazr.delegates import delegates
 from pytz import utc
@@ -39,7 +40,6 @@ from lp.buildmaster.enums import BuildStatus
 from lp.code.errors import (
     BuildAlreadyPending,
     BuildNotAllowedForDistro,
-    TooManyBuilds,
     )
 from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe,
@@ -49,16 +49,13 @@ from lp.code.interfaces.sourcepackagerecipe import (
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildSource,
     )
-from lp.code.model.branch import Branch
 from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
 from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
 from lp.code.vocabularies.sourcepackagerecipe import BuildableDistroSeries
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.distroseries import DistroSeries
-from lp.services.database.bulk import (
-    load_referencing,
-    load_related,
-    )
+from lp.services.database.bulk import load_referencing
 from lp.services.database.constants import (
     DEFAULT,
     UTC_NOW,
@@ -166,14 +163,15 @@ class SourcePackageRecipe(Storm):
         spr_datas = load_referencing(
             SourcePackageRecipeData,
             sourcepackagerecipes, ['sourcepackage_recipe_id'])
-        # Load the related branches.
-        load_related(Branch, spr_datas, ['base_branch_id'])
         # Store the SourcePackageRecipeData in the sourcepackagerecipes
         # objects.
         for spr_data in spr_datas:
             cache = get_property_cache(spr_data.sourcepackage_recipe)
             cache._recipe_data = spr_data
         SourcePackageRecipeData.preLoadReferencedBranches(spr_datas)
+        owner_ids = set(map(attrgetter('owner_id'), sourcepackagerecipes))
+        list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+            owner_ids, need_validity=True))
 
     def setRecipeText(self, recipe_text):
         parsed = SourcePackageRecipeData.getParsedRecipe(recipe_text)
@@ -255,11 +253,6 @@ class SourcePackageRecipe(Storm):
         store.remove(self._recipe_data)
         store.remove(self)
 
-    def isOverQuota(self, requester, distroseries):
-        """See `ISourcePackageRecipe`."""
-        return SourcePackageRecipeBuild.getRecentBuilds(
-            requester, self, distroseries).count() >= 5
-
     def containsUnbuildableSeries(self, archive):
         buildable_distros = set(
             BuildableDistroSeries.findSeries(archive.owner))
@@ -281,8 +274,6 @@ class SourcePackageRecipe(Storm):
             pocket)
         if reject_reason is not None:
             raise reject_reason
-        if self.isOverQuota(requester, distroseries):
-            raise TooManyBuilds(self, distroseries)
         pending = IStore(self).find(SourcePackageRecipeBuild,
             SourcePackageRecipeBuild.recipe_id == self.id,
             SourcePackageRecipeBuild.distroseries_id == distroseries.id,

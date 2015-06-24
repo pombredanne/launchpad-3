@@ -41,8 +41,8 @@ also sends the email to the list of recipients.
     ...     BranchSubscriptionNotificationLevel.FULL,
     ...     BranchSubscriptionDiffSize.WHOLEDIFF,
     ...     CodeReviewNotificationLevel.NOEMAIL, branch.owner)
-    >>> BranchMailer.forRevision(branch, 1, 'foo@canonical.com',
-    ...     'The contents.', None, 'Subject line').sendAll()
+    >>> BranchMailer.forRevision(branch, 'foo@canonical.com',
+    ...     'The contents.', None, 'Subject line', revno=1).sendAll()
 
     >>> notifications = pop_notifications()
     >>> len(notifications)
@@ -213,8 +213,8 @@ We need to create some sufficiently large diffs to compare against.
 Send the revision notifications.
 
     >>> BranchMailer.forRevision(
-    ...     branch, 1234, 'no-reply@canonical.com', message, diff,
-    ...     None).sendAll()
+    ...     branch, 'no-reply@canonical.com', message, diff,
+    ...     None, revno=1234).sendAll()
     >>> notifications = pop_notifications()
     >>> len(notifications)
     6
@@ -287,8 +287,8 @@ And just to be sure, lets create one with 800 lines.
 
     >>> diff = '\n'.join([str(value) for value in xrange(800)])
     >>> BranchMailer.forRevision(
-    ...     branch, 1234, 'no-reply@canonical.com', message, diff,
-    ...     None).sendAll()
+    ...     branch, 'no-reply@canonical.com', message, diff,
+    ...     None, revno=1234).sendAll()
     >>> notifications = pop_notifications()
     >>> len(notifications)
     6

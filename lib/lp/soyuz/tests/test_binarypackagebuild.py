@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test Build features."""
@@ -78,7 +78,7 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
         self.assertEqual(
             self.build.build_farm_job, removeSecurityProxy(bq)._build_farm_job)
         self.assertEqual(self.build, bq.specific_build)
-        self.assertEqual(self.build.is_virtualized, bq.virtualized)
+        self.assertEqual(self.build.virtualized, bq.virtualized)
         self.assertIsNotNone(bq.processor)
         self.assertEqual(bq, self.build.buildqueue_record)
 
@@ -187,6 +187,23 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
         build.cancel()
         self.assertEqual(BuildStatus.CANCELLING, build.status)
         self.assertEqual(bq, build.buildqueue_record)
+
+    def test_getLatestSourcePublication(self):
+        distroseries = self.factory.makeDistroSeries()
+        archive = self.factory.makeArchive(
+            distribution=distroseries.distribution)
+        other_archive = self.factory.makeArchive(
+            distribution=distroseries.distribution)
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            distroseries=distroseries, archive=archive)
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=distroseries, archive=other_archive,
+            sourcepackagerelease=spph.sourcepackagerelease)
+        das = self.factory.makeDistroArchSeries(distroseries=distroseries)
+        build = self.factory.makeBinaryPackageBuild(
+            source_package_release=spph.sourcepackagerelease,
+            distroarchseries=das, archive=archive)
+        self.assertEqual(spph, build.getLatestSourcePublication())
 
 
 class TestBuildUpdateDependencies(TestCaseWithFactory):
@@ -483,6 +500,13 @@ class TestBinaryPackageBuildWebservice(TestCaseWithFactory):
         logout()
         entry = self.webservice.get(build_url, api_version='devel').jsonBody()
         self.assertEndsWith(entry['builder_link'], builder_url)
+
+    def test_source_package_name(self):
+        name = self.build.source_package_release.name
+        build_url = api_url(self.build)
+        logout()
+        entry = self.webservice.get(build_url, api_version='devel').jsonBody()
+        self.assertEqual(name, entry['source_package_name'])
 
 
 class TestPostprocessCandidate(TestCaseWithFactory):

@@ -74,9 +74,9 @@ class AffectsEmailCommandTestCase(TestCaseWithFactory):
         login_person(owner)
         project_group = self.factory.makeProject(name='fnord', owner=owner)
         project_1 = self.factory.makeProduct(name='pting', owner=owner)
-        project_1.project = project_group
+        project_1.projectgroup = project_group
         project_2 = self.factory.makeProduct(name='snarf', owner=owner)
-        project_2.project = project_group
+        project_2.projectgroup = project_group
         message = (
             "fnord is a group of projects. To report a bug, you need to "
             "specify which of these projects the bug applies to: "

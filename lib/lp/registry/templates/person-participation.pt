@@ -76,7 +76,7 @@
         </li>
         <li>
           <a class="sprite edit"
-            tal:attributes="href context/menu:overview/editemailaddresses/fmt:url"
+            tal:attributes="href context/menu:overview/editmailinglists/fmt:url"
             >Change mailing list subscriptions</a>
         </li>
       </ul>

@@ -72,13 +72,13 @@ from lp.services.database.interfaces import IStore
 from lp.services.webapp.authorization import check_permission
 
 
-def adapt(provided, interface):
+def adapt(obj, interface):
     """Adapt 'obj' to 'interface', using multi-adapters if necessary."""
-    required = interface(provided, None)
+    required = interface(obj, None)
     if required is not None:
         return required
     try:
-        return queryMultiAdapter(provided, interface)
+        return queryMultiAdapter(obj, interface)
     except TypeError:
         return None
 
@@ -103,9 +103,9 @@ class RootTraversable:
         pillar = getUtility(IPillarNameSet).getByName(name)
         if pillar is None:
             # Actually, the pillar is no such *anything*. The user might be
-            # trying to refer to a project, a distribution or a product. We
-            # raise a NoSuchProduct error since that's what we used to raise
-            # when we only supported product & junk branches.
+            # trying to refer to a project group, a distribution or a
+            # project. We raise a NoSuchProduct error since that's what we
+            # used to raise when we only supported project & junk branches.
             raise NoSuchProduct(name)
         return pillar
 

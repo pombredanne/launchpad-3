@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementations of `IBranchCollection`."""
@@ -66,6 +66,7 @@ from lp.registry.model.distribution import Distribution
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.person import Person
 from lp.registry.model.product import Product
+from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database.bulk import (
     load_referencing,
@@ -84,7 +85,7 @@ class GenericBranchCollection:
     implements(IBranchCollection)
 
     def __init__(self, store=None, branch_filter_expressions=None,
-                 tables=None, exclude_from_search=None,
+                 tables=None,
                  asymmetric_filter_expressions=None, asymmetric_tables=None):
         """Construct a `GenericBranchCollection`.
 
@@ -116,9 +117,6 @@ class GenericBranchCollection:
         if asymmetric_tables is None:
             asymmetric_tables = {}
         self._asymmetric_tables = asymmetric_tables
-        if exclude_from_search is None:
-            exclude_from_search = []
-        self._exclude_from_search = exclude_from_search
         self._user = None
 
     def count(self):
@@ -150,8 +148,7 @@ class GenericBranchCollection:
         else:
             return self._store
 
-    def _filterBy(self, expressions, table=None, join=None,
-                  exclude_from_search=None, symmetric=True):
+    def _filterBy(self, expressions, table=None, join=None, symmetric=True):
         """Return a subset of this collection, filtered by 'expressions'.
 
         :param symmetric: If True this filter will apply to both sides
@@ -179,13 +176,10 @@ class GenericBranchCollection:
             symmetric_expr = list(self._branch_filter_expressions)
             asymmetric_expr = (
                 self._asymmetric_filter_expressions + expressions)
-        if exclude_from_search is None:
-            exclude_from_search = []
         return self.__class__(
             self.store,
             symmetric_expr,
             tables,
-            self._exclude_from_search + exclude_from_search,
             asymmetric_expr,
             asymmetric_tables)
 
@@ -243,8 +237,11 @@ class GenericBranchCollection:
 
     @staticmethod
     def preloadDataForBranches(branches):
-        """Preload branches cached associated product series and
+        """Preload branches' cached associated targets, product series, and
         suite source packages."""
+        load_related(SourcePackageName, branches, ['sourcepackagenameID'])
+        load_related(DistroSeries, branches, ['distroseriesID'])
+        load_related(Product, branches, ['productID'])
         caches = dict((branch.id, get_property_cache(branch))
             for branch in branches)
         branch_ids = caches.keys()
@@ -288,7 +285,6 @@ class GenericBranchCollection:
             if not branch_ids:
                 return
             GenericBranchCollection.preloadDataForBranches(rows)
-            load_related(Product, rows, ['productID'])
             # So far have only needed the persons for their canonical_url - no
             # need for validity etc in the /branches API call.
             load_related(Person, rows,
@@ -537,13 +533,12 @@ class GenericBranchCollection:
 
     def inProduct(self, product):
         """See `IBranchCollection`."""
-        return self._filterBy(
-            [Branch.product == product], exclude_from_search=['product'])
+        return self._filterBy([Branch.product == product])
 
-    def inProject(self, project):
+    def inProjectGroup(self, projectgroup):
         """See `IBranchCollection`."""
         return self._filterBy(
-            [Product.project == project.id],
+            [Product.projectgroup == projectgroup.id],
             table=Product, join=Join(Product, Branch.product == Product.id))
 
     def inDistribution(self, distribution):
@@ -697,12 +692,10 @@ class GenericBranchCollection:
             return self
         if person is None:
             return AnonymousBranchCollection(
-                self._store, self._branch_filter_expressions,
-                self._tables, self._exclude_from_search,
+                self._store, self._branch_filter_expressions, self._tables,
                 self._asymmetric_filter_expressions, self._asymmetric_tables)
         return VisibleBranchCollection(
-            person, self._store, self._branch_filter_expressions,
-            self._tables, self._exclude_from_search,
+            person, self._store, self._branch_filter_expressions, self._tables,
             self._asymmetric_filter_expressions, self._asymmetric_tables)
 
     def withBranchType(self, *branch_types):
@@ -740,17 +733,16 @@ class VisibleBranchCollection(GenericBranchCollection):
     """A branch collection that has special logic for visibility."""
 
     def __init__(self, user, store=None, branch_filter_expressions=None,
-                 tables=None, exclude_from_search=None,
+                 tables=None,
                  asymmetric_filter_expressions=None, asymmetric_tables=None):
         super(VisibleBranchCollection, self).__init__(
             store=store, branch_filter_expressions=branch_filter_expressions,
-            tables=tables, exclude_from_search=exclude_from_search,
+            tables=tables,
             asymmetric_filter_expressions=asymmetric_filter_expressions,
             asymmetric_tables=asymmetric_tables)
         self._user = user
 
-    def _filterBy(self, expressions, table=None, join=None,
-                  exclude_from_search=None, symmetric=True):
+    def _filterBy(self, expressions, table=None, join=None, symmetric=True):
         """Return a subset of this collection, filtered by 'expressions'.
 
         :param symmetric: If True this filter will apply to both sides
@@ -778,11 +770,8 @@ class VisibleBranchCollection(GenericBranchCollection):
             symmetric_expr = list(self._branch_filter_expressions)
             asymmetric_expr = (
                 self._asymmetric_filter_expressions + expressions)
-        if exclude_from_search is None:
-            exclude_from_search = []
         return self.__class__(
             self._user, self.store, symmetric_expr, tables,
-            self._exclude_from_search + exclude_from_search,
             asymmetric_expr, asymmetric_tables)
 
     def _getBranchVisibilityExpression(self, branch_class=Branch):

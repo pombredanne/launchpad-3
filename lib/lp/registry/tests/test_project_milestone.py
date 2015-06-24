@@ -182,7 +182,7 @@ class ProjectMilestoneTest(unittest.TestCase):
         """
         # firefox does not belong to the Gnome project.
         firefox = getUtility(IProductSet)['firefox']
-        self.assertNotEqual(firefox.project.name, 'gnome')
+        self.assertNotEqual(firefox.projectgroup.name, 'gnome')
 
         self.createProductMilestone('1.1', 'firefox', None)
         gnome = getUtility(IProjectGroupSet)['gnome']

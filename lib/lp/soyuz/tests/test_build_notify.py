@@ -35,11 +35,10 @@ class TestBuildNotify(TestCaseWithFactory):
         super(TestBuildNotify, self).setUp()
         self.admin = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)
         # Create all of the items we need to create builds
-        self.processor = self.factory.makeProcessor()
+        self.processor = self.factory.makeProcessor(supports_virtualized=True)
         self.distroseries = self.factory.makeDistroSeries()
         self.das = self.factory.makeDistroArchSeries(
-            distroseries=self.distroseries, processor=self.processor,
-            supports_virtualized=True)
+            distroseries=self.distroseries, processor=self.processor)
         self.creator = self.factory.makePerson(email='test@example.com')
         self.gpgkey = self.factory.makeGPGKey(owner=self.creator)
         self.archive = self.factory.makeArchive(

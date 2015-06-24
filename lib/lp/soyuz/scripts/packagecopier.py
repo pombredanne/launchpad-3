@@ -21,10 +21,7 @@ from zope.security.proxy import removeSecurityProxy
 from lp.services.database.bulk import load_related
 from lp.soyuz.adapters.notification import notify
 from lp.soyuz.adapters.overrides import SourceOverride
-from lp.soyuz.enums import (
-    BinaryPackageFileType,
-    SourcePackageFormat,
-    )
+from lp.soyuz.enums import SourcePackageFormat
 from lp.soyuz.interfaces.archive import CannotCopy
 from lp.soyuz.interfaces.binarypackagebuild import BuildSetStatus
 from lp.soyuz.interfaces.publishing import (
@@ -451,11 +448,6 @@ class CopyChecker:
                 for binary_file in binary_pub.binarypackagerelease.files:
                     if binary_file.libraryfile.expires is not None:
                         raise CannotCopy('source has expired binaries')
-                    if (self.archive.is_main and
-                        not self.archive.build_debug_symbols and
-                        binary_file.filetype == BinaryPackageFileType.DDEB):
-                        raise CannotCopy(
-                            "Cannot copy DDEBs to a primary archive")
 
         # Check if there is already a source with the same name and version
         # published in the destination archive.

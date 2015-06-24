@@ -8,10 +8,7 @@ __all__ = [
     'SourcePackageRecipeBuild',
     ]
 
-from datetime import (
-    datetime,
-    timedelta,
-    )
+from datetime import timedelta
 import logging
 
 from psycopg2 import ProgrammingError
@@ -120,8 +117,6 @@ class SourcePackageRecipeBuild(SpecificBuildFarmJobSourceMixin,
     def distribution(self):
         """See `IPackageBuild`."""
         return self.distroseries.distribution
-
-    is_virtualized = True
 
     recipe_id = Int(name='recipe')
     recipe = Reference(recipe_id, 'SourcePackageRecipe.id')
@@ -317,16 +312,6 @@ class SourcePackageRecipeBuild(SpecificBuildFarmJobSourceMixin,
             cls, cls.build_farm_job_id.is_in(
                 bfj.id for bfj in build_farm_jobs))
         return DecoratedResultSet(rows, pre_iter_hook=cls.preloadBuildsData)
-
-    @classmethod
-    def getRecentBuilds(cls, requester, recipe, distroseries, _now=None):
-        if _now is None:
-            _now = datetime.now(pytz.UTC)
-        store = IMasterStore(SourcePackageRecipeBuild)
-        old_threshold = _now - timedelta(days=1)
-        return store.find(cls, cls.distroseries_id == distroseries.id,
-            cls.requester_id == requester.id, cls.recipe_id == recipe.id,
-            cls.date_created > old_threshold)
 
     def estimateDuration(self):
         """See `IPackageBuild`."""

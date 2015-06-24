@@ -126,8 +126,8 @@ class IBranchCollection(Interface):
     def inProduct(product):
         """Restrict the collection to branches in 'product'."""
 
-    def inProject(project):
-        """Restrict the collection to branches in 'project'."""
+    def inProjectGroup(projectgroup):
+        """Restrict the collection to branches in 'projectgroup'."""
 
     def inSourcePackage(package):
         """Restrict the collection to branches in 'package'.
@@ -207,7 +207,7 @@ class IBranchCollection(Interface):
     def scannedSince(epoch):
         """Restrict the collection to branches scanned since `epoch`."""
 
-    def targetedBy(person):
+    def targetedBy(person, since=None):
         """Restrict the collection to branches targeted by person.
 
         A branch is targeted by a person if that person has registered a merge

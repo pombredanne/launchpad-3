@@ -1,7 +1,7 @@
-# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Tests for the BranchSubscrptions model object.."""
+"""Tests for the BranchSubscription model object."""
 
 __metaclass__ = type
 
@@ -133,7 +133,7 @@ class TestBranchSubscriptions(TestCaseWithFactory):
                 None, CodeReviewNotificationLevel.NOEMAIL, owner)
             # The stacked on branch should be visible.
             service = getUtility(IService, 'sharing')
-            ignored, visible_branches, ignored = service.getVisibleArtifacts(
+            _, visible_branches, _, _ = service.getVisibleArtifacts(
                 grantee, branches=[private_stacked_on_branch])
             self.assertContentEqual(
                 [private_stacked_on_branch], visible_branches)
@@ -161,7 +161,7 @@ class TestBranchSubscriptions(TestCaseWithFactory):
                 grantee, BranchSubscriptionNotificationLevel.NOEMAIL,
                 None, CodeReviewNotificationLevel.NOEMAIL, owner)
             # The stacked on branch should not be visible.
-            ignored, visible_branches, ignored = service.getVisibleArtifacts(
+            _, visible_branches, _, _ = service.getVisibleArtifacts(
                 grantee, branches=[private_stacked_on_branch])
             self.assertContentEqual([], visible_branches)
             self.assertIn(

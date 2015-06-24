@@ -236,8 +236,6 @@ those permitted by private teams.
     ...     bug.subscribe(team, team_owner)
     ...     bugtask = bug.default_bugtask
     ...     bugtask.transitionToAssignee(team)
-    ...     # A branch.
-    ...     branch = factory.makeBranch(owner=team, registrant=team_owner)
     ...     # A branch subscription.
     ...     from lp.code.enums import (
     ...         BranchSubscriptionDiffSize,
@@ -245,6 +243,13 @@ those permitted by private teams.
     ...         CodeReviewNotificationLevel)
     ...     branch = factory.makeBranch()
     ...     branch.subscribe(
+    ...         team,
+    ...         BranchSubscriptionNotificationLevel.DIFFSONLY,
+    ...         BranchSubscriptionDiffSize.WHOLEDIFF,
+    ...         CodeReviewNotificationLevel.STATUS, team_owner)
+    ...     # A Git repository subscription.
+    ...     repository = factory.makeGitRepository()
+    ...     repository.subscribe(
     ...         team,
     ...         BranchSubscriptionNotificationLevel.DIFFSONLY,
     ...         BranchSubscriptionDiffSize.WHOLEDIFF,

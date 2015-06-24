@@ -24,6 +24,7 @@ from lp.buildmaster.interfaces.builder import BuildDaemonError
 from lp.buildmaster.interfaces.buildfarmjobbehaviour import (
     IBuildFarmJobBehaviour,
     )
+from lp.buildmaster.interfaces.processor import IProcessorSet
 from lp.buildmaster.model.buildfarmjobbehaviour import (
     BuildFarmJobBehaviourBase,
     )
@@ -36,7 +37,6 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.config import config
 from lp.services.log.logger import BufferLogger
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
-from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.testing import (
     TestCase,
     TestCaseWithFactory,

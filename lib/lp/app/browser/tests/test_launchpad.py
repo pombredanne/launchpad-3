@@ -358,7 +358,7 @@ class TestPersonTraversal(TestCaseWithFactory, TraversalMixin):
         name = 'suspended-person'
         person = self.factory.makePerson(name=name)
         login_person(self.admin)
-        removeSecurityProxy(person).account_status = AccountStatus.SUSPENDED
+        person.setAccountStatus(AccountStatus.SUSPENDED, None, 'Go away')
         segment = '~%s' % name
         # Admins can see the suspended user.
         traversed = self.traverse(segment, segment)

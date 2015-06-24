@@ -22,6 +22,7 @@ from lp.buildmaster.interfaces.builder import CannotBuild
 from lp.buildmaster.interfaces.buildfarmjobbehaviour import (
     IBuildFarmJobBehaviour,
     )
+from lp.buildmaster.interfaces.processor import IProcessorSet
 from lp.buildmaster.tests.mock_slaves import (
     MockBuilder,
     OkSlave,
@@ -43,7 +44,6 @@ from lp.soyuz.interfaces.livefs import (
     LIVEFS_FEATURE_FLAG,
     LiveFSBuildArchiveOwnerMismatch,
     )
-from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.soyuz.model.livefsbuildbehaviour import LiveFSBuildBehaviour
 from lp.testing import TestCaseWithFactory
 from lp.testing.layers import LaunchpadZopelessLayer

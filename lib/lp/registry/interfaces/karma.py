@@ -130,7 +130,7 @@ class IKarmaCache(Interface):
 
     product = Attribute(_("Project"))
 
-    project = Attribute(_("Project Group"))
+    projectgroup = Attribute(_("Project Group"))
 
     distribution = Attribute(_("Distribution"))
 
@@ -149,10 +149,10 @@ class IKarmaCacheManager(Interface):
 
     def updateKarmaValue(value, person_id, category_id, product_id=None,
                          distribution_id=None, sourcepackagename_id=None,
-                         project_id=None):
+                         projectgroup_id=None):
         """Update the karmavalue attribute of the KarmaCache with the given
-        person_id, category_id, product_id, distribution_id and
-        sourcepackagename_id.
+        person_id, category_id, product_id, distribution_id,
+        sourcepackagename_id, and projectgroup_id.
 
         Raise NotFoundError if there's no KarmaCache with those attributes.
 

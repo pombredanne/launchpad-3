@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -215,7 +215,7 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
     source_package_name = Reference(
         source_package_name_id, 'SourcePackageName.id')
 
-    def _getLatestPublication(self):
+    def getLatestSourcePublication(self):
         from lp.soyuz.model.publishing import SourcePackagePublishingHistory
         store = Store.of(self)
         results = store.find(
@@ -230,7 +230,7 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
     @property
     def current_component(self):
         """See `IBuild`."""
-        latest_publication = self._getLatestPublication()
+        latest_publication = self.getLatestSourcePublication()
         # Production has some buggy builds without source publications.
         # They seem to have been created by early versions of gina and
         # the readding of hppa.
@@ -241,11 +241,16 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
     def current_source_publication(self):
         """See `IBuild`."""
         from lp.soyuz.interfaces.publishing import active_publishing_status
-        latest_publication = self._getLatestPublication()
+        latest_publication = self.getLatestSourcePublication()
         if (latest_publication is not None and
             latest_publication.status in active_publishing_status):
             return latest_publication
         return None
+
+    @property
+    def api_source_package_name(self):
+        """See `IBuild`."""
+        return self.source_package_release.name
 
     @property
     def upload_changesfile(self):
@@ -290,11 +295,6 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
         # and the `LibraryFileContent` in cache because it's most likely
         # they will be needed.
         return DecoratedResultSet(results, itemgetter(0)).one()
-
-    @property
-    def is_virtualized(self):
-        """See `IBuild`"""
-        return self.archive.require_virtualized
 
     @property
     def title(self):
@@ -913,14 +913,17 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
         build_farm_job = getUtility(IBuildFarmJobSource).new(
             BinaryPackageBuild.job_type, status, date_created, builder,
             archive)
+        processor = distro_arch_series.processor
+        virtualized = (
+            archive.require_virtualized
+            or not processor.supports_nonvirtualized)
         return BinaryPackageBuild(
             build_farm_job=build_farm_job,
             distro_arch_series=distro_arch_series,
             source_package_release=source_package_release,
             archive=archive, pocket=pocket, arch_indep=arch_indep,
-            status=status, processor=distro_arch_series.processor,
-            virtualized=archive.require_virtualized, builder=builder,
-            is_distro_archive=archive.is_main,
+            status=status, processor=processor, virtualized=virtualized,
+            builder=builder, is_distro_archive=archive.is_main,
             distribution=distro_arch_series.distroseries.distribution,
             distro_series=distro_arch_series.distroseries,
             source_package_name=source_package_release.sourcepackagename,
@@ -1385,9 +1388,14 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
         """
         # Return all distroarches with unrestricted processors or with
         # processors the archive is explicitly associated with.
-        return [distroarch for distroarch in available_archs
-            if not distroarch.processor.restricted or
-               distroarch.processor in archive.enabled_restricted_processors]
+        return [
+            das for das in available_archs
+            if (
+                das.enabled
+                and das.processor in archive.processors
+                and (
+                    das.processor.supports_virtualized
+                    or not archive.require_virtualized))]
 
     def createForSource(self, sourcepackagerelease, archive, distroseries,
                         pocket, architectures_available=None, logger=None):
@@ -1416,49 +1424,44 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
         # this series already has it set.
         need_arch_indep = not any(bpb.arch_indep for bpb in relevant_builds)
 
-        # Find the architectures for which the source should end up with
-        # binaries, parsing architecturehintlist as you'd expect.
-        # For an architecturehintlist of just 'all', this will
-        # be the current nominatedarchindep if need_arch_indep,
-        # otherwise nothing.
-        if architectures_available is None:
-            architectures_available = list(
-                distroseries.buildable_architectures)
-        architectures_available = self._getAllowedArchitectures(
-            archive, architectures_available)
-        candidate_architectures = determine_architectures_to_build(
-            sourcepackagerelease.architecturehintlist, archive, distroseries,
-            architectures_available, need_arch_indep)
+        # Find the architectures for which the source chould end up with
+        # new binaries. Exclude architectures not allowed in this
+        # archive and architectures that have already built. Order by
+        # Processor.id so determine_architectures_to_build is
+        # deterministic.
+        # XXX wgrant 2014-11-06: The fact that production's
+        # Processor 1 is i386, a good arch-indep candidate, is a
+        # total coincidence and this isn't a hack. I promise.
+        need_archs = sorted(
+            [das for das in
+             self._getAllowedArchitectures(
+                 archive,
+                 architectures_available
+                    or distroseries.buildable_architectures)
+             if das.architecturetag not in skip_archtags],
+            key=attrgetter('processor.id'))
+        nominated_arch_indep_tag = (
+            distroseries.nominatedarchindep.architecturetag
+            if distroseries.nominatedarchindep else None)
 
-        # Filter out any architectures for which we earlier found sufficient
-        # builds.
-        needed_architectures = [
-            das for das in candidate_architectures
-            if das.architecturetag not in skip_archtags]
-        if not needed_architectures:
-            return []
-
-        arch_indep_das = None
-        if need_arch_indep:
-            # The ideal arch_indep build is nominatedarchindep. But if
-            # that isn't a build we would otherwise create, use the DAS
-            # with the lowest Processor.id.
-            # XXX wgrant 2014-11-06: The fact that production's
-            # Processor 1 is i386, a good arch-indep candidate, is a
-            # total coincidence and this isn't a hack. I promise.
-            if distroseries.nominatedarchindep in needed_architectures:
-                arch_indep_das = distroseries.nominatedarchindep
-            else:
-                arch_indep_das = sorted(
-                    needed_architectures, key=attrgetter('processor.id'))[0]
+        # Filter the valid archs against the hint list and work out
+        # their arch-indepness.
+        create_tag_map = determine_architectures_to_build(
+            sourcepackagerelease.architecturehintlist,
+            sourcepackagerelease.getUserDefinedField(
+                'Build-Indep-Architecture'),
+            [das.architecturetag for das in need_archs],
+            nominated_arch_indep_tag, need_arch_indep)
 
         # Create builds for the remaining architectures.
         new_builds = []
-        for das in needed_architectures:
+        for das in sorted(need_archs, key=attrgetter('architecturetag')):
+            if das.architecturetag not in create_tag_map:
+                continue
             build = self.new(
                 source_package_release=sourcepackagerelease,
                 distro_arch_series=das, archive=archive, pocket=pocket,
-                arch_indep=das == arch_indep_das)
+                arch_indep=create_tag_map[das.architecturetag])
             new_builds.append(build)
             # Create the builds in suspended mode for disabled archives.
             build_queue = build.queueBuild(suspended=not archive.enabled)

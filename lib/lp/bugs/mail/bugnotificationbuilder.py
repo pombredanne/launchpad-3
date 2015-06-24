@@ -11,8 +11,8 @@ __all__ = [
     'get_bugmail_from_address',
     ]
 
-from email.MIMEText import MIMEText
-from email.Utils import formatdate
+from email.mime.text import MIMEText
+from email.utils import formatdate
 import rfc822
 
 from zope.component import getUtility
@@ -102,6 +102,7 @@ class BugNotificationBuilder:
         self.common_headers = [
             ('Reply-To', get_bugmail_replyto_address(bug)),
             ('Sender', config.canonical.bounce_address),
+            ('X-Launchpad-Notification-Type', 'bug'),
             ]
 
         # X-Launchpad-Bug
@@ -171,7 +172,7 @@ class BugNotificationBuilder:
         :param references: A value for the References header.
         :param message_id: A value for the Message-ID header.
 
-        :return: An `email.MIMEText.MIMEText` object.
+        :return: An `email.mime.text.MIMEText` object.
         """
         message = MIMEText(body.encode('utf8'), 'plain', 'utf8')
         message['Date'] = format_rfc2822_date(email_date)

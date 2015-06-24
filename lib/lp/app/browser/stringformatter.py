@@ -1,4 +1,4 @@
-# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """TALES formatter for strings."""
@@ -884,7 +884,9 @@ class FormattersAPI:
         for row, line in enumerate(text.splitlines()[:max_format_lines]):
             result.append('<tr id="diff-line-%s">' % (row + 1))
             result.append('<td class="line-no">%s</td>' % (row + 1))
-            if line.startswith('==='):
+            if (line.startswith('===') or
+                    line.startswith('diff') or
+                    line.startswith('index')):
                 css_class = 'diff-file text'
                 header_next = True
             elif (header_next and

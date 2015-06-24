@@ -196,7 +196,7 @@ class RevisionAuthor(SQLBase):
         """
         if '@' not in self.name:
             return self.name
-        return email.Utils.parseaddr(self.name)[0]
+        return email.utils.parseaddr(self.name)[0]
 
     email = StringCol(notNull=False, default=None)
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=False,
@@ -254,7 +254,7 @@ class RevisionSet:
 
     def _createRevisionAuthor(self, revision_author):
         """Extract out the email and check to see if it matches a Person."""
-        email_address = email.Utils.parseaddr(revision_author)[1]
+        email_address = email.utils.parseaddr(revision_author)[1]
         # If there is no @, then it isn't a real email address.
         if '@' not in email_address:
             email_address = None
@@ -521,7 +521,7 @@ class RevisionSet:
             conditions = And(conditions, Branch.product == obj)
         elif IProjectGroup.providedBy(obj):
             origin.append(Join(Product, Branch.product == Product.id))
-            conditions = And(conditions, Product.project == obj)
+            conditions = And(conditions, Product.projectgroup == obj)
         else:
             raise AssertionError(
                 "Not an IProduct or IProjectGroup: %r" % obj)

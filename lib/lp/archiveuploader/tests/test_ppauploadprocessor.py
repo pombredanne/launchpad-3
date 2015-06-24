@@ -64,7 +64,6 @@ class TestPPAUploadProcessorBase(TestUploadProcessorBase):
         self.name16_ppa = self.makeArchive(self.name16)
         # Extra setup for breezy and allowing PPA builds on breezy/i386.
         self.setupBreezy()
-        self.breezy['i386'].supports_virtualized = True
         transaction.commit()
 
         # Set up the uploadprocessor with appropriate options and logger
@@ -286,7 +285,6 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         # farty and override to use that.
         self.setupBreezy(name="farty")
         # Allow PPA builds.
-        self.breezy['i386'].supports_virtualized = True
         upload_dir = self.queueUpload("bar_1.0-1", "~name16/ppa/ubuntu/farty")
         self.processUpload(self.uploadprocessor, upload_dir)
 
@@ -767,7 +765,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
 
         # Remove breezy/i386 PPA support.
         self.switchToAdmin()
-        self.breezy['i386'].supports_virtualized = False
+        self.breezy['i386'].processor.supports_virtualized = False
         self.switchToUploader()
 
         # Next version can't be accepted because it can't be built.

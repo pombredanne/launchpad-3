@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Job classes related to BranchMergeProposals are in here.
@@ -21,6 +21,7 @@ __all__ = [
     'UpdatePreviewDiffJob',
     ]
 
+from contextlib import contextmanager
 from datetime import (
     datetime,
     timedelta,
@@ -39,7 +40,6 @@ from storm.expr import (
     Desc,
     Or,
     )
-from storm.info import ClassAlias
 from storm.locals import (
     Int,
     Reference,
@@ -101,6 +101,7 @@ from lp.services.job.runner import (
     )
 from lp.services.mail.sendmail import format_address_for_person
 from lp.services.webapp import canonical_url
+
 
 class BranchMergeProposalJobType(DBEnumeratedType):
     """Values that ICodeImportJob.state can take."""
@@ -235,7 +236,7 @@ class BranchMergeProposalJobDerived(BaseRunnableJob):
         return '<%(job_type)s job for merge %(merge_id)s on %(branch)s>' % {
             'job_type': self.context.job_type.name,
             'merge_id': bmp.id,
-            'branch': bmp.source_branch.unique_name,
+            'branch': bmp.merge_source.unique_name,
             }
 
     @classmethod
@@ -278,12 +279,13 @@ class BranchMergeProposalJobDerived(BaseRunnableJob):
                 Job.id.is_in(Job.ready_jobs),
                 BranchMergeProposalJob.branch_merge_proposal
                     == BranchMergeProposal.id,
-                BranchMergeProposal.source_branch == Branch.id,
-                # A proposal isn't considered ready if it has no revisions,
-                # or if it is hosted but pending a mirror.
-                Branch.revision_count > 0,
-                Or(Branch.next_mirror_time == None,
-                   Branch.branch_type != BranchType.HOSTED)))
+                Or(And(BranchMergeProposal.source_branch == Branch.id,
+                       # A proposal isn't considered ready if it has no
+                       # revisions, or if it is hosted but pending a mirror.
+                       Branch.revision_count > 0,
+                       Or(Branch.next_mirror_time == None,
+                          Branch.branch_type != BranchType.HOSTED)),
+                   BranchMergeProposal.source_git_repository != None)))
         return (klass(job) for job in jobs)
 
     def getOopsVars(self):
@@ -293,8 +295,8 @@ class BranchMergeProposalJobDerived(BaseRunnableJob):
         vars.extend([
             ('branchmergeproposal_job_id', self.context.id),
             ('branchmergeproposal_job_type', self.context.job_type.title),
-            ('source_branch', bmp.source_branch.unique_name),
-            ('target_branch', bmp.target_branch.unique_name)])
+            ('merge_source', bmp.merge_source.unique_name),
+            ('merge_target', bmp.merge_target.unique_name)])
         return vars
 
 
@@ -320,8 +322,8 @@ class MergeProposalNeedsReviewEmailJob(BranchMergeProposalJobDerived):
 
     def getOperationDescription(self):
         return ('notifying people about the proposal to merge %s into %s' %
-            (self.branch_merge_proposal.source_branch.bzr_identity,
-             self.branch_merge_proposal.target_branch.bzr_identity))
+            (self.branch_merge_proposal.merge_source.identity,
+             self.branch_merge_proposal.merge_target.identity))
 
 
 class UpdatePreviewDiffJob(BranchMergeProposalJobDerived):
@@ -350,15 +352,16 @@ class UpdatePreviewDiffJob(BranchMergeProposalJobDerived):
         """Is this job ready to run?"""
         bmp = self.branch_merge_proposal
         url = canonical_url(bmp)
-        if bmp.source_branch.last_scanned_id is None:
-            raise UpdatePreviewDiffNotReady(
-                'The source branch of %s has no revisions.' % url)
-        if bmp.target_branch.last_scanned_id is None:
-            raise UpdatePreviewDiffNotReady(
-                'The target branch of %s has no revisions.' % url)
-        if bmp.source_branch.pending_writes:
-            raise BranchHasPendingWrites(
-                'The source branch of %s has pending writes.' % url)
+        if bmp.source_branch is not None:
+            if bmp.source_branch.last_scanned_id is None:
+                raise UpdatePreviewDiffNotReady(
+                    'The source branch of %s has no revisions.' % url)
+            if bmp.target_branch.last_scanned_id is None:
+                raise UpdatePreviewDiffNotReady(
+                    'The target branch of %s has no revisions.' % url)
+            if bmp.source_branch.pending_writes:
+                raise BranchHasPendingWrites(
+                    'The source branch of %s has pending writes.' % url)
 
     def acquireLease(self, duration=600):
         return self.job.acquireLease(duration)
@@ -366,7 +369,13 @@ class UpdatePreviewDiffJob(BranchMergeProposalJobDerived):
     def run(self):
         """See `IRunnableJob`."""
         self.checkReady()
-        with server(get_ro_server(), no_replace=True):
+        if self.branch_merge_proposal.source_branch is not None:
+            server_context = server(get_ro_server(), no_replace=True)
+        else:
+            # A no-op context manager.  (This could be simplified with
+            # contextlib.ExitStack from Python 3.3.)
+            server_context = contextmanager(lambda: (None for _ in [None]))()
+        with server_context:
             with BranchMergeProposalDelta.monitor(self.branch_merge_proposal):
                 PreviewDiff.fromBranchMergeProposal(self.branch_merge_proposal)
 
@@ -655,22 +664,16 @@ class BranchMergeProposalJobSource(BaseRunnableJobSource):
 
     @staticmethod
     def iterReady(job_type=None):
-        from lp.code.model.branch import Branch
-        SourceBranch = ClassAlias(Branch)
-        TargetBranch = ClassAlias(Branch)
         clauses = [
             BranchMergeProposalJob.job == Job.id,
             Job._status.is_in([JobStatus.WAITING, JobStatus.RUNNING]),
             BranchMergeProposalJob.branch_merge_proposal ==
-            BranchMergeProposal.id, BranchMergeProposal.source_branch ==
-            SourceBranch.id, BranchMergeProposal.target_branch ==
-            TargetBranch.id,
+            BranchMergeProposal.id,
             ]
         if job_type is not None:
             clauses.append(BranchMergeProposalJob.job_type == job_type)
-        jobs = IMasterStore(Branch).find(
-            (BranchMergeProposalJob, Job, BranchMergeProposal,
-             SourceBranch, TargetBranch), And(*clauses))
+        jobs = IMasterStore(BranchMergeProposalJob).find(
+            (BranchMergeProposalJob, Job, BranchMergeProposal), And(*clauses))
         # Order by the job status first (to get running before waiting), then
         # the date_created, then job type.  This should give us all creation
         # jobs before comment jobs.
@@ -680,7 +683,7 @@ class BranchMergeProposalJobSource(BaseRunnableJobSource):
         # Now only return one job for any given merge proposal.
         ready_jobs = []
         seen_merge_proposals = set()
-        for bmp_job, job, bmp, source, target in jobs:
+        for bmp_job, job, bmp in jobs:
             # If we've seen this merge proposal already, skip this job.
             if bmp.id in seen_merge_proposals:
                 continue

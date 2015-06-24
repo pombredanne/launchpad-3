@@ -21,6 +21,7 @@ from lp.app.errors import NotFoundError
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.diskpool import DiskPool
 from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.interfaces.processor import IProcessorSet
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -38,7 +39,6 @@ from lp.soyuz.enums import (
     )
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.component import IComponentSet
-from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status,
     DeletionError,
@@ -120,7 +120,7 @@ class SoyuzTestPublisher:
         except NotFoundError:
             self.breezy_autotest_i386 = self.breezy_autotest.newArch(
                 'i386', getUtility(IProcessorSet).getByName('386'), False,
-                self.person, supports_virtualized=True)
+                self.person)
         try:
             self.breezy_autotest_hppa = self.breezy_autotest['hppa']
         except NotFoundError:
@@ -431,7 +431,9 @@ class SoyuzTestPublisher:
         # Adjust the build record in way it looks complete.
         date_finished = datetime.datetime(2008, 1, 1, 0, 5, 0, tzinfo=pytz.UTC)
         date_started = date_finished - datetime.timedelta(minutes=5)
-        build.updateStatus(BuildStatus.BUILDING, date_started=date_started)
+        build.updateStatus(
+            BuildStatus.BUILDING, date_started=date_started,
+            force_invalid_transition=True)
         build.updateStatus(BuildStatus.FULLYBUILT, date_finished=date_finished)
         buildlog_filename = 'buildlog_%s-%s-%s.%s_%s_%s.txt.gz' % (
             build.distribution.name,
@@ -1490,22 +1492,6 @@ class TestPublishBinaries(TestCaseWithFactory):
         # causes a new publication to be created.
         args['pocket'] = PackagePublishingPocket.RELEASE
         [another_bpph] = getUtility(IPublishingSet).publishBinaries(**args)
-
-    def test_primary_ddebs_need_ddebs_enabled(self):
-        debug = self.factory.makeBinaryPackageRelease(
-            binpackageformat=BinaryPackageFormat.DDEB)
-        args = self.makeArgs(
-            [debug], debug.build.distro_arch_series.distroseries)
-
-        # ddebs are rejected with build_debug_symbols unset
-        self.assertRaises(
-            QueueInconsistentStateError,
-            getUtility(IPublishingSet).publishBinaries, **args)
-
-        # But accepted with build_debug_symbols set
-        archive = debug.build.distro_arch_series.distroseries.main_archive
-        archive.build_debug_symbols = True
-        getUtility(IPublishingSet).publishBinaries(**args)
 
 
 class TestChangeOverride(TestNativePublishingBase):

@@ -349,7 +349,8 @@ class LiveFSBuildSet(SpecificBuildFarmJobSourceMixin):
         livefsbuild = LiveFSBuild(
             build_farm_job, requester, livefs, archive, distro_arch_series,
             pocket, distro_arch_series.processor,
-            livefs.require_virtualized or archive.require_virtualized,
+            not distro_arch_series.processor.supports_nonvirtualized
+            or livefs.require_virtualized or archive.require_virtualized,
             unique_key, metadata_override, date_created)
         store.add(livefsbuild)
         return livefsbuild

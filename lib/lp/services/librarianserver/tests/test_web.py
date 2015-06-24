@@ -117,7 +117,7 @@ class LibrarianWebTestCase(unittest.TestCase):
         fileObj = urlopen(url)
         mimetype = fileObj.headers['content-type']
         encoding = fileObj.headers['content-encoding']
-        self.failUnless(mimetype == "text/plain",
+        self.failUnless(mimetype == "text/plain; charset=utf-8",
                         "Wrong mimetype. %s != 'text/plain'." % mimetype)
         self.failUnless(encoding == "gzip",
                         "Wrong encoding. %s != 'gzip'." % encoding)

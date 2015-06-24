@@ -121,6 +121,7 @@ known_canonical_lp_devs = \
                               u'Christian Reis',
                               u'Christian Robottom Reis',
                               u'kiko {_AT_} beetle',
+                              u'Colin Watson',
                               u'Curtis Hovey',
                               u'Dafydd Harries',
                               u'Danilo Šegan',

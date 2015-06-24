@@ -32,7 +32,6 @@ from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.errors import (
     BuildAlreadyPending,
     PrivateBranchRecipe,
-    TooManyBuilds,
     TooNewRecipeFormat,
     )
 from lp.code.interfaces.sourcepackagerecipe import (
@@ -405,24 +404,6 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         queue_record = build.buildqueue_record
         queue_record.score()
         self.assertEqual(2705, queue_record.lastscore)
-
-    def test_requestBuildRejectsOverQuota(self):
-        """Build requests that exceed quota raise an exception."""
-        requester = self.factory.makePerson(name='requester')
-        recipe = self.factory.makeSourcePackageRecipe(
-            name=u'myrecipe', owner=requester)
-        series = list(recipe.distroseries)[0]
-        archive = self.factory.makeArchive(owner=requester)
-
-        def request_build():
-            build = recipe.requestBuild(archive, requester, series,
-                    PackagePublishingPocket.RELEASE)
-            build.updateStatus(BuildStatus.FULLYBUILT)
-        [request_build() for num in range(5)]
-        e = self.assertRaises(TooManyBuilds, request_build)
-        self.assertIn(
-            'You have exceeded your quota for recipe requester/myrecipe',
-            str(e))
 
     def test_requestBuildRejectRepeats(self):
         """Reject build requests that are identical to pending builds."""
@@ -1119,26 +1100,6 @@ class TestWebservice(TestCaseWithFactory):
             pocket=PackagePublishingPocket.RELEASE.title)
         self.assertIn(
             'An identical build of this recipe is already pending.', str(e))
-
-    def test_requestBuildRejectOverQuota(self):
-        """Build requests are rejected if they exceed quota."""
-        person = self.factory.makePerson()
-        archives = [self.factory.makeArchive(owner=person) for x in range(6)]
-        distroseries = self.factory.makeSourcePackageRecipeDistroseries()
-
-        recipe, user, launchpad = self.makeRecipe(person)
-        distroseries = ws_object(launchpad, distroseries)
-        for archive in archives[:-1]:
-            archive = ws_object(launchpad, archive)
-            recipe.requestBuild(
-                archive=archive, distroseries=distroseries,
-                pocket=PackagePublishingPocket.RELEASE.title)
-
-        archive = ws_object(launchpad, archives[-1])
-        e = self.assertRaises(Exception, recipe.requestBuild,
-            archive=archive, distroseries=distroseries,
-            pocket=PackagePublishingPocket.RELEASE.title)
-        self.assertIn('You have exceeded your quota', str(e))
 
     def test_requestBuildRejectUnsupportedDistroSeries(self):
         """Build requests are rejected if they have a bad distroseries."""

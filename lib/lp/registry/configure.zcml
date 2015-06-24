@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -37,6 +37,7 @@
                 id
                 team
                 person
+                personID
                 status
                 proposed_by
                 acknowledged_by
@@ -556,6 +557,11 @@
                 bug_reporting_guidelines
                 enable_bugfiling_duplicate_search
                 "/>
+
+        <!-- IHasGitRepositories -->
+
+        <allow
+            interface="lp.code.interfaces.hasgitrepositories.IHasGitRepositories" />
     </class>
     <adapter
         provides="lp.registry.interfaces.distribution.IDistribution"
@@ -990,6 +996,7 @@
                 set_attributes="displayname icon logo visibility"/>
             <require
                 permission="launchpad.Moderate"
+                interface="lp.registry.interfaces.person.IPersonModerateRestricted"
                 set_attributes="name"/>
             <require
                 permission="launchpad.Special"
@@ -1181,16 +1188,6 @@
         class="lp.registry.xmlrpc.mailinglist.MailingListAPIView"
         permission="zope.Public"/>
     <securedutility
-        class="lp.registry.xmlrpc.softwarecenteragent.SoftwareCenterAgentApplication"
-        provides="lp.registry.interfaces.person.ISoftwareCenterAgentApplication">
-      <allow interface="lp.registry.interfaces.person.ISoftwareCenterAgentApplication" />
-    </securedutility>
-    <xmlrpc:view
-        for="lp.registry.interfaces.person.ISoftwareCenterAgentApplication"
-        interface="lp.registry.interfaces.person.ISoftwareCenterAgentAPI"
-        class="lp.registry.xmlrpc.softwarecenteragent.SoftwareCenterAgentAPI"
-        permission="zope.Public"/>
-    <securedutility
         class="lp.registry.xmlrpc.canonicalsso.CanonicalSSOApplication"
         provides="lp.registry.interfaces.person.ICanonicalSSOApplication">
       <allow interface="lp.registry.interfaces.person.ICanonicalSSOApplication" />
@@ -1319,14 +1316,16 @@
                 official_codehosting
                 owner
                 programminglang
-                project
+                projectgroup
                 redeemSubscriptionVoucher
                 releaseroot
                 screenshotsurl
                 sourceforgeproject
                 summary
                 title
-                wikiurl"/>
+                vcs
+                wikiurl"
+            />
         <require
             permission="launchpad.BugSupervisor"
             set_attributes="
@@ -1737,7 +1736,9 @@
                 package_derivatives_email
                 redirect_release_uploads
                 summary
-                title"/>
+                title
+                vcs
+                "/>
         <require
             permission="launchpad.Admin"
             set_attributes="
@@ -2062,6 +2063,27 @@
         provides="lp.registry.interfaces.packaging.IPackagingUtil">
         <allow
             interface="lp.registry.interfaces.packaging.IPackagingUtil"/>
+    </securedutility>
+
+    <!-- PersonDistributionSourcePackage -->
+
+    <class
+        class="lp.registry.model.persondistributionsourcepackage.PersonDistributionSourcePackage">
+        <allow
+            interface="lp.registry.interfaces.persondistributionsourcepackage.IPersonDistributionSourcePackage" />
+    </class>
+
+    <adapter
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
+        for="lp.registry.interfaces.persondistributionsourcepackage.IPersonDistributionSourcePackage"
+        factory="lp.registry.browser.persondistributionsourcepackage.PersonDistributionSourcePackageBreadcrumb"
+        permission="zope.Public"/>
+
+    <securedutility
+        component="lp.registry.model.persondistributionsourcepackage.PersonDistributionSourcePackage"
+        provides="lp.registry.interfaces.persondistributionsourcepackage.IPersonDistributionSourcePackageFactory">
+        <allow
+            interface="lp.registry.interfaces.persondistributionsourcepackage.IPersonDistributionSourcePackageFactory"/>
     </securedutility>
 
     <!-- PersonNotification -->

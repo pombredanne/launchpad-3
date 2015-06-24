@@ -24,7 +24,7 @@
     </div>
   </div>
 
-  <div id="source-revisions">
+  <div id="source-revisions" tal:condition="context/source_branch">
     <tal:history-available condition="context/source_branch/revision_count"
                            define="branch context/source_branch;
                                    revisions view/unlanded_revisions">

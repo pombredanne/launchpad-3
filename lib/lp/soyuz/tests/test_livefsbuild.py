@@ -25,6 +25,7 @@ from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.buildmaster.interfaces.packagebuild import IPackageBuild
+from lp.buildmaster.interfaces.processor import IProcessorSet
 from lp.registry.enums import PersonVisibility
 from lp.services.config import config
 from lp.services.features.testing import FeatureFixture
@@ -39,7 +40,6 @@ from lp.soyuz.interfaces.livefsbuild import (
     ILiveFSBuild,
     ILiveFSBuildSet,
     )
-from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.testing import (
     ANONYMOUS,
     api_url,

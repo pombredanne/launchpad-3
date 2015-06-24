@@ -25,8 +25,8 @@ __all__ = [
     'MaloneView',
     ]
 
-from email.MIMEMultipart import MIMEMultipart
-from email.MIMEText import MIMEText
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 import re
 
 from lazr.enum import (

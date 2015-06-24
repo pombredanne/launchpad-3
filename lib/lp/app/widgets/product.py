@@ -174,16 +174,18 @@ class ProductBugTrackerWidget(LaunchpadRadioWidget):
             value="malone", name=self.name, cssClass=self.cssClass)
 
         # Project or somewhere else.
-        project = product.project
-        if project is None or project.bugtracker is None:
-            project_bugtracker_caption = "Somewhere else"
+        projectgroup = product.projectgroup
+        if projectgroup is None or projectgroup.bugtracker is None:
+            projectgroup_bugtracker_caption = "Somewhere else"
         else:
-            project_bugtracker_caption = structured(
+            projectgroup_bugtracker_caption = structured(
                 'In the %s bug tracker (<a href="%s">%s</a>)</label>',
-                project.displayname, canonical_url(project.bugtracker),
-                project.bugtracker.title).escapedtext
-        project_bugtracker_arguments = dict(
-            index=1, text=self._renderLabel(project_bugtracker_caption, 1),
+                projectgroup.displayname,
+                canonical_url(projectgroup.bugtracker),
+                projectgroup.bugtracker.title).escapedtext
+        projectgroup_bugtracker_arguments = dict(
+            index=1,
+            text=self._renderLabel(projectgroup_bugtracker_caption, 1),
             value="project", name=self.name, cssClass=self.cssClass)
 
         # External bug tracker.
@@ -213,7 +215,7 @@ class ProductBugTrackerWidget(LaunchpadRadioWidget):
             'launchpad': malone_item_arguments,
             'external_bugtracker': external_bugtracker_arguments,
             'external_email': external_bugtracker_email_arguments,
-            'unknown': project_bugtracker_arguments,
+            'unknown': projectgroup_bugtracker_arguments,
             }
 
         # Figure out the selected choice.
@@ -229,7 +231,7 @@ class ProductBugTrackerWidget(LaunchpadRadioWidget):
             else:
                 selected = external_bugtracker_arguments
         else:
-            selected = project_bugtracker_arguments
+            selected = projectgroup_bugtracker_arguments
 
         # Render.
         for name, arguments in all_arguments.items():

@@ -558,7 +558,7 @@ class TestBranchView(BrowserTestCase):
         logout()
         with StormStatementRecorder() as recorder:
             browser.open(branch_url)
-        self.assertThat(recorder, HasQueryCount(Equals(26)))
+        self.assertThat(recorder, HasQueryCount(Equals(28)))
 
 
 class TestBranchViewPrivateArtifacts(BrowserTestCase):

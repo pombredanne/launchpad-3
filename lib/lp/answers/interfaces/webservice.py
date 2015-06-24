@@ -10,6 +10,8 @@ which tells `lazr.restful` that it should look for webservice exports here.
 """
 
 __all__ = [
+    'IFAQ',
+    'IFAQTarget',
     'IQuestion',
     'IQuestionSet',
     'IQuestionSubscription',
@@ -17,8 +19,11 @@ __all__ = [
 
 from lazr.restful.declarations import LAZR_WEBSERVICE_EXPORTED
 
+from lp.answers.interfaces.faq import IFAQ
+from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.answers.interfaces.question import IQuestion
 from lp.answers.interfaces.questioncollection import (
+    IQuestionCollection,
     IQuestionSet,
     ISearchableByQuestionOwner,
     )
@@ -38,6 +43,8 @@ IQuestionSet.queryTaggedValue(
 patch_entry_return_type(IQuestionSet, 'get', IQuestion)
 patch_collection_return_type(
     IQuestionTarget, 'findSimilarQuestions', IQuestion)
+patch_collection_return_type(
+    IQuestionCollection, 'searchQuestions', IQuestion)
 patch_collection_return_type(
     ISearchableByQuestionOwner, 'searchQuestions', IQuestion)
 patch_reference_property(IQuestionMessage, 'question', IQuestion)

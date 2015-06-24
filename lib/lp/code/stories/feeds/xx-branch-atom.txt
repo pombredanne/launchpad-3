@@ -22,11 +22,11 @@ using BeautifulStoneSoup instead of BeautifulSoup or the helper functions.
     ...         owner=owner, date_created=date_generator.next())
     >>> mike = factory.makePerson(name='mike', displayname='Mike Murphy')
     >>> mary = factory.makePerson(name='mary', displayname='Mary Murphy')
-    >>> project = factory.makeProject(name='oh-man', displayname='Oh Man')
+    >>> projectgroup = factory.makeProject(name='oh-man', displayname='Oh Man')
     >>> product1 = factory.makeProduct(
-    ...     name='fooix', project=project, displayname="Fooix")
+    ...     name='fooix', projectgroup=projectgroup, displayname="Fooix")
     >>> product2 = factory.makeProduct(
-    ...     name='fooey', project=project, displayname="Fooey")
+    ...     name='fooey', projectgroup=projectgroup, displayname="Fooey")
     >>> make_branch(mike, product1, 'first')
     >>> make_branch(mike, product2, 'second')
     >>> make_branch(mike, product1, 'third')
@@ -162,10 +162,10 @@ updated field in all of the entries.
     ...     "Feed <update> value is not the same as latest entry.")
 
 
-== Feed for a project's branches ==
+== Feed for a project group's branches ==
 
-The feed for a project's branches will show the most recent 25 branches
-which will include an entry for each branch.
+The feed for a project group's branches will show the most recent 25
+branches which will include an entry for each branch.
 
     >>> anon_browser.open('http://feeds.launchpad.dev/oh-man/branches.atom')
     >>> validate_browser_feed(anon_browser)

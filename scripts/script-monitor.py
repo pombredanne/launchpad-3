@@ -14,7 +14,7 @@ from datetime import (
     datetime,
     timedelta,
     )
-from email.MIMEText import MIMEText
+from email.mime.text import MIMEText
 from optparse import OptionParser
 import smtplib
 import sys

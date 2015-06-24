@@ -7,6 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'IBuildFarmJob',
+    'IBuildFarmJobDB',
     'IBuildFarmJobSet',
     'IBuildFarmJobSource',
     'InconsistentBuildFarmJobError',
@@ -35,8 +36,8 @@ from zope.schema import (
 from lp import _
 from lp.buildmaster.enums import BuildFarmJobType
 from lp.buildmaster.interfaces.builder import IBuilder
+from lp.buildmaster.interfaces.processor import IProcessor
 from lp.services.librarian.interfaces import ILibraryFileAlias
-from lp.soyuz.interfaces.processor import IProcessor
 
 
 class InconsistentBuildFarmJobError(Exception):
@@ -180,13 +181,19 @@ class IBuildFarmJob(Interface):
         """Set the `LibraryFileAlias` that contains the job log."""
 
     def updateStatus(status, builder=None, slave_status=None,
-                     date_started=None, date_finished=None):
+                     date_started=None, date_finished=None,
+                     force_invalid_transition=False):
         """Update job metadata when the build status changes.
 
         This automatically handles setting status, date_finished, builder,
         dependencies. Later it will manage the denormalised search schema.
 
         date_started and date_finished override the default (now).
+
+        Only sensible transitions are permitted unless
+        force_invalid_transition is set. The override only exists for
+        tests and as an escape hatch for buildd-manager's failure
+        counting. You do not want to use it.
         """
 
     def gotFailure():

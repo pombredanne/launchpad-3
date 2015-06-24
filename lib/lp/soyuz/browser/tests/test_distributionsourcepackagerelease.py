@@ -10,9 +10,55 @@ __all__ = [
 
 from zope.security.proxy import removeSecurityProxy
 
+from lp.services.webapp import canonical_url
 from lp.testing import TestCaseWithFactory
-from lp.testing.layers import LaunchpadFunctionalLayer
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
+from lp.testing.publication import test_traverse
 from lp.testing.views import create_initialized_view
+
+
+class TestDistributionSourcePackageReleaseNavigation(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUpLatestBuildTests(self):
+        distribution = self.factory.makeDistribution()
+        dses = [
+            self.factory.makeDistroSeries(distribution=distribution)
+            for i in range(2)]
+        spr = self.factory.makeSourcePackageRelease(distroseries=dses[0])
+        proc = self.factory.makeProcessor()
+        builds = []
+        for i in range(2):
+            self.factory.makeSourcePackagePublishingHistory(
+                distroseries=dses[0], sourcepackagerelease=spr)
+            das = self.factory.makeDistroArchSeries(
+                distroseries=dses[i], architecturetag="arch", processor=proc)
+            builds.append(self.factory.makeBinaryPackageBuild(
+                source_package_release=spr, distroarchseries=das))
+        builds.append(
+            self.factory.makeBinaryPackageBuild(source_package_release=spr))
+        return canonical_url(distribution.getSourcePackageRelease(spr)), builds
+
+    def test_latestbuild_known_arch(self):
+        # +latestbuild redirects to the most recent build for the requested
+        # architecture.
+        dspr_url, builds = self.setUpLatestBuildTests()
+        _, view, _ = test_traverse("%s/+latestbuild/arch" % dspr_url)
+        self.assertEqual(
+            canonical_url(builds[1]), removeSecurityProxy(view).target)
+        self.assertEqual(303, removeSecurityProxy(view).status)
+
+    def test_latestbuild_unknown_arch(self):
+        # If there is no build for the requested architecture, +latestbuild
+        # redirects to the context DSPR.
+        dspr_url, _ = self.setUpLatestBuildTests()
+        obj, view, _ = test_traverse("%s/+latestbuild/unknown" % dspr_url)
+        self.assertEqual(dspr_url, canonical_url(obj))
+        self.assertEqual(303, removeSecurityProxy(view).status)
 
 
 class TestDistributionSourcePackageReleaseFiles(TestCaseWithFactory):

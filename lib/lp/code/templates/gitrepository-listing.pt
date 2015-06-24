@@ -1,0 +1,30 @@
+<div id="gitrepositories-table-listing"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  >
+  <tal:needs-batch condition="context/has_multiple_pages">
+    <div id="branch-batch-links">
+      <tal:navigation replace="structure context/@@+navigation-links-upper" />
+    </div>
+  </tal:needs-batch>
+  <table class="listing">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Last Modified</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr tal:repeat="repo context/currentBatch">
+        <td>
+          <a tal:content="repo/display_name"
+              tal:attributes="href repo/fmt:url">lp:foo</a>
+        </td>
+        <td tal:content="repo/date_last_modified/fmt:approximatedate">
+          2 hours ago
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  <tal:navigation replace="structure context/@@+navigation-links-lower" />
+</div>

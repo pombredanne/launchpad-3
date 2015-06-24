@@ -25,14 +25,14 @@ class TestAccount(TestCaseWithFactory):
     def test_account_repr_ansii(self):
         # Verify that ANSI displayname is ascii safe.
         distro = self.factory.makeAccount(u'\xdc-account')
-        ignore, displayname, status_1, status_2 = repr(distro).rsplit(' ', 3)
+        ignore, displayname, status = repr(distro).rsplit(' ', 2)
         self.assertEqual("'\\xdc-account'", displayname)
-        self.assertEqual('(Active account)>', '%s %s' % (status_1, status_2))
+        self.assertEqual('(Active)>', status)
 
     def test_account_repr_unicode(self):
         # Verify that Unicode displayname is ascii safe.
         distro = self.factory.makeAccount(u'\u0170-account')
-        ignore, displayname, status_1, status_2 = repr(distro).rsplit(' ', 3)
+        ignore, displayname, status = repr(distro).rsplit(' ', 2)
         self.assertEqual("'\\u0170-account'", displayname)
 
     def assertCannotTransition(self, account, statuses):
@@ -40,13 +40,13 @@ class TestAccount(TestCaseWithFactory):
             self.assertFalse(
                 IAccount['status'].bind(account).constraint(status))
             self.assertRaises(
-                AccountStatusError, setattr, account, 'status', status)
+                AccountStatusError, account.setStatus, status, None, 'Go away')
 
     def assertCanTransition(self, account, statuses):
         for status in statuses:
             self.assertTrue(
                 IAccount['status'].bind(account).constraint(status))
-        account.status = status
+        account.setStatus(status, None, 'No reason')
         self.assertEqual(status, account.status)
 
     def test_status_from_noaccount(self):
@@ -69,7 +69,7 @@ class TestAccount(TestCaseWithFactory):
         # The status may change from DEACTIVATED to ACTIVATED.
         account = self.factory.makeAccount()
         login_celebrity('admin')
-        account.status = AccountStatus.DEACTIVATED
+        account.setStatus(AccountStatus.DEACTIVATED, None, 'gbcw')
         self.assertCannotTransition(
             account, [AccountStatus.NOACCOUNT, AccountStatus.SUSPENDED])
         self.assertCanTransition(account, [AccountStatus.ACTIVE])
@@ -78,7 +78,7 @@ class TestAccount(TestCaseWithFactory):
         # The status may change from SUSPENDED to DEACTIVATED.
         account = self.factory.makeAccount()
         login_celebrity('admin')
-        account.status = AccountStatus.SUSPENDED
+        account.setStatus(AccountStatus.SUSPENDED, None, 'spammer!')
         self.assertCannotTransition(
             account, [AccountStatus.NOACCOUNT, AccountStatus.ACTIVE])
         self.assertCanTransition(account, [AccountStatus.DEACTIVATED])

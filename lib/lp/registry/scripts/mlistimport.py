@@ -9,7 +9,7 @@ __all__ = [
     ]
 
 
-from email.Utils import parseaddr
+from email.utils import parseaddr
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -97,7 +97,7 @@ class Importer:
 
         The named file has email address to import, one per line.  The lines
         may be formatted using any format recognized by
-        `email.Utils.parseaddr()`.
+        `email.utils.parseaddr()`.
 
         :param filename: The name of the file containing email address.
         :type filename: string

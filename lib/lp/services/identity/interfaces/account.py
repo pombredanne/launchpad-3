@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Account interfaces."""
@@ -11,18 +11,20 @@ __all__ = [
     'AccountSuspendedError',
     'AccountCreationRationale',
     'IAccount',
+    'IAccountModerateRestricted',
     'IAccountPublic',
     'IAccountSet',
-    'IAccountSpecialRestricted',
     'IAccountViewRestricted',
     'INACTIVE_ACCOUNT_STATUSES',
     ]
 
+import httplib
 
 from lazr.enum import (
     DBEnumeratedType,
     DBItem,
     )
+from lazr.restful.declarations import error_status
 from zope.interface import (
     Attribute,
     Interface,
@@ -40,6 +42,7 @@ from lp.app.validators import LaunchpadValidationError
 from lp.services.fields import StrippedTextLine
 
 
+@error_status(httplib.BAD_REQUEST)
 class AccountSuspendedError(Exception):
     """The account being accessed has been suspended."""
 
@@ -48,25 +51,25 @@ class AccountStatus(DBEnumeratedType):
     """The status of an account."""
 
     NOACCOUNT = DBItem(10, """
-        Unactivated account
+        Unactivated
 
         The account has not yet been activated.
         """)
 
     ACTIVE = DBItem(20, """
-        Active account
+        Active
 
         The account is active.
         """)
 
     DEACTIVATED = DBItem(30, """
-        Deactivated account
+        Deactivated
 
         The account has been deactivated by the account's owner.
         """)
 
     SUSPENDED = DBItem(40, """
-        Suspended Launchpad account
+        Suspended
 
         The account has been suspended by a Launchpad admin.
         """)
@@ -253,7 +256,7 @@ class IAccountPublic(Interface):
 
     status = AccountStatusChoice(
         title=_("The status of this account"), required=True,
-        readonly=False, vocabulary=AccountStatus)
+        readonly=True, vocabulary=AccountStatus)
 
 
 class IAccountViewRestricted(Interface):
@@ -269,12 +272,7 @@ class IAccountViewRestricted(Interface):
     openid_identifiers = Attribute(_("Linked OpenId Identifiers"))
 
     date_status_set = Datetime(
-        title=_('Date status last modified.'),
-        required=True, readonly=False)
-
-    status_comment = Text(
-        title=_("Why are you deactivating your account?"),
-        required=False, readonly=False)
+        title=_('Date status last modified.'), required=True, readonly=True)
 
     def reactivate(comment):
         """Activate this account.
@@ -285,7 +283,22 @@ class IAccountViewRestricted(Interface):
         """
 
 
-class IAccount(IAccountPublic, IAccountViewRestricted):
+class IAccountModerateRestricted(Interface):
+
+    status_history = Text(
+        title=_("Account status comments"), required=False, readonly=True)
+
+    def setStatus(status, user, comment):
+        """Change the status of this account.
+
+        :param user: The user performing the action or None.
+        :param comment: An explanation of the change to be logged in
+            status_history.
+        """
+
+
+class IAccount(IAccountPublic, IAccountViewRestricted,
+               IAccountModerateRestricted):
     """Interface describing an `Account`."""
 
 

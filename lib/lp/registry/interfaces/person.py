@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Person interfaces."""
@@ -21,12 +21,11 @@ __all__ = [
     'IPersonLimitedView',
     'IPersonViewRestricted',
     'IRequestPeopleMerge',
-    'ISoftwareCenterAgentAPI',
-    'ISoftwareCenterAgentApplication',
     'ITeam',
     'ITeamContactAddressForm',
     'ITeamReassignment',
     'ImmutableVisibilityError',
+    'NoAccountError',
     'NoSuchPerson',
     'PersonCreationRationale',
     'PersonalStanding',
@@ -58,7 +57,6 @@ from lazr.restful.declarations import (
     export_read_operation,
     export_write_operation,
     exported,
-    LAZR_WEBSERVICE_EXPORTED,
     mutator_for,
     operation_for_version,
     operation_parameters,
@@ -111,6 +109,7 @@ from lp.code.interfaces.hasbranches import (
     IHasMergeProposals,
     IHasRequestedReviews,
     )
+from lp.code.interfaces.hasgitrepositories import IHasGitRepositories
 from lp.code.interfaces.hasrecipes import IHasRecipes
 from lp.registry.enums import (
     EXCLUSIVE_TEAM_POLICY,
@@ -161,6 +160,12 @@ from lp.services.identity.interfaces.account import (
 from lp.services.identity.interfaces.emailaddress import IEmailAddress
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.interfaces import ILaunchpadApplication
+from lp.services.webservice.apihelpers import (
+    patch_collection_property,
+    patch_collection_return_type,
+    patch_plain_parameter_type,
+    patch_reference_property,
+    )
 from lp.services.worlddata.interfaces.language import ILanguage
 from lp.translations.interfaces.hastranslationimports import (
     IHasTranslationImports,
@@ -572,12 +577,11 @@ class IPersonPublic(IPrivacy):
         exported_as='is_valid')
     is_team = exported(
         Bool(title=_('Is this object a team?'), readonly=True))
-    account_status = Choice(
-        title=_("The status of this person's account"), required=False,
-        readonly=True, vocabulary=AccountStatus)
-    account_status_comment = Text(
-        title=_("Why are you deactivating your account?"), required=False,
-        readonly=True)
+    account_status = exported(
+        Choice(
+            title=_("The status of this person's account"), required=True,
+            readonly=True, vocabulary=AccountStatus),
+        as_of='devel')
     visibility = exported(
         Choice(title=_("Visibility"),
                description=_(
@@ -683,7 +687,7 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
                     IHasMergeProposals, IHasMugshot,
                     IHasLocation, IHasRequestedReviews, IObjectWithLocation,
                     IHasBugs, IHasRecipes, IHasTranslationImports,
-                    IPersonSettings, IQuestionsPerson):
+                    IPersonSettings, IQuestionsPerson, IHasGitRepositories):
     """IPerson attributes that require launchpad.View permission."""
     account = Object(schema=IAccount)
     accountID = Int(title=_('Account ID'), required=True, readonly=True)
@@ -910,14 +914,14 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
             # Really IArchive, see archive.py
             schema=Interface))
 
-    ppas = exported(
+    ppas = exported(doNotSnapshot(
         CollectionField(
             title=_("PPAs for this person."),
             description=_(
                 "PPAs owned by the context person ordered by name."),
             readonly=True, required=False,
             # Really IArchive, see archive.py
-            value_type=Reference(schema=Interface)))
+            value_type=Reference(schema=Interface))))
 
     structural_subscriptions = Attribute(
         "The structural subscriptions for this person.")
@@ -1024,9 +1028,6 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
     @operation_for_version("beta")
     def getRecipe(name):
         """Return the person's recipe with the given name."""
-
-    def getMergeQueue(name):
-        """Return the person's merge queue with the given name."""
 
     @call_with(requester=REQUEST_USER)
     @export_read_operation()
@@ -1843,9 +1844,29 @@ class IPersonSpecialRestricted(Interface):
         """
 
 
+class IPersonModerateRestricted(Interface):
+    """IPerson attributes that require launchpad.Moderate permission."""
+
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        status=copy_field(IAccount['status']),
+        comment=Text(title=_("Status change comment"), required=True))
+    @export_write_operation()
+    @operation_for_version('devel')
+    def setAccountStatus(status, user, comment):
+        """Set the status of this person's account."""
+
+    account_status_history = exported(
+        Text(
+            title=_("Account status history"), required=False,
+            readonly=True),
+        as_of='devel')
+
+
 class IPerson(IPersonPublic, IPersonLimitedView, IPersonViewRestricted,
-              IPersonEditRestricted, IPersonSpecialRestricted, IHasStanding,
-              ISetLocation, IHeadingContext):
+              IPersonEditRestricted, IPersonModerateRestricted,
+              IPersonSpecialRestricted, IHasStanding, ISetLocation,
+              IHeadingContext):
     """A Person."""
     export_as_webservice_entry(plural_name='people')
 
@@ -2145,6 +2166,31 @@ class IPersonSet(Interface):
             database was updated.
         :raises AccountSuspendedError: if the account associated with the
             identifier has been suspended.
+        """
+
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        openid_identifier=TextLine(
+            title=_("OpenID identifier suffix"), required=True),
+        email_address=TextLine(title=_("Email address"), required=True),
+        display_name=TextLine(title=_("Display name"), required=True))
+    @operation_returns_entry(IPerson)
+    @export_write_operation()
+    @operation_for_version("devel")
+    def getOrCreateSoftwareCenterCustomer(user, openid_identifier,
+                                          email_address, display_name):
+        """Restricted person creation API for Software Center Agent.
+
+        This method can only be called by Software Center Agent. It gets
+        a person by OpenID identifier or creates a new Launchpad person
+        from the OpenID identifier, email address and display name.
+
+        :param user: the `IPerson` performing the operation. Only the
+            software-center-agent celebrity is allowed.
+        :param openid_identifier: OpenID identifier suffix for the user.
+            This is *not* the full URL, just the unique suffix portion.
+        :param email_address: the email address of the user.
+        :param full_name: the full name of the user.
         """
 
     @call_with(teamowner=REQUEST_USER)
@@ -2449,41 +2495,25 @@ class ITeamContactAddressForm(Interface):
         required=True, vocabulary=TeamContactMethod)
 
 
-class ISoftwareCenterAgentAPI(Interface):
-    """XMLRPC API used by the software center agent."""
-
-    def getOrCreateSoftwareCenterCustomer(openid_identifier, email,
-                                          full_name):
-        """Get or create an LP person based on a given identifier.
-
-        See the method of the same name on `IPersonSet`. This XMLRPC version
-        doesn't require the creation rationale and comment.
-
-        This is added as a private XMLRPC method instead of exposing via the
-        API as it should not be needed long-term. Long term we should allow
-        the software center to create subscriptions to private PPAs without
-        requiring a Launchpad account.
-        """
-
-
 class ICanonicalSSOApplication(ILaunchpadApplication):
     """XMLRPC application root for ICanonicalSSOAPI."""
 
 
 class ICanonicalSSOAPI(Interface):
-    """XMLRPC API used by the software center agent."""
+    """XMLRPC API used by Canonical SSO."""
 
     def getPersonDetailsByOpenIDIdentifier(openid_identifier):
         """Get the details of an LP person based on an OpenID identifier."""
 
 
-class ISoftwareCenterAgentApplication(ILaunchpadApplication):
-    """XMLRPC application root for ISoftwareCenterAgentAPI."""
-
-
 @error_status(httplib.FORBIDDEN)
 class ImmutableVisibilityError(Exception):
     """A change in team membership visibility is not allowed."""
+
+
+@error_status(httplib.BAD_REQUEST)
+class NoAccountError(Exception):
+    """The person has no account."""
 
 
 class NoSuchPerson(NameLookupFailed):
@@ -2506,53 +2536,51 @@ for name in [
     'api_deactivatedmembers',
     'api_expiredmembers',
     ]:
-    IPersonViewRestricted[name].value_type.schema = IPerson
+    patch_collection_property(IPersonViewRestricted, name, IPerson)
 
-IPersonViewRestricted['sub_teams'].value_type.schema = ITeam
-IPersonViewRestricted['super_teams'].value_type.schema = ITeam
+patch_collection_property(IPersonViewRestricted, 'sub_teams', ITeam)
+patch_collection_property(IPersonViewRestricted, 'super_teams', ITeam)
 # XXX: salgado, 2008-08-01: Uncomment these when teams_*participated_in are
 # exported again.
-# IPersonViewRestricted['teams_participated_in'].value_type.schema = ITeam
-# IPersonViewRestricted[
-#   'teams_indirectly_participated_in'].value_type.schema = ITeam
+# patch_collection_property(
+#     IPersonViewRestricted, 'teams_participated_in', ITeam)
+# patch_collection_property(
+#     IPersonViewRestricted, 'teams_indirectly_participated_in', ITeam)
 
 # Fix schema of operation parameters. We need zope.deferredimport!
 params_to_fix = [
     # XXX: salgado, 2008-08-01: Uncomment these when they are exported again.
     # (IPersonViewRestricted['findPathToTeam'], 'team'),
     # (IPersonViewRestricted['inTeam'], 'team'),
-    (IPersonEditRestricted['join'], 'team'),
-    (IPersonEditRestricted['leave'], 'team'),
-    (IPersonEditRestricted['addMember'], 'person'),
-    (IPersonEditRestricted['acceptInvitationToBeMemberOf'], 'team'),
-    (IPersonEditRestricted['declineInvitationToBeMemberOf'], 'team'),
-    (IPersonEditRestricted['retractTeamMembership'], 'team'),
+    ('join', 'team'),
+    ('leave', 'team'),
+    ('addMember', 'person'),
+    ('acceptInvitationToBeMemberOf', 'team'),
+    ('declineInvitationToBeMemberOf', 'team'),
+    ('retractTeamMembership', 'team'),
     ]
 for method, name in params_to_fix:
-    method.queryTaggedValue(
-        'lazr.restful.exported')['params'][name].schema = IPerson
+    patch_plain_parameter_type(IPersonEditRestricted, method, name, IPerson)
 
 # Fix schema of operation return values.
 # XXX: salgado, 2008-08-01: Uncomment when findPathToTeam is exported again.
-# IPersonPublic['findPathToTeam'].queryTaggedValue(
-#     'lazr.webservice.exported')['return_type'].value_type.schema = IPerson
-IPersonViewRestricted['getMembersByStatus'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)['return_type'].value_type.schema = IPerson
-IPersonViewRestricted['getOwnedTeams'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)['return_type'].value_type.schema = ITeam
+# patch_collection_return_type(IPersonPublic, 'findPathToTeam', IPerson)
+patch_collection_return_type(
+    IPersonViewRestricted, 'getMembersByStatus', IPerson)
+patch_collection_return_type(IPersonViewRestricted, 'getOwnedTeams', ITeam)
 
 # Fix schema of ITeamMembership fields.  Has to be done here because of
 # circular dependencies.
 for name in ['team', 'person', 'last_changed_by']:
-    ITeamMembership[name].schema = IPerson
+    patch_reference_property(ITeamMembership, name, IPerson)
 
 # Fix schema of ITeamParticipation fields.  Has to be done here because of
 # circular dependencies.
 for name in ['team', 'person']:
-    ITeamParticipation[name].schema = IPerson
+    patch_reference_property(ITeamParticipation, name, IPerson)
 
 # Thank circular dependencies once again.
-IIrcID['person'].schema = IPerson
-IJabberID['person'].schema = IPerson
-IWikiName['person'].schema = IPerson
-IEmailAddress['person'].schema = IPerson
+patch_reference_property(IIrcID, 'person', IPerson)
+patch_reference_property(IJabberID, 'person', IPerson)
+patch_reference_property(IWikiName, 'person', IPerson)
+patch_reference_property(IEmailAddress, 'person', IPerson)

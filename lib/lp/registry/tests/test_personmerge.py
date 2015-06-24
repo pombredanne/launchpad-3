@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for merge_people."""
@@ -13,6 +13,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.code.interfaces.gitrepository import IGitRepositorySet
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactGrantSource,
     IAccessPolicyGrantSource,
@@ -269,6 +270,38 @@ class TestMergePeople(TestCaseWithFactory, KarmaTestMixin):
         branches = [b.name for b in mergee.getBranches()]
         self.assertEqual(2, len(branches))
         self.assertContentEqual([u'foo', u'foo-1'], branches)
+
+    def test_merge_moves_git_repositories(self):
+        # When person/teams are merged, Git repositories owned by the from
+        # person are moved.
+        person = self.factory.makePerson()
+        repository = self.factory.makeGitRepository()
+        duplicate = repository.owner
+        self._do_premerge(repository.owner, person)
+        login_person(person)
+        duplicate, person = self._do_merge(duplicate, person)
+        repository_set = getUtility(IGitRepositorySet)
+        repositories = repository_set.getRepositories(None, person)
+        self.assertEqual(1, repositories.count())
+
+    def test_merge_with_duplicated_git_repositories(self):
+        # If both the from and to people have Git repositories with the same
+        # name, merging renames the duplicate from the from person's side.
+        project = self.factory.makeProduct()
+        from_repository = self.factory.makeGitRepository(
+            target=project, name=u'foo')
+        to_repository = self.factory.makeGitRepository(
+            target=project, name=u'foo')
+        mergee = to_repository.owner
+        duplicate = from_repository.owner
+        self._do_premerge(duplicate, mergee)
+        login_person(mergee)
+        duplicate, mergee = self._do_merge(duplicate, mergee)
+        repository_set = getUtility(IGitRepositorySet)
+        repositories = [
+            r.name for r in repository_set.getRepositories(None, mergee)]
+        self.assertEqual(2, len(repositories))
+        self.assertContentEqual([u'foo', u'foo-1'], repositories)
 
     def test_merge_moves_recipes(self):
         # When person/teams are merged, recipes owned by the from person are

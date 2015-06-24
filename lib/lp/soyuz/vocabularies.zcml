@@ -55,17 +55,4 @@
     <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
-
-  <securedutility
-    name="Processor"
-    component="lp.soyuz.vocabularies.ProcessorVocabulary"
-    provides="zope.schema.interfaces.IVocabularyFactory"
-    >
-    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
-  </securedutility>
-
-  <class class="lp.soyuz.vocabularies.ProcessorVocabulary">
-    <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
-  </class>
-
 </configure>

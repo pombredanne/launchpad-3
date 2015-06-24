@@ -793,9 +793,9 @@ class FileBugViewBase(LaunchpadFormView):
             # we don't need to look at
             # context.product.bug_reported_acknowledgement because a
             # product series inherits this property from the product.
-            next_context = context.product.project
+            next_context = context.product.projectgroup
         elif IProduct.providedBy(context):
-            next_context = context.project
+            next_context = context.projectgroup
         elif IDistributionSourcePackage.providedBy(context):
             next_context = context.distribution
         # IDistroseries and ISourcePackage inherit

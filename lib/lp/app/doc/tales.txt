@@ -394,6 +394,8 @@ to a content object.  There are currently links defined for:
 
   * people / teams
   * branches
+  * Git repositories
+  * Git references
   * bugs
   * bug subscriptions
   * bug tasks
@@ -483,7 +485,7 @@ If the person has no time_zone specified, we use UTC.
     u'Australia/Perth'
 
     >>> test_tales("person/fmt:local-time", person=sample_person)
-    '... WST'
+    '... AWST'
 
     >>> print mark.time_zone
     None
@@ -518,6 +520,27 @@ The bzr-link formatter uses the bzr identity.
     >>> clear_property_cache(branch)
     >>> print test_tales("branch/fmt:bzr-link", branch=branch)
     <a href=".../~eric/fooix/bar" class="sprite branch">lp://dev/fooix</a>
+
+
+Git repositories
+................
+
+For Git repositories, fmt:link links to the repository page.
+
+    >>> repository = factory.makeGitRepository(
+    ...     owner=eric, target=fooix, name=u'bar')
+    >>> print test_tales("repository/fmt:link", repository=repository)
+    <a href=".../~eric/fooix/+git/bar">lp:~eric/fooix/+git/bar</a>
+
+
+Git references
+..............
+
+For Git references, fmt:link links to the reference page.
+
+    >>> [ref] = factory.makeGitRefs(repository=repository, paths=[u"master"])
+    >>> print test_tales("ref/fmt:link", ref=ref)
+    <a href=".../~eric/fooix/+git/bar/+ref/master">~eric/fooix/+git/bar:master</a>
 
 
 Bugs

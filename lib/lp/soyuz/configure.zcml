@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -14,7 +14,6 @@
         package=".browser"/>
     <include
         file="vocabularies.zcml"/>
-    <authorizations module=".security" />
 
     <lp:help-folder folder="help" name="+help-soyuz" />
 
@@ -54,21 +53,6 @@
             <!-- XXX cprov 2006-06-14: missing security adapter -->
 
         </class>
-
-    <!-- ArchiveArch -->
-    <class
-        class="lp.soyuz.model.archivearch.ArchiveArch">
-        <allow
-            interface="lp.soyuz.interfaces.archivearch.IArchiveArch" />
-    </class>
-
-    <!-- ArchiveArchSet -->
-    <securedutility
-        class="lp.soyuz.model.archivearch.ArchiveArchSet"
-        provides="lp.soyuz.interfaces.archivearch.IArchiveArchSet">
-        <allow
-            interface="lp.soyuz.interfaces.archivearch.IArchiveArchSet"/>
-    </securedutility>
 
     <!-- DistroSeriesPackageCache -->
     <class
@@ -353,20 +337,6 @@
         <allow
             interface="lp.soyuz.interfaces.distroarchseriesbinarypackagerelease.IDistroArchSeriesBinaryPackageRelease"/>
     </class>
-    <class
-        class="lp.soyuz.model.processor.Processor">
-        <allow
-            interface="lp.soyuz.interfaces.processor.IProcessor"/>
-        <require
-            permission="zope.Public"
-            set_schema="lp.soyuz.interfaces.processor.IProcessor"/>
-    </class>
-    <securedutility
-        class="lp.soyuz.model.processor.ProcessorSet"
-        provides="lp.soyuz.interfaces.processor.IProcessorSet">
-        <allow
-            interface="lp.soyuz.interfaces.processor.IProcessorSet"/>
-    </securedutility>
     <adapter
         for="lp.soyuz.interfaces.distroarchseriesbinarypackagerelease.IDistroArchSeriesBinaryPackageRelease"
         provides="lp.services.webapp.interfaces.IBreadcrumb"
@@ -409,7 +379,7 @@
                             buildd_secret enabled_restricted_processors
                             external_dependencies name
                             permit_obsolete_series_uploads
-                            private publish_debug_symbols
+                            private processors publish_debug_symbols
                             require_virtualized"/>
         <require
             permission="launchpad.Moderate"
@@ -978,6 +948,7 @@
                        .interfaces.livefs.ILiveFSAdminAttributes"/>
         <require
             permission="launchpad.Edit"
+            interface=".interfaces.livefs.ILiveFSEdit"
             set_schema=".interfaces.livefs.ILiveFSEditableAttributes"
             set_attributes="date_last_modified"/>
         <require

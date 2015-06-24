@@ -1,0 +1,54 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  metal:use-macro="view/macro:page/main_side"
+  i18n:domain="launchpad"
+>
+
+<metal:block fill-slot="head_epilogue">
+  <style type="text/css">
+    #clone-url dt {
+      font-weight: strong;
+    }
+  </style>
+</metal:block>
+
+<body>
+
+<metal:side fill-slot="side">
+  <div tal:replace="structure context/@@+portlet-privacy" />
+  <div tal:replace="structure context/@@+global-actions" />
+  <tal:subscribers replace="structure context/@@+portlet-subscribers" />
+</metal:side>
+
+<tal:registering metal:fill-slot="registering">
+  Owned by <tal:owner replace="structure context/owner/fmt:link" />
+</tal:registering>
+
+<div metal:fill-slot="main">
+
+  <div id="repository-description" tal:condition="context/description"
+       class="summary"
+       tal:content="structure context/description/fmt:text-to-html" />
+
+  <div class="yui-g first">
+    <div id="repository-management" class="portlet">
+      <tal:repository-management
+          replace="structure context/@@++repository-management" />
+    </div>
+  </div>
+
+  <div class="yui-g">
+    <div id="repository-branches" class="portlet"
+         tal:define="branches view/branches">
+      <h2>Branches</h2>
+      <tal:repository-branches replace="structure branches/@@+ref-listing" />
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

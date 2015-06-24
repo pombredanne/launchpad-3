@@ -1229,13 +1229,16 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
 
         if data:
             searchtext = data.get("searchtext")
-            if searchtext and searchtext.isdigit():
-                try:
-                    bug = getUtility(IBugSet).get(searchtext)
-                except NotFoundError:
-                    pass
-                else:
-                    self.request.response.redirect(canonical_url(bug))
+            if searchtext:
+                if searchtext.startswith('#'):
+                    searchtext = searchtext[1:]
+                if searchtext.isdigit():
+                    try:
+                        bug = getUtility(IBugSet).get(searchtext)
+                    except NotFoundError:
+                        pass
+                    else:
+                        self.request.response.redirect(canonical_url(bug))
 
             assignee_option = self.request.form.get("assignee_option")
             if assignee_option == "none":
@@ -1703,23 +1706,7 @@ class TextualBugTaskSearchListingView(BugTaskSearchListingView):
         # of bugs and we don't want to load all of that data in memory.
         # Retrieving only the bug numbers is much more efficient.
         search_params = self.buildSearchParams()
-
-        # XXX flacoste 2008/04/24 This should be moved to a
-        # BugTaskSearchParams.setTarget().
-        if (IDistroSeries.providedBy(self.context) or
-            IProductSeries.providedBy(self.context)):
-            search_params.setTarget(self.context)
-        elif IDistribution.providedBy(self.context):
-            search_params.setDistribution(self.context)
-        elif IProduct.providedBy(self.context):
-            search_params.setProduct(self.context)
-        elif IProjectGroup.providedBy(self.context):
-            search_params.setProject(self.context)
-        elif (ISourcePackage.providedBy(self.context) or
-              IDistributionSourcePackage.providedBy(self.context)):
-            search_params.setSourcePackage(self.context)
-        else:
-            raise AssertionError('Unknown context type: %s' % self.context)
+        search_params.setTarget(self.context)
 
         return u"".join("%d\n" % bug_id for bug_id in
             getUtility(IBugTaskSet).searchBugIds(search_params))

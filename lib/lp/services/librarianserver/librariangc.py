@@ -433,7 +433,7 @@ class UnreferencedLibraryFileAliasPruner:
             "SELECT COALESCE(max(id),0) FROM UnreferencedLibraryFileAlias")
         self.max_id = cur.fetchone()[0]
         log.debug(
-            "%d unreferenced LibraryFileContent to remove." % self.max_id)
+            "%d unreferenced LibraryFileAlias to remove." % self.max_id)
         con.commit()
 
     def isDone(self):
@@ -616,7 +616,7 @@ def delete_unwanted_disk_files(con):
     removed_count = 0
     content_id = next_wanted_content_id = -1
 
-    hex_content_id_re = re.compile('^[0-9a-f]{8}$')
+    hex_content_id_re = re.compile('^([0-9a-f]{8})(\.migrated)?$')
     ONE_DAY = 24 * 60 * 60
 
     for dirpath, dirnames, filenames in os.walk(
@@ -659,12 +659,13 @@ def delete_unwanted_disk_files(con):
         for filename in filenames:
             path = os.path.join(dirpath, filename)
             hex_content_id = ''.join(path.split(os.sep)[-4:])
-            if hex_content_id_re.search(hex_content_id) is None:
+            match = hex_content_id_re.search(hex_content_id)
+            if match is None:
                 log.warning(
                     "Ignoring invalid path %s" % path)
                 continue
 
-            content_id = int(hex_content_id, 16)
+            content_id = int(match.groups()[0], 16)
 
             while (next_wanted_content_id is not None
                     and content_id > next_wanted_content_id):
@@ -706,9 +707,8 @@ def delete_unwanted_disk_files(con):
             next_wanted_content_id = get_next_wanted_content_id()
 
     log.info(
-            "Deleted %d files from disk that where no longer referenced "
-            "in the db" % removed_count
-            )
+        "Deleted %d files from disk that were no longer referenced "
+        "in the db." % removed_count)
 
 
 def swift_files(max_lfc_id):
@@ -827,8 +827,8 @@ def delete_unwanted_swift_files(con):
         next_wanted_content_id = get_next_wanted_content_id()
 
     log.info(
-        "Deleted {0} files from Swift that where no longer referenced"
-        "in the db".format(removed_count))
+        "Deleted {0} files from Swift that were no longer referenced "
+        "in the db.".format(removed_count))
 
 
 def get_file_path(content_id):

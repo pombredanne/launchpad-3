@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -77,11 +77,9 @@ class TestDistributionMirror(TestCaseWithFactory):
             self.hoary, flavour='ubuntu')
         self.cdimage_mirror.ensureMirrorCDImageSeries(
             self.hoary, flavour='edubuntu')
-        self.failUnlessEqual(
-            self.cdimage_mirror.cdimage_series.count(), 2)
+        self.assertEqual(2, len(self.cdimage_mirror.cdimage_series))
         self.cdimage_mirror.deleteAllMirrorCDImageSeries()
-        self.failUnlessEqual(
-            self.cdimage_mirror.cdimage_series.count(), 0)
+        self.assertEqual(0, len(self.cdimage_mirror.cdimage_series))
 
     def test_archive_mirror_without_content_freshness(self):
         self.failIf(self.archive_mirror.source_series or

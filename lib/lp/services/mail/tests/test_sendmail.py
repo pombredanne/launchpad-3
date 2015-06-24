@@ -5,7 +5,7 @@ __metaclass__ = type
 
 from doctest import DocTestSuite
 import email.header
-from email.Message import Message
+from email.message import Message
 import unittest
 
 from zope.interface import implements
@@ -275,7 +275,7 @@ class TestMailController(TestCase):
         self.checkTimelineHasOneMailAction(ctl.timeline, subject=subject)
 
     def test_sendmail_with_email_header(self):
-        """Check the timeline is ok even if there is an email.Header.
+        """Check the timeline is ok even if there is an email.header.Header.
 
         See https://bugs.launchpad.net/launchpad/+bug/885972
         """

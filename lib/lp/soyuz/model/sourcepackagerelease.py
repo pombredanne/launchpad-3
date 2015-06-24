@@ -143,6 +143,12 @@ class SourcePackageRelease(SQLBase):
         super(SourcePackageRelease, self).__init__(*args, **kwargs)
         self.copyright = copyright
 
+    def __repr__(self):
+        """Returns an informative representation of a SourcePackageRelease."""
+        return '<{cls} {pkg_name} (id: {id}, version: {version})>'.format(
+            cls=self.__class__.__name__, pkg_name=self.name,
+            id=self.id, version=self.version)
+
     @property
     def copyright(self):
         """See `ISourcePackageRelease`."""
@@ -169,6 +175,12 @@ class SourcePackageRelease(SQLBase):
         if self._user_defined_fields is None:
             return []
         return simplejson.loads(self._user_defined_fields)
+
+    def getUserDefinedField(self, name):
+        if self.user_defined_fields:
+            for k, v in self.user_defined_fields:
+                if k.lower() == name.lower():
+                    return v
 
     @cachedproperty
     def package_diffs(self):

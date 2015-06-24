@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for archive."""
@@ -22,7 +22,7 @@ __all__ = [
     'ArchivePackagesView',
     'ArchiveView',
     'ArchiveViewBase',
-    'EnableRestrictedProcessorsMixin',
+    'EnableProcessorsMixin',
     'make_archive_vocabulary',
     'PackageCopyingMixin',
     'traverse_named_ppa',
@@ -33,6 +33,7 @@ from datetime import (
     datetime,
     timedelta,
     )
+from operator import attrgetter
 
 from lazr.restful.utils import smartquote
 import pytz
@@ -80,6 +81,7 @@ from lp.app.widgets.itemswidgets import (
     )
 from lp.app.widgets.textwidgets import StrippedTextWidget
 from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.interfaces.processor import IProcessorSet
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildSource,
     )
@@ -155,7 +157,6 @@ from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
 from lp.soyuz.interfaces.packagecopyrequest import IPackageCopyRequestSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
-from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status,
     inactive_publishing_status,
@@ -2023,16 +2024,18 @@ class ArchiveEditView(BaseArchiveEditView):
         return 'Edit %s' % self.context.displayname
 
 
-class EnableRestrictedProcessorsMixin:
-    """A mixin that provides enabled_restricted_processors field support"""
+class EnableProcessorsMixin:
+    """A mixin that provides processors field support"""
 
-    def createEnabledRestrictedProcessors(self, description=None):
-        """Creates the 'enabled_restricted_processors' field."""
+    def createEnabledProcessors(self, description=None):
+        """Creates the 'processors' field."""
         terms = []
-        for processor in getUtility(IProcessorSet).getRestricted():
+        for processor in sorted(
+                getUtility(IProcessorSet).getAll(), key=attrgetter('name')):
             terms.append(SimpleTerm(
-                processor, token=processor.name, title=processor.title))
-        old_field = IArchive['enabled_restricted_processors']
+                processor, token=processor.name,
+                title="%s (%s)" % (processor.title, processor.name)))
+        old_field = IArchive['processors']
         return form.Fields(
             List(__name__=old_field.__name__,
                  title=old_field.title,
@@ -2043,7 +2046,7 @@ class EnableRestrictedProcessorsMixin:
                  render_context=self.render_context)
 
 
-class ArchiveAdminView(BaseArchiveEditView, EnableRestrictedProcessorsMixin):
+class ArchiveAdminView(BaseArchiveEditView, EnableProcessorsMixin):
 
     field_names = [
         'enabled',
@@ -2058,7 +2061,7 @@ class ArchiveAdminView(BaseArchiveEditView, EnableRestrictedProcessorsMixin):
         'external_dependencies',
         ]
     custom_widget('external_dependencies', TextAreaWidget, height=3)
-    custom_widget('enabled_restricted_processors', LabeledMultiCheckBoxWidget)
+    custom_widget('processors', LabeledMultiCheckBoxWidget)
     page_title = 'Administer'
 
     @property
@@ -2102,17 +2105,16 @@ class ArchiveAdminView(BaseArchiveEditView, EnableRestrictedProcessorsMixin):
     @property
     def initial_values(self):
         return {
-            'enabled_restricted_processors':
-                self.context.enabled_restricted_processors,
+            'processors': self.context.processors,
             }
 
     def setUpFields(self):
         """Override `LaunchpadEditFormView`.
 
-        See `createEnabledRestrictedProcessors` method.
+        See `createEnabledProcessors` method.
         """
         super(ArchiveAdminView, self).setUpFields()
-        self.form_fields += self.createEnabledRestrictedProcessors()
+        self.form_fields += self.createEnabledProcessors()
 
 
 class ArchiveDeleteView(LaunchpadFormView):

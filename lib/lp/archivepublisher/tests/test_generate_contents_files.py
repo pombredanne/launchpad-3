@@ -1,10 +1,11 @@
-# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test for the `generate-contents-files` script."""
 
 __metaclass__ = type
 
+import hashlib
 from optparse import OptionValueError
 import os
 
@@ -15,6 +16,7 @@ from lp.archivepublisher.scripts.generate_contents_files import (
     execute,
     GenerateContentsFiles,
     )
+from lp.archivepublisher.scripts.publish_ftpmaster import PublishFTPMaster
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.log.logger import DevNullLogger
 from lp.services.osutils import write_file
@@ -183,14 +185,6 @@ class TestGenerateContentsFiles(TestCaseWithFactory):
         self.assertEqual(
             [das.architecturetag], script.getArchs(distroseries.name))
 
-    def test_getSupportedSeries(self):
-        # getSupportedSeries returns the supported distroseries in the
-        # distribution.
-        script = self.makeScript()
-        distroseries = self.factory.makeDistroSeries(
-            distribution=script.distribution)
-        self.assertIn(distroseries, script.getSupportedSeries())
-
     def test_getSuites(self):
         # getSuites returns the full names (distroseries-pocket) of the
         # pockets that have packages to publish.
@@ -268,7 +262,9 @@ class TestGenerateContentsFiles(TestCaseWithFactory):
             script.content_archive, StartsWith(script.config.distroroot))
 
     def test_main(self):
-        # If run end-to-end, the script generates Contents.gz files.
+        # If run end-to-end, the script generates Contents.gz files, and a
+        # following publisher run will put those files in their final place
+        # and include them in the Release file.
         distro = self.makeDistro()
         distroseries = self.factory.makeDistroSeries(distribution=distro)
         processor = self.factory.makeProcessor()
@@ -287,8 +283,27 @@ class TestGenerateContentsFiles(TestCaseWithFactory):
         fake_overrides(script, distroseries)
         script.process()
         self.assertTrue(file_exists(os.path.join(
+            script.content_archive, distro.name, "dists", suite,
+            "Contents-%s-staged.gz" % das.architecturetag)))
+        publisher_script = PublishFTPMaster(test_args=["-d", distro.name])
+        publisher_script.txn = self.layer.txn
+        publisher_script.logger = DevNullLogger()
+        publisher_script.main()
+        contents_path = os.path.join(
             script.config.distsroot, suite,
-            "Contents-%s.gz" % das.architecturetag)))
+            "Contents-%s.gz" % das.architecturetag)
+        self.assertTrue(file_exists(contents_path))
+        with open(contents_path, "rb") as contents_file:
+            contents_bytes = contents_file.read()
+        release_path = os.path.join(script.config.distsroot, suite, "Release")
+        self.assertTrue(file_exists(release_path))
+        with open(release_path) as release_file:
+            release_lines = release_file.readlines()
+        self.assertIn(
+            " %s %16s Contents-%s.gz\n" % (
+                hashlib.md5(contents_bytes).hexdigest(), len(contents_bytes),
+                das.architecturetag),
+            release_lines)
 
     def test_run_script(self):
         # The script will run stand-alone.

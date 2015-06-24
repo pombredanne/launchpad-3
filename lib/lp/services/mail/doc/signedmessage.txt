@@ -1,4 +1,4 @@
-SignedMessage extends email.Message.Message in order to provide easy
+SignedMessage extends email.message.Message in order to provide easy
 access to signed content and the signature of messages.
 
 You can create it from a string using signed_message_from_string. It
@@ -37,7 +37,7 @@ The raw text that was signed is available as msg.signedContent:
     <BLANKLINE>
     With multiple paragraphs.
 
-And to make it easier to work with, it's available as an email.Message
+And to make it easier to work with, it's available as an email.message
 object as well:
 
     >>> signed_msg = msg.signedMessage

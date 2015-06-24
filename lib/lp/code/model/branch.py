@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -14,7 +14,6 @@ import operator
 from bzrlib import urlutils
 from bzrlib.revision import NULL_REVISION
 import pytz
-import simplejson
 from sqlobject import (
     ForeignKey,
     IntCol,
@@ -35,11 +34,7 @@ from storm.expr import (
     Select,
     SQL,
     )
-from storm.locals import (
-    AutoReload,
-    Int,
-    Reference,
-    )
+from storm.locals import AutoReload
 from storm.store import Store
 from zope.component import getUtility
 from zope.event import notify
@@ -97,7 +92,6 @@ from lp.code.errors import (
     CannotUpgradeBranch,
     CannotUpgradeNonHosted,
     InvalidBranchMergeProposal,
-    InvalidMergeQueueConfig,
     UpgradePending,
     )
 from lp.code.event.branchmergeproposal import (
@@ -108,7 +102,6 @@ from lp.code.interfaces.branch import (
     BzrIdentityMixin,
     DEFAULT_BRANCH_STATUS_IN_LISTING,
     IBranch,
-    IBranchNavigationMenu,
     IBranchSet,
     user_has_special_branch_access,
     WrongNumberOfReviewTypeArguments,
@@ -191,7 +184,7 @@ from lp.services.webapp.authorization import check_permission
 class Branch(SQLBase, BzrIdentityMixin):
     """A sequence of ordered revisions in Bazaar."""
 
-    implements(IBranch, IBranchNavigationMenu, IPrivacy, IInformationType)
+    implements(IBranch, IPrivacy, IInformationType)
     _table = 'Branch'
 
     branch_type = EnumCol(enum=BranchType, notNull=True)
@@ -208,7 +201,6 @@ class Branch(SQLBase, BzrIdentityMixin):
     mirror_status_message = StringCol(default=None)
     information_type = EnumCol(
         enum=InformationType, default=InformationType.PUBLIC)
-    access_policy = IntCol()
 
     @property
     def private(self):
@@ -510,14 +502,21 @@ class Branch(SQLBase, BzrIdentityMixin):
             status, target_branch=self, merged_revnos=merged_revnos,
             eager_load=eager_load)
 
+    def getMergeProposalByID(self, id):
+        """See `IBranch`."""
+        return Store.of(self).find(
+            BranchMergeProposal,
+            BranchMergeProposal.id == id,
+            BranchMergeProposal.source_branch == self).one()
+
     def isBranchMergeable(self, target_branch):
         """See `IBranch`."""
         # In some imaginary time we may actually check to see if this branch
         # and the target branch have common ancestry.
         return self.target.areBranchesMergeable(target_branch.target)
 
-    def addLandingTarget(self, registrant, target_branch,
-                         prerequisite_branch=None, whiteboard=None,
+    def addLandingTarget(self, registrant, merge_target,
+                         merge_prerequisite=None, whiteboard=None,
                          date_created=None, needs_review=False,
                          description=None, review_requests=None,
                          commit_message=None):
@@ -526,27 +525,27 @@ class Branch(SQLBase, BzrIdentityMixin):
             raise InvalidBranchMergeProposal(
                 '%s branches do not support merge proposals.'
                 % self.target.displayname)
-        if self == target_branch:
+        if self == merge_target:
             raise InvalidBranchMergeProposal(
                 'Source and target branches must be different.')
-        if not target_branch.isBranchMergeable(self):
+        if not merge_target.isBranchMergeable(self):
             raise InvalidBranchMergeProposal(
                 '%s is not mergeable into %s' % (
-                    self.displayname, target_branch.displayname))
-        if prerequisite_branch is not None:
-            if not self.isBranchMergeable(prerequisite_branch):
+                    self.displayname, merge_target.displayname))
+        if merge_prerequisite is not None:
+            if not self.isBranchMergeable(merge_prerequisite):
                 raise InvalidBranchMergeProposal(
                     '%s is not mergeable into %s' % (
-                        prerequisite_branch.displayname, self.displayname))
-            if self == prerequisite_branch:
+                        merge_prerequisite.displayname, self.displayname))
+            if self == merge_prerequisite:
                 raise InvalidBranchMergeProposal(
                     'Source and prerequisite branches must be different.')
-            if target_branch == prerequisite_branch:
+            if merge_target == merge_prerequisite:
                 raise InvalidBranchMergeProposal(
                     'Target and prerequisite branches must be different.')
 
         target = BranchMergeProposalGetter.activeProposalsForBranches(
-            self, target_branch)
+            self, merge_target)
         for existing_proposal in target:
             raise BranchMergeProposalExists(existing_proposal)
 
@@ -565,12 +564,12 @@ class Branch(SQLBase, BzrIdentityMixin):
 
         # If no reviewer is specified, use the default for the branch.
         if len(review_requests) == 0:
-            review_requests.append((target_branch.code_reviewer, None))
+            review_requests.append((merge_target.code_reviewer, None))
 
         bmp = BranchMergeProposal(
             registrant=registrant, source_branch=self,
-            target_branch=target_branch,
-            prerequisite_branch=prerequisite_branch, whiteboard=whiteboard,
+            target_branch=merge_target,
+            prerequisite_branch=merge_prerequisite, whiteboard=whiteboard,
             date_created=date_created,
             date_review_requested=date_review_requested,
             queue_status=queue_status, commit_message=commit_message,
@@ -587,7 +586,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         return bmp
 
     def _createMergeProposal(
-        self, registrant, target_branch, prerequisite_branch=None,
+        self, registrant, merge_target, merge_prerequisite=None,
         needs_review=True, initial_comment=None, commit_message=None,
         reviewers=None, review_types=None):
         """See `IBranch`."""
@@ -600,7 +599,7 @@ class Branch(SQLBase, BzrIdentityMixin):
                 'reviewers and review_types must be equal length.')
         review_requests = zip(reviewers, review_types)
         return self.addLandingTarget(
-            registrant, target_branch, prerequisite_branch,
+            registrant, merge_target, merge_prerequisite,
             needs_review=needs_review, description=initial_comment,
             commit_message=commit_message, review_requests=review_requests)
 
@@ -619,6 +618,11 @@ class Branch(SQLBase, BzrIdentityMixin):
                 GenerateIncrementalDiffJob.create(
                     merge_proposal, old.revision_id, new.revision_id)
         return jobs
+
+    def markRecipesStale(self):
+        """See `IBranch`."""
+        for recipe in self._recipes:
+            recipe.is_stale = True
 
     def addToLaunchBag(self, launchbag):
         """See `IBranch`."""
@@ -649,7 +653,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         """See `IBranch`."""
         return (self.revision_count > 0 or self.last_mirrored != None)
 
-    def codebrowse_url(self, *extras):
+    def getCodebrowseUrl(self, *extras):
         """See `IBranch`."""
         if self.private:
             root = config.codehosting.secure_codebrowse_root
@@ -659,7 +663,7 @@ class Branch(SQLBase, BzrIdentityMixin):
 
     @property
     def browse_source_url(self):
-        return self.codebrowse_url('files')
+        return self.getCodebrowseUrl('files')
 
     def composePublicURL(self, scheme='http'):
         """See `IBranch`."""
@@ -678,9 +682,11 @@ class Branch(SQLBase, BzrIdentityMixin):
         return safe_open('lp-internal', self.getInternalBzrUrl())
 
     @property
-    def displayname(self):
+    def display_name(self):
         """See `IBranch`."""
         return self.bzr_identity
+
+    displayname = display_name
 
     @property
     def code_reviewer(self):
@@ -915,7 +921,7 @@ class Branch(SQLBase, BzrIdentityMixin):
             subscription.review_level = code_review_level
         # Grant the subscriber access if they can't see the branch.
         service = getUtility(IService, 'sharing')
-        ignored, branches, ignored = service.getVisibleArtifacts(
+        _, branches, _, _ = service.getVisibleArtifacts(
             person, branches=[self], ignore_permissions=True)
         if not branches:
             service.ensureAccessGrants(
@@ -929,7 +935,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         # currently accessible to the person but which the subscribed_by user
         # has edit permissions for.
         service = getUtility(IService, 'sharing')
-        ignored, invisible_stacked_branches = service.getInvisibleArtifacts(
+        _, invisible_stacked_branches, _ = service.getInvisibleArtifacts(
             person, branches=self.getStackedOnBranches())
         editable_stacked_on_branches = [
             branch for branch in invisible_stacked_branches
@@ -1251,10 +1257,6 @@ class Branch(SQLBase, BzrIdentityMixin):
                 datetime.now(pytz.timezone('UTC'))
                 + increment * 2 ** (self.mirror_failures - 1))
 
-    def destroySelfBreakReferences(self):
-        """See `IBranch`."""
-        return self.destroySelf(break_references=True)
-
     def _deleteBranchSubscriptions(self):
         """Delete subscriptions for this branch prior to deleting branch."""
         subscriptions = Store.of(self).find(
@@ -1405,28 +1407,19 @@ class Branch(SQLBase, BzrIdentityMixin):
         return can_access
 
     @property
-    def recipes(self):
-        """See `IHasRecipes`."""
+    def _recipes(self):
+        """Undecorated version of recipes for use by `markRecipesStale`."""
         from lp.code.model.sourcepackagerecipedata import (
-            SourcePackageRecipeData)
+            SourcePackageRecipeData,
+            )
         return SourcePackageRecipeData.findRecipes(self)
 
-    merge_queue_id = Int(name='merge_queue', allow_none=True)
-    merge_queue = Reference(merge_queue_id, 'BranchMergeQueue.id')
-
-    merge_queue_config = StringCol(dbName='merge_queue_config')
-
-    def addToQueue(self, queue):
-        """See `IBranchEdit`."""
-        self.merge_queue = queue
-
-    def setMergeQueueConfig(self, config):
-        """See `IBranchEdit`."""
-        try:
-            simplejson.loads(config)
-            self.merge_queue_config = config
-        except ValueError:  # The json string is invalid
-            raise InvalidMergeQueueConfig
+    @property
+    def recipes(self):
+        """See `IHasRecipes`."""
+        from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
+        hook = SourcePackageRecipe.preLoadDataForSourcePackageRecipes
+        return DecoratedResultSet(self._recipes, pre_iter_hook=hook)
 
 
 class DeletionOperation:
@@ -1661,7 +1654,7 @@ def get_branch_privacy_filter(user, branch_class=Branch):
 
     policy_grant_query = Coalesce(
         ArrayIntersects(
-            Array(branch_class.access_policy),
+            Array(SQL('%s.access_policy' % branch_class.__storm_table__)),
             Select(
                 ArrayAgg(AccessPolicyGrant.policy_id),
                 tables=(AccessPolicyGrant,

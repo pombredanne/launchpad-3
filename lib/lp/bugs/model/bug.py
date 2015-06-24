@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Launchpad bug-related database table classes."""
@@ -20,7 +20,7 @@ __all__ = [
 
 
 from cStringIO import StringIO
-from email.Utils import make_msgid
+from email.utils import make_msgid
 from functools import wraps
 from itertools import chain
 import operator
@@ -836,7 +836,7 @@ class Bug(SQLBase, InformationTypeMixin):
         # there is at least one bugtask for which access can be checked.
         if self.default_bugtask:
             service = getUtility(IService, 'sharing')
-            bugs, ignored, ignored = service.getVisibleArtifacts(
+            bugs, _, _, _ = service.getVisibleArtifacts(
                 person, bugs=[self], ignore_permissions=True)
             if not bugs:
                 service.ensureAccessGrants(
@@ -1774,7 +1774,7 @@ class Bug(SQLBase, InformationTypeMixin):
         if information_type in PRIVATE_INFORMATION_TYPES:
             service = getUtility(IService, 'sharing')
             for person in (who, self.owner):
-                bugs, ignored, ignored = service.getVisibleArtifacts(
+                bugs, _, _, _ = service.getVisibleArtifacts(
                     person, bugs=[self], ignore_permissions=True)
                 if not bugs:
                     # subscribe() isn't sufficient if a subscription

@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Person-related view classes."""
@@ -143,6 +143,7 @@ from lp.buildmaster.enums import BuildStatus
 from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
 from lp.code.errors import InvalidNamespace
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
+from lp.code.interfaces.gitlookup import IGitTraverser
 from lp.registry.browser import BaseRdfView
 from lp.registry.browser.branding import BrandingChangeView
 from lp.registry.browser.menu import (
@@ -154,6 +155,10 @@ from lp.registry.browser.teamjoin import TeamJoinMixin
 from lp.registry.enums import PersonVisibility
 from lp.registry.errors import VoucherAlreadyRedeemed
 from lp.registry.interfaces.codeofconduct import ISignedCodeOfConductSet
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage,
+    )
 from lp.registry.interfaces.gpg import IGPGKeySet
 from lp.registry.interfaces.irc import IIrcIDSet
 from lp.registry.interfaces.jabber import (
@@ -172,13 +177,19 @@ from lp.registry.interfaces.person import (
     IPersonClaim,
     IPersonSet,
     )
+from lp.registry.interfaces.persondistributionsourcepackage import (
+    IPersonDistributionSourcePackageFactory,
+    )
 from lp.registry.interfaces.personproduct import IPersonProductFactory
 from lp.registry.interfaces.persontransferjob import (
     IPersonDeactivateJobSource,
     )
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.poll import IPollSubset
-from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.product import (
+    InvalidProductName,
+    IProduct,
+    )
 from lp.registry.interfaces.ssh import (
     ISSHKeySet,
     SSHKeyAdditionError,
@@ -273,9 +284,6 @@ from lp.soyuz.interfaces.publishing import ISourcePackagePublishingHistory
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 
 
-COMMASPACE = ', '
-
-
 class PersonBreadcrumb(DisplaynameBreadcrumb):
     implements(IHeadingBreadcrumb, IMultiFacetedBreadcrumb)
 
@@ -356,8 +364,60 @@ class BranchTraversalMixin:
             return self.redirectSubTree(canonical_url(branch))
         raise NotFoundError
 
+    @stepthrough('+git')
+    def traverse_personal_gitrepo(self, name):
+        # XXX wgrant 2015-06-12: traverse() handles traversal for
+        # non-personal repos, and works for personal repos except that
+        # the +git view is matched first. A stepto would clobber the
+        # view, but stepthroughs match before views and only for
+        # multi-segment paths, so this is a workable hack.
+        _, _, repository, _ = getUtility(IGitTraverser).traverse(
+            iter(['+git', name]), owner=self.context)
+        return repository
+
     def traverse(self, pillar_name):
-        # If the pillar is a product, then return the PersonProduct.
+        try:
+            # Look for a Git repository.  We must be careful not to consume
+            # the traversal stack immediately, as if we fail to find a Git
+            # repository we will need to look for a Bazaar branch instead.
+            segments = (
+                [pillar_name] +
+                list(reversed(self.request.getTraversalStack())))
+            num_segments = len(segments)
+            iter_segments = iter(segments)
+            traverser = getUtility(IGitTraverser)
+            _, target, repository, trailing = traverser.traverse(
+                iter_segments, owner=self.context)
+            if repository is None:
+                raise NotFoundError
+            # Subtract one because the pillar has already been traversed.
+            num_traversed = num_segments - len(list(iter_segments)) - 1
+            if trailing:
+                num_traversed -= 1
+            for _ in range(num_traversed):
+                self.request.stepstogo.consume()
+
+            if IProduct.providedBy(target):
+                if target.name != pillar_name:
+                    # This repository was accessed through one of its
+                    # project's aliases, so we must redirect to its
+                    # canonical URL.
+                    return self.redirectSubTree(canonical_url(repository))
+
+            if IDistributionSourcePackage.providedBy(target):
+                if target.distribution.name != pillar_name:
+                    # This branch or repository was accessed through one of its
+                    # distribution's aliases, so we must redirect to its
+                    # canonical URL.
+                    return self.redirectSubTree(canonical_url(repository))
+
+            return repository
+        except (NotFoundError, InvalidNamespace, InvalidProductName):
+            pass
+
+        # If the pillar is a product, then return the PersonProduct; if it
+        # is a distribution and further segments provide a source package,
+        # then return the PersonDistributionSourcePackage.
         pillar = getUtility(IPillarNameSet).getByName(pillar_name)
         if IProduct.providedBy(pillar):
             person_product = getUtility(IPersonProductFactory).create(
@@ -369,6 +429,25 @@ class BranchTraversalMixin:
                     status=301)
             getUtility(IOpenLaunchBag).add(pillar)
             return person_product
+        elif IDistribution.providedBy(pillar):
+            if (len(self.request.stepstogo) >= 2 and
+                self.request.stepstogo.peek() == "+source"):
+                self.request.stepstogo.consume()
+                spn_name = self.request.stepstogo.consume()
+                dsp = IDistribution(pillar).getSourcePackage(spn_name)
+                if dsp is not None:
+                    factory = getUtility(
+                        IPersonDistributionSourcePackageFactory)
+                    person_dsp = factory.create(self.context, dsp)
+                    # If accessed through an alias, redirect to the proper
+                    # name.
+                    if pillar.name != pillar_name:
+                        return self.redirectSubTree(
+                            canonical_url(person_dsp, request=self.request),
+                            status=301)
+                    getUtility(IOpenLaunchBag).add(pillar)
+                    return person_dsp
+
         # Otherwise look for a branch.
         try:
             branch = getUtility(IBranchNamespaceSet).traverse(
@@ -384,13 +463,13 @@ class BranchTraversalMixin:
 
         if branch.product is not None:
             if branch.product.name != pillar_name:
-                # This branch was accessed through one of its product's
+                # This branch was accessed through one of its project's
                 # aliases, so we must redirect to its canonical URL.
                 return self.redirectSubTree(canonical_url(branch))
 
         if branch.distribution is not None:
             if branch.distribution.name != pillar_name:
-                # This branch was accessed through one of its product's
+                # This branch was accessed through one of its distribution's
                 # aliases, so we must redirect to its canonical URL.
                 return self.redirectSubTree(canonical_url(branch))
 
@@ -515,11 +594,6 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
     def traverse_recipe(self, name):
         """Traverse to this person's recipes."""
         return self.context.getRecipe(name)
-
-    @stepthrough('+merge-queues')
-    def traverse_merge_queue(self, name):
-        """Traverse to this person's merge queues."""
-        return self.context.getMergeQueue(name)
 
     @stepthrough('+livefs')
     def traverse_livefs(self, distribution_name):
@@ -698,6 +772,7 @@ class PersonOverviewMenu(ApplicationMenu, PersonMenuMixin,
         'branding',
         'editemailaddresses',
         'editlanguages',
+        'editmailinglists',
         'editircnicknames',
         'editjabberids',
         'editsshkeys',
@@ -754,6 +829,12 @@ class PersonOverviewMenu(ApplicationMenu, PersonMenuMixin,
     def editemailaddresses(self):
         target = '+editemails'
         text = 'Change e-mail settings'
+        return Link(target, text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def editmailinglists(self):
+        target = '+editmailinglists'
+        text = 'Manage mailing list subscriptions'
         return Link(target, text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
@@ -945,8 +1026,8 @@ class PeopleSearchView(LaunchpadView):
 
 
 class DeactivateAccountSchema(Interface):
-    comment = copy_field(
-        IPerson['account_status_comment'], readonly=False, __name__='comment')
+    comment = Text(
+        title=_("Why are you deactivating your account?"), required=False)
 
 
 class PersonDeactivateAccountView(LaunchpadFormView):
@@ -1176,13 +1257,19 @@ class PersonAdministerView(PersonRenameFormMixin):
         self.updateContextFromData(data)
 
 
-class PersonAccountAdministerView(LaunchpadEditFormView):
+class IAccountAdministerSchema(Interface):
+
+    status = copy_field(IAccount['status'], required=True, readonly=False)
+    comment = Text(
+        title=_('Status change comment'), required=True, readonly=False)
+
+
+class PersonAccountAdministerView(LaunchpadFormView):
     """Administer an `IAccount` belonging to an `IPerson`."""
-    schema = IAccount
+    schema = IAccountAdministerSchema
     label = "Review person's account"
-    field_names = ['displayname', 'status', 'status_comment']
-    custom_widget(
-        'status_comment', TextAreaWidget, height=5, width=60)
+    field_names = ['status', 'comment']
+    custom_widget('comment', TextAreaWidget, height=5, width=60)
 
     def __init__(self, context, request):
         """See `LaunchpadEditFormView`."""
@@ -1191,6 +1278,10 @@ class PersonAccountAdministerView(LaunchpadEditFormView):
         # It also means that permissions are checked on IAccount, not IPerson.
         self.person = self.context
         self.context = self.person.account
+
+    @property
+    def initial_values(self):
+        return {'status': self.context.status}
 
     @property
     def is_viewing_person(self):
@@ -1232,20 +1323,20 @@ class PersonAccountAdministerView(LaunchpadEditFormView):
     @action('Change', name='change')
     def change_action(self, action, data):
         """Update the IAccount."""
-        if (data['status'] == AccountStatus.SUSPENDED
-            and self.context.status != AccountStatus.SUSPENDED):
+        if data['status'] == self.context.status:
+            return
+        if data['status'] == AccountStatus.SUSPENDED:
             # The preferred email address is removed to ensure no email
             # is sent to the user.
             self.person.setPreferredEmail(None)
             self.request.response.addInfoNotification(
-                u'The account "%s" has been suspended.' % (
-                    self.context.displayname))
-        if (data['status'] == AccountStatus.ACTIVE
-            and self.context.status != AccountStatus.ACTIVE):
+                u'The account "%s" has been suspended.'
+                % self.context.displayname)
+        elif data['status'] == AccountStatus.DEACTIVATED:
             self.request.response.addInfoNotification(
-                u'The user is reactivated. He must use the '
-                u'"forgot password" to log in.')
-        self.updateContextFromData(data)
+                u'The account "%s" is now deactivated. The user can log in '
+                u'to reactivate it.' % self.context.displayname)
+        self.context.setStatus(data['status'], self.user, data['comment'])
 
 
 class PersonVouchersView(LaunchpadFormView):
@@ -1944,24 +2035,30 @@ class PersonParticipationView(LaunchpadView):
     def label(self):
         return 'Team participation for ' + self.context.displayname
 
-    def _asParticipation(self, membership=None, team=None, via=None):
+    def _asParticipation(self, team=None, membership=None, via=None,
+                         mailing_list=None, subscription=None):
         """Return a dict of participation information for the membership.
 
-        Method requires membership or team, not both.
+        Method requires membership or via, not both.
         :param via: The team through which the membership in the indirect
         team is established.
         """
-        if ((membership is None and team is None) or
-            (membership is not None and team is not None)):
+        if ((membership is None and via is None) or
+            (membership is not None and via is not None)):
             raise AssertionError(
-                "The membership or team argument must be provided, not both.")
+                "The membership or via argument must be provided, not both.")
 
         if via is not None:
             # When showing the path, it's unnecessary to show the team in
             # question at the beginning of the path, or the user at the
             # end of the path.
-            via = COMMASPACE.join(
-                [via_team.displayname for via_team in via[1:-1]])
+            via_names = []
+            for via_team in via[1:-1]:
+                if check_permission('launchpad.LimitedView', via_team):
+                    via_names.append(via_team.displayname)
+                else:
+                    via_names.append('[private team]')
+            via = ", ".join(via_names)
 
         if membership is None:
             # Membership is via an indirect team so sane defaults exist.
@@ -1971,17 +2068,15 @@ class PersonParticipationView(LaunchpadView):
             datejoined = None
         else:
             # The member is a direct member; use the membership data.
-            team = membership.team
             datejoined = membership.datejoined
-            if membership.person == team.teamowner:
+            if membership.personID == team.teamownerID:
                 role = 'Owner'
             elif membership.status == TeamMembershipStatus.ADMIN:
                 role = 'Admin'
             else:
                 role = 'Member'
 
-        if team.mailing_list is not None and team.mailing_list.is_usable:
-            subscription = team.mailing_list.getSubscription(self.context)
+        if mailing_list is not None:
             if subscription is None:
                 subscribed = 'Not subscribed'
             else:
@@ -1998,27 +2093,26 @@ class PersonParticipationView(LaunchpadView):
         """Return the participation information for active memberships."""
         paths, memberships = self.context.getPathsToTeams()
         direct_teams = [membership.team for membership in memberships]
-        indirect_teams = [
-            team for team in paths.keys()
-            if team not in direct_teams]
+        items = []
+        for membership in memberships:
+            items.append(dict(team=membership.team, membership=membership))
+        for team, via in paths.items():
+            if team not in direct_teams:
+                items.append(dict(team=team, via=via))
+        items = [
+            item for item in items
+            if check_permission('launchpad.View', item["team"])]
         participations = []
 
-        # First, create a participation for all direct memberships.
-        for membership in memberships:
-            # Add a participation record for the membership if allowed.
-            if check_permission('launchpad.View', membership.team):
-                participations.append(
-                    self._asParticipation(membership=membership))
+        # Bulk-load mailing list subscriptions.
+        subscriptions = getUtility(IMailingListSet).getSubscriptionsForTeams(
+            self.context, [item["team"] for item in items])
 
-        # Second, create a participation for all indirect memberships,
-        # using the remaining paths.
-        for indirect_team in indirect_teams:
-            if not check_permission('launchpad.View', indirect_team):
-                continue
-            participations.append(
-                self._asParticipation(
-                    via=paths[indirect_team],
-                    team=indirect_team))
+        # Create all the participations.
+        for item in items:
+            item["mailing_list"], item["subscription"] = subscriptions.get(
+                item["team"].id, (None, None))
+            participations.append(self._asParticipation(**item))
         return sorted(participations, key=itemgetter('displayname'))
 
     @cachedproperty
@@ -2687,8 +2781,6 @@ class PersonEditEmailsView(LaunchpadFormView):
                   orientation='vertical')
     custom_widget('UNVALIDATED_SELECTED', LaunchpadRadioWidget,
                   orientation='vertical')
-    custom_widget('mailing_list_auto_subscribe_policy',
-                  LaunchpadRadioWidgetWithDescription)
 
     label = 'Change your e-mail settings'
 
@@ -2711,9 +2803,7 @@ class PersonEditEmailsView(LaunchpadFormView):
         self.form_fields = (self._validated_emails_field() +
                             self._unvalidated_emails_field() +
                             FormFields(TextLine(__name__='newemail',
-                                                title=u'Add a new address'))
-                            + self._mailing_list_fields()
-                            + self._autosubscribe_policy_fields())
+                                                title=u'Add a new address')))
 
     @property
     def initial_values(self):
@@ -2734,20 +2824,8 @@ class PersonEditEmailsView(LaunchpadFormView):
         unvalidated = self.unvalidated_addresses
         if len(unvalidated) > 0:
             unvalidated = unvalidated.pop()
-        initial = dict(VALIDATED_SELECTED=validated,
-                       UNVALIDATED_SELECTED=unvalidated)
-
-        # Defaults for the mailing list autosubscribe buttons.
-        policy = self.context.mailing_list_auto_subscribe_policy
-        initial.update(mailing_list_auto_subscribe_policy=policy)
-
-        return initial
-
-    def setUpWidgets(self, context=None):
-        """See `LaunchpadFormView`."""
-        super(PersonEditEmailsView, self).setUpWidgets(context)
-        widget = self.widgets['mailing_list_auto_subscribe_policy']
-        widget.display_label = False
+        return dict(VALIDATED_SELECTED=validated,
+                    UNVALIDATED_SELECTED=unvalidated)
 
     def _validated_emails_field(self):
         """Create a field with a vocabulary of validated emails.
@@ -2788,75 +2866,6 @@ class PersonEditEmailsView(LaunchpadFormView):
             Choice(__name__='UNVALIDATED_SELECTED', title=title,
                    source=SimpleVocabulary(terms)),
             custom_widget=self.custom_widgets['UNVALIDATED_SELECTED'])
-
-    def _mailing_list_subscription_type(self, mailing_list):
-        """Return the context user's subscription type for the given list.
-
-        This is 'Preferred address' if the user is subscribed using her
-        preferred address and 'Don't subscribe' if the user is not
-        subscribed at all. Otherwise it's the EmailAddress under
-        which the user is subscribed to this mailing list.
-        """
-        subscription = mailing_list.getSubscription(self.context)
-        if subscription is None:
-            return "Don't subscribe"
-        elif subscription.email_address is None:
-            return 'Preferred address'
-        else:
-            return subscription.email_address
-
-    def _mailing_list_fields(self):
-        """Creates a field for each mailing list the user can subscribe to.
-
-        If a team doesn't have a mailing list, or the mailing list
-        isn't usable, it's not included.
-        """
-        mailing_list_set = getUtility(IMailingListSet)
-        fields = []
-        terms = [
-            SimpleTerm("Preferred address"),
-            SimpleTerm("Don't subscribe"),
-            ]
-        for email in self.validated_addresses:
-            terms.append(SimpleTerm(email, email.email))
-        for team in self.context.teams_participated_in:
-            mailing_list = mailing_list_set.get(team.name)
-            if mailing_list is not None and mailing_list.is_usable:
-                name = 'subscription.%s' % team.name
-                value = self._mailing_list_subscription_type(mailing_list)
-                field = Choice(__name__=name,
-                               title=team.name,
-                               source=SimpleVocabulary(terms), default=value)
-                fields.append(field)
-        return FormFields(*fields)
-
-    def _autosubscribe_policy_fields(self):
-        """Create a field for each mailing list auto-subscription option."""
-        return FormFields(
-            Choice(__name__='mailing_list_auto_subscribe_policy',
-                   title=_('When should Launchpad automatically subscribe '
-                           'you to a team&#x2019;s mailing list?'),
-                   source=MailingListAutoSubscribePolicy))
-
-    @property
-    def mailing_list_widgets(self):
-        """Return all the mailing list subscription widgets."""
-        mailing_list_set = getUtility(IMailingListSet)
-        widgets = []
-        for widget in self.widgets:
-            if widget.name.startswith('field.subscription.'):
-                team_name = widget.label
-                mailing_list = mailing_list_set.get(team_name)
-                assert mailing_list is not None, 'Missing mailing list'
-                widget_dict = dict(
-                    team=mailing_list.team,
-                    widget=widget,
-                    )
-                widgets.append(widget_dict)
-                # We'll put the label in the first column, so don't include it
-                # in the second column.
-                widget.display_label = False
-        return widgets
 
     def _validate_selected_address(self, data, field='VALIDATED_SELECTED'):
         """A generic validator for this view's actions.
@@ -3089,6 +3098,140 @@ class PersonEditEmailsView(LaunchpadFormView):
                 "provider might use 'greylisting', which could delay the "
                 "message for up to an hour or two.)" % newemail)
         self.next_url = self.action_url
+
+
+class PersonEditMailingListsView(LaunchpadFormView):
+    """A view for editing a person's mailing list subscriptions."""
+
+    implements(IPersonEditMenu)
+
+    schema = IEmailAddress
+
+    custom_widget('mailing_list_auto_subscribe_policy',
+                  LaunchpadRadioWidgetWithDescription)
+
+    label = 'Change your mailing list subscriptions'
+
+    def initialize(self):
+        if self.context.is_team:
+            # +editmailinglists is not available on teams.
+            name = self.request['PATH_INFO'].split('/')[-1]
+            raise NotFound(self, name, request=self.request)
+        super(PersonEditMailingListsView, self).initialize()
+
+    def setUpFields(self):
+        """Set up fields for this view.
+
+        The main fields of interest are the selection fields with custom
+        vocabularies for the lists of validated and unvalidated email
+        addresses.
+        """
+        super(PersonEditMailingListsView, self).setUpFields()
+        self.form_fields = (self._mailing_list_fields()
+                            + self._autosubscribe_policy_fields())
+
+    @property
+    def initial_values(self):
+        """Set up default values for the radio widgets.
+
+        A radio widget must have a selected value, so we select the
+        first unvalidated and validated email addresses in the lists
+        to be the default for the corresponding widgets.
+
+        The only exception is if the user has a preferred email
+        address: then, that address is used as the default validated
+        email address.
+        """
+        # Defaults for the mailing list autosubscribe buttons.
+        return dict(
+            mailing_list_auto_subscribe_policy=
+                self.context.mailing_list_auto_subscribe_policy)
+
+    def setUpWidgets(self, context=None):
+        """See `LaunchpadFormView`."""
+        super(PersonEditMailingListsView, self).setUpWidgets(context)
+        widget = self.widgets['mailing_list_auto_subscribe_policy']
+        widget.display_label = False
+
+    def _mailing_list_subscription_type(self, mailing_list):
+        """Return the context user's subscription type for the given list.
+
+        This is 'Preferred address' if the user is subscribed using her
+        preferred address and 'Don't subscribe' if the user is not
+        subscribed at all. Otherwise it's the EmailAddress under
+        which the user is subscribed to this mailing list.
+        """
+        subscription = mailing_list.getSubscription(self.context)
+        if subscription is None:
+            return "Don't subscribe"
+        elif subscription.email_address is None:
+            return 'Preferred address'
+        else:
+            return subscription.email_address
+
+    def _mailing_list_fields(self):
+        """Creates a field for each mailing list the user can subscribe to.
+
+        If a team doesn't have a mailing list, or the mailing list
+        isn't usable, it's not included.
+        """
+        mailing_list_set = getUtility(IMailingListSet)
+        fields = []
+        terms = [
+            SimpleTerm("Preferred address"),
+            SimpleTerm("Don't subscribe"),
+            ]
+        for email in self.validated_addresses:
+            terms.append(SimpleTerm(email, email.email))
+        for team in self.context.teams_participated_in:
+            mailing_list = mailing_list_set.get(team.name)
+            if mailing_list is not None and mailing_list.is_usable:
+                name = 'subscription.%s' % team.name
+                value = self._mailing_list_subscription_type(mailing_list)
+                field = Choice(__name__=name,
+                               title=team.name,
+                               source=SimpleVocabulary(terms), default=value)
+                fields.append(field)
+        return FormFields(*fields)
+
+    def _autosubscribe_policy_fields(self):
+        """Create a field for each mailing list auto-subscription option."""
+        return FormFields(
+            Choice(__name__='mailing_list_auto_subscribe_policy',
+                   title=_('When should Launchpad automatically subscribe '
+                           'you to a team&#x2019;s mailing list?'),
+                   source=MailingListAutoSubscribePolicy))
+
+    @property
+    def mailing_list_widgets(self):
+        """Return all the mailing list subscription widgets."""
+        mailing_list_set = getUtility(IMailingListSet)
+        widgets = []
+        for widget in self.widgets:
+            if widget.name.startswith('field.subscription.'):
+                team_name = widget.label
+                mailing_list = mailing_list_set.get(team_name)
+                assert mailing_list is not None, 'Missing mailing list'
+                widget_dict = dict(
+                    team=mailing_list.team,
+                    widget=widget,
+                    )
+                widgets.append(widget_dict)
+                # We'll put the label in the first column, so don't include it
+                # in the second column.
+                widget.display_label = False
+        return widgets
+
+    @property
+    def validated_addresses(self):
+        """All of this person's validated email addresses, including
+        their preferred address (if any).
+        """
+        addresses = []
+        if self.context.preferredemail:
+            addresses.append(self.context.preferredemail)
+        addresses += list(self.context.validatedemails)
+        return addresses
 
     def validate_action_update_subscriptions(self, action, data):
         """Make sure the user is subscribing using a valid address.

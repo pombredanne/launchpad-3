@@ -828,7 +828,7 @@ class TestProduct(TestCaseWithFactory):
             'getSpecification',
             'icon', 'logo', 'name', 'official_answers', 'official_anything',
             'official_blueprints', 'official_codehosting', 'official_malone',
-            'owner', 'parent_subscription_target', 'pillar', 'project',
+            'owner', 'parent_subscription_target', 'pillar', 'projectgroup',
             'searchTasks', 'title')),
         'launchpad.View': set((
             '_getOfficialTagClause', 'visible_specifications',
@@ -891,7 +891,7 @@ class TestProduct(TestCaseWithFactory):
             'translationpermission', 'translations_usage', 'ubuntu_packages',
             'userCanAlterBugSubscription', 'userCanAlterSubscription',
             'userCanEdit', 'userHasBugSubscriptions', 'uses_launchpad',
-            'wikiurl')),
+            'vcs', 'wikiurl')),
         'launchpad.AnyAllowedPerson': set((
             'addAnswerContact', 'addBugSubscription',
             'addBugSubscriptionFilter', 'addSubscription',
@@ -930,9 +930,9 @@ class TestProduct(TestCaseWithFactory):
                 'license_info', 'licenses', 'logo', 'mugshot',
                 'official_answers', 'official_blueprints',
                 'official_codehosting', 'owner', 'private',
-                'programminglang', 'project', 'redeemSubscriptionVoucher',
+                'programminglang', 'projectgroup', 'redeemSubscriptionVoucher',
                 'releaseroot', 'screenshotsurl', 'sourceforgeproject',
-                'summary', 'title', 'uses_launchpad', 'wikiurl')),
+                'summary', 'title', 'uses_launchpad', 'wikiurl', 'vcs')),
             'launchpad.Moderate': set((
                 'active', 'autoupdate', 'license_approved', 'name',
                 'project_reviewed', 'registrant', 'reviewer_whiteboard')),

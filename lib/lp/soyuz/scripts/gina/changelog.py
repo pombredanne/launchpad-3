@@ -72,7 +72,7 @@ def parse_changelog(changelines):
                 #print "state0 Exception skip"
                 continue
             firstline = line.strip()
-            stanza = [line, '\n', '\n']
+            stanza = [line, '\n']
             state = 1
             continue
 

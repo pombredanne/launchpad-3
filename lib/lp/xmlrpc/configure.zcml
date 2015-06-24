@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -44,6 +44,19 @@
     for="lp.code.interfaces.codeimportscheduler.ICodeImportSchedulerApplication"
     interface="lp.code.interfaces.codeimportscheduler.ICodeImportScheduler"
     class="lp.code.xmlrpc.codeimportscheduler.CodeImportSchedulerAPI"
+    permission="zope.Public"
+    />
+
+  <securedutility
+    class="lp.systemhomes.GitApplication"
+    provides="lp.code.interfaces.gitapi.IGitApplication">
+    <allow interface="lp.code.interfaces.gitapi.IGitApplication"/>
+  </securedutility>
+
+  <xmlrpc:view
+    for="lp.code.interfaces.gitapi.IGitApplication"
+    interface="lp.code.interfaces.gitapi.IGitAPI"
+    class="lp.code.xmlrpc.git.GitAPI"
     permission="zope.Public"
     />
 
@@ -198,13 +211,11 @@
     <require like_class="xmlrpclib.Fault" />
   </class>
 
-  <class class="lp.xmlrpc.faults.AccountSuspended">
-    <require like_class="xmlrpclib.Fault" />
-  </class>
-  <class class="lp.xmlrpc.faults.TeamEmailAddress">
-    <require like_class="xmlrpclib.Fault" />
-  </class>
   <class class="lp.xmlrpc.faults.InvalidSourcePackageName">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class class="lp.xmlrpc.faults.Unauthorized">
     <require like_class="xmlrpclib.Fault" />
   </class>
 </configure>

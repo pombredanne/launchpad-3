@@ -1,4 +1,4 @@
-# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for Specification."""
@@ -53,6 +53,7 @@ from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactGrantSource,
     IAccessPolicySource,
     )
+from lp.registry.interfaces.person import IPersonSet
 from lp.security import (
     AdminSpecification,
     EditSpecificationByRelatedPeople,
@@ -414,6 +415,27 @@ class SpecificationTests(TestCaseWithFactory):
                 specification.target.owner, specification,
                 error_expected=False, attribute='name', value='foo')
 
+    def test_registry_write_access(self):
+        # Users with special privileges can change the attributes
+        # of public and private specifcations.
+        specification = self.factory.makeSpecification()
+        removeSecurityProxy(specification.target)._ensurePolicies(
+            PRIVATE_INFORMATION_TYPES)
+        all_types = specification.getAllowedInformationTypes(
+            specification.owner)
+        expert = self.factory.makePerson(
+            member_of=[getUtility(IPersonSet).getByName('registry')])
+        for information_type in all_types:
+            with person_logged_in(specification.target.owner):
+                specification.transitionToInformationType(
+                    information_type, specification.owner)
+            self.write_access_to_ISpecificationView(
+                expert, specification, error_expected=False,
+                attribute='whiteboard', value='foo')
+            self.write_access_to_ISpecificationView(
+                expert, specification, error_expected=False,
+                attribute='name', value='foo')
+
     def _fetch_specs_visible_for_user(self, user):
         return Store.of(self.product).find(
             Specification,
@@ -468,7 +490,7 @@ class SpecificationTests(TestCaseWithFactory):
                 product=product, information_type=InformationType.PROPRIETARY)
             spec.subscribe(user, subscribed_by=owner)
             service = getUtility(IService, 'sharing')
-            ignored, ignored, shared_specs = service.getVisibleArtifacts(
+            _, _, _, shared_specs = service.getVisibleArtifacts(
                 user, specifications=[spec])
             self.assertEqual([spec], shared_specs)
             # The spec is also returned by getSharedSpecifications(),
@@ -485,7 +507,7 @@ class SpecificationTests(TestCaseWithFactory):
             service.sharePillarInformation(
                 product, user_2, owner, permissions)
             spec.subscribe(user_2, subscribed_by=owner)
-            ignored, ignored, shared_specs = service.getVisibleArtifacts(
+            _, _, _, shared_specs = service.getVisibleArtifacts(
                 user_2, specifications=[spec])
             self.assertEqual([spec], shared_specs)
             self.assertEqual(
@@ -505,7 +527,7 @@ class SpecificationTests(TestCaseWithFactory):
             spec.subscribe(user, subscribed_by=owner)
             spec.unsubscribe(user, unsubscribed_by=owner)
             service = getUtility(IService, 'sharing')
-            ignored, ignored, shared_specs = service.getVisibleArtifacts(
+            _, _, _, shared_specs = service.getVisibleArtifacts(
                 user, specifications=[spec])
             self.assertEqual([], shared_specs)
 

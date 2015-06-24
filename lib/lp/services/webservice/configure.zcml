@@ -64,9 +64,23 @@
        factory="lp.services.webapp.marshallers.choiceMarshallerError"
        />
    <adapter
+       for="zope.schema.interfaces.IChoice
+            zope.publisher.interfaces.http.IHTTPRequest
+            lp.services.webapp.vocabulary.StormVocabularyBase"
+       provides="lazr.restful.interfaces.IFieldMarshaller"
+       factory="lp.services.webapp.marshallers.choiceMarshallerError"
+       />
+   <adapter
        for="lazr.restful.interfaces.IReferenceChoice
             zope.publisher.interfaces.http.IHTTPRequest
             lp.services.webapp.vocabulary.SQLObjectVocabularyBase"
+       provides="lazr.restful.interfaces.IFieldMarshaller"
+       factory="lazr.restful.marshallers.ObjectLookupFieldMarshaller"
+       />
+   <adapter
+       for="lazr.restful.interfaces.IReferenceChoice
+            zope.publisher.interfaces.http.IHTTPRequest
+            lp.services.webapp.vocabulary.StormVocabularyBase"
        provides="lazr.restful.interfaces.IFieldMarshaller"
        factory="lazr.restful.marshallers.ObjectLookupFieldMarshaller"
        />

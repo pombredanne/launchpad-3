@@ -85,7 +85,7 @@ class TestFeedSwift(TestCase):
             self.assert_(os.path.exists(path))
 
         # Copy all the files into Swift.
-        swift.to_swift(log)  # remove == False
+        swift.to_swift(log, remove_func=None)
 
         # Confirm that files exist on disk where we expect to find them.
         for lfc in self.lfcs:
@@ -105,7 +105,38 @@ class TestFeedSwift(TestCase):
             swift.swiftclient.Connection, 'put_object',
             side_effect=AssertionError('do not call'))
         with con_patch:
-            swift.to_swift(log)  # remove == False
+            swift.to_swift(log)  # remove_func == None
+
+    def test_copy_to_swift_and_rename(self):
+        log = BufferLogger()
+
+        # Confirm that files exist on disk where we expect to find them.
+        for lfc in self.lfcs:
+            path = swift.filesystem_path(lfc.id)
+            self.assert_(os.path.exists(path))
+
+        # Copy all the files into Swift.
+        swift.to_swift(log, remove_func=swift.rename)
+
+        # Confirm that files exist on disk where we expect to find them.
+        for lfc in self.lfcs:
+            path = swift.filesystem_path(lfc.id) + '.migrated'
+            self.assert_(os.path.exists(path))
+
+        # Confirm all the files are also in Swift.
+        swift_client = self.swift_fixture.connect()
+        for lfc, contents in zip(self.lfcs, self.contents):
+            container, name = swift.swift_location(lfc.id)
+            headers, obj = swift_client.get_object(container, name)
+            self.assertEqual(contents, obj, 'Did not round trip')
+
+        # Running again does nothing, in particular does not reupload
+        # the files to Swift.
+        con_patch = patch.object(
+            swift.swiftclient.Connection, 'put_object',
+            side_effect=AssertionError('do not call'))
+        with con_patch:
+            swift.to_swift(log, remove_func=swift.rename)  # remove == False
 
     def test_move_to_swift(self):
         log = BufferLogger()
@@ -116,7 +147,7 @@ class TestFeedSwift(TestCase):
             self.assert_(os.path.exists(path))
 
         # Migrate all the files into Swift.
-        swift.to_swift(log, remove=True)
+        swift.to_swift(log, remove_func=os.unlink)
 
         # Confirm that all the files have gone from disk.
         for lfc in self.lfcs:
@@ -133,7 +164,7 @@ class TestFeedSwift(TestCase):
         log = BufferLogger()
 
         # Move all the files into Swift and off the file system.
-        swift.to_swift(log, remove=True)
+        swift.to_swift(log, remove_func=os.unlink)
 
         # Confirm we can still access the files from the Librarian.
         for lfa_id, content in zip(self.lfa_ids, self.contents):
@@ -179,7 +210,7 @@ class TestFeedSwift(TestCase):
             0, len(expected_content) % LibrarianStorage.CHUNK_SIZE)
 
         # Data round trips when served from Swift.
-        swift.to_swift(BufferLogger(), remove=True)
+        swift.to_swift(BufferLogger(), remove_func=os.unlink)
         self.failIf(os.path.exists(swift.filesystem_path(lfc.id)))
         lfa = self.librarian_client.getFileByAlias(lfa_id)
         self.assertEqual(expected_content, lfa.read())
@@ -201,7 +232,7 @@ class TestFeedSwift(TestCase):
             0, len(expected_content) % LibrarianStorage.CHUNK_SIZE)
 
         # Data round trips when served from Swift.
-        swift.to_swift(BufferLogger(), remove=True)
+        swift.to_swift(BufferLogger(), remove_func=os.unlink)
         lfa = self.librarian_client.getFileByAlias(lfa_id)
         self.failIf(os.path.exists(swift.filesystem_path(lfc.id)))
         self.assertEqual(expected_content, lfa.read())
@@ -224,7 +255,7 @@ class TestFeedSwift(TestCase):
         swift.MAX_SWIFT_OBJECT_SIZE = int(size / 2) - 1
 
         # Shove the file requiring multiple segments into Swift.
-        swift.to_swift(BufferLogger(), remove=False)
+        swift.to_swift(BufferLogger(), remove_func=None)
 
         # As our mock Swift does not support multi-segment files,
         # instead we examine it directly in Swift as best we can.

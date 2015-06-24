@@ -26,6 +26,7 @@ from lp.bugs.interfaces.bug import (
     )
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.interfaces.processor import IProcessorSet
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.database.constants import UTC_NOW
@@ -670,16 +671,18 @@ class CopyCheckerDifferentArchiveHarness(TestCaseWithFactory,
             "explicit unembargo option.")
         self.assertCanCopyBinaries(unembargo=True)
 
-    def test_cannot_copy_ddebs_to_primary_archives(self):
-        # The primary archive cannot (yet) cope with DDEBs, see bug
-        # 724237 and anything tagged "ddebs".
+    def test_can_copy_ddebs_to_primary_archives(self):
+        # Copying DDEBs to a primary archive is allowed even if it has
+        # build_debug_symbols disabled.
         ppa = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
         self.archive = self.test_publisher.ubuntutest.main_archive
+        self.assertFalse(self.archive.build_debug_symbols)
         self.series = self.test_publisher.breezy_autotest
-        self.source = self.test_publisher.getPubSource(archive=ppa)
+        self.source = self.test_publisher.getPubSource(
+            sourcename="with-ddebs", archive=ppa)
         self.test_publisher.getPubBinaries(
             pub_source=self.source, with_debug=True)
-        self.assertCannotCopyBinaries('Cannot copy DDEBs to a primary archive')
+        self.assertCanCopyBinaries()
 
     def test_cannot_copy_source_twice(self):
         # checkCopy refuses to copy the same source twice.  Duplicates are
@@ -1020,6 +1023,11 @@ class BaseDoCopyTests:
 
     layer = LaunchpadZopelessLayer
 
+    def setUp(self):
+        super(BaseDoCopyTests, self).setUp()
+        for arch in ('i386', 'hppa'):
+            self.factory.makeProcessor(name='my_%s' % arch)
+
     def createNobby(self, archs):
         """Create a new 'nobby' series with the given architecture tags.
 
@@ -1028,9 +1036,9 @@ class BaseDoCopyTests:
         nobby = self.factory.makeDistroSeries(
             distribution=self.test_publisher.ubuntutest, name='nobby')
         for arch in archs:
-            processor = self.factory.makeProcessor(name='my_%s' % arch)
             self.factory.makeDistroArchSeries(
-                distroseries=nobby, architecturetag=arch, processor=processor)
+                distroseries=nobby, architecturetag=arch,
+                processor=getUtility(IProcessorSet).getByName('my_%s' % arch))
         nobby.nominatedarchindep = nobby[archs[0]]
         self.test_publisher.addFakeChroots(nobby)
         return nobby
@@ -1051,7 +1059,7 @@ class BaseDoCopyTests:
         source = self.test_publisher.getPubSource(
             archive=archive, architecturehintlist='any')
         [bin_i386, bin_hppa] = self.test_publisher.getPubBinaries(
-            pub_source=source)
+            archive=source.archive, pub_source=source)
 
         # Now make a new distroseries with two architectures, one of
         # which is disabled.
@@ -1092,7 +1100,7 @@ class BaseDoCopyTests:
         self.assertCopied(copies, nobby, ('i386',))
 
 
-class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
+class TestDoDirectCopy(BaseDoCopyTests, TestCaseWithFactory):
 
     def setUp(self):
         super(TestDoDirectCopy, self).setUp()
@@ -1253,6 +1261,7 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
         target_archive = self.factory.makeArchive(
             distribution=self.test_publisher.ubuntutest, virtualized=False,
             purpose=ArchivePurpose.PRIMARY)
+        target_archive.setProcessors(getUtility(IProcessorSet).getAll())
         target_archive.build_debug_symbols = True
         existing_source = self.test_publisher.getPubSource(
             archive=target_archive, version='1.0-1', distroseries=nobby,
@@ -1281,6 +1290,7 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
 
     def _setup_archive(self, version="1.0-2", use_nobby=False, **kwargs):
         archive = self.test_publisher.ubuntutest.main_archive
+        archive.setProcessors(getUtility(IProcessorSet).getAll())
         nobby = self.createNobby(('i386', 'hppa'))
         source = self.test_publisher.getPubSource(
             archive=archive, version=version, architecturehintlist='any',
@@ -1767,7 +1777,9 @@ class TestCopyBuildRecords(TestCaseWithFactory):
         # If the destination distroseries supports more architectures than
         # the source distroseries, then the copier propagates
         # architecture-independent binaries to the new architectures.
-        new_series, _ = self.makeSeriesWithExtraArchitecture()
+        new_series, new_das = self.makeSeriesWithExtraArchitecture()
+        self.primary.setProcessors(
+            self.primary.processors + [new_das.processor])
         source = self.test_publisher.getPubSource(
             archive=self.primary, status=PackagePublishingStatus.PUBLISHED,
             architecturehintlist="all")
@@ -1799,6 +1811,8 @@ class TestCopyBuildRecords(TestCaseWithFactory):
         # they were built, the copier creates builds for the new
         # architectures.
         new_series, new_das = self.makeSeriesWithExtraArchitecture()
+        self.primary.setProcessors(
+            self.primary.processors + [new_das.processor])
         source = self.test_publisher.getPubSource(
             archive=self.primary, status=PackagePublishingStatus.PUBLISHED,
             architecturehintlist="any")

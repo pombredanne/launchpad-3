@@ -24,6 +24,7 @@ from zope.security.proxy import removeSecurityProxy
 from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.interfaces.processor import IProcessorSet
 from lp.code.browser.sourcepackagerecipe import (
     SourcePackageRecipeEditView,
     SourcePackageRecipeRequestBuildsView,
@@ -45,7 +46,6 @@ from lp.services.webapp import canonical_url
 from lp.services.webapp.escaping import html_escape
 from lp.services.webapp.interfaces import ILaunchpadRoot
 from lp.services.webapp.servers import LaunchpadTestRequest
-from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.testing import (
     admin_logged_in,
     ANONYMOUS,
@@ -106,7 +106,7 @@ class TestCaseForRecipe(BrowserTestCase):
         naked_squirrel = removeSecurityProxy(self.squirrel)
         naked_squirrel.nominatedarchindep = self.squirrel.newArch(
             'i386', getUtility(IProcessorSet).getByName('386'), False,
-            self.chef, supports_virtualized=True)
+            self.chef)
 
     def makeRecipe(self):
         """Create and return a specific recipe."""
@@ -1384,24 +1384,6 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
             set([2505]),
             set(build.buildqueue_record.lastscore for build in builds))
 
-    def test_request_daily_builds_action_over_quota(self):
-        recipe = self.factory.makeSourcePackageRecipe(
-            owner=self.chef, daily_build_archive=self.ppa,
-            name=u'julia', is_stale=True, build_daily=True)
-        # Create some previous builds.
-        series = list(recipe.distroseries)[0]
-        for x in xrange(5):
-            build = recipe.requestBuild(
-                self.ppa, self.chef, series, PackagePublishingPocket.RELEASE)
-            build.updateStatus(BuildStatus.FULLYBUILT)
-        harness = LaunchpadFormHarness(
-            recipe, SourcePackageRecipeRequestDailyBuildView)
-        harness.submit('build', {})
-        self.assertEqual(
-            "You have exceeded your quota for recipe chef/julia "
-            "for distroseries ubuntu warty",
-            harness.view.request.notifications[0].message)
-
     def test_request_daily_builds_disabled_archive(self):
         # Requesting a daily build from a disabled archive is a user error.
         recipe = self.factory.makeSourcePackageRecipe(
@@ -1506,27 +1488,11 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
             distribution=self.ppa.distribution)
         removeSecurityProxy(woody).nominatedarchindep = woody.newArch(
             'i386', getUtility(IProcessorSet).getByName('386'), False,
-            self.factory.makePerson(), supports_virtualized=True)
+            self.factory.makePerson())
         return woody
 
-    def test_request_build_rejects_over_quota(self):
-        """Over-quota build requests cause validation failures."""
-        woody = self._makeWoodyDistroSeries()
-        recipe = self.makeRecipe()
-        for x in range(5):
-            build = recipe.requestBuild(
-                self.ppa, self.chef, woody, PackagePublishingPocket.RELEASE)
-            build.updateStatus(BuildStatus.FULLYBUILT)
-
-        browser = self.getViewBrowser(recipe, '+request-builds')
-        browser.getControl('Woody').click()
-        browser.getControl('Request builds').click()
-        self.assertIn(
-            html_escape("You have exceeded today's quota for ubuntu woody."),
-            extract_text(find_main_content(browser.contents)))
-
     def test_request_builds_rejects_duplicate(self):
-        """Over-quota build requests cause validation failures."""
+        """Duplicate build requests cause validation failures."""
         woody = self._makeWoodyDistroSeries()
         recipe = self.makeRecipe()
         recipe.requestBuild(

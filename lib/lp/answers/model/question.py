@@ -14,7 +14,7 @@ __all__ = [
     ]
 
 from datetime import datetime
-from email.Utils import make_msgid
+from email.utils import make_msgid
 import operator
 
 from lazr.enum import (
@@ -869,7 +869,7 @@ class QuestionSearch:
     def __init__(self, search_text=None, needs_attention_from=None, sort=None,
                  status=QUESTION_STATUS_DEFAULT_SEARCH, language=None,
                  product=None, distribution=None, sourcepackagename=None,
-                 project=None):
+                 projectgroup=None):
         self.search_text = search_text
         self.nl_phrase_used = False
 
@@ -892,7 +892,7 @@ class QuestionSearch:
         self.product = product
         self.distribution = distribution
         self.sourcepackagename = sourcepackagename
-        self.project = project
+        self.projectgroup = projectgroup
 
     def getTargetConstraints(self):
         """Return the constraints related to the IQuestionTarget context."""
@@ -912,10 +912,10 @@ class QuestionSearch:
                 constraints.append(
                     'Question.sourcepackagename = %s' % sqlvalues(
                         self.sourcepackagename))
-        elif self.project:
+        elif self.projectgroup:
             constraints.append("""
                 Question.product = Product.id AND Product.active AND
-                Product.project = %s""" % sqlvalues(self.project))
+                Product.project = %s""" % sqlvalues(self.projectgroup))
 
         return constraints
 
@@ -923,7 +923,7 @@ class QuestionSearch:
         """Return the tables that should be joined for the constraints."""
         if self.needs_attention_from:
             return self.getMessageJoins(self.needs_attention_from)
-        elif self.project:
+        elif self.projectgroup:
             return self.getProductJoins()
         else:
             return []
@@ -935,14 +935,14 @@ class QuestionSearch:
             ("""LEFT OUTER JOIN QuestionMessage
                 ON QuestionMessage.question = Question.id
                 AND QuestionMessage.owner = %s""" % sqlvalues(person))]
-        if self.project:
+        if self.projectgroup:
             joins.extend(self.getProductJoins())
 
         return joins
 
     def getProductJoins(self):
-        """Create the joins needed to select contrains on progects by a
-        particular project."""
+        """Create the joins needed to select constraints on projects by a
+        particular project group."""
         return [('JOIN Product '
                  'ON Question.product = Product.id')]
 
@@ -988,8 +988,8 @@ class QuestionSearch:
         # The idea is to prejoin all dependant tables, except if the
         # object will be the same in all rows because it is used as a
         # search criteria.
-        if self.product or self.sourcepackagename or self.project:
-            # Will always be the same product, sourcepackage, or project.
+        if self.product or self.sourcepackagename or self.projectgroup:
+            # Will always be the same project, sourcepackage, or project group.
             return ['owner']
         elif self.distribution:
             # Same distribution, sourcepackagename will vary.
@@ -1061,15 +1061,16 @@ class QuestionTargetSearch(QuestionSearch):
                  status=QUESTION_STATUS_DEFAULT_SEARCH,
                  language=None, sort=None, owner=None,
                  needs_attention_from=None, unsupported_target=None,
-                 project=None, product=None, distribution=None,
+                 projectgroup=None, product=None, distribution=None,
                  sourcepackagename=None):
-        assert (product is not None or distribution is not None or
-            project is not None), ("Missing a product, distribution or "
-                                   "project context.")
+        assert (
+            product is not None or distribution is not None or
+            projectgroup is not None), (
+                "Missing a project, distribution or project group context.")
         QuestionSearch.__init__(
             self, search_text=search_text, status=status, language=language,
             needs_attention_from=needs_attention_from, sort=sort,
-            project=project, product=product,
+            projectgroup=projectgroup, product=product,
             distribution=distribution, sourcepackagename=sourcepackagename)
 
         if owner:

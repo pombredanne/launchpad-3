@@ -276,13 +276,12 @@ class ISpecificationView(IHasOwner, IHasLinkedBranches):
     # using setTarget() as the mutator.
     target = exported(
         ReferenceChoice(
-            title=_('For'), required=True, vocabulary='DistributionOrProduct',
+            title=_('For'), required=True, readonly=True,
+            vocabulary='DistributionOrProduct',
             description=_(
                 "The project for which this proposal is being made."),
             schema=ISpecificationTarget),
-        as_of="devel",
-        readonly=True,
-        )
+        as_of="devel")
 
     productseries = Choice(
         title=_('Series Goal'), required=False,
@@ -635,12 +634,23 @@ class ISpecificationEditRestricted(Interface):
         :param target: an IProduct or IDistribution.
         """
 
+    @mutator_for(ISpecificationView['target'])
+    @operation_parameters(
+        target=copy_field(ISpecificationView['target']))
+    @export_write_operation()
+    @operation_for_version('devel')
     def retarget(target):
         """Move the spec to the given target.
 
         The new target must be an IProduct or IDistribution.
         """
 
+    @mutator_for(ISpecificationPublic['information_type'])
+    @call_with(who=REQUEST_USER)
+    @operation_parameters(
+        information_type=copy_field(ISpecificationPublic['information_type']))
+    @export_write_operation()
+    @operation_for_version('devel')
     def transitionToInformationType(information_type, who):
         """Change the information type of the Specification."""
 
