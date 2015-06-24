@@ -1,4 +1,4 @@
-# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for branch merge proposal jobs."""
@@ -78,6 +78,24 @@ from lp.testing.layers import (
 from lp.testing.mail_helpers import pop_notifications
 
 
+class BzrMixin:
+    """Mixin for Bazaar-based tests."""
+
+    def makeBranchMergeProposal(self, merge_source=None, merge_target=None,
+                                **kwargs):
+        return self.factory.makeBranchMergeProposal(
+            source_branch=merge_source, target_branch=merge_target, **kwargs)
+
+
+class GitMixin:
+    """Mixin for Git-based tests."""
+
+    def makeBranchMergeProposal(self, merge_source=None, merge_target=None,
+                                **kwargs):
+        return self.factory.makeBranchMergeProposalForGit(
+            source_ref=merge_source, target_ref=merge_target, **kwargs)
+
+
 class TestBranchMergeProposalJob(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
@@ -116,19 +134,19 @@ class TestBranchMergeProposalJobDerived(TestCaseWithFactory):
         self.assertEqual(job, MergeProposalNeedsReviewEmailJob.get(job.id))
 
 
-class TestMergeProposalNeedsReviewEmailJob(TestCaseWithFactory):
+class TestMergeProposalNeedsReviewEmailJobMixin:
 
     layer = LaunchpadZopelessLayer
 
     def test_providesInterface(self):
         """MergeProposalNeedsReviewEmailJob provides expected interfaces."""
-        bmp = self.factory.makeBranchMergeProposal()
+        bmp = self.makeBranchMergeProposal()
         job = MergeProposalNeedsReviewEmailJob.create(bmp)
         verifyObject(IMergeProposalNeedsReviewEmailJob, job)
         verifyObject(IBranchMergeProposalJob, job)
 
     def test_getOperationDescription(self):
-        bmp = self.factory.makeBranchMergeProposal()
+        bmp = self.makeBranchMergeProposal()
         job = MergeProposalNeedsReviewEmailJob.create(bmp)
         self.assertTrue(
             job.getOperationDescription().startswith(
@@ -137,6 +155,30 @@ class TestMergeProposalNeedsReviewEmailJob(TestCaseWithFactory):
     def checkDiff(self, diff):
         self.assertNotIn('+bar', diff.diff.text)
         self.assertIn('+qux', diff.diff.text)
+
+    def test_run_sends_email(self):
+        """MergeProposalCreationJob.run sends an email."""
+        bmp = self.createProposalWithEmptyBranches()
+        job = MergeProposalNeedsReviewEmailJob.create(bmp)
+        self.assertEqual([], pop_notifications())
+        with dbuser("merge-proposal-jobs"):
+            JobRunner([job]).runAll()
+        self.assertEqual(2, len(pop_notifications()))
+
+    def test_getOopsMailController(self):
+        """The registrant is notified about merge proposal creation issues."""
+        bmp = self.makeBranchMergeProposal()
+        job = MergeProposalNeedsReviewEmailJob.create(bmp)
+        ctrl = job.getOopsMailController('1234')
+        self.assertEqual([bmp.registrant.preferredemail.email], ctrl.to_addrs)
+        message = (
+            'notifying people about the proposal to merge %s into %s' %
+            (bmp.merge_source.identity, bmp.merge_target.identity))
+        self.assertIn(message, ctrl.body)
+
+
+class TestMergeProposalNeedsReviewEmailJobBzr(
+    TestMergeProposalNeedsReviewEmailJobMixin, BzrMixin, TestCaseWithFactory):
 
     def createProposalWithEmptyBranches(self):
         target_branch, tree = self.create_branch_and_tree()
@@ -147,31 +189,17 @@ class TestMergeProposalNeedsReviewEmailJob(TestCaseWithFactory):
         source_branch = self.factory.makeProductBranch(
             product=target_branch.product)
         self.createBzrBranch(source_branch, tree.branch)
-        return self.factory.makeBranchMergeProposal(
-            source_branch=source_branch, target_branch=target_branch)
+        return self.makeBranchMergeProposal(
+            merge_source=source_branch, merge_target=target_branch)
 
     def test_run_sends_email(self):
-        """MergeProposalCreationJob.run sends an email."""
         self.useBzrBranches(direct_database=True)
-        bmp = self.createProposalWithEmptyBranches()
-        job = MergeProposalNeedsReviewEmailJob.create(bmp)
-        self.assertEqual([], pop_notifications())
-        job.run()
-        self.assertEqual(2, len(pop_notifications()))
-
-    def test_getOopsMailController(self):
-        """The registrant is notified about merge proposal creation issues."""
-        bmp = self.factory.makeBranchMergeProposal()
-        job = MergeProposalNeedsReviewEmailJob.create(bmp)
-        ctrl = job.getOopsMailController('1234')
-        self.assertEqual([bmp.registrant.preferredemail.email], ctrl.to_addrs)
-        message = (
-            'notifying people about the proposal to merge %s into %s' %
-            (bmp.source_branch.bzr_identity, bmp.target_branch.bzr_identity))
-        self.assertIn(message, ctrl.body)
+        parent = super(TestMergeProposalNeedsReviewEmailJobBzr, self)
+        parent.test_run_sends_email()
 
     def test_MergeProposalCreateJob_with_sourcepackage_branch(self):
         """Jobs for merge proposals with sourcepackage branches work."""
+        # XXX cjwatson 2015-06-01: Port this test to Git as well.
         self.useBzrBranches(direct_database=True)
         bmp = self.factory.makeBranchMergeProposal(
             target_branch=self.factory.makePackageBranch())
@@ -184,7 +212,14 @@ class TestMergeProposalNeedsReviewEmailJob(TestCaseWithFactory):
         self.factory.makeRevisionsForBranch(bmp.source_branch, count=1)
         job = MergeProposalNeedsReviewEmailJob.create(bmp)
         with dbuser("merge-proposal-jobs"):
-            job.run()
+            JobRunner([job]).runAll()
+
+
+class TestMergeProposalNeedsReviewEmailJobGit(
+    TestMergeProposalNeedsReviewEmailJobMixin, GitMixin, TestCaseWithFactory):
+
+    def createProposalWithEmptyBranches(self):
+        return self.makeBranchMergeProposal()
 
 
 class TestUpdatePreviewDiffJob(DiffTestCase):
@@ -196,7 +231,7 @@ class TestUpdatePreviewDiffJob(DiffTestCase):
         verifyObject(IUpdatePreviewDiffJobSource, UpdatePreviewDiffJob)
 
     def test_providesInterface(self):
-        """MergeProposalNeedsReviewEmailJob provides expected interfaces."""
+        """UpdatePreviewDiffJob provides expected interfaces."""
         bmp = self.factory.makeBranchMergeProposal()
         job = UpdatePreviewDiffJob.create(bmp)
         verifyObject(IUpdatePreviewDiffJob, job)
@@ -218,6 +253,13 @@ class TestUpdatePreviewDiffJob(DiffTestCase):
         with dbuser("merge-proposal-jobs"):
             JobRunner([job]).runAll()
         self.checkExampleMerge(bmp.preview_diff.text)
+
+    def test_run_git(self):
+        bmp, _, _, patch = self.createExampleGitMerge()
+        job = UpdatePreviewDiffJob.create(bmp)
+        with dbuser("merge-proposal-jobs"):
+            JobRunner([job]).runAll()
+        self.assertEqual(patch, bmp.preview_diff.text)
 
     def test_run_object_events(self):
         # While the job runs a single IObjectModifiedEvent is issued when the
@@ -513,6 +555,15 @@ class TestBranchMergeProposalJobSource(TestCaseWithFactory):
         [job] = self.job_source.iterReady()
         self.assertEqual(job.branch_merge_proposal, bmp)
         self.assertIsInstance(job, MergeProposalUpdatedEmailJob)
+
+    def test_iterReady_supports_git(self):
+        # iterReady supports merge proposals based on Git.  (These are
+        # currently considered ready regardless of scanning, since the hard
+        # work is done by the backend.)
+        bmp = self.factory.makeBranchMergeProposalForGit()
+        [job] = self.job_source.iterReady()
+        self.assertEqual(bmp, job.branch_merge_proposal)
+        self.assertIsInstance(job, UpdatePreviewDiffJob)
 
 
 class TestCodeReviewCommentEmailJob(TestCaseWithFactory):

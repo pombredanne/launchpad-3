@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test Archive features."""
@@ -29,6 +29,7 @@ from lp.buildmaster.enums import (
     BuildQueueStatus,
     BuildStatus,
     )
+from lp.buildmaster.interfaces.processor import IProcessorSet
 from lp.registry.enums import (
     PersonVisibility,
     TeamMembershipPolicy,
@@ -75,13 +76,11 @@ from lp.soyuz.interfaces.archive import (
     RedirectedPocket,
     VersionRequiresName,
     )
-from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.binarypackagebuild import BuildSetStatus
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
-from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.soyuz.model.archive import (
     Archive,
     validate_ppa,
@@ -1002,7 +1001,7 @@ class TestUpdatePackageDownloadCount(TestCaseWithFactory):
         self.assertEqual(3, self.archive.getPackageDownloadTotal(self.bpr_2))
 
 
-class TestEnabledRestrictedBuilds(TestCaseWithFactory):
+class TestProcessors(TestCaseWithFactory):
     """Ensure that restricted architectures builds can be allowed and
     disallowed correctly."""
 
@@ -1010,51 +1009,77 @@ class TestEnabledRestrictedBuilds(TestCaseWithFactory):
 
     def setUp(self):
         """Setup an archive with relevant publications."""
-        super(TestEnabledRestrictedBuilds, self).setUp()
+        super(TestProcessors, self).setUp()
         self.publisher = SoyuzTestPublisher()
         self.publisher.prepareBreezyAutotest()
         self.archive = self.factory.makeArchive()
-        self.archive_arch_set = getUtility(IArchiveArchSet)
-        self.arm = self.factory.makeProcessor(name='arm', restricted=True)
+        self.default_procs = [
+            getUtility(IProcessorSet).getByName("386"),
+            getUtility(IProcessorSet).getByName("amd64")]
+        self.unrestricted_procs = (
+            self.default_procs + [getUtility(IProcessorSet).getByName("hppa")])
+        self.arm = self.factory.makeProcessor(
+            name='arm', restricted=True, build_by_default=False)
 
-    def test_default(self):
-        """By default, ARM builds are not allowed as ARM is restricted."""
-        self.assertEqual(0,
-            self.archive_arch_set.getByArchive(
-                self.archive, self.arm).count())
-        self.assertContentEqual([], self.archive.enabled_restricted_processors)
+    def test_new_default_processors(self):
+        # ArchiveSet.new creates an ArchiveArch for each Processor with
+        # build_by_default set.
+        self.factory.makeProcessor(name='default', build_by_default=True)
+        self.factory.makeProcessor(name='nondefault', build_by_default=False)
+        archive = getUtility(IArchiveSet).new(
+            owner=self.factory.makePerson(), purpose=ArchivePurpose.PPA,
+            distribution=self.factory.makeDistribution(), name='ppa')
+        self.assertContentEqual(
+            ['386', 'amd64', 'hppa', 'default'],
+            [processor.name for processor in archive.processors])
 
-    def test_get_uses_archivearch(self):
-        """Adding an entry to ArchiveArch for ARM and an archive will
-        enable enabled_restricted_processors for arm for that archive."""
-        self.assertContentEqual([], self.archive.enabled_restricted_processors)
-        self.archive_arch_set.new(self.archive, self.arm)
-        self.assertEqual(
-            [self.arm], list(self.archive.enabled_restricted_processors))
+    def test_new_override_processors(self):
+        # ArchiveSet.new can be given a custom set of processors.
+        archive = getUtility(IArchiveSet).new(
+            owner=self.factory.makePerson(), purpose=ArchivePurpose.PPA,
+            distribution=self.factory.makeDistribution(), name='ppa',
+            processors=[self.arm])
+        self.assertContentEqual(
+            ['arm'], [processor.name for processor in archive.processors])
 
     def test_get_returns_restricted_only(self):
-        """Adding an entry to ArchiveArch for something that is not
-        restricted does not make it show up in enabled_restricted_processors.
+        """Only restricted processors showup in enabled_restricted_processors.
         """
+        self.assertContentEqual(
+            self.unrestricted_procs, self.archive.processors)
         self.assertContentEqual([], self.archive.enabled_restricted_processors)
-        self.archive_arch_set.new(
-            self.archive, getUtility(IProcessorSet).getByName('amd64'))
-        self.assertContentEqual([], self.archive.enabled_restricted_processors)
+        uproc = self.factory.makeProcessor(
+            restricted=False, build_by_default=True)
+        rproc = self.factory.makeProcessor(
+            restricted=True, build_by_default=False)
+        self.archive.setProcessors([uproc, rproc])
+        self.assertContentEqual([uproc, rproc], self.archive.processors)
+        self.assertContentEqual(
+            [rproc], self.archive.enabled_restricted_processors)
 
     def test_set(self):
-        """The property remembers its value correctly and sets ArchiveArch."""
+        """The property remembers its value correctly."""
+        self.archive.setProcessors([self.arm])
+        self.assertContentEqual([self.arm], self.archive.processors)
+        self.archive.setProcessors(self.unrestricted_procs + [self.arm])
+        self.assertContentEqual(
+            self.unrestricted_procs + [self.arm], self.archive.processors)
+        self.archive.processors = []
+        self.assertContentEqual([], self.archive.processors)
+
+    def test_set_enabled_restricted_processors(self):
+        """The deprecated enabled_restricted_processors property still works.
+
+        It's like processors, but only including those that are restricted.
+        """
         self.archive.enabled_restricted_processors = [self.arm]
-        allowed_restricted_processors = self.archive_arch_set.getByArchive(
-            self.archive, self.arm)
-        self.assertEqual(1, allowed_restricted_processors.count())
-        self.assertEqual(
-            self.arm, allowed_restricted_processors[0].processor)
-        self.assertEqual(
+        self.assertContentEqual(
+            self.unrestricted_procs + [self.arm], self.archive.processors)
+        self.assertContentEqual(
             [self.arm], self.archive.enabled_restricted_processors)
         self.archive.enabled_restricted_processors = []
-        self.assertEqual(
-            0,
-            self.archive_arch_set.getByArchive(self.archive, self.arm).count())
+        self.assertContentEqual(
+            self.unrestricted_procs, self.archive.processors)
         self.assertContentEqual([], self.archive.enabled_restricted_processors)
 
 
@@ -2187,13 +2212,23 @@ class TestGetPublishedSources(TestCaseWithFactory):
             component_name='universe')
         self.assertEqual('universe', filtered.component.name)
 
+    def test_order_by_date(self):
+        archive = self.factory.makeArchive()
+        dates = [self.factory.getUniqueDate() for _ in range(5)]
+        # Make sure the ID ordering and date ordering don't match so that we
+        # can spot a date-ordered result.
+        pubs = [
+            self.factory.makeSourcePackagePublishingHistory(
+                archive=archive, date_uploaded=dates[(i + 1) % 5])
+            for i in range(5)]
+        self.assertEqual(
+            [pubs[i] for i in (3, 2, 1, 0, 4)],
+            list(archive.getPublishedSources(order_by_date=True)))
 
-class GetPublishedSourcesWebServiceTests(TestCaseWithFactory):
+
+class TestGetPublishedSourcesWebService(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
-
-    def setUp(self):
-        super(GetPublishedSourcesWebServiceTests, self).setUp()
 
     def createTestingPPA(self):
         """Creates and populates a PPA for API performance tests.
@@ -2208,7 +2243,6 @@ class GetPublishedSourcesWebServiceTests(TestCaseWithFactory):
         # XXX cprov 2014-04-22: currently the target archive owner cannot
         # 'addSource' to a `PackageUpload` ('launchpad.Edit'). It seems
         # too restrive to me.
-        from zope.security.proxy import removeSecurityProxy
         with person_logged_in(ppa.owner):
             for i in range(5):
                 upload = self.factory.makePackageUpload(
@@ -2814,6 +2848,19 @@ class TestgetAllPublishedBinaries(TestCaseWithFactory):
             publications,
             [first_publication, middle_publication, later_publication])
 
+    def test_order_by_date(self):
+        archive = self.factory.makeArchive()
+        dates = [self.factory.getUniqueDate() for _ in range(5)]
+        # Make sure the ID ordering and date ordering don't match so that we
+        # can spot a date-ordered result.
+        pubs = [
+            self.factory.makeBinaryPackagePublishingHistory(
+                archive=archive, datecreated=dates[(i + 1) % 5])
+            for i in range(5)]
+        self.assertEqual(
+            [pubs[i] for i in (3, 2, 1, 0, 4)],
+            list(archive.getAllPublishedBinaries(order_by_date=True)))
+
 
 class TestRemovingPermissions(TestCaseWithFactory):
 
@@ -3098,6 +3145,15 @@ class TestArchiveReference(TestCaseWithFactory):
             '~%s/%s/%s' % (
                 archive.owner.name, archive.distribution.name, archive.name),
             archive)
+
+    def test_ppa_alias(self):
+        # ppa:OWNER/DISTRO/ARCHIVE is accepted as a convenience to make it
+        # easier to avoid tilde-expansion in shells.
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        reference = 'ppa:%s/%s/%s' % (
+            archive.owner.name, archive.distribution.name, archive.name)
+        self.assertEqual(
+            archive, getUtility(IArchiveSet).getByReference(reference))
 
 
 class TestArchiveSetGetByReference(TestCaseWithFactory):

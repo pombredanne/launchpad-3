@@ -13,6 +13,8 @@ __all__ = [
     'IBuilder',
     'IBuilderSet',
     'IBuildFarmJob',
+    'IProcessor',
+    'IProcessorSet',
     ]
 
 from lp.buildmaster.interfaces.builder import (
@@ -20,3 +22,7 @@ from lp.buildmaster.interfaces.builder import (
     IBuilderSet,
     )
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
+from lp.buildmaster.interfaces.processor import (
+    IProcessor,
+    IProcessorSet,
+    )

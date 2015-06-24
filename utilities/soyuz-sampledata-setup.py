@@ -35,6 +35,7 @@ from zope.lifecycleevent import ObjectCreatedEvent
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.buildmaster.interfaces.processor import IProcessorSet
 from lp.registry.interfaces.codeofconduct import ISignedCodeOfConductSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.series import SeriesStatus
@@ -46,7 +47,6 @@ from lp.services.database.interfaces import (
 from lp.services.scripts.base import LaunchpadScript
 from lp.soyuz.enums import SourcePackageFormat
 from lp.soyuz.interfaces.component import IComponentSet
-from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
@@ -224,16 +224,18 @@ def create_sample_series(original_series, log):
         ('Intrepid Ibex', SeriesStatus.OBSOLETE, '8.10'),
         ('Jaunty Jackalope', SeriesStatus.OBSOLETE, '9.04'),
         ('Karmic Koala', SeriesStatus.OBSOLETE, '9.10'),
-        ('Lucid Lynx', SeriesStatus.SUPPORTED, '10.04'),
+        ('Lucid Lynx', SeriesStatus.OBSOLETE, '10.04'),
         ('Maverick Meerkat', SeriesStatus.OBSOLETE, '10.10'),
         ('Natty Narwhal', SeriesStatus.OBSOLETE, '11.04'),
         ('Oneiric Ocelot', SeriesStatus.OBSOLETE, '11.10'),
         ('Precise Pangolin', SeriesStatus.SUPPORTED, '12.04'),
-        ('Quantal Quetzal', SeriesStatus.SUPPORTED, '12.10'),
+        ('Quantal Quetzal', SeriesStatus.OBSOLETE, '12.10'),
         ('Raring Ringtail', SeriesStatus.OBSOLETE, '13.04'),
-        ('Saucy Salamander', SeriesStatus.SUPPORTED, '13.10'),
-        ('Trusty Tahr', SeriesStatus.CURRENT, '14.04'),
-        ('Utopic Unicorn', SeriesStatus.DEVELOPMENT, '14.10'),
+        ('Saucy Salamander', SeriesStatus.OBSOLETE, '13.10'),
+        ('Trusty Tahr', SeriesStatus.SUPPORTED, '14.04'),
+        ('Utopic Unicorn', SeriesStatus.SUPPORTED, '14.10'),
+        ('Vivid Vervet', SeriesStatus.CURRENT, '15.04'),
+        ('Wily Werewolf', SeriesStatus.DEVELOPMENT, '15.10'),
         ]
 
     parent = original_series

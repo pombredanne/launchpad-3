@@ -1,4 +1,4 @@
-# Copyright 2010-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the initialize_distroseries script machinery."""
@@ -10,6 +10,10 @@ from zope.component import getUtility
 
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.interfaces.processor import (
+    IProcessorSet,
+    ProcessorNotFound,
+    )
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifferenceSource,
     )
@@ -27,10 +31,6 @@ from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packageset import (
     IPackagesetSet,
     NoSuchPackageSet,
-    )
-from lp.soyuz.interfaces.processor import (
-    IProcessorSet,
-    ProcessorNotFound,
     )
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.interfaces.sourcepackageformat import (
@@ -58,12 +58,12 @@ class InitializationHelperTestCase(TestCaseWithFactory):
             processor = getUtility(IProcessorSet).getByName(processor_name)
         except ProcessorNotFound:
             processor = self.factory.makeProcessor(name=processor_name)
+        processor.supports_virtualized = True
         parent_das = self.factory.makeDistroArchSeries(
             distroseries=parent, processor=processor, architecturetag=arch_tag)
         lf = self.factory.makeLibraryFileAlias()
         transaction.commit()
         parent_das.addOrUpdateChroot(lf)
-        parent_das.supports_virtualized = True
         return parent_das
 
     def setupParent(self, parent=None, packages=None, format_selection=None,
@@ -581,9 +581,9 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         self.assertEqual(
             parent_udev_pubs.count(), child_udev_pubs.count())
         parent_arch_udev_pubs = parent.main_archive.getAllPublishedBinaries(
-            distroarchseries=parent[parent_das.architecturetag], name='udev')
+            distroarchseries=parent[parent_das.architecturetag], name=u'udev')
         child_arch_udev_pubs = child.main_archive.getAllPublishedBinaries(
-            distroarchseries=child[parent_das.architecturetag], name='udev')
+            distroarchseries=child[parent_das.architecturetag], name=u'udev')
         self.assertEqual(
             parent_arch_udev_pubs.count(), child_arch_udev_pubs.count())
         # And the binary package, and linked source package look fine too.

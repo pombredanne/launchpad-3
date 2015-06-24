@@ -70,7 +70,6 @@ from lp.code.interfaces.branchcollection import (
     IBranchCollection,
     )
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
-from lp.code.interfaces.branchmergequeue import IBranchMergeQueue
 from lp.code.interfaces.codeimport import ICodeImport
 from lp.code.interfaces.codeimportjob import (
     ICodeImportJobSet,
@@ -84,6 +83,7 @@ from lp.code.interfaces.codereviewcomment import (
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.code.interfaces.diff import IPreviewDiff
 from lp.code.interfaces.gitcollection import IGitCollection
+from lp.code.interfaces.gitref import IGitRef
 from lp.code.interfaces.gitrepository import (
     IGitRepository,
     user_has_special_git_repository_access,
@@ -995,7 +995,7 @@ class PublicOrPrivateTeamsExistence(AuthorizationBase):
             subscriptions = getUtility(
                 IArchiveSubscriberSet).getBySubscriber(user.person)
             subscriber_archive_ids = set(
-                sub.archive.id for sub in subscriptions)
+                sub.archive_id for sub in subscriptions)
             team_ppa_ids = set(
                 ppa.id for ppa in self.obj.ppas if ppa.private)
             if len(subscriber_archive_ids.intersection(team_ppa_ids)) > 0:
@@ -1521,18 +1521,6 @@ class AdminSourcePackageRecipeBuilds(AuthorizationBase):
         return user.in_buildd_admin
 
 
-class EditBranchMergeQueue(AuthorizationBase):
-    """Control who can edit a BranchMergeQueue.
-
-    Access is granted only to the owner of the queue.
-    """
-    permission = 'launchpad.Edit'
-    usedfor = IBranchMergeQueue
-
-    def checkAuthenticated(self, user):
-        return user.isOwner(self.obj)
-
-
 class AdminDistributionTranslations(AuthorizationBase):
     """Class for deciding who can administer distribution translations.
 
@@ -2045,7 +2033,8 @@ class AppendFAQTarget(EditByOwnersOrAdmins):
 
     def checkAuthenticated(self, user):
         """Allow people with launchpad.Edit or an answer contact."""
-        if EditByOwnersOrAdmins.checkAuthenticated(self, user):
+        if (EditByOwnersOrAdmins.checkAuthenticated(self, user)
+                or user.in_registry_experts):
             return True
         if IQuestionTarget.providedBy(self.obj):
             # Adapt QuestionTargets to FAQTargets to ensure the correct
@@ -2069,6 +2058,14 @@ class EditFAQ(AuthorizationBase):
         """Everybody who has launchpad.Append on the FAQ target is allowed.
         """
         return AppendFAQTarget(self.obj.target).checkAuthenticated(user)
+
+
+class DeleteFAQ(AuthorizationBase):
+    permission = 'launchpad.Delete'
+    usedfor = IFAQ
+
+    def checkAuthenticated(self, user):
+        return user.in_registry_experts or user.in_admin
 
 
 def can_edit_team(team, user):
@@ -2260,6 +2257,24 @@ class AdminGitRepository(AdminByAdminsTeam):
     usedfor = IGitRepository
 
 
+class ViewGitRef(DelegatedAuthorization):
+    """Anyone who can see a Git repository can see references within it."""
+    permission = 'launchpad.View'
+    usedfor = IGitRef
+
+    def __init__(self, obj):
+        super(ViewGitRef, self).__init__(obj, obj.repository)
+
+
+class EditGitRef(DelegatedAuthorization):
+    """Anyone who can edit a Git repository can edit references within it."""
+    permission = 'launchpad.Edit'
+    usedfor = IGitRef
+
+    def __init__(self, obj):
+        super(EditGitRef, self).__init__(obj, obj.repository)
+
+
 class AdminDistroSeriesTranslations(AuthorizationBase):
     permission = 'launchpad.TranslationsAdmin'
     usedfor = IDistroSeries
@@ -2307,24 +2322,42 @@ class BranchMergeProposalView(AuthorizationBase):
             required.append(self.obj.prerequisite_branch)
         return required
 
+    @property
+    def git_repositories(self):
+        required = [
+            self.obj.source_git_repository, self.obj.target_git_repository]
+        if self.obj.prerequisite_git_repository:
+            required.append(self.obj.prerequisite_git_repository)
+        return required
+
     def checkAuthenticated(self, user):
         """Is the user able to view the branch merge proposal?
 
         The user can see a merge proposal if they can see the source, target
         and prerequisite branches.
         """
-        return all(map(
-            lambda b: AccessBranch(b).checkAuthenticated(user),
-            self.branches))
+        if self.obj.source_git_repository is not None:
+            return all(map(
+                lambda r: ViewGitRepository(r).checkAuthenticated(user),
+                self.git_repositories))
+        else:
+            return all(map(
+                lambda b: AccessBranch(b).checkAuthenticated(user),
+                self.branches))
 
     def checkUnauthenticated(self):
         """Is anyone able to view the branch merge proposal?
 
         Anyone can see a merge proposal between two public branches.
         """
-        return all(map(
-            lambda b: AccessBranch(b).checkUnauthenticated(),
-            self.branches))
+        if self.obj.source_git_repository is not None:
+            return all(map(
+                lambda r: ViewGitRepository(r).checkUnauthenticated(),
+                self.git_repositories))
+        else:
+            return all(map(
+                lambda b: AccessBranch(b).checkUnauthenticated(),
+                self.branches))
 
 
 class PreviewDiffView(DelegatedAuthorization):
@@ -2386,16 +2419,15 @@ class BranchMergeProposalEdit(AuthorizationBase):
 
         The user is able to edit if they are:
           * the registrant of the merge proposal
-          * the owner of the source_branch
-          * the owner of the target_branch
-          * the reviewer for the target_branch
+          * the owner of the merge_source
+          * the owner of the merge_target
+          * the reviewer for the merge_target
           * an administrator
         """
         return (user.inTeam(self.obj.registrant) or
-                user.inTeam(self.obj.source_branch.owner) or
-                self.forwardCheckAuthenticated(
-                    user, self.obj.target_branch) or
-                user.inTeam(self.obj.target_branch.reviewer))
+                user.inTeam(self.obj.merge_source.owner) or
+                self.forwardCheckAuthenticated(user, self.obj.merge_target) or
+                user.inTeam(self.obj.merge_target.reviewer))
 
 
 class AdminDistroSeriesLanguagePacks(

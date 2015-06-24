@@ -29,9 +29,6 @@ from lp.registry.xmlrpc.mailinglist import MailingListAPIView
 from lp.services.database.sqlbase import flush_database_updates
 
 
-COMMASPACE = ', '
-
-
 def fault_catcher(func):
     """Decorator for displaying Faults in a cross-compatible way.
 

@@ -12,7 +12,6 @@ from lp.code.enums import (
     BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel,
     )
-from lp.code.interfaces.branch import IBranchNavigationMenu
 from lp.code.interfaces.branchsubscription import IBranchSubscription
 from lp.code.interfaces.branchtarget import IHasBranchTarget
 from lp.code.security import BranchSubscriptionEdit
@@ -26,7 +25,7 @@ from lp.services.database.sqlbase import SQLBase
 class BranchSubscription(SQLBase):
     """A relationship between a person and a branch."""
 
-    implements(IBranchSubscription, IBranchNavigationMenu, IHasBranchTarget)
+    implements(IBranchSubscription, IHasBranchTarget)
 
     _table = 'BranchSubscription'
 

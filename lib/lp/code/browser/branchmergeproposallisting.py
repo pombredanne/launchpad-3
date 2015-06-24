@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Base class view for branch merge proposal listings."""
@@ -39,10 +39,6 @@ from lp.app.widgets.itemswidgets import LaunchpadDropdownWidget
 from lp.code.enums import (
     BranchMergeProposalStatus,
     CodeReviewVote,
-    )
-from lp.code.interfaces.branchcollection import (
-    IAllBranches,
-    IBranchCollection,
     )
 from lp.code.interfaces.branchmergeproposal import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES,
@@ -168,7 +164,7 @@ class BranchMergeProposalListingBatchNavigator(TableBatchNavigator):
 
     @cachedproperty
     def proposals(self):
-        """Return a list of BranchListingItems."""
+        """Return a list of BranchMergeProposalListingItems."""
         proposals = self._proposals_for_current_batch
         return [self._createItem(proposal) for proposal in proposals]
 
@@ -287,12 +283,11 @@ class ActiveReviewsView(BranchMergeProposalListingView):
 
     def getProposals(self):
         """Get the proposals for the view."""
-        collection = IBranchCollection(self.context)
-        collection = collection.visibleByUser(self.user)
-        proposals = collection.getMergeProposals(
-            [BranchMergeProposalStatus.CODE_APPROVED,
-             BranchMergeProposalStatus.NEEDS_REVIEW], eager_load=True)
-        return proposals
+        return self.context.getMergeProposals(
+            status=(
+                BranchMergeProposalStatus.CODE_APPROVED,
+                BranchMergeProposalStatus.NEEDS_REVIEW),
+            visible_by_user=self.user, eager_load=True)
 
     def _getReviewGroup(self, proposal, votes, reviewer):
         """One of APPROVED, MINE, TO_DO, CAN_DO, ARE_DOING, OTHER or WIP.
@@ -324,8 +319,8 @@ class ActiveReviewsView(BranchMergeProposalListingView):
             return self.WIP
 
         if (reviewer is not None and
-            (proposal.source_branch.owner == reviewer or
-             (reviewer.inTeam(proposal.source_branch.owner) and
+            (proposal.merge_source.owner == reviewer or
+             (reviewer.inTeam(proposal.merge_source.owner) and
               proposal.registrant == reviewer))):
             return self.MINE
 
@@ -437,15 +432,13 @@ class PersonActiveReviewsView(ActiveReviewsView):
     def _getReviewer(self):
         return self.context
 
-    def _getCollection(self):
-        return getUtility(IAllBranches)
-
-    def getProposals(self):
+    def getProposals(self, project=None):
         """See `ActiveReviewsView`."""
-        collection = self._getCollection().visibleByUser(self.user)
-        return collection.getMergeProposalsForPerson(
-            self._getReviewer(), [BranchMergeProposalStatus.CODE_APPROVED,
-            BranchMergeProposalStatus.NEEDS_REVIEW], eager_load=True)
+        return self._getReviewer().getOwnedAndRequestedReviews(
+            status=(
+                BranchMergeProposalStatus.CODE_APPROVED,
+                BranchMergeProposalStatus.NEEDS_REVIEW),
+            visible_by_user=self.user, project=project, eager_load=True)
 
 
 class PersonProductActiveReviewsView(PersonActiveReviewsView):
@@ -459,8 +452,9 @@ class PersonProductActiveReviewsView(PersonActiveReviewsView):
     def _getReviewer(self):
         return self.context.person
 
-    def _getCollection(self):
-        return getUtility(IAllBranches).inProduct(self.context.product)
+    def getProposals(self):
+        return super(PersonProductActiveReviewsView, self).getProposals(
+            project=self.context.product)
 
     @property
     def no_proposal_message(self):

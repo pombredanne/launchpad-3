@@ -104,16 +104,28 @@ class TestZopeUtilityFixture(TestCase):
 
     layer = BaseLayer
 
+    def getMailer(self):
+        return getGlobalSiteManager().getUtility(IMailDelivery, 'Mail')
+
     def test_fixture(self):
-        def get_mailer():
-            return getGlobalSiteManager().getUtility(
-                IMailDelivery, 'Mail')
         fake = DummyMailer()
         # In BaseLayer there should be no mailer by default.
-        self.assertRaises(ComponentLookupError, get_mailer)
+        self.assertRaises(ComponentLookupError, self.getMailer)
         with ZopeUtilityFixture(fake, IMailDelivery, 'Mail'):
-            self.assertEquals(get_mailer(), fake)
-        self.assertRaises(ComponentLookupError, get_mailer)
+            self.assertEqual(fake, self.getMailer())
+        self.assertRaises(ComponentLookupError, self.getMailer)
+
+    def test_restores_previous_utility(self):
+        # If there was a previous utility, ZopeUtilityFixture restores it on
+        # cleanup.
+        original_fake = DummyMailer()
+        getGlobalSiteManager().registerUtility(
+            original_fake, IMailDelivery, 'Mail')
+        self.assertEqual(original_fake, self.getMailer())
+        fake = DummyMailer()
+        with ZopeUtilityFixture(fake, IMailDelivery, 'Mail'):
+            self.assertEqual(fake, self.getMailer())
+        self.assertEqual(original_fake, self.getMailer())
 
 
 class TestPGBouncerFixtureWithCA(TestCase):

@@ -7,6 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'ISpecificationWorkItem',
+    'ISpecificationWorkItemSet',
     ]
 
 
@@ -80,3 +81,10 @@ class ISpecificationWorkItem(Interface):
         description=_(
             "True or False depending on whether or not there is more "
             "work required on this work item."))
+
+
+class ISpecificationWorkItemSet(Interface):
+    """SpecificationWorkItemSet's public attributes and methods."""
+
+    def unlinkMilestone(milestone):
+        """Unlink the given milestone from all SpecificationWorkItems."""

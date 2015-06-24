@@ -67,8 +67,6 @@ class ISourcePackageRecipeBuild(IPackageBuild):
         ISourcePackageRelease, title=_("The produced source package release"),
         readonly=True)
 
-    is_virtualized = Bool(title=_('If True, this build is virtualized.'))
-
     def getFileByName(filename):
         """Return the file under +files with specified name."""
 

@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Branch views."""
@@ -14,7 +14,6 @@ __all__ = [
     'BranchEditWhiteboardView',
     'BranchRequestImportView',
     'BranchReviewerEditView',
-    'BranchMergeQueueView',
     'BranchMirrorStatusView',
     'BranchMirrorMixin',
     'BranchNameValidationMixin',
@@ -23,6 +22,7 @@ __all__ = [
     'BranchUpgradeView',
     'BranchURL',
     'BranchView',
+    'CodeEditOwnerMixin',
     'RegisterBranchMergeProposalView',
     'TryImportAgainView',
     ]
@@ -216,9 +216,7 @@ class BranchNavigation(Navigation):
         except ValueError:
             # Not a number.
             return None
-        for proposal in self.context.landing_targets:
-            if proposal.id == id:
-                return proposal
+        return self.context.getMergeProposalByID(id)
 
     @stepto("+code-import")
     def traverse_code_import(self):
@@ -279,7 +277,7 @@ class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
         'add_subscriber', 'browse_revisions', 'create_recipe', 'link_bug',
         'link_blueprint', 'register_merge', 'source', 'subscription',
         'edit_status', 'edit_import', 'upgrade_branch', 'view_recipes',
-        'create_queue', 'visibility']
+        'visibility']
 
     @enabled_with_permission('launchpad.Edit')
     def edit_status(self):
@@ -296,7 +294,7 @@ class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
         """Return a link to the branch's revisions on codebrowse."""
         text = 'All revisions'
         enabled = self.context.code_is_browseable
-        url = self.context.codebrowse_url('changes')
+        url = self.context.getCodebrowseUrl('changes')
         return Link(url, text, enabled=enabled)
 
     @enabled_with_permission('launchpad.AnyPerson')
@@ -345,7 +343,7 @@ class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
         """Return a link to the branch's file listing on codebrowse."""
         text = 'Browse the code'
         enabled = self.context.code_is_browseable
-        url = self.context.codebrowse_url('files')
+        url = self.context.getCodebrowseUrl('files')
         return Link(url, text, icon='info', enabled=enabled)
 
     def edit_import(self):
@@ -366,10 +364,6 @@ class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
         enabled = not self.context.private
         text = 'Create packaging recipe'
         return Link('+new-recipe', text, enabled=enabled, icon='add')
-
-    @enabled_with_permission('launchpad.Edit')
-    def create_queue(self):
-        return Link('+create-queue', 'Create a new queue', icon='add')
 
 
 class BranchMirrorMixin:
@@ -471,7 +465,7 @@ class BranchView(InformationTypePortletMixin, FeedsMixin, BranchMirrorMixin,
     @property
     def codebrowse_url(self):
         """Return the link to codebrowse for this branch."""
-        return self.context.codebrowse_url()
+        return self.context.getCodebrowseUrl()
 
     @property
     def pending_writes(self):
@@ -1063,34 +1057,19 @@ class BranchUpgradeView(LaunchpadFormView):
             self.request.response.addErrorNotification(e)
 
 
-class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
-    """The main branch for editing the branch attributes."""
-
-    @property
-    def field_names(self):
-        field_names = ['owner', 'name']
-        if not self.context.sourcepackagename:
-            field_names.append('target')
-        field_names.extend([
-            'information_type', 'url', 'description',
-            'lifecycle_status'])
-        return field_names
-
-    custom_widget('target', BranchTargetWidget)
-    custom_widget('lifecycle_status', LaunchpadRadioWidgetWithDescription)
-    custom_widget('information_type', LaunchpadRadioWidgetWithDescription)
+class CodeEditOwnerMixin:
+    """A mixin to adjust owner vocabularies for admins."""
 
     def setUpFields(self):
-        super(BranchEditView, self).setUpFields()
-        branch = self.context
-        # If the user can administer branches, then they should be able to
-        # assign the ownership of the branch to any valid person or team.
-        if check_permission('launchpad.Admin', branch):
+        super(CodeEditOwnerMixin, self).setUpFields()
+        # If the user can administer the relevant object type, then they
+        # should be able to assign the ownership of the object to any valid
+        # person or team.
+        if check_permission('launchpad.Admin', self.context):
             owner_field = self.schema['owner']
             any_owner_choice = Choice(
                 __name__='owner', title=owner_field.title,
-                description=_("As an administrator you are able to assign"
-                                " this branch to any person or team."),
+                description=self.any_owner_description,
                 required=True, vocabulary='ValidPersonOrTeam')
             any_owner_field = form.Fields(
                 any_owner_choice, render_context=self.render_context)
@@ -1119,6 +1098,32 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
                 self.form_fields = self.form_fields.omit('owner')
                 self.form_fields = new_owner_field + self.form_fields
 
+
+class BranchEditView(CodeEditOwnerMixin, BranchEditFormView,
+                     BranchNameValidationMixin):
+    """The main branch for editing the branch attributes."""
+
+    @property
+    def field_names(self):
+        field_names = ['owner', 'name']
+        if not self.context.sourcepackagename:
+            field_names.append('target')
+        field_names.extend([
+            'information_type', 'url', 'description',
+            'lifecycle_status'])
+        return field_names
+
+    custom_widget('target', BranchTargetWidget)
+    custom_widget('lifecycle_status', LaunchpadRadioWidgetWithDescription)
+    custom_widget('information_type', LaunchpadRadioWidgetWithDescription)
+
+    any_owner_description = _(
+        "As an administrator you are able to assign this branch to any "
+        "person or team.")
+
+    def setUpFields(self):
+        super(BranchEditView, self).setUpFields()
+        branch = self.context
         if branch.branch_type in (BranchType.HOSTED, BranchType.IMPORTED):
             self.form_fields = self.form_fields.omit('url')
 
@@ -1169,23 +1174,6 @@ class BranchReviewerEditView(BranchEditFormView):
     @property
     def initial_values(self):
         return {'reviewer': self.context.code_reviewer}
-
-
-class BranchMergeQueueView(LaunchpadView):
-    """The view used to render the merge queue for a branch."""
-
-    @cachedproperty
-    def merge_queue(self):
-        """Get the merge queue and check visibility."""
-        result = []
-        for proposal in self.context.getMergeQueue():
-            # If the logged in user cannot view the proposal then we
-            # show a "place holder" in the queue position.
-            if check_permission('launchpad.View', proposal):
-                result.append(proposal)
-            else:
-                result.append(None)
-        return result
 
 
 class RegisterProposalStatus(EnumeratedType):
@@ -1301,8 +1289,8 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
 
         try:
             proposal = source_branch.addLandingTarget(
-                registrant=registrant, target_branch=target_branch,
-                prerequisite_branch=prerequisite_branch,
+                registrant=registrant, merge_target=target_branch,
+                merge_prerequisite=prerequisite_branch,
                 needs_review=data['needs_review'],
                 description=data.get('comment'),
                 review_requests=review_requests,
@@ -1424,4 +1412,3 @@ class TryImportAgainView(LaunchpadFormView):
     @property
     def prefix(self):
         return "tryagain"
-

@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Interfaces including and related to IDistroSeries."""
@@ -327,13 +327,13 @@ class IDistroSeriesPublic(
             language pack update for this distribution series.
             '''), vocabulary='FilteredLanguagePack')
 
-    language_pack_full_export_requested = Bool(
+    language_pack_full_export_requested = exported(Bool(
         title=_('Request a full language pack export'), required=True,
         description=_('''
             Whether next language pack generation will be a full export. This
             information is useful when update packs are too big and want to
             merge all those changes in the base pack.
-            '''))
+            ''')))
 
     last_full_language_pack_exported = Object(
         title=_('Latest exported language pack with all translation files.'),
@@ -765,8 +765,7 @@ class IDistroSeriesPublic(
         :return: A new `PackageUpload`.
         """
 
-    def newArch(architecturetag, processor, official, owner,
-                supports_virtualized=False, enabled=True):
+    def newArch(architecturetag, processor, official, owner, enabled=True):
         """Create a new port or DistroArchSeries for this DistroSeries."""
 
     def getPOFileContributorsByLanguage(language):

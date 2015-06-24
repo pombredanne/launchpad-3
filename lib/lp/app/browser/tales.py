@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementation of the lp: htmlform: fmt: namespaces in TALES."""
@@ -10,7 +10,7 @@ from datetime import (
     datetime,
     timedelta,
     )
-from email.Utils import formatdate
+from email.utils import formatdate
 import math
 import os.path
 import rfc822
@@ -1672,6 +1672,24 @@ class BranchMergeProposalFormatterAPI(CustomizableFormatter):
         return {
             'title': self._context.title,
             }
+
+
+class GitRepositoryFormatterAPI(CustomizableFormatter):
+    """Adapter for IGitRepository objects to a formatted string."""
+
+    _link_summary_template = '%(display_name)s'
+
+    def _link_summary_values(self):
+        return {'display_name': self._context.display_name}
+
+
+class GitRefFormatterAPI(CustomizableFormatter):
+    """Adapter for IGitRef objects to a formatted string."""
+
+    _link_summary_template = '%(display_name)s'
+
+    def _link_summary_values(self):
+        return {'display_name': self._context.display_name}
 
 
 class BugBranchFormatterAPI(CustomizableFormatter):

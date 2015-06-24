@@ -20,8 +20,9 @@ __all__ = [
     'InvalidBranchIdentifier',
     'InvalidBranchName',
     'InvalidBranchUniqueName',
-    'InvalidProductName',
     'InvalidBranchUrl',
+    'InvalidPath',
+    'InvalidProductName',
     'InvalidSourcePackageName',
     'OopsOccurred',
     'NoBranchWithID',
@@ -30,16 +31,21 @@ __all__ = [
     'NoSuchBug',
     'NoSuchCodeImportJob',
     'NoSuchDistribution',
+    'NoSuchDistroSeries',
     'NoSuchPackage',
     'NoSuchPerson',
     'NoSuchPersonWithName',
     'NoSuchProduct',
     'NoSuchProductSeries',
+    'NoSuchSourcePackageName',
     'NoSuchTeamMailingList',
+    'NotFound',
     'NotInTeam',
     'NoUrlForBranch',
+    'PathTranslationError',
+    'PermissionDenied',
     'RequiredParameterMissing',
-    'TeamEmailAddress',
+    'Unauthorized',
     'UnexpectedStatusReport',
     ]
 
@@ -455,18 +461,6 @@ class NoSuchCodeImportJob(LaunchpadFault):
         LaunchpadFault.__init__(self, job_id=job_id)
 
 
-class AccountSuspended(LaunchpadFault):
-    """Raised by `ISoftwareCenterAgentAPI` when an account is suspended."""
-
-    error_code = 370
-    msg_template = (
-        'The openid_identifier \'%(openid_identifier)s\''
-        ' is linked to a suspended account.')
-
-    def __init__(self, openid_identifier):
-        LaunchpadFault.__init__(self, openid_identifier=openid_identifier)
-
-
 class OopsOccurred(LaunchpadFault):
     """An oops has occurred performing the requested operation."""
 
@@ -490,15 +484,13 @@ class InvalidSourcePackageName(LaunchpadFault):
         LaunchpadFault.__init__(self, name=name)
 
 
-class TeamEmailAddress(LaunchpadFault):
-    """Raised by `ISoftwareCenterAgentAPI` when an email address is a team."""
+# American English spelling to line up with httplib etc.
+class Unauthorized(LaunchpadFault):
+    """Permission was denied, but authorisation may help."""
 
-    error_code = 400
+    error_code = 410
     msg_template = (
-        'The email address \'%(email)s\' '
-        '(openid_identifier \'%(openid_identifier)s\') '
-        'is linked to a Launchpad team.')
+        "%(message)s")
 
-    def __init__(self, email, openid_identifier):
-        LaunchpadFault.__init__(
-            self, email=email, openid_identifier=openid_identifier)
+    def __init__(self, message="Authorisation required."):
+        LaunchpadFault.__init__(self, message=message)

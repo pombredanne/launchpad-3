@@ -147,12 +147,6 @@ def _mergeBranches(from_person, to_person):
         removeSecurityProxy(branch).setOwner(to_person, to_person)
 
 
-def _mergeBranchMergeQueues(cur, from_id, to_id):
-    cur.execute('''
-        UPDATE BranchMergeQueue SET owner = %(to_id)s WHERE owner =
-        %(from_id)s''', dict(to_id=to_id, from_id=from_id))
-
-
 def _mergeGitRepositories(from_person, to_person):
     # This shouldn't use removeSecurityProxy.
     repositories = getUtility(IGitCollection).ownedBy(from_person)
@@ -205,6 +199,24 @@ def _mergeBranchSubscription(cur, from_id, to_id):
     # and delete those left over.
     cur.execute('''
         DELETE FROM BranchSubscription WHERE person=%(from_id)d
+        ''' % vars())
+
+
+def _mergeGitSubscription(cur, from_id, to_id):
+    # Update only the GitSubscription that will not conflict.
+    cur.execute('''
+        UPDATE GitSubscription
+        SET person=%(to_id)d
+        WHERE person=%(from_id)d AND repository NOT IN
+            (
+            SELECT repository
+            FROM GitSubscription
+            WHERE person = %(to_id)d
+            )
+        ''' % vars())
+    # and delete those left over.
+    cur.execute('''
+        DELETE FROM GitSubscription WHERE person=%(from_id)d
         ''' % vars())
 
 
@@ -699,6 +711,8 @@ def merge_people(from_person, to_person, reviewer, delete=False):
         ('bugsummaryjournal', 'viewed_by'),
         ('latestpersonsourcepackagereleasecache', 'creator'),
         ('latestpersonsourcepackagereleasecache', 'maintainer'),
+        # Obsolete table.
+        ('branchmergequeue', 'owner'),
         ]
 
     references = list(postgresql.listReferences(cur, 'person', 'id'))
@@ -746,9 +760,6 @@ def merge_people(from_person, to_person, reviewer, delete=False):
     _mergeBranches(from_person, to_person)
     skip.append(('branch', 'owner'))
 
-    _mergeBranchMergeQueues(cur, from_id, to_id)
-    skip.append(('branchmergequeue', 'owner'))
-
     # Update the GitRepositories that will not conflict, and fudge the names
     # of ones that *do* conflict.
     _mergeGitRepositories(from_person, to_person)
@@ -762,6 +773,9 @@ def merge_people(from_person, to_person, reviewer, delete=False):
 
     _mergeBranchSubscription(cur, from_id, to_id)
     skip.append(('branchsubscription', 'person'))
+
+    _mergeGitSubscription(cur, from_id, to_id)
+    skip.append(('gitsubscription', 'person'))
 
     _mergeBugAffectsPerson(cur, from_id, to_id)
     skip.append(('bugaffectsperson', 'person'))

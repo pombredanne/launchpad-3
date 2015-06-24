@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the database garbage collector."""
@@ -56,6 +56,10 @@ from lp.code.model.branchjob import (
 from lp.code.model.codeimportevent import CodeImportEvent
 from lp.code.model.codeimportresult import CodeImportResult
 from lp.code.model.diff import Diff
+from lp.code.model.gitjob import (
+    GitJob,
+    GitRefScanJob,
+    )
 from lp.registry.enums import (
     BranchSharingPolicy,
     BugSharingPolicy,
@@ -929,6 +933,46 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
 
         switch_dbuser('testadmin')
         self.assertEqual(store.find(BranchJob).count(), 1)
+
+    def test_GitJobPruner(self):
+        # Garbo should remove jobs completed over 30 days ago.
+        switch_dbuser('testadmin')
+        store = IMasterStore(Job)
+
+        db_repository = self.factory.makeGitRepository()
+        Store.of(db_repository).flush()
+        git_job = GitRefScanJob.create(db_repository)
+        git_job.job.date_finished = THIRTY_DAYS_AGO
+
+        self.assertEqual(
+            1,
+            store.find(GitJob, GitJob.repository == db_repository.id).count())
+
+        self.runDaily()
+
+        switch_dbuser('testadmin')
+        self.assertEqual(
+            0,
+            store.find(GitJob, GitJob.repository == db_repository.id).count())
+
+    def test_GitJobPruner_doesnt_prune_recent_jobs(self):
+        # Check to make sure the garbo doesn't remove jobs that aren't more
+        # than thirty days old.
+        switch_dbuser('testadmin')
+        store = IMasterStore(Job)
+
+        db_repository = self.factory.makeGitRepository()
+
+        git_job = GitRefScanJob.create(db_repository)
+        git_job.job.date_finished = THIRTY_DAYS_AGO
+
+        db_repository2 = self.factory.makeGitRepository()
+        GitRefScanJob.create(db_repository2)
+
+        self.runDaily()
+
+        switch_dbuser('testadmin')
+        self.assertEqual(1, store.find(GitJob).count())
 
     def test_ObsoleteBugAttachmentPruner(self):
         # Bug attachments without a LibraryFileContent record are removed.

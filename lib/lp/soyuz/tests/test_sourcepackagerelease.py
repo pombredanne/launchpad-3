@@ -25,6 +25,14 @@ class TestSourcePackageRelease(TestCaseWithFactory):
         spr = self.factory.makeSourcePackageRelease()
         self.assertIs(None, spr.uploader)
 
+    def test___repr__(self):
+        spr = self.factory.makeSourcePackageRelease()
+        expected_repr = ('<{cls} {pkg_name} (id: {id}, '
+                         'version: {version})>').format(
+                             cls=spr.__class__.__name__, pkg_name=spr.name,
+                             id=spr.id, version=spr.version)
+        self.assertEqual(expected_repr, repr(spr))
+
     def test_uploader_dsc_package(self):
         owner = self.factory.makePerson()
         key = self.factory.makeGPGKey(owner)

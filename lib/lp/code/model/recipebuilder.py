@@ -117,7 +117,7 @@ class RecipeBuildBehaviour(BuildFarmJobBehaviourBase):
            distroseries state.
         """
         build = self.build
-        assert not (not self._builder.virtualized and build.is_virtualized), (
+        assert self._builder.virtualized, (
             "Attempt to build virtual item on a non-virtual builder.")
 
         # This should already have been checked earlier, but just check again

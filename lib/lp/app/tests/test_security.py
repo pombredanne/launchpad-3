@@ -1,7 +1,9 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
+
+from testtools.matchers import Equals
 from zope.component import (
     getSiteManager,
     getUtility,
@@ -28,6 +30,7 @@ from lp.security import PublicOrPrivateTeamsExistence
 from lp.testing import (
     admin_logged_in,
     person_logged_in,
+    record_two_runs,
     TestCase,
     TestCaseWithFactory,
     )
@@ -36,6 +39,7 @@ from lp.testing.layers import (
     DatabaseFunctionalLayer,
     ZopelessDatabaseLayer,
     )
+from lp.testing.matchers import HasQueryCount
 
 
 def registerFakeSecurityAdapter(interface, permission, adapter=None):
@@ -253,3 +257,30 @@ class TestPublicOrPrivateTeamsExistence(TestCaseWithFactory):
         self.assertTeamOwnerCanListPrivateTeamWithTeamStatus(
             TeamMembershipStatus.EXPIRED)
 
+    def test_private_team_query_count(self):
+        # Testing visibility of a private team involves checking for
+        # subscriptions to any private PPAs owned by that team.  Make sure
+        # that this doesn't involve a query for every archive subscription
+        # the user has.
+        person = self.factory.makePerson()
+        team_owner = self.factory.makePerson()
+        private_team = self.factory.makeTeam(
+            owner=team_owner, visibility=PersonVisibility.PRIVATE)
+        checker = PublicOrPrivateTeamsExistence(
+            removeSecurityProxy(private_team))
+
+        def create_subscribed_archive():
+            with person_logged_in(team_owner):
+                archive = self.factory.makeArchive(
+                    owner=private_team, private=True)
+                archive.newSubscription(person, team_owner)
+
+        def check_team_limited_view():
+            person.clearInTeamCache()
+            with person_logged_in(person):
+                self.assertTrue(
+                    checker.checkAuthenticated(IPersonRoles(person)))
+
+        recorder1, recorder2 = record_two_runs(
+            check_team_limited_view, create_subscribed_archive, 5)
+        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))

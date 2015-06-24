@@ -1,0 +1,27 @@
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n">
+
+  <p tal:condition="not: context/committer_date">
+    <metal:no-commit-message use-macro="context/@@+macros/no-commit-message" />
+  </p>
+
+  <tal:has_commit condition="context/committer_date">
+    <style type="text/css">
+      .subordinate {
+        margin-left: 1em;
+      }
+    </style>
+    <dl class="revision">
+      <tal:comment condition="nothing">
+        XXX cjwatson 2015-03-19: This should display more commits once we
+        have them.  For now, we only have the tip commit.
+      </tal:comment>
+      <tal:tip define="commit_info view/tip_commit_info">
+        <metal:commit-text use-macro="context/@@+macros/commit-text" />
+      </tal:tip>
+    </dl>
+  </tal:has_commit>
+
+</div>

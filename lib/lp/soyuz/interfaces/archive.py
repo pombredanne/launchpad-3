@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Archive interfaces."""
@@ -94,6 +94,7 @@ from lp import _
 from lp.app.errors import NameLookupFailed
 from lp.app.interfaces.launchpad import IPrivacy
 from lp.app.validators.name import name_validator
+from lp.buildmaster.interfaces.processor import IProcessor
 from lp.registry.interfaces.gpg import IGPGKey
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.role import IHasOwner
@@ -449,6 +450,12 @@ class IArchiveSubscriberView(Interface):
                           "than or equal to this date."),
             required=False),
         component_name=TextLine(title=_("Component name"), required=False),
+        order_by_date=Bool(
+            title=_("Order by creation date"),
+            description=_("Return newest results first. This is recommended "
+                          "for applications that need to catch up with "
+                          "publications since their last run."),
+            required=False),
         )
     # Really returns ISourcePackagePublishingHistory, see below for
     # patch to avoid circular import.
@@ -457,7 +464,7 @@ class IArchiveSubscriberView(Interface):
     def api_getPublishedSources(name=None, version=None, status=None,
                                 distroseries=None, pocket=None,
                                 exact_match=False, created_since_date=None,
-                                component_name=None):
+                                component_name=None, order_by_date=False):
         """All `ISourcePackagePublishingHistory` target to this archive."""
         # It loads additional related objects only needed in the API call
         # context (i.e. security checks and entries marshalling).
@@ -465,7 +472,8 @@ class IArchiveSubscriberView(Interface):
     def getPublishedSources(name=None, version=None, status=None,
                             distroseries=None, pocket=None,
                             exact_match=False, created_since_date=None,
-                            eager_load=False, component_name=None):
+                            eager_load=False, component_name=None,
+                            order_by_date=False):
         """All `ISourcePackagePublishingHistory` target to this archive.
 
         :param name: source name filter (exact match or SQL LIKE controlled
@@ -482,6 +490,9 @@ class IArchiveSubscriberView(Interface):
             is greater than or equal to this date.
         :param component_name: component filter. Only return source packages
             that are in this component.
+        :param order_by_date: Order publications by descending creation date
+            and then by descending ID.  This is suitable for applications
+            that need to catch up with publications since their last run.
 
         :return: SelectResults containing `ISourcePackagePublishingHistory`,
             ordered by name. If there are multiple results for the same
@@ -511,18 +522,22 @@ class IArchiveView(IHasBuildRecords):
             readonly=False, description=_(
                 "Only build the archive's packages on virtual builders.")))
 
-    build_debug_symbols = Bool(
-        title=_("Build debug symbols"), required=False,
+    build_debug_symbols = exported(Bool(
+        title=_("Build debug symbols"), required=False, readonly=False,
         description=_(
-            "Create debug symbol packages for builds in the archive."))
-    publish_debug_symbols = Bool(
-        title=_("Publish debug symbols"), required=False,
+            "Create debug symbol packages for builds in the archive.")),
+        as_of='devel')
+    publish_debug_symbols = exported(Bool(
+        title=_("Publish debug symbols"), required=False, readonly=False,
         description=_(
-            "Publish debug symbol packages in the apt repository."))
+            "Publish debug symbol packages in the apt repository.")),
+        as_of='devel')
 
-    permit_obsolete_series_uploads = Bool(
+    permit_obsolete_series_uploads = exported(Bool(
         title=_("Permit uploads to obsolete series"), required=False,
-        description=_("Allow uploads targeted to obsolete series."))
+        readonly=False,
+        description=_("Allow uploads targeted to obsolete series.")),
+        as_of='devel')
 
     authorized_size = exported(
         Int(
@@ -608,14 +623,19 @@ class IArchiveView(IHasBuildRecords):
             "context build.\n"
             "NOTE: This is for migration of OEM PPAs only!")))
 
+    processors = exported(
+        CollectionField(
+            title=_("Processors"),
+            description=_("The architectures on which the archive can build."),
+            value_type=Reference(schema=IProcessor),
+            readonly=True),
+        as_of='devel')
+
     enabled_restricted_processors = exported(
         CollectionField(
             title=_("Enabled restricted processors"),
-            description=_(
-                "The restricted architectures on which the archive "
-                "can build."),
-            value_type=Reference(schema=Interface),
-            # Really IProcessor.
+            description=_("DEPRECATED. Use processors instead."),
+            value_type=Reference(schema=IProcessor),
             readonly=True),
         as_of='devel')
 
@@ -1110,6 +1130,12 @@ class IArchiveView(IHasBuildRecords):
             description=_("Return ordered results by default, but specifying "
                           "False will return results more quickly."),
             required=False, readonly=True),
+        order_by_date=Bool(
+            title=_("Order by creation date"),
+            description=_("Return newest results first. This is recommended "
+                          "for applications that need to catch up with "
+                          "publications since their last run."),
+            required=False),
         )
     # Really returns ISourcePackagePublishingHistory, see below for
     # patch to avoid circular import.
@@ -1119,7 +1145,7 @@ class IArchiveView(IHasBuildRecords):
     def getAllPublishedBinaries(name=None, version=None, status=None,
                                 distroarchseries=None, pocket=None,
                                 exact_match=False, created_since_date=None,
-                                ordered=True):
+                                ordered=True, order_by_date=False):
         """All `IBinaryPackagePublishingHistory` target to this archive.
 
         :param name: binary name filter (exact match or SQL LIKE controlled
@@ -1137,6 +1163,9 @@ class IArchiveView(IHasBuildRecords):
             False then the results will be unordered.  This will make the
             operation much quicker to return results if you don't care about
             ordering.
+        :param order_by_date: Order publications by descending creation date
+            and then by descending ID.  This is suitable for applications
+            that need to catch up with publications since their last run.
 
         :return: A collection containing `BinaryPackagePublishingHistory`.
         """
@@ -2007,13 +2036,23 @@ class IArchiveAdmin(Interface):
     """Archive interface for operations restricted by commercial."""
 
     @operation_parameters(
-        processor=Reference(schema=Interface, required=True),
-        # Really IProcessor.
+        processors=List(
+            value_type=Reference(schema=IProcessor), required=True),
+    )
+    @export_write_operation()
+    @operation_for_version('devel')
+    def setProcessors(processors):
+        """Set the architectures on which the archive can build."""
+
+    @operation_parameters(
+        processor=Reference(schema=IProcessor, required=True),
     )
     @export_write_operation()
     @operation_for_version('devel')
     def enableRestrictedProcessor(processor):
         """Add the processor to the set of enabled restricted processors.
+
+        DEPRECATED. Use setProcessors instead.
 
         :param processor: is an `IProcessor` object.
         """
@@ -2064,7 +2103,8 @@ class IArchiveSet(Interface):
 
     def new(purpose, owner, name=None, displayname=None, distribution=None,
             description=None, enabled=True, require_virtualized=True,
-            private=False, suppress_subscription_notifications=False):
+            private=False, suppress_subscription_notifications=False,
+            processors=None):
         """Create a new archive.
 
         On named-ppa creation, the signing key for the default PPA for the
@@ -2089,6 +2129,8 @@ class IArchiveSet(Interface):
         :param private: whether or not to make the PPA private
         :param suppress_subscription_notifications: whether to suppress
             emails to subscribers about new subscriptions.
+        :param processors: list of `IProcessors` for which the archive should
+            build. If omitted, processors with `build_by_default` will be used.
 
         :return: an `IArchive` object.
         :raises AssertionError if name is already taken within distribution.

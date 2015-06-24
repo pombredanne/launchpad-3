@@ -9,7 +9,7 @@ __all__ = [
     'DistroSeriesDifferenceComment',
     ]
 
-from email.Utils import make_msgid
+from email.utils import make_msgid
 
 from storm.locals import (
     Desc,

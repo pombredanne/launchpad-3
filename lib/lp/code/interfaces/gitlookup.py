@@ -33,9 +33,9 @@ class IGitTraversable(Interface):
 class IGitTraverser(Interface):
     """Utility for traversing to an object that can have a Git repository."""
 
-    def traverse(segments):
+    def traverse(segments, owner=None):
         """Traverse to the object referred to by a prefix of the 'segments'
-        iterable.
+        iterable, starting from 'owner' if given.
 
         :raises InvalidNamespace: If the path cannot be parsed as a
             repository namespace.
@@ -53,7 +53,8 @@ class IGitTraverser(Interface):
         :return: A tuple of::
             * an `IPerson`, or None;
             * an `IHasGitRepositories`;
-            * an `IGitRepository`, or None.
+            * an `IGitRepository`, or None;
+            * a trailing path segment, or None.
         """
 
     def traverse_path(path):
@@ -88,6 +89,12 @@ class IGitLookup(Interface):
         """Return the repository with the given id.
 
         Return the default value if there is no such repository.
+        """
+
+    def getByHostingPath(path):
+        """Get information about a given path on the hosting backend.
+
+        :return: An `IGitRepository`, or None.
         """
 
     def getByUniqueName(unique_name):
@@ -133,5 +140,8 @@ class IGitLookup(Interface):
                 PROJECT
                 DISTRO/+source/SOURCE
 
-        :return: An `IGitRepository`, or None.
+        :return: A tuple of (`IGitRepository`, extra_path), or (None, _).
+            'extra_path' may be used by applications that need to traverse a
+            leading part of a path as a repository, such as external code
+            browsers.
         """

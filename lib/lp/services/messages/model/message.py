@@ -13,11 +13,11 @@ __all__ = [
 from cStringIO import StringIO as cStringIO
 from datetime import datetime
 import email
-from email.Header import (
+from email.header import (
     decode_header,
     make_header,
     )
-from email.Utils import (
+from email.utils import (
     make_msgid,
     mktime_tz,
     parseaddr,
@@ -250,7 +250,7 @@ class MessageSet:
         # Unfold the header before decoding it.
         header = ''.join(header.splitlines())
 
-        bits = email.Header.decode_header(header)
+        bits = email.header.decode_header(header)
         # Re-encode the header parts using utf-8, replacing undecodable
         # characters with question marks.
         re_encoded_bits = []
@@ -260,7 +260,7 @@ class MessageSet:
             # 2008-09-26 gary:
             # The RFC 2047 encoding names and the Python encoding names are
             # not always the same. A safer and more correct approach would use
-            #   bytes.decode(email.Charset.Charset(charset).input_codec,
+            #   bytes.decode(email.charset.Charset(charset).input_codec,
             #                'replace')
             # or similar, rather than
             #   bytes.decode(charset, 'replace')
@@ -270,7 +270,7 @@ class MessageSet:
             re_encoded_bits.append(
                 (self.decode(bytes, charset).encode('utf-8'), 'utf-8'))
 
-        return unicode(email.Header.make_header(re_encoded_bits))
+        return unicode(email.header.make_header(re_encoded_bits))
 
     def fromEmail(self, email_message, owner=None, filealias=None,
                   parsed_message=None, create_missing_persons=False,
@@ -284,7 +284,7 @@ class MessageSet:
                 'email_message must be a normal string.  Got: %r'
                 % email_message)
 
-        # Parse the raw message into an email.Message.Message instance,
+        # Parse the raw message into an email.message.Message instance,
         # if we haven't been given one already.
         if parsed_message is None:
             parsed_message = email.message_from_string(email_message)

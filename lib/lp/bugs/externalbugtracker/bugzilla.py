@@ -11,7 +11,7 @@ __all__ = [
     'needs_authentication',
     ]
 
-from email.Utils import parseaddr
+from email.utils import parseaddr
 from httplib import BadStatusLine
 import re
 import string

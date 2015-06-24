@@ -414,7 +414,7 @@ class POTMsgSet(SQLBase):
                 JOIN SuggestivePOTemplate ON
                     TranslationTemplateItem.potemplate =
                         SuggestivePOTemplate.potemplate
-                WHERE msgid_singular = %s and potmsgset.id <> %s
+                WHERE POTMsgSet.msgid_singular = %s and POTMsgSet.id <> %s
             )''' % sqlvalues(self.msgid_singular, self))
 
         # Subquery to find the ids of TranslationMessages that are

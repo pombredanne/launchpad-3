@@ -72,6 +72,7 @@ from zope.schema import (
 from zope.schema.vocabulary import SimpleVocabulary
 
 from lp import _
+from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.app.errors import NameLookupFailed
 from lp.app.interfaces.informationtype import IInformationType
@@ -108,6 +109,7 @@ from lp.registry.enums import (
     BranchSharingPolicy,
     BugSharingPolicy,
     SpecificationSharingPolicy,
+    VCSType,
     )
 from lp.registry.interfaces.announcement import IMakesAnnouncements
 from lp.registry.interfaces.commercialsubscription import (
@@ -751,6 +753,14 @@ class IProductView(
             description=_('Security contact (obsolete; always None)')),
             ('devel', dict(exported=False)), as_of='1.0')
 
+    vcs = exported(
+        Choice(
+            title=_("VCS"),
+            required=False,
+            vocabulary=VCSType,
+            description=_(
+                "Version control system for this project's code.")))
+
     def getAllowedBugInformationTypes():
         """Get the information types that a bug in this project can have.
 
@@ -888,7 +898,7 @@ class IProductEditRestricted(IOfficialBugTagTargetRestricted):
 class IProduct(
     IBugTarget, IHasBugSupervisor, IHasDrivers, IProductEditRestricted,
     IProductModerateRestricted, IProductDriverRestricted, IProductView,
-    IProductLimitedView, IProductPublic, IQuestionTarget,
+    IProductLimitedView, IProductPublic, IFAQTarget, IQuestionTarget,
     ISpecificationTarget, IStructuralSubscriptionTarget, IInformationType,
     IPillar):
     """A Product.

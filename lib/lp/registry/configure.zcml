@@ -37,6 +37,7 @@
                 id
                 team
                 person
+                personID
                 status
                 proposed_by
                 acknowledged_by
@@ -1187,16 +1188,6 @@
         class="lp.registry.xmlrpc.mailinglist.MailingListAPIView"
         permission="zope.Public"/>
     <securedutility
-        class="lp.registry.xmlrpc.softwarecenteragent.SoftwareCenterAgentApplication"
-        provides="lp.registry.interfaces.person.ISoftwareCenterAgentApplication">
-      <allow interface="lp.registry.interfaces.person.ISoftwareCenterAgentApplication" />
-    </securedutility>
-    <xmlrpc:view
-        for="lp.registry.interfaces.person.ISoftwareCenterAgentApplication"
-        interface="lp.registry.interfaces.person.ISoftwareCenterAgentAPI"
-        class="lp.registry.xmlrpc.softwarecenteragent.SoftwareCenterAgentAPI"
-        permission="zope.Public"/>
-    <securedutility
         class="lp.registry.xmlrpc.canonicalsso.CanonicalSSOApplication"
         provides="lp.registry.interfaces.person.ICanonicalSSOApplication">
       <allow interface="lp.registry.interfaces.person.ICanonicalSSOApplication" />
@@ -1332,7 +1323,9 @@
                 sourceforgeproject
                 summary
                 title
-                wikiurl"/>
+                vcs
+                wikiurl"
+            />
         <require
             permission="launchpad.BugSupervisor"
             set_attributes="
@@ -1743,7 +1736,9 @@
                 package_derivatives_email
                 redirect_release_uploads
                 summary
-                title"/>
+                title
+                vcs
+                "/>
         <require
             permission="launchpad.Admin"
             set_attributes="

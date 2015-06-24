@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Account interfaces."""
@@ -18,11 +18,13 @@ __all__ = [
     'INACTIVE_ACCOUNT_STATUSES',
     ]
 
+import httplib
 
 from lazr.enum import (
     DBEnumeratedType,
     DBItem,
     )
+from lazr.restful.declarations import error_status
 from zope.interface import (
     Attribute,
     Interface,
@@ -40,6 +42,7 @@ from lp.app.validators import LaunchpadValidationError
 from lp.services.fields import StrippedTextLine
 
 
+@error_status(httplib.BAD_REQUEST)
 class AccountSuspendedError(Exception):
     """The account being accessed has been suspended."""
 

@@ -15,6 +15,7 @@ from lp.code.mail.branch import (
     RecipientReason,
     )
 from lp.code.model.branch import Branch
+from lp.code.model.gitref import GitRef
 from lp.testing import (
     login_person,
     TestCaseWithFactory,
@@ -22,38 +23,25 @@ from lp.testing import (
 from lp.testing.layers import DatabaseFunctionalLayer
 
 
-class TestRecipientReason(TestCaseWithFactory):
+class TestRecipientReasonMixin:
     """Test the RecipientReason class."""
 
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        # Need to set target_branch.date_last_modified.
+        # Need to set merge_target.date_last_modified.
         TestCaseWithFactory.setUp(self, user='test@canonical.com')
-
-    def makeProposalWithSubscription(self, subscriber=None):
-        """Test fixture."""
-        if subscriber is None:
-            subscriber = self.factory.makePerson()
-        source_branch = self.factory.makeProductBranch(title='foo')
-        target_branch = self.factory.makeProductBranch(
-            product=source_branch.product, title='bar')
-        merge_proposal = source_branch.addLandingTarget(
-            source_branch.owner, target_branch)
-        subscription = merge_proposal.source_branch.subscribe(
-            subscriber, BranchSubscriptionNotificationLevel.NOEMAIL, None,
-            CodeReviewNotificationLevel.FULL, subscriber)
-        return merge_proposal, subscription
 
     def test_forBranchSubscriber(self):
         """Test values when created from a branch subscription."""
         merge_proposal, subscription = self.makeProposalWithSubscription()
         subscriber = subscription.person
         reason = RecipientReason.forBranchSubscriber(
-            subscription, subscriber, '', merge_proposal)
+            subscription, merge_proposal.merge_source, subscriber, '',
+            merge_proposal)
         self.assertEqual(subscriber, reason.subscriber)
         self.assertEqual(subscriber, reason.recipient)
-        self.assertEqual(merge_proposal.source_branch, reason.branch)
+        self.assertEqual(merge_proposal.merge_source, reason.branch)
 
     def makeReviewerAndSubscriber(self):
         """Return a tuple of vote_reference, subscriber."""
@@ -74,7 +62,7 @@ class TestRecipientReason(TestCaseWithFactory):
         self.assertEqual(subscriber, reason.subscriber)
         self.assertEqual(subscriber, reason.recipient)
         self.assertEqual(
-            vote_reference.branch_merge_proposal.source_branch, reason.branch)
+            vote_reference.branch_merge_proposal.merge_source, reason.branch)
 
     def test_forReview_individual_pending(self):
         bmp = self.factory.makeBranchMergeProposal()
@@ -83,8 +71,7 @@ class TestRecipientReason(TestCaseWithFactory):
         self.assertEqual('Reviewer', reason.mail_header)
         self.assertEqual(
             'You are requested to review the proposed merge of %s into %s.'
-            % (bmp.source_branch.bzr_identity,
-               bmp.target_branch.bzr_identity),
+            % (bmp.merge_source.identity, bmp.merge_target.identity),
             reason.getReason())
 
     def test_forReview_individual_in_progress(self):
@@ -94,8 +81,7 @@ class TestRecipientReason(TestCaseWithFactory):
         self.assertEqual('Reviewer', reason.mail_header)
         self.assertEqual(
             'You are reviewing the proposed merge of %s into %s.'
-            % (bmp.source_branch.bzr_identity,
-               bmp.target_branch.bzr_identity),
+            % (bmp.merge_source.identity, bmp.merge_target.identity),
             reason.getReason())
 
     def test_forReview_team_pending(self):
@@ -106,18 +92,18 @@ class TestRecipientReason(TestCaseWithFactory):
         self.assertEqual(
             'Your team Vikings is requested to review the proposed merge'
             ' of %s into %s.'
-            % (bmp.source_branch.bzr_identity,
-               bmp.target_branch.bzr_identity),
+            % (bmp.merge_source.identity, bmp.merge_target.identity),
             reason.getReason())
 
     def test_getReasonPerson(self):
         """Ensure the correct reason is generated for individuals."""
         merge_proposal, subscription = self.makeProposalWithSubscription()
         reason = RecipientReason.forBranchSubscriber(
-            subscription, subscription.person, '', merge_proposal)
+            subscription, merge_proposal.merge_source, subscription.person, '',
+            merge_proposal)
         self.assertEqual(
             'You are subscribed to branch %s.'
-            % merge_proposal.source_branch.bzr_identity, reason.getReason())
+            % merge_proposal.merge_source.identity, reason.getReason())
 
     def test_getReasonTeam(self):
         """Ensure the correct reason is generated for teams."""
@@ -126,10 +112,28 @@ class TestRecipientReason(TestCaseWithFactory):
         team = self.factory.makeTeam(team_member, displayname='Qux')
         bmp, subscription = self.makeProposalWithSubscription(team)
         reason = RecipientReason.forBranchSubscriber(
-            subscription, team_member, '', bmp)
+            subscription, bmp.merge_source, team_member, '', bmp)
         self.assertEqual(
             'Your team Qux is subscribed to branch %s.'
-            % bmp.source_branch.bzr_identity, reason.getReason())
+            % bmp.merge_source.identity, reason.getReason())
+
+
+class TestRecipientReasonBzr(TestRecipientReasonMixin, TestCaseWithFactory):
+    """Test RecipientReason for Bazaar branches."""
+
+    def makeProposalWithSubscription(self, subscriber=None):
+        """Test fixture."""
+        if subscriber is None:
+            subscriber = self.factory.makePerson()
+        source_branch = self.factory.makeProductBranch(title='foo')
+        target_branch = self.factory.makeProductBranch(
+            product=source_branch.product, title='bar')
+        merge_proposal = source_branch.addLandingTarget(
+            source_branch.owner, target_branch)
+        subscription = merge_proposal.merge_source.subscribe(
+            subscriber, BranchSubscriptionNotificationLevel.NOEMAIL, None,
+            CodeReviewNotificationLevel.FULL, subscriber)
+        return merge_proposal, subscription
 
     def test_usesBranchIdentityCache(self):
         """Ensure that the cache is used for branches if provided."""
@@ -139,30 +143,72 @@ class TestRecipientReason(TestCaseWithFactory):
 
         def blowup(self):
             raise AssertionError('boom')
-        patched = Branch.bzr_identity
-        Branch.bzr_identity = property(blowup)
+        patched = Branch.identity
+        Branch.identity = property(blowup)
 
         def cleanup():
-            Branch.bzr_identity = patched
+            Branch.identity = patched
         self.addCleanup(cleanup)
-        self.assertRaises(AssertionError, getattr, branch, 'bzr_identity')
+        self.assertRaises(AssertionError, getattr, branch, 'identity')
         reason = RecipientReason.forBranchSubscriber(
-            subscription, subscription.person, '',
+            subscription, branch, subscription.person, '',
             branch_identity_cache=branch_cache)
         self.assertEqual(
             'You are subscribed to branch lp://fake.',
             reason.getReason())
 
 
-class TestBranchMailerHeaders(TestCaseWithFactory):
-    """Check the headers are correct for Branch email."""
+class TestRecipientReasonGit(TestRecipientReasonMixin, TestCaseWithFactory):
+    """Test RecipientReason for Git references."""
+
+    def makeProposalWithSubscription(self, subscriber=None):
+        """Test fixture."""
+        if subscriber is None:
+            subscriber = self.factory.makePerson()
+        source_repository = self.factory.makeGitRepository()
+        [source_ref] = self.factory.makeGitRefs(repository=source_repository)
+        target_repository = self.factory.makeGitRepository(
+            target=source_repository.target)
+        [target_ref] = self.factory.makeGitRefs(repository=target_repository)
+        merge_proposal = source_ref.addLandingTarget(
+            source_repository.owner, target_ref)
+        subscription = merge_proposal.merge_source.subscribe(
+            subscriber, BranchSubscriptionNotificationLevel.NOEMAIL, None,
+            CodeReviewNotificationLevel.FULL, subscriber)
+        return merge_proposal, subscription
+
+    def test_usesBranchIdentityCache(self):
+        """Ensure that the cache is used for Git references if provided."""
+        [ref] = self.factory.makeGitRefs()
+        subscription = ref.getSubscription(ref.owner)
+        branch_cache = {ref: 'fake:master'}
+
+        def blowup(self):
+            raise AssertionError('boom')
+        patched = GitRef.identity
+        GitRef.identity = property(blowup)
+
+        def cleanup():
+            GitRef.identity = patched
+        self.addCleanup(cleanup)
+        self.assertRaises(AssertionError, getattr, ref, 'identity')
+        reason = RecipientReason.forBranchSubscriber(
+            subscription, ref, subscription.person, '',
+            branch_identity_cache=branch_cache)
+        self.assertEqual(
+            'You are subscribed to branch fake:master.',
+            reason.getReason())
+
+
+class TestBranchMailerHeadersMixin:
+    """Check the headers are correct."""
 
     layer = DatabaseFunctionalLayer
 
     def test_branch_modified(self):
         # Test the email headers for a branch modified email.
         bob = self.factory.makePerson(email='bob@example.com')
-        branch = self.factory.makeProductBranch(owner=bob)
+        branch = self.makeBranch(owner=bob)
         branch.getSubscription(bob).notification_level = (
             BranchSubscriptionNotificationLevel.FULL)
         mailer = BranchMailer.forBranchModified(branch, branch.owner, None)
@@ -172,18 +218,19 @@ class TestBranchMailerHeaders(TestCaseWithFactory):
             {'X-Launchpad-Branch': branch.unique_name,
              'X-Launchpad-Message-Rationale': 'Subscriber',
              'X-Launchpad-Notification-Type': 'branch-updated',
-             'X-Launchpad-Project': branch.product.name,
+             'X-Launchpad-Project': self.getBranchProjectName(branch),
              'Message-Id': '<foobar-example-com>'},
             ctrl.headers)
 
     def test_branch_revision(self):
         # Test the email headers for new revision email.
         bob = self.factory.makePerson(email='bob@example.com')
-        branch = self.factory.makeProductBranch(owner=bob)
+        branch = self.makeBranch(owner=bob)
         branch.getSubscription(bob).notification_level = (
             BranchSubscriptionNotificationLevel.FULL)
         mailer = BranchMailer.forRevision(
-            branch, 1, 'from@example.com', contents='', diff=None, subject='')
+            branch, 'from@example.com', contents='', diff=None, subject='',
+            revno=1)
         mailer.message_id = '<foobar-example-com>'
         ctrl = mailer.generateEmail('bob@example.com', branch.owner)
         self.assertEqual(
@@ -191,26 +238,50 @@ class TestBranchMailerHeaders(TestCaseWithFactory):
              'X-Launchpad-Message-Rationale': 'Subscriber',
              'X-Launchpad-Notification-Type': 'branch-revision',
              'X-Launchpad-Branch-Revision-Number': '1',
-             'X-Launchpad-Project': branch.product.name,
+             'X-Launchpad-Project': self.getBranchProjectName(branch),
              'Message-Id': '<foobar-example-com>'},
             ctrl.headers)
 
 
-class TestBranchMailerDiff(TestCaseWithFactory):
-    """Check the diff is an attachment for Branch email."""
+class TestBranchMailerHeadersBzr(
+    TestBranchMailerHeadersMixin, TestCaseWithFactory):
+    """Check the headers are correct for Branch email."""
+
+    def makeBranch(self, owner):
+        return self.factory.makeProductBranch(owner=owner)
+
+    def getBranchProjectName(self, branch):
+        return branch.product.name
+
+
+class TestBranchMailerHeadersGit(
+    TestBranchMailerHeadersMixin, TestCaseWithFactory):
+    """Check the headers are correct for GitRef email."""
+
+    def makeBranch(self, owner):
+        repository = self.factory.makeGitRepository(owner=owner)
+        return self.factory.makeGitRefs(repository=repository)[0]
+
+    def getBranchProjectName(self, branch):
+        return branch.target.name
+
+
+class TestBranchMailerDiffMixin:
+    """Check the diff is an attachment."""
 
     layer = DatabaseFunctionalLayer
 
     def makeBobMailController(self, diff=None,
                               max_lines=BranchSubscriptionDiffSize.WHOLEDIFF):
         bob = self.factory.makePerson(email='bob@example.com')
-        branch = self.factory.makeProductBranch(owner=bob)
+        branch = self.makeBranch(owner=bob)
         subscription = branch.getSubscription(bob)
         subscription.max_diff_lines = max_lines
         subscription.notification_level = (
             BranchSubscriptionNotificationLevel.FULL)
         mailer = BranchMailer.forRevision(
-            branch, 1, 'from@example.com', contents='', diff=diff, subject='')
+            branch, 'from@example.com', contents='', diff=diff, subject='',
+            revno=1)
         return mailer.generateEmail('bob@example.com', branch.owner)
 
     def test_generateEmail_with_no_diff(self):
@@ -247,21 +318,52 @@ class TestBranchMailerDiff(TestCaseWithFactory):
         self.assertNotIn('larger than your specified limit', ctrl.body)
 
 
-class TestBranchMailerSubject(TestCaseWithFactory):
+class TestBranchMailerDiffBzr(TestBranchMailerDiffMixin, TestCaseWithFactory):
+    """Check the diff is an attachment for Branch email."""
+
+    def makeBranch(self, owner):
+        return self.factory.makeProductBranch(owner=owner)
+
+
+class TestBranchMailerDiffGit(TestBranchMailerDiffMixin, TestCaseWithFactory):
+    """Check the diff is an attachment for GitRef email."""
+
+    def makeBranch(self, owner):
+        repository = self.factory.makeGitRepository(owner=owner)
+        return self.factory.makeGitRefs(repository=repository)[0]
+
+
+class TestBranchMailerSubjectMixin:
     """The subject for a BranchMailer is returned verbatim."""
 
     layer = DatabaseFunctionalLayer
 
     def test_subject(self):
         # No string interpolation should occur on the subject.
-        branch = self.factory.makeAnyBranch()
+        branch = self.makeBranch()
         # Subscribe the owner to get revision email.
         branch.getSubscription(branch.owner).notification_level = (
             BranchSubscriptionNotificationLevel.FULL)
         mailer = BranchMailer.forRevision(
-            branch, 1, 'test@example.com', 'content', 'diff',
-            'Testing %j foo')
+            branch, 'test@example.com', 'content', 'diff', 'Testing %j foo',
+            revno=1)
         branch_owner_email = removeSecurityProxy(
             branch.owner).preferredemail.email
         self.assertEqual('Testing %j foo', mailer._getSubject(
                 branch_owner_email, branch.owner))
+
+
+class TestBranchMailerSubjectBzr(
+    TestBranchMailerSubjectMixin, TestCaseWithFactory):
+    """The subject for a BranchMailer is returned verbatim for Branch."""
+
+    def makeBranch(self):
+        return self.factory.makeAnyBranch()
+
+
+class TestBranchMailerSubjectGit(
+    TestBranchMailerSubjectMixin, TestCaseWithFactory):
+    """The subject for a BranchMailer is returned verbatim for GitRef."""
+
+    def makeBranch(self):
+        return self.factory.makeGitRefs()[0]

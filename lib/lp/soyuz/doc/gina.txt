@@ -35,7 +35,7 @@ Get the current counts of stuff in the database:
 
 Create a distribution release and an arch release for breezy:
 
-    >>> from lp.soyuz.interfaces.processor import IProcessorSet
+    >>> from lp.buildmaster.interfaces.processor import IProcessorSet
     >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> celebs = getUtility(ILaunchpadCelebrities)
     >>> ubuntu = celebs.ubuntu
@@ -218,7 +218,6 @@ Check if the changelog message was stored correcly:
 
     >>> print x11p.changelog_entry #doctest: -NORMALIZE_WHITESPACE
     x11proto-damage (6.8.99.7-2) breezy; urgency=low
-    <BLANKLINE>
     <BLANKLINE>
       * Add dependency on x11proto-fixes-dev.
     <BLANKLINE>

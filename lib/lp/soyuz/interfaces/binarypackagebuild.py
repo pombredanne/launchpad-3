@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """BinaryPackageBuild interfaces."""
@@ -23,10 +23,12 @@ from lazr.enum import (
 from lazr.restful.declarations import (
     error_status,
     export_as_webservice_entry,
+    export_read_operation,
     export_write_operation,
     exported,
     operation_for_version,
     operation_parameters,
+    operation_returns_entry,
     )
 from lazr.restful.fields import Reference
 from zope.interface import (
@@ -44,7 +46,7 @@ from lp import _
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import ISpecificBuildFarmJobSource
 from lp.buildmaster.interfaces.packagebuild import IPackageBuild
-from lp.soyuz.interfaces.processor import IProcessor
+from lp.buildmaster.interfaces.processor import IProcessor
 from lp.soyuz.interfaces.publishing import ISourcePackagePublishingHistory
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 
@@ -96,6 +98,10 @@ class IBinaryPackageBuildView(IPackageBuild):
             schema=ISourcePackagePublishingHistory,
             required=False, readonly=True,
             description=_("The current source publication for this build.")))
+    api_source_package_name = exported(
+        TextLine(
+            title=_("Source package name"), required=False, readonly=True),
+        exported_as="source_package_name")
 
     distro_series = Attribute("Direct parent needed by CanonicalURL")
     arch_tag = exported(
@@ -127,9 +133,6 @@ class IBinaryPackageBuildView(IPackageBuild):
             title=_("Can Be Cancelled"), required=False, readonly=True,
             description=_(
                 "Whether or not this build record can be cancelled.")))
-
-    is_virtualized = Attribute(
-        "Whether or not this build requires a virtual build host or not.")
 
     upload_changesfile = Attribute(
         "The `LibraryFileAlias` object containing the changes file which "
@@ -218,6 +221,20 @@ class IBinaryPackageBuildView(IPackageBuild):
 
         :return: a result set of (`IBinaryPackageRelease`,
             `IBinaryPackageFile`, `ILibraryFileAlias`, `ILibraryFileContent`).
+        """
+
+    @operation_returns_entry(ISourcePackagePublishingHistory)
+    @export_read_operation()
+    @operation_for_version("devel")
+    def getLatestSourcePublication():
+        """The latest source publication corresponding to this build.
+
+        Unlike current_source_publication, this returns publications even if
+        they are no longer active.
+
+        :return: An `ISourcePackagePublishingHistory`, or None if no
+            corresponding source publication can be located (which is a bug,
+            but is true for some old production builds).
         """
 
 

@@ -26,23 +26,6 @@
       provides="lp.services.webapp.interfaces.IFacet"
       name="branches" />
 
-  <!-- Branch Merge Queues -->
-  <securedutility
-     component="lp.code.model.branchmergequeue.BranchMergeQueue"
-     provides="lp.code.interfaces.branchmergequeue.IBranchMergeQueueSource">
-    <allow interface="lp.code.interfaces.branchmergequeue.IBranchMergeQueueSource"/>
-
-  </securedutility>
-
-  <class class="lp.code.model.branchmergequeue.BranchMergeQueue">
-    <require permission="zope.Public"
-             attributes="registrant owner name description configuration
-                         date_created branches" />
-    <require permission="launchpad.Edit"
-             attributes="setMergeQueueConfig"
-             set_attributes="owner name description configuration" />
-  </class>
-
   <class class="lp.code.model.codereviewvote.CodeReviewVoteReference">
     <allow interface="lp.code.interfaces.codereviewvote.ICodeReviewVoteReferencePublic"/>
     <require
@@ -97,12 +80,6 @@
   <class class="lp.code.browser.branchref.StaticContentView">
     <allow attributes="browserDefault
                        __call__"/>
-  </class>
-  <class class="lp.code.model.branchmergequeuecollection.GenericBranchMergeQueueCollection">
-    <allow interface="lp.code.interfaces.branchmergequeuecollection.IBranchMergeQueueCollection"/>
-  </class>
-  <class class="lp.code.model.branchmergequeuecollection.VisibleBranchMergeQueueCollection">
-    <allow interface="lp.code.interfaces.branchmergequeuecollection.IBranchMergeQueueCollection"/>
   </class>
   <class class="lp.code.model.branchcollection.GenericBranchCollection">
     <allow interface="lp.code.interfaces.branchcollection.IBranchCollection"/>
@@ -161,11 +138,6 @@
       class="lp.code.model.revisioncache.GenericRevisionCollection"
       provides="lp.code.interfaces.revisioncache.IRevisionCache">
     <allow interface="lp.code.interfaces.revisioncache.IRevisionCache"/>
-  </securedutility>
-  <securedutility
-      class="lp.code.model.branchmergequeuecollection.GenericBranchMergeQueueCollection"
-      provides="lp.code.interfaces.branchmergequeuecollection.IAllBranchMergeQueues">
-    <allow interface="lp.code.interfaces.branchmergequeuecollection.IAllBranchMergeQueues"/>
   </securedutility>
   <adapter
       for="lp.registry.interfaces.person.IPerson"
@@ -232,7 +204,9 @@
         permission="launchpad.Edit"
         interface="lp.code.interfaces.branchmergeproposal.IBranchMergeProposalEdit"
         set_attributes="description whiteboard merged_revno commit_message
-                        root_message_id prerequisite_branch"/>
+                        root_message_id prerequisite_branch
+                        prerequisite_git_repository prerequisite_git_path
+                        prerequisite_git_commit_sha1"/>
     <require
         permission="launchpad.AnyAllowedPerson"
         interface="lp.code.interfaces.branchmergeproposal.IBranchMergeProposalAnyAllowedPerson"/>
@@ -392,8 +366,7 @@
                    lp.code.interfaces.branch.IBranchModerateAttributes
                    lp.code.interfaces.branch.IBranchEditableAttributes
                    lp.code.interfaces.branch.IBranchPublic
-                   lp.code.interfaces.branch.IBranchView"
-        attributes="merge_queue merge_queue_config"/>
+                   lp.code.interfaces.branch.IBranchView"/>
     <require
         permission="launchpad.Moderate"
         interface="lp.code.interfaces.branch.IBranchModerate"
@@ -402,7 +375,7 @@
         permission="launchpad.Edit"
         interface="lp.code.interfaces.branch.IBranchEdit"
         set_schema="lp.code.interfaces.branch.IBranchEditableAttributes"
-        attributes="setPrivate addToQueue setMergeQueueConfig"
+        attributes="setPrivate"
         set_attributes="branch_format control_format repository_format
                         branch_type
                         last_scanned last_scanned_id
@@ -814,18 +787,25 @@
         permission="launchpad.View"
         interface="lp.app.interfaces.launchpad.IPrivacy
                    lp.code.interfaces.gitrepository.IGitRepositoryView
-                   lp.code.interfaces.gitrepository.IGitRepositoryModerateAttributes" />
+                   lp.code.interfaces.gitrepository.IGitRepositoryModerateAttributes
+                   lp.code.interfaces.gitrepository.IGitRepositoryEditableAttributes" />
     <require
         permission="launchpad.Moderate"
         interface="lp.code.interfaces.gitrepository.IGitRepositoryModerate"
-        set_schema="lp.code.interfaces.gitrepository.IGitRepositoryModerateAttributes" />
+        set_schema="lp.code.interfaces.gitrepository.IGitRepositoryModerateAttributes"
+        set_attributes="date_last_modified" />
     <require
         permission="launchpad.Edit"
-        interface="lp.code.interfaces.gitrepository.IGitRepositoryEdit" />
+        interface="lp.code.interfaces.gitrepository.IGitRepositoryEdit"
+        set_schema="lp.code.interfaces.gitrepository.IGitRepositoryEditableAttributes" />
   </class>
   <subscriber
       for="lp.code.interfaces.gitrepository.IGitRepository zope.lifecycleevent.interfaces.IObjectModifiedEvent"
       handler="lp.code.model.gitrepository.git_repository_modified"/>
+  <subscriber
+      for="lp.code.interfaces.gitrepository.IGitRepository
+           lp.code.interfaces.event.IGitRefsUpdatedEvent"
+      handler="lp.code.subscribers.git.refs_updated"/>
 
   <!-- GitRepositorySet -->
 
@@ -837,6 +817,21 @@
       provides="lp.code.interfaces.gitrepository.IGitRepositorySet">
     <allow interface="lp.code.interfaces.gitrepository.IGitRepositorySet" />
   </securedutility>
+
+  <!-- GitRepositoryDelta -->
+
+  <class class="lp.code.adapters.gitrepository.GitRepositoryDelta">
+    <allow interface="lp.code.interfaces.gitrepository.IGitRepositoryDelta"/>
+  </class>
+
+  <!-- GitSubscription -->
+
+  <class class="lp.code.model.gitsubscription.GitSubscription">
+    <allow interface="lp.code.interfaces.gitsubscription.IGitSubscription"/>
+    <require
+        permission="zope.Public"
+        set_schema="lp.code.interfaces.gitsubscription.IGitSubscription"/>
+  </class>
 
   <!-- GitNamespace -->
 
@@ -857,6 +852,19 @@
       provides="lp.code.interfaces.gitnamespace.IGitNamespaceSet">
     <allow interface="lp.code.interfaces.gitnamespace.IGitNamespaceSet" />
   </securedutility>
+
+  <!-- GitRef -->
+
+  <class class="lp.code.model.gitref.GitRef">
+    <require
+        permission="launchpad.View"
+        interface="lp.code.interfaces.gitref.IGitRef" />
+  </class>
+  <class class="lp.code.model.gitref.GitRefFrozen">
+    <require
+        permission="launchpad.View"
+        interface="lp.code.interfaces.gitref.IGitRef" />
+  </class>
 
   <!-- GitCollection -->
 
@@ -931,6 +939,36 @@
   <adapter factory="lp.code.model.gitlookup.ProjectGitTraversable" />
   <adapter factory="lp.code.model.gitlookup.DistributionGitTraversable" />
   <adapter factory="lp.code.model.gitlookup.DistributionSourcePackageGitTraversable" />
+
+  <!-- Git hosting -->
+  <securedutility
+      class="lp.code.model.githosting.GitHostingClient"
+      provides="lp.code.interfaces.githosting.IGitHostingClient">
+    <allow interface="lp.code.interfaces.githosting.IGitHostingClient" />
+  </securedutility>
+
+  <!-- Git-related jobs -->
+  <class class="lp.code.model.gitjob.GitJob">
+    <allow interface="lp.code.interfaces.gitjob.IGitJob" />
+  </class>
+  <securedutility
+      component="lp.code.model.gitjob.GitRefScanJob"
+      provides="lp.code.interfaces.gitjob.IGitRefScanJobSource">
+    <allow interface="lp.code.interfaces.gitjob.IGitRefScanJobSource" />
+  </securedutility>
+  <securedutility
+      component="lp.code.model.gitjob.ReclaimGitRepositorySpaceJob"
+      provides="lp.code.interfaces.gitjob.IReclaimGitRepositorySpaceJobSource">
+    <allow interface="lp.code.interfaces.gitjob.IReclaimGitRepositorySpaceJobSource" />
+  </securedutility>
+  <class class="lp.code.model.gitjob.GitRefScanJob">
+    <allow interface="lp.code.interfaces.gitjob.IGitJob" />
+    <allow interface="lp.code.interfaces.gitjob.IGitRefScanJob" />
+  </class>
+  <class class="lp.code.model.gitjob.ReclaimGitRepositorySpaceJob">
+    <allow interface="lp.code.interfaces.gitjob.IGitJob" />
+    <allow interface="lp.code.interfaces.gitjob.IReclaimGitRepositorySpaceJob" />
+  </class>
 
   <lp:help-folder folder="help" name="+help-code" />
 

@@ -9,6 +9,7 @@ __all__ = [
     ]
 
 from datetime import datetime
+import math
 import os
 import shutil
 
@@ -429,12 +430,14 @@ class PublishFTPMaster(LaunchpadCronScript):
         publish_distro.main()
 
     def publishDistroArchive(self, distribution, archive,
-                             security_suites=None):
+                             security_suites=None, updated_suites=[]):
         """Publish the results for an archive.
 
         :param archive: Archive to publish.
         :param security_suites: An optional list of suites to restrict
             the publishing to.
+        :param updated_suites: An optional list of archive/suite pairs that
+            have been updated out of band and should be republished.
         """
         purpose = archive.purpose
         archive_config = self.configs[distribution][purpose]
@@ -449,6 +452,9 @@ class PublishFTPMaster(LaunchpadCronScript):
         arguments = ['-R', temporary_dists]
         if archive.purpose == ArchivePurpose.PARTNER:
             arguments.append('--partner')
+        for updated_archive, updated_suite in updated_suites:
+            if archive == updated_archive:
+                arguments.extend(['--dirty-suite', updated_suite])
 
         os.rename(get_backup_dists(archive_config), temporary_dists)
         try:
@@ -544,18 +550,22 @@ class PublishFTPMaster(LaunchpadCronScript):
             security_suites=security_suites)
         return True
 
-    def publishDistroUploads(self, distribution):
+    def publishDistroUploads(self, distribution, updated_suites=[]):
         """Publish the distro's complete uploads."""
         self.logger.debug("Full publication.  This may take some time.")
         for archive in get_publishable_archives(distribution):
             if archive.purpose in self.configs[distribution]:
                 # This, for the main archive, is where the script spends
                 # most of its time.
-                self.publishDistroArchive(distribution, archive)
+                self.publishDistroArchive(
+                    distribution, archive, updated_suites=updated_suites)
 
-    def updateContentsFile(self, distribution, suite, arch):
-        """Update a single Contents file if necessary."""
-        config = self.configs[distribution][ArchivePurpose.PRIMARY]
+    def updateContentsFile(self, archive, distribution, suite, arch):
+        """Update a single Contents file if necessary.
+
+        :return: True if a file was updated, otherwise False.
+        """
+        config = self.configs[distribution][archive.purpose]
         backup_dists = get_backup_dists(config)
         content_dists = os.path.join(
             config.distroroot, "contents-generation", distribution.name,
@@ -570,14 +580,34 @@ class PublishFTPMaster(LaunchpadCronScript):
                 "Installing new Contents file for %s/%s.", suite,
                 arch.architecturetag)
             shutil.copy2(new_contents, current_contents)
+            # Due to http://bugs.python.org/issue12904, shutil.copy2 doesn't
+            # copy timestamps precisely, and unfortunately it rounds down.
+            # If we must lose accuracy, we need to round up instead.  This
+            # can be removed once Launchpad runs on Python >= 3.3.
+            st = os.stat(new_contents)
+            os.utime(
+                current_contents,
+                (math.ceil(st.st_atime), math.ceil(st.st_mtime)))
+            return True
+        return False
 
     def updateContentsFiles(self, distribution):
         """Pick up updated Contents files if necessary."""
+        updated_suites = []
+        # XXX cjwatson 2015-03-20: GenerateContentsFiles currently only
+        # supports the primary archive.
+        archive = distribution.main_archive
         for series in distribution.getNonObsoleteSeries():
             for pocket in PackagePublishingPocket.items:
                 suite = series.getSuite(pocket)
+                updated = False
                 for arch in series.enabled_architectures:
-                    self.updateContentsFile(distribution, suite, arch)
+                    if self.updateContentsFile(
+                            archive, distribution, suite, arch):
+                        updated = True
+                if updated:
+                    updated_suites.append((archive, suite))
+        return updated_suites
 
     def publish(self, distribution, security_only=False):
         """Do the main publishing work.
@@ -594,11 +624,11 @@ class PublishFTPMaster(LaunchpadCronScript):
             if security_only:
                 has_published = self.publishSecurityUploads(distribution)
             else:
-                self.publishDistroUploads(distribution)
+                updated_suites = self.updateContentsFiles(distribution)
+                self.publishDistroUploads(
+                    distribution, updated_suites=updated_suites)
                 # Let's assume the main archive is always modified
                 has_published = True
-
-            self.updateContentsFiles(distribution)
 
             # Swizzle the now-updated backup dists and the current dists
             # around.

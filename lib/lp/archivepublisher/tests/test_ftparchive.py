@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for ftparchive.py"""
@@ -308,7 +308,7 @@ class TestFTPArchive(TestCaseWithFactory):
         self._publisher = SamplePublisher(self._archive)
         fa = self._setUpFTPArchiveHandler()
         pubs = self._archive.getAllPublishedBinaries(
-            name="pmount", status=PackagePublishingStatus.PUBLISHED,
+            name=u"pmount", status=PackagePublishingStatus.PUBLISHED,
             distroarchseries=self._distribution.getSeries("hoary")["hppa"])
         for pub in pubs:
             pub.changeOverride(new_phased_update_percentage=30).setPublished()

@@ -20,6 +20,7 @@ __all__ = [
     'BuildNotAllowedForDistro',
     'BranchMergeProposalExists',
     'CannotDeleteBranch',
+    'CannotDeleteGitRepository',
     'CannotHaveLinkedBranch',
     'CannotUpgradeBranch',
     'CannotUpgradeNonHosted',
@@ -34,18 +35,19 @@ __all__ = [
     'GitRepositoryCreationForbidden',
     'GitRepositoryCreatorNotMemberOfOwnerTeam',
     'GitRepositoryCreatorNotOwner',
+    'GitRepositoryDeletionFault',
     'GitRepositoryExists',
+    'GitRepositoryScanFault',
     'GitTargetError',
     'InvalidBranchMergeProposal',
-    'InvalidMergeQueueConfig',
     'InvalidNamespace',
     'NoLinkedBranch',
     'NoSuchBranch',
+    'NoSuchGitReference',
     'NoSuchGitRepository',
     'PrivateBranchRecipe',
     'ReviewNotPending',
     'StaleLastMirrored',
-    'TooManyBuilds',
     'TooNewRecipeFormat',
     'UnknownBranchTypeError',
     'UpdatePreviewDiffNotReady',
@@ -60,7 +62,10 @@ import httplib
 from bzrlib.plugins.builder.recipe import RecipeParseError
 from lazr.restful.declarations import error_status
 
-from lp.app.errors import NameLookupFailed
+from lp.app.errors import (
+    NameLookupFailed,
+    NotFoundError,
+    )
 
 # Annotate the RecipeParseError's with a 400 webservice status.
 error_status(httplib.BAD_REQUEST)(RecipeParseError)
@@ -230,11 +235,18 @@ class BranchMergeProposalExists(InvalidBranchMergeProposal):
     """Raised if there is already a matching BranchMergeProposal."""
 
     def __init__(self, existing_proposal):
+        # Circular import.
+        from lp.code.interfaces.branch import IBranch
+        # display_name is the newer style, but IBranch uses the older style.
+        if IBranch.providedBy(existing_proposal.merge_source):
+            display_name = "displayname"
+        else:
+            display_name = "display_name"
         super(BranchMergeProposalExists, self).__init__(
                 'There is already a branch merge proposal registered for '
                 'branch %s to land on %s that is still active.' %
-                (existing_proposal.source_branch.displayname,
-                 existing_proposal.target_branch.displayname))
+                (getattr(existing_proposal.merge_source, display_name),
+                 getattr(existing_proposal.merge_target, display_name)))
         self.existing_proposal = existing_proposal
 
 
@@ -341,6 +353,11 @@ class GitRepositoryExists(GitRepositoryCreationException):
         GitRepositoryCreationException.__init__(self, message)
 
 
+@error_status(httplib.BAD_REQUEST)
+class CannotDeleteGitRepository(Exception):
+    """The Git repository cannot be deleted at this time."""
+
+
 class GitRepositoryCreationForbidden(GitRepositoryCreationException):
     """A visibility policy forbids Git repository creation.
 
@@ -367,8 +384,16 @@ class GitRepositoryCreatorNotOwner(GitRepositoryCreationException):
     """
 
 
-class GitRepositoryCreationFault(GitRepositoryCreationException):
+class GitRepositoryCreationFault(Exception):
     """Raised when there is a hosting fault creating a Git repository."""
+
+
+class GitRepositoryScanFault(Exception):
+    """Raised when there is a fault scanning a repository."""
+
+
+class GitRepositoryDeletionFault(Exception):
+    """Raised when there is a fault deleting a repository."""
 
 
 class GitTargetError(Exception):
@@ -381,6 +406,21 @@ class NoSuchGitRepository(NameLookupFailed):
     _message_prefix = "No such Git repository"
 
 
+class NoSuchGitReference(NotFoundError):
+    """Raised when we try to look up a Git reference that does not exist."""
+
+    def __init__(self, repository, path):
+        self.repository = repository
+        self.path = path
+        self.message = (
+            "The repository at %s does not contain a reference named '%s'." %
+            (repository.display_name, path))
+        NotFoundError.__init__(self, self.message)
+
+    def __str__(self):
+        return self.message
+
+
 @error_status(httplib.CONFLICT)
 class GitDefaultConflict(Exception):
     """Raised when trying to set a Git repository as the default for
@@ -390,15 +430,15 @@ class GitDefaultConflict(Exception):
         params = {
             "unique_name": existing_repository.unique_name,
             "target": target.displayname,
-            "owner": owner.displayname,
             }
         if owner is None:
             message = (
                 "The default repository for '%(target)s' is already set to "
                 "%(unique_name)s." % params)
         else:
+            params["owner"] = owner.displayname
             message = (
-                "%(owner)'s default repository for '%(target)s' is already "
+                "%(owner)s's default repository for '%(target)s' is already "
                 "set to %(unique_name)s." % params)
         self.existing_repository = existing_repository
         self.target = target
@@ -444,16 +484,6 @@ class RecipeBuildException(Exception):
         Exception.__init__(self, msg)
 
 
-class TooManyBuilds(RecipeBuildException):
-    """A build was requested that exceeded the quota."""
-
-    def __init__(self, recipe, distroseries):
-        RecipeBuildException.__init__(
-            self, recipe, distroseries,
-            'You have exceeded your quota for recipe %(recipe)s for'
-            ' distroseries %(distroseries)s')
-
-
 class BuildAlreadyPending(RecipeBuildException):
     """A build was requested when an identical build was already pending."""
 
@@ -470,15 +500,6 @@ class BuildNotAllowedForDistro(RecipeBuildException):
         RecipeBuildException.__init__(
             self, recipe, distroseries,
             'A build against this distro is not allowed.')
-
-
-@error_status(httplib.BAD_REQUEST)
-class InvalidMergeQueueConfig(Exception):
-    """The config specified is not a valid JSON string."""
-
-    def __init__(self):
-        message = ('The configuration specified is not a valid JSON string.')
-        Exception.__init__(self, message)
 
 
 @error_status(httplib.BAD_REQUEST)

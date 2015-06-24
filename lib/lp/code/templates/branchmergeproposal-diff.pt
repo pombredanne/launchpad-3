@@ -6,6 +6,7 @@
        tal:define="attachment view/preview_diff/diff_text">
     <tal:real-diff condition="attachment">
       <div class="boardCommentDetails filename">
+        <div class="editorShortcutTip">[H/L] Next/Prev Comment, [J/K] Next/Prev File, [N/P] Next/Prev Hunk</div>
         <ul class="horizontal">
           <li>
             <a tal:attributes="href view/preview_diff/fmt:url">

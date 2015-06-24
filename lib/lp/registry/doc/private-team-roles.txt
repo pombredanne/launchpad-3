@@ -60,7 +60,7 @@ Branches
 Branch ownership
 ----------------
 
-Private teams can be assigned as the owner of a branch
+Private teams can be assigned as the owner of a branch.
 
     >>> branch = factory.makeBranch()
     >>> branch.setOwner(priv_team, user=admin_user)
@@ -76,6 +76,32 @@ Private teams can subscribe to branches.
     ...     CodeReviewNotificationLevel)
     >>> branch = factory.makeBranch()
     >>> subscription = branch.subscribe(
+    ...     priv_team,
+    ...     BranchSubscriptionNotificationLevel.DIFFSONLY,
+    ...     BranchSubscriptionDiffSize.WHOLEDIFF,
+    ...     CodeReviewNotificationLevel.STATUS, team_owner)
+    >>> print subscription.person.name
+    private-team
+
+
+Git repositories
+================
+
+Git repository ownership
+------------------------
+
+Private teams can be assigned as the owner of a Git repository.
+
+    >>> repository = factory.makeGitRepository()
+    >>> repository.setOwner(priv_team, user=admin_user)
+
+Git repository subscriptions
+----------------------------
+
+Private teams can subscribe to Git repositories.
+
+    >>> repository = factory.makeGitRepository()
+    >>> subscription = repository.subscribe(
     ...     priv_team,
     ...     BranchSubscriptionNotificationLevel.DIFFSONLY,
     ...     BranchSubscriptionDiffSize.WHOLEDIFF,

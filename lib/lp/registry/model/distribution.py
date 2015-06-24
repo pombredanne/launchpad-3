@@ -37,7 +37,6 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
-from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.answers.model.faq import (
     FAQ,
     FAQSearch,
@@ -87,6 +86,7 @@ from lp.code.interfaces.seriessourcepackagebranch import (
 from lp.registry.enums import (
     BranchSharingPolicy,
     BugSharingPolicy,
+    VCSType,
     SpecificationSharingPolicy,
     )
 from lp.registry.errors import NoSuchDistroSeries
@@ -193,9 +193,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                    HasDriversMixin, TranslationPolicyMixin):
     """A distribution of an operating system, e.g. Debian GNU/Linux."""
     implements(
-        IBugSummaryDimension, IDistribution, IFAQTarget,
-        IHasBugSupervisor, IHasBuildRecords, IHasIcon, IHasLogo,
-        IHasMugshot, IHasOOPSReferences, ILaunchpadUsage, IServiceUsage)
+        IBugSummaryDimension, IDistribution, IHasBugSupervisor,
+        IHasBuildRecords, IHasIcon, IHasLogo, IHasMugshot,
+        IHasOOPSReferences, ILaunchpadUsage, IServiceUsage)
 
     _table = 'Distribution'
     _defaultOrder = 'name'
@@ -248,6 +248,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     package_derivatives_email = StringCol(notNull=False, default=None)
     redirect_release_uploads = BoolCol(notNull=True, default=False)
     development_series_alias = StringCol(notNull=False, default=None)
+    vcs = EnumCol(enum=VCSType, notNull=False)
 
     def __repr__(self):
         displayname = self.displayname.encode('ASCII', 'backslashreplace')
@@ -1446,7 +1447,8 @@ class DistributionSet:
         return pillar
 
     def new(self, name, displayname, title, description, summary, domainname,
-            members, owner, registrant, mugshot=None, logo=None, icon=None):
+            members, owner, registrant, mugshot=None, logo=None, icon=None,
+            vcs=None):
         """See `IDistributionSet`."""
         distro = Distribution(
             name=name,
@@ -1461,7 +1463,8 @@ class DistributionSet:
             registrant=registrant,
             mugshot=mugshot,
             logo=logo,
-            icon=icon)
+            icon=icon,
+            vcs=vcs)
         getUtility(IArchiveSet).new(distribution=distro,
             owner=owner, purpose=ArchivePurpose.PRIMARY)
         policies = itertools.product(

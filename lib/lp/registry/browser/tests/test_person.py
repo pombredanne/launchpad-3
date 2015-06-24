@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -45,6 +45,7 @@ from lp.services.identity.interfaces.account import AccountStatus
 from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
 from lp.services.log.logger import FakeLogger
 from lp.services.mail import stub
+from lp.services.propertycache import clear_property_cache
 from lp.services.verification.interfaces.authtoken import LoginTokenType
 from lp.services.verification.interfaces.logintoken import ILoginTokenSet
 from lp.services.verification.tests.logintoken import get_token_url_from_email
@@ -66,6 +67,7 @@ from lp.testing import (
     login_person,
     monkey_patch,
     person_logged_in,
+    record_two_runs,
     StormStatementRecorder,
     TestCaseWithFactory,
     )
@@ -143,6 +145,28 @@ class TestPersonNavigation(TestCaseWithFactory):
         self.assertRedirect(in_suf, out_suf)
         self.assertRedirect('/api/devel' + in_suf, '/api/devel' + out_suf)
         self.assertRedirect('/api/1.0' + in_suf, '/api/1.0' + out_suf)
+
+    def test_traverse_git_repository_project(self):
+        project = self.factory.makeProduct()
+        repository = self.factory.makeGitRepository(target=project)
+        url = "/~%s/%s/+git/%s" % (
+            repository.owner.name, project.name, repository.name)
+        self.assertEqual(repository, test_traverse(url)[0])
+
+    def test_traverse_git_repository_package(self):
+        dsp = self.factory.makeDistributionSourcePackage()
+        repository = self.factory.makeGitRepository(target=dsp)
+        url = "/~%s/%s/+source/%s/+git/%s" % (
+            repository.owner.name, dsp.distribution.name,
+            dsp.sourcepackagename.name, repository.name)
+        self.assertEqual(repository, test_traverse(url)[0])
+
+    def test_traverse_git_repository_personal(self):
+        person = self.factory.makePerson()
+        repository = self.factory.makeGitRepository(
+            owner=person, target=person)
+        url = "/~%s/+git/%s" % (person.name, repository.name)
+        self.assertEqual(repository, test_traverse(url)[0])
 
 
 class PersonViewOpenidIdentityUrlTestCase(TestCaseWithFactory):
@@ -274,7 +298,7 @@ class TestPersonIndexView(BrowserTestCase):
             implementation_status=SpecificationImplementationStatus.STARTED,
             information_type=InformationType.PUBLIC)
         private_name = 'super-private'
-        private_spec = self.factory.makeSpecification(
+        self.factory.makeSpecification(
             name=private_name, assignee=person,
             implementation_status=SpecificationImplementationStatus.STARTED,
             information_type=InformationType.PROPRIETARY)
@@ -731,13 +755,13 @@ class TestPersonParticipationView(TestCaseWithFactory):
         self.user = self.factory.makePerson()
         self.view = create_view(self.user, name='+participation')
 
-    def test__asParticpation_owner(self):
+    def test__asParticipation_owner(self):
         # Team owners have the role of 'Owner'.
         self.factory.makeTeam(owner=self.user)
         [participation] = self.view.active_participations
         self.assertEqual('Owner', participation['role'])
 
-    def test__asParticpation_admin(self):
+    def test__asParticipation_admin(self):
         # Team admins have the role of 'Admin'.
         team = self.factory.makeTeam()
         login_person(team.teamowner)
@@ -748,7 +772,7 @@ class TestPersonParticipationView(TestCaseWithFactory):
         [participation] = self.view.active_participations
         self.assertEqual('Admin', participation['role'])
 
-    def test__asParticpation_member(self):
+    def test__asParticipation_member(self):
         # The default team role is 'Member'.
         team = self.factory.makeTeam()
         login_person(team.teamowner)
@@ -756,7 +780,7 @@ class TestPersonParticipationView(TestCaseWithFactory):
         [participation] = self.view.active_participations
         self.assertEqual('Member', participation['role'])
 
-    def test__asParticpation_without_mailing_list(self):
+    def test__asParticipation_without_mailing_list(self):
         # The default team role is 'Member'.
         team = self.factory.makeTeam()
         login_person(team.teamowner)
@@ -764,7 +788,7 @@ class TestPersonParticipationView(TestCaseWithFactory):
         [participation] = self.view.active_participations
         self.assertEqual('&mdash;', participation['subscribed'])
 
-    def test__asParticpation_unsubscribed_to_mailing_list(self):
+    def test__asParticipation_unsubscribed_to_mailing_list(self):
         # The default team role is 'Member'.
         team = self.factory.makeTeam()
         self.factory.makeMailingList(team, team.teamowner)
@@ -773,7 +797,7 @@ class TestPersonParticipationView(TestCaseWithFactory):
         [participation] = self.view.active_participations
         self.assertEqual('Not subscribed', participation['subscribed'])
 
-    def test__asParticpation_subscribed_to_mailing_list(self):
+    def test__asParticipation_subscribed_to_mailing_list(self):
         # The default team role is 'Member'.
         team = self.factory.makeTeam()
         mailing_list = self.factory.makeMailingList(team, team.teamowner)
@@ -840,6 +864,33 @@ class TestPersonParticipationView(TestCaseWithFactory):
         self.assertEqual('A', participations[1]['via'])
         self.assertEqual('B, A', participations[2]['via'])
 
+    def test_active_participations_public_via_private_team(self):
+        # Private teams that grant a user access to public teams are listed,
+        # but redacted if the requesting user does not have access to them.
+        owner = self.factory.makePerson()
+        direct_team = self.factory.makeTeam(
+            owner=owner, name='a', visibility=PersonVisibility.PRIVATE)
+        indirect_team = self.factory.makeTeam(owner=owner, name='b')
+        login_person(owner)
+        direct_team.addMember(self.user, owner)
+        indirect_team.addMember(direct_team, owner)
+        # The private team is included in active_participations and via.
+        login_person(self.user)
+        view = create_view(
+            self.user, name='+participation', principal=self.user)
+        participations = view.active_participations
+        self.assertEqual(2, len(participations))
+        self.assertIsNone(participations[0]['via'])
+        self.assertEqual('A', participations[1]['via'])
+        # The private team is not included in active_participations and via.
+        observer = self.factory.makePerson()
+        login_person(observer)
+        view = create_view(
+            self.user, name='+participation', principal=observer)
+        participations = view.active_participations
+        self.assertEqual(1, len(participations))
+        self.assertEqual('[private team]', participations[0]['via'])
+
     def test_has_participations_false(self):
         participations = self.view.active_participations
         self.assertEqual(0, len(participations))
@@ -850,6 +901,26 @@ class TestPersonParticipationView(TestCaseWithFactory):
         participations = self.view.active_participations
         self.assertEqual(1, len(participations))
         self.assertEqual(True, self.view.has_participations)
+
+    def test_mailing_list_subscriptions_query_count(self):
+        # Additional mailing list subscriptions do not add additional queries.
+        def create_subscriptions():
+            direct_team = self.factory.makeTeam(members=[self.user])
+            direct_list = self.factory.makeMailingList(
+                direct_team, direct_team.teamowner)
+            direct_list.subscribe(self.user)
+            indirect_team = self.factory.makeTeam(members=[direct_team])
+            indirect_list = self.factory.makeMailingList(
+                indirect_team, indirect_team.teamowner)
+            indirect_list.subscribe(self.user)
+
+        def get_participations():
+            clear_property_cache(self.view)
+            return list(self.view.active_participations)
+
+        recorder1, recorder2 = record_two_runs(
+            get_participations, create_subscriptions, 5)
+        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
 
 
 class TestPersonRelatedPackagesView(TestCaseWithFactory):

@@ -19,7 +19,7 @@
 <div metal:fill-slot="main">
 
   <p id="push-instructions">
-    You can push the branch directly to Launchpad with the command:<br />
+    You can push a Bazaar branch directly to Launchpad with the command:<br />
     <tt class="command">
       bzr push lp:~<tal:user replace="view/user/name"/>/<tal:project replace="context/product/name"/>/<tal:series replace="context/name"/>
     </tt>

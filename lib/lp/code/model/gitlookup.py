@@ -252,32 +252,43 @@ class GitTraverser:
 
     implements(IGitTraverser)
 
-    def traverse(self, segments):
+    def traverse(self, segments, owner=None):
         """See `IGitTraverser`."""
-        owner = None
-        target = None
         repository = None
-        traversable = RootGitTraversable()
+        if owner is None:
+            target = None
+            traversable = RootGitTraversable()
+        else:
+            target = owner
+            traversable = adapt(owner, IGitTraversable)
+        trailing = None
         segments_iter = SegmentIterator(segments)
         while traversable is not None:
             try:
                 name = next(segments_iter)
             except StopIteration:
                 break
-            owner, target, repository = traversable.traverse(
-                owner, name, segments_iter)
+            try:
+                owner, target, repository = traversable.traverse(
+                    owner, name, segments_iter)
+            except InvalidNamespace:
+                if target is not None or repository is not None:
+                    # We have some information, so the rest may consist of
+                    # trailing path information.
+                    trailing = name
+                    break
             if repository is not None:
                 break
             traversable = adapt(target, IGitTraversable)
         if target is None or not IHasGitRepositories.providedBy(target):
             raise InvalidNamespace("/".join(segments_iter.traversed))
-        return owner, target, repository
+        return owner, target, repository, trailing
 
     def traverse_path(self, path):
         """See `IGitTraverser`."""
         segments = iter(path.split("/"))
-        owner, target, repository = self.traverse(segments)
-        if list(segments):
+        owner, target, repository, trailing = self.traverse(segments)
+        if trailing or list(segments):
             raise InvalidNamespace(path)
         return owner, target, repository
 
@@ -293,6 +304,16 @@ class GitLookup:
         if repository is None:
             return default
         return repository
+
+    def getByHostingPath(self, path):
+        """See `IGitLookup`."""
+        # This may need to change later to improve support for sharding.
+        # See also `IGitRepository.getInternalPath`.
+        try:
+            repository_id = int(path)
+        except ValueError:
+            return None
+        return self.get(repository_id)
 
     @staticmethod
     def uriToPath(uri):
@@ -318,15 +339,19 @@ class GitLookup:
         path = self.uriToPath(uri)
         if path is None:
             return None
-        return self.getByPath(path)
+        path, extra_path = self.getByPath(path)
+        if extra_path:
+            return None
+        return path
 
     def getByUniqueName(self, unique_name):
         """See `IGitLookup`."""
         try:
             if unique_name.startswith("~"):
+                traverser = getUtility(IGitTraverser)
                 segments = iter(unique_name.split("/"))
-                _, _, repository = getUtility(IGitTraverser).traverse(segments)
-                if repository is None or list(segments):
+                _, _, repository, trailing = traverser.traverse(segments)
+                if repository is None or trailing or list(segments):
                     raise InvalidNamespace(unique_name)
                 return repository
         except (InvalidNamespace, NameLookupFailed):
@@ -336,14 +361,21 @@ class GitLookup:
     def getByPath(self, path):
         """See `IGitLookup`."""
         traverser = getUtility(IGitTraverser)
+        segments = iter(path.split("/"))
         try:
-            owner, target, repository = traverser.traverse_path(path)
+            owner, target, repository, trailing = traverser.traverse(segments)
         except (InvalidNamespace, InvalidProductName, NameLookupFailed):
-            return None
-        if repository is not None:
-            return repository
-        repository_set = getUtility(IGitRepositorySet)
-        if owner is None:
-            return repository_set.getDefaultRepository(target)
-        else:
-            return repository_set.getDefaultRepositoryForOwner(owner, target)
+            return None, None
+        if repository is None:
+            if IPerson.providedBy(target):
+                return None, None
+            repository_set = getUtility(IGitRepositorySet)
+            if owner is None:
+                repository = repository_set.getDefaultRepository(target)
+            else:
+                repository = repository_set.getDefaultRepositoryForOwner(
+                    owner, target)
+        trailing_segments = list(segments)
+        if trailing:
+            trailing_segments.insert(0, trailing)
+        return repository, "/".join(trailing_segments)

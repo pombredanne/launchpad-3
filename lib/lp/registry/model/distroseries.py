@@ -57,6 +57,7 @@ from lp.bugs.model.bugtarget import BugTargetBase
 from lp.bugs.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
     )
+from lp.buildmaster.model.processor import Processor
 from lp.registry.errors import NoSuchDistroSeries
 from lp.registry.interfaces.distroseries import (
     DerivationError,
@@ -420,7 +421,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         results = store.find(
             DistroArchSeries,
             DistroArchSeries.distroseries == self,
-            DistroArchSeries.supports_virtualized == True)
+            Processor.id == DistroArchSeries.processor_id,
+            Processor.supports_virtualized == True)
         return results.order_by(DistroArchSeries.architecturetag)
     # End of DistroArchSeries lookup methods
 
@@ -1178,12 +1180,11 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return DecoratedResultSet(package_caches, result_to_dsbp)
 
     def newArch(self, architecturetag, processor, official, owner,
-                supports_virtualized=False, enabled=True):
+                enabled=True):
         """See `IDistroSeries`."""
         return DistroArchSeries(
             architecturetag=architecturetag, processor=processor,
-            official=official, distroseries=self, owner=owner,
-            supports_virtualized=supports_virtualized, enabled=enabled)
+            official=official, distroseries=self, owner=owner, enabled=enabled)
 
     def newMilestone(self, name, dateexpected=None, summary=None,
                      code_name=None, tags=None):

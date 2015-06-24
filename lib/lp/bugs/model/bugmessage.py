@@ -4,7 +4,7 @@
 __metaclass__ = type
 __all__ = ['BugMessage', 'BugMessageSet']
 
-from email.Utils import make_msgid
+from email.utils import make_msgid
 
 from sqlobject import (
     ForeignKey,

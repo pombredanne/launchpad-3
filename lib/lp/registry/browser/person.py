@@ -143,6 +143,7 @@ from lp.buildmaster.enums import BuildStatus
 from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
 from lp.code.errors import InvalidNamespace
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
+from lp.code.interfaces.gitlookup import IGitTraverser
 from lp.registry.browser import BaseRdfView
 from lp.registry.browser.branding import BrandingChangeView
 from lp.registry.browser.menu import (
@@ -155,6 +156,9 @@ from lp.registry.enums import PersonVisibility
 from lp.registry.errors import VoucherAlreadyRedeemed
 from lp.registry.interfaces.codeofconduct import ISignedCodeOfConductSet
 from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage,
+    )
 from lp.registry.interfaces.gpg import IGPGKeySet
 from lp.registry.interfaces.irc import IIrcIDSet
 from lp.registry.interfaces.jabber import (
@@ -182,7 +186,10 @@ from lp.registry.interfaces.persontransferjob import (
     )
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.poll import IPollSubset
-from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.product import (
+    InvalidProductName,
+    IProduct,
+    )
 from lp.registry.interfaces.ssh import (
     ISSHKeySet,
     SSHKeyAdditionError,
@@ -277,9 +284,6 @@ from lp.soyuz.interfaces.publishing import ISourcePackagePublishingHistory
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 
 
-COMMASPACE = ', '
-
-
 class PersonBreadcrumb(DisplaynameBreadcrumb):
     implements(IHeadingBreadcrumb, IMultiFacetedBreadcrumb)
 
@@ -360,7 +364,57 @@ class BranchTraversalMixin:
             return self.redirectSubTree(canonical_url(branch))
         raise NotFoundError
 
+    @stepthrough('+git')
+    def traverse_personal_gitrepo(self, name):
+        # XXX wgrant 2015-06-12: traverse() handles traversal for
+        # non-personal repos, and works for personal repos except that
+        # the +git view is matched first. A stepto would clobber the
+        # view, but stepthroughs match before views and only for
+        # multi-segment paths, so this is a workable hack.
+        _, _, repository, _ = getUtility(IGitTraverser).traverse(
+            iter(['+git', name]), owner=self.context)
+        return repository
+
     def traverse(self, pillar_name):
+        try:
+            # Look for a Git repository.  We must be careful not to consume
+            # the traversal stack immediately, as if we fail to find a Git
+            # repository we will need to look for a Bazaar branch instead.
+            segments = (
+                [pillar_name] +
+                list(reversed(self.request.getTraversalStack())))
+            num_segments = len(segments)
+            iter_segments = iter(segments)
+            traverser = getUtility(IGitTraverser)
+            _, target, repository, trailing = traverser.traverse(
+                iter_segments, owner=self.context)
+            if repository is None:
+                raise NotFoundError
+            # Subtract one because the pillar has already been traversed.
+            num_traversed = num_segments - len(list(iter_segments)) - 1
+            if trailing:
+                num_traversed -= 1
+            for _ in range(num_traversed):
+                self.request.stepstogo.consume()
+
+            if IProduct.providedBy(target):
+                if target.name != pillar_name:
+                    # This repository was accessed through one of its
+                    # project's aliases, so we must redirect to its
+                    # canonical URL.
+                    return self.redirectSubTree(canonical_url(repository))
+
+            if IDistributionSourcePackage.providedBy(target):
+                if target.distribution.name != pillar_name:
+                    # This branch or repository was accessed through one of its
+                    # distribution's aliases, so we must redirect to its
+                    # canonical URL.
+                    return self.redirectSubTree(canonical_url(repository))
+
+            return repository
+        except (NotFoundError, InvalidNamespace, InvalidProductName):
+            pass
+
         # If the pillar is a product, then return the PersonProduct; if it
         # is a distribution and further segments provide a source package,
         # then return the PersonDistributionSourcePackage.
@@ -409,13 +463,13 @@ class BranchTraversalMixin:
 
         if branch.product is not None:
             if branch.product.name != pillar_name:
-                # This branch was accessed through one of its product's
+                # This branch was accessed through one of its project's
                 # aliases, so we must redirect to its canonical URL.
                 return self.redirectSubTree(canonical_url(branch))
 
         if branch.distribution is not None:
             if branch.distribution.name != pillar_name:
-                # This branch was accessed through one of its product's
+                # This branch was accessed through one of its distribution's
                 # aliases, so we must redirect to its canonical URL.
                 return self.redirectSubTree(canonical_url(branch))
 
@@ -540,11 +594,6 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
     def traverse_recipe(self, name):
         """Traverse to this person's recipes."""
         return self.context.getRecipe(name)
-
-    @stepthrough('+merge-queues')
-    def traverse_merge_queue(self, name):
-        """Traverse to this person's merge queues."""
-        return self.context.getMergeQueue(name)
 
     @stepthrough('+livefs')
     def traverse_livefs(self, distribution_name):
@@ -1986,24 +2035,30 @@ class PersonParticipationView(LaunchpadView):
     def label(self):
         return 'Team participation for ' + self.context.displayname
 
-    def _asParticipation(self, membership=None, team=None, via=None):
+    def _asParticipation(self, team=None, membership=None, via=None,
+                         mailing_list=None, subscription=None):
         """Return a dict of participation information for the membership.
 
-        Method requires membership or team, not both.
+        Method requires membership or via, not both.
         :param via: The team through which the membership in the indirect
         team is established.
         """
-        if ((membership is None and team is None) or
-            (membership is not None and team is not None)):
+        if ((membership is None and via is None) or
+            (membership is not None and via is not None)):
             raise AssertionError(
-                "The membership or team argument must be provided, not both.")
+                "The membership or via argument must be provided, not both.")
 
         if via is not None:
             # When showing the path, it's unnecessary to show the team in
             # question at the beginning of the path, or the user at the
             # end of the path.
-            via = COMMASPACE.join(
-                [via_team.displayname for via_team in via[1:-1]])
+            via_names = []
+            for via_team in via[1:-1]:
+                if check_permission('launchpad.LimitedView', via_team):
+                    via_names.append(via_team.displayname)
+                else:
+                    via_names.append('[private team]')
+            via = ", ".join(via_names)
 
         if membership is None:
             # Membership is via an indirect team so sane defaults exist.
@@ -2013,17 +2068,15 @@ class PersonParticipationView(LaunchpadView):
             datejoined = None
         else:
             # The member is a direct member; use the membership data.
-            team = membership.team
             datejoined = membership.datejoined
-            if membership.person == team.teamowner:
+            if membership.personID == team.teamownerID:
                 role = 'Owner'
             elif membership.status == TeamMembershipStatus.ADMIN:
                 role = 'Admin'
             else:
                 role = 'Member'
 
-        if team.mailing_list is not None and team.mailing_list.is_usable:
-            subscription = team.mailing_list.getSubscription(self.context)
+        if mailing_list is not None:
             if subscription is None:
                 subscribed = 'Not subscribed'
             else:
@@ -2040,27 +2093,26 @@ class PersonParticipationView(LaunchpadView):
         """Return the participation information for active memberships."""
         paths, memberships = self.context.getPathsToTeams()
         direct_teams = [membership.team for membership in memberships]
-        indirect_teams = [
-            team for team in paths.keys()
-            if team not in direct_teams]
+        items = []
+        for membership in memberships:
+            items.append(dict(team=membership.team, membership=membership))
+        for team, via in paths.items():
+            if team not in direct_teams:
+                items.append(dict(team=team, via=via))
+        items = [
+            item for item in items
+            if check_permission('launchpad.View', item["team"])]
         participations = []
 
-        # First, create a participation for all direct memberships.
-        for membership in memberships:
-            # Add a participation record for the membership if allowed.
-            if check_permission('launchpad.View', membership.team):
-                participations.append(
-                    self._asParticipation(membership=membership))
+        # Bulk-load mailing list subscriptions.
+        subscriptions = getUtility(IMailingListSet).getSubscriptionsForTeams(
+            self.context, [item["team"] for item in items])
 
-        # Second, create a participation for all indirect memberships,
-        # using the remaining paths.
-        for indirect_team in indirect_teams:
-            if not check_permission('launchpad.View', indirect_team):
-                continue
-            participations.append(
-                self._asParticipation(
-                    via=paths[indirect_team],
-                    team=indirect_team))
+        # Create all the participations.
+        for item in items:
+            item["mailing_list"], item["subscription"] = subscriptions.get(
+                item["team"].id, (None, None))
+            participations.append(self._asParticipation(**item))
         return sorted(participations, key=itemgetter('displayname'))
 
     @cachedproperty

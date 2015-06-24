@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -215,7 +215,7 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
     source_package_name = Reference(
         source_package_name_id, 'SourcePackageName.id')
 
-    def _getLatestPublication(self):
+    def getLatestSourcePublication(self):
         from lp.soyuz.model.publishing import SourcePackagePublishingHistory
         store = Store.of(self)
         results = store.find(
@@ -230,7 +230,7 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
     @property
     def current_component(self):
         """See `IBuild`."""
-        latest_publication = self._getLatestPublication()
+        latest_publication = self.getLatestSourcePublication()
         # Production has some buggy builds without source publications.
         # They seem to have been created by early versions of gina and
         # the readding of hppa.
@@ -241,11 +241,16 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
     def current_source_publication(self):
         """See `IBuild`."""
         from lp.soyuz.interfaces.publishing import active_publishing_status
-        latest_publication = self._getLatestPublication()
+        latest_publication = self.getLatestSourcePublication()
         if (latest_publication is not None and
             latest_publication.status in active_publishing_status):
             return latest_publication
         return None
+
+    @property
+    def api_source_package_name(self):
+        """See `IBuild`."""
+        return self.source_package_release.name
 
     @property
     def upload_changesfile(self):
@@ -290,11 +295,6 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
         # and the `LibraryFileContent` in cache because it's most likely
         # they will be needed.
         return DecoratedResultSet(results, itemgetter(0)).one()
-
-    @property
-    def is_virtualized(self):
-        """See `IBuild`"""
-        return self.archive.require_virtualized
 
     @property
     def title(self):
@@ -913,14 +913,17 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
         build_farm_job = getUtility(IBuildFarmJobSource).new(
             BinaryPackageBuild.job_type, status, date_created, builder,
             archive)
+        processor = distro_arch_series.processor
+        virtualized = (
+            archive.require_virtualized
+            or not processor.supports_nonvirtualized)
         return BinaryPackageBuild(
             build_farm_job=build_farm_job,
             distro_arch_series=distro_arch_series,
             source_package_release=source_package_release,
             archive=archive, pocket=pocket, arch_indep=arch_indep,
-            status=status, processor=distro_arch_series.processor,
-            virtualized=archive.require_virtualized, builder=builder,
-            is_distro_archive=archive.is_main,
+            status=status, processor=processor, virtualized=virtualized,
+            builder=builder, is_distro_archive=archive.is_main,
             distribution=distro_arch_series.distroseries.distribution,
             distro_series=distro_arch_series.distroseries,
             source_package_name=source_package_release.sourcepackagename,
@@ -1389,11 +1392,9 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
             das for das in available_archs
             if (
                 das.enabled
+                and das.processor in archive.processors
                 and (
-                    not das.processor.restricted
-                    or das.processor in archive.enabled_restricted_processors)
-                and (
-                    das.supports_virtualized
+                    das.processor.supports_virtualized
                     or not archive.require_virtualized))]
 
     def createForSource(self, sourcepackagerelease, archive, distroseries,

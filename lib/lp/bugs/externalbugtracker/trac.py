@@ -10,7 +10,7 @@ from Cookie import SimpleCookie
 from cookielib import CookieJar
 import csv
 from datetime import datetime
-from email.Utils import parseaddr
+from email.utils import parseaddr
 import time
 import urllib2
 import xmlrpclib

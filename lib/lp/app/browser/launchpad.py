@@ -93,6 +93,7 @@ from lp.blueprints.interfaces.sprint import ISprintSet
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.malone import IMaloneApplication
 from lp.buildmaster.interfaces.builder import IBuilderSet
+from lp.buildmaster.interfaces.processor import IProcessorSet
 from lp.code.errors import (
     CannotHaveLinkedBranch,
     InvalidNamespace,
@@ -102,6 +103,7 @@ from lp.code.interfaces.branch import IBranchSet
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.codehosting import IBazaarApplication
 from lp.code.interfaces.codeimport import ICodeImportSet
+from lp.code.interfaces.gitrepository import IGitRepositorySet
 from lp.hardwaredb.interfaces.hwdb import IHWDBApplication
 from lp.layers import WebServiceLayer
 from lp.registry.interfaces.announcement import IAnnouncementSet
@@ -159,7 +161,6 @@ from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.livefs import ILiveFSSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
-from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.testopenid.interfaces.server import ITestOpenIDApplication
 from lp.translations.interfaces.translationgroup import ITranslationGroupSet
 from lp.translations.interfaces.translationimportqueue import (
@@ -783,6 +784,7 @@ class LaunchpadRootNavigation(Navigation):
         'codeofconduct': ICodeOfConductSet,
         '+countries': ICountrySet,
         'distros': IDistributionSet,
+        '+git': IGitRepositorySet,
         '+hwdb': IHWDBApplication,
         'karmaaction': IKarmaActionSet,
         '+imports': ITranslationImportQueue,

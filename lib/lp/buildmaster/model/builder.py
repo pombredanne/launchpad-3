@@ -54,6 +54,7 @@ from lp.buildmaster.model.buildqueue import (
     BuildQueue,
     specific_build_farm_job_sources,
     )
+from lp.buildmaster.model.processor import Processor
 from lp.registry.interfaces.person import validate_public_person
 from lp.services.database.bulk import (
     load,
@@ -84,7 +85,6 @@ from lp.soyuz.interfaces.buildrecords import (
     IHasBuildRecords,
     IncompatibleArguments,
     )
-from lp.soyuz.model.processor import Processor
 
 
 class Builder(SQLBase):
@@ -141,7 +141,7 @@ class Builder(SQLBase):
         return list(Store.of(self).find(
             Processor,
             BuilderProcessor.processor_id == Processor.id,
-            BuilderProcessor.builder == self).order_by(Processor.id))
+            BuilderProcessor.builder == self).order_by(Processor.name))
 
     def _processors(self):
         return self._processors_cache
@@ -344,11 +344,12 @@ class BuilderSet(object):
     def _preloadProcessors(self, rows):
         # Grab (Builder.id, Processor.id) pairs and stuff them into the
         # Builders' processor caches.
-        store = IStore(Builder)
-        pairs = list(store.find(
+        store = IStore(BuilderProcessor)
+        pairs = list(store.using(BuilderProcessor, Processor).find(
             (BuilderProcessor.builder_id, BuilderProcessor.processor_id),
+            BuilderProcessor.processor_id == Processor.id,
             BuilderProcessor.builder_id.is_in([b.id for b in rows])).order_by(
-                BuilderProcessor.builder_id, BuilderProcessor.processor_id))
+                BuilderProcessor.builder_id, Processor.name))
         load(Processor, [pid for bid, pid in pairs])
         for row in rows:
             get_property_cache(row)._processors_cache = []

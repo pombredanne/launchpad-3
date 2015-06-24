@@ -97,9 +97,9 @@ class BinaryPackageBuildBehaviour(BuildFarmJobBehaviourBase):
            distroseries state.
         """
         build = self.build
-        if build.is_virtualized and not self._builder.virtualized:
+        if build.archive.require_virtualized and not self._builder.virtualized:
             raise AssertionError(
-                "Attempt to build virtual item on a non-virtual builder.")
+                "Attempt to build virtual archive on a non-virtual builder.")
 
         # Assert that we are not silently building SECURITY jobs.
         # See findBuildCandidates. Once we start building SECURITY

@@ -525,7 +525,7 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
             plural_suffix = ""
 
         return structured(
-            " and %(num_dupes)d duplicate%(plural_suffix)s "
+            " and %(num_dupes)s duplicate%(plural_suffix)s "
             "(%(dupe_links_string)s)",
             num_dupes=num_dupes, plural_suffix=plural_suffix,
             dupe_links_string=dupe_links_string)

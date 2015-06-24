@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for Diff, etc."""
@@ -8,6 +8,7 @@ __metaclass__ = type
 from cStringIO import StringIO
 from difflib import unified_diff
 import logging
+from textwrap import dedent
 
 from bzrlib import trace
 from bzrlib.patches import (
@@ -16,6 +17,7 @@ from bzrlib.patches import (
     RemoveLine,
     )
 import transaction
+from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.errors import NotFoundError
@@ -24,6 +26,7 @@ from lp.code.interfaces.diff import (
     IIncrementalDiff,
     IPreviewDiff,
     )
+from lp.code.interfaces.githosting import IGitHostingClient
 from lp.code.model.diff import (
     Diff,
     PreviewDiff,
@@ -40,6 +43,8 @@ from lp.testing import (
     TestCaseWithFactory,
     verifyObject,
     )
+from lp.testing.fakemethod import FakeMethod
+from lp.testing.fixture import ZopeUtilityFixture
 from lp.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
@@ -86,6 +91,11 @@ def create_example_merge(test_case):
     return bmp, source_rev_id, target_rev_id
 
 
+class FakeGitHostingClient:
+
+    implements(IGitHostingClient)
+
+
 class DiffTestCase(TestCaseWithFactory):
 
     def createExampleMerge(self):
@@ -127,6 +137,42 @@ class DiffTestCase(TestCaseWithFactory):
             'target text\nprerequisite text\nsource text\n')
         return (source_bzr, source_rev_id, target_bzr, prerequisite_bzr,
                 prerequisite)
+
+    def installFakeGitMergeDiff(self, result=None, failure=None):
+        hosting_client = FakeGitHostingClient()
+        hosting_client.getMergeDiff = FakeMethod(
+            result=result, failure=failure)
+        self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
+
+    def createExampleGitMerge(self):
+        """Create an example Git-based merge scenario.
+
+        The actual diff work is done in turnip, and we have no turnip
+        fixture as yet, so for the moment we just install a fake hosting
+        client that will return a plausible-looking diff.
+        """
+        bmp = self.factory.makeBranchMergeProposalForGit()
+        source_sha1 = bmp.source_git_ref.commit_sha1
+        target_sha1 = bmp.target_git_ref.commit_sha1
+        patch = dedent("""\
+            diff --git a/foo b/foo
+            index %s..%s 100644
+            --- a/foo
+            +++ b/foo
+            @@ -1,2 +1,7 @@
+            +<<<<<<< foo
+             c
+            +=======
+            +d
+            +>>>>>>> foo
+             a
+            +b
+            """) % (target_sha1[:7], source_sha1[:7])
+        self.installFakeGitMergeDiff(result={
+            "patch": patch,
+            "conflicts": ["foo"],
+            })
+        return bmp, source_sha1, target_sha1, patch
 
 
 class TestDiff(DiffTestCase):
@@ -348,6 +394,24 @@ class TestPreviewDiff(DiffTestCase):
         transaction.commit()
         return mp
 
+    def _createGitProposalWithPreviewDiff(self, merge_prerequisite=None,
+                                          content=None):
+        mp = self.factory.makeBranchMergeProposalForGit(
+            prerequisite_ref=merge_prerequisite)
+        login_person(mp.registrant)
+        if merge_prerequisite is None:
+            prerequisite_revision_id = None
+        else:
+            prerequisite_revision_id = u"c" * 40
+        if content is None:
+            content = "".join(unified_diff("", "content"))
+        mp.updatePreviewDiff(
+            content, u"a" * 40, u"b" * 40,
+            prerequisite_revision_id=prerequisite_revision_id)
+        # Make sure the librarian file is written.
+        transaction.commit()
+        return mp
+
     def test_providesInterface(self):
         # In order to test the interface provision, we need to make sure that
         # the associated diff object that is delegated to is also created.
@@ -365,7 +429,7 @@ class TestPreviewDiff(DiffTestCase):
 
     def test_title(self):
         # PreviewDiff has title and it copes with absent
-        # BranchRevision{.sequence} when branches get overridden/rebased. 
+        # BranchRevision{.sequence} when branches get overridden/rebased.
         mp = self._createProposalWithPreviewDiff(content='')
         preview = mp.preview_diff
         # Both, source and target, branch revisions are absent,
@@ -385,6 +449,12 @@ class TestPreviewDiff(DiffTestCase):
         self.assertEqual('r10 into rev-b', preview.title)
         target_rev.sequence = 1
         self.assertEqual('r10 into r1', preview.title)
+
+    def test_title_git(self):
+        # Git commit IDs are shortened to seven characters.
+        mp = self._createGitProposalWithPreviewDiff(content='')
+        preview = mp.preview_diff
+        self.assertEqual('aaaaaaa into bbbbbbb', preview.title)
 
     def test_empty_diff(self):
         # Once the source is merged into the target, the diff between the
@@ -494,6 +564,24 @@ class TestPreviewDiff(DiffTestCase):
             self.assertNotEqual(handler.records, [])
         finally:
             logger.removeHandler(handler)
+
+    def test_fromBranchMergeProposalForGit(self):
+        # Correctly generates a PreviewDiff from a Git-based
+        # BranchMergeProposal.
+        bmp, source_rev_id, target_rev_id, patch = self.createExampleGitMerge()
+        preview = PreviewDiff.fromBranchMergeProposal(bmp)
+        self.assertEqual(source_rev_id, preview.source_revision_id)
+        self.assertEqual(target_rev_id, preview.target_revision_id)
+        transaction.commit()
+        self.assertEqual(patch, preview.text)
+        self.assertEqual({'foo': (5, 0)}, preview.diffstat)
+
+    def test_fromBranchMergeProposalForGit_sets_conflicts(self):
+        # Conflicts are set on the PreviewDiff.
+        bmp, source_rev_id, target_rev_id, _ = self.createExampleGitMerge()
+        preview = PreviewDiff.fromBranchMergeProposal(bmp)
+        self.assertEqual('Conflict in foo\n', preview.conflicts)
+        self.assertTrue(preview.has_conflicts)
 
     def test_getFileByName(self):
         diff = self._createProposalWithPreviewDiff().preview_diff

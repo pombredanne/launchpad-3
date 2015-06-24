@@ -11,9 +11,9 @@ __all__ = [
 
 from difflib import unified_diff
 from email import message_from_string
-from email.MIMEMessage import MIMEMessage
-from email.MIMEMultipart import MIMEMultipart
-from email.MIMEText import MIMEText
+from email.mime.message import MIMEMessage
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 import re
 
 from lp.bugs.mail.bugnotificationbuilder import get_bugmail_error_address

@@ -129,7 +129,7 @@ Now let's look at the sent email again.
     >>> from_addr, to_addr, raw_message = stub.test_emails.pop()
     >>> msg = email.message_from_string(raw_message)
 
-    >>> from email.Header import decode_header
+    >>> from email.header import decode_header
     >>> subject_str, charset = decode_header(msg['Subject'])[0]
     >>> subject_str.decode(charset)
     u'\xc4mnesrad'
@@ -153,7 +153,7 @@ contain non-ASCII characters:
     >>> from_addr, to_addr, raw_message = stub.test_emails.pop()
     >>> msg = email.message_from_string(raw_message)
 
-    >>> from email.Utils import parseaddr
+    >>> from email.utils import parseaddr
     >>> from_name_encoded, from_addr = parseaddr(msg['From'])
     >>> from_name_str, charset = decode_header(from_name_encoded)[0]
     >>> from_addr
@@ -265,7 +265,7 @@ send more complicated emails, like emails with attachments.
 Let's send a mail using that function. We only create a simple message
 to test with, though.
 
-    >>> msg = email.MIMEText.MIMEText("Some content")
+    >>> msg = email.mime.text.MIMEText("Some content")
     >>> msg['From'] = 'foo.bar@canonical.com'
     >>> msg['To'] = 'test@canonical.com'
     >>> msg['Subject'] = "test"
@@ -304,7 +304,7 @@ If we want to bounce messages, we can manually specify which addresses
 the mail should be sent to. When we do this, the 'To' and 'CC' headers
 are ignored.
 
-    >>> msg = email.MIMEText.MIMEText("Some content")
+    >>> msg = email.mime.text.MIMEText("Some content")
     >>> msg['From'] = 'foo.bar@canonical.com'
     >>> msg['To'] = 'test@canonical.com'
     >>> msg['CC'] = 'foo.bar@canonical.com'

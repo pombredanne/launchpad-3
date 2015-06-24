@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementations of the XML-RPC APIs for codehosting."""
@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'CodehostingAPI',
     'datetime_from_tuple',
+    'run_with_login',
     ]
 
 
@@ -109,7 +110,13 @@ def run_with_login(login_id, function, *args, **kwargs):
         # and expect `function` to use `removeSecurityProxy` or similar.
         return function(login_id, *args, **kwargs)
     if isinstance(login_id, basestring):
-        requester = getUtility(IPersonSet).getByName(login_id)
+        if isinstance(login_id, bytes):
+            login_id = login_id.decode("UTF-8")
+        # OpenID identifiers must contain a slash, while names must not.
+        if "/" in login_id:
+            requester = getUtility(IPersonSet).getByOpenIDIdentifier(login_id)
+        else:
+            requester = getUtility(IPersonSet).getByName(login_id)
     else:
         requester = getUtility(IPersonSet).get(login_id)
     if requester is None:
@@ -309,7 +316,7 @@ class CodehostingAPI(LaunchpadXMLRPCView):
             writable = self._canWriteToBranch(requester, branch)
         return (
             BRANCH_TRANSPORT,
-            {'id': branch_id, 'writable': writable},
+            {'id': branch_id, 'writable': writable, 'private': branch.private},
             trailing_path)
 
     def _serializeControlDirectory(self, requester, lookup):

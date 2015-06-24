@@ -8,6 +8,18 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
     i18n_domain="launchpad">
+    <browser:url
+        for="lp.buildmaster.interfaces.processor.IProcessor"
+        path_expression="string:${name}"
+        parent_utility="lp.buildmaster.interfaces.processor.IProcessorSet" />
+
+    <browser:navigation
+        module="lp.buildmaster.browser.processor"
+        classes="ProcessorSetNavigation" />
+    <browser:url for="lp.buildmaster.interfaces.processor.IProcessorSet"
+        path_expression="string:+processors"
+        parent_utility="lp.services.webapp.interfaces.ILaunchpadRoot"/>
+
     <browser:page
         for="lp.buildmaster.interfaces.buildqueue.IBuildQueue"
         name="+current"

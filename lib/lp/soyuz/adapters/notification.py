@@ -587,7 +587,7 @@ def email_to_person(fullemail):
 def person_to_email(person):
     """Return a string of full name <e-mail address> given an IPerson."""
     if person and person.preferredemail:
-        # This will use email.Header to encode any non-ASCII characters.
+        # This will use email.header to encode any non-ASCII characters.
         return format_address_for_person(person)
 
 
