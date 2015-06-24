@@ -286,7 +286,7 @@ class GitRepository(StormBase, GitIdentityMixin):
             repository_set = getUtility(IGitRepositorySet)
             existing = repository_set.getDefaultRepositoryForOwner(
                 self.owner, self.target)
-            if existing is not None:
+            if existing is not None and existing != self:
                 raise GitDefaultConflict(
                     existing, self.target, owner=self.owner)
         self.owner_default = value
