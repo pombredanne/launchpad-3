@@ -265,7 +265,7 @@ class TestMerges(BrowserTestCase):
         with StormStatementRecorder() as recorder:
             self.getViewBrowser(
                 product, '+merges', rootsite='code', user=product.owner)
-        self.assertThat(recorder, HasQueryCount(Equals(41)))
+        self.assertThat(recorder, HasQueryCount(Equals(42)))
 
     def test_query_count_git(self):
         product = self.factory.makeProduct()
@@ -280,7 +280,7 @@ class TestMerges(BrowserTestCase):
         with StormStatementRecorder() as recorder:
             self.getViewBrowser(
                 product, '+merges', rootsite='code', user=product.owner)
-        self.assertThat(recorder, HasQueryCount(Equals(38)))
+        self.assertThat(recorder, HasQueryCount(Equals(40)))
 
     def test_productseries_bzr(self):
         target = self.factory.makeBranch()
