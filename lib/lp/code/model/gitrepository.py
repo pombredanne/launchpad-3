@@ -296,7 +296,7 @@ class GitRepository(StormBase, GitIdentityMixin):
             repository_set = getUtility(IGitRepositorySet)
             existing = repository_set.getDefaultRepositoryForOwner(
                 self.owner, self.target)
-            if existing is not None:
+            if existing is not None and existing != self:
                 raise GitDefaultConflict(
                     existing, self.target, owner=self.owner)
         self.owner_default = value
@@ -307,7 +307,7 @@ class GitRepository(StormBase, GitIdentityMixin):
             # Check for an existing target default.
             existing = getUtility(IGitRepositorySet).getDefaultRepository(
                 self.target)
-            if existing is not None:
+            if existing is not None and existing != self:
                 raise GitDefaultConflict(existing, self.target)
         self.target_default = value
         if IProduct.providedBy(self.target):
