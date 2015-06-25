@@ -733,8 +733,7 @@ class ProductSeriesDeleteView(RegistryDeleteViewMixin, LaunchpadEditFormView):
 class ProductSeriesSetBranchView(ProductSetBranchView, ProductSeriesView):
     """The view to set a branch for the ProductSeries."""
 
-    def is_series(self):
-        return True
+    is_series = True
 
     @property
     def series(self):

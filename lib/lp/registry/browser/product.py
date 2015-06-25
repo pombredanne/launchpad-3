@@ -1717,9 +1717,7 @@ class ProductSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
     custom_widget('default_vcs', LaunchpadRadioWidget)
 
     errors_in_action = False
-
-    def is_series(self):
-        return False
+    is_series = False
 
     @property
     def series(self):
@@ -1747,7 +1745,7 @@ class ProductSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
     def setUpFields(self):
         """See `LaunchpadFormView`."""
         super(ProductSetBranchView, self).setUpFields()
-        if not self.is_series():
+        if not self.is_series:
             self.form_fields = (self.form_fields + create_git_fields())
 
     def setUpWidgets(self):
@@ -1775,7 +1773,7 @@ class ProductSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
             render_radio_widget_part(widget, value, current_value)
             for value in (LINK_LP_BZR, IMPORT_EXTERNAL)]
 
-        if not self.is_series():
+        if not self.is_series:
             widget = self.widgets['default_vcs']
             vocab = widget.vocabulary
             current_value = widget._getFormValue()
@@ -1893,7 +1891,7 @@ class ProductSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
         if len(self.errors) > 0:
             return
         branch_type = data.get('branch_type')
-        if not self.is_series():
+        if not self.is_series:
             self._validateLinkLpGit(data)
         if branch_type == IMPORT_EXTERNAL:
             self._validateImportExternal(data)
@@ -1924,7 +1922,7 @@ class ProductSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
     def update_action(self, action, data):
         branch_type = data.get('branch_type')
 
-        if not self.is_series():
+        if not self.is_series:
             default_vcs = data.get('default_vcs')
             if default_vcs:
                 self.context.vcs = default_vcs
