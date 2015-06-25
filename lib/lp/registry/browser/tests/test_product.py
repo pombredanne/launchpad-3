@@ -310,11 +310,11 @@ class TestProductView(BrowserTestCase):
         view = create_initialized_view(self.product, '+index')
         self.assertTrue(view.show_programming_languages)
 
-    def test_show_default_vcs(self):
+    def test_show_inferred_vcs(self):
         with person_logged_in(self.product.owner):
             self.product.vcs = VCSType.GIT
-        view = create_initialized_view(self.product, '+index')
-        self.assertTrue(view.show_vcs)
+        browser = self.getViewBrowser(self.product, '+index')
+        self.assertIn(VCSType.GIT.title, browser.contents)
 
     def test_show_license_info_without_other_license(self):
         # show_license_info is false when one of the "other" licences is
