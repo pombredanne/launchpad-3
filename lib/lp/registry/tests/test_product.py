@@ -877,7 +877,7 @@ class TestProduct(TestCaseWithFactory):
             'getVersionSortedSeries',
             'has_current_commercial_subscription',
             'has_custom_language_codes', 'has_milestones', 'homepage_content',
-            'homepageurl', 'invitesTranslationEdits',
+            'homepageurl', 'inferred_vcs', 'invitesTranslationEdits',
             'invitesTranslationSuggestions',
             'license_info', 'license_status', 'licenses', 'milestones',
             'mugshot', 'newCodeImport',
