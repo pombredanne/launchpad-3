@@ -494,7 +494,7 @@ class TestInlineCommentsSection(testtools.TestCase):
                 'A comment in the non-last hunk',
                 '',
                 '> +b']),
-            self.getSection(comments)                   )
+            self.getSection(comments).splitlines()[4:12])
 
     def test_multi_line_comment(self):
         # Inline comments with multiple lines are rendered appropriately.

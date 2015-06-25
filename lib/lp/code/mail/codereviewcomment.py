@@ -209,7 +209,7 @@ def build_inline_comments_section(comments, diff_text):
             comment = comments.get(str(line_count))
 
             patch_lines.append('> {0}'.format(ph))
-            if comment is not None:
+            if comment:
                 patch_lines.extend(format_comment(comment))
                 patch_comment = True
 
@@ -224,17 +224,18 @@ def build_inline_comments_section(comments, diff_text):
 
             # comment for context line (hunk header)
             comment = comments.get(str(line_count))
-            if comment is not None:
+            if comment:
                 hunk_lines.extend(format_comment(comment))
                 hunk_comment = True
 
             for line in hunk.lines:
                 line_count += 1  # inc hunk lines
 
+                #  line is a ContextLine/ReplaceLine
                 hunk_lines.append(u'> %s' %
                     str(line).rstrip('\n').decode('utf-8', 'replace'))
                 comment = comments.get(str(line_count))
-                if comment is not None:
+                if comment:
                     hunk_lines.extend(format_comment(comment))
                     hunk_comment = True
 
@@ -243,7 +244,7 @@ def build_inline_comments_section(comments, diff_text):
                 keep_hunks.extend(hunk_lines)
 
         # Add entire patch and hunks to result if comment found
-        if patch_comment or hunk_comment:
+        if patch_comment or keep_hunks:
             result_lines.extend(dirty_head)
             result_lines.extend(patch_lines)
             result_lines.extend(keep_hunks)
