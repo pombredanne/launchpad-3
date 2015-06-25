@@ -11,6 +11,7 @@ __all__ = [
     'extract_email_addresses',
     'FormattersAPI',
     'linkify_bug_numbers',
+    'parse_diff',
     're_substitute',
     'split_paragraphs',
     ]
@@ -243,6 +244,59 @@ def extract_email_addresses(text):
     '''Unique email addresses in the text.'''
     matches = re.finditer(re_email_address, text)
     return list(set([match.group() for match in matches]))
+
+
+def parse_diff(text):
+    """Parse a string into categorised diff lines.
+
+    Yields a sequence of (CSS class, diff row, per-file row in original
+    file, per-file row in modified file, line).
+    """
+    max_format_lines = config.diff.max_format_lines
+    header_next = False
+    orig_row = 0
+    mod_row = 0
+    for row, line in enumerate(text.splitlines()[:max_format_lines]):
+        row += 1
+        if (line.startswith('===') or
+                line.startswith('diff') or
+                line.startswith('index')):
+            yield 'diff-file text', row, None, None, line
+            header_next = True
+        elif (header_next and
+              (line.startswith('+++') or
+              line.startswith('---'))):
+            yield 'diff-header text', row, None, None, line
+        elif line.startswith('@@'):
+            try:
+                hunk = hunk_from_header(line + '\n')
+                # The positions indicate the per-file line numbers of
+                # the next row.
+                orig_row = hunk.orig_pos
+                mod_row = hunk.mod_pos
+            except Exception:
+                getUtility(IErrorReportingUtility).raising(sys.exc_info())
+                orig_row = 1
+                mod_row = 1
+            yield 'diff-chunk text', row, None, None, line
+            header_next = False
+        elif line.startswith('+'):
+            yield 'diff-added text', row, None, mod_row, line
+            mod_row += 1
+        elif line.startswith('-'):
+            yield 'diff-removed text', row, orig_row, None, line
+            orig_row += 1
+        elif line.startswith('#'):
+            # This doesn't occur in normal unified diffs, but does
+            # appear in merge directives, which use text/x-diff or
+            # text/x-patch.
+            yield 'diff-comment text', row, None, None, line
+            header_next = False
+        else:
+            yield 'text', row, orig_row, mod_row, line
+            orig_row += 1
+            mod_row += 1
+            header_next = False
 
 
 class FormattersAPI:
@@ -883,38 +937,9 @@ class FormattersAPI:
             return text
         result = ['<table class="diff unidiff">']
 
-        max_format_lines = config.diff.max_format_lines
-        header_next = False
-        for row, line in enumerate(text.splitlines()[:max_format_lines]):
-            result.append('<tr id="diff-line-%s">' % (row + 1))
-            result.append('<td class="line-no">%s</td>' % (row + 1))
-            if (line.startswith('===') or
-                    line.startswith('diff') or
-                    line.startswith('index')):
-                css_class = 'diff-file text'
-                header_next = True
-            elif (header_next and
-                  (line.startswith('+++') or
-                  line.startswith('---'))):
-                css_class = 'diff-header text'
-            elif line.startswith('@@'):
-                css_class = 'diff-chunk text'
-                header_next = False
-            elif line.startswith('+'):
-                css_class = 'diff-added text'
-                header_next = False
-            elif line.startswith('-'):
-                css_class = 'diff-removed text'
-                header_next = False
-            elif line.startswith('#'):
-                # This doesn't occur in normal unified diffs, but does
-                # appear in merge directives, which use text/x-diff or
-                # text/x-patch.
-                css_class = 'diff-comment text'
-                header_next = False
-            else:
-                css_class = 'text'
-                header_next = False
+        for css_class, row, _, _, line in parse_diff(text):
+            result.append('<tr id="diff-line-%s">' % row)
+            result.append('<td class="line-no">%s</td>' % row)
             result.append(
                 structured(
                     '<td class="%s">%s</td>', css_class, line).escapedtext)
@@ -967,79 +992,47 @@ class FormattersAPI:
             return text
         result = ['<table class="diff ssdiff">']
 
-        max_format_lines = config.diff.max_format_lines
-        header_next = False
-        queue_removed = []
-        queue_added = []
-        removed_row = 0
-        added_row = 0
-        for row, line in enumerate(text.splitlines()[:max_format_lines]):
-            row += 1
-            css_class = None
-            if (line.startswith('===') or
-                    line.startswith('diff') or
-                    line.startswith('index')):
-                css_class = 'diff-file text'
-                header_next = True
-            elif (header_next and
-                  (line.startswith('+++') or
-                  line.startswith('---'))):
-                css_class = 'diff-header text'
-            elif line.startswith('@@'):
-                try:
-                    hunk = hunk_from_header(line + '\n')
-                    # The positions indicate the per-file line numbers of
-                    # the next row.
-                    removed_row = hunk.orig_pos
-                    added_row = hunk.mod_pos
-                except Exception:
-                    getUtility(IErrorReportingUtility).raising(sys.exc_info())
-                    removed_row = 1
-                    added_row = 1
-                css_class = 'diff-chunk text'
-                header_next = False
-            elif line.startswith('+'):
-                queue_added.append((row, added_row, line[1:]))
-                added_row += 1
-                continue
-            elif line.startswith('-'):
-                queue_removed.append((row, removed_row, line[1:]))
-                removed_row += 1
-                continue
-            elif line.startswith('#'):
-                # This doesn't occur in normal unified diffs, but does
-                # appear in merge directives, which use text/x-diff or
-                # text/x-patch.
-                css_class = 'diff-comment text'
-                header_next = False
-
-            if css_class is not None:
-                cells = [
-                    structured(
-                        '<td class="%s" colspan="4">%s</td>',
-                        css_class, line).escapedtext,
-                    ]
+        queue_orig = []
+        queue_mod = []
+        for css_class, row, orig_row, mod_row, line in parse_diff(text):
+            if orig_row is not None and mod_row is None:
+                # Text line only in original version.  Queue until we find a
+                # common or non-text line.
+                queue_orig.append((row, orig_row, line[1:]))
+            elif mod_row is not None and orig_row is None:
+                # Text line only in modified version.  Queue until we find a
+                # common or non-text line.
+                queue_mod.append((row, mod_row, line[1:]))
             else:
-                if line.startswith(' '):
-                    line = line[1:]
-                cells = [
-                    '<td class="ss-line-no">%s</td>' % removed_row,
-                    structured('<td class="text">%s</td>', line).escapedtext,
-                    '<td class="ss-line-no">%s</td>' % added_row,
-                    structured('<td class="text">%s</td>', line).escapedtext,
-                    ]
-                removed_row += 1
-                added_row += 1
-                header_next = False
-
-            if queue_removed or queue_added:
-                self._ssdiff_emit_queued_lines(
-                    result, queue_removed, queue_added)
-                queue_removed = []
-                queue_added = []
-            self._ssdiff_emit_line(result, row, cells)
-        if queue_removed or queue_added:
-            self._ssdiff_emit_queued_lines(result, queue_removed, queue_added)
+                # Common or non-text line; emit any queued differences, then
+                # this line.
+                if queue_orig or queue_mod:
+                    self._ssdiff_emit_queued_lines(
+                        result, queue_orig, queue_mod)
+                    queue_orig = []
+                    queue_mod = []
+                if orig_row is None and mod_row is None:
+                    # Non-text line.
+                    cells = [
+                        structured(
+                            '<td class="%s" colspan="4">%s</td>',
+                            css_class, line).escapedtext,
+                        ]
+                else:
+                    # Line common to both versions.
+                    if line.startswith(' '):
+                        line = line[1:]
+                    cells = [
+                        '<td class="ss-line-no">%s</td>' % orig_row,
+                        structured(
+                            '<td class="text">%s</td>', line).escapedtext,
+                        '<td class="ss-line-no">%s</td>' % mod_row,
+                        structured(
+                            '<td class="text">%s</td>', line).escapedtext,
+                        ]
+                self._ssdiff_emit_line(result, row, cells)
+        if queue_orig or queue_mod:
+            self._ssdiff_emit_queued_lines(result, queue_orig, queue_mod)
 
         result.append('</table>')
         return ''.join(result)
