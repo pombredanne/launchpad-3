@@ -201,7 +201,7 @@ def build_inline_comments_section(comments, diff_text):
         if isinstance(patch, dict) and 'dirty_head' in patch:
             for line in patch['dirty_head']:
                 dirty_head.append(u'> %s' % line.rstrip('\n'))
-                line_count += 1 # inc for dirty headers
+                line_count += 1  # inc for dirty headers
             patch = patch['patch']
 
         for ph in patch.get_header().splitlines():
@@ -232,8 +232,8 @@ def build_inline_comments_section(comments, diff_text):
                 line_count += 1  # inc hunk lines
 
                 #  line is a ContextLine/ReplaceLine
-                hunk_lines.append(u'> %s' %
-                    str(line).rstrip('\n').decode('utf-8', 'replace'))
+                hunk_lines.append(u'> %s' % str(line).rstrip('\n').decode(
+                    'utf-8', 'replace'))
                 comment = comments.get(str(line_count))
                 if comment:
                     hunk_lines.extend(format_comment(comment))
