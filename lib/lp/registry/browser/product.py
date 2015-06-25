@@ -1968,6 +1968,7 @@ class ProductSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
                 except BranchExists as e:
                     self._setBranchExists(e.existing_branch, 'branch_name')
                     self.abort_update()
+                    return
                 self.series.branch = code_import.branch
                 self.request.response.addInfoNotification(
                     'Code import created and branch linked to the series.')
