@@ -482,6 +482,20 @@ class TestInlineCommentsSection(testtools.TestCase):
                 '> +e']),
             self.getSection(comments).splitlines()[4:18])
 
+    def test_non_last_hunk_comment(self):
+        comments = {'12': 'A comment in the non-last hunk'}
+        self.assertEqual(
+            map(unicode, [
+                '> --- baz\t1969-12-31 19:00:00.000000000 -0500',
+                '> +++ baz\t2009-08-26 15:53:57.000000000 -0400',
+                '> @@ -0,0 +1,2 @@',
+                '> +a',
+                '',
+                'A comment in the non-last hunk',
+                '',
+                '> +b']),
+            self.getSection(comments)                   )
+
     def test_multi_line_comment(self):
         # Inline comments with multiple lines are rendered appropriately.
         comments = {'4': 'Foo\nBar'}

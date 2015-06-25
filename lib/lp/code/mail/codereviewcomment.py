@@ -229,10 +229,10 @@ def build_inline_comments_section(comments, diff_text):
                 hunk_comment = True
 
             for line in hunk.lines:
-                line_count = line_count + 1  # inc hunk lines
+                line_count += 1  # inc hunk lines
 
-                hunk_lines.append(u'> %s' % str(
-                    line).rstrip('\n').decode('utf-8', 'replace'))
+                hunk_lines.append(u'> %s' %
+                    str(line).rstrip('\n').decode('utf-8', 'replace'))
                 comment = comments.get(str(line_count))
                 if comment is not None:
                     hunk_lines.extend(format_comment(comment))
@@ -244,8 +244,7 @@ def build_inline_comments_section(comments, diff_text):
 
         # Add entire patch and hunks to result if comment found
         if patch_comment or hunk_comment:
-            if len(dirty_head) > 0:
-                result_lines.extend(dirty_head)
+            result_lines.extend(dirty_head)
             result_lines.extend(patch_lines)
             result_lines.extend(keep_hunks)
 
