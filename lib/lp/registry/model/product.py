@@ -116,6 +116,8 @@ from lp.bugs.model.structuralsubscription import (
     )
 from lp.code.enums import BranchType
 from lp.code.interfaces.branch import DEFAULT_BRANCH_STATUS_IN_LISTING
+from lp.code.interfaces.branchcollection import IBranchCollection
+from lp.code.interfaces.gitcollection import IGitCollection
 from lp.code.interfaces.gitrepository import IGitRepositorySet
 from lp.code.model.branch import Branch
 from lp.code.model.branchnamespace import BRANCH_POLICY_ALLOWED_TYPES
@@ -444,6 +446,19 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         Returns None; exists only to maintain API compatability.
         """
         return None
+
+    @property
+    def inferred_vcs(self):
+        """Use vcs, otherwise infer from existence of git or bzr branches.
+
+        Bzr take precedence over git, if no project vcs set.
+        """
+        if self.vcs:
+            return self.vcs
+        if not IBranchCollection(self).is_empty():
+            return VCSType.BZR
+        elif not IGitCollection(self).is_empty():
+            return VCSType.GIT
 
     @date_next_suggest_packaging.setter  # pyflakes:ignore
     def date_next_suggest_packaging(self, value):

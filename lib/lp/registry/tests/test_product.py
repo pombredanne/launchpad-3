@@ -65,6 +65,7 @@ from lp.registry.enums import (
     SharingPermission,
     SpecificationSharingPolicy,
     TeamMembershipPolicy,
+    VCSType,
     )
 from lp.registry.errors import (
     CannotChangeInformationType,
@@ -308,6 +309,13 @@ class TestProduct(TestCaseWithFactory):
         self.assertEqual(
             [u'trunk', u'active-series'],
             [series.name for series in active_series])
+
+    def test_inferred_vcs(self):
+        """VCS is inferred correctly from existing branch or repo."""
+        git_repo = self.factory.makeGitRepository()
+        bzr_branch = self.factory.makeBranch()
+        self.assertEqual(VCSType.GIT, git_repo.target.inferred_vcs)
+        self.assertEqual(VCSType.BZR, bzr_branch.product.inferred_vcs)
 
     def test_owner_cannot_be_open_team(self):
         """Product owners cannot be open teams."""
@@ -869,7 +877,7 @@ class TestProduct(TestCaseWithFactory):
             'getVersionSortedSeries',
             'has_current_commercial_subscription',
             'has_custom_language_codes', 'has_milestones', 'homepage_content',
-            'homepageurl', 'invitesTranslationEdits',
+            'homepageurl', 'inferred_vcs', 'invitesTranslationEdits',
             'invitesTranslationSuggestions',
             'license_info', 'license_status', 'licenses', 'milestones',
             'mugshot', 'newCodeImport',
