@@ -18,6 +18,7 @@ from zope.component import getUtility
 from lp.app.browser.stringformatter import (
     FormattersAPI,
     linkify_bug_numbers,
+    parse_diff,
     )
 from lp.services.config import config
 from lp.services.features.testing import FeatureFixture
@@ -27,7 +28,10 @@ from lp.testing import (
     TestCase,
     TestCaseWithFactory,
     )
-from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    ZopelessLayer,
+    )
 from lp.testing.pages import find_tags_by_class
 
 
@@ -299,6 +303,174 @@ class TestLastParagraphClass(TestCase):
                 last_paragraph_class="last"))
 
 
+class TestParseDiff(TestCase):
+    """Test the parser for fmt:diff and fmt:ssdiff."""
+
+    def test_emptyString(self):
+        # An empty string yields no lines.
+        self.assertEqual([], list(parse_diff('')))
+
+    def test_almostEmptyString(self):
+        # White space yields a single line of text.
+        self.assertEqual([('text', 1, 0, 0, ' ')], list(parse_diff(' ')))
+
+    def test_unicode(self):
+        # Diffs containing Unicode work too.
+        self.assertEqual(
+            [('text', 1, 0, 0, u'Unicode \u1010')],
+            list(parse_diff(u'Unicode \u1010')))
+
+    def assertParses(self, expected, diff):
+        diff_lines = diff.splitlines()
+        self.assertEqual(
+            [(css_class, row + 1, orig_row, mod_row, diff_lines[row])
+             for row, (css_class, orig_row, mod_row) in enumerate(expected)],
+            list(parse_diff(diff)))
+
+    def test_basic_bzr(self):
+        # A basic Bazaar diff with a few different classes is parsed correctly.
+        diff = dedent('''\
+            === modified file 'tales.py'
+            --- tales.py
+            +++ tales.py
+            @@ -2435,7 +2439,8 @@
+                 def method(self):
+            -        removed this line
+            +        added this line
+            +        added another line
+                     something in between
+            -------- a sql style comment
+            ++++++++ a line of pluses
+            ########
+            # A merge directive comment.
+            ''')
+        expected = [
+            ('diff-file text', None, None),
+            ('diff-header text', None, None),
+            ('diff-header text', None, None),
+            ('diff-chunk text', None, None),
+            ('text', 2435, 2439),
+            ('diff-removed text', 2436, None),
+            ('diff-added text', None, 2440),
+            ('diff-added text', None, 2441),
+            ('text', 2437, 2442),
+            ('diff-removed text', 2438, None),
+            ('diff-added text', None, 2443),
+            ('diff-comment text', None, None),
+            ('diff-comment text', None, None),
+            ]
+        self.assertParses(expected, diff)
+
+    def test_basic_git(self):
+        # A basic Git diff with a few different classes is parsed correctly.
+        diff = dedent('''\
+            diff --git a/tales.py b/tales.py
+            index aaaaaaa..bbbbbbb 100644
+            --- a/tales.py
+            +++ b/tales.py
+            @@ -2435,7 +2439,8 @@
+                 def method(self):
+            -        removed this line
+            +        added this line
+            +        added another line
+                     something in between
+            -------- a sql style comment
+            ++++++++ a line of pluses
+            ''')
+        expected = [
+            ('diff-file text', None, None),
+            ('diff-file text', None, None),
+            ('diff-header text', None, None),
+            ('diff-header text', None, None),
+            ('diff-chunk text', None, None),
+            ('text', 2435, 2439),
+            ('diff-removed text', 2436, None),
+            ('diff-added text', None, 2440),
+            ('diff-added text', None, 2441),
+            ('text', 2437, 2442),
+            ('diff-removed text', 2438, None),
+            ('diff-added text', None, 2443),
+            ]
+        self.assertParses(expected, diff)
+
+    def test_config_value_limits_line_count(self):
+        # The config.diff.max_line_format contains the maximum number of
+        # lines to parse.
+        diff = dedent('''\
+            === modified file 'tales.py'
+            --- tales.py
+            +++ tales.py
+            @@ -2435,6 +2435,8 @@
+                 def method(self):
+            -        removed this line
+            +        added this line
+            ########
+            # A merge directive comment.
+            ''')
+        expected = [
+            ('diff-file text', None, None),
+            ('diff-header text', None, None),
+            ('diff-header text', None, None),
+            ]
+        self.pushConfig("diff", max_format_lines=3)
+        self.assertParses(expected, diff)
+
+    def test_multiple_hunks(self):
+        # Diffs containing multiple hunks are parsed reasonably, and the
+        # original and modified row numbers are adjusted for each hunk.
+        diff = dedent('''\
+            @@ -2,2 +2,3 @@
+             a
+            -b
+            +c
+            +d
+            @@ -10,3 +11,2 @@
+            -e
+             f
+            -g
+            +h
+            ''')
+        expected = [
+            ('diff-chunk text', None, None),
+            ('text', 2, 2),
+            ('diff-removed text', 3, None),
+            ('diff-added text', None, 3),
+            ('diff-added text', None, 4),
+            ('diff-chunk text', None, None),
+            ('diff-removed text', 10, None),
+            ('text', 11, 11),
+            ('diff-removed text', 12, None),
+            ('diff-added text', None, 12),
+            ]
+        self.assertParses(expected, diff)
+
+
+class TestParseDiffErrors(TestCaseWithFactory):
+
+    layer = ZopelessLayer
+
+    def assertParses(self, expected, diff):
+        diff_lines = diff.splitlines()
+        self.assertEqual(
+            [(css_class, row + 1, orig_row, mod_row, diff_lines[row])
+             for row, (css_class, orig_row, mod_row) in enumerate(expected)],
+            list(parse_diff(diff)))
+
+    def test_bad_hunk_header(self):
+        # A bad hunk header causes the parser to record an OOPS but continue
+        # anyway.
+        diff = dedent('''\
+            @@ some nonsense @@
+                 def method(self):
+            ''')
+        expected = [
+            ('diff-chunk text', None, None),
+            ('text', 1, 1),
+            ]
+        self.assertParses(expected, diff)
+        self.assertEqual('MalformedHunkHeader', self.oopses[0]['type'])
+
+
 class TestDiffFormatter(TestCase):
     """Test the string formatter fmt:diff."""
 
@@ -308,7 +480,7 @@ class TestDiffFormatter(TestCase):
             '', FormattersAPI('').format_diff())
 
     def test_almostEmptyString(self):
-        # White space doesn't count as empty, and is formtted.
+        # White space doesn't count as empty, and is formatted.
         self.assertEqual(
             '<table class="diff unidiff"><tr id="diff-line-1">'
             '<td class="line-no">1</td><td class="text"> </td></tr></table>',
@@ -391,25 +563,6 @@ class TestDiffFormatter(TestCase):
              'diff-added text'],
             [str(tag['class']) for tag in text])
 
-    def test_config_value_limits_line_count(self):
-        # The config.diff.max_line_format contains the maximum number of lines
-        # to format.
-        diff = dedent('''\
-            === modified file 'tales.py'
-            --- tales.py
-            +++ tales.py
-            @@ -2435,6 +2435,8 @@
-                 def format_diff(self):
-            -        removed this line
-            +        added this line
-            ########
-            # A merge directive comment.
-            ''')
-        self.pushConfig("diff", max_format_lines=3)
-        html = FormattersAPI(diff).format_diff()
-        line_count = html.count('<td class="line-no">')
-        self.assertEqual(3, line_count)
-
 
 class TestSideBySideDiffFormatter(TestCase):
     """Test the string formatter fmt:ssdiff."""
@@ -420,7 +573,7 @@ class TestSideBySideDiffFormatter(TestCase):
             '', FormattersAPI('').format_ssdiff())
 
     def test_almostEmptyString(self):
-        # White space doesn't count as empty, and is formtted.
+        # White space doesn't count as empty, and is formatted.
         self.assertEqual(
             '<table class="diff ssdiff"><tr id="diff-line-1">'
             '<td class="line-no" style="display: none">1</td>'
@@ -535,25 +688,6 @@ class TestSideBySideDiffFormatter(TestCase):
              'diff-removed text',
              'diff-added text'],
             [str(tag['class']) for tag in text])
-
-    def test_config_value_limits_line_count(self):
-        # The config.diff.max_line_format contains the maximum number of lines
-        # to format.
-        diff = dedent('''\
-            === modified file 'tales.py'
-            --- tales.py
-            +++ tales.py
-            @@ -2435,6 +2435,8 @@
-                 def format_ssdiff(self):
-            -        removed this line
-            +        added this line
-            ########
-            # A merge directive comment.
-            ''')
-        self.pushConfig("diff", max_format_lines=3)
-        html = FormattersAPI(diff).format_ssdiff()
-        line_count = html.count('<td class="line-no" style="display: none">')
-        self.assertEqual(3, line_count)
 
 
 class TestOOPSFormatter(TestCase):
