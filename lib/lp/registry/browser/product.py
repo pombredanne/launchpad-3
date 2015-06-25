@@ -1813,7 +1813,7 @@ class ProductSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
             self.setFieldError(
                 'repo_url', 'You must set the external repository URL.')
         else:
-            reason = validate_import_url(repo_url)
+            reason = validate_import_url(repo_url, rcs_type)
             if reason:
                 self.setFieldError('repo_url', reason)
 
