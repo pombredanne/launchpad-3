@@ -1823,6 +1823,10 @@ class ProductSet:
 
         # Normal users can see any project for which they can see either
         # an entire policy or an artifact.
+        # XXX wgrant 2015-06-26: This is slower than ideal for people in
+        # teams with lots of artifact grants, as there can be tens of
+        # thousands of APGF rows for a single policy. But it's tens of
+        # milliseconds at most.
         grant_filter = Coalesce(
             ArrayIntersects(
                 Product.access_policies,
