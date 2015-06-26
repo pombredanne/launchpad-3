@@ -166,10 +166,7 @@ from lp.registry.interfaces.product import (
     )
 from lp.registry.interfaces.productrelease import IProductReleaseSet
 from lp.registry.interfaces.role import IPersonRoles
-from lp.registry.model.accesspolicy import (
-    AccessPolicy,
-    AccessPolicyGrantFlat,
-    )
+from lp.registry.model.accesspolicy import AccessPolicyGrantFlat
 from lp.registry.model.announcement import MakesAnnouncements
 from lp.registry.model.commercialsubscription import CommercialSubscription
 from lp.registry.model.distribution import Distribution
@@ -1630,6 +1627,17 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             self._known_viewers.add(user.id)
             return True
         return False
+
+    def userCanLimitedView(self, user):
+        """See `IProductPublic`."""
+        if self.userCanView(user):
+            return True
+        if user is None:
+            return False
+        return not Store.of(self).find(
+            Product,
+            Product.id == self.id,
+            ProductSet.getProductPrivacyFilter(user.person)).is_empty()
 
 
 def get_precached_products(products, need_licences=False,

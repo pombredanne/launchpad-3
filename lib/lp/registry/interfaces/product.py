@@ -393,6 +393,9 @@ class IProductPublic(Interface):
     def userCanView(user):
         """True if the given user has access to this product."""
 
+    def userCanLimitedView(user):
+        """True if the given user has limited access to this product."""
+
     private = exported(
         Bool(
             title=_("Product is confidential"), required=False,
