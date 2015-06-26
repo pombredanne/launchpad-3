@@ -38,6 +38,7 @@ from storm.expr import (
     Join,
     LeftJoin,
     NamedFunc,
+    Not,
     Or,
     Select,
     SQL,

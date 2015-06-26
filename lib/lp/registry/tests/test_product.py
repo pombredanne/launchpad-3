@@ -2328,18 +2328,6 @@ class TestProductSet(TestCaseWithFactory):
         self.assertNotIn(embargoed, result)
         self.assertNotIn(proprietary, result)
 
-    def test_getProductPrivacyFilter_ignores_wrong_info_type(self):
-        # Exclude proprietary products if grant is on wrong information type.
-        grantee = self.factory.makePerson()
-        proprietary, embargoed, public = self.makeAllInformationTypes()
-        self.grant(embargoed, InformationType.PROPRIETARY, grantee)
-        self.factory.makeAccessPolicy(proprietary, InformationType.EMBARGOED)
-        self.grant(proprietary, InformationType.EMBARGOED, grantee)
-        result = self.filterFind(grantee)
-        self.assertIn(public, result)
-        self.assertNotIn(embargoed, result)
-        self.assertNotIn(proprietary, result)
-
     def test_getProductPrivacyFilter_respects_team_grants(self):
         # Include proprietary products for users in teams with right grants.
         grantee = self.factory.makeTeam()
