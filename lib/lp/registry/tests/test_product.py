@@ -527,6 +527,25 @@ class TestProduct(TestCaseWithFactory):
             SpecificationSharingPolicy.PROPRIETARY,
             product.specification_sharing_policy)
 
+    def test_cacheAccessPolicies(self):
+        # Product.access_policies is a list caching AccessPolicy.id for
+        # the Product's information_type.
+        product = self.factory.makeProduct(
+            information_type=InformationType.PROPRIETARY)
+        naked_product = removeSecurityProxy(product)
+
+        [prop_policy] = getUtility(IAccessPolicySource).find(
+            [(product, InformationType.PROPRIETARY)])
+        self.assertEqual([prop_policy.id], naked_product.access_policies)
+
+        naked_product.information_type = InformationType.PUBLIC
+        self.assertIs(None, naked_product.access_policies)
+
+        naked_product.information_type = InformationType.EMBARGOED
+        [emb_policy] = getUtility(IAccessPolicySource).find(
+            [(product, InformationType.EMBARGOED)])
+        self.assertEqual([emb_policy.id], naked_product.access_policies)
+
     def test_checkInformationType_bug_supervisor(self):
         # Bug supervisors of proprietary products must not have inclusive
         # membership policies.

@@ -38,7 +38,9 @@ from storm.expr import (
 from storm.locals import (
     And,
     Desc,
+    Int,
     Join,
+    List,
     Not,
     Or,
     Select,
@@ -439,6 +441,11 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         name='remote_product', allow_none=True, default=None)
     vcs = EnumCol(enum=VCSType, notNull=False)
 
+    # Cache of AccessPolicy.ids that convey launchpad.View.  Unlike
+    # artifacts' cached access_policies, an AccessArtifactGrant to an
+    # artifact in the policy is sufficient for access.
+    access_policies = List(type=Int())
+
     @property
     def date_next_suggest_packaging(self):
         """See `IProduct`
@@ -582,6 +589,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                 self.setSpecificationSharingPolicy(
                     specification_policy_default[value])
             self._ensurePolicies([value])
+            self._cacheAccessPolicies()
 
     information_type = property(_get_information_type, _set_information_type)
 
@@ -814,6 +822,14 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         for p in policies:
             grants.append((p, self.owner, self.owner))
         getUtility(IAccessPolicyGrantSource).grant(grants)
+
+    def _cacheAccessPolicies(self):
+        if self.information_type in PRIVATE_INFORMATION_TYPES:
+            [policy] = getUtility(IAccessPolicySource).find(
+                [(self, self.information_type)])
+            self.access_policies = [policy.id]
+        else:
+            self.access_policies = None
 
     def _pruneUnusedPolicies(self):
         allowed_bug_types = set(
@@ -1902,6 +1918,7 @@ class ProductSet:
             branch_policy_default[information_type])
         product.setSpecificationSharingPolicy(
             specification_policy_default[information_type])
+        product._cacheAccessPolicies()
 
         # Create a default trunk series and set it as the development focus
         trunk = product.newSeries(
