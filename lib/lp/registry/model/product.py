@@ -32,19 +32,19 @@ from sqlobject import (
     StringCol,
     )
 from storm.expr import (
+    And,
+    Coalesce,
+    Desc,
+    Join,
     LeftJoin,
     NamedFunc,
-    )
-from storm.locals import (
-    And,
-    Desc,
-    Int,
-    Join,
-    List,
-    Not,
     Or,
     Select,
     SQL,
+    )
+from storm.locals import (
+    Int,
+    List,
     Store,
     Unicode,
     )
@@ -199,7 +199,11 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from lp.services.database.stormexpr import fti_search
+from lp.services.database.stormexpr import (
+    ArrayAgg,
+    ArrayIntersects,
+    fti_search,
+    )
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
@@ -1805,19 +1809,37 @@ class ProductSet:
 
     @staticmethod
     def getProductPrivacyFilter(user):
-        if user is not None:
-            roles = IPersonRoles(user)
-            if roles.in_admin or roles.in_commercial_admin:
-                return True
-        granted_products = And(
-            AccessPolicyGrantFlat.grantee_id == TeamParticipation.teamID,
-            TeamParticipation.person == user,
-            AccessPolicyGrantFlat.policy == AccessPolicy.id,
-            AccessPolicy.product == Product.id,
-            AccessPolicy.type == Product._information_type)
-        return Or(Product._information_type == InformationType.PUBLIC,
-                  Product._information_type == None,
-                  Product.id.is_in(Select(Product.id, granted_products)))
+        # Anonymous users can only see public projects.
+        public_filter = Product._information_type == InformationType.PUBLIC
+        if user is None:
+            return public_filter
+
+        # (Commercial) admins can see any project.
+        roles = IPersonRoles(user)
+        if roles.in_admin or roles.in_commercial_admin:
+            return True
+
+        # Normal users can see any project for which they can see either
+        # the entire policy or an artifact matching
+        # Product.information_type.
+        # XXX wgrant 2015-06-26: Rewritten to match the old behaviour,
+        # but it's pretty non-sensical: LimitedView on IProduct is
+        # defined by SharingService.checkPillarArtifactAccess, which
+        # allows a policy for any information type. This method is
+        # probably wrong.
+        grant_filter = Coalesce(
+            ArrayIntersects(
+                Product.access_policies,
+                Select(
+                    ArrayAgg(AccessPolicyGrantFlat.policy_id),
+                    tables=(AccessPolicyGrantFlat,
+                            Join(TeamParticipation,
+                                TeamParticipation.teamID ==
+                                AccessPolicyGrantFlat.grantee_id)),
+                    where=(TeamParticipation.person == user)
+                )),
+            False)
+        return Or(public_filter, grant_filter)
 
     @classmethod
     def get_users_private_products(cls, user):
