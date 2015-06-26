@@ -441,9 +441,9 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         name='remote_product', allow_none=True, default=None)
     vcs = EnumCol(enum=VCSType, notNull=False)
 
-    # Cache of AccessPolicy.ids that convey launchpad.View.  Unlike
-    # artifacts' cached access_policies, an AccessArtifactGrant to an
-    # artifact in the policy is sufficient for access.
+    # Cache of AccessPolicy.ids that convey launchpad.LimitedView.
+    # Unlike artifacts' cached access_policies, an AccessArtifactGrant
+    # to an artifact in the policy is sufficient for access.
     access_policies = List(type=Int())
 
     @property
