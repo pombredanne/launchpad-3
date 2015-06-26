@@ -1821,13 +1821,7 @@ class ProductSet:
             return True
 
         # Normal users can see any project for which they can see either
-        # the entire policy or an artifact matching
-        # Product.information_type.
-        # XXX wgrant 2015-06-26: Rewritten to match the old behaviour,
-        # but it's pretty non-sensical: LimitedView on IProduct is
-        # defined by SharingService.checkPillarArtifactAccess, which
-        # allows a policy for any information type. This method is
-        # probably wrong.
+        # an entire policy or an artifact.
         grant_filter = Coalesce(
             ArrayIntersects(
                 Product.access_policies,
