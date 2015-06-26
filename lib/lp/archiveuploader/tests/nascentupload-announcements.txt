@@ -525,7 +525,7 @@ AUTO-APPROVED upload to BACKPORTS pocket via 'sync' policy:
     DEBUG
     DEBUG Announcing to hoary-announce@lists.ubuntu.com
     DEBUG
-    DEBUG Thank you for your contribution to Ubuntu Linux.
+    DEBUG Thank you for your contribution to Ubuntu.
     DEBUG
     DEBUG --
     DEBUG You are receiving this email because you are the uploader,
@@ -745,7 +745,7 @@ changes file is mentioned toward the end of the email.
     <BLANKLINE>
     Announcing to hoary-announce@lists.ubuntu.com
     <BLANKLINE>
-    Thank you for your contribution to Ubuntu Linux.
+    Thank you for your contribution to Ubuntu.
     <BLANKLINE>
     -- =
     <BLANKLINE>

@@ -202,7 +202,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
     name = StringCol(notNull=True, alternateID=True, unique=True)
     displayname = StringCol(notNull=True)
-    title = StringCol(notNull=True)
+    _title = StringCol(dbName='title', notNull=True)
     summary = StringCol(notNull=True)
     description = StringCol(notNull=True)
     homepage_content = StringCol(default=None)
@@ -254,6 +254,10 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         displayname = self.displayname.encode('ASCII', 'backslashreplace')
         return "<%s '%s' (%s)>" % (
             self.__class__.__name__, displayname, self.name)
+
+    @property
+    def title(self):
+        return self.displayname
 
     @property
     def pillar(self):
@@ -1453,7 +1457,7 @@ class DistributionSet:
         distro = Distribution(
             name=name,
             displayname=displayname,
-            title=title,
+            _title=title,
             description=description,
             summary=summary,
             domainname=domainname,

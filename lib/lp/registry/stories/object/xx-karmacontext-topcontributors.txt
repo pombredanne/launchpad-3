@@ -20,7 +20,7 @@ The top contributors page can be reached from the top contributors portlet.
 
     >>> anon_browser.getLink('More contributors').click()
     >>> print anon_browser.title
-    Top Ubuntu Linux Contributors...
+    Top Ubuntu Contributors...
 
 
 Top contributors of a product
