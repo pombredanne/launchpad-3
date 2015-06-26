@@ -765,6 +765,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                 raise ProprietaryProduct(
                     "The project is %s." % self.information_type.title)
         self._ensurePolicies(allowed_types[var])
+        self._cacheAccessPolicies()
 
     def setBranchSharingPolicy(self, branch_sharing_policy):
         """See `IProductEditRestricted`."""
@@ -829,9 +830,9 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def _cacheAccessPolicies(self):
         if self.information_type in PRIVATE_INFORMATION_TYPES:
-            [policy] = getUtility(IAccessPolicySource).find(
-                [(self, self.information_type)])
-            self.access_policies = [policy.id]
+            self.access_policies = [
+                policy.id for policy in
+                getUtility(IAccessPolicySource).findByPillar([self])]
         else:
             self.access_policies = None
 
@@ -1940,7 +1941,6 @@ class ProductSet:
             branch_policy_default[information_type])
         product.setSpecificationSharingPolicy(
             specification_policy_default[information_type])
-        product._cacheAccessPolicies()
 
         # Create a default trunk series and set it as the development focus
         trunk = product.newSeries(

@@ -544,7 +544,8 @@ class TestProduct(TestCaseWithFactory):
         naked_product.information_type = InformationType.EMBARGOED
         [emb_policy] = getUtility(IAccessPolicySource).find(
             [(product, InformationType.EMBARGOED)])
-        self.assertEqual([emb_policy.id], naked_product.access_policies)
+        self.assertContentEqual(
+            [prop_policy.id, emb_policy.id], naked_product.access_policies)
 
     def test_checkInformationType_bug_supervisor(self):
         # Bug supervisors of proprietary products must not have inclusive
