@@ -830,10 +830,19 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         getUtility(IAccessPolicyGrantSource).grant(grants)
 
     def _cacheAccessPolicies(self):
-        if self.information_type in PRIVATE_INFORMATION_TYPES:
+        # Update the cache of AccessPolicy.ids for which an
+        # AccessPolicyGrant or AccessArtifactGrant is sufficient to
+        # convey launchpad.LimitedView on this Product.
+        #
+        # We only need a cache for proprietary types, and it only
+        # includes proprietary policies in case a policy like Private
+        # Security was somehow left around when a project was
+        # transitioned to Proprietary.
+        if self.information_type in PROPRIETARY_INFORMATION_TYPES:
             self.access_policies = [
                 policy.id for policy in
-                getUtility(IAccessPolicySource).findByPillar([self])]
+                getUtility(IAccessPolicySource).findByPillar([self])
+                if policy.type in PROPRIETARY_INFORMATION_TYPES]
         else:
             self.access_policies = None
 
@@ -862,6 +871,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             and apa_source.findByPolicy([ap]).is_empty()]
         getUtility(IAccessPolicyGrantSource).revokeByPolicy(unused_aps)
         ap_source.delete([(ap.pillar, ap.type) for ap in unused_aps])
+        self._cacheAccessPolicies()
 
     @cachedproperty
     def commercial_subscription(self):
