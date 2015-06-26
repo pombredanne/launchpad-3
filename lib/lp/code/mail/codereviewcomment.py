@@ -244,7 +244,7 @@ def build_inline_comments_section(comments, diff_text):
                 keep_hunks.extend(hunk_lines)
 
         # Add entire patch and hunks to result if comment found
-        if patch_comment or keep_hunks:
+        if keep_hunks:
             result_lines.extend(dirty_head)
             result_lines.extend(patch_lines)
             result_lines.extend(keep_hunks)
