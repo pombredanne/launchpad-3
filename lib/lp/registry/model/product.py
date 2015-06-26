@@ -67,10 +67,10 @@ from lp.answers.model.question import (
 from lp.app.enums import (
     FREE_INFORMATION_TYPES,
     InformationType,
+    PILLAR_INFORMATION_TYPES,
     PRIVATE_INFORMATION_TYPES,
     PROPRIETARY_INFORMATION_TYPES,
     PUBLIC_INFORMATION_TYPES,
-    PUBLIC_PROPRIETARY_INFORMATION_TYPES,
     service_uses_launchpad,
     ServiceUsage,
     )
@@ -337,21 +337,17 @@ class UnDeactivateable(Exception):
 bug_policy_default = {
     InformationType.PUBLIC: BugSharingPolicy.PUBLIC,
     InformationType.PROPRIETARY: BugSharingPolicy.PROPRIETARY,
-    InformationType.EMBARGOED: BugSharingPolicy.EMBARGOED_OR_PROPRIETARY,
 }
 
 
 branch_policy_default = {
     InformationType.PUBLIC: BranchSharingPolicy.PUBLIC,
-    InformationType.EMBARGOED: BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY,
     InformationType.PROPRIETARY: BranchSharingPolicy.PROPRIETARY,
 }
 
 
 specification_policy_default = {
     InformationType.PUBLIC: SpecificationSharingPolicy.PUBLIC,
-    InformationType.EMBARGOED:
-        SpecificationSharingPolicy.EMBARGOED_OR_PROPRIETARY,
     InformationType.PROPRIETARY: SpecificationSharingPolicy.PROPRIETARY,
 }
 
@@ -480,7 +476,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         changed.  Has the side-effect of creating a commercial subscription if
         permitted.
         """
-        if value not in PUBLIC_PROPRIETARY_INFORMATION_TYPES:
+        if value not in PILLAR_INFORMATION_TYPES:
             yield CannotChangeInformationType('Not supported for Projects.')
         if value in PROPRIETARY_INFORMATION_TYPES:
             if self.answers_usage == ServiceUsage.LAUNCHPAD:
@@ -1872,7 +1868,8 @@ class ProductSet:
             licenses = set()
         if information_type is None:
             information_type = InformationType.PUBLIC
-        if information_type in PROPRIETARY_INFORMATION_TYPES:
+        if (information_type in PILLAR_INFORMATION_TYPES
+                and information_type in PROPRIETARY_INFORMATION_TYPES):
             # This check is skipped in _valid_product_information_type during
             # creation, so done here.  It predicts whether a commercial
             # subscription will be generated based on the selected license,

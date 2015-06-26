@@ -412,12 +412,12 @@ class TestPerson(TestCaseWithFactory):
             user.getAffiliatedPillars(user)]
         self.assertEqual(expected_pillars, received_pillars)
 
-    def test_getAffiliatedPillars_minus_embargoed(self):
+    def test_getAffiliatedPillars_minus_proprietary(self):
         # Skip non public products if not allowed to see them.
         owner = self.factory.makePerson()
         user = self.factory.makePerson()
         self.factory.makeProduct(
-            information_type=InformationType.EMBARGOED,
+            information_type=InformationType.PROPRIETARY,
             owner=owner)
         public = self.factory.makeProduct(
             information_type=InformationType.PUBLIC,
@@ -432,15 +432,15 @@ class TestPerson(TestCaseWithFactory):
         # Users can see their own non-public affiliated products.
         owner = self.factory.makePerson()
         self.factory.makeProduct(
-            name=u'embargoed',
-            information_type=InformationType.EMBARGOED,
+            name=u'proprietary',
+            information_type=InformationType.PROPRIETARY,
             owner=owner)
         self.factory.makeProduct(
             name=u'public',
             information_type=InformationType.PUBLIC,
             owner=owner)
 
-        expected_pillars = [u'embargoed', u'public']
+        expected_pillars = [u'proprietary', u'public']
         received_pillars = [pillar.name for pillar in
             owner.getAffiliatedPillars(owner)]
         self.assertEqual(expected_pillars, received_pillars)
@@ -450,15 +450,15 @@ class TestPerson(TestCaseWithFactory):
         owner = self.factory.makePerson()
         admin = self.factory.makeAdministrator()
         self.factory.makeProduct(
-            name=u'embargoed',
-            information_type=InformationType.EMBARGOED,
+            name=u'proprietary',
+            information_type=InformationType.PROPRIETARY,
             owner=owner)
         self.factory.makeProduct(
             name=u'public',
             information_type=InformationType.PUBLIC,
             owner=owner)
 
-        expected_pillars = [u'embargoed', u'public']
+        expected_pillars = [u'proprietary', u'public']
         received_pillars = [pillar.name for pillar in
             owner.getAffiliatedPillars(admin)]
         self.assertEqual(expected_pillars, received_pillars)
@@ -468,15 +468,15 @@ class TestPerson(TestCaseWithFactory):
         owner = self.factory.makePerson()
         admin = self.factory.makeCommercialAdmin()
         self.factory.makeProduct(
-            name=u'embargoed',
-            information_type=InformationType.EMBARGOED,
+            name=u'proprietary',
+            information_type=InformationType.PROPRIETARY,
             owner=owner)
         self.factory.makeProduct(
             name=u'public',
             information_type=InformationType.PUBLIC,
             owner=owner)
 
-        expected_pillars = [u'embargoed', u'public']
+        expected_pillars = [u'proprietary', u'public']
         received_pillars = [pillar.name for pillar in
             owner.getAffiliatedPillars(admin)]
         self.assertEqual(expected_pillars, received_pillars)
