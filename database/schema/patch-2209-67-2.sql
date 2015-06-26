@@ -10,4 +10,4 @@ UPDATE product
         WHERE AccessPolicy.product = Product.id)
     WHERE information_type IN (5, 6); -- PROPRIETARY, EMBARGOED
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 67, 1);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 67, 2);
