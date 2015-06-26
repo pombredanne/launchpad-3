@@ -387,7 +387,7 @@ class ProjectEditView(LaunchpadEditFormView):
     page_title = label
     schema = IProjectGroup
     field_names = [
-        'displayname', 'title', 'summary', 'description',
+        'displayname', 'summary', 'description',
         'bug_reporting_guidelines', 'bug_reported_acknowledgement',
         'homepageurl', 'bugtracker', 'sourceforgeproject',
         'wikiurl']
@@ -582,7 +582,6 @@ class ProjectAddView(LaunchpadFormView):
     field_names = [
         'name',
         'displayname',
-        'title',
         'summary',
         'description',
         'owner',
@@ -599,7 +598,7 @@ class ProjectAddView(LaunchpadFormView):
         self.projectgroup = getUtility(IProjectGroupSet).new(
             name=data['name'].lower().strip(),
             displayname=data['displayname'],
-            title=data['title'],
+            title=data['displayname'],
             homepageurl=data['homepageurl'],
             summary=data['summary'],
             description=data['description'],

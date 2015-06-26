@@ -24,6 +24,7 @@ It is possible to get a batched list of all the project groups.
     >>> for project_group in project_group_entries:
     ...   print project_group['display_name']
     Apache
+    ...
     GNOME
     ...
     The Mozilla Project
@@ -46,6 +47,7 @@ the project groups.
     >>> for project_group in project_group_entries:
     ...   print project_group['display_name']
     Apache
+    ...
     GNOME
     ...
     The Mozilla Project

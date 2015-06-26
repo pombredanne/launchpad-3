@@ -1249,7 +1249,7 @@ _clauseTables).
     bazaar          Bazaar
     firefox         Mozilla Firefox
     gentoo          Gentoo
-    gnome           The GNOME Project
+    gnome           GNOME
     gnome-terminal  GNOME Terminal
     mozilla         The Mozilla Project
     thunderbird     Mozilla Thunderbird
