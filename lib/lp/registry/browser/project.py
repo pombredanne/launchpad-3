@@ -493,7 +493,7 @@ class ProjectGroupAddStepTwo(ProjectAddStepTwo):
         return getUtility(IProductSet).createProduct(
             owner=self.user,
             name=data['name'],
-            title=data['title'],
+            title=data['displayname'],
             summary=data['summary'],
             displayname=data['displayname'],
             licenses=data['licenses'],

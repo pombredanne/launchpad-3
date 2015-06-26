@@ -468,7 +468,8 @@ class IProductLimitedView(IHasIcon, IHasLogo, IHasOwner, ILaunchpadUsage):
     title = exported(
         Title(
             title=_('Title'),
-            description=_("The project title. Should be just a few words.")))
+            description=_("The project title. Should be just a few words."),
+            readonly=True))
 
 
 class IProductView(

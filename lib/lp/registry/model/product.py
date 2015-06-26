@@ -397,7 +397,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     name = StringCol(
         dbName='name', notNull=True, alternateID=True, unique=True)
     displayname = StringCol(dbName='displayname', notNull=True)
-    title = StringCol(dbName='title', notNull=True)
+    _title = StringCol(dbName='title', notNull=True)
     summary = StringCol(dbName='summary', notNull=True)
     description = StringCol(notNull=False, default=None)
     datecreated = UtcDateTimeCol(
@@ -438,6 +438,10 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     remote_product = Unicode(
         name='remote_product', allow_none=True, default=None)
     vcs = EnumCol(enum=VCSType, notNull=False)
+
+    @property
+    def title(self):
+        return self.displayname
 
     @property
     def date_next_suggest_packaging(self):
@@ -1883,7 +1887,7 @@ class ProductSet:
                     ' Projects.')
         product = Product(
             owner=owner, registrant=registrant, name=name,
-            displayname=displayname, title=title, projectgroup=projectgroup,
+            displayname=displayname, _title=title, projectgroup=projectgroup,
             summary=summary, description=description, homepageurl=homepageurl,
             screenshotsurl=screenshotsurl, wikiurl=wikiurl,
             downloadurl=downloadurl, freshmeatproject=None,
@@ -2067,7 +2071,7 @@ class ProductSet:
             POTemplate.productseriesID == ProductSeries.id,
             Product.translations_usage == ServiceUsage.LAUNCHPAD,
             Person.id == Product._ownerID).config(
-                distinct=True).order_by(Product.title)
+                distinct=True).order_by(Product.displayname)
 
         # We only want Product - the other tables are just to populate
         # the cache.
