@@ -169,6 +169,17 @@ class WebhookFailed(Exception):
 
 
 def send_to_webhook(endpoint_url, proxy, payload):
+    """Send a payload to a webhook endpoint.
+
+    Returns a dict of request and response details. The 'request' key
+    and one of either 'response' or 'connection_error' are always
+    present.
+
+    An exception will be raised if an internal error has occurred that
+    cannot be the fault of the remote endpoint. For example, a 404 will
+    return a response, and a DNS error returns a connection_error, but
+    the proxy being offline will raise an exception.
+    """
     # We never want to execute a job if there's no proxy configured, as
     # we'd then be sending near-arbitrary requests from a trusted
     # machine.
@@ -182,20 +193,26 @@ def send_to_webhook(endpoint_url, proxy, payload):
     session = requests.Session()
     session.trust_env = False
     session.headers = {}
-    resp = session.post(endpoint_url, json=payload, proxies=proxies)
-    return {
+    preq = session.prepare_request(
+        requests.Request('POST', endpoint_url, json=payload))
+    result = {
         'request': {
             'url': endpoint_url,
             'method': 'POST',
-            'headers': dict(resp.request.headers),
-            'body': resp.request.body,
+            'headers': dict(preq.headers),
+            'body': preq.body,
             },
-        'response': {
+        }
+    try:
+        resp = session.send(preq, proxies=proxies)
+        result['response'] = {
             'status_code': resp.status_code,
             'headers': dict(resp.headers),
             'body': resp.content,
-            },
-        }
+            }
+    except requests.ConnectionError as e:
+        result['connection_error'] = str(e)
+    return result
 
 
 class WebhookEventJob(WebhookJobDerived):
@@ -221,5 +238,6 @@ class WebhookEventJob(WebhookJobDerived):
         result = send_to_webhook(
             self.webhook.endpoint_url, config.webhooks.http_proxy,
             self.json_data['payload'])
-        if not (200 <= result['response']['status_code'] <= 299):
-            raise WebhookFailed('Failed.')
+        updated_data = self.json_data
+        updated_data['result'] = result
+        self.json_data = updated_data
