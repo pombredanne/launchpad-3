@@ -91,7 +91,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
             comment.branch_merge_proposal, mailer.merge_proposal)
         sender = comment.message.owner
         sender_address = format_address(sender.displayname,
-            sender.preferredemail.email)
+                                        sender.preferredemail.email)
         self.assertEqual(sender_address, mailer.from_address)
         self.assertEqual(comment, mailer.code_review_comment)
 
@@ -145,9 +145,10 @@ class TestCodeReviewComment(TestCaseWithFactory):
         source_branch = mailer.merge_proposal.source_branch
         branch_name = source_branch.bzr_identity
         self.assertEqual(
-            ctrl.body.splitlines()[-3:], ['-- ',
-            canonical_url(mailer.merge_proposal),
-            'You are subscribed to branch %s.' % branch_name])
+            ctrl.body.splitlines()[-3:], [
+                '-- ', canonical_url(mailer.merge_proposal),
+                'You are subscribed to branch %s.' % branch_name
+                ])
         rationale = mailer._recipients.getReason('subscriber@example.com')[1]
         expected = {'X-Launchpad-Branch': source_branch.unique_name,
                     'X-Launchpad-Message-Rationale': rationale,
@@ -216,7 +217,8 @@ class TestCodeReviewComment(TestCaseWithFactory):
                                       inline_comments=None):
         """Create a `CodeReviewComment` with inline (diff) comments."""
         bmp = self.factory.makeBranchMergeProposal()
-        bmp.source_branch.subscribe(bmp.registrant,
+        bmp.source_branch.subscribe(
+            bmp.registrant,
             BranchSubscriptionNotificationLevel.NOEMAIL, None,
             CodeReviewNotificationLevel.FULL, bmp.registrant)
         previewdiff = self.factory.makePreviewDiff(merge_proposal=bmp)
@@ -317,7 +319,8 @@ class TestCodeReviewComment(TestCaseWithFactory):
         bmp = self.factory.makeBranchMergeProposal(registrant=proposer)
         commenter = self.factory.makePerson(
             email='commenter@email.com', displayname='Commenter')
-        bmp.source_branch.subscribe(commenter,
+        bmp.source_branch.subscribe(
+            commenter,
             BranchSubscriptionNotificationLevel.NOEMAIL, None,
             CodeReviewNotificationLevel.FULL, commenter)
         comment = bmp.createComment(commenter, 'hello')
@@ -429,35 +432,37 @@ class TestInlineCommentsSection(testtools.TestCase):
         # and prefixed with '>>> '
         comments = {'4': '\u03b4\u03bf\u03ba\u03b9\u03bc\u03ae'}
         self.assertEqual(
-            map(unicode, ['> +++ bar\t1969-12-31 19:00:00.000000000 -0500',
-             '',
-             '\u03b4\u03bf\u03ba\u03b9\u03bc\u03ae',
-             '']),
+            map(unicode, [
+                '> +++ bar\t1969-12-31 19:00:00.000000000 -0500',
+                '',
+                '\u03b4\u03bf\u03ba\u03b9\u03bc\u03ae',
+                '']),
             self.getSection(comments).splitlines()[7:11])
 
     def test_commentless_hunks_ignored(self):
         # Hunks without inline comments are not returned in the diff text.
         comments = {'16': 'A comment', '21': 'Another comment'}
         self.assertEqual(
-            map(unicode, ['> --- baz\t1969-12-31 19:00:00.000000000 -0500',
-             '> +++ baz\t2009-08-26 15:53:57.000000000 -0400',
-             '> @@ -1,2 +0,0 @@',
-             '> -x',
-             '> -y',
-             '',
-             'A comment',
-             '',
-             '> --- foo\t2009-08-26 15:53:23.000000000 -0400',
-             '> +++ foo\t2009-08-26 15:56:43.000000000 -0400',
-             '> @@ -1,3 +1,4 @@',
-             '>  a',
-             '> -b',
-             '',
-             'Another comment',
-             '',
-             '>  c',
-             '> +d',
-             '> +e']),
+            map(unicode, [
+                '> --- baz\t1969-12-31 19:00:00.000000000 -0500',
+                '> +++ baz\t2009-08-26 15:53:57.000000000 -0400',
+                '> @@ -1,2 +0,0 @@',
+                '> -x',
+                '> -y',
+                '',
+                'A comment',
+                '',
+                '> --- foo\t2009-08-26 15:53:23.000000000 -0400',
+                '> +++ foo\t2009-08-26 15:56:43.000000000 -0400',
+                '> @@ -1,3 +1,4 @@',
+                '>  a',
+                '> -b',
+                '',
+                'Another comment',
+                '',
+                '>  c',
+                '> +d',
+                '> +e']),
             self.getSection(comments).splitlines()[4:23])
 
     def test_patch_header_comment(self):
@@ -500,12 +505,13 @@ class TestInlineCommentsSection(testtools.TestCase):
         # Inline comments with multiple lines are rendered appropriately.
         comments = {'4': 'Foo\nBar'}
         self.assertEqual(
-            map(unicode, ['> --- bar\t2009-08-26 15:53:34.000000000 -0400',
-             '> +++ bar\t1969-12-31 19:00:00.000000000 -0500',
-             '',
-             'Foo',
-             'Bar',
-             '']),
+            map(unicode, [
+                '> --- bar\t2009-08-26 15:53:34.000000000 -0400',
+                '> +++ bar\t1969-12-31 19:00:00.000000000 -0500',
+                '',
+                'Foo',
+                'Bar',
+                '']),
             self.getSection(comments).splitlines()[6:12])
 
     def test_multiple_comments(self):
