@@ -224,7 +224,7 @@ class TestExposeAdministeredTeams(TestCaseWithFactory):
                 absoluteURL=fake_absoluteURL)
         statements_for_admininstrated_teams = [
             statement for statement in recorder.statements
-            if statement.startswith("SELECT *")]
+            if 'TeamMembership' in statement]
         self.assertEqual(1, len(statements_for_admininstrated_teams))
 
         # Calling the function a second time does not require an
@@ -235,7 +235,7 @@ class TestExposeAdministeredTeams(TestCaseWithFactory):
                 absoluteURL=fake_absoluteURL)
         statements_for_admininstrated_teams = [
             statement for statement in recorder.statements
-            if statement.startswith("SELECT *")]
+            if 'TeamMembership' in statement]
         self.assertEqual(0, len(statements_for_admininstrated_teams))
 
     def test_teams_owned_but_not_joined_are_not_included(self):
@@ -450,7 +450,7 @@ class TestIntegrationExposeUserSubscriptionsToJS(TestCaseWithFactory):
             expose_user_subscriptions_to_js(user, [sub], request)
         statements_for_admininstrated_teams = [
             statement for statement in recorder.statements
-            if statement.startswith("SELECT *")]
+            if 'TeamMembership' in statement]
         self.assertEqual(1, len(statements_for_admininstrated_teams))
 
         # Calling the function a second time does not require an
@@ -460,5 +460,5 @@ class TestIntegrationExposeUserSubscriptionsToJS(TestCaseWithFactory):
                 expose_user_subscriptions_to_js(user, [sub], request)
         statements_for_admininstrated_teams = [
             statement for statement in recorder.statements
-            if statement.startswith("SELECT *")]
+            if 'TeamMembership' in statement]
         self.assertEqual(0, len(statements_for_admininstrated_teams))
