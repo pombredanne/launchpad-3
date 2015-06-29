@@ -11,6 +11,7 @@ from httmock import (
     HTTMock,
     urlmatch,
     )
+from testtools import TestCase
 from testtools.matchers import MatchesStructure
 
 from lp.services.job.interfaces.job import JobStatus
@@ -20,6 +21,7 @@ from lp.services.webhooks.interfaces import (
     IWebhookJob,
     )
 from lp.services.webhooks.model import (
+    send_to_webhook,
     WebhookEventJob,
     WebhookJob,
     WebhookJobDerived,
@@ -57,6 +59,47 @@ class TestWebhookJobDerived(TestCaseWithFactory):
         job = WebhookJob(hook, WebhookJobType.EVENT, {})
         derived = WebhookJobDerived(job)
         self.assertIsNone(derived.getOopsMailController("x"))
+
+
+class SendToWebhook(TestCase):
+    """Tests for `send_to_webhook`."""
+
+    def sendToWebhook(self, response_status=200):
+        requests = []
+
+        @urlmatch(netloc='hookep.com')
+        def endpoint_mock(url, request):
+            requests.append(request)
+            return {'status_code': response_status, 'content': 'Content'}
+
+        with HTTMock(endpoint_mock):
+            result = send_to_webhook(
+                'http://hookep.com/foo',
+                {'http': 'http://squid.example.com:3128'},
+                {'foo': 'bar'})
+
+        self.assertEqual(1, len(requests))
+        return requests, result
+
+    def test_sends_request(self):
+        [request], result = self.sendToWebhook()
+        self.assertEqual(
+            {'Content-Type': 'application/json', 'Content-Length': '14'},
+            result['request']['headers'])
+        self.assertEqual('{"foo": "bar"}', result['request']['body'])
+        self.assertEqual(200, result['response']['status_code'])
+        self.assertEqual({}, result['response']['headers'])
+        self.assertEqual('Content', result['response']['body'])
+
+    def test_accepts_404(self):
+        [request], result = self.sendToWebhook(response_status=404)
+        self.assertEqual(
+            {'Content-Type': 'application/json', 'Content-Length': '14'},
+            result['request']['headers'])
+        self.assertEqual('{"foo": "bar"}', result['request']['body'])
+        self.assertEqual(404, result['response']['status_code'])
+        self.assertEqual({}, result['response']['headers'])
+        self.assertEqual('Content', result['response']['body'])
 
 
 class TestWebhookEventJob(TestCaseWithFactory):

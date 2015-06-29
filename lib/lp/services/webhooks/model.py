@@ -181,9 +181,21 @@ def send_to_webhook(endpoint_url, proxy, payload):
         raise Exception("Unproxied scheme!")
     session = requests.Session()
     session.trust_env = False
+    session.headers = {}
     resp = session.post(endpoint_url, json=payload, proxies=proxies)
-    if resp.status_code != 200:
-        raise WebhookFailed("Failed.")
+    return {
+        'request': {
+            'url': endpoint_url,
+            'method': 'POST',
+            'headers': dict(resp.request.headers),
+            'body': resp.request.body,
+            },
+        'response': {
+            'status_code': resp.status_code,
+            'headers': dict(resp.headers),
+            'body': resp.content,
+            },
+        }
 
 
 class WebhookEventJob(WebhookJobDerived):
@@ -206,6 +218,8 @@ class WebhookEventJob(WebhookJobDerived):
         return job
 
     def run(self):
-        send_to_webhook(
+        result = send_to_webhook(
             self.webhook.endpoint_url, config.webhooks.http_proxy,
             self.json_data['payload'])
+        if not (200 <= result['response']['status_code'] <= 299):
+            raise WebhookFailed('Failed.')
