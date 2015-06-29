@@ -9,7 +9,6 @@ __all__ = [
     'WebhookJobType',
     ]
 
-
 from lazr.delegates import delegates
 from lazr.enum import (
     DBEnumeratedType,
@@ -169,7 +168,7 @@ class WebhookFailed(Exception):
     pass
 
 
-def send_to_webhook(endpoint_url, proxy):
+def send_to_webhook(endpoint_url, proxy, payload):
     # We never want to execute a job if there's no proxy configured, as
     # we'd then be sending near-arbitrary requests from a trusted
     # machine.
@@ -182,7 +181,7 @@ def send_to_webhook(endpoint_url, proxy):
         raise Exception("Unproxied scheme!")
     session = requests.Session()
     session.trust_env = False
-    resp = session.get(endpoint_url, proxies=proxies)
+    resp = session.post(endpoint_url, json=payload, proxies=proxies)
     if resp.status_code != 200:
         raise WebhookFailed("Failed.")
 
@@ -199,11 +198,14 @@ class WebhookEventJob(WebhookJobDerived):
     user_error_types = (WebhookFailed,)
 
     @classmethod
-    def create(cls, webhook):
-        webhook_job = WebhookJob(webhook, cls.class_job_type, {})
+    def create(cls, webhook, payload):
+        webhook_job = WebhookJob(
+            webhook, cls.class_job_type, {"payload": payload})
         job = cls(webhook_job)
         job.celeryRunOnCommit()
         return job
 
     def run(self):
-        send_to_webhook(self.webhook.endpoint_url, config.webhooks.http_proxy)
+        send_to_webhook(
+            self.webhook.endpoint_url, config.webhooks.http_proxy,
+            self.json_data['payload'])

@@ -5,14 +5,16 @@
 
 __metaclass__ = type
 
+import json
+
 from httmock import (
-    urlmatch,
     HTTMock,
+    urlmatch,
     )
 from testtools.matchers import MatchesStructure
 
-from lp.services.job.runner import JobRunner
 from lp.services.job.interfaces.job import JobStatus
+from lp.services.job.runner import JobRunner
 from lp.services.webhooks.interfaces import (
     IWebhookEventJob,
     IWebhookJob,
@@ -71,7 +73,7 @@ class TestWebhookEventJob(TestCaseWithFactory):
             return {'status_code': response_status, 'content': 'Content'}
 
         hook = self.factory.makeWebhook(endpoint_url=u'http://hookep.com/foo')
-        job = WebhookEventJob.create(hook)
+        job = WebhookEventJob.create(hook, payload={'foo': 'bar'})
         with HTTMock(endpoint_mock):
             with dbuser("webhookrunner"):
                 JobRunner([job]).runAll()
@@ -80,7 +82,8 @@ class TestWebhookEventJob(TestCaseWithFactory):
     def test_provides_interface(self):
         # `WebhookEventJob` objects provide `IWebhookEventJob`.
         hook = self.factory.makeWebhook()
-        self.assertProvides(WebhookEventJob.create(hook), IWebhookEventJob)
+        self.assertProvides(
+            WebhookEventJob.create(hook, payload={}), IWebhookEventJob)
 
     def test_run(self):
         with CaptureOops() as oopses:
@@ -90,7 +93,10 @@ class TestWebhookEventJob(TestCaseWithFactory):
         self.assertThat(
             requests[0],
             MatchesStructure.byEquality(
-                url=u'http://hookep.com/foo', method='GET', body=None))
+                url=u'http://hookep.com/foo', method='POST'))
+        self.assertEqual(
+            'application/json', requests[0].headers['Content-Type'])
+        self.assertEqual({'foo': 'bar'}, json.loads(requests[0].body))
         self.assertEqual([], oopses.oopses)
 
     def test_run_404(self):
