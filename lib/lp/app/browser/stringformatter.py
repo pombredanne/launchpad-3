@@ -249,8 +249,8 @@ def extract_email_addresses(text):
 def parse_diff(text):
     """Parse a string into categorised diff lines.
 
-    Yields a sequence of (CSS class, diff row, per-file row in original
-    file, per-file row in modified file, line).
+    Yields a sequence of (CSS class, line number in diff, line number in
+    original file, line number in modified file, line).
     """
     max_format_lines = config.diff.max_format_lines
     header_next = False
