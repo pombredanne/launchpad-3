@@ -589,7 +589,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                 self.setSpecificationSharingPolicy(
                     specification_policy_default[value])
             self._ensurePolicies([value])
-            self._cacheAccessPolicies()
 
     information_type = property(_get_information_type, _set_information_type)
 
@@ -761,7 +760,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                 raise ProprietaryProduct(
                     "The project is %s." % self.information_type.title)
         self._ensurePolicies(allowed_types[var])
-        self._cacheAccessPolicies()
 
     def setBranchSharingPolicy(self, branch_sharing_policy):
         """See `IProductEditRestricted`."""
@@ -824,6 +822,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             grants.append((p, self.owner, self.owner))
         getUtility(IAccessPolicyGrantSource).grant(grants)
 
+        self._cacheAccessPolicies()
+
     def _cacheAccessPolicies(self):
         # Update the cache of AccessPolicy.ids for which an
         # AccessPolicyGrant or AccessArtifactGrant is sufficient to
@@ -836,8 +836,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         if self.information_type in PROPRIETARY_INFORMATION_TYPES:
             self.access_policies = [
                 policy.id for policy in
-                getUtility(IAccessPolicySource).findByPillar([self])
-                if policy.type in PROPRIETARY_INFORMATION_TYPES]
+                getUtility(IAccessPolicySource).find(
+                    [(self, type) for type in PROPRIETARY_INFORMATION_TYPES])]
         else:
             self.access_policies = None
 
