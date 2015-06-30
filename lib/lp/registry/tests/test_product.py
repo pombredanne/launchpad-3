@@ -527,6 +527,40 @@ class TestProduct(TestCaseWithFactory):
             SpecificationSharingPolicy.PROPRIETARY,
             product.specification_sharing_policy)
 
+    def test_cacheAccessPolicies(self):
+        # Product.access_policies is a list caching AccessPolicy.ids for
+        # which an AccessPolicyGrant or AccessArtifactGrant gives a
+        # principal LimitedView on the Product.
+        aps = getUtility(IAccessPolicySource)
+
+        # Public projects don't need a cache.
+        product = self.factory.makeProduct()
+        naked_product = removeSecurityProxy(product)
+        self.assertContentEqual(
+            [InformationType.USERDATA, InformationType.PRIVATESECURITY],
+            [p.type for p in aps.findByPillar([product])])
+        self.assertIs(None, naked_product.access_policies)
+
+        # A private project normally just allows the Proprietary policy,
+        # even if there is still another policy like Private Security.
+        naked_product.information_type = InformationType.PROPRIETARY
+        [prop_policy] = aps.find([(product, InformationType.PROPRIETARY)])
+        self.assertEqual([prop_policy.id], naked_product.access_policies)
+
+        # If we switch it back to public, the cache is no longer
+        # required.
+        naked_product.information_type = InformationType.PUBLIC
+        self.assertIs(None, naked_product.access_policies)
+
+        # Projects can also be Embargoed because of reasons. Since they
+        # can have both Proprietary and Embargoed artifacts, and someone
+        # who can see either needs LimitedView on the pillar they're on,
+        # both policies are permissible.
+        naked_product.information_type = InformationType.EMBARGOED
+        [emb_policy] = aps.find([(product, InformationType.EMBARGOED)])
+        self.assertContentEqual(
+            [prop_policy.id, emb_policy.id], naked_product.access_policies)
+
     def test_checkInformationType_bug_supervisor(self):
         # Bug supervisors of proprietary products must not have inclusive
         # membership policies.
