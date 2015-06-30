@@ -18,6 +18,7 @@ from lazr.restful.declarations import (
     call_with,
     export_as_webservice_entry,
     export_factory_operation,
+    export_write_operation,
     exported,
     operation_for_version,
     REQUEST_USER,
@@ -71,6 +72,11 @@ class IWebhook(Interface):
         title=_("Active"), required=True, readonly=False))
     secret = TextLine(
         title=_("Unique name"), required=False, readonly=False)
+
+    @export_write_operation()
+    @operation_for_version('devel')
+    def ping():
+        """Send a test event."""
 
 
 class IWebhookSource(Interface):

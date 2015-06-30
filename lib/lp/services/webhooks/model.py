@@ -80,6 +80,9 @@ class Webhook(StormBase):
         else:
             raise AssertionError("No target.")
 
+    def ping(self):
+        WebhookEventJob.create(self, {'ping': True})
+
 
 class WebhookSource:
     """See `IWebhookSource`."""
@@ -172,6 +175,9 @@ class WebhookJob(StormBase):
         self.webhook = webhook
         self.job_type = job_type
         self.json_data = json_data
+
+    def makeDerived(self):
+        return WebhookJobDerived.makeSubclass(self)
 
 
 class WebhookJobDerived(BaseRunnableJob):
