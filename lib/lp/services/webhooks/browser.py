@@ -24,6 +24,6 @@ class WebhookTargetNavigationMixin:
         except ValueError:
             return None
         webhook = getUtility(IWebhookSource).getByID(id)
-        if webhook.target != self.context:
+        if webhook is None or webhook.target != self.context:
             return None
         return webhook

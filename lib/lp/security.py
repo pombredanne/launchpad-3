@@ -3054,3 +3054,13 @@ class EditLiveFSBuild(AdminByBuilddAdmin):
 
 class AdminLiveFSBuild(AdminByBuilddAdmin):
     usedfor = ILiveFSBuild
+
+
+class ViewWebhook(AuthorizationBase):
+    """Webhooks can be viewed and edited by someone who can edit the target."""
+
+    permission = 'launchpad.View'
+
+    def checkAuthenticated(self, user):
+        return self.forwardCheckAuthenticated(
+            user, self.obj.target, 'launchpad.Edit')
