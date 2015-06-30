@@ -7,6 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'IWebhook',
+    'IWebhookClient',
     'IWebhookEventJob',
     'IWebhookEventJobSource',
     'IWebhookJob',
@@ -96,4 +97,20 @@ class IWebhookEventJobSource(IJobSource):
         """Send an event to a webhook consumer.
 
         :param webhook: The webhook to send to.
+        """
+
+
+class IWebhookClient(Interface):
+
+    def sendEvent(self, url, proxy, payload):
+        """Send a payload to a webhook endpoint.
+
+        Returns a dict of request and response details. The 'request' key
+        and one of either 'response' or 'connection_error' are always
+        present.
+
+        An exception will be raised if an internal error has occurred that
+        cannot be the fault of the remote endpoint. For example, a 404 will
+        return a response, and a DNS error returns a connection_error, but
+        the proxy being offline will raise an exception.
         """

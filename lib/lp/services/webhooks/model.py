@@ -15,7 +15,6 @@ from lazr.enum import (
     DBItem,
     )
 import pytz
-import requests
 from storm.properties import (
     Bool,
     DateTime,
@@ -25,6 +24,7 @@ from storm.properties import (
     )
 from storm.references import Reference
 from storm.store import Store
+from zope.component import getUtility
 from zope.interface import (
     classProvides,
     implements,
@@ -40,6 +40,7 @@ from lp.services.job.model.job import (
     )
 from lp.services.job.runner import BaseRunnableJob
 from lp.services.webhooks.interfaces import (
+    IWebhookClient,
     IWebhookEventJob,
     IWebhookEventJobSource,
     IWebhookJob,
@@ -164,57 +165,6 @@ class WebhookJobDerived(BaseRunnableJob):
         self.context = webhook_job
 
 
-class WebhookFailed(Exception):
-    pass
-
-
-def send_to_webhook(endpoint_url, proxy, payload):
-    """Send a payload to a webhook endpoint.
-
-    Returns a dict of request and response details. The 'request' key
-    and one of either 'response' or 'connection_error' are always
-    present.
-
-    An exception will be raised if an internal error has occurred that
-    cannot be the fault of the remote endpoint. For example, a 404 will
-    return a response, and a DNS error returns a connection_error, but
-    the proxy being offline will raise an exception.
-    """
-    # We never want to execute a job if there's no proxy configured, as
-    # we'd then be sending near-arbitrary requests from a trusted
-    # machine.
-    if proxy is None:
-        raise Exception("No webhook proxy configured.")
-    proxies = {'http': proxy, 'https': proxy}
-    if not any(
-            endpoint_url.startswith("%s://" % scheme)
-            for scheme in proxies.keys()):
-        raise Exception("Unproxied scheme!")
-    session = requests.Session()
-    session.trust_env = False
-    session.headers = {}
-    preq = session.prepare_request(
-        requests.Request('POST', endpoint_url, json=payload))
-    result = {
-        'request': {
-            'url': endpoint_url,
-            'method': 'POST',
-            'headers': dict(preq.headers),
-            'body': preq.body,
-            },
-        }
-    try:
-        resp = session.send(preq, proxies=proxies)
-        result['response'] = {
-            'status_code': resp.status_code,
-            'headers': dict(resp.headers),
-            'body': resp.content,
-            }
-    except requests.ConnectionError as e:
-        result['connection_error'] = str(e)
-    return result
-
-
 class WebhookEventJob(WebhookJobDerived):
     """A job that send an event to a webhook consumer."""
 
@@ -224,7 +174,6 @@ class WebhookEventJob(WebhookJobDerived):
     class_job_type = WebhookJobType.EVENT
 
     config = config.IWebhookEventJobSource
-    user_error_types = (WebhookFailed,)
 
     @classmethod
     def create(cls, webhook, payload):
@@ -235,7 +184,7 @@ class WebhookEventJob(WebhookJobDerived):
         return job
 
     def run(self):
-        result = send_to_webhook(
+        result = getUtility(IWebhookClient).sendEvent(
             self.webhook.endpoint_url, config.webhooks.http_proxy,
             self.json_data['payload'])
         updated_data = self.json_data

@@ -14,4 +14,9 @@
         <allow interface="lp.services.webhooks.interfaces.IWebhookSource"/>
     </securedutility>
 
+    <utility
+        provides="lp.services.webhooks.interfaces.IWebhookClient"
+        factory="lp.services.webhooks.client.WebhookClient"
+        permission="zope.Public"/>
+
 </configure>

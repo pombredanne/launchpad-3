@@ -17,12 +17,12 @@ from testtools.matchers import MatchesStructure
 
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.runner import JobRunner
+from lp.services.webhooks.client import WebhookClient
 from lp.services.webhooks.interfaces import (
     IWebhookEventJob,
     IWebhookJob,
     )
 from lp.services.webhooks.model import (
-    send_to_webhook,
     WebhookEventJob,
     WebhookJob,
     WebhookJobDerived,
@@ -62,25 +62,25 @@ class TestWebhookJobDerived(TestCaseWithFactory):
         self.assertIsNone(derived.getOopsMailController("x"))
 
 
-class SendToWebhook(TestCase):
-    """Tests for `send_to_webhook`."""
+class TestWebhookClient(TestCase):
+    """Tests for `WebhookClient`."""
 
     def sendToWebhook(self, response_status=200):
-        requests = []
+        reqs = []
 
         @urlmatch(netloc='hookep.com')
         def endpoint_mock(url, request):
-            requests.append(request)
+            reqs.append(request)
             return {'status_code': response_status, 'content': 'Content'}
 
         with HTTMock(endpoint_mock):
-            result = send_to_webhook(
+            result = WebhookClient().sendEvent(
                 'http://hookep.com/foo',
                 {'http': 'http://squid.example.com:3128'},
                 {'foo': 'bar'})
 
-        self.assertEqual(1, len(requests))
-        return requests, result
+        self.assertEqual(1, len(reqs))
+        return reqs, result
 
     def test_sends_request(self):
         [request], result = self.sendToWebhook()
