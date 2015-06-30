@@ -13,8 +13,19 @@ __all__ = [
     'IWebhookJob',
     ]
 
-from lazr.restful.declarations import exported
-from lazr.restful.fields import Reference
+from lazr.lifecycle.snapshot import doNotSnapshot
+from lazr.restful.declarations import (
+    call_with,
+    export_as_webservice_entry,
+    export_factory_operation,
+    exported,
+    operation_for_version,
+    REQUEST_USER,
+    )
+from lazr.restful.fields import (
+    CollectionField,
+    Reference,
+    )
 from zope.interface import (
     Attribute,
     Interface,
@@ -33,14 +44,18 @@ from lp.services.job.interfaces.job import (
     IJobSource,
     IRunnableJob,
     )
+from lp.services.webservice.apihelpers import patch_reference_property
 
 
 class IWebhook(Interface):
 
+    export_as_webservice_entry(as_of='beta')
+
     id = Int(title=_("ID"), readonly=True, required=True)
 
     target = exported(Reference(
-        title=_("Target"), schema=IPerson, required=True, readonly=True,
+        title=_("Target"), schema=Interface,  # Actually IWebhookTarget.
+        required=True, readonly=True,
         description=_("The object for which this webhook receives events.")))
     registrant = exported(Reference(
         title=_("Registrant"), schema=IPerson, required=True, readonly=True,
@@ -50,7 +65,7 @@ class IWebhook(Interface):
     date_last_modified = exported(Datetime(
         title=_("Date last modified"), required=True, readonly=True))
 
-    endpoint_url = exported(Bool(
+    endpoint_url = exported(TextLine(
         title=_("URL"), required=True, readonly=True))
     active = exported(Bool(
         title=_("Active"), required=True, readonly=False))
@@ -71,6 +86,22 @@ class IWebhookSource(Interface):
 
     def findByTarget(target):
         """Find all webhooks for the given target."""
+
+
+class IWebhookTarget(Interface):
+
+    export_as_webservice_entry(as_of='beta')
+
+    webhooks = exported(doNotSnapshot(CollectionField(
+        title=_("Webhooks for this target."),
+        value_type=Reference(schema=IWebhook),
+        readonly=True)))
+
+    @call_with(registrant=REQUEST_USER)
+    @export_factory_operation(IWebhook, ['endpoint_url', 'active'])
+    @operation_for_version("devel")
+    def newWebhook(registrant, endpoint_url, active=True):
+        """Create a new webhook."""
 
 
 class IWebhookJob(Interface):
@@ -114,3 +145,5 @@ class IWebhookClient(Interface):
         return a response, and a DNS error returns a connection_error, but
         the proxy being offline will raise an exception.
         """
+
+patch_reference_property(IWebhook, 'target', IWebhookTarget)

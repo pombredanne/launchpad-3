@@ -7,6 +7,7 @@ __all__ = [
     'Webhook',
     'WebhookJob',
     'WebhookJobType',
+    'WebhookTargetMixin',
     ]
 
 from lazr.delegates import delegates
@@ -40,15 +41,19 @@ from lp.services.job.model.job import (
     )
 from lp.services.job.runner import BaseRunnableJob
 from lp.services.webhooks.interfaces import (
+    IWebhook,
     IWebhookClient,
     IWebhookEventJob,
     IWebhookEventJobSource,
     IWebhookJob,
+    IWebhookSource,
     )
 
 
 class Webhook(StormBase):
     """See `IWebhook`."""
+
+    implements(IWebhook)
 
     __storm_table__ = 'Webhook'
 
@@ -64,7 +69,7 @@ class Webhook(StormBase):
 
     endpoint_url = Unicode(allow_none=False)
     active = Bool(default=True, allow_none=False)
-    secret = Unicode(allow_none=False)
+    secret = Unicode(allow_none=True)
 
     json_data = JSON(name='json_data')
 
@@ -79,6 +84,8 @@ class Webhook(StormBase):
 class WebhookSource:
     """See `IWebhookSource`."""
 
+    implements(IWebhookSource)
+
     def new(self, target, registrant, endpoint_url, active, secret):
         from lp.code.interfaces.gitrepository import IGitRepository
         hook = Webhook()
@@ -92,6 +99,7 @@ class WebhookSource:
         hook.secret = secret
         hook.json_data = {}
         IStore(Webhook).add(hook)
+        IStore(Webhook).flush()
         return hook
 
     def delete(self, hooks):
@@ -108,6 +116,17 @@ class WebhookSource:
         else:
             raise AssertionError("Unsupported target: %r" % (target,))
         return IStore(Webhook).find(Webhook, target_filter)
+
+
+class WebhookTargetMixin:
+
+    @property
+    def webhooks(self):
+        return getUtility(IWebhookSource).findByTarget(self)
+
+    def newWebhook(self, registrant, endpoint_url, active=True):
+        return getUtility(IWebhookSource).new(
+            self, registrant, endpoint_url, active, None)
 
 
 class WebhookJobType(DBEnumeratedType):

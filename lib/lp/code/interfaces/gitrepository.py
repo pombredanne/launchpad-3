@@ -77,6 +77,7 @@ from lp.services.fields import (
     PersonChoice,
     PublicPersonChoice,
     )
+from lp.services.webhooks.interfaces import IWebhookTarget
 
 
 GIT_REPOSITORY_NAME_VALIDATION_ERROR_MESSAGE = _(
@@ -565,7 +566,7 @@ class IGitRepositoryEditableAttributes(Interface):
             "refs/heads/master.")))
 
 
-class IGitRepositoryEdit(Interface):
+class IGitRepositoryEdit(IWebhookTarget):
     """IGitRepository methods that require launchpad.Edit permission."""
 
     @mutator_for(IGitRepositoryView["name"])

@@ -2,7 +2,10 @@
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
-<configure xmlns="http://namespaces.zope.org/zope">
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:webservice="http://namespaces.canonical.com/webservice">
 
     <class class="lp.services.webhooks.model.Webhook">
         <allow interface="lp.services.webhooks.interfaces.IWebhook"/>
@@ -18,5 +21,13 @@
         provides="lp.services.webhooks.interfaces.IWebhookClient"
         factory="lp.services.webhooks.client.WebhookClient"
         permission="zope.Public"/>
+
+    <browser:url
+       for="lp.services.webhooks.interfaces.IWebhook"
+       path_expression="string:+webhook/${id}"
+       attribute_to_parent="target"
+       />
+
+    <webservice:register module="lp.services.webhooks.webservice" />
 
 </configure>

@@ -146,6 +146,7 @@ from lp.services.propertycache import (
     get_property_cache,
     )
 from lp.services.webapp.authorization import available_with_permission
+from lp.services.webhooks.model import WebhookTargetMixin
 
 
 object_type_map = {
@@ -167,7 +168,7 @@ def git_repository_modified(repository, event):
         send_git_repository_modified_notifications(repository, event)
 
 
-class GitRepository(StormBase, GitIdentityMixin):
+class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
     """See `IGitRepository`."""
 
     __storm_table__ = 'GitRepository'

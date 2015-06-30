@@ -74,6 +74,7 @@ from lp.services.webapp.batching import TableBatchNavigator
 from lp.services.webapp.breadcrumb import NameBreadcrumb
 from lp.services.webapp.escaping import structured
 from lp.services.webapp.interfaces import ICanonicalUrlData
+from lp.services.webhooks.browser import WebhookTargetNavigationMixin
 
 
 class GitRepositoryURL:
@@ -99,7 +100,7 @@ class GitRepositoryBreadcrumb(NameBreadcrumb):
         return self.context.target
 
 
-class GitRepositoryNavigation(Navigation):
+class GitRepositoryNavigation(WebhookTargetNavigationMixin, Navigation):
 
     usedfor = IGitRepository
 
