@@ -125,6 +125,7 @@ from zope.security.proxy import (
     )
 from zope.testing.testrunner.runner import TestResult as ZopeTestResult
 
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.interfaces.security import IAuthorization
 from lp.codehosting.vfs import (
     branch_id_to_path,
@@ -392,6 +393,7 @@ def record_two_runs(tested_method, item_creator, first_round_number,
     flush_database_caches()
     if queryInteraction() is not None:
         clear_permission_cache()
+    getUtility(ILaunchpadCelebrities).clearCache()
     with StormStatementRecorder() as recorder1:
         tested_method()
     # Run {item_creator} {second_round_number} more times.
@@ -403,6 +405,7 @@ def record_two_runs(tested_method, item_creator, first_round_number,
     flush_database_caches()
     if queryInteraction() is not None:
         clear_permission_cache()
+    getUtility(ILaunchpadCelebrities).clearCache()
     with StormStatementRecorder() as recorder2:
         tested_method()
     return recorder1, recorder2
