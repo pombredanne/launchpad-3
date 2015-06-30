@@ -38,7 +38,9 @@ from storm.expr import (
 from storm.locals import (
     And,
     Desc,
+    Int,
     Join,
+    List,
     Not,
     Or,
     Select,
@@ -439,6 +441,11 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         name='remote_product', allow_none=True, default=None)
     vcs = EnumCol(enum=VCSType, notNull=False)
 
+    # Cache of AccessPolicy.ids that convey launchpad.LimitedView.
+    # Unlike artifacts' cached access_policies, an AccessArtifactGrant
+    # to an artifact in the policy is sufficient for access.
+    access_policies = List(type=Int())
+
     @property
     def date_next_suggest_packaging(self):
         """See `IProduct`
@@ -815,6 +822,25 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             grants.append((p, self.owner, self.owner))
         getUtility(IAccessPolicyGrantSource).grant(grants)
 
+        self._cacheAccessPolicies()
+
+    def _cacheAccessPolicies(self):
+        # Update the cache of AccessPolicy.ids for which an
+        # AccessPolicyGrant or AccessArtifactGrant is sufficient to
+        # convey launchpad.LimitedView on this Product.
+        #
+        # We only need a cache for proprietary types, and it only
+        # includes proprietary policies in case a policy like Private
+        # Security was somehow left around when a project was
+        # transitioned to Proprietary.
+        if self.information_type in PROPRIETARY_INFORMATION_TYPES:
+            self.access_policies = [
+                policy.id for policy in
+                getUtility(IAccessPolicySource).find(
+                    [(self, type) for type in PROPRIETARY_INFORMATION_TYPES])]
+        else:
+            self.access_policies = None
+
     def _pruneUnusedPolicies(self):
         allowed_bug_types = set(
             BUG_POLICY_ALLOWED_TYPES.get(
@@ -840,6 +866,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             and apa_source.findByPolicy([ap]).is_empty()]
         getUtility(IAccessPolicyGrantSource).revokeByPolicy(unused_aps)
         ap_source.delete([(ap.pillar, ap.type) for ap in unused_aps])
+        self._cacheAccessPolicies()
 
     @cachedproperty
     def commercial_subscription(self):
