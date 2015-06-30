@@ -375,16 +375,21 @@ def record_statements(function, *args, **kwargs):
 
 
 def record_two_runs(tested_method, item_creator, first_round_number,
-                    second_round_number=None):
+                    second_round_number=None, login_method=None):
     """A helper that returns the two storm statement recorders
     obtained when running tested_method after having run the
     method {item_creator} {first_round_number} times and then
     again after having run the same method {second_round_number}
     times.
 
+    If {login_method} is not None, it is called before each batch of
+    {item_creator} calls.
+
     :return: a tuple containing the two recorders obtained by the successive
         runs.
     """
+    if login_method is not None:
+        login_method()
     for i in range(first_round_number):
         item_creator()
     # Record how many queries are issued when {tested_method} is
@@ -399,6 +404,8 @@ def record_two_runs(tested_method, item_creator, first_round_number,
     # Run {item_creator} {second_round_number} more times.
     if second_round_number is None:
         second_round_number = first_round_number
+    if login_method is not None:
+        login_method()
     for i in range(second_round_number):
         item_creator()
     # Record again the number of queries issued.
