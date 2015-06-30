@@ -37,7 +37,6 @@ from storm.expr import (
     )
 from storm.locals import (
     And,
-    AutoReload,
     Desc,
     Int,
     Join,
@@ -442,13 +441,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         name='remote_product', allow_none=True, default=None)
     vcs = EnumCol(enum=VCSType, notNull=False)
 
-    # Cache of AccessPolicy.ids that convey launchpad.LimitedView.
-    # Unlike artifacts' cached access_policies, an AccessArtifactGrant
-    # to an artifact in the policy is sufficient for access.
-    # XXX wgrant 2015-06-30: Do not attempt to set this directly, lest
-    # you incur Storm's garbage wrath. See _cacheAccessPolicies.
-    access_policies = List(type=Int())
-
     @property
     def date_next_suggest_packaging(self):
         """See `IProduct`
@@ -849,7 +841,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         Store.of(self).execute(
             "UPDATE Product SET access_policies = ? WHERE id = ?",
             (policy_ids, self.id))
-        self.access_policies = AutoReload
 
     def _pruneUnusedPolicies(self):
         allowed_bug_types = set(
