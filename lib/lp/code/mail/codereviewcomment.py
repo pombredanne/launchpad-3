@@ -196,12 +196,17 @@ def build_inline_comments_section(comments, diff_text):
     for patch in diff_patches:
         patch_lines = []
         dirty_head = []
+        dirty_comment = False
         patch_comment = False
 
         if isinstance(patch, dict) and 'dirty_head' in patch:
             for line in patch['dirty_head']:
                 dirty_head.append(u'> %s' % line.rstrip('\n'))
                 line_count += 1  # inc for dirty headers
+                comment = comments.get(str(line_count))
+                if comment:
+                    dirty_head.extend(format_comment(comment))
+                    dirty_comment = True
             patch = patch['patch']
 
         for ph in patch.get_header().splitlines():
@@ -243,8 +248,11 @@ def build_inline_comments_section(comments, diff_text):
             if patch_comment or hunk_comment:
                 keep_hunks.extend(hunk_lines)
 
+        if dirty_comment:
+            result_lines.extend(dirty_head)
+
         # Add entire patch and hunks to result if comment found
-        if keep_hunks:
+        if patch_comment or keep_hunks:
             result_lines.extend(dirty_head)
             result_lines.extend(patch_lines)
             result_lines.extend(keep_hunks)

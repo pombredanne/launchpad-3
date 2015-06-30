@@ -487,6 +487,18 @@ class TestInlineCommentsSection(testtools.TestCase):
                 '> +e']),
             self.getSection(comments).splitlines()[4:18])
 
+    def test_dirty_header_comment(self):
+        # Inline comments in dirty headers e.g. 'added file/modified file'
+        # are rendered correctly
+        comments = {'1': 'A comment for a dirty header'}
+        self.assertEqual(
+            map(unicode, [
+                "> === added directory 'foo/bar'",
+                '',
+                'A comment for a dirty header',
+                '']),
+            self.getSection(comments).splitlines()[4:8])
+
     def test_non_last_hunk_comment(self):
         comments = {'12': 'A comment in the non-last hunk'}
         self.assertEqual(
