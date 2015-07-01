@@ -1027,9 +1027,9 @@ class Person(
                 )
         """ % sqlvalues(person=self)
 
-        return (
-            base_query + " AND "
-            + convert_storm_clause_to_string(
+        return "%s AND (%s)" % (
+            base_query,
+            convert_storm_clause_to_string(
                 ProductSet.getProductPrivacyFilter(user)))
 
     def getAffiliatedPillars(self, user):
