@@ -51,11 +51,11 @@ class IWebhook(Interface):
         title=_("Date last modified"), required=True, readonly=True))
 
     endpoint_url = exported(Bool(
-        title=_("URL"), required=True, readonly=True))
+        title=_("URL"), required=True, readonly=False))
     active = exported(Bool(
         title=_("Active"), required=True, readonly=False))
     secret = TextLine(
-        title=_("Unique name"), required=False, readonly=False)
+        title=_("Unique name"), required=False, readonly=True)
 
 
 class IWebhookSource(Interface):

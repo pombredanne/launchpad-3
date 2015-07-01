@@ -40,6 +40,7 @@ from lp.services.job.model.job import (
     )
 from lp.services.job.runner import BaseRunnableJob
 from lp.services.webhooks.interfaces import (
+    IWebhook,
     IWebhookClient,
     IWebhookEventJob,
     IWebhookEventJobSource,
@@ -49,6 +50,8 @@ from lp.services.webhooks.interfaces import (
 
 class Webhook(StormBase):
     """See `IWebhook`."""
+
+    implements(IWebhook)
 
     __storm_table__ = 'Webhook'
 

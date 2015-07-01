@@ -5,7 +5,10 @@
 <configure xmlns="http://namespaces.zope.org/zope">
 
     <class class="lp.services.webhooks.model.Webhook">
-        <allow interface="lp.services.webhooks.interfaces.IWebhook"/>
+        <require
+            permission="launchpad.View"
+            interface="lp.services.webhooks.interfaces.IWebhook"
+            set_schema="lp.services.webhooks.interfaces.IWebhook"/>
     </class>
 
     <securedutility
