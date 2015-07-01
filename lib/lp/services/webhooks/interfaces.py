@@ -69,7 +69,7 @@ class IWebhook(Interface):
         title=_("Date last modified"), required=True, readonly=True))
 
     endpoint_url = exported(TextLine(
-        title=_("URL"), required=True, readonly=True))
+        title=_("URL"), required=True, readonly=False))
     active = exported(Bool(
         title=_("Active"), required=True, readonly=False))
     secret = TextLine(
