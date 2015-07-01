@@ -1848,7 +1848,7 @@ class ProductSet:
         # milliseconds at most.
         grant_filter = Coalesce(
             ArrayIntersects(
-                Product.access_policies,
+                SQL('Product.access_policies'),
                 Select(
                     ArrayAgg(AccessPolicyGrantFlat.policy_id),
                     tables=(AccessPolicyGrantFlat,
