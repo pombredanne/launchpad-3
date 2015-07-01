@@ -66,4 +66,15 @@
     <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
+  <securedutility
+    name="GitRepositoryRestrictedOnProduct"
+    component=".gitrepository.GitRepositoryRestrictedOnProductVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory">
+    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+  </securedutility>
+
+  <class class=".gitrepository.GitRepositoryRestrictedOnProductVocabulary">
+    <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
+  </class>
+
 </configure>

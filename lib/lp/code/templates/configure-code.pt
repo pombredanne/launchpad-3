@@ -1,0 +1,165 @@
+<html
+    xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:tal="http://xml.zope.org/namespaces/tal"
+    xmlns:metal="http://xml.zope.org/namespaces/metal"
+    xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+    metal:use-macro="view/macro:page/main_only"
+    i18n:domain="launchpad">
+
+  <body>
+
+    <metal:block fill-slot="head_epilogue">
+      <style type="text/css">
+        .subordinate {
+        margin: 0.5em 0 0.5em 4em;
+        }
+      </style>
+    </metal:block>
+
+    <div metal:fill-slot="main">
+
+      <div metal:use-macro="context/@@launchpad_form/form">
+
+        <metal:formbody fill-slot="widgets">
+          <tal:block condition="not: view/is_series">
+            <h3>Version control system</h3>
+            <div id="default_vcs">
+              <ul>
+                <li>
+                  <label tal:replace="structure view/default_vcs_bzr">
+                    Bazaar
+                  </label>
+                </li>
+                <li>
+                  <label tal:replace="structure view/default_vcs_git">
+                    Git
+                    </label> <div style="display: inline"
+                    class="beta"><img alt="[BETA]" src="/@@/beta" /></div>
+                </li>
+              </ul>
+              <p>Your project may have both Git repositories and Bazaar branches.
+              </p>
+            </div>
+          </tal:block>
+
+          <div id="show-hide-bzr">
+            <a href="#" id="bzr-expander-icon" class="expander-icon js-action">
+              <span class="sprite branch">Bazaar settings</span>
+            </a>
+            <div id="bzr-expander-content">
+              <div class="push-instructions">
+                <div metal:use-macro="context/@@+configure-code-macros/push-instructions-bzr"></div>
+                <div metal:use-macro="context/@@+configure-code-macros/no-keys"></div>
+              </div>
+
+              <table id="form_bzr" class="form">
+                <tr>
+                  <td>
+                    <h3>Link or import an existing branch</h3>
+                    <label tal:replace="structure view/branch_type_link">
+                      Link to a Bazaar branch already on Launchpad
+                    </label>
+                    <table class="subordinate">
+                      <tal:widget define="widget nocall:view/widgets/branch_location">
+                        <metal:block use-macro="context/@@launchpad_form/widget_row" />
+                      </tal:widget>
+                    </table>
+                  </td>
+                </tr>
+
+                <tr id="branch_mirror">
+                  <td>
+                    <label tal:replace="structure view/branch_type_import">
+                      Import a branch hosted somewhere else
+                    </label>
+                    <table class="subordinate">
+                      <tal:widget define="widget nocall:view/widgets/branch_name">
+                        <metal:block use-macro="context/@@launchpad_form/widget_row" />
+                      </tal:widget>
+                      <tal:widget define="widget nocall:view/widgets/branch_owner">
+                        <metal:block use-macro="context/@@launchpad_form/widget_row" />
+                      </tal:widget>
+
+                      <tal:widget define="widget nocall:view/widgets/repo_url">
+                        <metal:block use-macro="context/@@launchpad_form/widget_row" />
+                      </tal:widget>
+
+                      <tr>
+                        <td>
+                          <label tal:replace="structure view/rcs_type_bzr">
+                            Bazaar, hosted externally
+                          </label>
+                        </td>
+                      </tr>
+
+                      <tr>
+                        <td>
+                          <label tal:replace="structure view/rcs_type_git">
+                            Git
+                          </label>
+                        </td>
+                      </tr>
+
+                      <tr>
+                        <td>
+                          <label tal:replace="structure view/rcs_type_svn">
+                            SVN
+                          </label>
+                        </td>
+                      </tr>
+
+                      <tr>
+                        <td>
+                          <label tal:replace="structure view/rcs_type_cvs">
+                            CVS
+                          </label>
+                          <table class="subordinate">
+                            <tal:widget define="widget nocall:view/widgets/cvs_module">
+                              <metal:block use-macro="context/@@launchpad_form/widget_row" />
+                            </tal:widget>
+                          </table>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </div>
+            <input tal:replace="structure view/rcs_type_emptymarker" />
+          </div>
+
+          <tal:block condition="not: view/is_series">
+            <div id="show-hide-git">
+              <a href="#" id="git-expander-icon" class="expander-icon js-action">
+                <span class="sprite gitbranch">Git settings</span>
+              </a>
+              <div id="git-expander-content">
+                <div id="form_git" class="form">
+                  <div class="push-instructions">
+                    <div metal:use-macro="context/@@+configure-code-macros/push-instructions-git"></div>
+                    <div metal:use-macro="context/@@+configure-code-macros/no-keys"></div>
+                  </div>
+
+                  <h3>Link an existing repository</h3>
+                  <p>Link to an existing Git repository already on Launchpad</p>
+                  <tal:widget define="widget nocall:view/widgets/git_repository_location">
+                    <metal:block use-macro="context/@@launchpad_form/widget_row" />
+                  </tal:widget>
+                </div>
+              </div>
+            </div>
+          </tal:block>
+
+
+        </metal:formbody>
+      </div>
+
+      <script type="text/javascript">
+        LPJS.use('lp.code.productseries_setbranch', function(Y) {
+        Y.on('domready', Y.lp.code.productseries_setbranch.setup);
+        });
+      </script>
+
+    </div>
+  </body>
+</html>
