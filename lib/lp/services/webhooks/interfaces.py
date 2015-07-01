@@ -11,6 +11,8 @@ __all__ = [
     'IWebhookEventJob',
     'IWebhookEventJobSource',
     'IWebhookJob',
+    'IWebhookSource',
+    'IWebhookTarget',
     ]
 
 from lazr.lifecycle.snapshot import doNotSnapshot
