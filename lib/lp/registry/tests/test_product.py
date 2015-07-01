@@ -868,7 +868,7 @@ class TestProduct(TestCaseWithFactory):
     expected_get_permissions = {
         CheckerPublic: set((
             'active', 'id', 'information_type', 'pillar_category', 'private',
-            'userCanView',)),
+            'userCanLimitedView', 'userCanView',)),
         'launchpad.LimitedView': set((
             'bugtargetdisplayname', 'displayname', 'drivers',
             'enable_bug_expiration', 'getBugTaskWeightFunction',
@@ -2351,9 +2351,9 @@ class TestProductSet(TestCaseWithFactory):
         # Exclude proprietary products if grant is on wrong information type.
         grantee = self.factory.makePerson()
         proprietary, embargoed, public = self.makeAllInformationTypes()
-        self.grant(embargoed, InformationType.PROPRIETARY, grantee)
-        self.factory.makeAccessPolicy(proprietary, InformationType.EMBARGOED)
-        self.grant(proprietary, InformationType.EMBARGOED, grantee)
+        self.factory.makeAccessPolicy(
+            proprietary, InformationType.PRIVATESECURITY)
+        self.grant(proprietary, InformationType.PRIVATESECURITY, grantee)
         result = self.filterFind(grantee)
         self.assertIn(public, result)
         self.assertNotIn(embargoed, result)

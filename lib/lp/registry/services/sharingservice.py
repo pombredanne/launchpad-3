@@ -240,21 +240,6 @@ class SharingService:
 
         return bugtasks, branches, gitrepositories, specifications
 
-    def checkPillarArtifactAccess(self, pillar, user):
-        """See `ISharingService`."""
-        tables = [
-            AccessPolicyGrantFlat,
-            Join(
-                TeamParticipation,
-                TeamParticipation.teamID == AccessPolicyGrantFlat.grantee_id),
-            Join(
-                AccessPolicy,
-                AccessPolicy.id == AccessPolicyGrantFlat.policy_id)]
-        return not IStore(AccessPolicyGrantFlat).using(*tables).find(
-            AccessPolicyGrantFlat,
-            AccessPolicy.product_id == pillar.id,
-            TeamParticipation.personID == user.id).is_empty()
-
     @available_with_permission('launchpad.Driver', 'pillar')
     def getSharedBugs(self, pillar, person, user):
         """See `ISharingService`."""
