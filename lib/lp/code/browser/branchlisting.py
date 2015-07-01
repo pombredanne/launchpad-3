@@ -1133,13 +1133,12 @@ class ProductBranchListingView(BranchListingView):
     @property
     def configure_codehosting(self):
         """Get the menu link for configuring code hosting."""
-        if not check_permission(
-            'launchpad.Edit', self.context.development_focus):
+        if not check_permission('launchpad.Edit', self.context):
             return None
-        series_menu = MenuAPI(self.context.development_focus).overview
-        set_branch = series_menu['set_branch']
-        set_branch.text = 'Configure Code'
-        return set_branch
+        menu = MenuAPI(self.context).overview
+        configure_code = menu['configure_code']
+        configure_code.text = 'Configure Code'
+        return configure_code
 
 
 class ProductBranchStatisticsView(BranchCountSummaryView,

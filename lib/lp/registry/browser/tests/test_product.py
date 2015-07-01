@@ -34,6 +34,7 @@ from lp.registry.browser.product import (
 from lp.registry.enums import (
     EXCLUSIVE_TEAM_POLICY,
     TeamMembershipPolicy,
+    VCSType,
     )
 from lp.registry.interfaces.product import (
     IProductSet,
@@ -308,6 +309,12 @@ class TestProductView(BrowserTestCase):
             self.product.programminglang = 'C++'
         view = create_initialized_view(self.product, '+index')
         self.assertTrue(view.show_programming_languages)
+
+    def test_show_inferred_vcs(self):
+        with person_logged_in(self.product.owner):
+            self.product.vcs = VCSType.GIT
+        browser = self.getViewBrowser(self.product, '+index')
+        self.assertIn(VCSType.GIT.title, browser.contents)
 
     def test_show_license_info_without_other_license(self):
         # show_license_info is false when one of the "other" licences is
@@ -642,12 +649,12 @@ class ProductSetReviewLicensesViewTestCase(TestCaseWithFactory):
             product = self.factory.makeProduct()
             for _ in range(5):
                 self.factory.makeProductReleaseFile(product=product)
-        IStore(Product).reset()
+        IStore(Product).invalidate()
         with StormStatementRecorder() as recorder:
             view = create_initialized_view(
                 self.product_set, '+review-licenses', principal=self.user)
             view.render()
-            self.assertThat(recorder, HasQueryCount(LessThan(25)))
+            self.assertThat(recorder, HasQueryCount(LessThan(26)))
 
 
 class TestProductRdfView(BrowserTestCase):

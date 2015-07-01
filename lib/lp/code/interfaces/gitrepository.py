@@ -214,11 +214,15 @@ class IGitRepositoryView(Interface):
         "The identity of this repository: a VCS-independent synonym for "
         "git_identity.")
 
-    git_https_url = Attribute(
-        "An HTTPS URL for this repository, or None in the case of private "
-        "repositories.")
+    git_https_url = exported(TextLine(
+        title=_("HTTPS URL"), readonly=True,
+        description=_(
+            "An HTTPS URL for this repository, or None in the case of private "
+            "repositories.")))
 
-    git_ssh_url = Attribute("A git+ssh:// URL for this repository.")
+    git_ssh_url = exported(TextLine(
+        title=_("SSH URL"), readonly=True,
+        description=_("A git+ssh:// URL for this repository.")))
 
     refs = exported(CollectionField(
         title=_("The references present in this repository."),
