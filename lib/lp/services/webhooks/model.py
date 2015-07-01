@@ -154,6 +154,9 @@ class WebhookJob(StormBase):
         self.job_type = job_type
         self.json_data = json_data
 
+    def makeDerived(self):
+        return WebhookJobDerived.makeSubclass(self)
+
 
 class WebhookJobDerived(BaseRunnableJob):
 
