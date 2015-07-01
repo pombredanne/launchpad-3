@@ -32,19 +32,20 @@ from sqlobject import (
     StringCol,
     )
 from storm.expr import (
+    And,
+    Coalesce,
+    Desc,
+    Join,
     LeftJoin,
     NamedFunc,
-    )
-from storm.locals import (
-    And,
-    Desc,
-    Int,
-    Join,
-    List,
     Not,
     Or,
     Select,
     SQL,
+    )
+from storm.locals import (
+    Int,
+    List,
     Store,
     Unicode,
     )
@@ -165,10 +166,7 @@ from lp.registry.interfaces.product import (
     )
 from lp.registry.interfaces.productrelease import IProductReleaseSet
 from lp.registry.interfaces.role import IPersonRoles
-from lp.registry.model.accesspolicy import (
-    AccessPolicy,
-    AccessPolicyGrantFlat,
-    )
+from lp.registry.model.accesspolicy import AccessPolicyGrantFlat
 from lp.registry.model.announcement import MakesAnnouncements
 from lp.registry.model.commercialsubscription import CommercialSubscription
 from lp.registry.model.distribution import Distribution
@@ -199,7 +197,11 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from lp.services.database.stormexpr import fti_search
+from lp.services.database.stormexpr import (
+    ArrayAgg,
+    ArrayIntersects,
+    fti_search,
+    )
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
@@ -1627,6 +1629,17 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             return True
         return False
 
+    def userCanLimitedView(self, user):
+        """See `IProductPublic`."""
+        if self.userCanView(user):
+            return True
+        if user is None:
+            return False
+        return not Store.of(self).find(
+            Product,
+            Product.id == self.id,
+            ProductSet.getProductPrivacyFilter(user.person)).is_empty()
+
 
 def get_precached_products(products, need_licences=False,
                            need_projectgroups=False, need_series=False,
@@ -1817,19 +1830,35 @@ class ProductSet:
 
     @staticmethod
     def getProductPrivacyFilter(user):
-        if user is not None:
-            roles = IPersonRoles(user)
-            if roles.in_admin or roles.in_commercial_admin:
-                return True
-        granted_products = And(
-            AccessPolicyGrantFlat.grantee_id == TeamParticipation.teamID,
-            TeamParticipation.person == user,
-            AccessPolicyGrantFlat.policy == AccessPolicy.id,
-            AccessPolicy.product == Product.id,
-            AccessPolicy.type == Product._information_type)
-        return Or(Product._information_type == InformationType.PUBLIC,
-                  Product._information_type == None,
-                  Product.id.is_in(Select(Product.id, granted_products)))
+        # Anonymous users can only see public projects.
+        public_filter = Product._information_type == InformationType.PUBLIC
+        if user is None:
+            return public_filter
+
+        # (Commercial) admins can see any project.
+        roles = IPersonRoles(user)
+        if roles.in_admin or roles.in_commercial_admin:
+            return True
+
+        # Normal users can see any project for which they can see either
+        # an entire policy or an artifact.
+        # XXX wgrant 2015-06-26: This is slower than ideal for people in
+        # teams with lots of artifact grants, as there can be tens of
+        # thousands of APGF rows for a single policy. But it's tens of
+        # milliseconds at most.
+        grant_filter = Coalesce(
+            ArrayIntersects(
+                SQL('Product.access_policies'),
+                Select(
+                    ArrayAgg(AccessPolicyGrantFlat.policy_id),
+                    tables=(AccessPolicyGrantFlat,
+                            Join(TeamParticipation,
+                                TeamParticipation.teamID ==
+                                AccessPolicyGrantFlat.grantee_id)),
+                    where=(TeamParticipation.person == user)
+                )),
+            False)
+        return Or(public_filter, grant_filter)
 
     @classmethod
     def get_users_private_products(cls, user):
