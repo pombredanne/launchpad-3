@@ -31,10 +31,9 @@ class TestWebhook(TestCaseWithFactory):
 
     def setUp(self):
         super(TestWebhook, self).setUp()
-        product = self.factory.makeProduct()
-        self.owner = product.owner
+        target = self.factory.makeGitRepository()
+        self.owner = target.owner
         with person_logged_in(self.owner):
-            target = self.factory.makeGitRepository()
             self.webhook = self.factory.makeWebhook(
                 target=target, endpoint_url=u'http://example.com/ep')
             self.webhook_url = api_url(self.webhook)
@@ -77,3 +76,53 @@ class TestWebhook(TestCaseWithFactory):
             self.webhook_url, api_version='devel')
         self.assertEqual(401, response.status)
         self.assertIn('launchpad.View', response.body)
+
+
+class TestWebhookTarget(TestCaseWithFactory):
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestWebhookTarget, self).setUp()
+        self.target = self.factory.makeGitRepository()
+        self.owner = self.target.owner
+        self.target_url = api_url(self.target)
+        self.webservice = webservice_for_person(
+            self.owner, permission=OAuthPermission.WRITE_PRIVATE)
+
+    def test_webhooks(self):
+        with person_logged_in(self.owner):
+            for ep in (u'http://example.com/ep1', u'http://example.com/ep2'):
+                self.factory.makeWebhook(target=self.target, endpoint_url=ep)
+        representation = self.webservice.get(
+            self.target_url + '/webhooks', api_version='devel').jsonBody()
+        self.assertContentEqual(
+            ['http://example.com/ep1', 'http://example.com/ep2'],
+            [entry['endpoint_url'] for entry in representation['entries']])
+
+    def test_webhooks_permissions(self):
+        webservice = LaunchpadWebServiceCaller()
+        response = webservice.get(
+            self.target_url + '/webhooks', api_version='devel')
+        self.assertEqual(401, response.status)
+        self.assertIn('launchpad.Edit', response.body)
+
+    def test_newWebhook(self):
+        response = self.webservice.named_post(
+            self.target_url, 'newWebhook',
+            endpoint_url='http://example.com/ep', api_version='devel')
+        self.assertEqual(201, response.status)
+
+        representation = self.webservice.get(
+            self.target_url + '/webhooks', api_version='devel').jsonBody()
+        self.assertContentEqual(
+            [('http://example.com/ep', True)],
+            [(entry['endpoint_url'], entry['active'])
+             for entry in representation['entries']])
+
+    def test_newWebhook_permissions(self):
+        webservice = LaunchpadWebServiceCaller()
+        response = webservice.named_post(
+            self.target_url, 'newWebhook',
+            endpoint_url='http://example.com/ep', api_version='devel')
+        self.assertEqual(401, response.status)
+        self.assertIn('launchpad.Edit', response.body)
