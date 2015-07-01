@@ -10,6 +10,9 @@
             interface="lp.services.webhooks.interfaces.IWebhook"
             set_schema="lp.services.webhooks.interfaces.IWebhook"/>
     </class>
+    <subscriber
+        for="lp.services.webhooks.interfaces.IWebhook zope.lifecycleevent.interfaces.IObjectModifiedEvent"
+        handler="lp.services.webhooks.model.webhook_modified"/>
 
     <securedutility
         class="lp.services.webhooks.model.WebhookSource"

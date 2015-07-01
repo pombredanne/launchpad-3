@@ -29,8 +29,10 @@ from zope.interface import (
     classProvides,
     implements,
     )
+from zope.security.proxy import removeSecurityProxy
 
 from lp.services.config import config
+from lp.services.database.constants import UTC_NOW
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.interfaces import IStore
 from lp.services.database.stormbase import StormBase
@@ -46,6 +48,16 @@ from lp.services.webhooks.interfaces import (
     IWebhookEventJobSource,
     IWebhookJob,
     )
+
+
+def webhook_modified(webhook, event):
+    """Update the date_last_modified property when a Webhook is modified.
+
+    This method is registered as a subscriber to `IObjectModifiedEvent`
+    events on Webhooks.
+    """
+    if event.edited_fields:
+        removeSecurityProxy(webhook).date_last_modified = UTC_NOW
 
 
 class Webhook(StormBase):

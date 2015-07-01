@@ -1,12 +1,19 @@
 # Copyright 2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+from lazr.lifecycle.event import ObjectModifiedEvent
 from storm.store import Store
+from testtools.matchers import GreaterThan
+import transaction
 from zope.component import getUtility
+from zope.event import notify
 from zope.security.checker import getChecker
 
 from lp.services.webapp.authorization import check_permission
-from lp.services.webhooks.interfaces import IWebhookSource
+from lp.services.webhooks.interfaces import (
+    IWebhook,
+    IWebhookSource,
+    )
 from lp.testing import (
     admin_logged_in,
     anonymous_logged_in,
@@ -15,6 +22,25 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
+
+
+class TestWebhook(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_modifiedevent_sets_date_last_modified(self):
+        # When a Webhook receives an object modified event, the last modified
+        # date is set to UTC_NOW.
+        webhook = self.factory.makeWebhook()
+        transaction.commit()
+        with admin_logged_in():
+            old_mtime = webhook.date_last_modified
+        notify(ObjectModifiedEvent(
+            webhook, webhook, [IWebhook["endpoint_url"]]))
+        with admin_logged_in():
+            self.assertThat(
+                webhook.date_last_modified,
+                GreaterThan(old_mtime))
 
 
 class TestWebhookPermissions(TestCaseWithFactory):
