@@ -38,7 +38,9 @@ from storm.expr import (
 from storm.locals import (
     And,
     Desc,
+    Int,
     Join,
+    List,
     Not,
     Or,
     Select,
@@ -116,6 +118,8 @@ from lp.bugs.model.structuralsubscription import (
     )
 from lp.code.enums import BranchType
 from lp.code.interfaces.branch import DEFAULT_BRANCH_STATUS_IN_LISTING
+from lp.code.interfaces.branchcollection import IBranchCollection
+from lp.code.interfaces.gitcollection import IGitCollection
 from lp.code.interfaces.gitrepository import IGitRepositorySet
 from lp.code.model.branch import Branch
 from lp.code.model.branchnamespace import BRANCH_POLICY_ALLOWED_TYPES
@@ -444,6 +448,19 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         Returns None; exists only to maintain API compatability.
         """
         return None
+
+    @property
+    def inferred_vcs(self):
+        """Use vcs, otherwise infer from existence of git or bzr branches.
+
+        Bzr take precedence over git, if no project vcs set.
+        """
+        if self.vcs:
+            return self.vcs
+        if not IBranchCollection(self).is_empty():
+            return VCSType.BZR
+        elif not IGitCollection(self).is_empty():
+            return VCSType.GIT
 
     @date_next_suggest_packaging.setter  # pyflakes:ignore
     def date_next_suggest_packaging(self, value):
@@ -800,6 +817,31 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             grants.append((p, self.owner, self.owner))
         getUtility(IAccessPolicyGrantSource).grant(grants)
 
+        self._cacheAccessPolicies()
+
+    def _cacheAccessPolicies(self):
+        # Update the cache of AccessPolicy.ids for which an
+        # AccessPolicyGrant or AccessArtifactGrant is sufficient to
+        # convey launchpad.LimitedView on this Product.
+        #
+        # We only need a cache for proprietary types, and it only
+        # includes proprietary policies in case a policy like Private
+        # Security was somehow left around when a project was
+        # transitioned to Proprietary.
+        if self.information_type in PROPRIETARY_INFORMATION_TYPES:
+            policy_ids = [
+                policy.id for policy in
+                getUtility(IAccessPolicySource).find(
+                    [(self, type) for type in PROPRIETARY_INFORMATION_TYPES])]
+        else:
+            policy_ids = None
+        # XXX wgrant 2015-06-30: We must set this manually, as Storm's
+        # MutableValueVariable causes a PostgresConnection to be
+        # uncollectable in some circumstances involving a Store.reset.
+        Store.of(self).execute(
+            "UPDATE Product SET access_policies = ? WHERE id = ?",
+            (policy_ids, self.id))
+
     def _pruneUnusedPolicies(self):
         allowed_bug_types = set(
             BUG_POLICY_ALLOWED_TYPES.get(
@@ -825,6 +867,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             and apa_source.findByPolicy([ap]).is_empty()]
         getUtility(IAccessPolicyGrantSource).revokeByPolicy(unused_aps)
         ap_source.delete([(ap.pillar, ap.type) for ap in unused_aps])
+        self._cacheAccessPolicies()
 
     @cachedproperty
     def commercial_subscription(self):

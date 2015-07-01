@@ -65,6 +65,7 @@ from lp.registry.enums import (
     SharingPermission,
     SpecificationSharingPolicy,
     TeamMembershipPolicy,
+    VCSType,
     )
 from lp.registry.errors import (
     CannotChangeInformationType,
@@ -309,6 +310,13 @@ class TestProduct(TestCaseWithFactory):
             [u'trunk', u'active-series'],
             [series.name for series in active_series])
 
+    def test_inferred_vcs(self):
+        """VCS is inferred correctly from existing branch or repo."""
+        git_repo = self.factory.makeGitRepository()
+        bzr_branch = self.factory.makeBranch()
+        self.assertEqual(VCSType.GIT, git_repo.target.inferred_vcs)
+        self.assertEqual(VCSType.BZR, bzr_branch.product.inferred_vcs)
+
     def test_owner_cannot_be_open_team(self):
         """Product owners cannot be open teams."""
         for policy in INCLUSIVE_TEAM_POLICY:
@@ -518,6 +526,45 @@ class TestProduct(TestCaseWithFactory):
         self.assertEqual(
             SpecificationSharingPolicy.PROPRIETARY,
             product.specification_sharing_policy)
+
+    def test_cacheAccessPolicies(self):
+        # Product.access_policies is a list caching AccessPolicy.ids for
+        # which an AccessPolicyGrant or AccessArtifactGrant gives a
+        # principal LimitedView on the Product.
+        aps = getUtility(IAccessPolicySource)
+
+        def get_aps(product):
+            return Store.of(product).execute(
+                "SELECT access_policies FROM product WHERE id = ?",
+                (product.id,)).get_one()[0]
+
+        # Public projects don't need a cache.
+        product = self.factory.makeProduct()
+        naked_product = removeSecurityProxy(product)
+        self.assertContentEqual(
+            [InformationType.USERDATA, InformationType.PRIVATESECURITY],
+            [p.type for p in aps.findByPillar([product])])
+        self.assertIs(None, get_aps(product))
+
+        # A private project normally just allows the Proprietary policy,
+        # even if there is still another policy like Private Security.
+        naked_product.information_type = InformationType.PROPRIETARY
+        [prop_policy] = aps.find([(product, InformationType.PROPRIETARY)])
+        self.assertEqual([prop_policy.id], get_aps(naked_product))
+
+        # If we switch it back to public, the cache is no longer
+        # required.
+        naked_product.information_type = InformationType.PUBLIC
+        self.assertIs(None, get_aps(naked_product))
+
+        # Projects can also be Embargoed because of reasons. Since they
+        # can have both Proprietary and Embargoed artifacts, and someone
+        # who can see either needs LimitedView on the pillar they're on,
+        # both policies are permissible.
+        naked_product.information_type = InformationType.EMBARGOED
+        [emb_policy] = aps.find([(product, InformationType.EMBARGOED)])
+        self.assertContentEqual(
+            [prop_policy.id, emb_policy.id], get_aps(naked_product))
 
     def test_checkInformationType_bug_supervisor(self):
         # Bug supervisors of proprietary products must not have inclusive
@@ -869,7 +916,7 @@ class TestProduct(TestCaseWithFactory):
             'getVersionSortedSeries',
             'has_current_commercial_subscription',
             'has_custom_language_codes', 'has_milestones', 'homepage_content',
-            'homepageurl', 'invitesTranslationEdits',
+            'homepageurl', 'inferred_vcs', 'invitesTranslationEdits',
             'invitesTranslationSuggestions',
             'license_info', 'license_status', 'licenses', 'milestones',
             'mugshot', 'newCodeImport',

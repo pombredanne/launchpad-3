@@ -27,8 +27,8 @@ that exists externally in a variety of version control systems.
 
 The user can see instructions to push a branch.
 
-    >>> instructions = find_tag_by_id(content, 'push-instructions')
-    >>> 'bzr push lp:~' in str(instructions)
+    >>> instructions = find_tag_by_id(content, 'push-instructions-bzr')
+    >>> 'bzr push lp:' in str(instructions)
     True
 
 
