@@ -1722,22 +1722,33 @@ class Person(
 
     def getAdministratedTeams(self):
         """See `IPerson`."""
-        owner_of_teams = Person.select('''
-            Person.teamowner = TeamParticipation.team
-            AND TeamParticipation.person = %s
-            AND Person.merged IS NULL
-            ''' % sqlvalues(self),
-            clauseTables=['TeamParticipation'])
-        admin_of_teams = Person.select('''
-            Person.id = TeamMembership.team
-            AND TeamMembership.status = %(admin)s
-            AND TeamMembership.person = TeamParticipation.team
-            AND TeamParticipation.person = %(person)s
-            AND Person.merged IS NULL
-            ''' % sqlvalues(person=self, admin=TeamMembershipStatus.ADMIN),
-            clauseTables=['TeamParticipation', 'TeamMembership'])
-        return admin_of_teams.union(
-            owner_of_teams, orderBy=self._sortingColumnsForSetOperations)
+        class RestrictedParticipation:
+            __storm_table__ = 'RestrictedParticipation'
+            teamID = Int(primary=True, name='team')
+
+        restricted_participation_cte = With(
+            'RestrictedParticipation',
+            Select(
+                TeamParticipation.teamID, tables=[TeamParticipation],
+                where=TeamParticipation.person == self))
+        team_select = Select(
+            RestrictedParticipation.teamID, tables=[RestrictedParticipation])
+
+        return Store.of(self).with_(restricted_participation_cte).find(
+            Person,
+            Person.id.is_in(
+                Union(
+                    Select(
+                        Person.id, tables=[Person],
+                        where=Person.teamownerID.is_in(team_select)),
+                    Select(
+                        TeamMembership.teamID, tables=[TeamMembership],
+                        where=And(
+                            TeamMembership.status ==
+                                TeamMembershipStatus.ADMIN,
+                            TeamMembership.personID.is_in(team_select))))),
+            Person.merged == None).order_by(
+                self._sortingColumnsForSetOperations)
 
     def getDirectAdministrators(self):
         """See `IPerson`."""

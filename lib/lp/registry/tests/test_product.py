@@ -533,24 +533,29 @@ class TestProduct(TestCaseWithFactory):
         # principal LimitedView on the Product.
         aps = getUtility(IAccessPolicySource)
 
+        def get_aps(product):
+            return Store.of(product).execute(
+                "SELECT access_policies FROM product WHERE id = ?",
+                (product.id,)).get_one()[0]
+
         # Public projects don't need a cache.
         product = self.factory.makeProduct()
         naked_product = removeSecurityProxy(product)
         self.assertContentEqual(
             [InformationType.USERDATA, InformationType.PRIVATESECURITY],
             [p.type for p in aps.findByPillar([product])])
-        self.assertIs(None, naked_product.access_policies)
+        self.assertIs(None, get_aps(product))
 
         # A private project normally just allows the Proprietary policy,
         # even if there is still another policy like Private Security.
         naked_product.information_type = InformationType.PROPRIETARY
         [prop_policy] = aps.find([(product, InformationType.PROPRIETARY)])
-        self.assertEqual([prop_policy.id], naked_product.access_policies)
+        self.assertEqual([prop_policy.id], get_aps(naked_product))
 
         # If we switch it back to public, the cache is no longer
         # required.
         naked_product.information_type = InformationType.PUBLIC
-        self.assertIs(None, naked_product.access_policies)
+        self.assertIs(None, get_aps(naked_product))
 
         # Projects can also be Embargoed because of reasons. Since they
         # can have both Proprietary and Embargoed artifacts, and someone
@@ -559,7 +564,7 @@ class TestProduct(TestCaseWithFactory):
         naked_product.information_type = InformationType.EMBARGOED
         [emb_policy] = aps.find([(product, InformationType.EMBARGOED)])
         self.assertContentEqual(
-            [prop_policy.id, emb_policy.id], naked_product.access_policies)
+            [prop_policy.id, emb_policy.id], get_aps(naked_product))
 
     def test_checkInformationType_bug_supervisor(self):
         # Bug supervisors of proprietary products must not have inclusive
