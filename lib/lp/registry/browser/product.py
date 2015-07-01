@@ -1043,10 +1043,11 @@ class ProductView(PillarViewMixin, HasAnnouncementsView, SortSeriesMixin,
             else:
                 return None
         elif self.context.vcs == VCSType.BZR:
-            return "{base_url}/{product} bzr {codebrowse_root}{product}".format(
-                base_url=config.vhost.mainsite.hostname,
-                product=self.context.name,
-                codebrowse_root=config.codehosting.secure_codebrowse_root)
+            return ("{base_url}/{product} bzr "
+                    "{browse_root}{product}").format(
+                        base_url=config.vhost.mainsite.hostname,
+                        product=self.context.name,
+                        browse_root=config.codehosting.supermirror_root)
         else:
             return None
 

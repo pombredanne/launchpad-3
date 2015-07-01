@@ -71,7 +71,6 @@ from lp.bugs.browser.structuralsubscription import (
     )
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.code.browser.branchref import BranchRef
-from lp.code.enums import RevisionControlSystems
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.registry.browser import (
     add_subscribe_link,
@@ -80,7 +79,6 @@ from lp.registry.browser import (
     RegistryDeleteViewMixin,
     StatusCount,
     )
-from lp.code.interfaces.gitrepository import IGitRepositorySet
 from lp.registry.browser.pillar import (
     InvolvedMenu,
     PillarInvolvementView,
@@ -390,9 +388,9 @@ class ProductSeriesView(
         if self.context.product.vcs == VCSType.BZR:
             return ("{base_url}/{product}/{series} bzr "
                     "{root}{product}/{series}").format(
-                        base_url=config.launchpad.non_restricted_hostname,
+                        base_url=config.vhost.mainsite.hostname,
                         product=self.context.product.name,
-                        root=config.codehosting.secure_codebrowse_root,
+                        root=config.codehosting.supermirror_root,
                         series=self.context.name)
         else:
             return None

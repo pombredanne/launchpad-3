@@ -8,7 +8,6 @@ __metaclass__ = type
 
 import soupmatchers
 from testtools.matchers import Not
-from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import InformationType
@@ -16,7 +15,6 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     BugTaskStatusSearch,
     )
-from lp.code.interfaces.gitrepository import IGitRepositorySet
 from lp.registry.enums import VCSType
 from lp.services.config import config
 from lp.services.webapp import canonical_url
@@ -45,10 +43,10 @@ class TestProductSeries(BrowserTestCase):
             branch.product.vcs = VCSType.BZR
 
         golang_import = ("{base}/{name}/{series} bzr "
-                         "{repo_url}{name}/{series}").format(
+                         "{root}{name}/{series}").format(
                              base=config.vhost.mainsite.hostname,
                              name=branch.product.name,
-                             repo_url=config.codehosting.secure_codebrowse_root,
+                             root=config.codehosting.supermirror_root,
                              series=branch.product.development_focus.name)
         self.assertEqual(golang_import, view.golang_import_spec)
 

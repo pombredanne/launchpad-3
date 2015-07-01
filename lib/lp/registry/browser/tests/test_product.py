@@ -326,7 +326,7 @@ class TestProductView(BrowserTestCase):
         golang_import = '{base}/{name} bzr {repo_url}{name}'.format(
             base=config.vhost.mainsite.hostname,
             name=branch.target.name,
-            repo_url=config.codehosting.secure_codebrowse_root
+            repo_url=config.codehosting.supermirror_root
             )
         self.assertEqual(golang_import, view.golang_import_spec)
 
