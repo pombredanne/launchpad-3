@@ -30,6 +30,7 @@ from zope.interface import (
     classProvides,
     implements,
     )
+from zope.security.proxy import removeSecurityProxy
 
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
@@ -58,7 +59,7 @@ def webhook_modified(webhook, event):
     events on Webhooks.
     """
     if event.edited_fields:
-        webhook.date_last_modified = UTC_NOW
+        removeSecurityProxy(webhook).date_last_modified = UTC_NOW
 
 
 class Webhook(StormBase):

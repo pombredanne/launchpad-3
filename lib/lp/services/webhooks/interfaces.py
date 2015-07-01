@@ -73,7 +73,7 @@ class IWebhook(Interface):
     active = exported(Bool(
         title=_("Active"), required=True, readonly=False))
     secret = TextLine(
-        title=_("Unique name"), required=False, readonly=False)
+        title=_("Unique name"), required=False, readonly=True)
 
     @export_write_operation()
     @operation_for_version('devel')

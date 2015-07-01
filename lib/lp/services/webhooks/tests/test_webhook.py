@@ -1,12 +1,87 @@
 # Copyright 2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+from lazr.lifecycle.event import ObjectModifiedEvent
 from storm.store import Store
+from testtools.matchers import GreaterThan
+import transaction
 from zope.component import getUtility
+from zope.event import notify
+from zope.security.checker import getChecker
 
-from lp.services.webhooks.interfaces import IWebhookSource
-from lp.testing import TestCaseWithFactory
+from lp.services.webapp.authorization import check_permission
+from lp.services.webhooks.interfaces import (
+    IWebhook,
+    IWebhookSource,
+    )
+from lp.testing import (
+    admin_logged_in,
+    anonymous_logged_in,
+    login_person,
+    person_logged_in,
+    TestCaseWithFactory,
+    )
 from lp.testing.layers import DatabaseFunctionalLayer
+
+
+class TestWebhook(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_modifiedevent_sets_date_last_modified(self):
+        # When a Webhook receives an object modified event, the last modified
+        # date is set to UTC_NOW.
+        webhook = self.factory.makeWebhook()
+        transaction.commit()
+        with admin_logged_in():
+            old_mtime = webhook.date_last_modified
+        notify(ObjectModifiedEvent(
+            webhook, webhook, [IWebhook["endpoint_url"]]))
+        with admin_logged_in():
+            self.assertThat(
+                webhook.date_last_modified,
+                GreaterThan(old_mtime))
+
+
+class TestWebhookPermissions(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_target_owner_can_view(self):
+        target = self.factory.makeGitRepository()
+        webhook = self.factory.makeWebhook(target=target)
+        with person_logged_in(target.owner):
+            self.assertTrue(check_permission('launchpad.View', webhook))
+
+    def test_random_cannot_view(self):
+        webhook = self.factory.makeWebhook()
+        with person_logged_in(self.factory.makePerson()):
+            self.assertFalse(check_permission('launchpad.View', webhook))
+
+    def test_anonymous_cannot_view(self):
+        webhook = self.factory.makeWebhook()
+        with anonymous_logged_in():
+            self.assertFalse(check_permission('launchpad.View', webhook))
+
+    def test_get_permissions(self):
+        expected_get_permissions = {
+            'launchpad.View': set((
+                'active', 'date_created', 'date_last_modified', 'endpoint_url',
+                'id', 'registrant', 'secret', 'target')),
+            }
+        webhook = self.factory.makeWebhook()
+        checker = getChecker(webhook)
+        self.checkPermissions(
+            expected_get_permissions, checker.get_permissions, 'get')
+
+    def test_set_permissions(self):
+        expected_set_permissions = {
+            'launchpad.View': set(('endpoint_url', 'active')),
+            }
+        webhook = self.factory.makeWebhook()
+        checker = getChecker(webhook)
+        self.checkPermissions(
+            expected_set_permissions, checker.set_permissions, 'set')
 
 
 class TestWebhookSource(TestCaseWithFactory):
@@ -15,6 +90,7 @@ class TestWebhookSource(TestCaseWithFactory):
 
     def test_new(self):
         target = self.factory.makeGitRepository()
+        login_person(target.owner)
         person = self.factory.makePerson()
         hook = getUtility(IWebhookSource).new(
             target, person, u'http://path/to/something', True, u'sekrit')
@@ -30,9 +106,13 @@ class TestWebhookSource(TestCaseWithFactory):
     def test_getByID(self):
         hook1 = self.factory.makeWebhook()
         hook2 = self.factory.makeWebhook()
-        self.assertEqual(hook1, getUtility(IWebhookSource).getByID(hook1.id))
-        self.assertEqual(hook2, getUtility(IWebhookSource).getByID(hook2.id))
-        self.assertIs(None, getUtility(IWebhookSource).getByID(1234))
+        with admin_logged_in():
+            self.assertEqual(
+                hook1, getUtility(IWebhookSource).getByID(hook1.id))
+            self.assertEqual(
+                hook2, getUtility(IWebhookSource).getByID(hook2.id))
+            self.assertIs(
+                None, getUtility(IWebhookSource).getByID(1234))
 
     def test_findByTarget(self):
         target1 = self.factory.makeGitRepository()
@@ -41,17 +121,22 @@ class TestWebhookSource(TestCaseWithFactory):
             for i in range(3):
                 self.factory.makeWebhook(
                     target, u'http://path/%s/%d' % (name, i))
-        self.assertContentEqual(
-            [u'http://path/one/0', u'http://path/one/1', u'http://path/one/2'],
-            [hook.endpoint_url for hook in
-             getUtility(IWebhookSource).findByTarget(target1)])
-        self.assertContentEqual(
-            [u'http://path/two/0', u'http://path/two/1', u'http://path/two/2'],
-            [hook.endpoint_url for hook in
-             getUtility(IWebhookSource).findByTarget(target2)])
+        with person_logged_in(target1.owner):
+            self.assertContentEqual(
+                [u'http://path/one/0', u'http://path/one/1',
+                 u'http://path/one/2'],
+                [hook.endpoint_url for hook in
+                getUtility(IWebhookSource).findByTarget(target1)])
+        with person_logged_in(target2.owner):
+            self.assertContentEqual(
+                [u'http://path/two/0', u'http://path/two/1',
+                 u'http://path/two/2'],
+                [hook.endpoint_url for hook in
+                getUtility(IWebhookSource).findByTarget(target2)])
 
     def test_delete(self):
         target = self.factory.makeGitRepository()
+        login_person(target.owner)
         hooks = [
             self.factory.makeWebhook(target, u'http://path/to/%d' % i)
             for i in range(3)]
