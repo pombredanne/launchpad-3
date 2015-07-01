@@ -1830,8 +1830,12 @@ class ProductSet:
 
     @staticmethod
     def getProductPrivacyFilter(user):
-        # Anonymous users can only see public projects.
-        public_filter = Product._information_type == InformationType.PUBLIC
+        # Anonymous users can only see public projects. This is also
+        # sometimes used with an outer join with eg. Distribution, so we
+        # let NULL through too.
+        public_filter = Or(
+            Product._information_type == None,
+            Product._information_type == InformationType.PUBLIC)
         if user is None:
             return public_filter
 

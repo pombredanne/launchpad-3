@@ -868,7 +868,7 @@ class TestProduct(TestCaseWithFactory):
     expected_get_permissions = {
         CheckerPublic: set((
             'active', 'id', 'information_type', 'pillar_category', 'private',
-            'userCanView',)),
+            'userCanLimitedView', 'userCanView',)),
         'launchpad.LimitedView': set((
             'bugtargetdisplayname', 'displayname', 'drivers',
             'enable_bug_expiration', 'getBugTaskWeightFunction',
