@@ -8,8 +8,8 @@ __metaclass__ = type
 __all__ = [
     'IWebhook',
     'IWebhookClient',
-    'IWebhookEventJob',
-    'IWebhookEventJobSource',
+    'IWebhookDeliveryJob',
+    'IWebhookDeliveryJobSource',
     'IWebhookJob',
     'IWebhookSource',
     'IWebhookTarget',
@@ -68,7 +68,7 @@ class IWebhook(Interface):
     date_last_modified = exported(Datetime(
         title=_("Date last modified"), required=True, readonly=True))
 
-    endpoint_url = exported(TextLine(
+    delivery_url = exported(TextLine(
         title=_("URL"), required=True, readonly=False))
     active = exported(Bool(
         title=_("Active"), required=True, readonly=False))
@@ -83,7 +83,7 @@ class IWebhook(Interface):
 
 class IWebhookSource(Interface):
 
-    def new(target, registrant, endpoint_url, active, secret):
+    def new(target, registrant, delivery_url, active, secret):
         """Create a new webhook."""
 
     def delete(hooks):
@@ -106,9 +106,9 @@ class IWebhookTarget(Interface):
         readonly=True)))
 
     @call_with(registrant=REQUEST_USER)
-    @export_factory_operation(IWebhook, ['endpoint_url', 'active'])
+    @export_factory_operation(IWebhook, ['delivery_url', 'active'])
     @operation_for_version("devel")
-    def newWebhook(registrant, endpoint_url, active=True):
+    def newWebhook(registrant, delivery_url, active=True):
         """Create a new webhook."""
 
 
@@ -126,23 +126,23 @@ class IWebhookJob(Interface):
     json_data = Attribute(_("A dict of data about the job."))
 
 
-class IWebhookEventJob(IRunnableJob):
-    """A Job that sends an event to a webhook consumer."""
+class IWebhookDeliveryJob(IRunnableJob):
+    """A Job that delivers an event to a webhook consumer."""
 
 
-class IWebhookEventJobSource(IJobSource):
+class IWebhookDeliveryJobSource(IJobSource):
 
     def create(webhook):
-        """Send an event to a webhook consumer.
+        """Deliver an event to a webhook consumer.
 
-        :param webhook: The webhook to send to.
+        :param webhook: The webhook to deliver to.
         """
 
 
 class IWebhookClient(Interface):
 
-    def sendEvent(self, url, proxy, payload):
-        """Send a payload to a webhook endpoint.
+    def deliver(self, url, proxy, payload):
+        """Deliver a payload to a webhook endpoint.
 
         Returns a dict of request and response details. The 'request' key
         and one of either 'response' or 'connection_error' are always

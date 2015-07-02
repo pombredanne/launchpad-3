@@ -5,26 +5,23 @@
 
 __metaclass__ = type
 
-import json
-
 from httmock import (
     HTTMock,
     urlmatch,
     )
 import requests
 from testtools import TestCase
-from testtools.matchers import MatchesStructure
 
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.runner import JobRunner
 from lp.services.webhooks.client import WebhookClient
 from lp.services.webhooks.interfaces import (
     IWebhookClient,
-    IWebhookEventJob,
+    IWebhookDeliveryJob,
     IWebhookJob,
     )
 from lp.services.webhooks.model import (
-    WebhookEventJob,
+    WebhookDeliveryJob,
     WebhookJob,
     WebhookJobDerived,
     WebhookJobType,
@@ -50,7 +47,7 @@ class TestWebhookJob(TestCaseWithFactory):
         # `WebhookJob` objects provide `IWebhookJob`.
         hook = self.factory.makeWebhook()
         self.assertProvides(
-            WebhookJob(hook, WebhookJobType.EVENT, {}), IWebhookJob)
+            WebhookJob(hook, WebhookJobType.DELIVERY, {}), IWebhookJob)
 
 
 class TestWebhookJobDerived(TestCaseWithFactory):
@@ -61,7 +58,7 @@ class TestWebhookJobDerived(TestCaseWithFactory):
     def test_getOopsMailController(self):
         """By default, no mail is sent about failed WebhookJobs."""
         hook = self.factory.makeWebhook()
-        job = WebhookJob(hook, WebhookJobType.EVENT, {})
+        job = WebhookJob(hook, WebhookJobType.DELIVERY, {})
         derived = WebhookJobDerived(job)
         self.assertIsNone(derived.getOopsMailController("x"))
 
@@ -80,7 +77,7 @@ class TestWebhookClient(TestCase):
             return {'status_code': response_status, 'content': 'Content'}
 
         with HTTMock(endpoint_mock):
-            result = WebhookClient().sendEvent(
+            result = WebhookClient().deliver(
                 'http://hookep.com/foo',
                 {'http': 'http://squid.example.com:3128'},
                 {'foo': 'bar'})
@@ -125,7 +122,7 @@ class MockWebhookClient:
         self.raises = raises
         self.requests = []
 
-    def sendEvent(self, url, proxy, payload):
+    def deliver(self, url, proxy, payload):
         result = {'request': {}}
         if isinstance(self.raises, requests.ConnectionError):
             result['connection_error'] = str(self.raises)
@@ -137,14 +134,14 @@ class MockWebhookClient:
         return result
 
 
-class TestWebhookEventJob(TestCaseWithFactory):
-    """Tests for `WebhookEventJob`."""
+class TestWebhookDeliveryJob(TestCaseWithFactory):
+    """Tests for `WebhookDeliveryJob`."""
 
     layer = LaunchpadZopelessLayer
 
     def makeAndRunJob(self, response_status=200, raises=None, mock=True):
-        hook = self.factory.makeWebhook(endpoint_url=u'http://hookep.com/foo')
-        job = WebhookEventJob.create(hook, payload={'foo': 'bar'})
+        hook = self.factory.makeWebhook(delivery_url=u'http://hookep.com/foo')
+        job = WebhookDeliveryJob.create(hook, payload={'foo': 'bar'})
 
         client = MockWebhookClient(
             response_status=response_status, raises=raises)
@@ -155,10 +152,10 @@ class TestWebhookEventJob(TestCaseWithFactory):
         return job, client.requests
 
     def test_provides_interface(self):
-        # `WebhookEventJob` objects provide `IWebhookEventJob`.
+        # `WebhookDeliveryJob` objects provide `IWebhookDeliveryJob`.
         hook = self.factory.makeWebhook()
         self.assertProvides(
-            WebhookEventJob.create(hook, payload={}), IWebhookEventJob)
+            WebhookDeliveryJob.create(hook, payload={}), IWebhookDeliveryJob)
 
     def test_run_200(self):
         # A request that returns 200 is a success.

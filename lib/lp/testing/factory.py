@@ -4522,13 +4522,13 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return ProxyFactory(
             LiveFSFile(livefsbuild=livefsbuild, libraryfile=libraryfile))
 
-    def makeWebhook(self, target=None, endpoint_url=None):
+    def makeWebhook(self, target=None, delivery_url=None):
         if target is None:
             target = self.makeGitRepository()
-        if endpoint_url is None:
-            endpoint_url = self.getUniqueURL().decode('utf-8')
+        if delivery_url is None:
+            delivery_url = self.getUniqueURL().decode('utf-8')
         return getUtility(IWebhookSource).new(
-            target, self.makePerson(), endpoint_url, True,
+            target, self.makePerson(), delivery_url, True,
             self.getUniqueUnicode())
 
 

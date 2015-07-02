@@ -17,7 +17,7 @@ from lp.services.webhooks.interfaces import IWebhookClient
 class WebhookClient:
     implements(IWebhookClient)
 
-    def sendEvent(self, url, proxy, payload):
+    def deliver(self, url, proxy, payload):
         """See `IWebhookClient`."""
         # We never want to execute a job if there's no proxy configured, as
         # we'd then be sending near-arbitrary requests from a trusted
