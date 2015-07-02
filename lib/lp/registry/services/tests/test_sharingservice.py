@@ -248,7 +248,7 @@ class TestSharingService(TestCaseWithFactory):
         # proprietary.
         owner = self.factory.makePerson()
         product = self.factory.makeProduct(
-            information_type=InformationType.EMBARGOED,
+            information_type=InformationType.PROPRIETARY,
             owner=owner,
             branch_sharing_policy=BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY)
         with person_logged_in(owner):

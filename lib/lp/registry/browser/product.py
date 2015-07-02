@@ -106,7 +106,7 @@ from lp.app.browser.tales import (
 from lp.app.enums import (
     InformationType,
     PROPRIETARY_INFORMATION_TYPES,
-    PUBLIC_PROPRIETARY_INFORMATION_TYPES,
+    PILLAR_INFORMATION_TYPES,
     ServiceUsage,
     )
 from lp.app.errors import (
@@ -1376,8 +1376,7 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
     custom_widget('license_info', GhostWidget)
     custom_widget(
         'information_type', LaunchpadRadioWidgetWithDescription,
-        vocabulary=InformationTypeVocabulary(
-            types=PUBLIC_PROPRIETARY_INFORMATION_TYPES))
+        vocabulary=InformationTypeVocabulary(types=PILLAR_INFORMATION_TYPES))
 
     @property
     def next_url(self):
@@ -1401,8 +1400,7 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
         # the form is rendered during LaunchpadFormView's initialize()
         # when an action is invoked.
         cache = IJSONRequestCache(self.request)
-        json_dump_information_types(
-            cache, PUBLIC_PROPRIETARY_INFORMATION_TYPES)
+        json_dump_information_types(cache, PILLAR_INFORMATION_TYPES)
         super(ProductEditView, self).initialize()
 
     def validate(self, data):
@@ -2279,8 +2277,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
     custom_widget(
         'information_type',
         LaunchpadRadioWidgetWithDescription,
-        vocabulary=InformationTypeVocabulary(
-            types=PUBLIC_PROPRIETARY_INFORMATION_TYPES))
+        vocabulary=InformationTypeVocabulary(types=PILLAR_INFORMATION_TYPES))
 
     custom_widget(
         'owner', PersonPickerWidget, header="Select the maintainer",
@@ -2299,8 +2296,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
         # the form is rendered during LaunchpadFormView's initialize()
         # when an action is invoked.
         cache = IJSONRequestCache(self.request)
-        json_dump_information_types(
-            cache, PUBLIC_PROPRIETARY_INFORMATION_TYPES)
+        json_dump_information_types(cache, PILLAR_INFORMATION_TYPES)
         super(ProjectAddStepTwo, self).initialize()
 
     @property
