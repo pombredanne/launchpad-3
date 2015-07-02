@@ -176,4 +176,13 @@ class LaunchpadCelebrities:
         return mirror
 
     def isCelebrityPerson(self, name):
+        """See `ILaunchpadCelebrities`."""
         return str(name) in PersonCelebrityDescriptor.names
+
+    @classmethod
+    def clearCache(cls):
+        """See `ILaunchpadCelebrities`."""
+        for name in cls.__dict__:
+            desc = getattr(cls, name)
+            if isinstance(desc, CelebrityDescriptor):
+                desc.id = None

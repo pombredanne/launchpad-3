@@ -73,6 +73,9 @@ class ILaunchpadCelebrities(Interface):
         """Return true if there is an IPerson celebrity with the given name.
         """
 
+    def clearCache():
+        """Clear any cached celebrities."""
+
 
 class IServiceUsage(Interface):
     """Pillar service usages."""
