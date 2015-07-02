@@ -47,7 +47,7 @@ class TestProductSeries(BrowserTestCase):
             branch.product.vcs = VCSType.BZR
 
         golang_import = (
-            "{base}/~zardoz/wapcaplet/a-branch bzr "
+            "{base}/wapcaplet bzr "
             "{root}~zardoz/wapcaplet/a-branch").format(
                 base=config.vhost.mainsite.hostname,
                 root=config.codehosting.supermirror_root
