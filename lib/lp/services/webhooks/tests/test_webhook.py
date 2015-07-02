@@ -36,7 +36,7 @@ class TestWebhook(TestCaseWithFactory):
         with admin_logged_in():
             old_mtime = webhook.date_last_modified
         notify(ObjectModifiedEvent(
-            webhook, webhook, [IWebhook["endpoint_url"]]))
+            webhook, webhook, [IWebhook["delivery_url"]]))
         with admin_logged_in():
             self.assertThat(
                 webhook.date_last_modified,
@@ -66,7 +66,7 @@ class TestWebhookPermissions(TestCaseWithFactory):
     def test_get_permissions(self):
         expected_get_permissions = {
             'launchpad.View': set((
-                'active', 'date_created', 'date_last_modified', 'endpoint_url',
+                'active', 'date_created', 'date_last_modified', 'delivery_url',
                 'id', 'registrant', 'secret', 'target')),
             }
         webhook = self.factory.makeWebhook()
@@ -76,7 +76,7 @@ class TestWebhookPermissions(TestCaseWithFactory):
 
     def test_set_permissions(self):
         expected_set_permissions = {
-            'launchpad.View': set(('endpoint_url', 'active')),
+            'launchpad.View': set(('delivery_url', 'active')),
             }
         webhook = self.factory.makeWebhook()
         checker = getChecker(webhook)
@@ -99,7 +99,7 @@ class TestWebhookSource(TestCaseWithFactory):
         self.assertEqual(person, hook.registrant)
         self.assertIsNot(None, hook.date_created)
         self.assertEqual(hook.date_created, hook.date_last_modified)
-        self.assertEqual(u'http://path/to/something', hook.endpoint_url)
+        self.assertEqual(u'http://path/to/something', hook.delivery_url)
         self.assertEqual(True, hook.active)
         self.assertEqual(u'sekrit', hook.secret)
 
@@ -125,13 +125,13 @@ class TestWebhookSource(TestCaseWithFactory):
             self.assertContentEqual(
                 [u'http://path/one/0', u'http://path/one/1',
                  u'http://path/one/2'],
-                [hook.endpoint_url for hook in
+                [hook.delivery_url for hook in
                 getUtility(IWebhookSource).findByTarget(target1)])
         with person_logged_in(target2.owner):
             self.assertContentEqual(
                 [u'http://path/two/0', u'http://path/two/1',
                  u'http://path/two/2'],
-                [hook.endpoint_url for hook in
+                [hook.delivery_url for hook in
                 getUtility(IWebhookSource).findByTarget(target2)])
 
     def test_delete(self):
@@ -142,10 +142,10 @@ class TestWebhookSource(TestCaseWithFactory):
             for i in range(3)]
         self.assertContentEqual(
             [u'http://path/to/0', u'http://path/to/1', u'http://path/to/2'],
-            [hook.endpoint_url for hook in
+            [hook.delivery_url for hook in
              getUtility(IWebhookSource).findByTarget(target)])
         getUtility(IWebhookSource).delete(hooks[:2])
         self.assertContentEqual(
             [u'http://path/to/2'],
-            [hook.endpoint_url for hook in
+            [hook.delivery_url for hook in
              getUtility(IWebhookSource).findByTarget(target)])

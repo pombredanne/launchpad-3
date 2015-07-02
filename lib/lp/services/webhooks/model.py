@@ -44,8 +44,8 @@ from lp.services.job.runner import BaseRunnableJob
 from lp.services.webhooks.interfaces import (
     IWebhook,
     IWebhookClient,
-    IWebhookEventJob,
-    IWebhookEventJobSource,
+    IWebhookDeliveryJob,
+    IWebhookDeliveryJobSource,
     IWebhookJob,
     )
 
@@ -77,7 +77,7 @@ class Webhook(StormBase):
     date_created = DateTime(tzinfo=pytz.UTC, allow_none=False)
     date_last_modified = DateTime(tzinfo=pytz.UTC, allow_none=False)
 
-    endpoint_url = Unicode(allow_none=False)
+    delivery_url = Unicode(allow_none=False)
     active = Bool(default=True, allow_none=False)
     secret = Unicode(allow_none=False)
 
@@ -94,7 +94,7 @@ class Webhook(StormBase):
 class WebhookSource:
     """See `IWebhookSource`."""
 
-    def new(self, target, registrant, endpoint_url, active, secret):
+    def new(self, target, registrant, delivery_url, active, secret):
         from lp.code.interfaces.gitrepository import IGitRepository
         hook = Webhook()
         if IGitRepository.providedBy(target):
@@ -102,7 +102,7 @@ class WebhookSource:
         else:
             raise AssertionError("Unsupported target: %r" % (target,))
         hook.registrant = registrant
-        hook.endpoint_url = endpoint_url
+        hook.delivery_url = delivery_url
         hook.active = active
         hook.secret = secret
         hook.json_data = {}
@@ -128,10 +128,10 @@ class WebhookSource:
 class WebhookJobType(DBEnumeratedType):
     """Values that `IWebhookJob.job_type` can take."""
 
-    EVENT = DBItem(0, """
-        Event
+    DELIVERY = DBItem(0, """
+        DELIVERY
 
-        This job forwards an event to the target of a webhook.
+        This job delivers an event to a webhook's endpoint.
         """)
 
 
@@ -183,15 +183,15 @@ class WebhookJobDerived(BaseRunnableJob):
         self.context = webhook_job
 
 
-class WebhookEventJob(WebhookJobDerived):
-    """A job that send an event to a webhook consumer."""
+class WebhookDeliveryJob(WebhookJobDerived):
+    """A job that delivers an event to a webhook endpoint."""
 
-    implements(IWebhookEventJob)
+    implements(IWebhookDeliveryJob)
 
-    classProvides(IWebhookEventJobSource)
-    class_job_type = WebhookJobType.EVENT
+    classProvides(IWebhookDeliveryJobSource)
+    class_job_type = WebhookJobType.DELIVERY
 
-    config = config.IWebhookEventJobSource
+    config = config.IWebhookDeliveryJobSource
 
     @classmethod
     def create(cls, webhook, payload):
@@ -202,8 +202,8 @@ class WebhookEventJob(WebhookJobDerived):
         return job
 
     def run(self):
-        result = getUtility(IWebhookClient).sendEvent(
-            self.webhook.endpoint_url, config.webhooks.http_proxy,
+        result = getUtility(IWebhookClient).deliver(
+            self.webhook.delivery_url, config.webhooks.http_proxy,
             self.json_data['payload'])
         updated_data = self.json_data
         updated_data['result'] = result
