@@ -36,18 +36,29 @@ class TestProductSeries(BrowserTestCase):
         # ensure golang meta import path is rendered if project has
         # bzr default vcs.
         # See: https://golang.org/cmd/go/#hdr-Remote_import_paths
-        branch = self.factory.makeBranch()
+        owner = self.factory.makePerson(name='zardoz')
+        product = self.factory.makeProduct(name='wapcaplet')
+        branch = self.factory.makeBranch(product=product, name='a-branch',
+                                         owner=owner)
         view = create_initialized_view(branch.product.development_focus,
                                        '+index')
         with person_logged_in(branch.product.owner):
             branch.product.development_focus.branch = branch
             branch.product.vcs = VCSType.BZR
 
-        golang_import = ("{base}/{name} bzr {root}{name}").format(
-            base=config.vhost.mainsite.hostname,
-            name=branch.product.development_focus.branch.unique_name,
-            root=config.codehosting.supermirror_root)
+        golang_import = (
+            "{base}/~zardoz/wapcaplet/a-branch bzr "
+            "{root}~zardoz/wapcaplet/a-branch").format(
+                base=config.vhost.mainsite.hostname,
+                owner=branch.owner.name,
+                root=config.codehosting.supermirror_root
+            )
         self.assertEqual(golang_import, view.golang_import_spec)
+        meta_tag = soupmatchers.Tag('go-import-meta', 'meta',
+                                    attrs={'name': 'go-import'})
+        browser = self.getViewBrowser(branch.product.development_focus,
+                                      '+index', user=branch.owner)
+        self.assertThat(browser.contents, soupmatchers.HTMLContains(meta_tag))
 
     def test_information_type_public(self):
         # A ProductSeries view should include its information_type,

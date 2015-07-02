@@ -313,23 +313,36 @@ class TestProductView(BrowserTestCase):
             repo_url=repo.git_https_url
             )
         self.assertEqual(golang_import, view.golang_import_spec)
+        meta_tag = Tag('go-import-meta', 'meta', attrs={'name': 'go-import'})
+        browser = self.getViewBrowser(repo.target, '+index',
+                                      user=repo.target.owner)
+        self.assertThat(browser.contents, HTMLContains(meta_tag))
 
     def test_golang_meta_renders_bzr(self):
         # ensure golang meta import path is rendered if project has
         # bzr default vcs.
         # See: https://golang.org/cmd/go/#hdr-Remote_import_paths
-        branch = self.factory.makeProductBranch()
+        owner = self.factory.makePerson(name='zardoz')
+        product = self.factory.makeProduct(name='wapcaplet')
+        branch = self.factory.makeBranch(product=product, name='a-branch',
+                                         owner=owner)
         view = create_initialized_view(branch.product, '+index')
+
         with person_logged_in(branch.product.owner):
             branch.product.development_focus.branch = branch
             branch.product.vcs = VCSType.BZR
 
-        golang_import = '{base}/{name} bzr {repo_url}{name}'.format(
-            base=config.vhost.mainsite.hostname,
-            name=branch.product.development_focus.branch.unique_name,
-            repo_url=config.codehosting.supermirror_root
+        golang_import = (
+            "{base}/~zardoz/wapcaplet/a-branch bzr "
+            "{root}~zardoz/wapcaplet/a-branch").format(
+                base=config.vhost.mainsite.hostname,
+                root=config.codehosting.supermirror_root
             )
         self.assertEqual(golang_import, view.golang_import_spec)
+        meta_tag = Tag('go-import-meta', 'meta', attrs={'name': 'go-import'})
+        browser = self.getViewBrowser(branch.product, '+index',
+                                      user=branch.owner)
+        self.assertThat(browser.contents, HTMLContains(meta_tag))
 
     def test_show_programming_languages_without_languages(self):
         # show_programming_languages is false when there are no programming

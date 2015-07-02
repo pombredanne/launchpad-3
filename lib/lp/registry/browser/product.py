@@ -152,17 +152,14 @@ from lp.code.enums import (
 from lp.code.errors import (
     BranchCreationForbidden,
     BranchExists,
-    GitTargetError,
     )
 from lp.code.interfaces.branch import IBranch
-from lp.code.interfaces.branchcollection import IBranchCollection
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codeimport import (
     ICodeImport,
     ICodeImportSet,
     )
-from lp.code.interfaces.gitcollection import IGitCollection
 from lp.code.interfaces.gitrepository import IGitRepositorySet
 from lp.code.browser.vcslisting import TargetDefaultVCSNavigationMixin
 from lp.code.interfaces.gitrepository import IGitRepositorySet
@@ -1044,10 +1041,10 @@ class ProductView(PillarViewMixin, HasAnnouncementsView, SortSeriesMixin,
                 return None
         elif (self.context.vcs == VCSType.BZR and
         self.context.development_focus.branch):
-            return ("{base_url}/{product} bzr "
-                    "{browse_root}{product}").format(
+            return ("{base_url}/{name} bzr "
+                    "{browse_root}{name}").format(
                         base_url=config.vhost.mainsite.hostname,
-                        product=self.context.development_focus.branch.unique_name,
+                        name=self.context.development_focus.branch.unique_name,
                         browse_root=config.codehosting.supermirror_root)
         else:
             return None
@@ -1672,6 +1669,7 @@ BRANCH_TYPE_VOCABULARY = SimpleVocabulary((
     SimpleTerm(IMPORT_EXTERNAL, IMPORT_EXTERNAL,
                _("Import a branch hosted somewhere else")),
     ))
+
 
 class SetBranchForm(Interface):
     """The fields presented on the form for setting a branch."""
