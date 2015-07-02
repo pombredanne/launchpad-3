@@ -318,14 +318,15 @@ class TestProductView(BrowserTestCase):
         # ensure golang meta import path is rendered if project has
         # bzr default vcs.
         # See: https://golang.org/cmd/go/#hdr-Remote_import_paths
-        branch = self.factory.makeBranch()
+        branch = self.factory.makeProductBranch()
         view = create_initialized_view(branch.product, '+index')
         with person_logged_in(branch.product.owner):
+            branch.product.development_focus.branch = branch
             branch.product.vcs = VCSType.BZR
 
         golang_import = '{base}/{name} bzr {repo_url}{name}'.format(
             base=config.vhost.mainsite.hostname,
-            name=branch.target.name,
+            name=branch.product.development_focus.branch.unique_name,
             repo_url=config.codehosting.supermirror_root
             )
         self.assertEqual(golang_import, view.golang_import_spec)

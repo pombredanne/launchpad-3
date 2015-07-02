@@ -40,14 +40,13 @@ class TestProductSeries(BrowserTestCase):
         view = create_initialized_view(branch.product.development_focus,
                                        '+index')
         with person_logged_in(branch.product.owner):
+            branch.product.development_focus.branch = branch
             branch.product.vcs = VCSType.BZR
 
-        golang_import = ("{base}/{name}/{series} bzr "
-                         "{root}{name}/{series}").format(
-                             base=config.vhost.mainsite.hostname,
-                             name=branch.product.name,
-                             root=config.codehosting.supermirror_root,
-                             series=branch.product.development_focus.name)
+        golang_import = ("{base}/{name} bzr {root}{name}").format(
+            base=config.vhost.mainsite.hostname,
+            name=branch.product.development_focus.branch.unique_name,
+            root=config.codehosting.supermirror_root)
         self.assertEqual(golang_import, view.golang_import_spec)
 
     def test_information_type_public(self):

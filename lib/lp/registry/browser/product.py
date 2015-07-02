@@ -1042,11 +1042,12 @@ class ProductView(PillarViewMixin, HasAnnouncementsView, SortSeriesMixin,
                     git_https_url=repo.git_https_url)
             else:
                 return None
-        elif self.context.vcs == VCSType.BZR:
+        elif (self.context.vcs == VCSType.BZR and
+        self.context.development_focus.branch):
             return ("{base_url}/{product} bzr "
                     "{browse_root}{product}").format(
                         base_url=config.vhost.mainsite.hostname,
-                        product=self.context.name,
+                        product=self.context.development_focus.branch.unique_name,
                         browse_root=config.codehosting.supermirror_root)
         else:
             return None
