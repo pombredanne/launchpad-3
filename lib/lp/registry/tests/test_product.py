@@ -519,11 +519,13 @@ class TestProduct(TestCaseWithFactory):
         naked_product.information_type = InformationType.PUBLIC
         self.assertIs(None, get_aps(naked_product))
 
-        # Projects can also be Embargoed because of reasons. Since they
-        # can have both Proprietary and Embargoed artifacts, and someone
-        # who can see either needs LimitedView on the pillar they're on,
-        # both policies are permissible.
-        naked_product.information_type = InformationType.EMBARGOED
+        # Proprietary projects can have both Proprietary and Embargoed
+        # artifacts, and someone who can see either needs LimitedView on
+        # the pillar they're on. So both policies are permissible if
+        # they exist.
+        naked_product.information_type = InformationType.PROPRIETARY
+        naked_product.setBugSharingPolicy(
+            BugSharingPolicy.EMBARGOED_OR_PROPRIETARY)
         [emb_policy] = aps.find([(product, InformationType.EMBARGOED)])
         self.assertContentEqual(
             [prop_policy.id, emb_policy.id], get_aps(naked_product))
