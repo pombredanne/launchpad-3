@@ -15,6 +15,8 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     BugTaskStatusSearch,
     )
+from lp.registry.enums import VCSType
+from lp.services.config import config
 from lp.services.webapp import canonical_url
 from lp.testing import (
     BrowserTestCase,
@@ -29,6 +31,34 @@ from lp.testing.views import create_initialized_view
 class TestProductSeries(BrowserTestCase):
 
     layer = DatabaseFunctionalLayer
+
+    def test_golang_meta_renders(self):
+        # ensure golang meta import path is rendered if project has
+        # bzr default vcs.
+        # See: https://golang.org/cmd/go/#hdr-Remote_import_paths
+        owner = self.factory.makePerson(name='zardoz')
+        product = self.factory.makeProduct(name='wapcaplet')
+        branch = self.factory.makeBranch(product=product, name='a-branch',
+                                         owner=owner)
+        view = create_initialized_view(branch.product.development_focus,
+                                       '+index')
+        with person_logged_in(branch.product.owner):
+            branch.product.development_focus.branch = branch
+            branch.product.vcs = VCSType.BZR
+
+        golang_import = (
+            "{base}/~zardoz/wapcaplet/a-branch bzr "
+            "{root}~zardoz/wapcaplet/a-branch").format(
+                base=config.vhost.mainsite.hostname,
+                root=config.codehosting.supermirror_root
+            )
+        self.assertEqual(golang_import, view.golang_import_spec)
+        meta_tag = soupmatchers.Tag('go-import-meta', 'meta',
+                                    attrs={'name': 'go-import',
+                                           'content': golang_import})
+        browser = self.getViewBrowser(branch.product.development_focus,
+                                      '+index', user=branch.owner)
+        self.assertThat(browser.contents, soupmatchers.HTMLContains(meta_tag))
 
     def test_information_type_public(self):
         # A ProductSeries view should include its information_type,

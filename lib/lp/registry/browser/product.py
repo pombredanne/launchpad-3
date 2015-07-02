@@ -161,7 +161,7 @@ from lp.code.interfaces.codeimport import (
     )
 from lp.code.interfaces.gitrepository import IGitRepositorySet
 from lp.code.browser.vcslisting import TargetDefaultVCSNavigationMixin
-
+from lp.code.interfaces.gitrepository import IGitRepositorySet
 from lp.registry.browser import (
     add_subscribe_link,
     BaseRdfView,
@@ -217,6 +217,7 @@ from lp.services.webapp import (
     stepto,
     structured,
     )
+from lp.services.config import config
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.batching import BatchNavigator
 from lp.services.webapp.breadcrumb import Breadcrumb
@@ -1021,6 +1022,31 @@ class ProductView(PillarViewMixin, HasAnnouncementsView, SortSeriesMixin,
 
     def requestCountry(self):
         return ICountry(self.request, None)
+
+    @property
+    def golang_import_spec(self):
+        """Meta string for golang remote import path.
+        See: https://golang.org/cmd/go/#hdr-Remote_import_paths
+        """
+        if self.context.vcs == VCSType.GIT:
+            repo = getUtility(IGitRepositorySet).getDefaultRepository(
+                self.context)
+            if repo:
+                return "{base_url}/{product} git {git_https_url}".format(
+                    base_url=config.vhost.mainsite.hostname,
+                    product=self.context.name,
+                    git_https_url=repo.git_https_url)
+            else:
+                return None
+        elif (self.context.vcs == VCSType.BZR and
+        self.context.development_focus.branch):
+            return ("{base_url}/{name} bzr "
+                    "{browse_root}{name}").format(
+                        base_url=config.vhost.mainsite.hostname,
+                        name=self.context.development_focus.branch.unique_name,
+                        browse_root=config.codehosting.supermirror_root)
+        else:
+            return None
 
     def browserLanguages(self):
         return browser_languages(self.request)

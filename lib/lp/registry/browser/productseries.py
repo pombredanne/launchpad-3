@@ -71,7 +71,6 @@ from lp.bugs.browser.structuralsubscription import (
     )
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.code.browser.branchref import BranchRef
-from lp.code.enums import RevisionControlSystems
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.registry.browser import (
     add_subscribe_link,
@@ -85,6 +84,7 @@ from lp.registry.browser.pillar import (
     PillarInvolvementView,
     )
 from lp.registry.browser.product import ProductSetBranchView
+from lp.registry.enums import VCSType
 from lp.registry.errors import CannotPackageProprietaryProduct
 from lp.registry.interfaces.packaging import (
     IPackaging,
@@ -92,6 +92,7 @@ from lp.registry.interfaces.packaging import (
     )
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.config import config
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (
     ApplicationMenu,
@@ -378,6 +379,20 @@ class ProductSeriesView(
     def requestCountry(self):
         """The country associated with the IP of the request."""
         return ICountry(self.request, None)
+
+    @property
+    def golang_import_spec(self):
+        """Meta string for golang remote import path.
+        See: https://golang.org/cmd/go/#hdr-Remote_import_paths
+        """
+        if (self.context.product.vcs == VCSType.BZR and
+            self.context.product.development_focus.branch):
+            return ("{base_url}/{name} bzr {root}{name}").format(
+                base_url=config.vhost.mainsite.hostname,
+                name=self.context.branch.unique_name,
+                root=config.codehosting.supermirror_root)
+        else:
+            return None
 
     def browserLanguages(self):
         """The languages the user's browser requested."""
