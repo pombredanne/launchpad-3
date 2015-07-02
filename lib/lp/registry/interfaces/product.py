@@ -762,9 +762,10 @@ class IProductView(
                 "Version control system for this project's code.")))
 
     inferred_vcs = exported(
-        TextLine(
+        Choice(
             title=_("Inferred VCS"),
             readonly=True,
+            vocabulary=VCSType,
             description=_(
                 "Inferred version control system for this project's code.")))
 

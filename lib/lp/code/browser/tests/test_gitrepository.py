@@ -15,13 +15,16 @@ from testtools.matchers import (
     DocTestMatches,
     Equals,
     )
+import transaction
 from zope.component import getUtility
+from zope.formlib.itemswidgets import ItemDisplayWidget
 from zope.publisher.interfaces import NotFound
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.interfaces.services import IService
+from lp.code.interfaces.githosting import IGitHostingClient
 from lp.code.interfaces.revision import IRevisionSet
 from lp.registry.enums import BranchSharingPolicy
 from lp.registry.interfaces.person import PersonVisibility
@@ -37,8 +40,13 @@ from lp.testing import (
     record_two_runs,
     TestCaseWithFactory,
     )
+from lp.testing.fakemethod import FakeMethod
+from lp.testing.fixture import ZopeUtilityFixture
 from lp.testing.layers import DatabaseFunctionalLayer
-from lp.testing.matchers import HasQueryCount
+from lp.testing.matchers import (
+    Contains,
+    HasQueryCount,
+    )
 from lp.testing.pages import (
     get_feedback_messages,
     setupBrowser,
@@ -255,6 +263,213 @@ class TestGitRepositoryEditView(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def test_repository_target_widget_read_only(self):
+        # The repository target widget is read-only if the repository is the
+        # default for its target.
+        person = self.factory.makePerson()
+        project = self.factory.makeProduct(owner=person)
+        repository = self.factory.makeGitRepository(
+            owner=person, target=project)
+        login_person(person)
+        repository.setTargetDefault(True)
+        view = create_initialized_view(repository, name="+edit")
+        self.assertEqual("project", view.widgets["target"].default_option)
+        self.assertIsInstance(
+            view.widgets["target"].project_widget, ItemDisplayWidget)
+        self.assertEqual(
+            project.title, view.widgets["target"].project_widget())
+
+    def test_repository_target_widget_renders_personal(self):
+        # The repository target widget renders correctly for a personal
+        # repository.
+        person = self.factory.makePerson()
+        repository = self.factory.makeGitRepository(
+            owner=person, target=person)
+        login_person(person)
+        view = create_initialized_view(repository, name="+edit")
+        self.assertEqual("personal", view.widgets["target"].default_option)
+
+    def test_repository_target_widget_renders_product(self):
+        # The repository target widget renders correctly for a product
+        # repository.
+        person = self.factory.makePerson()
+        project = self.factory.makeProduct()
+        repository = self.factory.makeGitRepository(
+            owner=person, target=project)
+        login_person(person)
+        view = create_initialized_view(repository, name="+edit")
+        self.assertEqual("project", view.widgets["target"].default_option)
+        self.assertEqual(
+            project.name, view.widgets["target"].project_widget.selected_value)
+
+    def test_repository_target_widget_renders_package(self):
+        # The repository target widget renders correctly for a package
+        # repository.
+        person = self.factory.makePerson()
+        dsp = self.factory.makeDistributionSourcePackage()
+        repository = self.factory.makeGitRepository(owner=person, target=dsp)
+        login_person(person)
+        view = create_initialized_view(repository, name="+edit")
+        self.assertEqual("package", view.widgets["target"].default_option)
+        self.assertEqual(
+            dsp.distribution,
+            view.widgets["target"].distribution_widget._getFormValue())
+        self.assertEqual(
+            dsp.sourcepackagename.name,
+            view.widgets["target"].package_widget.selected_value)
+
+    def test_repository_target_widget_saves_personal(self):
+        # The repository target widget can retarget to a personal
+        # repository.
+        person = self.factory.makePerson()
+        repository = self.factory.makeGitRepository(owner=person)
+        login_person(person)
+        form = {
+            "field.target": "personal",
+            "field.actions.change": "Change Git Repository",
+            }
+        view = create_initialized_view(repository, name="+edit", form=form)
+        self.assertEqual(person, repository.target)
+        self.assertEqual(1, len(view.request.response.notifications))
+        self.assertEqual(
+            "This repository is now a personal repository for %s (%s)"
+                % (person.displayname, person.name),
+            view.request.response.notifications[0].message)
+
+    def test_repository_target_widget_saves_personal_different_owner(self):
+        # The repository target widget can retarget to a personal repository
+        # for a different owner.
+        person = self.factory.makePerson()
+        repository = self.factory.makeGitRepository(
+            owner=person, target=person)
+        new_owner = self.factory.makeTeam(name="newowner", members=[person])
+        login_person(person)
+        form = {
+            "field.target": "personal",
+            "field.owner": "newowner",
+            "field.actions.change": "Change Git Repository",
+            }
+        view = create_initialized_view(repository, name="+edit", form=form)
+        self.assertEqual(new_owner, repository.target)
+        self.assertEqual(1, len(view.request.response.notifications))
+        self.assertEqual(
+            "The repository owner has been changed to Newowner (newowner)",
+            view.request.response.notifications[0].message)
+
+    def test_repository_target_widget_saves_personal_clears_default(self):
+        # When retargeting to a personal repository, the owner-target
+        # default flag is cleared.
+        person = self.factory.makePerson()
+        project = self.factory.makeProduct(owner=person)
+        repository = self.factory.makeGitRepository(
+            owner=person, target=project)
+        login_person(person)
+        repository.setOwnerDefault(True)
+        form = {
+            "field.target": "personal",
+            "field.actions.change": "Change Git Repository",
+            }
+        view = create_initialized_view(repository, name="+edit", form=form)
+        self.assertEqual([], view.errors)
+        self.assertEqual(person, repository.target)
+        self.assertFalse(repository.owner_default)
+        self.assertEqual(1, len(view.request.response.notifications))
+        self.assertEqual(
+            "This repository is now a personal repository for %s (%s)"
+                % (person.displayname, person.name),
+            view.request.response.notifications[0].message)
+
+    def test_repository_target_widget_saves_project(self):
+        # The repository target widget can retarget to a project repository.
+        person = self.factory.makePerson()
+        repository = self.factory.makeGitRepository(
+            owner=person, target=person)
+        project = self.factory.makeProduct()
+        login_person(person)
+        form = {
+            "field.target": "project",
+            "field.target.project": project.name,
+            "field.actions.change": "Change Git Repository",
+            }
+        view = create_initialized_view(repository, name="+edit", form=form)
+        self.assertEqual(project, repository.target)
+        self.assertEqual(
+            "The repository target has been changed to %s (%s)"
+                % (project.displayname, project.name),
+            view.request.response.notifications[0].message)
+
+    def test_repository_target_widget_saves_package(self):
+        # The repository target widget can retarget to a package repository.
+        person = self.factory.makePerson()
+        repository = self.factory.makeGitRepository(
+            owner=person, target=person)
+        dsp = self.factory.makeDistributionSourcePackage()
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=dsp.distribution.currentseries,
+            sourcepackagename=dsp.sourcepackagename,
+            archive=dsp.distribution.main_archive)
+        login_person(person)
+        form = {
+            "field.target": "package",
+            "field.target.distribution": dsp.distribution.name,
+            "field.target.package": dsp.sourcepackagename.name,
+            "field.actions.change": "Change Git Repository",
+            }
+        view = create_initialized_view(repository, name="+edit", form=form)
+        self.assertEqual(dsp, repository.target)
+        self.assertEqual(
+            "The repository target has been changed to %s (%s)"
+                % (dsp.displayname, dsp.name),
+            view.request.response.notifications[0].message)
+
+    def test_forbidden_target_is_error(self):
+        # An error is displayed if a repository is saved with a target that
+        # is not allowed by the sharing policy.
+        owner = self.factory.makePerson()
+        initial_target = self.factory.makeProduct()
+        self.factory.makeProduct(
+            name="commercial", owner=owner,
+            branch_sharing_policy=BranchSharingPolicy.PROPRIETARY)
+        repository = self.factory.makeGitRepository(
+            owner=owner, target=initial_target,
+            information_type=InformationType.PUBLIC)
+        browser = self.getUserBrowser(
+            canonical_url(repository) + "/+edit", user=owner)
+        browser.getControl(name="field.target.project").value = "commercial"
+        browser.getControl("Change Git Repository").click()
+        self.assertThat(
+            browser.contents,
+            Contains(
+                "Public repositories are not allowed for target Commercial."))
+        with person_logged_in(owner):
+            self.assertEqual(initial_target, repository.target)
+
+    def test_default_conflict_is_error(self):
+        # An error is displayed if an owner-default repository is saved with
+        # a new target that already has an owner-default repository.
+        owner = self.factory.makePerson()
+        initial_target = self.factory.makeProduct()
+        new_target = self.factory.makeProduct(name="new", displayname="New")
+        repository = self.factory.makeGitRepository(
+            owner=owner, target=initial_target)
+        existing_default = self.factory.makeGitRepository(
+            owner=owner, target=new_target)
+        login_person(owner)
+        repository.setOwnerDefault(True)
+        existing_default.setOwnerDefault(True)
+        browser = self.getUserBrowser(
+            canonical_url(repository) + "/+edit", user=owner)
+        browser.getControl(name="field.target.project").value = "new"
+        browser.getControl("Change Git Repository").click()
+        with person_logged_in(owner):
+            self.assertThat(
+                browser.contents,
+                Contains(
+                    "%s&#x27;s default repository for &#x27;New&#x27; is "
+                    "already set to %s." %
+                    (owner.displayname, existing_default.unique_name)))
+            self.assertEqual(initial_target, repository.target)
+
     def test_rename(self):
         # The name of a repository can be changed via the UI by an
         # authorised user.
@@ -342,6 +557,50 @@ class TestGitRepositoryEditView(TestCaseWithFactory):
             self.assertEqual("", result)
             self.assertEqual(
                 repository.information_type, InformationType.PUBLICSECURITY)
+
+    def test_change_default_branch(self):
+        # An authorised user can change the default branch to one that
+        # exists.  They may omit "refs/heads/".
+        hosting_client = FakeMethod()
+        hosting_client.setProperties = FakeMethod()
+        self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
+        person = self.factory.makePerson()
+        repository = self.factory.makeGitRepository(owner=person)
+        master, new = self.factory.makeGitRefs(
+            repository=repository,
+            paths=[u"refs/heads/master", u"refs/heads/new"])
+        removeSecurityProxy(repository)._default_branch = u"refs/heads/master"
+        browser = self.getUserBrowser(
+            canonical_url(repository) + "/+edit", user=person)
+        browser.getControl(name="field.default_branch").value = u"new"
+        browser.getControl("Change Git Repository").click()
+        with person_logged_in(person):
+            self.assertEqual(
+                [((repository.getInternalPath(),),
+                 {u"default_branch": u"refs/heads/new"})],
+                hosting_client.setProperties.calls)
+            self.assertEqual(u"refs/heads/new", repository.default_branch)
+
+    def test_change_default_branch_nonexistent(self):
+        # Trying to change the default branch to one that doesn't exist
+        # displays an error.
+        person = self.factory.makePerson()
+        repository = self.factory.makeGitRepository(owner=person)
+        [master] = self.factory.makeGitRefs(
+            repository=repository, paths=[u"refs/heads/master"])
+        removeSecurityProxy(repository)._default_branch = u"refs/heads/master"
+        form = {
+            "field.default_branch": "refs/heads/new",
+            "field.actions.change": "Change Git Repository",
+            }
+        transaction.commit()
+        with person_logged_in(person):
+            view = create_initialized_view(repository, name="+edit", form=form)
+        self.assertEqual(
+            ["This repository does not contain a reference named "
+             "&#x27;refs/heads/new&#x27;."],
+            view.errors)
+        self.assertEqual(u"refs/heads/master", repository.default_branch)
 
 
 class TestGitRepositoryEditViewInformationTypes(TestCaseWithFactory):

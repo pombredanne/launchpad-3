@@ -10,7 +10,12 @@ __all__ = [
 
 from datetime import datetime
 import email
-from itertools import chain
+from functools import partial
+from itertools import (
+    chain,
+    groupby,
+    )
+from operator import attrgetter
 
 from bzrlib import urlutils
 import pytz
@@ -67,15 +72,18 @@ from lp.code.errors import (
     CannotDeleteGitRepository,
     GitDefaultConflict,
     GitTargetError,
+    NoSuchGitReference,
     )
 from lp.code.event.git import GitRefsUpdatedEvent
 from lp.code.interfaces.branchmergeproposal import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES,
+    notify_modified,
     )
 from lp.code.interfaces.gitcollection import (
     IAllGitRepositories,
     IGitCollection,
     )
+from lp.code.interfaces.githosting import IGitHostingClient
 from lp.code.interfaces.gitlookup import IGitLookup
 from lp.code.interfaces.gitnamespace import (
     get_git_namespace,
@@ -199,6 +207,8 @@ class GitRepository(StormBase, GitIdentityMixin):
     owner_default = Bool(name='owner_default', allow_none=False)
     target_default = Bool(name='target_default', allow_none=False)
 
+    _default_branch = Unicode(name='default_branch', allow_none=True)
+
     def __init__(self, registrant, owner, target, name, information_type,
                  date_created, reviewer=None, description=None):
         super(GitRepository, self).__init__()
@@ -286,7 +296,7 @@ class GitRepository(StormBase, GitIdentityMixin):
             repository_set = getUtility(IGitRepositorySet)
             existing = repository_set.getDefaultRepositoryForOwner(
                 self.owner, self.target)
-            if existing is not None:
+            if existing is not None and existing != self:
                 raise GitDefaultConflict(
                     existing, self.target, owner=self.owner)
         self.owner_default = value
@@ -297,7 +307,7 @@ class GitRepository(StormBase, GitIdentityMixin):
             # Check for an existing target default.
             existing = getUtility(IGitRepositorySet).getDefaultRepository(
                 self.target)
-            if existing is not None:
+            if existing is not None and existing != self:
                 raise GitDefaultConflict(existing, self.target)
         self.target_default = value
         if IProduct.providedBy(self.target):
@@ -400,6 +410,22 @@ class GitRepository(StormBase, GitIdentityMixin):
             GitRef.repository_id == self.id,
             GitRef.path.startswith(u"refs/heads/")).order_by(GitRef.path)
 
+    @property
+    def default_branch(self):
+        """See `IGitRepository`."""
+        return self._default_branch
+
+    @default_branch.setter
+    def default_branch(self, value):
+        """See `IGitRepository`."""
+        ref = self.getRefByPath(value)
+        if ref is None:
+            raise NoSuchGitReference(self, value)
+        if self._default_branch != ref.path:
+            self._default_branch = ref.path
+            getUtility(IGitHostingClient).setProperties(
+                self.getInternalPath(), default_branch=ref.path)
+
     def getRefByPath(self, path):
         paths = [path]
         if not path.startswith(u"refs/heads/"):
@@ -439,7 +465,7 @@ class GitRepository(StormBase, GitIdentityMixin):
             sha1 = sha1.decode("US-ASCII")
         return {"sha1": sha1, "type": object_type_map[obj["type"]]}
 
-    def createOrUpdateRefs(self, refs_info, get_objects=False):
+    def createOrUpdateRefs(self, refs_info, get_objects=False, logger=None):
         """See `IGitRepository`."""
         def dbify_values(values):
             return [
@@ -508,7 +534,8 @@ class GitRepository(StormBase, GitIdentityMixin):
 
         self.date_last_modified = UTC_NOW
         if updated:
-            notify(GitRefsUpdatedEvent(self, [value[1] for value in updated]))
+            notify(GitRefsUpdatedEvent(
+                self, [value[1] for value in updated], logger))
         if get_objects:
             return bulk.load(GitRef, updated + created)
 
@@ -519,8 +546,9 @@ class GitRepository(StormBase, GitIdentityMixin):
             GitRef.repository == self, GitRef.path.is_in(paths)).remove()
         self.date_last_modified = UTC_NOW
 
-    def planRefChanges(self, hosting_client, hosting_path, logger=None):
+    def planRefChanges(self, hosting_path, logger=None):
         """See `IGitRepository`."""
+        hosting_client = getUtility(IGitHostingClient)
         new_refs = {}
         for path, info in hosting_client.getRefs(hosting_path).items():
             try:
@@ -550,12 +578,12 @@ class GitRepository(StormBase, GitIdentityMixin):
         return refs_to_upsert, refs_to_remove
 
     @staticmethod
-    def fetchRefCommits(hosting_client, hosting_path, refs, logger=None):
+    def fetchRefCommits(hosting_path, refs, logger=None):
         """See `IGitRepository`."""
         oids = sorted(set(info["sha1"] for info in refs.values()))
         commits = {
             commit.get("sha1"): commit
-            for commit in hosting_client.getCommits(
+            for commit in getUtility(IGitHostingClient).getCommits(
                 hosting_path, oids, logger=logger)}
         authors_to_acquire = []
         committers_to_acquire = []
@@ -595,10 +623,10 @@ class GitRepository(StormBase, GitIdentityMixin):
             if committer is not None:
                 info["committer"] = committer.id
 
-    def synchroniseRefs(self, refs_to_upsert, refs_to_remove):
+    def synchroniseRefs(self, refs_to_upsert, refs_to_remove, logger=None):
         """See `IGitRepository`."""
         if refs_to_upsert:
-            self.createOrUpdateRefs(refs_to_upsert)
+            self.createOrUpdateRefs(refs_to_upsert, logger=logger)
         if refs_to_remove:
             self.removeRefs(refs_to_remove)
 
@@ -810,6 +838,15 @@ class GitRepository(StormBase, GitIdentityMixin):
             Not(BranchMergeProposal.queue_status.is_in(
                 BRANCH_MERGE_PROPOSAL_FINAL_STATES)))
 
+    def getActiveLandingCandidates(self, paths):
+        """Merge proposals not in final states where these refs are target."""
+        return Store.of(self).find(
+            BranchMergeProposal,
+            BranchMergeProposal.target_git_repository == self,
+            BranchMergeProposal.target_git_path.is_in(paths),
+            Not(BranchMergeProposal.queue_status.is_in(
+                BRANCH_MERGE_PROPOSAL_FINAL_STATES)))
+
     @property
     def dependent_landings(self):
         """See `IGitRepository`."""
@@ -842,6 +879,52 @@ class GitRepository(StormBase, GitIdentityMixin):
             Job._status.is_in([JobStatus.WAITING, JobStatus.RUNNING]))
         return not jobs.is_empty()
 
+    def updateMergeCommitIDs(self, paths):
+        """See `IGitRepository`."""
+        store = Store.of(self)
+        refs = {
+            path: commit_sha1 for path, commit_sha1 in store.find(
+                (GitRef.path, GitRef.commit_sha1),
+                GitRef.repository_id == self.id,
+                GitRef.path.is_in(paths))}
+        updated = set()
+        for kind in ("source", "target", "prerequisite"):
+            repository_name = "%s_git_repositoryID" % kind
+            path_name = "%s_git_path" % kind
+            commit_sha1_name = "%s_git_commit_sha1" % kind
+            old_column = partial(getattr, BranchMergeProposal)
+            db_kind = "dependent" if kind == "prerequisite" else kind
+            column_types = [
+                ("%s_git_path" % db_kind, "text"),
+                ("%s_git_commit_sha1" % db_kind, "character(40)"),
+                ]
+            db_values = [(
+                bulk.dbify_value(old_column(path_name), path),
+                bulk.dbify_value(old_column(commit_sha1_name), commit_sha1)
+                ) for path, commit_sha1 in refs.items()]
+            new_proposals_expr = Values(
+                "new_proposals", column_types, db_values)
+            new_proposals = ClassAlias(BranchMergeProposal, "new_proposals")
+            new_column = partial(getattr, new_proposals)
+            updated_columns = {
+                old_column(commit_sha1_name): new_column(commit_sha1_name)}
+            update_filter = And(
+                old_column(repository_name) == self.id,
+                old_column(path_name) == new_column(path_name),
+                Not(BranchMergeProposal.queue_status.is_in(
+                    BRANCH_MERGE_PROPOSAL_FINAL_STATES)))
+            result = store.execute(Returning(BulkUpdate(
+                updated_columns, table=BranchMergeProposal,
+                values=new_proposals_expr, where=update_filter,
+                primary_columns=BranchMergeProposal.id)))
+            updated.update(item[0] for item in result)
+        if updated:
+            # Some existing BranchMergeProposal objects may no longer be
+            # valid.  Without knowing which ones we already have, it's
+            # safest to just invalidate everything.
+            store.invalidate()
+        return updated
+
     def scheduleDiffUpdates(self, paths):
         """See `IGitRepository`."""
         from lp.code.model.branchmergeproposaljob import UpdatePreviewDiffJob
@@ -849,6 +932,33 @@ class GitRepository(StormBase, GitIdentityMixin):
         for merge_proposal in self.getActiveLandingTargets(paths):
             jobs.append(UpdatePreviewDiffJob.create(merge_proposal))
         return jobs
+
+    def _markProposalMerged(self, proposal, merged_revision_id, logger=None):
+        if logger is not None:
+            logger.info(
+                "Merge detected: %s => %s",
+                proposal.source_git_ref.identity,
+                proposal.target_git_ref.identity)
+        notify_modified(
+            proposal, proposal.markAsMerged,
+            merged_revision_id=merged_revision_id)
+
+    def detectMerges(self, paths, logger=None):
+        """See `IGitRepository`."""
+        hosting_client = getUtility(IGitHostingClient)
+        all_proposals = self.getActiveLandingCandidates(paths).order_by(
+            BranchMergeProposal.target_git_path)
+        for _, group in groupby(all_proposals, attrgetter("target_git_path")):
+            proposals = list(group)
+            merges = hosting_client.detectMerges(
+                self.getInternalPath(), proposals[0].target_git_commit_sha1,
+                set(proposal.source_git_commit_sha1 for proposal in proposals))
+            for proposal in proposals:
+                merged_revision_id = merges.get(
+                    proposal.source_git_commit_sha1)
+                if merged_revision_id is not None:
+                    self._markProposalMerged(
+                        proposal, merged_revision_id, logger=logger)
 
     def canBeDeleted(self):
         """See `IGitRepository`."""

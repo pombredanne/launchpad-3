@@ -72,7 +72,7 @@ form.primary.search {
     margin-bottom: 2em;
 }
 
-.note {
+.infobox {
     color: #666;
     display: inline-block;
     padding: 0.5em 0.5em 0.5em 2em;
@@ -626,9 +626,11 @@ div.diff .horizontal {
 table.diff {
    white-space: pre-wrap;
    width: 100%;
-   table-layout: fixed;
    background-color: white;
    margin-bottom: 0.5em;
+}
+table.unidiff {
+   table-layout: fixed;
 }
 
 table.diff .nav-cursor:before {
@@ -639,7 +641,7 @@ table.diff .nav-cursor:before {
    margin-left: 1.25em;
 }
 table.diff .text { padding-left: 0.5em; }
-table.diff .line-no {
+table.diff .line-no, table.diff .ss-line-no {
   text-align: right;
   background-color: #f6f6f6;
   color: #999;

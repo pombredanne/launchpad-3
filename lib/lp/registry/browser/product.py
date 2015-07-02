@@ -1676,10 +1676,6 @@ class SetBranchForm(Interface):
 
     use_template(ICodeImport, ['cvs_module'])
 
-    default_vcs = Choice(title=_("Project VCS"),
-        required=True, vocabulary=VCSType,
-        description=_("The version control system for this project."))
-
     rcs_type = Choice(title=_("Type of RCS"),
         required=False, vocabulary=RevisionControlSystems,
         description=_(
@@ -1699,15 +1695,6 @@ class SetBranchForm(Interface):
             "The Bazaar branch for this series in Launchpad, "
             "if one exists."))
 
-    git_repository_location = TextLine(
-        title=_(
-            'Git Repository'),
-        required=False,
-        description=_(
-            "The Git repository for this project in Launchpad, "
-            "if one exists, in the form: "
-            "~user/project-name/+git/repo-name"))
-
     branch_type = Choice(
         title=_('Import type'), vocabulary=BRANCH_TYPE_VOCABULARY,
         description=_("The type of import"), required=True)
@@ -1719,6 +1706,24 @@ class SetBranchForm(Interface):
     branch_owner = copy_field(
         IBranch['owner'], __name__='branch_owner', title=_('Branch owner'),
         description=_(''), required=True)
+
+
+def create_git_fields():
+    return form.Fields(
+        Choice(__name__='default_vcs',
+               title=_("Project VCS"),
+               required=True, vocabulary=VCSType,
+               description=_("The version control system for "
+                             "this project.")),
+        Choice(__name__='git_repository_location',
+               title=_('Git repository'),
+               required=False,
+               vocabulary='GitRepositoryRestrictedOnProduct',
+               description=_(
+                   "The Git repository for this project in Launchpad, "
+                   "if one exists, in the form: "
+                   "~user/project-name/+git/repo-name"))
+    )
 
 
 class ProductSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
@@ -1738,10 +1743,7 @@ class ProductSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
     custom_widget('default_vcs', LaunchpadRadioWidget)
 
     errors_in_action = False
-
-    @property
-    def is_series(self):
-        return False
+    is_series = False
 
     @property
     def series(self):
@@ -1765,6 +1767,12 @@ class ProductSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
         if self.errors_in_action:
             return None
         return super(ProductSetBranchView, self).next_url
+
+    def setUpFields(self):
+        """See `LaunchpadFormView`."""
+        super(ProductSetBranchView, self).setUpFields()
+        if not self.is_series:
+            self.form_fields = (self.form_fields + create_git_fields())
 
     def setUpWidgets(self):
         """See `LaunchpadFormView`."""
@@ -1791,13 +1799,14 @@ class ProductSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
             render_radio_widget_part(widget, value, current_value)
             for value in (LINK_LP_BZR, IMPORT_EXTERNAL)]
 
-        widget = self.widgets['default_vcs']
-        vocab = widget.vocabulary
-        current_value = widget._getFormValue()
-        self.default_vcs_git = render_radio_widget_part(
-            widget, vocab.GIT, current_value, 'Git')
-        self.default_vcs_bzr = render_radio_widget_part(
-            widget, vocab.BZR, current_value, 'Bazaar')
+        if not self.is_series:
+            widget = self.widgets['default_vcs']
+            vocab = widget.vocabulary
+            current_value = widget._getFormValue()
+            self.default_vcs_git = render_radio_widget_part(
+                widget, vocab.GIT, current_value, 'Git')
+            self.default_vcs_bzr = render_radio_widget_part(
+                widget, vocab.BZR, current_value, 'Bazaar')
 
     def _validateLinkLpBzr(self, data):
         """Validate data for link-lp-bzr case."""
@@ -1808,16 +1817,11 @@ class ProductSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
     def _validateLinkLpGit(self, data):
         """Validate data for link-lp-git case."""
         if data.get('git_repository_location'):
-            repo = getUtility(IGitRepositorySet).getByPath(
-                self.user, data.get('git_repository_location'))
+            repo = data.get('git_repository_location')
             if not repo:
                 self.setFieldError(
                     'git_repository_location',
                     'The repository does not exist.')
-            if not (self.context == repo.target):
-                self.setFieldError(
-                    'git_repository_location',
-                    'The repository is in a different project.')
 
     def _validateImportExternal(self, data):
         """Validate data for import external case."""
@@ -1835,7 +1839,7 @@ class ProductSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
             self.setFieldError(
                 'repo_url', 'You must set the external repository URL.')
         else:
-            reason = validate_import_url(repo_url)
+            reason = validate_import_url(repo_url, rcs_type)
             if reason:
                 self.setFieldError('repo_url', reason)
 
@@ -1913,7 +1917,8 @@ class ProductSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
         if len(self.errors) > 0:
             return
         branch_type = data.get('branch_type')
-        self._validateLinkLpGit(data)
+        if not self.is_series:
+            self._validateLinkLpGit(data)
         if branch_type == IMPORT_EXTERNAL:
             self._validateImportExternal(data)
         elif branch_type == LINK_LP_BZR:
@@ -1926,7 +1931,7 @@ class ProductSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
         """The branch target for the context."""
         return IBranchTarget(self.context)
 
-    def abort_update():
+    def abort_update(self):
         """Abort transaction.
 
         This is normally handled by LaunchpadFormView, but this can be called
@@ -1934,24 +1939,23 @@ class ProductSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
 
         self.errors_in_action = True
         self._abort()
-        return
 
     def add_update_notification(self):
         self.request.response.addInfoNotification(
-            'Project code updated.')
+            'Project settings updated.')
 
     @action(_('Update'), name='update')
     def update_action(self, action, data):
         branch_type = data.get('branch_type')
-        default_vcs = data.get('default_vcs')
 
-        if default_vcs:
-            self.context.vcs = default_vcs
+        if not self.is_series:
+            default_vcs = data.get('default_vcs')
+            if default_vcs:
+                self.context.vcs = default_vcs
 
-        git_repository_location = data.get('git_repository_location')
-        if git_repository_location:
-            repo = getUtility(IGitRepositorySet).getByPath(
-                self.user, git_repository_location)
+            repo = data.get('git_repository_location')
+            getUtility(IGitRepositorySet).setDefaultRepository(
+                self.context, repo)
         if branch_type == LINK_LP_BZR:
             branch_location = data.get('branch_location')
             if branch_location != self.series.branch:
@@ -1989,7 +1993,8 @@ class ProductSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
                         cvs_module=cvs_module)
                 except BranchExists as e:
                     self._setBranchExists(e.existing_branch, 'branch_name')
-                    abort_update()
+                    self.abort_update()
+                    return
                 self.series.branch = code_import.branch
                 self.request.response.addInfoNotification(
                     'Code import created and branch linked to the series.')

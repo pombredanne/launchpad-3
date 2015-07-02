@@ -359,11 +359,11 @@ class TestProductView(BrowserTestCase):
         view = create_initialized_view(self.product, '+index')
         self.assertTrue(view.show_programming_languages)
 
-    def test_show_default_vcs(self):
+    def test_show_inferred_vcs(self):
         with person_logged_in(self.product.owner):
             self.product.vcs = VCSType.GIT
-        view = create_initialized_view(self.product, '+index')
-        self.assertTrue(view.show_vcs)
+        browser = self.getViewBrowser(self.product, '+index')
+        self.assertIn(VCSType.GIT.title, browser.contents)
 
     def test_show_license_info_without_other_license(self):
         # show_license_info is false when one of the "other" licences is
@@ -698,12 +698,12 @@ class ProductSetReviewLicensesViewTestCase(TestCaseWithFactory):
             product = self.factory.makeProduct()
             for _ in range(5):
                 self.factory.makeProductReleaseFile(product=product)
-        IStore(Product).reset()
+        IStore(Product).invalidate()
         with StormStatementRecorder() as recorder:
             view = create_initialized_view(
                 self.product_set, '+review-licenses', principal=self.user)
             view.render()
-            self.assertThat(recorder, HasQueryCount(LessThan(25)))
+            self.assertThat(recorder, HasQueryCount(LessThan(26)))
 
 
 class TestProductRdfView(BrowserTestCase):

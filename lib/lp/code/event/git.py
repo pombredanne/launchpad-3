@@ -19,6 +19,7 @@ class GitRefsUpdatedEvent(ObjectEvent):
 
     implements(IGitRefsUpdatedEvent)
 
-    def __init__(self, repository, paths):
+    def __init__(self, repository, paths, logger):
         super(GitRefsUpdatedEvent, self).__init__(repository)
         self.paths = paths
+        self.logger = logger

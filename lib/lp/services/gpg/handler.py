@@ -462,15 +462,17 @@ class GPGHandler:
     def getURLForKeyInServer(self, fingerprint, action='index', public=False):
         """See IGPGHandler"""
         params = {
-            'search': '0x%s' % fingerprint,
             'op': action,
+            'search': '0x%s' % fingerprint,
+            'fingerprint': 'on',
             }
         if public:
             host = config.gpghandler.public_host
         else:
             host = config.gpghandler.host
-        return 'http://%s:%s/pks/lookup?%s' % (host, config.gpghandler.port,
-                                               urllib.urlencode(params))
+        return 'http://%s:%s/pks/lookup?%s' % (
+            host, config.gpghandler.port,
+            urllib.urlencode(sorted(params.items())))
 
     def _getPubKey(self, fingerprint):
         """See IGPGHandler for further information."""
