@@ -10,7 +10,7 @@ CREATE TABLE WebHook (
     date_created timestamp without time zone DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC') NOT NULL,
     date_last_modified timestamp without time zone DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC') NOT NULL,
     active boolean DEFAULT true NOT NULL,
-    endpoint_url text NOT NULL,
+    delivery_url text NOT NULL,
     secret text,
     json_data text NOT NULL,
     CHECK (git_repository IS NOT NULL) -- To be expanded to other targets later.
