@@ -387,9 +387,10 @@ class ProductSeriesView(
         """
         if (self.context.product.vcs == VCSType.BZR and
             self.context.product.development_focus.branch):
-            return ("{base_url}/{name} bzr {root}{branch}").format(
+            return ("{base_url}/{product}/{series} bzr {root}{branch}").format(
                 base_url=config.vhost.mainsite.hostname,
-                name=self.context.product.name,
+                product=self.context.product.name,
+                series=self.context.name,
                 branch=self.context.branch.unique_name,
                 root=config.codehosting.supermirror_root)
         else:

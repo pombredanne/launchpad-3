@@ -1041,10 +1041,10 @@ class ProductView(PillarViewMixin, HasAnnouncementsView, SortSeriesMixin,
         elif (self.context.vcs == VCSType.BZR and
         self.context.development_focus.branch):
             return (
-                "{base_url}/{name} bzr "
+                "{base_url}/{product} bzr "
                 "{browse_root}{branch}").format(
                     base_url=config.vhost.mainsite.hostname,
-                    name=self.context.name,
+                    product=self.context.name,
                     branch=self.context.development_focus.branch.unique_name,
                     browse_root=config.codehosting.supermirror_root)
         else:
