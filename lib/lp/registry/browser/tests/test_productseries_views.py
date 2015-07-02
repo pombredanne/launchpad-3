@@ -55,7 +55,8 @@ class TestProductSeries(BrowserTestCase):
             )
         self.assertEqual(golang_import, view.golang_import_spec)
         meta_tag = soupmatchers.Tag('go-import-meta', 'meta',
-                                    attrs={'name': 'go-import'})
+                                    attrs={'name': 'go-import',
+                                           'content': golang_import})
         browser = self.getViewBrowser(branch.product.development_focus,
                                       '+index', user=branch.owner)
         self.assertThat(browser.contents, soupmatchers.HTMLContains(meta_tag))

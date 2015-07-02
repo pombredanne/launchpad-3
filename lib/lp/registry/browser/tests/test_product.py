@@ -313,7 +313,8 @@ class TestProductView(BrowserTestCase):
             repo_url=repo.git_https_url
             )
         self.assertEqual(golang_import, view.golang_import_spec)
-        meta_tag = Tag('go-import-meta', 'meta', attrs={'name': 'go-import'})
+        meta_tag = Tag('go-import-meta', 'meta',
+                       attrs={'name': 'go-import', 'content': golang_import})
         browser = self.getViewBrowser(repo.target, '+index',
                                       user=repo.target.owner)
         self.assertThat(browser.contents, HTMLContains(meta_tag))
@@ -339,7 +340,8 @@ class TestProductView(BrowserTestCase):
                 root=config.codehosting.supermirror_root
             )
         self.assertEqual(golang_import, view.golang_import_spec)
-        meta_tag = Tag('go-import-meta', 'meta', attrs={'name': 'go-import'})
+        meta_tag = Tag('go-import-meta', 'meta',
+                       attrs={'name': 'go-import', 'content': golang_import})
         browser = self.getViewBrowser(branch.product, '+index',
                                       user=branch.owner)
         self.assertThat(browser.contents, HTMLContains(meta_tag))
