@@ -50,7 +50,6 @@ class TestProductSeries(BrowserTestCase):
             "{base}/~zardoz/wapcaplet/a-branch bzr "
             "{root}~zardoz/wapcaplet/a-branch").format(
                 base=config.vhost.mainsite.hostname,
-                owner=branch.owner.name,
                 root=config.codehosting.supermirror_root
             )
         self.assertEqual(golang_import, view.golang_import_spec)
