@@ -106,12 +106,12 @@ class TestProductConfiguration(BrowserTestCase):
 
     def test_configure_answers_skips_launchpad_for_proprietary(self):
         # Proprietary projects forbid LAUNCHPAD for answers.
-        for info_type in PROPRIETARY_INFORMATION_TYPES:
-            product = self.factory.makeProduct(information_type=info_type)
-            with person_logged_in(None):
-                browser = self.getViewBrowser(product, '+configure-answers',
-                    user=removeSecurityProxy(product).owner)
-            self.assertThat(browser.contents, Not(HTMLContains(self.lp_tag)))
+        product = self.factory.makeProduct(
+            information_type=InformationType.PROPRIETARY)
+        with person_logged_in(None):
+            browser = self.getViewBrowser(product, '+configure-answers',
+                user=removeSecurityProxy(product).owner)
+        self.assertThat(browser.contents, Not(HTMLContains(self.lp_tag)))
 
 
 def make_product_form(person=None, action=1, proprietary=False):
@@ -482,14 +482,14 @@ class TestProductEditView(BrowserTestCase):
         }
 
     def test_limited_information_types_allowed(self):
-        """Products can only be PUBLIC_PROPRIETARY_INFORMATION_TYPES"""
+        """Products can only be PILLAR_INFORMATION_TYPES"""
         product = self.factory.makeProduct()
         login_person(product.owner)
         view = create_initialized_view(
             product, '+edit', principal=product.owner)
         vocabulary = view.widgets['information_type'].vocabulary
         info_types = [t.name for t in vocabulary]
-        expected = ['PUBLIC', 'PROPRIETARY', 'EMBARGOED']
+        expected = ['PUBLIC', 'PROPRIETARY']
         self.assertEqual(expected, info_types)
 
     def test_change_information_type_proprietary(self):
@@ -683,52 +683,46 @@ class TestProductSet(BrowserTestCase):
             information_type=InformationType.PUBLIC, owner=owner)
         proprietary = self.factory.makeProduct(
             information_type=InformationType.PROPRIETARY, owner=owner)
-        embargoed = self.factory.makeProduct(
-            information_type=InformationType.EMBARGOED, owner=owner)
-        return owner, public, proprietary, embargoed
+        return owner, public, proprietary
 
     def test_proprietary_products_skipped(self):
         # Ignore proprietary products for anonymous users
-        owner, public, proprietary, embargoed = self.makeAllInformationTypes()
+        owner, public, proprietary = self.makeAllInformationTypes()
         browser = self.getViewBrowser(getUtility(IProductSet))
         with person_logged_in(owner):
             self.assertIn(public.name, browser.contents)
             self.assertNotIn(proprietary.name, browser.contents)
-            self.assertNotIn(embargoed.name, browser.contents)
 
     def test_proprietary_products_shown_to_owners(self):
         # Owners will see their proprietary products listed
-        owner, public, proprietary, embargoed = self.makeAllInformationTypes()
+        owner, public, proprietary = self.makeAllInformationTypes()
         transaction.commit()
         browser = self.getViewBrowser(getUtility(IProductSet), user=owner)
         with person_logged_in(owner):
             self.assertIn(public.name, browser.contents)
             self.assertIn(proprietary.name, browser.contents)
-            self.assertIn(embargoed.name, browser.contents)
 
     def test_proprietary_products_skipped_all(self):
         # Ignore proprietary products for anonymous users
-        owner, public, proprietary, embargoed = self.makeAllInformationTypes()
+        owner, public, proprietary = self.makeAllInformationTypes()
         product_set = getUtility(IProductSet)
         browser = self.getViewBrowser(product_set, view_name='+all')
         with person_logged_in(owner):
             self.assertIn(public.name, browser.contents)
             self.assertNotIn(proprietary.name, browser.contents)
-            self.assertNotIn(embargoed.name, browser.contents)
 
     def test_proprietary_products_shown_to_owners_all(self):
         # Owners will see their proprietary products listed
-        owner, public, proprietary, embargoed = self.makeAllInformationTypes()
+        owner, public, proprietary = self.makeAllInformationTypes()
         transaction.commit()
         browser = self.getViewBrowser(getUtility(IProductSet), user=owner,
                 view_name='+all')
         with person_logged_in(owner):
             self.assertIn(public.name, browser.contents)
             self.assertIn(proprietary.name, browser.contents)
-            self.assertIn(embargoed.name, browser.contents)
 
     def test_review_exclude_proprietary_for_expert(self):
-        owner, public, proprietary, embargoed = self.makeAllInformationTypes()
+        owner, public, proprietary = self.makeAllInformationTypes()
         transaction.commit()
         expert = self.factory.makeRegistryExpert()
         browser = self.getViewBrowser(getUtility(IProductSet),
@@ -737,10 +731,9 @@ class TestProductSet(BrowserTestCase):
         with person_logged_in(owner):
             self.assertIn(public.name, browser.contents)
             self.assertNotIn(proprietary.name, browser.contents)
-            self.assertNotIn(embargoed.name, browser.contents)
 
     def test_review_include_proprietary_for_admin(self):
-        owner, public, proprietary, embargoed = self.makeAllInformationTypes()
+        owner, public, proprietary = self.makeAllInformationTypes()
         transaction.commit()
         admin = self.factory.makeAdministrator()
         browser = self.getViewBrowser(getUtility(IProductSet),
@@ -749,4 +742,3 @@ class TestProductSet(BrowserTestCase):
         with person_logged_in(owner):
             self.assertIn(public.name, browser.contents)
             self.assertIn(proprietary.name, browser.contents)
-            self.assertIn(embargoed.name, browser.contents)

@@ -11,6 +11,7 @@ __all__ = [
     'NON_EMBARGOED_INFORMATION_TYPES',
     'PRIVATE_INFORMATION_TYPES',
     'PROPRIETARY_INFORMATION_TYPES',
+    'PILLAR_INFORMATION_TYPES',
     'PUBLIC_INFORMATION_TYPES',
     'PUBLIC_PROPRIETARY_INFORMATION_TYPES',
     'SECURITY_INFORMATION_TYPES',
@@ -67,7 +68,6 @@ class InformationType(DBEnumeratedType):
         Only shared with users permitted to see embargoed information.
         """)
 
-
 PUBLIC_INFORMATION_TYPES = (
     InformationType.PUBLIC, InformationType.PUBLICSECURITY)
 
@@ -96,6 +96,9 @@ PROPRIETARY_INFORMATION_TYPES = (
 PUBLIC_PROPRIETARY_INFORMATION_TYPES = (
     (InformationType.PUBLIC,) + PROPRIETARY_INFORMATION_TYPES
 )
+
+PILLAR_INFORMATION_TYPES = (
+    InformationType.PUBLIC, InformationType.PROPRIETARY)
 
 
 class ServiceUsage(DBEnumeratedType):
