@@ -10,7 +10,7 @@ __all__ = [
     'CodeReviewCommentMailer',
     ]
 
-
+from bzrlib import patches
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -169,18 +169,92 @@ class CodeReviewCommentMailer(BMPMailer):
                 content, content_type=content_type, filename=filename)
 
 
+def format_comment(comment):
+    """Returns a list of correctly formatted comment(s)."""
+    comment_lines = []
+    if comment is not None:
+        comment_lines.append('')
+        comment_lines.extend(comment.splitlines())
+        comment_lines.append('')
+    return comment_lines
+
+
 def build_inline_comments_section(comments, diff_text):
-    """Return a formatted text section with contextualized comments."""
+    """Return a formatted text section with contextualized comments.
+
+    Hunks without comments are skipped to limit verbosity.
+    Comments can be rendered after patch headers, hunk context lines,
+    and hunk lines.
+    """
+    diff_lines = diff_text.splitlines(True)
+
+    diff_patches = patches.parse_patches(
+        diff_lines, allow_dirty=True, keep_dirty=True)
     result_lines = []
-    diff_lines = diff_text.splitlines()
-    for num, line in enumerate(diff_lines, 1):
-        result_lines.append(u'> {0}'.format(line.decode('utf-8', 'replace')))
-        comment = comments.get(str(num))
-        if comment is not None:
-            result_lines.append('')
-            result_lines.extend(comment.splitlines())
-            result_lines.append('')
+    line_count = 0  # track lines in original diff
 
-    result_text = u'\n'.join(result_lines)
+    for patch in diff_patches:
+        patch_lines = []
+        dirty_head = []
+        dirty_comment = False
+        patch_comment = False
 
+        if isinstance(patch, dict) and 'dirty_head' in patch:
+            for line in patch['dirty_head']:
+                dirty_head.append(u'> %s' % line.rstrip('\n'))
+                line_count += 1  # inc for dirty headers
+                comment = comments.get(str(line_count))
+                if comment:
+                    dirty_head.extend(format_comment(comment))
+                    dirty_comment = True
+            patch = patch['patch']
+
+        for ph in patch.get_header().splitlines():
+            line_count += 1  # inc patch headers
+            comment = comments.get(str(line_count))
+
+            patch_lines.append('> {0}'.format(ph))
+            if comment:
+                patch_lines.extend(format_comment(comment))
+                patch_comment = True
+
+        keep_hunks = []  # preserve hunks with comments
+        for hunk in patch.hunks:
+            hunk_lines = []
+            hunk_comment = False
+
+            # add context line (hunk header)
+            line_count += 1  # inc hunk context line
+            hunk_lines.append(u'> %s' % hunk.get_header().rstrip('\n'))
+
+            # comment for context line (hunk header)
+            comment = comments.get(str(line_count))
+            if comment:
+                hunk_lines.extend(format_comment(comment))
+                hunk_comment = True
+
+            for line in hunk.lines:
+                line_count += 1  # inc hunk lines
+
+                #  line is a ContextLine/ReplaceLine
+                hunk_lines.append(u'> %s' % str(line).rstrip('\n').decode(
+                    'utf-8', 'replace'))
+                comment = comments.get(str(line_count))
+                if comment:
+                    hunk_lines.extend(format_comment(comment))
+                    hunk_comment = True
+
+            # preserve hunks for context if comment in patch header
+            if patch_comment or hunk_comment:
+                keep_hunks.extend(hunk_lines)
+
+        # Add entire patch and hunks to result if comment found
+        if patch_comment or keep_hunks:
+            result_lines.extend(dirty_head)
+            result_lines.extend(patch_lines)
+            result_lines.extend(keep_hunks)
+        elif dirty_comment:
+            result_lines.extend(dirty_head)
+
+    result_text = '\n'.join(result_lines)
     return '\n\nDiff comments:\n\n%s\n\n' % result_text

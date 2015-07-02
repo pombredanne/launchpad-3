@@ -113,9 +113,6 @@ class ISharingService(IService):
         :return: a (bugtasks, branches, gitrepositories, specifications) tuple
         """
 
-    def checkPillarArtifactAccess(pillar, user):
-        """Return True if user has any grants on pillar else return False."""
-
     @export_read_operation()
     @call_with(user=REQUEST_USER)
     @operation_parameters(

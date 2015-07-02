@@ -249,6 +249,7 @@ from lp.services.database.enumcol import EnumCol
 from lp.services.database.interfaces import IStore
 from lp.services.database.policy import MasterDatabasePolicy
 from lp.services.database.sqlbase import (
+    convert_storm_clause_to_string,
     cursor,
     quote,
     SQLBase,
@@ -1013,52 +1014,23 @@ class Person(
 
     def _genAffiliatedProductSql(self, user=None):
         """Helper to generate the product sql for getAffiliatePillars"""
+        from lp.registry.model.product import ProductSet
         base_query = """
             SELECT name, 3 as kind, displayname
-            FROM product p
+            FROM product
             WHERE
-                p.active = True
+                product.active = True
                 AND (
-                    p.driver = %(person)s
-                    OR p.owner = %(person)s
-                    OR p.bug_supervisor = %(person)s
+                    product.driver = %(person)s
+                    OR product.owner = %(person)s
+                    OR product.bug_supervisor = %(person)s
                 )
         """ % sqlvalues(person=self)
 
-        if user is not None:
-            roles = IPersonRoles(user)
-            if roles.in_admin or roles.in_commercial_admin:
-                return base_query
-
-        # This is the raw sql version of model/product getProductPrivacyFilter
-        granted_products = """
-            SELECT p.id
-            FROM product p,
-                 accesspolicygrantflat apflat,
-                 teamparticipation part,
-                 accesspolicy ap
-             WHERE
-                apflat.grantee = part.team
-                AND part.person = %(user)s
-                AND apflat.policy = ap.id
-                AND ap.product = p.id
-                AND ap.type = p.information_type
-        """ % sqlvalues(user=user)
-
-        # We have to generate the sqlvalues first so that they're properly
-        # setup and escaped. Then we combine the above query which is already
-        # processed.
-        query_values = sqlvalues(information_type=InformationType.PUBLIC)
-        query_values.update(granted_sql=granted_products)
-
-        query = base_query + """
-                AND (
-                    p.information_type = %(information_type)s
-                    OR p.information_type is NULL
-                    OR p.id IN (%(granted_sql)s)
-                )
-        """ % query_values
-        return query
+        return "%s AND (%s)" % (
+            base_query,
+            convert_storm_clause_to_string(
+                ProductSet.getProductPrivacyFilter(user)))
 
     def getAffiliatedPillars(self, user):
         """See `IPerson`."""
@@ -1750,22 +1722,33 @@ class Person(
 
     def getAdministratedTeams(self):
         """See `IPerson`."""
-        owner_of_teams = Person.select('''
-            Person.teamowner = TeamParticipation.team
-            AND TeamParticipation.person = %s
-            AND Person.merged IS NULL
-            ''' % sqlvalues(self),
-            clauseTables=['TeamParticipation'])
-        admin_of_teams = Person.select('''
-            Person.id = TeamMembership.team
-            AND TeamMembership.status = %(admin)s
-            AND TeamMembership.person = TeamParticipation.team
-            AND TeamParticipation.person = %(person)s
-            AND Person.merged IS NULL
-            ''' % sqlvalues(person=self, admin=TeamMembershipStatus.ADMIN),
-            clauseTables=['TeamParticipation', 'TeamMembership'])
-        return admin_of_teams.union(
-            owner_of_teams, orderBy=self._sortingColumnsForSetOperations)
+        class RestrictedParticipation:
+            __storm_table__ = 'RestrictedParticipation'
+            teamID = Int(primary=True, name='team')
+
+        restricted_participation_cte = With(
+            'RestrictedParticipation',
+            Select(
+                TeamParticipation.teamID, tables=[TeamParticipation],
+                where=TeamParticipation.person == self))
+        team_select = Select(
+            RestrictedParticipation.teamID, tables=[RestrictedParticipation])
+
+        return Store.of(self).with_(restricted_participation_cte).find(
+            Person,
+            Person.id.is_in(
+                Union(
+                    Select(
+                        Person.id, tables=[Person],
+                        where=Person.teamownerID.is_in(team_select)),
+                    Select(
+                        TeamMembership.teamID, tables=[TeamMembership],
+                        where=And(
+                            TeamMembership.status ==
+                                TeamMembershipStatus.ADMIN,
+                            TeamMembership.personID.is_in(team_select))))),
+            Person.merged == None).order_by(
+                self._sortingColumnsForSetOperations)
 
     def getDirectAdministrators(self):
         """See `IPerson`."""

@@ -32,17 +32,20 @@ from sqlobject import (
     StringCol,
     )
 from storm.expr import (
-    LeftJoin,
-    NamedFunc,
-    )
-from storm.locals import (
     And,
+    Coalesce,
     Desc,
     Join,
+    LeftJoin,
+    NamedFunc,
     Not,
     Or,
     Select,
     SQL,
+    )
+from storm.locals import (
+    Int,
+    List,
     Store,
     Unicode,
     )
@@ -163,10 +166,7 @@ from lp.registry.interfaces.product import (
     )
 from lp.registry.interfaces.productrelease import IProductReleaseSet
 from lp.registry.interfaces.role import IPersonRoles
-from lp.registry.model.accesspolicy import (
-    AccessPolicy,
-    AccessPolicyGrantFlat,
-    )
+from lp.registry.model.accesspolicy import AccessPolicyGrantFlat
 from lp.registry.model.announcement import MakesAnnouncements
 from lp.registry.model.commercialsubscription import CommercialSubscription
 from lp.registry.model.distribution import Distribution
@@ -197,7 +197,11 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from lp.services.database.stormexpr import fti_search
+from lp.services.database.stormexpr import (
+    ArrayAgg,
+    ArrayIntersects,
+    fti_search,
+    )
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
@@ -811,6 +815,31 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             grants.append((p, self.owner, self.owner))
         getUtility(IAccessPolicyGrantSource).grant(grants)
 
+        self._cacheAccessPolicies()
+
+    def _cacheAccessPolicies(self):
+        # Update the cache of AccessPolicy.ids for which an
+        # AccessPolicyGrant or AccessArtifactGrant is sufficient to
+        # convey launchpad.LimitedView on this Product.
+        #
+        # We only need a cache for proprietary types, and it only
+        # includes proprietary policies in case a policy like Private
+        # Security was somehow left around when a project was
+        # transitioned to Proprietary.
+        if self.information_type in PROPRIETARY_INFORMATION_TYPES:
+            policy_ids = [
+                policy.id for policy in
+                getUtility(IAccessPolicySource).find(
+                    [(self, type) for type in PROPRIETARY_INFORMATION_TYPES])]
+        else:
+            policy_ids = None
+        # XXX wgrant 2015-06-30: We must set this manually, as Storm's
+        # MutableValueVariable causes a PostgresConnection to be
+        # uncollectable in some circumstances involving a Store.reset.
+        Store.of(self).execute(
+            "UPDATE Product SET access_policies = ? WHERE id = ?",
+            (policy_ids, self.id))
+
     def _pruneUnusedPolicies(self):
         allowed_bug_types = set(
             BUG_POLICY_ALLOWED_TYPES.get(
@@ -836,6 +865,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             and apa_source.findByPolicy([ap]).is_empty()]
         getUtility(IAccessPolicyGrantSource).revokeByPolicy(unused_aps)
         ap_source.delete([(ap.pillar, ap.type) for ap in unused_aps])
+        self._cacheAccessPolicies()
 
     @cachedproperty
     def commercial_subscription(self):
@@ -1595,6 +1625,17 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             return True
         return False
 
+    def userCanLimitedView(self, user):
+        """See `IProductPublic`."""
+        if self.userCanView(user):
+            return True
+        if user is None:
+            return False
+        return not Store.of(self).find(
+            Product,
+            Product.id == self.id,
+            ProductSet.getProductPrivacyFilter(user.person)).is_empty()
+
 
 def get_precached_products(products, need_licences=False,
                            need_projectgroups=False, need_series=False,
@@ -1785,19 +1826,39 @@ class ProductSet:
 
     @staticmethod
     def getProductPrivacyFilter(user):
-        if user is not None:
-            roles = IPersonRoles(user)
-            if roles.in_admin or roles.in_commercial_admin:
-                return True
-        granted_products = And(
-            AccessPolicyGrantFlat.grantee_id == TeamParticipation.teamID,
-            TeamParticipation.person == user,
-            AccessPolicyGrantFlat.policy == AccessPolicy.id,
-            AccessPolicy.product == Product.id,
-            AccessPolicy.type == Product._information_type)
-        return Or(Product._information_type == InformationType.PUBLIC,
-                  Product._information_type == None,
-                  Product.id.is_in(Select(Product.id, granted_products)))
+        # Anonymous users can only see public projects. This is also
+        # sometimes used with an outer join with eg. Distribution, so we
+        # let NULL through too.
+        public_filter = Or(
+            Product._information_type == None,
+            Product._information_type == InformationType.PUBLIC)
+        if user is None:
+            return public_filter
+
+        # (Commercial) admins can see any project.
+        roles = IPersonRoles(user)
+        if roles.in_admin or roles.in_commercial_admin:
+            return True
+
+        # Normal users can see any project for which they can see either
+        # an entire policy or an artifact.
+        # XXX wgrant 2015-06-26: This is slower than ideal for people in
+        # teams with lots of artifact grants, as there can be tens of
+        # thousands of APGF rows for a single policy. But it's tens of
+        # milliseconds at most.
+        grant_filter = Coalesce(
+            ArrayIntersects(
+                SQL('Product.access_policies'),
+                Select(
+                    ArrayAgg(AccessPolicyGrantFlat.policy_id),
+                    tables=(AccessPolicyGrantFlat,
+                            Join(TeamParticipation,
+                                TeamParticipation.teamID ==
+                                AccessPolicyGrantFlat.grantee_id)),
+                    where=(TeamParticipation.person == user)
+                )),
+            False)
+        return Or(public_filter, grant_filter)
 
     @classmethod
     def get_users_private_products(cls, user):

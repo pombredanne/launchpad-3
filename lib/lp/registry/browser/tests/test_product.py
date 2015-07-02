@@ -649,12 +649,12 @@ class ProductSetReviewLicensesViewTestCase(TestCaseWithFactory):
             product = self.factory.makeProduct()
             for _ in range(5):
                 self.factory.makeProductReleaseFile(product=product)
-        IStore(Product).reset()
+        IStore(Product).invalidate()
         with StormStatementRecorder() as recorder:
             view = create_initialized_view(
                 self.product_set, '+review-licenses', principal=self.user)
             view.render()
-            self.assertThat(recorder, HasQueryCount(LessThan(25)))
+            self.assertThat(recorder, HasQueryCount(LessThan(26)))
 
 
 class TestProductRdfView(BrowserTestCase):

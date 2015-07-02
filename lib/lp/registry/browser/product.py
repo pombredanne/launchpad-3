@@ -1722,11 +1722,14 @@ class ProductSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
 
     @property
     def initial_values(self):
+        repository_set = getUtility(IGitRepositorySet)
         return dict(
             rcs_type=RevisionControlSystems.BZR,
             default_vcs=(self.context.pillar.inferred_vcs or VCSType.BZR),
             branch_type=LINK_LP_BZR,
-            branch_location=self.series.branch)
+            branch_location=self.series.branch,
+            git_repository_location=repository_set.getDefaultRepository(
+                self.context.pillar))
 
     @property
     def next_url(self):
