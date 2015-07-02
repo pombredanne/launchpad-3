@@ -346,6 +346,31 @@ class TestProductView(BrowserTestCase):
                                       user=branch.owner)
         self.assertThat(browser.contents, HTMLContains(meta_tag))
 
+    def test_golang_meta_no_default_vcs(self):
+        # ensure golang meta import path is not rendered without
+        # a default vcs
+        branch = self.factory.makeBranch()
+        view = create_initialized_view(branch.product, '+index')
+        self.assertEqual(None, view.golang_import_spec)
+
+    def test_golang_meta_no_default_branch(self):
+        # ensure golang meta import path is not rendered without
+        # a product development_focus.
+        branch = self.factory.makeBranch()
+        view = create_initialized_view(branch.product, '+index')
+        with person_logged_in(branch.product.owner):
+            branch.product.vcs = VCSType.BZR
+        self.assertEqual(None, view.golang_import_spec)
+
+    def test_golang_meta_no_default_repo(self):
+        # ensure golang meta import path is not rendered without
+        # a default repo.
+        repo = self.factory.makeGitRepository()
+        view = create_initialized_view(repo.target, '+index')
+        with person_logged_in(repo.target.owner):
+            repo.target.vcs = VCSType.GIT
+        self.assertEqual(None, view.golang_import_spec)
+
     def test_show_programming_languages_without_languages(self):
         # show_programming_languages is false when there are no programming
         # languages set.
