@@ -7,10 +7,12 @@ __metaclass__ = type
 
 __all__ = [
     'IWebhook',
+    'IWebhookDeliveryJob',
     'IWebhookTarget',
     ]
 
 from lp.services.webhooks.interfaces import (
     IWebhook,
+    IWebhookDeliveryJob,
     IWebhookTarget,
     )

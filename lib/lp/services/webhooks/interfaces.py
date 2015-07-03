@@ -20,7 +20,6 @@ from lazr.restful.declarations import (
     call_with,
     export_as_webservice_entry,
     export_factory_operation,
-    export_write_operation,
     exported,
     operation_for_version,
     REQUEST_USER,
@@ -36,6 +35,7 @@ from zope.interface import (
 from zope.schema import (
     Bool,
     Datetime,
+    Dict,
     Int,
     TextLine,
     )
@@ -47,7 +47,11 @@ from lp.services.job.interfaces.job import (
     IJobSource,
     IRunnableJob,
     )
-from lp.services.webservice.apihelpers import patch_reference_property
+from lp.services.webservice.apihelpers import (
+    patch_collection_property,
+    patch_entry_return_type,
+    patch_reference_property,
+    )
 
 
 class IWebhook(Interface):
@@ -75,7 +79,15 @@ class IWebhook(Interface):
     secret = TextLine(
         title=_("Unique name"), required=False, readonly=True)
 
-    @export_write_operation()
+    deliveries = exported(doNotSnapshot(CollectionField(
+        title=_("Recent deliveries for this webhook."),
+        value_type=Reference(schema=Interface),
+        readonly=True)))
+
+    def getDelivery(id):
+        """Retrieve a delivery by ID, or None if it doesn't exist."""
+
+    @export_factory_operation(Interface, [])  # Actually IWebhookDelivery.
     @operation_for_version('devel')
     def ping():
         """Send a test event."""
@@ -129,6 +141,16 @@ class IWebhookJob(Interface):
 class IWebhookDeliveryJob(IRunnableJob):
     """A Job that delivers an event to a webhook consumer."""
 
+    export_as_webservice_entry('webhook_delivery', as_of='beta')
+
+    webhook = exported(Reference(
+        title=_("The webhook that this delivery is for."),
+        schema=IWebhook, required=True, readonly=True))
+
+    payload = exported(Dict(
+        title=_('Event payload'),
+        key_type=TextLine(), required=True, readonly=True))
+
 
 class IWebhookDeliveryJobSource(IJobSource):
 
@@ -154,4 +176,6 @@ class IWebhookClient(Interface):
         the proxy being offline will raise an exception.
         """
 
+patch_collection_property(IWebhook, 'deliveries', IWebhookDeliveryJob)
+patch_entry_return_type(IWebhook, 'ping', IWebhookDeliveryJob)
 patch_reference_property(IWebhook, 'target', IWebhookTarget)

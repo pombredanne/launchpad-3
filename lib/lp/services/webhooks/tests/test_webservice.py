@@ -44,9 +44,10 @@ class TestWebhook(TestCaseWithFactory):
         representation = self.webservice.get(
             self.webhook_url, api_version='devel').jsonBody()
         self.assertContentEqual(
-            ['active', 'date_created', 'date_last_modified', 'delivery_url',
-             'http_etag', 'registrant_link', 'resource_type_link',
-             'self_link', 'target_link', 'web_link'],
+            ['active', 'date_created', 'date_last_modified',
+             'deliveries_collection_link', 'delivery_url', 'http_etag',
+             'registrant_link', 'resource_type_link', 'self_link',
+             'target_link', 'web_link'],
             representation.keys())
 
     def test_patch(self):
@@ -76,6 +77,27 @@ class TestWebhook(TestCaseWithFactory):
             self.webhook_url, api_version='devel')
         self.assertEqual(401, response.status)
         self.assertIn('launchpad.View', response.body)
+
+    def test_deliveries(self):
+        representation = self.webservice.get(
+            self.webhook_url + '/deliveries', api_version='devel').jsonBody()
+        self.assertContentEqual(
+            [], [entry['payload'] for entry in representation['entries']])
+
+        # Send a test event.
+        response = self.webservice.named_post(
+            self.webhook_url, 'ping', api_version='devel')
+        self.assertEqual(201, response.status)
+        delivery = self.webservice.get(
+            response.getHeader("Location")).jsonBody()
+        self.assertEqual({'ping': True}, delivery['payload'])
+
+        # The delivery shows up in the collection.
+        representation = self.webservice.get(
+            self.webhook_url + '/deliveries', api_version='devel').jsonBody()
+        self.assertContentEqual(
+            [delivery['self_link']],
+            [entry['self_link'] for entry in representation['entries']])
 
 
 class TestWebhookTarget(TestCaseWithFactory):

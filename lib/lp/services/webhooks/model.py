@@ -34,6 +34,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
+from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.interfaces import IStore
 from lp.services.database.stormbase import StormBase
@@ -92,8 +93,20 @@ class Webhook(StormBase):
         else:
             raise AssertionError("No target.")
 
+    @property
+    def deliveries(self):
+        jobs = Store.of(self).find(
+            WebhookJob,
+            WebhookJob.webhook == self,
+            WebhookJob.job_type == WebhookJobType.DELIVERY,
+            ).order_by(WebhookJob.job_id)
+        return DecoratedResultSet(jobs, lambda job: job.makeDerived())
+
+    def getDelivery(self, id):
+        return self.deliveries.find(WebhookJob.job_id == id).one()
+
     def ping(self):
-        WebhookDeliveryJob.create(self, {'ping': True})
+        return WebhookDeliveryJob.create(self, {'ping': True})
 
 
 class WebhookSource:
@@ -220,10 +233,14 @@ class WebhookDeliveryJob(WebhookJobDerived):
         job.celeryRunOnCommit()
         return job
 
+    @property
+    def payload(self):
+        return self.json_data['payload']
+
     def run(self):
         result = getUtility(IWebhookClient).deliver(
             self.webhook.delivery_url, config.webhooks.http_proxy,
-            self.json_data['payload'])
+            self.payload)
         updated_data = self.json_data
         updated_data['result'] = result
         self.json_data = updated_data
