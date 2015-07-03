@@ -47,10 +47,10 @@ class TestProductSeries(BrowserTestCase):
             branch.product.vcs = VCSType.BZR
 
         golang_import = (
-            "{base}/~zardoz/wapcaplet/a-branch bzr "
+            "{base}/wapcaplet/trunk bzr "
             "{root}~zardoz/wapcaplet/a-branch").format(
                 base=config.vhost.mainsite.hostname,
-                root=config.codehosting.supermirror_root
+                root=config.codehosting.supermirror_root,
             )
         self.assertEqual(golang_import, view.golang_import_spec)
         meta_tag = soupmatchers.Tag('go-import-meta', 'meta',
