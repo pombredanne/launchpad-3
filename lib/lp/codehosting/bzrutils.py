@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Utilities for dealing with Bazaar.
@@ -27,6 +27,7 @@ __all__ = [
 from contextlib import contextmanager
 import os
 import sys
+import xmlrpclib
 
 from bzrlib import (
     config,
@@ -60,10 +61,16 @@ from lp.services.webapp.errorlog import (
 # Exception classes which are not converted into OOPSes
 NOT_OOPS_EXCEPTIONS = (AppendRevisionsOnlyViolation,)
 
-def should_log_oops(exc):
+
+def should_log_oops(exctype, excvalue):
     """Return true if exc should trigger an OOPS.
     """
-    return not issubclass(exc, NOT_OOPS_EXCEPTIONS)
+    if issubclass(exctype, NOT_OOPS_EXCEPTIONS):
+        return False
+    if (issubclass(exctype, xmlrpclib.ProtocolError) and
+            excvalue.errcode == 401):
+        return False
+    return True
 
 
 def is_branch_stackable(bzr_branch):
@@ -172,8 +179,9 @@ def make_oops_logging_exception_hook(error_utility, request):
     """Make a hook for logging OOPSes."""
 
     def log_oops():
-        if should_log_oops(sys.exc_info()[0]):
-            error_utility.raising(sys.exc_info(), request)
+        exc = sys.exc_info()
+        if should_log_oops(exc[0], exc[1]):
+            error_utility.raising(exc, request)
     return log_oops
 
 
