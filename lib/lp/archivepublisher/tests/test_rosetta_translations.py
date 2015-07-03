@@ -7,6 +7,7 @@ See also lp.soyuz.tests.test_distroseriesqueue_rosetta_translations for
 high-level tests of rosetta-translations upload and queue manipulation.
 """
 
+from storm.expr import Desc
 import transaction
 from zope.security.proxy import removeSecurityProxy
 from zope.component import getUtility
@@ -16,6 +17,7 @@ from lp.archivepublisher.rosetta_translations import (
     RosettaTranslationsUpload,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.database.interfaces import IStore
 from lp.services.tarfile_helpers import LaunchpadWriteTarFile
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -29,6 +31,7 @@ from lp.soyuz.interfaces.sourcepackageformat import (
 from lp.soyuz.model.packagetranslationsuploadjob import (
     PackageTranslationsUploadJob,
     )
+from lp.soyuz.model.queue import PackageUpload
 from lp.testing import TestCaseWithFactory, person_logged_in
 from lp.testing.layers import LaunchpadZopelessLayer
 
@@ -138,9 +141,6 @@ class TestRosettaTranslations(TestCaseWithFactory):
 
         job.run()
 
-        from storm.expr import Desc
-        from lp.soyuz.model.queue import PackageUpload
-        from lp.services.database.interfaces import IStore
         upload = IStore(PackageUpload).find(PackageUpload).order_by(
             Desc(PackageUpload.id)).first()
 
