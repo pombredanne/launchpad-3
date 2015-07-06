@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for bzrutils."""
@@ -7,7 +7,6 @@ __metaclass__ = type
 
 import gc
 import sys
-import xmlrpclib
 
 from bzrlib import (
     errors,
@@ -182,26 +181,6 @@ class TestExceptionLoggingHooks(TestCase):
         exception = AppendRevisionsOnlyViolation("foo")
         self.logException(exception)
         self.assertEqual(0, len(self.oopses))
-
-    def test_doesnt_call_hook_for_unauthorized(self):
-        # 401 Unauthorized can happen in normal operation when somebody
-        # tries to access a branch they don't have access to, and isn't
-        # worth an OOPS.
-        self.assertEqual(0, len(self.oopses))
-        hook = install_oops_handler(1000)
-        self.addCleanup(remove_exception_logging_hook, hook)
-        exception = xmlrpclib.ProtocolError("", 401, "", "")
-        self.logException(exception)
-        self.assertEqual(0, len(self.oopses))
-
-    def test_calls_hook_for_other_protocol_error(self):
-        # Other XML-RPC protocol errors still log an OOPS.
-        self.assertEqual(0, len(self.oopses))
-        hook = install_oops_handler(1000)
-        self.addCleanup(remove_exception_logging_hook, hook)
-        exception = xmlrpclib.ProtocolError("", 500, "", "")
-        self.logException(exception)
-        self.assertEqual(1, len(self.oopses))
 
     def test_doesnt_call_hook_when_removed(self):
         # remove_exception_logging_hook removes the hook function, ensuring
