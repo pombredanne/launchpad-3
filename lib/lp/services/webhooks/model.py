@@ -234,6 +234,24 @@ class WebhookDeliveryJob(WebhookJobDerived):
         return job
 
     @property
+    def pending(self):
+        return self.job.is_pending
+
+    @property
+    def successful(self):
+        if 'result' not in self.json_data:
+            return None
+        if 'connection_error' in self.json_data['result']:
+            return False
+        status_code = self.json_data['result']['response']['status_code']
+        return 200 <= status_code <= 299
+
+    @property
+    def date_sent(self):
+        # XXX: This will be reset on replay?
+        return self.job.date_finished
+
+    @property
     def payload(self):
         return self.json_data['payload']
 

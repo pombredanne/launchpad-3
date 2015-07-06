@@ -144,8 +144,26 @@ class IWebhookDeliveryJob(IRunnableJob):
     export_as_webservice_entry('webhook_delivery', as_of='beta')
 
     webhook = exported(Reference(
-        title=_("The webhook that this delivery is for."),
+        title=_("Webhook"),
+        description=_("The webhook that this delivery is for."),
         schema=IWebhook, required=True, readonly=True))
+
+    pending = exported(Bool(
+        title=_("Pending"),
+        description=_("Whether a delivery attempt is in progress."),
+        required=True, readonly=True))
+
+    successful = exported(Bool(
+        title=_("Successful"),
+        description=_(
+            "Whether the most recent delivery attempt succeeded, or null if "
+            "no attempts have been made yet."),
+        required=False, readonly=True))
+
+    date_sent = exported(Datetime(
+        title=_("Date sent"),
+        description=_("Timestamp of the last delivery attempt."),
+        required=False, readonly=True))
 
     payload = exported(Dict(
         title=_('Event payload'),

@@ -11,6 +11,16 @@ from httmock import (
     )
 import requests
 from testtools import TestCase
+from testtools.matchers import (
+    Contains,
+    ContainsDict,
+    Equals,
+    Is,
+    KeysEqual,
+    MatchesAll,
+    MatchesStructure,
+    Not,
+    )
 
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.runner import JobRunner
@@ -161,10 +171,19 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
         # A request that returns 200 is a success.
         with CaptureOops() as oopses:
             job, reqs = self.makeAndRunJob(response_status=200)
-        self.assertEqual(JobStatus.COMPLETED, job.status)
+        self.assertThat(
+            job,
+            MatchesStructure(
+                status=Equals(JobStatus.COMPLETED),
+                pending=Equals(False),
+                successful=Equals(True),
+                json_data=ContainsDict(
+                    {'result': MatchesAll(
+                        KeysEqual('request', 'response'),
+                        ContainsDict(
+                            {'response': ContainsDict(
+                                {'status_code': Equals(200)})}))})))
         self.assertEqual(1, len(reqs))
-        self.assertEqual(
-            200, job.json_data['result']['response']['status_code'])
         self.assertEqual([('POST', 'http://hookep.com/foo')], reqs)
         self.assertEqual([], oopses.oopses)
 
@@ -173,10 +192,19 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
         # fails if it was definitely a problem on our end.
         with CaptureOops() as oopses:
             job, reqs = self.makeAndRunJob(response_status=404)
-        self.assertEqual(JobStatus.COMPLETED, job.status)
+        self.assertThat(
+            job,
+            MatchesStructure(
+                status=Equals(JobStatus.COMPLETED),
+                pending=Equals(False),
+                successful=Equals(False),
+                json_data=ContainsDict(
+                    {'result': MatchesAll(
+                        KeysEqual('request', 'response'),
+                        ContainsDict(
+                            {'response': ContainsDict(
+                                {'status_code': Equals(404)})}))})))
         self.assertEqual(1, len(reqs))
-        self.assertEqual(
-            404, job.json_data['result']['response']['status_code'])
         self.assertEqual([], oopses.oopses)
 
     def test_run_connection_error(self):
@@ -185,10 +213,18 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
         with CaptureOops() as oopses:
             job, reqs = self.makeAndRunJob(
                 raises=requests.ConnectionError('Connection refused'))
-        self.assertEqual(JobStatus.COMPLETED, job.status)
-        self.assertNotIn('response', job.json_data['result'])
-        self.assertEqual(
-            'Connection refused', job.json_data['result']['connection_error'])
+        self.assertThat(
+            job,
+            MatchesStructure(
+                status=Equals(JobStatus.COMPLETED),
+                pending=Equals(False),
+                successful=Equals(False),
+                json_data=ContainsDict(
+                    {'result': MatchesAll(
+                        KeysEqual('request', 'connection_error'),
+                        ContainsDict(
+                            {'connection_error': Equals('Connection refused')})
+                        )})))
         self.assertEqual([], reqs)
         self.assertEqual([], oopses.oopses)
 
@@ -200,7 +236,13 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
         self.pushConfig('webhooks', http_proxy=None)
         with CaptureOops() as oopses:
             job, reqs = self.makeAndRunJob(response_status=200, mock=False)
-        self.assertEqual(JobStatus.FAILED, job.status)
+        self.assertThat(
+            job,
+            MatchesStructure(
+                status=Equals(JobStatus.FAILED),
+                pending=Equals(False),
+                successful=Is(None),
+                json_data=Not(Contains('result'))))
         self.assertEqual([], reqs)
         self.assertEqual(1, len(oopses.oopses))
         self.assertEqual(

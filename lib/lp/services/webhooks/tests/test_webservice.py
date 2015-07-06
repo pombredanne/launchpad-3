@@ -11,6 +11,9 @@ from testtools.matchers import (
     ContainsDict,
     Equals,
     GreaterThan,
+    Is,
+    KeysEqual,
+    MatchesAll,
     )
 
 from lp.services.webapp.interfaces import OAuthPermission
@@ -43,12 +46,13 @@ class TestWebhook(TestCaseWithFactory):
     def test_get(self):
         representation = self.webservice.get(
             self.webhook_url, api_version='devel').jsonBody()
-        self.assertContentEqual(
-            ['active', 'date_created', 'date_last_modified',
-             'deliveries_collection_link', 'delivery_url', 'http_etag',
-             'registrant_link', 'resource_type_link', 'self_link',
-             'target_link', 'web_link'],
-            representation.keys())
+        self.assertThat(
+            representation,
+            KeysEqual(
+                'active', 'date_created', 'date_last_modified',
+                'deliveries_collection_link', 'delivery_url', 'http_etag',
+                'registrant_link', 'resource_type_link', 'self_link',
+                'target_link', 'web_link'))
 
     def test_patch(self):
         representation = self.webservice.get(
@@ -98,6 +102,39 @@ class TestWebhook(TestCaseWithFactory):
         self.assertContentEqual(
             [delivery['self_link']],
             [entry['self_link'] for entry in representation['entries']])
+
+
+class TestWebhookDelivery(TestCaseWithFactory):
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestWebhookDelivery, self).setUp()
+        target = self.factory.makeGitRepository()
+        self.owner = target.owner
+        with person_logged_in(self.owner):
+            self.webhook = self.factory.makeWebhook(
+                target=target, delivery_url=u'http://example.com/ep')
+            self.webhook_url = api_url(self.webhook)
+            self.delivery = self.webhook.ping()
+            self.delivery_url = api_url(self.delivery)
+        self.webservice = webservice_for_person(
+            self.owner, permission=OAuthPermission.WRITE_PRIVATE)
+
+    def test_get(self):
+        representation = self.webservice.get(
+            self.delivery_url, api_version='devel').jsonBody()
+        self.assertThat(
+            representation,
+            MatchesAll(
+                KeysEqual(
+                    'date_sent', 'http_etag', 'payload', 'pending',
+                    'resource_type_link', 'self_link', 'successful',
+                    'web_link', 'webhook_link'),
+                ContainsDict(
+                    {'payload': Equals({'ping': True}),
+                    'pending': Equals(True),
+                    'successful': Is(None),
+                    'date_sent': Is(None)})))
 
 
 class TestWebhookTarget(TestCaseWithFactory):
