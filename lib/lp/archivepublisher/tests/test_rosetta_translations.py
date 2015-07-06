@@ -1,4 +1,4 @@
-# Copyright 2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2013-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test rosetta-translations custom uploads.
@@ -7,15 +7,19 @@ See also lp.soyuz.tests.test_distroseriesqueue_rosetta_translations for
 high-level tests of rosetta-translations upload and queue manipulation.
 """
 
+from storm.expr import Desc
 import transaction
-from zope.security.proxy import removeSecurityProxy
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
+from lp.app.errors import NotFoundError
 from lp.archivepublisher.rosetta_translations import (
     process_rosetta_translations,
     RosettaTranslationsUpload,
     )
+from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.database.interfaces import IStore
 from lp.services.tarfile_helpers import LaunchpadWriteTarFile
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -29,7 +33,11 @@ from lp.soyuz.interfaces.sourcepackageformat import (
 from lp.soyuz.model.packagetranslationsuploadjob import (
     PackageTranslationsUploadJob,
     )
-from lp.testing import TestCaseWithFactory, person_logged_in
+from lp.soyuz.model.queue import PackageUpload
+from lp.testing import (
+    person_logged_in,
+    TestCaseWithFactory,
+    )
 from lp.testing.layers import LaunchpadZopelessLayer
 
 
@@ -138,13 +146,42 @@ class TestRosettaTranslations(TestCaseWithFactory):
 
         job.run()
 
-        from storm.expr import Desc
-        from lp.soyuz.model.queue import PackageUpload
-        from lp.services.database.interfaces import IStore
         upload = IStore(PackageUpload).find(PackageUpload).order_by(
             Desc(PackageUpload.id)).first()
 
         return spr, upload, libraryfilealias
+
+    def ensureDistroSeries(self, distribution_name, distroseries_name):
+        distribution = getUtility(IDistributionSet).getByName(
+            distribution_name)
+        if distribution is None:
+            distribution = self.factory.makeDistribution(
+                name=distribution_name)
+        try:
+            distroseries = distribution[distroseries_name]
+        except NotFoundError:
+            distroseries = self.factory.makeDistroSeries(
+                distribution=distribution, name=distroseries_name)
+        return distroseries
+
+    def makeJobElementsForPPA(self, owner_name, distribution_name,
+                              distroseries_name, archive_name):
+        owner = self.factory.makePerson(name=owner_name)
+        distroseries = self.ensureDistroSeries(
+            distribution_name, distroseries_name)
+        archive = self.factory.makeArchive(
+            owner=owner, distribution=distroseries.distribution,
+            name=archive_name, purpose=ArchivePurpose.PPA)
+        sourcepackage_version = "3.8.2-1ubuntu1"
+        filename = "foo_%s_i386_translations.tar.gz" % sourcepackage_version
+        spph = self.makeAndPublishSourcePackage(
+            sourcepackagename="foo", distroseries=distroseries,
+            archive=archive)
+        packageupload = removeSecurityProxy(self.factory.makePackageUpload(
+            distroseries=distroseries, archive=archive))
+        packageupload.addSource(spph.sourcepackagerelease)
+        libraryfilealias = self.makeTranslationsLFA(filename=filename)
+        return spph.sourcepackagerelease, packageupload, libraryfilealias
 
     def test_parsePath(self):
         filename = "foobar_3.8.2-1ubuntu1_i386_translations.tar.gz"
@@ -236,3 +273,40 @@ class TestRosettaTranslations(TestCaseWithFactory):
         self.assertEqual(spr.upload_distroseries, jobs[0].distroseries)
         self.assertEqual(libraryfilealias, jobs[0].libraryfilealias)
         self.assertEqual(spr.sourcepackagename, jobs[0].sourcepackagename)
+
+    def test_correct_job_is_created_from_redirected_ppa(self):
+        spr, packageupload, libraryfilealias = self.makeJobElementsForPPA(
+            owner_name="ci-train-ppa-service", distribution_name="ubuntu",
+            distroseries_name="vivid", archive_name="stable-phone-overlay")
+        self.ensureDistroSeries("ubuntu-rtm", "15.04")
+        transaction.commit()
+        process_rosetta_translations(packageupload, libraryfilealias)
+
+        jobs = list(PackageTranslationsUploadJob.iterReady())
+        self.assertEqual(1, len(jobs))
+
+        self.assertEqual("ubuntu-rtm 15.04", str(jobs[0].distroseries))
+        self.assertEqual(libraryfilealias, jobs[0].libraryfilealias)
+        self.assertEqual(spr.sourcepackagename, jobs[0].sourcepackagename)
+
+    def test_unredirected_series_in_redirected_ppa_is_skipped(self):
+        spr, packageupload, libraryfilealias = self.makeJobElementsForPPA(
+            owner_name="ci-train-ppa-service", distribution_name="ubuntu",
+            distroseries_name="wily", archive_name="stable-phone-overlay")
+        self.ensureDistroSeries("ubuntu-rtm", "15.04")
+        transaction.commit()
+        process_rosetta_translations(packageupload, libraryfilealias)
+
+        jobs = list(PackageTranslationsUploadJob.iterReady())
+        self.assertEqual(0, len(jobs))
+
+    def test_unredirected_ppa_is_skipped(self):
+        spr, packageupload, libraryfilealias = self.makeJobElementsForPPA(
+            owner_name="ci-train-ppa-service", distribution_name="ubuntu",
+            distroseries_name="vivid", archive_name="landing-001")
+        self.ensureDistroSeries("ubuntu-rtm", "15.04")
+        transaction.commit()
+        process_rosetta_translations(packageupload, libraryfilealias)
+
+        jobs = list(PackageTranslationsUploadJob.iterReady())
+        self.assertEqual(0, len(jobs))
