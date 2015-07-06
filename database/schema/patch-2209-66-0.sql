@@ -17,13 +17,10 @@ CREATE TABLE WebHook (
     );
 
 CREATE TABLE WebHookJob (
-    -- TODO: UUID PK?
     job integer PRIMARY KEY REFERENCES Job ON DELETE CASCADE NOT NULL,
     webhook integer REFERENCES WebHook NOT NULL,
     job_type integer NOT NULL,
     json_data text NOT NULL,
-    request integer REFERENCES LibraryFileAlias,
-    response integer REFERENCES LibraryFileAlias
     );
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 66, 0);
