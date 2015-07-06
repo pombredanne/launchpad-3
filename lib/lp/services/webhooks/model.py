@@ -240,6 +240,13 @@ class WebhookDeliveryJob(WebhookJobDerived):
         result = getUtility(IWebhookClient).deliver(
             self.webhook.delivery_url, config.webhooks.http_proxy,
             self.payload)
+        # Request and response headers and body may be large, so don't
+        # store them in the frequently-used JSON. We could store them in
+        # the librarian if we wanted them in future.
+        for direction in ('request', 'response'):
+            for attr in ('headers', 'body'):
+                if direction in result and attr in result[direction]:
+                    del result[direction][attr]
         updated_data = self.json_data
         updated_data['result'] = result
         self.json_data = updated_data
