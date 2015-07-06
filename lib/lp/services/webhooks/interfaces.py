@@ -160,6 +160,9 @@ class IWebhookDeliveryJob(IRunnableJob):
             "no attempts have been made yet."),
         required=False, readonly=True))
 
+    date_created = exported(Datetime(
+        title=_("Date created"), required=True, readonly=True))
+
     date_sent = exported(Datetime(
         title=_("Date sent"),
         description=_("Timestamp of the last delivery attempt."),

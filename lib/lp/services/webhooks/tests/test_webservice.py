@@ -14,6 +14,7 @@ from testtools.matchers import (
     Is,
     KeysEqual,
     MatchesAll,
+    Not,
     )
 
 from lp.services.webapp.interfaces import OAuthPermission
@@ -127,13 +128,14 @@ class TestWebhookDelivery(TestCaseWithFactory):
             representation,
             MatchesAll(
                 KeysEqual(
-                    'date_sent', 'http_etag', 'payload', 'pending',
-                    'resource_type_link', 'self_link', 'successful',
-                    'web_link', 'webhook_link'),
+                    'date_created', 'date_sent', 'http_etag', 'payload',
+                    'pending', 'resource_type_link', 'self_link',
+                    'successful', 'web_link', 'webhook_link'),
                 ContainsDict(
                     {'payload': Equals({'ping': True}),
                     'pending': Equals(True),
                     'successful': Is(None),
+                    'date_created': Not(Is(None)),
                     'date_sent': Is(None)})))
 
 
