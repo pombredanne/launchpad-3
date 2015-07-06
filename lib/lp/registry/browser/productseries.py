@@ -109,6 +109,7 @@ from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.batching import BatchNavigator
 from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.services.webapp.escaping import structured
+from lp.services.webapp.vhosts import allvhosts
 from lp.services.worlddata.helpers import browser_languages
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.services.worlddata.interfaces.language import ILanguageSet
@@ -387,12 +388,13 @@ class ProductSeriesView(
         """
         if (self.context.product.vcs == VCSType.BZR and
             self.context.product.development_focus.branch):
-            return ("{base_url}/{product}/{series} bzr {root}{branch}").format(
-                base_url=config.vhost.mainsite.hostname,
-                product=self.context.product.name,
-                series=self.context.name,
-                branch=self.context.branch.unique_name,
-                root=config.codehosting.supermirror_root)
+            return (
+                "{hostname}/{product}/{series} bzr {root_url}{branch}").format(
+                    hostname=config.vhost.mainsite.hostname,
+                    product=self.context.product.name,
+                    series=self.context.name,
+                    branch=self.context.branch.unique_name,
+                    root_url=allvhosts.configs['mainsite'].rooturl)
         else:
             return None
 
