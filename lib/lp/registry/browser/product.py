@@ -217,12 +217,12 @@ from lp.services.webapp import (
     stepto,
     structured,
     )
-from lp.services.config import config
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.batching import BatchNavigator
 from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.services.webapp.interfaces import UnsafeFormGetSubmissionError
 from lp.services.webapp.menu import NavigationMenu
+from lp.services.webapp.vhosts import allvhosts
 from lp.services.worlddata.helpers import browser_languages
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.translations.browser.customlanguagecode import (
@@ -1032,8 +1032,8 @@ class ProductView(PillarViewMixin, HasAnnouncementsView, SortSeriesMixin,
             repo = getUtility(IGitRepositorySet).getDefaultRepository(
                 self.context)
             if repo:
-                return "{base_url}/{product} git {git_https_url}".format(
-                    base_url=config.vhost.mainsite.hostname,
+                return "{hostname}/{product} git {git_https_url}".format(
+                    hostname=config.vhost.mainsite.hostname,
                     product=self.context.name,
                     git_https_url=repo.git_https_url)
             else:
@@ -1041,12 +1041,12 @@ class ProductView(PillarViewMixin, HasAnnouncementsView, SortSeriesMixin,
         elif (self.context.vcs == VCSType.BZR and
         self.context.development_focus.branch):
             return (
-                "{base_url}/{product} bzr "
-                "{browse_root}{branch}").format(
-                    base_url=config.vhost.mainsite.hostname,
+                "{hostname}/{product} bzr "
+                "{root_url}{branch}").format(
+                    hostname=config.vhost.mainsite.hostname,
+                    root_url=allvhosts.configs['mainsite'].rooturl,
                     product=self.context.name,
-                    branch=self.context.development_focus.branch.unique_name,
-                    browse_root=config.codehosting.supermirror_root)
+                    branch=self.context.development_focus.branch.unique_name)
         else:
             return None
 

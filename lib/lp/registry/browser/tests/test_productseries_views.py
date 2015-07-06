@@ -18,6 +18,7 @@ from lp.bugs.interfaces.bugtask import (
 from lp.registry.enums import VCSType
 from lp.services.config import config
 from lp.services.webapp import canonical_url
+from lp.services.webapp.vhosts import allvhosts
 from lp.testing import (
     BrowserTestCase,
     person_logged_in,
@@ -47,10 +48,10 @@ class TestProductSeries(BrowserTestCase):
             branch.product.vcs = VCSType.BZR
 
         golang_import = (
-            "{base}/wapcaplet/trunk bzr "
-            "{root}~zardoz/wapcaplet/a-branch").format(
-                base=config.vhost.mainsite.hostname,
-                root=config.codehosting.supermirror_root,
+            "{hostname}/wapcaplet/trunk bzr "
+            "{root_url}~zardoz/wapcaplet/a-branch").format(
+                hostname=config.vhost.mainsite.hostname,
+                root_url=allvhosts.configs['mainsite'].rooturl,
             )
         self.assertEqual(golang_import, view.golang_import_spec)
         meta_tag = soupmatchers.Tag('go-import-meta', 'meta',
