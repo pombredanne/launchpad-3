@@ -305,9 +305,10 @@ class FakeTeam(FakePerson):
 class FakeProduct(FakeDatabaseObject):
     """Fake product."""
 
-    def __init__(self, name, owner):
+    def __init__(self, name, owner, information_type=InformationType.PUBLIC):
         self.name = name
         self.owner = owner
+        self.information_type = information_type
         self.bzr_path = name
         self.development_focus = FakeProductSeries(self, 'trunk')
         self.series = {
@@ -492,12 +493,13 @@ class FakeObjectFactory(ObjectFactory):
         self._person_set._add(person)
         return person
 
-    def makeProduct(self, name=None, owner=None):
+    def makeProduct(self, name=None, owner=None,
+                    information_type=InformationType.PUBLIC):
         if name is None:
             name = self.getUniqueString()
         if owner is None:
             owner = self.makePerson()
-        product = FakeProduct(name, owner)
+        product = FakeProduct(name, owner, information_type=information_type)
         self._product_set._add(product)
         return product
 

@@ -822,6 +822,15 @@ class CodehostingTest(TestCaseWithFactory):
         path = '/~%s/%s/.bzr/branch-format' % (requester.name, product.name)
         self.assertNotFound(requester, path)
 
+    def test_translatePath_branches_in_private_parent_dirs_not_found(self):
+        requester = self.factory.makePerson()
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(
+            owner=owner, information_type=InformationType.PROPRIETARY)
+        path = '/~%s/%s/.bzr/branch-format' % (
+            requester.name, removeSecurityProxy(product).name)
+        self.assertNotFound(requester, path)
+
     def test_translatePath_no_such_branch(self):
         requester = self.factory.makePerson()
         product = self.factory.makeProduct()
