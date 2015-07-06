@@ -25,6 +25,7 @@ from zope.schema import (
     Datetime,
     Dict,
     Int,
+    List,
     TextLine,
     )
 
@@ -44,6 +45,11 @@ class IWebhook(Interface):
     target = exported(Reference(
         title=_("Target"), schema=IPerson, required=True, readonly=True,
         description=_("The object for which this webhook receives events.")))
+    event_types = exported(List(
+        TextLine(), title=_("Event types"),
+        description=_(
+            "The event types for which this webhook receives events."),
+        required=True, readonly=False))
     registrant = exported(Reference(
         title=_("Registrant"), schema=IPerson, required=True, readonly=True,
         description=_("The person who created this webhook.")))

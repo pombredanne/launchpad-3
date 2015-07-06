@@ -90,11 +90,24 @@ class Webhook(StormBase):
         else:
             raise AssertionError("No target.")
 
+    @property
+    def event_types(self):
+        return (self.json_data or {}).get('event_types', [])
+
+    @event_types.setter
+    def event_types(self, event_types):
+        updated_data = self.json_data or {}
+        assert isinstance(event_types, (list, tuple))
+        assert all(isinstance(v, basestring) for v in event_types)
+        updated_data['event_types'] = event_types
+        self.json_data = updated_data
+
 
 class WebhookSource:
     """See `IWebhookSource`."""
 
-    def new(self, target, registrant, delivery_url, active, secret):
+    def new(self, target, registrant, delivery_url, active, secret,
+            event_types):
         from lp.code.interfaces.gitrepository import IGitRepository
         hook = Webhook()
         if IGitRepository.providedBy(target):
@@ -105,7 +118,7 @@ class WebhookSource:
         hook.delivery_url = delivery_url
         hook.active = active
         hook.secret = secret
-        hook.json_data = {}
+        hook.event_types = event_types
         IStore(Webhook).add(hook)
         return hook
 
