@@ -177,6 +177,7 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
                 status=Equals(JobStatus.COMPLETED),
                 pending=Equals(False),
                 successful=Equals(True),
+                date_sent=Not(Is(None)),
                 json_data=ContainsDict(
                     {'result': MatchesAll(
                         KeysEqual('request', 'response'),
@@ -198,6 +199,7 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
                 status=Equals(JobStatus.COMPLETED),
                 pending=Equals(False),
                 successful=Equals(False),
+                date_sent=Not(Is(None)),
                 json_data=ContainsDict(
                     {'result': MatchesAll(
                         KeysEqual('request', 'response'),
@@ -219,6 +221,7 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
                 status=Equals(JobStatus.COMPLETED),
                 pending=Equals(False),
                 successful=Equals(False),
+                date_sent=Not(Is(None)),
                 json_data=ContainsDict(
                     {'result': MatchesAll(
                         KeysEqual('request', 'connection_error'),
@@ -242,6 +245,7 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
                 status=Equals(JobStatus.FAILED),
                 pending=Equals(False),
                 successful=Is(None),
+                date_sent=Is(None),
                 json_data=Not(Contains('result'))))
         self.assertEqual([], reqs)
         self.assertEqual(1, len(oopses.oopses))

@@ -9,6 +9,9 @@ __all__ = [
     'WebhookJobType',
     ]
 
+import datetime
+
+import iso8601
 from lazr.delegates import delegates
 from lazr.enum import (
     DBEnumeratedType,
@@ -229,8 +232,9 @@ class WebhookDeliveryJob(WebhookJobDerived):
 
     @property
     def date_sent(self):
-        # XXX: This will be reset on replay?
-        return self.job.date_finished
+        if 'date_sent' not in self.json_data:
+            return None
+        return iso8601.parse_date(self.json_data['date_sent'])
 
     @property
     def payload(self):
@@ -249,4 +253,5 @@ class WebhookDeliveryJob(WebhookJobDerived):
                     del result[direction][attr]
         updated_data = self.json_data
         updated_data['result'] = result
+        updated_data['date_sent'] = datetime.datetime.now(pytz.UTC).isoformat()
         self.json_data = updated_data
