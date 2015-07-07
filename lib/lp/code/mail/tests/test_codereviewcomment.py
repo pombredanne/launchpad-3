@@ -406,6 +406,20 @@ class TestInlineCommentsSection(testtools.TestCase):
         "+d\n"
         "+e\n")
 
+    binary_diff_text = (
+        "=== added file 'lib/canonical/launchpad/images/foo.png'\n"
+        "Binary files lib/canonical/launchpad/images/foo.png\t"
+        "1970-01-01 00:00:00 +0000 and "
+        "lib/canonical/launchpad/images/foo.png\t"
+        "2015-06-21 22:07:50 +0000 differ\n"
+        "=== modified file 'foo/bar/baz.py'\n"
+        "--- bar\t2009-08-26 15:53:34.000000000 -0400\n"
+        "+++ bar\t1969-12-31 19:00:00.000000000 -0500\n"
+        "@@ -1,3 +0,0 @@\n"
+        "-a\n"
+        "-b\n"
+        "-c\n")
+
     def getSection(self, comments, diff_text=None):
         """Call `build_inline_comments_section` with the test-diff."""
         if diff_text is None:
@@ -426,6 +440,35 @@ class TestInlineCommentsSection(testtools.TestCase):
         self.assertEqual(
             [''],
             footer)
+
+    def test_binary_patch_in_diff(self):
+        # Binary patches with comments are handled appropriately.
+        comments = {'1': 'Updated the png', '2': 'foo', '8': 'bar'}
+        section = self.getSection(comments, diff_text=self.binary_diff_text)
+        self.assertEqual(
+            map(unicode, [
+                "> === added file 'lib/canonical/launchpad/images/foo.png'",
+                "",
+                "Updated the png",
+                "",
+                ("> Binary files lib/canonical/launchpad/images/foo.png\t"
+                 "1970-01-01 00:00:00 +0000 and "
+                 "lib/canonical/launchpad/images/foo.png\t"
+                 "2015-06-21 22:07:50 +0000 differ"),
+                "",
+                "foo",
+                "",
+                "> === modified file 'foo/bar/baz.py'",
+                "> --- bar\t2009-08-26 15:53:34.000000000 -0400",
+                "> +++ bar\t1969-12-31 19:00:00.000000000 -0500",
+                "> @@ -1,3 +0,0 @@",
+                "> -a",
+                "> -b",
+                "",
+                "bar",
+                "",
+                "> -c"]),
+            section.splitlines()[4:22])
 
     def test_single_line_comment(self):
         # The inline comments are correctly contextualized in the diff.
