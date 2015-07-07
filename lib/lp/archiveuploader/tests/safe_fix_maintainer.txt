@@ -1,4 +1,4 @@
-Test some utils method inheritaded from DAK:
+Test some utils method inherited from DAK:
 
 safe_fix_maintainer() is a function used to sanitise the
 identification fields coming from the Debian control files (changes
@@ -14,11 +14,13 @@ Pure ASCII content using the two available fieldname (pretty much the same)
 
   >>> content = 'Hello World <hello@world.com>'
   >>> safe_fix_maintainer(content, maintainer_field)
-  ('Hello World <hello@world.com>', 'Hello World <hello@world.com>', 'Hello World', 'hello@world.com')
+  ('Hello World <hello@world.com>', 'Hello World <hello@world.com>',
+  'Hello World', 'hello@world.com')
 
   >>> content = 'Hello World <hello@world.com>'
   >>> safe_fix_maintainer(content, changer_field)
-  ('Hello World <hello@world.com>', 'Hello World <hello@world.com>', 'Hello World', 'hello@world.com')
+  ('Hello World <hello@world.com>', 'Hello World <hello@world.com>',
+  'Hello World', 'hello@world.com')
 
 
 Passing Unicode:
@@ -28,14 +30,15 @@ Passing Unicode:
 
   >>> content = u'Rapha\xc3l Pinson <raphink@ubuntu.com>'
   >>> safe_fix_maintainer(content, maintainer_field)
-  ('RaphaAl Pinson <raphink@ubuntu.com>', 'RaphaAl Pinson <raphink@ubuntu.com>', 'RaphaAl Pinson', 'raphink@ubuntu.com')
+  ('Rapha\xc3\x83l Pinson <raphink@ubuntu.com>',
+  '=?utf-8?q?Rapha=C3=83l_Pinson?= <raphink@ubuntu.com>',
+  'Rapha\xc3\x83l Pinson', 'raphink@ubuntu.com')
 
 
 Passing latin encoded string:
 
   >>> content = 'Rapha\xebl Pinson <raphink@ubuntu.com>'
   >>> safe_fix_maintainer(content, maintainer_field)
-  ('Raphael Pinson <raphink@ubuntu.com>', 'Raphael Pinson <raphink@ubuntu.com>', 'Raphael Pinson', 'raphink@ubuntu.com')
-
-
-
+  ('Rapha\xc3\xabl Pinson <raphink@ubuntu.com>',
+  '=?utf-8?q?Rapha=C3=ABl_Pinson?= <raphink@ubuntu.com>',
+  'Rapha\xc3\xabl Pinson', 'raphink@ubuntu.com')

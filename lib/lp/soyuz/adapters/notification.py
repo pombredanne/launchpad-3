@@ -1,4 +1,4 @@
-# Copyright 2011-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Notification for uploads and copies."""
@@ -27,10 +27,7 @@ from lp.archiveuploader.utils import (
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.config import config
-from lp.services.encoding import (
-    ascii_smash,
-    guess as guess_encoding,
-    )
+from lp.services.encoding import guess as guess_encoding
 from lp.services.mail.helpers import get_email_template
 from lp.services.mail.sendmail import (
     format_address,
@@ -232,9 +229,11 @@ def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
 
     info = fetch_information(spr, bprs, changes)
     from_addr = info['changedby']
+    from_email = info['changedby_email']
     if announce_from_person is not None:
         if announce_from_person.preferredemail is not None:
             from_addr = format_address_for_person(announce_from_person)
+            from_email = announce_from_person.preferredemail.email
 
     # If we're sending an acceptance notification for a non-PPA upload,
     # announce if possible. Avoid announcing backports, binary-only
@@ -243,7 +242,7 @@ def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
         and not archive.is_ppa
         and pocket != PackagePublishingPocket.BACKPORTS
         and not (pocket == PackagePublishingPocket.SECURITY and spr is None)
-        and not is_auto_sync_upload(spr, bprs, pocket, from_addr)):
+        and not is_auto_sync_upload(spr, bprs, pocket, from_email)):
         name = None
         bcc_addr = None
         if spr:
@@ -301,17 +300,17 @@ def assemble_body(blamer, spr, bprs, archive, distroseries, summary, changes,
     # Some syncs (e.g. from Debian) will involve packages whose
     # changed-by person was auto-created in LP and hence does not have a
     # preferred email address set.  We'll get a None here.
-    changedby_person = email_to_person(info['changedby'])
+    changedby_person = email_to_person(info['changedby_email'])
 
     if blamer is not None and blamer != changedby_person:
         signer_signature = person_to_email(blamer)
         if signer_signature != info['changedby']:
             information['SIGNER'] = '\nSigned-By: %s' % signer_signature
     # Add maintainer if present and different from changed-by.
-    maintainer = info['maintainer']
-    changedby = info['changedby']
-    if maintainer and maintainer != changedby:
-        information['MAINTAINER'] = '\nMaintainer: %s' % maintainer
+    maintainer_displayname = info['maintainer_displayname']
+    if (maintainer_displayname and
+            maintainer_displayname != changedby_displayname):
+        information['MAINTAINER'] = '\nMaintainer: %s' % maintainer_displayname
     return get_template(archive, action) % information
 
 
@@ -360,24 +359,15 @@ def send_mail(
             config.uploader.default_sender_name,
             config.uploader.default_sender_address)
 
-    # `sendmail`, despite handling unicode message bodies, can't
-    # cope with non-ascii sender/recipient addresses, so ascii_smash
-    # is used on all addresses.
-
     # All emails from here have a Bcc to the default recipient.
     bcc_text = format_address(
         config.uploader.default_recipient_name,
         config.uploader.default_recipient_address)
     if bcc:
         bcc_text = "%s, %s" % (bcc_text, bcc)
-    extra_headers['Bcc'] = ascii_smash(bcc_text)
+    extra_headers['Bcc'] = bcc_text
 
-    recipients = ascii_smash(", ".join(to_addrs))
-    if isinstance(from_addr, unicode):
-        # ascii_smash only works on unicode strings.
-        from_addr = ascii_smash(from_addr)
-    else:
-        from_addr.encode('ascii')
+    recipients = ", ".join(to_addrs)
 
     if dry_run and logger is not None:
         debug(logger, "Would have sent a mail:")
@@ -471,8 +461,8 @@ def get_upload_notification_recipients(blamer, archive, distroseries,
     candidate_recipients = [blamer]
     info = fetch_information(spr, bprs, changes)
 
-    changer = email_to_person(info['changedby'])
-    maintainer = email_to_person(info['maintainer'])
+    changer = email_to_person(info['changedby_email'])
+    maintainer = email_to_person(info['maintainer_email'])
 
     if blamer is None and not archive.is_copy:
         debug(logger, "Changes file is unsigned; adding changer as recipient.")
@@ -565,23 +555,16 @@ def build_summary(spr, files, action):
     return summary
 
 
-def email_to_person(fullemail):
-    """Return an `IPerson` given an RFC2047 email address.
+def email_to_person(email):
+    """Return an `IPerson` given an email address (without a name).
 
-    :param fullemail: Potential email address.
+    :param email: Potential email address.
     :return: `IPerson` with the given email address.  None if there
-        isn't one, or if `fullemail` isn't a proper email address.
+        isn't one, or if `email` is None.
     """
-    if not fullemail:
+    if not email:
         return None
-
-    try:
-        # The 2nd arg to s_f_m() doesn't matter as it won't fail since every-
-        # thing will have already parsed at this point.
-        rfc822, rfc2047, name, email = safe_fix_maintainer(fullemail, "email")
-        return getUtility(IPersonSet).getByEmail(email)
-    except ParseMaintError:
-        return None
+    return getUtility(IPersonSet).getByEmail(email)
 
 
 def person_to_email(person):
@@ -589,6 +572,25 @@ def person_to_email(person):
     if person and person.preferredemail:
         # This will use email.header to encode any non-ASCII characters.
         return format_address_for_person(person)
+
+
+def fix_email(fullemail, field_name):
+    """Turn an email address from .changes into various useful forms.
+
+    The input address may be None, or anything that `fix_maintainer`
+    understands.
+
+    :return: A tuple of (RFC2047-compatible address, Unicode
+        RFC822-compatible address, email).
+    """
+    if not fullemail:
+        return None, None, None
+
+    try:
+        rfc822, rfc2047, _, email = safe_fix_maintainer(fullemail, field_name)
+        return rfc2047, rfc822.decode('utf-8'), email
+    except ParseMaintError:
+        return None, None, None
 
 
 def is_auto_sync_upload(spr, bprs, pocket, changed_by_email):
@@ -616,10 +618,10 @@ def fetch_information(spr, bprs, changes, previous_version=None):
         changesfile = ChangesFile.formatChangesComment(
             sanitize_string(changes.get('Changes')))
         date = changes.get('Date')
-        changedby = sanitize_string(changes.get('Changed-By'))
-        maintainer = sanitize_string(changes.get('Maintainer'))
-        changedby_displayname = changedby
-        maintainer_displayname = maintainer
+        changedby, changedby_displayname, changedby_email = fix_email(
+            changes.get('Changed-By'), 'Changed-By')
+        maintainer, maintainer_displayname, maintainer_email = fix_email(
+            changes.get('Maintainer'), 'Maintainer')
     elif spr or bprs:
         if not spr and bprs:
             spr = bprs[0].build.source_package_release
@@ -631,10 +633,12 @@ def fetch_information(spr, bprs, changes, previous_version=None):
             addr = formataddr((spr.creator.displayname,
                                spr.creator.preferredemail.email))
             changedby_displayname = sanitize_string(addr)
+            changedby_email = spr.creator.preferredemail.email
         if maintainer:
             addr = formataddr((spr.maintainer.displayname,
                                spr.maintainer.preferredemail.email))
             maintainer_displayname = sanitize_string(addr)
+            maintainer_email = spr.maintainer.preferredemail.email
     else:
         changesfile = date = None
 
@@ -643,8 +647,10 @@ def fetch_information(spr, bprs, changes, previous_version=None):
         'date': date,
         'changedby': changedby,
         'changedby_displayname': changedby_displayname,
+        'changedby_email': changedby_email,
         'maintainer': maintainer,
         'maintainer_displayname': maintainer_displayname,
+        'maintainer_email': maintainer_email,
         }
 
 
