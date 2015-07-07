@@ -109,8 +109,8 @@ class Webhook(StormBase):
 class WebhookSource:
     """See `IWebhookSource`."""
 
-    def new(self, target, registrant, delivery_url, active, secret,
-            event_types):
+    def new(self, target, registrant, delivery_url, event_types, active,
+            secret):
         from lp.code.interfaces.gitrepository import IGitRepository
         hook = Webhook()
         if IGitRepository.providedBy(target):
