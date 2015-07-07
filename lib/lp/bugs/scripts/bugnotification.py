@@ -164,7 +164,8 @@ def construct_email_notifications(bug_notifications):
         text = notification.message.text_contents.rstrip()
         text_notifications.append(text)
 
-    if bug.initial_message.rfc822msgid not in references:
+    if (bug.initial_message.rfc822msgid not in references and
+            msgid != bug.initial_message.rfc822msgid):
         # Ensure that references contain the initial message ID
         references.insert(0, bug.initial_message.rfc822msgid)
 
