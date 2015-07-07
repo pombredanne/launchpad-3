@@ -416,10 +416,9 @@ class TestInlineCommentsSection(testtools.TestCase):
         "--- bar\t2009-08-26 15:53:34.000000000 -0400\n"
         "+++ bar\t1969-12-31 19:00:00.000000000 -0500\n"
         "@@ -1,3 +0,0 @@\n"
-        "-\xc3\xa5\n"
+        "-a\n"
         "-b\n"
         "-c\n")
-
 
     def getSection(self, comments, diff_text=None):
         """Call `build_inline_comments_section` with the test-diff."""
@@ -444,7 +443,7 @@ class TestInlineCommentsSection(testtools.TestCase):
 
     def test_binary_patch_in_diff(self):
         # Binary patches with comments are handled appropriately.
-        comments = {'1': 'Updated the png', '2': 'foo'}
+        comments = {'1': 'Updated the png', '2': 'foo', '8': 'bar'}
         section = self.getSection(comments, diff_text=self.binary_diff_text)
         self.assertEqual(
             map(unicode, [
@@ -458,8 +457,18 @@ class TestInlineCommentsSection(testtools.TestCase):
                  "2015-06-21 22:07:50 +0000 differ"),
                 "",
                 "foo",
-                ""]),
-            section.splitlines()[4:12])
+                "",
+                "> === modified file 'foo/bar/baz.py'",
+                "> --- bar\t2009-08-26 15:53:34.000000000 -0400",
+                "> +++ bar\t1969-12-31 19:00:00.000000000 -0500",
+                "> @@ -1,3 +0,0 @@",
+                "> -a",
+                "> -b",
+                "",
+                "bar",
+                "",
+                "> -c"]),
+            section.splitlines()[4:22])
 
     def test_single_line_comment(self):
         # The inline comments are correctly contextualized in the diff.
