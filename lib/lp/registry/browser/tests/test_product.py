@@ -45,6 +45,7 @@ from lp.registry.model.product import Product
 from lp.services.config import config
 from lp.services.database.interfaces import IStore
 from lp.services.webapp.publisher import canonical_url
+from lp.services.webapp.vhosts import allvhosts
 from lp.testing import (
     BrowserTestCase,
     login_celebrity,
@@ -334,11 +335,10 @@ class TestProductView(BrowserTestCase):
             branch.product.vcs = VCSType.BZR
 
         golang_import = (
-            "{base}/wapcaplet bzr "
-            "{root}~zardoz/wapcaplet/a-branch").format(
-                base=config.vhost.mainsite.hostname,
-                root=config.codehosting.supermirror_root
-            )
+            "{hostname}/wapcaplet bzr "
+            "{root_url}~zardoz/wapcaplet/a-branch").format(
+                hostname=config.vhost.mainsite.hostname,
+                root_url=allvhosts.configs['mainsite'].rooturl)
         self.assertEqual(golang_import, view.golang_import_spec)
         meta_tag = Tag('go-import-meta', 'meta',
                        attrs={'name': 'go-import', 'content': golang_import})
