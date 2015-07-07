@@ -10,6 +10,9 @@ __all__ = [
     'WebhookTargetMixin',
     ]
 
+import datetime
+
+import iso8601
 from lazr.delegates import delegates
 from lazr.enum import (
     DBEnumeratedType,
@@ -108,13 +111,26 @@ class Webhook(StormBase):
     def ping(self):
         return WebhookDeliveryJob.create(self, {'ping': True})
 
+    @property
+    def event_types(self):
+        return (self.json_data or {}).get('event_types', [])
+
+    @event_types.setter
+    def event_types(self, event_types):
+        updated_data = self.json_data or {}
+        assert isinstance(event_types, (list, tuple))
+        assert all(isinstance(v, basestring) for v in event_types)
+        updated_data['event_types'] = event_types
+        self.json_data = updated_data
+
 
 class WebhookSource:
     """See `IWebhookSource`."""
 
     implements(IWebhookSource)
 
-    def new(self, target, registrant, delivery_url, active, secret):
+    def new(self, target, registrant, delivery_url, active, secret,
+            event_types):
         from lp.code.interfaces.gitrepository import IGitRepository
         hook = Webhook()
         if IGitRepository.providedBy(target):
@@ -125,7 +141,7 @@ class WebhookSource:
         hook.delivery_url = delivery_url
         hook.active = active
         hook.secret = secret
-        hook.json_data = {}
+        hook.event_types = event_types
         IStore(Webhook).add(hook)
         IStore(Webhook).flush()
         return hook
@@ -152,9 +168,9 @@ class WebhookTargetMixin:
     def webhooks(self):
         return getUtility(IWebhookSource).findByTarget(self)
 
-    def newWebhook(self, registrant, delivery_url, active=True):
+    def newWebhook(self, registrant, delivery_url, event_types, active=True):
         return getUtility(IWebhookSource).new(
-            self, registrant, delivery_url, active, None)
+            self, registrant, delivery_url, active, None, event_types)
 
 
 class WebhookJobType(DBEnumeratedType):
@@ -248,8 +264,9 @@ class WebhookDeliveryJob(WebhookJobDerived):
 
     @property
     def date_sent(self):
-        # XXX: This will be reset on replay?
-        return self.job.date_finished
+        if 'date_sent' not in self.json_data:
+            return None
+        return iso8601.parse_date(self.json_data['date_sent'])
 
     @property
     def payload(self):
@@ -259,6 +276,14 @@ class WebhookDeliveryJob(WebhookJobDerived):
         result = getUtility(IWebhookClient).deliver(
             self.webhook.delivery_url, config.webhooks.http_proxy,
             self.payload)
+        # Request and response headers and body may be large, so don't
+        # store them in the frequently-used JSON. We could store them in
+        # the librarian if we wanted them in future.
+        for direction in ('request', 'response'):
+            for attr in ('headers', 'body'):
+                if direction in result and attr in result[direction]:
+                    del result[direction][attr]
         updated_data = self.json_data
         updated_data['result'] = result
+        updated_data['date_sent'] = datetime.datetime.now(pytz.UTC).isoformat()
         self.json_data = updated_data

@@ -67,8 +67,8 @@ class TestWebhookPermissions(TestCaseWithFactory):
         expected_get_permissions = {
             'launchpad.View': set((
                 'active', 'date_created', 'date_last_modified', 'deliveries',
-                'delivery_url', 'getDelivery', 'id', 'ping', 'registrant',
-                'secret', 'target')),
+                'delivery_url', 'event_types', 'getDelivery', 'id', 'ping',
+                'registrant', 'secret', 'target')),
             }
         webhook = self.factory.makeWebhook()
         checker = getChecker(webhook)
@@ -77,7 +77,7 @@ class TestWebhookPermissions(TestCaseWithFactory):
 
     def test_set_permissions(self):
         expected_set_permissions = {
-            'launchpad.View': set(('delivery_url', 'active')),
+            'launchpad.View': set(('active', 'delivery_url', 'event_types')),
             }
         webhook = self.factory.makeWebhook()
         checker = getChecker(webhook)
@@ -94,7 +94,8 @@ class TestWebhookSource(TestCaseWithFactory):
         login_person(target.owner)
         person = self.factory.makePerson()
         hook = getUtility(IWebhookSource).new(
-            target, person, u'http://path/to/something', True, u'sekrit')
+            target, person, u'http://path/to/something', True, u'sekrit',
+            ['git:push'])
         Store.of(hook).flush()
         self.assertEqual(target, hook.target)
         self.assertEqual(person, hook.registrant)
@@ -103,6 +104,7 @@ class TestWebhookSource(TestCaseWithFactory):
         self.assertEqual(u'http://path/to/something', hook.delivery_url)
         self.assertEqual(True, hook.active)
         self.assertEqual(u'sekrit', hook.secret)
+        self.assertEqual(['git:push'], hook.event_types)
 
     def test_getByID(self):
         hook1 = self.factory.makeWebhook()

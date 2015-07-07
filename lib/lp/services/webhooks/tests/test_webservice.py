@@ -51,9 +51,9 @@ class TestWebhook(TestCaseWithFactory):
             representation,
             KeysEqual(
                 'active', 'date_created', 'date_last_modified',
-                'deliveries_collection_link', 'delivery_url', 'http_etag',
-                'registrant_link', 'resource_type_link', 'self_link',
-                'target_link', 'web_link'))
+                'deliveries_collection_link', 'delivery_url', 'event_types',
+                'http_etag', 'registrant_link', 'resource_type_link',
+                'self_link', 'target_link', 'web_link'))
 
     def test_patch(self):
         representation = self.webservice.get(
@@ -62,10 +62,12 @@ class TestWebhook(TestCaseWithFactory):
             representation,
             ContainsDict(
                 {'active': Equals(True),
-                 'delivery_url': Equals('http://example.com/ep')}))
+                 'delivery_url': Equals('http://example.com/ep'),
+                 'event_types': Equals([])}))
         old_mtime = representation['date_last_modified']
         patch = json.dumps(
-            {'active': False, 'delivery_url': 'http://example.com/ep2'})
+            {'active': False, 'delivery_url': 'http://example.com/ep2',
+             'event_types': ['foo', 'bar']})
         self.webservice.patch(
             self.webhook_url, 'application/json', patch, api_version='devel')
         representation = self.webservice.get(
@@ -75,7 +77,8 @@ class TestWebhook(TestCaseWithFactory):
             ContainsDict(
                 {'active': Equals(False),
                  'delivery_url': Equals('http://example.com/ep2'),
-                 'date_last_modified': GreaterThan(old_mtime)}))
+                 'date_last_modified': GreaterThan(old_mtime),
+                 'event_types': Equals(['foo', 'bar'])}))
 
     def test_anon_forbidden(self):
         response = LaunchpadWebServiceCaller().get(
@@ -170,20 +173,22 @@ class TestWebhookTarget(TestCaseWithFactory):
     def test_newWebhook(self):
         response = self.webservice.named_post(
             self.target_url, 'newWebhook',
-            delivery_url='http://example.com/ep', api_version='devel')
+            delivery_url='http://example.com/ep', event_types=['foo', 'bar'],
+            api_version='devel')
         self.assertEqual(201, response.status)
 
         representation = self.webservice.get(
             self.target_url + '/webhooks', api_version='devel').jsonBody()
         self.assertContentEqual(
-            [('http://example.com/ep', True)],
-            [(entry['delivery_url'], entry['active'])
+            [('http://example.com/ep', ['foo', 'bar'], True)],
+            [(entry['delivery_url'], entry['event_types'], entry['active'])
              for entry in representation['entries']])
 
     def test_newWebhook_permissions(self):
         webservice = LaunchpadWebServiceCaller()
         response = webservice.named_post(
             self.target_url, 'newWebhook',
-            delivery_url='http://example.com/ep', api_version='devel')
+            delivery_url='http://example.com/ep', event_types=['foo', 'bar'],
+            api_version='devel')
         self.assertEqual(401, response.status)
         self.assertIn('launchpad.Edit', response.body)

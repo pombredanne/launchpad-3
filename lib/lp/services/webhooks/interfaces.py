@@ -37,6 +37,7 @@ from zope.schema import (
     Datetime,
     Dict,
     Int,
+    List,
     TextLine,
     )
 
@@ -64,6 +65,11 @@ class IWebhook(Interface):
         title=_("Target"), schema=Interface,  # Actually IWebhookTarget.
         required=True, readonly=True,
         description=_("The object for which this webhook receives events.")))
+    event_types = exported(List(
+        TextLine(), title=_("Event types"),
+        description=_(
+            "The event types for which this webhook receives events."),
+        required=True, readonly=False))
     registrant = exported(Reference(
         title=_("Registrant"), schema=IPerson, required=True, readonly=True,
         description=_("The person who created this webhook.")))
@@ -118,9 +124,10 @@ class IWebhookTarget(Interface):
         readonly=True)))
 
     @call_with(registrant=REQUEST_USER)
-    @export_factory_operation(IWebhook, ['delivery_url', 'active'])
+    @export_factory_operation(
+        IWebhook, ['delivery_url', 'active', 'event_types'])
     @operation_for_version("devel")
-    def newWebhook(registrant, delivery_url, active=True):
+    def newWebhook(registrant, delivery_url, event_types, active=True):
         """Create a new webhook."""
 
 
