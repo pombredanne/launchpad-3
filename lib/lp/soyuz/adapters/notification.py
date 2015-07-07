@@ -611,8 +611,10 @@ def is_auto_sync_upload(spr, bprs, pocket, changed_by_email):
 def fetch_information(spr, bprs, changes, previous_version=None):
     changedby = None
     changedby_displayname = None
+    changedby_email = None
     maintainer = None
     maintainer_displayname = None
+    maintainer_email = None
 
     if changes:
         changesfile = ChangesFile.formatChangesComment(
