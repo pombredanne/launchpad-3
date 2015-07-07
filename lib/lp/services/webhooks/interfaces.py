@@ -13,11 +13,15 @@ __all__ = [
     'IWebhookJob',
     'IWebhookSource',
     'IWebhookTarget',
+    'WebhookFeatureDisabled',
     ]
+
+import httplib
 
 from lazr.lifecycle.snapshot import doNotSnapshot
 from lazr.restful.declarations import (
     call_with,
+    error_status,
     export_as_webservice_entry,
     export_factory_operation,
     exported,
@@ -53,6 +57,15 @@ from lp.services.webservice.apihelpers import (
     patch_entry_return_type,
     patch_reference_property,
     )
+
+
+@error_status(httplib.UNAUTHORIZED)
+class WebhookFeatureDisabled(Exception):
+    """Only certain users can create new Git repositories."""
+
+    def __init__(self):
+        Exception.__init__(
+            self, "This webhook feature is not available yet.")
 
 
 class IWebhook(Interface):

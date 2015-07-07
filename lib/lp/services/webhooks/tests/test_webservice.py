@@ -17,6 +17,7 @@ from testtools.matchers import (
     Not,
     )
 
+from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.interfaces import OAuthPermission
 from lp.testing import (
     api_url,
@@ -205,6 +206,7 @@ class TestWebhookTarget(TestCaseWithFactory):
         self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
 
     def test_newWebhook(self):
+        self.useFixture(FeatureFixture({'webhooks.new.enabled': 'true'}))
         response = self.webservice.named_post(
             self.target_url, 'newWebhook',
             delivery_url='http://example.com/ep', event_types=['foo', 'bar'],
@@ -219,6 +221,7 @@ class TestWebhookTarget(TestCaseWithFactory):
              for entry in representation['entries']])
 
     def test_newWebhook_permissions(self):
+        self.useFixture(FeatureFixture({'webhooks.new.enabled': 'true'}))
         webservice = LaunchpadWebServiceCaller()
         response = webservice.named_post(
             self.target_url, 'newWebhook',
@@ -226,3 +229,12 @@ class TestWebhookTarget(TestCaseWithFactory):
             api_version='devel')
         self.assertEqual(401, response.status)
         self.assertIn('launchpad.Edit', response.body)
+
+    def test_newWebhook_feature_flag_guard(self):
+        response = self.webservice.named_post(
+            self.target_url, 'newWebhook',
+            delivery_url='http://example.com/ep', event_types=['foo', 'bar'],
+            api_version='devel')
+        self.assertEqual(401, response.status)
+        self.assertEqual(
+            'This webhook feature is not available yet.', response.body)

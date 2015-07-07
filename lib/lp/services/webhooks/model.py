@@ -43,6 +43,7 @@ from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.interfaces import IStore
 from lp.services.database.stormbase import StormBase
+from lp.services.features import getFeatureFlag
 from lp.services.job.model.job import (
     EnumeratedSubclass,
     Job,
@@ -55,6 +56,7 @@ from lp.services.webhooks.interfaces import (
     IWebhookDeliveryJobSource,
     IWebhookJob,
     IWebhookSource,
+    WebhookFeatureDisabled,
     )
 
 
@@ -181,6 +183,8 @@ class WebhookTargetMixin:
             pre_iter_hook=preload_registrants)
 
     def newWebhook(self, registrant, delivery_url, event_types, active=True):
+        if not getFeatureFlag('webhooks.new.enabled'):
+            raise WebhookFeatureDisabled()
         return getUtility(IWebhookSource).new(
             self, registrant, delivery_url, event_types, active, None)
 
