@@ -210,7 +210,6 @@ def build_inline_comments_section(comments, diff_text):
             patch = patch['patch']
 
             if type(patch) is patches.BinaryPatch:
-
                 result_lines.extend(dirty_head)
                 result_lines.append(
                     '> Binary files {old} and {new} differ'.format(
