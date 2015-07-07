@@ -123,3 +123,33 @@ Grab the notifications:
     >>> comment.rfc822msgid in references
     True
 
+Create a new bug, fetching the notification manually since it will not yet
+be ready to send.  The notification sent for this should not have any
+References header.
+
+    >>> from lp.bugs.interfaces.bug import CreateBugParams
+    >>> from lp.bugs.model.bugnotification import BugNotification
+    >>> from lp.services.database.interfaces import IStore
+
+    >>> for notification in notifications:
+    ...     notification.date_emailed = datetime.now(pytz.timezone('UTC'))
+    >>> flush_database_updates()
+
+    >>> params = CreateBugParams(
+    ...     owner=sample_person, title="New bug", comment="New bug.",
+    ...     target=bug_one.default_bugtask.target)
+    >>> bug = getUtility(IBugSet).createBug(params)
+    >>> notifications = IStore(BugNotification).find(
+    ...     BugNotification, BugNotification.bug == bug)
+    >>> messages = [emails for notifications, omitted, emails in
+    ...     get_email_notifications(notifications)]
+    >>> len(messages)
+    1
+    >>> emails = messages[0]
+    >>> len(emails)
+    1
+    >>> notification = emails[0]
+    >>> notification['Message-Id'] == bug.initial_message.rfc822msgid
+    True
+    >>> 'References' in notification
+    False
