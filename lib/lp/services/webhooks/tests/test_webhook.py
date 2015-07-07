@@ -94,8 +94,8 @@ class TestWebhookSource(TestCaseWithFactory):
         login_person(target.owner)
         person = self.factory.makePerson()
         hook = getUtility(IWebhookSource).new(
-            target, person, u'http://path/to/something', True, u'sekrit',
-            ['git:push'])
+            target, person, u'http://path/to/something', ['git:push'], True,
+            u'sekrit')
         Store.of(hook).flush()
         self.assertEqual(target, hook.target)
         self.assertEqual(person, hook.registrant)

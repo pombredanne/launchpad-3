@@ -101,7 +101,7 @@ class IWebhook(Interface):
 
 class IWebhookSource(Interface):
 
-    def new(target, registrant, delivery_url, active, secret):
+    def new(target, registrant, delivery_url, event_types, active, secret):
         """Create a new webhook."""
 
     def delete(hooks):

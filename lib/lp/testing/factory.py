@@ -4528,8 +4528,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if delivery_url is None:
             delivery_url = self.getUniqueURL().decode('utf-8')
         return getUtility(IWebhookSource).new(
-            target, self.makePerson(), delivery_url, True,
-            self.getUniqueUnicode(), [])
+            target, self.makePerson(), delivery_url, [], True,
+            self.getUniqueUnicode())
 
 
 # Some factory methods return simple Python types. We don't add

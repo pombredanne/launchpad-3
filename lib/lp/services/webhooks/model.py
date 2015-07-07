@@ -129,8 +129,8 @@ class WebhookSource:
 
     implements(IWebhookSource)
 
-    def new(self, target, registrant, delivery_url, active, secret,
-            event_types):
+    def new(self, target, registrant, delivery_url, event_types, active,
+            secret):
         from lp.code.interfaces.gitrepository import IGitRepository
         hook = Webhook()
         if IGitRepository.providedBy(target):
@@ -170,7 +170,7 @@ class WebhookTargetMixin:
 
     def newWebhook(self, registrant, delivery_url, event_types, active=True):
         return getUtility(IWebhookSource).new(
-            self, registrant, delivery_url, active, None, event_types)
+            self, registrant, delivery_url, event_types, active, None)
 
 
 class WebhookJobType(DBEnumeratedType):
