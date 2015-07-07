@@ -209,6 +209,18 @@ def build_inline_comments_section(comments, diff_text):
                     dirty_comment = True
             patch = patch['patch']
 
+            if type(patch) is patches.BinaryPatch:
+
+                result_lines.extend(dirty_head)
+                result_lines.append(
+                    '> Binary files {old} and {new} differ'.format(
+                        old=patch.oldname, new=patch.newname))
+                line_count += 1
+                comment = comments.get(str(line_count))
+                if comment:
+                    result_lines.extend(format_comment(comment))
+                continue
+
         for ph in patch.get_header().splitlines():
             line_count += 1  # inc patch headers
             comment = comments.get(str(line_count))
