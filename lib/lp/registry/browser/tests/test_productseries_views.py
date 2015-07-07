@@ -62,7 +62,7 @@ class TestProductSeries(BrowserTestCase):
                                       user=series.branch.owner)
         self.assertThat(browser.contents, soupmatchers.HTMLContains(meta_tag))
 
-    def test_golang_meta_no_branch_does_not_render(self):
+    def test_golang_meta_no_default_branch(self):
         # ensure golang meta import path is not rendered if series has
         # no default branch.
         series = self.factory.makeProductSeries()
