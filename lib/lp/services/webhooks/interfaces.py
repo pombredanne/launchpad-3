@@ -73,6 +73,7 @@ class IWebhook(Interface):
     registrant = exported(Reference(
         title=_("Registrant"), schema=IPerson, required=True, readonly=True,
         description=_("The person who created this webhook.")))
+    registrant_id = Int(title=_("Registrant ID"))
     date_created = exported(Datetime(
         title=_("Date created"), required=True, readonly=True))
     date_last_modified = exported(Datetime(

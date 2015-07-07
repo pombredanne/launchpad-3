@@ -35,7 +35,9 @@ from zope.interface import (
     )
 from zope.security.proxy import removeSecurityProxy
 
+from lp.registry.model.person import Person
 from lp.services.config import config
+from lp.services.database.bulk import load_related
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
@@ -103,7 +105,12 @@ class Webhook(StormBase):
             WebhookJob.webhook == self,
             WebhookJob.job_type == WebhookJobType.DELIVERY,
             ).order_by(WebhookJob.job_id)
-        return DecoratedResultSet(jobs, lambda job: job.makeDerived())
+
+        def preload_jobs(rows):
+            load_related(Job, rows, ['job_id'])
+
+        return DecoratedResultSet(
+            jobs, lambda job: job.makeDerived(), pre_iter_hook=preload_jobs)
 
     def getDelivery(self, id):
         return self.deliveries.find(WebhookJob.job_id == id).one()
@@ -166,7 +173,12 @@ class WebhookTargetMixin:
 
     @property
     def webhooks(self):
-        return getUtility(IWebhookSource).findByTarget(self)
+        def preload_registrants(rows):
+            load_related(Person, rows, ['registrant_id'])
+
+        return DecoratedResultSet(
+            getUtility(IWebhookSource).findByTarget(self),
+            pre_iter_hook=preload_registrants)
 
     def newWebhook(self, registrant, delivery_url, event_types, active=True):
         return getUtility(IWebhookSource).new(

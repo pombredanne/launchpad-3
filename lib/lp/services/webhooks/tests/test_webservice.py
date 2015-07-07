@@ -21,9 +21,11 @@ from lp.services.webapp.interfaces import OAuthPermission
 from lp.testing import (
     api_url,
     person_logged_in,
+    record_two_runs,
     TestCaseWithFactory,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.matchers import HasQueryCount
 from lp.testing.pages import (
     LaunchpadWebServiceCaller,
     webservice_for_person,
@@ -107,6 +109,22 @@ class TestWebhook(TestCaseWithFactory):
             [delivery['self_link']],
             [entry['self_link'] for entry in representation['entries']])
 
+    def test_deliveries_query_count(self):
+        def get_deliveries():
+            representation = self.webservice.get(
+                self.webhook_url + '/deliveries',
+                api_version='devel').jsonBody()
+            self.assertIn(len(representation['entries']), (0, 2, 4))
+
+        def create_delivery():
+            with person_logged_in(self.owner):
+                self.webhook.ping()
+
+        get_deliveries()
+        recorder1, recorder2 = record_two_runs(
+            get_deliveries, create_delivery, 2)
+        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
+
 
 class TestWebhookDelivery(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
@@ -169,6 +187,22 @@ class TestWebhookTarget(TestCaseWithFactory):
             self.target_url + '/webhooks', api_version='devel')
         self.assertEqual(401, response.status)
         self.assertIn('launchpad.Edit', response.body)
+
+    def test_webhooks_query_count(self):
+        def get_webhooks():
+            representation = self.webservice.get(
+                self.target_url + '/webhooks',
+                api_version='devel').jsonBody()
+            self.assertIn(len(representation['entries']), (0, 2, 4))
+
+        def create_webhook():
+            with person_logged_in(self.owner):
+                self.factory.makeWebhook(target=self.target)
+
+        get_webhooks()
+        recorder1, recorder2 = record_two_runs(
+            get_webhooks, create_webhook, 2)
+        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
 
     def test_newWebhook(self):
         response = self.webservice.named_post(
