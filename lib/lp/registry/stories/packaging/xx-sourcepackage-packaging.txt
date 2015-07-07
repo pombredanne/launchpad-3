@@ -84,8 +84,6 @@ step of the multistep form.
     bonkers
     >>> print user_browser.getControl(name='field.displayname').value
     Bonkers
-    >>> print user_browser.getControl(name='field.title').value
-    Bonkers
     >>> print user_browser.getControl(name='field.summary').value
     summary for flubber-bin
     summary for flubber-lib
@@ -109,8 +107,6 @@ then finds out that the project doesn't exist, he uses the
     >>> print user_browser.getControl(name='field.name').value
     bonkers
     >>> print user_browser.getControl(name='field.displayname').value
-    Bonkers
-    >>> print user_browser.getControl(name='field.title').value
     Bonkers
     >>> print user_browser.getControl(name='field.summary').value
     summary for flubber-bin

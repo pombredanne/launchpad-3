@@ -21,7 +21,7 @@ When we go back to the secrecy form, the previously set value is pre-selected.
     >>> browser.getControl("Private", index=1).selected
     True
 
-Foo Bar files a security (private) bug on Ubuntu Linux. He gets
+Foo Bar files a security (private) bug on Ubuntu. He gets
 redirected to the bug page.
 
     >>> browser = setupBrowser("Basic foo.bar@canonical.com:test")
@@ -53,7 +53,7 @@ Foo Bar sees the private bug he filed.
     >>> print browser.contents.replace(bug_id, "BUG-ID")
     <!DOCTYPE...
     ...
-    ...Ubuntu Linux...
+    ...Ubuntu...
     ...<a...>...BUG-ID...</a>...
 
 Foo Bar is subscribed to the bug.

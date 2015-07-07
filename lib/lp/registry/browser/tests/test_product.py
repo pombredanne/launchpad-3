@@ -130,7 +130,6 @@ def make_product_form(person=None, action=1, proprietary=False):
             'field.__visited_steps__': ProjectAddStepOne.step_name,
             'field.displayname': 'Fnord',
             'field.name': 'fnord',
-            'field.title': 'fnord',
             'field.summary': 'fnord summary',
             }
     else:
@@ -140,7 +139,6 @@ def make_product_form(person=None, action=1, proprietary=False):
                 ProjectAddStepOne.step_name, ProjectAddStepTwo.step_name),
             'field.displayname': 'Fnord',
             'field.name': 'fnord',
-            'field.title': 'fnord',
             'field.summary': 'fnord summary',
             'field.disclaim_maintainer': 'off',
             }
@@ -207,13 +205,13 @@ class TestProductAddView(TestCaseWithFactory):
         disclaim_widget = view.view.widgets['disclaim_maintainer']
         self.assertEqual('subordinate', disclaim_widget.cssClass)
         self.assertEqual(
-            ['displayname', 'name', 'title', 'summary', 'description',
+            ['displayname', 'name', 'summary', 'description',
              'homepageurl', 'information_type', 'licenses', 'license_info',
              'driver', 'bug_supervisor', 'owner',
              '__visited_steps__'],
             view.view.field_names)
         self.assertEqual(
-            ['displayname', 'name', 'title', 'summary', 'description',
+            ['displayname', 'name', 'summary', 'description',
              'homepageurl', 'information_type', 'licenses', 'driver',
              'bug_supervisor', 'owner', 'disclaim_maintainer',
              'source_package_name', 'distroseries', '__visited_steps__',

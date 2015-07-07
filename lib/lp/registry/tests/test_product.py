@@ -941,7 +941,7 @@ class TestProduct(TestCaseWithFactory):
                 'official_codehosting', 'owner', 'private',
                 'programminglang', 'projectgroup', 'redeemSubscriptionVoucher',
                 'releaseroot', 'screenshotsurl', 'sourceforgeproject',
-                'summary', 'title', 'uses_launchpad', 'wikiurl', 'vcs')),
+                'summary', 'uses_launchpad', 'wikiurl', 'vcs')),
             'launchpad.Moderate': set((
                 'active', 'autoupdate', 'license_approved', 'name',
                 'project_reviewed', 'registrant', 'reviewer_whiteboard')),

@@ -349,7 +349,7 @@ Check the email recipient for displayname containing special chars,
     <BLANKLINE>
     Announcing to breezy-changes@ubuntu.com
     <BLANKLINE>
-    Thank you for your contribution to Ubuntu Test.
+    Thank you for your contribution to ubuntutest.
     <BLANKLINE>
     -- =
     <BLANKLINE>

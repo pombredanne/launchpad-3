@@ -604,7 +604,7 @@ You can also add bugs for a specific distro.
     >>> notify(ObjectCreatedEvent(ubuntu_task))
 
     >>> print ubuntu_task.distribution.title
-    Ubuntu Linux
+    Ubuntu
 
 And for a specific distribution series.
 
