@@ -36,10 +36,10 @@ Ubuntu has mirror support enabled, so it can have mirrors.
 The view provides a label, page_title, and cancel_url
 
     >>> print view.label
-    Register a new mirror for Ubuntu Linux
+    Register a new mirror for Ubuntu
 
     >>> print view.page_title
-    Register a new mirror for Ubuntu Linux
+    Register a new mirror for Ubuntu
 
     >>> print view.cancel_url
     http://launchpad.dev/ubuntu

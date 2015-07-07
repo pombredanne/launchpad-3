@@ -50,16 +50,13 @@ forgetting to enter a title or summary.
     >>> user_browser.getControl('Continue').click()
 
     >>> print_errors(user_browser.contents)
-    There are 3 errors.
+    There are 2 errors.
     URL:
     http://launchpad.dev/
     Invalid name 'aard vark'. Names must be at least two characters ...
     At least one lowercase letter or number, followed by letters, numbers,
     dots, hyphens or pluses. Keep this name short; it is used in URLs as
     shown above.
-    Title:
-    Required input is missing.
-    The project title. Should be just a few words.
     Summary:
     Required input is missing.
     A short paragraph to introduce the project's work.
@@ -68,7 +65,6 @@ Realizing her mistake, Sample Person fills out the project's basic information
 correctly this time.
 
     >>> user_browser.getControl('URL').value = 'aardvark'
-    >>> user_browser.getControl('Title').value = 'The Aardvark Center'
     >>> user_browser.getControl('Summary').value = (
     ...     'A project designed to placate ornery aardvarks')
 
@@ -92,10 +88,9 @@ modify the project's URL.
     >>> print user_browser.getControl(name='field.name').value
     aardvark
 
-Sample Person is given the opportunity though to change the title and
-summary.  She can also add a longer description.
+Sample Person is given the opportunity though to change the summary.
+She can also add a longer description.
 
-    >>> user_browser.getControl('Title').value = 'Aardvark Central Command'
     >>> user_browser.getControl('Summary').value = (
     ...     'Control pesky aardvarkian fnords')
     >>> user_browser.getControl('Description').value = (
@@ -142,7 +137,6 @@ interested in being the project maintainer for the long run.
 
     >>> user_browser.getControl('Name').value = 'kittyhawk'
     >>> user_browser.getControl('URL').value = 'kittyhawk'
-    >>> user_browser.getControl('Title').value = 'Kitty Hawk ATC'
     >>> user_browser.getControl('Summary').value = (
     ...     'Kitty Hawk Air Traffic Simulator')
     >>> user_browser.getControl('Continue').click()
@@ -178,7 +172,6 @@ Firefox.
 
     >>> user_browser.getControl('Name').value = 'Snowdog'
     >>> user_browser.getControl('URL').value = 'snowdog'
-    >>> user_browser.getControl('Title').value = 'Snowdog Browser'
     >>> user_browser.getControl('Summary').value = (
     ...     'Snowdog is a browser similar to Firefox')
     >>> user_browser.getControl('Continue').click()

@@ -1,11 +1,11 @@
 = Ubuntu PPAs =
 
-The Ubuntu Linux page contains a link to get to the Personal Package Archives.
+The Ubuntu page contains a link to get to the Personal Package Archives.
 
     >>> anon_browser.open("http://launchpad.dev/ubuntu")
     >>> anon_browser.getLink("Personal Package Archives").click()
     >>> print_location(anon_browser.contents)
-    Hierarchy: Ubuntu Linux
+    Hierarchy: Ubuntu
     Tabs:
     * Overview (selected) - http://launchpad.dev/ubuntu
     * Code - http://code.launchpad.dev/ubuntu
@@ -13,7 +13,7 @@ The Ubuntu Linux page contains a link to get to the Personal Package Archives.
     * Blueprints - http://blueprints.launchpad.dev/ubuntu
     * Translations - http://translations.launchpad.dev/ubuntu
     * Answers - http://answers.launchpad.dev/ubuntu
-    Main heading: Personal Package Archives for Ubuntu Linux
+    Main heading: Personal Package Archives for Ubuntu
 
 
 == Distribution PPA main page ==

@@ -2198,7 +2198,7 @@ class ProductAddViewBase(ProductLicenseMixin, LaunchpadFormView):
 
     schema = IProduct
     product = None
-    field_names = ['name', 'displayname', 'title', 'summary',
+    field_names = ['name', 'displayname', 'summary',
                    'description', 'homepageurl', 'sourceforgeproject',
                    'wikiurl', 'screenshotsurl',
                    'downloadurl', 'programminglang',
@@ -2231,7 +2231,7 @@ def create_source_package_fields():
 class ProjectAddStepOne(StepView):
     """product/+new view class for creating a new project."""
 
-    _field_names = ['displayname', 'name', 'title', 'summary']
+    _field_names = ['displayname', 'name', 'summary']
     label = "Register a project in Launchpad"
     schema = IProduct
     step_name = 'projectaddstep1'
@@ -2287,7 +2287,7 @@ class ProjectAddStepOne(StepView):
 class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
     """Step 2 (of 2) in the +new project add wizard."""
 
-    _field_names = ['displayname', 'name', 'title', 'summary', 'description',
+    _field_names = ['displayname', 'name', 'summary', 'description',
                     'homepageurl', 'information_type', 'licenses',
                     'license_info', 'driver', 'bug_supervisor', 'owner']
     schema = IProduct
@@ -2514,7 +2514,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
             owner=owner,
             name=data['name'],
             displayname=data['displayname'],
-            title=data['title'],
+            title=data['displayname'],
             summary=data['summary'],
             description=description,
             homepageurl=data.get('homepageurl'),

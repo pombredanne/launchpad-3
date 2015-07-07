@@ -45,7 +45,7 @@ Its application bar has enabled entries for Code, Bugs and Answers, and
 they all point to the `DistributionSourcePackage` (parent) url.
 
     >>> print_location(anon_browser.contents)
-    Hierarchy: Ubuntu Test > testing-dspr package
+    Hierarchy: ubuntutest > testing-dspr package
     Tabs:
     * Overview (selected) - http://launchpad.dev/ubuntutest/+source/testing-dspr
     * Code - http://code.launchpad.dev/ubuntutest/+source/testing-dspr

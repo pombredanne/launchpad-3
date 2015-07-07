@@ -183,8 +183,8 @@ IProductSet will also tell us which products can be translated:
 
     >>> for product in productset.getTranslatables():
     ...    print product.name
-    alsa-utils
     evolution
+    alsa-utils
 
 Only active products are listed as translatables.
 

@@ -128,7 +128,7 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
         storm_validator=validate_public_person, notNull=True)
     name = StringCol(dbName='name', notNull=True)
     displayname = StringCol(dbName='displayname', notNull=True)
-    title = StringCol(dbName='title', notNull=True)
+    _title = StringCol(dbName='title', notNull=True)
     summary = StringCol(dbName='summary', notNull=True)
     description = StringCol(dbName='description', notNull=True)
     datecreated = UtcDateTimeCol(dbName='datecreated', notNull=True,
@@ -161,6 +161,10 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
         default=None)
     bug_reporting_guidelines = StringCol(default=None)
     bug_reported_acknowledgement = StringCol(default=None)
+
+    @property
+    def title(self):
+        return self.displayname
 
     @property
     def pillar_category(self):
@@ -555,7 +559,7 @@ class ProjectGroupSet:
         return ProjectGroup(
             name=name,
             displayname=displayname,
-            title=title,
+            _title=title,
             summary=summary,
             description=description,
             homepageurl=homepageurl,
