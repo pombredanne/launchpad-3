@@ -5,8 +5,6 @@ Launchpad features a site-wide search that combines Google's site-
 specific search with Launchpad's prominent objects (projects, bugs,
 teams, etc.).
 
-    >>> from lp.services.encoding import ascii_smash
-
     # Our very helpful function for printing all the page results.
 
     >>> def print_search_results(contents=None):
@@ -14,7 +12,7 @@ teams, etc.).
     ...         contents = anon_browser.contents
     ...     tag = find_tag_by_id(contents, 'search-results')
     ...     if tag:
-    ...         print ascii_smash(extract_text(tag))
+    ...         print extract_text(tag)
 
     # Another helper to make searching convenient.
 
