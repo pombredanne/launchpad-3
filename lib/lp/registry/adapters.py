@@ -15,7 +15,7 @@ __all__ = [
 
 from zope.component import getUtility
 from zope.component.interfaces import ComponentLookupError
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.registry.interfaces.poll import (
@@ -60,9 +60,9 @@ def person_from_principal(principal):
         raise ComponentLookupError
 
 
+@implementer(IPollSubset)
 class PollSubset:
     """Adapt an `IPoll` to an `IPollSubset`."""
-    implements(IPollSubset)
 
     title = 'Team polls'
 

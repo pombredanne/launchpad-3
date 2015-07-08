@@ -37,7 +37,7 @@ from zope.component import (
     getUtility,
     )
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     )
 
@@ -70,10 +70,9 @@ from lp.services.librarian.interfaces.client import (
 from lp.services.tokens import create_token
 
 
+@implementer(ILibraryFileContent)
 class LibraryFileContent(SQLBase):
     """A pointer to file content in the librarian."""
-
-    implements(ILibraryFileContent)
 
     _table = 'LibraryFileContent'
 
@@ -84,10 +83,9 @@ class LibraryFileContent(SQLBase):
     md5 = StringCol(notNull=True)
 
 
+@implementer(ILibraryFileAlias)
 class LibraryFileAlias(SQLBase):
     """A filename and mimetype that we can serve some given content with."""
-
-    implements(ILibraryFileAlias)
 
     _table = 'LibraryFileAlias'
     date_created = UtcDateTimeCol(notNull=False, default=DEFAULT)
@@ -227,11 +225,11 @@ class LibraryFileAlias(SQLBase):
         self.close()
 
 
+@implementer(ILibraryFileAliasWithParent)
 class LibraryFileAliasWithParent:
     """A LibraryFileAlias variant that has a parent."""
 
     adapts(ILibraryFileAlias, Interface)
-    implements(ILibraryFileAliasWithParent)
     delegates(ILibraryFileAlias)
 
     def __init__(self, libraryfile, parent):
@@ -243,10 +241,9 @@ class LibraryFileAliasWithParent:
         return TimeLimitedToken.allocate(self.private_url)
 
 
+@implementer(ILibraryFileAliasSet)
 class LibraryFileAliasSet(object):
     """Create and find LibraryFileAliases."""
-
-    implements(ILibraryFileAliasSet)
 
     def create(self, name, size, file, contentType, expires=None,
                debugID=None, restricted=False):
@@ -275,10 +272,9 @@ class LibraryFileAliasSet(object):
             """ % sha1, clauseTables=['LibraryFileContent'])
 
 
+@implementer(ILibraryFileDownloadCount)
 class LibraryFileDownloadCount(SQLBase):
     """See `ILibraryFileDownloadCount`"""
-
-    implements(ILibraryFileDownloadCount)
     __storm_table__ = 'LibraryFileDownloadCount'
 
     id = Int(primary=True)

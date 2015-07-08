@@ -14,10 +14,7 @@ from zope.component import (
     adapter,
     adapts,
     )
-from zope.interface import (
-    implementer,
-    implements,
-    )
+from zope.interface import implementer
 
 from lp.registry.interfaces.person import IPerson
 from lp.services.config import config
@@ -36,11 +33,11 @@ class CurrentOpenIDEndPoint:
         return config.launchpad.openid_provider_root + '+openid'
 
 
+@implementer(IOpenIDPersistentIdentity)
 class OpenIDPersistentIdentity:
     """A persistent OpenID identifier for a user."""
 
     adapts(IAccount)
-    implements(IOpenIDPersistentIdentity)
 
     def __init__(self, account):
         self.account = account

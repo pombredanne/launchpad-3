@@ -29,7 +29,7 @@ import urllib
 import urllib2
 from urlparse import urlparse
 
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.bugs.adapters import treelookup
 from lp.bugs.interfaces.bugtask import BugTaskStatus
@@ -134,10 +134,9 @@ class PrivateRemoteBug(BugWatchUpdateWarning):
     """Raised when a bug is marked private on the remote bugtracker."""
 
 
+@implementer(IExternalBugTracker)
 class ExternalBugTracker:
     """Base class for an external bug tracker."""
-
-    implements(IExternalBugTracker)
 
     batch_size = None
     batch_query_threshold = config.checkwatches.batch_query_threshold

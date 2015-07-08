@@ -23,7 +23,7 @@ from timeline.timeline import Timeline
 from zope.authentication.interfaces import IUnauthenticatedPrincipal
 from zope.interface import (
     directlyProvides,
-    implements,
+    implementer,
     )
 from zope.publisher.browser import TestRequest
 from zope.publisher.interfaces import NotFound
@@ -611,8 +611,8 @@ class TestSensitiveRequestVariables(testtools.TestCase):
         self.failUnless(_is_sensitive(request, 'oauth_signature'))
 
 
+@implementer(IUnauthenticatedPrincipal)
 class UnauthenticatedPrincipal:
-    implements(IUnauthenticatedPrincipal)
     id = 0
     title = ''
     description = ''

@@ -12,7 +12,7 @@ from cStringIO import StringIO
 import textwrap
 
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.services.librarian.interfaces.client import ILibrarianClient
 from lp.translations.interfaces.translationfileformat import (
@@ -370,10 +370,9 @@ class PropertyFile:
                 translation = u''
 
 
+@implementer(ITranslationFormatImporter)
 class MozillaXpiImporter:
     """Support class to import Mozilla .xpi files."""
-
-    implements(ITranslationFormatImporter)
 
     def __init__(self):
         self.basepath = None

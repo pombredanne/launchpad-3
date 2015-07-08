@@ -26,7 +26,7 @@ from storm.locals import (
     )
 from storm.store import EmptyResultSet
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.buildmaster.model.processor import Processor
 from lp.registry.interfaces.person import validate_public_person
@@ -61,8 +61,8 @@ from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 
 
+@implementer(IDistroArchSeries, IHasBuildRecords)
 class DistroArchSeries(SQLBase):
-    implements(IDistroArchSeries, IHasBuildRecords)
     _table = 'DistroArchSeries'
     _defaultOrder = 'id'
 
@@ -285,8 +285,8 @@ class DistroArchSeries(SQLBase):
         return self.distroseries.distribution.main_archive
 
 
+@implementer(IPocketChroot)
 class PocketChroot(SQLBase):
-    implements(IPocketChroot)
     _table = "PocketChroot"
 
     distroarchseries = ForeignKey(

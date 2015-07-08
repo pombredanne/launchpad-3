@@ -21,7 +21,7 @@ import os.path
 import pytz
 import transaction
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.bugs.externalbugtracker import (
     BATCH_SIZE_UNLIMITED,
@@ -58,11 +58,10 @@ class DebBugsDatabaseNotFound(BugTrackerConnectError):
     """The Debian bug database was not found."""
 
 
+@implementer(
+    ISupportsBugImport, ISupportsCommentImport, ISupportsCommentPushing)
 class DebBugs(ExternalBugTracker):
     """A class that deals with communications with a debbugs db."""
-
-    implements(
-        ISupportsBugImport, ISupportsCommentImport, ISupportsCommentPushing)
 
     # We don't support different versions of debbugs.
     version = None

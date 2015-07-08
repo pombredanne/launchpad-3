@@ -15,7 +15,7 @@ import email
 from email.message import Message
 import re
 
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.services.mail.interfaces import ISignedMessage
 
@@ -47,9 +47,9 @@ def signed_message_from_string(string):
     return msg
 
 
+@implementer(ISignedMessage)
 class SignedMessage(Message):
     """Provides easy access to signed content and the signature"""
-    implements(ISignedMessage)
 
     parsed_string = None
 

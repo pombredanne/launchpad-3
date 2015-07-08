@@ -14,7 +14,7 @@ from zope.formlib.widget import (
     SimpleInputWidget,
     )
 from zope.formlib.widgets import FileWidget
-from zope.interface import implements
+from zope.interface import implementer
 from zope.schema import (
     Bytes,
     Choice,
@@ -43,13 +43,12 @@ class LaunchpadFileWidget(FileWidget):
         return contents
 
 
+@implementer(IAlwaysSubmittedWidget)
 class ImageChangeWidget(SimpleInputWidget):
     """Widget for changing an existing image.
 
     This widget should be used only on edit forms.
     """
-
-    implements(IAlwaysSubmittedWidget)
 
     EDIT_STYLE = 'editview'
     ADD_STYLE = 'addview'

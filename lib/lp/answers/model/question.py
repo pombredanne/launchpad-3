@@ -39,7 +39,7 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import (
-    implements,
+    implementer,
     providedBy,
     )
 from zope.security.interfaces import Unauthorized
@@ -157,10 +157,9 @@ class notify_question_modified:
         return notify_question_modified
 
 
+@implementer(IQuestion, IBugLinkTarget)
 class Question(SQLBase, BugLinkTargetMixin):
     """See `IQuestion`."""
-
-    implements(IQuestion, IBugLinkTarget)
 
     _table = 'Question'
     _defaultOrder = ['-priority', 'datecreated']
@@ -691,10 +690,9 @@ class Question(SQLBase, BugLinkTargetMixin):
         message.visible = visible
 
 
+@implementer(IQuestionSet)
 class QuestionSet:
     """The set of questions in the Answer Tracker."""
-
-    implements(IQuestionSet)
 
     def __init__(self):
         """See `IQuestionSet`."""

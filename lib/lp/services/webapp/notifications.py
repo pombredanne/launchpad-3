@@ -16,7 +16,7 @@ __metaclass__ = type
 
 from datetime import datetime
 
-from zope.interface import implements
+from zope.interface import implementer
 from zope.session.interfaces import ISession
 
 from lp.services.config import config
@@ -38,6 +38,7 @@ from lp.services.webapp.publisher import LaunchpadView
 SESSION_KEY = 'launchpad'
 
 
+@implementer(INotificationRequest)
 class NotificationRequest:
     """NotificationRequest extracts notifications to display to the user
     from the request and session
@@ -69,13 +70,13 @@ class NotificationRequest:
     >>> [notification.message for notification in request.notifications]
     ['Fnord', u'Aargh']
     """
-    implements(INotificationRequest)
 
     @property
     def notifications(self):
         return INotificationResponse(self).notifications
 
 
+@implementer(INotificationResponse)
 class NotificationResponse:
     """The NotificationResponse collects notifications to propogate to the
     next page loaded. Notifications are stored in the session, with a key
@@ -163,7 +164,6 @@ class NotificationResponse:
     >>> session.has_key('notifications')
     False
     """
-    implements(INotificationResponse)
 
     # We stuff our Notifications here until we are sure we should persist it
     # in the request. This avoids needless calls to the session machinery
@@ -243,6 +243,7 @@ class NotificationResponse:
         self.addNotification(msg, BrowserNotificationLevel.ERROR)
 
 
+@implementer(INotificationList)
 class NotificationList(list):
     """
     Collection of INotification instances with a creation date
@@ -272,7 +273,6 @@ class NotificationList(list):
     ...     print repr(notification.message)
     u'A debug message'
     """
-    implements(INotificationList)
 
     created = None
 
@@ -297,8 +297,8 @@ class NotificationList(list):
             ]
 
 
+@implementer(INotification)
 class Notification:
-    implements(INotification)
 
     level = None
     message = None

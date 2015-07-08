@@ -12,7 +12,7 @@ __all__ = [
 
 from sqlobject import OR
 from storm.expr import And
-from zope.interface import implements
+from zope.interface import implementer
 from zope.schema.vocabulary import SimpleTerm
 
 from lp.answers.interfaces.faq import IFAQ
@@ -31,9 +31,9 @@ from lp.services.webapp.vocabulary import (
     )
 
 
+@implementer(IHugeVocabulary)
 class FAQVocabulary(FilteredVocabularyBase):
     """Vocabulary containing all the FAQs in an `IFAQTarget`."""
-    implements(IHugeVocabulary)
 
     displayname = 'Select a FAQ'
     step_title = 'Search'

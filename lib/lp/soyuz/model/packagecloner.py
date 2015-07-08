@@ -13,7 +13,7 @@ __all__ = [
 
 import transaction
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.interfaces import IStore
@@ -48,11 +48,10 @@ def clone_packages(origin, destination, distroarchseries_list=None):
     pkg_cloner.clonePackages(origin, destination, distroarchseries_list)
 
 
+@implementer(IPackageCloner)
 class PackageCloner:
     """Used for copying of various publishing history data across archives.
     """
-
-    implements(IPackageCloner)
 
     def clonePackages(self, origin, destination, distroarchseries_list=None,
                       processors=None, sourcepackagenames=None):

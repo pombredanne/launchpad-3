@@ -15,7 +15,7 @@ from storm.locals import (
     Max,
     RawStr,
     )
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import (
@@ -31,8 +31,8 @@ from lp.soyuz.model.distroarchseries import DistroArchSeries
 from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
 
 
+@implementer(IDistroSeriesPackageCache)
 class DistroSeriesPackageCache(SQLBase):
-    implements(IDistroSeriesPackageCache)
     _table = 'DistroSeriesPackageCache'
 
     archive = ForeignKey(dbName='archive',

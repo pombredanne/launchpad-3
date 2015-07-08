@@ -20,7 +20,7 @@ from storm.locals import (
     )
 from zope.component import getUtility
 from zope.event import notify
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.errors import NotFoundError
 from lp.code.enums import (
@@ -213,13 +213,12 @@ class GitRefMixin:
         return self.repository.pending_writes
 
 
+@implementer(IGitRef)
 class GitRef(StormBase, GitRefMixin):
     """See `IGitRef`."""
 
     __storm_table__ = 'GitRef'
     __storm_primary__ = ('repository_id', 'path')
-
-    implements(IGitRef)
 
     repository_id = Int(name='repository', allow_none=False)
     repository = Reference(repository_id, 'GitRepository.id')
@@ -344,6 +343,7 @@ class GitRef(StormBase, GitRefMixin):
             commit_message=commit_message, review_requests=review_requests)
 
 
+@implementer(IGitRef)
 class GitRefFrozen(GitRefMixin):
     """A frozen Git reference.
 
@@ -354,8 +354,6 @@ class GitRefFrozen(GitRefMixin):
     repository/path/commit_sha1 that you want to pass around as a single
     object, but don't necessarily know that the ref still exists.
     """
-
-    implements(IGitRef)
 
     def __init__(self, repository, path, commit_sha1):
         self.repository_id = repository.id

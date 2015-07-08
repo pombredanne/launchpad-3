@@ -64,7 +64,6 @@ from zope.event import notify
 from zope.formlib.widget import CustomWidgetFactory
 from zope.interface import (
     implementer,
-    implements,
     providedBy,
     )
 from zope.schema import Choice
@@ -2272,10 +2271,9 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin,
             )
 
 
+@implementer(IObjectPrivacy)
 class BugTaskPrivacyAdapter:
     """Provides `IObjectPrivacy` for `IBugTask`."""
-
-    implements(IObjectPrivacy)
 
     def __init__(self, context):
         self.context = context

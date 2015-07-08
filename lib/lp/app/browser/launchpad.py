@@ -44,7 +44,7 @@ from zope.datetime import (
 from zope.i18nmessageid import Message
 from zope.interface import (
     alsoProvides,
-    implements,
+    implementer,
     Interface,
     )
 from zope.publisher.defaultview import getDefaultViewName
@@ -448,6 +448,7 @@ class ExceptionHierarchy(Hierarchy):
         return []
 
 
+@implementer(IBrowserPublisher, ITraversable)
 class Macro:
     """Keeps templates that are registered as pages from being URL accessable.
 
@@ -489,7 +490,6 @@ class Macro:
         permission="zope.Public"
         />
     """
-    implements(IBrowserPublisher, ITraversable)
 
     def __init__(self, context, request):
         self.context = context

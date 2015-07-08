@@ -6,7 +6,7 @@
 __metaclass__ = type
 
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import InformationType
@@ -40,10 +40,9 @@ from lp.testing.layers import (
 from lp.xmlrpc import faults
 
 
+@implementer(IGitHostingClient)
 class FakeGitHostingClient:
     """A GitHostingClient lookalike that just logs calls."""
-
-    implements(IGitHostingClient)
 
     def __init__(self):
         self.calls = []
@@ -52,10 +51,9 @@ class FakeGitHostingClient:
         self.calls.append(("create", path, clone_from))
 
 
+@implementer(IGitHostingClient)
 class BrokenGitHostingClient:
     """A GitHostingClient lookalike that pretends the remote end is down."""
-
-    implements(IGitHostingClient)
 
     def create(self, path, clone_from=None):
         raise GitRepositoryCreationFault("nothing here")

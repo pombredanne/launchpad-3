@@ -18,7 +18,7 @@ from storm.locals import (
     Reference,
     Storm,
     )
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks,
@@ -32,11 +32,11 @@ from lp.services.database.interfaces import (
     )
 
 
+@implementer(ISeriesSourcePackageBranch)
 class SeriesSourcePackageBranch(Storm):
     """See `ISeriesSourcePackageBranch`."""
 
     __storm_table__ = 'SeriesSourcePackageBranch'
-    implements(ISeriesSourcePackageBranch)
 
     id = Int(primary=True)
     distroseriesID = Int('distroseries')
@@ -75,10 +75,9 @@ class SeriesSourcePackageBranch(Storm):
         return self.sourcepackage.getSuiteSourcePackage(self.pocket)
 
 
+@implementer(IFindOfficialBranchLinks)
 class SeriesSourcePackageBranchSet:
     """See `ISeriesSourcePackageBranchSet`."""
-
-    implements(IFindOfficialBranchLinks)
 
     @staticmethod
     def new(distroseries, pocket, sourcepackagename, branch, registrant,

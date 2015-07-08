@@ -72,7 +72,7 @@ from zope.component import getUtility
 from zope.contenttype import guess_content_type
 from zope.event import notify
 from zope.interface import (
-    implements,
+    implementer,
     providedBy,
     )
 from zope.security.interfaces import Unauthorized
@@ -306,9 +306,9 @@ def get_bug_tags_open_count(context_condition, user, tag_limit=0,
     return tags
 
 
+@implementer(IBugBecameQuestionEvent)
 class BugBecameQuestionEvent:
     """See `IBugBecameQuestionEvent`."""
-    implements(IBugBecameQuestionEvent)
 
     def __init__(self, bug, question, user):
         self.bug = bug
@@ -329,10 +329,9 @@ def update_bug_heat(bug_ids):
             heat_last_updated=UTC_NOW)
 
 
+@implementer(IBug, IInformationType)
 class Bug(SQLBase, InformationTypeMixin):
     """A bug."""
-
-    implements(IBug, IInformationType)
 
     _defaultOrder = '-id'
 
@@ -2322,6 +2321,7 @@ def freeze(factory):
     return decorate
 
 
+@implementer(IHasBug)
 class BugSubscriptionInfo:
     """Represents bug subscription sets.
 
@@ -2345,8 +2345,6 @@ class BugSubscriptionInfo:
         to move even more bug mail processing out of the web request.
 
     """
-
-    implements(IHasBug)
 
     def __init__(self, bug, level):
         self.bug = bug
@@ -2554,9 +2552,9 @@ class BugSubscriptionInfo:
             self.duplicate_subscribers)
 
 
+@implementer(IBugSet)
 class BugSet:
     """See BugSet."""
-    implements(IBugSet)
 
     valid_bug_name_re = re.compile(r'''^[a-z][a-z0-9\\+\\.\\-]+$''')
 
@@ -2768,9 +2766,9 @@ class BugAffectsPerson(SQLBase):
     __storm_primary__ = "bugID", "personID"
 
 
+@implementer(IFileBugData)
 class FileBugData:
     """Extra data to be added to the bug."""
-    implements(IFileBugData)
 
     def __init__(self, initial_summary=None, initial_tags=None,
                  private=None, subscribers=None, extra_description=None,
@@ -2801,10 +2799,9 @@ class FileBugData:
         return self.__dict__.copy()
 
 
+@implementer(IBugMute)
 class BugMute(StormBase):
     """Contains bugs a person has decided to block notifications from."""
-
-    implements(IBugMute)
 
     __storm_table__ = "BugMute"
 

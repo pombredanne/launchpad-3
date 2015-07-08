@@ -24,7 +24,7 @@ import urllib2
 
 import gpgme
 from lazr.restful.utils import get_current_browser_request
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.validators.email import valid_email
 from lp.services.config import config
@@ -64,10 +64,9 @@ signing_only_param = """
 """
 
 
+@implementer(IGPGHandler)
 class GPGHandler:
     """See IGPGHandler."""
-
-    implements(IGPGHandler)
 
     def __init__(self):
         """Initialize environment variable."""
@@ -514,9 +513,9 @@ class GPGHandler:
         return urlfetch(url)
 
 
+@implementer(IPymeSignature)
 class PymeSignature(object):
     """See IPymeSignature."""
-    implements(IPymeSignature)
 
     def __init__(self, fingerprint=None, plain_data=None, timestamp=None):
         """Initialized a signature container."""
@@ -525,9 +524,9 @@ class PymeSignature(object):
         self.timestamp = timestamp
 
 
+@implementer(IPymeKey)
 class PymeKey:
     """See IPymeKey."""
-    implements(IPymeKey)
 
     fingerprint = None
     exists_in_local_keyring = False
@@ -601,9 +600,9 @@ class PymeKey:
         return keydata.getvalue()
 
 
+@implementer(IPymeUserId)
 class PymeUserId:
     """See IPymeUserId"""
-    implements(IPymeUserId)
 
     def __init__(self, uid):
         self.revoked = uid.revoked

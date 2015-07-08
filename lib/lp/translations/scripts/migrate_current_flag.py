@@ -15,7 +15,7 @@ from storm.expr import (
     Select,
     )
 from storm.info import ClassAlias
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.registry.model.product import Product
 from lp.registry.model.productseries import ProductSeries
@@ -31,8 +31,8 @@ from lp.translations.model.translationtemplateitem import (
     )
 
 
+@implementer(ITunableLoop)
 class TranslationMessageImportedFlagUpdater:
-    implements(ITunableLoop)
     """Populates is_imported flag from is_current flag on translations."""
 
     def __init__(self, transaction, logger, tm_ids):

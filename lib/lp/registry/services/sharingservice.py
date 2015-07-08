@@ -27,7 +27,7 @@ from storm.expr import (
     )
 from storm.store import Store
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 from zope.security.interfaces import Unauthorized
 from zope.traversing.browser.absoluteurl import absoluteURL
 
@@ -82,14 +82,13 @@ from lp.services.webapp.authorization import (
     )
 
 
+@implementer(ISharingService)
 class SharingService:
     """Service providing operations for adding and removing pillar grantees.
 
     Service is accessed via a url of the form
     '/services/sharing?ws.op=...
     """
-
-    implements(ISharingService)
 
     @property
     def name(self):

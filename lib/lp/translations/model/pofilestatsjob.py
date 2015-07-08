@@ -20,8 +20,8 @@ from storm.locals import (
     )
 from zope.component import getUtility
 from zope.interface import (
-    classProvides,
-    implements,
+    implementer,
+    provider,
     )
 
 from lp.services.config import config
@@ -35,21 +35,19 @@ from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.model.pofile import POFile
 
 
+# Instances of this class are runnable jobs.
+@implementer(IRunnableJob)
+# Oddly, BaseRunnableJob inherits from BaseRunnableJobSource so this class
+# is both the factory for jobs (the "implementer", above) and the source for
+# runnable jobs (not the constructor of the job source, the class provides
+# the IJobSource interface itself).
+@provider(IPOFileStatsJobSource)
 class POFileStatsJob(StormBase, BaseRunnableJob):
     """The details for a POFile status update job."""
 
     __storm_table__ = 'POFileStatsJob'
 
     config = config.IPOFileStatsJobSource
-
-    # Instances of this class are runnable jobs.
-    implements(IRunnableJob)
-
-    # Oddly, BaseRunnableJob inherits from BaseRunnableJobSource so this class
-    # is both the factory for jobs (the "implements", above) and the source
-    # for runnable jobs (not the constructor of the job source, the class
-    # provides the IJobSource interface itself).
-    classProvides(IPOFileStatsJobSource)
 
     # The Job table contains core job details.
     job_id = Int('job', primary=True)

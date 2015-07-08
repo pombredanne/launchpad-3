@@ -35,8 +35,8 @@ from storm.locals import (
 from storm.store import Store
 from zope.component import getUtility
 from zope.interface import (
-    classProvides,
-    implements,
+    implementer,
+    provider,
     )
 
 from lp.app.enums import InformationType
@@ -113,10 +113,9 @@ class SharingJobType(DBEnumeratedType):
         """)
 
 
+@implementer(ISharingJob)
 class SharingJob(StormBase):
     """Base class for jobs related to sharing."""
-
-    implements(ISharingJob)
 
     __storm_table__ = 'SharingJob'
 
@@ -170,13 +169,13 @@ class SharingJob(StormBase):
         return SharingJobDerived.makeSubclass(self)
 
 
+@provider(ISharingJobSource)
 class SharingJobDerived(BaseRunnableJob):
     """Intermediate class for deriving from SharingJob."""
 
     __metaclass__ = EnumeratedSubclass
 
     delegates(ISharingJob)
-    classProvides(ISharingJobSource)
 
     def __init__(self, job):
         self.context = job
@@ -253,11 +252,10 @@ class SharingJobDerived(BaseRunnableJob):
         return vars
 
 
+@implementer(IRemoveArtifactSubscriptionsJob)
+@provider(IRemoveArtifactSubscriptionsJobSource)
 class RemoveArtifactSubscriptionsJob(SharingJobDerived):
     """See `IRemoveArtifactSubscriptionsJob`."""
-
-    implements(IRemoveArtifactSubscriptionsJob)
-    classProvides(IRemoveArtifactSubscriptionsJobSource)
     class_job_type = SharingJobType.REMOVE_ARTIFACT_SUBSCRIPTIONS
 
     config = config.IRemoveArtifactSubscriptionsJobSource

@@ -25,8 +25,8 @@ from storm.locals import (
     )
 from zope.component import getUtility
 from zope.interface import (
-    classProvides,
-    implements,
+    implementer,
+    provider,
     )
 from zope.security.proxy import removeSecurityProxy
 
@@ -77,12 +77,11 @@ class GitJobType(DBEnumeratedType):
         """)
 
 
+@implementer(IGitJob)
 class GitJob(StormBase):
     """See `IGitJob`."""
 
     __storm_table__ = 'GitJob'
-
-    implements(IGitJob)
 
     job_id = Int(name='job', primary=True, allow_none=False)
     job = Reference(job_id, 'Job.id')
@@ -178,12 +177,10 @@ class GitJobDerived(BaseRunnableJob):
         return [format_address_for_person(self.requester)]
 
 
+@implementer(IGitRefScanJob)
+@provider(IGitRefScanJobSource)
 class GitRefScanJob(GitJobDerived):
     """A Job that scans a Git repository for its current list of references."""
-
-    implements(IGitRefScanJob)
-
-    classProvides(IGitRefScanJobSource)
     class_job_type = GitJobType.REF_SCAN
 
     max_retries = 5
@@ -225,13 +222,11 @@ class GitRefScanJob(GitJobDerived):
                 self._cached_repository_name)
 
 
+@implementer(IReclaimGitRepositorySpaceJob)
+@provider(IReclaimGitRepositorySpaceJobSource)
 class ReclaimGitRepositorySpaceJob(GitJobDerived):
     """A Job that deletes a repository from storage after it has been
     deleted from the database."""
-
-    implements(IReclaimGitRepositorySpaceJob)
-
-    classProvides(IReclaimGitRepositorySpaceJobSource)
     class_job_type = GitJobType.RECLAIM_REPOSITORY_SPACE
 
     config = config.IReclaimGitRepositorySpaceJobSource

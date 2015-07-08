@@ -26,7 +26,7 @@ from twisted.python import (
     )
 from twisted.python.logfile import DailyLogFile
 from twisted.web import xmlrpc
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.services.librarian.utils import copy_and_close
 from lp.services.scripts import logger
@@ -170,10 +170,9 @@ class LoggingProxy(xmlrpc.Proxy):
         return deferred.addBoth(_logResult)
 
 
+@implementer(log.ILogObserver)
 class RotatableFileLogObserver:
     """A log observer that uses a log file and reopens it on SIGUSR1."""
-
-    implements(log.ILogObserver)
 
     def __init__(self, logfilepath):
         """Set up the logfile and possible signal handler.

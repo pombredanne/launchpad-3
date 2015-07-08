@@ -23,7 +23,7 @@ from storm.expr import (
     )
 from storm.store import EmptyResultSet
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.enums import InformationType
 from lp.app.errors import NotFoundError
@@ -56,9 +56,9 @@ from lp.services.webapp.publisher import (
     )
 
 
+@implementer(IProductRelease)
 class ProductRelease(SQLBase):
     """A release of a product."""
-    implements(IProductRelease)
     _table = 'ProductRelease'
     _defaultOrder = ['-datereleased']
 
@@ -210,9 +210,9 @@ class ProductRelease(SQLBase):
             return False
 
 
+@implementer(IProductReleaseFile)
 class ProductReleaseFile(SQLBase):
     """A file of a product release."""
-    implements(IProductReleaseFile)
 
     _table = 'ProductReleaseFile'
 
@@ -237,9 +237,9 @@ class ProductReleaseFile(SQLBase):
     date_uploaded = UtcDateTimeCol(notNull=True, default=UTC_NOW)
 
 
+@implementer(IProductReleaseSet)
 class ProductReleaseSet(object):
     """See `IProductReleaseSet`."""
-    implements(IProductReleaseSet)
 
     def getBySeriesAndVersion(self, productseries, version, default=None):
         """See `IProductReleaseSet`."""

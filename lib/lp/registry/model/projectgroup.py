@@ -25,7 +25,7 @@ from storm.expr import (
     )
 from storm.store import Store
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
 from lp.answers.interfaces.faqcollection import IFAQCollection
@@ -105,6 +105,9 @@ from lp.translations.model.potemplate import POTemplate
 from lp.translations.model.translationpolicy import TranslationPolicyMixin
 
 
+@implementer(
+    IBugSummaryDimension, IProjectGroup, IFAQCollection, IHasIcon,
+    IHasLogo, IHasMugshot, ISearchableByQuestionOwner)
 class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
                    MakesAnnouncements, HasSprintsMixin, HasAliasMixin,
                    KarmaContextMixin, StructuralSubscriptionTargetMixin,
@@ -112,10 +115,6 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
                    HasMilestonesMixin, HasDriversMixin,
                    TranslationPolicyMixin):
     """A ProjectGroup"""
-
-    implements(
-        IBugSummaryDimension, IProjectGroup, IFAQCollection, IHasIcon,
-        IHasLogo, IHasMugshot, ISearchableByQuestionOwner)
 
     _table = "Project"
 
@@ -512,8 +511,8 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return False
 
 
+@implementer(IProjectGroupSet)
 class ProjectGroupSet:
-    implements(IProjectGroupSet)
 
     def __init__(self):
         self.title = 'Project groups registered in Launchpad'
@@ -612,10 +611,9 @@ class ProjectGroupSet:
             query, distinct=True, clauseTables=clauseTables)
 
 
+@implementer(IProjectGroupSeries)
 class ProjectGroupSeries(HasSpecificationsMixin):
     """See `IProjectGroupSeries`."""
-
-    implements(IProjectGroupSeries)
 
     def __init__(self, projectgroup, name):
         self.projectgroup = projectgroup

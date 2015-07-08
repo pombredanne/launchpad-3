@@ -14,7 +14,7 @@ from storm.store import Store
 import transaction
 from zope.component import getUtility
 from zope.error.interfaces import IErrorReportingUtility
-from zope.interface import implements
+from zope.interface import implementer
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
@@ -59,10 +59,9 @@ from lp.xmlrpc import faults
 from lp.xmlrpc.helpers import return_fault
 
 
+@implementer(IGitAPI)
 class GitAPI(LaunchpadXMLRPCView):
     """See `IGitAPI`."""
-
-    implements(IGitAPI)
 
     def __init__(self, *args, **kwargs):
         super(GitAPI, self).__init__(*args, **kwargs)

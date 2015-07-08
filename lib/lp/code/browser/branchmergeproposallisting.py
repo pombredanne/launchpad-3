@@ -24,7 +24,7 @@ from lazr.enum import (
     )
 from zope.component import getUtility
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     )
 from zope.schema import Choice
@@ -134,9 +134,9 @@ class BranchMergeProposalListingItem:
             return self.context.date_created
 
 
+@implementer(IBranchMergeProposalListingBatchNavigator)
 class BranchMergeProposalListingBatchNavigator(TableBatchNavigator):
     """Batch up the branch listings."""
-    implements(IBranchMergeProposalListingBatchNavigator)
 
     def __init__(self, view):
         super(BranchMergeProposalListingBatchNavigator, self).__init__(

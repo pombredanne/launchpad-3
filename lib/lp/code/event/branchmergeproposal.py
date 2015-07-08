@@ -13,7 +13,7 @@ __all__ = [
     ]
 
 from zope.component.interfaces import ObjectEvent
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.code.interfaces.event import (
     IBranchMergeProposalNeedsReviewEvent,
@@ -24,10 +24,9 @@ from lp.code.interfaces.event import (
     )
 
 
+@implementer(IBranchMergeProposalStatusChangeEvent)
 class BranchMergeProposalStatusChangeEvent(ObjectEvent):
     """See `IBranchMergeProposalStatusChangeEvent`."""
-
-    implements(IBranchMergeProposalStatusChangeEvent)
 
     def __init__(self, proposal, user, from_state, to_state):
         ObjectEvent.__init__(self, proposal)
@@ -36,24 +35,24 @@ class BranchMergeProposalStatusChangeEvent(ObjectEvent):
         self.to_state = to_state
 
 
+@implementer(INewBranchMergeProposalEvent)
 class NewBranchMergeProposalEvent(ObjectEvent):
     """A new merge has been proposed."""
-    implements(INewBranchMergeProposalEvent)
 
 
+@implementer(IBranchMergeProposalNeedsReviewEvent)
 class BranchMergeProposalNeedsReviewEvent(ObjectEvent):
     """The merge proposal has moved from work in progress to needs reivew."""
-    implements(IBranchMergeProposalNeedsReviewEvent)
 
 
+@implementer(IReviewerNominatedEvent)
 class ReviewerNominatedEvent(ObjectEvent):
     """A reviewer has been nominated."""
-    implements(IReviewerNominatedEvent)
 
 
+@implementer(INewCodeReviewCommentEvent)
 class NewCodeReviewCommentEvent(ObjectEvent):
     """A new comment has been added to the merge proposal."""
-    implements(INewCodeReviewCommentEvent)
 
     def __init__(self, code_review_comment, original_email):
         ObjectEvent.__init__(self, code_review_comment)

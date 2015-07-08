@@ -39,7 +39,7 @@ from zope.component import (
 from zope.error.interfaces import IErrorReportingUtility
 from zope.event import notify
 from zope.interface import (
-    implements,
+    implementer,
     providedBy,
     )
 from zope.publisher.interfaces import (
@@ -174,6 +174,7 @@ class ProfilingOops(Exception):
     """Fake exception used to log OOPS information when profiling pages."""
 
 
+@implementer(IPublishTraverse)
 class LoginRoot:
     """Object that provides IPublishTraverse to return only itself.
 
@@ -181,7 +182,6 @@ class LoginRoot:
     special namespaces to be traversed, but doesn't traverse other
     normal names.
     """
-    implements(IPublishTraverse)
 
     def publishTraverse(self, request, name):
         if not request.getTraversalStack():

@@ -22,7 +22,7 @@ import time
 from amqplib import client_0_8 as amqp
 import transaction
 from transaction._transaction import Status as TransactionStatus
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.services.config import config
 from lp.services.messaging.interfaces import (
@@ -38,9 +38,8 @@ from lp.services.messaging.interfaces import (
 LAUNCHPAD_EXCHANGE = "launchpad-exchange"
 
 
+@implementer(transaction.interfaces.ISynchronizer)
 class RabbitSessionTransactionSync:
-
-    implements(transaction.interfaces.ISynchronizer)
 
     def __init__(self, session):
         self.session = session
@@ -80,9 +79,8 @@ def connect():
         virtual_host=config.rabbitmq.virtual_host, insist=False)
 
 
+@implementer(IMessageSession)
 class RabbitSession(threading.local):
-
-    implements(IMessageSession)
 
     exchange = LAUNCHPAD_EXCHANGE
 
@@ -221,10 +219,9 @@ class RabbitMessageBase:
         return self._channel
 
 
+@implementer(IMessageProducer)
 class RabbitRoutingKey(RabbitMessageBase):
     """A RabbitMQ data origination point."""
-
-    implements(IMessageProducer)
 
     def __init__(self, session, routing_key):
         super(RabbitRoutingKey, self).__init__(session)
@@ -258,10 +255,9 @@ class RabbitRoutingKey(RabbitMessageBase):
             routing_key=self.key, msg=msg)
 
 
+@implementer(IMessageConsumer)
 class RabbitQueue(RabbitMessageBase):
     """A RabbitMQ Queue."""
-
-    implements(IMessageConsumer)
 
     def __init__(self, session, name):
         super(RabbitQueue, self).__init__(session)

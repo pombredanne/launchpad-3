@@ -39,7 +39,7 @@ from twisted.conch.ls import lsLine
 from twisted.conch.ssh import filetransfer
 from twisted.internet import defer
 from twisted.python import util
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.codehosting.vfs import (
     AsyncLaunchpadTransport,
@@ -119,13 +119,12 @@ class DirectoryListing:
         pass
 
 
+@implementer(ISFTPFile)
 class TransportSFTPFile:
     """An implementation of `ISFTPFile` that backs onto a Bazaar transport.
 
     The transport must be a Twisted Transport.
     """
-
-    implements(ISFTPFile)
 
     def __init__(self, transport, name, flags, server):
         self._unescaped_relpath = name
@@ -251,13 +250,12 @@ def avatar_to_sftp_server(avatar):
     return TransportSFTPServer(transport)
 
 
+@implementer(ISFTPServer)
 class TransportSFTPServer:
     """An implementation of `ISFTPServer` that backs onto a Bazaar transport.
 
     The transport must be a Twisted Transport.
     """
-
-    implements(ISFTPServer)
 
     def __init__(self, transport):
         self.transport = transport

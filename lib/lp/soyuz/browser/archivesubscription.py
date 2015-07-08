@@ -25,7 +25,7 @@ from zope.formlib import form
 from zope.formlib.widget import CustomWidgetFactory
 from zope.formlib.widgets import TextWidget
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     )
 from zope.schema import (
@@ -76,10 +76,9 @@ def archive_subscription_ui_adapter(archive_subscription):
     return archive_subscription
 
 
+@implementer(IPersonalArchiveSubscription)
 class PersonalArchiveSubscription:
     """See `IPersonalArchiveSubscription`."""
-
-    implements(IPersonalArchiveSubscription)
 
     def __init__(self, subscriber, archive):
         self.subscriber = subscriber

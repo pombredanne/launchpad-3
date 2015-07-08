@@ -50,7 +50,7 @@ from zope.component import (
 from zope.event import notify
 from zope.formlib.widgets import TextWidget
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     providedBy,
     )
@@ -1172,9 +1172,9 @@ class BugTextView(LaunchpadView):
         return "\n".join(texts)
 
 
+@implementer(ICanonicalUrlData)
 class BugURL:
     """Bug URL creation rules."""
-    implements(ICanonicalUrlData)
 
     inside = None
     rootsite = 'bugs'

@@ -5,14 +5,14 @@
 
 __metaclass__ = type
 
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.blueprints.interfaces.specification import ISpecificationDelta
 
 
+@implementer(ISpecificationDelta)
 class SpecificationDelta:
     """See lp.blueprints.interfaces.specification.ISpecificationDelta."""
-    implements(ISpecificationDelta)
 
     def __init__(self, specification, user, title=None,
         summary=None, whiteboard=None, specurl=None, productseries=None,

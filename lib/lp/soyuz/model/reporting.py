@@ -13,7 +13,7 @@ from storm.locals import (
     Reference,
     )
 from storm.properties import DateTime
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.services.database.enumcol import EnumCol
 from lp.soyuz.enums import ArchivePurpose
@@ -23,9 +23,9 @@ from lp.soyuz.interfaces.reporting import (
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 
 
+@implementer(ILatestPersonSourcePackageReleaseCache)
 class LatestPersonSourcePackageReleaseCache(Storm):
     """See `LatestPersonSourcePackageReleaseCache`."""
-    implements(ILatestPersonSourcePackageReleaseCache)
     delegates(ISourcePackageRelease, context='sourcepackagerelease')
 
     __storm_table__ = 'LatestPersonSourcePackageReleaseCache'

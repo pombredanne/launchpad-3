@@ -34,7 +34,7 @@ from storm.expr import (
 from storm.info import ClassAlias
 from storm.store import Store
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
 from lp.answers.model.faq import (
@@ -185,6 +185,10 @@ from lp.translations.model.hastranslationimports import (
 from lp.translations.model.translationpolicy import TranslationPolicyMixin
 
 
+@implementer(
+    IBugSummaryDimension, IDistribution, IHasBugSupervisor,
+    IHasBuildRecords, IHasIcon, IHasLogo, IHasMugshot,
+    IHasOOPSReferences, ILaunchpadUsage, IServiceUsage)
 class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                    HasSpecificationsMixin, HasSprintsMixin, HasAliasMixin,
                    HasTranslationImportsMixin, KarmaContextMixin,
@@ -192,10 +196,6 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                    StructuralSubscriptionTargetMixin, HasMilestonesMixin,
                    HasDriversMixin, TranslationPolicyMixin):
     """A distribution of an operating system, e.g. Debian GNU/Linux."""
-    implements(
-        IBugSummaryDimension, IDistribution, IHasBugSupervisor,
-        IHasBuildRecords, IHasIcon, IHasLogo, IHasMugshot,
-        IHasOOPSReferences, ILaunchpadUsage, IServiceUsage)
 
     _table = 'Distribution'
     _defaultOrder = 'name'
@@ -1412,10 +1412,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         return False
 
 
+@implementer(IDistributionSet)
 class DistributionSet:
     """This class is to deal with Distribution related stuff"""
-
-    implements(IDistributionSet)
     title = "Registered Distributions"
 
     def __iter__(self):

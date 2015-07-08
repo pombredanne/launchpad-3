@@ -10,7 +10,7 @@ __all__ = [
     ]
 
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.enums import InformationType
 from lp.app.errors import NotFoundError
@@ -119,10 +119,9 @@ class FileBugAPI(LaunchpadXMLRPCView):
         return canonical_url(bug)
 
 
+@implementer(IExternalBugTrackerTokenAPI)
 class ExternalBugTrackerTokenAPI(LaunchpadXMLRPCView):
     """The private XML-RPC API for generating bug tracker login tokens."""
-
-    implements(IExternalBugTrackerTokenAPI)
 
     def newBugTrackerToken(self):
         """Generate a new `LoginToken` for a bug tracker and return it.

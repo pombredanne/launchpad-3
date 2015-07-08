@@ -36,7 +36,7 @@ from zope.formlib.widgets import (
     TextWidget,
     )
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     )
 from zope.schema import Choice
@@ -188,10 +188,9 @@ class ProductSeriesInvolvedMenu(InvolvedMenu):
         return self.view.context.product
 
 
+@implementer(IProductSeriesInvolved)
 class ProductSeriesInvolvementView(PillarInvolvementView):
     """Encourage configuration of involvement links for project series."""
-
-    implements(IProductSeriesInvolved)
     has_involvement = True
 
     def __init__(self, context, request):

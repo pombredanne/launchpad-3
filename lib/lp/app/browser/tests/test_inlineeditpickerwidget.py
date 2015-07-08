@@ -6,7 +6,7 @@
 __metaclass__ = type
 
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     )
 from zope.schema import Choice
@@ -72,8 +72,8 @@ class TestInlinePersonEditPickerWidget(TestCaseWithFactory):
         class ITest(Interface):
             test_field = Choice(**kwargs)
 
+        @implementer(ITest)
         class Test:
-            implements(ITest)
 
             def __init__(self):
                 self.test_field = widget_value

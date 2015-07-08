@@ -26,10 +26,10 @@ IMailHandler. The name of the utility is the domain that's handled.
 Let's create some utilities which keep track of which mails they
 handle, and register them for some domains:
 
-    >>> from zope.interface import implements
+    >>> from zope.interface import implementer
     >>> from lp.services.mail.interfaces import IMailHandler
-    >>> class MockHandler:
-    ...     implements(IMailHandler)
+    >>> @implementer(IMailHandler)
+    ... class MockHandler:
     ...     def __init__(self, allow_unknown_users=False):
     ...         self.allow_unknown_users = allow_unknown_users
     ...         self.handledMails = []
@@ -234,8 +234,8 @@ attempting to process incoming mail.
 
     >>> class TestOopsException(Exception):
     ...     pass
-    >>> class OopsHandler:
-    ...     implements(IMailHandler)
+    >>> @implementer(IMailHandler)
+    ... class OopsHandler:
     ...     def process(self, mail, to_addr, filealias):
     ...         raise TestOopsException()
     >>> mail_handlers.add('oops.com', OopsHandler())
@@ -285,8 +285,8 @@ Unauthorized exceptions, which are ignored for the purpose of OOPS
 reporting in the web interface, are not ignored in the email interface.
 
     >>> from twisted.cred.error import Unauthorized
-    >>> class UnauthorizedOopsHandler:
-    ...     implements(IMailHandler)
+    >>> @implementer(IMailHandler)
+    ... class UnauthorizedOopsHandler:
     ...     def process(self, mail, to_addr, filealias):
     ...         raise Unauthorized()
     >>> mail_handlers.add('unauthorized.com', UnauthorizedOopsHandler())
@@ -337,8 +337,8 @@ be printed, and the mail should be deleted from the queue.
 Let's create and register a handler which raises a SQL error:
 
     >>> from lp.services.database.sqlbase import cursor
-    >>> class DBExceptionRaiser:
-    ...     implements(IMailHandler)
+    >>> @implementer(IMailHandler)
+    ... class DBExceptionRaiser:
     ...     def process(self, mail, to_addr, filealias):
     ...         cur = cursor()
     ...         cur.execute('SELECT 1/0')

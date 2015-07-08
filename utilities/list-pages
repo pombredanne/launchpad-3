@@ -50,7 +50,7 @@ import os
 from zope.app.testing.functional import FunctionalTestSetup
 from zope.browserpage.simpleviewclass import simple
 from zope.component import adapts, getGlobalSiteManager
-from zope.interface import directlyProvides, implements
+from zope.interface import directlyProvides, implementer
 from zope.publisher.interfaces.browser import IDefaultBrowserLayer
 
 from lp.services.config import config
@@ -214,8 +214,8 @@ class Whatever(object):
             return child
 
 
+@implementer(ICanonicalUrlData)
 class DefaultCanonicalUrlData(object):
-    implements(ICanonicalUrlData)
     adapts(object)
 
     def __init__(self, name):

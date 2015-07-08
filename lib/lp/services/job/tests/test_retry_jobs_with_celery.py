@@ -9,7 +9,7 @@ from time import sleep
 
 from lazr.delegates import delegates
 import transaction
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.services.config import config
 from lp.services.database.interfaces import IStore
@@ -26,10 +26,9 @@ from lp.testing import TestCaseWithFactory
 from lp.testing.layers import CeleryJobLayer
 
 
+@implementer(IRunnableJob)
 class TestJob(BaseRunnableJob):
     """A dummy job."""
-
-    implements(IRunnableJob)
     delegates(IJob, 'job')
 
     config = config.launchpad

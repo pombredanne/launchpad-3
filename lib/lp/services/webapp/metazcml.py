@@ -29,7 +29,7 @@ from zope.configuration.fields import (
     )
 from zope.contenttype import guess_content_type
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     )
 from zope.pagetemplate.engine import TrustedEngine
@@ -340,11 +340,10 @@ class TALESContextForInterfaceInstance:
         self.vars = InterfaceInstanceDispatcher(interface, instance)
 
 
+# This is not true in this base class.  It will be true for subclasses that
+# provide an 'inside' property.
+@implementer(ICanonicalUrlData)
 class CanonicalUrlDataBase:
-
-    # This is not true in this base class.  It will be true for subclasses
-    # that provide an 'inside' property.
-    implements(ICanonicalUrlData)
 
     # Filled in by subclass.
     _for = None
@@ -591,8 +590,8 @@ class ILaunchpadPermission(IPermission):
     access_level = IDefineLaunchpadPermissionDirective['access_level']
 
 
+@implementer(ILaunchpadPermission)
 class LaunchpadPermission(Permission):
-    implements(ILaunchpadPermission)
 
     def __init__(self, id, title, access_level, description):
         assert access_level in ["read", "write"], (

@@ -24,7 +24,7 @@ from sqlobject import (
     ForeignKey,
     StringCol,
     )
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
@@ -76,9 +76,9 @@ class OAuthBase:
     getStore = _get_store
 
 
+@implementer(IOAuthConsumer)
 class OAuthConsumer(OAuthBase, SQLBase):
     """See `IOAuthConsumer`."""
-    implements(IOAuthConsumer)
 
     date_created = UtcDateTimeCol(default=UTC_NOW, notNull=True)
     disabled = BoolCol(notNull=True, default=False)
@@ -165,9 +165,9 @@ class OAuthConsumer(OAuthBase, SQLBase):
         return OAuthRequestToken.selectOneBy(key=key, consumer=self)
 
 
+@implementer(IOAuthConsumerSet)
 class OAuthConsumerSet:
     """See `IOAuthConsumerSet`."""
-    implements(IOAuthConsumerSet)
 
     def new(self, key, secret=''):
         """See `IOAuthConsumerSet`."""
@@ -180,9 +180,9 @@ class OAuthConsumerSet:
         return OAuthConsumer.selectOneBy(key=key)
 
 
+@implementer(IOAuthAccessToken)
 class OAuthAccessToken(OAuthBase, SQLBase):
     """See `IOAuthAccessToken`."""
-    implements(IOAuthAccessToken)
 
     consumer = ForeignKey(
         dbName='consumer', foreignKey='OAuthConsumer', notNull=True)
@@ -243,9 +243,9 @@ class OAuthAccessToken(OAuthBase, SQLBase):
         return hashlib.sha256(secret).hexdigest() == self._secret
 
 
+@implementer(IOAuthRequestToken)
 class OAuthRequestToken(OAuthBase, SQLBase):
     """See `IOAuthRequestToken`."""
-    implements(IOAuthRequestToken)
 
     consumer = ForeignKey(
         dbName='consumer', foreignKey='OAuthConsumer', notNull=True)
@@ -370,9 +370,9 @@ class OAuthRequestToken(OAuthBase, SQLBase):
         return self.date_reviewed is not None
 
 
+@implementer(IOAuthRequestTokenSet)
 class OAuthRequestTokenSet:
     """See `IOAuthRequestTokenSet`."""
-    implements(IOAuthRequestTokenSet)
 
     def getByKey(self, key):
         """See `IOAuthRequestTokenSet`."""

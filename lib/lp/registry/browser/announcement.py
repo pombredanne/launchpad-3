@@ -18,7 +18,7 @@ __all__ = [
     ]
 
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     )
 from zope.schema import (
@@ -279,9 +279,9 @@ class AnnouncementDeleteView(AnnouncementFormMixin, LaunchpadFormView):
         self.next_url = canonical_url(self.context.target) + '/+announcements'
 
 
+@implementer(IAnnouncementCreateMenu)
 class HasAnnouncementsView(LaunchpadView, FeedsMixin):
     """A view class for pillars which have announcements."""
-    implements(IAnnouncementCreateMenu)
 
     page_title = 'News and announcements'
     batch_size = config.launchpad.announcement_batch_size

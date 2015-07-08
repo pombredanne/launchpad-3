@@ -91,7 +91,6 @@ from zope.interface import (
     alsoProvides,
     classImplements,
     implementer,
-    implements,
     )
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.publisher.interfaces import Unauthorized
@@ -333,20 +332,18 @@ class AlreadyConvertedException(Exception):
     """Raised when an attempt to claim a team that has been claimed."""
 
 
+@implementer(IJoinTeamEvent)
 class JoinTeamEvent:
     """See `IJoinTeamEvent`."""
-
-    implements(IJoinTeamEvent)
 
     def __init__(self, person, team):
         self.person = person
         self.team = team
 
 
+@implementer(ITeamInvitationEvent)
 class TeamInvitationEvent:
     """See `IJoinTeamEvent`."""
-
-    implements(ITeamInvitationEvent)
 
     def __init__(self, member, team):
         self.member = member
@@ -415,10 +412,9 @@ def person_sort_key(person):
     return "%s, %s" % (displayname.strip(), person.name)
 
 
+@implementer(IPersonSettings)
 class PersonSettings(Storm):
     "The relatively rarely used settings for person (not a team)."
-
-    implements(IPersonSettings)
 
     __storm_table__ = 'PersonSettings'
 
@@ -475,13 +471,12 @@ _readonly_person_settings = readonly_settings(
     'Teams do not support changing this attribute.', IPersonSettings)
 
 
+@implementer(IPerson, IHasIcon, IHasLogo, IHasMugshot)
 class Person(
     SQLBase, HasBugsBase, HasSpecificationsMixin, HasTranslationImportsMixin,
     HasBranchesMixin, HasMergeProposalsMixin, HasRequestedReviewsMixin,
     QuestionsPersonMixin):
     """A Person."""
-
-    implements(IPerson, IHasIcon, IHasLogo, IHasMugshot)
 
     def __init__(self, *args, **kwargs):
         super(Person, self).__init__(*args, **kwargs)
@@ -3230,9 +3225,9 @@ class Person(
         getUtility(IAccessPolicyGrantSource).grant(grants)
 
 
+@implementer(IPersonSet)
 class PersonSet:
     """The set of persons."""
-    implements(IPersonSet)
 
     def __init__(self):
         self.title = 'People registered with Launchpad'
@@ -3966,8 +3961,8 @@ class PersonLanguage(SQLBase):
                           notNull=True)
 
 
+@implementer(ISSHKey)
 class SSHKey(SQLBase):
-    implements(ISSHKey)
     _defaultOrder = ["person", "keytype", "keytext"]
 
     _table = 'SSHKey'
@@ -3986,8 +3981,8 @@ class SSHKey(SQLBase):
         super(SSHKey, self).destroySelf()
 
 
+@implementer(ISSHKeySet)
 class SSHKeySet:
-    implements(ISSHKeySet)
 
     def new(self, person, sshkey):
         try:
@@ -4032,8 +4027,8 @@ class SSHKeySet:
             """ % sqlvalues([person.id for person in people]))
 
 
+@implementer(IWikiName)
 class WikiName(SQLBase, HasOwnerMixin):
-    implements(IWikiName)
 
     _table = 'WikiName'
 
@@ -4046,8 +4041,8 @@ class WikiName(SQLBase, HasOwnerMixin):
         return self.wiki + self.wikiname
 
 
+@implementer(IWikiNameSet)
 class WikiNameSet:
-    implements(IWikiNameSet)
 
     def getByWikiAndName(self, wiki, wikiname):
         """See `IWikiNameSet`."""
@@ -4065,8 +4060,8 @@ class WikiNameSet:
         return WikiName(person=person, wiki=wiki, wikiname=wikiname)
 
 
+@implementer(IJabberID)
 class JabberID(SQLBase, HasOwnerMixin):
-    implements(IJabberID)
 
     _table = 'JabberID'
     _defaultOrder = ['jabberid']
@@ -4075,8 +4070,8 @@ class JabberID(SQLBase, HasOwnerMixin):
     jabberid = StringCol(dbName='jabberid', notNull=True)
 
 
+@implementer(IJabberIDSet)
 class JabberIDSet:
-    implements(IJabberIDSet)
 
     def new(self, person, jabberid):
         """See `IJabberIDSet`"""
@@ -4091,9 +4086,9 @@ class JabberIDSet:
         return JabberID.selectBy(person=person)
 
 
+@implementer(IIrcID)
 class IrcID(SQLBase, HasOwnerMixin):
     """See `IIrcID`"""
-    implements(IIrcID)
 
     _table = 'IrcID'
 
@@ -4102,9 +4097,9 @@ class IrcID(SQLBase, HasOwnerMixin):
     nickname = StringCol(dbName='nickname', notNull=True)
 
 
+@implementer(IIrcIDSet)
 class IrcIDSet:
     """See `IIrcIDSet`"""
-    implements(IIrcIDSet)
 
     def get(self, id):
         """See `IIrcIDSet`"""

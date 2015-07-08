@@ -38,7 +38,7 @@ from storm.store import (
     Store,
     )
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.errors import NotFoundError
 # XXX 2009-05-10 julian
@@ -152,19 +152,17 @@ def validate_status(self, attr, value):
             'provided methods to set it.')
 
 
+@implementer(IPackageUploadQueue)
 class PackageUploadQueue:
-
-    implements(IPackageUploadQueue)
 
     def __init__(self, distroseries, status):
         self.distroseries = distroseries
         self.status = status
 
 
+@implementer(IPackageUpload)
 class PackageUpload(SQLBase):
     """A Queue item for the archive uploader."""
-
-    implements(IPackageUpload)
 
     _defaultOrder = ['id']
 
@@ -1156,9 +1154,9 @@ def get_properties_for_binary(bpr):
         }
 
 
+@implementer(IPackageUploadBuild)
 class PackageUploadBuild(SQLBase):
     """A Queue item's related builds."""
-    implements(IPackageUploadBuild)
 
     _defaultOrder = ['id']
 
@@ -1216,10 +1214,9 @@ class PackageUploadBuild(SQLBase):
             self.packageupload.pocket, bins)
 
 
+@implementer(IPackageUploadSource)
 class PackageUploadSource(SQLBase):
     """A Queue item's related sourcepackagereleases."""
-
-    implements(IPackageUploadSource)
 
     _defaultOrder = ['id']
 
@@ -1342,9 +1339,9 @@ class PackageUploadSource(SQLBase):
             packageupload=self.packageupload)
 
 
+@implementer(IPackageUploadCustom)
 class PackageUploadCustom(SQLBase):
     """A Queue item's related custom format uploads."""
-    implements(IPackageUploadCustom)
 
     _defaultOrder = ['id']
 
@@ -1491,9 +1488,9 @@ class PackageUploadCustom(SQLBase):
     assert len(publisher_dispatch) == len(PackageUploadCustomFormat)
 
 
+@implementer(IPackageUploadSet)
 class PackageUploadSet:
     """See `IPackageUploadSet`"""
-    implements(IPackageUploadSet)
 
     def __iter__(self):
         """See `IPackageUploadSet`."""

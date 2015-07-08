@@ -17,7 +17,7 @@ import pytz
 from storm.exceptions import TimeoutError
 import transaction
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.registry.interfaces.person import (
     IPersonSet,
@@ -273,10 +273,9 @@ class ExistingPOFileInDatabase:
             return is_identical_translation(msg_in_db, message)
 
 
+@implementer(ITranslationImporter)
 class TranslationImporter:
     """Handle translation resources imports."""
-
-    implements(ITranslationImporter)
 
     @cachedproperty
     def supported_file_extensions(self):

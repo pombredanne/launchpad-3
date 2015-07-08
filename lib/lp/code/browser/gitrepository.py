@@ -29,7 +29,7 @@ from storm.expr import Desc
 from zope.event import notify
 from zope.formlib import form
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     providedBy,
     )
@@ -90,10 +90,9 @@ from lp.services.webapp.escaping import structured
 from lp.services.webapp.interfaces import ICanonicalUrlData
 
 
+@implementer(ICanonicalUrlData)
 class GitRepositoryURL:
     """Git repository URL creation rules."""
-
-    implements(ICanonicalUrlData)
 
     rootsite = "code"
     inside = None
@@ -202,9 +201,9 @@ class GitRepositoryContextMenu(ContextMenu):
         return Link("+edit-information-type", text)
 
 
+@implementer(IGitRefBatchNavigator)
 class GitRefBatchNavigator(TableBatchNavigator):
     """Batch up the branch listings."""
-    implements(IGitRefBatchNavigator)
 
     def __init__(self, view, context):
         self.context = context

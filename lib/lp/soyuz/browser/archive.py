@@ -43,7 +43,7 @@ from zope.component import getUtility
 from zope.formlib import form
 from zope.formlib.widgets import TextAreaWidget
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     )
 from zope.schema import (
@@ -194,6 +194,7 @@ def traverse_named_ppa(person, distro_name, ppa_name):
         return None
 
 
+@implementer(ICanonicalUrlData)
 class DistributionArchiveURL:
     """Dynamic URL declaration for `IDistributionArchive`.
 
@@ -201,7 +202,6 @@ class DistributionArchiveURL:
     IDistribution as /<distro>/+archive/<name>, for example:
     /ubuntu/+archive/partner
     """
-    implements(ICanonicalUrlData)
     rootsite = None
 
     def __init__(self, context):
@@ -216,9 +216,9 @@ class DistributionArchiveURL:
         return u"+archive/%s" % self.context.name
 
 
+@implementer(ICanonicalUrlData)
 class PPAURL:
     """Dynamic URL declaration for named PPAs."""
-    implements(ICanonicalUrlData)
     rootsite = None
 
     def __init__(self, context):
@@ -734,10 +734,9 @@ class ArchiveViewBase(LaunchpadView, SourcesListEntriesWidget):
             return "This %s has been disabled." % self.archive_label
 
 
+@implementer(IContextSourceBinder)
 class ArchiveSeriesVocabularyFactory:
     """A factory for generating vocabularies of an archive's series."""
-
-    implements(IContextSourceBinder)
 
     def __call__(self, context):
         """Return a vocabulary created dynamically from the context archive.
@@ -891,13 +890,12 @@ class ArchiveSourcePackageListViewBase(ArchiveViewBase, LaunchpadFormView):
         return not self.filtered_sources.is_empty()
 
 
+@implementer(IArchiveIndexActionsMenu)
 class ArchiveView(ArchiveSourcePackageListViewBase):
     """Default Archive view class.
 
     Implements useful actions and collects useful sets for the page template.
     """
-
-    implements(IArchiveIndexActionsMenu)
 
     def initialize(self):
         """Redirect if our context is a main archive."""
@@ -1020,9 +1018,9 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
             }
 
 
+@implementer(IArchivePackagesActionMenu)
 class ArchivePackagesView(ArchiveSourcePackageListViewBase):
     """Detailed packages view for an archive."""
-    implements(IArchivePackagesActionMenu)
 
     @property
     def page_title(self):

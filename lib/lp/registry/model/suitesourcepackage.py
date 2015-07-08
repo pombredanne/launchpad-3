@@ -8,15 +8,14 @@ __all__ = [
     'SuiteSourcePackage',
     ]
 
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.registry.interfaces.suitesourcepackage import ISuiteSourcePackage
 
 
+@implementer(ISuiteSourcePackage)
 class SuiteSourcePackage:
     """Implementation of `ISuiteSourcePackage`."""
-
-    implements(ISuiteSourcePackage)
 
     def __init__(self, distroseries, pocket, sourcepackagename):
         self.distroseries = distroseries

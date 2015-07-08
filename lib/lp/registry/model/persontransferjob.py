@@ -22,8 +22,8 @@ from storm.locals import (
     )
 from zope.component import getUtility
 from zope.interface import (
-    classProvides,
-    implements,
+    implementer,
+    provider,
     )
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
@@ -75,10 +75,9 @@ from lp.services.mail.sendmail import (
 from lp.services.webapp import canonical_url
 
 
+@implementer(IPersonTransferJob)
 class PersonTransferJob(StormBase):
     """Base class for team membership and person merge jobs."""
-
-    implements(IPersonTransferJob)
 
     __storm_table__ = 'PersonTransferJob'
 
@@ -128,6 +127,7 @@ class PersonTransferJob(StormBase):
         return PersonTransferJobDerived.makeSubclass(self)
 
 
+@provider(IPersonTransferJobSource)
 class PersonTransferJobDerived(BaseRunnableJob):
     """Intermediate class for deriving from PersonTransferJob.
 
@@ -140,7 +140,6 @@ class PersonTransferJobDerived(BaseRunnableJob):
 
     __metaclass__ = EnumeratedSubclass
     delegates(IPersonTransferJob)
-    classProvides(IPersonTransferJobSource)
 
     def __init__(self, job):
         self.context = job
@@ -184,11 +183,10 @@ class PersonTransferJobDerived(BaseRunnableJob):
         return vars
 
 
+@implementer(IMembershipNotificationJob)
+@provider(IMembershipNotificationJobSource)
 class MembershipNotificationJob(PersonTransferJobDerived):
     """A Job that sends notifications about team membership changes."""
-
-    implements(IMembershipNotificationJob)
-    classProvides(IMembershipNotificationJobSource)
 
     class_job_type = PersonTransferJobType.MEMBERSHIP_NOTIFICATION
 
@@ -352,11 +350,10 @@ class MembershipNotificationJob(PersonTransferJobDerived):
             "status={self.job.status}>").format(self=self)
 
 
+@implementer(IPersonMergeJob)
+@provider(IPersonMergeJobSource)
 class PersonMergeJob(PersonTransferJobDerived):
     """A Job that merges one person or team into another."""
-
-    implements(IPersonMergeJob)
-    classProvides(IPersonMergeJobSource)
 
     class_job_type = PersonTransferJobType.MERGE
 
@@ -467,11 +464,10 @@ class PersonMergeJob(PersonTransferJobDerived):
                 (self.from_person.name, self.to_person.name))
 
 
+@implementer(IPersonDeactivateJob)
+@provider(IPersonDeactivateJobSource)
 class PersonDeactivateJob(PersonTransferJobDerived):
     """A Job that deactivates a person."""
-
-    implements(IPersonDeactivateJob)
-    classProvides(IPersonDeactivateJobSource)
 
     class_job_type = PersonTransferJobType.DEACTIVATE
 

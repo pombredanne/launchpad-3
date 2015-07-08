@@ -25,7 +25,7 @@ from zope.component import (
     getUtility,
     )
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     )
 
@@ -63,6 +63,7 @@ class ArchiveUploadType(EnumeratedType):
     MIXED_ONLY = Item("Mixed only")
 
 
+@implementer(IArchiveUploadPolicy)
 class AbstractUploadPolicy:
     """Encapsulate the policy of an upload to a launchpad archive.
 
@@ -72,7 +73,6 @@ class AbstractUploadPolicy:
     tests themselves and they operate on NascentUpload instances in order
     to verify them.
     """
-    implements(IArchiveUploadPolicy)
 
     name = 'abstract'
     options = None

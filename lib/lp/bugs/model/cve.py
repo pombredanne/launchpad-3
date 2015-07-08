@@ -18,7 +18,7 @@ from sqlobject import (
 from storm.expr import In
 from storm.store import Store
 # Zope
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.validators.cve import (
     CVEREF_PATTERN,
@@ -42,10 +42,9 @@ from lp.services.database.sqlbase import SQLBase
 from lp.services.database.stormexpr import fti_search
 
 
+@implementer(ICve, IBugLinkTarget)
 class Cve(SQLBase, BugLinkTargetMixin):
     """A CVE database record."""
-
-    implements(ICve, IBugLinkTarget)
 
     _table = 'Cve'
 
@@ -94,10 +93,9 @@ class Cve(SQLBase, BugLinkTargetMixin):
         return BugCve(cve=self, bug=bug)
 
 
+@implementer(ICveSet)
 class CveSet:
     """The full set of ICve's."""
-
-    implements(ICveSet)
     table = Cve
 
     def __init__(self, bug=None):

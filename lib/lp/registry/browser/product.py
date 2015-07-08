@@ -64,7 +64,7 @@ from zope.formlib.widgets import (
     TextWidget,
     )
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     )
 from zope.lifecycleevent import ObjectCreatedEvent
@@ -913,10 +913,9 @@ class ProductDownloadFileMixin:
         return False
 
 
+@implementer(IProductActionMenu)
 class ProductView(PillarViewMixin, HasAnnouncementsView, SortSeriesMixin,
                   FeedsMixin, ProductDownloadFileMixin):
-
-    implements(IProductActionMenu)
 
     @property
     def maintainer_widget(self):
@@ -1299,9 +1298,9 @@ class ProductDownloadFilesView(LaunchpadView,
                 release.version in self.milestones[series.name])
 
 
+@implementer(IProductEditMenu)
 class ProductBrandingView(BrandingChangeView):
     """A view to set branding."""
-    implements(IProductEditMenu)
 
     label = "Change branding"
     schema = IProduct
@@ -1318,8 +1317,8 @@ class ProductBrandingView(BrandingChangeView):
         return canonical_url(self.context)
 
 
+@implementer(IProductEditMenu)
 class ProductConfigureBase(ReturnToReferrerMixin, LaunchpadEditFormView):
-    implements(IProductEditMenu)
     schema = IProduct
     usage_fieldname = None
 
@@ -1376,10 +1375,9 @@ class ProductConfigureAnswersView(ProductConfigureBase):
     usage_fieldname = 'answers_usage'
 
 
+@implementer(IProductEditMenu)
 class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
     """View class that lets you edit a Product object."""
-
-    implements(IProductEditMenu)
 
     label = "Edit details"
     schema = IProduct
@@ -2068,10 +2066,9 @@ class ProductSetNavigationMenu(RegistryCollectionActionMenuBase):
         return Link('+all', 'Show all projects', icon='list')
 
 
+@implementer(IRegistryCollectionNavigationMenu)
 class ProductSetView(LaunchpadView):
     """View for products index page."""
-
-    implements(IRegistryCollectionNavigationMenu)
 
     page_title = 'Projects registered in Launchpad'
 
@@ -2578,10 +2575,9 @@ class IProductEditPeopleSchema(Interface):
             "become the project's new maintainers."))
 
 
+@implementer(IProductEditMenu)
 class ProductEditPeopleView(LaunchpadEditFormView):
     """Enable editing of important people on the project."""
-
-    implements(IProductEditMenu)
 
     label = "Change the roles of people"
     schema = IProductEditPeopleSchema

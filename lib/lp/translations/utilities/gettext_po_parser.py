@@ -21,7 +21,7 @@ import re
 
 import pytz
 from zope import datetime as zope_datetime
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.versioninfo import revno
 from lp.translations.interfaces.translationcommonformat import (
@@ -88,9 +88,9 @@ def parse_charset(string_to_parse, is_escaped=True):
     return charset
 
 
+@implementer(ITranslationHeaderData)
 class POHeader:
     """See `ITranslationHeaderData`."""
-    implements(ITranslationHeaderData)
 
     # Set of known keys in the .po header.
     _handled_keys_mapping = {

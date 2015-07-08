@@ -27,7 +27,7 @@ from lazr.restful.utils import smartquote
 from zope.component import getUtility
 from zope.formlib import form
 from zope.formlib.widgets import TextAreaWidget
-from zope.interface import implements
+from zope.interface import implementer
 from zope.schema import Choice
 from zope.schema.vocabulary import SimpleVocabulary
 
@@ -560,10 +560,9 @@ class BugTrackerBreadcrumb(Breadcrumb):
         return self.context.title
 
 
+@implementer(IRemoteBug)
 class RemoteBug:
     """Represents a bug in a remote bug tracker."""
-
-    implements(IRemoteBug)
 
     def __init__(self, bugtracker, remotebug, bugs):
         self.bugtracker = bugtracker

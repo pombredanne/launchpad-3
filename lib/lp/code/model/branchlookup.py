@@ -26,7 +26,7 @@ from zope.component import (
     getUtility,
     queryMultiAdapter,
     )
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.errors import NameLookupFailed
 from lp.app.validators.name import valid_name
@@ -83,14 +83,13 @@ def adapt(obj, interface):
         return None
 
 
+@implementer(ILinkedBranchTraversable)
 class RootTraversable:
     """Root traversable for linked branch objects.
 
     Corresponds to '/' in the path. From here, you can traverse to a
     distribution or a product.
     """
-
-    implements(ILinkedBranchTraversable)
 
     def traverse(self, name, segments):
         """See `ITraversable`.
@@ -120,6 +119,7 @@ class _BaseTraversable:
         self.context = context
 
 
+@implementer(ILinkedBranchTraversable)
 class ProductTraversable(_BaseTraversable):
     """Linked branch traversable for products.
 
@@ -127,7 +127,6 @@ class ProductTraversable(_BaseTraversable):
     """
 
     adapts(IProduct)
-    implements(ILinkedBranchTraversable)
 
     def traverse(self, name, segments):
         """See `ITraversable`.
@@ -142,6 +141,7 @@ class ProductTraversable(_BaseTraversable):
         return series
 
 
+@implementer(ILinkedBranchTraversable)
 class DistributionTraversable(_BaseTraversable):
     """Linked branch traversable for distributions.
 
@@ -149,7 +149,6 @@ class DistributionTraversable(_BaseTraversable):
     """
 
     adapts(IDistribution)
-    implements(ILinkedBranchTraversable)
 
     def traverse(self, name, segments):
         """See `ITraversable`."""
@@ -165,6 +164,7 @@ class DistributionTraversable(_BaseTraversable):
             return sourcepackage
 
 
+@implementer(ILinkedBranchTraversable)
 class DistroSeriesTraversable:
     """Linked branch traversable for distribution series.
 
@@ -172,7 +172,6 @@ class DistroSeriesTraversable:
     """
 
     adapts(IDistroSeries, DBItem)
-    implements(ILinkedBranchTraversable)
 
     def __init__(self, distroseries, pocket):
         self.distroseries = distroseries
@@ -186,10 +185,9 @@ class DistroSeriesTraversable:
         return sourcepackage.getSuiteSourcePackage(self.pocket)
 
 
+@implementer(ILinkedBranchTraverser)
 class LinkedBranchTraverser:
     """Utility for traversing to objects that can have linked branches."""
-
-    implements(ILinkedBranchTraverser)
 
     def traverse(self, path):
         """See `ILinkedBranchTraverser`."""
@@ -204,10 +202,9 @@ class LinkedBranchTraverser:
         return context
 
 
+@implementer(IBranchLookup)
 class BranchLookup:
     """Utility for looking up branches."""
-
-    implements(IBranchLookup)
 
     def get(self, branch_id, default=None):
         """See `IBranchLookup`."""

@@ -26,7 +26,7 @@ from zope.component import (
     getUtility,
     )
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     )
 
@@ -289,8 +289,9 @@ class TestWebServiceRequestTraversal(WebServiceTestCase):
         # For this test we need to make the URL "/foo" resolve to a
         # resource.  To this end, we'll define a top-level collection
         # named 'foo'.
+        @implementer(IGenericCollection)
         class GenericCollection:
-            implements(IGenericCollection)
+            pass
 
         class MyRootResource(RootResource):
 
@@ -556,12 +557,14 @@ class IThing(Interface):
     """Marker interface for a thing."""
 
 
+@implementer(IThing)
 class Thing:
-    implements(IThing)
+    pass
 
 
+@implementer(IThingSet)
 class ThingSet:
-    implements(IThingSet)
+    pass
 
 
 class TestLaunchpadBrowserRequest_getNearest(TestCase):
