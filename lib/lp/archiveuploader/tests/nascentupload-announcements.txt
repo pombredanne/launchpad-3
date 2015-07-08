@@ -512,7 +512,7 @@ AUTO-APPROVED upload to BACKPORTS pocket via 'sync' policy:
     DEBUG   * Changer using non-preferred email
     DEBUG
     DEBUG Date: Tue, 25 Apr 2006 10:36:14 -0300
-    DEBUG Changed-By: Celso R. Providelo <cprov@ubuntu.com>
+    DEBUG Changed-By: cprov@ubuntu.com (Celso R. Providelo)
     DEBUG Maintainer: Launchpad team <launchpad@lists.canonical.com>
     DEBUG http://launchpad.dev/ubuntu/+source/bar/1.0-4
     DEBUG
@@ -679,8 +679,7 @@ No emails generated:
     0
 
 Uploads with UTF-8 characters in email addresses in the changes file are
-permitted, but converted to ASCII, which is a limitation of the mailer.
-However, UTF-8 in the mail content is preserved.
+permitted, but RFC2047-encoded.  UTF-8 in the mail content is preserved.
 
     >>> hoary.status = SeriesStatus.DEVELOPMENT
     >>> anything_policy = getPolicy(
@@ -701,10 +700,8 @@ However, UTF-8 in the mail content is preserved.
     >>> len(msgs)
     2
 
-"Cihar" should actually be "Čihař" but the mailer will convert to ASCII.
-
-    >>> [message['From'] for message in msgs]
-    ['Root <root@localhost>', 'Non-ascii changed-by Cihar
+    >>> [message['From'].replace('\n ', ' ') for message in msgs]
+    ['Root <root@localhost>', '=?utf-8?q?Non-ascii_changed-by_=C4=8Ciha=C5=99?=
     <daniel.silverstone@canonical.com>']
 
 UTF-8 text in the changes file that is sent on the email is preserved

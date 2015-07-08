@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Archive uploader utilities."""
@@ -37,10 +37,7 @@ import re
 import signal
 import subprocess
 
-from lp.services.encoding import (
-    ascii_smash,
-    guess as guess_encoding,
-    )
+from lp.services.encoding import guess as guess_encoding
 from lp.soyuz.enums import BinaryPackageFileType
 
 
@@ -269,15 +266,13 @@ def fix_maintainer(maintainer, field_name="Maintainer"):
 def safe_fix_maintainer(content, fieldname):
     """Wrapper for fix_maintainer() to handle unicode and string argument.
 
-    It verifies the content type and transform it in a unicode with guess()
-    before call ascii_smash(). Then we can safely call fix_maintainer().
+    It verifies the content type and transforms it to a unicode with
+    guess().  Then we can safely call fix_maintainer().
     """
     if type(content) != unicode:
         content = guess_encoding(content)
 
-    content = ascii_smash(content)
-
-    return fix_maintainer(content, fieldname)
+    return fix_maintainer(content.encode("utf-8"), fieldname)
 
 
 def extract_dpkg_source(dsc_filepath, target, vendor=None):

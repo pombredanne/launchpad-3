@@ -48,16 +48,15 @@ The search_text parameter will return questions matching the query using the
 regular full text algorithm.
 
     # Because not everyone uses a real editor <wink>
-    >>> from lp.services.encoding import ascii_smash
     >>> for question in question_set.searchQuestions(search_text=u'firefox'):
-    ...     print ascii_smash(question.title), question.target.displayname
-    Problemas de Impressao no Firefox                Mozilla Firefox
+    ...     print question.title, question.target.displayname
+    Problemas de Impressão no Firefox                Mozilla Firefox
     Firefox loses focus and gets stuck               Mozilla Firefox
     Firefox cannot render Bank Site                  Mozilla Firefox
     mailto: problem in webpage                       mozilla-firefox in Ubuntu
     Newly installed plug-in doesn't seem to be used  Mozilla Firefox
     Problem showing the SVG demo on W3C site         Mozilla Firefox
-    AINKAFSEEN ALEFLAMTEHGHAINYEHYEHREHALEFTEH ...   Ubuntu
+    عكس التغييرات غير المحفوظة للمستن؟               Ubuntu
 
 
 Status
@@ -93,8 +92,8 @@ particular language.
     >>> from lp.services.worlddata.interfaces.language import ILanguageSet
     >>> spanish = getUtility(ILanguageSet)['es']
     >>> for t in question_set.searchQuestions(language=spanish):
-    ...     print ascii_smash(t.title)
-    Problema al recompilar kernel con soporte smp (doble-nucleo)
+    ...     print t.title
+    Problema al recompilar kernel con soporte smp (doble-núcleo)
 
 
 Combinations
@@ -106,14 +105,14 @@ each criteria.
     >>> for question in question_set.searchQuestions(
     ...     search_text=u'firefox',
     ...     status=(QuestionStatus.OPEN, QuestionStatus.INVALID)):
-    ...     print ascii_smash(question.title), question.status.title, (
+    ...     print question.title, question.status.title, (
     ...           question.target.displayname)
-    Problemas de Impressao no Firefox Open           Mozilla Firefox
+    Problemas de Impressão no Firefox Open           Mozilla Firefox
     Firefox is slow and consumes too much ...        mozilla-firefox in Ubuntu
     Firefox loses focus and gets stuck Open          Mozilla Firefox
     Firefox cannot render Bank Site Open             Mozilla Firefox
     Problem showing the SVG demo on W3C site Open    Mozilla Firefox
-    AINKAFSEEN ALEFLAMTEHGHAINYEHYEHREHALEFTEH ...   Ubuntu
+    عكس التغييرات غير المحفوظة للمستن؟ Open          Ubuntu
 
 
 Sort order
@@ -126,24 +125,24 @@ of the constant defined in the QuestionSort enumeration.
     >>> from lp.answers.enums import QuestionSort
     >>> for question in question_set.searchQuestions(
     ...     search_text=u'firefox', sort=QuestionSort.OLDEST_FIRST):
-    ...     print question.id, ascii_smash(question.title), (
+    ...     print question.id, question.title, (
     ...          question.target.displayname)
-    14 AINKAFSEEN ALEFLAMTEHGHAINYEHYEHREHALEFTEH ...   Ubuntu
+    14 عكس التغييرات غير المحفوظة للمستن؟               Ubuntu
     1 Firefox cannot render Bank Site                   Mozilla Firefox
     2 Problem showing the SVG demo on W3C site          Mozilla Firefox
     4 Firefox loses focus and gets stuck                Mozilla Firefox
     6 Newly installed plug-in doesn't seem to be used   Mozilla Firefox
     9 mailto: problem in webpage                    mozilla-firefox in Ubuntu
-    13 Problemas de Impressao no Firefox                Mozilla Firefox
+    13 Problemas de Impressão no Firefox                Mozilla Firefox
 
 When no text search is done, the default sort order is by newest first.
 
     >>> for question in question_set.searchQuestions(
     ...         status=QuestionStatus.OPEN)[:5]:
-    ...     print question.id, ascii_smash(question.title), (
+    ...     print question.id, question.title, (
     ...         question.target.displayname)
-    13 Problemas de Impressao no Firefox                Mozilla Firefox
-    12 Problema al recompilar kernel con soporte smp (doble-nucleo) Ubuntu
+    13 Problemas de Impressão no Firefox                Mozilla Firefox
+    12 Problema al recompilar kernel con soporte smp (doble-núcleo) Ubuntu
     11 Continue playing after shutdown                  Ubuntu
     5 Installation failed                               Ubuntu
     4 Firefox loses focus and gets stuck Mozilla        Firefox
