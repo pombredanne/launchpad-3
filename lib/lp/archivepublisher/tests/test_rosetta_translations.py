@@ -310,3 +310,68 @@ class TestRosettaTranslations(TestCaseWithFactory):
 
         jobs = list(PackageTranslationsUploadJob.iterReady())
         self.assertEqual(0, len(jobs))
+
+    def test_skips_packaging_for_primary(self):
+        # An upload to a primary archive leaves Packaging records untouched.
+        spr, packageupload, libraryfilealias = self.makeJobElements()
+        transaction.commit()
+        sourcepackage = packageupload.distroseries.getSourcePackage(spr.name)
+        self.assertIsNone(sourcepackage.packaging)
+        process_rosetta_translations(packageupload, libraryfilealias)
+        self.assertIsNone(sourcepackage.packaging)
+
+    def test_skips_packaging_for_redirected_ppa_no_original(self):
+        # If there is no suitable Packaging record in the original
+        # distroseries, then an upload to a redirected PPA leaves Packaging
+        # records untouched.
+        spr, packageupload, libraryfilealias = self.makeJobElementsForPPA(
+            owner_name="ci-train-ppa-service", distribution_name="ubuntu",
+            distroseries_name="vivid", archive_name="stable-phone-overlay")
+        self.ensureDistroSeries("ubuntu-rtm", "15.04")
+        transaction.commit()
+        sourcepackage = packageupload.distroseries.getSourcePackage(spr.name)
+        self.assertIsNone(sourcepackage.packaging)
+        process_rosetta_translations(packageupload, libraryfilealias)
+        self.assertIsNone(sourcepackage.packaging)
+
+    def test_skips_existing_packaging_for_redirected_ppa(self):
+        # If there is already a suitable Packaging record in the redirected
+        # distroseries, then an upload to a redirected PPA leaves it
+        # untouched.
+        person = self.factory.makePerson()
+        current_upstream = self.factory.makeProductSeries()
+        new_upstream = self.factory.makeProductSeries()
+        spr, packageupload, libraryfilealias = self.makeJobElementsForPPA(
+            owner_name="ci-train-ppa-service", distribution_name="ubuntu",
+            distroseries_name="vivid", archive_name="stable-phone-overlay")
+        redirected_series = self.ensureDistroSeries("ubuntu-rtm", "15.04")
+        sourcepackage = redirected_series.getSourcePackage(spr.name)
+        sourcepackage.setPackaging(current_upstream, person)
+        original_series = self.ensureDistroSeries("ubuntu", "vivid")
+        original_series.getSourcePackage(spr.name).setPackaging(
+            new_upstream, person)
+        transaction.commit()
+        self.assertEqual(
+            current_upstream, sourcepackage.packaging.productseries)
+        process_rosetta_translations(packageupload, libraryfilealias)
+        self.assertEqual(
+            current_upstream, sourcepackage.packaging.productseries)
+
+    def test_copies_packaging_for_redirected_ppa(self):
+        # If there is no suitable Packaging record in the redirected
+        # distroseries but there is one in the original distroseries, then
+        # an upload to a redirected PPA copies it from the original.
+        person = self.factory.makePerson()
+        upstream = self.factory.makeProductSeries()
+        spr, packageupload, libraryfilealias = self.makeJobElementsForPPA(
+            owner_name="ci-train-ppa-service", distribution_name="ubuntu",
+            distroseries_name="vivid", archive_name="stable-phone-overlay")
+        redirected_series = self.ensureDistroSeries("ubuntu-rtm", "15.04")
+        original_series = self.ensureDistroSeries("ubuntu", "vivid")
+        original_series.getSourcePackage(spr.name).setPackaging(
+            upstream, person)
+        transaction.commit()
+        sourcepackage = redirected_series.getSourcePackage(spr.name)
+        self.assertIsNone(sourcepackage.packaging)
+        process_rosetta_translations(packageupload, libraryfilealias)
+        self.assertEqual(upstream, sourcepackage.packaging.productseries)
