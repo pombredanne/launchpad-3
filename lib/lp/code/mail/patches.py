@@ -360,7 +360,7 @@ def iter_file_patch(iter_lines, allow_dirty=False, keep_dirty=False):
     dirty_headers = ('=== ', 'diff ', 'index ')
     for line in iter_lines:
         # preserve bzr modified/added headers and blank lines
-        if line.startswith(dirty_headers):
+        if line.startswith(dirty_headers) or not line.strip('\n'):
             if len(saved_lines) > 0:
                 if keep_dirty and len(dirty_head) > 0:
                     yield {'saved_lines': saved_lines,

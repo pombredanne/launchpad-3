@@ -427,7 +427,7 @@ class TestInlineCommentsSection(testtools.TestCase):
         "1970-01-01 00:00:00 +0000 and "
         "lib/canonical/launchpad/images/foo.png\t"
         "2015-06-21 22:07:50 +0000 differ\n"
-        " \n"
+        "\n"
         "=== modified file 'foo/bar/bar.py'\n"
         "--- bar.py\t2009-08-26 15:53:34.000000000 -0400\n"
         "+++ bar.py\t1969-12-31 19:00:00.000000000 -0500\n"
@@ -474,6 +474,7 @@ class TestInlineCommentsSection(testtools.TestCase):
                 "",
                 "foo",
                 "",
+                "> ",
                 "> === modified file 'foo/bar/bar.py'",
                 "> --- bar.py\t2009-08-26 15:53:34.000000000 -0400",
                 "> +++ bar.py\t1969-12-31 19:00:00.000000000 -0500",
@@ -484,7 +485,7 @@ class TestInlineCommentsSection(testtools.TestCase):
                 "bar",
                 "",
                 "> -c"]),
-            section.splitlines()[4:22])
+            section.splitlines()[4:23])
 
     def test_single_line_comment(self):
         # The inline comments are correctly contextualized in the diff.
@@ -576,6 +577,7 @@ class TestInlineCommentsSection(testtools.TestCase):
         comments = {'31': 'que?'}
         self.assertEqual(
             map(unicode, [
+                "> ",
                 "> === modified file 'fulango.py'",
                 "> --- fulano.py\t2014-08-26 15:53:34.000000000 -0400",
                 "> +++ fulano.py\t2015-12-31 19:00:00.000000000 -0500",
@@ -588,7 +590,7 @@ class TestInlineCommentsSection(testtools.TestCase):
                 ">  c",
                 "> +mengano",
                 "> +zutano"]),
-            self.getSection(comments).splitlines()[4:16])
+            self.getSection(comments).splitlines()[4:17])
 
     def test_multi_line_comment(self):
         # Inline comments with multiple lines are rendered appropriately.
