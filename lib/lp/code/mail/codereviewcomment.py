@@ -244,16 +244,18 @@ def build_inline_comments_section(comments, diff_text):
                 hunk_lines.extend(format_comment(comment))
                 hunk_comment = True
 
-            for line in hunk.lines:
-                line_count += 1  # inc hunk lines
-
-                #  line is a ContextLine/ReplaceLine
-                hunk_lines.append(u'> %s' % str(line).rstrip('\n').decode(
-                    'utf-8', 'replace'))
-                comment = comments.get(str(line_count))
-                if comment:
-                    hunk_lines.extend(format_comment(comment))
-                    hunk_comment = True
+            for hunk_line in hunk.lines:
+                # A single HunkLine can actually represent multiple
+                # lines in the "No newline at end of file" case.
+                hunk_line = str(hunk_line)
+                for line in hunk_line.splitlines():
+                    line_count += 1  # inc hunk lines
+                    hunk_lines.append(u'> %s' % line.rstrip('\n').decode(
+                        'utf-8', 'replace'))
+                    comment = comments.get(str(line_count))
+                    if comment:
+                        hunk_lines.extend(format_comment(comment))
+                        hunk_comment = True
 
             # preserve hunks for context if comment in patch header
             if patch_comment or hunk_comment:
