@@ -89,6 +89,7 @@ from zope.formlib.widgets import (
     TextWidget,
     )
 from zope.interface import (
+    classImplements,
     implementer,
     Interface,
     )
@@ -4386,12 +4387,14 @@ class IPersonIndexMenu(Interface):
     """A marker interface for the +index navigation menu."""
 
 
-@implementer(IPersonIndexMenu)
 class PersonIndexMenu(NavigationMenu, PersonMenuMixin):
     usedfor = IPersonIndexMenu
     facet = 'overview'
     title = 'Change person'
     links = ('edit', 'administer', 'administer_account', 'branding')
+
+
+classImplements(PersonIndexView, IPersonIndexMenu)
 
 
 @implementer(Interface)
