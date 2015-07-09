@@ -24,7 +24,7 @@ from lazr.uri import URI
 import pytz
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.component import (
-    adapts,
+    adapter,
     getMultiAdapter,
     getUtility,
     queryAdapter,
@@ -110,8 +110,8 @@ def format_link(obj, view_name=None, empty_value='None'):
     """Return the equivalent of obj/fmt:link as a string."""
     if obj is None:
         return empty_value
-    adapter = queryAdapter(obj, IPathAdapter, 'fmt')
-    link = getattr(adapter, 'link', None)
+    fmt_adapter = queryAdapter(obj, IPathAdapter, 'fmt')
+    link = getattr(fmt_adapter, 'link', None)
     if link is None:
         raise NotImplementedError("Missing link function on adapter.")
     return link(view_name)
@@ -2517,10 +2517,9 @@ class IMainTemplateFile(Interface):
     path = TextLine(title=u'The absolute path to this main template.')
 
 
+@adapter(LaunchpadLayer)
 @implementer(IMainTemplateFile)
 class LaunchpadLayerToMainTemplateAdapter:
-    adapts(LaunchpadLayer)
-
     def __init__(self, context):
         here = os.path.dirname(os.path.realpath(__file__))
         self.path = os.path.join(here, '../templates/base-layout.pt')

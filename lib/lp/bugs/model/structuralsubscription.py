@@ -38,7 +38,7 @@ from storm.store import (
     Store,
     )
 from zope.component import (
-    adapts,
+    adapter,
     getUtility,
     )
 from zope.interface import implementer
@@ -187,10 +187,9 @@ class StructuralSubscription(Storm):
 
 
 @implementer(IStructuralSubscriptionTargetHelper)
+@adapter(IDistroSeries)
 class DistroSeriesTargetHelper:
     """A helper for `IDistroSeries`s."""
-    adapts(IDistroSeries)
-
     target_type_display = 'distribution series'
 
     def __init__(self, target):
@@ -202,10 +201,9 @@ class DistroSeriesTargetHelper:
 
 
 @implementer(IStructuralSubscriptionTargetHelper)
+@adapter(IProjectGroup)
 class ProjectGroupTargetHelper:
     """A helper for `IProjectGroup`s."""
-    adapts(IProjectGroup)
-
     target_type_display = 'project group'
 
     def __init__(self, target):
@@ -217,10 +215,9 @@ class ProjectGroupTargetHelper:
 
 
 @implementer(IStructuralSubscriptionTargetHelper)
+@adapter(IDistributionSourcePackage)
 class DistributionSourcePackageTargetHelper:
     """A helper for `IDistributionSourcePackage`s."""
-    adapts(IDistributionSourcePackage)
-
     target_type_display = 'package'
 
     def __init__(self, target):
@@ -239,10 +236,9 @@ class DistributionSourcePackageTargetHelper:
 
 
 @implementer(IStructuralSubscriptionTargetHelper)
+@adapter(IMilestone)
 class MilestoneTargetHelper:
     """A helper for `IMilestone`s."""
-    adapts(IMilestone)
-
     target_type_display = 'milestone'
 
     def __init__(self, target):
@@ -254,10 +250,9 @@ class MilestoneTargetHelper:
 
 
 @implementer(IStructuralSubscriptionTargetHelper)
+@adapter(IProduct)
 class ProductTargetHelper:
     """A helper for `IProduct`s."""
-    adapts(IProduct)
-
     target_type_display = 'project'
 
     def __init__(self, target):
@@ -275,10 +270,9 @@ class ProductTargetHelper:
 
 
 @implementer(IStructuralSubscriptionTargetHelper)
+@adapter(IProductSeries)
 class ProductSeriesTargetHelper:
     """A helper for `IProductSeries`s."""
-    adapts(IProductSeries)
-
     target_type_display = 'project series'
 
     def __init__(self, target):
@@ -290,10 +284,9 @@ class ProductSeriesTargetHelper:
 
 
 @implementer(IStructuralSubscriptionTargetHelper)
+@adapter(IDistribution)
 class DistributionTargetHelper:
     """A helper for `IDistribution`s."""
-    adapts(IDistribution)
-
     target_type_display = 'distribution'
 
     def __init__(self, target):

@@ -13,7 +13,7 @@ from lazr.uri import (
     URI,
     )
 from zope.component import (
-    adapts,
+    adapter,
     getUtility,
     queryMultiAdapter,
     )
@@ -129,6 +129,7 @@ class _BaseGitTraversable:
         return owner, self.context, repository
 
 
+@adapter(IProduct)
 @implementer(IGitTraversable)
 class ProjectGitTraversable(_BaseGitTraversable):
     """Git repository traversable for projects.
@@ -136,20 +137,17 @@ class ProjectGitTraversable(_BaseGitTraversable):
     From here, you can traverse to a named project repository.
     """
 
-    adapts(IProduct)
-
     def getNamespace(self, owner):
         return getUtility(IGitNamespaceSet).get(owner, project=self.context)
 
 
+@adapter(IDistribution)
 @implementer(IGitTraversable)
 class DistributionGitTraversable(_BaseGitTraversable):
     """Git repository traversable for distributions.
 
     From here, you can traverse to a distribution source package.
     """
-
-    adapts(IDistribution)
 
     # Marker for references to Git URL layouts: ##GITNAMESPACE##
     def traverse(self, owner, name, segments):
@@ -175,6 +173,7 @@ class DistributionGitTraversable(_BaseGitTraversable):
         return owner, distro_source_package, None
 
 
+@adapter(IDistributionSourcePackage)
 @implementer(IGitTraversable)
 class DistributionSourcePackageGitTraversable(_BaseGitTraversable):
     """Git repository traversable for distribution source packages.
@@ -182,14 +181,13 @@ class DistributionSourcePackageGitTraversable(_BaseGitTraversable):
     From here, you can traverse to a named package repository.
     """
 
-    adapts(IDistributionSourcePackage)
-
     def getNamespace(self, owner):
         return getUtility(IGitNamespaceSet).get(
             owner, distribution=self.context.distribution,
             sourcepackagename=self.context.sourcepackagename)
 
 
+@adapter(IPerson)
 @implementer(IGitTraversable)
 class PersonGitTraversable(_BaseGitTraversable):
     """Git repository traversable for people.
@@ -197,8 +195,6 @@ class PersonGitTraversable(_BaseGitTraversable):
     From here, you can traverse to a named personal repository, or to a
     project or a distribution with a person context.
     """
-
-    adapts(IPerson)
 
     def getNamespace(self, owner):
         return getUtility(IGitNamespaceSet).get(owner)

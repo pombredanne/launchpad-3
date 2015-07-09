@@ -34,9 +34,10 @@ class LongPollEvent:
     Sub-classes need to define the `event_key` property and declare something
     along the lines of::
 
+        @adapter(IAwesomeThing)
+        @implementer(ILongPollEvent)
         class LongPollAwesomeThingEvent(LongPollEvent):
-            adapts(IAwesomeThing)
-            implements(ILongPollEvent)
+            ...
 
     Alternatively, use the `long_poll_event` class decorator::
 

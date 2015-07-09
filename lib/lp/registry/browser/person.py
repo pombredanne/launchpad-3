@@ -77,7 +77,7 @@ import pytz
 from storm.zope.interfaces import IResultSet
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.component import (
-    adapts,
+    adapter,
     getUtility,
     queryMultiAdapter,
     )
@@ -4397,10 +4397,9 @@ class PersonIndexMenu(NavigationMenu, PersonMenuMixin):
 classImplements(PersonIndexView, IPersonIndexMenu)
 
 
+@adapter(IPerson, IWebServiceClientRequest)
 @implementer(Interface)
 class PersonXHTMLRepresentation:
-    adapts(IPerson, IWebServiceClientRequest)
-
     def __init__(self, person, request):
         self.person = person
         self.request = request

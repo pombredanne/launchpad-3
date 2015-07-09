@@ -12,7 +12,7 @@ __all__ = [
 from lazr.restful.interfaces import IWebServiceClientRequest
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.component import (
-    adapts,
+    adapter,
     getUtility,
     )
 from zope.formlib.itemswidgets import RadioWidget
@@ -266,11 +266,10 @@ def get_message(comment):
     return comment.comment.message
 
 
+@adapter(IDistroSeriesDifferenceComment, IWebServiceClientRequest)
 @implementer(Interface)
 class CommentXHTMLRepresentation(LaunchpadView):
     """Render individual comments when requested via the API."""
-    adapts(IDistroSeriesDifferenceComment, IWebServiceClientRequest)
-
     template = ViewPageTemplateFile(
         '../templates/distroseriesdifferencecomment-fragment.pt')
 
