@@ -10,7 +10,6 @@ __all__ = [
     'CodeReviewCommentMailer',
     ]
 
-#from bzrlib import patches
 import patches
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
