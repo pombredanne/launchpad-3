@@ -192,15 +192,15 @@ class Hunk:
         return "".join(lines)
 
     def shift_to_mod(self, pos):
-        if pos < self.orig_pos-1:
+        if pos < self.orig_pos - 1:
             return 0
-        elif pos > self.orig_pos+self.orig_range:
+        elif pos > self.orig_pos + self.orig_range:
             return self.mod_range - self.orig_range
         else:
             return self.shift_to_mod_lines(pos)
 
     def shift_to_mod_lines(self, pos):
-        position = self.orig_pos-1
+        position = self.orig_pos - 1
         shift = 0
         for line in self.lines:
             if isinstance(line, InsertLine):
@@ -318,6 +318,7 @@ class Patch(BinaryPatch):
                     pos += 1
                 if isinstance(line, ContextLine):
                     pos += 1
+
 
 def parse_patch(iter_lines, allow_dirty=False):
     '''
@@ -496,7 +497,8 @@ def iter_patched_from_hunks(orig_lines, hunks):
             elif isinstance(hunk_line, (ContextLine, RemoveLine)):
                 orig_line = orig_lines.next()
                 if orig_line != hunk_line.contents:
-                    raise PatchConflict(line_no, orig_line, "".join(seen_patch))
+                    raise PatchConflict(line_no, orig_line,
+                                        "".join(seen_patch))
                 if isinstance(hunk_line, ContextLine):
                     yield orig_line
                 else:
