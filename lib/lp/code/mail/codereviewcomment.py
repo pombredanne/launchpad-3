@@ -250,8 +250,6 @@ def build_inline_comments_section(comments, diff_text):
                 hunk_line = str(hunk_line)
                 for line in hunk_line.splitlines():
                     line_count += 1  # inc hunk lines
-
-                    #  line is a ContextLine/ReplaceLine
                     hunk_lines.append(u'> %s' % line.rstrip('\n').decode(
                         'utf-8', 'replace'))
                     comment = comments.get(str(line_count))
