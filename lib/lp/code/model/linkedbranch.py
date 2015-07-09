@@ -12,7 +12,7 @@ from lazr.enum import (
     EnumeratedType,
     Item,
     )
-from zope.component import adapts
+from zope.component import adapter
 from zope.interface import implementer
 
 from lp.archivepublisher.debversion import Version
@@ -45,11 +45,10 @@ class BaseLinkedBranch:
         return cmp(self.sort_order, other.sort_order)
 
 
+@adapter(IProductSeries)
 @implementer(ICanHasLinkedBranch)
 class ProductSeriesLinkedBranch(BaseLinkedBranch):
     """Implement a linked branch for a product series."""
-
-    adapts(IProductSeries)
 
     sort_order = LinkedBranchOrder.PRODUCT_SERIES
 
@@ -91,11 +90,10 @@ class ProductSeriesLinkedBranch(BaseLinkedBranch):
         self.product_series.branch = branch
 
 
+@adapter(IProduct)
 @implementer(ICanHasLinkedBranch)
 class ProductLinkedBranch(BaseLinkedBranch):
     """Implement a linked branch for a product."""
-
-    adapts(IProduct)
 
     sort_order = LinkedBranchOrder.PRODUCT
 
@@ -129,11 +127,10 @@ class ProductLinkedBranch(BaseLinkedBranch):
             branch, registrant)
 
 
+@adapter(ISuiteSourcePackage)
 @implementer(ICanHasLinkedBranch)
 class PackageLinkedBranch(BaseLinkedBranch):
     """Implement a linked branch for a source package pocket."""
-
-    adapts(ISuiteSourcePackage)
 
     sort_order = LinkedBranchOrder.SUITE_SOURCE_PACKAGE
 
@@ -182,11 +179,10 @@ class PackageLinkedBranch(BaseLinkedBranch):
         package.setBranch(pocket, branch, registrant)
 
 
+@adapter(IDistributionSourcePackage)
 @implementer(ICanHasLinkedBranch)
 class DistributionPackageLinkedBranch(BaseLinkedBranch):
     """Implement a linked branch for an `IDistributionSourcePackage`."""
-
-    adapts(IDistributionSourcePackage)
 
     sort_order = LinkedBranchOrder.DISTRIBUTION_SOURCE_PACKAGE
 

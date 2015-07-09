@@ -7,7 +7,7 @@ __metaclass__ = type
 __all__ = ['PersonRoles']
 
 from zope.component import (
-    adapts,
+    adapter,
     getUtility,
     )
 from zope.interface import implementer
@@ -22,10 +22,9 @@ from lp.registry.interfaces.role import (
     )
 
 
+@adapter(IPerson)
 @implementer(IPersonRoles)
 class PersonRoles:
-    adapts(IPerson)
-
     def __init__(self, person):
         self.person = person
         self._celebrities = getUtility(ILaunchpadCelebrities)

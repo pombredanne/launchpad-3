@@ -33,7 +33,7 @@ from storm.locals import (
     Store,
     )
 from zope.component import (
-    adapts,
+    adapter,
     getUtility,
     )
 from zope.interface import (
@@ -225,11 +225,11 @@ class LibraryFileAlias(SQLBase):
         self.close()
 
 
+@adapter(ILibraryFileAlias, Interface)
 @implementer(ILibraryFileAliasWithParent)
 class LibraryFileAliasWithParent:
     """A LibraryFileAlias variant that has a parent."""
 
-    adapts(ILibraryFileAlias, Interface)
     delegates(ILibraryFileAlias)
 
     def __init__(self, libraryfile, parent):

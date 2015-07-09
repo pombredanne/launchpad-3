@@ -13,7 +13,7 @@ __all__ = [
 
 from lazr.restful.interfaces import IWebServiceClientRequest
 from zope.component import (
-    adapts,
+    adapter,
     getMultiAdapter,
     )
 from zope.interface import (
@@ -138,10 +138,9 @@ class BranchLinkToBugView(LaunchpadFormView):
         bug.linkBranch(branch=self.context, registrant=self.user)
 
 
+@adapter(IBugBranch, IWebServiceClientRequest)
 @implementer(Interface)
 class BugBranchXHTMLRepresentation:
-    adapts(IBugBranch, IWebServiceClientRequest)
-
     def __init__(self, branch, request):
         self.branch = branch
         self.request = request
