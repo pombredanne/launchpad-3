@@ -19,7 +19,7 @@ from lazr.lifecycle.event import ObjectCreatedEvent
 from storm.locals import And
 from zope.component import getUtility
 from zope.event import notify
-from zope.interface import implements
+from zope.interface import implementer
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import (
@@ -289,13 +289,12 @@ class _BaseBranchNamespace:
         raise NotImplementedError
 
 
+@implementer(IBranchNamespace, IBranchNamespacePolicy)
 class PersonalBranchNamespace(_BaseBranchNamespace):
     """A namespace for personal (or 'junk') branches.
 
     Branches in this namespace have names like '~foo/+junk/bar'.
     """
-
-    implements(IBranchNamespace, IBranchNamespacePolicy)
 
     def __init__(self, person):
         self.owner = person
@@ -337,14 +336,13 @@ class PersonalBranchNamespace(_BaseBranchNamespace):
         return IBranchTarget(self.owner)
 
 
+@implementer(IBranchNamespace, IBranchNamespacePolicy)
 class ProjectBranchNamespace(_BaseBranchNamespace):
     """A namespace for project branches.
 
     This namespace is for all the branches owned by a particular person in a
     particular project.
     """
-
-    implements(IBranchNamespace, IBranchNamespacePolicy)
 
     def __init__(self, person, product):
         self.owner = person
@@ -393,14 +391,13 @@ class ProjectBranchNamespace(_BaseBranchNamespace):
         return default_type
 
 
+@implementer(IBranchNamespace, IBranchNamespacePolicy)
 class PackageBranchNamespace(_BaseBranchNamespace):
     """A namespace for source package branches.
 
     This namespace is for all the branches owned by a particular person in a
     particular source package in a particular distroseries.
     """
-
-    implements(IBranchNamespace, IBranchNamespacePolicy)
 
     def __init__(self, person, sourcepackage):
         self.owner = person

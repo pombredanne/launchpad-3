@@ -10,7 +10,7 @@ from zope.formlib.interfaces import (
     )
 from zope.interface import (
     directlyProvides,
-    implements,
+    implementer,
     )
 
 from lp.app.browser.launchpadform import LaunchpadFormView
@@ -67,8 +67,8 @@ class LaunchpadFormTest(unittest.TestCase):
         """Verify a field marked .for_display has no (Optional) marker."""
         # IInputWidgets have an (Optional) marker if they are not required.
         form = LaunchpadFormView(None, None)
+        @implementer(IInputWidget)
         class FakeInputWidget:
-            implements(IInputWidget)
             def __init__(self, required):
                 self.required = required
         form.widgets = {'widget': FakeInputWidget(required=False)}
@@ -78,8 +78,8 @@ class LaunchpadFormTest(unittest.TestCase):
         self.assertFalse(form.showOptionalMarker('widget'))
         # IDisplayWidgets have no (Optional) marker, regardless of whether
         # they are required or not, since they are read only.
+        @implementer(IDisplayWidget)
         class FakeDisplayWidget:
-            implements(IDisplayWidget)
             def __init__(self, required):
                 self.required = required
         form.widgets = {'widget': FakeDisplayWidget(required=False)}

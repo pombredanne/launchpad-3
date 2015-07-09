@@ -11,7 +11,7 @@ __all__ = ['QuestionReopening',
 from lazr.lifecycle.event import ObjectCreatedEvent
 from sqlobject import ForeignKey
 from zope.event import notify
-from zope.interface import implements
+from zope.interface import implementer
 from zope.security.proxy import ProxyFactory
 
 from lp.answers.enums import QuestionStatus
@@ -23,10 +23,9 @@ from lp.services.database.enumcol import EnumCol
 from lp.services.database.sqlbase import SQLBase
 
 
+@implementer(IQuestionReopening)
 class QuestionReopening(SQLBase):
     """A table recording each time a question is re-opened."""
-
-    implements(IQuestionReopening)
 
     _table = 'QuestionReopening'
 

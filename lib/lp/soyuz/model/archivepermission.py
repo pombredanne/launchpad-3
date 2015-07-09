@@ -26,7 +26,7 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.interface import (
     alsoProvides,
-    implements,
+    implementer,
     )
 from zope.security.proxy import isinstance as zope_isinstance
 
@@ -66,9 +66,9 @@ from lp.soyuz.interfaces.component import (
 from lp.soyuz.interfaces.packageset import IPackageset
 
 
+@implementer(IArchivePermission)
 class ArchivePermission(SQLBase):
     """See `IArchivePermission`."""
-    implements(IArchivePermission)
     _table = 'ArchivePermission'
     _defaultOrder = 'id'
 
@@ -150,9 +150,9 @@ class ArchivePermission(SQLBase):
             return None
 
 
+@implementer(IArchivePermissionSet)
 class ArchivePermissionSet:
     """See `IArchivePermissionSet`."""
-    implements(IArchivePermissionSet)
 
     def checkAuthenticated(self, person, archive, permission, item,
                            distroseries=None):

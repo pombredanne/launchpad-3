@@ -23,8 +23,8 @@ from storm.locals import (
 import transaction
 from zope.component import getUtility
 from zope.interface import (
-    classProvides,
-    implements,
+    implementer,
+    provider,
     )
 from zope.security.proxy import removeSecurityProxy
 
@@ -80,11 +80,10 @@ from lp.soyuz.model.archive import Archive
 from lp.soyuz.scripts.packagecopier import do_copy
 
 
+@implementer(IPackageCopyJob)
+@provider(IPackageCopyJobSource)
 class PackageCopyJob(StormBase):
     """Base class for package copying jobs."""
-
-    implements(IPackageCopyJob)
-    classProvides(IPackageCopyJobSource)
 
     __storm_table__ = 'PackageCopyJob'
 
@@ -253,6 +252,8 @@ class PackageCopyJobDerived(BaseRunnableJob):
         return self.context.copy_policy
 
 
+@implementer(IPlainPackageCopyJob)
+@provider(IPlainPackageCopyJobSource)
 class PlainPackageCopyJob(PackageCopyJobDerived):
     """Job that copies a package from one archive to another."""
     # This job type serves in different places: it supports copying
@@ -261,10 +262,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
     # separate types at some point, but for now we (allenap, bigjools,
     # jtv) chose to keep it as one.
 
-    implements(IPlainPackageCopyJob)
-
     class_job_type = PackageCopyJobType.PLAIN
-    classProvides(IPlainPackageCopyJobSource)
     config = config.IPlainPackageCopyJobSource
     user_error_types = (CannotCopy,)
     # Raised when closing bugs ends up hitting another process and

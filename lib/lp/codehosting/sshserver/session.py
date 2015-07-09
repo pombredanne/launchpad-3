@@ -23,7 +23,7 @@ from twisted.internet import (
     )
 from twisted.python import log
 from zope.event import notify
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.codehosting import get_bzr_path
 from lp.services.config import config
@@ -76,14 +76,13 @@ class _WaitForExit(process.ProcessReader):
         self.proc.processEnded(exit_status)
 
 
+@implementer(interfaces.IProcessTransport)
 class ForkedProcessTransport(process.BaseProcess):
     """Wrap the forked process in a ProcessTransport so we can talk to it.
 
     Note that instantiating the class creates the fork and sets it up in the
     reactor.
     """
-
-    implements(interfaces.IProcessTransport)
 
     # Design decisions
     # [Decision #a]

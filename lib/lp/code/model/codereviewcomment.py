@@ -14,7 +14,7 @@ from sqlobject import (
     ForeignKey,
     StringCol,
     )
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.code.enums import CodeReviewVote
 from lp.code.interfaces.branchtarget import IHasBranchTarget
@@ -59,14 +59,9 @@ def quote_text_as_email(text, width=80):
     return '\n'.join(result)
 
 
+@implementer(ICodeReviewComment, ICodeReviewCommentDeletion, IHasBranchTarget)
 class CodeReviewComment(SQLBase):
     """A table linking branch merge proposals and messages."""
-
-    implements(
-        ICodeReviewComment,
-        ICodeReviewCommentDeletion,
-        IHasBranchTarget,
-        )
 
     _table = 'CodeReviewMessage'
 

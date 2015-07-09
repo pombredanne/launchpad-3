@@ -47,7 +47,7 @@ from zope.component import (
 from zope.component.interfaces import ComponentLookupError
 from zope.interface import (
     directlyProvides,
-    implements,
+    implementer,
     )
 from zope.interface.advice import addClassAdvisor
 from zope.publisher.defaultview import getDefaultViewName
@@ -566,20 +566,18 @@ class LaunchpadView(UserAttributeCache):
         return beta_info
 
 
+@implementer(IXMLRPCView, IMethodPublisher)
 class LaunchpadXMLRPCView(UserAttributeCache):
     """Base class for writing XMLRPC view code."""
-
-    implements(IXMLRPCView, IMethodPublisher)
 
     def __init__(self, context, request):
         self.context = context
         self.request = request
 
 
+@implementer(ICanonicalUrlData)
 class LaunchpadRootUrlData:
     """ICanonicalUrlData for the ILaunchpadRoot object."""
-
-    implements(ICanonicalUrlData)
 
     path = ''
     inside = None
@@ -619,13 +617,13 @@ def canonical_url_iterator(obj):
             yield urldata.inside
 
 
+@implementer(IAbsoluteURL)
 class CanonicalAbsoluteURL:
     """A bridge between Zope's IAbsoluteURL and Launchpad's canonical_url.
 
     We don't implement the whole interface; only what's needed to
     make absoluteURL() succceed.
     """
-    implements(IAbsoluteURL)
 
     def __init__(self, context, request):
         """Initialize with respect to a context and request."""
@@ -832,15 +830,16 @@ def get_raw_form_value_from_current_request(field, field_name):
         return field
 
 
+@implementer(ILaunchpadApplication, ILaunchpadRoot)
 class RootObject:
-    implements(ILaunchpadApplication, ILaunchpadRoot)
+    pass
 
 
 rootObject = ProxyFactory(RootObject(), NamesChecker(["__class__"]))
 
 
+@implementer(ILaunchpadContainer)
 class LaunchpadContainer:
-    implements(ILaunchpadContainer)
 
     def __init__(self, context):
         self.context = context
@@ -854,13 +853,13 @@ class LaunchpadContainer:
         return self.context == scope
 
 
+@implementer(IBrowserPublisher)
 class Navigation:
     """Base class for writing browser navigation components.
 
     Note that the canonical_url part of Navigation is used outside of
     the browser context.
     """
-    implements(IBrowserPublisher)
 
     def __init__(self, context, request=None):
         """Initialize with context and maybe with a request."""
@@ -1040,8 +1039,8 @@ class Navigation:
         return self.context, (view_name, )
 
 
+@implementer(IBrowserPublisher)
 class RedirectionView:
-    implements(IBrowserPublisher)
 
     def __init__(self, target, request, status=None, cache_view=None):
         self.target = target
@@ -1067,6 +1066,7 @@ class RedirectionView:
         return self, ()
 
 
+@implementer(IBrowserPublisher)
 class RenamedView:
     """Redirect permanently to the new name of the view.
 
@@ -1076,7 +1076,6 @@ class RenamedView:
     :param rootsite: (optional) the virtual host to redirect to,
             e.g. 'answers'.
     """
-    implements(IBrowserPublisher)
 
     def __init__(self, context, request, new_name, rootsite=None):
         self.context = context

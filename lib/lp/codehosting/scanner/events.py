@@ -12,10 +12,10 @@ __all__ = [
 
 
 from zope.component.interfaces import (
-    implements,
     IObjectEvent,
     ObjectEvent,
     )
+from zope.interface import implementer
 
 
 class ScannerEvent(ObjectEvent):
@@ -36,10 +36,9 @@ class INewMainlineRevisions(IObjectEvent):
     """A new revision has been found in the branch."""
 
 
+@implementer(INewMainlineRevisions)
 class NewMainlineRevisions(ScannerEvent):
     """A new revision has been found in the branch."""
-
-    implements(INewMainlineRevisions)
 
     def __init__(self, db_branch, bzr_branch, bzr_revisions):
         """Construct a `NewRevisions` event.
@@ -59,9 +58,9 @@ class ITipChanged(IObjectEvent):
     """The tip of the branch has changed."""
 
 
+@implementer(ITipChanged)
 class TipChanged(ScannerEvent):
     """The tip of the branch has changed."""
-    implements(ITipChanged)
 
     def __init__(self, db_branch, bzr_branch, initial_scan):
         """Construct a `TipChanged` event.
@@ -88,10 +87,9 @@ class IRevisionsRemoved(IObjectEvent):
     """Revisions have been removed from the branch."""
 
 
+@implementer(IRevisionsRemoved)
 class RevisionsRemoved(ScannerEvent):
     """Revisions have been removed from the branch."""
-
-    implements(IRevisionsRemoved)
 
     def __init__(self, db_branch, bzr_branch, removed_history):
         """Construct a `RevisionsRemoved` event.
@@ -109,10 +107,9 @@ class IScanCompleted(IObjectEvent):
     """The scan has been completed and the database is up-to-date."""
 
 
+@implementer(IScanCompleted)
 class ScanCompleted(ScannerEvent):
     """The scan has been completed and the database is up-to-date."""
-
-    implements(IScanCompleted)
 
     def __init__(self, db_branch, bzr_branch, logger, new_ancestry):
         """Construct a `ScanCompleted` event.

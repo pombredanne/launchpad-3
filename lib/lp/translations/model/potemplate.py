@@ -42,7 +42,7 @@ from zope.component import (
     getAdapter,
     getUtility,
     )
-from zope.interface import implements
+from zope.interface import implementer
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import ServiceUsage
@@ -198,8 +198,8 @@ def get_pofiles_for(potemplates, language):
     return result
 
 
+@implementer(IPOTemplate)
 class POTemplate(SQLBase, RosettaStats):
-    implements(IPOTemplate)
 
     _table = 'POTemplate'
 
@@ -1050,8 +1050,8 @@ class POTemplate(SQLBase, RosettaStats):
             sourcepackagename=self.sourcepackagename)
 
 
+@implementer(IPOTemplateSubset)
 class POTemplateSubset:
-    implements(IPOTemplateSubset)
 
     def __init__(self, sourcepackagename=None, from_sourcepackagename=None,
                  distroseries=None, productseries=None, iscurrent=None,
@@ -1276,8 +1276,8 @@ class POTemplateSubset:
             return None
 
 
+@implementer(IPOTemplateSet)
 class POTemplateSet:
-    implements(IPOTemplateSet)
 
     def __iter__(self):
         """See `IPOTemplateSet`."""
@@ -1423,8 +1423,8 @@ class POTemplateSet:
         ).rowcount
 
 
+@implementer(IPOTemplateSharingSubset)
 class POTemplateSharingSubset(object):
-    implements(IPOTemplateSharingSubset)
 
     distribution = None
     sourcepackagename = None
@@ -1570,9 +1570,9 @@ class POTemplateSharingSubset(object):
         return equivalents
 
 
+@implementer(ITranslationFileData)
 class POTemplateToTranslationFileDataAdapter:
     """Adapter from `IPOTemplate` to `ITranslationFileData`."""
-    implements(ITranslationFileData)
 
     def __init__(self, potemplate):
         self._potemplate = potemplate

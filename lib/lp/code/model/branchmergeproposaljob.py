@@ -48,8 +48,8 @@ from storm.locals import (
 from storm.store import Store
 from zope.component import getUtility
 from zope.interface import (
-    classProvides,
-    implements,
+    implementer,
+    provider,
     )
 
 from lp.code.adapters.branch import BranchMergeProposalDelta
@@ -145,10 +145,9 @@ class BranchMergeProposalJobType(DBEnumeratedType):
         This job generates an incremental diff for a merge proposal.""")
 
 
+@implementer(IBranchMergeProposalJob)
 class BranchMergeProposalJob(StormBase):
     """Base class for jobs related to branch merge proposals."""
-
-    implements(IBranchMergeProposalJob)
 
     __storm_table__ = 'BranchMergeProposalJob'
 
@@ -300,12 +299,10 @@ class BranchMergeProposalJobDerived(BaseRunnableJob):
         return vars
 
 
+@implementer(IMergeProposalNeedsReviewEmailJob)
+@provider(IMergeProposalNeedsReviewEmailJobSource)
 class MergeProposalNeedsReviewEmailJob(BranchMergeProposalJobDerived):
     """See `IMergeProposalNeedsReviewEmailJob`."""
-
-    implements(IMergeProposalNeedsReviewEmailJob)
-
-    classProvides(IMergeProposalNeedsReviewEmailJobSource)
 
     class_job_type = BranchMergeProposalJobType.MERGE_PROPOSAL_NEEDS_REVIEW
 
@@ -326,15 +323,13 @@ class MergeProposalNeedsReviewEmailJob(BranchMergeProposalJobDerived):
              self.branch_merge_proposal.merge_target.identity))
 
 
+@implementer(IUpdatePreviewDiffJob)
+@provider(IUpdatePreviewDiffJobSource)
 class UpdatePreviewDiffJob(BranchMergeProposalJobDerived):
     """A job to update the preview diff for a branch merge proposal.
 
     Provides class methods to create and retrieve such jobs.
     """
-
-    implements(IUpdatePreviewDiffJob)
-
-    classProvides(IUpdatePreviewDiffJobSource)
 
     class_job_type = BranchMergeProposalJobType.UPDATE_PREVIEW_DIFF
 
@@ -388,15 +383,13 @@ class UpdatePreviewDiffJob(BranchMergeProposalJobDerived):
         return format_address_for_person(registrant)
 
 
+@implementer(ICodeReviewCommentEmailJob)
+@provider(ICodeReviewCommentEmailJobSource)
 class CodeReviewCommentEmailJob(BranchMergeProposalJobDerived):
     """A job to send a code review comment.
 
     Provides class methods to create and retrieve such jobs.
     """
-
-    implements(ICodeReviewCommentEmailJob)
-
-    classProvides(ICodeReviewCommentEmailJobSource)
 
     class_job_type = BranchMergeProposalJobType.CODE_REVIEW_COMMENT_EMAIL
 
@@ -441,15 +434,13 @@ class CodeReviewCommentEmailJob(BranchMergeProposalJobDerived):
         return 'emailing a code review comment'
 
 
+@implementer(IReviewRequestedEmailJob)
+@provider(IReviewRequestedEmailJobSource)
 class ReviewRequestedEmailJob(BranchMergeProposalJobDerived):
     """Send email to the reviewer telling them to review the proposal.
 
     Provides class methods to create and retrieve such jobs.
     """
-
-    implements(IReviewRequestedEmailJob)
-
-    classProvides(IReviewRequestedEmailJobSource)
 
     class_job_type = BranchMergeProposalJobType.REVIEW_REQUEST_EMAIL
 
@@ -507,16 +498,14 @@ class ReviewRequestedEmailJob(BranchMergeProposalJobDerived):
         return 'emailing a reviewer requesting a review'
 
 
+@implementer(IMergeProposalUpdatedEmailJob)
+@provider(IMergeProposalUpdatedEmailJobSource)
 class MergeProposalUpdatedEmailJob(BranchMergeProposalJobDerived):
     """Send email to the subscribers informing them of updated fields.
 
     When attributes of the merge proposal are edited, we inform the
     subscribers.
     """
-
-    implements(IMergeProposalUpdatedEmailJob)
-
-    classProvides(IMergeProposalUpdatedEmailJobSource)
 
     class_job_type = BranchMergeProposalJobType.MERGE_PROPOSAL_UPDATED
 
@@ -575,15 +564,13 @@ class MergeProposalUpdatedEmailJob(BranchMergeProposalJobDerived):
         return 'emailing subscribers about merge proposal changes'
 
 
+@implementer(IGenerateIncrementalDiffJob)
+@provider(IGenerateIncrementalDiffJobSource)
 class GenerateIncrementalDiffJob(BranchMergeProposalJobDerived):
     """A job to generate an incremental diff for a branch merge proposal.
 
     Provides class methods to create and retrieve such jobs.
     """
-
-    implements(IGenerateIncrementalDiffJob)
-
-    classProvides(IGenerateIncrementalDiffJobSource)
 
     class_job_type = BranchMergeProposalJobType.GENERATE_INCREMENTAL_DIFF
 
@@ -642,13 +629,12 @@ class GenerateIncrementalDiffJob(BranchMergeProposalJobDerived):
         return format_address_for_person(registrant)
 
 
+@provider(IBranchMergeProposalJobSource)
 class BranchMergeProposalJobSource(BaseRunnableJobSource):
     """Provide a job source for all merge proposal jobs.
 
     Only one job for any particular merge proposal is returned.
     """
-
-    classProvides(IBranchMergeProposalJobSource)
 
     @staticmethod
     def get(job_id):

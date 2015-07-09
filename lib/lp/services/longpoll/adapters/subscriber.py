@@ -16,7 +16,7 @@ from zope.component import (
     adapts,
     getUtility,
     )
-from zope.interface import implements
+from zope.interface import implementer
 from zope.publisher.interfaces import IApplicationRequest
 
 from lp.services.config import config
@@ -29,10 +29,10 @@ def generate_subscribe_key():
     return "longpoll.subscribe.%s" % uuid4()
 
 
+@implementer(ILongPollSubscriber)
 class LongPollApplicationRequestSubscriber:
 
     adapts(IApplicationRequest)
-    implements(ILongPollSubscriber)
 
     def __init__(self, request):
         self.request = request

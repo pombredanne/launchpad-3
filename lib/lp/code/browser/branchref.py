@@ -8,7 +8,7 @@ __all__ = [
     'BranchRef'
     ]
 
-from zope.interface import implements
+from zope.interface import implementer
 from zope.publisher.interfaces.browser import IBrowserPublisher
 
 from lp.code.interfaces.branchref import IBranchRef
@@ -20,8 +20,8 @@ from lp.services.webapp import (
     )
 
 
+@implementer(IBranchRef)
 class BranchRef:
-    implements(IBranchRef)
 
     def __init__(self, branch):
         self.branch = branch
@@ -55,8 +55,8 @@ class BranchRefNavigation(Navigation):
             return None
 
 
+@implementer(IBrowserPublisher)
 class StaticContentView:
-    implements(IBrowserPublisher)
 
     def __init__(self, contents):
         self.contents = contents

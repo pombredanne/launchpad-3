@@ -11,7 +11,7 @@ __all__ = [
 
 from operator import attrgetter
 
-from zope.interface import implements
+from zope.interface import implementer
 from zope.security.proxy import isinstance as zope_isinstance
 
 from lp.registry.interfaces.person import IPerson
@@ -21,10 +21,9 @@ from lp.services.mail.interfaces import (
     )
 
 
+@implementer(INotificationRecipientSet)
 class NotificationRecipientSet:
     """Set of recipients along the rationale for being in the set."""
-
-    implements(INotificationRecipientSet)
 
     def __init__(self):
         """Create a new empty set."""

@@ -51,7 +51,7 @@ from zope.event import notify
 from zope.formlib import form
 from zope.formlib.widgets import TextAreaWidget
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     providedBy,
     )
@@ -160,10 +160,9 @@ from lp.translations.interfaces.translationtemplatesbuild import (
     )
 
 
+@implementer(ICanonicalUrlData)
 class BranchURL:
     """Branch URL creation rules."""
-
-    implements(ICanonicalUrlData)
 
     rootsite = 'code'
     inside = None

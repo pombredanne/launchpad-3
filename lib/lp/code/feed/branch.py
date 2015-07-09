@@ -21,7 +21,7 @@ from storm.locals import (
     )
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 from zope.security.interfaces import Unauthorized
 
 from lp.code.browser.branch import BranchView
@@ -365,12 +365,12 @@ class ProjectRevisionFeed(ProjectRevisionFeedBase):
         return getUtility(IRevisionCache).inProjectGroup(self.context)
 
 
+@implementer(IFeedPerson)
 class RevisionPerson:
     """See `IFeedPerson`.
 
     Uses the `name_without_email` property for the display name.
     """
-    implements(IFeedPerson)
 
     def __init__(self, person, rootsite):
 

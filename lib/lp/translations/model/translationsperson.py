@@ -23,7 +23,7 @@ from zope.component import (
     adapts,
     getUtility,
     )
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.enums import ServiceUsage
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
@@ -54,9 +54,9 @@ from lp.translations.model.translationrelicensingagreement import (
 from lp.translations.model.translator import Translator
 
 
+@implementer(ITranslationsPerson)
 class TranslationsPerson:
     """See `ITranslationsPerson`."""
-    implements(ITranslationsPerson)
     adapts(IPerson)
 
     def __init__(self, person):

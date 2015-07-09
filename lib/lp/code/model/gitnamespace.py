@@ -15,7 +15,7 @@ from lazr.lifecycle.event import ObjectCreatedEvent
 from storm.locals import And
 from zope.component import getUtility
 from zope.event import notify
-from zope.interface import implements
+from zope.interface import implementer
 from zope.security.proxy import (
     isinstance as zope_isinstance,
     removeSecurityProxy,
@@ -228,13 +228,12 @@ class _BaseGitNamespace:
         return not self == other
 
 
+@implementer(IGitNamespace, IGitNamespacePolicy)
 class PersonalGitNamespace(_BaseGitNamespace):
     """A namespace for personal repositories.
 
     Repositories in this namespace have names like "~foo/+git/bar".
     """
-
-    implements(IGitNamespace, IGitNamespacePolicy)
 
     has_defaults = False
     allow_push_to_set_default = False
@@ -305,14 +304,13 @@ class PersonalGitNamespace(_BaseGitNamespace):
         return None
 
 
+@implementer(IGitNamespace, IGitNamespacePolicy)
 class ProjectGitNamespace(_BaseGitNamespace):
     """A namespace for project repositories.
 
     This namespace is for all the repositories owned by a particular person
     in a particular project.
     """
-
-    implements(IGitNamespace, IGitNamespacePolicy)
 
     has_defaults = True
     allow_push_to_set_default = True
@@ -390,14 +388,13 @@ class ProjectGitNamespace(_BaseGitNamespace):
             action_name, product=self.project, datecreated=date_created)
 
 
+@implementer(IGitNamespace, IGitNamespacePolicy)
 class PackageGitNamespace(_BaseGitNamespace):
     """A namespace for distribution source package repositories.
 
     This namespace is for all the repositories owned by a particular person
     in a particular source package in a particular distribution.
     """
-
-    implements(IGitNamespace, IGitNamespacePolicy)
 
     has_defaults = True
     allow_push_to_set_default = False
@@ -475,10 +472,9 @@ class PackageGitNamespace(_BaseGitNamespace):
             self_dsp.sourcepackagename == other_dsp.sourcepackagename)
 
 
+@implementer(IGitNamespaceSet)
 class GitNamespaceSet:
     """Only implementation of `IGitNamespaceSet`."""
-
-    implements(IGitNamespaceSet)
 
     def get(self, person, project=None, distribution=None,
             sourcepackagename=None):

@@ -39,7 +39,7 @@ from storm.locals import (
     )
 from zope.component import getUtility
 from zope.error.interfaces import IErrorReportingUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.errors import NotFoundError
 from lp.code.interfaces.diff import (
@@ -61,10 +61,9 @@ from lp.services.propertycache import get_property_cache
 from lp.services.webapp.adapter import get_request_remaining_seconds
 
 
+@implementer(IDiff)
 class Diff(SQLBase):
     """See `IDiff`."""
-
-    implements(IDiff)
 
     diff_text = ForeignKey(foreignKey='LibraryFileAlias')
 
@@ -323,10 +322,9 @@ class Diff(SQLBase):
         return cls.fromFileAtEnd(diff_content)
 
 
+@implementer(IIncrementalDiff)
 class IncrementalDiff(Storm):
     """See `IIncrementalDiff."""
-
-    implements(IIncrementalDiff)
 
     delegates(IDiff, context='diff')
 
@@ -353,9 +351,9 @@ class IncrementalDiff(Storm):
     new_revision = Reference(new_revision_id, 'Revision.id')
 
 
+@implementer(IPreviewDiff)
 class PreviewDiff(Storm):
     """See `IPreviewDiff`."""
-    implements(IPreviewDiff)
     delegates(IDiff, context='diff')
     __storm_table__ = 'PreviewDiff'
 

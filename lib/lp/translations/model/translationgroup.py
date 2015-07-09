@@ -21,7 +21,7 @@ from storm.expr import (
     LeftJoin,
     )
 from storm.store import Store
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.person import validate_public_person
@@ -47,10 +47,9 @@ from lp.translations.interfaces.translationgroup import (
 from lp.translations.model.translator import Translator
 
 
+@implementer(ITranslationGroup)
 class TranslationGroup(SQLBase):
     """A TranslationGroup."""
-
-    implements(ITranslationGroup)
 
     # default to listing alphabetically
     _defaultOrder = 'name'
@@ -260,9 +259,8 @@ class TranslationGroup(SQLBase):
         return DecoratedResultSet(distro_data, operator.itemgetter(0))
 
 
+@implementer(ITranslationGroupSet)
 class TranslationGroupSet:
-
-    implements(ITranslationGroupSet)
 
     title = 'Rosetta Translation Groups'
 

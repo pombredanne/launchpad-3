@@ -10,7 +10,7 @@ __all__ = [
     ]
 
 from lazr.restful.interfaces import ITopLevelEntryLink
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.interfaces.services import IServiceFactory
 from lp.services.webapp.interfaces import ICanonicalUrlData
@@ -20,9 +20,9 @@ class IServicesLink(ITopLevelEntryLink, ICanonicalUrlData):
     """A marker interface."""
 
 
+@implementer(IServicesLink)
 class ServicesLink:
     """The top-level link to the services factory."""
-    implements(IServicesLink)
 
     link_name = 'services'
     entry_type = IServiceFactory

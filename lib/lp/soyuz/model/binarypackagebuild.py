@@ -43,7 +43,7 @@ from storm.store import (
     )
 from storm.zope import IResultSet
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.browser.tales import DurationFormatterAPI
@@ -151,8 +151,8 @@ PRIVATE_ARCHIVE_SCORE_BONUS = 10000
 COPY_ARCHIVE_SCORE_PENALTY = 2600
 
 
+@implementer(IBinaryPackageBuild)
 class BinaryPackageBuild(PackageBuildMixin, SQLBase):
-    implements(IBinaryPackageBuild)
     _table = 'BinaryPackageBuild'
     _defaultOrder = 'id'
 
@@ -899,8 +899,8 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
         return changes.signer
 
 
+@implementer(IBinaryPackageBuildSet)
 class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
-    implements(IBinaryPackageBuildSet)
 
     def new(self, source_package_release, archive, distro_arch_series, pocket,
             arch_indep=None, status=BuildStatus.NEEDSBUILD, builder=None):

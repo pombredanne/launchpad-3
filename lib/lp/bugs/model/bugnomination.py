@@ -21,7 +21,7 @@ from sqlobject import (
     SQLObjectNotFound,
     )
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.errors import NotFoundError
 from lp.bugs.adapters.bugchange import BugTaskAdded
@@ -39,8 +39,8 @@ from lp.services.database.enumcol import EnumCol
 from lp.services.database.sqlbase import SQLBase
 
 
+@implementer(IBugNomination)
 class BugNomination(SQLBase):
-    implements(IBugNomination)
     _table = "BugNomination"
 
     owner = ForeignKey(
@@ -150,9 +150,9 @@ class BugNomination(SQLBase):
         return False
 
 
+@implementer(IBugNominationSet)
 class BugNominationSet:
     """See IBugNominationSet."""
-    implements(IBugNominationSet)
 
     def get(self, id):
         """See IBugNominationSet."""

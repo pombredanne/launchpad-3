@@ -13,7 +13,7 @@ __all__ = [
 from operator import attrgetter
 
 from sqlobject import StringCol
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.registry.interfaces.series import (
     ISeriesMixin,
@@ -30,10 +30,9 @@ ACTIVE_STATUSES = [
     ]
 
 
+@implementer(ISeriesMixin)
 class SeriesMixin(HasDriversMixin):
     """See `ISeriesMixin`."""
-
-    implements(ISeriesMixin)
 
     summary = StringCol(notNull=True)
 

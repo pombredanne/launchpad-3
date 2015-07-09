@@ -15,7 +15,7 @@ __all__ = [
 from operator import attrgetter
 
 from lazr.delegates import delegates
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.services.librarian.browser import (
     FileNavigationMixin,
@@ -39,9 +39,9 @@ from lp.soyuz.interfaces.publishing import (
     )
 
 
+@implementer(ICanonicalUrlData)
 class PublicationURLBase:
     """Dynamic URL declaration for `I*PackagePublishingHistory`"""
-    implements(ICanonicalUrlData)
     rootsite = None
 
     def __init__(self, context):

@@ -14,7 +14,7 @@ from sqlobject import (
     IntCol,
     StringCol,
     )
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.bugs.interfaces.bugbranch import (
     IBugBranch,
@@ -28,9 +28,9 @@ from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import SQLBase
 
 
+@implementer(IBugBranch, IHasBranchTarget)
 class BugBranch(SQLBase):
     """See `IBugBranch`."""
-    implements(IBugBranch, IHasBranchTarget)
 
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     bug = ForeignKey(dbName="bug", foreignKey="Bug", notNull=True)
@@ -57,9 +57,8 @@ class BugBranch(SQLBase):
         return task
 
 
+@implementer(IBugBranchSet)
 class BugBranchSet:
-
-    implements(IBugBranchSet)
 
     def getBugBranch(self, bug, branch):
         """See `IBugBranchSet`."""

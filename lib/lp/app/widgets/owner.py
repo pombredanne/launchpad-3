@@ -9,13 +9,14 @@ from zope.formlib.interfaces import (
     IInputWidget,
     )
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     )
 
 from lp.services.webapp.interfaces import ILaunchBag
 
 
+@implementer(IInputWidget, IBrowserWidget)
 class RequestWidget(object):
     '''A widget that sets itself to a value calculated from request
 
@@ -24,7 +25,6 @@ class RequestWidget(object):
     are the Views (the AddView and the Widgets). It is easier to define
     a custom widget than to override the AddView
     '''
-    implements(IInputWidget, IBrowserWidget)
 
     _prefix = 'field.'
     name = ''
@@ -85,8 +85,8 @@ class IUserWidget(Interface):
     pass
 
 
+@implementer(IUserWidget)
 class HiddenUserWidget(RequestWidget):
-    implements(IUserWidget)
 
     def __init__(self, context, vocabulary, request=None):
         '''Construct the HiddenUserWidget.

@@ -15,7 +15,7 @@ __all__ = [
     ]
 
 
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
@@ -64,19 +64,19 @@ class BasicCopyPolicy:
         return True
 
 
+@implementer(ICopyPolicy)
 class InsecureCopyPolicy(BasicCopyPolicy):
     """A policy for copying from insecure sources."""
-    implements(ICopyPolicy)
 
     enum_value = PackageCopyPolicy.INSECURE
 
 
+@implementer(ICopyPolicy)
 class MassSyncCopyPolicy(BasicCopyPolicy):
     """A policy for mass 'sync' copies.
 
     Exists soley so the classic job runner processes autosyncs last.
     """
-    implements(ICopyPolicy)
 
     enum_value = PackageCopyPolicy.MASS_SYNC
 

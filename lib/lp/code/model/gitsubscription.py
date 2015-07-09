@@ -10,7 +10,7 @@ from storm.locals import (
     Int,
     Reference,
     )
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.code.enums import (
     BranchSubscriptionDiffSize,
@@ -26,12 +26,11 @@ from lp.services.database.enumcol import EnumCol
 from lp.services.database.stormbase import StormBase
 
 
+@implementer(IGitSubscription)
 class GitSubscription(StormBase):
     """A relationship between a person and a Git repository."""
 
     __storm_table__ = 'GitSubscription'
-
-    implements(IGitSubscription)
 
     id = Int(primary=True)
 

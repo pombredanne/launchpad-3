@@ -23,7 +23,7 @@ from z3c.ptcompat import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.formlib.widgets import TextWidget
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     )
 
@@ -199,9 +199,9 @@ class PersonTranslationsMenu(NavigationMenu):
             site='translations')
 
 
+@implementer(IPersonTranslationsMenu)
 class PersonTranslationView(LaunchpadView):
     """View for translation-related Person pages."""
-    implements(IPersonTranslationsMenu)
 
     reviews_to_show = 10
 

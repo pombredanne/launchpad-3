@@ -39,7 +39,7 @@ from storm.store import (
     Store,
     )
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.enums import service_uses_launchpad
 from lp.app.errors import NotFoundError
@@ -201,14 +201,14 @@ ACTIVE_UNRELEASED_STATUSES = [
     ]
 
 
+@implementer(
+    IBugSummaryDimension, IDistroSeries, IHasBuildRecords, IHasQueueItems,
+    IServiceUsage, ISeriesBugTarget)
 class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                    HasTranslationImportsMixin, HasTranslationTemplatesMixin,
                    HasMilestonesMixin, SeriesMixin,
                    StructuralSubscriptionTargetMixin):
     """A particular series of a distribution."""
-    implements(
-        IBugSummaryDimension, IDistroSeries, IHasBuildRecords, IHasQueueItems,
-        IServiceUsage, ISeriesBugTarget)
 
     delegates(ISpecificationTarget, 'distribution')
 
@@ -1458,8 +1458,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             self, since=since, source_package_name=source_package_name)
 
 
+@implementer(IDistroSeriesSet)
 class DistroSeriesSet:
-    implements(IDistroSeriesSet)
 
     def get(self, distroseriesid):
         """See `IDistroSeriesSet`."""

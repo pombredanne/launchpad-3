@@ -7,16 +7,15 @@ __all__ = ['SpecificationBug']
 
 from lazr.restful.interfaces import IJSONPublishable
 from sqlobject import ForeignKey
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.blueprints.interfaces.specificationbug import ISpecificationBug
 from lp.services.database.sqlbase import SQLBase
 
 
+@implementer(ISpecificationBug, IJSONPublishable)
 class SpecificationBug(SQLBase):
     """A link between a spec and a bug."""
-
-    implements(ISpecificationBug, IJSONPublishable)
 
     _table = 'SpecificationBug'
     specification = ForeignKey(dbName='specification',

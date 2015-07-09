@@ -9,7 +9,7 @@ __all__ = [
     'BinaryPackageBuildBehaviour',
     ]
 
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.buildmaster.interfaces.builder import CannotBuild
 from lp.buildmaster.interfaces.buildfarmjobbehaviour import (
@@ -28,10 +28,9 @@ from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.model.publishing import makePoolPath
 
 
+@implementer(IBuildFarmJobBehaviour)
 class BinaryPackageBuildBehaviour(BuildFarmJobBehaviourBase):
     """Define the behaviour of binary package builds."""
-
-    implements(IBuildFarmJobBehaviour)
 
     def getLogFileName(self):
         """See `IBuildPackageJob`."""

@@ -22,7 +22,7 @@ from lazr.restful.fields import (
     )
 from zope.interface import (
     Attribute,
-    implements,
+    implementer,
     Interface,
     )
 from zope.schema import (
@@ -100,12 +100,11 @@ class IBugLinkForm(Interface):
 # code layout policy, this should really be in vocabularies.buglinks but this
 # is not possible because of dependencies on interfaces in some vocabularies
 # modules.
+@implementer(IContextSourceBinder)
 class BugLinksVocabularyFactory:
     """IContextSourceBinder that creates a vocabulary of the linked bugs on
     the IBugLinkTarget.
     """
-
-    implements(IContextSourceBinder)
 
     def __call__(self, context):
         """See IContextSourceBinder."""

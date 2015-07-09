@@ -114,9 +114,10 @@ H2.
 If the view class implements IMajorHeadingView, then this is the index page
 for the context and the heading is rendered in H1.
 
-    >>> from zope.interface import implements
+    >>> from zope.interface import implementer
     >>> from lp.app.interfaces.headings import IMajorHeadingView
-    >>> class HeadingView(TrivialView):
-    ...     implements(IMajorHeadingView)
+    >>> @implementer(IMajorHeadingView)
+    ... class HeadingView(TrivialView):
+    ...     pass
     >>> print get_hierarchy(widget, viewcls=HeadingView).heading()
     <h1...><a...>Widget</a></h1>

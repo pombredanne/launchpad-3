@@ -6,7 +6,7 @@
 __metaclass__ = type
 __all__ = ['OpenIDConsumerNonce']
 
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.services.openid.interfaces.openidconsumer import IOpenIDConsumerStore
 from lp.services.openid.model.baseopenidstore import (
@@ -24,9 +24,9 @@ class OpenIDConsumerNonce(BaseStormOpenIDNonce):
     __storm_table__ = 'OpenIDConsumerNonce'
 
 
+@implementer(IOpenIDConsumerStore)
 class OpenIDConsumerStore(BaseStormOpenIDStore):
     """An OpenID association and nonce store for Launchpad."""
-    implements(IOpenIDConsumerStore)
 
     Association = OpenIDConsumerAssociation
     Nonce = OpenIDConsumerNonce

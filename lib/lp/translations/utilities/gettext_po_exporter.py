@@ -17,7 +17,7 @@ __all__ = [
 import logging
 import os
 
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.translations.interfaces.translationexporter import (
     ITranslationFormatExporter,
@@ -260,6 +260,7 @@ def export_translation_message(translation_message, wrap_width=77):
         ]).strip()
 
 
+@implementer(ITranslationFormatExporter)
 class GettextPOExporterBase:
     """Base support class to export Gettext .po files.
 
@@ -267,7 +268,6 @@ class GettextPOExporterBase:
     format and supported_source_formats and must implement
     _makeExportedHeader.
     """
-    implements(ITranslationFormatExporter)
 
     format = None
     supported_source_formats = []

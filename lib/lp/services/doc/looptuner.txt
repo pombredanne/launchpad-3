@@ -19,7 +19,7 @@ per chunk to get close to your ideal time between stops.  Chunk sizes will
 adjust themselves dynamically to actual performance.
 
     >>> import math
-    >>> from zope.interface import implements
+    >>> from zope.interface import implementer
     >>> from lp.services.looptuner import ITunableLoop
     >>> from lp.services.looptuner import LoopTuner
 
@@ -63,8 +63,8 @@ architectures, compilers used for the Python interpreter, etc.
     ...     order_of_magnitude = math.log10(ratio)
     ...     print "%s (%.1f)" % (change, order_of_magnitude)
 
-    >>> class PlannedLoop:
-    ...     implements(ITunableLoop)
+    >>> @implementer(ITunableLoop)
+    ... class PlannedLoop:
     ...     def __init__(self, timings):
     ...         self.last_chunk_size = None
     ...         self.iteration = 0
@@ -185,8 +185,8 @@ governing the relationship between chunk size and chunk processing time.
 
 This variant of the LoopTuner simulates an overridable cost function:
 
-    >>> class CostedLoop:
-    ...     implements(ITunableLoop)
+    >>> @implementer(ITunableLoop)
+    ... class CostedLoop:
     ...     def __init__(self, cost_function, counter):
     ...         self.last_chunk_size = None
     ...         self.iteration = 0
@@ -391,8 +391,8 @@ but still print out what would happen.
 SimpleLoop is a loop that does a constant number of iterations, regardless
 of the actual run-time.
 
-    >>> class SimpleLoop:
-    ...     implements(ITunableLoop)
+    >>> @implementer(ITunableLoop)
+    ... class SimpleLoop:
     ...     def __init__(self, iterations):
     ...         self.total_iterations = iterations
     ...         self.iteration = 0

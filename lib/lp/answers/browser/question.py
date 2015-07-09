@@ -44,7 +44,7 @@ from zope.formlib.widgets import (
     )
 from zope.interface import (
     alsoProvides,
-    implements,
+    implementer,
     providedBy,
     )
 from zope.schema import Choice
@@ -405,6 +405,7 @@ class QuestionSubscriptionView(LaunchpadView):
         return self.context.isSubscribed(self.user)
 
 
+@implementer(IContextSourceBinder)
 class QuestionLanguageVocabularyFactory:
     """Factory for a vocabulary containing a subset of the possible languages.
 
@@ -415,8 +416,6 @@ class QuestionLanguageVocabularyFactory:
     It also always include the question's current language and excludes all
     English variants.
     """
-
-    implements(IContextSourceBinder)
 
     def __init__(self, view):
         """Create a QuestionLanguageVocabularyFactory.

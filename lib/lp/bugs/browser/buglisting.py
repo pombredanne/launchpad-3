@@ -42,7 +42,7 @@ from zope.component import (
 from zope.formlib.interfaces import InputErrors
 from zope.formlib.itemswidgets import RadioWidget
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     )
 from zope.schema.vocabulary import getVocabularyRegistry
@@ -887,10 +887,9 @@ SORT_KEYS = [
     ]
 
 
+@implementer(IBugTaskSearchListingMenu)
 class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
     """View that renders a list of bugs for a given set of search criteria."""
-
-    implements(IBugTaskSearchListingMenu)
 
     related_features = {
         'bugs.dynamic_bug_listings.pre_fetch': False

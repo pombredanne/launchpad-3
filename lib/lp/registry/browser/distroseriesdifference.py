@@ -17,7 +17,7 @@ from zope.component import (
     )
 from zope.formlib.itemswidgets import RadioWidget
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     )
 from zope.schema import Choice
@@ -109,9 +109,8 @@ class IDistroSeriesDifferenceForm(Interface):
         )))
 
 
+@implementer(IConversation)
 class DistroSeriesDifferenceView(LaunchpadFormView):
-
-    implements(IConversation)
     schema = IDistroSeriesDifferenceForm
     custom_widget('blacklist_options', RadioWidget)
 
@@ -248,9 +247,9 @@ class IDistroSeriesDifferenceDisplayComment(IComment):
     """Marker interface."""
 
 
+@implementer(IDistroSeriesDifferenceDisplayComment)
 class DistroSeriesDifferenceDisplayComment(MessageComment):
     """Used simply to provide `IComment` for rendering."""
-    implements(IDistroSeriesDifferenceDisplayComment)
 
     index = None
 
@@ -267,10 +266,10 @@ def get_message(comment):
     return comment.comment.message
 
 
+@implementer(Interface)
 class CommentXHTMLRepresentation(LaunchpadView):
     """Render individual comments when requested via the API."""
     adapts(IDistroSeriesDifferenceComment, IWebServiceClientRequest)
-    implements(Interface)
 
     template = ViewPageTemplateFile(
         '../templates/distroseriesdifferencecomment-fragment.pt')

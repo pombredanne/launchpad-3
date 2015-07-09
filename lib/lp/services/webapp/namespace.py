@@ -14,7 +14,7 @@ from z3c.ptcompat import (
     ViewPageTemplateFile,
     )
 from zope.component import getMultiAdapter
-from zope.interface import implements
+from zope.interface import implementer
 from zope.publisher.defaultview import getDefaultViewName
 from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.security.proxy import removeSecurityProxy
@@ -51,6 +51,7 @@ class FormNamespaceView(view):
         return self.context
 
 
+@implementer(IBrowserPublisher)
 class JsonModelNamespaceView(view):
     """A namespace view to handle traversals with ++model++.
 
@@ -58,8 +59,6 @@ class JsonModelNamespaceView(view):
     by a view's `initialize` method.  Any objects added after the call to
     initialize will not be presented by the namespace.
     """
-
-    implements(IBrowserPublisher)
 
     def traverse(self, name, ignored):
         """Model traversal adapter.

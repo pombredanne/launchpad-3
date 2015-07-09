@@ -32,8 +32,8 @@ from storm.locals import (
     )
 from zope.component import getUtility
 from zope.interface import (
-    classProvides,
-    implements,
+    implementer,
+    provider,
     )
 from zope.security.proxy import removeSecurityProxy
 
@@ -122,10 +122,9 @@ class ProductJobManager:
         return total
 
 
+@implementer(IProductJob)
 class ProductJob(StormBase):
     """Base class for product jobs."""
-
-    implements(IProductJob)
 
     __storm_table__ = 'ProductJob'
 
@@ -160,6 +159,7 @@ class ProductJob(StormBase):
         self._json_data = json_data.decode('utf-8')
 
 
+@provider(IProductJobSource)
 class ProductJobDerived(BaseRunnableJob):
     """Intermediate class for deriving from ProductJob.
 
@@ -171,7 +171,6 @@ class ProductJobDerived(BaseRunnableJob):
     """
 
     delegates(IProductJob)
-    classProvides(IProductJobSource)
 
     def __init__(self, job):
         self.context = job
@@ -230,11 +229,10 @@ class ProductJobDerived(BaseRunnableJob):
         return vars
 
 
+@implementer(IProductNotificationJob)
+@provider(IProductNotificationJobSource)
 class ProductNotificationJob(ProductJobDerived):
     """A Job that send an email to the product maintainer."""
-
-    implements(IProductNotificationJob)
-    classProvides(IProductNotificationJobSource)
     class_job_type = ProductJobType.REVIEWER_NOTIFICATION
 
     @classmethod
@@ -399,12 +397,11 @@ class CommericialExpirationMixin:
         return data
 
 
+@implementer(ISevenDayCommercialExpirationJob)
+@provider(ISevenDayCommercialExpirationJobSource)
 class SevenDayCommercialExpirationJob(CommericialExpirationMixin,
                                       ProductNotificationJob):
     """A job that sends an email about an expiring commercial subscription."""
-
-    implements(ISevenDayCommercialExpirationJob)
-    classProvides(ISevenDayCommercialExpirationJobSource)
     class_job_type = ProductJobType.COMMERCIAL_EXPIRATION_7_DAYS
 
     @staticmethod
@@ -415,12 +412,11 @@ class SevenDayCommercialExpirationJob(CommericialExpirationMixin,
         return now, in_seven_days, seven_days_ago
 
 
+@implementer(IThirtyDayCommercialExpirationJob)
+@provider(IThirtyDayCommercialExpirationJobSource)
 class ThirtyDayCommercialExpirationJob(CommericialExpirationMixin,
                                        ProductNotificationJob):
     """A job that sends an email about an expiring commercial subscription."""
-
-    implements(IThirtyDayCommercialExpirationJob)
-    classProvides(IThirtyDayCommercialExpirationJobSource)
     class_job_type = ProductJobType.COMMERCIAL_EXPIRATION_30_DAYS
 
     @staticmethod
@@ -433,11 +429,10 @@ class ThirtyDayCommercialExpirationJob(CommericialExpirationMixin,
         return in_twenty_three_days, in_thirty_days, thirty_days_ago
 
 
+@implementer(ICommercialExpiredJob)
+@provider(ICommercialExpiredJobSource)
 class CommercialExpiredJob(CommericialExpirationMixin, ProductNotificationJob):
     """A job that sends an email about an expired commercial subscription."""
-
-    implements(ICommercialExpiredJob)
-    classProvides(ICommercialExpiredJobSource)
     class_job_type = ProductJobType.COMMERCIAL_EXPIRED
 
     _email_template_name = ''  # email_template_name does not need this.

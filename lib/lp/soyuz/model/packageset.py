@@ -15,7 +15,7 @@ from storm.locals import (
     Unicode,
     )
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageName,
@@ -42,9 +42,9 @@ def _order_result_set(result_set):
     return result_set.order_by('name')
 
 
+@implementer(IPackageset)
 class Packageset(Storm):
     """See `IPackageset`."""
-    implements(IPackageset)
     __storm_table__ = 'Packageset'
     id = Int(primary=True)
 
@@ -333,9 +333,9 @@ class Packageset(Storm):
             store.remove(self.packagesetgroup)
 
 
+@implementer(IPackagesetSet)
 class PackagesetSet:
     """See `IPackagesetSet`."""
-    implements(IPackagesetSet)
 
     def new(self, name, description, owner, distroseries, related_set=None):
         """See `IPackagesetSet`."""

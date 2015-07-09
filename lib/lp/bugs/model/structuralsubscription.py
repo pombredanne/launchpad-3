@@ -41,7 +41,7 @@ from zope.component import (
     adapts,
     getUtility,
     )
-from zope.interface import implements
+from zope.interface import implementer
 from zope.security.proxy import ProxyFactory
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
@@ -90,10 +90,9 @@ from lp.services.database.stormexpr import (
 from lp.services.propertycache import cachedproperty
 
 
+@implementer(IStructuralSubscription)
 class StructuralSubscription(Storm):
     """A subscription to a Launchpad structure."""
-
-    implements(IStructuralSubscription)
 
     __storm_table__ = 'StructuralSubscription'
 
@@ -187,10 +186,9 @@ class StructuralSubscription(Storm):
         Store.of(self).remove(self)
 
 
+@implementer(IStructuralSubscriptionTargetHelper)
 class DistroSeriesTargetHelper:
     """A helper for `IDistroSeries`s."""
-
-    implements(IStructuralSubscriptionTargetHelper)
     adapts(IDistroSeries)
 
     target_type_display = 'distribution series'
@@ -203,10 +201,9 @@ class DistroSeriesTargetHelper:
         self.join = (StructuralSubscription.distroseries == target)
 
 
+@implementer(IStructuralSubscriptionTargetHelper)
 class ProjectGroupTargetHelper:
     """A helper for `IProjectGroup`s."""
-
-    implements(IStructuralSubscriptionTargetHelper)
     adapts(IProjectGroup)
 
     target_type_display = 'project group'
@@ -219,10 +216,9 @@ class ProjectGroupTargetHelper:
         self.join = (StructuralSubscription.projectgroup == target)
 
 
+@implementer(IStructuralSubscriptionTargetHelper)
 class DistributionSourcePackageTargetHelper:
     """A helper for `IDistributionSourcePackage`s."""
-
-    implements(IStructuralSubscriptionTargetHelper)
     adapts(IDistributionSourcePackage)
 
     target_type_display = 'package'
@@ -242,10 +238,9 @@ class DistributionSourcePackageTargetHelper:
                 target.sourcepackagename.id))
 
 
+@implementer(IStructuralSubscriptionTargetHelper)
 class MilestoneTargetHelper:
     """A helper for `IMilestone`s."""
-
-    implements(IStructuralSubscriptionTargetHelper)
     adapts(IMilestone)
 
     target_type_display = 'milestone'
@@ -258,10 +253,9 @@ class MilestoneTargetHelper:
         self.join = (StructuralSubscription.milestone == target)
 
 
+@implementer(IStructuralSubscriptionTargetHelper)
 class ProductTargetHelper:
     """A helper for `IProduct`s."""
-
-    implements(IStructuralSubscriptionTargetHelper)
     adapts(IProduct)
 
     target_type_display = 'project'
@@ -280,10 +274,9 @@ class ProductTargetHelper:
                 StructuralSubscription.product == target)
 
 
+@implementer(IStructuralSubscriptionTargetHelper)
 class ProductSeriesTargetHelper:
     """A helper for `IProductSeries`s."""
-
-    implements(IStructuralSubscriptionTargetHelper)
     adapts(IProductSeries)
 
     target_type_display = 'project series'
@@ -296,10 +289,9 @@ class ProductSeriesTargetHelper:
         self.join = (StructuralSubscription.productseries == target)
 
 
+@implementer(IStructuralSubscriptionTargetHelper)
 class DistributionTargetHelper:
     """A helper for `IDistribution`s."""
-
-    implements(IStructuralSubscriptionTargetHelper)
     adapts(IDistribution)
 
     target_type_display = 'distribution'

@@ -17,7 +17,7 @@ from bzrlib.patches import (
     RemoveLine,
     )
 import transaction
-from zope.interface import implements
+from zope.interface import implementer
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.errors import NotFoundError
@@ -91,9 +91,10 @@ def create_example_merge(test_case):
     return bmp, source_rev_id, target_rev_id
 
 
+@implementer(IGitHostingClient)
 class FakeGitHostingClient:
 
-    implements(IGitHostingClient)
+    pass
 
 
 class DiffTestCase(TestCaseWithFactory):

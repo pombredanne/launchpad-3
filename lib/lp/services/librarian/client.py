@@ -32,7 +32,7 @@ from urlparse import (
 
 from lazr.restful.utils import get_current_browser_request
 from storm.store import Store
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.services.config import (
     config,
@@ -502,9 +502,9 @@ class FileDownloadClient:
                     raise
 
 
+@implementer(ILibrarianClient)
 class LibrarianClient(FileUploadClient, FileDownloadClient):
     """See `ILibrarianClient`."""
-    implements(ILibrarianClient)
 
     restricted = False
 
@@ -529,9 +529,9 @@ class LibrarianClient(FileUploadClient, FileDownloadClient):
             )
 
 
+@implementer(IRestrictedLibrarianClient)
 class RestrictedLibrarianClient(LibrarianClient):
     """See `IRestrictedLibrarianClient`."""
-    implements(IRestrictedLibrarianClient)
 
     restricted = True
 

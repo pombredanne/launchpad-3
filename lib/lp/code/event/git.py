@@ -9,15 +9,14 @@ __all__ = [
     ]
 
 from zope.component.interfaces import ObjectEvent
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.code.interfaces.event import IGitRefsUpdatedEvent
 
 
+@implementer(IGitRefsUpdatedEvent)
 class GitRefsUpdatedEvent(ObjectEvent):
     """See `IGitRefsUpdatedEvent`."""
-
-    implements(IGitRefsUpdatedEvent)
 
     def __init__(self, repository, paths, logger):
         super(GitRefsUpdatedEvent, self).__init__(repository)

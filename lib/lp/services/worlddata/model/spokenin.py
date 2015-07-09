@@ -5,19 +5,18 @@ __metaclass__ = type
 __all__ = ['SpokenIn']
 
 from sqlobject import ForeignKey
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.services.database.sqlbase import SQLBase
 from lp.services.worlddata.interfaces.spokenin import ISpokenIn
 
 
+@implementer(ISpokenIn)
 class SpokenIn(SQLBase):
     """A way of telling which languages are spoken in which countries.
 
     This table maps a language which is SpokenIn a country.
     """
-
-    implements(ISpokenIn)
 
     _table = 'SpokenIn'
 

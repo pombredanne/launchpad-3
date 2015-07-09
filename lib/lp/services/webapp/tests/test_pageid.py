@@ -6,7 +6,7 @@ __metaclass__ = type
 
 
 from lazr.restful.interfaces import ICollectionResource
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.services.webapp.publication import LaunchpadBrowserPublication
 from lp.services.webapp.servers import WebServicePublication
@@ -39,9 +39,9 @@ class FakeView:
         return 'result'
 
 
+@implementer(ICollectionResource)
 class FakeCollectionResourceView(FakeView):
     """A view object that provides ICollectionResource."""
-    implements(ICollectionResource)
 
     def __init__(self):
         super(FakeCollectionResourceView, self).__init__()

@@ -15,7 +15,7 @@ from storm.locals import (
     JSON,
     Reference,
     )
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.errors import NotFoundError
 from lp.registry.model.distribution import Distribution
@@ -34,10 +34,9 @@ from lp.soyuz.interfaces.distributionjob import (
     )
 
 
+@implementer(IDistributionJob)
 class DistributionJob(StormBase):
     """Base class for jobs related to Distributions."""
-
-    implements(IDistributionJob)
 
     __storm_table__ = 'DistributionJob'
 

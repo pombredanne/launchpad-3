@@ -52,7 +52,7 @@ from storm.locals import (
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import (
-    implements,
+    implementer,
     providedBy,
     )
 from zope.security.proxy import removeSecurityProxy
@@ -226,9 +226,9 @@ from lp.translations.model.potemplate import POTemplate
 from lp.translations.model.translationpolicy import TranslationPolicyMixin
 
 
+@implementer(ILicensesModifiedEvent)
 class LicensesModifiedEvent(ObjectModifiedEvent):
     """See `ILicensesModifiedEvent`."""
-    implements(ILicensesModifiedEvent)
 
     def __init__(self, product, user=None):
         super(LicensesModifiedEvent, self).__init__(
@@ -356,6 +356,10 @@ specification_policy_default = {
 }
 
 
+@implementer(
+    IBugSummaryDimension, IHasBugSupervisor,
+    IHasCustomLanguageCodes, IHasIcon, IHasLogo, IHasMugshot,
+    IHasOOPSReferences, ILaunchpadUsage, IProduct, IServiceUsage)
 class Product(SQLBase, BugTargetBase, MakesAnnouncements,
               HasDriversMixin, HasSpecificationsMixin, HasSprintsMixin,
               KarmaContextMixin, QuestionTargetMixin,
@@ -366,11 +370,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
               HasCodeImportsMixin, InformationTypeMixin,
               TranslationPolicyMixin):
     """A Product."""
-
-    implements(
-        IBugSummaryDimension, IHasBugSupervisor,
-        IHasCustomLanguageCodes, IHasIcon, IHasLogo, IHasMugshot,
-        IHasOOPSReferences, ILaunchpadUsage, IProduct, IServiceUsage)
 
     _table = 'Product'
 
@@ -1799,8 +1798,8 @@ def get_distro_sourcepackages(products):
     return result
 
 
+@implementer(IProductSet)
 class ProductSet:
-    implements(IProductSet)
 
     def __init__(self):
         self.title = "Projects in Launchpad"

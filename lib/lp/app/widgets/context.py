@@ -9,7 +9,7 @@
 __metaclass__ = type
 
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     )
 
@@ -26,9 +26,8 @@ class IContextWidget(Interface):
     pass
 
 
+@implementer(IContextWidget)
 class ContextWidget(RequestWidget):
-
-    implements(IContextWidget)
     def __init__(self, context, vocabulary, request):
         RequestWidget.__init__(self, context, request)
 

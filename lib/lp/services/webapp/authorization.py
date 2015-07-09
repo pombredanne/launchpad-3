@@ -26,7 +26,7 @@ from zope.component import (
     getUtility,
     queryAdapter,
     )
-from zope.interface import classProvides
+from zope.interface import provider
 from zope.principalregistry.principalregistry import UnauthenticatedPrincipal
 from zope.proxy import removeAllProxies
 from zope.publisher.interfaces import IApplicationRequest
@@ -66,8 +66,8 @@ from lp.services.webapp.metazcml import ILaunchpadPermission
 LAUNCHPAD_SECURITY_POLICY_CACHE_KEY = 'launchpad.security_policy_cache'
 
 
+@provider(ISecurityPolicy)
 class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
-    classProvides(ISecurityPolicy)
 
     def __init__(self, *participations):
         ParanoidSecurityPolicy.__init__(self, *participations)

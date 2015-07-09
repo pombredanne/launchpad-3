@@ -13,7 +13,7 @@ from sqlobject import (
     BoolCol,
     ForeignKey,
     )
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.blueprints.interfaces.specificationmessage import (
     ISpecificationMessage,
@@ -26,10 +26,9 @@ from lp.services.messages.model.message import (
     )
 
 
+@implementer(ISpecificationMessage)
 class SpecificationMessage(SQLBase):
     """A table linking specifictions and messages."""
-
-    implements(ISpecificationMessage)
 
     _table = 'SpecificationMessage'
 
@@ -39,10 +38,9 @@ class SpecificationMessage(SQLBase):
     visible = BoolCol(notNull=True, default=True)
 
 
+@implementer(ISpecificationMessageSet)
 class SpecificationMessageSet:
     """See ISpecificationMessageSet."""
-
-    implements(ISpecificationMessageSet)
 
     def createMessage(self, subject, spec, owner, content=None):
         """See ISpecificationMessageSet."""

@@ -26,7 +26,7 @@ from storm.properties import PropertyColumn
 from storm.store import EmptyResultSet
 from storm.zope.interfaces import IResultSet
 from zope.component import adapts
-from zope.interface import implements
+from zope.interface import implementer
 from zope.interface.common.sequence import IFiniteSequence
 from zope.security.proxy import (
     isinstance as zope_isinstance,
@@ -49,10 +49,10 @@ from lp.services.webapp.interfaces import (
 from lp.services.webapp.publisher import LaunchpadView
 
 
+@implementer(IFiniteSequence)
 class FiniteSequenceAdapter:
 
     adapts(IResultSet)
-    implements(IFiniteSequence)
 
     def __init__(self, context):
         self.context = context
@@ -67,10 +67,9 @@ class FiniteSequenceAdapter:
         return self.context.count()
 
 
+@implementer(IFiniteSequence)
 class BoundReferenceSetAdapter:
     """Adaptor for `BoundReferenceSet` implementations in Storm."""
-
-    implements(IFiniteSequence)
 
     def __init__(self, context):
         self.context = context
@@ -146,9 +145,9 @@ class InactiveBatchNavigator(BatchNavigator):
     variable_name_prefix = 'inactive'
 
 
+@implementer(ITableBatchNavigator)
 class TableBatchNavigator(BatchNavigator):
     """See lp.services.webapp.interfaces.ITableBatchNavigator."""
-    implements(ITableBatchNavigator)
 
     def __init__(self, results, request, start=0, size=None,
                  columns_to_show=None, callback=None):
@@ -244,6 +243,7 @@ def plain_expression(expression):
         return expression
 
 
+@implementer(IRangeFactory)
 class StormRangeFactory:
     """A range factory for Storm result sets.
 
@@ -270,7 +270,6 @@ class StormRangeFactory:
     i.e. that the set of the column values used for sorting is
     distinct for each result row.
     """
-    implements(IRangeFactory)
 
     def __init__(self, resultset, error_cb=None):
         """Create a new StormRangeFactory instance.

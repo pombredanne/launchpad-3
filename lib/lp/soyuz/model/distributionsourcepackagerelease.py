@@ -20,7 +20,7 @@ from storm.expr import (
     SQL,
     )
 from storm.store import Store
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.soyuz.interfaces.distributionsourcepackagerelease import (
@@ -38,6 +38,7 @@ from lp.soyuz.model.publishing import (
     )
 
 
+@implementer(IDistributionSourcePackageRelease)
 class DistributionSourcePackageRelease:
     """This is a "Magic Distribution Source Package Release". It is not an
     SQLObject, but it represents the concept of a specific source package
@@ -45,7 +46,6 @@ class DistributionSourcePackageRelease:
     information.
     """
 
-    implements(IDistributionSourcePackageRelease)
     delegates(ISourcePackageRelease, context='sourcepackagerelease')
 
     def __init__(self, distribution, sourcepackagerelease):

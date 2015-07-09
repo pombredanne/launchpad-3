@@ -17,7 +17,7 @@ from time import time
 
 import iso8601
 from swiftclient import client as swiftclient
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.services.config import config
 from lp.services.database.postgresql import (
@@ -290,13 +290,13 @@ def merge_duplicates(con):
         con.commit()
 
 
+@implementer(ITunableLoop)
 class ExpireAliases:
     """Expire expired LibraryFileAlias records.
 
     This simply involves setting the LibraryFileAlias.content to NULL.
     Unreferenced LibraryFileContent records are cleaned up elsewhere.
     """
-    implements(ITunableLoop)
 
     def __init__(self, con):
         self.con = con
@@ -339,6 +339,7 @@ def expire_aliases(con):
     loop_tuner.run()
 
 
+@implementer(ITunableLoop)
 class UnreferencedLibraryFileAliasPruner:
     """Delete unreferenced LibraryFileAliases.
 
@@ -350,7 +351,6 @@ class UnreferencedLibraryFileAliasPruner:
     in the database and delete them, if they are expired (expiry in the past
     or NULL).
     """
-    implements(ITunableLoop)
 
     def __init__(self, con):
         self.con = con  # Database connection to use
@@ -467,6 +467,7 @@ def delete_unreferenced_aliases(con):
     loop_tuner.run()
 
 
+@implementer(ITunableLoop)
 class UnreferencedContentPruner:
     """Delete LibraryFileContent entries and their disk files that are
     not referenced by any LibraryFileAlias entries.
@@ -474,7 +475,6 @@ class UnreferencedContentPruner:
     Note that a LibraryFileContent can only be accessed through a
     LibraryFileAlias, so all entries in this state are garbage.
     """
-    implements(ITunableLoop)
 
     def __init__(self, con):
         self.swift_enabled = getFeatureFlag(

@@ -19,7 +19,7 @@ from zope.authentication.interfaces import (
 from zope.component.interfaces import IObjectEvent
 from zope.interface import (
     Attribute,
-    implements,
+    implementer,
     Interface,
     )
 from zope.publisher.interfaces.browser import IBrowserApplicationRequest
@@ -443,16 +443,16 @@ class ILoggedInEvent(Interface):
         'The login id that was used.  For example, an email address.')
 
 
+@implementer(ILoggedInEvent)
 class CookieAuthLoggedInEvent:
-    implements(ILoggedInEvent)
 
     def __init__(self, request, login):
         self.request = request
         self.login = login
 
 
+@implementer(IPrincipalIdentifiedEvent)
 class CookieAuthPrincipalIdentifiedEvent:
-    implements(IPrincipalIdentifiedEvent)
 
     def __init__(self, principal, request, login):
         self.principal = principal
@@ -460,8 +460,8 @@ class CookieAuthPrincipalIdentifiedEvent:
         self.login = login
 
 
+@implementer(ILoggedInEvent, IPrincipalIdentifiedEvent)
 class BasicAuthLoggedInEvent:
-    implements(ILoggedInEvent, IPrincipalIdentifiedEvent)
 
     def __init__(self, request, login, principal):
         # these one from ILoggedInEvent
@@ -476,8 +476,8 @@ class ILoggedOutEvent(Interface):
     """An event which gets sent after someone has logged out via a form."""
 
 
+@implementer(ILoggedOutEvent)
 class LoggedOutEvent:
-    implements(ILoggedOutEvent)
 
     def __init__(self, request):
         self.request = request
@@ -758,10 +758,9 @@ class IFinishReadOnlyRequestEvent(Interface):
     request = Attribute("The active request.")
 
 
+@implementer(IFinishReadOnlyRequestEvent)
 class FinishReadOnlyRequestEvent:
     """An event which gets sent when the publication is ended"""
-
-    implements(IFinishReadOnlyRequestEvent)
 
     def __init__(self, ob, request):
         self.object = ob

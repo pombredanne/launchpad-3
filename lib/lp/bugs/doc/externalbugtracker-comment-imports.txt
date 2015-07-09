@@ -6,7 +6,7 @@ remote bug tracker into Launchpad.
 In order to demonstrate this we need to create example Bug, BugTracker
 and BugWatch instances with which to work.
 
-    >>> from zope.interface import implements
+    >>> from zope.interface import implementer
     >>> from lp.services.config import config
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     new_bugtracker)
@@ -42,8 +42,8 @@ ExternalBugTracker class which implements these three methods.
     >>> from lp.bugs.externalbugtracker import (
     ...     ExternalBugTracker)
     >>> from lp.bugs.interfaces.externalbugtracker import ISupportsCommentImport
-    >>> class CommentImportingExternalBugTracker(ExternalBugTracker):
-    ...     implements(ISupportsCommentImport)
+    >>> @implementer(ISupportsCommentImport)
+    ... class CommentImportingExternalBugTracker(ExternalBugTracker):
     ...
     ...     comment_dict = {}
     ...     remote_comments = {

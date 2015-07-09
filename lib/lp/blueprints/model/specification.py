@@ -32,7 +32,7 @@ from storm.locals import (
 from storm.store import Store
 from zope.component import getUtility
 from zope.event import notify
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.enums import (
     InformationType,
@@ -161,10 +161,9 @@ SPECIFICATION_POLICY_DEFAULT_TYPES = {
     }
 
 
+@implementer(ISpecification, IBugLinkTarget, IInformationType)
 class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
     """See ISpecification."""
-
-    implements(ISpecification, IBugLinkTarget, IInformationType)
 
     _defaultOrder = ['-priority', 'definition_status', 'name', 'id']
 
@@ -1001,10 +1000,9 @@ class HasSpecificationsMixin:
             user, filter=[SpecificationFilter.ALL]).count()
 
 
+@implementer(ISpecificationSet)
 class SpecificationSet(HasSpecificationsMixin):
     """The set of feature specifications."""
-
-    implements(ISpecificationSet)
 
     def __init__(self):
         """See ISpecificationSet."""

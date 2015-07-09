@@ -6,12 +6,12 @@ remote bug tracker into Launchpad. They indicate that they support doing
 this by implementing ISupportsBugImport, and implement all the specified
 methods.
 
-    >>> from zope.interface import implements
+    >>> from zope.interface import implementer
     >>> from lp.bugs.interfaces.externalbugtracker import ISupportsBugImport
     >>> from lp.bugs.externalbugtracker import (
     ...     ExternalBugTracker)
-    >>> class BugImportingExternalBugTracker(ExternalBugTracker):
-    ...     implements(ISupportsBugImport)
+    >>> @implementer(ISupportsBugImport)
+    ... class BugImportingExternalBugTracker(ExternalBugTracker):
     ...
     ...     _bugs = {}
     ...

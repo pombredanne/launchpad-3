@@ -28,7 +28,7 @@ from textwrap import wrap
 
 from zope.interface import (
     Attribute,
-    implements,
+    implementer,
     Interface,
     )
 from BeautifulSoup import BeautifulStoneSoup as BSS
@@ -41,8 +41,8 @@ class IThing(Interface):
     value = Attribute('the value of the thing')
 
 
+@implementer(IThing)
 class Thing(object):
-    implements(IThing)
 
     def __init__(self, value):
         self.value = value

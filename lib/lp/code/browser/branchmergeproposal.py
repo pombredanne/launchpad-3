@@ -43,7 +43,7 @@ from zope.component import (
 from zope.formlib import form
 from zope.formlib.widgets import TextAreaWidget
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     )
 from zope.schema import (
@@ -453,10 +453,9 @@ class BranchMergeProposalNavigation(Navigation):
             return None
 
 
+@implementer(IConversation)
 class CodeReviewConversation:
     """A code review conversation."""
-
-    implements(IConversation)
 
     def __init__(self, comments):
         self.comments = comments
@@ -538,13 +537,13 @@ class ICodeReviewNewRevisions(IComment):
     """Marker interface used to register views for CodeReviewNewRevisions."""
 
 
+@implementer(ICodeReviewNewRevisions)
 class CodeReviewNewRevisions:
     """Represents a logical grouping of revisions.
 
     Each object instance represents a number of revisions scanned at a
     particular time.
     """
-    implements(ICodeReviewNewRevisions)
 
     def __init__(self, revisions, date, branch, diff):
         self.revisions = revisions
@@ -580,13 +579,12 @@ class CodeReviewNewRevisionsView(LaunchpadView):
         return self.context.branch.getCodebrowseUrl()
 
 
+@implementer(IBranchMergeProposalActionMenu)
 class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
                               BranchMergeProposalRevisionIdMixin,
                               BranchMergeProposalStatusMixin,
                               DiffRenderingMixin):
     """A basic view used for the index page."""
-
-    implements(IBranchMergeProposalActionMenu)
 
     schema = ClaimButton
 
@@ -1391,9 +1389,9 @@ class FormatPreviewDiffView(LaunchpadView, DiffRenderingMixin):
         return self.context
 
 
+@implementer(Interface)
 class PreviewDiffHTMLRepresentation:
     adapts(IPreviewDiff, IWebServiceClientRequest)
-    implements(Interface)
 
     def __init__(self, diff, request):
         self.diff = diff

@@ -9,7 +9,7 @@ adaptation.
 
 First, we'll construct an example object hierarchy.
 
-    >>> from zope.interface import implements, Interface
+    >>> from zope.interface import implementer, Interface
     >>> from lp.services.webapp.interfaces import ICanonicalUrlData
 
     >>> class ICookbook(Interface):
@@ -18,9 +18,8 @@ First, we'll construct an example object hierarchy.
     >>> class IRecipe(Interface):
     ...     pass
 
-    >>> class BaseContent:
-    ...     implements(ICanonicalUrlData)
-    ...
+    >>> @implementer(ICanonicalUrlData)
+    ... class BaseContent:
     ...     def __init__(self, name, parent):
     ...         self.name = name
     ...         self.path = name
@@ -30,11 +29,13 @@ First, we'll construct an example object hierarchy.
     >>> class Root(BaseContent):
     ...     pass
 
-    >>> class Cookbook(BaseContent):
-    ...     implements(ICookbook)
+    >>> @implementer(ICookbook)
+    ... class Cookbook(BaseContent):
+    ...     pass
 
-    >>> class Recipe(BaseContent):
-    ...     implements(IRecipe)
+    >>> @implementer(IRecipe)
+    ... class Recipe(BaseContent):
+    ...     pass
 
 Here is the structure of our hierarchy:
 
@@ -50,8 +51,8 @@ We'll try adapting our objects to a made-up interface, ICookingDirections.
     >>> class ICookingDirections(Interface):
     ...     """Something that tells us how to cook."""
 
-    >>> class CookingDirections:
-    ...     implements(ICookingDirections)
+    >>> @implementer(ICookingDirections)
+    ... class CookingDirections:
     ...     def __init__(self, context):
     ...         self.context = context
 
@@ -121,8 +122,8 @@ First we need a named adapter to use:
     >>> class ILabelledCookbook(Interface):
     ...     """ A recipe with a name."""
 
-    >>> class LabelledCookbook:
-    ...     implements(ILabelledCookbook)
+    >>> @implementer(ILabelledCookbook)
+    ... class LabelledCookbook:
     ...     def __init__(self, context):
     ...         self.context = context
 

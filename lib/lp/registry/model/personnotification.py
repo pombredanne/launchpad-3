@@ -16,7 +16,7 @@ from sqlobject import (
     ForeignKey,
     StringCol,
     )
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.registry.interfaces.personnotification import (
     IPersonNotification,
@@ -36,9 +36,9 @@ from lp.services.mail.sendmail import (
 from lp.services.propertycache import cachedproperty
 
 
+@implementer(IPersonNotification)
 class PersonNotification(SQLBase):
     """See `IPersonNotification`."""
-    implements(IPersonNotification)
 
     person = ForeignKey(dbName='person', notNull=True, foreignKey='Person')
     date_created = UtcDateTimeCol(notNull=True, default=UTC_NOW)
@@ -75,9 +75,9 @@ class PersonNotification(SQLBase):
         self.date_emailed = datetime.now(pytz.timezone('UTC'))
 
 
+@implementer(IPersonNotificationSet)
 class PersonNotificationSet:
     """See `IPersonNotificationSet`."""
-    implements(IPersonNotificationSet)
 
     def getNotificationsToSend(self):
         """See `IPersonNotificationSet`."""
