@@ -193,8 +193,7 @@ def build_inline_comments_section(comments, diff_text):
         diff_lines, allow_dirty=True, keep_dirty=True)
     result_lines = []
     line_count = 0  # track lines in original diff
-    import pdb
-    #pdb.set_trace()
+
     for patch in diff_patches:
         patch_lines = []
         dirty_head = []
