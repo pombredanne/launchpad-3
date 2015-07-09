@@ -11,7 +11,7 @@ __all__ = [
     'TranslationSharingJobDerived',
     ]
 
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 from lazr.enum import (
     DBEnumeratedType,
     DBItem,
@@ -63,6 +63,7 @@ class TranslationSharingJobType(DBEnumeratedType):
         """)
 
 
+@delegate_to(IJob, context='job')
 class TranslationSharingJob(StormBase):
     """Base class for jobs related to a packaging."""
 
@@ -73,8 +74,6 @@ class TranslationSharingJob(StormBase):
     job_id = Int('job')
 
     job = Reference(job_id, Job.id)
-
-    delegates(IJob, 'job')
 
     job_type = EnumCol(enum=TranslationSharingJobType, notNull=True)
 
@@ -114,12 +113,11 @@ class TranslationSharingJob(StormBase):
         return TranslationSharingJobDerived.makeSubclass(self)
 
 
+@delegate_to(ITranslationSharingJob, context='job')
 class TranslationSharingJobDerived:
     """Base class for specialized TranslationTemplate Job types."""
 
     __metaclass__ = EnumeratedSubclass
-
-    delegates(ITranslationSharingJob, 'job')
 
     def getDBClass(self):
         return TranslationSharingJob

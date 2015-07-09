@@ -21,7 +21,7 @@ __all__ = [
 
 import types
 
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 from lazr.restful.utils import get_current_browser_request
 from lazr.uri import (
     InvalidURIError,
@@ -123,9 +123,9 @@ Link = LinkData
 
 
 @implementer(ILink)
+@delegate_to(ILinkData, context='_linkdata')
 class MenuLink:
     """Adapter from ILinkData to ILink."""
-    delegates(ILinkData, context='_linkdata')
 
     # These attributes are set by the menus infrastructure.
     name = None

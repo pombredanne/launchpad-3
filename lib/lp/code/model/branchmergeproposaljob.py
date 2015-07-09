@@ -27,7 +27,7 @@ from datetime import (
     timedelta,
     )
 
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 from lazr.enum import (
     DBEnumeratedType,
     DBItem,
@@ -220,12 +220,11 @@ class BranchMergeProposalJob(StormBase):
         return BranchMergeProposalJobDerived.makeSubclass(self)
 
 
+@delegate_to(IBranchMergeProposalJob)
 class BranchMergeProposalJobDerived(BaseRunnableJob):
     """Intermediate class for deriving from BranchMergeProposalJob."""
 
     __metaclass__ = EnumeratedSubclass
-
-    delegates(IBranchMergeProposalJob)
 
     def __init__(self, job):
         self.context = job

@@ -38,7 +38,7 @@ import re
 import subprocess
 import weakref
 
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 from lazr.restful.utils import (
     get_current_browser_request,
     smartquote,
@@ -472,6 +472,7 @@ _readonly_person_settings = readonly_settings(
 
 
 @implementer(IPerson, IHasIcon, IHasLogo, IHasMugshot)
+@delegate_to(IPersonSettings, context='_person_settings')
 class Person(
     SQLBase, HasBugsBase, HasSpecificationsMixin, HasTranslationImportsMixin,
     HasBranchesMixin, HasMergeProposalsMixin, HasRequestedReviewsMixin,
@@ -500,8 +501,6 @@ class Person(
             return IStore(PersonSettings).find(
                 PersonSettings,
                 PersonSettings.person == self).one()
-
-    delegates(IPersonSettings, context='_person_settings')
 
     sortingColumns = SQL("person_sort_key(Person.displayname, Person.name)")
     # Redefine the default ordering into Storm syntax.

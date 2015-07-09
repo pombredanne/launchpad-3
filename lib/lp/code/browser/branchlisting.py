@@ -29,7 +29,7 @@ __all__ = [
 from operator import attrgetter
 import urlparse
 
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 from lazr.enum import (
     EnumeratedType,
     Item,
@@ -147,6 +147,7 @@ class BranchBadges(HasBadgeBase):
             return super(BranchBadges, self).getBadge(badge_name)
 
 
+@delegate_to(IBranch, context='context')
 class BranchListingItem(BzrIdentityMixin, BranchBadges):
     """A decorated branch.
 
@@ -154,7 +155,6 @@ class BranchListingItem(BzrIdentityMixin, BranchBadges):
     to get on the fly for each branch in the listing.  These items are
     prefetched by the view and decorate the branch.
     """
-    delegates(IBranch, 'context')
 
     def __init__(self, branch, last_commit, show_bug_badge,
                  show_blueprint_badge, show_mp_badge,

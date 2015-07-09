@@ -12,7 +12,7 @@ __all__ = [
     'BugSubscriptionListView',
     ]
 
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 from lazr.restful.interfaces import (
     IJSONRequestCache,
     IWebServiceClientRequest,
@@ -623,9 +623,9 @@ class BugPortletSubscribersWithDetails(LaunchpadView):
         return self.subscriber_data_js
 
 
+@delegate_to(IBugSubscription, context='subscription')
 class SubscriptionAttrDecorator:
     """A BugSubscription with added attributes for HTML/JS."""
-    delegates(IBugSubscription, 'subscription')
 
     def __init__(self, subscription):
         self.subscription = subscription

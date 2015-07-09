@@ -6,7 +6,7 @@ __all__ = [
     'LatestPersonSourcePackageReleaseCache',
     ]
 
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 from storm.base import Storm
 from storm.locals import (
     Int,
@@ -24,9 +24,9 @@ from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 
 
 @implementer(ILatestPersonSourcePackageReleaseCache)
+@delegate_to(ISourcePackageRelease, context='sourcepackagerelease')
 class LatestPersonSourcePackageReleaseCache(Storm):
     """See `LatestPersonSourcePackageReleaseCache`."""
-    delegates(ISourcePackageRelease, context='sourcepackagerelease')
 
     __storm_table__ = 'LatestPersonSourcePackageReleaseCache'
 

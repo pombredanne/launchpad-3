@@ -16,7 +16,7 @@ __all__ = [
 
 from collections import defaultdict
 
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 from zope.component import getUtility
 
 from lp.registry.model.distroseries import DistroSeries
@@ -30,13 +30,13 @@ from lp.soyuz.interfaces.publishing import (
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 
 
+@delegate_to(ISourcePackageRelease)
 class ArchiveSourcePackageRelease:
     """Decorated `SourcePackageRelease` with cached 'upload_changesfile'.
 
     It receives the related upload changesfile, so it doesn't need
     to be recalculated.
     """
-    delegates(ISourcePackageRelease)
 
     def __init__(self, context, changesfile):
         self.context = context
@@ -48,13 +48,13 @@ class ArchiveSourcePackageRelease:
         return self._changesfile
 
 
+@delegate_to(ISourcePackagePublishingHistory)
 class ArchiveSourcePublication:
     """Delegates to `ISourcePackagePublishingHistory`.
 
     It receives the expensive external references when it is created
     and provide them as through the decorated interface transparently.
     """
-    delegates(ISourcePackagePublishingHistory)
 
     def __init__(self, context, changesfile, status_summary):
         self.context = context

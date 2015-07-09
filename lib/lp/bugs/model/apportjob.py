@@ -11,7 +11,7 @@ __all__ = [
 
 from cStringIO import StringIO
 
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 import simplejson
 from sqlobject import SQLObjectNotFound
 from storm.expr import And
@@ -70,7 +70,7 @@ class ApportJob(StormBase):
 
     # The metadata property because it needs to be modifiable by
     # subclasses of ApportJobDerived. However, since ApportJobDerived
-    # only delegates() to ApportJob we can't simply directly access the
+    # only delegates to ApportJob we can't simply directly access the
     # _json_data property, so we use a getter and setter here instead.
     def _set_metadata(self, metadata):
         self._json_data = unicode(
@@ -111,11 +111,11 @@ class ApportJob(StormBase):
         return ApportJobDerived.makeSubclass(self)
 
 
+@delegate_to(IApportJob)
 @provider(IApportJobSource)
 class ApportJobDerived(BaseRunnableJob):
     """Intermediate class for deriving from ApportJob."""
     __metaclass__ = EnumeratedSubclass
-    delegates(IApportJob)
 
     def __init__(self, job):
         self.context = job

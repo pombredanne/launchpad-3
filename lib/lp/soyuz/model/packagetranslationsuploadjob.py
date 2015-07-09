@@ -8,7 +8,7 @@ __all__ = [
     'PackageTranslationsUploadJob',
     ]
 
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 import simplejson
 from zope.component import getUtility
 from zope.interface import (
@@ -69,12 +69,12 @@ def _filter_ubuntu_translation_file(filename):
     return filename
 
 
+@delegate_to(IPackageTranslationsUploadJob)
 @provider(IPackageTranslationsUploadJobSource)
 class PackageTranslationsUploadJobDerived(BaseRunnableJob):
 
     __metaclass__ = EnumeratedSubclass
 
-    delegates(IPackageTranslationsUploadJob)
     config = config.IPackageTranslationsUploadJobSource
 
     def __init__(self, job):

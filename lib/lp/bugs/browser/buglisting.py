@@ -26,7 +26,7 @@ import os.path
 import urllib
 import urlparse
 
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 from lazr.restful.interfaces import IJSONRequestCache
 from lazr.uri import URI
 import pystache
@@ -601,6 +601,7 @@ def get_buglisting_search_filter_url(
     return search_filter_url
 
 
+@delegate_to(IBugTask, context='bugtask')
 class BugTaskListingItem:
     """A decorated bug task.
 
@@ -608,7 +609,6 @@ class BugTaskListingItem:
     to get on the fly for each bug task in the listing.  These items are
     prefetched by the view and decorate the bug task.
     """
-    delegates(IBugTask, 'bugtask')
 
     def __init__(self, bugtask, has_bug_branch,
                  has_specification, has_patch, tags,

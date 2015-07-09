@@ -10,7 +10,7 @@ __all__ = [
     'CodeReviewDisplayComment',
     ]
 
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 from lazr.restful.interface import copy_field
 from zope.component import getUtility
 from zope.formlib.widgets import (
@@ -57,6 +57,7 @@ class ICodeReviewDisplayComment(IComment, ICodeReviewComment):
 
 
 @implementer(ICodeReviewDisplayComment)
+@delegate_to(ICodeReviewComment, context='comment')
 class CodeReviewDisplayComment(MessageComment):
     """A code review comment or activity or both.
 
@@ -64,8 +65,6 @@ class CodeReviewDisplayComment(MessageComment):
     this is purely a display interface, and doesn't make sense to have display
     only code in the model itself.
     """
-
-    delegates(ICodeReviewComment, 'comment')
 
     def __init__(self, comment, from_superseded=False, limit_length=True):
         if limit_length:
@@ -140,10 +139,9 @@ class CodeReviewCommentContextMenu(ContextMenu):
 
 
 @implementer(ILibraryFileAlias)
+@delegate_to(ILibraryFileAlias, context='alias')
 class DiffAttachment:
     """An attachment that we are going to display."""
-
-    delegates(ILibraryFileAlias, 'alias')
 
     def __init__(self, alias):
         self.alias = alias

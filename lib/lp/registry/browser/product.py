@@ -46,7 +46,7 @@ __all__ = [
 from operator import attrgetter
 
 from bzrlib.revision import NULL_REVISION
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 from lazr.restful.interface import (
     copy_field,
     use_template,
@@ -688,6 +688,7 @@ class SortSeriesMixin:
         return self._sorted_filtered_list(check_active)
 
 
+@delegate_to(IProduct, context='product')
 class ProductWithSeries:
     """A decorated product that includes series data.
 
@@ -701,7 +702,6 @@ class ProductWithSeries:
     # variables to self.product, which would bypass the caching.
     series = None
     development_focus = None
-    delegates(IProduct, 'product')
 
     def __init__(self, product):
         self.product = product
@@ -726,9 +726,9 @@ class ProductWithSeries:
             self.release_by_id[release.id] = release_delegate
 
 
+@delegate_to(IProductSeries, context='series')
 class DecoratedSeries:
     """A decorated series that includes helper attributes for templates."""
-    delegates(IProductSeries, 'series')
 
     def __init__(self, series):
         self.series = series
@@ -781,6 +781,7 @@ class SeriesWithReleases(DecoratedSeries):
         return False
 
 
+@delegate_to(IProductRelease, context='release')
 class ReleaseWithFiles:
     """A decorated release that includes product release files.
 
@@ -793,7 +794,6 @@ class ReleaseWithFiles:
     # this class will not delegate the actual instance variables to
     # self.release, which would raise an AttributeError.
     parent = None
-    delegates(IProductRelease, 'release')
 
     def __init__(self, release, parent):
         self.release = release

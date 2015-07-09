@@ -9,7 +9,7 @@ __all__ = [
     'PersonTransferJob',
     ]
 
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 import simplejson
 from storm.expr import (
     And,
@@ -127,6 +127,7 @@ class PersonTransferJob(StormBase):
         return PersonTransferJobDerived.makeSubclass(self)
 
 
+@delegate_to(IPersonTransferJob)
 @provider(IPersonTransferJobSource)
 class PersonTransferJobDerived(BaseRunnableJob):
     """Intermediate class for deriving from PersonTransferJob.
@@ -139,7 +140,6 @@ class PersonTransferJobDerived(BaseRunnableJob):
     """
 
     __metaclass__ = EnumeratedSubclass
-    delegates(IPersonTransferJob)
 
     def __init__(self, job):
         self.context = job

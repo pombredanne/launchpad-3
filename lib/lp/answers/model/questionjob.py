@@ -8,7 +8,7 @@ __all__ = [
     'QuestionJob',
     ]
 
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 import simplejson
 from storm.expr import And
 from storm.locals import (
@@ -99,12 +99,12 @@ class QuestionJob(StormBase):
         return QuestionEmailJob(self)
 
 
+@delegate_to(IQuestionJob)
 @implementer(IQuestionEmailJob)
 @provider(IQuestionEmailJobSource)
 class QuestionEmailJob(BaseRunnableJob):
     """Intermediate class for deriving from QuestionJob."""
 
-    delegates(IQuestionJob)
     config = config.IQuestionEmailJobSource
 
     def __init__(self, job):
