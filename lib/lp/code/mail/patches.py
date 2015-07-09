@@ -1,3 +1,6 @@
+# This file was cloned from bzr-2.6.0-lp-3 (bzrlib.patches) and
+# customised for LP.
+#
 # Copyright (C) 2005-2010 Aaron Bentley, Canonical Ltd
 # <aaron.bentley@utoronto.ca>
 #

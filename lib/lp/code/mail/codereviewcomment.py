@@ -10,7 +10,6 @@ __all__ = [
     'CodeReviewCommentMailer',
     ]
 
-import patches
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -21,6 +20,7 @@ from lp.code.interfaces.branchmergeproposal import (
 from lp.code.interfaces.codereviewinlinecomment import (
     ICodeReviewInlineCommentSet,
     )
+from lp.code.mail import patches
 from lp.code.mail.branchmergeproposal import BMPMailer
 from lp.services.mail.sendmail import (
     append_footer,
