@@ -98,6 +98,21 @@ class RosettaTranslationsUpload(CustomUpload):
             # packages in main.
             return
 
+        if distroseries != packageupload.distroseries:
+            # Make sure that the target distroseries has a matching
+            # Packaging record, since we want to make sure that exists
+            # before importing translations so that message sharing works.
+            sourcepackage = distroseries.getSourcePackage(spr.name)
+            if sourcepackage is not None and sourcepackage.packaging is None:
+                original_sourcepackage = (
+                    packageupload.distroseries.getSourcePackage(spr.name))
+                if original_sourcepackage is not None:
+                    original_packaging = original_sourcepackage.packaging
+                    if original_packaging is not None:
+                        sourcepackage.setPackaging(
+                            original_packaging.productseries,
+                            original_packaging.owner)
+
         blamee = (packageupload.findPersonToNotify() or
                   latest_publication.creator or
                   getUtility(ILaunchpadCelebrities).rosetta_experts)
