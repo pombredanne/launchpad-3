@@ -3,7 +3,6 @@
 
 """Test CodeReviewComment emailing functionality."""
 
-
 import testtools
 import transaction
 from zope.component import getUtility
@@ -382,9 +381,9 @@ class TestInlineCommentsSection(testtools.TestCase):
 
     diff_text = (
         "=== added directory 'foo/bar'\n"
-        "=== modified file 'foo/bar/baz.py'\n"
-        "--- bar\t2009-08-26 15:53:34.000000000 -0400\n"
-        "+++ bar\t1969-12-31 19:00:00.000000000 -0500\n"
+        "=== modified file 'foo/bar/bar.py'\n"
+        "--- bar.py\t2009-08-26 15:53:34.000000000 -0400\n"
+        "+++ bar.py\t1969-12-31 19:00:00.000000000 -0500\n"
         "@@ -1,3 +0,0 @@\n"
         "-\xc3\xa5\n"
         "-b\n"
@@ -404,7 +403,35 @@ class TestInlineCommentsSection(testtools.TestCase):
         "-b\n"
         " c\n"
         "+d\n"
-        "+e\n")
+        "+e\n"
+        "\n"
+        "=== modified file 'fulango.py'\n"
+        "--- fulano.py\t2014-08-26 15:53:34.000000000 -0400\n"
+        "+++ fulano.py\t2015-12-31 19:00:00.000000000 -0500\n"
+        "@@ -1,3 +1,4 @@\n"
+        " a\n"
+        "-fulano\n"
+        " c\n"
+        "+mengano\n"
+        "+zutano\n")
+
+    git_diff_text = (
+        "diff --git a/foo b/foo\n"
+        "index 5716ca5..7601807 100644\n"
+        "--- a/foo\n"
+        "+++ b/foo\n"
+        "@@ -1 +1 @@\n"
+        "-bar\n"
+        "+baz\n"
+        "diff --git a/fulano b/fulano\n"
+        "index 5716ca5..7601807 100644\n"
+        "--- a/fulano\n"
+        "+++ b/fulano\n"
+        "@@ -1,3 +1,3 @@\n"
+        " fulano\n"
+        " \n"
+        "-mengano\n"
+        "+zutano\n")
 
     binary_diff_text = (
         "=== added file 'lib/canonical/launchpad/images/foo.png'\n"
@@ -412,9 +439,10 @@ class TestInlineCommentsSection(testtools.TestCase):
         "1970-01-01 00:00:00 +0000 and "
         "lib/canonical/launchpad/images/foo.png\t"
         "2015-06-21 22:07:50 +0000 differ\n"
-        "=== modified file 'foo/bar/baz.py'\n"
-        "--- bar\t2009-08-26 15:53:34.000000000 -0400\n"
-        "+++ bar\t1969-12-31 19:00:00.000000000 -0500\n"
+        "\n"
+        "=== modified file 'foo/bar/bar.py'\n"
+        "--- bar.py\t2009-08-26 15:53:34.000000000 -0400\n"
+        "+++ bar.py\t1969-12-31 19:00:00.000000000 -0500\n"
         "@@ -1,3 +0,0 @@\n"
         "-a\n"
         "-b\n"
@@ -443,7 +471,7 @@ class TestInlineCommentsSection(testtools.TestCase):
 
     def test_binary_patch_in_diff(self):
         # Binary patches with comments are handled appropriately.
-        comments = {'1': 'Updated the png', '2': 'foo', '8': 'bar'}
+        comments = {'1': 'Updated the png', '2': 'foo', '9': 'bar'}
         section = self.getSection(comments, diff_text=self.binary_diff_text)
         self.assertEqual(
             map(unicode, [
@@ -458,9 +486,10 @@ class TestInlineCommentsSection(testtools.TestCase):
                 "",
                 "foo",
                 "",
-                "> === modified file 'foo/bar/baz.py'",
-                "> --- bar\t2009-08-26 15:53:34.000000000 -0400",
-                "> +++ bar\t1969-12-31 19:00:00.000000000 -0500",
+                "> ",
+                "> === modified file 'foo/bar/bar.py'",
+                "> --- bar.py\t2009-08-26 15:53:34.000000000 -0400",
+                "> +++ bar.py\t1969-12-31 19:00:00.000000000 -0500",
                 "> @@ -1,3 +0,0 @@",
                 "> -a",
                 "> -b",
@@ -468,7 +497,7 @@ class TestInlineCommentsSection(testtools.TestCase):
                 "bar",
                 "",
                 "> -c"]),
-            section.splitlines()[4:22])
+            section.splitlines()[4:23])
 
     def test_single_line_comment(self):
         # The inline comments are correctly contextualized in the diff.
@@ -476,11 +505,43 @@ class TestInlineCommentsSection(testtools.TestCase):
         comments = {'4': '\u03b4\u03bf\u03ba\u03b9\u03bc\u03ae'}
         self.assertEqual(
             map(unicode, [
-                '> +++ bar\t1969-12-31 19:00:00.000000000 -0500',
+                '> +++ bar.py\t1969-12-31 19:00:00.000000000 -0500',
                 '',
                 '\u03b4\u03bf\u03ba\u03b9\u03bc\u03ae',
                 '']),
             self.getSection(comments).splitlines()[7:11])
+
+    def test_comments_in_git_diff(self):
+        comments = {'1': 'foo', '5': 'bar', '15': 'baz'}
+        section = self.getSection(comments, diff_text=self.git_diff_text)
+        self.assertEqual(
+            map(unicode, [
+                "> diff --git a/foo b/foo",
+                "",
+                "foo",
+                "",
+                "> index 5716ca5..7601807 100644",
+                "> --- a/foo",
+                "> +++ b/foo",
+                "> @@ -1 +1 @@",
+                "",
+                "bar",
+                "",
+                "> -bar",
+                "> +baz",
+                "> diff --git a/fulano b/fulano",
+                "> index 5716ca5..7601807 100644",
+                "> --- a/fulano",
+                "> +++ b/fulano",
+                "> @@ -1,3 +1,3 @@",
+                ">  fulano",
+                ">  ",
+                "> -mengano",
+                "",
+                "baz",
+                "",
+                "> +zutano"]),
+            section.splitlines()[4:29])
 
     def test_commentless_hunks_ignored(self):
         # Hunks without inline comments are not returned in the diff text.
@@ -556,13 +617,32 @@ class TestInlineCommentsSection(testtools.TestCase):
                 '> +b']),
             self.getSection(comments).splitlines()[4:12])
 
+    def test_comment_in_patch_after_linebreak(self):
+        comments = {'31': 'que?'}
+        self.assertEqual(
+            map(unicode, [
+                "> ",
+                "> === modified file 'fulango.py'",
+                "> --- fulano.py\t2014-08-26 15:53:34.000000000 -0400",
+                "> +++ fulano.py\t2015-12-31 19:00:00.000000000 -0500",
+                "> @@ -1,3 +1,4 @@",
+                ">  a",
+                "> -fulano",
+                "",
+                "que?",
+                "",
+                ">  c",
+                "> +mengano",
+                "> +zutano"]),
+            self.getSection(comments).splitlines()[4:17])
+
     def test_multi_line_comment(self):
         # Inline comments with multiple lines are rendered appropriately.
         comments = {'4': 'Foo\nBar'}
         self.assertEqual(
             map(unicode, [
-                '> --- bar\t2009-08-26 15:53:34.000000000 -0400',
-                '> +++ bar\t1969-12-31 19:00:00.000000000 -0500',
+                '> --- bar.py\t2009-08-26 15:53:34.000000000 -0400',
+                '> +++ bar.py\t1969-12-31 19:00:00.000000000 -0500',
                 '',
                 'Foo',
                 'Bar',
@@ -573,7 +653,7 @@ class TestInlineCommentsSection(testtools.TestCase):
         # Multiple inline comments are redered appropriately.
         comments = {'4': 'Foo', '5': 'Bar'}
         self.assertEqual(
-            ['> +++ bar\t1969-12-31 19:00:00.000000000 -0500',
+            ['> +++ bar.py\t1969-12-31 19:00:00.000000000 -0500',
              '',
              'Foo',
              '',
