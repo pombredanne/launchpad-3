@@ -429,12 +429,13 @@ class TestInlineCommentsSection(testtools.TestCase):
         "@@ -1 +1 @@\n"
         "-bar\n"
         "+baz\n"
-        "\n"
         "diff --git a/fulano b/fulano\n"
         "index 5716ca5..7601807 100644\n"
         "--- a/fulano\n"
         "+++ b/fulano\n"
-        "@@ -1 +1 @@\n"
+        "@@ -1,3 +1,3 @@\n"
+        " fulano\n"
+        " \n"
         "-mengano\n"
         "+zutano\n")
 
@@ -517,7 +518,7 @@ class TestInlineCommentsSection(testtools.TestCase):
             self.getSection(comments).splitlines()[7:11])
 
     def test_comments_in_git_diff(self):
-        comments = {'1': 'foo', '5': 'bar', '14': 'baz'}
+        comments = {'1': 'foo', '5': 'bar', '15': 'baz'}
         section = self.getSection(comments, diff_text=self.git_diff_text)
         self.assertEqual(
             map(unicode, [
@@ -534,18 +535,19 @@ class TestInlineCommentsSection(testtools.TestCase):
                 "",
                 "> -bar",
                 "> +baz",
-                "> ",
                 "> diff --git a/fulano b/fulano",
                 "> index 5716ca5..7601807 100644",
                 "> --- a/fulano",
                 "> +++ b/fulano",
-                "> @@ -1 +1 @@",
+                "> @@ -1,3 +1,3 @@",
+                ">  fulano",
+                ">  ",
                 "> -mengano",
                 "",
                 "baz",
                 "",
                 "> +zutano"]),
-            section.splitlines()[4:28])
+            section.splitlines()[4:29])
 
     def test_commentless_hunks_ignored(self):
         # Hunks without inline comments are not returned in the diff text.
