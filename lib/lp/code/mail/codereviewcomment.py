@@ -10,7 +10,8 @@ __all__ = [
     'CodeReviewCommentMailer',
     ]
 
-from bzrlib import patches
+#from bzrlib import patches
+import patches
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -192,7 +193,6 @@ def build_inline_comments_section(comments, diff_text):
         diff_lines, allow_dirty=True, keep_dirty=True)
     result_lines = []
     line_count = 0  # track lines in original diff
-    first_dirty = True
 
     for patch in diff_patches:
         patch_lines = []
@@ -201,11 +201,6 @@ def build_inline_comments_section(comments, diff_text):
         patch_comment = False
 
         if isinstance(patch, dict) and 'dirty_head' in patch:
-            # Count preceding blank lines for all but first dirty header
-            if not first_dirty:
-                line_count += 1
-            first_dirty = False
-
             for line in patch['dirty_head']:
                 dirty_head.append(u'> %s' % line.rstrip('\n'))
                 line_count += 1  # inc for dirty headers

@@ -3,6 +3,7 @@
 
 """Test CodeReviewComment emailing functionality."""
 
+import os
 import testtools
 import transaction
 from zope.component import getUtility
@@ -379,6 +380,11 @@ class TestCodeReviewComment(TestCaseWithFactory):
 class TestInlineCommentsSection(testtools.TestCase):
     """Tests for `build_inline_comments_section`."""
 
+    def datafile(self, filename):
+        data_path = os.path.join(os.path.dirname(__file__),
+                                 "test_data", filename)
+        return file(data_path, "rb")
+
     diff_text = (
         "=== added directory 'foo/bar'\n"
         "=== modified file 'foo/bar/bar.py'\n"
@@ -404,7 +410,7 @@ class TestInlineCommentsSection(testtools.TestCase):
         " c\n"
         "+d\n"
         "+e\n"
-        " \n"
+        "\n"
         "=== modified file 'fulango.py'\n"
         "--- fulano.py\t2014-08-26 15:53:34.000000000 -0400\n"
         "+++ fulano.py\t2015-12-31 19:00:00.000000000 -0500\n"
@@ -567,8 +573,6 @@ class TestInlineCommentsSection(testtools.TestCase):
             self.getSection(comments).splitlines()[4:12])
 
     def test_comment_in_patch_after_linebreak(self):
-        # Ensure blank lines preceding patches with dirty headers
-        # are handled appropriately.
         comments = {'31': 'que?'}
         self.assertEqual(
             map(unicode, [
