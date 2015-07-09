@@ -40,7 +40,7 @@ from storm.store import Store
 from storm.zope import IResultSet
 from storm.zope.interfaces import ISQLObjectResultSet
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 from zope.security.proxy import (
     isinstance as zope_isinstance,
     removeSecurityProxy,
@@ -173,6 +173,7 @@ class FilePublishingBase:
                 self.libraryfilealiasfilename)
 
 
+@implementer(ISourcePackageFilePublishing)
 class SourcePackageFilePublishing(FilePublishingBase, SQLBase):
     """Source package release files and their publishing status.
 
@@ -181,8 +182,6 @@ class SourcePackageFilePublishing(FilePublishingBase, SQLBase):
 
     _idType = unicode
     _defaultOrder = "id"
-
-    implements(ISourcePackageFilePublishing)
 
     distribution = ForeignKey(dbName='distribution',
                               foreignKey="Distribution",
@@ -223,6 +222,7 @@ class SourcePackageFilePublishing(FilePublishingBase, SQLBase):
         return self.sourcepackagepublishing
 
 
+@implementer(IBinaryPackageFilePublishing)
 class BinaryPackageFilePublishing(FilePublishingBase, SQLBase):
     """A binary package file which is published.
 
@@ -231,8 +231,6 @@ class BinaryPackageFilePublishing(FilePublishingBase, SQLBase):
 
     _idType = unicode
     _defaultOrder = "id"
-
-    implements(IBinaryPackageFilePublishing)
 
     binarypackagepublishing = ForeignKey(
         dbName='binarypackagepublishing',
@@ -328,9 +326,9 @@ class ArchivePublisherBase:
         return self.section.name
 
 
+@implementer(ISourcePackagePublishingHistory)
 class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     """A source package release publishing record."""
-    implements(ISourcePackagePublishingHistory)
 
     sourcepackagename = ForeignKey(
         foreignKey='SourcePackageName', dbName='sourcepackagename')
@@ -698,10 +696,9 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             [self], removed_by, removal_comment)
 
 
+@implementer(IBinaryPackagePublishingHistory)
 class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
     """A binary package publishing record."""
-
-    implements(IBinaryPackagePublishingHistory)
 
     binarypackagename = ForeignKey(
         foreignKey='BinaryPackageName', dbName='binarypackagename')
@@ -1108,10 +1105,9 @@ def expand_binary_requests(distroseries, binaries):
     return expanded
 
 
+@implementer(IPublishingSet)
 class PublishingSet:
     """Utilities for manipulating publications in batches."""
-
-    implements(IPublishingSet)
 
     def publishBinaries(self, archive, distroseries, pocket, binaries):
         """See `IPublishingSet`."""

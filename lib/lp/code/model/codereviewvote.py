@@ -12,7 +12,7 @@ from sqlobject import (
     ForeignKey,
     StringCol,
     )
-from zope.interface import implements
+from zope.interface import implementer
 from zope.schema import Int
 
 from lp.code.errors import (
@@ -26,10 +26,9 @@ from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.sqlbase import SQLBase
 
 
+@implementer(ICodeReviewVoteReference)
 class CodeReviewVoteReference(SQLBase):
     """See `ICodeReviewVote`"""
-
-    implements(ICodeReviewVoteReference)
 
     _table = 'CodeReviewVote'
     id = Int()

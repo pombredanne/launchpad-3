@@ -11,17 +11,16 @@ from storm.locals import (
     Reference,
     Storm,
     )
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.code.interfaces.branchrevision import IBranchRevision
 
 
+@implementer(IBranchRevision)
 class BranchRevision(Storm):
     """See `IBranchRevision`."""
     __storm_table__ = 'BranchRevision'
     __storm_primary__ = ("branch_id", "revision_id")
-
-    implements(IBranchRevision)
 
     branch_id = Int(name='branch', allow_none=False)
     branch = Reference(branch_id, 'Branch.id')

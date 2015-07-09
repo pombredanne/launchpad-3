@@ -11,7 +11,7 @@ __all__ = [
     ]
 
 from sqlobject import ForeignKey
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
@@ -27,8 +27,8 @@ from lp.translations.interfaces.languagepack import (
     )
 
 
+@implementer(ILanguagePack)
 class LanguagePack(SQLBase):
-    implements(ILanguagePack)
 
     _table = 'LanguagePack'
 
@@ -48,8 +48,8 @@ class LanguagePack(SQLBase):
         notNull=False, default=None)
 
 
+@implementer(ILanguagePackSet)
 class LanguagePackSet:
-    implements(ILanguagePackSet)
 
     def addLanguagePack(self, distroseries, file_alias, type):
         """See `ILanguagePackSet`."""

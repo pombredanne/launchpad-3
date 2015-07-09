@@ -13,7 +13,7 @@ __all__ = [
 from storm.expr import Desc
 from zope.component import getUtility
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     )
 
@@ -42,9 +42,9 @@ class IGitRepositoryBatchNavigator(Interface):
     pass
 
 
+@implementer(IGitRepositoryBatchNavigator)
 class GitRepositoryBatchNavigator(TableBatchNavigator):
     """Batch up Git repository listings."""
-    implements(IGitRepositoryBatchNavigator)
 
     variable_name_prefix = 'repo'
 

@@ -16,7 +16,7 @@ from testtools.matchers import (
     MatchesSetwise,
     MatchesStructure,
     )
-from zope.interface import implements
+from zope.interface import implementer
 from zope.security.proxy import removeSecurityProxy
 
 from lp.code.enums import GitObjectType
@@ -48,9 +48,8 @@ from lp.testing.layers import (
     )
 
 
+@implementer(IGitHostingClient)
 class FakeGitHostingClient:
-
-    implements(IGitHostingClient)
 
     def __init__(self, refs, commits, default_branch=u"refs/heads/master"):
         self._refs = refs

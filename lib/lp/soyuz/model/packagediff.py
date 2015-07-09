@@ -18,7 +18,7 @@ from sqlobject import ForeignKey
 from storm.expr import Desc
 from storm.store import EmptyResultSet
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.services.database.bulk import load
 from lp.services.database.constants import UTC_NOW
@@ -96,10 +96,9 @@ def download_file(destination_path, libraryfile):
     copy_and_close(libraryfile, destination_file)
 
 
+@implementer(IPackageDiff)
 class PackageDiff(SQLBase):
     """A Package Diff request."""
-
-    implements(IPackageDiff)
 
     _defaultOrder = ['id']
 
@@ -251,10 +250,9 @@ class PackageDiff(SQLBase):
             shutil.rmtree(tmp_dir)
 
 
+@implementer(IPackageDiffSet)
 class PackageDiffSet:
     """This class is to deal with Distribution related stuff"""
-
-    implements(IPackageDiffSet)
 
     def __iter__(self):
         """See `IPackageDiffSet`."""

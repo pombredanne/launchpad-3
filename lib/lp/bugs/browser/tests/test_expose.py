@@ -15,7 +15,7 @@ from testtools.matchers import (
     Equals,
     KeysEqual,
     )
-from zope.interface import implements
+from zope.interface import implementer
 from zope.traversing.browser import absoluteURL
 
 from lp.bugs.browser.structuralsubscription import (
@@ -45,10 +45,10 @@ from lp.testing.matchers import (
     )
 
 
+@implementer(IWebServiceClientRequest, IJSONRequestCache)
 class FakeRequest:
     """A request that implements some interfaces so adapting returns itself.
     """
-    implements(IWebServiceClientRequest, IJSONRequestCache)
 
     def __init__(self):
         self.objects = {}

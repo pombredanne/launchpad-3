@@ -10,7 +10,7 @@ from sqlobject import (
     ForeignKey,
     StringCol,
     )
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.database.decoratedresultset import DecoratedResultSet
@@ -28,8 +28,8 @@ from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
+@implementer(IDistributionSourcePackageCache)
 class DistributionSourcePackageCache(SQLBase):
-    implements(IDistributionSourcePackageCache)
     _table = 'DistributionSourcePackageCache'
 
     archive = ForeignKey(dbName='archive',

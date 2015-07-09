@@ -35,7 +35,7 @@ from storm.expr import (
 from storm.locals import Store
 from storm.zope import IResultSet
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.errors import NotFoundError
 from lp.blueprints.model.specification import Specification
@@ -93,8 +93,8 @@ def milestone_sort_key(milestone):
     return (date, expand_numbers(milestone.name))
 
 
+@implementer(IHasMilestones)
 class HasMilestonesMixin:
-    implements(IHasMilestones)
 
     _milestone_order = (
         'milestone_sort_key(Milestone.dateexpected, Milestone.name) DESC')
@@ -147,8 +147,8 @@ class InvalidTags(Exception):
         super(InvalidTags, self).__init__(msg)
 
 
+@implementer(IMilestoneData)
 class MilestoneData:
-    implements(IMilestoneData)
 
     @property
     def displayname(self):
@@ -207,9 +207,9 @@ class MilestoneData:
         return non_conjoined_slaves
 
 
+@implementer(IHasBugs, IMilestone, IBugSummaryDimension)
 class Milestone(SQLBase, MilestoneData, StructuralSubscriptionTargetMixin,
                 HasBugsBase):
-    implements(IHasBugs, IMilestone, IBugSummaryDimension)
 
     active = BoolCol(notNull=True, default=True)
 
@@ -381,8 +381,8 @@ class Milestone(SQLBase, MilestoneData, StructuralSubscriptionTargetMixin,
         return self.product.userCanView(user)
 
 
+@implementer(IMilestoneSet)
 class MilestoneSet:
-    implements(IMilestoneSet)
 
     def __iter__(self):
         """See lp.registry.interfaces.milestone.IMilestoneSet."""
@@ -425,6 +425,7 @@ class MilestoneSet:
         return Milestone.selectBy(active=True, orderBy='id')
 
 
+@implementer(IProjectGroupMilestone)
 class ProjectMilestone(MilestoneData, HasBugsBase):
     """A virtual milestone implementation for project.
 
@@ -436,8 +437,6 @@ class ProjectMilestone(MilestoneData, HasBugsBase):
     `dateexpected` attribute of a project milestone is set to the minimum of
     the `dateexpected` values of the product milestones.
     """
-
-    implements(IProjectGroupMilestone)
 
     def __init__(self, target, name, dateexpected, active, product):
         self.code_name = None

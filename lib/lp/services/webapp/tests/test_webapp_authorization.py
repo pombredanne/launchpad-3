@@ -7,7 +7,7 @@ from unittest import TestCase
 
 from zope.component import provideAdapter
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     )
 from zope.testing.cleanup import CleanUp
@@ -75,8 +75,8 @@ class ILoneObject(Interface):
     """A marker interface for objects that only contain themselves."""
 
 
+@implementer(ILoneObject, ILaunchpadContainer)
 class LoneObject:
-    implements(ILoneObject, ILaunchpadContainer)
 
     def isWithin(self, context):
         return self == context

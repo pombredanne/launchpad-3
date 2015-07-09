@@ -22,8 +22,8 @@ from storm.locals import (
     )
 from zope.component import getUtility
 from zope.interface import (
-    classProvides,
-    implements,
+    implementer,
+    provider,
     )
 
 from lp.bugs.interfaces.apportjob import (
@@ -50,10 +50,9 @@ from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.temporaryblobstorage.model import TemporaryBlobStorage
 
 
+@implementer(IApportJob)
 class ApportJob(StormBase):
     """Base class for jobs related to Apport BLOBs."""
-
-    implements(IApportJob)
 
     __storm_table__ = 'ApportJob'
 
@@ -112,11 +111,11 @@ class ApportJob(StormBase):
         return ApportJobDerived.makeSubclass(self)
 
 
+@provider(IApportJobSource)
 class ApportJobDerived(BaseRunnableJob):
     """Intermediate class for deriving from ApportJob."""
     __metaclass__ = EnumeratedSubclass
     delegates(IApportJob)
-    classProvides(IApportJobSource)
 
     def __init__(self, job):
         self.context = job
@@ -169,12 +168,12 @@ class ApportJobDerived(BaseRunnableJob):
         return vars
 
 
+@implementer(IProcessApportBlobJob)
+@provider(IProcessApportBlobJobSource)
 class ProcessApportBlobJob(ApportJobDerived):
     """A Job to process an Apport BLOB."""
-    implements(IProcessApportBlobJob)
 
     class_job_type = ApportJobType.PROCESS_BLOB
-    classProvides(IProcessApportBlobJobSource)
 
     config = config.IProcessApportBlobJobSource
 

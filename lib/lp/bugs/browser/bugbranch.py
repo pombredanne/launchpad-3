@@ -17,7 +17,7 @@ from zope.component import (
     getMultiAdapter,
     )
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     )
 
@@ -138,9 +138,9 @@ class BranchLinkToBugView(LaunchpadFormView):
         bug.linkBranch(branch=self.context, registrant=self.user)
 
 
+@implementer(Interface)
 class BugBranchXHTMLRepresentation:
     adapts(IBugBranch, IWebServiceClientRequest)
-    implements(Interface)
 
     def __init__(self, branch, request):
         self.branch = branch

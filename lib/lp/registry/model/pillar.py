@@ -21,8 +21,8 @@ from storm.locals import SQL
 from storm.store import Store
 from zope.component import getUtility
 from zope.interface import (
-    classProvides,
-    implements,
+    implementer,
+    provider,
     )
 
 from lp.app.errors import NotFoundError
@@ -79,8 +79,8 @@ def pillar_sort_key(pillar):
     return (distribution_name, product_name)
 
 
+@implementer(IPillarNameSet)
 class PillarNameSet:
-    implements(IPillarNameSet)
 
     def __contains__(self, name):
         """See `IPillarNameSet`."""
@@ -271,8 +271,8 @@ class PillarNameSet:
                     query, clauseTables=['FeaturedProject'])]
 
 
+@implementer(IPillarName)
 class PillarName(SQLBase):
-    implements(IPillarName)
 
     _table = 'PillarName'
     _defaultOrder = 'name'
@@ -332,11 +332,9 @@ class HasAliasMixin:
             store.remove(pillar_name)
 
 
+@implementer(IPillarPerson)
+@provider(IPillarPersonFactory)
 class PillarPerson:
-
-    implements(IPillarPerson)
-
-    classProvides(IPillarPersonFactory)
 
     def __init__(self, pillar, person):
         self.pillar = pillar

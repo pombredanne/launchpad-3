@@ -33,7 +33,7 @@ from storm.base import Storm
 from storm.store import EmptyResultSet
 from zope.interface import (
     Attribute,
-    implements,
+    implementer,
     Interface,
     )
 from zope.schema.interfaces import (
@@ -150,6 +150,7 @@ class ICountableIterator(Interface):
         pass
 
 
+@implementer(ICountableIterator)
 class CountableIterator:
     """Implements a wrapping iterator with a count() method.
 
@@ -157,8 +158,6 @@ class CountableIterator:
     namely the portion required to have it work as part of a
     BatchNavigator.
     """
-
-    implements(ICountableIterator)
 
     def __init__(self, count, iterator, item_wrapper=None):
         """Construct a CountableIterator instance.
@@ -279,6 +278,7 @@ class FilteredVocabularyBase:
         return []
 
 
+@implementer(IVocabulary, IVocabularyTokenized)
 class SQLObjectVocabularyBase(FilteredVocabularyBase):
     """A base class for widgets that are rendered to collect values
     for attributes that are SQLObjects, e.g. ForeignKey.
@@ -293,7 +293,6 @@ class SQLObjectVocabularyBase(FilteredVocabularyBase):
     Then the vocabulary for the widget that captures a value for bar
     should derive from SQLObjectVocabularyBase.
     """
-    implements(IVocabulary, IVocabularyTokenized)
     _orderBy = None
     _filter = None
     _clauseTables = None
@@ -435,10 +434,9 @@ class NamedSQLObjectVocabulary(SQLObjectVocabularyBase):
         return self.emptySelectResults()
 
 
+@implementer(IHugeVocabulary)
 class NamedSQLObjectHugeVocabulary(NamedSQLObjectVocabulary):
     """A NamedSQLObjectVocabulary that implements IHugeVocabulary."""
-
-    implements(IHugeVocabulary)
     _orderBy = 'name'
     displayname = None
     step_title = 'Search'
@@ -470,6 +468,7 @@ class NamedSQLObjectHugeVocabulary(NamedSQLObjectVocabulary):
         return self.iterator(results.count(), results, self.toTerm)
 
 
+@implementer(IVocabulary, IVocabularyTokenized)
 class StormVocabularyBase(FilteredVocabularyBase):
     """A base class for widgets that are rendered to collect values
     for attributes that are Storm references.
@@ -485,7 +484,6 @@ class StormVocabularyBase(FilteredVocabularyBase):
     Then the vocabulary for the widget that captures a value for bar
     should derive from StormVocabularyBase.
     """
-    implements(IVocabulary, IVocabularyTokenized)
     _order_by = None
     _clauses = []
 

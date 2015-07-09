@@ -61,7 +61,7 @@ from storm.store import (
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import (
-    implements,
+    implementer,
     providedBy,
     )
 from zope.security.proxy import removeSecurityProxy
@@ -234,10 +234,9 @@ def bug_target_to_key(target):
     return values
 
 
+@implementer(IBugTaskDelta)
 class BugTaskDelta:
     """See `IBugTaskDelta`."""
-
-    implements(IBugTaskDelta)
 
     def __init__(self, bugtask, status=None, importance=None,
                  assignee=None, milestone=None, bugwatch=None, target=None):
@@ -397,9 +396,9 @@ def validate_new_target(bug, target, check_source_package=True):
         check_source_package=check_source_package)
 
 
+@implementer(IBugTask)
 class BugTask(SQLBase):
     """See `IBugTask`."""
-    implements(IBugTask)
     _table = "BugTask"
     _defaultOrder = ['distribution', 'product', 'productseries',
                      'distroseries', 'milestone', 'sourcepackagename']
@@ -1327,9 +1326,9 @@ class BugTask(SQLBase):
         return "<BugTask for bug %s on %r>" % (self.bugID, self.target)
 
 
+@implementer(IBugTaskSet)
 class BugTaskSet:
     """See `IBugTaskSet`."""
-    implements(IBugTaskSet)
 
     title = "A set of bug tasks"
 

@@ -20,7 +20,7 @@ from sqlobject import (
     )
 from storm.expr import And
 from zope.event import notify
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.answers.interfaces.faq import (
     CannotDeleteFAQ,
@@ -49,10 +49,9 @@ from lp.services.database.stormexpr import (
     )
 
 
+@implementer(IFAQ)
 class FAQ(SQLBase):
     """See `IFAQ`."""
-
-    implements(IFAQ)
 
     _table = 'FAQ'
     _defaultOrder = ['date_created', 'id']
@@ -286,10 +285,9 @@ class FAQSearch:
             raise AssertionError("Unknown FAQSort value: %r" % sort)
 
 
+@implementer(IFAQSet)
 class FAQSet:
     """See `IFAQSet`."""
-
-    implements(IFAQSet)
 
     def getFAQ(self, id):
         """See `IFAQSet`."""

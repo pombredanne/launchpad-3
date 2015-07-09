@@ -25,8 +25,8 @@ from storm.locals import (
     )
 from storm.store import Store
 from zope.interface import (
-    classProvides,
-    implements,
+    implementer,
+    provider,
     )
 
 from lp.buildmaster.enums import (
@@ -68,12 +68,11 @@ VALID_STATUS_TRANSITIONS = {
     }
 
 
+@implementer(IBuildFarmJob, IBuildFarmJobDB)
+@provider(IBuildFarmJobSource)
 class BuildFarmJob(Storm):
     """A base implementation for `IBuildFarmJob` classes."""
     __storm_table__ = 'BuildFarmJob'
-
-    implements(IBuildFarmJob, IBuildFarmJobDB)
-    classProvides(IBuildFarmJobSource)
 
     id = Int(primary=True)
 
@@ -258,8 +257,8 @@ class SpecificBuildFarmJobSourceMixin:
         return True
 
 
+@implementer(IBuildFarmJobSet)
 class BuildFarmJobSet:
-    implements(IBuildFarmJobSet)
 
     def getBuildsForBuilder(self, builder_id, status=None, user=None):
         """See `IBuildFarmJobSet`."""

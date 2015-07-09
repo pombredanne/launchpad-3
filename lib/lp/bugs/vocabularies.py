@@ -30,7 +30,7 @@ from storm.expr import (
     Or,
     )
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 from zope.schema.interfaces import (
     IVocabulary,
     IVocabularyTokenized,
@@ -113,11 +113,11 @@ class BugVocabulary(SQLObjectVocabularyBase):
     _orderBy = 'id'
 
 
+@implementer(IHugeVocabulary)
 class BugTrackerVocabulary(SQLObjectVocabularyBase):
     """All web and email based external bug trackers."""
     displayname = 'Select a bug tracker'
     step_title = 'Search'
-    implements(IHugeVocabulary)
     _table = BugTracker
     _filter = True
     _orderBy = 'title'
@@ -210,10 +210,9 @@ class BugWatchVocabulary(SQLObjectVocabularyBase):
         return SimpleTerm(watch, watch.id, title)
 
 
+@implementer(IVocabulary, IVocabularyTokenized)
 class DistributionUsingMaloneVocabulary:
     """All the distributions that uses Malone officially."""
-
-    implements(IVocabulary, IVocabularyTokenized)
 
     _orderBy = 'displayname'
 
@@ -345,14 +344,13 @@ def milestone_matches_bugtask(milestone, bugtask):
     return False
 
 
+@implementer(IVocabulary, IVocabularyTokenized)
 class BugTaskMilestoneVocabulary:
     """Milestones for a set of bugtasks.
 
     This vocabulary supports the optional preloading and caching of milestones
     in order to avoid repeated database queries.
     """
-
-    implements(IVocabulary, IVocabularyTokenized)
 
     def __init__(self, default_bugtask=None, milestones=None):
         assert default_bugtask is None or IBugTask.providedBy(default_bugtask)

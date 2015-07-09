@@ -29,16 +29,15 @@ __all__ = [
 
 
 from lazr.enum import IEnumeratedType
-from zope.interface import implements
+from zope.interface import implementer
 from zope.schema.vocabulary import (
     SimpleTerm,
     SimpleVocabulary,
     )
 
 
+@implementer(IEnumeratedType)
 class InformationTypeVocabulary(SimpleVocabulary):
-
-    implements(IEnumeratedType)
 
     def __init__(self, types):
         terms = []

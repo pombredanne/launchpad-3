@@ -32,8 +32,8 @@ from storm.locals import (
     )
 from zope.component import getUtility
 from zope.interface import (
-    classProvides,
-    implements,
+    implementer,
+    provider,
     )
 
 from lp.buildmaster.enums import BuildStatus
@@ -99,6 +99,8 @@ class _SourcePackageRecipeDistroSeries(Storm):
     distroseries = Reference(distroseries_id, 'DistroSeries.id')
 
 
+@implementer(ISourcePackageRecipe)
+@provider(ISourcePackageRecipeSource)
 class SourcePackageRecipe(Storm):
     """See `ISourcePackageRecipe` and `ISourcePackageRecipeSource`."""
 
@@ -107,10 +109,7 @@ class SourcePackageRecipe(Storm):
     def __str__(self):
         return '%s/%s' % (self.owner.name, self.name)
 
-    implements(ISourcePackageRecipe)
-
-    classProvides(ISourcePackageRecipeSource)
-
+    
     delegates(ISourcePackageRecipeData, context='_recipe_data')
 
     id = Int(primary=True)

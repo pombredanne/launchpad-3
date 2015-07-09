@@ -9,15 +9,15 @@ __all__ = [
     'ArchivePermissionURL',
     ]
 
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.services.webapp.interfaces import ICanonicalUrlData
 from lp.soyuz.enums import ArchivePermissionType
 
 
+@implementer(ICanonicalUrlData)
 class ArchivePermissionURL:
     """Dynamic URL declaration for `IArchivePermission`."""
-    implements(ICanonicalUrlData)
     rootsite = None
 
     def __init__(self, context):

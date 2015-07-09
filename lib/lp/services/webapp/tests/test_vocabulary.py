@@ -4,7 +4,7 @@
 __metaclass__ = type
 
 
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.services.webapp.vocabulary import (
     FilteredVocabularyBase,
@@ -15,8 +15,8 @@ from lp.testing import TestCaseWithFactory
 from lp.testing.layers import ZopelessLayer
 
 
+@implementer(IHugeVocabulary)
 class TestVocabulary(FilteredVocabularyBase):
-    implements(IHugeVocabulary)
 
     def search(self, query=None, vocab_filter=None):
         assert(isinstance(vocab_filter, VocabularyFilter))

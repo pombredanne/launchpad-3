@@ -396,13 +396,13 @@ If the remote server time is unknown, we will refuse to import any
 comments from it. Bug watches will still be updated, but a warning is
 logged saying that comments won't be imported.
 
-    >>> from zope.interface import implements
+    >>> from zope.interface import implementer
     >>> from lp.bugs.interfaces.externalbugtracker import (
     ...     ISupportsCommentImport,
     ...     )
-    >>> class CommentImportExternalBugTracker(TimeUnknownExternalBugTracker):
+    >>> @implementer(ISupportsCommentImport)
+    ... class CommentImportExternalBugTracker(TimeUnknownExternalBugTracker):
     ...     baseurl = 'http://whatever.com'
-    ...     implements(ISupportsCommentImport)
     ...     sync_comments = True
 
     >>> checkwatches_master = CheckwatchesMaster(

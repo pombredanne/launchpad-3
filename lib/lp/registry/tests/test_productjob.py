@@ -16,8 +16,8 @@ from testtools.content_type import UTF8_TEXT
 import transaction
 from zope.component import getUtility
 from zope.interface import (
-    classProvides,
-    implements,
+    implementer,
+    provider,
     )
 from zope.security.proxy import removeSecurityProxy
 
@@ -199,18 +199,18 @@ class IProductThingJobSource(IProductJobSource):
     """An interface for testing derived job source classes."""
 
 
+@implementer(IProductThingJob)
+@provider(IProductThingJobSource)
 class FakeProductJob(ProductJobDerived):
     """A class that reuses other interfaces and types for testing."""
     class_job_type = ProductJobType.REVIEWER_NOTIFICATION
-    implements(IProductThingJob)
-    classProvides(IProductThingJobSource)
 
 
+@implementer(IProductThingJob)
+@provider(IProductThingJobSource)
 class OtherFakeProductJob(ProductJobDerived):
     """A class that reuses other interfaces and types for testing."""
     class_job_type = ProductJobType.COMMERCIAL_EXPIRED
-    implements(IProductThingJob)
-    classProvides(IProductThingJobSource)
 
 
 class ProductJobDerivedTestCase(TestCaseWithFactory):

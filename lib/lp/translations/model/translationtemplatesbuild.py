@@ -22,8 +22,8 @@ from storm.locals import (
     )
 from zope.component import getUtility
 from zope.interface import (
-    classProvides,
-    implements,
+    implementer,
+    provider,
     )
 from zope.security.proxy import removeSecurityProxy
 
@@ -55,12 +55,11 @@ from lp.translations.pottery.detect_intltool import is_intltool_structure
 HARDCODED_TRANSLATIONTEMPLATESBUILD_SCORE = 2510
 
 
+@implementer(ITranslationTemplatesBuild)
+@provider(ITranslationTemplatesBuildSource)
 class TranslationTemplatesBuild(SpecificBuildFarmJobSourceMixin,
                                 BuildFarmJobMixin, Storm):
     """A `BuildFarmJob` extension for translation templates builds."""
-
-    implements(ITranslationTemplatesBuild)
-    classProvides(ITranslationTemplatesBuildSource)
 
     __storm_table__ = 'TranslationTemplatesBuild'
 

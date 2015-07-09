@@ -17,7 +17,7 @@ import time
 
 import transaction
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     )
 
@@ -354,9 +354,9 @@ class DBLoopTuner(LoopTuner):
         return self._time()
 
 
+@implementer(ITunableLoop)
 class TunableLoop:
     """A base implementation of `ITunableLoop`."""
-    implements(ITunableLoop)
 
     # DBLoopTuner blocks on replication lag and long transactions. If a
     # subclass wants to ignore them, it can override this to be a normal

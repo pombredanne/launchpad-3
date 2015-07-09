@@ -9,7 +9,7 @@ __all__ = [
 
 from sqlobject import StringCol
 from storm.locals import Bool
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.buildmaster.interfaces.processor import (
     IProcessor,
@@ -20,8 +20,8 @@ from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import SQLBase
 
 
+@implementer(IProcessor)
 class Processor(SQLBase):
-    implements(IProcessor)
     _table = 'Processor'
 
     name = StringCol(dbName='name', notNull=True)
@@ -46,9 +46,9 @@ class Processor(SQLBase):
         return "<Processor %r>" % self.title
 
 
+@implementer(IProcessorSet)
 class ProcessorSet:
     """See `IProcessorSet`."""
-    implements(IProcessorSet)
 
     def getByName(self, name):
         """See `IProcessorSet`."""

@@ -11,7 +11,7 @@ from lazr.lifecycle.event import (
 from sqlobject import ForeignKey
 from zope.component import getUtility
 from zope.event import notify
-from zope.interface import implements
+from zope.interface import implementer
 from zope.security.interfaces import Unauthorized
 
 from lp.app.enums import InformationType
@@ -33,11 +33,10 @@ from lp.services.database.sqlbase import SQLBase
 from lp.services.webapp.interfaces import ILaunchBag
 
 
+@implementer(IPackaging)
 class Packaging(SQLBase):
     """A Packaging relating a SourcePackageName in DistroSeries and a Product.
     """
-
-    implements(IPackaging)
 
     _table = 'Packaging'
 
@@ -91,9 +90,9 @@ class Packaging(SQLBase):
         super(Packaging, self).destroySelf()
 
 
+@implementer(IPackagingUtil)
 class PackagingUtil:
     """Utilities for Packaging."""
-    implements(IPackagingUtil)
 
     @classmethod
     def createPackaging(cls, productseries, sourcepackagename,

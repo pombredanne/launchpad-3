@@ -26,7 +26,7 @@ from zope.formlib.widget import (
     InputWidget,
     renderElement,
     )
-from zope.interface import implements
+from zope.interface import implementer
 from zope.schema import Choice
 
 from lp.app.errors import (
@@ -47,9 +47,8 @@ from lp.services.webapp.interfaces import (
     )
 
 
+@implementer(IMultiLineWidgetLayout)
 class GitRepositoryTargetWidgetBase(BrowserWidget):
-
-    implements(IMultiLineWidgetLayout)
 
     template = ViewPageTemplateFile("templates/gitrepository-target.pt")
     default_option = "project"
@@ -123,20 +122,18 @@ class GitRepositoryTargetWidgetBase(BrowserWidget):
         return self.template()
 
 
+@implementer(IDisplayWidget)
 class GitRepositoryTargetDisplayWidget(
     GitRepositoryTargetWidgetBase, DisplayWidget):
     """Widget for displaying a Git repository target."""
-
-    implements(IDisplayWidget)
 
     _sub_widget_interface = IDisplayWidget
     _read_only = True
 
 
+@implementer(IAlwaysSubmittedWidget, IInputWidget)
 class GitRepositoryTargetWidget(GitRepositoryTargetWidgetBase, InputWidget):
     """Widget for selecting a Git repository target."""
-
-    implements(IAlwaysSubmittedWidget, IInputWidget)
 
     _sub_widget_interface = IInputWidget
     _read_only = False

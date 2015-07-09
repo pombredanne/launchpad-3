@@ -17,7 +17,7 @@ from xmlrpclib import Fault
 from bzrlib import urlutils
 from zope.component import getUtility
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     )
 
@@ -82,9 +82,8 @@ class IBranchSetAPI(Interface):
         """Link the branch to the bug."""
 
 
+@implementer(IBranchSetAPI)
 class BranchSetAPI(LaunchpadXMLRPCView):
-
-    implements(IBranchSetAPI)
 
     def register_branch(self, branch_url, branch_name, branch_title,
                         branch_description, author_email, product_name,
@@ -197,10 +196,9 @@ class _NonexistentBranch:
         self.branch_type = None
 
 
+@implementer(IPublicCodehostingAPI)
 class PublicCodehostingAPI(LaunchpadXMLRPCView):
     """See `IPublicCodehostingAPI`."""
-
-    implements(IPublicCodehostingAPI)
 
     def _compose_http_url(unique_name, path, suffix):
         return compose_public_url('http', unique_name, suffix)

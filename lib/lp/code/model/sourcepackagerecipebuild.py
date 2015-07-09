@@ -27,8 +27,8 @@ from storm.store import (
     )
 from zope.component import getUtility
 from zope.interface import (
-    classProvides,
-    implements,
+    implementer,
+    provider,
     )
 
 from lp.app.errors import NotFoundError
@@ -71,13 +71,12 @@ from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
+@implementer(ISourcePackageRecipeBuild)
+@provider(ISourcePackageRecipeBuildSource)
 class SourcePackageRecipeBuild(SpecificBuildFarmJobSourceMixin,
                                PackageBuildMixin, Storm):
 
     __storm_table__ = 'SourcePackageRecipeBuild'
-
-    implements(ISourcePackageRecipeBuild)
-    classProvides(ISourcePackageRecipeBuildSource)
 
     job_type = BuildFarmJobType.RECIPEBRANCHBUILD
 

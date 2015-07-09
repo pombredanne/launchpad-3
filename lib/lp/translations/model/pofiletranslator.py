@@ -11,7 +11,7 @@ __all__ = [
 from sqlobject import ForeignKey
 from storm.expr import And
 from storm.store import Store
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.registry.interfaces.person import validate_public_person
 from lp.services.database.datetimecol import UtcDateTimeCol
@@ -26,10 +26,9 @@ from lp.translations.interfaces.pofiletranslator import (
 from lp.translations.model.pofile import POFile
 
 
+@implementer(IPOFileTranslator)
 class POFileTranslator(SQLBase):
     """See `IPOFileTranslator`."""
-
-    implements(IPOFileTranslator)
     pofile = ForeignKey(foreignKey='POFile', dbName='pofile', notNull=True)
     person = ForeignKey(
         dbName='person', foreignKey='Person',
@@ -38,10 +37,9 @@ class POFileTranslator(SQLBase):
         dbName='date_last_touched', notNull=False, default=None)
 
 
+@implementer(IPOFileTranslatorSet)
 class POFileTranslatorSet:
     """The set of all `POFileTranslator` records."""
-
-    implements(IPOFileTranslatorSet)
 
     def prefetchPOFileTranslatorRelations(self, pofiletranslators):
         """See `IPOFileTranslatorSet`."""

@@ -23,7 +23,7 @@ from fixtures import Fixture
 import transaction
 from transaction.interfaces import ISynchronizer
 import zope.component
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.services.config import config
 from lp.services.librarian.client import get_libraryfilealias_download_path
@@ -59,14 +59,16 @@ class InstrumentedLibraryFileAlias(LibraryFileAlias):
         return self._datafile.read(chunksize)
 
 
+_fake_librarian_provided_utilities = [ILibrarianClient, ILibraryFileAliasSet]
+
+
+@implementer(ISynchronizer, *_fake_librarian_provided_utilities)
 class FakeLibrarian(Fixture):
     """A test double Librarian which works in-process.
 
     This takes the role of both the librarian client and the LibraryFileAlias
     utility.
     """
-    provided_utilities = [ILibrarianClient, ILibraryFileAliasSet]
-    implements(ISynchronizer, *provided_utilities)
 
     def setUp(self):
         """Fixture API: install as the librarian."""
@@ -77,7 +79,7 @@ class FakeLibrarian(Fixture):
         self.addCleanup(transaction.manager.unregisterSynch, self)
 
         site_manager = zope.component.getGlobalSiteManager()
-        for utility in self.provided_utilities:
+        for utility in _fake_librarian_provided_utilities:
             original = zope.component.getUtility(utility)
             if site_manager.unregisterUtility(original, utility):
                 # We really disabled a utility, restore it later.

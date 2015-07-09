@@ -23,7 +23,7 @@ import operator
 from lazr.delegates import delegates
 from zope.component import getUtility
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     )
 
@@ -99,9 +99,9 @@ class DistributionSourcePackageFormatterAPI(CustomizableFormatter):
         return {'displayname': displayname}
 
 
+@implementer(IHeadingBreadcrumb, IMultiFacetedBreadcrumb)
 class DistributionSourcePackageBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `IDistributionSourcePackage`."""
-    implements(IHeadingBreadcrumb, IMultiFacetedBreadcrumb)
 
     @property
     def text(self):
@@ -299,10 +299,10 @@ class DistributionSourcePackageBaseView(LaunchpadView):
             bulk_decorator=decorate)
 
 
+@implementer(IDistributionSourcePackageActionMenu)
 class DistributionSourcePackageView(DistributionSourcePackageBaseView,
                                     LaunchpadView):
     """View class for DistributionSourcePackage."""
-    implements(IDistributionSourcePackageActionMenu)
 
     def initialize(self):
         super(DistributionSourcePackageView, self).initialize()

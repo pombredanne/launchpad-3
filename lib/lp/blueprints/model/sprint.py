@@ -21,7 +21,7 @@ from storm.locals import (
     Store,
     )
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.interfaces.launchpad import (
     IHasIcon,
@@ -61,10 +61,9 @@ from lp.services.database.sqlbase import (
 from lp.services.propertycache import cachedproperty
 
 
+@implementer(ISprint, IHasLogo, IHasMugshot, IHasIcon)
 class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
     """See `ISprint`."""
-
-    implements(ISprint, IHasLogo, IHasMugshot, IHasIcon)
 
     _defaultOrder = ['name']
 
@@ -300,10 +299,9 @@ class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
                 user.inTeam(admins))
 
 
+@implementer(ISprintSet)
 class SprintSet:
     """The set of sprints."""
-
-    implements(ISprintSet)
 
     def __init__(self):
         """See `ISprintSet`."""

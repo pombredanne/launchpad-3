@@ -8,8 +8,8 @@ __all__ = [
 ]
 
 from zope.interface import (
-    classProvides,
-    implements,
+    implementer,
+    provider,
     )
 
 from lp.registry.model.distroseries import DistroSeries
@@ -38,12 +38,11 @@ from lp.soyuz.scripts.initialize_distroseries import (
     )
 
 
+@implementer(IInitializeDistroSeriesJob)
+@provider(IInitializeDistroSeriesJobSource)
 class InitializeDistroSeriesJob(DistributionJobDerived):
 
-    implements(IInitializeDistroSeriesJob)
-
     class_job_type = DistributionJobType.INITIALIZE_SERIES
-    classProvides(IInitializeDistroSeriesJobSource)
 
     user_error_types = (InitializationError,)
 

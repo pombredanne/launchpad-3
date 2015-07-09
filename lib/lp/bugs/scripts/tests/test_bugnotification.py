@@ -21,7 +21,7 @@ from zope.component import (
     getSiteManager,
     getUtility,
     )
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.enums import InformationType
 from lp.bugs.adapters.bugchange import (
@@ -91,9 +91,9 @@ from lp.testing.layers import LaunchpadZopelessLayer
 from lp.testing.matchers import Contains
 
 
+@implementer(IBug)
 class MockBug:
     """A bug which has only the attributes get_email_notifications() needs."""
-    implements(IBug)
 
     duplicateof = None
     information_type = InformationType.PUBLIC
@@ -184,10 +184,9 @@ class FakeNotification:
         self.activity = None
 
 
+@implementer(IBugNotificationSet)
 class FakeBugNotificationSetUtility:
     """A notification utility used for testing."""
-
-    implements(IBugNotificationSet)
 
     def getRecipientFilterData(self, bug, recipient_to_sources,
                                notifications):

@@ -32,7 +32,7 @@ from zope.component import (
 from zope.error.interfaces import IErrorReportingUtility
 from zope.interface import (
     Attribute,
-    implements,
+    implementer,
     Interface,
     )
 from zope.publisher.browser import BrowserView
@@ -351,6 +351,7 @@ class CountAPI:
         return len(self._context)
 
 
+@implementer(ITraversable)
 class EnumValueAPI:
     """Namespace to test the value of an EnumeratedType Item.
 
@@ -360,7 +361,6 @@ class EnumValueAPI:
 
     Registered for canonical.lazr.enum.Item.
     """
-    implements(ITraversable)
 
     def __init__(self, item):
         self.item = item
@@ -381,6 +381,7 @@ class EnumValueAPI:
             return False
 
 
+@implementer(ITraversable)
 class HTMLFormAPI:
     """HTML form helper API, available as request/htmlform:.
 
@@ -394,7 +395,6 @@ class HTMLFormAPI:
             return None
 
     """
-    implements(ITraversable)
 
     def __init__(self, request):
         self.form = request.form
@@ -420,9 +420,8 @@ def htmlmatch(formvalue, value):
         return formvalue == value
 
 
+@implementer(ITraversable)
 class HTMLFormOperation:
-
-    implements(ITraversable)
 
     def __init__(self, formvalue, operation):
         self.formvalue = formvalue
@@ -442,9 +441,9 @@ class IRequestAPI(Interface):
     cookie_scope = Attribute("The scope parameters for cookies.")
 
 
+@implementer(IRequestAPI)
 class RequestAPI:
     """Adapter from IApplicationRequest to IRequestAPI."""
-    implements(IRequestAPI)
 
     def __init__(self, request):
         self.request = request
@@ -465,11 +464,11 @@ class RequestAPI:
         return params
 
 
+@implementer(ITraversable)
 class DBSchemaAPI:
     """Adapter from integers to things that can extract information from
     DBSchemas.
     """
-    implements(ITraversable)
 
     def __init__(self, number):
         self._number = number
@@ -482,6 +481,7 @@ class DBSchemaAPI:
             raise TraversalError(name)
 
 
+@implementer(ITraversable)
 class NoneFormatter:
     """Adapter from None to various string formats.
 
@@ -489,7 +489,6 @@ class NoneFormatter:
     of handling NULL values from the database, which become None values for
     attributes in content classes.
     """
-    implements(ITraversable)
 
     allowed_names = set([
         'approximatedate',
@@ -543,10 +542,9 @@ class NoneFormatter:
             raise TraversalError(name)
 
 
+@implementer(ITraversable)
 class ObjectFormatterAPI:
     """Adapter for any object to a formatted string."""
-
-    implements(ITraversable)
 
     # Although we avoid mutables as class attributes, the two ones below are
     # constants, so it's not a problem. We might want to use something like
@@ -897,6 +895,7 @@ class ObjectImageDisplayAPI:
         return markup % dict(icon=icon)
 
 
+@implementer(ITraversable)
 class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
     """Adapter for IBugTask objects to a formatted string. This inherits
     from the generic ObjectImageDisplayAPI and overrides the icon
@@ -904,7 +903,6 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
 
     Used for image:icon.
     """
-    implements(ITraversable)
 
     allowed_names = set([
         'icon',
@@ -2072,10 +2070,9 @@ class BugWatchFormatterAPI(ObjectFormatterAPI):
         return self._make_external_link(self._context.remotebug)
 
 
+@implementer(ITraversable)
 class NumberFormatterAPI:
     """Adapter for converting numbers to formatted strings."""
-
-    implements(ITraversable)
 
     def __init__(self, number):
         self._number = number
@@ -2280,10 +2277,9 @@ class SeriesSourcePackageBranchFormatter(ObjectFormatterAPI):
             self._context.sourcepackage, IPathAdapter, 'fmt').link(view_name)
 
 
+@implementer(ITraversable)
 class DurationFormatterAPI:
     """Adapter from timedelta objects to a formatted string."""
-
-    implements(ITraversable)
 
     def __init__(self, duration):
         self._duration = duration
@@ -2498,14 +2494,13 @@ def clean_path_segments(request):
     return clean_path_split
 
 
+@implementer(ITraversable)
 class PermissionRequiredQuery:
     """Check if the logged in user has a given permission on a given object.
 
     Example usage::
         tal:condition="person/required:launchpad.Edit"
     """
-
-    implements(ITraversable)
 
     def __init__(self, context):
         self.context = context
@@ -2522,15 +2517,16 @@ class IMainTemplateFile(Interface):
     path = TextLine(title=u'The absolute path to this main template.')
 
 
+@implementer(IMainTemplateFile)
 class LaunchpadLayerToMainTemplateAdapter:
     adapts(LaunchpadLayer)
-    implements(IMainTemplateFile)
 
     def __init__(self, context):
         here = os.path.dirname(os.path.realpath(__file__))
         self.path = os.path.join(here, '../templates/base-layout.pt')
 
 
+@implementer(ITraversable)
 class PageMacroDispatcher:
     """Selects a macro, while storing information about page layout.
 
@@ -2549,8 +2545,6 @@ class PageMacroDispatcher:
         view/macro:is-page-contentless
         view/macro:has-watermark
     """
-
-    implements(ITraversable)
 
     def __init__(self, context):
         # The context of this object is a view object.
@@ -2750,6 +2744,7 @@ class PackageDiffFormatterAPI(ObjectFormatterAPI):
                 diff.diff_content.content.filesize)
 
 
+@implementer(ITraversable)
 class CSSFormatter:
     """A tales path adapter used for CSS rules.
 
@@ -2758,8 +2753,6 @@ class CSSFormatter:
     You will get "visible" if value evaluates to true, and "hidden" if the
     value evaluates to false.
     """
-
-    implements(ITraversable)
 
     def __init__(self, context):
         self.context = context
@@ -2781,10 +2774,9 @@ class CSSFormatter:
             raise TraversalError(name)
 
 
+@implementer(ITraversable)
 class IRCNicknameFormatterAPI(ObjectFormatterAPI):
     """Adapter from IrcID objects to a formatted string."""
-
-    implements(ITraversable)
 
     traversable_names = {
         'displayname': 'displayname',

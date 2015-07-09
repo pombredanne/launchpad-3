@@ -18,7 +18,7 @@ from contrib.oauth import OAuthRequest
 from zope.authentication.interfaces import ILoginPassword
 from zope.component import getUtility
 from zope.event import notify
-from zope.interface import implements
+from zope.interface import implementer
 from zope.principalregistry.principalregistry import UnauthenticatedPrincipal
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
@@ -41,11 +41,11 @@ from lp.services.webapp.interfaces import (
     )
 
 
+@implementer(IPlacelessAuthUtility)
 class PlacelessAuthUtility:
     """An authentication service which holds no state aside from its
     ZCML configuration, implemented as a utility.
     """
-    implements(IPlacelessAuthUtility)
 
     def __init__(self):
         self.nobody = UnauthenticatedPrincipal(
@@ -169,11 +169,11 @@ class PlacelessAuthUtility:
         return getUtility(IPlacelessLoginSource).getPrincipalByLogin(login)
 
 
+@implementer(IPlacelessLoginSource)
 class LaunchpadLoginSource:
     """A login source that uses the launchpad SQL database to look up
     principal information.
     """
-    implements(IPlacelessLoginSource)
 
     def getPrincipal(self, id, access_level=AccessLevel.WRITE_PRIVATE,
                      scope=None):
@@ -250,9 +250,8 @@ loginSource = LaunchpadLoginSource()
 loginSource.__parent__ = authService
 
 
+@implementer(ILaunchpadPrincipal)
 class LaunchpadPrincipal:
-
-    implements(ILaunchpadPrincipal)
 
     def __init__(self, id, title, description, account,
                  access_level=AccessLevel.WRITE_PRIVATE, scope=None):

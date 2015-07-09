@@ -19,7 +19,7 @@ from zope.formlib.widgets import (
     TextWidget,
     )
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     )
 from zope.schema import Text
@@ -56,6 +56,7 @@ class ICodeReviewDisplayComment(IComment, ICodeReviewComment):
     """Marker interface for displaying code review comments."""
 
 
+@implementer(ICodeReviewDisplayComment)
 class CodeReviewDisplayComment(MessageComment):
     """A code review comment or activity or both.
 
@@ -63,8 +64,6 @@ class CodeReviewDisplayComment(MessageComment):
     this is purely a display interface, and doesn't make sense to have display
     only code in the model itself.
     """
-
-    implements(ICodeReviewDisplayComment)
 
     delegates(ICodeReviewComment, 'comment')
 
@@ -140,10 +139,9 @@ class CodeReviewCommentContextMenu(ContextMenu):
         return Link('+reply', 'Reply', icon='add', enabled=enabled)
 
 
+@implementer(ILibraryFileAlias)
 class DiffAttachment:
     """An attachment that we are going to display."""
-
-    implements(ILibraryFileAlias)
 
     delegates(ILibraryFileAlias, 'alias')
 

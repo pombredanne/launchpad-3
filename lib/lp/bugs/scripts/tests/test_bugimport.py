@@ -11,7 +11,7 @@ import pytz
 from testtools.content import text_content
 import transaction
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 from zope.security.proxy import removeSecurityProxy
 
 from lp.bugs.externalbugtracker import ExternalBugTracker
@@ -817,13 +817,12 @@ class FakeResultSet:
         return False
 
 
+@implementer(IBugWatch)
 class TestBugWatch:
     """A mock bug watch object for testing `ExternalBugTracker.updateWatches`.
 
     This bug watch is guaranteed to trigger a DB failure when `updateStatus`
     is called if its `failing` attribute is True."""
-
-    implements(IBugWatch)
 
     lastchecked = None
     unpushed_comments = FakeResultSet()

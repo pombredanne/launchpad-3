@@ -22,7 +22,7 @@ from storm.locals import (
     Store,
     Storm,
     )
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
@@ -44,8 +44,8 @@ from lp.soyuz.interfaces.binarypackagerelease import (
 from lp.soyuz.model.files import BinaryPackageFile
 
 
+@implementer(IBinaryPackageRelease)
 class BinaryPackageRelease(SQLBase):
-    implements(IBinaryPackageRelease)
     _table = 'BinaryPackageRelease'
     binarypackagename = ForeignKey(dbName='binarypackagename', notNull=True,
                                    foreignKey='BinaryPackageName')
@@ -146,10 +146,10 @@ class BinaryPackageRelease(SQLBase):
             self.priority = priority
 
 
+@implementer(IBinaryPackageReleaseDownloadCount)
 class BinaryPackageReleaseDownloadCount(Storm):
     """See `IBinaryPackageReleaseDownloadCount`."""
 
-    implements(IBinaryPackageReleaseDownloadCount)
     __storm_table__ = 'BinaryPackageReleaseDownloadCount'
 
     id = Int(primary=True)

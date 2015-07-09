@@ -18,7 +18,7 @@ from zope.component import (
     queryAdapter,
     )
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     )
 from zope.sendmail.interfaces import IMailDelivery
@@ -59,18 +59,20 @@ class IBar(Interface):
     pass
 
 
+@implementer(IFoo)
 class Foo:
-    implements(IFoo)
+    pass
 
 
+@implementer(IBar)
 class Bar:
-    implements(IBar)
+    pass
 
 
+@implementer(IBar)
 class FooToBar:
 
     adapts(IFoo)
-    implements(IBar)
 
     def __init__(self, foo):
         self.foo = foo
@@ -95,9 +97,10 @@ class TestZopeAdapterFixture(TestCase):
         self.assertIs(None, queryAdapter(context, IBar))
 
 
+@implementer(IMailDelivery)
 class DummyMailer(object):
 
-    implements(IMailDelivery)
+    pass
 
 
 class TestZopeUtilityFixture(TestCase):

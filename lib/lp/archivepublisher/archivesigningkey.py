@@ -14,7 +14,7 @@ import os
 
 import gpgme
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archivepublisher.config import getPubConfig
@@ -29,10 +29,9 @@ from lp.services.gpg.interfaces import (
     )
 
 
+@implementer(IArchiveSigningKey)
 class ArchiveSigningKey:
     """`IArchive` adapter for manipulating its GPG key."""
-
-    implements(IArchiveSigningKey)
 
     def __init__(self, archive):
         self.archive = archive

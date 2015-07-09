@@ -17,7 +17,7 @@ from zope.component import (
     getUtility,
     queryMultiAdapter,
     )
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.errors import NameLookupFailed
 from lp.app.validators.name import valid_name
@@ -65,14 +65,13 @@ def adapt(obj, interface):
         return None
 
 
+@implementer(IGitTraversable)
 class RootGitTraversable:
     """Root traversable for Git repository objects.
 
     Corresponds to '/' in the path.  From here, you can traverse to a
     project or a distribution, optionally with a person context as well.
     """
-
-    implements(IGitTraversable)
 
     # Marker for references to Git URL layouts: ##GITNAMESPACE##
     def traverse(self, owner, name, segments):
@@ -130,6 +129,7 @@ class _BaseGitTraversable:
         return owner, self.context, repository
 
 
+@implementer(IGitTraversable)
 class ProjectGitTraversable(_BaseGitTraversable):
     """Git repository traversable for projects.
 
@@ -137,12 +137,12 @@ class ProjectGitTraversable(_BaseGitTraversable):
     """
 
     adapts(IProduct)
-    implements(IGitTraversable)
 
     def getNamespace(self, owner):
         return getUtility(IGitNamespaceSet).get(owner, project=self.context)
 
 
+@implementer(IGitTraversable)
 class DistributionGitTraversable(_BaseGitTraversable):
     """Git repository traversable for distributions.
 
@@ -150,7 +150,6 @@ class DistributionGitTraversable(_BaseGitTraversable):
     """
 
     adapts(IDistribution)
-    implements(IGitTraversable)
 
     # Marker for references to Git URL layouts: ##GITNAMESPACE##
     def traverse(self, owner, name, segments):
@@ -176,6 +175,7 @@ class DistributionGitTraversable(_BaseGitTraversable):
         return owner, distro_source_package, None
 
 
+@implementer(IGitTraversable)
 class DistributionSourcePackageGitTraversable(_BaseGitTraversable):
     """Git repository traversable for distribution source packages.
 
@@ -183,7 +183,6 @@ class DistributionSourcePackageGitTraversable(_BaseGitTraversable):
     """
 
     adapts(IDistributionSourcePackage)
-    implements(IGitTraversable)
 
     def getNamespace(self, owner):
         return getUtility(IGitNamespaceSet).get(
@@ -191,6 +190,7 @@ class DistributionSourcePackageGitTraversable(_BaseGitTraversable):
             sourcepackagename=self.context.sourcepackagename)
 
 
+@implementer(IGitTraversable)
 class PersonGitTraversable(_BaseGitTraversable):
     """Git repository traversable for people.
 
@@ -199,7 +199,6 @@ class PersonGitTraversable(_BaseGitTraversable):
     """
 
     adapts(IPerson)
-    implements(IGitTraversable)
 
     def getNamespace(self, owner):
         return getUtility(IGitNamespaceSet).get(owner)
@@ -247,10 +246,9 @@ class SegmentIterator:
         return segment
 
 
+@implementer(IGitTraverser)
 class GitTraverser:
     """Utility for traversing to objects that can have Git repositories."""
-
-    implements(IGitTraverser)
 
     def traverse(self, segments, owner=None):
         """See `IGitTraverser`."""
@@ -293,10 +291,9 @@ class GitTraverser:
         return owner, target, repository
 
 
+@implementer(IGitLookup)
 class GitLookup:
     """Utility for looking up Git repositories."""
-
-    implements(IGitLookup)
 
     def get(self, repository_id, default=None):
         """See `IGitLookup`."""

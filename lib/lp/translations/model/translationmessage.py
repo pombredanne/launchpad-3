@@ -23,7 +23,7 @@ from storm.expr import And
 from storm.locals import SQL
 from storm.store import Store
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 from zope.security.proxy import removeSecurityProxy
 
 from lp.registry.interfaces.person import (
@@ -149,6 +149,7 @@ class TranslationMessageMixIn:
         self.date_reviewed = timestamp
 
 
+@implementer(ITranslationMessage)
 class DummyTranslationMessage(TranslationMessageMixIn):
     """Represents an `ITranslationMessage` where we don't yet HAVE it.
 
@@ -156,7 +157,6 @@ class DummyTranslationMessage(TranslationMessageMixIn):
     default information. We can represent them from the existing data and
     logic.
     """
-    implements(ITranslationMessage)
 
     def __init__(self, pofile, potmsgset):
         self.id = None
@@ -235,8 +235,8 @@ class DummyTranslationMessage(TranslationMessageMixIn):
         """See `ITranslationMessage`."""
 
 
+@implementer(ITranslationMessage)
 class TranslationMessage(SQLBase, TranslationMessageMixIn):
-    implements(ITranslationMessage)
 
     _table = 'TranslationMessage'
 
@@ -530,9 +530,9 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
         return clone
 
 
+@implementer(ITranslationMessageSet)
 class TranslationMessageSet:
     """See `ITranslationMessageSet`."""
-    implements(ITranslationMessageSet)
 
     def getByID(self, ID):
         """See `ITranslationMessageSet`."""

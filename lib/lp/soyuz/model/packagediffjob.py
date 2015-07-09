@@ -11,8 +11,8 @@ from lazr.delegates import delegates
 import simplejson
 from zope.component import getUtility
 from zope.interface import (
-    classProvides,
-    implements,
+    implementer,
+    provider,
     )
 
 from lp.services.config import config
@@ -30,12 +30,12 @@ from lp.soyuz.interfaces.packagediffjob import (
     )
 
 
+@provider(IPackageDiffJobSource)
 class PackageDiffJobDerived(BaseRunnableJob):
 
     __metaclass__ = EnumeratedSubclass
 
     delegates(IPackageDiffJob)
-    classProvides(IPackageDiffJobSource)
     config = config.IPackageDiffJobSource
 
     def __init__(self, job):
@@ -61,10 +61,9 @@ class PackageDiffJobDerived(BaseRunnableJob):
         return (cls(job) for job in jobs)
 
 
+@implementer(IPackageDiffJob)
+@provider(IPackageDiffJobSource)
 class PackageDiffJob(PackageDiffJobDerived):
-
-    implements(IPackageDiffJob)
-    classProvides(IPackageDiffJobSource)
 
     def __repr__(self):
         """Returns an informative representation of a PackageDiff job."""

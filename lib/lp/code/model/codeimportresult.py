@@ -10,7 +10,7 @@ from sqlobject import (
     ForeignKey,
     StringCol,
     )
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.code.enums import CodeImportResultStatus
 from lp.code.interfaces.codeimportresult import (
@@ -24,10 +24,9 @@ from lp.services.database.enumcol import EnumCol
 from lp.services.database.sqlbase import SQLBase
 
 
+@implementer(ICodeImportResult)
 class CodeImportResult(SQLBase):
     """See `ICodeImportResult`."""
-
-    implements(ICodeImportResult)
 
     date_created = UtcDateTimeCol(notNull=True, default=UTC_NOW)
 
@@ -61,10 +60,9 @@ class CodeImportResult(SQLBase):
         return self.date_job_finished - self.date_job_started
 
 
+@implementer(ICodeImportResultSet)
 class CodeImportResultSet(object):
     """See `ICodeImportResultSet`."""
-
-    implements(ICodeImportResultSet)
 
     def new(self, code_import, machine, requesting_user, log_excerpt,
             log_file, status, date_job_started, date_job_finished=None):

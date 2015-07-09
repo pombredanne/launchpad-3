@@ -15,7 +15,7 @@ from sqlobject import (
     StringCol,
     )
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.answers.enums import QuestionStatus
 from lp.answers.model.question import Question
@@ -41,10 +41,9 @@ from lp.translations.model.pomsgid import POMsgID
 from lp.translations.model.potemplate import POTemplate
 
 
+@implementer(ILaunchpadStatistic)
 class LaunchpadStatistic(SQLBase):
     """A table of Launchpad Statistics."""
-
-    implements(ILaunchpadStatistic)
 
     _table = 'LaunchpadStatistic'
     _defaultOrder = 'name'
@@ -55,10 +54,9 @@ class LaunchpadStatistic(SQLBase):
     dateupdated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
 
 
+@implementer(ILaunchpadStatisticSet)
 class LaunchpadStatisticSet:
     """See`ILaunchpadStatisticSet`."""
-
-    implements(ILaunchpadStatisticSet)
 
     def __iter__(self):
         """See ILaunchpadStatisticSet."""

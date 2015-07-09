@@ -38,7 +38,7 @@ from storm.locals import AutoReload
 from storm.store import Store
 from zope.component import getUtility
 from zope.event import notify
-from zope.interface import implements
+from zope.interface import implementer
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import (
     ProxyFactory,
@@ -181,10 +181,9 @@ from lp.services.webapp import urlappend
 from lp.services.webapp.authorization import check_permission
 
 
+@implementer(IBranch, IPrivacy, IInformationType)
 class Branch(SQLBase, BzrIdentityMixin):
     """A sequence of ordered revisions in Bazaar."""
-
-    implements(IBranch, IPrivacy, IInformationType)
     _table = 'Branch'
 
     branch_type = EnumCol(enum=BranchType, notNull=True)
@@ -1516,10 +1515,9 @@ class DeleteCodeImport(DeletionOperation):
         CodeImportSet().delete(self.affected_object)
 
 
+@implementer(IBranchSet)
 class BranchSet:
     """The set of all branches."""
-
-    implements(IBranchSet)
 
     def getRecentlyChangedBranches(
         self, branch_count=None,

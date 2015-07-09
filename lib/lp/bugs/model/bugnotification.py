@@ -33,7 +33,7 @@ from storm.locals import (
     )
 from storm.store import Store
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.bugs.enums import BugNotificationStatus
 from lp.bugs.interfaces.bugnotification import (
@@ -59,9 +59,9 @@ from lp.services.database.stormbase import StormBase
 from lp.services.messages.model.message import Message
 
 
+@implementer(IBugNotification)
 class BugNotification(SQLBase):
     """A textual representation about a bug change."""
-    implements(IBugNotification)
 
     message = ForeignKey(dbName='message', notNull=True, foreignKey='Message')
     activity = ForeignKey(
@@ -90,9 +90,9 @@ class BugNotification(SQLBase):
             BugNotificationFilter.bug_notification == self)
 
 
+@implementer(IBugNotificationSet)
 class BugNotificationSet:
     """A set of bug notifications."""
-    implements(IBugNotificationSet)
 
     def getNotificationsToSend(self):
         """See IBugNotificationSet."""
@@ -307,9 +307,9 @@ class BugNotificationSet:
         return result
 
 
+@implementer(IBugNotificationRecipient)
 class BugNotificationRecipient(SQLBase):
     """A recipient of a bug notification."""
-    implements(IBugNotificationRecipient)
 
     bug_notification = ForeignKey(
         dbName='bug_notification', notNull=True, foreignKey='BugNotification')
@@ -319,9 +319,9 @@ class BugNotificationRecipient(SQLBase):
     reason_body = StringCol(dbName='reason_body', notNull=True)
 
 
+@implementer(IBugNotificationFilter)
 class BugNotificationFilter(StormBase):
     """See `IBugNotificationFilter`."""
-    implements(IBugNotificationFilter)
 
     __storm_table__ = "BugNotificationFilter"
     __storm_primary__ = "bug_notification_id", "bug_subscription_filter_id"

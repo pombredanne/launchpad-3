@@ -9,7 +9,7 @@ __all__ = [
     ]
 
 from lazr.delegates import delegates
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.interfaces.informationtype import IInformationType
 from lp.app.interfaces.launchpad import IPrivacy
@@ -20,12 +20,12 @@ from lp.code.interfaces.branch import (
 from lp.services.propertycache import cachedproperty
 
 
+@implementer(IPrivacy)
 class DecoratedBranch(BzrIdentityMixin):
     """Wrap a number of the branch accessors to cache results.
 
     This avoids repeated db queries.
     """
-    implements(IPrivacy)
     delegates([IBranch, IInformationType], 'branch')
 
     def __init__(self, branch):

@@ -9,7 +9,7 @@ from zope.component import (
     )
 from zope.configuration import xmlconfig
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     )
 from zope.publisher.interfaces.browser import (
@@ -77,16 +77,18 @@ class TestNavigationDirective(TestCase):
         cleanUp()
 
 
+@implementer(IDefaultBrowserLayer)
 class DefaultBrowserLayer:
-    implements(IDefaultBrowserLayer)
+    pass
 
 
 class IThing(Interface):
     pass
 
 
+@implementer(IThing)
 class Thing(object):
-    implements(IThing)
+    pass
 
 
 class ThingNavigation(Navigation):
@@ -101,8 +103,9 @@ class IOtherLayer(Interface):
     pass
 
 
+@implementer(IOtherLayer)
 class OtherLayer:
-    implements(IOtherLayer)
+    pass
 
 
 this = "lp.services.webapp.tests.test_navigation"

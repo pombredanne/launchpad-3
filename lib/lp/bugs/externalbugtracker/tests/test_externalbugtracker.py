@@ -8,7 +8,7 @@ __metaclass__ = type
 from StringIO import StringIO
 import urllib2
 
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.bugs.externalbugtracker.base import (
     BugTrackerConnectError,
@@ -29,16 +29,19 @@ from lp.testing.fakemethod import FakeMethod
 from lp.testing.layers import ZopelessLayer
 
 
+@implementer(ISupportsBackLinking)
 class BackLinkingExternalBugTracker(ExternalBugTracker):
-    implements(ISupportsBackLinking)
+    pass
 
 
+@implementer(ISupportsCommentImport)
 class CommentImportingExternalBugTracker(ExternalBugTracker):
-    implements(ISupportsCommentImport)
+    pass
 
 
+@implementer(ISupportsCommentPushing)
 class CommentPushingExternalBugTracker(ExternalBugTracker):
-    implements(ISupportsCommentPushing)
+    pass
 
 
 class TestCheckwatchesConfig(TestCase):

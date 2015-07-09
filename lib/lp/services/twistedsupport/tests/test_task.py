@@ -9,7 +9,7 @@ from twisted.internet.defer import (
     succeed,
     )
 from twisted.internet.task import Clock
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.services.twistedsupport.task import (
     AlreadyRunningError,
@@ -22,10 +22,9 @@ from lp.services.twistedsupport.task import (
 from lp.testing import TestCase
 
 
+@implementer(ITaskConsumer)
 class NoopTaskConsumer:
     """Task consumer that does nothing."""
-
-    implements(ITaskConsumer)
 
     def taskStarted(self, task):
         """Do nothing."""
@@ -48,10 +47,9 @@ class AppendingTaskConsumer(NoopTaskConsumer):
         self.data_sink.append(task)
 
 
+@implementer(ITaskSource)
 class LoggingSource:
     """Task source that logs calls to `start` and `stop'`"""
-
-    implements(ITaskSource)
 
     def __init__(self, log, stop_deferred=None):
         self._log = log

@@ -33,7 +33,7 @@ from storm.locals import (
     )
 from storm.store import Store
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.errors import NotFoundError
 from lp.archiveuploader.utils import determine_source_file_type
@@ -75,8 +75,8 @@ from lp.soyuz.model.queue import (
     )
 
 
+@implementer(ISourcePackageRelease)
 class SourcePackageRelease(SQLBase):
-    implements(ISourcePackageRelease)
     _table = 'SourcePackageRelease'
 
     section = ForeignKey(foreignKey='Section', dbName='section')

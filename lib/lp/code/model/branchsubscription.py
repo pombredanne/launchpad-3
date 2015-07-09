@@ -5,7 +5,7 @@ __metaclass__ = type
 __all__ = ['BranchSubscription']
 
 from sqlobject import ForeignKey
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.code.enums import (
     BranchSubscriptionDiffSize,
@@ -22,10 +22,9 @@ from lp.services.database.enumcol import EnumCol
 from lp.services.database.sqlbase import SQLBase
 
 
+@implementer(IBranchSubscription, IHasBranchTarget)
 class BranchSubscription(SQLBase):
     """A relationship between a person and a branch."""
-
-    implements(IBranchSubscription, IHasBranchTarget)
 
     _table = 'BranchSubscription'
 

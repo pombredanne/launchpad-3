@@ -4,7 +4,7 @@
 __metaclass__ = type
 __all__ = ['TranslationsOverview']
 
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.enums import (
     InformationType,
@@ -22,8 +22,8 @@ from lp.translations.interfaces.translationsoverview import (
     )
 
 
+@implementer(ITranslationsOverview)
 class TranslationsOverview:
-    implements(ITranslationsOverview)
 
     # Project weights will be scaled into [MINIMUM_SIZE, MAXIMUM_SIZE] range.
     MINIMUM_SIZE = 10

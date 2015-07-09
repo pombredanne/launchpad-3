@@ -29,7 +29,7 @@ from twisted.cred.portal import (
     )
 from twisted.python import components
 from twisted.web.xmlrpc import Proxy
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.codehosting import sftp
 from lp.codehosting.sshserver.session import launch_smart_server
@@ -62,8 +62,8 @@ components.registerAdapter(
     sftp.avatar_to_sftp_server, CodehostingAvatar, filetransfer.ISFTPServer)
 
 
+@implementer(IRealm)
 class Realm:
-    implements(IRealm)
 
     def __init__(self, authentication_proxy, codehosting_proxy):
         self.authentication_proxy = authentication_proxy

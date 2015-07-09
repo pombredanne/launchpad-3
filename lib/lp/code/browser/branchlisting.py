@@ -42,7 +42,7 @@ from z3c.ptcompat import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.formlib import form
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     )
 from zope.schema import Choice
@@ -478,10 +478,10 @@ class BranchListingItemsMixin:
         return [self._createItem(branch) for branch in branches]
 
 
+@implementer(IBranchBatchNavigator)
 class BranchListingBatchNavigator(TableBatchNavigator,
                                   BranchListingItemsMixin):
     """Batch up the branch listings."""
-    implements(IBranchBatchNavigator)
 
     def __init__(self, view):
         TableBatchNavigator.__init__(

@@ -20,7 +20,7 @@ from bzrlib.urlutils import (
 import pytz
 import transaction
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 from zope.security.interfaces import Unauthorized
 from zope.security.management import endInteraction
 from zope.security.proxy import removeSecurityProxy
@@ -128,10 +128,9 @@ def run_with_login(login_id, function, *args, **kwargs):
         endInteraction()
 
 
+@implementer(ICodehostingAPI)
 class CodehostingAPI(LaunchpadXMLRPCView):
     """See `ICodehostingAPI`."""
-
-    implements(ICodehostingAPI)
 
     def acquireBranchToPull(self, branch_type_names):
         """See `ICodehostingAPI`."""

@@ -11,7 +11,7 @@ from zope.component import (
     )
 from zope.interface import (
     Attribute,
-    implements,
+    implementer,
     Interface,
     )
 
@@ -35,18 +35,17 @@ class IFakeObject(Interface):
     ident = Attribute("ident")
 
 
+@implementer(IFakeObject)
 class FakeObject:
-
-    implements(IFakeObject)
 
     def __init__(self, ident):
         self.ident = ident
 
 
+@implementer(ILongPollEvent)
 class FakeEvent:
 
     adapts(IFakeObject)
-    implements(ILongPollEvent)
 
     def __init__(self, source):
         self.source = source

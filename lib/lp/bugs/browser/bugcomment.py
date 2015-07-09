@@ -30,7 +30,7 @@ from zope.component import (
     getUtility,
     )
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     )
 from zope.security.proxy import removeSecurityProxy
@@ -173,6 +173,7 @@ def group_comments_with_activity(comments, activities):
             yield [event for (kind, event) in window_group]
 
 
+@implementer(IBugComment)
 class BugComment(MessageComment):
     """Data structure that holds all data pertaining to a bug comment.
 
@@ -184,7 +185,6 @@ class BugComment(MessageComment):
     canonical_url()s of BugComments to take you to the correct
     (task-specific) location.
     """
-    implements(IBugComment)
 
     delegates(IMessage, '_message')
 
@@ -350,9 +350,9 @@ class BugCommentBoxExpandedReplyView(LaunchpadView, BugCommentBoxViewMixin):
     expand_reply_box = True
 
 
+@implementer(Interface)
 class BugCommentXHTMLRepresentation:
     adapts(IBugComment, IWebServiceClientRequest)
-    implements(Interface)
 
     def __init__(self, comment, request):
         self.comment = comment

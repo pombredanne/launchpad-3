@@ -38,7 +38,7 @@ from storm.store import (
     )
 from zope.component import getUtility
 from zope.event import notify
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.enums import PRIVATE_INFORMATION_TYPES
 from lp.code.enums import (
@@ -172,10 +172,9 @@ def is_valid_transition(proposal, from_state, next_state, user=None):
         return True
 
 
+@implementer(IBranchMergeProposal, IHasBranchTarget)
 class BranchMergeProposal(SQLBase):
     """A relationship between a person and a branch."""
-
-    implements(IBranchMergeProposal, IHasBranchTarget)
 
     _table = 'BranchMergeProposal'
     _defaultOrder = ['-date_created', 'id']
@@ -1151,10 +1150,9 @@ class BranchMergeProposal(SQLBase):
             GenericGitCollection.preloadDataForRepositories(repositories)
 
 
+@implementer(IBranchMergeProposalGetter)
 class BranchMergeProposalGetter:
     """See `IBranchMergeProposalGetter`."""
-
-    implements(IBranchMergeProposalGetter)
 
     @staticmethod
     def get(id):

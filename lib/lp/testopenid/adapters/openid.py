@@ -10,7 +10,7 @@ __all__ = [
     ]
 
 from zope.component import adapts
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.services.identity.interfaces.account import IAccount
 from lp.services.openid.adapters.openid import OpenIDPersistentIdentity
@@ -18,11 +18,11 @@ from lp.services.webapp.vhosts import allvhosts
 from lp.testopenid.interfaces.server import ITestOpenIDPersistentIdentity
 
 
+@implementer(ITestOpenIDPersistentIdentity)
 class TestOpenIDPersistentIdentity(OpenIDPersistentIdentity):
     """See `IOpenIDPersistentIdentity`."""
 
     adapts(IAccount)
-    implements(ITestOpenIDPersistentIdentity)
 
     @property
     def openid_identity_url(self):

@@ -12,7 +12,7 @@ from sqlobject import (
     StringCol,
     )
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.registry.interfaces.gpg import (
     IGPGKey,
@@ -29,8 +29,8 @@ from lp.services.gpg.interfaces import (
     )
 
 
+@implementer(IGPGKey)
 class GPGKey(SQLBase):
-    implements(IGPGKey)
 
     _table = 'GPGKey'
     _defaultOrder = ['owner', 'keyid']
@@ -59,8 +59,8 @@ class GPGKey(SQLBase):
         return '%s%s/%s' % (self.keysize, self.algorithm.title, self.keyid)
 
 
+@implementer(IGPGKeySet)
 class GPGKeySet:
-    implements(IGPGKeySet)
 
     def new(self, ownerID, keyid, fingerprint, keysize,
             algorithm, active=True, can_encrypt=False):

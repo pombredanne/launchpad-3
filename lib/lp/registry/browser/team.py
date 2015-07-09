@@ -55,7 +55,7 @@ from zope.formlib.textwidgets import IntWidget
 from zope.formlib.widgets import TextAreaWidget
 from zope.interface import (
     classImplements,
-    implements,
+    implementer,
     Interface,
     )
 from zope.publisher.interfaces.browser import IBrowserPublisher
@@ -179,10 +179,9 @@ from lp.services.webapp.interfaces import (
     )
 
 
+@implementer(IObjectPrivacy)
 class TeamPrivacyAdapter:
     """Provides `IObjectPrivacy` for `ITeam`."""
-
-    implements(IObjectPrivacy)
 
     def __init__(self, context):
         self.context = context
@@ -1248,18 +1247,17 @@ class TeamNavigation(PersonNavigation):
             person, self.context)
 
 
+@implementer(IHeadingBreadcrumb, IMultiFacetedBreadcrumb)
 class TeamBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `ITeam`."""
-    implements(IHeadingBreadcrumb, IMultiFacetedBreadcrumb)
 
     @property
     def text(self):
         return smartquote('"%s" team') % self.context.displayname
 
 
+@implementer(IBrowserPublisher)
 class TeamMembershipSelfRenewalView(LaunchpadFormView):
-
-    implements(IBrowserPublisher)
 
     # This is needed for our breadcrumbs, as there's no <browser:page>
     # declaration for this view.
@@ -1354,10 +1352,9 @@ class ITeamMembershipInvitationAcknowledgementForm(Interface):
         title=_("Comment"), required=False, readonly=False)
 
 
+@implementer(IBrowserPublisher)
 class TeamInvitationView(LaunchpadFormView):
     """Where team admins can accept/decline membership invitations."""
-
-    implements(IBrowserPublisher)
 
     # This is needed for our breadcrumbs, as there's no <browser:page>
     # declaration for this view.

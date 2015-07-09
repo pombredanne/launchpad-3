@@ -8,7 +8,7 @@ __metaclass__ = type
 from datetime import datetime
 
 import pytz
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.interfaces.launchpad import IAging
 
@@ -20,9 +20,9 @@ DAYS_PER_MONTH = 30
 DAYS_PER_WEEK = 7
 
 
+@implementer(IAging)
 class AgingAdapter:
     """Adapt an IHasDateCreated to an IAging."""
-    implements(IAging)
 
     def __init__(self, context):
         self.context = context

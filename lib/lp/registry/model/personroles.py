@@ -10,7 +10,7 @@ from zope.component import (
     adapts,
     getUtility,
     )
-from zope.interface import implements
+from zope.interface import implementer
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
@@ -22,8 +22,8 @@ from lp.registry.interfaces.role import (
     )
 
 
+@implementer(IPersonRoles)
 class PersonRoles:
-    implements(IPersonRoles)
     adapts(IPerson)
 
     def __init__(self, person):
