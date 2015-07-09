@@ -404,6 +404,7 @@ class TestInlineCommentsSection(testtools.TestCase):
         " c\n"
         "+d\n"
         "+e\n"
+        "\\ No newline at end of file\n"
         "\n"
         "=== modified file 'fulango.py'\n"
         "--- fulano.py\t2014-08-26 15:53:34.000000000 -0400\n"
@@ -618,7 +619,7 @@ class TestInlineCommentsSection(testtools.TestCase):
             self.getSection(comments).splitlines()[4:12])
 
     def test_comment_in_patch_after_linebreak(self):
-        comments = {'31': 'que?'}
+        comments = {'32': 'que?'}
         self.assertEqual(
             map(unicode, [
                 "> ",
