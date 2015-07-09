@@ -3,7 +3,6 @@
 
 """Test CodeReviewComment emailing functionality."""
 
-import os
 import testtools
 import transaction
 from zope.component import getUtility
@@ -379,11 +378,6 @@ class TestCodeReviewComment(TestCaseWithFactory):
 
 class TestInlineCommentsSection(testtools.TestCase):
     """Tests for `build_inline_comments_section`."""
-
-    def datafile(self, filename):
-        data_path = os.path.join(os.path.dirname(__file__),
-                                 "test_data", filename)
-        return file(data_path, "rb")
 
     diff_text = (
         "=== added directory 'foo/bar'\n"
