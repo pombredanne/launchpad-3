@@ -12,7 +12,7 @@ import psycopg2
 from storm.exceptions import DisconnectionError
 import transaction
 from zope.component import (
-    adapts,
+    adapter,
     ComponentLookupError,
     getGlobalSiteManager,
     queryAdapter,
@@ -69,10 +69,9 @@ class Bar:
     pass
 
 
+@adapter(IFoo)
 @implementer(IBar)
 class FooToBar:
-
-    adapts(IFoo)
 
     def __init__(self, foo):
         self.foo = foo
@@ -90,9 +89,9 @@ class TestZopeAdapterFixture(TestCase):
         self.assertIs(None, queryAdapter(context, IBar))
         with ZopeAdapterFixture(FooToBar):
             # Now there is an adapter from Foo to Bar.
-            adapter = queryAdapter(context, IBar)
-            self.assertIsNot(None, adapter)
-            self.assertIsInstance(adapter, FooToBar)
+            bar_adapter = queryAdapter(context, IBar)
+            self.assertIsNot(None, bar_adapter)
+            self.assertIsInstance(bar_adapter, FooToBar)
         # The adapter is no longer registered.
         self.assertIs(None, queryAdapter(context, IBar))
 

@@ -36,7 +36,7 @@ from lazr.restful.interfaces import (
     )
 import simplejson
 from zope.component import (
-    adapts,
+    adapter,
     getMultiAdapter,
     getUtility,
     )
@@ -1389,10 +1389,9 @@ class FormatPreviewDiffView(LaunchpadView, DiffRenderingMixin):
         return self.context
 
 
+@adapter(IPreviewDiff, IWebServiceClientRequest)
 @implementer(Interface)
 class PreviewDiffHTMLRepresentation:
-    adapts(IPreviewDiff, IWebServiceClientRequest)
-
     def __init__(self, diff, request):
         self.diff = diff
         self.request = request

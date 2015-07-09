@@ -22,7 +22,7 @@ from storm.expr import (
     Select,
     )
 from zope.component import (
-    adapts,
+    adapter,
     getUtility,
     queryMultiAdapter,
     )
@@ -119,14 +119,13 @@ class _BaseTraversable:
         self.context = context
 
 
+@adapter(IProduct)
 @implementer(ILinkedBranchTraversable)
 class ProductTraversable(_BaseTraversable):
     """Linked branch traversable for products.
 
     From here, you can traverse to a product series.
     """
-
-    adapts(IProduct)
 
     def traverse(self, name, segments):
         """See `ITraversable`.
@@ -141,14 +140,13 @@ class ProductTraversable(_BaseTraversable):
         return series
 
 
+@adapter(IDistribution)
 @implementer(ILinkedBranchTraversable)
 class DistributionTraversable(_BaseTraversable):
     """Linked branch traversable for distributions.
 
     From here, you can traverse to a distribution series.
     """
-
-    adapts(IDistribution)
 
     def traverse(self, name, segments):
         """See `ITraversable`."""
@@ -164,14 +162,13 @@ class DistributionTraversable(_BaseTraversable):
             return sourcepackage
 
 
+@adapter(IDistroSeries, DBItem)
 @implementer(ILinkedBranchTraversable)
 class DistroSeriesTraversable:
     """Linked branch traversable for distribution series.
 
     From here, you can traverse to a source package.
     """
-
-    adapts(IDistroSeries, DBItem)
 
     def __init__(self, distroseries, pocket):
         self.distroseries = distroseries

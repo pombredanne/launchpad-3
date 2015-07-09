@@ -25,7 +25,7 @@ from operator import itemgetter
 from lazr.delegates import delegates
 from lazr.restful.interfaces import IWebServiceClientRequest
 from zope.component import (
-    adapts,
+    adapter,
     getMultiAdapter,
     getUtility,
     )
@@ -350,10 +350,9 @@ class BugCommentBoxExpandedReplyView(LaunchpadView, BugCommentBoxViewMixin):
     expand_reply_box = True
 
 
+@adapter(IBugComment, IWebServiceClientRequest)
 @implementer(Interface)
 class BugCommentXHTMLRepresentation:
-    adapts(IBugComment, IWebServiceClientRequest)
-
     def __init__(self, comment, request):
         self.comment = comment
         self.request = request

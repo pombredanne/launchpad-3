@@ -20,7 +20,7 @@ from storm.expr import (
 from storm.info import ClassAlias
 from storm.store import Store
 from zope.component import (
-    adapts,
+    adapter,
     getUtility,
     )
 from zope.interface import implementer
@@ -55,10 +55,9 @@ from lp.translations.model.translator import Translator
 
 
 @implementer(ITranslationsPerson)
+@adapter(IPerson)
 class TranslationsPerson:
     """See `ITranslationsPerson`."""
-    adapts(IPerson)
-
     def __init__(self, person):
         self.person = person
 

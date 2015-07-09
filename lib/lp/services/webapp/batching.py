@@ -25,7 +25,7 @@ from storm.expr import (
 from storm.properties import PropertyColumn
 from storm.store import EmptyResultSet
 from storm.zope.interfaces import IResultSet
-from zope.component import adapts
+from zope.component import adapter
 from zope.interface import implementer
 from zope.interface.common.sequence import IFiniteSequence
 from zope.security.proxy import (
@@ -49,10 +49,9 @@ from lp.services.webapp.interfaces import (
 from lp.services.webapp.publisher import LaunchpadView
 
 
+@adapter(IResultSet)
 @implementer(IFiniteSequence)
 class FiniteSequenceAdapter:
-
-    adapts(IResultSet)
 
     def __init__(self, context):
         self.context = context
