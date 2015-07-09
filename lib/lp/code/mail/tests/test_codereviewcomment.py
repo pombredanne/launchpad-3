@@ -421,6 +421,23 @@ class TestInlineCommentsSection(testtools.TestCase):
         "+mengano\n"
         "+zutano\n")
 
+    git_diff_text = (
+        "diff --git a/foo b/foo\n"
+        "index 5716ca5..7601807 100644\n"
+        "--- a/foo\n"
+        "+++ b/foo\n"
+        "@@ -1 +1 @@\n"
+        "-bar\n"
+        "+baz\n"
+        "\n"
+        "diff --git a/fulano b/fulano\n"
+        "index 5716ca5..7601807 100644\n"
+        "--- a/fulano\n"
+        "+++ b/fulano\n"
+        "@@ -1 +1 @@\n"
+        "-mengano\n"
+        "+zutano\n")
+
     binary_diff_text = (
         "=== added file 'lib/canonical/launchpad/images/foo.png'\n"
         "Binary files lib/canonical/launchpad/images/foo.png\t"
@@ -498,6 +515,37 @@ class TestInlineCommentsSection(testtools.TestCase):
                 '\u03b4\u03bf\u03ba\u03b9\u03bc\u03ae',
                 '']),
             self.getSection(comments).splitlines()[7:11])
+
+    def test_comments_in_git_diff(self):
+        comments = {'1': 'foo', '5': 'bar', '14': 'baz'}
+        section = self.getSection(comments, diff_text=self.git_diff_text)
+        self.assertEqual(
+            map(unicode, [
+                "> diff --git a/foo b/foo",
+                "",
+                "foo",
+                "",
+                "> index 5716ca5..7601807 100644",
+                "> --- a/foo",
+                "> +++ b/foo",
+                "> @@ -1 +1 @@",
+                "",
+                "bar",
+                "",
+                "> -bar",
+                "> +baz",
+                "> ",
+                "> diff --git a/fulano b/fulano",
+                "> index 5716ca5..7601807 100644",
+                "> --- a/fulano",
+                "> +++ b/fulano",
+                "> @@ -1 +1 @@",
+                "> -mengano",
+                "",
+                "baz",
+                "",
+                "> +zutano"]),
+            section.splitlines()[4:28])
 
     def test_commentless_hunks_ignored(self):
         # Hunks without inline comments are not returned in the diff text.
