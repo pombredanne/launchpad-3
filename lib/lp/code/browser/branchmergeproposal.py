@@ -28,7 +28,7 @@ __all__ = [
 from functools import wraps
 import operator
 
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 from lazr.restful.interface import copy_field
 from lazr.restful.interfaces import (
     IJSONRequestCache,
@@ -780,10 +780,9 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
             })
 
 
+@delegate_to(ICodeReviewVoteReference)
 class DecoratedCodeReviewVoteReference:
     """Provide a code review vote that knows if it is important or not."""
-
-    delegates(ICodeReviewVoteReference)
 
     status_text_map = {
         CodeReviewVote.DISAPPROVE: CodeReviewVote.DISAPPROVE.title,

@@ -12,7 +12,7 @@ __all__ = [
 
 from operator import attrgetter
 
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -475,6 +475,7 @@ class PackageUploadNavigation(GetitemNavigation, FileNavigationMixin):
     usedfor = IPackageUpload
 
 
+@delegate_to(IPackageUpload)
 class CompletePackageUpload:
     """A decorated `PackageUpload` including sources, builds and packages.
 
@@ -493,8 +494,6 @@ class CompletePackageUpload:
     contains_source = None
     contains_build = None
     sourcepackagerelease = None
-
-    delegates(IPackageUpload)
 
     def __init__(self, packageupload, build_upload_files,
                  source_upload_files, package_sets):

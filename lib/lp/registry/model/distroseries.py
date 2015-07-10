@@ -17,7 +17,7 @@ from cStringIO import StringIO
 from operator import attrgetter
 
 import apt_pkg
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 from sqlobject import (
     BoolCol,
     ForeignKey,
@@ -204,13 +204,12 @@ ACTIVE_UNRELEASED_STATUSES = [
 @implementer(
     IBugSummaryDimension, IDistroSeries, IHasBuildRecords, IHasQueueItems,
     IServiceUsage, ISeriesBugTarget)
+@delegate_to(ISpecificationTarget, context='distribution')
 class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                    HasTranslationImportsMixin, HasTranslationTemplatesMixin,
                    HasMilestonesMixin, SeriesMixin,
                    StructuralSubscriptionTargetMixin):
     """A particular series of a distribution."""
-
-    delegates(ISpecificationTarget, 'distribution')
 
     _table = 'DistroSeries'
     _defaultOrder = ['distribution', 'version']

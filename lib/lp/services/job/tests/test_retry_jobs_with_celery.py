@@ -7,7 +7,7 @@
 from datetime import timedelta
 from time import sleep
 
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 import transaction
 from zope.interface import implementer
 
@@ -27,9 +27,9 @@ from lp.testing.layers import CeleryJobLayer
 
 
 @implementer(IRunnableJob)
+@delegate_to(IJob, context='job')
 class TestJob(BaseRunnableJob):
     """A dummy job."""
-    delegates(IJob, 'job')
 
     config = config.launchpad
 

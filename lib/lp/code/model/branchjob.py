@@ -32,7 +32,7 @@ from bzrlib.revision import NULL_REVISION
 from bzrlib.revisionspec import RevisionInfo
 from bzrlib.transport import get_transport
 from bzrlib.upgrade import upgrade
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 from lazr.enum import (
     DBEnumeratedType,
     DBItem,
@@ -228,11 +228,10 @@ class BranchJob(SQLBase):
         return BranchJobDerived.makeSubclass(self)
 
 
+@delegate_to(IBranchJob)
 class BranchJobDerived(BaseRunnableJob):
 
     __metaclass__ = EnumeratedSubclass
-
-    delegates(IBranchJob)
 
     def __init__(self, branch_job):
         self.context = branch_job
@@ -246,7 +245,7 @@ class BranchJobDerived(BaseRunnableJob):
             }
 
     # XXX: henninge 2009-02-20 bug=331919: These two standard operators
-    # should be implemented by delegates().
+    # should be implemented by delegate_to().
     def __eq__(self, other):
         # removeSecurityProxy, since 'other' might well be a delegated object
         # and the context attribute is not exposed by design.

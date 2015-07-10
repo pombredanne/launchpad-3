@@ -10,7 +10,7 @@ __all__ = [
 
 import logging
 
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 from lazr.jobrunner.jobrunner import SuspendJobException
 from psycopg2.extensions import TransactionRollbackError
 from storm.locals import (
@@ -174,12 +174,11 @@ class PackageCopyJob(StormBase):
         return PackageCopyJobDerived.makeSubclass(self)
 
 
+@delegate_to(IPackageCopyJob)
 class PackageCopyJobDerived(BaseRunnableJob):
     """Abstract class for deriving from PackageCopyJob."""
 
     __metaclass__ = EnumeratedSubclass
-
-    delegates(IPackageCopyJob)
 
     def __init__(self, job):
         self.context = job

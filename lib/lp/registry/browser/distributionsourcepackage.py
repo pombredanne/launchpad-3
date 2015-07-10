@@ -20,7 +20,7 @@ __all__ = [
 import itertools
 import operator
 
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 from zope.component import getUtility
 from zope.interface import (
     implementer,
@@ -190,13 +190,13 @@ class DistributionSourcePackageNavigation(Navigation,
         return self.context.getVersion(name)
 
 
+@delegate_to(IDistributionSourcePackageRelease, context='context')
 class DecoratedDistributionSourcePackageRelease:
     """A decorated DistributionSourcePackageRelease.
 
     The publishing history and package diffs for the release are
     pre-cached.
     """
-    delegates(IDistributionSourcePackageRelease, 'context')
 
     def __init__(
         self, distributionsourcepackagerelease, publishing_history,

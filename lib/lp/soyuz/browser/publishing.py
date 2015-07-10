@@ -14,7 +14,7 @@ __all__ = [
 
 from operator import attrgetter
 
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 from zope.interface import implementer
 
 from lp.services.librarian.browser import (
@@ -71,13 +71,13 @@ class SourcePackagePublishingHistoryNavigation(Navigation,
     usedfor = ISourcePackagePublishingHistory
 
 
+@delegate_to(IPackageDiff)
 class ProxiedPackageDiff:
     """A `PackageDiff` extension.
 
     Instead of `LibraryFileAlias` returns `ProxiedLibraryFileAlias`, so
     their 'http_url' attribute can be used in the template.
     """
-    delegates(IPackageDiff)
 
     def __init__(self, context, parent):
         self.context = context

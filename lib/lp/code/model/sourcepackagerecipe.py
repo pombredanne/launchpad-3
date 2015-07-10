@@ -14,7 +14,7 @@ from datetime import (
     )
 from operator import attrgetter
 
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 from pytz import utc
 from storm.expr import (
     And,
@@ -101,6 +101,7 @@ class _SourcePackageRecipeDistroSeries(Storm):
 
 @implementer(ISourcePackageRecipe)
 @provider(ISourcePackageRecipeSource)
+@delegate_to(ISourcePackageRecipeData, context='_recipe_data')
 class SourcePackageRecipe(Storm):
     """See `ISourcePackageRecipe` and `ISourcePackageRecipeSource`."""
 
@@ -108,9 +109,6 @@ class SourcePackageRecipe(Storm):
 
     def __str__(self):
         return '%s/%s' % (self.owner.name, self.name)
-
-    
-    delegates(ISourcePackageRecipeData, context='_recipe_data')
 
     id = Int(primary=True)
 

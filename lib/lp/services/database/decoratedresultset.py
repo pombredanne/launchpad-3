@@ -6,7 +6,7 @@ __all__ = [
     'DecoratedResultSet',
     ]
 
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 from storm import Undef
 from storm.zope.interfaces import IResultSet
 from zope.security.proxy import (
@@ -16,6 +16,7 @@ from zope.security.proxy import (
     )
 
 
+@delegate_to(IResultSet, context='result_set')
 class DecoratedResultSet(object):
     """A decorated Storm ResultSet for 'Magic' (presenter) classes.
 
@@ -34,7 +35,6 @@ class DecoratedResultSet(object):
     This behaviour is required for other classes as well (Distribution,
     DistroArchSeries), hence a generalised solution.
     """
-    delegates(IResultSet, context='result_set')
 
     def __init__(self, result_set, result_decorator=None, pre_iter_hook=None,
                  bulk_decorator=None, slice_info=False, return_both=False):

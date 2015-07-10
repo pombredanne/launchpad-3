@@ -8,7 +8,7 @@ __all__ = [
     "DistributionJobDerived",
 ]
 
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 from storm.locals import (
     And,
     Int,
@@ -67,12 +67,11 @@ class DistributionJob(StormBase):
         return DistributionJobDerived.makeSubclass(self)
 
 
+@delegate_to(IDistributionJob)
 class DistributionJobDerived(BaseRunnableJob):
     """Abstract class for deriving from DistributionJob."""
 
     __metaclass__ = EnumeratedSubclass
-
-    delegates(IDistributionJob)
 
     def __init__(self, job):
         self.context = job
