@@ -100,7 +100,8 @@ class RootTraversable:
         if not valid_name(name):
             raise InvalidProductName(name)
         pillar = getUtility(IPillarNameSet).getByName(name)
-        if pillar is None:
+        if (pillar is None
+                or not check_permission('launchpad.LimitedView', pillar)):
             # Actually, the pillar is no such *anything*. The user might be
             # trying to refer to a project group, a distribution or a
             # project. We raise a NoSuchProduct error since that's what we
