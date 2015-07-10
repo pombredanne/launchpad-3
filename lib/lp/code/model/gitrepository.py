@@ -348,7 +348,7 @@ class GitRepository(StormBase, GitIdentityMixin):
     def getCodebrowseUrl(self):
         """See `IGitRepository`."""
         return urlutils.join(
-            config.codehosting.git_browse_root, self.unique_name)
+            config.codehosting.git_browse_root, self.shortened_path)
 
     @property
     def git_https_url(self):
