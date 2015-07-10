@@ -74,7 +74,7 @@ class GitAPI(LaunchpadXMLRPCView):
         try:
             hosting_path = repository.getInternalPath()
         except Unauthorized:
-            raise faults.PermissionDenied()
+            return None
         writable = check_permission("launchpad.Edit", repository)
         return {
             "path": hosting_path,
@@ -240,13 +240,14 @@ class GitAPI(LaunchpadXMLRPCView):
             if permission != "read" and not result["writable"]:
                 raise faults.PermissionDenied()
             return result
-        except faults.PermissionDenied:
-            # Turn "permission denied" for anonymous HTTP requests into
-            # "authorisation required", so that the user-agent has a chance
-            # to try HTTP basic auth.
+        except (faults.PermissionDenied, faults.PathTranslationError):
+            # Turn lookup errors for anonymous HTTP requests into
+            # "authorisation required", so that the user-agent has a
+            # chance to try HTTP basic auth.
             if can_authenticate and requester is None:
                 raise faults.Unauthorized()
-            raise
+            else:
+                raise
 
     def translatePath(self, path, permission, requester_id, can_authenticate):
         """See `IGitAPI`."""

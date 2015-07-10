@@ -197,14 +197,14 @@ class TestGitAPIMixin:
             self.factory.makeGitRepository(
                 information_type=InformationType.USERDATA))
         path = u"/%s" % repository.unique_name
-        self.assertPermissionDenied(requester, path)
+        self.assertPathTranslationError(requester, path)
 
     def test_translatePath_anonymous_cannot_see_private_repository(self):
         repository = removeSecurityProxy(
             self.factory.makeGitRepository(
                 information_type=InformationType.USERDATA))
         path = u"/%s" % repository.unique_name
-        self.assertPermissionDenied(
+        self.assertPathTranslationError(
             LAUNCHPAD_ANONYMOUS, path, can_authenticate=False)
         self.assertUnauthorized(
             LAUNCHPAD_ANONYMOUS, path, can_authenticate=True)
@@ -413,7 +413,7 @@ class TestGitAPI(TestGitAPIMixin, TestCaseWithFactory):
         self.assertPathTranslationError(
             LAUNCHPAD_ANONYMOUS, u"/%s" % project.name,
             permission="write", can_authenticate=False)
-        self.assertPathTranslationError(
+        self.assertUnauthorized(
             LAUNCHPAD_ANONYMOUS, u"/%s" % project.name,
             permission="write", can_authenticate=True)
 
