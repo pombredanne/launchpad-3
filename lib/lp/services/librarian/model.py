@@ -15,7 +15,7 @@ from datetime import datetime
 import hashlib
 from urlparse import urlparse
 
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 import pytz
 from sqlobject import (
     BoolCol,
@@ -227,10 +227,9 @@ class LibraryFileAlias(SQLBase):
 
 @adapter(ILibraryFileAlias, Interface)
 @implementer(ILibraryFileAliasWithParent)
+@delegate_to(ILibraryFileAlias)
 class LibraryFileAliasWithParent:
     """A LibraryFileAlias variant that has a parent."""
-
-    delegates(ILibraryFileAlias)
 
     def __init__(self, libraryfile, parent):
         self.context = libraryfile

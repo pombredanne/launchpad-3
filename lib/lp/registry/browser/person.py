@@ -68,7 +68,7 @@ from textwrap import dedent
 import urllib
 
 from lazr.config import as_timedelta
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 from lazr.restful.interface import copy_field
 from lazr.restful.interfaces import IWebServiceClientRequest
 from lazr.restful.utils import smartquote
@@ -1139,6 +1139,7 @@ class RedirectToEditLanguagesView(LaunchpadView):
             '%s/+editlanguages' % canonical_url(self.user))
 
 
+@delegate_to(IPerson, context='person')
 class PersonWithKeysAndPreferredEmail:
     """A decorated person that includes GPG keys and preferred emails."""
 
@@ -1148,7 +1149,6 @@ class PersonWithKeysAndPreferredEmail:
     gpgkeys = None
     sshkeys = None
     preferredemail = None
-    delegates(IPerson, 'person')
 
     def __init__(self, person):
         self.person = person
@@ -3560,15 +3560,16 @@ class BaseWithStats:
 
 
 @implementer(ISourcePackageRelease)
+@delegate_to(ISourcePackageRelease)
 class SourcePackageReleaseWithStats(BaseWithStats):
     """An ISourcePackageRelease, with extra stats added."""
-    delegates(ISourcePackageRelease)
+    pass
 
 
 @implementer(ISourcePackagePublishingHistory)
+@delegate_to(ISourcePackagePublishingHistory)
 class SourcePackagePublishingHistoryWithStats(BaseWithStats):
     """An ISourcePackagePublishingHistory, with extra stats added."""
-    delegates(ISourcePackagePublishingHistory)
 
 
 @implementer(IPersonRelatedSoftwareMenu)

@@ -12,7 +12,7 @@ __all__ = [
 
 import logging
 
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 from lazr.enum import (
     DBEnumeratedType,
     DBItem,
@@ -169,13 +169,12 @@ class SharingJob(StormBase):
         return SharingJobDerived.makeSubclass(self)
 
 
+@delegate_to(ISharingJob)
 @provider(ISharingJobSource)
 class SharingJobDerived(BaseRunnableJob):
     """Intermediate class for deriving from SharingJob."""
 
     __metaclass__ = EnumeratedSubclass
-
-    delegates(ISharingJob)
 
     def __init__(self, job):
         self.context = job

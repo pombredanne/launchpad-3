@@ -7,7 +7,7 @@ __all__ = [
     'PackageDiffJob',
     ]
 
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 import simplejson
 from zope.component import getUtility
 from zope.interface import (
@@ -30,12 +30,12 @@ from lp.soyuz.interfaces.packagediffjob import (
     )
 
 
+@delegate_to(IPackageDiffJob)
 @provider(IPackageDiffJobSource)
 class PackageDiffJobDerived(BaseRunnableJob):
 
     __metaclass__ = EnumeratedSubclass
 
-    delegates(IPackageDiffJob)
     config = config.IPackageDiffJobSource
 
     def __init__(self, job):

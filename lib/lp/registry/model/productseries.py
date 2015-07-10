@@ -13,7 +13,7 @@ __all__ = [
 
 import datetime
 
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 from sqlobject import (
     ForeignKey,
     SQLMultipleJoin,
@@ -112,13 +112,12 @@ def landmark_key(landmark):
 
 @implementer(
     IBugSummaryDimension, IProductSeries, IServiceUsage, ISeriesBugTarget)
+@delegate_to(ISpecificationTarget, context='product')
 class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
                     HasSpecificationsMixin, HasTranslationImportsMixin,
                     HasTranslationTemplatesMixin,
                     StructuralSubscriptionTargetMixin, SeriesMixin):
     """A series of product releases."""
-
-    delegates(ISpecificationTarget, 'product')
 
     _table = 'ProductSeries'
 

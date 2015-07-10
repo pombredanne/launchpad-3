@@ -22,7 +22,7 @@ from itertools import (
     )
 from operator import itemgetter
 
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 from lazr.restful.interfaces import IWebServiceClientRequest
 from zope.component import (
     adapter,
@@ -174,6 +174,7 @@ def group_comments_with_activity(comments, activities):
 
 
 @implementer(IBugComment)
+@delegate_to(IMessage, context='_message')
 class BugComment(MessageComment):
     """Data structure that holds all data pertaining to a bug comment.
 
@@ -185,8 +186,6 @@ class BugComment(MessageComment):
     canonical_url()s of BugComments to take you to the correct
     (task-specific) location.
     """
-
-    delegates(IMessage, '_message')
 
     def __init__(
             self, index, message, bugtask, activity=None,

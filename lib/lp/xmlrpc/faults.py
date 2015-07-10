@@ -17,6 +17,7 @@ __all__ = [
     'CannotHaveLinkedBranch',
     'FileBugGotProductAndDistro',
     'FileBugMissingProductOrDistribution',
+    'GitRepositoryNotFound',
     'InvalidBranchIdentifier',
     'InvalidBranchName',
     'InvalidBranchUniqueName',
@@ -378,6 +379,12 @@ class PathTranslationError(LaunchpadFault):
 
     def __init__(self, path):
         LaunchpadFault.__init__(self, path=path)
+
+
+class GitRepositoryNotFound(PathTranslationError):
+    """Raised when a Git repository path lookup fails."""
+
+    msg_template = "Repository '%(path)s' not found."
 
 
 class InvalidPath(LaunchpadFault):

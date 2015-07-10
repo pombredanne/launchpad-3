@@ -18,7 +18,7 @@ import httplib
 import itertools
 import operator
 
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 from lazr.restful.declarations import error_status
@@ -267,10 +267,9 @@ class Array(NamedFunc):
     name = 'array'
 
 
+@delegate_to(IProduct, context='product')
 class ProductWithLicenses:
     """Caches `Product.licenses`."""
-
-    delegates(IProduct, 'product')
 
     def __init__(self, product, license_ids):
         """Initialize a `ProductWithLicenses`.

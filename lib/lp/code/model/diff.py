@@ -24,7 +24,7 @@ from bzrlib.patches import (
     Patch,
     )
 from bzrlib.plugins.difftacular.generate_diff import diff_ignore_branches
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 import simplejson
 from sqlobject import (
     ForeignKey,
@@ -323,10 +323,9 @@ class Diff(SQLBase):
 
 
 @implementer(IIncrementalDiff)
+@delegate_to(IDiff, context='diff')
 class IncrementalDiff(Storm):
     """See `IIncrementalDiff."""
-
-    delegates(IDiff, context='diff')
 
     __storm_table__ = 'IncrementalDiff'
 
@@ -352,9 +351,9 @@ class IncrementalDiff(Storm):
 
 
 @implementer(IPreviewDiff)
+@delegate_to(IDiff, context='diff')
 class PreviewDiff(Storm):
     """See `IPreviewDiff`."""
-    delegates(IDiff, context='diff')
     __storm_table__ = 'PreviewDiff'
 
     id = Int(primary=True)

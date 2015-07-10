@@ -10,7 +10,7 @@ __all__ = [
     'ReclaimGitRepositorySpaceJob',
     ]
 
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 from lazr.enum import (
     DBEnumeratedType,
     DBItem,
@@ -116,11 +116,10 @@ class GitJob(StormBase):
         return GitJobDerived.makeSubclass(self)
 
 
+@delegate_to(IGitJob)
 class GitJobDerived(BaseRunnableJob):
 
     __metaclass__ = EnumeratedSubclass
-
-    delegates(IGitJob)
 
     def __init__(self, git_job):
         self.context = git_job

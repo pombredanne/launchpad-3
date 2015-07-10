@@ -17,7 +17,7 @@ from datetime import (
     timedelta,
     )
 
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 from pytz import utc
 import simplejson
 from storm.expr import (
@@ -159,6 +159,7 @@ class ProductJob(StormBase):
         self._json_data = json_data.decode('utf-8')
 
 
+@delegate_to(IProductJob)
 @provider(IProductJobSource)
 class ProductJobDerived(BaseRunnableJob):
     """Intermediate class for deriving from ProductJob.
@@ -169,8 +170,6 @@ class ProductJobDerived(BaseRunnableJob):
     inheritance solution to the problem. Subclasses need to override
     the run() method.
     """
-
-    delegates(IProductJob)
 
     def __init__(self, job):
         self.context = job

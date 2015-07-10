@@ -14,7 +14,7 @@ __all__ = [
     ]
 
 import apt_pkg
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -120,6 +120,7 @@ def has_restricted_files(source):
     return False
 
 
+@delegate_to(ISourcePackagePublishingHistory)
 class CheckedCopy:
     """Representation of a copy that was checked and approved.
 
@@ -127,7 +128,6 @@ class CheckedCopy:
     `getStatusSummaryForBuilds` to return `BuildSetStatus.NEEDSBUILD`
     for source-only copies.
     """
-    delegates(ISourcePackagePublishingHistory)
 
     def __init__(self, context, include_binaries):
         self.context = context

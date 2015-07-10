@@ -9,7 +9,7 @@ __all__ = [
     'QuestionMessage',
     ]
 
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 from sqlobject import ForeignKey
 from zope.interface import implementer
 
@@ -26,10 +26,9 @@ from lp.services.propertycache import cachedproperty
 
 
 @implementer(IQuestionMessage)
+@delegate_to(IMessage, context='message')
 class QuestionMessage(SQLBase):
     """A table linking questions and messages."""
-
-    delegates(IMessage, context='message')
 
     _table = 'QuestionMessage'
 
